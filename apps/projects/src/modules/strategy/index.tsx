@@ -118,11 +118,11 @@ export const WorkspaceStrategyMapPage = () => {
           <StrategyMapCanvas
             canEdit={!isGuest}
             objectives={objectives}
-            onAlign={(objectiveId, pillarId) => {
-              if (!isGuest) alignObjective.mutate({ objectiveId, pillarId });
-            }}
             onAddPillar={() => {
               if (!isGuest) setIsPillarOpen(true);
+            }}
+            onAlign={(objectiveId, pillarId) => {
+              if (!isGuest) alignObjective.mutate({ objectiveId, pillarId });
             }}
             onDeletePillar={(pillarId) => {
               if (!isGuest) setPillarToDelete(pillarId);
@@ -143,6 +143,7 @@ export const WorkspaceStrategyMapPage = () => {
             onSelectPillar={(pillar) => {
               setSelectedNode({ pillarId: pillar.id, type: "pillar" });
             }}
+            onZoomChange={setZoom}
             resetSignal={resetSignal}
             showUnaligned={showUnaligned}
             strategy={strategy}

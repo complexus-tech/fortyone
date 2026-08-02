@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { memo, useState } from "react";
+import { memo } from "react";
 import { format, formatISO } from "date-fns";
 import Link from "next/link";
 import {
@@ -12,6 +12,7 @@ import {
   ExternalLinkIcon,
   HelpIcon,
   ObjectiveIcon,
+  OKRIcon,
   UnlinkIcon,
 } from "icons";
 import { cn } from "lib";
@@ -37,7 +38,6 @@ import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
 import { useWorkspacePath } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
-import { useKeyResults } from "@/modules/objectives/hooks";
 import type {
   KeyResult,
   Objective,
@@ -48,11 +48,10 @@ import { hexToRgba } from "@/utils";
 import type { StrategicPillar } from "./types";
 import {
   GOAL_NODE_WIDTH,
+  KEY_RESULT_NODE_WIDTH,
   OBJECTIVE_NODE_WIDTH,
   PILLAR_NODE_WIDTH,
 } from "./strategy-map-layout";
-
-const NUMBER_FORMAT = new Intl.NumberFormat();
 
 const getStrategyDescriptionPreview = (description: string | null) => {
   if (!description) return "";
@@ -93,14 +92,6 @@ const getKeyResultProgress = (keyResult: KeyResult) => {
   );
 };
 
-const formatValue = (value: number, measurementType: string) => {
-  if (measurementType === "percentage") return `${value}%`;
-  if (measurementType === "boolean") {
-    return value >= 1 ? "Complete" : "Incomplete";
-  }
-  return NUMBER_FORMAT.format(value);
-};
-
 const getProgressBadgeClassName = (progress: number) => {
   if (progress < 25) return "border-danger/20 bg-danger/10";
   if (progress < 50) return "border-warning/20 bg-warning/10";
@@ -114,6 +105,13 @@ const getProgressTrackClassName = (progress: number) => {
   if (progress < 50) return "[&_circle:first-child]:stroke-warning/25";
   if (progress < 75) return "[&_circle:first-child]:stroke-info/25";
   return "[&_circle:first-child]:stroke-success/25";
+};
+
+const getProgressFillClassName = (progress: number) => {
+  if (progress < 25) return "bg-danger";
+  if (progress < 50) return "bg-warning";
+  if (progress < 75) return "bg-info";
+  return "bg-success";
 };
 
 const cardClasses = cn(
@@ -380,101 +378,98 @@ export const PillarNodeCard = memo(
 );
 PillarNodeCard.displayName = "PillarNodeCard";
 
-const ObjectiveKeyResults = ({ objectiveId }: { objectiveId: string }) => {
-  const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
-  const [isExpanded, setIsExpanded] = useState(true);
+export const KeyResultNodeCard = memo(
+  ({
+    keyResult,
+    onOpenDetails,
+  }: {
+    keyResult: KeyResult;
+    onOpenDetails: () => void;
+  }) => {
+    const { data: members = [] } = useMembers();
+    const progress = getKeyResultProgress(keyResult);
+    const lead = keyResult.lead
+      ? members.find(({ id }) => id === keyResult.lead)
+      : undefined;
 
-  if (isPending || keyResults.length === 0) return null;
-
-  return (
-    <Box
-      className={cn("border-border mt-3 border-t", !isExpanded && "-mb-2.5")}
-      data-no-drag
-    >
-      <button
-        aria-expanded={isExpanded}
-        className="text-foreground flex w-full items-center justify-between gap-1 rounded-md py-2.5 text-left text-[0.95rem] transition-colors"
-        onClick={() => {
-          setIsExpanded((current) => !current);
+    return (
+      <Box
+        className={cn(cardClasses, "cursor-pointer px-4 py-4")}
+        data-card-select
+        onClick={(event) => {
+          if (event.detail === 0) onOpenDetails();
         }}
-        type="button"
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          onOpenDetails();
+        }}
+        role="button"
+        style={{ width: KEY_RESULT_NODE_WIDTH }}
+        tabIndex={0}
       >
-        <span>
-          {keyResults.length} key result{keyResults.length === 1 ? "" : "s"}
-        </span>
-        <ChevronRightIcon
-          className={cn(
-            "h-4 w-4 shrink-0 transition-transform duration-150",
-            isExpanded && "rotate-90",
-          )}
-          strokeWidth={2}
-        />
-      </button>
-      {isExpanded ? (
-        <ul>
-          {keyResults.map((keyResult) => {
-            const progress = getKeyResultProgress(keyResult);
-            return (
-              <Tooltip
-                className="border-border-strong dark:border-border-strong dark:bg-surface-elevated min-w-44"
-                delayDuration={300}
-                key={keyResult.id}
-                title={
-                  <Box>
-                    <Flex align="center" className="gap-4" justify="between">
-                      <Text>Progress</Text>
-                      <Text className="tabular-nums" fontWeight="semibold">
-                        {progress}%
-                      </Text>
-                    </Flex>
-                    <Text className="mt-1 text-[0.9rem]" color="muted">
-                      {formatValue(
-                        keyResult.currentValue,
-                        keyResult.measurementType,
-                      )}{" "}
-                      of{" "}
-                      {formatValue(
-                        keyResult.targetValue,
-                        keyResult.measurementType,
-                      )}
-                    </Text>
-                  </Box>
-                }
-              >
-                <li className="border-border/70 dark:border-border-strong/55 flex items-center gap-2.5 border-t py-3 last:pb-0">
-                  <span
-                    aria-label={`Progress ${progress}%`}
-                    className="relative top-0.5 shrink-0"
-                  >
-                    <CircleProgressBar
-                      className={getProgressTrackClassName(progress)}
-                      progress={progress}
-                      size={14}
-                      strokeWidth={2}
-                    />
-                  </span>
-                  <Box className="min-w-0 flex-1">
-                    <Text className="text-foreground line-clamp-2 text-base leading-5">
-                      {keyResult.name}
-                    </Text>
-                  </Box>
-                </li>
-              </Tooltip>
-            );
-          })}
-        </ul>
-      ) : null}
-    </Box>
-  );
-};
+        <Flex align="center" className="gap-2">
+          <span className="border-info/20 bg-info/10 text-info grid h-7 w-7 shrink-0 place-items-center rounded-md border">
+            <OKRIcon className="h-4 w-4 text-current" strokeWidth={2} />
+          </span>
+          <NodeEyebrow>Key result</NodeEyebrow>
+        </Flex>
+        <Text
+          className="mt-3 line-clamp-2 text-[1.04rem] leading-[1.35rem]"
+          fontWeight="semibold"
+        >
+          {keyResult.name}
+        </Text>
+        <Flex align="center" className="mt-4 gap-2.5">
+          <div
+            aria-label={`Progress ${progress}%`}
+            aria-valuemax={100}
+            aria-valuemin={0}
+            aria-valuenow={progress}
+            className="bg-border h-1.5 min-w-0 flex-1 overflow-hidden rounded-full"
+            role="progressbar"
+          >
+            <div
+              className={cn(
+                "h-full rounded-full",
+                getProgressFillClassName(progress),
+              )}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <Text className="shrink-0 text-sm tabular-nums" color="muted">
+            {progress}%
+          </Text>
+        </Flex>
+        {lead ? (
+          <Flex align="center" className="mt-3 gap-2">
+            <Avatar
+              name={lead.fullName || lead.username}
+              rounded="md"
+              size="xs"
+              src={lead.avatarUrl}
+            />
+            <Text className="min-w-0 truncate text-sm" color="muted">
+              {lead.fullName || lead.username}
+            </Text>
+          </Flex>
+        ) : null}
+      </Box>
+    );
+  },
+);
+KeyResultNodeCard.displayName = "KeyResultNodeCard";
 
 export const ObjectiveNodeCard = memo(
   ({
     canEdit,
     currentPillarId,
+    isKeyResultsExpanded,
+    keyResultCount,
     objective,
     onAlign,
     onOpenDetails,
+    onToggleKeyResults,
     onUpdate,
     pillars,
     status,
@@ -483,9 +478,12 @@ export const ObjectiveNodeCard = memo(
   }: {
     canEdit: boolean;
     currentPillarId: string | null;
+    isKeyResultsExpanded: boolean;
+    keyResultCount: number;
     objective: Objective;
     onAlign: (objectiveId: string, pillarId: string | null) => void;
     onOpenDetails: () => void;
+    onToggleKeyResults: () => void;
     onUpdate: (objectiveId: string, data: ObjectiveUpdate) => void;
     pillars: StrategicPillar[];
     status?: ObjectiveStatus;
@@ -515,13 +513,17 @@ export const ObjectiveNodeCard = memo(
           >
             <Flex align="start" className="gap-3" justify="between">
               <button
-                className="focus-visible:ring-foreground/30 min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-1"
+                className="focus-visible:ring-foreground/30 flex min-w-0 flex-1 items-start gap-2 rounded-sm text-left outline-none focus-visible:ring-1"
                 data-card-select
                 onClick={(event) => {
                   if (event.detail === 0) onOpenDetails();
                 }}
                 type="button"
               >
+                <ObjectiveIcon
+                  className="text-text-muted mt-0.5 h-4.5 w-4.5 shrink-0"
+                  strokeWidth={2}
+                />
                 <Text
                   className="line-clamp-2 text-[1.15rem] leading-[1.45rem]"
                   fontWeight="semibold"
@@ -685,7 +687,26 @@ export const ObjectiveNodeCard = memo(
                 />
               </DatePicker>
             </Flex>
-            <ObjectiveKeyResults objectiveId={objective.id} />
+            {keyResultCount > 0 ? (
+              <button
+                aria-expanded={isKeyResultsExpanded}
+                className="border-border text-foreground hover:bg-state-hover mt-3 flex w-full items-center justify-between rounded-md border-t px-1 pt-3 pb-1 text-left text-[0.95rem] transition-colors"
+                data-no-drag
+                onClick={onToggleKeyResults}
+                type="button"
+              >
+                <span>
+                  {keyResultCount} key result{keyResultCount === 1 ? "" : "s"}
+                </span>
+                <ChevronRightIcon
+                  className={cn(
+                    "h-4 w-4 shrink-0 transition-transform duration-150",
+                    isKeyResultsExpanded && "rotate-90",
+                  )}
+                  strokeWidth={2}
+                />
+              </button>
+            ) : null}
           </Box>
         </ContextMenu.Trigger>
         <ContextMenu.Items className="w-64">

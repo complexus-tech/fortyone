@@ -1,4 +1,4 @@
-import type { Objective } from "@/modules/objectives/types";
+import type { KeyResult, Objective } from "@/modules/objectives/types";
 import type { StrategyMap } from "./types";
 
 export const STRATEGY_CANVAS_MIN_WIDTH = 2200;
@@ -6,12 +6,18 @@ export const STRATEGY_CANVAS_MIN_HEIGHT = 1400;
 export const GOAL_NODE_WIDTH = 440;
 export const PILLAR_NODE_WIDTH = 340;
 export const OBJECTIVE_NODE_WIDTH = 340;
+export const KEY_RESULT_NODE_WIDTH = 280;
 
 const CANVAS_GUTTER = 160;
 const BRANCH_GAP = 120;
 const OBJECTIVE_GAP = 64;
-const OBJECTIVE_ROW_GAP = 320;
+const OBJECTIVE_ROW_MIN_HEIGHT = 320;
+const OBJECTIVE_ROW_GAP = 80;
+const OBJECTIVE_TO_KEY_RESULT_OFFSET = 250;
+const KEY_RESULT_GAP = 28;
+const KEY_RESULT_ROW_GAP = 184;
 const MAX_OBJECTIVES_PER_ROW = 4;
+const MAX_KEY_RESULTS_PER_ROW = 2;
 
 export type StrategyNodePosition = {
   x: number;
@@ -35,13 +41,160 @@ export const GOAL_NODE_ID = "goal";
 export const getPillarNodeId = (pillarId: string) => `pillar:${pillarId}`;
 export const getObjectiveNodeId = (objectiveId: string) =>
   `objective:${objectiveId}`;
+export const getKeyResultNodeId = (keyResultId: string) =>
+  `key-result:${keyResultId}`;
 
-const getObjectiveRows = (count: number) =>
-  Math.max(1, Math.ceil(count / MAX_OBJECTIVES_PER_ROW));
+type ObjectiveCell = {
+  objective: Objective;
+  keyResults: KeyResult[];
+  width: number;
+};
+
+type ObjectiveRow = {
+  cells: ObjectiveCell[];
+  height: number;
+  width: number;
+};
+
+const getVisibleKeyResults = (
+  objectiveId: string,
+  keyResultsByObjective: ReadonlyMap<string, KeyResult[]>,
+  expandedObjectiveIds: ReadonlySet<string>,
+) =>
+  expandedObjectiveIds.has(objectiveId)
+    ? keyResultsByObjective.get(objectiveId) ?? []
+    : [];
+
+const getObjectiveCellWidth = (keyResultCount: number) => {
+  const visibleColumns = Math.min(
+    Math.max(keyResultCount, 1),
+    MAX_KEY_RESULTS_PER_ROW,
+  );
+
+  return Math.max(
+    OBJECTIVE_NODE_WIDTH,
+    visibleColumns * KEY_RESULT_NODE_WIDTH +
+      Math.max(0, visibleColumns - 1) * KEY_RESULT_GAP,
+  );
+};
+
+const createObjectiveRows = (
+  objectives: Objective[],
+  keyResultsByObjective: ReadonlyMap<string, KeyResult[]>,
+  expandedObjectiveIds: ReadonlySet<string>,
+): ObjectiveRow[] => {
+  if (objectives.length === 0) return [];
+
+  const rows: ObjectiveRow[] = [];
+  for (
+    let index = 0;
+    index < objectives.length;
+    index += MAX_OBJECTIVES_PER_ROW
+  ) {
+    const cells = objectives
+      .slice(index, index + MAX_OBJECTIVES_PER_ROW)
+      .map((objective) => {
+        const keyResults = getVisibleKeyResults(
+          objective.id,
+          keyResultsByObjective,
+          expandedObjectiveIds,
+        );
+        return {
+          keyResults,
+          objective,
+          width: getObjectiveCellWidth(keyResults.length),
+        };
+      });
+    const keyResultRows = Math.max(
+      0,
+      ...cells.map(({ keyResults }) =>
+        Math.ceil(keyResults.length / MAX_KEY_RESULTS_PER_ROW),
+      ),
+    );
+
+    rows.push({
+      cells,
+      height: Math.max(
+        OBJECTIVE_ROW_MIN_HEIGHT,
+        OBJECTIVE_TO_KEY_RESULT_OFFSET + keyResultRows * KEY_RESULT_ROW_GAP,
+      ),
+      width:
+        cells.reduce((total, cell) => total + cell.width, 0) +
+        Math.max(0, cells.length - 1) * OBJECTIVE_GAP,
+    });
+  }
+
+  return rows;
+};
+
+const getRowsHeight = (rows: ObjectiveRow[]) =>
+  rows.reduce(
+    (total, row, index) =>
+      total + row.height + (index > 0 ? OBJECTIVE_ROW_GAP : 0),
+    0,
+  );
+
+const positionObjectiveRows = ({
+  groupWidth,
+  groupX,
+  rows,
+  startY,
+  positions,
+}: {
+  groupWidth: number;
+  groupX: number;
+  rows: ObjectiveRow[];
+  startY: number;
+  positions: StrategyNodePositions;
+}) => {
+  let rowY = startY;
+  rows.forEach((row) => {
+    let cellX = groupX + (groupWidth - row.width) / 2;
+
+    row.cells.forEach(({ keyResults, objective, width }) => {
+      positions[getObjectiveNodeId(objective.id)] = {
+        x: cellX + (width - OBJECTIVE_NODE_WIDTH) / 2,
+        y: rowY,
+      };
+
+      keyResults.forEach((keyResult, keyResultIndex) => {
+        const keyResultRow = Math.floor(
+          keyResultIndex / MAX_KEY_RESULTS_PER_ROW,
+        );
+        const keyResultRowStart = keyResultRow * MAX_KEY_RESULTS_PER_ROW;
+        const keyResultRowCount = Math.min(
+          MAX_KEY_RESULTS_PER_ROW,
+          keyResults.length - keyResultRowStart,
+        );
+        const keyResultRowWidth =
+          keyResultRowCount * KEY_RESULT_NODE_WIDTH +
+          Math.max(0, keyResultRowCount - 1) * KEY_RESULT_GAP;
+        const keyResultColumn = keyResultIndex % MAX_KEY_RESULTS_PER_ROW;
+
+        positions[getKeyResultNodeId(keyResult.id)] = {
+          x:
+            cellX +
+            (width - keyResultRowWidth) / 2 +
+            keyResultColumn * (KEY_RESULT_NODE_WIDTH + KEY_RESULT_GAP),
+          y:
+            rowY +
+            OBJECTIVE_TO_KEY_RESULT_OFFSET +
+            keyResultRow * KEY_RESULT_ROW_GAP,
+        };
+      });
+
+      cellX += width + OBJECTIVE_GAP;
+    });
+
+    rowY += row.height + OBJECTIVE_ROW_GAP;
+  });
+};
 
 export const createStrategyMapLayout = (
   strategy: StrategyMap,
   objectives: Objective[],
+  keyResultsByObjective: ReadonlyMap<string, KeyResult[]> = new Map(),
+  expandedObjectiveIds: ReadonlySet<string> = new Set(),
 ) => {
   const objectiveById = new Map(
     objectives.map((objective) => [objective.id, objective]),
@@ -52,48 +205,44 @@ export const createStrategyMapLayout = (
   const unalignedObjectives = objectives.filter(
     (objective) => !alignedIds.has(objective.id),
   );
-  const branchWidths = strategy.pillars.map((pillar) => {
-    const objectiveCount = pillar.objectiveIds.filter((id) =>
-      objectiveById.has(id),
-    ).length;
-    const visibleInFirstRow = Math.min(
-      Math.max(objectiveCount, 1),
-      MAX_OBJECTIVES_PER_ROW,
-    );
-
-    return Math.max(
-      PILLAR_NODE_WIDTH,
-      visibleInFirstRow * OBJECTIVE_NODE_WIDTH +
-        Math.max(0, visibleInFirstRow - 1) * OBJECTIVE_GAP,
-    );
-  });
+  const branchRows = strategy.pillars.map((pillar) =>
+    createObjectiveRows(
+      pillar.objectiveIds
+        .map((id) => objectiveById.get(id))
+        .filter((objective): objective is Objective => Boolean(objective)),
+      keyResultsByObjective,
+      expandedObjectiveIds,
+    ),
+  );
+  const branchWidths = branchRows.map((rows) =>
+    Math.max(PILLAR_NODE_WIDTH, ...rows.map(({ width }) => width)),
+  );
   const branchesWidth = branchWidths.reduce(
     (total, width, index) => total + width + (index > 0 ? BRANCH_GAP : 0),
     0,
   );
-  const unalignedWidth =
-    Math.min(Math.max(unalignedObjectives.length, 1), MAX_OBJECTIVES_PER_ROW) *
-      (OBJECTIVE_NODE_WIDTH + OBJECTIVE_GAP) -
-    OBJECTIVE_GAP;
+  const unalignedRows = createObjectiveRows(
+    unalignedObjectives,
+    keyResultsByObjective,
+    expandedObjectiveIds,
+  );
+  const unalignedWidth = Math.max(
+    OBJECTIVE_NODE_WIDTH,
+    ...unalignedRows.map(({ width }) => width),
+  );
   const width = Math.max(
     STRATEGY_CANVAS_MIN_WIDTH,
     branchesWidth + CANVAS_GUTTER * 2,
     unalignedWidth + CANVAS_GUTTER * 2,
   );
-  const maxAlignedRows = Math.max(
-    1,
-    ...strategy.pillars.map((pillar) =>
-      getObjectiveRows(
-        pillar.objectiveIds.filter((id) => objectiveById.has(id)).length,
-      ),
-    ),
+  const maxAlignedHeight = Math.max(
+    OBJECTIVE_ROW_MIN_HEIGHT,
+    ...branchRows.map(getRowsHeight),
   );
-  const unalignedStartY = 620 + maxAlignedRows * OBJECTIVE_ROW_GAP + 180;
+  const unalignedStartY = 620 + maxAlignedHeight + 180;
   const height = Math.max(
     STRATEGY_CANVAS_MIN_HEIGHT,
-    unalignedStartY +
-      getObjectiveRows(unalignedObjectives.length) * OBJECTIVE_ROW_GAP +
-      260,
+    unalignedStartY + getRowsHeight(unalignedRows) + 260,
   );
   const positions: StrategyNodePositions = {
     [GOAL_NODE_ID]: {
@@ -105,56 +254,26 @@ export const createStrategyMapLayout = (
   let branchX = (width - branchesWidth) / 2;
   strategy.pillars.forEach((pillar, pillarIndex) => {
     const branchWidth = branchWidths[pillarIndex] ?? PILLAR_NODE_WIDTH;
-    const alignedObjectives = pillar.objectiveIds
-      .map((id) => objectiveById.get(id))
-      .filter((objective): objective is Objective => Boolean(objective));
-
     positions[getPillarNodeId(pillar.id)] = {
       x: branchX + (branchWidth - PILLAR_NODE_WIDTH) / 2,
       y: 340,
     };
-
-    alignedObjectives.forEach((objective, objectiveIndex) => {
-      const row = Math.floor(objectiveIndex / MAX_OBJECTIVES_PER_ROW);
-      const rowStart = row * MAX_OBJECTIVES_PER_ROW;
-      const rowCount = Math.min(
-        MAX_OBJECTIVES_PER_ROW,
-        alignedObjectives.length - rowStart,
-      );
-      const rowWidth =
-        rowCount * OBJECTIVE_NODE_WIDTH +
-        Math.max(0, rowCount - 1) * OBJECTIVE_GAP;
-      const column = objectiveIndex % MAX_OBJECTIVES_PER_ROW;
-
-      positions[getObjectiveNodeId(objective.id)] = {
-        x:
-          branchX +
-          (branchWidth - rowWidth) / 2 +
-          column * (OBJECTIVE_NODE_WIDTH + OBJECTIVE_GAP),
-        y: 620 + row * OBJECTIVE_ROW_GAP,
-      };
+    positionObjectiveRows({
+      groupWidth: branchWidth,
+      groupX: branchX,
+      positions,
+      rows: branchRows[pillarIndex] ?? [],
+      startY: 620,
     });
-
     branchX += branchWidth + BRANCH_GAP;
   });
 
-  const unalignedColumns = Math.min(
-    Math.max(unalignedObjectives.length, 1),
-    MAX_OBJECTIVES_PER_ROW,
-  );
-  const unalignedRowWidth =
-    unalignedColumns * OBJECTIVE_NODE_WIDTH +
-    Math.max(0, unalignedColumns - 1) * OBJECTIVE_GAP;
-
-  unalignedObjectives.forEach((objective, index) => {
-    const row = Math.floor(index / MAX_OBJECTIVES_PER_ROW);
-    const column = index % MAX_OBJECTIVES_PER_ROW;
-    positions[getObjectiveNodeId(objective.id)] = {
-      x:
-        (width - unalignedRowWidth) / 2 +
-        column * (OBJECTIVE_NODE_WIDTH + OBJECTIVE_GAP),
-      y: unalignedStartY + row * OBJECTIVE_ROW_GAP,
-    };
+  positionObjectiveRows({
+    groupWidth: unalignedWidth,
+    groupX: (width - unalignedWidth) / 2,
+    positions,
+    rows: unalignedRows,
+    startY: unalignedStartY,
   });
 
   return { height, positions, width };
@@ -162,7 +281,9 @@ export const createStrategyMapLayout = (
 
 export const getStrategyConnections = (
   strategy: StrategyMap,
-  objectiveIds: Set<string>,
+  objectiveIds: ReadonlySet<string>,
+  keyResultsByObjective: ReadonlyMap<string, KeyResult[]> = new Map(),
+  expandedObjectiveIds: ReadonlySet<string> = new Set(),
 ): StrategyConnection[] => {
   const connections: StrategyConnection[] = [];
 
@@ -181,6 +302,22 @@ export const getStrategyConnections = (
         id: `${pillarNodeId}->${objectiveNodeId}`,
         sourceId: pillarNodeId,
         targetId: objectiveNodeId,
+      });
+    });
+  });
+
+  objectiveIds.forEach((objectiveId) => {
+    getVisibleKeyResults(
+      objectiveId,
+      keyResultsByObjective,
+      expandedObjectiveIds,
+    ).forEach((keyResult) => {
+      const objectiveNodeId = getObjectiveNodeId(objectiveId);
+      const keyResultNodeId = getKeyResultNodeId(keyResult.id);
+      connections.push({
+        id: `${objectiveNodeId}->${keyResultNodeId}`,
+        sourceId: objectiveNodeId,
+        targetId: keyResultNodeId,
       });
     });
   });

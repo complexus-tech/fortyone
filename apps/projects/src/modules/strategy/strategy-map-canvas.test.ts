@@ -45,8 +45,10 @@ describe("StrategyMapCanvas", () => {
     expect(source).toContain("UltimateGoalNodeCard");
     expect(source).toContain("PillarNodeCard");
     expect(source).toContain("ObjectiveNodeCard");
-    expect(cardSource).toContain("ObjectiveKeyResults");
-    expect(cardSource).not.toContain("OKRIcon");
+    expect(source).toContain("KeyResultNodeCard");
+    expect(cardSource).not.toContain("ObjectiveKeyResults");
+    expect(cardSource).toContain("OKRIcon");
+    expect(cardSource).toContain("ObjectiveIcon");
     expect(cardSource).toContain("CircleProgressBar");
     expect(cardSource).toContain("ObjectiveStatusesMenu");
     expect(cardSource).toContain("PrioritiesMenu");
@@ -160,7 +162,7 @@ describe("StrategyMapCanvas", () => {
     expect(canvasSource).toContain("teamCodeById");
     expect(profileMenuSource).toContain("ExternalLinkIcon");
     expect(profileMenuSource).not.toContain("NewTabIcon");
-    expect(externalLinkIconSource).toContain("strokeWidth = 2");
+    expect(externalLinkIconSource).toContain("strokeWidth = 1.5");
   });
 
   it("opens node details without treating controls or drags as card clicks", () => {
@@ -203,34 +205,38 @@ describe("StrategyMapCanvas", () => {
     );
   });
 
-  it("uses a right-aligned chevron for key-result expansion", () => {
+  it("renders key results as persistently collapsible child nodes", () => {
     const cardSource = readSource(
       "src/modules/strategy/strategy-map-cards.tsx",
     );
+    const canvasSource = readSource(
+      "src/modules/strategy/strategy-map-canvas.tsx",
+    );
+    const layoutSource = readSource(
+      "src/modules/strategy/strategy-map-layout.ts",
+    );
 
-    expect(cardSource).toContain("justify-between gap-1");
-    expect(cardSource).toContain(
-      "const [isExpanded, setIsExpanded] = useState(true)",
-    );
-    expect(cardSource).toContain(
-      'className="text-foreground flex w-full items-center',
-    );
-    expect(cardSource).toContain('isExpanded && "rotate-90"');
+    expect(cardSource).toContain("KeyResultNodeCard");
+    expect(cardSource).toContain("isKeyResultsExpanded");
+    expect(cardSource).toContain('isKeyResultsExpanded && "rotate-90"');
     expect(cardSource).not.toContain("ArrowDownIcon");
-    expect(cardSource).toContain("flex items-center gap-2.5 border-t");
-    expect(cardSource).toContain("dark:border-border-strong/55");
-    expect(cardSource).toContain("relative top-0.5 shrink-0");
-    expect(cardSource).not.toContain("last:border-b-0");
-    expect(cardSource).toContain("text-foreground line-clamp-2 text-base");
-    expect(cardSource).toContain("<Tooltip");
-    expect(cardSource).toContain("delayDuration={300}");
-    expect(cardSource).toContain(
-      "border-border-strong dark:border-border-strong dark:bg-surface-elevated",
-    );
-    expect(cardSource).toContain("size={14}");
-    expect(cardSource).toContain("py-2.5");
-    expect(cardSource).toContain('!isExpanded && "-mb-2.5"');
-    expect(cardSource).not.toContain("text-foreground/75");
+    expect(canvasSource).toContain("strategy-map-expansion:v");
+    expect(canvasSource).toContain("expandedObjectiveIds");
+    expect(canvasSource).toContain("toggleObjectiveKeyResults");
+    expect(layoutSource).toContain("getKeyResultNodeId");
+    expect(layoutSource).toContain("objectiveNodeId}->");
+    expect(layoutSource).toContain("targetId: keyResultNodeId");
+  });
+
+  it("zooms around the pointer and drags visible objective subtrees", () => {
+    const source = readSource("src/modules/strategy/strategy-map-canvas.tsx");
+
+    expect(source).toContain('addEventListener("wheel"');
+    expect(source).toContain("{ passive: false }");
+    expect(source).toContain("pendingZoomAnchorRef");
+    expect(source).toContain("event.ctrlKey");
+    expect(source).toContain("startPositions");
+    expect(source).toContain("getKeyResultNodeId(keyResult.id)");
   });
 
   it("keeps the goal label prominent and pillar content compact", () => {

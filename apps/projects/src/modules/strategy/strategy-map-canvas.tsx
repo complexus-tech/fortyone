@@ -15,10 +15,15 @@ import { Box, Flex, Text } from "ui";
 import { useWorkspacePath } from "@/hooks";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks";
-import type { Objective, ObjectiveUpdate } from "@/modules/objectives/types";
+import type {
+  KeyResult,
+  Objective,
+  ObjectiveUpdate,
+} from "@/modules/objectives/types";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import {
   getObjectiveProgress,
+  KeyResultNodeCard,
   ObjectiveNodeCard,
   PillarNodeCard,
   UltimateGoalNodeCard,
@@ -26,11 +31,13 @@ import {
 import {
   createConnectionPath,
   createStrategyMapLayout,
+  getKeyResultNodeId,
   getObjectiveNodeId,
   getPillarNodeId,
   getStrategyConnections,
   GOAL_NODE_ID,
   GOAL_NODE_WIDTH,
+  KEY_RESULT_NODE_WIDTH,
   mergeStrategyNodePositions,
   OBJECTIVE_NODE_WIDTH,
   parseStoredStrategyNodePositions,
@@ -39,18 +46,49 @@ import {
   type StrategyNodePositions,
 } from "./strategy-map-layout";
 import type { StrategicPillar, StrategyMap } from "./types";
+import { useStrategyKeyResults } from "./use-strategy-key-results";
 
-const LAYOUT_STORAGE_VERSION = 1;
+const LAYOUT_STORAGE_VERSION = 2;
+const EXPANSION_STORAGE_VERSION = 1;
+const EXPANSION_STORAGE_EVENT = "strategy-map-expansion-change";
 const CANVAS_INSET = 28;
 const CLICK_MOVEMENT_THRESHOLD = 4;
 const subscribeToStaticStorage = () => () => undefined;
+const subscribeToExpansionStorage = (onStoreChange: () => void) => {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(EXPANSION_STORAGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(EXPANSION_STORAGE_EVENT, onStoreChange);
+  };
+};
+
+const parseCollapsedObjectiveIds = (value: string | null) => {
+  try {
+    const parsed = value ? (JSON.parse(value) as unknown) : [];
+    return new Set(
+      Array.isArray(parsed)
+        ? parsed.filter((item): item is string => typeof item === "string")
+        : [],
+    );
+  } catch {
+    return new Set<string>();
+  }
+};
 
 type ActiveNodeDrag = {
   id: string;
   pointerId: number;
   startClientX: number;
   startClientY: number;
-  startPosition: { x: number; y: number };
+  startPositions: StrategyNodePositions;
+};
+
+type ZoomAnchor = {
+  viewportX: number;
+  viewportY: number;
+  worldX: number;
+  worldY: number;
 };
 
 type ActivePan = {
@@ -78,6 +116,9 @@ const getDefaultNodeDimensions = (nodeId: string): StrategyNodeDimensions => {
   }
   if (nodeId.startsWith("pillar:")) {
     return { height: 150, width: PILLAR_NODE_WIDTH };
+  }
+  if (nodeId.startsWith("key-result:")) {
+    return { height: 154, width: KEY_RESULT_NODE_WIDTH };
   }
   return { height: 174, width: OBJECTIVE_NODE_WIDTH };
 };
@@ -120,16 +161,25 @@ const StrategyCanvasNode = ({
 
 const CanvasConnections = ({
   dimensions,
+  expandedObjectiveIds,
+  keyResultsByObjective,
   objectiveIds,
   positions,
   strategy,
 }: {
   dimensions: Record<string, StrategyNodeDimensions>;
+  expandedObjectiveIds: ReadonlySet<string>;
+  keyResultsByObjective: ReadonlyMap<string, KeyResult[]>;
   objectiveIds: Set<string>;
   positions: StrategyNodePositions;
   strategy: StrategyMap;
 }) => {
-  const connections = getStrategyConnections(strategy, objectiveIds);
+  const connections = getStrategyConnections(
+    strategy,
+    objectiveIds,
+    keyResultsByObjective,
+    expandedObjectiveIds,
+  );
 
   return (
     <svg
@@ -187,6 +237,7 @@ export const StrategyMapCanvas = ({
   canEdit,
   resetSignal = 0,
   zoom,
+  onZoomChange,
 }: {
   strategy: StrategyMap;
   objectives: Objective[];
@@ -200,11 +251,13 @@ export const StrategyMapCanvas = ({
   canEdit: boolean;
   resetSignal?: number;
   zoom: number;
+  onZoomChange: (zoom: number) => void;
 }) => {
   const { workspaceSlug } = useWorkspacePath();
   const { data: statuses = [] } = useObjectiveStatuses();
   const { data: teams = [] } = useTeams();
   const updateObjective = useUpdateObjectiveMutation();
+  const { keyResultsByObjective } = useStrategyKeyResults(objectives);
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const activeDragRef = useRef<ActiveNodeDrag | null>(null);
@@ -214,6 +267,7 @@ export const StrategyMapCanvas = ({
   const hasPositionedViewportRef = useRef(false);
   const previousZoomRef = useRef(zoom);
   const previousResetSignalRef = useRef(resetSignal);
+  const pendingZoomAnchorRef = useRef<ZoomAnchor | null>(null);
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [dropTargetPillarId, setDropTargetPillarId] = useState<string | null>(
     null,
@@ -222,9 +276,41 @@ export const StrategyMapCanvas = ({
   const [dimensions, setDimensions] = useState<
     Record<string, StrategyNodeDimensions>
   >({});
+  const expansionStorageKey = `strategy-map-expansion:v${EXPANSION_STORAGE_VERSION}:${workspaceSlug}`;
+  const getStoredExpansionSnapshot = useCallback(
+    () => window.localStorage.getItem(expansionStorageKey),
+    [expansionStorageKey],
+  );
+  const storedExpansionValue = useSyncExternalStore(
+    subscribeToExpansionStorage,
+    getStoredExpansionSnapshot,
+    () => null,
+  );
+  const collapsedObjectiveIds = useMemo(
+    () => parseCollapsedObjectiveIds(storedExpansionValue),
+    [storedExpansionValue],
+  );
+  const expandedObjectiveIds = useMemo(
+    () => {
+      const result = new Set<string>();
+      objectives.forEach(({ id, keyResultCount }) => {
+        if (keyResultCount > 0 && !collapsedObjectiveIds.has(id)) {
+          result.add(id);
+        }
+      });
+      return result;
+    },
+    [collapsedObjectiveIds, objectives],
+  );
   const layout = useMemo(
-    () => createStrategyMapLayout(strategy, objectives),
-    [objectives, strategy],
+    () =>
+      createStrategyMapLayout(
+        strategy,
+        objectives,
+        keyResultsByObjective,
+        expandedObjectiveIds,
+      ),
+    [expandedObjectiveIds, keyResultsByObjective, objectives, strategy],
   );
   const storageKey = `strategy-map-layout:v${LAYOUT_STORAGE_VERSION}:${workspaceSlug}`;
   const getStoredLayoutSnapshot = useCallback(
@@ -249,16 +335,39 @@ export const StrategyMapCanvas = ({
       transientLayout.storageKey === storageKey
         ? transientLayout.positions
         : {};
-
-    return mergeStrategyNodePositions(layout.positions, {
+    const overrides = {
       ...storedPositions,
       ...transientPositions,
+    };
+    const merged = mergeStrategyNodePositions(layout.positions, overrides);
+
+    objectives.forEach((objective) => {
+      const objectiveNodeId = getObjectiveNodeId(objective.id);
+      const defaultObjectivePosition = layout.positions[objectiveNodeId];
+      const objectivePosition = merged[objectiveNodeId];
+
+      const deltaX = objectivePosition.x - defaultObjectivePosition.x;
+      const deltaY = objectivePosition.y - defaultObjectivePosition.y;
+      keyResultsByObjective.get(objective.id)?.forEach((keyResult) => {
+        const keyResultNodeId = getKeyResultNodeId(keyResult.id);
+        if (Object.hasOwn(overrides, keyResultNodeId)) return;
+        const defaultKeyResultPosition = layout.positions[keyResultNodeId];
+        merged[keyResultNodeId] = {
+          x: defaultKeyResultPosition.x + deltaX,
+          y: defaultKeyResultPosition.y + deltaY,
+        };
+      });
     });
-  }, [layout.positions, storageKey, storedPositions, transientLayout]);
-  const objectiveIds = useMemo(
-    () => new Set(objectives.map((objective) => objective.id)),
-    [objectives],
-  );
+
+    return merged;
+  }, [
+    keyResultsByObjective,
+    layout.positions,
+    objectives,
+    storageKey,
+    storedPositions,
+    transientLayout,
+  ]);
   const objectiveById = useMemo(
     () => new Map(objectives.map((objective) => [objective.id, objective])),
     [objectives],
@@ -280,6 +389,18 @@ export const StrategyMapCanvas = ({
     });
     return result;
   }, [strategy.pillars]);
+  const objectiveIds = useMemo(
+    () => {
+      const result = new Set<string>();
+      objectives.forEach((objective) => {
+        if (showUnaligned || pillarByObjectiveId.has(objective.id)) {
+          result.add(objective.id);
+        }
+      });
+      return result;
+    },
+    [objectives, pillarByObjectiveId, showUnaligned],
+  );
   const averageProgress =
     objectives.length > 0
       ? Math.round(
@@ -302,10 +423,22 @@ export const StrategyMapCanvas = ({
     objectives.forEach((objective) => {
       if (showUnaligned || pillarByObjectiveId.has(objective.id)) {
         ids.push(getObjectiveNodeId(objective.id));
+        if (expandedObjectiveIds.has(objective.id)) {
+          keyResultsByObjective.get(objective.id)?.forEach((keyResult) => {
+            ids.push(getKeyResultNodeId(keyResult.id));
+          });
+        }
       }
     });
     return ids.join("|");
-  }, [objectives, pillarByObjectiveId, showUnaligned, strategy.pillars]);
+  }, [
+    expandedObjectiveIds,
+    keyResultsByObjective,
+    objectives,
+    pillarByObjectiveId,
+    showUnaligned,
+    strategy.pillars,
+  ]);
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
@@ -366,6 +499,14 @@ export const StrategyMapCanvas = ({
       return;
     }
 
+    const anchor = pendingZoomAnchorRef.current;
+    pendingZoomAnchorRef.current = null;
+    if (anchor) {
+      viewport.scrollLeft = anchor.worldX * zoom - anchor.viewportX;
+      viewport.scrollTop = anchor.worldY * zoom - anchor.viewportY;
+      return;
+    }
+
     const ratio = zoom / previousZoom;
     viewport.scrollLeft =
       (viewport.scrollLeft + viewport.clientWidth / 2) * ratio -
@@ -374,6 +515,41 @@ export const StrategyMapCanvas = ({
       (viewport.scrollTop + viewport.clientHeight / 2) * ratio -
       viewport.clientHeight / 2;
   }, [zoom]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+
+      const nextZoom = Math.max(
+        0.5,
+        Math.min(
+          1.6,
+          Number((zoom * Math.exp(-event.deltaY * 0.002)).toFixed(2)),
+        ),
+      );
+      if (nextZoom === zoom) return;
+
+      const bounds = viewport.getBoundingClientRect();
+      const viewportX = event.clientX - bounds.left;
+      const viewportY = event.clientY - bounds.top;
+      pendingZoomAnchorRef.current = {
+        viewportX,
+        viewportY,
+        worldX: (viewport.scrollLeft + viewportX) / zoom,
+        worldY: (viewport.scrollTop + viewportY) / zoom,
+      };
+      onZoomChange(nextZoom);
+    };
+
+    viewport.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      viewport.removeEventListener("wheel", handleWheel);
+    };
+  }, [onZoomChange, zoom]);
 
   const persistPositions = useCallback(() => {
     try {
@@ -426,7 +602,18 @@ export const StrategyMapCanvas = ({
   const handleNodePointerDown = useCallback(
     (nodeId: string, event: ReactPointerEvent<HTMLDivElement>) => {
       if (event.button !== 0 || isInteractiveTarget(event.target)) return;
-      const startPosition = positionsRef.current[nodeId];
+      const draggedNodeIds = [nodeId];
+      if (nodeId.startsWith("objective:")) {
+        const objectiveId = nodeId.slice("objective:".length);
+        if (expandedObjectiveIds.has(objectiveId)) {
+          keyResultsByObjective.get(objectiveId)?.forEach((keyResult) => {
+            draggedNodeIds.push(getKeyResultNodeId(keyResult.id));
+          });
+        }
+      }
+      const startPositions = Object.fromEntries(
+        draggedNodeIds.map((id) => [id, positionsRef.current[id]]),
+      );
 
       event.preventDefault();
       event.stopPropagation();
@@ -436,41 +623,56 @@ export const StrategyMapCanvas = ({
         pointerId: event.pointerId,
         startClientX: event.clientX,
         startClientY: event.clientY,
-        startPosition,
+        startPositions,
       };
       setDraggingNodeId(nodeId);
       document.body.style.cursor = "grabbing";
       document.body.style.userSelect = "none";
     },
-    [],
+    [expandedObjectiveIds, keyResultsByObjective],
   );
 
   const handleNodePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const drag = activeDragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
-      const nodeDimensions =
-        dimensionsRef.current[drag.id] ?? getDefaultNodeDimensions(drag.id);
-      const nextPosition = {
-        x: Math.max(
-          CANVAS_INSET,
-          Math.min(
-            layout.width - nodeDimensions.width - CANVAS_INSET,
-            drag.startPosition.x + (event.clientX - drag.startClientX) / zoom,
-          ),
-        ),
-        y: Math.max(
-          CANVAS_INSET,
-          Math.min(
-            layout.height - nodeDimensions.height - CANVAS_INSET,
-            drag.startPosition.y + (event.clientY - drag.startClientY) / zoom,
-          ),
-        ),
-      };
-      const nextPositions = {
-        ...positionsRef.current,
-        [drag.id]: nextPosition,
-      };
+      const rawDeltaX = (event.clientX - drag.startClientX) / zoom;
+      const rawDeltaY = (event.clientY - drag.startClientY) / zoom;
+      let minimumDeltaX = Number.NEGATIVE_INFINITY;
+      let maximumDeltaX = Number.POSITIVE_INFINITY;
+      let minimumDeltaY = Number.NEGATIVE_INFINITY;
+      let maximumDeltaY = Number.POSITIVE_INFINITY;
+
+      Object.entries(drag.startPositions).forEach(([nodeId, position]) => {
+        const nodeDimensions =
+          dimensionsRef.current[nodeId] ?? getDefaultNodeDimensions(nodeId);
+        minimumDeltaX = Math.max(minimumDeltaX, CANVAS_INSET - position.x);
+        maximumDeltaX = Math.min(
+          maximumDeltaX,
+          layout.width - nodeDimensions.width - CANVAS_INSET - position.x,
+        );
+        minimumDeltaY = Math.max(minimumDeltaY, CANVAS_INSET - position.y);
+        maximumDeltaY = Math.min(
+          maximumDeltaY,
+          layout.height - nodeDimensions.height - CANVAS_INSET - position.y,
+        );
+      });
+
+      const deltaX = Math.max(
+        minimumDeltaX,
+        Math.min(maximumDeltaX, rawDeltaX),
+      );
+      const deltaY = Math.max(
+        minimumDeltaY,
+        Math.min(maximumDeltaY, rawDeltaY),
+      );
+      const nextPositions = { ...positionsRef.current };
+      Object.entries(drag.startPositions).forEach(([nodeId, position]) => {
+        nextPositions[nodeId] = {
+          x: position.x + deltaX,
+          y: position.y + deltaY,
+        };
+      });
       positionsRef.current = nextPositions;
       setTransientLayout({ positions: nextPositions, storageKey });
 
@@ -529,6 +731,25 @@ export const StrategyMapCanvas = ({
       updateObjective.mutate({ objectiveId, data });
     },
     [updateObjective],
+  );
+
+  const toggleObjectiveKeyResults = useCallback(
+    (objectiveId: string) => {
+      const next = new Set(collapsedObjectiveIds);
+      if (next.has(objectiveId)) next.delete(objectiveId);
+      else next.add(objectiveId);
+
+      try {
+        window.localStorage.setItem(
+          expansionStorageKey,
+          JSON.stringify(Array.from(next)),
+        );
+        window.dispatchEvent(new Event(EXPANSION_STORAGE_EVENT));
+      } catch {
+        // Expansion remains at its last persisted state if storage is unavailable.
+      }
+    },
+    [collapsedObjectiveIds, expansionStorageKey],
   );
 
   const handleViewportPointerDown = (
@@ -621,6 +842,8 @@ export const StrategyMapCanvas = ({
           >
             <CanvasConnections
               dimensions={dimensions}
+              expandedObjectiveIds={expandedObjectiveIds}
+              keyResultsByObjective={keyResultsByObjective}
               objectiveIds={objectiveIds}
               positions={positions}
               strategy={strategy}
@@ -742,10 +965,17 @@ export const StrategyMapCanvas = ({
                   <ObjectiveNodeCard
                     canEdit={canEdit}
                     currentPillarId={currentPillarId}
+                    isKeyResultsExpanded={expandedObjectiveIds.has(
+                      objective.id,
+                    )}
+                    keyResultCount={objective.keyResultCount}
                     objective={objective}
                     onAlign={onAlign}
                     onOpenDetails={() => {
                       onSelectObjective(objective);
+                    }}
+                    onToggleKeyResults={() => {
+                      toggleObjectiveKeyResults(objective.id);
                     }}
                     onUpdate={handleObjectiveUpdate}
                     pillars={strategy.pillars}
@@ -754,6 +984,48 @@ export const StrategyMapCanvas = ({
                     teamCode={teamCodeById.get(objective.teamId)}
                   />
                 </StrategyCanvasNode>
+              );
+            })}
+
+            {objectives.flatMap((objective) => {
+              const currentPillarId = pillarByObjectiveId.get(objective.id);
+              if (
+                (!showUnaligned && !currentPillarId) ||
+                !expandedObjectiveIds.has(objective.id)
+              ) {
+                return [];
+              }
+
+              return (keyResultsByObjective.get(objective.id) ?? []).map(
+                (keyResult) => {
+                  const nodeId = getKeyResultNodeId(keyResult.id);
+                  return (
+                    <StrategyCanvasNode
+                      id={nodeId}
+                      isDragging={draggingNodeId === nodeId}
+                      key={keyResult.id}
+                      onPointerDown={handleNodePointerDown}
+                      onPointerMove={handleNodePointerMove}
+                      onPointerUp={(event) => {
+                        finishNodeDrag(
+                          event,
+                          event.type !== "pointercancel",
+                          () => {
+                            onSelectObjective(objective);
+                          },
+                        );
+                      }}
+                      position={positions[nodeId] ?? layout.positions[nodeId]}
+                    >
+                      <KeyResultNodeCard
+                        keyResult={keyResult}
+                        onOpenDetails={() => {
+                          onSelectObjective(objective);
+                        }}
+                      />
+                    </StrategyCanvasNode>
+                  );
+                },
               );
             })}
           </div>
