@@ -106,7 +106,7 @@ export const WorkspaceStrategyMapPage = () => {
             }}
             size="sm"
           >
-            Add pillar
+            Add strategic pillar
           </Button>
         </Flex>
       </HeaderContainer>
