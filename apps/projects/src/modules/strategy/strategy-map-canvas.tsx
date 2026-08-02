@@ -290,18 +290,15 @@ export const StrategyMapCanvas = ({
     () => parseCollapsedObjectiveIds(storedExpansionValue),
     [storedExpansionValue],
   );
-  const expandedObjectiveIds = useMemo(
-    () => {
-      const result = new Set<string>();
-      objectives.forEach(({ id, keyResultCount }) => {
-        if (keyResultCount > 0 && !collapsedObjectiveIds.has(id)) {
-          result.add(id);
-        }
-      });
-      return result;
-    },
-    [collapsedObjectiveIds, objectives],
-  );
+  const expandedObjectiveIds = useMemo(() => {
+    const result = new Set<string>();
+    objectives.forEach(({ id, keyResultCount }) => {
+      if (keyResultCount > 0 && !collapsedObjectiveIds.has(id)) {
+        result.add(id);
+      }
+    });
+    return result;
+  }, [collapsedObjectiveIds, objectives]);
   const layout = useMemo(
     () =>
       createStrategyMapLayout(
@@ -389,18 +386,15 @@ export const StrategyMapCanvas = ({
     });
     return result;
   }, [strategy.pillars]);
-  const objectiveIds = useMemo(
-    () => {
-      const result = new Set<string>();
-      objectives.forEach((objective) => {
-        if (showUnaligned || pillarByObjectiveId.has(objective.id)) {
-          result.add(objective.id);
-        }
-      });
-      return result;
-    },
-    [objectives, pillarByObjectiveId, showUnaligned],
-  );
+  const objectiveIds = useMemo(() => {
+    const result = new Set<string>();
+    objectives.forEach((objective) => {
+      if (showUnaligned || pillarByObjectiveId.has(objective.id)) {
+        result.add(objective.id);
+      }
+    });
+    return result;
+  }, [objectives, pillarByObjectiveId, showUnaligned]);
   const averageProgress =
     objectives.length > 0
       ? Math.round(
@@ -995,6 +989,7 @@ export const StrategyMapCanvas = ({
               ) {
                 return [];
               }
+              const teamCode = teamCodeById.get(objective.teamId);
 
               return (keyResultsByObjective.get(objective.id) ?? []).map(
                 (keyResult) => {
@@ -1018,6 +1013,11 @@ export const StrategyMapCanvas = ({
                       position={positions[nodeId] ?? layout.positions[nodeId]}
                     >
                       <KeyResultNodeCard
+                        code={
+                          teamCode
+                            ? `${teamCode}-${keyResult.sequenceId}`
+                            : String(keyResult.sequenceId)
+                        }
                         keyResult={keyResult}
                         onOpenDetails={() => {
                           onSelectObjective(objective);

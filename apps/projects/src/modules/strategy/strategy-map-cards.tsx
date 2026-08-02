@@ -380,9 +380,11 @@ PillarNodeCard.displayName = "PillarNodeCard";
 
 export const KeyResultNodeCard = memo(
   ({
+    code,
     keyResult,
     onOpenDetails,
   }: {
+    code: string;
     keyResult: KeyResult;
     onOpenDetails: () => void;
   }) => {
@@ -408,19 +410,29 @@ export const KeyResultNodeCard = memo(
         style={{ width: KEY_RESULT_NODE_WIDTH }}
         tabIndex={0}
       >
-        <Flex align="center" className="gap-2">
-          <span className="border-info/20 bg-info/10 text-info grid h-7 w-7 shrink-0 place-items-center rounded-md border">
-            <OKRIcon className="h-4 w-4 text-current" strokeWidth={2} />
-          </span>
-          <NodeEyebrow>Key result</NodeEyebrow>
+        <Flex align="start" className="gap-3" justify="between">
+          <Flex align="start" className="min-w-0 flex-1 gap-2">
+            <OKRIcon
+              className="text-text-muted mt-0.5 h-4.5 w-4.5 shrink-0"
+              strokeWidth={2}
+            />
+            <Text
+              className="line-clamp-2 text-[1.08rem] leading-[1.4rem]"
+              fontWeight="semibold"
+            >
+              {keyResult.name}
+            </Text>
+          </Flex>
+          {keyResult.sequenceId > 0 ? (
+            <Text
+              className="shrink-0 text-[0.9rem] leading-[1.4rem] uppercase"
+              color="muted"
+            >
+              {code}
+            </Text>
+          ) : null}
         </Flex>
-        <Text
-          className="mt-3 line-clamp-2 text-[1.04rem] leading-[1.35rem]"
-          fontWeight="semibold"
-        >
-          {keyResult.name}
-        </Text>
-        <Flex align="center" className="mt-4 gap-2.5">
+        <Flex align="center" className="mt-3 gap-2.5">
           <div
             aria-label={`Progress ${progress}%`}
             aria-valuemax={100}
