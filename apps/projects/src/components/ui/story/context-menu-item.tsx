@@ -1,4 +1,4 @@
-import { ArrowRightIcon } from "icons";
+import { ArrowRightIcon, CheckIcon } from "icons";
 import type { ReactNode } from "react";
 import { Box, ContextMenu, Flex, Text } from "ui";
 
@@ -14,6 +14,7 @@ export const ContextMenuItem = ({
   icon: ReactNode;
   disabled?: boolean;
   subMenu?: {
+    active?: boolean;
     label: string;
     icon: ReactNode;
     shortCut?: string;
@@ -27,7 +28,10 @@ export const ContextMenuItem = ({
     <>
       {subMenu ? (
         <ContextMenu.SubMenu>
-          <ContextMenu.SubTrigger className="justify-between">
+          <ContextMenu.SubTrigger
+            className="justify-between"
+            disabled={disabled}
+          >
             <Box className="grid grid-cols-[24px_auto] items-center">
               <span className="text-foreground flex">{icon}</span>
               <Text>{label}</Text>
@@ -51,8 +55,10 @@ export const ContextMenuItem = ({
                   shortCut: subShortCut,
                   onSelect: subOnSelect,
                   disabled: subDisabled,
+                  active: subActive,
                 }) => (
                   <ContextMenu.Item
+                    active={subActive}
                     className="mb-1 justify-between py-1.5"
                     disabled={subDisabled}
                     key={subLabel}
@@ -64,9 +70,14 @@ export const ContextMenuItem = ({
                         {subLabel}
                       </Text>
                     </Box>
-                    {subShortCut ? (
-                      <Flex className="text-text-muted">{subShortCut}</Flex>
-                    ) : null}
+                    <Flex align="center" gap={2}>
+                      {subShortCut ? (
+                        <Flex className="text-text-muted">{subShortCut}</Flex>
+                      ) : null}
+                      {subActive ? (
+                        <CheckIcon className="h-4 w-4 shrink-0" />
+                      ) : null}
+                    </Flex>
                   </ContextMenu.Item>
                 ),
               )}

@@ -10,8 +10,8 @@ import {
   CheckIcon,
   DeleteIcon,
   DuplicateIcon,
+  ExternalLinkIcon,
   MoreHorizontalIcon,
-  NewTabIcon,
   NotificationsOffIcon,
   ShareIcon,
   UndoIcon,
@@ -19,6 +19,7 @@ import {
 import { Button, Dialog, Flex, Menu, Text } from "ui";
 import { toast } from "sonner";
 import type { StoryPriority } from "@/modules/stories/types";
+import { STORY_PRIORITIES } from "@/components/ui/story/story-action-options";
 import {
   useCopyToClipboard,
   useTerminology,
@@ -39,14 +40,6 @@ import { useSetStoryWatchingMutation } from "../hooks/collaboration-mutations";
 import { useDuplicateStoryMutation } from "../hooks/duplicate-mutation";
 import { useStoryById } from "../hooks/story";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
-
-const STORY_PRIORITIES: StoryPriority[] = [
-  "No Priority",
-  "Low",
-  "Medium",
-  "High",
-  "Urgent",
-];
 
 interface StoryStatusSubMenuProps {
   disabled: boolean;
@@ -70,7 +63,7 @@ const StoryStatusSubMenu = ({
       <Menu.SubTrigger className="justify-between" disabled={disabled}>
         <Flex align="center" gap={2}>
           <StoryStatusIcon statusId={statusId} />
-          Change status
+          Status
         </Flex>
         <ArrowRightIcon
           className="text-text-muted h-3.5 w-auto"
@@ -123,7 +116,7 @@ const StoryPrioritySubMenu = ({
       <Menu.SubTrigger className="justify-between" disabled={disabled}>
         <Flex align="center" gap={2}>
           <PriorityIcon priority={priority} />
-          Change priority
+          Priority
         </Flex>
         <ArrowRightIcon
           className="text-text-muted h-3.5 w-auto"
@@ -391,7 +384,7 @@ export const StoryActionsMenu = ({
                 window.open(storyUrl, "_blank", "noopener,noreferrer");
               }}
             >
-              <NewTabIcon />
+              <ExternalLinkIcon className="h-[1.15rem]" />
               Open in new tab
             </Menu.Item>
             <Menu.Item onSelect={handleShare}>

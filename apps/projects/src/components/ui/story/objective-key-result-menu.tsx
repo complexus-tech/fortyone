@@ -2,8 +2,14 @@
 
 import type { ReactNode } from "react";
 import { useDeferredValue, useState } from "react";
-import { ArrowRightIcon, CheckIcon, ObjectiveIcon, OKRIcon } from "icons";
-import { Box, Divider, Flex, Menu, Text } from "ui";
+import {
+  ArrowRightIcon,
+  CheckIcon,
+  ObjectiveIcon,
+  OKRIcon,
+  SearchIcon,
+} from "icons";
+import { Box, ContextMenu, Divider, Flex, Input, Menu, Text } from "ui";
 import { useTerminology } from "@/hooks";
 import { useKeyResults } from "@/modules/objectives/hooks";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
@@ -352,6 +358,266 @@ export const KeyResultMenu = ({
   );
 };
 
+type ObjectiveContextSubMenuProps = {
+  currentKeyResultId: string | null;
+  currentObjectiveId: string | null;
+  objective: Objective;
+  onSelect: (selection: ObjectiveKeyResultSelection) => void;
+};
+
+const ObjectiveContextOnlyItem = ({
+  currentObjectiveId,
+  objective,
+  onSelect,
+}: Pick<
+  ObjectiveContextSubMenuProps,
+  "currentObjectiveId" | "objective" | "onSelect"
+>) => {
+  const isCurrentObjective = objective.id === currentObjectiveId;
+
+  return (
+    <ContextMenu.Item
+      active={isCurrentObjective}
+      className="justify-between gap-3"
+      onSelect={() => {
+        onSelect({ objectiveId: objective.id, keyResultId: null });
+      }}
+    >
+      <Flex align="center" className="min-w-0 gap-2">
+        <ObjectiveIcon className="h-[1.1rem] shrink-0" />
+        <Text className="max-w-64 truncate">{objective.name}</Text>
+      </Flex>
+      {isCurrentObjective ? <CheckIcon className="h-4 w-4 shrink-0" /> : null}
+    </ContextMenu.Item>
+  );
+};
+
+const ObjectiveContextSubMenu = ({
+  currentKeyResultId,
+  currentObjectiveId,
+  objective,
+  onSelect,
+}: ObjectiveContextSubMenuProps) => {
+  const { getTermDisplay } = useTerminology();
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
+  const { data: keyResults = [], isPending } = useKeyResults(
+    objective.id,
+    isOpen,
+  );
+  const isCurrentObjective = objective.id === currentObjectiveId;
+  const filteredKeyResults = filterKeyResultsByName(keyResults, deferredQuery);
+
+  return (
+    <ContextMenu.SubMenu
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) setQuery("");
+      }}
+      open={isOpen}
+    >
+      <ContextMenu.SubTrigger
+        active={isCurrentObjective}
+        className="justify-between gap-4"
+      >
+        <Flex align="center" className="min-w-0 gap-2">
+          <ObjectiveIcon className="h-[1.1rem] shrink-0" />
+          <Text className="max-w-64 truncate">{objective.name}</Text>
+        </Flex>
+        <Flex align="center" className="shrink-0 gap-1.5">
+          {isCurrentObjective ? <CheckIcon className="h-4 w-4" /> : null}
+          <ArrowRightIcon
+            className="text-text-muted h-3.5 w-3.5"
+            strokeWidth={2.4}
+          />
+        </Flex>
+      </ContextMenu.SubTrigger>
+      <ContextMenu.SubItems className="w-80 max-w-[calc(100vw-2rem)]">
+        <Box className="px-2 pb-1.5">
+          <Input
+            autoFocus
+            className="h-8"
+            leftIcon={<SearchIcon className="h-4 w-4" />}
+            onChange={(event) => {
+              setQuery(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+            }}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+            }}
+            placeholder={`Find ${getTermDisplay("keyResultTerm")}...`}
+            size="sm"
+            value={query}
+            variant="solid"
+          />
+        </Box>
+        <ContextMenu.Separator />
+        <ContextMenu.Group>
+          <ContextMenu.Item
+            active={Boolean(isCurrentObjective && !currentKeyResultId)}
+            className="justify-between gap-3"
+            onSelect={() => {
+              onSelect({ objectiveId: objective.id, keyResultId: null });
+            }}
+          >
+            <Flex align="center" className="min-w-0 gap-2">
+              <ObjectiveIcon className="h-[1.1rem] shrink-0" />
+              <Text className="truncate">
+                Link {getTermDisplay("objectiveTerm")} only
+              </Text>
+            </Flex>
+            {isCurrentObjective && !currentKeyResultId ? (
+              <CheckIcon className="h-4 w-4 shrink-0" />
+            ) : null}
+          </ContextMenu.Item>
+        </ContextMenu.Group>
+        <ContextMenu.Separator />
+        <ContextMenu.Group className="max-h-72 overflow-y-auto">
+          {isPending ? <MenuLoadingSkeleton rows={3} /> : null}
+          {!isPending && filteredKeyResults.length === 0 ? (
+            <Text className="px-2 py-2" color="muted">
+              No {getTermDisplay("keyResultTerm")} found.
+            </Text>
+          ) : null}
+          {filteredKeyResults.map((keyResult) => (
+            <ContextMenu.Item
+              active={keyResult.id === currentKeyResultId}
+              className="justify-between gap-3"
+              key={keyResult.id}
+              onSelect={() => {
+                onSelect({
+                  objectiveId: objective.id,
+                  keyResultId: keyResult.id,
+                });
+              }}
+            >
+              <Flex align="center" className="min-w-0 gap-2">
+                <OKRIcon className="h-[1.1rem] shrink-0" strokeWidth={2.4} />
+                <Text className="truncate">{keyResult.name}</Text>
+              </Flex>
+              {keyResult.id === currentKeyResultId ? (
+                <CheckIcon className="h-4 w-4 shrink-0" />
+              ) : null}
+            </ContextMenu.Item>
+          ))}
+        </ContextMenu.Group>
+      </ContextMenu.SubItems>
+    </ContextMenu.SubMenu>
+  );
+};
+
+export const ObjectiveKeyResultContextSubMenu = ({
+  disabled = false,
+  keyResultId,
+  objectiveId,
+  onChange,
+  teamId,
+}: {
+  disabled?: boolean;
+  keyResultId: string | null;
+  objectiveId: string | null;
+  onChange: (selection: ObjectiveKeyResultSelection) => void;
+  teamId: string;
+}) => {
+  const { getTermDisplay } = useTerminology();
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
+  const { data: objectives = [], isPending } = useTeamObjectives(
+    teamId,
+    deferredQuery,
+  );
+
+  return (
+    <ContextMenu.SubMenu
+      onOpenChange={(open) => {
+        if (!open) setQuery("");
+      }}
+    >
+      <ContextMenu.SubTrigger
+        className="justify-between gap-4"
+        disabled={disabled}
+      >
+        <Flex align="center" className="gap-2">
+          <ObjectiveIcon className="h-[1.1rem]" />
+          <Text>{getTermDisplay("objectiveTerm", { capitalize: true })}</Text>
+        </Flex>
+        <ArrowRightIcon
+          className="text-text-muted h-3.5 w-3.5"
+          strokeWidth={2.4}
+        />
+      </ContextMenu.SubTrigger>
+      <ContextMenu.SubItems className="w-80 max-w-[calc(100vw-2rem)]">
+        <Box className="px-2 pb-1.5">
+          <Input
+            autoFocus
+            className="h-8"
+            leftIcon={<SearchIcon className="h-4 w-4" />}
+            onChange={(event) => {
+              setQuery(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+            }}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+            }}
+            placeholder={`Find ${getTermDisplay("objectiveTerm")}...`}
+            size="sm"
+            value={query}
+            variant="solid"
+          />
+        </Box>
+        <ContextMenu.Separator />
+        <ContextMenu.Group>
+          <ContextMenu.Item
+            active={!objectiveId}
+            className="justify-between gap-3"
+            onSelect={() => {
+              onChange({ objectiveId: null, keyResultId: null });
+            }}
+          >
+            <Flex align="center" className="gap-2">
+              <ObjectiveIcon className="h-[1.1rem]" />
+              <Text>No {getTermDisplay("objectiveTerm")}</Text>
+            </Flex>
+            {!objectiveId ? <CheckIcon className="h-4 w-4" /> : null}
+          </ContextMenu.Item>
+        </ContextMenu.Group>
+        <ContextMenu.Separator />
+        <ContextMenu.Group className="max-h-80 overflow-y-auto">
+          {isPending ? <MenuLoadingSkeleton rows={5} /> : null}
+          {!isPending && objectives.length === 0 ? (
+            <Text className="px-2 py-2" color="muted">
+              No {getTermDisplay("objectiveTerm")} found.
+            </Text>
+          ) : null}
+          {objectives.map((objective) =>
+            objective.keyResultCount > 0 ? (
+              <ObjectiveContextSubMenu
+                currentKeyResultId={keyResultId}
+                currentObjectiveId={objectiveId}
+                key={objective.id}
+                objective={objective}
+                onSelect={onChange}
+              />
+            ) : (
+              <ObjectiveContextOnlyItem
+                currentObjectiveId={objectiveId}
+                key={objective.id}
+                objective={objective}
+                onSelect={onChange}
+              />
+            ),
+          )}
+        </ContextMenu.Group>
+      </ContextMenu.SubItems>
+    </ContextMenu.SubMenu>
+  );
+};
+
 export const ObjectiveKeyResultSubMenu = ({
   disabled = false,
   keyResultId,
@@ -382,10 +648,7 @@ export const ObjectiveKeyResultSubMenu = ({
       <Menu.SubTrigger className="justify-between gap-4" disabled={disabled}>
         <Flex align="center" className="gap-2">
           <ObjectiveIcon className="h-[1.1rem]" />
-          <Text>
-            {getTermDisplay("objectiveTerm", { capitalize: true })} and{" "}
-            {getTermDisplay("keyResultTerm")}
-          </Text>
+          <Text>{getTermDisplay("objectiveTerm", { capitalize: true })}</Text>
         </Flex>
         <ArrowRightIcon
           className="text-text-muted h-3.5 w-3.5"
