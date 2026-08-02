@@ -1,0 +1,256 @@
+"use client";
+
+import { useState } from "react";
+import { format } from "date-fns";
+import { OKRIcon } from "icons";
+import {
+  Avatar,
+  Box,
+  Button,
+  CircleProgressBar,
+  Flex,
+  Popover,
+  Text,
+  Tooltip,
+} from "ui";
+import { RowWrapper } from "@/components/ui/row-wrapper";
+import { useTerminology } from "@/hooks";
+import { useMembers } from "@/lib/hooks/members";
+import { KeyResultContextMenu } from "@/modules/key-results/components/key-result-context-menu";
+import { getKeyResultProgress } from "@/modules/key-results/utils";
+import { ObjectiveCard } from "@/modules/objectives/components/card";
+import { useKeyResults } from "@/modules/objectives/hooks/use-key-results";
+import type { KeyResult, Objective } from "@/modules/objectives/types";
+
+const KeyResultPreview = ({
+  interactive = false,
+  keyResults,
+  onSelect,
+}: {
+  interactive?: boolean;
+  keyResults: KeyResult[];
+  onSelect: (keyResult: KeyResult) => void;
+}) => (
+  <Box className="max-w-80 min-w-64">
+    {keyResults.map((keyResult) => {
+      const content = (
+        <Flex align="center" className="min-w-0 gap-2.5" justify="between">
+          <Text className="line-clamp-1 min-w-0">{keyResult.name}</Text>
+          <Text className="shrink-0 text-[0.9rem] tabular-nums" color="muted">
+            {getKeyResultProgress(keyResult)}%
+          </Text>
+        </Flex>
+      );
+
+      return interactive ? (
+        <button
+          className="border-border hover:bg-state-hover w-full border-t px-3 py-2.5 text-left first:border-t-0"
+          key={keyResult.id}
+          onClick={() => {
+            onSelect(keyResult);
+          }}
+          type="button"
+        >
+          {content}
+        </button>
+      ) : (
+        <Box
+          className="border-border border-t py-2.5 first:border-t-0"
+          key={keyResult.id}
+        >
+          {content}
+        </Box>
+      );
+    })}
+  </Box>
+);
+
+export const RoadmapKeyResultSummary = ({
+  objective,
+  onSelect,
+}: {
+  objective: Objective;
+  onSelect: (keyResult: KeyResult) => void;
+}) => {
+  const { getTermDisplay } = useTerminology();
+  const { data: keyResults = [] } = useKeyResults(
+    objective.id,
+    objective.keyResultCount > 0,
+  );
+
+  if (objective.keyResultCount === 0) return null;
+
+  return (
+    <Popover>
+      <Tooltip
+        className="border-border-strong dark:border-border-strong dark:bg-surface-elevated p-3"
+        delayDuration={250}
+        title={
+          keyResults.length > 0 ? (
+            <KeyResultPreview keyResults={keyResults} onSelect={onSelect} />
+          ) : (
+            <Text color="muted">Loading key results…</Text>
+          )
+        }
+      >
+        <span>
+          <Popover.Trigger asChild>
+            <Button
+              className="mt-3 gap-1.5 px-2"
+              color="tertiary"
+              leftIcon={<OKRIcon className="h-4 w-4" strokeWidth={2} />}
+              size="xs"
+              type="button"
+              variant="outline"
+            >
+              {objective.keyResultCount}{" "}
+              {getTermDisplay("keyResultTerm", {
+                variant: objective.keyResultCount === 1 ? "singular" : "plural",
+              })}
+            </Button>
+          </Popover.Trigger>
+        </span>
+      </Tooltip>
+      <Popover.Content align="start" className="w-80 p-1.5">
+        {keyResults.length > 0 ? (
+          <KeyResultPreview
+            interactive
+            keyResults={keyResults}
+            onSelect={onSelect}
+          />
+        ) : (
+          <Text className="px-3 py-2.5" color="muted">
+            Loading key results…
+          </Text>
+        )}
+      </Popover.Content>
+    </Popover>
+  );
+};
+
+const RoadmapKeyResultRow = ({
+  keyResult,
+  onSelect,
+  teamCode,
+}: {
+  keyResult: KeyResult;
+  onSelect: (keyResult: KeyResult) => void;
+  teamCode?: string;
+}) => {
+  const { data: members = [] } = useMembers();
+  const lead = keyResult.lead
+    ? members.find(({ id }) => id === keyResult.lead)
+    : undefined;
+  const progress = getKeyResultProgress(keyResult);
+  const reference = teamCode
+    ? `${teamCode}-${keyResult.sequenceId}`
+    : String(keyResult.sequenceId);
+
+  return (
+    <KeyResultContextMenu
+      keyResult={keyResult}
+      onOpenDetails={() => {
+        onSelect(keyResult);
+      }}
+    >
+      <RowWrapper className="bg-surface-muted/45 px-5 py-2.5 md:pr-12 md:pl-18">
+        <Box className="relative flex min-w-10 flex-1 items-center gap-2 @sm:min-w-20">
+          <button
+            className="focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-2 rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"
+            onClick={() => {
+              onSelect(keyResult);
+            }}
+            type="button"
+          >
+            <OKRIcon
+              className="text-text-muted h-4 w-4 shrink-0"
+              strokeWidth={2}
+            />
+            <Text className="text-text-muted min-w-[6ch] shrink-0 text-[0.95rem] uppercase">
+              {reference}
+            </Text>
+            <Text className="min-w-0 truncate pr-2">{keyResult.name}</Text>
+          </button>
+        </Box>
+        <Flex align="center" className="shrink-0 gap-2 md:gap-4">
+          <Box className="hidden w-[50px] shrink-0 items-center md:flex">
+            <Text className="truncate uppercase" color="muted">
+              {teamCode}
+            </Text>
+          </Box>
+          <Box className="hidden w-[40px] shrink-0 items-center md:flex">
+            <Tooltip title={lead?.fullName || lead?.username || "No lead"}>
+              <span>
+                <Avatar
+                  name={lead?.fullName || lead?.username}
+                  size="xs"
+                  src={lead?.avatarUrl}
+                />
+              </span>
+            </Tooltip>
+          </Box>
+          <Box className="hidden w-[60px] shrink-0 items-center gap-1.5 md:flex">
+            <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
+            {progress}%
+          </Box>
+          <Box className="hidden w-[96px] shrink-0 md:block" />
+          <Box className="hidden w-[100px] shrink-0 md:block" />
+          <Box className="hidden w-[100px] shrink-0 items-center pl-2 md:flex">
+            <Text className="truncate" color="muted">
+              {format(new Date(keyResult.endDate), "MMM d")}
+            </Text>
+          </Box>
+          <Box className="hidden w-[96px] shrink-0 md:block" />
+        </Flex>
+      </RowWrapper>
+    </KeyResultContextMenu>
+  );
+};
+
+export const RoadmapObjectiveListItem = ({
+  objective,
+  onKeyResultSelect,
+  onObjectiveSelect,
+  onSelectionChange,
+  selected,
+  teamCode,
+}: {
+  objective: Objective;
+  onKeyResultSelect: (keyResult: KeyResult) => void;
+  onObjectiveSelect: () => void;
+  onSelectionChange: (checked: boolean) => void;
+  selected: boolean;
+  teamCode?: string;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const { data: keyResults = [] } = useKeyResults(
+    objective.id,
+    objective.keyResultCount > 0,
+  );
+
+  return (
+    <Box>
+      <ObjectiveCard
+        {...objective}
+        childCount={objective.keyResultCount}
+        isExpanded={isExpanded}
+        onSelect={onObjectiveSelect}
+        onSelectionChange={onSelectionChange}
+        onToggleExpanded={() => {
+          setIsExpanded((current) => !current);
+        }}
+        selected={selected}
+      />
+      {isExpanded
+        ? keyResults.map((keyResult) => (
+            <RoadmapKeyResultRow
+              key={keyResult.id}
+              keyResult={keyResult}
+              onSelect={onKeyResultSelect}
+              teamCode={teamCode}
+            />
+          ))
+        : null}
+    </Box>
+  );
+};

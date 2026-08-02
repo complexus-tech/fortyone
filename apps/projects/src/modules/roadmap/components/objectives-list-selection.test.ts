@@ -33,6 +33,37 @@ describe("Roadmap objective list selection", () => {
     expect(cardSource).toContain("onSelectionChange ? null");
   });
 
+  it("shows key results on board cards and as collapsible list rows", () => {
+    const boardSource = readSource(
+      "src/modules/roadmap/components/objectives-board.tsx",
+    );
+    const keyResultSource = readSource(
+      "src/modules/roadmap/components/roadmap-key-results.tsx",
+    );
+    const cardSource = readSource("src/modules/objectives/components/card.tsx");
+
+    expect(boardSource).toContain("RoadmapKeyResultSummary");
+    expect(boardSource).toContain("RoadmapObjectiveListItem");
+    expect(keyResultSource).toContain("KeyResultContextMenu");
+    expect(keyResultSource).toContain("RoadmapKeyResultRow");
+    expect(cardSource).toContain("onToggleExpanded");
+    expect(cardSource).toContain("childCount > 0");
+  });
+
+  it("opens the shared key-result details panel from roadmap surfaces", () => {
+    const pageSource = readSource("src/modules/roadmap/index.tsx");
+    const detailsSource = readSource(
+      "src/modules/key-results/components/key-result-details.tsx",
+    );
+
+    expect(pageSource).toContain("selectKeyResult");
+    expect(pageSource).toContain("KeyResultDetails");
+    expect(detailsSource).toContain("Progress history");
+    expect(detailsSource).toContain("Update progress");
+    expect(detailsSource).toContain("AssigneesMenu");
+    expect(detailsSource).toContain("DatePicker");
+  });
+
   it("exposes only supported objective bulk operations", () => {
     const toolbarSource = readSource(
       "src/modules/roadmap/components/objectives-toolbar.tsx",

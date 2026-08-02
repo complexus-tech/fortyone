@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 import { OKRIcon as KeyResultIcon } from "icons";
 import { Badge, Box, Flex, ProgressBar, Text, Wrapper } from "ui";
+import { KeyResultContextMenu } from "@/modules/key-results/components/key-result-context-menu";
 import type { KeyResult } from "@/modules/objectives/types";
 
 const getKeyResultProgress = (keyResult: KeyResult) => {
@@ -35,8 +36,10 @@ const formatDate = (date: string | null | undefined) => {
 
 export const ObjectiveDetailsKeyResults = ({
   keyResults,
+  onSelect,
 }: {
   keyResults: KeyResult[];
+  onSelect?: (keyResult: KeyResult) => void;
 }) => {
   return (
     <>
@@ -52,36 +55,55 @@ export const ObjectiveDetailsKeyResults = ({
             const progress = getKeyResultProgress(keyResult);
 
             return (
-              <Wrapper
-                className="flex items-center gap-3 rounded-xl px-3.5 py-3 shadow-none"
+              <KeyResultContextMenu
                 key={keyResult.id}
+                keyResult={keyResult}
+                onOpenDetails={() => {
+                  onSelect?.(keyResult);
+                }}
               >
-                <Badge className="aspect-square h-9 shrink-0" color="tertiary">
-                  <KeyResultIcon strokeWidth={2.8} />
-                </Badge>
-                <Box className="min-w-0 flex-1">
-                  <Flex align="center" gap={3} justify="between">
-                    <Text
-                      className="line-clamp-1 min-w-0"
-                      title={keyResult.name}
+                <Wrapper className="flex items-center gap-3 rounded-xl px-3.5 py-3 shadow-none">
+                  <button
+                    className="focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-1"
+                    onClick={() => {
+                      onSelect?.(keyResult);
+                    }}
+                    type="button"
+                  >
+                    <Badge
+                      className="aspect-square h-9 shrink-0"
+                      color="tertiary"
                     >
-                      {keyResult.name}
-                    </Text>
-                    <Text className="shrink-0 text-[0.95rem]" color="muted">
-                      {progress}%
-                    </Text>
-                  </Flex>
-                  <Flex align="center" className="mt-1.5" gap={3}>
-                    <Text className="line-clamp-1 text-[0.95rem]" color="muted">
-                      {formatDate(keyResult.endDate)}
-                    </Text>
-                    <ProgressBar
-                      className="ml-auto w-20 shrink-0"
-                      progress={progress}
-                    />
-                  </Flex>
-                </Box>
-              </Wrapper>
+                      <KeyResultIcon strokeWidth={2.8} />
+                    </Badge>
+                    <Box className="min-w-0 flex-1">
+                      <Flex align="center" gap={3} justify="between">
+                        <Text
+                          className="line-clamp-1 min-w-0"
+                          title={keyResult.name}
+                        >
+                          {keyResult.name}
+                        </Text>
+                        <Text className="shrink-0 text-[0.95rem]" color="muted">
+                          {progress}%
+                        </Text>
+                      </Flex>
+                      <Flex align="center" className="mt-1.5" gap={3}>
+                        <Text
+                          className="line-clamp-1 text-[0.95rem]"
+                          color="muted"
+                        >
+                          {formatDate(keyResult.endDate)}
+                        </Text>
+                        <ProgressBar
+                          className="ml-auto w-20 shrink-0"
+                          progress={progress}
+                        />
+                      </Flex>
+                    </Box>
+                  </button>
+                </Wrapper>
+              </KeyResultContextMenu>
             );
           })}
         </Flex>

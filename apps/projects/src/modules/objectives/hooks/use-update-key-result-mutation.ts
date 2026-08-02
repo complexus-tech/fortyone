@@ -133,6 +133,9 @@ export const useUpdateKeyResultMutation = () => {
         queryKey: objectiveKeys.activitiesInfinite(workspaceSlug, objectiveId),
       });
       queryClient.invalidateQueries({
+        queryKey: ["key-result-activities", workspaceSlug, keyResultId],
+      });
+      queryClient.invalidateQueries({
         queryKey: ["key-results", workspaceSlug],
       });
       queryClient.invalidateQueries({

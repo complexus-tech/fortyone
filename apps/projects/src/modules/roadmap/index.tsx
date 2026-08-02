@@ -11,7 +11,8 @@ import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { NewObjectiveDialog } from "@/components/ui";
 import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
 import type { ZoomLevel } from "@/components/ui/base-gantt";
-import type { Objective } from "@/modules/objectives/types";
+import { KeyResultDetails } from "@/modules/key-results/components/key-result-details";
+import type { KeyResult, Objective } from "@/modules/objectives/types";
 import { RoadmapObjectiveDetails } from "./components/objective-details";
 import { ObjectivesBoard } from "./components/objectives-board";
 import { ObjectiveViewOptionsButton } from "./components/objective-view-options-button";
@@ -41,6 +42,20 @@ export const RoadmapPage = () => {
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(
     null,
   );
+  const [selectedKeyResult, setSelectedKeyResult] = useState<{
+    keyResult: KeyResult;
+    objective: Objective;
+  } | null>(null);
+
+  const selectObjective = (objective: Objective) => {
+    setSelectedKeyResult(null);
+    setSelectedObjective(objective);
+  };
+
+  const selectKeyResult = (objective: Objective, keyResult: KeyResult) => {
+    setSelectedObjective(null);
+    setSelectedKeyResult({ keyResult, objective });
+  };
 
   const renderContent = () => {
     if (isPending) {
@@ -86,7 +101,7 @@ export const RoadmapPage = () => {
           <RoadmapGanttBoard
             className="h-full"
             objectives={objectives}
-            onObjectiveSelect={setSelectedObjective}
+            onObjectiveSelect={selectObjective}
             onZoomLevelChange={setZoomLevel}
             selectedObjectiveId={selectedObjective?.id}
             zoomLevel={zoomLevel}
@@ -101,7 +116,8 @@ export const RoadmapPage = () => {
             onCreateObjective={() => {
               if (userRole !== "guest") setIsOpen(true);
             }}
-            onObjectiveSelect={setSelectedObjective}
+            onKeyResultSelect={selectKeyResult}
+            onObjectiveSelect={selectObjective}
             setViewOptions={setViewOptions}
             viewOptions={viewOptions}
           />
@@ -164,6 +180,18 @@ export const RoadmapPage = () => {
             objective={selectedObjective}
             onClose={() => {
               setSelectedObjective(null);
+            }}
+            onKeyResultSelect={(keyResult) => {
+              selectKeyResult(selectedObjective, keyResult);
+            }}
+          />
+        ) : null}
+        {selectedKeyResult ? (
+          <KeyResultDetails
+            initialKeyResult={selectedKeyResult.keyResult}
+            objective={selectedKeyResult.objective}
+            onClose={() => {
+              setSelectedKeyResult(null);
             }}
           />
         ) : null}

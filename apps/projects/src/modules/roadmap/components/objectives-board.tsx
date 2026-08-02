@@ -44,14 +44,17 @@ import { useTerminology, useUserRole } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { ObjectiveCard } from "@/modules/objectives/components/card";
 import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
 import { TableHeader } from "@/modules/objectives/components/heading";
 import {
   useCanUpdateObjective,
   useUpdateObjectiveMutation,
 } from "@/modules/objectives/hooks";
-import type { Objective, ObjectiveUpdate } from "@/modules/objectives/types";
+import type {
+  KeyResult,
+  Objective,
+  ObjectiveUpdate,
+} from "@/modules/objectives/types";
 import type { RoadmapLayoutType } from "@/modules/roadmap/types";
 import { hexToRgba } from "@/utils";
 import {
@@ -64,6 +67,10 @@ import {
   type ObjectiveViewOptions,
 } from "../objective-board-utils";
 import { ObjectivesToolbar } from "./objectives-toolbar";
+import {
+  RoadmapKeyResultSummary,
+  RoadmapObjectiveListItem,
+} from "./roadmap-key-results";
 
 const GROUP_ID_PREFIX = "objective-group:";
 
@@ -110,11 +117,13 @@ const ObjectiveGroupIdentity = ({
 
 const ObjectiveBoardCard = ({
   objective,
+  onKeyResultSelect,
   teamCode,
   onSelect,
   isOverlay = false,
 }: {
   objective: Objective;
+  onKeyResultSelect: (objective: Objective, keyResult: KeyResult) => void;
   teamCode?: string;
   onSelect: (objective: Objective) => void;
   isOverlay?: boolean;
@@ -298,16 +307,26 @@ const ObjectiveBoardCard = ({
           />
         </DatePicker>
       </Flex>
+      {!isOverlay ? (
+        <RoadmapKeyResultSummary
+          objective={objective}
+          onSelect={(keyResult) => {
+            onKeyResultSelect(objective, keyResult);
+          }}
+        />
+      ) : null}
     </div>
   );
 };
 
 const ObjectiveKanbanColumn = ({
   group,
+  onKeyResultSelect,
   onObjectiveSelect,
   teamCodeById,
 }: {
   group: ObjectiveGroup;
+  onKeyResultSelect: (objective: Objective, keyResult: KeyResult) => void;
   onObjectiveSelect: (objective: Objective) => void;
   teamCodeById: Map<string, string>;
 }) => {
@@ -327,6 +346,7 @@ const ObjectiveKanbanColumn = ({
         <ObjectiveBoardCard
           key={objective.id}
           objective={objective}
+          onKeyResultSelect={onKeyResultSelect}
           onSelect={onObjectiveSelect}
           teamCode={teamCodeById.get(objective.teamId)}
         />
@@ -547,6 +567,7 @@ const ObjectivesKanban = ({
   setViewOptions,
   teamCodeById,
   onObjectiveSelect,
+  onKeyResultSelect,
   onCreateObjective,
 }: {
   groups: ObjectiveGroup[];
@@ -554,6 +575,7 @@ const ObjectivesKanban = ({
   setViewOptions: (viewOptions: ObjectiveViewOptions) => void;
   teamCodeById: Map<string, string>;
   onObjectiveSelect: (objective: Objective) => void;
+  onKeyResultSelect: (objective: Objective, keyResult: KeyResult) => void;
   onCreateObjective: () => void;
 }) => {
   const hiddenGroupKeys = getHiddenObjectiveGroupKeys(viewOptions);
@@ -596,6 +618,7 @@ const ObjectivesKanban = ({
           <ObjectiveKanbanColumn
             group={group}
             key={group.key}
+            onKeyResultSelect={onKeyResultSelect}
             onObjectiveSelect={onObjectiveSelect}
             teamCodeById={teamCodeById}
           />
@@ -614,13 +637,17 @@ const ObjectivesKanban = ({
 
 const ObjectivesGroupedList = ({
   groups,
-  viewOptions,
+  teamCodeById,
+  onKeyResultSelect,
   onObjectiveSelect,
   onCreateObjective,
+  viewOptions,
 }: {
   groups: ObjectiveGroup[];
+  teamCodeById: Map<string, string>;
   viewOptions: ObjectiveViewOptions;
   onObjectiveSelect: (objective: Objective) => void;
+  onKeyResultSelect: (objective: Objective, keyResult: KeyResult) => void;
   onCreateObjective: () => void;
 }) => {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
@@ -663,10 +690,13 @@ const ObjectivesGroupedList = ({
               {isCollapsed
                 ? null
                 : group.objectives.map((objective) => (
-                    <ObjectiveCard
+                    <RoadmapObjectiveListItem
                       key={objective.id}
-                      {...objective}
-                      onSelect={() => {
+                      objective={objective}
+                      onKeyResultSelect={(keyResult) => {
+                        onKeyResultSelect(objective, keyResult);
+                      }}
+                      onObjectiveSelect={() => {
                         onObjectiveSelect(objective);
                       }}
                       onSelectionChange={(checked) => {
@@ -677,6 +707,7 @@ const ObjectivesGroupedList = ({
                         );
                       }}
                       selected={selectedObjectiveIdSet.has(objective.id)}
+                      teamCode={teamCodeById.get(objective.teamId)}
                     />
                   ))}
             </Box>
@@ -702,6 +733,7 @@ export const ObjectivesBoard = ({
   viewOptions,
   setViewOptions,
   onObjectiveSelect,
+  onKeyResultSelect,
   onCreateObjective,
 }: {
   objectives: Objective[];
@@ -709,6 +741,7 @@ export const ObjectivesBoard = ({
   viewOptions: ObjectiveViewOptions;
   setViewOptions: (viewOptions: ObjectiveViewOptions) => void;
   onObjectiveSelect: (objective: Objective) => void;
+  onKeyResultSelect: (objective: Objective, keyResult: KeyResult) => void;
   onCreateObjective: () => void;
 }) => {
   const { data: statuses = [] } = useObjectiveStatuses();
@@ -757,7 +790,9 @@ export const ObjectivesBoard = ({
       <ObjectivesGroupedList
         groups={groups}
         onCreateObjective={onCreateObjective}
+        onKeyResultSelect={onKeyResultSelect}
         onObjectiveSelect={onObjectiveSelect}
+        teamCodeById={teamCodeById}
         viewOptions={viewOptions}
       />
     );
@@ -775,6 +810,7 @@ export const ObjectivesBoard = ({
       <ObjectivesKanban
         groups={groups}
         onCreateObjective={onCreateObjective}
+        onKeyResultSelect={onKeyResultSelect}
         onObjectiveSelect={onObjectiveSelect}
         setViewOptions={setViewOptions}
         teamCodeById={teamCodeById}
@@ -785,6 +821,7 @@ export const ObjectivesBoard = ({
           <ObjectiveBoardCard
             isOverlay
             objective={activeObjective}
+            onKeyResultSelect={onKeyResultSelect}
             onSelect={() => {}}
             teamCode={teamCodeById.get(activeObjective.teamId)}
           />

@@ -123,7 +123,7 @@ describe("StrategyMapCanvas", () => {
     expect(cardSource).not.toContain("hover:bg-danger/10");
     expect(cardSource).toContain("dark:border-foreground/20");
     expect(cardSource).toContain("dark:bg-accent/70");
-    expect(cardSource).toContain("dark:hover:bg-surface-prominent/55");
+    expect(cardSource).toContain("dark:hover:bg-accent/70");
     expect(cardSource).not.toContain("dark:bg-surface-elevated/55");
     expect(canvasSource).toContain("dark:bg-surface-elevated/35");
     expect(pageSource).toContain("dark:bg-surface-elevated/20");
@@ -187,7 +187,10 @@ describe("StrategyMapCanvas", () => {
 
     expect(pageSource).toContain("StrategySelectedDetails");
     expect(selectedDetailsSource).toContain("RoadmapObjectiveDetails");
+    expect(selectedDetailsSource).toContain("KeyResultDetails");
     expect(selectedDetailsSource).toContain("StrategyNodeDetails");
+    expect(canvasSource).toContain("KeyResultContextMenu");
+    expect(canvasSource).toContain("onSelectKeyResult(objective, keyResult)");
     expect(canvasSource).toContain("CLICK_MOVEMENT_THRESHOLD");
     expect(canvasSource).toContain("shouldCommit && !wasDragged");
     expect(canvasSource).toContain('target.closest("[data-card-select]")');

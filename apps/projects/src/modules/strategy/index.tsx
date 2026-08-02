@@ -134,6 +134,13 @@ export const WorkspaceStrategyMapPage = () => {
               }
               setSelectedNode({ type: "goal" });
             }}
+            onSelectKeyResult={(objective, keyResult) => {
+              setSelectedNode({
+                keyResultId: keyResult.id,
+                objectiveId: objective.id,
+                type: "key-result",
+              });
+            }}
             onSelectObjective={(objective) => {
               setSelectedNode({
                 objectiveId: objective.id,
@@ -165,6 +172,13 @@ export const WorkspaceStrategyMapPage = () => {
               updatePillar.mutate({
                 pillarId,
                 data: { name, description },
+              });
+            }}
+            onSelectKeyResult={(objective, keyResult) => {
+              setSelectedNode({
+                keyResultId: keyResult.id,
+                objectiveId: objective.id,
+                type: "key-result",
               });
             }}
             selectedNode={selectedNode}

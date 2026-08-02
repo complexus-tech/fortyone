@@ -7,7 +7,7 @@ import { useWorkspacePath } from "@/hooks";
 import { useObjectiveAnalytics } from "@/modules/objectives/hooks/objective-analytics";
 import { useKeyResults } from "@/modules/objectives/hooks/use-key-results";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
-import type { Objective } from "@/modules/objectives/types";
+import type { KeyResult, Objective } from "@/modules/objectives/types";
 import { ProgressChart } from "@/modules/objectives/stories/progress-chart";
 import { ObjectiveDetailsProperties } from "./objective-details-properties";
 import { ObjectiveDetailsKeyResults } from "./objective-details-key-results";
@@ -17,9 +17,11 @@ const EMPTY_PROGRESS_DATA: [] = [];
 export const RoadmapObjectiveDetails = ({
   objective: initialObjective,
   onClose,
+  onKeyResultSelect,
 }: {
   objective: Objective;
   onClose: () => void;
+  onKeyResultSelect?: (keyResult: KeyResult) => void;
 }) => {
   const { withWorkspace } = useWorkspacePath();
   const { data: fetchedObjective } = useObjective(initialObjective.id);
@@ -77,7 +79,10 @@ export const RoadmapObjectiveDetails = ({
         />
         <Divider className="my-5" />
 
-        <ObjectiveDetailsKeyResults keyResults={keyResults} />
+        <ObjectiveDetailsKeyResults
+          keyResults={keyResults}
+          onSelect={onKeyResultSelect}
+        />
       </Box>
     </Box>
   );

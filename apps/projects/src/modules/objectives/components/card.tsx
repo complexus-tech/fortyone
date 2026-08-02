@@ -10,7 +10,7 @@ import {
   CircleProgressBar,
 } from "ui";
 import Link from "next/link";
-import { ObjectiveIcon, CalendarIcon } from "icons";
+import { ArrowRight2Icon, ObjectiveIcon, CalendarIcon } from "icons";
 import { format, formatISO } from "date-fns";
 import { cn } from "lib";
 import { RowWrapper } from "@/components/ui/row-wrapper";
@@ -27,7 +27,7 @@ import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { hexToRgba } from "@/utils";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useCanUpdateObjective } from "../hooks/use-can-update-objective";
 import { useUpdateObjectiveMutation } from "../hooks/update-mutation";
 import type { Objective, ObjectiveUpdate } from "../types";
@@ -47,12 +47,18 @@ export const ObjectiveCard = ({
   onSelect,
   onSelectionChange,
   selected = false,
+  childCount = 0,
+  isExpanded = false,
+  onToggleExpanded,
   ...rest
 }: Objective & {
+  childCount?: number;
+  isExpanded?: boolean;
   isInTeam?: boolean;
   isInSearch?: boolean;
   onSelect?: () => void;
   onSelectionChange?: (checked: boolean) => void;
+  onToggleExpanded?: () => void;
   selected?: boolean;
 }) => {
   const canUpdate = useCanUpdateObjective();
@@ -61,6 +67,7 @@ export const ObjectiveCard = ({
   const { data: statuses = [] } = useObjectiveStatuses();
   const updateMutation = useUpdateObjectiveMutation();
   const { withWorkspace } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
 
   const lead = members.find((member) => member.id === leadUser);
   const team = teams.find((team) => team.id === teamId);
@@ -98,6 +105,24 @@ export const ObjectiveCard = ({
             disabled={!canUpdate}
             onCheckedChange={onSelectionChange}
           />
+        ) : null}
+        {childCount > 0 && onToggleExpanded ? (
+          <button
+            aria-label={`${isExpanded ? "Collapse" : "Expand"} ${getTermDisplay(
+              "keyResultTerm",
+              { variant: "plural" },
+            )}`}
+            className="text-text-muted hover:text-foreground grid h-7 w-7 shrink-0 place-items-center rounded transition-colors"
+            onClick={onToggleExpanded}
+            type="button"
+          >
+            <ArrowRight2Icon
+              className={cn("h-4 w-4 transition-transform", {
+                "rotate-90": isExpanded,
+              })}
+              strokeWidth={2.5}
+            />
+          </button>
         ) : null}
         {onSelect ? (
           <button

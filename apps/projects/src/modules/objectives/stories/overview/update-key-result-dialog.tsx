@@ -1,13 +1,12 @@
-import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Dialog, Input, Flex, Box, Text, TextArea } from "ui";
-import { toast } from "sonner";
-import { cn } from "lib";
-import { formatISO } from "date-fns";
-import { useMediaQuery, useTerminology } from "@/hooks";
-import { useWorkspacePath } from "@/hooks";
+import { useState } from "react";
 import Link from "next/link";
+import { formatISO } from "date-fns";
 import { ArrowRightIcon } from "icons";
+import { cn } from "lib";
+import { toast } from "sonner";
+import { Box, Button, Dialog, Flex, Input, Text, TextArea } from "ui";
+import { useMediaQuery, useTerminology, useWorkspacePath } from "@/hooks";
 import { useKeyResultStories } from "@/modules/stories/hooks/key-result-stories";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useUpdateKeyResultMutation } from "../../hooks";
@@ -162,8 +161,9 @@ export const UpdateKeyResultDialog = ({
         <form onSubmit={handleSubmit}>
           <Dialog.Header className="px-6">
             <Dialog.Title className="text-lg capitalize">
-              Update {getTermDisplay("keyResultTerm", { capitalize: true })}{" "}
-              progress
+              {updateMode === "progress" ? "Update" : "Edit"}{" "}
+              {getTermDisplay("keyResultTerm", { capitalize: true })}
+              {updateMode === "progress" ? " progress" : ""}
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="space-y-4 pb-0">

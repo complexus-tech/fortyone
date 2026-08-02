@@ -20,6 +20,7 @@ import type {
   Objective,
   ObjectiveUpdate,
 } from "@/modules/objectives/types";
+import { KeyResultContextMenu } from "@/modules/key-results/components/key-result-context-menu";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import {
   getObjectiveProgress,
@@ -232,6 +233,7 @@ export const StrategyMapCanvas = ({
   onAddPillar,
   onDeletePillar,
   onSelectGoal,
+  onSelectKeyResult,
   onSelectObjective,
   onSelectPillar,
   canEdit,
@@ -246,6 +248,7 @@ export const StrategyMapCanvas = ({
   onAddPillar: () => void;
   onDeletePillar: (pillarId: string) => void;
   onSelectGoal: () => void;
+  onSelectKeyResult: (objective: Objective, keyResult: KeyResult) => void;
   onSelectObjective: (objective: Objective) => void;
   onSelectPillar: (pillar: StrategicPillar) => void;
   canEdit: boolean;
@@ -1012,23 +1015,30 @@ export const StrategyMapCanvas = ({
                           event,
                           event.type !== "pointercancel",
                           () => {
-                            onSelectObjective(objective);
+                            onSelectKeyResult(objective, keyResult);
                           },
                         );
                       }}
                       position={positions[nodeId] ?? layout.positions[nodeId]}
                     >
-                      <KeyResultNodeCard
-                        code={
-                          teamCode
-                            ? `${teamCode}-${keyResult.sequenceId}`
-                            : String(keyResult.sequenceId)
-                        }
+                      <KeyResultContextMenu
                         keyResult={keyResult}
                         onOpenDetails={() => {
-                          onSelectObjective(objective);
+                          onSelectKeyResult(objective, keyResult);
                         }}
-                      />
+                      >
+                        <KeyResultNodeCard
+                          code={
+                            teamCode
+                              ? `${teamCode}-${keyResult.sequenceId}`
+                              : String(keyResult.sequenceId)
+                          }
+                          keyResult={keyResult}
+                          onOpenDetails={() => {
+                            onSelectKeyResult(objective, keyResult);
+                          }}
+                        />
+                      </KeyResultContextMenu>
                     </StrategyCanvasNode>
                   );
                 },

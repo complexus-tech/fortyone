@@ -1,12 +1,15 @@
 "use client";
 
-import type { Objective } from "@/modules/objectives/types";
+import type { KeyResult, Objective } from "@/modules/objectives/types";
+import { useKeyResults } from "@/modules/objectives/hooks/use-key-results";
+import { KeyResultDetails } from "@/modules/key-results/components/key-result-details";
 import { RoadmapObjectiveDetails } from "@/modules/roadmap/components/objective-details";
 import { StrategyNodeDetails } from "./strategy-node-details";
 import type { StrategyMap } from "./types";
 
 export type SelectedStrategyNode =
   | { type: "goal" }
+  | { keyResultId: string; objectiveId: string; type: "key-result" }
   | { objectiveId: string; type: "objective" }
   | { pillarId: string; type: "pillar" };
 
@@ -16,6 +19,7 @@ export const StrategySelectedDetails = ({
   onClose,
   onSaveGoal,
   onSavePillar,
+  onSelectKeyResult,
   selectedNode,
   strategy,
 }: {
@@ -28,12 +32,26 @@ export const StrategySelectedDetails = ({
     name: string,
     description: string | null,
   ) => void;
+  onSelectKeyResult: (objective: Objective, keyResult: KeyResult) => void;
   selectedNode: SelectedStrategyNode | null;
   strategy: StrategyMap;
 }) => {
-  const selectedObjective =
-    selectedNode?.type === "objective"
-      ? objectives.find(({ id }) => id === selectedNode.objectiveId)
+  const selectedObjectiveId =
+    selectedNode?.type === "objective" || selectedNode?.type === "key-result"
+      ? selectedNode.objectiveId
+      : undefined;
+  const selectedObjective = objectives.find(
+    ({ id }) => id === selectedObjectiveId,
+  );
+  const { data: selectedObjectiveKeyResults = [] } = useKeyResults(
+    selectedObjectiveId ?? "",
+    selectedNode?.type === "key-result",
+  );
+  const selectedKeyResult =
+    selectedNode?.type === "key-result"
+      ? selectedObjectiveKeyResults.find(
+          ({ id }) => id === selectedNode.keyResultId,
+        )
       : undefined;
   const selectedPillar =
     selectedNode?.type === "pillar"
@@ -44,11 +62,24 @@ export const StrategySelectedDetails = ({
     selectedPillar?.objectiveIds.filter((id) => objectiveIds.has(id)).length ??
     0;
 
-  if (selectedObjective) {
+  if (selectedObjective && selectedKeyResult) {
+    return (
+      <KeyResultDetails
+        initialKeyResult={selectedKeyResult}
+        objective={selectedObjective}
+        onClose={onClose}
+      />
+    );
+  }
+
+  if (selectedObjective && selectedNode?.type === "objective") {
     return (
       <RoadmapObjectiveDetails
         objective={selectedObjective}
         onClose={onClose}
+        onKeyResultSelect={(keyResult) => {
+          onSelectKeyResult(selectedObjective, keyResult);
+        }}
       />
     );
   }
