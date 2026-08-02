@@ -3,6 +3,7 @@
 import {
   formatKeyResultValue,
   getKeyResultProgress,
+  getKeyResultReference,
   groupKeyResultsByObjective,
 } from "./utils";
 
@@ -55,6 +56,14 @@ describe("key result utilities", () => {
       expect(formatKeyResultValue(42.5, "percentage")).toBe("42.5%");
       expect(formatKeyResultValue(15000, "number")).toBe("15,000");
       expect(formatKeyResultValue(1, "boolean")).toBe("Complete");
+    });
+  });
+
+  describe("getKeyResultReference", () => {
+    it("formats valid references without exposing missing sequence values", () => {
+      expect(getKeyResultReference("web", 12)).toBe("WEB-12");
+      expect(getKeyResultReference("WEB", undefined)).toBeNull();
+      expect(getKeyResultReference("WEB", 0)).toBeNull();
     });
   });
 

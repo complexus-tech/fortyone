@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
 import { OKRIcon } from "icons";
 import {
   Avatar,
   Box,
   Button,
-  CircleProgressBar,
   Flex,
   Popover,
+  ProgressBar,
   Text,
   Tooltip,
 } from "ui";
@@ -17,7 +16,10 @@ import { RowWrapper } from "@/components/ui/row-wrapper";
 import { useTerminology } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { KeyResultContextMenu } from "@/modules/key-results/components/key-result-context-menu";
-import { getKeyResultProgress } from "@/modules/key-results/utils";
+import {
+  getKeyResultProgress,
+  getKeyResultReference,
+} from "@/modules/key-results/utils";
 import { ObjectiveCard } from "@/modules/objectives/components/card";
 import { useKeyResults } from "@/modules/objectives/hooks/use-key-results";
 import type { KeyResult, Objective } from "@/modules/objectives/types";
@@ -142,9 +144,7 @@ const RoadmapKeyResultRow = ({
     ? members.find(({ id }) => id === keyResult.lead)
     : undefined;
   const progress = getKeyResultProgress(keyResult);
-  const reference = teamCode
-    ? `${teamCode}-${keyResult.sequenceId}`
-    : String(keyResult.sequenceId);
+  const reference = getKeyResultReference(teamCode, keyResult.sequenceId);
 
   return (
     <KeyResultContextMenu
@@ -166,41 +166,35 @@ const RoadmapKeyResultRow = ({
               className="text-text-muted h-4 w-4 shrink-0"
               strokeWidth={2}
             />
-            <Text className="text-text-muted min-w-[6ch] shrink-0 text-[0.95rem] uppercase">
-              {reference}
+            {reference ? (
+              <Text className="text-text-muted shrink-0 text-[0.95rem] uppercase">
+                {reference}
+              </Text>
+            ) : null}
+            <Text className="min-w-0 flex-1 truncate pr-4">
+              {keyResult.name}
             </Text>
-            <Text className="min-w-0 truncate pr-2">{keyResult.name}</Text>
           </button>
         </Box>
-        <Flex align="center" className="shrink-0 gap-2 md:gap-4">
-          <Box className="hidden w-[50px] shrink-0 items-center md:flex">
-            <Text className="truncate uppercase" color="muted">
-              {teamCode}
+        <Flex align="center" className="ml-4 shrink-0 gap-5">
+          <Flex align="center" className="hidden w-40 gap-2 sm:flex">
+            <ProgressBar className="min-w-0 flex-1" progress={progress} />
+            <Text
+              className="w-10 shrink-0 text-right text-[0.95rem] tabular-nums"
+              color="muted"
+            >
+              {progress}%
             </Text>
-          </Box>
-          <Box className="hidden w-[40px] shrink-0 items-center md:flex">
-            <Tooltip title={lead?.fullName || lead?.username || "No lead"}>
-              <span>
-                <Avatar
-                  name={lead?.fullName || lead?.username}
-                  size="xs"
-                  src={lead?.avatarUrl}
-                />
-              </span>
-            </Tooltip>
-          </Box>
-          <Box className="hidden w-[60px] shrink-0 items-center gap-1.5 md:flex">
-            <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
-            {progress}%
-          </Box>
-          <Box className="hidden w-[96px] shrink-0 md:block" />
-          <Box className="hidden w-[100px] shrink-0 md:block" />
-          <Box className="hidden w-[100px] shrink-0 items-center pl-2 md:flex">
-            <Text className="truncate" color="muted">
-              {format(new Date(keyResult.endDate), "MMM d")}
-            </Text>
-          </Box>
-          <Box className="hidden w-[96px] shrink-0 md:block" />
+          </Flex>
+          <Tooltip title={lead?.fullName || lead?.username || "No lead"}>
+            <span className="flex w-7 shrink-0 justify-end">
+              <Avatar
+                name={lead?.fullName || lead?.username}
+                size="xs"
+                src={lead?.avatarUrl}
+              />
+            </span>
+          </Tooltip>
         </Flex>
       </RowWrapper>
     </KeyResultContextMenu>
@@ -227,6 +221,15 @@ export const RoadmapObjectiveListItem = ({
     objective.id,
     objective.keyResultCount > 0,
   );
+  const keyResultProgress =
+    keyResults.length > 0
+      ? Math.round(
+          keyResults.reduce(
+            (total, keyResult) => total + getKeyResultProgress(keyResult),
+            0,
+          ) / keyResults.length,
+        )
+      : undefined;
 
   return (
     <Box>
@@ -239,6 +242,7 @@ export const RoadmapObjectiveListItem = ({
         onToggleExpanded={() => {
           setIsExpanded((current) => !current);
         }}
+        progress={keyResultProgress}
         selected={selected}
       />
       {isExpanded

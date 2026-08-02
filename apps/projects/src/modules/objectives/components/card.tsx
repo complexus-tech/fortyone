@@ -47,6 +47,7 @@ export const ObjectiveCard = ({
   onSelect,
   onSelectionChange,
   selected = false,
+  progress: progressOverride,
   childCount = 0,
   isExpanded = false,
   onToggleExpanded,
@@ -59,6 +60,7 @@ export const ObjectiveCard = ({
   onSelect?: () => void;
   onSelectionChange?: (checked: boolean) => void;
   onToggleExpanded?: () => void;
+  progress?: number;
   selected?: boolean;
 }) => {
   const canUpdate = useCanUpdateObjective();
@@ -72,8 +74,8 @@ export const ObjectiveCard = ({
   const lead = members.find((member) => member.id === leadUser);
   const team = teams.find((team) => team.id === teamId);
   const status = statuses.find((s) => s.id === statusId);
-  let progress = 0;
-  if (rest.stats) {
+  let progress = progressOverride ?? 0;
+  if (progressOverride === undefined && rest.stats) {
     progress = Math.round((rest.stats.completed / rest.stats.total) * 100) || 0;
   }
 
@@ -92,7 +94,7 @@ export const ObjectiveCard = ({
     >
       <Box
         className={cn(
-          "relative flex min-w-10 flex-1 items-center gap-2 @sm:min-w-20",
+          "relative flex min-w-10 flex-1 items-center gap-1 @sm:min-w-20",
           {
             "pointer-events-none opacity-40": id === "optimistic",
           },
@@ -112,7 +114,7 @@ export const ObjectiveCard = ({
               "keyResultTerm",
               { variant: "plural" },
             )}`}
-            className="text-text-muted hover:text-foreground grid h-7 w-7 shrink-0 place-items-center rounded transition-colors"
+            className="text-text-muted hover:text-foreground grid h-7 w-5 shrink-0 place-items-center rounded transition-colors"
             onClick={onToggleExpanded}
             type="button"
           >
@@ -120,7 +122,7 @@ export const ObjectiveCard = ({
               className={cn("h-4 w-4 transition-transform", {
                 "rotate-90": isExpanded,
               })}
-              strokeWidth={2.5}
+              strokeWidth={2.8}
             />
           </button>
         ) : null}

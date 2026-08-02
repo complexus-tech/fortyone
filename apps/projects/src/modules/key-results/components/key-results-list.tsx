@@ -47,7 +47,11 @@ import type { Member } from "@/types";
 import { hexToRgba } from "@/utils";
 import type { KeyResultWithTeam } from "../types";
 import type { ObjectiveKeyResultGroup } from "../utils";
-import { formatKeyResultValue, getKeyResultProgress } from "../utils";
+import {
+  formatKeyResultValue,
+  getKeyResultProgress,
+  getKeyResultReference,
+} from "../utils";
 
 const getDisplayName = (member?: Member) =>
   member?.fullName.trim() || member?.username || "No lead";
@@ -378,6 +382,10 @@ const KeyResultRow = ({
   const canEdit = userRole !== "guest";
   const { mutate: deleteKeyResult } = useDeleteKeyResultMutation();
   const lead = keyResult.lead ? memberById.get(keyResult.lead) : undefined;
+  const reference = getKeyResultReference(
+    keyResult.teamCode,
+    keyResult.sequenceId,
+  );
   const contributors = keyResult.contributors
     .map((id) => memberById.get(id))
     .filter((member): member is Member => Boolean(member));
@@ -429,9 +437,11 @@ const KeyResultRow = ({
                     event.stopPropagation();
                   }}
                 />
-                <Text className="text-text-muted min-w-[6ch] shrink-0 text-[0.95rem] whitespace-nowrap">
-                  {keyResult.teamCode}-{keyResult.sequenceId}
-                </Text>
+                {reference ? (
+                  <Text className="text-text-muted min-w-[6ch] shrink-0 text-[0.95rem] whitespace-nowrap">
+                    {reference}
+                  </Text>
+                ) : null}
                 <Text
                   className="min-w-0 truncate whitespace-nowrap"
                   fontWeight="medium"

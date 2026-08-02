@@ -49,6 +49,22 @@ export const formatKeyResultValue = (
     : formattedValue;
 };
 
+export const getKeyResultReference = (
+  teamCode: string | null | undefined,
+  sequenceId: number | null | undefined,
+) => {
+  if (
+    !teamCode?.trim() ||
+    typeof sequenceId !== "number" ||
+    !Number.isInteger(sequenceId) ||
+    sequenceId <= 0
+  ) {
+    return null;
+  }
+
+  return `${teamCode.trim().toUpperCase()}-${sequenceId}`;
+};
+
 export const groupKeyResultsByObjective = (
   keyResults: KeyResultWithTeam[],
 ): ObjectiveKeyResultGroup[] => {

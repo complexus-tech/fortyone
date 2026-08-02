@@ -1,14 +1,10 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import Link from "next/link";
 import { formatISO } from "date-fns";
-import { ArrowRightIcon } from "icons";
 import { cn } from "lib";
 import { toast } from "sonner";
 import { Box, Button, Dialog, Flex, Input, Text, TextArea } from "ui";
-import { useMediaQuery, useTerminology, useWorkspacePath } from "@/hooks";
-import { useKeyResultStories } from "@/modules/stories/hooks/key-result-stories";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { useMediaQuery, useTerminology } from "@/hooks";
 import { useUpdateKeyResultMutation } from "../../hooks";
 import type { KeyResult, KeyResultUpdate } from "../../types";
 
@@ -52,9 +48,6 @@ export const UpdateKeyResultDialog = ({
   const { getTermDisplay } = useTerminology();
   const updateMutation = useUpdateKeyResultMutation();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { withWorkspace } = useWorkspacePath();
-  const { data: linkedStories = [], isPending: areStoriesPending } =
-    useKeyResultStories(keyResult.id, isOpen && updateMode === "other");
   const [formState, setFormState] = useState(() => ({
     keyResultId: keyResult.id,
     values: createInitialForm(keyResult),
@@ -322,58 +315,6 @@ export const UpdateKeyResultDialog = ({
                 </>
               ) : null}
             </Box>
-            {updateMode === "other" ? (
-              <Box className="border-border mt-5 border-t pt-4">
-                <Flex align="center" justify="between">
-                  <Text fontWeight="semibold">
-                    Linked {getTermDisplay("storyTerm", { variant: "plural" })}
-                  </Text>
-                  <Text className="tabular-nums" color="muted">
-                    {linkedStories.length}
-                  </Text>
-                </Flex>
-                <Box className="mt-2 max-h-52 overflow-y-auto">
-                  {areStoriesPending ? (
-                    <Text className="py-3" color="muted">
-                      Loading linked work…
-                    </Text>
-                  ) : null}
-                  {!areStoriesPending && linkedStories.length === 0 ? (
-                    <Text className="py-3 leading-5" color="muted">
-                      No {getTermDisplay("storyTerm", { variant: "plural" })}{" "}
-                      are linked to this {getTermDisplay("keyResultTerm")} yet.
-                    </Text>
-                  ) : null}
-                  {linkedStories.map((story) => (
-                    <Link
-                      className="border-border hover:bg-state-hover flex items-center justify-between gap-4 border-t py-2.5 first:border-t-0"
-                      href={withWorkspace(
-                        getStoryPath({
-                          id: story.id,
-                          sequenceId: story.sequenceId,
-                          teamCode: story.team?.code,
-                        }),
-                      )}
-                      key={story.id}
-                      onClick={() => {
-                        handleOpenChange(false);
-                      }}
-                    >
-                      <Box className="min-w-0">
-                        <Text className="text-text-muted text-[0.85rem] uppercase">
-                          {story.team?.code}-{story.sequenceId}
-                        </Text>
-                        <Text className="truncate">{story.title}</Text>
-                      </Box>
-                      <ArrowRightIcon
-                        className="text-text-muted h-4 w-4 shrink-0"
-                        strokeWidth={2.2}
-                      />
-                    </Link>
-                  ))}
-                </Box>
-              </Box>
-            ) : null}
             {updateMode === "progress" && (
               <Box className="mt-3">
                 <TextArea

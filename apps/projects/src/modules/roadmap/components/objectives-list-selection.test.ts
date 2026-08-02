@@ -46,8 +46,13 @@ describe("Roadmap objective list selection", () => {
     expect(boardSource).toContain("RoadmapObjectiveListItem");
     expect(keyResultSource).toContain("KeyResultContextMenu");
     expect(keyResultSource).toContain("RoadmapKeyResultRow");
+    expect(keyResultSource).toContain("getKeyResultReference");
+    expect(keyResultSource).toContain("<ProgressBar");
+    expect(keyResultSource).not.toContain("CircleProgressBar");
+    expect(keyResultSource).toContain("keyResultProgress");
     expect(cardSource).toContain("onToggleExpanded");
     expect(cardSource).toContain("childCount > 0");
+    expect(cardSource).toContain("strokeWidth={2.8}");
   });
 
   it("opens the shared key-result details panel from roadmap surfaces", () => {
@@ -62,6 +67,21 @@ describe("Roadmap objective list selection", () => {
     expect(detailsSource).toContain("Update progress");
     expect(detailsSource).toContain("AssigneesMenu");
     expect(detailsSource).toContain("DatePicker");
+    expect(detailsSource).toContain('label="Objective"');
+    expect(detailsSource).not.toContain('label="Parent objective"');
+  });
+
+  it("keeps linked work in details rather than the edit dialog", () => {
+    const detailsSource = readSource(
+      "src/modules/key-results/components/key-result-details.tsx",
+    );
+    const dialogSource = readSource(
+      "src/modules/objectives/stories/overview/update-key-result-dialog.tsx",
+    );
+
+    expect(detailsSource).toContain("Linked");
+    expect(dialogSource).not.toContain("linkedStories");
+    expect(dialogSource).not.toContain("Loading linked work");
   });
 
   it("exposes only supported objective bulk operations", () => {

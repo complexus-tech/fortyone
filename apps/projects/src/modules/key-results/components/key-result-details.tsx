@@ -198,7 +198,7 @@ export const KeyResultDetails = ({
         </Flex>
 
         <Box className="px-6 pt-5 pb-24">
-          <Box className="border-border bg-surface-muted/35 rounded-xl border px-4 py-4">
+          <Box>
             <Flex align="center" justify="between">
               <Box>
                 <Text color="muted">Progress</Text>
@@ -238,7 +238,7 @@ export const KeyResultDetails = ({
           </Box>
 
           <Text className="mt-6 mb-3">Progress history</Text>
-          <Box className="border-border h-56 rounded-xl border p-3">
+          <Box className="h-56 pt-2">
             <ResponsiveContainer height="100%" width="100%">
               <LineChart data={progressData} margin={{ left: -20, right: 12 }}>
                 <XAxis
@@ -288,7 +288,7 @@ export const KeyResultDetails = ({
           <Flex direction="column" gap={2}>
             <PropertyRow
               icon={<ObjectiveIcon className="h-4 w-4" />}
-              label="Parent objective"
+              label="Objective"
             >
               <Text className="truncate" fontWeight="medium">
                 {objective.name}
