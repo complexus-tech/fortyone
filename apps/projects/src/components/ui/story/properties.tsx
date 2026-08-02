@@ -12,8 +12,6 @@ import {
   ArrowRight2Icon,
   CalendarIcon,
   EstimateIcon,
-  ObjectiveIcon,
-  OKRIcon,
   SprintsIcon,
   SubStoryIcon,
 } from "icons";
@@ -21,10 +19,6 @@ import { cn } from "lib";
 import { format, addDays, formatISO } from "date-fns";
 import Link from "next/link";
 import { useRef, useState } from "react";
-import {
-  KeyResultMenu,
-  ObjectiveKeyResultMenu,
-} from "@/components/ui/story/objective-key-result-menu";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
 import { EstimateMenu } from "@/components/ui/story/estimate-menu";
 import { Labels } from "@/components/ui/story/labels";
@@ -43,9 +37,8 @@ import { hexToRgba } from "@/utils";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatEstimate } from "@/lib/estimate";
-import { useKeyResults } from "@/modules/objectives/hooks";
-import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { RowWrapper } from "../row-wrapper";
+import { StoryStrategyProperties } from "./strategy-properties";
 
 type StoryPropertiesProps = Story & {
   handleUpdate: (data: Partial<Story>) => void;
@@ -94,27 +87,6 @@ export const StoryProperties = ({
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
   const isListRow = !asKanban;
-  const selectedObjective =
-    objectiveId && objective?.id === objectiveId ? objective : null;
-  const { data: objectiveDetails } = useObjective(objectiveId, teamId);
-  const resolvedObjective = objectiveDetails ?? selectedObjective;
-  const { data: keyResults = [] } = useKeyResults(
-    objectiveId ?? "",
-    Boolean(objectiveId && keyResultId),
-  );
-  const selectedKeyResult = keyResults.find(({ id }) => id === keyResultId);
-  const objectiveName =
-    typeof resolvedObjective?.name === "string"
-      ? resolvedObjective.name.trim() || null
-      : null;
-  const keyResultName =
-    typeof selectedKeyResult?.name === "string"
-      ? selectedKeyResult.name.trim() || null
-      : null;
-  const objectiveLabel =
-    objectiveName ?? getTermDisplay("objectiveTerm", { capitalize: true });
-  const keyResultLabel =
-    keyResultName ?? getTermDisplay("keyResultTerm", { capitalize: true });
   const selectedSprint = sprintId && sprint?.id === sprintId ? sprint : null;
   const isDoneStatus = (statusId: string) => {
     const status = statuses.find((s) => s.id === statusId);
@@ -278,94 +250,17 @@ export const StoryProperties = ({
           />
         </EstimateMenu>
       ) : null}
-      {isColumnVisible("Objective") && resolvedObjective && objectiveId ? (
-        <>
-          <ObjectiveKeyResultMenu
-            keyResultId={keyResultId}
-            objectiveId={objectiveId}
-            onChange={(selection) => {
-              handleUpdate(selection);
-            }}
-            teamId={teamId}
-          >
-            <Tooltip
-              className="w-80 max-w-[calc(100vw-2rem)] py-3"
-              collisionPadding={16}
-              title={
-                <Flex align="start" gap={2}>
-                  <ObjectiveIcon className="relative top-[3px] h-4 shrink-0" />
-                  <Box className="min-w-0">
-                    <Text className="mb-1.5" fontSize="md">
-                      {objectiveLabel}
-                    </Text>
-                    <Box
-                      className="text-text-muted mt-1 line-clamp-4 min-w-0 break-words"
-                      html={resolvedObjective.description ?? ""}
-                    />
-                  </Box>
-                </Flex>
-              }
-            >
-              <span>
-                <Button
-                  aria-label={objectiveLabel}
-                  className="gap-1 px-2"
-                  color="tertiary"
-                  disabled={isGuest}
-                  rounded="md"
-                  size="xs"
-                  type="button"
-                  variant="outline"
-                >
-                  <ObjectiveIcon className="h-4" />
-                  <span
-                    className={cn("max-w-32 truncate", {
-                      "inline-block": asKanban,
-                      "hidden @7xl:inline-block": isListRow,
-                    })}
-                  >
-                    {objectiveLabel}
-                  </span>
-                </Button>
-              </span>
-            </Tooltip>
-          </ObjectiveKeyResultMenu>
-          {keyResultId ? (
-            <KeyResultMenu
-              keyResultId={keyResultId}
-              objectiveId={objectiveId}
-              onChange={(nextKeyResultId) => {
-                handleUpdate({ keyResultId: nextKeyResultId });
-              }}
-            >
-              <Tooltip title={keyResultLabel}>
-                <span>
-                  <Button
-                    aria-label={keyResultLabel}
-                    className="gap-1 px-2"
-                    color="tertiary"
-                    disabled={isGuest}
-                    rounded="md"
-                    size="xs"
-                    type="button"
-                    variant="outline"
-                  >
-                    <OKRIcon className="h-4" strokeWidth={2.4} />
-                    <span
-                      className={cn("max-w-32 truncate", {
-                        "inline-block": asKanban,
-                        "hidden @7xl:inline-block": isListRow,
-                      })}
-                    >
-                      {keyResultLabel}
-                    </span>
-                  </Button>
-                </span>
-              </Tooltip>
-            </KeyResultMenu>
-          ) : null}
-        </>
-      ) : null}
+      <StoryStrategyProperties
+        asKanban={asKanban}
+        disabled={isGuest}
+        handleUpdate={handleUpdate}
+        keyResultId={keyResultId}
+        objective={objective}
+        objectiveId={objectiveId}
+        showKeyResult={isColumnVisible("Key Result")}
+        showObjective={isColumnVisible("Objective")}
+        teamId={teamId}
+      />
       {isColumnVisible("Sprint") && selectedSprint ? (
         <SprintsMenu>
           <Tooltip

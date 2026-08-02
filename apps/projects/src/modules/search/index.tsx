@@ -48,6 +48,7 @@ export const SearchPage = () => {
     "Deadline",
     "Labels",
     "Objective",
+    "Key Result",
     "Sprint",
   ];
 

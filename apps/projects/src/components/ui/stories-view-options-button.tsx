@@ -4,21 +4,15 @@ import { ArrowDownIcon, ArrowUpDownIcon, PreferencesIcon } from "icons";
 import { useCallback, useEffect } from "react";
 import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
+import {
+  DISPLAY_COLUMNS_VERSION,
+  migrateDisplayColumns,
+} from "./stories-view-options-utils";
+import type { DisplayColumn } from "./stories-view-options-utils";
+
+export type { DisplayColumn } from "./stories-view-options-utils";
 
 export type ViewOptionsGroupBy = "status" | "assignee" | "priority" | "none";
-export type DisplayColumn =
-  | "ID"
-  | "Status"
-  | "Assignee"
-  | "Estimate"
-  | "Priority"
-  | "Deadline"
-  | "Created"
-  | "Updated"
-  | "Sprint"
-  | "Objective"
-  | "Epic"
-  | "Labels";
 export type ViewOptionsOrderBy =
   | "priority"
   | "deadline"
@@ -27,6 +21,7 @@ export type ViewOptionsOrderBy =
 export type ViewOptionsOrderDirection = "asc" | "desc";
 
 export type StoriesViewOptions = {
+  displayColumnsVersion?: number;
   groupBy: ViewOptionsGroupBy;
   orderBy: ViewOptionsOrderBy;
   orderDirection: ViewOptionsOrderDirection;
@@ -39,6 +34,7 @@ export type StoriesViewOptions = {
 };
 
 const defaultViewOptions: StoriesViewOptions = {
+  displayColumnsVersion: DISPLAY_COLUMNS_VERSION,
   groupBy: "status",
   orderBy: "priority",
   orderDirection: "desc",
@@ -55,6 +51,7 @@ const defaultViewOptions: StoriesViewOptions = {
     "Updated",
     "Sprint",
     "Objective",
+    "Key Result",
     "Labels",
   ],
 };
@@ -104,7 +101,7 @@ export const StoriesViewOptionsButton = ({
       : []),
     ...(isDesktop ? (["Sprint"] as DisplayColumn[]) : []),
     ...(features.objectiveEnabled && isDesktop
-      ? (["Objective"] as DisplayColumn[])
+      ? (["Objective", "Key Result"] as DisplayColumn[])
       : []),
   ];
 
@@ -130,11 +127,19 @@ export const StoriesViewOptionsButton = ({
   );
 
   useEffect(() => {
-    const filteredColumns = getFilteredDisplayColumns([...displayColumns]);
+    const migratedColumns = migrateDisplayColumns(
+      displayColumns,
+      viewOptions.displayColumnsVersion,
+    );
+    const filteredColumns = getFilteredDisplayColumns(migratedColumns);
 
-    if (JSON.stringify(filteredColumns) !== JSON.stringify(displayColumns)) {
+    if (
+      JSON.stringify(filteredColumns) !== JSON.stringify(displayColumns) ||
+      viewOptions.displayColumnsVersion !== DISPLAY_COLUMNS_VERSION
+    ) {
       setViewOptions({
         ...viewOptions,
+        displayColumnsVersion: DISPLAY_COLUMNS_VERSION,
         displayColumns: filteredColumns,
       });
     }
@@ -146,6 +151,8 @@ export const StoriesViewOptionsButton = ({
         return getTermDisplay("sprintTerm", { capitalize: true });
       case "Objective":
         return getTermDisplay("objectiveTerm", { capitalize: true });
+      case "Key Result":
+        return getTermDisplay("keyResultTerm", { capitalize: true });
       default:
         return column;
     }

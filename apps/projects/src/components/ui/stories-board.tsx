@@ -186,7 +186,11 @@ export const StoriesBoard = ({
   const isColumnVisible = useCallback(
     (column: DisplayColumn) => {
       if (column === "Sprint" && !sprintsEnabled) return false;
-      if (column === "Objective" && !features.objectiveEnabled) return false;
+      if (
+        (column === "Objective" || column === "Key Result") &&
+        !features.objectiveEnabled
+      )
+        return false;
       return viewOptions.displayColumns.includes(column);
     },
     [features.objectiveEnabled, sprintsEnabled, viewOptions.displayColumns],

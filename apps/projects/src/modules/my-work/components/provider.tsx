@@ -41,6 +41,7 @@ export const MyWorkProvider = ({
       "Updated",
       "Sprint",
       "Objective",
+      "Key Result",
       "Labels",
     ],
   };
