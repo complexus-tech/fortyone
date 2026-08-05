@@ -48,6 +48,75 @@ type StoryPropertiesProps = Story & {
   setIsExpanded?: (isExpanded: boolean) => void;
 };
 
+type StoryStatusPropertyProps = {
+  className?: string;
+  disabled?: boolean;
+  readOnly?: boolean;
+  statusColor?: string;
+  statusId: string;
+  statusName?: string;
+};
+
+export const StoryStatusProperty = ({
+  className,
+  disabled = false,
+  readOnly = false,
+  statusColor,
+  statusId,
+  statusName,
+}: StoryStatusPropertyProps) => (
+  <Button
+    aria-hidden={readOnly || undefined}
+    className={cn("gap-1 pr-2", className)}
+    disabled={disabled}
+    rounded="md"
+    size="xs"
+    style={{
+      backgroundColor: hexToRgba(statusColor, 0.1),
+      borderColor: hexToRgba(statusColor, 0.2),
+    }}
+    tabIndex={readOnly ? -1 : undefined}
+    type="button"
+    variant="outline"
+  >
+    <StoryStatusIcon statusId={statusId} />
+    {statusName}
+  </Button>
+);
+
+type StoryPriorityPropertyProps = {
+  className?: string;
+  disabled?: boolean;
+  isListRow: boolean;
+  priority: Story["priority"];
+  readOnly?: boolean;
+};
+
+export const StoryPriorityProperty = ({
+  className,
+  disabled = false,
+  isListRow,
+  priority,
+  readOnly = false,
+}: StoryPriorityPropertyProps) => (
+  <button
+    aria-hidden={readOnly || undefined}
+    aria-label={priority}
+    className={cn(
+      "flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50",
+      className,
+    )}
+    disabled={disabled}
+    tabIndex={readOnly ? -1 : undefined}
+    type="button"
+  >
+    <PriorityIcon priority={priority} />
+    <span className={cn("hidden", { "@6xl:inline": isListRow })}>
+      {priority}
+    </span>
+  </button>
+);
+
 const completedOrCancelled = (category?: StateCategory) => {
   return ["completed", "cancelled", "paused"].includes(category || "");
 };
@@ -153,21 +222,12 @@ export const StoryProperties = ({
       {isColumnVisible("Status") && (
         <StatusesMenu>
           <StatusesMenu.Trigger>
-            <Button
-              className="gap-1 pr-2"
+            <StoryStatusProperty
               disabled={isGuest}
-              rounded="md"
-              size="xs"
-              style={{
-                backgroundColor: hexToRgba(status?.color, 0.1),
-                borderColor: hexToRgba(status?.color, 0.2),
-              }}
-              type="button"
-              variant="outline"
-            >
-              <StoryStatusIcon statusId={statusId} />
-              {status?.name}
-            </Button>
+              statusColor={status?.color}
+              statusId={statusId}
+              statusName={status?.name}
+            />
           </StatusesMenu.Trigger>
           <StatusesMenu.Items
             setStatusId={handleStatusUpdate}
@@ -192,17 +252,11 @@ export const StoryProperties = ({
                 {priority}
               </Button>
             ) : (
-              <button
-                aria-label={priority}
-                className="flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50"
+              <StoryPriorityProperty
                 disabled={isGuest}
-                type="button"
-              >
-                <PriorityIcon priority={priority} />
-                <span className={cn("hidden", { "@6xl:inline": isListRow })}>
-                  {priority}
-                </span>
-              </button>
+                isListRow={isListRow}
+                priority={priority}
+              />
             )}
           </PrioritiesMenu.Trigger>
           <PrioritiesMenu.Items

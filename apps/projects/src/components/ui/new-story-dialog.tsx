@@ -1025,6 +1025,7 @@ export const NewStoryDialog = ({
                   }}
                   priority={story.priority ?? "No Priority"}
                   reference={`${teamCode}-${story.sequenceId}`}
+                  statusColor={status?.color}
                   statusId={story.statusId}
                   statusName={status?.name}
                   title={story.title}

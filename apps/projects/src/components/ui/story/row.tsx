@@ -31,19 +31,22 @@ import { getLinks } from "@/lib/queries/links/get-links";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useBoard } from "../board-context";
 import { MemberTooltip } from "../member-tooltip";
-import { PriorityIcon } from "../priority-icon";
 import { RowWrapper } from "../row-wrapper";
-import { StoryStatusIcon } from "../story-status-icon";
 import { AssigneesMenu } from "./assignees-menu";
 import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
-import { StoryProperties } from "./properties";
+import {
+  StoryPriorityProperty,
+  StoryProperties,
+  StoryStatusProperty,
+} from "./properties";
 
 export const StoryRowPreview = ({
   assignee,
   onSelect,
   priority,
   reference,
+  statusColor,
   statusId,
   statusName,
   title,
@@ -52,6 +55,7 @@ export const StoryRowPreview = ({
   onSelect: () => void;
   priority: StoryPriority;
   reference: string;
+  statusColor?: string;
   statusId?: string | null;
   statusName?: string;
   title: string;
@@ -85,6 +89,21 @@ export const StoryRowPreview = ({
         </Text>
       </Flex>
       <Flex align="center" className="text-text-muted shrink-0" gap={3}>
+        {statusId ? (
+          <StoryStatusProperty
+            className="pointer-events-none"
+            readOnly
+            statusColor={statusColor}
+            statusId={statusId}
+            statusName={statusName}
+          />
+        ) : null}
+        <StoryPriorityProperty
+          className="pointer-events-none"
+          isListRow
+          priority={priority}
+          readOnly
+        />
         <MemberTooltip member={assignee}>
           <span className="flex items-center">
             <Avatar
@@ -94,20 +113,6 @@ export const StoryRowPreview = ({
             />
           </span>
         </MemberTooltip>
-        <span className="flex items-center gap-2 text-sm sm:min-w-24">
-          {statusId ? (
-            <StoryStatusIcon statusId={statusId} />
-          ) : (
-            <span className="bg-text-muted size-3 rounded-sm opacity-50" />
-          )}
-          <span className="hidden truncate sm:inline">
-            {statusName ?? "No status"}
-          </span>
-        </span>
-        <span className="flex items-center gap-2 text-sm sm:min-w-24">
-          <PriorityIcon priority={priority} />
-          <span className="hidden sm:inline">{priority}</span>
-        </span>
       </Flex>
     </RowWrapper>
   );
