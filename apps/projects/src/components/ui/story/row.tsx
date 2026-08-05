@@ -6,6 +6,7 @@ import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight2Icon, StoryIcon, SubStoryIcon } from "icons";
 import { useState } from "react";
+import type { KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
 import type {
@@ -54,46 +55,63 @@ export const StoryRowPreview = ({
   statusId?: string | null;
   statusName?: string;
   title: string;
-}) => (
-  <button
-    className="hover:bg-state-hover/40 focus-visible:bg-state-hover/40 group flex min-h-16 w-full items-center gap-4 px-6 py-3 text-left transition-colors outline-none"
-    onClick={onSelect}
-    type="button"
-  >
-    <Text className="w-20 shrink-0 text-[0.92rem]" color="muted">
-      {reference}
-    </Text>
-    <Text className="min-w-0 flex-1 truncate" fontWeight="medium">
-      {title}
-    </Text>
-    <Flex align="center" className="text-text-muted shrink-0 gap-4">
-      <MemberTooltip member={assignee}>
-        <span className="flex items-center">
-          <Avatar
-            name={assignee?.fullName || assignee?.username}
-            size="sm"
-            src={assignee?.avatarUrl}
-          />
+}) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    onSelect();
+  };
+
+  return (
+    <RowWrapper
+      className="cursor-pointer gap-4 border-b-0 px-6 md:px-6"
+      onClick={onSelect}
+      onKeyDown={handleKeyDown}
+      role="button"
+    >
+      <Flex align="center" className="min-w-0 flex-1 select-none" gap={2}>
+        <Text
+          className="flex min-w-[6ch] shrink-0 items-center gap-1 truncate text-[0.95rem]"
+          color="muted"
+        >
+          {reference}
+        </Text>
+        <Text
+          className="line-clamp-1 min-w-0 hover:opacity-90"
+          fontWeight="medium"
+        >
+          {title}
+        </Text>
+      </Flex>
+      <Flex align="center" className="text-text-muted shrink-0" gap={3}>
+        <MemberTooltip member={assignee}>
+          <span className="flex items-center">
+            <Avatar
+              name={assignee?.fullName || assignee?.username}
+              size="sm"
+              src={assignee?.avatarUrl}
+            />
+          </span>
+        </MemberTooltip>
+        <span className="flex items-center gap-2 text-sm sm:min-w-24">
+          {statusId ? (
+            <StoryStatusIcon statusId={statusId} />
+          ) : (
+            <span className="bg-text-muted size-3 rounded-sm opacity-50" />
+          )}
+          <span className="hidden truncate sm:inline">
+            {statusName ?? "No status"}
+          </span>
         </span>
-      </MemberTooltip>
-      <span className="flex items-center gap-2 text-sm sm:min-w-24">
-        {statusId ? (
-          <StoryStatusIcon statusId={statusId} />
-        ) : (
-          <span className="bg-text-muted size-3 rounded-sm opacity-50" />
-        )}
-        <span className="hidden truncate sm:inline">
-          {statusName ?? "No status"}
+        <span className="flex items-center gap-2 text-sm sm:min-w-24">
+          <PriorityIcon priority={priority} />
+          <span className="hidden sm:inline">{priority}</span>
         </span>
-      </span>
-      <span className="flex items-center gap-2 text-sm sm:min-w-24">
-        <PriorityIcon priority={priority} />
-        <span className="hidden sm:inline">{priority}</span>
-      </span>
-      <ArrowRight2Icon className="h-4.5 shrink-0 opacity-45 transition-transform group-hover:translate-x-0.5 group-hover:opacity-100" />
-    </Flex>
-  </button>
-);
+      </Flex>
+    </RowWrapper>
+  );
+};
 
 export const StoryRow = ({
   story,
