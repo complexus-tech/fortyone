@@ -108,7 +108,7 @@ export const StoryRowPreview = ({
           <span className="flex items-center">
             <Avatar
               name={assignee?.fullName || assignee?.username}
-              size="sm"
+              size="xs"
               src={assignee?.avatarUrl}
             />
           </span>
