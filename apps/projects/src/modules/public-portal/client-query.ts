@@ -3,7 +3,12 @@
 import type { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
-import type { PublicPortal, PublicPortalFilters, PublicRequest } from "./types";
+import type {
+  PublicPortal,
+  PublicPortalFilters,
+  PublicRequest,
+  SimilarPublicFeedback,
+} from "./types";
 import { publicPortalKeys, toPublicPortalFilterKey } from "./query-keys";
 
 type ApiResponse<T> = {
@@ -138,4 +143,37 @@ export const usePublicFeedbackDetail = ({
     },
     initialData: request,
     staleTime: PUBLIC_PORTAL_STALE_TIME,
+  });
+
+export const useSimilarPublicFeedback = ({
+  description,
+  portalSlug,
+  title,
+}: {
+  description: string;
+  portalSlug: string;
+  title: string;
+}) =>
+  useQuery({
+    queryKey: [
+      ...publicPortalKeys.feedback(portalSlug),
+      "similar",
+      title.trim(),
+      description.trim(),
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams({ title: title.trim() });
+      if (description.trim()) params.set("description", description.trim());
+      const response = await fetch(
+        `/api/public-portal/${portalSlug}/similar?${params.toString()}`,
+      );
+      if (!response.ok) throw new Error("Unable to check similar feedback");
+
+      const payload = (await response.json()) as ApiResponse<
+        SimilarPublicFeedback[]
+      >;
+      return payload.data;
+    },
+    enabled: title.trim().length >= 3,
+    staleTime: DURATION_FROM_MILLISECONDS.MINUTE,
   });

@@ -85,6 +85,15 @@ type itemRow struct {
 	DeletedAt         *time.Time `db:"deleted_at"`
 }
 
+type similarItemRow struct {
+	ID           uuid.UUID `db:"id"`
+	Slug         string    `db:"slug"`
+	Title        string    `db:"title"`
+	VoteCount    int       `db:"vote_count"`
+	CommentCount int       `db:"comment_count"`
+	Confidence   float64   `db:"confidence"`
+}
+
 type commentRow struct {
 	ID           uuid.UUID  `db:"id"`
 	WorkspaceID  uuid.UUID  `db:"workspace_id"`
@@ -928,6 +937,59 @@ func (r *Repo) GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) 
 		return feedback.CoreItem{}, err
 	}
 	return toCoreItem(row), nil
+}
+
+func (r *Repo) ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, description string, limit int) ([]feedback.CoreSimilarItem, error) {
+	const query = `
+		WITH ranked AS (
+			SELECT fi.id,
+				fi.slug,
+				fi.title,
+				CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = fi.id), 0) AS integer) AS vote_count,
+				CAST((SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = fi.id) AS integer) AS comment_count,
+				GREATEST(
+					similarity(lower(fi.title), lower($2)),
+					LEAST(
+						word_similarity(lower(fi.title), lower($2)),
+						word_similarity(lower($2), lower(fi.title))
+					),
+					CASE
+						WHEN lower(regexp_replace(fi.title, '[^a-z0-9]+', '', 'g')) =
+							lower(regexp_replace($2, '[^a-z0-9]+', '', 'g'))
+						THEN 1.0
+						ELSE 0.0
+					END,
+					CASE
+						WHEN $3 <> '' THEN similarity(lower(fi.title || ' ' || fi.description), lower($2 || ' ' || $3))
+						ELSE 0.0
+					END
+				) AS confidence
+			FROM feedback_items fi
+			WHERE fi.portal_id = $1 AND fi.deleted_at IS NULL
+		)
+		SELECT id, slug, title, vote_count, comment_count, confidence
+		FROM ranked
+		WHERE confidence >= 0.2
+		ORDER BY confidence DESC, vote_count DESC, title ASC
+		LIMIT $4
+	`
+	var rows []similarItemRow
+	if err := r.db.SelectContext(ctx, &rows, query, portalID, title, description, limit); err != nil {
+		return nil, err
+	}
+
+	items := make([]feedback.CoreSimilarItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, feedback.CoreSimilarItem{
+			ID:           row.ID,
+			Slug:         row.Slug,
+			Title:        row.Title,
+			VoteCount:    row.VoteCount,
+			CommentCount: row.CommentCount,
+			Confidence:   row.Confidence,
+		})
+	}
+	return items, nil
 }
 
 func (r *Repo) CreateItem(ctx context.Context, input feedback.CoreItemInput) (feedback.CoreItem, error) {

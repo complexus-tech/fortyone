@@ -23,6 +23,7 @@ var (
 	ErrAlreadyPlanned = errors.New("feedback is already linked to a primary story")
 	ErrTeamMismatch   = errors.New("feedback and story must belong to the same team")
 	ErrStoryManaged   = errors.New("feedback status is managed by its linked story")
+	ErrDuplicateItem  = errors.New("similar feedback has already been reported")
 )
 
 var nonSlugCharacters = regexp.MustCompile(`[^a-z0-9]+`)
@@ -34,6 +35,9 @@ const (
 	defaultContributorCommentsPageSize     = 20
 	maxContributorCommentsPageSize         = 50
 	publicRoadmapSlug                      = "roadmap"
+	defaultSimilarItemsLimit               = 3
+	maxSimilarItemsLimit                   = 5
+	duplicateItemConfidence                = 0.82
 )
 
 type Service struct {
@@ -443,6 +447,13 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 	if board.WorkspaceID != portal.WorkspaceID {
 		return CoreItem{}, ErrNotFound
 	}
+	similarItems, err := s.repo.ListSimilarItems(ctx, portal.ID, input.Title, input.Description, 1)
+	if err != nil {
+		return CoreItem{}, err
+	}
+	if len(similarItems) > 0 && similarItems[0].Confidence >= duplicateItemConfidence {
+		return CoreItem{}, fmt.Errorf("%w: %s", ErrDuplicateItem, similarItems[0].Title)
+	}
 
 	return s.CreateItem(ctx, CoreItemInput{
 		WorkspaceID: portal.WorkspaceID,
@@ -453,6 +464,36 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 		Description: input.Description,
 		Source:      SubmissionSourcePortal,
 	})
+}
+
+func (s *Service) ListPublicSimilarItems(ctx context.Context, portalSlug, title, description string, limit int) ([]CoreSimilarItem, error) {
+	title = strings.TrimSpace(title)
+	description = strings.TrimSpace(description)
+	if title == "" {
+		return []CoreSimilarItem{}, nil
+	}
+	if utf8.RuneCountInString(title) > maxPublicFeedbackTitleCharacters {
+		return nil, invalidInputf("feedback title must be %d characters or fewer", maxPublicFeedbackTitleCharacters)
+	}
+	if limit <= 0 {
+		limit = defaultSimilarItemsLimit
+	}
+	if limit > maxSimilarItemsLimit {
+		limit = maxSimilarItemsLimit
+	}
+
+	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(portalSlug))
+	if err != nil {
+		return nil, err
+	}
+	items, err := s.repo.ListSimilarItems(ctx, portal.ID, title, description, limit)
+	if err != nil {
+		return nil, err
+	}
+	for index := range items {
+		items[index].IsDuplicate = items[index].Confidence >= duplicateItemConfidence
+	}
+	return items, nil
 }
 
 func (s *Service) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, error) {

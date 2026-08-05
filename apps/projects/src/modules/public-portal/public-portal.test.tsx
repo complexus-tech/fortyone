@@ -32,7 +32,12 @@ import {
 
 const clipboardWriteTextMock = jest.fn(async (_text: string) => undefined);
 const shareMock = jest.fn(async (_data?: ShareData) => undefined);
+const mockRouterPush = jest.fn();
 let triggerIntersection: (() => void) | undefined;
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockRouterPush }),
+}));
 
 const createDeferred = <T,>() => {
   let resolve!: (value: T) => void;
@@ -239,6 +244,7 @@ const render = (element: ReactTypes.ReactElement) => {
 jest.mock("sonner", () => ({
   toast: {
     error: jest.fn(),
+    info: jest.fn(),
     success: jest.fn(),
   },
 }));
@@ -643,6 +649,12 @@ describe("Public portal UI", () => {
           url = input.url;
         }
         const requestUrl = new URL(url, "https://fortyone.test");
+        if (requestUrl.pathname.endsWith("/similar")) {
+          return {
+            json: async () => ({ data: [] }),
+            ok: true,
+          } as Response;
+        }
         const status = requestUrl.searchParams.get("status");
         const boardId = requestUrl.searchParams.get("boardId");
         const search = requestUrl.searchParams.get("search")?.toLowerCase();
@@ -894,6 +906,7 @@ describe("Public portal UI", () => {
     };
     render(<PublicPortalRequestsPage portal={portal} viewer={portalViewer} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "New Feedback" }));
     fireEvent.change(screen.getByLabelText("Feedback title"), {
       target: { value: "Add a safer crossing" },
     });
@@ -910,6 +923,66 @@ describe("Public portal UI", () => {
         }),
       );
     });
+  });
+
+  it("blocks duplicate feedback and opens the existing submission", async () => {
+    const defaultFetch = jest.mocked(global.fetch).getMockImplementation()!;
+    jest.mocked(global.fetch).mockImplementation(async (input, init) => {
+      let rawUrl: string;
+      if (typeof input === "string") {
+        rawUrl = input;
+      } else if (input instanceof URL) {
+        rawUrl = input.toString();
+      } else {
+        rawUrl = input.url;
+      }
+      const requestUrl = new URL(rawUrl, "https://fortyone.test");
+      if (requestUrl.pathname.endsWith("/similar")) {
+        return {
+          json: async () => ({
+            data: [
+              {
+                commentCount: 4,
+                confidence: 0.96,
+                id: "req-1",
+                isDuplicate: true,
+                slug: "add-pedestrian-crossing-near-east-avenue-school",
+                title: "Add pedestrian crossing near East Avenue school",
+                voteCount: 12,
+              },
+            ],
+          }),
+          ok: true,
+        } as Response;
+      }
+      return defaultFetch(input, init);
+    });
+    const portal = {
+      ...publicPortalFixture,
+      boards: [publicPortalFixture.boards[0]],
+    };
+    render(<PublicPortalRequestsPage portal={portal} viewer={portalViewer} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "New Feedback" }));
+    fireEvent.change(screen.getByLabelText("Feedback title"), {
+      target: { value: "Add a pedestrian crossing by East Avenue school" },
+    });
+
+    expect(await screen.findByText("Already reported")).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("button", { name: "View existing feedback" }),
+    );
+
+    expect(createFeedbackActionMock).not.toHaveBeenCalled();
+    expect(mockRouterPush).toHaveBeenCalledWith(
+      "/portal/city-roads/feedback/add-pedestrian-crossing-near-east-avenue-school",
+    );
+    expect(toast.info).toHaveBeenCalledWith(
+      "This feedback was already reported",
+      expect.objectContaining({
+        description: expect.stringContaining("comment"),
+      }),
+    );
   });
 
   it("shows new feedback immediately and rolls it back when submission fails", async () => {

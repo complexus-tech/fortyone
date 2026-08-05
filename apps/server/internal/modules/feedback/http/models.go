@@ -185,6 +185,16 @@ type AppCreatePublicItem struct {
 	Description string    `json:"description"`
 }
 
+type AppSimilarItem struct {
+	ID           uuid.UUID `json:"id"`
+	Slug         string    `json:"slug"`
+	Title        string    `json:"title"`
+	VoteCount    int       `json:"voteCount"`
+	CommentCount int       `json:"commentCount"`
+	Confidence   float64   `json:"confidence"`
+	IsDuplicate  bool      `json:"isDuplicate"`
+}
+
 type AppUpdateItemStatus struct {
 	Status         string  `json:"status"`
 	RoadmapSummary *string `json:"roadmapSummary"`
@@ -297,6 +307,18 @@ func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLi
 		item.Board = &board
 	}
 	return item
+}
+
+func toAppSimilarItem(core feedback.CoreSimilarItem) AppSimilarItem {
+	return AppSimilarItem{
+		ID:           core.ID,
+		Slug:         core.Slug,
+		Title:        core.Title,
+		VoteCount:    core.VoteCount,
+		CommentCount: core.CommentCount,
+		Confidence:   core.Confidence,
+		IsDuplicate:  core.IsDuplicate,
+	}
 }
 
 func toAppComment(core feedback.CoreComment) AppComment {

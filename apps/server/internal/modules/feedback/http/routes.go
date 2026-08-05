@@ -46,6 +46,7 @@ func Routes(cfg Config, app *web.App) {
 	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
 	app.Get("/portals/{portalSlug}/feedback", h.GetPortal)
+	app.Get("/portals/{portalSlug}/feedback/similar", h.ListPublicSimilarItems)
 	app.Get("/portals/{portalSlug}/feedback/contributors/{authorId}", h.GetPublicContributor)
 	app.Get("/portals/{portalSlug}/feedback/contributors/{authorId}/comments", h.ListPublicContributorComments)
 	app.Post("/portals/{portalSlug}/feedback/items", h.CreatePublicItem, auth, createItemRateLimit)

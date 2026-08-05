@@ -81,6 +81,16 @@ type CoreItem struct {
 	UpdatedAt      time.Time
 }
 
+type CoreSimilarItem struct {
+	ID           uuid.UUID
+	Slug         string
+	Title        string
+	VoteCount    int
+	CommentCount int
+	Confidence   float64
+	IsDuplicate  bool
+}
+
 type CoreComment struct {
 	ID           uuid.UUID
 	WorkspaceID  uuid.UUID
@@ -307,6 +317,7 @@ type Repository interface {
 	MarkItemRead(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (time.Time, error)
 	MarkItemUnread(ctx context.Context, workspaceID, itemID, userID uuid.UUID) error
 	GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (CoreItem, error)
+	ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, description string, limit int) ([]CoreSimilarItem, error)
 	CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error)
 	UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, bool, error)
 	TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) error

@@ -67,6 +67,11 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, userID 
 			AND (
 				s.search_vector @@ plainto_tsquery('english', :query)
 				OR s.title ILIKE '%' || :query || '%'
+				OR similarity(lower(s.title), lower(:query)) >= 0.2
+				OR LEAST(
+					word_similarity(lower(s.title), lower(:query)),
+					word_similarity(lower(:query), lower(s.title))
+				) >= 0.25
 			)
 		`)
 	}
@@ -114,8 +119,15 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, userID 
 	default: // SortByRelevance or empty
 		if params.Query != "" {
 			queryBuilder.WriteString(`
-				ORDER BY 
-					ts_rank(s.search_vector, plainto_tsquery('english', :query)) DESC,
+				ORDER BY
+					GREATEST(
+						ts_rank(s.search_vector, plainto_tsquery('english', :query)),
+						similarity(lower(s.title), lower(:query)),
+						LEAST(
+							word_similarity(lower(s.title), lower(:query)),
+							word_similarity(lower(:query), lower(s.title))
+						)
+					) DESC,
 					s.created_at DESC
 			`)
 		} else {
@@ -142,6 +154,11 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, userID 
 			AND (
 				s.search_vector @@ plainto_tsquery('english', :query)
 				OR s.title ILIKE '%' || :query || '%'
+				OR similarity(lower(s.title), lower(:query)) >= 0.2
+				OR LEAST(
+					word_similarity(lower(s.title), lower(:query)),
+					word_similarity(lower(:query), lower(s.title))
+				) >= 0.25
 			)
 		`
 	}

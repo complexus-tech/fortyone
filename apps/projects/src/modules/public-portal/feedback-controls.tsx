@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
@@ -8,6 +9,7 @@ import { useEditor } from "@tiptap/react";
 import {
   ArrowRight2Icon,
   CheckIcon,
+  CommentIcon,
   PlusIcon,
   RequestsIcon,
   ThumbsDownIcon,
@@ -17,12 +19,16 @@ import { Box, Button, Dialog, Input, Menu, Text, TextEditor } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { TeamColor } from "@/components/ui/team-color";
+import { SimilarItemsPanel } from "@/components/ui/similar-items-panel";
+import { useDebouncedCallback } from "@/hooks/debounce";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import type { PublicPortal, PublicPortalViewer, PublicRequest } from "./types";
+import { useSimilarPublicFeedback } from "./client-query";
 import {
   useCreatePublicFeedback,
   usePublicFeedbackVote,
 } from "./feedback-mutations";
+import { getRequestPathBySlug } from "./utils";
 
 const MAX_FEEDBACK_TITLE_LENGTH = 200;
 
@@ -33,13 +39,21 @@ export const NewFeedbackButton = ({
   portal: PublicPortal;
   viewer: PublicPortalViewer;
 }) => {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
+  const titleRef = useRef("");
+  const [similarityInput, setSimilarityInput] = useState({
+    description: "",
+    title: "",
+  });
   const [boardId, setBoardId] = useState(
     portal.boards.length === 1 ? portal.boards[0]?.id ?? "" : "",
   );
   const createFeedback = useCreatePublicFeedback({ portal, viewer });
   const selectedBoard = portal.boards.find((board) => board.id === boardId);
+  const { callback: checkForSimilarFeedback, cancel: cancelSimilarityCheck } =
+    useDebouncedCallback(setSimilarityInput, 300);
   const descriptionEditor = useEditor({
     content: "",
     editable: true,
@@ -58,9 +72,36 @@ export const NewFeedbackButton = ({
       }),
     ],
     immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      checkForSimilarFeedback({
+        description: editor.getText(),
+        title: titleRef.current,
+      });
+    },
   });
+  const similarFeedback = useSimilarPublicFeedback({
+    description: similarityInput.description,
+    portalSlug: portal.slug,
+    title: open ? similarityInput.title : "",
+  });
+  const blockingMatch = similarFeedback.data?.find((item) => item.isDuplicate);
+
+  const openExistingFeedback = (slug: string, isDuplicate = false) => {
+    cancelSimilarityCheck();
+    setOpen(false);
+    router.push(getRequestPathBySlug(portal, slug));
+    if (isDuplicate) {
+      toast.info("This feedback was already reported", {
+        description: "Add your context as a comment on the existing feedback.",
+      });
+    }
+  };
 
   const submit = () => {
+    if (blockingMatch) {
+      openExistingFeedback(blockingMatch.slug, true);
+      return;
+    }
     const input = {
       boardId,
       description: descriptionEditor?.getText() ?? "",
@@ -68,14 +109,21 @@ export const NewFeedbackButton = ({
       title,
     };
 
+    cancelSimilarityCheck();
     setOpen(false);
     setTitle("");
+    titleRef.current = "";
+    setSimilarityInput({ description: "", title: "" });
     descriptionEditor?.commands.setContent("");
     createFeedback.mutate(input, {
-      onError: () => {
+      onError: async () => {
         setTitle(input.title);
+        titleRef.current = input.title;
         descriptionEditor?.commands.setContent(input.description);
         setOpen(true);
+        const refreshed = await similarFeedback.refetch();
+        const duplicate = refreshed.data?.find((item) => item.isDuplicate);
+        if (duplicate) openExistingFeedback(duplicate.slug, true);
       },
       onSuccess: () => {
         toast.success("Feedback submitted");
@@ -84,19 +132,29 @@ export const NewFeedbackButton = ({
   };
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) cancelSimilarityCheck();
+      }}
+      open={open}
+    >
       <Button
         className="h-12 w-full justify-center text-[1rem]"
         color="invert"
         leftIcon={<PlusIcon className="h-4 text-current" />}
         onClick={() => {
           setOpen(true);
+          checkForSimilarFeedback({
+            description: descriptionEditor?.getText() ?? "",
+            title: titleRef.current,
+          });
         }}
         size="lg"
       >
         New Feedback
       </Button>
-      <Dialog.Content className="max-w-4xl" hideClose>
+      <Dialog.Content className="max-w-4xl overflow-visible" hideClose>
         <Dialog.Header className="flex items-center justify-between px-6 pt-5 pb-1">
           <Dialog.Title className="flex items-center gap-1 text-lg">
             <Menu>
@@ -156,7 +214,13 @@ export const NewFeedbackButton = ({
               className="h-auto border-0 bg-transparent px-0 pt-1 pb-1 text-2xl leading-tight font-medium focus-visible:ring-0 dark:bg-transparent"
               maxLength={MAX_FEEDBACK_TITLE_LENGTH}
               onChange={(event) => {
-                setTitle(event.target.value);
+                const nextTitle = event.target.value;
+                setTitle(nextTitle);
+                titleRef.current = nextTitle;
+                checkForSimilarFeedback({
+                  description: descriptionEditor?.getText() ?? "",
+                  title: nextTitle,
+                });
               }}
               placeholder="Feedback title"
               value={title}
@@ -184,9 +248,34 @@ export const NewFeedbackButton = ({
             }
             onClick={submit}
           >
-            Submit feedback
+            {blockingMatch ? "View existing feedback" : "Submit feedback"}
           </Button>
         </Dialog.Footer>
+        <SimilarItemsPanel
+          heading="Similar submissions"
+          items={(similarFeedback.data ?? []).map((item) => ({
+            id: item.id,
+            isBlocking: item.isDuplicate,
+            label: item.isDuplicate ? "Already reported" : "Possible match",
+            meta: (
+              <>
+                <span className="flex items-center gap-1">
+                  <ThumbsUpIcon className="h-3.5" /> {item.voteCount}
+                </span>
+                <span className="flex items-center gap-1">
+                  <CommentIcon className="h-3.5" /> {item.commentCount}
+                </span>
+              </>
+            ),
+            title: item.title,
+          }))}
+          onSelect={(item) => {
+            const match = similarFeedback.data?.find(
+              (candidate) => candidate.id === item.id,
+            );
+            if (match) openExistingFeedback(match.slug, match.isDuplicate);
+          }}
+        />
       </Dialog.Content>
     </Dialog>
   );

@@ -15,6 +15,7 @@ import type {
   PublicFeedbackListStatus,
   PublicPortal,
   PublicPortalWorkspace,
+  SimilarPublicFeedback,
 } from "./types";
 
 type ApiResponse<T> = {
@@ -130,6 +131,41 @@ export const getPublicPortal = async (
     (await feedbackResponse.json()) as ApiResponse<ApiPortal>;
 
   return toPublicPortal(feedbackPayload.data, workspacePayload?.data);
+};
+
+export const getSimilarPublicFeedback = async (
+  portalSlug: string,
+  {
+    description,
+    limit = 3,
+    title,
+  }: { description?: string; limit?: number; title: string },
+): Promise<SimilarPublicFeedback[]> => {
+  const apiUrl = getApiUrl();
+  if (!apiUrl) {
+    throw new Error("NEXT_PUBLIC_API_URL is required to find similar feedback");
+  }
+
+  const params = new URLSearchParams({
+    limit: String(limit),
+    title: title.trim(),
+  });
+  if (description?.trim()) params.set("description", description.trim());
+  const response = await fetch(
+    `${apiUrl}/portals/${portalSlug}/feedback/similar?${params.toString()}`,
+    { cache: "no-store" },
+  );
+  if (!response.ok) {
+    throw new PublicPortalRequestError(
+      "Failed to find similar feedback",
+      response.status,
+    );
+  }
+
+  const payload = (await response.json()) as ApiResponse<
+    SimilarPublicFeedback[]
+  >;
+  return payload.data;
 };
 
 export const getPublicContributor = async (

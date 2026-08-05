@@ -161,6 +161,26 @@ func (h *Handlers) GetWorkspacePortal(ctx context.Context, w http.ResponseWriter
 	return web.Respond(ctx, w, toAppPortalSnapshot(portal), http.StatusOK)
 }
 
+func (h *Handlers) ListPublicSimilarItems(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	items, err := h.feedback.ListPublicSimilarItems(
+		ctx,
+		web.Params(r, "portalSlug"),
+		r.URL.Query().Get("title"),
+		r.URL.Query().Get("description"),
+		limit,
+	)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+
+	response := make([]AppSimilarItem, 0, len(items))
+	for _, item := range items {
+		response = append(response, toAppSimilarItem(item))
+	}
+	return web.Respond(ctx, w, response, http.StatusOK)
+}
+
 func (h *Handlers) GetPublicContributor(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	authorID, err := publicContributorID(r)
 	if err != nil {
@@ -918,6 +938,8 @@ func httpStatus(err error) int {
 	case errors.Is(err, feedback.ErrBoardExists):
 		return http.StatusConflict
 	case errors.Is(err, feedback.ErrStoryManaged):
+		return http.StatusConflict
+	case errors.Is(err, feedback.ErrDuplicateItem):
 		return http.StatusConflict
 	case errors.Is(err, feedback.ErrTeamMismatch):
 		return http.StatusBadRequest

@@ -7,6 +7,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   Button,
   Dialog,
@@ -61,6 +62,7 @@ import {
   useSprintsEnabled,
   useWorkspacePath,
 } from "@/hooks";
+import { useDebouncedCallback } from "@/hooks/debounce";
 import type { Team } from "@/modules/teams/types";
 import type { DetailedStory, NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
@@ -80,6 +82,9 @@ import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useTotalStories } from "@/modules/stories/hooks/total-stories";
 import { storyKeys } from "@/modules/stories/constants";
+import { useSearch } from "@/modules/search/hooks/use-search";
+import { getStoryPath } from "@/modules/story/utils/story-url";
+import { SimilarItemsPanel } from "./similar-items-panel";
 import { PriorityIcon } from "./priority-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -147,6 +152,7 @@ export const NewStoryDialog = ({
   description?: string;
   onCreated?: (story: DetailedStory) => Promise<void> | void;
 }) => {
+  const router = useRouter();
   const session = useSession();
   const { userRole } = useUserRole();
   const queryClient = useQueryClient();
@@ -229,6 +235,8 @@ export const NewStoryDialog = ({
   const [storyForm, dispatch] = useReducer(storyFormReducer, initialForm);
   const [loading, setLoading] = useState(false);
   const [createMore, setCreateMore] = useState(false);
+  const [storyTitle, setStoryTitle] = useState("");
+  const [storySearchQuery, setStorySearchQuery] = useState("");
   const mutation = useCreateStoryMutation();
   const objective = objectives.find((o) => o.id === storyForm.objectiveId);
   const { data: keyResults = [] } = useKeyResults(
@@ -248,6 +256,16 @@ export const NewStoryDialog = ({
   const selectedLabels = allLabels.filter((label) =>
     selectedLabelIds.includes(label.id),
   );
+  const teamCodeById = new Map(teams.map((team) => [team.id, team.code]));
+  const { callback: searchSimilarStories, cancel: cancelStorySearch } =
+    useDebouncedCallback(setStorySearchQuery, 300);
+  const similarStories = useSearch({
+    pageSize: 3,
+    query: isOpen && storyTitle.trim().length >= 3 ? storySearchQuery : "",
+    sortBy: "relevance",
+    teamId: currentTeamId,
+    type: "stories",
+  });
 
   const titleEditor = useEditor({
     extensions: [
@@ -260,6 +278,9 @@ export const NewStoryDialog = ({
     editable: true,
     autofocus: true,
     immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      setStoryTitle(editor.getText());
+    },
   });
 
   const editor = useEditor({
@@ -319,6 +340,7 @@ export const NewStoryDialog = ({
         setIsExpanded(false);
       }
       titleEditor.commands.setContent("");
+      setStoryTitle("");
       editor.commands.setContent("");
       dispatch({ type: "RESET_FORM", payload: initialForm });
       if (tier === "free") {
@@ -362,6 +384,14 @@ export const NewStoryDialog = ({
       titleEditor.commands.focus();
     }
   }, [isOpen, titleEditor]);
+
+  useEffect(() => {
+    if (!isOpen || storyTitle.trim().length < 3) {
+      cancelStorySearch();
+      return;
+    }
+    searchSimilarStories(storyTitle.trim());
+  }, [cancelStorySearch, isOpen, searchSimilarStories, storyTitle]);
 
   // Initialize form when props change
   useEffect(() => {
@@ -462,7 +492,11 @@ export const NewStoryDialog = ({
       feature="maxStories"
     >
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
-        <Dialog.Content hideClose size={isExpanded ? "xl" : "lg"}>
+        <Dialog.Content
+          className="overflow-visible"
+          hideClose
+          size={isExpanded ? "xl" : "lg"}
+        >
           <Dialog.Header className="flex items-center justify-between px-6 pt-6">
             <Dialog.Title className="flex items-center gap-1 text-lg">
               <Menu>
@@ -948,6 +982,35 @@ export const NewStoryDialog = ({
               Create {getTermDisplay("storyTerm")}
             </Button>
           </Dialog.Footer>
+          <SimilarItemsPanel
+            heading={`Similar ${getTermDisplay("storyTerm", {
+              variant: "plural",
+            })}`}
+            items={(similarStories.data?.stories ?? []).map((story) => {
+              return {
+                id: story.id,
+                label: "Review story",
+                meta: `${teamCodeById.get(story.teamId) ?? currentTeam?.code ?? ""}-${story.sequenceId}`,
+                title: story.title,
+              };
+            })}
+            onSelect={(item) => {
+              const story = similarStories.data?.stories.find(
+                (candidate) => candidate.id === item.id,
+              );
+              if (!story) return;
+              setIsOpen(false);
+              router.push(
+                withWorkspace(
+                  getStoryPath({
+                    id: story.id,
+                    sequenceId: story.sequenceId,
+                    teamCode: teamCodeById.get(story.teamId),
+                  }),
+                ),
+              );
+            }}
+          />
         </Dialog.Content>
       </Dialog>
     </FeatureGuard>

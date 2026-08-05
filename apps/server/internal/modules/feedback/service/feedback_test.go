@@ -18,6 +18,7 @@ type repoStub struct {
 	portals                    []CorePortal
 	boards                     []CoreBoard
 	items                      []CoreItem
+	similarItems               []CoreSimilarItem
 	comments                   []CoreComment
 	storyLinks                 []CoreStoryLink
 	linkStoryErr               error
@@ -375,6 +376,14 @@ func (r *repoStub) GetItemByPortal(ctx context.Context, portalID, itemID uuid.UU
 		}
 	}
 	return CoreItem{}, sql.ErrNoRows
+}
+
+func (r *repoStub) ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, description string, limit int) ([]CoreSimilarItem, error) {
+	items := r.similarItems
+	if len(items) > limit {
+		items = items[:limit]
+	}
+	return append([]CoreSimilarItem(nil), items...), nil
 }
 
 func (r *repoStub) CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error) {
@@ -998,6 +1007,51 @@ func TestPublicFeedbackWritesDeriveWorkspaceFromPortal(t *testing.T) {
 	require.Equal(t, authorID, item.AuthorID)
 	require.Equal(t, workspaceID, repo.createdItems[0].WorkspaceID)
 	require.Equal(t, SubmissionSourcePortal, repo.createdItems[0].Source)
+}
+
+func TestPublicFeedbackRejectsHighConfidenceDuplicate(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	boardID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID, Slug: "city-roads", IsPublic: true}},
+		boards:  []CoreBoard{{ID: boardID, WorkspaceID: workspaceID, PortalID: portalID}},
+		similarItems: []CoreSimilarItem{{
+			ID:         uuid.New(),
+			Title:      "Repair the crossing signal",
+			Confidence: duplicateItemConfidence,
+		}},
+	}
+	service := New(repo, nil)
+
+	_, err := service.CreatePublicItem(context.Background(), CorePublicItemInput{
+		PortalSlug: "city-roads",
+		BoardID:    boardID,
+		AuthorID:   uuid.New(),
+		Title:      "Repair crossing signal",
+	})
+
+	require.ErrorIs(t, err, ErrDuplicateItem)
+	require.Empty(t, repo.createdItems)
+}
+
+func TestListPublicSimilarItemsMarksOnlyBlockingMatchesAsDuplicates(t *testing.T) {
+	portalID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, Slug: "city-roads", IsPublic: true}},
+		similarItems: []CoreSimilarItem{
+			{ID: uuid.New(), Title: "Exact match", Confidence: duplicateItemConfidence},
+			{ID: uuid.New(), Title: "Possible match", Confidence: duplicateItemConfidence - 0.01},
+		},
+	}
+	service := New(repo, nil)
+
+	items, err := service.ListPublicSimilarItems(context.Background(), "city-roads", "Signal timing", "", 10)
+
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+	require.True(t, items[0].IsDuplicate)
+	require.False(t, items[1].IsDuplicate)
 }
 
 func TestSetBoardReviewerNormalizesEmailFrequency(t *testing.T) {

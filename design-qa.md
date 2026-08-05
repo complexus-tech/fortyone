@@ -235,3 +235,31 @@ final result: blocked
 - [ ] Re-run the visual comparison in an authenticated browser session.
 
 final result: blocked
+
+---
+
+# Duplicate Feedback and Story Similarity Design QA
+
+## Source and implementation evidence
+
+- Source visual truth: `/Users/joseph/Downloads/Screenshot 2026-08-05 at 10.04.46 AM.png` (1472 × 932 pixels).
+- Implementation screenshot: unavailable because the only connected app-browser session redirected the Projects route to `Login - FortyOne`.
+- Intended viewport: authenticated desktop dialog in dark mode.
+- State: feedback or story title entered far enough to return ranked similar records.
+
+## Comparison evidence
+
+- Full-view comparison: blocked before implementation capture because authentication was unavailable.
+- Focused panel comparison: blocked for the same reason.
+- Code-level alignment: the implementation uses a separate rounded surface below the dialog, an uppercase muted heading, divided clickable result rows, supporting metadata, and a right-side affordance while retaining FortyOne’s design tokens.
+
+## Functional verification
+
+- Public feedback duplicate matching is debounced, ranked, and rechecked in the Go service before insert.
+- High-confidence feedback changes the primary action to open the existing submission and guides the user to comment there.
+- Story matches remain advisory and navigate directly to the existing story.
+- Go service/repository checks, Projects type checking, focused ESLint, React Doctor, and all 35 public-portal tests pass.
+
+## Result
+
+final result: blocked — functional verification passed, but authenticated side-by-side visual comparison remains outstanding.

@@ -95,6 +95,16 @@ export type PublicRequest = {
   storyLinks: PublicFeedbackStoryLink[];
 };
 
+export type SimilarPublicFeedback = {
+  id: string;
+  slug: string;
+  title: string;
+  voteCount: number;
+  commentCount: number;
+  confidence: number;
+  isDuplicate: boolean;
+};
+
 export type PublicPortalUpdate = {
   id: string;
   title: string;
