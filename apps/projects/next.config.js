@@ -2,7 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   // productionBrowserSourceMaps: true,
-  output: "standalone",
+  // Vercel's Next adapter consumes build output before standalone tracing runs.
+  // Keep standalone output for Docker while allowing Vercel to use its adapter.
+  output: process.env.VERCEL ? undefined : "standalone",
   transpilePackages: ["ui", "icons"],
   devIndicators: false,
   reactCompiler: true,
