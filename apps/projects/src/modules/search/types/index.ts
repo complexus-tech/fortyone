@@ -29,5 +29,8 @@ export type SimilarStory = {
   sequenceId: number;
   title: string;
   teamId: string;
+  statusId?: string | null;
+  assigneeId?: string | null;
+  priority?: StoryPriority;
   confidence: number;
 };

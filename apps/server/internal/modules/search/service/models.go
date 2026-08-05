@@ -60,6 +60,9 @@ type CoreSimilarStory struct {
 	SequenceID int
 	Title      string
 	Team       uuid.UUID
+	Status     *uuid.UUID
+	Assignee   *uuid.UUID
+	Priority   string
 	Confidence float64
 }
 

@@ -8,8 +8,12 @@ import { ArrowRight2Icon, StoryIcon, SubStoryIcon } from "icons";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
-import type { Story as StoryProps } from "@/modules/stories/types";
+import type {
+  Story as StoryProps,
+  StoryPriority,
+} from "@/modules/stories/types";
 import type { DetailedStory } from "@/modules/story/types";
+import type { UserSummary } from "@/types";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import {
@@ -24,13 +28,72 @@ import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
 import { linkKeys } from "@/constants/keys";
 import { getLinks } from "@/lib/queries/links/get-links";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
-import { RowWrapper } from "../row-wrapper";
 import { useBoard } from "../board-context";
 import { MemberTooltip } from "../member-tooltip";
+import { PriorityIcon } from "../priority-icon";
+import { RowWrapper } from "../row-wrapper";
+import { StoryStatusIcon } from "../story-status-icon";
 import { AssigneesMenu } from "./assignees-menu";
 import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
 import { StoryProperties } from "./properties";
+
+export const StoryRowPreview = ({
+  assignee,
+  onSelect,
+  priority,
+  reference,
+  statusId,
+  statusName,
+  title,
+}: {
+  assignee?: UserSummary | null;
+  onSelect: () => void;
+  priority: StoryPriority;
+  reference: string;
+  statusId?: string | null;
+  statusName?: string;
+  title: string;
+}) => (
+  <button
+    className="hover:bg-state-hover/40 focus-visible:bg-state-hover/40 group flex min-h-16 w-full items-center gap-4 px-6 py-3 text-left transition-colors outline-none"
+    onClick={onSelect}
+    type="button"
+  >
+    <Text className="w-20 shrink-0 text-[0.92rem]" color="muted">
+      {reference}
+    </Text>
+    <Text className="min-w-0 flex-1 truncate" fontWeight="medium">
+      {title}
+    </Text>
+    <Flex align="center" className="text-text-muted shrink-0 gap-4">
+      <MemberTooltip member={assignee}>
+        <span className="flex items-center">
+          <Avatar
+            name={assignee?.fullName || assignee?.username}
+            size="sm"
+            src={assignee?.avatarUrl}
+          />
+        </span>
+      </MemberTooltip>
+      <span className="flex items-center gap-2 text-sm sm:min-w-24">
+        {statusId ? (
+          <StoryStatusIcon statusId={statusId} />
+        ) : (
+          <span className="bg-text-muted size-3 rounded-sm opacity-50" />
+        )}
+        <span className="hidden truncate sm:inline">
+          {statusName ?? "No status"}
+        </span>
+      </span>
+      <span className="flex items-center gap-2 text-sm sm:min-w-24">
+        <PriorityIcon priority={priority} />
+        <span className="hidden sm:inline">{priority}</span>
+      </span>
+      <ArrowRight2Icon className="h-4.5 shrink-0 opacity-45 transition-transform group-hover:translate-x-0.5 group-hover:opacity-100" />
+    </Flex>
+  </button>
+);
 
 export const StoryRow = ({
   story,

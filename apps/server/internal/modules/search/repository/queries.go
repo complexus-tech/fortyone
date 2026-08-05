@@ -17,35 +17,47 @@ func (r *repo) FindSimilarStories(ctx context.Context, workspaceID uuid.UUID, us
 	defer span.End()
 
 	const query = `
-		WITH ranked AS (
+		WITH input AS (
+			SELECT COALESCE(string_agg(token, ' ' ORDER BY token_order), '') AS normalized_title
+			FROM unnest(regexp_split_to_array(lower($3), '[^a-z0-9]+')) WITH ORDINALITY AS tokens(token, token_order)
+			WHERE token <> ''
+				AND token NOT IN ('a', 'add', 'an', 'build', 'create', 'fix', 'for', 'implement', 'make', 'new', 'please', 'story', 'support', 'task', 'the', 'to', 'update')
+		), ranked AS (
 			SELECT
 				s.id,
 				s.sequence_id,
 				s.title,
 				s.team_id,
+				s.status_id,
+				s.assignee_id,
+				s.priority,
 				s.updated_at,
 				GREATEST(
-					similarity(lower(s.title), lower($3)),
-					LEAST(
-						word_similarity(lower(s.title), lower($3)),
-						word_similarity(lower($3), lower(s.title))
-					),
+					similarity(normalized.normalized_title, input.normalized_title),
 					CASE
-						WHEN lower(regexp_replace(s.title, '[^a-z0-9]+', '', 'g')) =
-							lower(regexp_replace($3, '[^a-z0-9]+', '', 'g'))
+						WHEN normalized.normalized_title = input.normalized_title
 						THEN 1.0
 						ELSE 0.0
 					END
 				) AS confidence
 			FROM stories s
 			INNER JOIN team_members tm ON tm.team_id = s.team_id AND tm.user_id = $2
+			CROSS JOIN input
+			CROSS JOIN LATERAL (
+				SELECT COALESCE(string_agg(token, ' ' ORDER BY token_order), '') AS normalized_title
+				FROM unnest(regexp_split_to_array(lower(s.title), '[^a-z0-9]+')) WITH ORDINALITY AS tokens(token, token_order)
+				WHERE token <> ''
+					AND token NOT IN ('a', 'add', 'an', 'build', 'create', 'fix', 'for', 'implement', 'make', 'new', 'please', 'story', 'support', 'task', 'the', 'to', 'update')
+			) normalized
 			WHERE s.workspace_id = $1
 				AND s.deleted_at IS NULL
+				AND input.normalized_title <> ''
+				AND normalized.normalized_title <> ''
 				AND (CAST($4 AS uuid) IS NULL OR s.team_id = CAST($4 AS uuid))
 		)
-		SELECT id, sequence_id, title, team_id, confidence
+		SELECT id, sequence_id, title, team_id, status_id, assignee_id, priority, confidence
 		FROM ranked
-		WHERE confidence >= 0.2
+		WHERE confidence >= 0.45
 		ORDER BY confidence DESC, updated_at DESC, title ASC
 		LIMIT $5
 	`

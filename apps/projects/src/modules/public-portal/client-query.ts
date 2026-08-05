@@ -3,6 +3,7 @@
 import type { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
+import { MINIMUM_SIMILARITY_TITLE_CHARACTERS } from "@/constants/similarity";
 import type {
   PublicPortal,
   PublicPortalFilters,
@@ -174,6 +175,6 @@ export const useSimilarPublicFeedback = ({
       >;
       return payload.data;
     },
-    enabled: title.trim().length >= 3,
+    enabled: title.trim().length >= MINIMUM_SIMILARITY_TITLE_CHARACTERS,
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE,
   });

@@ -99,6 +99,10 @@ export type SimilarPublicFeedback = {
   id: string;
   slug: string;
   title: string;
+  authorId: string | null;
+  authorName: string;
+  authorAvatar?: string | null;
+  status?: PublicRequestStatus;
   voteCount: number;
   commentCount: number;
   confidence: number;

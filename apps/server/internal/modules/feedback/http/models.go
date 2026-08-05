@@ -186,13 +186,17 @@ type AppCreatePublicItem struct {
 }
 
 type AppSimilarItem struct {
-	ID           uuid.UUID `json:"id"`
-	Slug         string    `json:"slug"`
-	Title        string    `json:"title"`
-	VoteCount    int       `json:"voteCount"`
-	CommentCount int       `json:"commentCount"`
-	Confidence   float64   `json:"confidence"`
-	IsDuplicate  bool      `json:"isDuplicate"`
+	ID           uuid.UUID  `json:"id"`
+	Slug         string     `json:"slug"`
+	Title        string     `json:"title"`
+	AuthorID     *uuid.UUID `json:"authorId"`
+	AuthorName   string     `json:"authorName"`
+	AuthorAvatar *string    `json:"authorAvatar"`
+	Status       string     `json:"status"`
+	VoteCount    int        `json:"voteCount"`
+	CommentCount int        `json:"commentCount"`
+	Confidence   float64    `json:"confidence"`
+	IsDuplicate  bool       `json:"isDuplicate"`
 }
 
 type AppUpdateItemStatus struct {
@@ -314,6 +318,10 @@ func toAppSimilarItem(core feedback.CoreSimilarItem) AppSimilarItem {
 		ID:           core.ID,
 		Slug:         core.Slug,
 		Title:        core.Title,
+		AuthorID:     core.AuthorID,
+		AuthorName:   core.AuthorName,
+		AuthorAvatar: core.AuthorAvatar,
+		Status:       core.Status,
 		VoteCount:    core.VoteCount,
 		CommentCount: core.CommentCount,
 		Confidence:   core.Confidence,

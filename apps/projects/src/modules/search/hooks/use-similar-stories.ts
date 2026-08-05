@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
+import { MINIMUM_SIMILARITY_TITLE_CHARACTERS } from "@/constants/similarity";
 import { useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import {
@@ -20,7 +21,7 @@ export const useSimilarStories = (params: SimilarStoriesQueryParams) => {
     queryKey: similarStoryKeys.query(workspaceSlug, params),
     queryFn: () =>
       similarStoriesQuery({ session: session!, workspaceSlug }, params),
-    enabled: params.title.trim().length >= 3,
+    enabled: params.title.trim().length >= MINIMUM_SIMILARITY_TITLE_CHARACTERS,
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE,
   });
 };

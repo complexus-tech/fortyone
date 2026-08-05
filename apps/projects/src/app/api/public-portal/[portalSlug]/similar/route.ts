@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { MINIMUM_SIMILARITY_TITLE_CHARACTERS } from "@/constants/similarity";
 import { getSimilarPublicFeedback } from "@/modules/public-portal/query";
 
 type RouteProps = {
@@ -8,7 +9,9 @@ type RouteProps = {
 export const GET = async (request: NextRequest, { params }: RouteProps) => {
   const { portalSlug } = await params;
   const title = request.nextUrl.searchParams.get("title")?.trim() ?? "";
-  if (title.length < 3) return NextResponse.json({ data: [] });
+  if (title.length < MINIMUM_SIMILARITY_TITLE_CHARACTERS) {
+    return NextResponse.json({ data: [] });
+  }
 
   const description =
     request.nextUrl.searchParams.get("description")?.trim() ?? "";

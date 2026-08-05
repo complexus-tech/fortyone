@@ -49,11 +49,14 @@ type dbObjective struct {
 }
 
 type dbSimilarStory struct {
-	ID         uuid.UUID `db:"id"`
-	SequenceID int       `db:"sequence_id"`
-	Title      string    `db:"title"`
-	Team       uuid.UUID `db:"team_id"`
-	Confidence float64   `db:"confidence"`
+	ID         uuid.UUID  `db:"id"`
+	SequenceID int        `db:"sequence_id"`
+	Title      string     `db:"title"`
+	Team       uuid.UUID  `db:"team_id"`
+	Status     *uuid.UUID `db:"status_id"`
+	Assignee   *uuid.UUID `db:"assignee_id"`
+	Priority   string     `db:"priority"`
+	Confidence float64    `db:"confidence"`
 }
 
 // toCoreSearchStory converts a dbStory to a CoreSearchStory.
@@ -132,6 +135,9 @@ func toCoreSimilarStories(stories []dbSimilarStory) []search.CoreSimilarStory {
 			SequenceID: story.SequenceID,
 			Title:      story.Title,
 			Team:       story.Team,
+			Status:     story.Status,
+			Assignee:   story.Assignee,
+			Priority:   story.Priority,
 			Confidence: story.Confidence,
 		}
 	}

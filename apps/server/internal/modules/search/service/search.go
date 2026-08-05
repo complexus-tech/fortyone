@@ -19,8 +19,9 @@ type Repository interface {
 }
 
 const (
-	defaultSimilarStoriesLimit = 3
-	maxSimilarStoriesLimit     = 5
+	defaultSimilarStoriesLimit       = 3
+	maxSimilarStoriesLimit           = 5
+	minimumSimilarityTitleCharacters = 10
 )
 
 // Service provides search-related operations.
@@ -102,7 +103,7 @@ func (s *Service) FindSimilarStories(ctx context.Context, workspaceID uuid.UUID,
 	defer span.End()
 
 	title = strings.TrimSpace(title)
-	if len([]rune(title)) < 3 {
+	if len([]rune(title)) < minimumSimilarityTitleCharacters {
 		return []CoreSimilarStory{}, nil
 	}
 	if limit <= 0 {

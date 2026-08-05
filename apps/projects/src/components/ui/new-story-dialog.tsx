@@ -84,6 +84,8 @@ import { useTotalStories } from "@/modules/stories/hooks/total-stories";
 import { storyKeys } from "@/modules/stories/constants";
 import { useSimilarStories } from "@/modules/search/hooks/use-similar-stories";
 import { getStoryPath } from "@/modules/story/utils/story-url";
+import { MINIMUM_SIMILARITY_TITLE_CHARACTERS } from "@/constants/similarity";
+import { StoryRowPreview } from "./story/row";
 import { SimilarItemsPanel } from "./similar-items-panel";
 import { PriorityIcon } from "./priority-icon";
 import { PrioritiesMenu } from "./story/priorities-menu";
@@ -257,11 +259,16 @@ export const NewStoryDialog = ({
     selectedLabelIds.includes(label.id),
   );
   const teamCodeById = new Map(teams.map((team) => [team.id, team.code]));
+  const statusById = new Map(statuses.map((status) => [status.id, status]));
+  const memberById = new Map(members.map((member) => [member.id, member]));
   const { callback: searchSimilarStories, cancel: cancelStorySearch } =
     useDebouncedCallback(setStorySearchQuery, 300);
   const similarStories = useSimilarStories({
     limit: 3,
-    title: isOpen && storyTitle.trim().length >= 3 ? storySearchQuery : "",
+    title:
+      isOpen && storyTitle.trim().length >= MINIMUM_SIMILARITY_TITLE_CHARACTERS
+        ? storySearchQuery
+        : "",
     teamId: currentTeamId,
   });
   const similarStoryItems =
@@ -386,7 +393,10 @@ export const NewStoryDialog = ({
   }, [isOpen, titleEditor]);
 
   useEffect(() => {
-    if (!isOpen || storyTitle.trim().length < 3) {
+    if (
+      !isOpen ||
+      storyTitle.trim().length < MINIMUM_SIMILARITY_TITLE_CHARACTERS
+    ) {
       cancelStorySearch();
       return;
     }
@@ -986,31 +996,42 @@ export const NewStoryDialog = ({
             heading={`Similar ${getTermDisplay("storyTerm", {
               variant: "plural",
             })}`}
-            items={similarStoryItems.map((story) => {
-              return {
-                id: story.id,
-                label: "Review story",
-                meta: `${teamCodeById.get(story.teamId) ?? currentTeam?.code ?? ""}-${story.sequenceId}`,
-                title: story.title,
-              };
+          >
+            {similarStoryItems.map((story) => {
+              const teamCode =
+                teamCodeById.get(story.teamId) ?? currentTeam?.code ?? "";
+              const status = story.statusId
+                ? statusById.get(story.statusId)
+                : undefined;
+              const assignee = story.assigneeId
+                ? memberById.get(story.assigneeId)
+                : undefined;
+
+              return (
+                <StoryRowPreview
+                  assignee={assignee}
+                  key={story.id}
+                  onSelect={() => {
+                    setIsOpen(false);
+                    router.push(
+                      withWorkspace(
+                        getStoryPath({
+                          id: story.id,
+                          sequenceId: story.sequenceId,
+                          teamCode,
+                        }),
+                      ),
+                    );
+                  }}
+                  priority={story.priority ?? "No Priority"}
+                  reference={`${teamCode}-${story.sequenceId}`}
+                  statusId={story.statusId}
+                  statusName={status?.name}
+                  title={story.title}
+                />
+              );
             })}
-            onSelect={(item) => {
-              const story = similarStoryItems.find(
-                (candidate) => candidate.id === item.id,
-              );
-              if (!story) return;
-              setIsOpen(false);
-              router.push(
-                withWorkspace(
-                  getStoryPath({
-                    id: story.id,
-                    sequenceId: story.sequenceId,
-                    teamCode: teamCodeById.get(story.teamId),
-                  }),
-                ),
-              );
-            }}
-          />
+          </SimilarItemsPanel>
         </Dialog.Content>
       </Dialog>
     </FeatureGuard>

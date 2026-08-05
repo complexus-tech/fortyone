@@ -242,25 +242,44 @@ final result: blocked
 
 ## Source and implementation evidence
 
-- Source visual truth: `/Users/joseph/Downloads/Screenshot 2026-08-05 at 10.04.46 AM.png` (1472 × 932 pixels).
-- Implementation screenshot: unavailable because the only connected app-browser session redirected the Projects route to `Login - FortyOne`.
-- Intended viewport: authenticated desktop dialog in dark mode.
-- State: feedback or story title entered far enough to return ranked similar records.
+- Source visual truth: `/Users/joseph/Downloads/Screenshot 2026-08-05 at 11.53.16 AM.png` (1910 × 1304 pixels, light mode) and `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_VwyO1j/Screenshot 2026-08-05 at 11.54.43 AM.png` (1872 × 896 pixels, dark mode), together with the requested row and surface corrections.
+- Implementation screenshot: unavailable because `http://localhost:3000` redirected the connected in-app browser to `Login - FortyOne`; Chrome browser control was unavailable.
+- Intended viewport: authenticated desktop create-story and create-feedback dialogs in light and dark mode.
+- Source CSS size and density: unavailable from the OS captures; source pixel dimensions are recorded above. Implementation size and density normalization could not be measured without the authenticated state.
+- State: a title of at least 10 characters has produced one or more high-relevance similar records.
 
 ## Comparison evidence
 
 - Full-view comparison: blocked before implementation capture because authentication was unavailable.
 - Focused panel comparison: blocked for the same reason.
-- Code-level alignment: the implementation uses a separate rounded surface below the dialog, an uppercase muted heading, divided clickable result rows, supporting metadata, and a right-side affordance while retaining FortyOne’s design tokens.
+- The source screenshots were opened at original resolution. A side-by-side comparison input could not be produced because the post-change implementation capture is unavailable.
+- Code-level inspection confirms that the result panel now shares the dialog surface token and backdrop blur, uses a taller lighter header, stronger dialog-divider borders, and compact read-only product rows.
 
 ## Functional verification
 
-- Public feedback duplicate matching is debounced, ranked, and rechecked in the Go service before insert.
-- High-confidence feedback changes the primary action to open the existing submission and guides the user to comment there.
-- Story matches remain advisory and navigate directly to the existing story.
-- The dialog exposes checking, unavailable, and no-match states instead of failing silently; the ranked route also falls back to the existing portal search during staggered deployments.
-- Go service/repository checks, Projects type checking, focused ESLint, React Doctor, and all 42 focused public-portal tests pass.
+- Similarity requests remain debounced but do not run before 10 trimmed title characters.
+- Generic action words are removed before ranking and the normalized-title display threshold is raised from `0.2` to `0.45`.
+- A read-only database score check returned `1.000` for “Create a monthly feedback digest”, `0.333` for “AI Feedback”, and `0.067` for “Create backlog”; only the first clears the display threshold.
+- Story results include reference, title, assignee, status, and priority and remain advisory links.
+- Feedback results include title, creator, status, and a working optimistic upvote control. High-confidence duplicates still redirect to the existing record.
+- No checking, no-match, or error panel is displayed; the panel exists only when result rows exist.
+- The full Go suite, Projects type checking, focused ESLint, formatting, and React Doctor completed successfully. Focused Jest execution remains blocked by the repository's Jest 29/TypeScript 7 config loader incompatibility before tests load.
+
+## Required fidelity surfaces
+
+- Typography: the heading increases from `text-xs` to `text-sm`, retains the established uppercase tracking, and result text uses the existing `Text` component weights.
+- Spacing and layout: the heading has a 4rem minimum height; result rows use a compact 4rem minimum height with responsive metadata labels.
+- Colors and visual tokens: the panel uses `bg-surface-elevated`, `border-border-strong`, a lighter `bg-surface-muted/70` heading, and `backdrop-blur-xl`, including the dialog's translucent dark surface.
+- Image and icon quality: existing avatar, status, priority, vote, and chevron components are reused; no replacement raster or custom icon asset was introduced.
+- Copy and content: story and feedback rows now show the requested product metadata without “Review story”, checking, or empty-result copy.
+
+## Comparison history
+
+- Earlier P1: generic verbs caused visibly unrelated candidates such as “Create backlog”. The normalized threshold and stop-word ranking now exclude that result in the database score check.
+- Earlier P2: the panel header was too short and visually merged into the body. It now uses a taller, lighter, bordered header.
+- Earlier P2: result rows looked like bespoke suggestion cards and omitted operational metadata. They now reuse the story-row visual vocabulary and public-feedback status/vote components.
+- Post-fix browser evidence remains blocked by authentication, so these fixes cannot be visually passed yet.
 
 ## Result
 
-final result: blocked — functional verification passed, but authenticated side-by-side visual comparison remains outstanding.
+final result: blocked

@@ -86,12 +86,16 @@ type itemRow struct {
 }
 
 type similarItemRow struct {
-	ID           uuid.UUID `db:"id"`
-	Slug         string    `db:"slug"`
-	Title        string    `db:"title"`
-	VoteCount    int       `db:"vote_count"`
-	CommentCount int       `db:"comment_count"`
-	Confidence   float64   `db:"confidence"`
+	ID           uuid.UUID  `db:"id"`
+	Slug         string     `db:"slug"`
+	Title        string     `db:"title"`
+	AuthorID     *uuid.UUID `db:"author_id"`
+	AuthorName   string     `db:"author_name"`
+	AuthorAvatar *string    `db:"author_avatar"`
+	Status       string     `db:"status"`
+	VoteCount    int        `db:"vote_count"`
+	CommentCount int        `db:"comment_count"`
+	Confidence   float64    `db:"confidence"`
 }
 
 type commentRow struct {
@@ -941,35 +945,58 @@ func (r *Repo) GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) 
 
 func (r *Repo) ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, description string, limit int) ([]feedback.CoreSimilarItem, error) {
 	const query = `
-		WITH ranked AS (
+		WITH input AS (
+			SELECT COALESCE(string_agg(token, ' ' ORDER BY token_order), '') AS normalized_title
+			FROM unnest(regexp_split_to_array(lower($2), '[^a-z0-9]+')) WITH ORDINALITY AS tokens(token, token_order)
+			WHERE token <> ''
+				AND token NOT IN ('a', 'add', 'an', 'build', 'create', 'fix', 'for', 'implement', 'make', 'new', 'please', 'story', 'support', 'task', 'the', 'to', 'update')
+		), ranked AS (
 			SELECT fi.id,
 				fi.slug,
 				fi.title,
+				fi.author_id,
+				COALESCE(u.full_name, u.email, 'Deleted user') AS author_name,
+				u.avatar_url AS author_avatar,
+				` + projectedFeedbackStatus + ` AS status,
 				CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = fi.id), 0) AS integer) AS vote_count,
 				CAST((SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = fi.id) AS integer) AS comment_count,
 				GREATEST(
-					similarity(lower(fi.title), lower($2)),
-					LEAST(
-						word_similarity(lower(fi.title), lower($2)),
-						word_similarity(lower($2), lower(fi.title))
-					),
+					similarity(normalized.normalized_title, input.normalized_title),
 					CASE
-						WHEN lower(regexp_replace(fi.title, '[^a-z0-9]+', '', 'g')) =
-							lower(regexp_replace($2, '[^a-z0-9]+', '', 'g'))
+						WHEN normalized.normalized_title = input.normalized_title
 						THEN 1.0
 						ELSE 0.0
 					END,
 					CASE
-						WHEN $3 <> '' THEN similarity(lower(fi.title || ' ' || fi.description), lower($2 || ' ' || $3))
+						WHEN $3 <> '' THEN similarity(lower(normalized.normalized_title || ' ' || fi.description), lower(input.normalized_title || ' ' || $3))
 						ELSE 0.0
 					END
 				) AS confidence
 			FROM feedback_items fi
-			WHERE fi.portal_id = $1 AND fi.deleted_at IS NULL
+			LEFT JOIN users u ON u.user_id = fi.author_id
+			LEFT JOIN LATERAL (
+				SELECT fsl.id, fsl.story_id
+				FROM feedback_story_links fsl
+				WHERE fsl.item_id = fi.id AND fsl.is_primary = true
+				LIMIT 1
+			) primary_link ON true
+			LEFT JOIN stories projected_story ON projected_story.id = primary_link.story_id
+			LEFT JOIN statuses projected_state ON projected_state.status_id = projected_story.status_id
+			CROSS JOIN input
+			CROSS JOIN LATERAL (
+				SELECT COALESCE(string_agg(token, ' ' ORDER BY token_order), '') AS normalized_title
+				FROM unnest(regexp_split_to_array(lower(fi.title), '[^a-z0-9]+')) WITH ORDINALITY AS tokens(token, token_order)
+				WHERE token <> ''
+					AND token NOT IN ('a', 'add', 'an', 'build', 'create', 'fix', 'for', 'implement', 'make', 'new', 'please', 'story', 'support', 'task', 'the', 'to', 'update')
+			) normalized
+			WHERE fi.portal_id = $1
+				AND fi.deleted_at IS NULL
+				AND input.normalized_title <> ''
+				AND normalized.normalized_title <> ''
 		)
-		SELECT id, slug, title, vote_count, comment_count, confidence
+		SELECT id, slug, title, author_id, author_name, author_avatar, status, vote_count, comment_count, confidence
 		FROM ranked
-		WHERE confidence >= 0.2
+		WHERE confidence >= 0.45
 		ORDER BY confidence DESC, vote_count DESC, title ASC
 		LIMIT $4
 	`
@@ -984,6 +1011,10 @@ func (r *Repo) ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, 
 			ID:           row.ID,
 			Slug:         row.Slug,
 			Title:        row.Title,
+			AuthorID:     row.AuthorID,
+			AuthorName:   row.AuthorName,
+			AuthorAvatar: row.AuthorAvatar,
+			Status:       row.Status,
 			VoteCount:    row.VoteCount,
 			CommentCount: row.CommentCount,
 			Confidence:   row.Confidence,

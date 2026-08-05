@@ -67,7 +67,7 @@ func TestFindSimilarStoriesNormalizesInputAndCapsLimit(t *testing.T) {
 	require.Equal(t, maxSimilarStoriesLimit, repo.limit)
 }
 
-func TestFindSimilarStoriesSkipsTitlesThatAreTooShort(t *testing.T) {
+func TestFindSimilarStoriesSkipsTitlesBelowTheSuggestionThreshold(t *testing.T) {
 	repo := &repositoryStub{}
 	service := newTestService(repo)
 
@@ -75,7 +75,7 @@ func TestFindSimilarStoriesSkipsTitlesThatAreTooShort(t *testing.T) {
 		context.Background(),
 		uuid.New(),
 		uuid.New(),
-		"ab",
+		"create",
 		nil,
 		0,
 	)

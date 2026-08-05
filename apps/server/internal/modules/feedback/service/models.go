@@ -85,6 +85,10 @@ type CoreSimilarItem struct {
 	ID           uuid.UUID
 	Slug         string
 	Title        string
+	AuthorID     *uuid.UUID
+	AuthorName   string
+	AuthorAvatar *string
+	Status       string
 	VoteCount    int
 	CommentCount int
 	Confidence   float64

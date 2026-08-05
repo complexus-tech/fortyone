@@ -9,28 +9,120 @@ import { useEditor } from "@tiptap/react";
 import {
   ArrowRight2Icon,
   CheckIcon,
-  CommentIcon,
   PlusIcon,
   RequestsIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "icons";
-import { Box, Button, Dialog, Input, Menu, Text, TextEditor } from "ui";
+import {
+  Avatar,
+  Box,
+  Button,
+  Dialog,
+  Flex,
+  Input,
+  Menu,
+  Text,
+  TextEditor,
+} from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { TeamColor } from "@/components/ui/team-color";
 import { SimilarItemsPanel } from "@/components/ui/similar-items-panel";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
-import type { PublicPortal, PublicPortalViewer, PublicRequest } from "./types";
+import type {
+  PublicPortal,
+  PublicPortalViewer,
+  PublicRequest,
+  SimilarPublicFeedback,
+} from "./types";
 import { useSimilarPublicFeedback } from "./client-query";
 import {
   useCreatePublicFeedback,
   usePublicFeedbackVote,
 } from "./feedback-mutations";
 import { getRequestPathBySlug } from "./utils";
+import { requestStatusMeta } from "./status";
+import { getPublicAvatarColor } from "./avatar-color";
 
 const MAX_FEEDBACK_TITLE_LENGTH = 200;
+
+const SimilarFeedbackRow = ({
+  item,
+  onOpen,
+  portal,
+}: {
+  item: SimilarPublicFeedback;
+  onOpen: () => void;
+  portal: PublicPortal;
+}) => {
+  const itemStatus = item.status ?? "pending";
+  const authorName = item.authorName || "Unknown contributor";
+  const status = requestStatusMeta[itemStatus];
+  const request: PublicRequest = {
+    authorAvatar: item.authorAvatar,
+    authorId: item.authorId ?? "",
+    authorName,
+    boardId: "",
+    commentCount: item.commentCount,
+    comments: [],
+    createdAtLabel: "",
+    description: "",
+    id: item.id,
+    slug: item.slug,
+    status: itemStatus,
+    storyLinks: [],
+    title: item.title,
+    voteCount: item.voteCount,
+  };
+
+  return (
+    <div className="hover:bg-state-hover/40 focus-within:bg-state-hover/40 group flex min-h-16 items-center gap-3 px-6 py-3 transition-colors">
+      <button
+        className="flex min-w-0 flex-1 items-center gap-5 text-left outline-none"
+        onClick={onOpen}
+        type="button"
+      >
+        <Text className="min-w-0 flex-1 truncate" fontWeight="medium">
+          {item.title}
+        </Text>
+        <Flex
+          align="center"
+          className="text-text-muted gap-2 text-sm sm:min-w-40"
+        >
+          <Avatar
+            name={authorName}
+            size="xs"
+            src={item.authorAvatar}
+            style={{ backgroundColor: getPublicAvatarColor(authorName) }}
+          />
+          <span className="hidden max-w-32 truncate sm:inline">
+            {authorName}
+          </span>
+        </Flex>
+        <span
+          className={cn(
+            "inline-flex h-7 items-center justify-center gap-2 rounded-lg border px-2 text-sm font-medium sm:min-w-24 sm:px-2.5",
+            status.badgeClassName,
+          )}
+        >
+          <span className={cn("size-2 rounded-sm", status.dotClassName)} />
+          <span className="hidden sm:inline">{status.label}</span>
+        </span>
+      </button>
+      <FeedbackVoteButton compact portal={portal} request={request} />
+      <button
+        aria-label={`Open ${item.title}`}
+        className="text-text-muted hover:bg-state-hover rounded-md p-1.5 transition outline-none"
+        onClick={onOpen}
+        type="button"
+      >
+        <ArrowRight2Icon className="h-4.5 opacity-45 transition-transform group-hover:translate-x-0.5 group-hover:opacity-100" />
+      </button>
+    </div>
+  );
+};
 
 export const NewFeedbackButton = ({
   portal,
@@ -255,31 +347,18 @@ export const NewFeedbackButton = ({
             {blockingMatch ? "View existing feedback" : "Submit feedback"}
           </Button>
         </Dialog.Footer>
-        <SimilarItemsPanel
-          heading="Similar submissions"
-          items={similarFeedbackItems.map((item) => ({
-            id: item.id,
-            isBlocking: item.isDuplicate,
-            label: item.isDuplicate ? "Already reported" : "Possible match",
-            meta: (
-              <>
-                <span className="flex items-center gap-1">
-                  <ThumbsUpIcon className="h-3.5" /> {item.voteCount}
-                </span>
-                <span className="flex items-center gap-1">
-                  <CommentIcon className="h-3.5" /> {item.commentCount}
-                </span>
-              </>
-            ),
-            title: item.title,
-          }))}
-          onSelect={(item) => {
-            const match = similarFeedbackItems.find(
-              (candidate) => candidate.id === item.id,
-            );
-            if (match) openExistingFeedback(match.slug, match.isDuplicate);
-          }}
-        />
+        <SimilarItemsPanel heading="Similar submissions">
+          {similarFeedbackItems.map((item) => (
+            <SimilarFeedbackRow
+              item={item}
+              key={item.id}
+              onOpen={() => {
+                openExistingFeedback(item.slug, item.isDuplicate);
+              }}
+              portal={portal}
+            />
+          ))}
+        </SimilarItemsPanel>
       </Dialog.Content>
     </Dialog>
   );

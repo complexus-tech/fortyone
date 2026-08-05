@@ -964,11 +964,15 @@ describe("Public portal UI", () => {
           json: async () => ({
             data: [
               {
+                authorAvatar: null,
+                authorId: "author-1",
+                authorName: "Ada Ndlovu",
                 commentCount: 4,
                 confidence: 0.96,
                 id: "req-1",
                 isDuplicate: true,
                 slug: "add-pedestrian-crossing-near-east-avenue-school",
+                status: "planned",
                 title: "Add pedestrian crossing near East Avenue school",
                 voteCount: 12,
               },
@@ -990,7 +994,14 @@ describe("Public portal UI", () => {
       target: { value: "Add a pedestrian crossing by East Avenue school" },
     });
 
-    expect(await screen.findByText("Already reported")).toBeVisible();
+    const similarSubmissions = await screen.findByRole("region", {
+      name: "Similar submissions",
+    });
+    expect(within(similarSubmissions).getByText("Ada Ndlovu")).toBeVisible();
+    expect(within(similarSubmissions).getByText("Planned")).toBeVisible();
+    expect(
+      within(similarSubmissions).getByRole("button", { name: "Upvote" }),
+    ).toBeVisible();
     fireEvent.click(
       screen.getByRole("button", { name: "View existing feedback" }),
     );

@@ -37,6 +37,7 @@ const (
 	publicRoadmapSlug                      = "roadmap"
 	defaultSimilarItemsLimit               = 3
 	maxSimilarItemsLimit                   = 5
+	minimumSimilarityTitleCharacters       = 10
 	duplicateItemConfidence                = 0.82
 )
 
@@ -469,7 +470,7 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 func (s *Service) ListPublicSimilarItems(ctx context.Context, portalSlug, title, description string, limit int) ([]CoreSimilarItem, error) {
 	title = strings.TrimSpace(title)
 	description = strings.TrimSpace(description)
-	if title == "" {
+	if utf8.RuneCountInString(title) < minimumSimilarityTitleCharacters {
 		return []CoreSimilarItem{}, nil
 	}
 	if utf8.RuneCountInString(title) > maxPublicFeedbackTitleCharacters {

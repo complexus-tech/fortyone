@@ -1054,6 +1054,15 @@ func TestListPublicSimilarItemsMarksOnlyBlockingMatchesAsDuplicates(t *testing.T
 	require.False(t, items[1].IsDuplicate)
 }
 
+func TestListPublicSimilarItemsSkipsTitlesBelowTheSuggestionThreshold(t *testing.T) {
+	service := New(&repoStub{}, nil)
+
+	items, err := service.ListPublicSimilarItems(context.Background(), "city-roads", "create", "", 3)
+
+	require.NoError(t, err)
+	require.Empty(t, items)
+}
+
 func TestSetBoardReviewerNormalizesEmailFrequency(t *testing.T) {
 	repo := &repoStub{}
 	service := New(repo, nil)

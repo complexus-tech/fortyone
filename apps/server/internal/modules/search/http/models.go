@@ -31,11 +31,14 @@ type AppSearchStory struct {
 
 // AppSimilarStory represents a possible duplicate for a proposed story title.
 type AppSimilarStory struct {
-	ID         uuid.UUID `json:"id"`
-	SequenceID int       `json:"sequenceId"`
-	Title      string    `json:"title"`
-	Team       uuid.UUID `json:"teamId"`
-	Confidence float64   `json:"confidence"`
+	ID         uuid.UUID  `json:"id"`
+	SequenceID int        `json:"sequenceId"`
+	Title      string     `json:"title"`
+	Team       uuid.UUID  `json:"teamId"`
+	Status     *uuid.UUID `json:"statusId"`
+	Assignee   *uuid.UUID `json:"assigneeId"`
+	Priority   string     `json:"priority"`
+	Confidence float64    `json:"confidence"`
 }
 
 // AppSearchObjective represents an objective in search results for the API.
@@ -172,6 +175,9 @@ func toAppSimilarStories(stories []search.CoreSimilarStory) []AppSimilarStory {
 			SequenceID: story.SequenceID,
 			Title:      story.Title,
 			Team:       story.Team,
+			Status:     story.Status,
+			Assignee:   story.Assignee,
+			Priority:   story.Priority,
 			Confidence: story.Confidence,
 		}
 	}
