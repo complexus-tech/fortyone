@@ -8,6 +8,7 @@ const nextConfig = {
   devIndicators: false,
   reactCompiler: true,
   experimental: {
+    useTypeScriptCli: true,
     turbopackFileSystemCacheForDev: false,
     staleTimes: {
       dynamic: 30,

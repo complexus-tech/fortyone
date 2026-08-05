@@ -11,6 +11,7 @@ const nextConfig = {
   pageExtensions: ["tsx", "ts", "mdx"],
   reactCompiler: true,
   experimental: {
+    useTypeScriptCli: true,
     turbopackFileSystemCacheForDev: true,
     mdxRs: true,
     staleTimes: {
