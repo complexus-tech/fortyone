@@ -69,7 +69,7 @@ export const StoryRowPreview = ({
 
   return (
     <RowWrapper
-      className="cursor-pointer gap-4 border-b-0 px-6 md:px-6"
+      className="@container cursor-pointer gap-4 border-b-0 px-6 md:px-6"
       onClick={onSelect}
       onKeyDown={handleKeyDown}
       role="button"
