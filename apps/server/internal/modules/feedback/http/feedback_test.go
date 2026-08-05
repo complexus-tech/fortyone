@@ -231,6 +231,33 @@ func TestResolvePortalAvatarsUsesPresignedURLs(t *testing.T) {
 	}
 }
 
+func TestResolveSimilarItemAvatarsUsesPresignedURLs(t *testing.T) {
+	t.Parallel()
+
+	resolver := &profileImageResolverStub{
+		resolved: map[string]string{
+			"profiles/joseph.webp": "https://signed.example.com/profiles/joseph.webp",
+		},
+	}
+	handler := New(nil, nil, resolver, nil)
+	items := []feedback.CoreSimilarItem{
+		{AuthorAvatar: stringPointer("profiles/joseph.webp")},
+		{AuthorAvatar: stringPointer("profiles/joseph.webp")},
+	}
+
+	handler.resolveSimilarItemAvatars(context.Background(), items)
+
+	want := "https://signed.example.com/profiles/joseph.webp"
+	for i, item := range items {
+		if item.AuthorAvatar == nil || *item.AuthorAvatar != want {
+			t.Fatalf("item %d avatar = %v, want %q", i, item.AuthorAvatar, want)
+		}
+	}
+	if got := resolver.calls["profiles/joseph.webp"]; got != 1 {
+		t.Fatalf("resolver calls = %d, want 1", got)
+	}
+}
+
 func TestRespondPublicContributorUsesPresignedAvatarAndDoesNotExposeEmail(t *testing.T) {
 	t.Parallel()
 

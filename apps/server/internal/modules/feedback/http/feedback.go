@@ -134,6 +134,13 @@ func (h *Handlers) resolvePortalAvatars(ctx context.Context, portal *feedback.Co
 	}
 }
 
+func (h *Handlers) resolveSimilarItemAvatars(ctx context.Context, items []feedback.CoreSimilarItem) {
+	resolvedByAvatar := make(map[string]*string)
+	for i := range items {
+		items[i].AuthorAvatar = h.resolveAuthorAvatar(ctx, items[i].AuthorAvatar, resolvedByAvatar)
+	}
+}
+
 func (h *Handlers) GetPortal(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	slug := web.Params(r, "portalSlug")
 	portal, err := h.feedback.GetPortalSnapshot(ctx, slug)
@@ -173,6 +180,7 @@ func (h *Handlers) ListPublicSimilarItems(ctx context.Context, w http.ResponseWr
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
+	h.resolveSimilarItemAvatars(ctx, items)
 
 	response := make([]AppSimilarItem, 0, len(items))
 	for _, item := range items {

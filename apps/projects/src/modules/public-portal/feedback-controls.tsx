@@ -14,17 +14,7 @@ import {
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "icons";
-import {
-  Avatar,
-  Box,
-  Button,
-  Dialog,
-  Flex,
-  Input,
-  Menu,
-  Text,
-  TextEditor,
-} from "ui";
+import { Avatar, Box, Button, Dialog, Input, Menu, Text, TextEditor } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { TeamColor } from "@/components/ui/team-color";
@@ -78,29 +68,18 @@ const SimilarFeedbackRow = ({
   };
 
   return (
-    <div className="hover:bg-state-hover/40 focus-within:bg-state-hover/40 group flex min-h-16 items-center gap-3 px-6 py-3 transition-colors">
+    <div className="hover:bg-state-hover/40 focus-within:bg-state-hover/40 group flex min-h-14 items-center gap-3 px-6 py-2.5 transition-colors">
       <button
-        className="flex min-w-0 flex-1 items-center gap-5 text-left outline-none"
+        className="min-w-0 flex-1 text-left outline-none"
         onClick={onOpen}
         type="button"
       >
-        <Text className="min-w-0 flex-1 truncate" fontWeight="medium">
+        <Text className="truncate" fontWeight="medium">
           {item.title}
         </Text>
-        <Flex
-          align="center"
-          className="text-text-muted gap-2 text-sm sm:min-w-40"
-        >
-          <Avatar
-            name={authorName}
-            size="xs"
-            src={item.authorAvatar}
-            style={{ backgroundColor: getPublicAvatarColor(authorName) }}
-          />
-          <span className="hidden max-w-32 truncate sm:inline">
-            {authorName}
-          </span>
-        </Flex>
+      </button>
+      <div className="flex shrink-0 items-center gap-3">
+        <FeedbackVoteButton compact portal={portal} request={request} />
         <span
           className={cn(
             "inline-flex h-7 items-center justify-center gap-2 rounded-lg border px-2 text-sm font-medium sm:min-w-24 sm:px-2.5",
@@ -110,16 +89,13 @@ const SimilarFeedbackRow = ({
           <span className={cn("size-2 rounded-sm", status.dotClassName)} />
           <span className="hidden sm:inline">{status.label}</span>
         </span>
-      </button>
-      <FeedbackVoteButton compact portal={portal} request={request} />
-      <button
-        aria-label={`Open ${item.title}`}
-        className="text-text-muted hover:bg-state-hover rounded-md p-1.5 transition outline-none"
-        onClick={onOpen}
-        type="button"
-      >
-        <ArrowRight2Icon className="h-4.5 opacity-45 transition-transform group-hover:translate-x-0.5 group-hover:opacity-100" />
-      </button>
+        <Avatar
+          name={authorName}
+          size="xs"
+          src={item.authorAvatar}
+          style={{ backgroundColor: getPublicAvatarColor(authorName) }}
+        />
+      </div>
     </div>
   );
 };
