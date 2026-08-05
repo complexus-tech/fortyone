@@ -32,57 +32,19 @@ import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useMediaQuery, useTerminology } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
 import {
-  useCreateKeyResultMutation,
+  useCreateKeyResultsMutation,
   useKeyResults,
   useObjective,
   useUpdateKeyResultMutation,
 } from "@/modules/objectives/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { toKeyResultCreateInput } from "@/modules/objectives/key-result-generation";
-import type { KeyResult, NewObjectiveKeyResult, Objective } from "../../types";
+import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
 import { keyResultGenerationSchema } from "../../schemas/key-result-generation";
 import { NewKeyResultButton } from "./new-key-result";
 import { UpdateKeyResultDialog } from "./update-key-result-dialog";
 import { KeyResultsSkeleton } from "./key-results-skeleton";
-
-const getSuggestionName = (suggestion: unknown) => {
-  if (!suggestion || typeof suggestion !== "object") {
-    return "Invalid suggestion";
-  }
-
-  const name = Reflect.get(suggestion, "name");
-  return typeof name === "string" && name.trim()
-    ? name.trim()
-    : "Invalid suggestion";
-};
-
-const createGeneratedKeyResults = async (
-  suggestions: unknown[],
-  objective: Objective,
-  createKeyResult: (input: NewObjectiveKeyResult) => Promise<KeyResult>,
-) => {
-  const failedNames = new Set<string>();
-  for (const suggestion of suggestions) {
-    const parsed =
-      keyResultGenerationSchema.shape.keyResults.element.safeParse(suggestion);
-    if (!parsed.success) {
-      failedNames.add(getSuggestionName(suggestion));
-      continue;
-    }
-
-    try {
-      // Serialize creates so each optimistic cache transaction settles before
-      // the next suggestion is inserted.
-      // eslint-disable-next-line no-await-in-loop -- preserve cache transaction ordering
-      await createKeyResult(toKeyResultCreateInput(parsed.data, objective));
-    } catch {
-      failedNames.add(parsed.data.name);
-    }
-  }
-
-  return failedNames;
-};
 
 const RenderValue = ({
   value,
@@ -386,14 +348,13 @@ const Okr = ({
 export const KeyResults = () => {
   const { getTermDisplay } = useTerminology();
   const { objectiveId } = useParams<{ objectiveId: string }>();
-  const keyResultMutation = useCreateKeyResultMutation();
+  const createKeyResultsMutation = useCreateKeyResultsMutation();
   const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
   const { data: objective } = useObjective(objectiveId);
   const [manualSelectedKeyResults, setManualSelectedKeyResults] = useState<
     Set<string>
   >(new Set());
   const [hasCustomSelection, setHasCustomSelection] = useState(false);
-  const [isCreatingSuggestions, setIsCreatingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
@@ -445,25 +406,28 @@ export const KeyResults = () => {
     );
     if (!objective || !suggestions?.length) return;
 
-    setIsCreatingSuggestions(true);
-    const failedNames = await createGeneratedKeyResults(
-      suggestions,
-      objective,
-      keyResultMutation.mutateAsync,
+    const parsedSuggestions = suggestions.map((suggestion) =>
+      keyResultGenerationSchema.shape.keyResults.element.safeParse(suggestion),
     );
-    setIsCreatingSuggestions(false);
-
-    if (failedNames.size > 0) {
-      setHasCustomSelection(true);
-      setManualSelectedKeyResults(failedNames);
-      toast.error("Some key results could not be created", {
-        description: "The failed suggestions remain selected so you can retry.",
+    if (parsedSuggestions.some((result) => !result.success)) {
+      toast.error("Suggestions are still being prepared", {
+        description: "Wait for Maya to finish, then try creating them again.",
       });
       return;
     }
 
-    clearSelection();
-    setShowSuggestions(false);
+    try {
+      await createKeyResultsMutation.mutateAsync({
+        objectiveId,
+        keyResults: parsedSuggestions.map((result) =>
+          toKeyResultCreateInput(result.data!, objective),
+        ),
+      });
+      clearSelection();
+      setShowSuggestions(false);
+    } catch {
+      // The mutation keeps the selected suggestions visible for retry.
+    }
   };
 
   const handleCancel = () => {
@@ -586,11 +550,13 @@ export const KeyResults = () => {
                 </Button>
                 <Button
                   disabled={
-                    selectedKeyResults.size === 0 || isCreatingSuggestions
+                    selectedKeyResults.size === 0 ||
+                    isLoading ||
+                    createKeyResultsMutation.isPending
                   }
                   onClick={() => void handleAddSelected()}
                 >
-                  {isCreatingSuggestions ? (
+                  {createKeyResultsMutation.isPending ? (
                     "Creating..."
                   ) : (
                     <>

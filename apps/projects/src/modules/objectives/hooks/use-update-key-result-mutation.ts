@@ -23,12 +23,15 @@ export const useUpdateKeyResultMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: ({ keyResultId, data }: UpdateKeyResultVariables) =>
-      updateKeyResult(
+    mutationFn: async ({ keyResultId, data }: UpdateKeyResultVariables) => {
+      const response = await updateKeyResult(
         keyResultId,
         data.lead === null ? { ...data, clearLead: true } : data,
         workspaceSlug,
-      ),
+      );
+      if (response.error?.message) throw new Error(response.error.message);
+      return response;
+    },
 
     onMutate: async ({ keyResultId, objectiveId, data }) => {
       const workspaceKeyResultsQuery = ["key-results", workspaceSlug] as const;
@@ -108,18 +111,7 @@ export const useUpdateKeyResultMutation = () => {
         },
       });
     },
-    onSuccess: (
-      res,
-      { objectiveId, keyResultId, data: updateData, silent },
-    ) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-      if (!silent) {
-        toast.success("Success", {
-          description: "Key result updated successfully",
-        });
-      }
+    onSuccess: (_response, { objectiveId, keyResultId, data: updateData }) => {
       analytics.track("key_result_updated", {
         keyResultId,
         objectiveId,
@@ -140,6 +132,9 @@ export const useUpdateKeyResultMutation = () => {
       });
       queryClient.invalidateQueries({
         queryKey: analyticsKeys.all(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["strategy-map", workspaceSlug],
       });
     },
   });

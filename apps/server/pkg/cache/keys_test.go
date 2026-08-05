@@ -39,3 +39,29 @@ func TestObjectiveListCacheKeyIncludesFilters(t *testing.T) {
 		t.Fatalf("expected cache key %q to include filters %q", key, filters)
 	}
 }
+
+func TestInvalidateObjectiveKeysIncludesKeyResultsAndLists(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	objectiveID := uuid.MustParse("44444444-4444-4444-4444-444444444444")
+	keys := InvalidateObjectiveKeys(workspaceID, objectiveID)
+
+	wantKeyResults := KeyResultsListCacheKey(workspaceID, objectiveID)
+	if !containsCacheKey(keys, wantKeyResults) {
+		t.Fatalf("expected invalidation keys to contain %q, got %#v", wantKeyResults, keys)
+	}
+	wantListPattern := "objectives:list:" + workspaceID.String() + "*"
+	if !containsCacheKey(keys, wantListPattern) {
+		t.Fatalf("expected invalidation keys to contain %q, got %#v", wantListPattern, keys)
+	}
+}
+
+func containsCacheKey(keys []string, target string) bool {
+	for _, key := range keys {
+		if key == target {
+			return true
+		}
+	}
+	return false
+}

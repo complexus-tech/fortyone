@@ -1,6 +1,8 @@
 package objectiveshttp
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
@@ -147,6 +149,44 @@ type AppNewKeyResult struct {
 	StartDate       *date.Date  `json:"startDate"`
 	EndDate         *date.Date  `json:"endDate"`
 	CreatedBy       uuid.UUID   `json:"createdBy"`
+}
+
+const maxKeyResultBatchSize = 20
+
+// AppCreateKeyResultsRequest represents an atomic key-result batch for one objective.
+type AppCreateKeyResultsRequest struct {
+	KeyResults []AppNewKeyResult `json:"keyResults"`
+}
+
+func (request AppCreateKeyResultsRequest) Validate() error {
+	if len(request.KeyResults) == 0 {
+		return errors.New("at least one key result is required")
+	}
+	if len(request.KeyResults) > maxKeyResultBatchSize {
+		return fmt.Errorf("a maximum of %d key results can be created at once", maxKeyResultBatchSize)
+	}
+
+	for i, keyResult := range request.KeyResults {
+		if keyResult.Name == "" {
+			return fmt.Errorf("keyResults[%d].name is required", i)
+		}
+		switch keyResult.MeasurementType {
+		case "number", "percentage", "boolean":
+		default:
+			return fmt.Errorf("keyResults[%d].measurementType is invalid", i)
+		}
+		if keyResult.StartDate == nil {
+			return fmt.Errorf("keyResults[%d].startDate is required", i)
+		}
+		if keyResult.EndDate == nil {
+			return fmt.Errorf("keyResults[%d].endDate is required", i)
+		}
+		if keyResult.EndDate.Time().Before(keyResult.StartDate.Time()) {
+			return fmt.Errorf("keyResults[%d].endDate cannot be before startDate", i)
+		}
+	}
+
+	return nil
 }
 
 // toCoreNewObjective converts an AppNewObjective to a CoreNewObjective

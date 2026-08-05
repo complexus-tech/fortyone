@@ -17,6 +17,7 @@ var (
 // Repository defines the repository for key results
 type Repository interface {
 	Create(ctx context.Context, kr *keyresults.CoreKeyResult, workspaceID uuid.UUID) (uuid.UUID, int, error)
+	CreateBatch(ctx context.Context, keyResults []keyresults.CoreKeyResult, workspaceID uuid.UUID) ([]keyresults.CoreKeyResult, error)
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (keyresults.CoreKeyResult, error)

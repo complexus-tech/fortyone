@@ -55,6 +55,8 @@ import {
 } from "@/modules/objectives/hooks/use-objectives";
 import { FeatureGuard } from "@/components/ui/feature-guard";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { OkrQualityBanner } from "@/modules/objectives/components/okr-quality-banner";
+import { useOkrQualityAssessment } from "@/modules/objectives/hooks/use-okr-quality-assessment";
 import { TeamColor } from "../team-color";
 import { PriorityIcon } from "../priority-icon";
 import { StoryStatusIcon } from "../story-status-icon";
@@ -128,10 +130,28 @@ export const NewObjectiveDialog = ({
     null,
   );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [objectiveName, setObjectiveName] = useState("");
   const { data: teamObjectives = [] } = useTeamObjectives(
     currentTeam?.id ?? "",
   );
   const createMutation = useCreateObjectiveMutation();
+  const objectiveQualityRequest = objectiveName.trim()
+    ? {
+        kind: "objective" as const,
+        draft: {
+          name: objectiveName,
+          summary: objectiveForm.shortSummary ?? "",
+          startDate: objectiveForm.startDate ?? null,
+          endDate: objectiveForm.endDate ?? null,
+        },
+        existingObjectives: teamObjectives.map((objective) => ({
+          id: objective.id,
+          name: objective.name,
+        })),
+      }
+    : null;
+  const { assessment: objectiveQuality, isAssessing: isAssessingObjective } =
+    useOkrQualityAssessment(objectiveQualityRequest);
 
   const titleEditor = useEditor({
     extensions: [
@@ -144,6 +164,9 @@ export const NewObjectiveDialog = ({
     editable: true,
     immediatelyRender: false,
     autofocus: true,
+    onUpdate: ({ editor: currentEditor }) => {
+      setObjectiveName(currentEditor.getText());
+    },
   });
 
   const editor = useEditor({
@@ -196,6 +219,7 @@ export const NewObjectiveDialog = ({
     setIsOpen(false);
     setIsExpanded(false);
     titleEditor.commands.setContent("");
+    setObjectiveName("");
     editor.commands.setContent("");
     setObjectiveForm(initialForm);
   };
@@ -412,6 +436,14 @@ export const NewObjectiveDialog = ({
               placeholder="Add short summary..."
               rows={2}
               value={objectiveForm.shortSummary}
+            />
+            <OkrQualityBanner
+              assessment={objectiveQuality}
+              isAssessing={isAssessingObjective}
+              onUseSuggestion={(suggestion) => {
+                titleEditor?.commands.setContent(suggestion);
+                setObjectiveName(suggestion);
+              }}
             />
             <Divider className="my-3 opacity-60" />
             <TextEditor
@@ -680,6 +712,14 @@ export const NewObjectiveDialog = ({
                           ...updates,
                         };
                       });
+                    }}
+                    qualityContext={{
+                      existingKeyResults: (
+                        objectiveForm.keyResults ?? []
+                      ).filter((_keyResult, index) => index !== editingIndex),
+                      objectiveEndDate: objectiveForm.endDate ?? null,
+                      objectiveName,
+                      objectiveStartDate: objectiveForm.startDate ?? null,
                     }}
                   />
                 )}

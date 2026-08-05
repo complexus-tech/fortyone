@@ -53,17 +53,16 @@ func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) stri
 	return resolved
 }
 
-func (h *Handlers) invalidateCache(ctx context.Context, workspaceID uuid.UUID) {
-	cacheKeys := cache.InvalidateKeyResultKeys(workspaceID)
-	for _, key := range cacheKeys {
+func (h *Handlers) invalidateObjectiveCache(ctx context.Context, workspaceID, objectiveID uuid.UUID) {
+	for _, key := range cache.InvalidateObjectiveKeys(workspaceID, objectiveID) {
 		if strings.Contains(key, "*") {
 			if err := h.cache.DeleteByPattern(ctx, key); err != nil {
-				h.log.Error(ctx, "failed to delete cache pattern", "key", key, "error", err)
+				h.log.Error(ctx, "failed to delete objective cache pattern", "key", key, "error", err)
 			}
-		} else {
-			if err := h.cache.Delete(ctx, key); err != nil {
-				h.log.Error(ctx, "failed to delete cache", "key", key, "error", err)
-			}
+			continue
+		}
+		if err := h.cache.Delete(ctx, key); err != nil {
+			h.log.Error(ctx, "failed to delete objective cache", "key", key, "error", err)
 		}
 	}
 }
@@ -90,7 +89,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	h.invalidateCache(ctx, workspace.ID)
+	h.invalidateObjectiveCache(ctx, workspace.ID, nkr.ObjectiveID)
 
 	web.Respond(ctx, w, toAppKeyResult(kr), http.StatusCreated)
 	return nil
@@ -153,6 +152,13 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if ukr.Contributors != nil {
 		updates["contributors"] = *ukr.Contributors
 	}
+	currentKeyResult, err := h.keyResults.Get(ctx, id, workspace.ID)
+	if err != nil {
+		if errors.Is(err, keyresults.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
 
 	if err := h.keyResults.Update(ctx, id, workspace.ID, userID, updates, comment); err != nil {
 		if errors.Is(err, keyresults.ErrNotFound) {
@@ -163,7 +169,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	h.invalidateCache(ctx, workspace.ID)
+	h.invalidateObjectiveCache(ctx, workspace.ID, currentKeyResult.ObjectiveID)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
@@ -186,6 +192,13 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		web.RespondError(ctx, w, ErrInvalidKeyResultID, http.StatusBadRequest)
 		return nil
 	}
+	currentKeyResult, err := h.keyResults.Get(ctx, id, workspace.ID)
+	if err != nil {
+		if errors.Is(err, keyresults.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
 
 	if err := h.keyResults.Delete(ctx, id, workspace.ID, userID); err != nil {
 		if errors.Is(err, keyresults.ErrNotFound) {
@@ -196,7 +209,7 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	h.invalidateCache(ctx, workspace.ID)
+	h.invalidateObjectiveCache(ctx, workspace.ID, currentKeyResult.ObjectiveID)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil

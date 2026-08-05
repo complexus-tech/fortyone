@@ -331,6 +331,52 @@ func (h *Handlers) GetKeyResults(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
+// CreateKeyResults creates an objective's key results atomically.
+func (h *Handlers) CreateKeyResults(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	objectiveID, err := uuid.Parse(web.Params(r, "id"))
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
+	}
+
+	var request AppCreateKeyResultsRequest
+	if err := web.Decode(r, &request); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	newKeyResults := make([]keyresults.CoreNewKeyResult, len(request.KeyResults))
+	for i, keyResult := range request.KeyResults {
+		newKeyResults[i] = keyresults.CoreNewKeyResult{
+			ObjectiveID:     objectiveID,
+			Name:            keyResult.Name,
+			MeasurementType: keyResult.MeasurementType,
+			StartValue:      keyResult.StartValue,
+			CurrentValue:    keyResult.CurrentValue,
+			TargetValue:     keyResult.TargetValue,
+			Lead:            keyResult.Lead,
+			Contributors:    keyResult.Contributors,
+			StartDate:       keyResult.StartDate.TimePtr(),
+			EndDate:         keyResult.EndDate.TimePtr(),
+			CreatedBy:       userID,
+		}
+	}
+
+	createdKeyResults, err := h.keyResults.CreateBatch(ctx, newKeyResults, workspace.ID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	h.invalidateObjectiveCache(ctx, workspace.ID, objectiveID)
+	return web.Respond(ctx, w, toAppKeyResults(createdKeyResults), http.StatusCreated)
+}
+
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "objectiveshttp.handlers.Create")
 	defer span.End()

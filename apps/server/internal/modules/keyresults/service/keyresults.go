@@ -25,6 +25,7 @@ var (
 // Repository defines the storage contract for key results.
 type Repository interface {
 	Create(ctx context.Context, kr *CoreKeyResult, workspaceID uuid.UUID) (uuid.UUID, int, error)
+	CreateBatch(ctx context.Context, keyResults []CoreKeyResult, workspaceID uuid.UUID) ([]CoreKeyResult, error)
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreKeyResult, error)
@@ -130,6 +131,55 @@ func (s *Service) Create(ctx context.Context, nkr CoreNewKeyResult, workspaceID 
 		UpdatedAt:       kr.UpdatedAt,
 		CreatedBy:       kr.CreatedBy,
 	}, nil
+}
+
+// CreateBatch creates key results atomically for one objective.
+func (s *Service) CreateBatch(ctx context.Context, newKeyResults []CoreNewKeyResult, workspaceID uuid.UUID) ([]CoreKeyResult, error) {
+	if len(newKeyResults) == 0 {
+		return []CoreKeyResult{}, nil
+	}
+
+	keyResults := make([]CoreKeyResult, len(newKeyResults))
+	for i, newKeyResult := range newKeyResults {
+		keyResults[i] = CoreKeyResult{
+			ObjectiveID:     newKeyResult.ObjectiveID,
+			Name:            newKeyResult.Name,
+			MeasurementType: newKeyResult.MeasurementType,
+			StartValue:      newKeyResult.StartValue,
+			CurrentValue:    newKeyResult.CurrentValue,
+			TargetValue:     newKeyResult.TargetValue,
+			Lead:            newKeyResult.Lead,
+			Contributors:    newKeyResult.Contributors,
+			StartDate:       newKeyResult.StartDate,
+			EndDate:         newKeyResult.EndDate,
+			CreatedBy:       newKeyResult.CreatedBy,
+		}
+	}
+
+	createdKeyResults, err := s.repo.CreateBatch(ctx, keyResults, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("create batch: %w", err)
+	}
+
+	activities := make([]okractivities.CoreNewActivity, len(createdKeyResults))
+	for i, keyResult := range createdKeyResults {
+		keyResultID := keyResult.ID
+		activities[i] = okractivities.CoreNewActivity{
+			ObjectiveID:  keyResult.ObjectiveID,
+			KeyResultID:  &keyResultID,
+			UserID:       keyResult.CreatedBy,
+			Type:         okractivities.ActivityTypeCreate,
+			UpdateType:   okractivities.UpdateTypeKeyResult,
+			Field:        "all",
+			CurrentValue: keyResult.Name,
+			WorkspaceID:  workspaceID,
+		}
+	}
+	if err := s.okrActivities.CreateBatch(ctx, activities); err != nil {
+		s.log.Error(ctx, "failed to record key result batch create activities", "error", err)
+	}
+
+	return createdKeyResults, nil
 }
 
 // Update updates a key result in the system

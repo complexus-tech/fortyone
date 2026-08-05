@@ -2,6 +2,7 @@ package keyresultsrepository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -11,6 +12,15 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
+
+func contributorsJSON(contributorIDs []uuid.UUID) *json.RawMessage {
+	encoded, err := json.Marshal(contributorIDs)
+	if err != nil {
+		encoded = []byte("[]")
+	}
+	raw := json.RawMessage(encoded)
+	return &raw
+}
 
 // Create inserts a new key result into the database
 func (r *repo) Create(ctx context.Context, kr *CoreKeyResult, workspaceID uuid.UUID) (uuid.UUID, int, error) {
@@ -105,6 +115,122 @@ func (r *repo) Create(ctx context.Context, kr *CoreKeyResult, workspaceID uuid.U
 	))
 
 	return id, sequenceID, nil
+}
+
+// CreateBatch inserts key results for one objective in a single transaction.
+func (r *repo) CreateBatch(ctx context.Context, keyResults []CoreKeyResult, workspaceID uuid.UUID) ([]CoreKeyResult, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.keyresults.CreateBatch")
+	defer span.End()
+
+	if len(keyResults) == 0 {
+		return []CoreKeyResult{}, nil
+	}
+
+	objectiveID := keyResults[0].ObjectiveID
+	for _, keyResult := range keyResults[1:] {
+		if keyResult.ObjectiveID != objectiveID {
+			return nil, errors.New("all key results in a batch must belong to the same objective")
+		}
+	}
+
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin key result batch transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	var teamID uuid.UUID
+	if err := tx.GetContext(ctx, &teamID, `
+		SELECT team_id
+		FROM objectives
+		WHERE objective_id = $1
+			AND workspace_id = $2
+	`, objectiveID, workspaceID); err != nil {
+		return nil, fmt.Errorf("resolve key result batch objective: %w", err)
+	}
+
+	var finalSequenceID int
+	if err := tx.GetContext(ctx, &finalSequenceID, `
+		INSERT INTO team_key_result_sequences (
+			workspace_id,
+			team_id,
+			current_sequence
+		) VALUES ($1, $2, $3)
+		ON CONFLICT (workspace_id, team_id)
+		DO UPDATE SET current_sequence =
+			team_key_result_sequences.current_sequence + EXCLUDED.current_sequence
+		RETURNING current_sequence
+	`, workspaceID, teamID, len(keyResults)); err != nil {
+		return nil, fmt.Errorf("allocate key result batch sequences: %w", err)
+	}
+	firstSequenceID := finalSequenceID - len(keyResults) + 1
+
+	const insertKeyResult = `
+		INSERT INTO key_results (
+			objective_id, team_id, sequence_id, name, measurement_type,
+			start_value, current_value, target_value,
+			lead, start_date, end_date, created_by
+		) VALUES (
+			:objective_id, :team_id, :sequence_id, :name, :measurement_type,
+			:start_value, :current_value, :target_value,
+			:lead, :start_date, :end_date, :created_by
+		)
+		RETURNING id, sequence_id, objective_id, name, measurement_type,
+			start_value, current_value, target_value, lead, start_date, end_date,
+			created_at, updated_at, created_by
+	`
+	keyResultStatement, err := tx.PrepareNamedContext(ctx, insertKeyResult)
+	if err != nil {
+		return nil, fmt.Errorf("prepare key result batch insert: %w", err)
+	}
+	defer keyResultStatement.Close()
+
+	const insertContributor = `
+		INSERT INTO key_result_contributors (key_result_id, user_id, created_at, updated_at)
+		VALUES ($1, $2, NOW(), NOW())
+	`
+	contributorStatement, err := tx.PrepareContext(ctx, insertContributor)
+	if err != nil {
+		return nil, fmt.Errorf("prepare key result batch contributor insert: %w", err)
+	}
+	defer contributorStatement.Close()
+
+	createdKeyResults := make([]CoreKeyResult, 0, len(keyResults))
+	for i, keyResult := range keyResults {
+		var created dbKeyResult
+		params := map[string]any{
+			"objective_id":     objectiveID,
+			"team_id":          teamID,
+			"sequence_id":      firstSequenceID + i,
+			"name":             keyResult.Name,
+			"measurement_type": keyResult.MeasurementType,
+			"start_value":      keyResult.StartValue,
+			"current_value":    keyResult.CurrentValue,
+			"target_value":     keyResult.TargetValue,
+			"lead":             keyResult.Lead,
+			"start_date":       keyResult.StartDate,
+			"end_date":         keyResult.EndDate,
+			"created_by":       keyResult.CreatedBy,
+		}
+		if err := keyResultStatement.GetContext(ctx, &created, params); err != nil {
+			return nil, fmt.Errorf("insert key result batch item %d: %w", i, err)
+		}
+
+		for _, contributorID := range keyResult.Contributors {
+			if _, err := contributorStatement.ExecContext(ctx, created.ID, contributorID); err != nil {
+				return nil, fmt.Errorf("insert key result batch contributor: %w", err)
+			}
+		}
+
+		created.Contributors = contributorsJSON(keyResult.Contributors)
+		createdKeyResults = append(createdKeyResults, toCoreKeyResult(created))
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit key result batch transaction: %w", err)
+	}
+
+	return createdKeyResults, nil
 }
 
 // Update modifies data about a key result
