@@ -23,3 +23,11 @@ export type SearchResponse = {
   page: number;
   pageSize: number;
 };
+
+export type SimilarStory = {
+  id: string;
+  sequenceId: number;
+  title: string;
+  teamId: string;
+  confidence: number;
+};

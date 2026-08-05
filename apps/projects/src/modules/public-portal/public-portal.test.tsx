@@ -925,7 +925,7 @@ describe("Public portal UI", () => {
     });
   });
 
-  it("confirms when no similar feedback is found", async () => {
+  it("keeps similarity UI hidden when no similar feedback is found", async () => {
     const portal = {
       ...publicPortalFixture,
       boards: [publicPortalFixture.boards[0]],
@@ -937,11 +937,14 @@ describe("Public portal UI", () => {
       target: { value: "Introduce automatic curb inspections" },
     });
 
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/similar?title="),
+      );
+    });
     expect(
-      await screen.findByText(
-        "No similar feedback found. You’re clear to submit.",
-      ),
-    ).toBeVisible();
+      screen.queryByRole("region", { name: "Similar submissions" }),
+    ).not.toBeInTheDocument();
   });
 
   it("blocks duplicate feedback and opens the existing submission", async () => {

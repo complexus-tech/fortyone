@@ -54,6 +54,15 @@ type CoreSearchResult struct {
 	TotalObjectives int
 }
 
+// CoreSimilarStory represents a story that may duplicate a proposed title.
+type CoreSimilarStory struct {
+	ID         uuid.UUID
+	SequenceID int
+	Title      string
+	Team       uuid.UUID
+	Confidence float64
+}
+
 // SearchType defines the type of content to search for
 type SearchType string
 

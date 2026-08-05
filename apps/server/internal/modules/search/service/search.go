@@ -2,6 +2,7 @@ package search
 
 import (
 	"context"
+	"strings"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -14,7 +15,13 @@ import (
 type Repository interface {
 	SearchStories(ctx context.Context, workspaceID uuid.UUID, userId uuid.UUID, params SearchParams) ([]CoreSearchStory, int, error)
 	SearchObjectives(ctx context.Context, workspaceID uuid.UUID, userId uuid.UUID, params SearchParams) ([]CoreSearchObjective, int, error)
+	FindSimilarStories(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, title string, teamID *uuid.UUID, limit int) ([]CoreSimilarStory, error)
 }
+
+const (
+	defaultSimilarStoriesLimit = 3
+	maxSimilarStoriesLimit     = 5
+)
 
 // Service provides search-related operations.
 type Service struct {
@@ -86,4 +93,33 @@ func (s *Service) Search(ctx context.Context, workspaceID uuid.UUID, userId uuid
 		TotalStories:    totalStories,
 		TotalObjectives: totalObjectives,
 	}, nil
+}
+
+// FindSimilarStories returns stories whose titles are close to a proposed title.
+func (s *Service) FindSimilarStories(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, title string, teamID *uuid.UUID, limit int) ([]CoreSimilarStory, error) {
+	s.log.Info(ctx, "business.core.search.FindSimilarStories")
+	ctx, span := web.AddSpan(ctx, "business.core.search.FindSimilarStories")
+	defer span.End()
+
+	title = strings.TrimSpace(title)
+	if len([]rune(title)) < 3 {
+		return []CoreSimilarStory{}, nil
+	}
+	if limit <= 0 {
+		limit = defaultSimilarStoriesLimit
+	}
+	if limit > maxSimilarStoriesLimit {
+		limit = maxSimilarStoriesLimit
+	}
+
+	stories, err := s.repo.FindSimilarStories(ctx, workspaceID, userID, title, teamID, limit)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.AddEvent("similar stories found", trace.WithAttributes(
+		attribute.Int("search.similar_stories.count", len(stories)),
+	))
+	return stories, nil
 }

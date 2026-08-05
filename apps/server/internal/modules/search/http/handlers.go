@@ -142,3 +142,35 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
+
+func (h *Handlers) FindSimilarStories(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, _ := mid.GetUserID(ctx)
+
+	var teamID *uuid.UUID
+	if teamIDString := r.URL.Query().Get("teamId"); teamIDString != "" {
+		parsedTeamID, err := uuid.Parse(teamIDString)
+		if err != nil {
+			return web.RespondError(ctx, w, errors.New("invalid team ID"), http.StatusBadRequest)
+		}
+		teamID = &parsedTeamID
+	}
+
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	stories, err := h.searchService.FindSimilarStories(
+		ctx,
+		workspace.ID,
+		userID,
+		r.URL.Query().Get("title"),
+		teamID,
+		limit,
+	)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	return web.Respond(ctx, w, toAppSimilarStories(stories), http.StatusOK)
+}

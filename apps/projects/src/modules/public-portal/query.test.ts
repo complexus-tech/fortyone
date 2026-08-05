@@ -130,59 +130,19 @@ describe("public portal query caching", () => {
     );
   });
 
-  it("falls back to the existing feedback search when the similarity route is unavailable", async () => {
-    headersMock.mockResolvedValue(new Headers({ host: "localhost:3000" }));
-    global.fetch = jest.fn(async (input: Parameters<typeof fetch>[0]) => {
-      const url = String(input);
-      if (url.includes("/feedback/similar?")) {
-        return { ok: false, status: 404 } as Response;
-      }
-      if (url === "https://api.fortyone.test/portals/feedback") {
-        return response({
-          avatarUrl: null,
-          color: "#111111",
-          name: "Art Circles",
-          slug: "art-circles",
-        });
-      }
-
-      return response({
-        boards: [],
-        id: "portal-1",
-        items: [
-          {
-            authorId: "author-1",
-            authorName: "Ada",
-            boardId: "board-1",
-            commentCount: 3,
-            createdAt: "2026-08-05T08:00:00.000Z",
-            description: "Connect projects to Linear.",
-            id: "feedback-1",
-            slug: "linear-integration",
-            status: "pending",
-            title: "Linear integration",
-            voteCount: 8,
-          },
-        ],
-        name: "Art Circles",
-        slug: "feedback",
-      });
-    });
-
-    const items = await getSimilarPublicFeedback("feedback", {
-      title: "Add a Linear integration",
-    });
-
-    expect(items).toEqual([
-      expect.objectContaining({
-        id: "feedback-1",
-        isDuplicate: true,
-        title: "Linear integration",
-      }),
-    ]);
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("search=Add+a+Linear+integration"),
-      { cache: "no-store" },
+  it("keeps similarity scoring on the API when the route is unavailable", async () => {
+    global.fetch = jest.fn(
+      async () => ({ ok: false, status: 404 }) as Response,
     );
+
+    await expect(
+      getSimilarPublicFeedback("feedback", {
+        title: "Add a Linear integration",
+      }),
+    ).rejects.toMatchObject({
+      message: "Failed to find similar feedback",
+      status: 404,
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });

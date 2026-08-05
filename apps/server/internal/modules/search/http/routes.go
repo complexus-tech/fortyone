@@ -25,4 +25,5 @@ func Routes(cfg Config, app *web.App) {
 	h := New(searchService)
 
 	app.Get("/workspaces/{workspaceSlug}/search", h.Search, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/search/similar-stories", h.FindSimilarStories, auth, workspace)
 }

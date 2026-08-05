@@ -82,7 +82,7 @@ import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useTotalStories } from "@/modules/stories/hooks/total-stories";
 import { storyKeys } from "@/modules/stories/constants";
-import { useSearch } from "@/modules/search/hooks/use-search";
+import { useSimilarStories } from "@/modules/search/hooks/use-similar-stories";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import { SimilarItemsPanel } from "./similar-items-panel";
 import { PriorityIcon } from "./priority-icon";
@@ -259,30 +259,13 @@ export const NewStoryDialog = ({
   const teamCodeById = new Map(teams.map((team) => [team.id, team.code]));
   const { callback: searchSimilarStories, cancel: cancelStorySearch } =
     useDebouncedCallback(setStorySearchQuery, 300);
-  const similarStories = useSearch({
-    pageSize: 3,
-    query: isOpen && storyTitle.trim().length >= 3 ? storySearchQuery : "",
-    sortBy: "relevance",
+  const similarStories = useSimilarStories({
+    limit: 3,
+    title: isOpen && storyTitle.trim().length >= 3 ? storySearchQuery : "",
     teamId: currentTeamId,
-    type: "stories",
   });
-  const similarStoryItems = similarStories.data?.stories ?? [];
-  const storySimilarityActive = isOpen && storyTitle.trim().length >= 3;
-  const storySimilarityPending =
-    storySimilarityActive &&
-    (storyTitle.trim() !== storySearchQuery || similarStories.isFetching);
-  let storySimilarityStatusMessage: string | undefined;
-  if (similarStoryItems.length === 0 && storySimilarityActive) {
-    if (storySimilarityPending) {
-      storySimilarityStatusMessage = "Checking for similar stories…";
-    } else if (similarStories.isError) {
-      storySimilarityStatusMessage =
-        "We couldn’t check for similar stories right now.";
-    } else {
-      storySimilarityStatusMessage =
-        "No similar stories found. You can create this story.";
-    }
-  }
+  const similarStoryItems =
+    storyTitle.trim() === storySearchQuery ? similarStories.data ?? [] : [];
 
   const titleEditor = useEditor({
     extensions: [
@@ -1027,8 +1010,6 @@ export const NewStoryDialog = ({
                 ),
               );
             }}
-            statusMessage={storySimilarityStatusMessage}
-            statusTone={similarStories.isError ? "error" : "muted"}
           />
         </Dialog.Content>
       </Dialog>

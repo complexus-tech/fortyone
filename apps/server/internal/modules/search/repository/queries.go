@@ -11,6 +11,53 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+// FindSimilarStories ranks accessible stories against a proposed title.
+func (r *repo) FindSimilarStories(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, title string, teamID *uuid.UUID, limit int) ([]search.CoreSimilarStory, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.search.FindSimilarStories")
+	defer span.End()
+
+	const query = `
+		WITH ranked AS (
+			SELECT
+				s.id,
+				s.sequence_id,
+				s.title,
+				s.team_id,
+				s.updated_at,
+				GREATEST(
+					similarity(lower(s.title), lower($3)),
+					LEAST(
+						word_similarity(lower(s.title), lower($3)),
+						word_similarity(lower($3), lower(s.title))
+					),
+					CASE
+						WHEN lower(regexp_replace(s.title, '[^a-z0-9]+', '', 'g')) =
+							lower(regexp_replace($3, '[^a-z0-9]+', '', 'g'))
+						THEN 1.0
+						ELSE 0.0
+					END
+				) AS confidence
+			FROM stories s
+			INNER JOIN team_members tm ON tm.team_id = s.team_id AND tm.user_id = $2
+			WHERE s.workspace_id = $1
+				AND s.deleted_at IS NULL
+				AND (CAST($4 AS uuid) IS NULL OR s.team_id = CAST($4 AS uuid))
+		)
+		SELECT id, sequence_id, title, team_id, confidence
+		FROM ranked
+		WHERE confidence >= 0.2
+		ORDER BY confidence DESC, updated_at DESC, title ASC
+		LIMIT $5
+	`
+
+	var stories []dbSimilarStory
+	if err := r.db.SelectContext(ctx, &stories, query, workspaceID, userID, title, teamID, limit); err != nil {
+		r.log.Error(ctx, fmt.Sprintf("failed to find similar stories: %s", err))
+		return nil, err
+	}
+	return toCoreSimilarStories(stories), nil
+}
+
 // SearchStories searches for stories based on the provided parameters.
 func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, params search.SearchParams) ([]search.CoreSearchStory, int, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.search.SearchStories")

@@ -48,6 +48,14 @@ type dbObjective struct {
 	UpdatedAt    time.Time  `db:"updated_at"`
 }
 
+type dbSimilarStory struct {
+	ID         uuid.UUID `db:"id"`
+	SequenceID int       `db:"sequence_id"`
+	Title      string    `db:"title"`
+	Team       uuid.UUID `db:"team_id"`
+	Confidence float64   `db:"confidence"`
+}
+
 // toCoreSearchStory converts a dbStory to a CoreSearchStory.
 func toCoreSearchStory(story dbStory) search.CoreSearchStory {
 	var labels []uuid.UUID
@@ -112,6 +120,20 @@ func toCoreSearchObjectives(objectives []dbObjective) []search.CoreSearchObjecti
 	result := make([]search.CoreSearchObjective, len(objectives))
 	for i, objective := range objectives {
 		result[i] = toCoreSearchObjective(objective)
+	}
+	return result
+}
+
+func toCoreSimilarStories(stories []dbSimilarStory) []search.CoreSimilarStory {
+	result := make([]search.CoreSimilarStory, len(stories))
+	for index, story := range stories {
+		result[index] = search.CoreSimilarStory{
+			ID:         story.ID,
+			SequenceID: story.SequenceID,
+			Title:      story.Title,
+			Team:       story.Team,
+			Confidence: story.Confidence,
+		}
 	}
 	return result
 }

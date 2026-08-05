@@ -84,25 +84,11 @@ export const NewFeedbackButton = ({
     portalSlug: portal.slug,
     title: open ? similarityInput.title : "",
   });
-  const similarFeedbackItems = similarFeedback.data ?? [];
+  const similarFeedbackItems =
+    title.trim() === similarityInput.title.trim()
+      ? similarFeedback.data ?? []
+      : [];
   const blockingMatch = similarFeedbackItems.find((item) => item.isDuplicate);
-  const similarityCheckActive = open && title.trim().length >= 3;
-  const similarityCheckPending =
-    similarityCheckActive &&
-    (title.trim() !== similarityInput.title.trim() ||
-      similarFeedback.isFetching);
-  let similarityStatusMessage: string | undefined;
-  if (similarFeedbackItems.length === 0 && similarityCheckActive) {
-    if (similarityCheckPending) {
-      similarityStatusMessage = "Checking for similar submissions…";
-    } else if (similarFeedback.isError) {
-      similarityStatusMessage =
-        "We couldn’t check for similar feedback right now.";
-    } else {
-      similarityStatusMessage =
-        "No similar feedback found. You’re clear to submit.";
-    }
-  }
 
   const openExistingFeedback = (slug: string, isDuplicate = false) => {
     cancelSimilarityCheck();
@@ -293,8 +279,6 @@ export const NewFeedbackButton = ({
             );
             if (match) openExistingFeedback(match.slug, match.isDuplicate);
           }}
-          statusMessage={similarityStatusMessage}
-          statusTone={similarFeedback.isError ? "error" : "muted"}
         />
       </Dialog.Content>
     </Dialog>
