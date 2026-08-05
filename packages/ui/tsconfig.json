@@ -2,6 +2,7 @@
   "extends": "tsconfig/react-library.json",
   "compilerOptions": {
     "outDir": "dist",
+    "rootDir": "src",
     "noEmit": false,
     "allowImportingTsExtensions": false
   },
