@@ -39,9 +39,10 @@ export const useCreateKeyResultMutation = () => {
         objectiveKeys.keyResults(workspaceSlug, newKeyResult.objectiveId),
       );
 
+      const optimisticKeyResultId = `optimistic:${crypto.randomUUID()}`;
       const optimisticKeyResult: KeyResult = {
         ...newKeyResult,
-        id: "optimistic",
+        id: optimisticKeyResultId,
         sequenceId: 0,
         createdBy: session?.user.id ?? "",
         lead: newKeyResult.lead || null,
@@ -55,15 +56,21 @@ export const useCreateKeyResultMutation = () => {
         (old = []) => [optimisticKeyResult, ...old],
       );
 
-      return { previousKeyResults };
+      return { optimisticKeyResultId, previousKeyResults };
     },
     onError: (error, variables, context) => {
-      if (context?.previousKeyResults) {
-        queryClient.setQueryData<KeyResult[]>(
-          objectiveKeys.keyResults(workspaceSlug, variables.objectiveId),
-          context.previousKeyResults,
-        );
-      }
+      queryClient.setQueryData<KeyResult[]>(
+        objectiveKeys.keyResults(workspaceSlug, variables.objectiveId),
+        (current) => {
+          if (!context) return current ?? [];
+          const keyResults = current ?? context.previousKeyResults;
+          if (!keyResults) return [];
+
+          return keyResults.filter(
+            ({ id }) => id !== context.optimisticKeyResultId,
+          );
+        },
+      );
       toast.error("Failed to create key result", {
         description:
           error.message || "An error occurred while creating the key result",
@@ -75,7 +82,7 @@ export const useCreateKeyResultMutation = () => {
         },
       });
     },
-    onSuccess: (keyResult, newKeyResult) => {
+    onSuccess: (keyResult, newKeyResult, context) => {
       analytics.track("key_result_created", {
         keyResultId: keyResult.id,
         objectiveId: keyResult.objectiveId,
@@ -86,6 +93,14 @@ export const useCreateKeyResultMutation = () => {
         id: "key-result-created",
         description: "Key result created successfully",
       });
+
+      queryClient.setQueryData<KeyResult[]>(
+        objectiveKeys.keyResults(workspaceSlug, newKeyResult.objectiveId),
+        (current = []) =>
+          current.map((item) =>
+            item.id === context.optimisticKeyResultId ? keyResult : item,
+          ),
+      );
 
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(

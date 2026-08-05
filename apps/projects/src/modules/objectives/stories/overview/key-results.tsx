@@ -22,10 +22,11 @@ import {
   CalendarIcon,
 } from "icons";
 import { useParams } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { differenceInDays, format } from "date-fns";
 import { cn } from "lib";
+import { toast } from "sonner";
 import { ConfirmDialog, RowWrapper, AssigneesMenu } from "@/components/ui";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useMediaQuery, useTerminology } from "@/hooks";
@@ -37,12 +38,51 @@ import {
   useUpdateKeyResultMutation,
 } from "@/modules/objectives/hooks";
 import { useMembers } from "@/lib/hooks/members";
-import type { KeyResult } from "../../types";
+import { toKeyResultCreateInput } from "@/modules/objectives/key-result-generation";
+import type { KeyResult, NewObjectiveKeyResult, Objective } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
 import { keyResultGenerationSchema } from "../../schemas/key-result-generation";
 import { NewKeyResultButton } from "./new-key-result";
 import { UpdateKeyResultDialog } from "./update-key-result-dialog";
 import { KeyResultsSkeleton } from "./key-results-skeleton";
+
+const getSuggestionName = (suggestion: unknown) => {
+  if (!suggestion || typeof suggestion !== "object") {
+    return "Invalid suggestion";
+  }
+
+  const name = Reflect.get(suggestion, "name");
+  return typeof name === "string" && name.trim()
+    ? name.trim()
+    : "Invalid suggestion";
+};
+
+const createGeneratedKeyResults = async (
+  suggestions: unknown[],
+  objective: Objective,
+  createKeyResult: (input: NewObjectiveKeyResult) => Promise<KeyResult>,
+) => {
+  const failedNames = new Set<string>();
+  for (const suggestion of suggestions) {
+    const parsed =
+      keyResultGenerationSchema.shape.keyResults.element.safeParse(suggestion);
+    if (!parsed.success) {
+      failedNames.add(getSuggestionName(suggestion));
+      continue;
+    }
+
+    try {
+      // Serialize creates so each optimistic cache transaction settles before
+      // the next suggestion is inserted.
+      // eslint-disable-next-line no-await-in-loop -- preserve cache transaction ordering
+      await createKeyResult(toKeyResultCreateInput(parsed.data, objective));
+    } catch {
+      failedNames.add(parsed.data.name);
+    }
+  }
+
+  return failedNames;
+};
 
 const RenderValue = ({
   value,
@@ -353,6 +393,7 @@ export const KeyResults = () => {
     Set<string>
   >(new Set());
   const [hasCustomSelection, setHasCustomSelection] = useState(false);
+  const [isCreatingSuggestions, setIsCreatingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
@@ -398,24 +439,29 @@ export const KeyResults = () => {
     setManualSelectedKeyResults(new Set());
   };
 
-  const handleAddSelected = () => {
-    const keyResults = object?.keyResults?.filter((kr) =>
+  const handleAddSelected = async () => {
+    const suggestions = object?.keyResults?.filter((kr) =>
       selectedKeyResults.has(kr?.name ?? ""),
     );
-    keyResults?.forEach((kr) => {
-      keyResultMutation.mutate({
-        name: kr?.name ?? "",
-        objectiveId,
-        measurementType: kr?.measurementType ?? "number",
-        startValue: kr?.startValue ?? 0,
-        targetValue: kr?.targetValue ?? 0,
-        currentValue: kr?.startValue ?? 0,
-        startDate: kr?.startDate ?? "",
-        endDate: kr?.endDate ?? "",
-        lead: null,
-        contributors: [],
+    if (!objective || !suggestions?.length) return;
+
+    setIsCreatingSuggestions(true);
+    const failedNames = await createGeneratedKeyResults(
+      suggestions,
+      objective,
+      keyResultMutation.mutateAsync,
+    );
+    setIsCreatingSuggestions(false);
+
+    if (failedNames.size > 0) {
+      setHasCustomSelection(true);
+      setManualSelectedKeyResults(failedNames);
+      toast.error("Some key results could not be created", {
+        description: "The failed suggestions remain selected so you can retry.",
       });
-    });
+      return;
+    }
+
     clearSelection();
     setShowSuggestions(false);
   };
@@ -539,15 +585,23 @@ export const KeyResults = () => {
                   Cancel
                 </Button>
                 <Button
-                  disabled={selectedKeyResults.size === 0}
-                  onClick={handleAddSelected}
+                  disabled={
+                    selectedKeyResults.size === 0 || isCreatingSuggestions
+                  }
+                  onClick={() => void handleAddSelected()}
                 >
-                  Create {selectedKeyResults.size}{" "}
-                  {getTermDisplay("keyResultTerm", {
-                    capitalize: true,
-                    variant:
-                      selectedKeyResults.size === 1 ? "singular" : "plural",
-                  })}
+                  {isCreatingSuggestions ? (
+                    "Creating..."
+                  ) : (
+                    <>
+                      Create {selectedKeyResults.size}{" "}
+                      {getTermDisplay("keyResultTerm", {
+                        capitalize: true,
+                        variant:
+                          selectedKeyResults.size === 1 ? "singular" : "plural",
+                      })}
+                    </>
+                  )}
                 </Button>
               </Flex>
             </>

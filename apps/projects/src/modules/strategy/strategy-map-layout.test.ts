@@ -1,6 +1,6 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
-import type { Objective } from "@/modules/objectives/types";
+import type { KeyResult, Objective } from "@/modules/objectives/types";
 import {
   createStrategyMapLayout,
   getObjectiveNodeId,
@@ -83,5 +83,32 @@ describe("strategy map layout", () => {
       goal: { x: 20, y: 30 },
       pillar: { x: 3, y: 4 },
     });
+  });
+
+  it("omits positions and connections for collapsed key results", () => {
+    const keyResult = {
+      id: "key-result-1",
+      objectiveId: "objective-1",
+    } as KeyResult;
+    const keyResultsByObjective = new Map([["objective-1", [keyResult]]]);
+    const layout = createStrategyMapLayout(
+      strategy,
+      [objective("objective-1")],
+      keyResultsByObjective,
+      new Set(),
+    );
+    const connections = getStrategyConnections(
+      strategy,
+      new Set(["objective-1"]),
+      keyResultsByObjective,
+      new Set(),
+    );
+
+    expect(layout.positions["key-result:key-result-1"]).toBeUndefined();
+    expect(
+      connections.some(
+        ({ targetId }) => targetId === "key-result:key-result-1",
+      ),
+    ).toBe(false);
   });
 });

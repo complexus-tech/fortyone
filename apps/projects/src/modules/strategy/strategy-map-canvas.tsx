@@ -44,6 +44,7 @@ import {
   parseStoredStrategyNodePositions,
   PILLAR_NODE_WIDTH,
   type StrategyNodeDimensions,
+  type StrategyNodePosition,
   type StrategyNodePositions,
 } from "./strategy-map-layout";
 import type { StrategicPillar, StrategyMap } from "./types";
@@ -124,6 +125,12 @@ const getDefaultNodeDimensions = (nodeId: string): StrategyNodeDimensions => {
   return { height: 174, width: OBJECTIVE_NODE_WIDTH };
 };
 
+const getNodePosition = (
+  positions: StrategyNodePositions,
+  nodeId: string,
+): StrategyNodePosition | undefined =>
+  Object.hasOwn(positions, nodeId) ? positions[nodeId] : undefined;
+
 const StrategyCanvasNode = ({
   children,
   id,
@@ -195,8 +202,15 @@ const CanvasConnections = ({
         strokeWidth="2.25"
       >
         {connections.map((connection) => {
-          const sourcePosition = positions[connection.sourceId];
-          const targetPosition = positions[connection.targetId];
+          const sourcePosition = getNodePosition(
+            positions,
+            connection.sourceId,
+          );
+          const targetPosition = getNodePosition(
+            positions,
+            connection.targetId,
+          );
+          if (!sourcePosition || !targetPosition) return null;
 
           const path = createConnectionPath(
             sourcePosition,
@@ -343,15 +357,23 @@ export const StrategyMapCanvas = ({
 
     objectives.forEach((objective) => {
       const objectiveNodeId = getObjectiveNodeId(objective.id);
-      const defaultObjectivePosition = layout.positions[objectiveNodeId];
-      const objectivePosition = merged[objectiveNodeId];
+      const defaultObjectivePosition = getNodePosition(
+        layout.positions,
+        objectiveNodeId,
+      );
+      const objectivePosition = getNodePosition(merged, objectiveNodeId);
+      if (!defaultObjectivePosition || !objectivePosition) return;
 
       const deltaX = objectivePosition.x - defaultObjectivePosition.x;
       const deltaY = objectivePosition.y - defaultObjectivePosition.y;
       keyResultsByObjective.get(objective.id)?.forEach((keyResult) => {
         const keyResultNodeId = getKeyResultNodeId(keyResult.id);
         if (Object.hasOwn(overrides, keyResultNodeId)) return;
-        const defaultKeyResultPosition = layout.positions[keyResultNodeId];
+        const defaultKeyResultPosition = getNodePosition(
+          layout.positions,
+          keyResultNodeId,
+        );
+        if (!defaultKeyResultPosition) return;
         merged[keyResultNodeId] = {
           x: defaultKeyResultPosition.x + deltaX,
           y: defaultKeyResultPosition.y + deltaY,
@@ -614,8 +636,12 @@ export const StrategyMapCanvas = ({
         }
       }
       const startPositions = Object.fromEntries(
-        draggedNodeIds.map((id) => [id, positionsRef.current[id]]),
+        draggedNodeIds.flatMap((id) => {
+          const position = getNodePosition(positionsRef.current, id);
+          return position ? [[id, position]] : [];
+        }),
       );
+      if (!Object.hasOwn(startPositions, nodeId)) return;
 
       event.preventDefault();
       event.stopPropagation();
