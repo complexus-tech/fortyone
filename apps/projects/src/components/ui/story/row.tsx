@@ -103,12 +103,13 @@ export const StoryRowPreview = ({
           isListRow
           priority={priority}
           readOnly
+          showName
         />
         <MemberTooltip member={assignee}>
           <span className="flex items-center">
             <Avatar
               name={assignee?.fullName || assignee?.username}
-              size="xs"
+              size="sm"
               src={assignee?.avatarUrl}
             />
           </span>

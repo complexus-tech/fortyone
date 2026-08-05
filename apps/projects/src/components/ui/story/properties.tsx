@@ -90,6 +90,7 @@ type StoryPriorityPropertyProps = {
   isListRow: boolean;
   priority: Story["priority"];
   readOnly?: boolean;
+  showName?: boolean;
 };
 
 export const StoryPriorityProperty = ({
@@ -98,6 +99,7 @@ export const StoryPriorityProperty = ({
   isListRow,
   priority,
   readOnly = false,
+  showName = false,
 }: StoryPriorityPropertyProps) => (
   <button
     aria-hidden={readOnly || undefined}
@@ -111,7 +113,13 @@ export const StoryPriorityProperty = ({
     type="button"
   >
     <PriorityIcon priority={priority} />
-    <span className={cn("hidden", { "@6xl:inline": isListRow })}>
+    <span
+      className={cn({
+        inline: showName,
+        "hidden @6xl:inline": !showName && isListRow,
+        hidden: !showName && !isListRow,
+      })}
+    >
       {priority}
     </span>
   </button>
