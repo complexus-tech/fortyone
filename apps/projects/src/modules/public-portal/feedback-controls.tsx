@@ -84,7 +84,25 @@ export const NewFeedbackButton = ({
     portalSlug: portal.slug,
     title: open ? similarityInput.title : "",
   });
-  const blockingMatch = similarFeedback.data?.find((item) => item.isDuplicate);
+  const similarFeedbackItems = similarFeedback.data ?? [];
+  const blockingMatch = similarFeedbackItems.find((item) => item.isDuplicate);
+  const similarityCheckActive = open && title.trim().length >= 3;
+  const similarityCheckPending =
+    similarityCheckActive &&
+    (title.trim() !== similarityInput.title.trim() ||
+      similarFeedback.isFetching);
+  let similarityStatusMessage: string | undefined;
+  if (similarFeedbackItems.length === 0 && similarityCheckActive) {
+    if (similarityCheckPending) {
+      similarityStatusMessage = "Checking for similar submissions…";
+    } else if (similarFeedback.isError) {
+      similarityStatusMessage =
+        "We couldn’t check for similar feedback right now.";
+    } else {
+      similarityStatusMessage =
+        "No similar feedback found. You’re clear to submit.";
+    }
+  }
 
   const openExistingFeedback = (slug: string, isDuplicate = false) => {
     cancelSimilarityCheck();
@@ -253,7 +271,7 @@ export const NewFeedbackButton = ({
         </Dialog.Footer>
         <SimilarItemsPanel
           heading="Similar submissions"
-          items={(similarFeedback.data ?? []).map((item) => ({
+          items={similarFeedbackItems.map((item) => ({
             id: item.id,
             isBlocking: item.isDuplicate,
             label: item.isDuplicate ? "Already reported" : "Possible match",
@@ -270,11 +288,13 @@ export const NewFeedbackButton = ({
             title: item.title,
           }))}
           onSelect={(item) => {
-            const match = similarFeedback.data?.find(
+            const match = similarFeedbackItems.find(
               (candidate) => candidate.id === item.id,
             );
             if (match) openExistingFeedback(match.slug, match.isDuplicate);
           }}
+          statusMessage={similarityStatusMessage}
+          statusTone={similarFeedback.isError ? "error" : "muted"}
         />
       </Dialog.Content>
     </Dialog>

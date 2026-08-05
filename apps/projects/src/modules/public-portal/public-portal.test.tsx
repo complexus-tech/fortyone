@@ -925,6 +925,25 @@ describe("Public portal UI", () => {
     });
   });
 
+  it("confirms when no similar feedback is found", async () => {
+    const portal = {
+      ...publicPortalFixture,
+      boards: [publicPortalFixture.boards[0]],
+    };
+    render(<PublicPortalRequestsPage portal={portal} viewer={portalViewer} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "New Feedback" }));
+    fireEvent.change(screen.getByLabelText("Feedback title"), {
+      target: { value: "Introduce automatic curb inspections" },
+    });
+
+    expect(
+      await screen.findByText(
+        "No similar feedback found. You’re clear to submit.",
+      ),
+    ).toBeVisible();
+  });
+
   it("blocks duplicate feedback and opens the existing submission", async () => {
     const defaultFetch = jest.mocked(global.fetch).getMockImplementation()!;
     jest.mocked(global.fetch).mockImplementation(async (input, init) => {

@@ -258,7 +258,8 @@ final result: blocked
 - Public feedback duplicate matching is debounced, ranked, and rechecked in the Go service before insert.
 - High-confidence feedback changes the primary action to open the existing submission and guides the user to comment there.
 - Story matches remain advisory and navigate directly to the existing story.
-- Go service/repository checks, Projects type checking, focused ESLint, React Doctor, and all 35 public-portal tests pass.
+- The dialog exposes checking, unavailable, and no-match states instead of failing silently; the ranked route also falls back to the existing portal search during staggered deployments.
+- Go service/repository checks, Projects type checking, focused ESLint, React Doctor, and all 42 focused public-portal tests pass.
 
 ## Result
 

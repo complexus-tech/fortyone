@@ -37,6 +37,21 @@ export type PublicPortalCachePolicy = {
 };
 
 const DOMAIN_SUFFIX = ".fortyone.app";
+const DUPLICATE_CONFIDENCE = 0.82;
+const FALLBACK_SIMILARITY_LIMIT = 5;
+const SIMILARITY_STOP_WORDS = new Set([
+  "a",
+  "add",
+  "an",
+  "build",
+  "create",
+  "for",
+  "implement",
+  "please",
+  "support",
+  "the",
+  "to",
+]);
 
 export class PublicPortalRequestError extends Error {
   status: number;
@@ -52,6 +67,87 @@ export const isPublicPortalNotFoundError = (
   error: unknown,
 ): error is PublicPortalRequestError =>
   error instanceof PublicPortalRequestError && error.status === 404;
+
+const normalizeSimilarityText = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((token) => token && !SIMILARITY_STOP_WORDS.has(token))
+    .join(" ");
+
+const getBigrams = (value: string) => {
+  const normalized = value.replace(/\s+/g, " ");
+  if (normalized.length < 2) return new Set([normalized]);
+
+  const bigrams = new Set<string>();
+  for (let index = 0; index < normalized.length - 1; index += 1) {
+    bigrams.add(normalized.slice(index, index + 2));
+  }
+  return bigrams;
+};
+
+const diceSimilarity = (first: string, second: string) => {
+  const firstBigrams = getBigrams(first);
+  const secondBigrams = getBigrams(second);
+  let overlap = 0;
+  firstBigrams.forEach((bigram) => {
+    if (secondBigrams.has(bigram)) overlap += 1;
+  });
+  return (2 * overlap) / (firstBigrams.size + secondBigrams.size);
+};
+
+const tokenSimilarity = (first: string, second: string) => {
+  const firstTokens = new Set(first.split(" ").filter(Boolean));
+  const secondTokens = new Set(second.split(" ").filter(Boolean));
+  const union = new Set([...firstTokens, ...secondTokens]);
+  if (union.size === 0) return 0;
+
+  let overlap = 0;
+  firstTokens.forEach((token) => {
+    if (secondTokens.has(token)) overlap += 1;
+  });
+  return overlap / union.size;
+};
+
+const fallbackSimilarity = (first: string, second: string) => {
+  const normalizedFirst = normalizeSimilarityText(first);
+  const normalizedSecond = normalizeSimilarityText(second);
+  if (!normalizedFirst || !normalizedSecond) return 0;
+  if (normalizedFirst === normalizedSecond) return 1;
+
+  return (
+    diceSimilarity(normalizedFirst, normalizedSecond) * 0.6 +
+    tokenSimilarity(normalizedFirst, normalizedSecond) * 0.4
+  );
+};
+
+const rankFallbackSimilarFeedback = (
+  requests: PublicPortal["requests"],
+  title: string,
+): SimilarPublicFeedback[] =>
+  requests
+    .reduce<SimilarPublicFeedback[]>((matches, request) => {
+      const confidence = fallbackSimilarity(request.title, title);
+      if (confidence < 0.2) return matches;
+
+      matches.push({
+        commentCount: request.commentCount,
+        confidence,
+        id: request.id,
+        isDuplicate: confidence >= DUPLICATE_CONFIDENCE,
+        slug: request.slug,
+        title: request.title,
+        voteCount: request.voteCount,
+      });
+      return matches;
+    }, [])
+    .sort(
+      (first, second) =>
+        second.confidence - first.confidence ||
+        second.voteCount - first.voteCount,
+    )
+    .slice(0, FALLBACK_SIMILARITY_LIMIT);
 
 const getWorkspaceSlugFromHost = async () => {
   const headerList = await headers();
@@ -151,21 +247,31 @@ export const getSimilarPublicFeedback = async (
     title: title.trim(),
   });
   if (description?.trim()) params.set("description", description.trim());
-  const response = await fetch(
-    `${apiUrl}/portals/${portalSlug}/feedback/similar?${params.toString()}`,
-    { cache: "no-store" },
-  );
-  if (!response.ok) {
-    throw new PublicPortalRequestError(
-      "Failed to find similar feedback",
-      response.status,
+  try {
+    const response = await fetch(
+      `${apiUrl}/portals/${portalSlug}/feedback/similar?${params.toString()}`,
+      { cache: "no-store" },
     );
-  }
+    if (!response.ok) {
+      throw new PublicPortalRequestError(
+        "Failed to find similar feedback",
+        response.status,
+      );
+    }
 
-  const payload = (await response.json()) as ApiResponse<
-    SimilarPublicFeedback[]
-  >;
-  return payload.data;
+    const payload = (await response.json()) as ApiResponse<
+      SimilarPublicFeedback[]
+    >;
+    return payload.data;
+  } catch {
+    const portal = await getPublicPortal(portalSlug, {
+      page: 1,
+      pageSize: FALLBACK_SIMILARITY_LIMIT,
+      search: title,
+      sort: "top",
+    });
+    return rankFallbackSimilarFeedback(portal.requests, title);
+  }
 };
 
 export const getPublicContributor = async (

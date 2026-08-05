@@ -266,6 +266,23 @@ export const NewStoryDialog = ({
     teamId: currentTeamId,
     type: "stories",
   });
+  const similarStoryItems = similarStories.data?.stories ?? [];
+  const storySimilarityActive = isOpen && storyTitle.trim().length >= 3;
+  const storySimilarityPending =
+    storySimilarityActive &&
+    (storyTitle.trim() !== storySearchQuery || similarStories.isFetching);
+  let storySimilarityStatusMessage: string | undefined;
+  if (similarStoryItems.length === 0 && storySimilarityActive) {
+    if (storySimilarityPending) {
+      storySimilarityStatusMessage = "Checking for similar stories…";
+    } else if (similarStories.isError) {
+      storySimilarityStatusMessage =
+        "We couldn’t check for similar stories right now.";
+    } else {
+      storySimilarityStatusMessage =
+        "No similar stories found. You can create this story.";
+    }
+  }
 
   const titleEditor = useEditor({
     extensions: [
@@ -986,7 +1003,7 @@ export const NewStoryDialog = ({
             heading={`Similar ${getTermDisplay("storyTerm", {
               variant: "plural",
             })}`}
-            items={(similarStories.data?.stories ?? []).map((story) => {
+            items={similarStoryItems.map((story) => {
               return {
                 id: story.id,
                 label: "Review story",
@@ -995,7 +1012,7 @@ export const NewStoryDialog = ({
               };
             })}
             onSelect={(item) => {
-              const story = similarStories.data?.stories.find(
+              const story = similarStoryItems.find(
                 (candidate) => candidate.id === item.id,
               );
               if (!story) return;
@@ -1010,6 +1027,8 @@ export const NewStoryDialog = ({
                 ),
               );
             }}
+            statusMessage={storySimilarityStatusMessage}
+            statusTone={similarStories.isError ? "error" : "muted"}
           />
         </Dialog.Content>
       </Dialog>
