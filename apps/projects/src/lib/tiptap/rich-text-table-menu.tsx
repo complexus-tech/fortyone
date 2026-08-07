@@ -400,7 +400,7 @@ const ActiveRichTextTableMenu = ({
           <Menu.Items
             align="start"
             avoidCollisions
-            className="max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-52 overflow-y-auto"
+            className="max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-56 overflow-y-auto"
             collisionBoundary={dialogBoundary}
             collisionPadding={12}
             hideWhenDetached

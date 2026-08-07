@@ -144,4 +144,28 @@ describe("slash command items", () => {
 
     expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: "nearest" });
   });
+
+  it("uses the platform menu sizing and interaction states", () => {
+    render(
+      <SlashCommandList
+        command={jest.fn()}
+        items={getSlashCommandItems(editor, () => undefined)}
+        query=""
+      />,
+    );
+
+    expect(screen.getByRole("menu")).toHaveClass(
+      "min-w-56",
+      "border-[0.5px]",
+      "py-2",
+      "text-[13px]",
+    );
+    expect(screen.getByRole("menuitem", { name: "Regular text" })).toHaveClass(
+      "gap-1.5",
+      "rounded-md",
+      "px-2",
+      "py-1.5",
+      "bg-accent",
+    );
+  });
 });

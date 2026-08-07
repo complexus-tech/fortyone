@@ -118,7 +118,7 @@ export const SlashCommandList = forwardRef<
 
   if (items.length === 0) {
     return (
-      <Box className="not-prose border-border-strong bg-surface-elevated w-72 rounded-xl border p-3 shadow-xl">
+      <Box className="not-prose border-border/70 bg-surface-elevated shadow-shadow dark:bg-surface-elevated/80 w-max max-w-[calc(100vw-1.5rem)] min-w-56 rounded-xl border-[0.5px] px-3 py-4 text-[13px] font-medium shadow-xl backdrop-blur-md 2xl:text-[13.5px]">
         <Text color="muted">No matching commands</Text>
       </Box>
     );
@@ -127,7 +127,7 @@ export const SlashCommandList = forwardRef<
   let previousGroup: SlashCommandItem["group"] | null = null;
   return (
     <Box
-      className="not-prose border-border-strong bg-surface-elevated max-h-[26rem] w-72 overflow-y-auto rounded-xl border p-1.5 shadow-xl"
+      className="not-prose border-border/70 bg-surface-elevated shadow-shadow dark:bg-surface-elevated/80 max-h-[min(26rem,calc(100dvh-1.5rem))] w-max max-w-[calc(100vw-1.5rem)] min-w-56 overflow-y-auto rounded-xl border-[0.5px] py-2 text-[13px] font-medium shadow-xl backdrop-blur-md 2xl:text-[13.5px]"
       data-slash-command-menu=""
       role="menu"
     >
@@ -138,33 +138,35 @@ export const SlashCommandList = forwardRef<
         return (
           <Box key={item.id}>
             {showDivider ? (
-              <Box className="border-border/80 my-1 border-t" />
+              <Box className="border-border dark:border-border-strong/80 my-1.5 border-b-[0.5px]" />
             ) : null}
-            <button
-              className={cn(
-                "hover:bg-state-hover focus-visible:bg-state-hover flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left outline-none",
-                { "bg-state-active": selectedIndex === index },
-              )}
-              onClick={() => {
-                select(index);
-              }}
-              onMouseDown={(event) => {
-                event.preventDefault();
-              }}
-              onMouseEnter={() => {
-                setSelection({ index, query });
-              }}
-              ref={selectedIndex === index ? selectedItemRef : undefined}
-              role="menuitem"
-              type="button"
-            >
-              <span className="text-text-muted flex size-6 shrink-0 items-center justify-center">
-                {item.icon}
-              </span>
-              <Text as="span" className="min-w-0 truncate" fontWeight="medium">
-                {item.label}
-              </Text>
-            </button>
+            <Box className="px-1.5">
+              <button
+                className={cn(
+                  "hover:bg-accent focus-visible:bg-accent flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-left outline-none select-none",
+                  { "bg-accent": selectedIndex === index },
+                )}
+                onClick={() => {
+                  select(index);
+                }}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                }}
+                onMouseEnter={() => {
+                  setSelection({ index, query });
+                }}
+                ref={selectedIndex === index ? selectedItemRef : undefined}
+                role="menuitem"
+                type="button"
+              >
+                <span className="text-text-muted flex size-5 shrink-0 items-center justify-center">
+                  {item.icon}
+                </span>
+                <Text as="span" className="min-w-0 truncate">
+                  {item.label}
+                </Text>
+              </button>
+            </Box>
           </Box>
         );
       })}
