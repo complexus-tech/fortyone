@@ -1,5 +1,6 @@
 "use client";
 
+import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEditor } from "@tiptap/react";
@@ -22,6 +23,7 @@ import {
   Text,
   TextEditor,
   Tooltip,
+  type BubbleMenuCreateAction,
 } from "ui";
 import {
   ArchiveIcon,
@@ -32,15 +34,25 @@ import {
   LinkIcon,
   LockKeyholeIcon,
   MoreHorizontalIcon,
+  ObjectiveIcon,
+  StoryIcon,
   UserMultiple02Icon,
 } from "icons";
 import {
   useCopyToClipboard,
+  useFeatures,
   useLocalStorage,
   useMediaQuery,
+  useTerminology,
+  useUserRole,
   useWorkspacePath,
 } from "@/hooks";
-import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
+import {
+  BoardDividedPanel,
+  ConfirmDialog,
+  NewObjectiveDialog,
+  NewStoryDialog,
+} from "@/components/ui";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { useSession } from "@/lib/auth/client";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
@@ -77,6 +89,11 @@ const documentAccessLabels = {
 
 const DOCUMENT_MEDIA_INPUT_ID = "document-media-upload";
 
+type DocumentCreationDraft = {
+  description: string;
+  kind: "story" | "objective";
+};
+
 const shouldShowDocumentTextMenu = ({
   editor,
 }: {
@@ -108,6 +125,9 @@ const DocumentPageSkeleton = () => (
 export const DocumentPage = ({ documentId }: { documentId: string }) => {
   const router = useRouter();
   const { data: session } = useSession();
+  const features = useFeatures();
+  const { getTermDisplay } = useTerminology();
+  const { userRole } = useUserRole();
   const { withWorkspace, workspaceSlug } = useWorkspacePath();
   const { data: document, isPending } = useDocument(documentId);
   const updateDocument = useUpdateDocument(documentId);
@@ -115,6 +135,8 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
   const duplicateDocument = useDuplicateDocument();
   const deleteDocument = useDeleteDocument();
   const [, copyToClipboard] = useCopyToClipboard();
+  const [creationDraft, setCreationDraft] =
+    useState<DocumentCreationDraft | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [titleDraft, setTitleDraft] = useState({
     documentId: "",
@@ -133,6 +155,15 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
   const closeRelatedWork = useCallback(() => {
     setIsRelatedWorkOpen(false);
   }, [setIsRelatedWorkOpen]);
+  const setCreationDialogOpen: Dispatch<SetStateAction<boolean>> = (
+    nextOpen,
+  ) => {
+    setCreationDraft((current) => {
+      const isOpen =
+        typeof nextOpen === "function" ? nextOpen(current !== null) : nextOpen;
+      return isOpen ? current : null;
+    });
+  };
   const handleMediaFiles = useCallback(
     (
       currentEditor: NonNullable<ReturnType<typeof useEditor>>,
@@ -273,6 +304,32 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
   const accessLabel = documentAccessLabels[document.visibility];
   const AccessIcon =
     document.visibility === "private" ? LockKeyholeIcon : UserMultiple02Icon;
+  const canCreateWork =
+    document.canEdit && userRole !== undefined && userRole !== "guest";
+  const bubbleMenuCreateActions: BubbleMenuCreateAction[] = canCreateWork
+    ? [
+        {
+          id: "story",
+          icon: <StoryIcon className="h-4 w-auto" strokeWidth={2} />,
+          label: getTermDisplay("storyTerm", { capitalize: true }),
+          onSelect: (description) => {
+            setCreationDraft({ description, kind: "story" });
+          },
+        },
+        ...(features.objectiveEnabled
+          ? [
+              {
+                id: "objective",
+                icon: <ObjectiveIcon className="h-4 w-auto" strokeWidth={2} />,
+                label: getTermDisplay("objectiveTerm", { capitalize: true }),
+                onSelect: (description: string) => {
+                  setCreationDraft({ description, kind: "objective" });
+                },
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   const handleArchive = () => {
     archiveDocument.mutate(document.id, {
@@ -489,6 +546,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                   />
                   <Divider className="mb-8" />
                   <TextEditor
+                    bubbleMenuCreateActions={bubbleMenuCreateActions}
                     bubbleMenuShouldShow={shouldShowDocumentTextMenu}
                     className="document-editor min-h-[55dvh] text-[1.05rem] leading-7"
                     editor={editor}
@@ -522,6 +580,20 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
           }}
           onConfirm={handleDelete}
           title="Delete document?"
+        />
+      ) : null}
+      {creationDraft?.kind === "story" ? (
+        <NewStoryDialog
+          description={creationDraft.description}
+          isOpen
+          setIsOpen={setCreationDialogOpen}
+        />
+      ) : null}
+      {creationDraft?.kind === "objective" ? (
+        <NewObjectiveDialog
+          description={creationDraft.description}
+          isOpen
+          setIsOpen={setCreationDialogOpen}
         />
       ) : null}
     </Flex>

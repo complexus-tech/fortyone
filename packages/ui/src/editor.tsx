@@ -8,12 +8,14 @@ import { BubbleMenu } from "@tiptap/react/menus";
 
 import {
   BubbleMenu as CustomBubbleMenu,
+  type BubbleMenuCreateAction,
   type BubbleMenuPanel,
 } from "./bubble-menu";
 import { cn } from "lib";
 
 type TextEditorProps = EditorContentProps & {
   asTitle?: boolean;
+  bubbleMenuCreateActions?: readonly BubbleMenuCreateAction[];
   bubbleMenuShouldShow?: ComponentProps<typeof BubbleMenu>["shouldShow"];
   hideBubbleMenu?: boolean;
 };
@@ -22,6 +24,7 @@ export const TextEditor = ({
   editor,
   className = "",
   asTitle = false,
+  bubbleMenuCreateActions,
   bubbleMenuShouldShow,
   hideBubbleMenu = false,
   innerRef,
@@ -69,6 +72,7 @@ export const TextEditor = ({
         >
           <CustomBubbleMenu
             activeMenu={activeBubbleMenu}
+            createActions={bubbleMenuCreateActions}
             editor={editor}
             setActiveMenu={setActiveBubbleMenu}
           />

@@ -1,5 +1,11 @@
 "use client";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import {
   Button,
   Dialog,
@@ -21,6 +27,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
+import { marked } from "marked";
 import {
   ArrowRightIcon,
   CalendarIcon,
@@ -70,10 +77,12 @@ type KeyResultFormMode = "add" | "edit" | null;
 type KeyResultUpdate = Partial<NewKeyResult>;
 
 export const NewObjectiveDialog = ({
+  description,
   isOpen,
   setIsOpen,
   teamId: initialTeamId,
 }: {
+  description?: string;
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   teamId?: string;
@@ -178,10 +187,20 @@ export const NewObjectiveDialog = ({
       }),
       Placeholder.configure({ placeholder: "Add description..." }),
     ],
-    content: "",
+    content: marked.parse(description || "", { gfm: true }),
     editable: true,
     immediatelyRender: false,
   });
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current && editor) {
+      editor.commands.setContent(
+        marked.parse(description || "", { gfm: true }),
+      );
+    }
+    wasOpenRef.current = isOpen;
+  }, [description, editor, isOpen]);
 
   const handleCreateObjective = () => {
     if (!titleEditor || !editor) return;
