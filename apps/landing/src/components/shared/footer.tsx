@@ -162,7 +162,7 @@ const Copyright = () => {
 export const Footer = () => {
   const { theme, setTheme } = useTheme();
   return (
-    <Box as="footer" className="bg-surface relative">
+    <Box as="footer" className="bg-surface-muted dark:bg-surface relative">
       <Container>
         <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-6 md:pt-20">
           <Box className="hidden md:block">
@@ -230,7 +230,7 @@ export const Footer = () => {
           </Text>
           <div
             aria-label="Color theme"
-            className="bg-state-hover text-text-muted flex shrink-0 items-center gap-0.5 rounded-full px-1 py-0.5"
+            className="bg-state-hover text-text-muted flex shrink-0 items-center gap-0.5 rounded-full p-1"
             role="group"
           >
             {themeOptions.map(({ icon: Icon, id, label }) => (
@@ -239,7 +239,7 @@ export const Footer = () => {
                   aria-label={`Use ${label.toLowerCase()} theme`}
                   aria-pressed={theme === id}
                   className={cn(
-                    "hover:text-foreground focus-visible:outline-foreground relative grid h-8 w-8 place-items-center rounded-full transition-[width,color,background-color,transform] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 active:scale-[0.94]",
+                    "hover:text-foreground focus-visible:outline-foreground relative grid h-7 w-8 place-items-center rounded-full transition-[width,color,background-color,transform] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 active:scale-[0.94]",
                     {
                       "bg-state-active text-foreground w-10": theme === id,
                     },
