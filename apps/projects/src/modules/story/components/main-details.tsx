@@ -224,7 +224,7 @@ export const MainDetails = ({
           type="file"
         />
         <TextEditor
-          className="rich-document-editor text-foreground/90 mb-10 text-[1.1rem]"
+          className="rich-document-editor text-foreground dark:text mb-10 text-[1.1rem]"
           editor={descriptionEditor}
         />
         <RichTextTableMenu editor={descriptionEditor} scrollTarget={null} />
