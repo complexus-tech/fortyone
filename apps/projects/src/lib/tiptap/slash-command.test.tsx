@@ -1,13 +1,22 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type { Editor } from "@tiptap/core";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { createRef } from "react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import {
   getSlashCommandItems,
   hasVisibleSlashCommandAnchor,
   SlashCommandList,
+  type SlashCommandListRef,
   shouldShowSlashCommand,
 } from "./slash-command";
+
+const scrollIntoViewMock = jest.fn();
+
+Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+  configurable: true,
+  value: scrollIntoViewMock,
+});
 
 jest.mock("ui", () => ({ Box: "div", Text: "span" }));
 jest.mock("icons", () => ({
@@ -110,5 +119,29 @@ describe("slash command items", () => {
     expect(mouseDown.defaultPrevented).toBe(true);
     expect(command).toHaveBeenCalledWith(items[0]);
     expect(onMediaRequest).toHaveBeenCalledWith(editor);
+  });
+
+  it("scrolls the keyboard-selected command into view", () => {
+    const ref = createRef<SlashCommandListRef>();
+
+    render(
+      <SlashCommandList
+        command={jest.fn()}
+        items={getSlashCommandItems(editor, () => undefined)}
+        query=""
+        ref={ref}
+      />,
+    );
+    scrollIntoViewMock.mockClear();
+
+    act(() => {
+      expect(
+        ref.current?.onKeyDown(
+          new KeyboardEvent("keydown", { key: "ArrowDown" }),
+        ),
+      ).toBe(true);
+    });
+
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: "nearest" });
   });
 });

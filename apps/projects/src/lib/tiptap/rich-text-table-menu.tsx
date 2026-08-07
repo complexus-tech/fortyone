@@ -24,6 +24,7 @@ import {
   PlusIcon,
 } from "icons";
 import { cn } from "lib";
+import { getRichTextOverlayRoot } from "./rich-text-overlay";
 
 type TableIconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -54,17 +55,35 @@ type TableBounds = {
   left: number;
   right: number;
   top: number;
+  viewportLeft: number;
   width: number;
 };
 
-const toTableBounds = (rect: DOMRect): TableBounds => ({
-  bottom: rect.bottom,
-  height: rect.height,
-  left: rect.left,
-  right: rect.right,
-  top: rect.top,
-  width: rect.width,
-});
+const toTableBounds = (
+  rect: DOMRect,
+  overlayRoot: HTMLElement,
+): TableBounds => {
+  const isDocumentRoot = overlayRoot === document.body;
+  const rootRect = isDocumentRoot ? null : overlayRoot.getBoundingClientRect();
+  const left =
+    rect.left -
+    (rootRect?.left ?? 0) +
+    (isDocumentRoot ? window.scrollX : overlayRoot.scrollLeft);
+  const top =
+    rect.top -
+    (rootRect?.top ?? 0) +
+    (isDocumentRoot ? window.scrollY : overlayRoot.scrollTop);
+
+  return {
+    bottom: top + rect.height,
+    height: rect.height,
+    left,
+    right: left + rect.width,
+    top,
+    viewportLeft: rect.left,
+    width: rect.width,
+  };
+};
 
 const tableBoundsAreEqual = (
   current: TableBounds | null,
@@ -75,6 +94,7 @@ const tableBoundsAreEqual = (
   current?.left === next?.left &&
   current?.right === next?.right &&
   current?.top === next?.top &&
+  current?.viewportLeft === next?.viewportLeft &&
   current?.width === next?.width;
 
 const getScrollContainer = (element: HTMLElement) => {
@@ -169,7 +189,7 @@ const AddTableEdge = ({
   <button
     aria-label={direction === "row" ? "Add row below" : "Add column right"}
     className={cn(
-      "bg-surface-muted/70 hover:bg-state-hover focus-visible:ring-ring dark:bg-surface-muted/70 fixed z-40 flex items-center justify-center rounded-xl transition-colors outline-none focus-visible:ring-1",
+      "not-prose bg-surface-muted/70 hover:bg-state-hover focus-visible:ring-ring dark:bg-surface-muted/70 absolute z-40 flex items-center justify-center rounded-xl transition-colors outline-none focus-visible:ring-1",
       direction === "row" ? "h-5" : "w-5",
     )}
     onClick={() => {
@@ -199,6 +219,7 @@ const AddTableEdge = ({
 
 const useActiveTableBounds = (
   editor: Editor,
+  overlayRoot: HTMLElement,
   scrollTarget: HTMLElement | null,
 ) => {
   const [bounds, setBounds] = useState<TableBounds | null>(null);
@@ -221,7 +242,9 @@ const useActiveTableBounds = (
           tableRect.top < viewportRect.bottom &&
           tableRect.right > viewportRect.left &&
           tableRect.left < viewportRect.right);
-      const nextBounds = isVisible ? toTableBounds(tableRect) : null;
+      const nextBounds = isVisible
+        ? toTableBounds(tableRect, overlayRoot)
+        : null;
 
       setBounds((current) =>
         tableBoundsAreEqual(current, nextBounds) ? current : nextBounds,
@@ -235,20 +258,28 @@ const useActiveTableBounds = (
         ? null
         : new ResizeObserver(updateBounds);
     resizeObserver?.observe(editor.view.dom);
+    if (overlayRoot !== editor.view.dom) resizeObserver?.observe(overlayRoot);
+    editor.view.dom.addEventListener("scroll", updateBounds, {
+      capture: true,
+      passive: true,
+    });
     resolvedScrollTarget?.addEventListener("scroll", updateBounds, {
       passive: true,
     });
+    window.addEventListener("scroll", updateBounds, { passive: true });
     window.addEventListener("resize", updateBounds);
     editor.on("transaction", updateBounds);
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
       resizeObserver?.disconnect();
+      editor.view.dom.removeEventListener("scroll", updateBounds, true);
       resolvedScrollTarget?.removeEventListener("scroll", updateBounds);
+      window.removeEventListener("scroll", updateBounds);
       window.removeEventListener("resize", updateBounds);
       editor.off("transaction", updateBounds);
     };
-  }, [editor, scrollTarget]);
+  }, [editor, overlayRoot, scrollTarget]);
 
   return bounds;
 };
@@ -262,7 +293,8 @@ const ActiveRichTextTableMenu = ({
 }) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const tableBounds = useActiveTableBounds(editor, scrollTarget);
+  const overlayRoot = getRichTextOverlayRoot(editor);
+  const tableBounds = useActiveTableBounds(editor, overlayRoot, scrollTarget);
 
   useEffect(() => {
     if (!open) return;
@@ -365,13 +397,13 @@ const ActiveRichTextTableMenu = ({
     },
   };
 
-  const menuOpensToLeft = tableBounds.left >= 288;
-  const tableActionLeft = Math.max(0, tableBounds.left - 24);
+  const menuOpensToLeft = tableBounds.viewportLeft >= 288;
+  const tableActionLeft = tableBounds.left - 24;
 
   return createPortal(
     <>
       <div
-        className="fixed z-50"
+        className="not-prose absolute z-50"
         ref={rootRef}
         style={{ left: tableActionLeft, top: tableBounds.top + 2 }}
       >
@@ -441,7 +473,7 @@ const ActiveRichTextTableMenu = ({
       <AddTableEdge bounds={tableBounds} direction="column" editor={editor} />
       <AddTableEdge bounds={tableBounds} direction="row" editor={editor} />
     </>,
-    document.body,
+    overlayRoot,
   );
 };
 

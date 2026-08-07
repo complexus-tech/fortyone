@@ -1,7 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { forwardRef, useImperativeHandle, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { Extension, type Editor } from "@tiptap/core";
 import { PluginKey } from "@tiptap/pm/state";
 import { ReactRenderer } from "@tiptap/react";
@@ -24,6 +30,7 @@ import {
   UnorderedListIcon,
 } from "icons";
 import { cn } from "lib";
+import { getRichTextOverlayRoot } from "./rich-text-overlay";
 
 type SlashCommandItem = {
   icon: ReactNode;
@@ -70,7 +77,12 @@ export const SlashCommandList = forwardRef<
   SlashCommandListProps
 >(({ command, items, query }, ref) => {
   const [selection, setSelection] = useState({ index: 0, query });
+  const selectedItemRef = useRef<HTMLButtonElement | null>(null);
   const selectedIndex = selection.query === query ? selection.index : 0;
+
+  useEffect(() => {
+    selectedItemRef.current?.scrollIntoView({ block: "nearest" });
+  }, [items.length, query, selectedIndex]);
 
   const select = (index: number) => {
     if (items.length === 0) return;
@@ -106,7 +118,7 @@ export const SlashCommandList = forwardRef<
 
   if (items.length === 0) {
     return (
-      <Box className="border-border-strong bg-surface-elevated w-72 rounded-xl border p-3 shadow-xl">
+      <Box className="not-prose border-border-strong bg-surface-elevated w-72 rounded-xl border p-3 shadow-xl">
         <Text color="muted">No matching commands</Text>
       </Box>
     );
@@ -115,7 +127,7 @@ export const SlashCommandList = forwardRef<
   let previousGroup: SlashCommandItem["group"] | null = null;
   return (
     <Box
-      className="border-border-strong bg-surface-elevated max-h-[26rem] w-72 overflow-y-auto rounded-xl border p-1.5 shadow-xl"
+      className="not-prose border-border-strong bg-surface-elevated max-h-[26rem] w-72 overflow-y-auto rounded-xl border p-1.5 shadow-xl"
       data-slash-command-menu=""
       role="menu"
     >
@@ -142,6 +154,7 @@ export const SlashCommandList = forwardRef<
               onMouseEnter={() => {
                 setSelection({ index, query });
               }}
+              ref={selectedIndex === index ? selectedItemRef : undefined}
               role="menuitem"
               type="button"
             >
@@ -310,8 +323,9 @@ const renderSlashCommand = () => {
         editor: props.editor,
       });
       component = nextComponent;
+      const overlayRoot = getRichTextOverlayRoot(props.editor);
       popup = tippy(document.body, {
-        appendTo: () => document.body,
+        appendTo: () => overlayRoot,
         content: nextComponent.element,
         getReferenceClientRect: () =>
           referenceClientRect ?? nextReferenceClientRect,

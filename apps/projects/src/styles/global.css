@@ -193,6 +193,10 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 /* Long-form document and story-description editors share the same table treatment. */
+.rich-document-editor {
+  @apply relative;
+}
+
 .rich-document-editor .tiptap .tableWrapper {
   @apply my-8 rounded-md;
 }
@@ -202,7 +206,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 .rich-document-editor .tiptap table {
-  @apply border-border dark:border-border-strong/80 overflow-hidden rounded-md border-[0.5px];
+  @apply border-border text-foreground dark:border-border-strong/80 overflow-hidden rounded-md border-[0.5px];
   border-collapse: separate;
   border-spacing: 0;
 }
