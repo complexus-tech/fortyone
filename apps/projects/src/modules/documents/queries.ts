@@ -1,16 +1,22 @@
 import { get } from "@/lib/http";
 import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
-import type { DocumentRelationType, WorkspaceDocument } from "./types";
+import type {
+  DocumentRelationType,
+  WorkspaceDocument,
+  WorkspaceDocumentSummary,
+} from "./types";
 
 export const getDocuments = async (
   ctx: WorkspaceCtx,
   search = "",
   scope = "all",
+  limit?: number,
 ) => {
   const params = new URLSearchParams({ scope });
   if (search.trim()) params.set("search", search.trim());
-  const response = await get<ApiResponse<WorkspaceDocument[]>>(
+  if (limit !== undefined) params.set("limit", String(limit));
+  const response = await get<ApiResponse<WorkspaceDocumentSummary[]>>(
     `documents?${params.toString()}`,
     ctx,
   );

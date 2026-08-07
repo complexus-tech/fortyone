@@ -32,6 +32,35 @@ export type WorkspaceDocument = {
   relatedWorkCount: number;
 };
 
+export type WorkspaceDocumentSummary = Pick<
+  WorkspaceDocument,
+  | "id"
+  | "workspaceId"
+  | "title"
+  | "visibility"
+  | "createdBy"
+  | "updatedBy"
+  | "createdAt"
+  | "updatedAt"
+  | "canEdit"
+  | "relatedWorkCount"
+>;
+
+export type DocumentAccessFilter = DocumentVisibility | "all";
+export type DocumentOwnerFilter = "all" | "mine" | "others";
+export type DocumentUpdatedFilter = "all" | "today" | "7d" | "30d" | "90d";
+export type DocumentSortField = "updated" | "created" | "title";
+export type DocumentSortDirection = "asc" | "desc";
+
+export type DocumentListState = {
+  access: DocumentAccessFilter;
+  direction: DocumentSortDirection;
+  owner: DocumentOwnerFilter;
+  page: number;
+  sort: DocumentSortField;
+  updated: DocumentUpdatedFilter;
+};
+
 export type DocumentCreate = {
   title?: string;
   contentHtml?: string;

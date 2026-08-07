@@ -32,8 +32,7 @@ const documentSummaryColumns = `
 	d.created_by,
 	d.updated_by,
 	d.created_at,
-	d.updated_at,
-	d.archived_at`
+	d.updated_at`
 
 func accessPredicate(documentAlias string) string {
 	return fmt.Sprintf(`(
@@ -87,7 +86,22 @@ func visibleRelationshipCount(documentAlias string) string {
 	)`, documentAlias, documentAlias)
 }
 
-func (r *repo) List(ctx context.Context, input documents.CoreListInput) ([]documents.CoreDocument, error) {
+func (r *repo) List(ctx context.Context, input documents.CoreListInput) ([]documents.CoreDocumentSummary, error) {
+	query, params := buildDocumentListQuery(input)
+
+	rows := []dbDocumentSummary{}
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+	if err := stmt.SelectContext(ctx, &rows, params); err != nil {
+		return nil, err
+	}
+	return toCoreDocumentSummaries(rows), nil
+}
+
+func buildDocumentListQuery(input documents.CoreListInput) (string, map[string]any) {
 	query := `
 		SELECT ` + documentSummaryColumns + `,
 			` + editPredicate("d") + ` AS can_edit,
@@ -118,17 +132,12 @@ func (r *repo) List(ctx context.Context, input documents.CoreListInput) ([]docum
 			)`
 	}
 	query += " ORDER BY d.updated_at DESC, d.document_id"
+	if input.Limit != nil {
+		query += " LIMIT :limit"
+		params["limit"] = *input.Limit
+	}
 
-	rows := []dbDocument{}
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer stmt.Close()
-	if err := stmt.SelectContext(ctx, &rows, params); err != nil {
-		return nil, err
-	}
-	return toCoreDocuments(rows), nil
+	return query, params
 }
 
 func (r *repo) Get(ctx context.Context, workspaceID, userID, documentID uuid.UUID) (documents.CoreDocument, error) {
@@ -475,7 +484,7 @@ func (r *repo) RemoveRelationship(ctx context.Context, input documents.CoreRelat
 	return requireAffected(result)
 }
 
-func (r *repo) ListRelatedDocuments(ctx context.Context, workspaceID, userID uuid.UUID, entityType documents.RelationshipType, entityID uuid.UUID) ([]documents.CoreDocument, error) {
+func (r *repo) ListRelatedDocuments(ctx context.Context, workspaceID, userID uuid.UUID, entityType documents.RelationshipType, entityID uuid.UUID) ([]documents.CoreDocumentSummary, error) {
 	if _, err := r.getRelatedWork(ctx, workspaceID, userID, entityType, entityID); err != nil {
 		return nil, err
 	}
@@ -497,11 +506,11 @@ func (r *repo) ListRelatedDocuments(ctx context.Context, workspaceID, userID uui
 		return nil, err
 	}
 	defer stmt.Close()
-	rows := []dbDocument{}
+	rows := []dbDocumentSummary{}
 	if err := stmt.SelectContext(ctx, &rows, params); err != nil {
 		return nil, err
 	}
-	return toCoreDocuments(rows), nil
+	return toCoreDocumentSummaries(rows), nil
 }
 
 func (r *repo) LinkMedia(ctx context.Context, input documents.CoreMediaInput) error {

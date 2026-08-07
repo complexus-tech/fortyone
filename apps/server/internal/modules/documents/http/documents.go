@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,16 +47,33 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	limit, err := documentListLimit(r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
 	result, err := h.documents.List(ctx, documents.CoreListInput{
 		WorkspaceID: workspace.ID,
 		UserID:      userID,
 		Search:      r.URL.Query().Get("search"),
 		Scope:       r.URL.Query().Get("scope"),
+		Limit:       limit,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
 	}
-	return web.Respond(ctx, w, toAppDocuments(result, canMutateDocuments(workspace)), http.StatusOK)
+	return web.Respond(ctx, w, toAppDocumentSummaries(result, canMutateDocuments(workspace)), http.StatusOK)
+}
+
+func documentListLimit(r *http.Request) (*int, error) {
+	raw := strings.TrimSpace(r.URL.Query().Get("limit"))
+	if raw == "" {
+		return nil, nil
+	}
+	limit, err := strconv.Atoi(raw)
+	if err != nil || limit <= 0 {
+		return nil, documents.ErrInvalidInput
+	}
+	return &limit, nil
 }
 
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -352,7 +370,7 @@ func (h *Handlers) ListRelatedDocuments(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
 	}
-	return web.Respond(ctx, w, toAppDocuments(result, canMutateDocuments(workspace)), http.StatusOK)
+	return web.Respond(ctx, w, toAppDocumentSummaries(result, canMutateDocuments(workspace)), http.StatusOK)
 }
 
 func requestContext(ctx context.Context) (mid.WorkspaceInfo, uuid.UUID, error) {

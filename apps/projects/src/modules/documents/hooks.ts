@@ -24,13 +24,13 @@ import type {
   WorkspaceDocument,
 } from "./types";
 
-export const useDocuments = (search = "", scope = "all") => {
+export const useDocuments = (search = "", scope = "all", limit?: number) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
   return useQuery({
-    queryKey: documentKeys.list(workspaceSlug, search, scope),
+    queryKey: documentKeys.list(workspaceSlug, search, scope, limit),
     queryFn: () =>
-      getDocuments({ session: session!, workspaceSlug }, search, scope),
+      getDocuments({ session: session!, workspaceSlug }, search, scope, limit),
     enabled: Boolean(session),
   });
 };

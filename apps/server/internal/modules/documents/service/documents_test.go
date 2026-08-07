@@ -2,6 +2,7 @@ package documents
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -9,6 +10,7 @@ import (
 )
 
 type repositoryStub struct {
+	listed       CoreListInput
 	created      CoreCreateInput
 	duplicated   [3]uuid.UUID
 	deleted      [3]uuid.UUID
@@ -18,8 +20,9 @@ type repositoryStub struct {
 	mediaChecks  int
 }
 
-func (r *repositoryStub) List(context.Context, CoreListInput) ([]CoreDocument, error) {
-	return []CoreDocument{}, nil
+func (r *repositoryStub) List(_ context.Context, input CoreListInput) ([]CoreDocumentSummary, error) {
+	r.listed = input
+	return []CoreDocumentSummary{}, nil
 }
 
 func (r *repositoryStub) Get(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (CoreDocument, error) {
@@ -68,8 +71,8 @@ func (r *repositoryStub) RemoveRelationship(context.Context, CoreRelationshipInp
 	return nil
 }
 
-func (r *repositoryStub) ListRelatedDocuments(context.Context, uuid.UUID, uuid.UUID, RelationshipType, uuid.UUID) ([]CoreDocument, error) {
-	return []CoreDocument{}, nil
+func (r *repositoryStub) ListRelatedDocuments(context.Context, uuid.UUID, uuid.UUID, RelationshipType, uuid.UUID) ([]CoreDocumentSummary, error) {
+	return []CoreDocumentSummary{}, nil
 }
 
 func (r *repositoryStub) LinkMedia(_ context.Context, input CoreMediaInput) error {
@@ -103,6 +106,52 @@ func TestCreateDefaultsBlankTitle(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Untitled document", document.Title)
 	require.Equal(t, VisibilityWorkspace, repo.created.Visibility)
+}
+
+func TestListLeavesLimitUnsetWhenNotRequested(t *testing.T) {
+	repo := &repositoryStub{}
+	service := New(nil, repo)
+
+	_, err := service.List(context.Background(), CoreListInput{
+		WorkspaceID: uuid.New(),
+		UserID:      uuid.New(),
+	})
+
+	require.NoError(t, err)
+	require.Nil(t, repo.listed.Limit)
+}
+
+func TestListCapsRequestedLimit(t *testing.T) {
+	repo := &repositoryStub{}
+	service := New(nil, repo)
+	requestedLimit := maxListLimit + 1
+
+	_, err := service.List(context.Background(), CoreListInput{
+		WorkspaceID: uuid.New(),
+		UserID:      uuid.New(),
+		Limit:       &requestedLimit,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, repo.listed.Limit)
+	require.Equal(t, maxListLimit, *repo.listed.Limit)
+}
+
+func TestListRejectsNonPositiveLimit(t *testing.T) {
+	service := New(nil, &repositoryStub{})
+
+	for _, limit := range []int{0, -1} {
+		limit := limit
+		t.Run(fmt.Sprintf("limit_%d", limit), func(t *testing.T) {
+			_, err := service.List(context.Background(), CoreListInput{
+				WorkspaceID: uuid.New(),
+				UserID:      uuid.New(),
+				Limit:       &limit,
+			})
+
+			require.ErrorIs(t, err, ErrInvalidInput)
+		})
+	}
 }
 
 func TestCreateForwardsTemplateContent(t *testing.T) {

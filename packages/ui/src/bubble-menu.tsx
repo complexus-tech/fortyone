@@ -443,6 +443,9 @@ export const BubbleMenu = ({
             <CheckListIcon strokeWidth={2} />
           </Button>
         </Tooltip>
+        {createActions.length > 0 ? (
+          <span className="bg-border-strong mx-1 h-5 w-px" />
+        ) : null}
         <CreateMenu
           actions={createActions}
           activeMenu={activeMenu}

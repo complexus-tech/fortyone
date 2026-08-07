@@ -1,17 +1,22 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Flex, Menu, Skeleton, Text } from "ui";
 import {
   ArchiveIcon,
+  ArrowDown2Icon,
+  ArrowUpDownIcon,
   CalendarIcon,
+  CheckIcon,
   DocsIcon,
+  LockKeyholeIcon,
   MoreHorizontalIcon,
   ObjectiveIcon,
   PlusIcon,
+  ShareIcon,
   TeamIcon,
   UserIcon,
 } from "icons";
@@ -24,9 +29,22 @@ import {
   type DocumentTemplate,
   type DocumentTemplateIcon,
 } from "./document-templates";
+import {
+  filterAndSortDocumentSummaries,
+  getDocumentListState,
+  paginateDocumentSummaries,
+} from "./document-list-state";
 import { useArchiveDocument, useCreateDocument, useDocuments } from "./hooks";
 import { formatDocumentRelativeTime } from "./relative-time";
-import type { DocumentScope, WorkspaceDocument } from "./types";
+import type {
+  DocumentAccessFilter,
+  DocumentOwnerFilter,
+  DocumentScope,
+  DocumentSortDirection,
+  DocumentSortField,
+  DocumentUpdatedFilter,
+  WorkspaceDocumentSummary,
+} from "./types";
 
 const scopeCopy: Record<
   DocumentScope,
@@ -73,6 +91,156 @@ const mobileScopes: { label: string; value: DocumentScope }[] = [
   { label: "Shared", value: "shared" },
   { label: "Templates", value: "templates" },
 ];
+
+type FilterOption<T extends string> = {
+  label: string;
+  value: T;
+};
+
+const accessOptions: FilterOption<DocumentAccessFilter>[] = [
+  { label: "All access", value: "all" },
+  { label: "Workspace", value: "workspace" },
+  { label: "Shared", value: "restricted" },
+  { label: "Private", value: "private" },
+];
+
+const ownerOptions: FilterOption<DocumentOwnerFilter>[] = [
+  { label: "Anyone", value: "all" },
+  { label: "Owned by me", value: "mine" },
+  { label: "Owned by others", value: "others" },
+];
+
+const updatedOptions: FilterOption<DocumentUpdatedFilter>[] = [
+  { label: "Any time", value: "all" },
+  { label: "Today", value: "today" },
+  { label: "Past 7 days", value: "7d" },
+  { label: "Past 30 days", value: "30d" },
+  { label: "Past 90 days", value: "90d" },
+];
+
+type DocumentSortOption = {
+  direction: DocumentSortDirection;
+  field: DocumentSortField;
+  label: string;
+};
+
+const sortOptions: DocumentSortOption[] = [
+  { direction: "desc", field: "updated", label: "Updated: newest" },
+  { direction: "asc", field: "updated", label: "Updated: oldest" },
+  { direction: "desc", field: "created", label: "Created: newest" },
+  { direction: "asc", field: "created", label: "Created: oldest" },
+  { direction: "asc", field: "title", label: "Title: A–Z" },
+  { direction: "desc", field: "title", label: "Title: Z–A" },
+];
+
+function DocumentControlMenu<T extends string>({
+  active,
+  icon: Icon,
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  active?: boolean;
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+  onChange: (value: T) => void;
+  options: FilterOption<T>[];
+  value: T;
+}) {
+  return (
+    <Menu>
+      <Menu.Button>
+        <Button
+          className={cn("gap-1.5 whitespace-nowrap", {
+            "bg-state-active": active,
+          })}
+          color="tertiary"
+          leftIcon={<Icon className="h-4 w-auto" strokeWidth={2} />}
+          rightIcon={
+            <ArrowDown2Icon className="h-3.5 w-auto" strokeWidth={2} />
+          }
+          size="sm"
+          variant="outline"
+        >
+          {label}
+        </Button>
+      </Menu.Button>
+      <Menu.Items align="start" className="min-w-48 p-1">
+        {options.map((option) => (
+          <Menu.Item
+            active={option.value === value}
+            className="justify-between gap-3"
+            key={option.value}
+            onSelect={() => {
+              onChange(option.value);
+            }}
+          >
+            <span>{option.label}</span>
+            {option.value === value ? (
+              <CheckIcon className="h-4 w-auto" strokeWidth={2} />
+            ) : null}
+          </Menu.Item>
+        ))}
+      </Menu.Items>
+    </Menu>
+  );
+}
+
+const DocumentSortMenu = ({
+  direction,
+  field,
+  onChange,
+}: {
+  direction: DocumentSortDirection;
+  field: DocumentSortField;
+  onChange: (option: DocumentSortOption) => void;
+}) => {
+  const selectedOption =
+    sortOptions.find(
+      (option) => option.field === field && option.direction === direction,
+    ) ?? sortOptions[0];
+
+  return (
+    <Menu>
+      <Menu.Button>
+        <Button
+          className="gap-1.5 whitespace-nowrap"
+          color="tertiary"
+          leftIcon={<ArrowUpDownIcon className="h-4 w-auto" strokeWidth={2} />}
+          rightIcon={
+            <ArrowDown2Icon className="h-3.5 w-auto" strokeWidth={2} />
+          }
+          size="sm"
+          variant="outline"
+        >
+          {selectedOption.label}
+        </Button>
+      </Menu.Button>
+      <Menu.Items align="start" className="min-w-52 p-1">
+        {sortOptions.map((option) => {
+          const isActive =
+            option.field === field && option.direction === direction;
+          return (
+            <Menu.Item
+              active={isActive}
+              className="justify-between gap-3"
+              key={`${option.field}:${option.direction}`}
+              onSelect={() => {
+                onChange(option);
+              }}
+            >
+              <span>{option.label}</span>
+              {isActive ? (
+                <CheckIcon className="h-4 w-auto" strokeWidth={2} />
+              ) : null}
+            </Menu.Item>
+          );
+        })}
+      </Menu.Items>
+    </Menu>
+  );
+};
 
 const TemplateCard = ({
   disabled,
@@ -130,11 +298,11 @@ const DocumentsTableSkeleton = () => (
 );
 
 const getEmptyDescription = (
-  search: string,
+  isFiltered: boolean,
   scope: DocumentScope,
   canCreateDocuments: boolean,
 ) => {
-  if (search) return "Try a different title or phrase.";
+  if (isFiltered) return "Try adjusting your search or filters.";
   if (scope === "shared") {
     return "Documents shared directly with you will appear here.";
   }
@@ -146,11 +314,11 @@ const getEmptyDescription = (
 
 const EmptyDocuments = ({
   canCreateDocuments,
-  search,
+  isFiltered,
   scope,
 }: {
   canCreateDocuments: boolean;
-  search: string;
+  isFiltered: boolean;
   scope: DocumentScope;
 }) => (
   <Flex
@@ -161,10 +329,10 @@ const EmptyDocuments = ({
   >
     <DocsIcon className="text-text-muted h-16 w-auto" strokeWidth={1.5} />
     <Text className="mt-4" fontWeight="semibold">
-      {search ? "No matching documents" : "No documents here yet"}
+      {isFiltered ? "No matching documents" : "No documents here yet"}
     </Text>
     <Text className="mt-1 max-w-md" color="muted">
-      {getEmptyDescription(search, scope, canCreateDocuments)}
+      {getEmptyDescription(isFiltered, scope, canCreateDocuments)}
     </Text>
   </Flex>
 );
@@ -178,6 +346,8 @@ export const DocumentsHome = () => {
   const requestedScope = searchParams.get("scope");
   const scope = isDocumentScope(requestedScope) ? requestedScope : "all";
   const search = searchParams.get("search")?.trim() ?? "";
+  const rawSearchParams = searchParams.toString();
+  const listState = getDocumentListState(new URLSearchParams(rawSearchParams));
   const apiScope = scope === "templates" ? "all" : scope;
   const { data: documents = [], isPending } = useDocuments(search, apiScope);
   const createDocument = useCreateDocument();
@@ -186,15 +356,68 @@ export const DocumentsHome = () => {
     null,
   );
   const canCreateDocuments = userRole === "admin" || userRole === "member";
+  const showTemplateGallery = scope === "templates";
+  const listScope = scope === "templates" ? "all" : scope;
+  const filteredDocuments = filterAndSortDocumentSummaries({
+    currentUserId: session?.user.id,
+    documents,
+    scope: listScope,
+    state: listState,
+  });
+  const pagination = paginateDocumentSummaries(
+    filteredDocuments,
+    listState.page,
+  );
 
-  const getDocumentsHref = (nextScope: DocumentScope, nextSearch = search) => {
-    const params = new URLSearchParams();
-    if (nextScope !== "all") params.set("scope", nextScope);
-    if (nextSearch.trim() && nextScope !== "templates") {
-      params.set("search", nextSearch.trim());
-    }
+  const getDocumentsPath = (params: URLSearchParams) => {
     const query = params.toString();
     return withWorkspace(`/docs${query ? `?${query}` : ""}`);
+  };
+
+  const getDocumentsHref = (nextScope: DocumentScope, nextSearch = search) => {
+    const params = new URLSearchParams(rawSearchParams);
+    params.delete("page");
+    if (nextScope === "all") {
+      params.delete("scope");
+    } else {
+      params.set("scope", nextScope);
+    }
+    if (nextScope === "templates") {
+      ["access", "direction", "owner", "search", "sort", "updated"].forEach(
+        (key) => {
+          params.delete(key);
+        },
+      );
+    } else if (nextSearch.trim()) {
+      params.set("search", nextSearch.trim());
+    } else {
+      params.delete("search");
+    }
+    if (nextScope === "mine") params.delete("owner");
+    return getDocumentsPath(params);
+  };
+
+  const updateListControls = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(rawSearchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    });
+    params.delete("page");
+    router.push(getDocumentsPath(params), { scroll: false });
+  };
+
+  const goToPage = (page: number) => {
+    const params = new URLSearchParams(rawSearchParams);
+    if (page <= 1) {
+      params.delete("page");
+    } else {
+      params.set("page", String(page));
+    }
+    router.push(getDocumentsPath(params), { scroll: false });
   };
 
   const handleCreate = (template: DocumentTemplate) => {
@@ -220,11 +443,53 @@ export const DocumentsHome = () => {
     );
   };
 
-  const showTemplateGallery = scope === "templates";
   const visibleTemplates = showTemplateGallery
     ? documentTemplates
     : documentTemplates.slice(0, 5);
   const copy = scopeCopy[scope];
+  const selectedAccessLabel =
+    accessOptions.find((option) => option.value === listState.access)?.label ??
+    "All access";
+  const selectedOwnerLabel =
+    ownerOptions.find((option) => option.value === listState.owner)?.label ??
+    "Anyone";
+  const selectedUpdatedLabel =
+    updatedOptions.find((option) => option.value === listState.updated)
+      ?.label ?? "Any time";
+  const hasCustomListControls =
+    listState.access !== "all" ||
+    (scope !== "mine" && listState.owner !== "all") ||
+    listState.updated !== "all" ||
+    listState.sort !== "updated" ||
+    listState.direction !== "desc";
+
+  useEffect(() => {
+    if (
+      isPending ||
+      showTemplateGallery ||
+      listState.page === pagination.page
+    ) {
+      return;
+    }
+    const params = new URLSearchParams(rawSearchParams);
+    if (pagination.page === 1) {
+      params.delete("page");
+    } else {
+      params.set("page", String(pagination.page));
+    }
+    const query = params.toString();
+    router.replace(withWorkspace(`/docs${query ? `?${query}` : ""}`), {
+      scroll: false,
+    });
+  }, [
+    isPending,
+    listState.page,
+    pagination.page,
+    rawSearchParams,
+    router,
+    showTemplateGallery,
+    withWorkspace,
+  ]);
 
   return (
     <Box className="h-dvh min-w-0 overflow-y-auto">
@@ -286,7 +551,7 @@ export const DocumentsHome = () => {
           ))}
         </Flex>
       </Box>
-      <Box className="mx-auto w-full max-w-[90rem] px-6 py-7 sm:px-8 lg:px-10 lg:py-8">
+      <Box className="mx-auto w-full max-w-[90rem] px-6 pt-7 pb-32 sm:px-8 lg:px-10 lg:pt-8">
         <Box className="mb-6">
           <Text as="h1" fontSize="2xl" fontWeight="semibold">
             {search ? `Results for “${search}”` : copy.heading}
@@ -336,21 +601,104 @@ export const DocumentsHome = () => {
                 {search ? "Matching documents" : copy.heading}
               </Text>
               <Text color="muted">
-                {documents.length}{" "}
-                {documents.length === 1 ? "document" : "documents"}
+                {filteredDocuments.length}{" "}
+                {filteredDocuments.length === 1 ? "document" : "documents"}
               </Text>
             </Flex>
+            <Flex
+              align="center"
+              className="border-border/70 border-b-[0.5px] py-3"
+              gap={2}
+              wrap
+            >
+              <DocumentControlMenu
+                active={listState.access !== "all"}
+                icon={LockKeyholeIcon}
+                label={
+                  listState.access === "all"
+                    ? "Access"
+                    : `Access: ${selectedAccessLabel}`
+                }
+                onChange={(access) => {
+                  updateListControls({
+                    access: access === "all" ? null : access,
+                  });
+                }}
+                options={accessOptions}
+                value={listState.access}
+              />
+              {scope !== "mine" ? (
+                <DocumentControlMenu
+                  active={listState.owner !== "all"}
+                  icon={UserIcon}
+                  label={
+                    listState.owner === "all" ? "Owner" : selectedOwnerLabel
+                  }
+                  onChange={(owner) => {
+                    updateListControls({
+                      owner: owner === "all" ? null : owner,
+                    });
+                  }}
+                  options={ownerOptions}
+                  value={listState.owner}
+                />
+              ) : null}
+              <DocumentControlMenu
+                active={listState.updated !== "all"}
+                icon={CalendarIcon}
+                label={
+                  listState.updated === "all" ? "Updated" : selectedUpdatedLabel
+                }
+                onChange={(updated) => {
+                  updateListControls({
+                    updated: updated === "all" ? null : updated,
+                  });
+                }}
+                options={updatedOptions}
+                value={listState.updated}
+              />
+              <DocumentSortMenu
+                direction={listState.direction}
+                field={listState.sort}
+                onChange={(option) => {
+                  const isDefault =
+                    option.field === "updated" && option.direction === "desc";
+                  updateListControls({
+                    direction: isDefault ? null : option.direction,
+                    sort: isDefault ? null : option.field,
+                  });
+                }}
+              />
+              {hasCustomListControls ? (
+                <Button
+                  color="tertiary"
+                  onClick={() => {
+                    updateListControls({
+                      access: null,
+                      direction: null,
+                      owner: null,
+                      sort: null,
+                      updated: null,
+                    });
+                  }}
+                  size="sm"
+                  variant="naked"
+                >
+                  Clear
+                </Button>
+              ) : null}
+            </Flex>
             {isPending ? <DocumentsTableSkeleton /> : null}
-            {!isPending && documents.length === 0 ? (
+            {!isPending && filteredDocuments.length === 0 ? (
               <EmptyDocuments
                 canCreateDocuments={canCreateDocuments}
+                isFiltered={Boolean(search) || hasCustomListControls}
                 scope={scope}
-                search={search}
               />
             ) : null}
-            {!isPending && documents.length > 0 ? (
+            {!isPending && filteredDocuments.length > 0 ? (
               <Box>
-                {documents.map((document) => (
+                {pagination.items.map((document) => (
                   <DocumentRow
                     document={document}
                     isArchiving={
@@ -369,6 +717,39 @@ export const DocumentsHome = () => {
                     withWorkspace={withWorkspace}
                   />
                 ))}
+                <Flex
+                  align="center"
+                  className="border-border/70 py-3"
+                  justify="between"
+                >
+                  <Text color="muted">
+                    {pagination.start}–{pagination.end} of {pagination.total}
+                  </Text>
+                  <Flex align="center" gap={2}>
+                    <Button
+                      color="tertiary"
+                      disabled={pagination.page <= 1}
+                      onClick={() => {
+                        goToPage(pagination.page - 1);
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      color="tertiary"
+                      disabled={pagination.page >= pagination.pageCount}
+                      onClick={() => {
+                        goToPage(pagination.page + 1);
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      Next
+                    </Button>
+                  </Flex>
+                </Flex>
               </Box>
             ) : null}
           </Box>
@@ -385,12 +766,16 @@ const DocumentRow = ({
   onArchive,
   withWorkspace,
 }: {
-  document: WorkspaceDocument;
+  document: WorkspaceDocumentSummary;
   isArchiving: boolean;
   isOwner: boolean;
   onArchive: () => void;
   withWorkspace: (path: string) => string;
 }) => {
+  let DocumentIcon = DocsIcon;
+  if (document.visibility === "private") DocumentIcon = LockKeyholeIcon;
+  if (document.visibility === "restricted") DocumentIcon = ShareIcon;
+
   return (
     <Flex
       align="center"
@@ -401,7 +786,10 @@ const DocumentRow = ({
         className="focus-visible:ring-ring/40 flex min-w-0 flex-1 items-center gap-2 rounded-sm outline-none focus-visible:ring-1"
         href={withWorkspace(`/docs/${document.id}`)}
       >
-        <DocsIcon className="text-text-muted size-[1.1rem] shrink-0" />
+        <DocumentIcon
+          className="text-text-muted size-[1.1rem] shrink-0"
+          strokeWidth={2}
+        />
         <span className="min-w-0 flex-1 truncate">{document.title}</span>
         <Text as="span" className="shrink-0" color="muted">
           {formatDocumentRelativeTime(document.updatedAt)}
@@ -423,8 +811,14 @@ const DocumentRow = ({
           </Menu.Button>
           <Menu.Items align="end" className="min-w-52">
             <Menu.Group>
-              <Menu.Item className="text-danger" onSelect={onArchive}>
-                <ArchiveIcon className="size-4" />
+              <Menu.Item
+                className="text-danger dark:!text-danger"
+                onSelect={onArchive}
+              >
+                <ArchiveIcon
+                  className="text-danger dark:!text-danger size-4"
+                  strokeWidth={2}
+                />
                 Archive document
               </Menu.Item>
             </Menu.Group>

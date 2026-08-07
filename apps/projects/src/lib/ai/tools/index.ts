@@ -109,6 +109,7 @@ import {
   updateIntegrationRequestTool,
 } from "./integration-requests";
 import { getCustomerFeedbackTool, listCustomerFeedbackTool } from "./feedback";
+import { getDocumentDetailsTool, listDocumentsTool } from "./documents";
 
 export { navigation } from "./navigation";
 export { membersTool } from "./members";
@@ -167,6 +168,7 @@ export {
   updateIntegrationRequestTool,
 } from "./integration-requests";
 export { getCustomerFeedbackTool, listCustomerFeedbackTool } from "./feedback";
+export { getDocumentDetailsTool, listDocumentsTool } from "./documents";
 
 export const tools = {
   navigation,
@@ -213,6 +215,9 @@ export const tools = {
   // Customer feedback
   listCustomerFeedbackTool,
   getCustomerFeedbackTool,
+  // Documents
+  listDocumentsTool,
+  getDocumentDetailsTool,
   // Teams
   listTeams,
   listPublicTeams,

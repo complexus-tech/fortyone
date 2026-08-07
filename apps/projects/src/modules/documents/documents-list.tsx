@@ -16,12 +16,13 @@ import {
 import { cn } from "lib";
 import { ExpandableSearchHeader } from "@/components/shared";
 import { useUserRole, useWorkspacePath } from "@/hooks";
+import { DOCUMENTS_SIDEBAR_RECENT_LIMIT } from "./constants";
 import { useCreateDocument, useDocuments } from "./hooks";
 import { formatDocumentRelativeTime } from "./relative-time";
 import type { DocumentScope } from "./types";
 
 const scopeOptions: {
-  icon: ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
   value: DocumentScope;
 }[] = [
@@ -45,19 +46,34 @@ export const DocumentsList = () => {
   const { withWorkspace } = useWorkspacePath();
   const createDocument = useCreateDocument();
   const { data: recentDocuments = [], isPending: isRecentPending } =
-    useDocuments("", "all");
+    useDocuments("", "all", DOCUMENTS_SIDEBAR_RECENT_LIMIT);
   const requestedScope = searchParams.get("scope");
   const scope = isDocumentScope(requestedScope) ? requestedScope : "all";
   const search = searchParams.get("search") ?? "";
   const isDocumentsHome = pathname.endsWith("/docs");
   const canCreateDocuments = userRole === "admin" || userRole === "member";
+  const rawSearchParams = searchParams.toString();
 
   const getDocumentsHref = (nextScope: DocumentScope, nextSearch = search) => {
-    const params = new URLSearchParams();
-    if (nextScope !== "all") params.set("scope", nextScope);
-    if (nextSearch.trim() && nextScope !== "templates") {
-      params.set("search", nextSearch.trim());
+    const params = new URLSearchParams(rawSearchParams);
+    params.delete("page");
+    if (nextScope === "all") {
+      params.delete("scope");
+    } else {
+      params.set("scope", nextScope);
     }
+    if (nextScope === "templates") {
+      ["access", "direction", "owner", "search", "sort", "updated"].forEach(
+        (key) => {
+          params.delete(key);
+        },
+      );
+    } else if (nextSearch.trim()) {
+      params.set("search", nextSearch.trim());
+    } else {
+      params.delete("search");
+    }
+    if (nextScope === "mine") params.delete("owner");
     const query = params.toString();
     return withWorkspace(`/docs${query ? `?${query}` : ""}`);
   };
@@ -89,7 +105,7 @@ export const DocumentsList = () => {
             onClick={handleCreate}
             size="sm"
           >
-            <PlusIcon />
+            <PlusIcon strokeWidth={2} />
           </Button>
         }
         initialValue={search}
@@ -97,7 +113,10 @@ export const DocumentsList = () => {
         label="Search documents"
         leading={
           <Flex align="center" className="min-w-0" gap={2}>
-            <DocsIcon className="text-text-muted size-5 shrink-0" />
+            <DocsIcon
+              className="text-text-muted size-5 shrink-0"
+              strokeWidth={2}
+            />
             <Text className="truncate" fontSize="lg" fontWeight="semibold">
               Documents
             </Text>
@@ -129,7 +148,7 @@ export const DocumentsList = () => {
               }}
               type="button"
             >
-              <Icon className="size-[1.1rem] shrink-0" />
+              <Icon className="size-[1.1rem] shrink-0" strokeWidth={2} />
               <span className="truncate">{label}</span>
             </button>
           );
@@ -154,7 +173,7 @@ export const DocumentsList = () => {
         ) : null}
         {isRecentPending
           ? null
-          : recentDocuments.slice(0, 8).map((document) => {
+          : recentDocuments.map((document) => {
               const href = withWorkspace(`/docs/${document.id}`);
               const isActive = pathname === href;
               return (
@@ -168,9 +187,15 @@ export const DocumentsList = () => {
                   key={document.id}
                 >
                   {document.visibility === "private" ? (
-                    <LockKeyholeIcon className="size-[1.1rem] shrink-0" />
+                    <LockKeyholeIcon
+                      className="size-[1.1rem] shrink-0"
+                      strokeWidth={2}
+                    />
                   ) : (
-                    <DocsIcon className="size-[1.1rem] shrink-0" />
+                    <DocsIcon
+                      className="size-[1.1rem] shrink-0"
+                      strokeWidth={2}
+                    />
                   )}
                   <span className="min-w-0 flex-1 truncate">
                     {document.title}

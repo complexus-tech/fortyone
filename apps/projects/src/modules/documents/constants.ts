@@ -1,9 +1,15 @@
+export const DOCUMENTS_PAGE_SIZE = 15;
+export const DOCUMENTS_SIDEBAR_RECENT_LIMIT = 8;
+
 export const documentKeys = {
   all: (workspaceSlug: string) => ["documents", workspaceSlug] as const,
   lists: (workspaceSlug: string) =>
     [...documentKeys.all(workspaceSlug), "list"] as const,
-  list: (workspaceSlug: string, search = "", scope = "all") =>
-    [...documentKeys.lists(workspaceSlug), search, scope] as const,
+  list: (workspaceSlug: string, search = "", scope = "all", limit?: number) =>
+    [
+      ...documentKeys.lists(workspaceSlug),
+      { limit: limit ?? null, scope, search },
+    ] as const,
   details: (workspaceSlug: string) =>
     [...documentKeys.all(workspaceSlug), "detail"] as const,
   detail: (workspaceSlug: string, documentId: string) =>

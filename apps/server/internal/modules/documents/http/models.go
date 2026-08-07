@@ -38,6 +38,19 @@ type AppDocument struct {
 	RelatedWorkCount int                 `json:"relatedWorkCount"`
 }
 
+type AppDocumentSummary struct {
+	ID               uuid.UUID `json:"id"`
+	WorkspaceID      uuid.UUID `json:"workspaceId"`
+	Title            string    `json:"title"`
+	Visibility       string    `json:"visibility"`
+	CreatedBy        uuid.UUID `json:"createdBy"`
+	UpdatedBy        uuid.UUID `json:"updatedBy"`
+	CreatedAt        time.Time `json:"createdAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
+	CanEdit          bool      `json:"canEdit"`
+	RelatedWorkCount int       `json:"relatedWorkCount"`
+}
+
 type AppCreateDocument struct {
 	Title       string `json:"title"`
 	Visibility  string `json:"visibility"`
@@ -98,6 +111,25 @@ func toAppDocuments(coreDocuments []documents.CoreDocument, canMutate bool) []Ap
 	result := make([]AppDocument, len(coreDocuments))
 	for i, document := range coreDocuments {
 		result[i] = toAppDocument(document, canMutate)
+	}
+	return result
+}
+
+func toAppDocumentSummaries(coreDocuments []documents.CoreDocumentSummary, canMutate bool) []AppDocumentSummary {
+	result := make([]AppDocumentSummary, len(coreDocuments))
+	for i, document := range coreDocuments {
+		result[i] = AppDocumentSummary{
+			ID:               document.ID,
+			WorkspaceID:      document.WorkspaceID,
+			Title:            document.Title,
+			Visibility:       string(document.Visibility),
+			CreatedBy:        document.CreatedBy,
+			UpdatedBy:        document.UpdatedBy,
+			CreatedAt:        document.CreatedAt,
+			UpdatedAt:        document.UpdatedAt,
+			CanEdit:          document.CanEdit && canMutate,
+			RelatedWorkCount: document.RelatedWorkCount,
+		}
 	}
 	return result
 }

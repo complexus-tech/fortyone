@@ -52,11 +52,25 @@ type CoreDocument struct {
 	RelatedWorkCount int
 }
 
+type CoreDocumentSummary struct {
+	ID               uuid.UUID
+	WorkspaceID      uuid.UUID
+	Title            string
+	Visibility       Visibility
+	CreatedBy        uuid.UUID
+	UpdatedBy        uuid.UUID
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	CanEdit          bool
+	RelatedWorkCount int
+}
+
 type CoreListInput struct {
 	WorkspaceID uuid.UUID
 	UserID      uuid.UUID
 	Search      string
 	Scope       string
+	Limit       *int
 }
 
 type CoreCreateInput struct {

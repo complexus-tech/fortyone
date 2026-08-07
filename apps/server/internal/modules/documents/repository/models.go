@@ -23,6 +23,19 @@ type dbDocument struct {
 	RelatedWorkCount int        `db:"related_work_count"`
 }
 
+type dbDocumentSummary struct {
+	ID               uuid.UUID `db:"document_id"`
+	WorkspaceID      uuid.UUID `db:"workspace_id"`
+	Title            string    `db:"title"`
+	Visibility       string    `db:"visibility"`
+	CreatedBy        uuid.UUID `db:"created_by"`
+	UpdatedBy        uuid.UUID `db:"updated_by"`
+	CreatedAt        time.Time `db:"created_at"`
+	UpdatedAt        time.Time `db:"updated_at"`
+	CanEdit          bool      `db:"can_edit"`
+	RelatedWorkCount int       `db:"related_work_count"`
+}
+
 type dbDocumentMember struct {
 	UserID uuid.UUID `db:"user_id"`
 	Role   string    `db:"role"`
@@ -60,6 +73,25 @@ func toCoreDocuments(rows []dbDocument) []documents.CoreDocument {
 	result := make([]documents.CoreDocument, len(rows))
 	for i, row := range rows {
 		result[i] = toCoreDocument(row)
+	}
+	return result
+}
+
+func toCoreDocumentSummaries(rows []dbDocumentSummary) []documents.CoreDocumentSummary {
+	result := make([]documents.CoreDocumentSummary, len(rows))
+	for i, row := range rows {
+		result[i] = documents.CoreDocumentSummary{
+			ID:               row.ID,
+			WorkspaceID:      row.WorkspaceID,
+			Title:            row.Title,
+			Visibility:       documents.Visibility(row.Visibility),
+			CreatedBy:        row.CreatedBy,
+			UpdatedBy:        row.UpdatedBy,
+			CreatedAt:        row.CreatedAt,
+			UpdatedAt:        row.UpdatedAt,
+			CanEdit:          row.CanEdit,
+			RelatedWorkCount: row.RelatedWorkCount,
+		}
 	}
 	return result
 }

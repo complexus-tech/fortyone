@@ -17,9 +17,11 @@ var (
 	ErrNotFound     = sql.ErrNoRows
 )
 
+const maxListLimit = 100
+
 // Repository provides persistence for workspace documents and their relationships.
 type Repository interface {
-	List(ctx context.Context, input CoreListInput) ([]CoreDocument, error)
+	List(ctx context.Context, input CoreListInput) ([]CoreDocumentSummary, error)
 	Get(ctx context.Context, workspaceID, userID, documentID uuid.UUID) (CoreDocument, error)
 	Create(ctx context.Context, input CoreCreateInput) (CoreDocument, error)
 	Duplicate(ctx context.Context, workspaceID, userID, documentID uuid.UUID) (CoreDocument, error)
@@ -29,7 +31,7 @@ type Repository interface {
 	SetAccess(ctx context.Context, input CoreAccessInput) (CoreDocument, error)
 	AddRelationship(ctx context.Context, input CoreRelationshipInput) (CoreRelatedWork, error)
 	RemoveRelationship(ctx context.Context, input CoreRelationshipInput) error
-	ListRelatedDocuments(ctx context.Context, workspaceID, userID uuid.UUID, entityType RelationshipType, entityID uuid.UUID) ([]CoreDocument, error)
+	ListRelatedDocuments(ctx context.Context, workspaceID, userID uuid.UUID, entityType RelationshipType, entityID uuid.UUID) ([]CoreDocumentSummary, error)
 	LinkMedia(ctx context.Context, input CoreMediaInput) error
 	UnlinkMedia(ctx context.Context, input CoreMediaInput) (bool, error)
 	AuthorizeMedia(ctx context.Context, input CoreMediaInput) error
@@ -44,7 +46,7 @@ func New(log *logger.Logger, repo Repository) *Service {
 	return &Service{repo: repo, log: log}
 }
 
-func (s *Service) List(ctx context.Context, input CoreListInput) ([]CoreDocument, error) {
+func (s *Service) List(ctx context.Context, input CoreListInput) ([]CoreDocumentSummary, error) {
 	ctx, span := web.AddSpan(ctx, "business.core.documents.List")
 	defer span.End()
 	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil {
@@ -53,6 +55,13 @@ func (s *Service) List(ctx context.Context, input CoreListInput) ([]CoreDocument
 	input.Search = strings.TrimSpace(input.Search)
 	if input.Scope != "" && input.Scope != "all" && input.Scope != "mine" && input.Scope != "shared" {
 		return nil, ErrInvalidInput
+	}
+	if input.Limit != nil {
+		if *input.Limit <= 0 {
+			return nil, ErrInvalidInput
+		}
+		limit := min(*input.Limit, maxListLimit)
+		input.Limit = &limit
 	}
 	return s.repo.List(ctx, input)
 }
@@ -156,7 +165,7 @@ func (s *Service) RemoveRelationship(ctx context.Context, input CoreRelationship
 	return s.repo.RemoveRelationship(ctx, input)
 }
 
-func (s *Service) ListRelatedDocuments(ctx context.Context, workspaceID, userID uuid.UUID, entityType RelationshipType, entityID uuid.UUID) ([]CoreDocument, error) {
+func (s *Service) ListRelatedDocuments(ctx context.Context, workspaceID, userID uuid.UUID, entityType RelationshipType, entityID uuid.UUID) ([]CoreDocumentSummary, error) {
 	if workspaceID == uuid.Nil || userID == uuid.Nil || entityID == uuid.Nil || !validRelationshipType(entityType) {
 		return nil, ErrInvalidInput
 	}

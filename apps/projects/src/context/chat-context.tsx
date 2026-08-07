@@ -14,6 +14,7 @@ import { useMayaChat } from "@/modules/maya";
 type ChatContextType = {
   chat: ReturnType<typeof useMayaChat>;
   openChat: (message?: string) => void;
+  openChatWithDraft: (draft: string) => void;
   closeChat: () => void;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
@@ -55,6 +56,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setIsOpen(true);
   };
 
+  const openChatWithDraft = (draft: string) => {
+    pendingInitialMessageRef.current = null;
+    chat.setInput(draft);
+    setIsOpen(true);
+  };
+
   const closeChat = () => {
     setIsOpen(false);
     pendingInitialMessageRef.current = null;
@@ -67,6 +74,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         closeChat,
         isOpen,
         openChat,
+        openChatWithDraft,
         setIsOpen,
       }}
     >
