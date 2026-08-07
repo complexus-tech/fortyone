@@ -4,14 +4,6 @@ import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEditor } from "@tiptap/react";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
-import Placeholder from "@tiptap/extension-placeholder";
-import { TaskItem, TaskList } from "@tiptap/extension-list";
-import { Table } from "@tiptap/extension-table";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import TableRow from "@tiptap/extension-table-row";
 import { toast } from "sonner";
 import {
   Box,
@@ -55,21 +47,18 @@ import {
 } from "@/components/ui";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { useSession } from "@/lib/auth/client";
-import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
+import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
+import {
+  getPersistableRichTextContent,
+  RICH_TEXT_MEDIA_ACCEPT,
+  uploadRichTextMediaFiles,
+} from "@/lib/tiptap/rich-text-media";
+import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
 import { DocumentAccessMenu } from "./document-access-menu";
 import {
   deleteDocumentMediaAction,
   uploadDocumentMediaAction,
 } from "./actions";
-import {
-  DOCUMENT_MEDIA_ACCEPT,
-  DocumentImage,
-  DocumentMediaDrop,
-  DocumentVideo,
-  getPersistableDocumentContent,
-  uploadDocumentMediaFiles,
-} from "./document-media";
-import { DocumentTableMenu } from "./document-table-menu";
 import {
   useArchiveDocument,
   useDeleteDocument,
@@ -78,7 +67,6 @@ import {
   useUpdateDocument,
 } from "./hooks";
 import { RelatedWorkPanel } from "./related-work-panel";
-import { SlashCommand } from "./slash-command";
 import type { DocumentUpdate } from "./types";
 
 const documentAccessLabels = {
@@ -170,7 +158,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
       files: File[],
       position?: number,
     ) => {
-      void uploadDocumentMediaFiles({
+      void uploadRichTextMediaFiles({
         cleanup: async (media) => {
           const response = await deleteDocumentMediaAction(
             documentId,
@@ -230,36 +218,18 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
   );
 
   const editor = useEditor({
-    extensions: [
-      createRichTextStarterKit(),
-      Underline,
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Link.configure({ autolink: true }),
-      DocumentImage.configure({
-        allowBase64: false,
-        HTMLAttributes: {
-          class: "max-w-full rounded-xl border border-border",
-        },
-      }),
-      DocumentVideo,
-      DocumentMediaDrop.configure({ onFiles: handleMediaFiles }),
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      Placeholder.configure({ placeholder: "Type / for commands" }),
-      SlashCommand.configure({
-        onMediaRequest: () => {
-          window.document.getElementById(DOCUMENT_MEDIA_INPUT_ID)?.click();
-        },
-      }),
-    ],
+    extensions: createRichTextExtensions({
+      onMediaFiles: handleMediaFiles,
+      onMediaRequest: () => {
+        window.document.getElementById(DOCUMENT_MEDIA_INPUT_ID)?.click();
+      },
+      placeholder: "Type / for commands",
+    }),
     content: "",
     editable: false,
     immediatelyRender: false,
     onUpdate: ({ editor: currentEditor }) => {
-      saveContent(getPersistableDocumentContent(currentEditor));
+      saveContent(getPersistableRichTextContent(currentEditor));
     },
     onBlur: flushContent,
   });
@@ -350,7 +320,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
 
   const handleDuplicate = async () => {
     const content = editor
-      ? getPersistableDocumentContent(editor)
+      ? getPersistableRichTextContent(editor)
       : {
           contentHtml: document.contentHtml,
           contentText: document.contentText,
@@ -508,7 +478,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                 </Box>
               ) : null}
               <input
-                accept={DOCUMENT_MEDIA_ACCEPT}
+                accept={RICH_TEXT_MEDIA_ACCEPT}
                 aria-label="Upload document media"
                 className="sr-only"
                 id={DOCUMENT_MEDIA_INPUT_ID}
@@ -548,10 +518,10 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                   <TextEditor
                     bubbleMenuCreateActions={bubbleMenuCreateActions}
                     bubbleMenuShouldShow={shouldShowDocumentTextMenu}
-                    className="document-editor min-h-[55dvh] text-[1.05rem] leading-7"
+                    className="rich-document-editor min-h-[55dvh] text-[1.05rem] leading-7"
                     editor={editor}
                   />
-                  <DocumentTableMenu
+                  <RichTextTableMenu
                     editor={editor}
                     scrollTarget={scrollContainer}
                   />

@@ -41,6 +41,7 @@ func Routes(cfg Config, app *web.App) {
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	gzip := mid.Gzip(cfg.Log)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
 	h := New(storiesService, cfg.Users, commentsService, linksService, attachmentsService, cfg.Cache, cfg.Log)
 
@@ -77,6 +78,11 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/attachments", h.UploadStoryAttachment, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/stories/{id}/attachments", h.GetAttachmentsForStory, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/stories/{id}/attachments/{attachmentId}", h.DeleteAttachment, auth, workspace)
+
+	// Inline media
+	app.Post("/workspaces/{workspaceSlug}/stories/{id}/media", h.UploadStoryMedia, auth, workspace, memberAndAdmin)
+	app.Get("/workspaces/{workspaceSlug}/stories/{id}/media/{attachmentId}", h.ResolveStoryMedia, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/stories/{id}/media/{attachmentId}", h.DeleteStoryMedia, auth, workspace, memberAndAdmin)
 
 	// Associations
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/associations", h.AddAssociation, auth, workspace)

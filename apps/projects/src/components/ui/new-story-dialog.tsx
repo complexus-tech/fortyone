@@ -23,17 +23,10 @@ import {
   Divider,
 } from "ui";
 import { useEditor } from "@tiptap/react";
-import Underline from "@tiptap/extension-underline";
-import { TaskItem, TaskList } from "@tiptap/extension-list";
-import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
-import { Table } from "@tiptap/extension-table";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import TableRow from "@tiptap/extension-table-row";
 import { useQueryClient } from "@tanstack/react-query";
 import { marked } from "marked";
 import {
@@ -67,10 +60,17 @@ import type { Team } from "@/modules/teams/types";
 import type { DetailedStory, NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
+import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-description-media";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useLabels } from "@/lib/hooks/labels";
 import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
-import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
+import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
+import {
+  clearRichTextContent,
+  getPersistableRichTextContent,
+  RICH_TEXT_MEDIA_ACCEPT,
+} from "@/lib/tiptap/rich-text-media";
+import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -97,7 +97,10 @@ import { SprintsMenu } from "./story/sprints-menu";
 import { EstimateMenu } from "./story/estimate-menu";
 import { LabelsMenu } from "./story/labels-menu";
 import { FeatureGuard } from "./feature-guard";
-import { buildNewStoryDialogPayload } from "./new-story-dialog-form";
+import {
+  buildNewStoryDialogPayload,
+  runStoryCreatedFollowUp,
+} from "./new-story-dialog-form";
 
 type StoryFormAction =
   | { type: "INITIALIZE"; payload: NewStory }
@@ -240,6 +243,14 @@ export const NewStoryDialog = ({
   const [storyTitle, setStoryTitle] = useState("");
   const [storySearchQuery, setStorySearchQuery] = useState("");
   const mutation = useCreateStoryMutation();
+  const {
+    cancelStagedUploads,
+    finalizeStagedMedia,
+    handleMediaFiles,
+    inputRef: mediaInputRef,
+    openMediaPicker,
+    resetForNextStory,
+  } = useStoryDescriptionMedia();
   const objective = objectives.find((o) => o.id === storyForm.objectiveId);
   const { data: keyResults = [] } = useKeyResults(
     storyForm.objectiveId ?? "",
@@ -291,27 +302,11 @@ export const NewStoryDialog = ({
   });
 
   const editor = useEditor({
-    extensions: [
-      createRichTextStarterKit(),
-      Underline,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Link.configure({
-        autolink: true,
-      }),
-      Placeholder.configure({
-        placeholder: `${getTermDisplay("storyTerm", { capitalize: true })} description`,
-      }),
-
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-    ],
+    extensions: createRichTextExtensions({
+      onMediaFiles: handleMediaFiles,
+      onMediaRequest: openMediaPicker,
+      placeholder: `${getTermDisplay("storyTerm", { capitalize: true })} description — type / for commands`,
+    }),
     content: marked.parse(description || "", {
       gfm: true,
     }),
@@ -330,41 +325,73 @@ export const NewStoryDialog = ({
     }
     setLoading(true);
 
+    const initialContent = getPersistableRichTextContent(editor);
     const newStory = buildNewStoryDialogPayload({
       currentTeamId,
-      description: editor.getText(),
-      descriptionHTML: editor.getHTML(),
+      description: initialContent.contentText,
+      descriptionHTML: initialContent.contentHtml,
       storyForm,
       title: titleEditor.getText(),
     });
 
-    let createError: Error | null = null;
-    try {
+    const creation = (async () => {
       const createdStory = await mutation.mutateAsync(newStory);
-      await onCreated?.(createdStory);
+      let finalizedContent: Awaited<ReturnType<typeof finalizeStagedMedia>> =
+        null;
+      try {
+        finalizedContent = await finalizeStagedMedia(createdStory.id, editor);
+      } catch (error) {
+        toast.error(
+          `${getTermDisplay("storyTerm", { capitalize: true })} created, but media could not be finalized`,
+          {
+            description:
+              error instanceof Error
+                ? error.message
+                : "The description media could not be saved.",
+          },
+        );
+      }
+
+      const committedStory = finalizedContent
+        ? {
+            ...createdStory,
+            description: finalizedContent.contentText,
+            descriptionHTML: finalizedContent.contentHtml,
+          }
+        : createdStory;
+
       if (!createMore) {
         setIsOpen(false);
         setIsExpanded(false);
       }
       titleEditor.commands.setContent("");
       setStoryTitle("");
-      editor.commands.setContent("");
+      clearRichTextContent(editor);
+      resetForNextStory();
       dispatch({ type: "RESET_FORM", payload: initialForm });
       if (tier === "free") {
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: storyKeys.total(workspaceSlug),
         });
       }
-    } catch (error) {
-      createError =
-        error instanceof Error
-          ? error
-          : new Error(`Failed to create ${getTermDisplay("storyTerm")}`);
-    }
-    setLoading(false);
-    if (createError) {
-      throw createError;
-    }
+
+      const followUpError = await runStoryCreatedFollowUp(
+        committedStory,
+        onCreated,
+      );
+      if (followUpError) {
+        toast.error(
+          `${getTermDisplay("storyTerm", { capitalize: true })} created, but the follow-up action failed`,
+          {
+            description: followUpError.message,
+          },
+        );
+      }
+    })();
+
+    await creation.finally(() => {
+      setLoading(false);
+    });
   };
 
   useEffect(() => {
@@ -391,6 +418,10 @@ export const NewStoryDialog = ({
       titleEditor.commands.focus();
     }
   }, [isOpen, titleEditor]);
+
+  useEffect(() => {
+    if (!isOpen) cancelStagedUploads();
+  }, [cancelStagedUploads, isOpen]);
 
   useEffect(() => {
     if (
@@ -582,11 +613,27 @@ export const NewStoryDialog = ({
               editor={titleEditor}
             />
             <TextEditor
-              className={cn("min-h-20", {
+              className={cn("rich-document-editor min-h-20", {
                 "min-h-96": isExpanded,
               })}
               editor={editor}
             />
+            <input
+              accept={RICH_TEXT_MEDIA_ACCEPT}
+              aria-label="Upload story description media"
+              className="sr-only"
+              multiple
+              onChange={(event) => {
+                const files = Array.from(event.target.files ?? []);
+                event.target.value = "";
+                if (editor && files.length > 0) {
+                  handleMediaFiles(editor, files);
+                }
+              }}
+              ref={mediaInputRef}
+              type="file"
+            />
+            <RichTextTableMenu editor={editor} scrollTarget={null} />
             <Flex align="center" className="mt-4 gap-1.5" wrap>
               <StatusesMenu>
                 <StatusesMenu.Trigger>

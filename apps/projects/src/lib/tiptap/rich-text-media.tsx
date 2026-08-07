@@ -26,17 +26,26 @@ import {
   MaximizeIcon,
 } from "icons";
 import { cn } from "lib";
-import type { DocumentMedia } from "./types";
 
-export const DOCUMENT_MEDIA_ACCEPT =
+export type RichTextMedia = {
+  createdAt: string;
+  filename: string;
+  id: string;
+  mimeType: string;
+  size: number;
+  uploadedBy: string;
+  url: string;
+};
+
+export const RICH_TEXT_MEDIA_ACCEPT =
   "image/jpeg,image/png,image/webp,video/mp4";
 
 const MAX_DOCUMENT_MEDIA_SIZE_BYTES = 25 * 1024 * 1024;
 const MIN_IMAGE_WIDTH_PX = 160;
 const DEFAULT_IMAGE_WIDTH = "100%";
 const DEFAULT_IMAGE_ALIGNMENT = "center";
-const DOCUMENT_MEDIA_UPLOAD_TRANSACTION = "documentMediaUploadTransaction";
-const DOCUMENT_MEDIA_RECONCILE_TRANSACTION =
+const RICH_TEXT_MEDIA_UPLOAD_TRANSACTION = "documentMediaUploadTransaction";
+const RICH_TEXT_MEDIA_RECONCILE_TRANSACTION =
   "documentMediaReconcileTransaction";
 const SUPPORTED_DOCUMENT_MEDIA_TYPES = new Set([
   "image/jpeg",
@@ -57,13 +66,13 @@ const IMAGE_ALIGNMENT_OPTIONS = [
   { icon: AlignRightIcon, label: "Right", value: "right" },
 ] as const;
 
-type UploadDocumentMediaFilesOptions = {
-  cleanup: (media: DocumentMedia) => Promise<void>;
+type UploadRichTextMediaFilesOptions = {
+  cleanup: (media: RichTextMedia) => Promise<void>;
   editor: Editor;
   files: File[];
   onError: (file: File, error: unknown) => void;
   position?: number;
-  upload: (file: File) => Promise<DocumentMedia>;
+  upload: (file: File) => Promise<RichTextMedia>;
 };
 
 const normalizeImageAlignment = (value: unknown): ImageAlignment =>
@@ -177,7 +186,7 @@ const ImageAlignmentControls = ({
   </div>
 );
 
-const ResizableDocumentImageView = ({
+const ResizableRichTextImageView = ({
   editor,
   getPos,
   node,
@@ -273,7 +282,7 @@ const ResizableDocumentImageView = ({
   );
 };
 
-const DocumentVideoView = ({
+const RichTextVideoView = ({
   editor,
   getPos,
   node,
@@ -302,7 +311,7 @@ const DocumentVideoView = ({
   );
 };
 
-export const DocumentImage = Image.extend({
+export const RichTextImage = Image.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -347,11 +356,11 @@ export const DocumentImage = Image.extend({
     };
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ResizableDocumentImageView);
+    return ReactNodeViewRenderer(ResizableRichTextImageView);
   },
 });
 
-export const DocumentVideo = Node.create({
+export const RichTextVideo = Node.create({
   name: "documentVideo",
   group: "block",
   atom: true,
@@ -397,19 +406,19 @@ export const DocumentVideo = Node.create({
     ];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(DocumentVideoView);
+    return ReactNodeViewRenderer(RichTextVideoView);
   },
 });
 
 const createUploadId = () => crypto.randomUUID();
 
-const resolvedUploads = new WeakMap<Editor, Map<string, DocumentMedia>>();
+const resolvedUploads = new WeakMap<Editor, Map<string, RichTextMedia>>();
 const failedUploads = new WeakMap<Editor, Set<string>>();
 
 const getResolvedUploads = (editor: Editor) => {
   const existing = resolvedUploads.get(editor);
   if (existing) return existing;
-  const created = new Map<string, DocumentMedia>();
+  const created = new Map<string, RichTextMedia>();
   resolvedUploads.set(editor, created);
   return created;
 };
@@ -452,7 +461,7 @@ const updateMediaNodeByUploadId = (
       ...attributes,
     })
     .setMeta("addToHistory", false)
-    .setMeta(DOCUMENT_MEDIA_UPLOAD_TRANSACTION, true);
+    .setMeta(RICH_TEXT_MEDIA_UPLOAD_TRANSACTION, true);
   editor.view.dispatch(transaction);
   return true;
 };
@@ -465,11 +474,11 @@ const removeMediaNodeByUploadId = (editor: Editor, uploadId: string) => {
   const transaction = editor.state.tr
     .delete(position, position + node.nodeSize)
     .setMeta("addToHistory", false)
-    .setMeta(DOCUMENT_MEDIA_UPLOAD_TRANSACTION, true);
+    .setMeta(RICH_TEXT_MEDIA_UPLOAD_TRANSACTION, true);
   editor.view.dispatch(transaction);
 };
 
-const validateDocumentMediaFile = (file: File) => {
+const validateRichTextMediaFile = (file: File) => {
   if (!SUPPORTED_DOCUMENT_MEDIA_TYPES.has(file.type)) {
     throw new Error("Choose a JPEG, PNG, WebP, or MP4 file.");
   }
@@ -518,7 +527,7 @@ const insertUploadingMedia = ({
     .chain()
     .focus()
     .command(({ tr }) => {
-      tr.setMeta(DOCUMENT_MEDIA_UPLOAD_TRANSACTION, true);
+      tr.setMeta(RICH_TEXT_MEDIA_UPLOAD_TRANSACTION, true);
       return true;
     });
   return typeof position === "number"
@@ -526,7 +535,7 @@ const insertUploadingMedia = ({
     : chain.insertContent(content).run();
 };
 
-const hasUploadingDocumentMedia = (editor: Editor) => {
+export const hasPendingRichTextMedia = (editor: Editor) => {
   let uploading = false;
   editor.state.doc.descendants((node) => {
     if (node.attrs.isUploading === true) uploading = true;
@@ -547,6 +556,16 @@ const getUploadingMediaIds = (document: Editor["state"]["doc"]) => {
   });
   return uploadIds;
 };
+
+export const clearRichTextContent = (editor: Editor) =>
+  editor
+    .chain()
+    .command(({ tr }) => {
+      tr.setMeta(RICH_TEXT_MEDIA_UPLOAD_TRANSACTION, true);
+      return true;
+    })
+    .clearContent()
+    .run();
 
 const removeUploadingMediaFromJSON = (
   node: JSONContent,
@@ -572,8 +591,8 @@ const isEmptyDocumentContent = (content: JSONContent[] | undefined) =>
   !content?.length ||
   content.every((node) => node.type === "paragraph" && !node.content?.length);
 
-export const getPersistableDocumentContent = (editor: Editor) => {
-  if (!hasUploadingDocumentMedia(editor)) {
+export const getPersistableRichTextContent = (editor: Editor) => {
+  if (!hasPendingRichTextMedia(editor)) {
     return {
       contentHtml: editor.isEmpty ? "" : editor.getHTML(),
       contentText: editor.isEmpty ? "" : editor.getText(),
@@ -608,20 +627,20 @@ export const getPersistableDocumentContent = (editor: Editor) => {
   };
 };
 
-export const uploadDocumentMediaFiles = async ({
+export const uploadRichTextMediaFiles = async ({
   cleanup,
   editor,
   files,
   onError,
   position,
   upload,
-}: UploadDocumentMediaFilesOptions) => {
+}: UploadRichTextMediaFilesOptions) => {
   let nextPosition = position;
   const pendingUploads: Promise<void>[] = [];
 
   for (const file of files) {
     try {
-      validateDocumentMediaFile(file);
+      validateRichTextMediaFile(file);
     } catch (error) {
       onError(file, error);
       continue;
@@ -685,11 +704,11 @@ export const uploadDocumentMediaFiles = async ({
   await Promise.all(pendingUploads);
 };
 
-type DocumentMediaDropOptions = {
+type RichTextMediaDropOptions = {
   onFiles: (editor: Editor, files: File[], position?: number) => void;
 };
 
-export const DocumentMediaDrop = Extension.create<DocumentMediaDropOptions>({
+export const RichTextMediaDrop = Extension.create<RichTextMediaDropOptions>({
   name: "documentMediaDrop",
   addOptions() {
     return {
@@ -704,7 +723,7 @@ export const DocumentMediaDrop = Extension.create<DocumentMediaDropOptions>({
         appendTransaction(transactions, _oldState, newState) {
           if (
             transactions.some((transaction) =>
-              transaction.getMeta(DOCUMENT_MEDIA_RECONCILE_TRANSACTION),
+              transaction.getMeta(RICH_TEXT_MEDIA_RECONCILE_TRANSACTION),
             )
           ) {
             return null;
@@ -713,7 +732,7 @@ export const DocumentMediaDrop = Extension.create<DocumentMediaDropOptions>({
           const resolved = getResolvedUploads(editor);
           const failed = getFailedUploads(editor);
           const replacements: {
-            media: DocumentMedia;
+            media: RichTextMedia;
             node: ProseMirrorNode;
             position: number;
           }[] = [];
@@ -734,8 +753,8 @@ export const DocumentMediaDrop = Extension.create<DocumentMediaDropOptions>({
 
           const transaction = newState.tr
             .setMeta("addToHistory", false)
-            .setMeta(DOCUMENT_MEDIA_UPLOAD_TRANSACTION, true)
-            .setMeta(DOCUMENT_MEDIA_RECONCILE_TRANSACTION, true);
+            .setMeta(RICH_TEXT_MEDIA_UPLOAD_TRANSACTION, true)
+            .setMeta(RICH_TEXT_MEDIA_RECONCILE_TRANSACTION, true);
           replacements.forEach(({ media, node, position }) => {
             transaction.setNodeMarkup(position, undefined, {
               ...node.attrs,
@@ -755,7 +774,7 @@ export const DocumentMediaDrop = Extension.create<DocumentMediaDropOptions>({
         filterTransaction(transaction, state) {
           if (
             !transaction.docChanged ||
-            transaction.getMeta(DOCUMENT_MEDIA_UPLOAD_TRANSACTION)
+            transaction.getMeta(RICH_TEXT_MEDIA_UPLOAD_TRANSACTION)
           ) {
             return true;
           }

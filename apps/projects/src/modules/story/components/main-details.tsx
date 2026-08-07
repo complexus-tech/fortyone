@@ -1,9 +1,6 @@
 "use client";
 import { Box, Container, Divider, TextEditor } from "ui";
 import { useEditor } from "@tiptap/react";
-import Underline from "@tiptap/extension-underline";
-import { TaskItem, TaskList } from "@tiptap/extension-list";
-import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
@@ -11,20 +8,23 @@ import TextExtension from "@tiptap/extension-text";
 import { cn } from "lib";
 import type { ReactNode } from "react";
 import { useCallback, useEffect } from "react";
-import { Table } from "@tiptap/extension-table";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import TableRow from "@tiptap/extension-table-row";
 import { useLocalStorage, useUserRole } from "@/hooks";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { BodyContainer } from "@/components/shared";
 import { useLinks } from "@/lib/hooks/links";
-import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
+import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
+import {
+  getPersistableRichTextContent,
+  hasPendingRichTextMedia,
+  RICH_TEXT_MEDIA_ACCEPT,
+} from "@/lib/tiptap/rich-text-media";
+import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
+import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-description-media";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { RelatedDocuments } from "@/modules/documents/related-documents";
 import { useStoryById } from "../hooks/story";
-import type { DetailedStory } from "../types";
+import type { StoryUpdate } from "../types";
 import { Activities } from "./activities";
 import { Associations } from "./associations";
 import { Attachments } from "./attachments";
@@ -37,6 +37,11 @@ import { OptionsHeader } from "./options-header";
 import { Options } from "./options";
 
 const DEBOUNCE_DELAY = 1000; // 1000ms delay
+
+type QueuedStoryUpdate = {
+  payload: StoryUpdate;
+  storyId: string;
+};
 
 export const MainDetails = ({
   storyId,
@@ -53,6 +58,11 @@ export const MainDetails = ({
   const { data: links = [], isLoading: isLinksLoading } = useLinks(storyId);
   const { mutate: updateStory } = useUpdateStoryMutation();
   const { userRole } = useUserRole();
+  const {
+    handleMediaFiles,
+    inputRef: mediaInputRef,
+    openMediaPicker,
+  } = useStoryDescriptionMedia(storyId);
 
   const [isSubStoriesOpen, setIsSubStoriesOpen] = useLocalStorage(
     "isSubStoriesOpen",
@@ -69,22 +79,16 @@ export const MainDetails = ({
     description,
     teamId,
     deletedAt,
-    subStories,
     reporterId,
     associations = [],
   } = data!;
   const isDeleted = Boolean(deletedAt);
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
-  const hasOpenSectionBeforeAttachments =
-    (isSubStoriesOpen && subStories.length > 0) ||
-    (isAssociationsOpen && associations.length > 0) ||
-    (isLinksOpen && links.length > 0);
-
   const handleUpdate = useCallback(
-    (data: Partial<DetailedStory>) => {
-      updateStory({ storyId, payload: data });
+    ({ payload, storyId: targetStoryId }: QueuedStoryUpdate) => {
+      updateStory({ storyId: targetStoryId, payload });
     },
-    [storyId, updateStory],
+    [updateStory],
   );
 
   // Keep independent queues so editing one field never cancels the other field's save.
@@ -100,30 +104,22 @@ export const MainDetails = ({
     });
 
   const descriptionEditor = useEditor({
-    extensions: [
-      createRichTextStarterKit(),
-      Underline,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Link.configure({
-        autolink: true,
-      }),
-      Placeholder.configure({ placeholder: "Enter description..." }),
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-    ],
+    extensions: createRichTextExtensions({
+      onMediaFiles: handleMediaFiles,
+      onMediaRequest: openMediaPicker,
+      placeholder: "Enter description or type / for commands...",
+    }),
     content: descriptionHTML || description,
     editable: !isDeleted && userRole !== "guest",
     onUpdate: ({ editor }) => {
+      const content = getPersistableRichTextContent(editor);
       debouncedDescriptionUpdate({
-        descriptionHTML: editor.getHTML(),
-        description: editor.getText(),
+        payload: {
+          descriptionHTML: content.contentHtml,
+          description: content.contentText,
+          reconcileDescriptionMedia: !hasPendingRichTextMedia(editor),
+        },
+        storyId,
       });
     },
     onBlur: () => {
@@ -143,7 +139,8 @@ export const MainDetails = ({
     editable: !isDeleted && userRole !== "guest",
     onUpdate: ({ editor }) => {
       debouncedTitleUpdate({
-        title: editor.getText(),
+        payload: { title: editor.getText() },
+        storyId,
       });
     },
     onBlur: () => {
@@ -151,6 +148,14 @@ export const MainDetails = ({
     },
     immediatelyRender: false,
   });
+
+  useEffect(
+    () => () => {
+      flushDescriptionUpdate();
+      flushTitleUpdate();
+    },
+    [flushDescriptionUpdate, flushTitleUpdate, storyId],
+  );
 
   // Only apply external updates while the field is idle. Replacing a focused
   // Tiptap document resets its selection and can overwrite a newer local draft.
@@ -187,7 +192,7 @@ export const MainDetails = ({
       </Box>
 
       <Container
-        className={cn("max-w-7xl pt-4 md:pt-7", {
+        className={cn("max-w-6xl pt-4 md:pt-7", {
           "md:pt-2": isDialog,
         })}
       >
@@ -200,10 +205,29 @@ export const MainDetails = ({
         <FeedbackSection.Banner storyId={storyId} />
         <TextEditor
           asTitle
-          className="text-foreground relative -left-px text-3xl font-semibold md:text-4xl"
+          className="text-foreground relative -left-px mb-5 text-3xl font-semibold md:text-4xl"
           editor={titleEditor}
         />
-        <TextEditor className="text-lg" editor={descriptionEditor} />
+        <input
+          accept={RICH_TEXT_MEDIA_ACCEPT}
+          aria-label="Upload story description media"
+          className="sr-only"
+          multiple
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            event.target.value = "";
+            if (descriptionEditor && files.length > 0) {
+              handleMediaFiles(descriptionEditor, files);
+            }
+          }}
+          ref={mediaInputRef}
+          type="file"
+        />
+        <TextEditor
+          className="rich-document-editor text-lg"
+          editor={descriptionEditor}
+        />
+        <RichTextTableMenu editor={descriptionEditor} scrollTarget={null} />
         <SubStories
           isSubStoriesOpen={isSubStoriesOpen}
           parent={data!}
@@ -239,13 +263,7 @@ export const MainDetails = ({
           />
         </Box>
 
-        <Attachments
-          className={cn("border-border mt-2.5 border-t-[0.5px] pt-2.5", {
-            "mt-0 border-0 pt-0": hasOpenSectionBeforeAttachments,
-          })}
-          compactHeader={hasOpenSectionBeforeAttachments}
-          storyId={storyId}
-        />
+        <Attachments className="mt-4" storyId={storyId} />
         <Divider className="my-6" />
         <Activities isDialog={isDialog} storyId={storyId} teamId={teamId} />
       </Container>

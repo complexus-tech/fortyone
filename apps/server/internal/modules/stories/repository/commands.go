@@ -349,35 +349,89 @@ func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid
 	return nil
 }
 
-// HardBulkDelete performs permanent removal of the stories with the specified IDs.
-func (r *repo) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
+// HardBulkDelete permanently removes the stories and returns inline-media
+// attachments that no feature references after the deletion.
+func (r *repo) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) ([]uuid.UUID, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.HardBulkDelete")
 	defer span.End()
 
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin hard story deletion: %w", err)
+	}
+	defer tx.Rollback()
+
 	params := map[string]any{"ids": ids, "workspace_id": workspaceId}
-	query := `
-		DELETE FROM stories
-		WHERE id = ANY(:ids)
-			AND workspace_id = :workspace_id;
-	`
+	orphanedAttachmentIDs := []uuid.UUID{}
+	orphanQuery := `
+		SELECT DISTINCT inline_media.attachment_id
+		FROM story_inline_attachments inline_media
+		JOIN stories target_story ON target_story.id = inline_media.story_id
+		JOIN attachments attachment ON attachment.attachment_id = inline_media.attachment_id
+		WHERE target_story.id = ANY(:ids)
+			AND target_story.workspace_id = :workspace_id
+			AND attachment.workspace_id = target_story.workspace_id
+			AND NOT EXISTS (
+				SELECT 1
+				FROM story_inline_attachments other_inline_media
+				JOIN stories other_inline_story ON other_inline_story.id = other_inline_media.story_id
+				WHERE other_inline_media.attachment_id = inline_media.attachment_id
+					AND NOT (
+						other_inline_story.workspace_id = :workspace_id
+						AND other_inline_story.id = ANY(:ids)
+					)
+			)
+			AND NOT EXISTS (
+				SELECT 1
+				FROM story_attachments other_story_media
+				JOIN stories other_story ON other_story.id = other_story_media.story_id
+				WHERE other_story_media.attachment_id = inline_media.attachment_id
+					AND NOT (
+						other_story.workspace_id = :workspace_id
+						AND other_story.id = ANY(:ids)
+					)
+			)
+			AND NOT EXISTS (
+				SELECT 1
+				FROM document_attachments document_media
+				WHERE document_media.attachment_id = inline_media.attachment_id
+			)`
+	orphanStmt, err := tx.PrepareNamedContext(ctx, orphanQuery)
+	if err != nil {
+		return nil, fmt.Errorf("prepare orphaned story media query: %w", err)
+	}
+	defer orphanStmt.Close()
+	if err := orphanStmt.SelectContext(ctx, &orphanedAttachmentIDs, params); err != nil {
+		return nil, fmt.Errorf("select orphaned story media: %w", err)
+	}
+
+	deleteQuery := `
+			DELETE FROM stories
+			WHERE id = ANY(:ids)
+				AND workspace_id = :workspace_id;
+		`
 
 	r.log.Info(ctx, fmt.Sprintf("Hard deleting stories: %v", ids), "ids", ids)
 
-	result, err := r.db.NamedExecContext(ctx, query, params)
+	result, err := tx.NamedExecContext(ctx, deleteQuery, params)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to hard delete stories: %s", err)
 		r.log.Error(ctx, errMsg, "ids", ids)
-		return err
+		return nil, err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("Failed to get rows affected: %s", err), "ids", ids)
-		return err
+		return nil, err
 	}
 	if rowsAffected == 0 {
 		r.log.Warn(ctx, "No stories found to hard delete", "ids", ids)
-		return fmt.Errorf("no stories found to delete")
+		return nil, fmt.Errorf("no stories found to delete")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit hard story deletion: %w", err)
 	}
 
 	r.log.Info(ctx, fmt.Sprintf("Stories hard deleted successfully: %v (%d rows)", ids, rowsAffected),
@@ -386,7 +440,7 @@ func (r *repo) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId 
 		attribute.Int("stories.length", len(ids)),
 		attribute.Int64("rows.affected", rowsAffected)))
 
-	return nil
+	return orphanedAttachmentIDs, nil
 }
 
 // Restore restores a story with the specified ID.
@@ -864,11 +918,7 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 	if err != nil {
 		return stories.CoreSingleStory{}, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
+	defer tx.Rollback()
 
 	// Get the original story
 	originalStory, err := r.getStoryById(ctx, originalStoryID, workspaceId)
@@ -949,6 +999,29 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 		return stories.CoreSingleStory{}, fmt.Errorf("failed to create duplicate story: %w", err)
 	}
 
+	originalMediaPath := storyMediaPath(originalStoryID)
+	duplicatedMediaPath := storyMediaPath(newStory.ID)
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE stories
+		SET description_html = REPLACE(description_html, $1, $2)
+		WHERE id = $3 AND workspace_id = $4`, originalMediaPath, duplicatedMediaPath, newStory.ID, workspaceId); err != nil {
+		return stories.CoreSingleStory{}, fmt.Errorf("rewrite duplicated story media URLs: %w", err)
+	}
+	newStory.DescriptionHTML = rewriteStoryMediaHTML(newStory.DescriptionHTML, originalStoryID, newStory.ID)
+
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO story_inline_attachments (story_id, attachment_id, created_by)
+		SELECT $1, media.attachment_id, $2
+		FROM story_inline_attachments media
+		JOIN stories source_story ON source_story.id = media.story_id
+		JOIN attachments attachment ON attachment.attachment_id = media.attachment_id
+		WHERE media.story_id = $3
+			AND source_story.workspace_id = $4
+			AND attachment.workspace_id = source_story.workspace_id
+		ON CONFLICT (story_id, attachment_id) DO NOTHING`, newStory.ID, userID, originalStoryID, workspaceId); err != nil {
+		return stories.CoreSingleStory{}, fmt.Errorf("copy duplicated story media links: %w", err)
+	}
+
 	// Commit the sequence ID transaction
 	if err := commit(); err != nil {
 		return stories.CoreSingleStory{}, fmt.Errorf("failed to commit sequence ID transaction: %w", err)
@@ -966,6 +1039,18 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 	))
 
 	return toCoreStory(newStory), nil
+}
+
+func storyMediaPath(storyID uuid.UUID) string {
+	return "/stories/" + storyID.String() + "/media/"
+}
+
+func rewriteStoryMediaHTML(contentHTML *string, originalStoryID, duplicatedStoryID uuid.UUID) *string {
+	if contentHTML == nil {
+		return nil
+	}
+	rewritten := strings.ReplaceAll(*contentHTML, storyMediaPath(originalStoryID), storyMediaPath(duplicatedStoryID))
+	return &rewritten
 }
 
 // CountStoriesInWorkspace returns the count of stories in a workspace.

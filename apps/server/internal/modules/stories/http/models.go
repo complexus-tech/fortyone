@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
@@ -27,6 +28,16 @@ type AppTeamSummary struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
 	Code string    `json:"code"`
+}
+
+type AppStoryMedia struct {
+	ID         uuid.UUID `json:"id"`
+	Filename   string    `json:"filename"`
+	Size       int64     `json:"size"`
+	MimeType   string    `json:"mimeType"`
+	URL        string    `json:"url"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UploadedBy uuid.UUID `json:"uploadedBy"`
 }
 
 type AppObjectiveSummary struct {
@@ -696,6 +707,18 @@ func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
 		StartDate:       a.StartDate.TimePtr(),
 		EndDate:         a.EndDate.TimePtr(),
 		Team:            a.Team,
+	}
+}
+
+func toAppStoryMedia(file attachments.FileInfo, stableURL string) AppStoryMedia {
+	return AppStoryMedia{
+		ID:         file.ID,
+		Filename:   file.Filename,
+		Size:       file.Size,
+		MimeType:   file.MimeType,
+		URL:        stableURL,
+		CreatedAt:  file.CreatedAt,
+		UploadedBy: file.UploadedBy,
 	}
 }
 

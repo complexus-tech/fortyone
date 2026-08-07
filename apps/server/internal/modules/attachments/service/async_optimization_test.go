@@ -27,8 +27,16 @@ func (testMultipartFile) Close() error {
 }
 
 type attachmentRepositoryStub struct {
-	attachment          CoreAttachment
-	deletedAttachmentID uuid.UUID
+	attachment            CoreAttachment
+	deletedAttachmentID   uuid.UUID
+	storyExists           bool
+	storyMediaAttachment  CoreAttachment
+	storyMediaStoryID     uuid.UUID
+	storyMediaWorkspaceID uuid.UUID
+	linkedStoryMediaID    uuid.UUID
+	linkedStoryMediaUser  uuid.UUID
+	storyMediaUnlinkCount int
+	storyMediaOrphaned    bool
 }
 
 func (r *attachmentRepositoryStub) CreateAttachment(_ context.Context, attachment CoreAttachment) (CoreAttachment, error) {
@@ -51,6 +59,38 @@ func (r *attachmentRepositoryStub) GetAttachmentByBlobName(_ context.Context, bl
 
 func (r *attachmentRepositoryStub) GetAttachmentsByStoryID(_ context.Context, _ uuid.UUID) ([]CoreAttachment, error) {
 	return nil, nil
+}
+
+func (r *attachmentRepositoryStub) StoryExistsInWorkspace(_ context.Context, storyID, workspaceID uuid.UUID) (bool, error) {
+	return r.storyExists && storyID == r.storyMediaStoryID && workspaceID == r.storyMediaWorkspaceID, nil
+}
+
+func (r *attachmentRepositoryStub) LinkStoryMedia(_ context.Context, storyID, attachmentID, createdBy, workspaceID uuid.UUID) error {
+	if !r.storyExists || storyID != r.storyMediaStoryID || workspaceID != r.storyMediaWorkspaceID {
+		return ErrNotFound
+	}
+	r.linkedStoryMediaID = attachmentID
+	r.linkedStoryMediaUser = createdBy
+	return nil
+}
+
+func (r *attachmentRepositoryStub) AuthorizeStoryMedia(_ context.Context, storyID, attachmentID, workspaceID uuid.UUID) (CoreAttachment, error) {
+	if storyID != r.storyMediaStoryID ||
+		workspaceID != r.storyMediaWorkspaceID ||
+		attachmentID != r.storyMediaAttachment.ID {
+		return CoreAttachment{}, ErrNotFound
+	}
+	return r.storyMediaAttachment, nil
+}
+
+func (r *attachmentRepositoryStub) UnlinkStoryMedia(_ context.Context, storyID, attachmentID, workspaceID uuid.UUID) (bool, error) {
+	if storyID != r.storyMediaStoryID ||
+		workspaceID != r.storyMediaWorkspaceID ||
+		attachmentID != r.storyMediaAttachment.ID {
+		return false, ErrNotFound
+	}
+	r.storyMediaUnlinkCount++
+	return r.storyMediaOrphaned, nil
 }
 
 func (r *attachmentRepositoryStub) UpdateAttachmentStorageMetadata(_ context.Context, blobName string, size int64, mimeType string) error {

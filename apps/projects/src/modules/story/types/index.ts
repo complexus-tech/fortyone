@@ -57,6 +57,10 @@ export type NewStory = Partial<DetailedStory> & {
   labelIds?: string[];
 };
 
+export type StoryUpdate = Partial<DetailedStory> & {
+  reconcileDescriptionMedia?: boolean;
+};
+
 export type StoryAttachment = {
   id: string;
   filename: string;

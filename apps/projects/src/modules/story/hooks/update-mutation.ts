@@ -17,12 +17,12 @@ import {
   moveStoryBetweenGroups,
   parseGroupQueryKey,
 } from "@/modules/stories/utils/optimistic";
-import type { DetailedStory } from "../types";
+import type { DetailedStory, StoryUpdate } from "../types";
 import { updateStoryAction } from "../actions/update-story";
 
 type UpdateStoryVariables = {
   storyId: string;
-  payload: Partial<DetailedStory>;
+  payload: StoryUpdate;
 };
 
 type UpdateStoryContext = {
@@ -50,10 +50,12 @@ export const useUpdateStoryMutation = () => {
     },
 
     onMutate: ({ storyId, payload }) => {
+      const storyPayload = { ...payload };
+      delete storyPayload.reconcileDescriptionMedia;
       const optimisticPayload = buildOptimisticStoryPayload(
         queryClient,
         workspaceSlug,
-        payload,
+        storyPayload,
       );
 
       queryClient.cancelQueries({
@@ -123,9 +125,11 @@ export const useUpdateStoryMutation = () => {
     },
 
     onSuccess: (_res, { storyId, payload }) => {
+      const storyPayload = { ...payload };
+      delete storyPayload.reconcileDescriptionMedia;
       analytics.track("story_updated", {
         storyId,
-        ...payload,
+        ...storyPayload,
       });
 
       queryClient.invalidateQueries({

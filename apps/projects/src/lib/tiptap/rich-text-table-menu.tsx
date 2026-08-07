@@ -42,8 +42,8 @@ const getActiveTableElement = (editor: Editor) => {
       ? domAtPosition
       : domAtPosition.parentElement;
   return (
-    element?.closest<HTMLElement>(".tableWrapper") ??
     element?.closest<HTMLElement>("table") ??
+    element?.closest<HTMLElement>(".tableWrapper") ??
     null
   );
 };
@@ -76,6 +76,16 @@ const tableBoundsAreEqual = (
   current?.right === next?.right &&
   current?.top === next?.top &&
   current?.width === next?.width;
+
+const getScrollContainer = (element: HTMLElement) => {
+  let parent = element.parentElement;
+  while (parent) {
+    const overflowY = window.getComputedStyle(parent).overflowY;
+    if (overflowY === "auto" || overflowY === "scroll") return parent;
+    parent = parent.parentElement;
+  }
+  return null;
+};
 
 const getActiveTableRect = (editor: Editor): TableRect | null => {
   const { $from } = editor.state.selection;
@@ -194,6 +204,8 @@ const useActiveTableBounds = (
   const [bounds, setBounds] = useState<TableBounds | null>(null);
 
   useEffect(() => {
+    const resolvedScrollTarget =
+      scrollTarget ?? getScrollContainer(editor.view.dom);
     const updateBounds = () => {
       const activeTable = getActiveTableElement(editor);
       if (!activeTable) {
@@ -202,7 +214,7 @@ const useActiveTableBounds = (
       }
 
       const tableRect = activeTable.getBoundingClientRect();
-      const viewportRect = scrollTarget?.getBoundingClientRect();
+      const viewportRect = resolvedScrollTarget?.getBoundingClientRect();
       const isVisible =
         !viewportRect ||
         (tableRect.bottom > viewportRect.top &&
@@ -223,14 +235,16 @@ const useActiveTableBounds = (
         ? null
         : new ResizeObserver(updateBounds);
     resizeObserver?.observe(editor.view.dom);
-    scrollTarget?.addEventListener("scroll", updateBounds, { passive: true });
+    resolvedScrollTarget?.addEventListener("scroll", updateBounds, {
+      passive: true,
+    });
     window.addEventListener("resize", updateBounds);
     editor.on("transaction", updateBounds);
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
       resizeObserver?.disconnect();
-      scrollTarget?.removeEventListener("scroll", updateBounds);
+      resolvedScrollTarget?.removeEventListener("scroll", updateBounds);
       window.removeEventListener("resize", updateBounds);
       editor.off("transaction", updateBounds);
     };
@@ -239,7 +253,7 @@ const useActiveTableBounds = (
   return bounds;
 };
 
-const ActiveDocumentTableMenu = ({
+const ActiveRichTextTableMenu = ({
   editor,
   scrollTarget,
 }: {
@@ -431,7 +445,7 @@ const ActiveDocumentTableMenu = ({
   );
 };
 
-export const DocumentTableMenu = ({
+export const RichTextTableMenu = ({
   editor,
   scrollTarget,
 }: {
@@ -441,7 +455,7 @@ export const DocumentTableMenu = ({
   const tableSelection = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) =>
-      currentEditor?.isActive("table")
+      currentEditor?.isEditable && currentEditor.isActive("table")
         ? currentEditor.state.selection.from
         : null,
   });
@@ -449,6 +463,6 @@ export const DocumentTableMenu = ({
   if (!editor || tableSelection === null) return null;
 
   return (
-    <ActiveDocumentTableMenu editor={editor} scrollTarget={scrollTarget} />
+    <ActiveRichTextTableMenu editor={editor} scrollTarget={scrollTarget} />
   );
 };

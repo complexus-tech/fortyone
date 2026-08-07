@@ -371,6 +371,11 @@ func (r *repo) Delete(ctx context.Context, workspaceID, userID, documentID uuid.
 				SELECT 1
 				FROM story_attachments story_media
 				WHERE story_media.attachment_id = media.attachment_id
+			)
+			AND NOT EXISTS (
+				SELECT 1
+				FROM story_inline_attachments inline_story_media
+				WHERE inline_story_media.attachment_id = media.attachment_id
 			)`, documentID, workspaceID, userID); err != nil {
 		return nil, err
 	}
@@ -582,6 +587,8 @@ func (r *repo) UnlinkMedia(ctx context.Context, input documents.CoreMediaInput) 
 			SELECT 1 FROM document_attachments WHERE attachment_id = $1
 		) AND NOT EXISTS (
 			SELECT 1 FROM story_attachments WHERE attachment_id = $1
+		) AND NOT EXISTS (
+			SELECT 1 FROM story_inline_attachments WHERE attachment_id = $1
 		)`, attachmentID); err != nil {
 		return false, err
 	}

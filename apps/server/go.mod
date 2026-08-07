@@ -33,6 +33,7 @@ require (
 	github.com/stripe/stripe-go/v82 v82.0.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.33.0
 	golang.org/x/image v0.28.0
+	golang.org/x/net v0.38.0
 	golang.org/x/text v0.26.0
 	google.golang.org/api v0.221.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
@@ -100,7 +101,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/time v0.10.0 // indirect

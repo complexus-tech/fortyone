@@ -25,6 +25,7 @@ import (
 var (
 	ErrNotFound                   = errors.New("story not found")
 	ErrInvalidStoryReference      = errors.New("invalid story reference")
+	ErrInvalidStoryMediaReference = errors.New("invalid story media reference")
 	ErrObjectiveKeyResultMismatch = errors.New("key result does not belong to objective")
 )
 
@@ -33,12 +34,13 @@ type Repository interface {
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreSingleStory, error)
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
-	HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
+	HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) ([]uuid.UUID, error)
 	Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	BulkArchive(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	BulkUnarchive(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
+	UpdateWithMediaReconciliation(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any, referencedAttachmentIDs []uuid.UUID) ([]uuid.UUID, error)
 	UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error
 	GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error)
 	Create(ctx context.Context, story *CoreSingleStory) (CoreSingleStory, error)
@@ -101,6 +103,9 @@ type updateOptions struct {
 	enqueueGitHubSync        bool
 	recordDescriptionUpdates bool
 	activityReason           string
+	reconcileMedia           bool
+	referencedMediaIDs       []uuid.UUID
+	orphanedMediaIDs         *[]uuid.UUID
 }
 
 type commentOptions struct {
@@ -481,6 +486,51 @@ func (s *Service) Update(ctx context.Context, storyID, workspaceID uuid.UUID, up
 	})
 }
 
+// UpdateWithMediaReconciliation applies an authoritative description snapshot.
+// The caller must only use this after all editor uploads have settled. Ordinary
+// updates intentionally do not reconcile media so an older autosave that omits
+// a pending upload cannot unlink it.
+func (s *Service) UpdateWithMediaReconciliation(
+	ctx context.Context,
+	storyID, workspaceID uuid.UUID,
+	updates map[string]any,
+	referencedMediaIDs []uuid.UUID,
+) ([]uuid.UUID, error) {
+	if storyID == uuid.Nil || workspaceID == uuid.Nil {
+		return nil, ErrInvalidStoryMediaReference
+	}
+	if _, hasDescriptionHTML := updates["description_html"].(string); !hasDescriptionHTML {
+		return nil, ErrInvalidStoryMediaReference
+	}
+	seenMediaIDs := make(map[uuid.UUID]struct{}, len(referencedMediaIDs))
+	deduplicatedMediaIDs := make([]uuid.UUID, 0, len(referencedMediaIDs))
+	for _, attachmentID := range referencedMediaIDs {
+		if attachmentID == uuid.Nil {
+			return nil, ErrInvalidStoryMediaReference
+		}
+		if _, seen := seenMediaIDs[attachmentID]; seen {
+			continue
+		}
+		seenMediaIDs[attachmentID] = struct{}{}
+		deduplicatedMediaIDs = append(deduplicatedMediaIDs, attachmentID)
+	}
+
+	actorID, _ := auth.GetUserID(ctx)
+	orphanedMediaIDs := []uuid.UUID{}
+	err := s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
+		publishEvents:            true,
+		enqueueGitHubSync:        true,
+		recordDescriptionUpdates: false,
+		reconcileMedia:           true,
+		referencedMediaIDs:       deduplicatedMediaIDs,
+		orphanedMediaIDs:         &orphanedMediaIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return orphanedMediaIDs, nil
+}
+
 func (s *Service) UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error {
 	return s.UpdateExternalWithReason(ctx, actorID, storyID, workspaceID, updates, "")
 }
@@ -560,7 +610,24 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 			delete(updates, field)
 		}
 	}
+	if len(updates) == 0 && !options.reconcileMedia {
+		return nil
+	}
 	if len(updates) == 0 {
+		orphanedMediaIDs, err := s.repo.UpdateWithMediaReconciliation(
+			ctx,
+			storyID,
+			workspaceID,
+			updates,
+			options.referencedMediaIDs,
+		)
+		if err != nil {
+			span.RecordError(err)
+			return err
+		}
+		if options.orphanedMediaIDs != nil {
+			*options.orphanedMediaIDs = append((*options.orphanedMediaIDs)[:0], orphanedMediaIDs...)
+		}
 		return nil
 	}
 
@@ -584,10 +651,27 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		}
 	}
 
-	// Update the story
-	if err := s.repo.Update(ctx, storyID, workspaceID, updates); err != nil {
-		span.RecordError(err)
-		return err
+	// Update the story, reconciling inline media only for an explicitly
+	// authoritative editor snapshot.
+	var updateErr error
+	if options.reconcileMedia {
+		var orphanedMediaIDs []uuid.UUID
+		orphanedMediaIDs, updateErr = s.repo.UpdateWithMediaReconciliation(
+			ctx,
+			storyID,
+			workspaceID,
+			updates,
+			options.referencedMediaIDs,
+		)
+		if updateErr == nil && options.orphanedMediaIDs != nil {
+			*options.orphanedMediaIDs = append((*options.orphanedMediaIDs)[:0], orphanedMediaIDs...)
+		}
+	} else {
+		updateErr = s.repo.Update(ctx, storyID, workspaceID, updates)
+	}
+	if updateErr != nil {
+		span.RecordError(updateErr)
+		return updateErr
 	}
 	ca := []CoreActivity{}
 	activityReason := normalizeActivityReason(options.activityReason)
@@ -791,16 +875,17 @@ func (s *Service) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId u
 }
 
 // HardBulkDelete performs permanent removal of the stories with the specified IDs.
-func (s *Service) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
+func (s *Service) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) ([]uuid.UUID, error) {
 	s.log.Info(ctx, fmt.Sprintf("Hard bulk deleting stories: %v", ids), "story_ids", ids)
 	ctx, span := web.AddSpan(ctx, "business.core.stories.HardBulkDelete")
 	defer span.End()
 
-	if err := s.repo.HardBulkDelete(ctx, ids, workspaceId); err != nil {
+	orphanedAttachmentIDs, err := s.repo.HardBulkDelete(ctx, ids, workspaceId)
+	if err != nil {
 		s.log.Error(ctx, fmt.Sprintf("Failed to hard bulk delete stories: %s", err),
 			"story_ids", ids, "error", err)
 		span.RecordError(err)
-		return err
+		return nil, err
 	}
 
 	s.log.Info(ctx, fmt.Sprintf("Successfully hard bulk deleted stories: %v", ids),
@@ -808,7 +893,7 @@ func (s *Service) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspace
 	span.AddEvent("Stories hard bulk deleted.", trace.WithAttributes(
 		attribute.Int("stories.count", len(ids))))
 
-	return nil
+	return orphanedAttachmentIDs, nil
 }
 
 // Restore restores the story with the specified ID.

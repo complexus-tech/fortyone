@@ -180,41 +180,7 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 			s.updated_at,
 			s.deleted_at,
 			s.archived_at,
-			COALESCE(
-				(
-					SELECT
-						json_agg(
-							json_build_object(
-								'id', sub.id,
-								'sequence_id', sub.sequence_id,
-								'title', sub.title,
-								'priority', sub.priority,
-								'estimate_unit', sub.estimate_unit,
-								'status_id', sub.status_id,
-								'start_date', sub.start_date,
-								'end_date', sub.end_date,
-								'sprint_id', sub.sprint_id,
-								'team_id', sub.team_id,
-								'objective_id', sub.objective_id,
-								'workspace_id', sub.workspace_id,
-								'assignee_id', sub.assignee_id,
-								'collaborator_count', (SELECT COUNT(*) FROM story_collaborators sc WHERE sc.story_id = sub.id),
-								'reporter_id', sub.reporter_id,
-								'created_at', sub.created_at,
-								'updated_at', sub.updated_at,
-								'completed_at', sub.completed_at,
-								'deleted_at', sub.deleted_at,
-								'archived_at', sub.archived_at,
-								'labels', '[]'
-							)
-						)
-					FROM
-						stories sub
-					WHERE
-						sub.parent_id = s.id
-						AND sub.deleted_at IS NULL
-				), '[]'
-			) AS sub_stories,
+			` + r.buildSubStoriesSelect("s", true) + `,
 			COALESCE(
 				(
 					SELECT
@@ -405,18 +371,7 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					s.deleted_at,
 					s.archived_at,
 					s.completed_at,
-					COALESCE(
-							(
-									SELECT
-											json_agg(sub.*)
-									FROM
-											stories sub
-									WHERE
-											sub.parent_id = s.id
-											AND sub.workspace_id = s.workspace_id
-											AND sub.deleted_at IS NULL
-							), '[]'
-					) AS sub_stories,
+					` + r.buildSubStoriesSelect("s", true) + `,
 					COALESCE(
 						(
 								SELECT
@@ -1680,12 +1635,35 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 		}
 	}
 
-	if teamCode, ok := storyMap["team_code"].(string); ok && story.Team != uuid.Nil {
-		if teamName, ok := storyMap["team_name"].(string); ok {
+	if teamSummary, ok := storyMap["team"].(map[string]any); ok {
+		teamID := story.Team
+		if id, ok := teamSummary["id"].(string); ok {
+			if parsed, err := uuid.Parse(id); err == nil {
+				teamID = parsed
+			}
+		}
+
+		teamCode, codeOK := teamSummary["code"].(string)
+		teamName, nameOK := teamSummary["name"].(string)
+		if teamID != uuid.Nil && codeOK && nameOK {
 			story.TeamSummary = &stories.CoreTeamSummary{
-				ID:   story.Team,
+				ID:   teamID,
 				Name: teamName,
 				Code: teamCode,
+			}
+		}
+	}
+
+	// Grouped story queries expose team fields as columns on the parent story.
+	// Keep this fallback while sub-story payloads use the nested API contract.
+	if story.TeamSummary == nil {
+		if teamCode, ok := storyMap["team_code"].(string); ok && story.Team != uuid.Nil {
+			if teamName, ok := storyMap["team_name"].(string); ok {
+				story.TeamSummary = &stories.CoreTeamSummary{
+					ID:   story.Team,
+					Name: teamName,
+					Code: teamCode,
+				}
 			}
 		}
 	}
@@ -2150,8 +2128,14 @@ func (r *repo) buildSubStoriesJSONExpr(parentAlias string, includeSubStories boo
 							'sprint_start_date', sub_sprint.start_date,
 							'sprint_end_date', sub_sprint.end_date,
 							'team_id', sub.team_id,
-							'team_code', sub_team.code,
-							'team_name', sub_team.name,
+							'team', CASE
+								WHEN sub_team.team_id IS NULL THEN NULL
+								ELSE json_build_object(
+									'id', sub_team.team_id,
+									'name', sub_team.name,
+									'code', sub_team.code
+								)
+							END,
 							'objective_id', sub.objective_id,
 							'objective_name', sub_objective.name,
 							'objective_description', sub_objective.description,
@@ -2173,7 +2157,8 @@ func (r *repo) buildSubStoriesJSONExpr(parentAlias string, includeSubStories boo
 					LEFT JOIN objectives sub_objective ON sub.objective_id = sub_objective.objective_id
 					LEFT JOIN sprints sub_sprint ON sub.sprint_id = sub_sprint.sprint_id
 				WHERE
-					sub.parent_id = %s.id
+					sub.parent_id = %[1]s.id
+					AND sub.workspace_id = %[1]s.workspace_id
 					AND sub.deleted_at IS NULL
 			), CAST('[]' AS json)
 		)
@@ -3152,18 +3137,7 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 					s.deleted_at,
 					s.archived_at,
 					s.completed_at,
-					COALESCE(
-							(
-									SELECT
-											json_agg(sub.*)
-									FROM
-											stories sub
-									WHERE
-											sub.parent_id = s.id
-											AND sub.workspace_id = s.workspace_id
-											AND sub.deleted_at IS NULL
-							), '[]'
-					) AS sub_stories,
+					` + r.buildSubStoriesSelect("s", true) + `,
 					COALESCE(
 						(
 								SELECT

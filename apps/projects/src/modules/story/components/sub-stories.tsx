@@ -122,11 +122,11 @@ export const SubStories = ({
   });
 
   return (
-    <>
+    <Box className="mt-6">
       <Flex
         align="center"
-        className={cn("@container w-full min-w-0", {
-          "border-border border-b-[0.5px]": !isSubStoriesOpen,
+        className={cn("@container w-full min-w-0 pb-1.5", {
+          "border-border border-b-[0.5px]": parent.subStories.length > 0,
         })}
         gap={2}
         justify={parent.subStories.length > 0 ? "between" : "end"}
@@ -331,7 +331,7 @@ export const SubStories = ({
 
       {isSubStoriesOpen && parent.subStories.length > 0 ? (
         <StoriesBoard
-          className="border-border mt-2 h-auto border-t-[0.5px] pb-0"
+          className="h-auto pb-0"
           groupedStories={{
             groups: [
               {
@@ -369,6 +369,6 @@ export const SubStories = ({
           }}
         />
       ) : null}
-    </>
+    </Box>
   );
 };

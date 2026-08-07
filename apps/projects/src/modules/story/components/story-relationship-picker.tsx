@@ -211,11 +211,18 @@ export const StoryRelationshipPicker = ({
   };
 
   const handleSelectStory = (story: Story) => {
-    addAssociation.mutate(getAssociationPayload(story.id), {
-      onSuccess: () => {
-        resetPicker();
+    addAssociation.mutate(
+      {
+        ...getAssociationPayload(story.id),
+        associatedStory: story,
+        storyId: currentStoryId,
       },
-    });
+      {
+        onSuccess: () => {
+          resetPicker();
+        },
+      },
+    );
   };
 
   const handleOpenCreateStoryDialog = () => {
@@ -225,7 +232,11 @@ export const StoryRelationshipPicker = ({
   };
 
   const handleCreatedStory = async (createdStory: DetailedStory) => {
-    await addAssociation.mutateAsync(getAssociationPayload(createdStory.id));
+    await addAssociation.mutateAsync({
+      ...getAssociationPayload(createdStory.id),
+      associatedStory: createdStory,
+      storyId: currentStoryId,
+    });
   };
 
   const handleCreateStoryDialogOpenChange: Dispatch<SetStateAction<boolean>> = (

@@ -1,4 +1,4 @@
-import type { NewStory } from "@/modules/story/types";
+import type { DetailedStory, NewStory } from "@/modules/story/types";
 
 export const buildNewStoryDialogPayload = ({
   currentTeamId,
@@ -28,3 +28,19 @@ export const buildNewStoryDialogPayload = ({
   estimateValue: storyForm.estimateValue ?? null,
   labelIds: storyForm.labelIds ?? [],
 });
+
+export const runStoryCreatedFollowUp = async (
+  story: DetailedStory,
+  onCreated?: (createdStory: DetailedStory) => Promise<void> | void,
+): Promise<Error | null> => {
+  if (!onCreated) return null;
+
+  try {
+    await onCreated(story);
+    return null;
+  } catch (error) {
+    return error instanceof Error
+      ? error
+      : new Error("The requested follow-up action could not be completed.");
+  }
+};

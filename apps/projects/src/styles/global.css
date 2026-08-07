@@ -192,44 +192,44 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   @apply bg-primary/10 pointer-events-none absolute inset-0 content-[""];
 }
 
-/* Documents use a calmer, roomier table treatment than compact story editors. */
-.document-editor .tiptap .tableWrapper {
+/* Long-form document and story-description editors share the same table treatment. */
+.rich-document-editor .tiptap .tableWrapper {
   @apply my-8 rounded-md;
 }
 
-.document-editor .tiptap :is(h1, h2, h3, h4, h5, h6) {
+.rich-document-editor .tiptap :is(h1, h2, h3, h4, h5, h6) {
   @apply font-semibold;
 }
 
-.document-editor .tiptap table {
+.rich-document-editor .tiptap table {
   @apply border-border dark:border-border-strong/80 overflow-hidden rounded-md border-[0.5px];
   border-collapse: separate;
   border-spacing: 0;
 }
 
-.document-editor .tiptap table td,
-.document-editor .tiptap table th {
+.rich-document-editor .tiptap table td,
+.rich-document-editor .tiptap table th {
   @apply border-border dark:border-border-strong/80 border-0 border-r-[0.5px] border-b-[0.5px] px-3 py-2.5;
 }
 
-.document-editor .tiptap table tr > :last-child {
+.rich-document-editor .tiptap table tr > :last-child {
   border-right-width: 0;
 }
 
-.document-editor .tiptap table tr:last-child > * {
+.rich-document-editor .tiptap table tr:last-child > * {
   border-bottom-width: 0;
 }
 
-.document-editor .tiptap table th {
+.rich-document-editor .tiptap table th {
   @apply bg-surface-muted/45 dark:bg-surface-elevated/45;
 }
 
-.document-editor .tiptap table tr,
-.document-editor .tiptap table tr:hover {
+.rich-document-editor .tiptap table tr,
+.rich-document-editor .tiptap table tr:hover {
   @apply bg-transparent;
 }
 
-.document-editor .tiptap table .selectedCell::after {
+.rich-document-editor .tiptap table .selectedCell::after {
   @apply bg-primary/10 ring-primary/80 ring-1 ring-inset;
 }
 

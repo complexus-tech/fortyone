@@ -11,7 +11,6 @@ import {
   PlusIcon,
 } from "icons";
 import { useState } from "react";
-import { cn } from "lib";
 import { toast } from "sonner";
 import { RowWrapper } from "@/components/ui";
 import type { Link as LinkType } from "@/types";
@@ -160,13 +159,13 @@ export const Links = ({
       {links.length > 0 && (
         <Flex
           align="center"
-          className={cn({
-            "border-border d border-b-[0.5px] pb-2": !isLinksOpen,
-          })}
+          className="border-border border-b-[0.5px] pb-2"
           justify={links.length > 0 ? "between" : "end"}
         >
           <Button
+            className="font-semibold"
             color="tertiary"
+            leftIcon={<LinkIcon className="mr-0.5 h-5" />}
             onClick={() => {
               setIsLinksOpen(!isLinksOpen);
             }}
@@ -177,10 +176,8 @@ export const Links = ({
                 <ArrowUp2Icon className="h-4" />
               )
             }
-            leftIcon={<LinkIcon className="mr-0.5 h-5" />}
             size="sm"
             variant="naked"
-            className="font-semibold"
           >
             External links
           </Button>
@@ -204,7 +201,7 @@ export const Links = ({
       )}
 
       {isLinksOpen && links.length > 0 ? (
-        <Box className="border-border d mt-2 border-t-[0.5px] pb-0">
+        <Box>
           {links.map((link) => (
             <StoryLink key={link.id} link={link} />
           ))}

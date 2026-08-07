@@ -62,6 +62,7 @@ import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
 import { useUpdateCollaboratorsMutation } from "../hooks/collaboration-mutations";
+import { AddLinks } from "./add-links";
 import { OptionsHeader } from "./options-header";
 
 export const Option = ({
@@ -994,7 +995,10 @@ export const Options = ({
           }
         /> */}
 
-        {!isInline ? <Divider className="my-4" /> : null}
+        <Divider className={cn("my-4", { "mt-6 mb-4": isInline })} />
+        <Box className={cn({ "flex justify-end": isInline })}>
+          <AddLinks storyId={storyId} />
+        </Box>
       </Container>
 
       <ConfirmDialog

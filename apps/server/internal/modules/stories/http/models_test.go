@@ -5,9 +5,30 @@ import (
 	"testing"
 	"time"
 
+	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
 )
+
+func TestStoryMediaUsesStableResolverURL(t *testing.T) {
+	storyID := uuid.MustParse("66db0798-2eef-4dad-bb35-413612ab0fd1")
+	attachmentID := uuid.MustParse("f124a762-a767-446c-bbd1-0b3f43dce115")
+	stableURL := storyMediaURL("product and design", storyID, attachmentID)
+	media := toAppStoryMedia(attachments.FileInfo{
+		ID:       attachmentID,
+		Filename: "brief.png",
+		MimeType: "image/png",
+		URL:      "https://storage.test/temporary-signature",
+	}, stableURL)
+
+	want := "/workspaces/product%20and%20design/stories/66db0798-2eef-4dad-bb35-413612ab0fd1/media/f124a762-a767-446c-bbd1-0b3f43dce115"
+	if media.URL != want {
+		t.Fatalf("stable media URL = %q, want %q", media.URL, want)
+	}
+	if media.URL == "https://storage.test/temporary-signature" {
+		t.Fatal("story media response exposed a temporary storage URL")
+	}
+}
 
 func TestToCoreNewStoryMapsLabelIDs(t *testing.T) {
 	userID := uuid.New()

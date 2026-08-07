@@ -20,11 +20,9 @@ import { StoryAttachmentPreview } from "./story-attachment-preview";
 
 export const Attachments = ({
   className,
-  compactHeader = false,
   storyId,
 }: {
   className?: string;
-  compactHeader?: boolean;
   storyId: string;
 }) => {
   const { getLimit } = useSubscriptionFeatures();
@@ -108,7 +106,7 @@ export const Attachments = ({
     <Box className={className} suppressHydrationWarning>
       <Flex
         align="center"
-        className={cn("mb-2", compactHeader ? "mt-2" : "mt-4")}
+        className="border-border border-b-[0.5px] pb-2"
         justify="between"
       >
         <Text as="h4" className="flex items-center gap-1" fontWeight="semibold">
@@ -131,21 +129,23 @@ export const Attachments = ({
         )}
       </Flex>
       {attachments.length === 0 && (
-        <DropZone>
-          <DropZone.Root
-            className={cn("dark:bg-surface/80", {
-              "dark:bg-surface-muted/80": isDragActive,
-            })}
-            isDragActive={isDragActive}
-            rootProps={getRootProps()}
-          >
-            <DropZone.Input inputProps={getInputProps()} />
-            <DropZone.Body
+        <Box className="mt-2">
+          <DropZone>
+            <DropZone.Root
+              className={cn("dark:bg-surface/80", {
+                "dark:bg-surface-muted/80": isDragActive,
+              })}
               isDragActive={isDragActive}
-              message={`Drag and drop up to ${MAX_ATTACHMENT_BATCH_FILES} files here, or click to select them.`}
-            />
-          </DropZone.Root>
-        </DropZone>
+              rootProps={getRootProps()}
+            >
+              <DropZone.Input inputProps={getInputProps()} />
+              <DropZone.Body
+                isDragActive={isDragActive}
+                message={`Drag and drop up to ${MAX_ATTACHMENT_BATCH_FILES} files here, or click to select them.`}
+              />
+            </DropZone.Root>
+          </DropZone>
+        </Box>
       )}
       {attachments.length > 0 ? <input {...getInputProps()} /> : null}
       {imagesAndVideos.length > 0 && (

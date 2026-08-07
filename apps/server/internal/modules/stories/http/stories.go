@@ -66,6 +66,7 @@ type Handlers struct {
 	comments    *comments.Service
 	links       *links.Service
 	attachments *attachments.Service
+	storyMedia  storyMediaService
 	cache       *cache.Service
 	log         *logger.Logger
 }
@@ -78,6 +79,7 @@ func New(stories *stories.Service, users *users.Service, comments *comments.Serv
 		comments:    comments,
 		links:       links,
 		attachments: attachments,
+		storyMedia:  attachments,
 		cache:       cacheService,
 		log:         log,
 	}
@@ -408,9 +410,15 @@ func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *htt
 	isHardDelete := req.HardDelete != nil && *req.HardDelete
 
 	if isHardDelete {
-		if err := h.stories.HardBulkDelete(ctx, req.StoryIDs, workspace.ID); err != nil {
+		orphanedAttachmentIDs, err := h.stories.HardBulkDelete(ctx, req.StoryIDs, workspace.ID)
+		if err != nil {
 			web.RespondError(ctx, w, err, http.StatusBadRequest)
 			return nil
+		}
+		for _, attachmentID := range orphanedAttachmentIDs {
+			if err := h.attachments.DeleteOrphanedMedia(ctx, attachmentID, workspace.ID); err != nil && h.log != nil {
+				h.log.Error(ctx, "failed to clean up permanently deleted story media", "error", err, "attachment_id", attachmentID)
+			}
 		}
 	} else {
 		if err := h.stories.BulkDelete(ctx, req.StoryIDs, workspace.ID); err != nil {
@@ -829,13 +837,49 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
+	reconcileMedia, referencedMediaIDs, err := storyMediaReconciliationRequest(
+		requestData,
+		workspace.Slug,
+		storyId,
+	)
+	if err != nil {
+		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return nil
+	}
 
 	updates, err := getUpdates(requestData)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
-	if err := h.stories.Update(ctx, storyId, workspace.ID, updates); err != nil {
+	if reconcileMedia {
+		orphanedMediaIDs, err := h.stories.UpdateWithMediaReconciliation(
+			ctx,
+			storyId,
+			workspace.ID,
+			updates,
+			referencedMediaIDs,
+		)
+		if err != nil {
+			web.RespondError(ctx, w, err, http.StatusBadRequest)
+			return nil
+		}
+		for _, attachmentID := range orphanedMediaIDs {
+			if h.attachments == nil {
+				break
+			}
+			if err := h.attachments.DeleteOrphanedMedia(ctx, attachmentID, workspace.ID); err != nil && h.log != nil {
+				h.log.Error(
+					ctx,
+					"failed to clean up reconciled story media",
+					"error",
+					err,
+					"attachment_id",
+					attachmentID,
+				)
+			}
+		}
+	} else if err := h.stories.Update(ctx, storyId, workspace.ID, updates); err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}

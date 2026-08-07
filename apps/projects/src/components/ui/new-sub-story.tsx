@@ -3,9 +3,6 @@ import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
 import { Button, Flex, TextEditor, DatePicker, Box, Avatar } from "ui";
 import { useEditor } from "@tiptap/react";
-import Underline from "@tiptap/extension-underline";
-import { TaskItem, TaskList } from "@tiptap/extension-list";
-import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
@@ -17,8 +14,15 @@ import { cn } from "lib";
 import type { NewStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
+import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-description-media";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
-import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
+import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
+import {
+  clearRichTextContent,
+  getPersistableRichTextContent,
+  RICH_TEXT_MEDIA_ACCEPT,
+} from "@/lib/tiptap/rich-text-media";
+import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useTerminology } from "@/hooks";
@@ -62,7 +66,16 @@ export const NewSubStory = ({
     priority,
   };
   const [storyForm, setStoryForm] = useState<NewStory>(initialForm);
+  const [isCreating, setIsCreating] = useState(false);
   const mutation = useCreateStoryMutation();
+  const {
+    cancelStagedUploads,
+    finalizeStagedMedia,
+    handleMediaFiles,
+    inputRef: mediaInputRef,
+    openMediaPicker,
+    resetForNextStory,
+  } = useStoryDescriptionMedia();
   const selectedStatusId = storyForm.statusId ?? defaultStatus?.id;
 
   const titleEditor = useEditor({
@@ -78,26 +91,17 @@ export const NewSubStory = ({
   });
 
   const editor = useEditor({
-    extensions: [
-      createRichTextStarterKit(),
-      Underline,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Link.configure({
-        autolink: true,
-      }),
-      Placeholder.configure({
-        placeholder: `${getTermDisplay("storyTerm", { capitalize: true })} description`,
-      }),
-    ],
+    extensions: createRichTextExtensions({
+      onMediaFiles: handleMediaFiles,
+      onMediaRequest: openMediaPicker,
+      placeholder: `${getTermDisplay("storyTerm", { capitalize: true })} description — type / for commands`,
+    }),
     content: "",
     editable: true,
     immediatelyRender: false,
   });
 
-  const handleCreateStory = () => {
+  const handleCreateStory = async () => {
     if (!titleEditor || !editor) return;
     if (!titleEditor.getText()) {
       titleEditor.commands.focus();
@@ -107,10 +111,11 @@ export const NewSubStory = ({
       return;
     }
 
+    const initialContent = getPersistableRichTextContent(editor);
     const newStory: NewStory = {
       title: titleEditor.getText(),
-      description: editor.getText(),
-      descriptionHTML: editor.getHTML(),
+      description: initialContent.contentText,
+      descriptionHTML: initialContent.contentHtml,
       teamId,
       priority: storyForm.priority,
       statusId: selectedStatusId,
@@ -120,17 +125,27 @@ export const NewSubStory = ({
       assigneeId: storyForm.assigneeId,
     };
 
-    mutation.mutate(newStory);
-    titleEditor.commands.setContent("");
-    editor.commands.setContent("");
-    setStoryForm(initialForm);
+    setIsCreating(true);
+    try {
+      const createdStory = await mutation.mutateAsync(newStory);
+      await finalizeStagedMedia(createdStory.id, editor);
+      titleEditor.commands.setContent("");
+      clearRichTextContent(editor);
+      resetForNextStory();
+      setStoryForm(initialForm);
+    } catch {
+      // The create mutation owns user-facing error handling and retry messaging.
+    }
+    setIsCreating(false);
   };
 
   useEffect(() => {
     if (isOpen) {
       titleEditor?.commands.focus();
+    } else {
+      cancelStagedUploads();
     }
-  }, [isOpen, titleEditor]);
+  }, [cancelStagedUploads, isOpen, titleEditor]);
 
   return (
     <Box>
@@ -141,7 +156,23 @@ export const NewSubStory = ({
             className="text-xl font-medium"
             editor={titleEditor}
           />
-          <TextEditor editor={editor} />
+          <input
+            accept={RICH_TEXT_MEDIA_ACCEPT}
+            aria-label="Upload sub-story description media"
+            className="sr-only"
+            multiple
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []);
+              event.target.value = "";
+              if (editor && files.length > 0) {
+                handleMediaFiles(editor, files);
+              }
+            }}
+            ref={mediaInputRef}
+            type="file"
+          />
+          <TextEditor className="rich-document-editor" editor={editor} />
+          <RichTextTableMenu editor={editor} scrollTarget={null} />
           <Box className="items-center justify-between space-y-2 md:flex">
             <Flex className="gap-1.5" wrap>
               <StatusesMenu>
@@ -329,9 +360,10 @@ export const NewSubStory = ({
                 className="px-2"
                 color="tertiary"
                 onClick={() => {
+                  cancelStagedUploads();
                   setIsOpen(false);
                   titleEditor?.commands.setContent("");
-                  editor?.commands.setContent("");
+                  if (editor) clearRichTextContent(editor);
                 }}
                 size="sm"
                 variant="naked"
@@ -341,6 +373,8 @@ export const NewSubStory = ({
               <Button
                 color="tertiary"
                 leftIcon={<PlusIcon className="h-4 w-auto" />}
+                loading={isCreating}
+                loadingText="Creating..."
                 onClick={handleCreateStory}
                 size="sm"
               >

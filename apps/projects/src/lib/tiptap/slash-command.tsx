@@ -34,7 +34,7 @@ type SlashCommandItem = {
 };
 
 type SlashCommandOptions = {
-  onMediaRequest: (editor: Editor) => void;
+  onMediaRequest: ((editor: Editor) => void) | null;
 };
 
 type SlashCommandListProps = {
@@ -48,6 +48,22 @@ export type SlashCommandListRef = {
 };
 
 const SLASH_COMMAND_PLUGIN_KEY = new PluginKey("slashCommand");
+
+type ActiveSlashCommandMenu = {
+  destroy: () => void;
+  owner: symbol;
+};
+
+let activeSlashCommandMenu: ActiveSlashCommandMenu | null = null;
+
+export const shouldShowSlashCommand = (
+  editor: Pick<Editor, "isDestroyed" | "isFocused">,
+) => !editor.isDestroyed && editor.isFocused;
+
+export const hasVisibleSlashCommandAnchor = (
+  clientRect: DOMRect | null | undefined,
+): clientRect is DOMRect =>
+  Boolean(clientRect && (clientRect.width !== 0 || clientRect.height !== 0));
 
 const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandListProps>(
   ({ command, items, query }, ref) => {
@@ -98,6 +114,7 @@ const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandListProps>(
     return (
       <Box
         className="border-border-strong bg-surface-elevated max-h-[26rem] w-72 overflow-y-auto rounded-xl border p-1.5 shadow-xl"
+        data-slash-command-menu=""
         role="menu"
       >
         {items.map((item, index) => {
@@ -144,7 +161,7 @@ const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandListProps>(
 
 SlashCommandList.displayName = "SlashCommandList";
 
-const getCommandItems = (
+export const getSlashCommandItems = (
   editor: Editor,
   onMediaRequest: SlashCommandOptions["onMediaRequest"],
 ): SlashCommandItem[] => [
@@ -216,15 +233,19 @@ const getCommandItems = (
     group: "Lists",
     command: () => editor.chain().focus().toggleTaskList().run(),
   },
-  {
-    id: "media",
-    label: "Insert media...",
-    icon: <ImageIcon className="size-5" />,
-    group: "Insert",
-    command: (currentEditor) => {
-      onMediaRequest(currentEditor);
-    },
-  },
+  ...(onMediaRequest
+    ? [
+        {
+          id: "media",
+          label: "Insert media...",
+          icon: <ImageIcon className="size-5" />,
+          group: "Insert" as const,
+          command: (currentEditor: Editor) => {
+            onMediaRequest(currentEditor);
+          },
+        },
+      ]
+    : []),
   {
     id: "table",
     label: "Table",
@@ -254,14 +275,20 @@ const getCommandItems = (
 ];
 
 const renderSlashCommand = () => {
+  const owner = Symbol("slash-command-menu");
   let component: ReactRenderer<SlashCommandListRef> | null = null;
   let popup: Instance | null = null;
+  let referenceClientRect: DOMRect | null = null;
 
   const destroy = () => {
     const popupToDestroy = popup;
     const componentToDestroy = component;
     popup = null;
     component = null;
+    referenceClientRect = null;
+    if (activeSlashCommandMenu?.owner === owner) {
+      activeSlashCommandMenu = null;
+    }
     popupToDestroy?.destroy();
     componentToDestroy?.destroy();
   };
@@ -269,32 +296,47 @@ const renderSlashCommand = () => {
   return {
     onStart: (props: SuggestionProps<SlashCommandItem, SlashCommandItem>) => {
       destroy();
-      if (!props.clientRect || props.editor.isDestroyed) return;
+      if (!shouldShowSlashCommand(props.editor)) return;
+
+      const nextReferenceClientRect = props.clientRect?.();
+      if (!hasVisibleSlashCommandAnchor(nextReferenceClientRect)) {
+        return;
+      }
+      activeSlashCommandMenu?.destroy();
+      referenceClientRect = nextReferenceClientRect;
 
       const nextComponent = new ReactRenderer(SlashCommandList, {
         props: props as unknown as Record<string, unknown>,
         editor: props.editor,
       });
       component = nextComponent;
-      const getReferenceClientRect = () =>
-        props.clientRect?.() ?? new DOMRect();
       popup = tippy(document.body, {
         appendTo: () => document.body,
         content: nextComponent.element,
-        getReferenceClientRect,
+        getReferenceClientRect: () =>
+          referenceClientRect ?? nextReferenceClientRect,
         interactive: true,
         placement: "bottom-start",
         showOnCreate: true,
         trigger: "manual",
       });
+      activeSlashCommandMenu = { destroy, owner };
     },
     onUpdate: (props: SuggestionProps<SlashCommandItem, SlashCommandItem>) => {
       component?.updateProps(props as unknown as Record<string, unknown>);
-      if (props.clientRect) {
-        popup?.setProps({
-          getReferenceClientRect: () => props.clientRect?.() ?? new DOMRect(),
-        });
+      const nextReferenceClientRect = props.clientRect?.();
+      if (
+        !shouldShowSlashCommand(props.editor) ||
+        !hasVisibleSlashCommandAnchor(nextReferenceClientRect)
+      ) {
+        destroy();
+        return;
       }
+      referenceClientRect = nextReferenceClientRect;
+      popup?.setProps({
+        getReferenceClientRect: () =>
+          referenceClientRect ?? nextReferenceClientRect,
+      });
     },
     onKeyDown: (props: SuggestionKeyDownProps) => {
       if (props.event.key === "Escape") {
@@ -311,7 +353,7 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
   name: "slashCommand",
   addOptions() {
     return {
-      onMediaRequest: () => undefined,
+      onMediaRequest: null,
     };
   },
   addProseMirrorPlugins() {
@@ -322,8 +364,9 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
         char: "/",
         allowSpaces: true,
         startOfLine: true,
+        allow: ({ editor }) => shouldShowSlashCommand(editor),
         items: ({ query }) => {
-          const items = getCommandItems(
+          const items = getSlashCommandItems(
             this.editor,
             this.options.onMediaRequest,
           );

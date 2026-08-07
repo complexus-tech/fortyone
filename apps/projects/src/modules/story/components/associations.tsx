@@ -11,7 +11,6 @@ import {
   MoreHorizontalIcon,
   WarningIcon,
 } from "icons";
-import { cn } from "lib";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { RowWrapper } from "@/components/ui";
@@ -128,9 +127,7 @@ export const Associations = ({
       {associations.length > 0 && (
         <Flex
           align="center"
-          className={cn({
-            "border-border d border-b-[0.5px] pb-2": !isAssociationsOpen,
-          })}
+          className="border-border border-b-[0.5px] pb-2"
           justify="between"
         >
           <Button
@@ -156,7 +153,7 @@ export const Associations = ({
       )}
 
       {isAssociationsOpen && associations.length > 0 ? (
-        <Box className="border-border d mt-2 border-t-[0.5px] pb-0">
+        <Box>
           {associations.map((assoc) => {
             const teamCode = teams.find(
               (team) => team.id === assoc.story.teamId,
