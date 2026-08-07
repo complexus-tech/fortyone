@@ -95,7 +95,7 @@ const DocumentPageSkeleton = () => (
   <Box className="h-dvh">
     <Flex
       align="center"
-      className="border-border/70 h-[4.5rem] border-b px-5"
+      className="border-border/70 h-18 border-b px-5"
       justify="between"
     >
       <Skeleton className="h-5 w-44" />
@@ -354,7 +354,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
     <Flex className="h-dvh min-w-0" direction="column">
       <Flex
         align="center"
-        className="border-border/70 h-[4.5rem] shrink-0 border-b px-4 md:px-5"
+        className="border-border/70 h-18 shrink-0 border-b px-4 md:px-5"
         justify="between"
       >
         <Flex align="center" className="min-w-0" gap={2}>
@@ -393,14 +393,14 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
             <Menu.Items align="start" className="min-w-52">
               <Menu.Group>
                 <Menu.Item onSelect={() => void handleCopyLink()}>
-                  <CopyIcon className="size-4" />
+                  <CopyIcon />
                   Copy link
                 </Menu.Item>
                 <Menu.Item
                   disabled={!document.canEdit || duplicateDocument.isPending}
                   onSelect={() => void handleDuplicate()}
                 >
-                  <DuplicateIcon className="size-4" />
+                  <DuplicateIcon />
                   {duplicateDocument.isPending
                     ? "Duplicating..."
                     : "Duplicate document"}
@@ -409,7 +409,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
               <Menu.Group>
                 {canManageDocument ? (
                   <Menu.Item onSelect={handleArchive}>
-                    <ArchiveIcon className="size-4" />
+                    <ArchiveIcon />
                     Archive document
                   </Menu.Item>
                 ) : (
@@ -420,12 +420,12 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
               <Menu.Group>
                 {canManageDocument ? (
                   <Menu.Item
-                    className="text-danger dark:!text-danger"
+                    className="text-danger dark:text-danger!"
                     onSelect={() => {
                       setIsDeleteDialogOpen(true);
                     }}
                   >
-                    <DeleteIcon className="text-danger dark:!text-danger size-4" />
+                    <DeleteIcon className="text-danger dark:text-danger!" />
                     Delete permanently...
                   </Menu.Item>
                 ) : (
@@ -447,7 +447,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
               size="sm"
               variant="outline"
             >
-              <AccessIcon className="size-4" />
+              <AccessIcon />
             </Button>
           )}
         </Flex>
@@ -472,7 +472,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                       size="sm"
                       variant="outline"
                     >
-                      <LinkIcon className="size-4" />
+                      <LinkIcon />
                     </Button>
                   </Tooltip>
                 </Box>
@@ -518,7 +518,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
                   <TextEditor
                     bubbleMenuCreateActions={bubbleMenuCreateActions}
                     bubbleMenuShouldShow={shouldShowDocumentTextMenu}
-                    className="rich-document-editor min-h-[55dvh] text-[1.05rem] leading-7"
+                    className="rich-document-editor min-h-[55dvh] text-[1.1rem] leading-7"
                     editor={editor}
                   />
                   <RichTextTableMenu
@@ -530,7 +530,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
             </Box>
           </BoardDividedPanel.MainPanel>
           <BoardDividedPanel.SideBar
-            className="!h-full"
+            className="h-full!"
             isExpanded={isDesktop ? isRelatedWorkOpen : false}
           >
             <RelatedWorkPanel document={document} onClose={closeRelatedWork} />

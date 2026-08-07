@@ -205,7 +205,7 @@ export const MainDetails = ({
         <FeedbackSection.Banner storyId={storyId} />
         <TextEditor
           asTitle
-          className="text-foreground relative -left-px mb-5 text-3xl font-semibold md:text-4xl"
+          className="text-foreground relative -left-px mb-6 text-3xl font-semibold md:text-4xl"
           editor={titleEditor}
         />
         <input
@@ -224,7 +224,7 @@ export const MainDetails = ({
           type="file"
         />
         <TextEditor
-          className="rich-document-editor text-lg"
+          className="rich-document-editor text-foreground/90 mb-10 text-[1.1rem]"
           editor={descriptionEditor}
         />
         <RichTextTableMenu editor={descriptionEditor} scrollTarget={null} />

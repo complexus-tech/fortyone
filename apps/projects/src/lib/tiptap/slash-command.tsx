@@ -65,99 +65,99 @@ export const hasVisibleSlashCommandAnchor = (
 ): clientRect is DOMRect =>
   Boolean(clientRect && (clientRect.width !== 0 || clientRect.height !== 0));
 
-const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandListProps>(
-  ({ command, items, query }, ref) => {
-    const [selection, setSelection] = useState({ index: 0, query });
-    const selectedIndex = selection.query === query ? selection.index : 0;
+export const SlashCommandList = forwardRef<
+  SlashCommandListRef,
+  SlashCommandListProps
+>(({ command, items, query }, ref) => {
+  const [selection, setSelection] = useState({ index: 0, query });
+  const selectedIndex = selection.query === query ? selection.index : 0;
 
-    const select = (index: number) => {
-      if (items.length === 0) return;
-      command(items[index % items.length]);
-    };
+  const select = (index: number) => {
+    if (items.length === 0) return;
+    command(items[index % items.length]);
+  };
 
-    useImperativeHandle(ref, () => ({
-      onKeyDown: (event) => {
-        if (event.key === "ArrowUp") {
-          setSelection({
-            index:
-              items.length === 0
-                ? 0
-                : (selectedIndex + items.length - 1) % items.length,
-            query,
-          });
-          return true;
-        }
-        if (event.key === "ArrowDown") {
-          setSelection({
-            index: items.length === 0 ? 0 : (selectedIndex + 1) % items.length,
-            query,
-          });
-          return true;
-        }
-        if (event.key === "Enter") {
-          select(selectedIndex);
-          return true;
-        }
-        return false;
-      },
-    }));
+  useImperativeHandle(ref, () => ({
+    onKeyDown: (event) => {
+      if (event.key === "ArrowUp") {
+        setSelection({
+          index:
+            items.length === 0
+              ? 0
+              : (selectedIndex + items.length - 1) % items.length,
+          query,
+        });
+        return true;
+      }
+      if (event.key === "ArrowDown") {
+        setSelection({
+          index: items.length === 0 ? 0 : (selectedIndex + 1) % items.length,
+          query,
+        });
+        return true;
+      }
+      if (event.key === "Enter") {
+        select(selectedIndex);
+        return true;
+      }
+      return false;
+    },
+  }));
 
-    if (items.length === 0) {
-      return (
-        <Box className="border-border-strong bg-surface-elevated w-72 rounded-xl border p-3 shadow-xl">
-          <Text color="muted">No matching commands</Text>
-        </Box>
-      );
-    }
-
-    let previousGroup: SlashCommandItem["group"] | null = null;
+  if (items.length === 0) {
     return (
-      <Box
-        className="border-border-strong bg-surface-elevated max-h-[26rem] w-72 overflow-y-auto rounded-xl border p-1.5 shadow-xl"
-        data-slash-command-menu=""
-        role="menu"
-      >
-        {items.map((item, index) => {
-          const showDivider =
-            previousGroup !== null && item.group !== previousGroup;
-          previousGroup = item.group;
-          return (
-            <Box key={item.id}>
-              {showDivider ? (
-                <Box className="border-border/80 my-1 border-t" />
-              ) : null}
-              <button
-                className={cn(
-                  "hover:bg-state-hover focus-visible:bg-state-hover flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left outline-none",
-                  { "bg-state-active": selectedIndex === index },
-                )}
-                onClick={() => {
-                  select(index);
-                }}
-                onMouseEnter={() => {
-                  setSelection({ index, query });
-                }}
-                role="menuitem"
-                type="button"
-              >
-                <span className="text-text-muted flex size-6 shrink-0 items-center justify-center">
-                  {item.icon}
-                </span>
-                <Text
-                  as="span"
-                  className="min-w-0 truncate"
-                  fontWeight="medium"
-                >
-                  {item.label}
-                </Text>
-              </button>
-            </Box>
-          );
-        })}
+      <Box className="border-border-strong bg-surface-elevated w-72 rounded-xl border p-3 shadow-xl">
+        <Text color="muted">No matching commands</Text>
       </Box>
     );
-  },
-);
+  }
+
+  let previousGroup: SlashCommandItem["group"] | null = null;
+  return (
+    <Box
+      className="border-border-strong bg-surface-elevated max-h-[26rem] w-72 overflow-y-auto rounded-xl border p-1.5 shadow-xl"
+      data-slash-command-menu=""
+      role="menu"
+    >
+      {items.map((item, index) => {
+        const showDivider =
+          previousGroup !== null && item.group !== previousGroup;
+        previousGroup = item.group;
+        return (
+          <Box key={item.id}>
+            {showDivider ? (
+              <Box className="border-border/80 my-1 border-t" />
+            ) : null}
+            <button
+              className={cn(
+                "hover:bg-state-hover focus-visible:bg-state-hover flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left outline-none",
+                { "bg-state-active": selectedIndex === index },
+              )}
+              onClick={() => {
+                select(index);
+              }}
+              onMouseDown={(event) => {
+                event.preventDefault();
+              }}
+              onMouseEnter={() => {
+                setSelection({ index, query });
+              }}
+              role="menuitem"
+              type="button"
+            >
+              <span className="text-text-muted flex size-6 shrink-0 items-center justify-center">
+                {item.icon}
+              </span>
+              <Text as="span" className="min-w-0 truncate" fontWeight="medium">
+                {item.label}
+              </Text>
+            </button>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+});
 
 SlashCommandList.displayName = "SlashCommandList";
 
