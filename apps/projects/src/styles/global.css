@@ -240,26 +240,26 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 
 /*** Works on common browsers ***/
 ::selection {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-background-inverse text-foreground-inverse;
 }
 
 /*** Mozilla based browsers ***/
 ::-moz-selection {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-background-inverse text-foreground-inverse;
 }
 
 /***For Other Browsers ***/
 ::-o-selection {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-background-inverse text-foreground-inverse;
 }
 
 ::-ms-selection {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-background-inverse text-foreground-inverse;
 }
 
 /*** For Webkit ***/
 ::-webkit-selection {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-background-inverse text-foreground-inverse;
 }
 
 /* this is for sonner */
