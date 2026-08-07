@@ -206,9 +206,9 @@ const CalendarTimedBlock = ({
     top: `${layout.top}px`,
     width: `calc(${laneWidth}% - 0.5rem)`,
   };
-  const showSecondaryLine = layout.height >= 38;
+  const showSecondaryLine = layout.height >= 39;
   const blockPaddingClass =
-    layout.height >= hourHeight ? "px-2.5 py-1" : "px-2.5 py-0.5";
+    layout.height >= hourHeight ? "px-2.5 py-1" : "px-2.5 py-px";
 
   if (item.kind === "event") {
     return (
@@ -235,8 +235,7 @@ const CalendarTimedBlock = ({
         {showSecondaryLine ? (
           <Text
             as="span"
-            className="block truncate leading-none text-[#3c90ff]"
-            fontSize="md"
+            className="mt-1 block truncate text-[0.9375rem] leading-[0.9375rem] text-[#3c90ff]"
           >
             {toTimeLabel(item.startAt, item.endAt)}
           </Text>
@@ -262,7 +261,10 @@ const CalendarTimedBlock = ({
           {getBusyWindowTitle(item.window)}
         </Text>
         {showSecondaryLine ? (
-          <Text className="truncate leading-none" color="muted" fontSize="md">
+          <Text
+            className="mt-1 truncate text-[0.9375rem] leading-[0.9375rem]"
+            color="muted"
+          >
             {toTimeLabel(item.startAt, item.endAt)}
           </Text>
         ) : null}
@@ -337,7 +339,10 @@ const CalendarTimedBlock = ({
           </Text>
         )}
         {showSecondaryLine ? (
-          <Text className="truncate leading-none" color="muted" fontSize="md">
+          <Text
+            className="mt-1 truncate text-[0.9375rem] leading-[0.9375rem]"
+            color="muted"
+          >
             {statusLabel} · {toTimeLabel(block.startAt, block.endAt)}
           </Text>
         ) : null}
