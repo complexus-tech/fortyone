@@ -10,7 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { useEditorState, type Editor } from "@tiptap/react";
 import { addColumn, addRow, TableMap, type TableRect } from "@tiptap/pm/tables";
-import { Button } from "ui";
+import { Button, Menu } from "ui";
 import {
   DeleteColumnIcon,
   DeleteIcon,
@@ -149,32 +149,24 @@ const TableActionIcon = ({ action }: { action: TableAction }) => {
   );
 };
 
-const TableActionButton = ({
+const TableActionItem = ({
   action,
-  close,
+  onActionSelect,
 }: {
   action: TableAction;
-  close: () => void;
+  onActionSelect: () => void;
 }) => (
-  <button
-    className={cn(
-      "hover:bg-state-hover focus-visible:bg-state-hover flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left outline-none disabled:pointer-events-none disabled:opacity-45",
-      { "text-danger dark:!text-danger": action.danger },
-    )}
+  <Menu.Item
+    className={cn({ "text-danger dark:!text-danger": action.danger })}
     disabled={action.disabled}
-    onClick={() => {
+    onSelect={() => {
+      onActionSelect();
       action.onSelect();
-      close();
     }}
-    onMouseDown={(event) => {
-      event.preventDefault();
-    }}
-    role="menuitem"
-    type="button"
   >
     <TableActionIcon action={action} />
     <span>{action.label}</span>
-  </button>
+  </Menu.Item>
 );
 
 const AddTableEdge = ({
@@ -291,32 +283,11 @@ const ActiveRichTextTableMenu = ({
   editor: Editor;
   scrollTarget: HTMLElement | null;
 }) => {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const restoreEditorFocusRef = useRef(false);
   const overlayRoot = getRichTextOverlayRoot(editor);
   const tableBounds = useActiveTableBounds(editor, overlayRoot, scrollTarget);
 
-  useEffect(() => {
-    if (!open) return;
-    const closeOnOutsidePointer = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("pointerdown", closeOnOutsidePointer);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutsidePointer);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [open]);
-
   if (!tableBounds || typeof document === "undefined") return null;
-
-  const closeMenu = () => {
-    setOpen(false);
-  };
   const rowActions: TableAction[] = [
     {
       icon: InsertRowUpIcon,
@@ -399,76 +370,89 @@ const ActiveRichTextTableMenu = ({
 
   const menuOpensToLeft = tableBounds.viewportLeft >= 288;
   const tableActionLeft = tableBounds.left - 24;
+  const dialogBoundary =
+    overlayRoot.closest<HTMLElement>('[role="dialog"]') ?? undefined;
+  const menuPortalContainer = dialogBoundary ?? document.body;
+  const handleActionSelect = () => {
+    restoreEditorFocusRef.current = true;
+  };
 
   return createPortal(
     <>
       <div
         className="not-prose absolute z-50"
-        ref={rootRef}
         style={{ left: tableActionLeft, top: tableBounds.top + 2 }}
       >
-        <Button
-          aria-expanded={open}
-          aria-haspopup="menu"
-          aria-label="Table actions"
-          asIcon
-          className="h-8 w-6 p-0 hover:bg-transparent focus-visible:bg-transparent active:bg-transparent"
-          color="tertiary"
-          onClick={() => {
-            setOpen((current) => !current);
-          }}
-          onMouseDown={(event) => {
-            event.preventDefault();
-          }}
-          size="sm"
-          type="button"
-          variant="naked"
-        >
-          <MoreVerticalIcon className="h-5" />
-        </Button>
-        {open ? (
-          <div
-            className={cn(
-              "border-border/70 bg-surface-elevated dark:border-border-strong/80 absolute top-0 z-50 min-w-60 rounded-xl border-[0.5px] p-1.5 shadow-xl",
-              menuOpensToLeft ? "right-full mr-2" : "left-full ml-2",
-            )}
-            role="menu"
+        <Menu>
+          <Menu.Button>
+            <Button
+              aria-label="Table actions"
+              asIcon
+              className="h-8 w-6 p-0 hover:bg-transparent focus-visible:bg-transparent active:bg-transparent"
+              color="tertiary"
+              size="sm"
+              type="button"
+              variant="naked"
+            >
+              <MoreVerticalIcon className="h-5" />
+            </Button>
+          </Menu.Button>
+          <Menu.Items
+            align="start"
+            avoidCollisions
+            className="max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-52 overflow-y-auto"
+            collisionBoundary={dialogBoundary}
+            collisionPadding={12}
+            hideWhenDetached
+            onCloseAutoFocus={(event) => {
+              if (!restoreEditorFocusRef.current) return;
+              restoreEditorFocusRef.current = false;
+              event.preventDefault();
+              editor.commands.focus();
+            }}
+            portalContainer={menuPortalContainer}
+            side={menuOpensToLeft ? "left" : "right"}
+            sideOffset={4}
+            sticky="always"
           >
-            <div>
+            <Menu.Group>
               {rowActions.map((action) => (
-                <TableActionButton
+                <TableActionItem
                   action={action}
-                  close={closeMenu}
                   key={action.label}
+                  onActionSelect={handleActionSelect}
                 />
               ))}
-            </div>
-            <div className="border-border-strong/80 my-1.5 border-t" />
-            <div>
+            </Menu.Group>
+            <Menu.Separator />
+            <Menu.Group>
               {cellActions.map((action) => (
-                <TableActionButton
+                <TableActionItem
                   action={action}
-                  close={closeMenu}
                   key={action.label}
+                  onActionSelect={handleActionSelect}
                 />
               ))}
-            </div>
-            <div className="border-border-strong/80 my-1.5 border-t" />
-            <div>
+            </Menu.Group>
+            <Menu.Separator />
+            <Menu.Group>
               {deleteSelectionActions.map((action) => (
-                <TableActionButton
+                <TableActionItem
                   action={action}
-                  close={closeMenu}
                   key={action.label}
+                  onActionSelect={handleActionSelect}
                 />
               ))}
-            </div>
-            <div className="border-border-strong/80 my-1.5 border-t" />
-            <div>
-              <TableActionButton action={deleteTableAction} close={closeMenu} />
-            </div>
-          </div>
-        ) : null}
+            </Menu.Group>
+            <Menu.Separator />
+            <Menu.Group>
+              <TableActionItem
+                action={deleteTableAction}
+                onActionSelect={handleActionSelect}
+              />
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
       </div>
       <AddTableEdge bounds={tableBounds} direction="column" editor={editor} />
       <AddTableEdge bounds={tableBounds} direction="row" editor={editor} />
