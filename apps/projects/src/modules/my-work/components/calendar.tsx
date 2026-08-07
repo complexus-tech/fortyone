@@ -21,6 +21,7 @@ import {
   CalendarIcon,
   ClockIcon,
   DeleteIcon,
+  GoogleCalendarIcon,
   PlusIcon,
   ReloadIcon,
 } from "icons";
@@ -177,7 +178,7 @@ const CalendarTimedBlock = ({
     return (
       <button
         aria-label={`Open ${getCalendarEventTitle(item.event)} details, ${getCalendarEventTimeLabel(item.event)}`}
-        className="absolute overflow-hidden rounded-md border border-blue-500/25 bg-blue-500/10 px-2.5 py-1.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition hover:bg-blue-500/15 focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:outline-none"
+        className="border-border bg-surface-elevated hover:bg-state-hover absolute overflow-hidden rounded-md border border-l-2 border-l-[#3c90ff] px-2.5 py-1.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50 focus-visible:outline-none"
         onClick={() => {
           onSelectEvent(item.event);
         }}
@@ -185,13 +186,13 @@ const CalendarTimedBlock = ({
         type="button"
       >
         <Text
-          className="truncate text-blue-600 dark:text-blue-300"
+          className="text-foreground truncate"
           fontSize="sm"
           fontWeight="semibold"
         >
           {getCalendarEventTitle(item.event)}
         </Text>
-        <Text className="truncate text-[0.78rem] text-blue-500/80 dark:text-blue-200/75">
+        <Text className="text-text-muted truncate text-[0.78rem]">
           {toTimeLabel(item.startAt, item.endAt)}
         </Text>
       </button>
@@ -201,17 +202,17 @@ const CalendarTimedBlock = ({
   if (item.kind === "busy") {
     return (
       <Box
-        className="absolute overflow-hidden rounded-md border border-blue-500/15 bg-blue-500/[0.07] px-2.5 py-1.5"
+        className="border-border bg-surface-muted/60 absolute overflow-hidden rounded-md border border-dashed px-2.5 py-1.5"
         style={style}
       >
         <Text
-          className="truncate text-blue-600 dark:text-blue-300"
+          className="text-foreground truncate"
           fontSize="sm"
           fontWeight="semibold"
         >
           {getBusyWindowTitle(item.window)}
         </Text>
-        <Text className="truncate text-[0.78rem] text-blue-500/80 dark:text-blue-200/75">
+        <Text className="text-text-muted truncate text-[0.78rem]">
           {toTimeLabel(item.startAt, item.endAt)}
         </Text>
       </Box>
@@ -229,12 +230,14 @@ const CalendarTimedBlock = ({
       ? getStoryHref(withWorkspace, block.storyId, block.storyCode)
       : null;
   let blockColorClass =
-    "border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/15";
+    "border-border bg-surface-muted/60 hover:bg-state-hover border-dashed";
   if (block.blockType === "work") {
-    blockColorClass = "border-primary/25 bg-primary/10 hover:bg-primary/15";
+    blockColorClass =
+      "border-border border-l-primary bg-primary/[0.045] hover:bg-primary/[0.08] border-l-2";
   }
   if (block.hasConflict) {
-    blockColorClass = "border-danger/40 bg-danger/10 hover:bg-danger/15";
+    blockColorClass =
+      "border-danger/40 border-l-danger bg-danger/[0.08] hover:bg-danger/[0.12] border-l-2";
   }
 
   return (
@@ -250,7 +253,7 @@ const CalendarTimedBlock = ({
           {href ? (
             <Link className="block" href={href}>
               <Text
-                className="text-primary hover:text-primary line-clamp-2"
+                className="text-foreground hover:text-primary line-clamp-2"
                 fontSize="sm"
                 fontWeight="semibold"
               >
@@ -262,9 +265,7 @@ const CalendarTimedBlock = ({
               className={cn(
                 "line-clamp-2",
                 block.hasConflict && "text-danger",
-                !block.hasConflict &&
-                  block.blockType === "focus" &&
-                  "text-emerald-700 dark:text-emerald-300",
+                !block.hasConflict && "text-foreground",
               )}
               fontSize="sm"
               fontWeight="semibold"
@@ -314,7 +315,7 @@ const CalendarAllDayEvent = ({
 }) => (
   <button
     aria-label={`Open ${getCalendarEventTitle(event)} details, ${getCalendarEventTimeLabel(event)}`}
-    className="w-full truncate rounded-md border border-blue-500/25 bg-blue-500/10 px-2 py-1 text-left text-sm font-medium text-blue-600 transition hover:bg-blue-500/15 focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:outline-none dark:text-blue-300"
+    className="border-border bg-surface-elevated hover:bg-state-hover text-foreground w-full truncate rounded-md border border-l-2 border-l-[#3c90ff] px-2 py-1 text-left text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50 focus-visible:outline-none"
     onClick={() => {
       onSelect(event);
     }}
@@ -671,18 +672,24 @@ const CalendarToolbar = ({
           size="sm"
           variant="outline"
         >
-          {canReadEventDetails ? "Sync primary" : "Sync availability"}
+          {canReadEventDetails ? "Sync calendar" : "Sync availability"}
         </Button>
       ) : null}
       {!isIntegrationPending && !hasIntegrationError && !connectionId ? (
         <Button
+          className="shrink-0 whitespace-nowrap"
           color="tertiary"
           href={connectHref}
-          leftIcon={<CalendarIcon className="h-4" />}
+          leftIcon={
+            <GoogleCalendarIcon
+              aria-hidden="true"
+              className="h-4 w-4 shrink-0"
+            />
+          }
           size="sm"
           variant="outline"
         >
-          Connect calendar
+          Connect Google Calendar
         </Button>
       ) : null}
       <Button
@@ -734,8 +741,8 @@ const CalendarNotices = ({
       <Box className="border-border bg-surface-muted/40 mb-4 rounded-lg border px-4 py-3">
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" className="min-w-0" gap={3}>
-            <Box className="bg-info/10 text-info flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-              <CalendarIcon className="h-4 text-current dark:text-current" />
+            <Box className="bg-surface-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+              <GoogleCalendarIcon aria-hidden="true" className="h-5 w-5" />
             </Box>
             <Box className="min-w-0">
               <Text fontSize="sm" fontWeight="medium">
@@ -763,8 +770,8 @@ const CalendarNotices = ({
       <Box className="border-border bg-surface-muted/40 mb-4 rounded-lg border px-4 py-3">
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" className="min-w-0" gap={3}>
-            <Box className="bg-info/10 text-info flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-              <CalendarIcon className="h-4 text-current dark:text-current" />
+            <Box className="bg-surface-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+              <GoogleCalendarIcon aria-hidden="true" className="h-5 w-5" />
             </Box>
             <Box className="min-w-0">
               <Text fontSize="sm" fontWeight="medium">
@@ -1199,7 +1206,7 @@ export const MyWorkCalendar = () => {
         canNavigateNext={canNavigateNext}
         canNavigatePrevious={canNavigatePrevious}
         canReadEventDetails={canReadEventDetails}
-        connectHref={withWorkspace("/settings/account/calendar")}
+        connectHref={withWorkspace("/settings/integrations/calendar")}
         connectionId={connection?.id}
         hasIntegrationError={integrationQuery.isError}
         isIntegrationPending={integrationQuery.isPending}
@@ -1229,7 +1236,7 @@ export const MyWorkCalendar = () => {
       <CalendarNotices
         canReadEventDetails={canReadEventDetails}
         conflictCount={conflictingBlocks.length}
-        connectHref={withWorkspace("/settings/account/calendar")}
+        connectHref={withWorkspace("/settings/integrations/calendar")}
         connection={connection}
         hasIntegrationError={integrationQuery.isError}
         isIntegrationPending={integrationQuery.isPending}

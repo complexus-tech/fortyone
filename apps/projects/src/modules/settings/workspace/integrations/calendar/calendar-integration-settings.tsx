@@ -9,6 +9,7 @@ import { Badge, Box, Button, Dialog, Flex, Menu, Skeleton, Text } from "ui";
 import {
   CalendarIcon,
   ClockIcon,
+  GoogleCalendarIcon,
   MoreHorizontalIcon,
   ReloadIcon,
   UnlinkIcon,
@@ -23,44 +24,27 @@ import {
 } from "@/lib/hooks/calendar";
 import type { CalendarConnection } from "./types";
 
-const GoogleCalendarIcon = ({
-  className = "h-5 w-5",
-}: {
-  className?: string;
-}) => (
-  <svg
-    className={className}
-    viewBox="0 0 48 48"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M36 8h5c1.7 0 3 1.3 3 3v5h-8V8Z" fill="#1A73E8" />
-    <path d="M4 16h40v21c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V16Z" fill="#fff" />
-    <path d="M7 8h29v8H4v-5c0-1.7 1.3-3 3-3Z" fill="#4285F4" />
-    <path d="M4 16h40v5H4v-5Z" fill="#E8F0FE" />
-    <path
-      d="M12.4 32.9c1.3 1.5 3.2 2.3 5.7 2.3 2 0 3.7-.5 4.9-1.6 1.2-1 1.9-2.4 1.9-4.1 0-1.4-.4-2.5-1.2-3.4-.8-.9-1.9-1.4-3.2-1.6l3.9-4v-2.3H12.9v3.1h7l-4 4 .5 2.1h1.7c2 0 3 .7 3 2.1 0 .8-.3 1.4-.9 1.9-.6.5-1.4.7-2.3.7-1.5 0-2.7-.6-3.7-1.7l-1.8 2.5ZM31.2 35h3.6V18.2h-2.7l-5 3.6 1.7 2.6 2.4-1.7V35Z"
-      fill="#3C4043"
-    />
-    <path
-      d="M7 40h34c1.7 0 3-1.3 3-3V16h-4v20H7c-1.7 0-3-1.3-3-3v4c0 1.7 1.3 3 3 3Z"
-      fill="#34A853"
-      opacity=".16"
-    />
-  </svg>
-);
-
-const getSyncBadgeColor = (status?: string) => {
-  if (status === "failed") return "warning";
-  if (status === "synced" || status === "connected") return "success";
-  return "tertiary";
+const getConnectionStatus = (status?: string) => {
+  if (status === "failed") {
+    return {
+      color: "warning" as const,
+      label: "Needs attention",
+      variant: "outline" as const,
+    };
+  }
+  if (status === "syncing") {
+    return {
+      color: "tertiary" as const,
+      label: "Syncing",
+      variant: "solid" as const,
+    };
+  }
+  return null;
 };
 
-const getDetailsBadgeColor = (connection?: CalendarConnection) =>
-  connection?.canReadEventDetails ? "success" : "warning";
-
 const formatSyncedAt = (value?: string | null) => {
-  if (!value) return "Not synced yet";
-  return formatDistanceToNow(new Date(value), { addSuffix: true });
+  if (!value) return "Waiting for first sync";
+  return `Synced ${formatDistanceToNow(new Date(value), { addSuffix: true })}`;
 };
 
 const formatExactDate = (value?: string | null) => {
@@ -83,6 +67,7 @@ export const CalendarIntegrationSettings = () => {
   const connection = integration?.connections.find(
     (item) => item.provider === "google",
   );
+  const connectionStatus = getConnectionStatus(connection?.syncStatus);
 
   useEffect(() => {
     const connected = searchParams.get("connected") === "1";
@@ -111,18 +96,19 @@ export const CalendarIntegrationSettings = () => {
   return (
     <Box>
       <Text as="h1" className="mb-6 text-2xl font-medium">
-        Calendar
+        Google Calendar
       </Text>
 
       <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           action={
-            <>
+            <Flex className="shrink-0">
               {integrationQuery.isPending ? (
                 <Skeleton className="h-10 w-48" />
               ) : null}
               {integrationQuery.isError ? (
                 <Button
+                  className="shrink-0 whitespace-nowrap"
                   color="tertiary"
                   loading={integrationQuery.isFetching}
                   onClick={() => {
@@ -135,21 +121,26 @@ export const CalendarIntegrationSettings = () => {
               ) : null}
               {!integrationQuery.isPending && !integrationQuery.isError ? (
                 <Button
+                  className="shrink-0 whitespace-nowrap"
                   color="invert"
+                  leftIcon={
+                    <GoogleCalendarIcon
+                      aria-hidden="true"
+                      className="h-4.5 w-4.5 shrink-0"
+                    />
+                  }
                   loading={createConnectSession.isPending}
                   onClick={() => {
                     createConnectSession.mutate();
                   }}
                 >
-                  {connection
-                    ? "Reconnect Google Calendar"
-                    : "Connect Google Calendar"}
+                  {connection ? "Reconnect" : "Connect"}
                 </Button>
               ) : null}
-            </>
+            </Flex>
           }
           description="Connect your primary Google Calendar to see meetings alongside FortyOne work and help future plans respect that calendar's availability."
-          title="Connected calendar"
+          title="Calendar"
         />
 
         {integrationQuery.isPending ? (
@@ -186,36 +177,38 @@ export const CalendarIntegrationSettings = () => {
         {!integrationQuery.isPending &&
         !integrationQuery.isError &&
         connection ? (
-          <Flex align="center" className="px-6 py-4" justify="between">
-            <Flex align="center" gap={3}>
+          <Flex align="center" className="gap-4 px-6 py-4" justify="between">
+            <Flex align="center" className="min-w-0" gap={3}>
               <Flex
                 align="center"
-                className="bg-surface-muted size-9 shrink-0 rounded-lg"
+                className="bg-surface-muted size-10 shrink-0 rounded-xl"
                 justify="center"
               >
-                <GoogleCalendarIcon className="h-5 w-5" />
+                <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
               </Flex>
-              <Box>
-                <Text className="font-medium">{connection.connectedEmail}</Text>
-                <Text color="muted">
-                  Primary calendar · Last synced{" "}
+              <Box className="min-w-0">
+                <Text className="truncate font-medium">
+                  {connection.connectedEmail}
+                </Text>
+                <Text className="truncate" color="muted">
+                  Primary calendar ·{" "}
+                  {connection.canReadEventDetails
+                    ? "Event details enabled"
+                    : "Availability only"}
+                  {" · "}
                   {formatSyncedAt(connection.lastSyncedAt)}
                 </Text>
               </Box>
             </Flex>
-            <Flex align="center" gap={2}>
-              <Badge
-                className="uppercase"
-                color={getSyncBadgeColor(connection.syncStatus)}
-              >
-                {connection.syncStatus}
-              </Badge>
-              <Badge
-                className="uppercase"
-                color={getDetailsBadgeColor(connection)}
-              >
-                {connection.canReadEventDetails ? "Event details" : "Busy only"}
-              </Badge>
+            <Flex align="center" className="shrink-0" gap={2}>
+              {connectionStatus ? (
+                <Badge
+                  color={connectionStatus.color}
+                  variant={connectionStatus.variant}
+                >
+                  {connectionStatus.label}
+                </Badge>
+              ) : null}
               <Menu>
                 <Menu.Button>
                   <Button
@@ -244,7 +237,10 @@ export const CalendarIntegrationSettings = () => {
                         createConnectSession.mutate();
                       }}
                     >
-                      <GoogleCalendarIcon className="h-4 w-4" />
+                      <GoogleCalendarIcon
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                      />
                       Update connection
                     </Menu.Item>
                     <Menu.Item
@@ -272,7 +268,7 @@ export const CalendarIntegrationSettings = () => {
         <Box className="grid grid-cols-1 gap-3 px-6 py-5 md:grid-cols-2">
           <Flex
             align="center"
-            className="border-border bg-surface-muted rounded-xl border px-4 py-3"
+            className="border-border bg-surface-prominent/45 rounded-xl border px-4 py-3"
             gap={3}
           >
             <CalendarIcon className="h-5 w-auto" />
@@ -283,7 +279,7 @@ export const CalendarIntegrationSettings = () => {
           </Flex>
           <Flex
             align="center"
-            className="border-border bg-surface-muted rounded-xl border px-4 py-3"
+            className="border-border bg-surface-prominent/45 rounded-xl border px-4 py-3"
             gap={3}
           >
             <ClockIcon className="h-5 w-auto" />
@@ -308,8 +304,8 @@ export const CalendarIntegrationSettings = () => {
       </Box>
 
       <Box className="mt-6">
-        <Link href={withWorkspace("/my-work?layout=calendar")}>
-          <Text color="muted">View calendar in My work</Text>
+        <Link href={withWorkspace("/settings/integrations")}>
+          <Text color="muted">Back to integrations</Text>
         </Link>
       </Box>
 

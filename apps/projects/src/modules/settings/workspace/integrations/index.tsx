@@ -97,9 +97,11 @@ type Integration = {
   icon: ReactNode;
   enabled: boolean;
   href?: string;
+  status?: string;
 };
 
 const getIntegrationStatus = (integration: Integration) => {
+  if (integration.status) return integration.status;
   if (!integration.href) return "Coming soon";
   return integration.enabled ? "Installed" : "Not connected";
 };
@@ -147,7 +149,8 @@ export const IntegrationsIndex = () => {
   const isAdmin = userRole === "admin";
   const { data: integration } = useGitHubIntegration({ enabled: isAdmin });
   const { data: slackIntegration } = useSlackIntegration({ enabled: isAdmin });
-  const { data: calendarIntegration } = useCalendarIntegration();
+  const calendarIntegrationQuery = useCalendarIntegration();
+  const calendarIntegration = calendarIntegrationQuery.data;
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
@@ -160,6 +163,12 @@ export const IntegrationsIndex = () => {
       (connection) => connection.provider === "google",
     ),
   );
+  let googleCalendarStatus: string | undefined;
+  if (calendarIntegrationQuery.isPending) {
+    googleCalendarStatus = "Checking connection";
+  } else if (calendarIntegrationQuery.isError) {
+    googleCalendarStatus = "Connection unavailable";
+  }
 
   const googleCalendarIntegration: Integration = {
     id: "google-calendar",
@@ -171,6 +180,7 @@ export const IntegrationsIndex = () => {
     ),
     enabled: isGoogleCalendarEnabled,
     href: withWorkspace("/settings/integrations/calendar"),
+    status: googleCalendarStatus,
   };
   const workspaceIntegrations: Integration[] = [
     {
@@ -276,10 +286,7 @@ export const IntegrationsIndex = () => {
         </Text>
         <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filteredIntegrations.map((integration) => (
-            <IntegrationCard
-              integration={integration}
-              key={integration.id}
-            />
+            <IntegrationCard integration={integration} key={integration.id} />
           ))}
         </Box>
       </Box>

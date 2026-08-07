@@ -40,6 +40,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
 
   const isAdmin = userRole === "admin";
   const isMember = userRole === "member";
+  const canUseIntegrations = isAdmin || isMember || userRole === "guest";
 
   const accountItems = [
     { title: "Profile", href: withWorkspace("/settings/account") },
@@ -80,7 +81,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
           // { title: "API tokens", href: withWorkspace("/settings/workspace/api") },
         ]
       : []),
-    ...(userRole
+    ...(canUseIntegrations
       ? [
           {
             title: "Integrations",

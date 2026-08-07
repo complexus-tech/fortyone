@@ -148,7 +148,7 @@ export const SlackIntegrationSettings = () => {
       </Box>
 
       <Box className="mt-6">
-        <Link href={withWorkspace("/settings/workspace/integrations")}>
+        <Link href={withWorkspace("/settings/integrations")}>
           <Text color="muted">Back to integrations</Text>
         </Link>
       </Box>

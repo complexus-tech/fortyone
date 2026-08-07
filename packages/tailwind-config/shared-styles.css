@@ -120,38 +120,38 @@
 
   --rounded-app: 0.5rem;
 
-  --color-background: oklch(0.997 0.004 95);
+  --color-background: oklch(0.997 0.002 95);
   --color-black: oklch(0 0 0);
   --color-white: oklch(1 0 0);
   --color-transparent: oklch(0 0 0 / 0);
   --color-current: oklch(0 0 0);
 
-  --color-foreground: oklch(0.145 0.008 95);
-  --color-foreground-inverse: oklch(0.997 0.004 95);
-  --color-background-inverse: oklch(0.145 0.008 95);
+  --color-foreground: oklch(0.145 0.006 95);
+  --color-foreground-inverse: oklch(0.997 0.002 95);
+  --color-background-inverse: oklch(0.145 0.006 95);
 
-  --color-surface: oklch(0.997 0.004 95);
-  --color-surface-foreground: oklch(0.145 0.008 95);
-  --color-surface-elevated: oklch(0.997 0.004 95);
-  --color-surface-elevated-foreground: oklch(0.145 0.008 95);
-  --color-surface-muted: oklch(0.975 0.005 95);
-  --color-surface-muted-foreground: oklch(0.45 0.007 95);
-  --color-surface-prominent: oklch(0.89 0.007 95);
-  --color-popover: oklch(0.997 0.004 95);
-  --color-popover-foreground: oklch(0.145 0.008 95);
+  --color-surface: oklch(0.997 0.002 95);
+  --color-surface-foreground: oklch(0.145 0.006 95);
+  --color-surface-elevated: oklch(0.997 0.002 95);
+  --color-surface-elevated-foreground: oklch(0.145 0.006 95);
+  --color-surface-muted: oklch(0.975 0.003 95);
+  --color-surface-muted-foreground: oklch(0.45 0.005 95);
+  --color-surface-prominent: oklch(0.89 0.005 95);
+  --color-popover: oklch(0.997 0.002 95);
+  --color-popover-foreground: oklch(0.145 0.006 95);
 
-  --color-muted: oklch(0.975 0.005 95);
-  --color-muted-foreground: oklch(0.45 0.007 95);
-  --color-accent: oklch(0.942 0.006 95);
-  --color-accent-foreground: oklch(0.145 0.008 95);
+  --color-muted: oklch(0.975 0.003 95);
+  --color-muted-foreground: oklch(0.45 0.005 95);
+  --color-accent: oklch(0.942 0.004 95);
+  --color-accent-foreground: oklch(0.145 0.006 95);
 
-  --color-border: oklch(0.92 0.006 95);
-  --color-border-strong: oklch(0.89 0.007 95);
-  --color-input: oklch(0.922 0.006 95);
+  --color-border: oklch(0.92 0.004 95);
+  --color-border-strong: oklch(0.89 0.005 95);
+  --color-input: oklch(0.922 0.004 95);
   --color-ring: oklch(0.6522 0.2135 38);
   --color-focus: oklch(0.6522 0.2135 38);
-  --color-shadow: oklch(0.145 0.008 95 / 0.03);
-  --color-icon: oklch(0.55 0.007 95);
+  --color-shadow: oklch(0.145 0.006 95 / 0.03);
+  --color-icon: oklch(0.55 0.005 95);
 
   --color-brand: oklch(0.6522 0.2135 38);
   --color-brand-foreground: oklch(0.1821 0.0139 94);
@@ -169,22 +169,22 @@
   --color-info: oklch(0.715 0.143 195);
   --color-info-foreground: oklch(0.1821 0.0139 94);
 
-  --color-text-primary: oklch(0.145 0.008 95);
-  --color-text-secondary: oklch(0.35 0.007 95);
-  --color-text-muted: oklch(0.45 0.007 95);
-  --color-text-disabled: oklch(0.6 0.006 95);
+  --color-text-primary: oklch(0.145 0.006 95);
+  --color-text-secondary: oklch(0.35 0.005 95);
+  --color-text-muted: oklch(0.45 0.005 95);
+  --color-text-disabled: oklch(0.6 0.004 95);
 
-  --color-state-hover: oklch(0.145 0.008 95 / 0.04);
-  --color-state-active: oklch(0.145 0.008 95 / 0.08);
-  --color-state-selected: oklch(0.145 0.008 95 / 0.12);
-  --color-state-disabled: oklch(0.145 0.008 95 / 0.5);
+  --color-state-hover: oklch(0.145 0.006 95 / 0.04);
+  --color-state-active: oklch(0.145 0.006 95 / 0.08);
+  --color-state-selected: oklch(0.145 0.006 95 / 0.12);
+  --color-state-disabled: oklch(0.145 0.006 95 / 0.5);
 
-  --color-sidebar: oklch(0.98 0.005 95);
-  --color-sidebar-foreground: oklch(0.145 0.008 95);
-  --color-sidebar-accent: oklch(0.95 0.006 95);
-  --color-sidebar-accent-foreground: oklch(0.145 0.008 95);
-  --color-sidebar-border: oklch(0.922 0.006 95);
-  --color-skeleton: oklch(0.922 0.006 95);
+  --color-sidebar: oklch(0.98 0.003 95);
+  --color-sidebar-foreground: oklch(0.145 0.006 95);
+  --color-sidebar-accent: oklch(0.95 0.004 95);
+  --color-sidebar-accent-foreground: oklch(0.145 0.006 95);
+  --color-sidebar-border: oklch(0.922 0.004 95);
+  --color-skeleton: oklch(0.922 0.004 95);
 
   --breakpoint-3xl: 1900px;
 }
