@@ -195,8 +195,8 @@ export const RelatedWorkPanel = ({
             justify="center"
           >
             <DocsIcon
-              className="text-text-muted mb-5 size-14"
-              strokeWidth={1.5}
+              className="text-text-muted mb-5 h-16 w-auto"
+              strokeWidth={1.3}
             />
             <Text className="mb-2" fontSize="lg" fontWeight="semibold">
               Nothing to see here!

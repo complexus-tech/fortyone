@@ -6,17 +6,21 @@ export const formatDocumentRelativeTime = (value: string) => {
   const minute = 60 * 1000;
   const hour = 60 * minute;
   const day = 24 * hour;
+  const week = 7 * day;
 
   if (difference < minute) return "Just now";
   if (difference < hour) {
     const minutes = Math.floor(difference / minute);
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
+    return `${minutes}m`;
   }
   if (difference < day) {
     const hours = Math.floor(difference / hour);
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+    return `${hours}h`;
   }
-  if (difference < 2 * day) return "Yesterday";
+  if (difference < week) {
+    const days = Math.floor(difference / day);
+    return `${days}d`;
+  }
 
   return date.toLocaleDateString(undefined, {
     day: "numeric",
