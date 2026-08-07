@@ -59,6 +59,28 @@ func New(log *logger.Logger, repo Repository, storageService storage.StorageServ
 
 // UploadAttachment uploads a file and creates an attachment record
 func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID, workspaceID uuid.UUID) (FileInfo, error) {
+	return s.uploadAttachment(ctx, file, fileHeader, userID, workspaceID, nil)
+}
+
+// UploadDocumentMedia uploads an image or MP4 video for use inside a document.
+// The content type is derived from the file bytes, not the multipart header.
+func (s *Service) UploadDocumentMedia(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID, workspaceID uuid.UUID) (FileInfo, error) {
+	return s.uploadAttachment(ctx, file, fileHeader, userID, workspaceID, func(contentType string) error {
+		if strings.HasPrefix(contentType, "image/") || contentType == "video/mp4" {
+			return nil
+		}
+		return fmt.Errorf("%w: upload an image or MP4 video", ErrInvalidFileType)
+	})
+}
+
+func (s *Service) uploadAttachment(
+	ctx context.Context,
+	file multipart.File,
+	fileHeader *multipart.FileHeader,
+	userID uuid.UUID,
+	workspaceID uuid.UUID,
+	validateContentType func(string) error,
+) (FileInfo, error) {
 	s.log.Info(ctx, "core.attachments.upload")
 	ctx, span := web.AddSpan(ctx, "core.attachments.UploadAttachment")
 	defer span.End()
@@ -75,6 +97,12 @@ func (s *Service) UploadAttachment(ctx context.Context, file multipart.File, fil
 	if err != nil {
 		span.RecordError(err)
 		return FileInfo{}, fmt.Errorf("%w: failed to detect content type", ErrInvalidFile)
+	}
+	if validateContentType != nil {
+		if err := validateContentType(contentType); err != nil {
+			span.RecordError(err)
+			return FileInfo{}, err
+		}
 	}
 
 	// Upload to storage
@@ -234,6 +262,43 @@ func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID)
 	return fileInfos, nil
 }
 
+// ResolveAttachmentAccessURL returns fresh, short-lived object access for an
+// attachment after confirming that it belongs to the requested workspace.
+func (s *Service) ResolveAttachmentAccessURL(ctx context.Context, id, workspaceID uuid.UUID, expiry time.Duration) (FileInfo, error) {
+	if id == uuid.Nil || workspaceID == uuid.Nil || expiry <= 0 {
+		return FileInfo{}, ErrInvalidFile
+	}
+
+	attachment, err := s.repo.GetAttachmentByID(ctx, id)
+	if err != nil {
+		return FileInfo{}, err
+	}
+	if attachment.WorkspaceID != workspaceID {
+		return FileInfo{}, ErrNotFound
+	}
+
+	accessURL, err := s.storage.GenerateAccessURL(
+		ctx,
+		s.config.AttachmentsBucket,
+		attachment.BlobName,
+		expiry,
+	)
+	if err != nil {
+		return FileInfo{}, fmt.Errorf("failed to generate attachment access URL: %w", err)
+	}
+
+	return FileInfo{
+		ID:         attachment.ID,
+		Filename:   attachment.Filename,
+		BlobName:   attachment.BlobName,
+		Size:       attachment.Size,
+		MimeType:   attachment.MimeType,
+		URL:        accessURL,
+		CreatedAt:  attachment.CreatedAt,
+		UploadedBy: attachment.UploadedBy,
+	}, nil
+}
+
 // DeleteAttachment deletes an attachment
 func (s *Service) DeleteAttachment(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
 	s.log.Info(ctx, "core.attachments.delete")
@@ -254,10 +319,34 @@ func (s *Service) DeleteAttachment(ctx context.Context, id uuid.UUID, userID uui
 		return ErrUnauthorized
 	}
 
+	return s.deleteStoredAttachment(ctx, span, attachment)
+}
+
+// DeleteDocumentMedia deletes an attachment after a document handler has
+// authorized the editor and confirms the attachment belongs to the workspace.
+func (s *Service) DeleteDocumentMedia(ctx context.Context, id, workspaceID uuid.UUID) error {
+	s.log.Info(ctx, "core.attachments.deleteDocumentMedia")
+	ctx, span := web.AddSpan(ctx, "core.attachments.DeleteDocumentMedia")
+	defer span.End()
+
+	attachment, err := s.repo.GetAttachmentByID(ctx, id)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+	if attachment.WorkspaceID != workspaceID {
+		span.RecordError(ErrNotFound)
+		return ErrNotFound
+	}
+
+	return s.deleteStoredAttachment(ctx, span, attachment)
+}
+
+func (s *Service) deleteStoredAttachment(ctx context.Context, span trace.Span, attachment CoreAttachment) error {
 	// Use the stored blob name if available, otherwise generate it
 	blobName := attachment.BlobName
 	// Delete from database first
-	err = s.repo.DeleteAttachment(ctx, id)
+	err := s.repo.DeleteAttachment(ctx, attachment.ID)
 	if err != nil {
 		span.RecordError(err)
 		return err
@@ -272,7 +361,7 @@ func (s *Service) DeleteAttachment(ctx context.Context, id uuid.UUID, userID uui
 	}
 
 	span.AddEvent("attachment deleted", trace.WithAttributes(
-		attribute.String("attachment_id", id.String()),
+		attribute.String("attachment_id", attachment.ID.String()),
 	))
 
 	return nil

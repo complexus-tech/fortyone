@@ -25,4 +25,9 @@
     margin-block: 0.25rem !important;
     line-height: 1.5 !important;
   }
+
+  .rich-text-editor table p {
+    line-height: 1.45 !important;
+    margin-block: 0 !important;
+  }
 }

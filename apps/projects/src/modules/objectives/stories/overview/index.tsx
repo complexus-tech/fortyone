@@ -22,6 +22,7 @@ import { useDebounce, useTerminology, useUserRole } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useChatContext } from "@/context/chat-context";
+import { RelatedDocuments } from "@/modules/documents/related-documents";
 import {
   useCanUpdateObjective,
   useDeleteObjectiveMutation,
@@ -197,6 +198,7 @@ export const Overview = () => {
                 />
               </Box>
               <Properties />
+              <RelatedDocuments entityId={objectiveId} entityType="objective" />
               <Divider className="my-8" />
               <Activity />
             </Container>
@@ -267,6 +269,7 @@ export const Overview = () => {
             />
           </Box>
           <Properties />
+          <RelatedDocuments entityId={objectiveId} entityType="objective" />
           <Divider className="my-6 md:my-8" />
           <Activity />
         </Container>

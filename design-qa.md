@@ -197,6 +197,131 @@ final result: blocked
 
 ---
 
+# Documents Related Work Sidebar and Header Design QA
+
+## Source and implementation evidence
+
+- Open Related Work reference: `/Users/joseph/Downloads/Screenshot 2026-08-06 at 10.47.25 PM.png` (1022 × 1472 pixels).
+- Collapsed Related Work reference: `/Users/joseph/Downloads/Screenshot 2026-08-06 at 10.47.37 PM.png` (958 × 1408 pixels).
+- Document header reference: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_ChBSdF/Screenshot 2026-08-06 at 10.50.41 PM.png` (2026 × 378 pixels).
+- Implementation screenshot: unavailable because the connected in-app browser opens `http://localhost:3000/` at `Login - FortyOne`; a connected Chrome session was unavailable.
+- Intended viewport and state: authenticated desktop Documents editor in dark mode, with Related Work open and collapsed.
+
+## Comparison evidence
+
+- Full-view comparison: blocked because an authenticated implementation capture could not be produced.
+- Focused header, sidebar, resize-divider, toggle, and empty-state comparison: blocked for the same reason.
+- The source references were opened at original resolution and used to define the implementation structure, copy, and proportions.
+
+## Functional verification
+
+- Related Work now uses the same resizable divided-panel primitive as the sprint page, with a 30% default sidebar and 25–40% resize bounds.
+- The open sidebar has a close control, full-width relationship action, centered empty state, and functional relationship list/remove actions.
+- The collapsed state exposes an icon-only edge control with a `Show related work` tooltip.
+- The document header groups the title and working overflow menu on the left and keeps document access on the right; unsupported Pin and Favorite controls were not added as static UI.
+- Focused formatting and ESLint pass with zero warnings, Projects type checking passes, `git diff --check` passes, and React Doctor reports 92/100 with advisory maintainability findings only.
+
+## Required fidelity surfaces
+
+- Typography: existing FortyOne type tokens are retained; the header title uses the larger semibold hierarchy from the reference and Related Work uses normal product font sizes.
+- Spacing and layout: the right rail uses sprint-page resize proportions, six-unit panel gutters, a full-width action, and a vertically centered empty state.
+- Colors and visual tokens: the sidebar uses the app surface and existing half-pixel resizable divider instead of the previous translucent floating overlay.
+- Image and icon quality: existing Hugeicons-based document, relationship, and close icons are reused; no generated or approximate assets were introduced.
+- Copy and content: the empty state follows the supplied `Nothing to see here!` structure while using FortyOne's `document` terminology.
+
+## Comparison history
+
+- Earlier P1: Related Work was a floating overlay that covered the editor and did not match the sprint-page layout. It now participates in the resizable document layout.
+- Earlier P2: the relationship toggle occupied the top navigation. It now appears as the collapsed edge control shown in the reference.
+- Earlier P2: the top navigation separated the title from its overflow menu. They are now grouped together, while access remains right-aligned.
+- Post-fix visual evidence remains unavailable until the local app is authenticated in the connected browser.
+
+## Implementation checklist
+
+- [x] Replace the floating Related Work overlay with a resizable sidebar.
+- [x] Match the supplied open and collapsed sidebar hierarchy.
+- [x] Move the collapsed toggle to the editor edge.
+- [x] Reorganize the top navigation using only working controls.
+- [ ] Capture and compare the authenticated open and collapsed states.
+
+final result: blocked
+
+---
+
+# Documents Editor Media and List Refinement Design QA
+
+## Source and implementation evidence
+
+- Table-density and misplaced-controls source: `/Users/joseph/Downloads/Screenshot 2026-08-06 at 8.09.48 PM.png`.
+- Shortcut Documents references: `/Users/joseph/Downloads/Screenshot 2026-08-06 at 7.22.33 PM.png`, `/Users/joseph/Downloads/Screenshot 2026-08-06 at 7.22.43 PM.png`, and `/Users/joseph/Downloads/Screenshot 2026-08-06 at 7.23.07 PM.png`.
+- Linear slash-command reference: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_JdtS3R/Screenshot 2026-08-05 at 11.17.44 PM.png`.
+- Implementation screenshot: unavailable because the connected in-app browser opened `http://localhost:3000` at `Login - FortyOne`.
+- Intended state: authenticated desktop Documents home and editor, with a table selected, Related Work open, and uploaded media selected.
+
+## Comparison evidence
+
+- Full-view and focused side-by-side comparisons are blocked until an authenticated implementation state is available.
+- The available visual references were inspected before implementation; no temporary authentication bypass or preview route was added.
+
+## Functional and source verification
+
+- Slash commands use `CodeXmlIcon` and `LayoutTable01Icon`; Diagram, GIF, and Attach file are removed.
+- Table cells use compact vertical padding, prose margins are reset inside cells, and table actions are anchored to the selected table in the document scroll container without a nested portal.
+- Related Work is closed by default and opens as a Maya-style floating translucent panel over a subtle backdrop without reducing editor width.
+- Document access uses the requested keyhole lock for Only me and a two-person outline icon for workspace/member access.
+- Images and MP4 videos support picker, paste, and drop uploads. Images persist width and alignment, support resize controls, and swap optimistic blob previews for access-checked stable document-media URLs.
+- Template-card hover changes only the border. Empty states have no card or icon well, and document results render directly beneath a divider with zero horizontal row padding and neutral title hover.
+- Focused Projects type checking and ESLint, Prettier, UI package type checking/builds, focused Go document/attachment tests, `gofmt -d`, and `git diff --check` pass.
+- React Doctor scores the changed React surface 92/100 with no errors; remaining findings are advisory component-organization, exact icon-vector precision, and animation-token warnings.
+
+## Result
+
+final result: blocked
+
+---
+
+# Documents Landing, Templates, and Editor Design QA
+
+## Source and implementation evidence
+
+- Shortcut recent-documents reference: `/Users/joseph/Downloads/Screenshot 2026-08-06 at 7.22.33 PM.png` (2048 × 1159 pixels).
+- Shortcut my-documents reference: `/Users/joseph/Downloads/Screenshot 2026-08-06 at 7.22.43 PM.png` (2048 × 1159 pixels).
+- Shortcut document-and-access reference: `/Users/joseph/Downloads/Screenshot 2026-08-06 at 7.23.07 PM.png` (2048 × 1159 pixels).
+- Linear slash-command reference: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_JdtS3R/Screenshot 2026-08-05 at 11.17.44 PM.png`.
+- Implementation screenshot: unavailable because `http://localhost:3000/fin-kenya/docs` redirected the connected in-app browser to `Login - FortyOne`.
+- Intended viewport and state: authenticated desktop Documents home and editor in dark mode, with recent documents and a populated template document.
+
+## Comparison evidence
+
+- Full Documents-home comparison: blocked because the authenticated implementation state could not be reached.
+- Focused template-card, document-table, slash-menu, and table-editor comparisons: blocked for the same authentication reason.
+- The three source screenshots were inspected at original resolution before implementation. A side-by-side comparison input could not be produced without a post-change implementation capture.
+
+## Functional verification
+
+- The Documents header now reuses the Notifications expandable-search interaction; the shared input uses normal body text sizing across Notifications, Feedback, Intake, and Documents.
+- Recent documents, My documents, Shared with me, and Templates are URL-addressable views, and the sidebar retains quick links to recently updated documents.
+- Blank, Meeting notes, Project brief, One-to-one, and Weekly update cards create real workspace-visible documents with trusted TipTap-compatible HTML and searchable text in one API operation.
+- My and shared views render a document table with last-updated, access, visible related-work count, and owner-only archive actions.
+- Visible relationship counts reuse team-membership visibility rules, and Shared with me now requires an explicit document-member relationship.
+- Workspace guests remain read-only across API responses and UI controls; guests selected for restricted access are stored as viewers.
+- The editor supports headings, inline formatting, links, quotes, lists, checklists, URL media, attachments, code, dividers, resizable tables, and contextual row/column/table actions.
+- Slash-menu teardown is nullable and idempotent, and Escape exits the dedicated TipTap suggestion plugin rather than only hiding its popover.
+- Projects type checking, focused ESLint, the Next.js 16.3 Turbopack production build, and focused Go document tests pass.
+- React Doctor reports no Documents warning; its remaining warning is an unrelated existing memoization finding in story details.
+
+## Required fidelity surfaces
+
+- Layout: the compact header moves scope navigation upward, while template cards and the bordered table use the same dense split-pane hierarchy as the Shortcut references.
+- Typography: document search, scope items, slash commands, cards, table headers, and empty states use the normal application text scale rather than auxiliary small labels.
+- Buttons and surfaces: search and create actions reuse Notifications button sizing and standard radius; template cards and editor popovers use opaque product surfaces and established border tokens.
+- Icons: Documents and sharing use the requested Hugeicons outline glyphs, and the remaining controls reuse the shared icon package without custom-drawn assets.
+- Interaction: search, scopes, templates, table rows, archive menus, slash commands, and table actions are implemented as working controls.
+
+## Result
+
+## final result: blocked
+
 # Objectives Board and Timeline Hover Design QA
 
 ## Source and implementation evidence
@@ -281,5 +406,43 @@ final result: blocked
 - Post-fix browser evidence remains blocked by authentication, so these fixes cannot be visually passed yet.
 
 ## Result
+
+final result: blocked
+
+---
+
+# Docs Workspace and Editor Design QA
+
+## Source and implementation evidence
+
+- Shortcut Docs split-pane reference: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_B3ZWeM/Screenshot 2026-08-05 at 11.17.10 PM.png`
+- Linear slash-command reference: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_JdtS3R/Screenshot 2026-08-05 at 11.17.44 PM.png`
+- Linear compact selection-toolbar reference: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_zwGzOl/Screenshot 2026-08-05 at 11.18.08 PM.png`
+- Implementation screenshot: unavailable because the connected in-app browser opens the local app at the FortyOne sign-in screen.
+- Intended viewport: authenticated desktop Docs route in dark mode.
+
+## Comparison evidence
+
+- Full-view comparison: blocked before implementation capture because authentication was unavailable.
+- Focused slash-menu and selection-toolbar comparisons: blocked for the same reason.
+- The local Docker daemon required to start a complete seeded API stack was unavailable, so a temporary authenticated environment could not be created.
+
+## Functional verification
+
+- The production build includes both `/[workspaceSlug]/docs` and `/[workspaceSlug]/docs/[documentId]`.
+- Focused TypeScript and ESLint checks pass for the Docs UI and affected story/objective surfaces.
+- The full Go test suite passes, including document service coverage.
+- React Doctor reports no new Docs warning; its remaining finding is pre-existing in story detail.
+- The editor toolbar uses a solid elevated surface and the stronger dark-mode border token.
+
+## Implementation checklist
+
+- [x] Add Docs after Strategy Map in workspace navigation.
+- [x] Add a searchable split-pane document workspace.
+- [x] Persist workspace, restricted, and private document access.
+- [x] Add bidirectional Story and Objective relationships.
+- [x] Add Linear-inspired slash commands.
+- [x] Compact and strengthen the text-selection toolbar.
+- [ ] Re-run the visual comparison in an authenticated browser session.
 
 final result: blocked

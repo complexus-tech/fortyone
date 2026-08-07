@@ -4,6 +4,7 @@ import {
   ActiveSprintIcon,
   AiIcon,
   DashboardIcon,
+  DocsIcon,
   RoadmapIcon,
   StrategyIcon,
   UserIcon,
@@ -80,6 +81,11 @@ export const Navigation = () => {
       icon: <StrategyIcon />,
       href: withWorkspace("/strategy"),
       disabled: !features.objectiveEnabled,
+    },
+    {
+      name: "Documents",
+      icon: <DocsIcon />,
+      href: withWorkspace("/docs"),
     },
   ];
 

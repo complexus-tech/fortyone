@@ -22,6 +22,7 @@ import { useLinks } from "@/lib/hooks/links";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useIsAdminOrOwner } from "@/hooks/owner";
+import { RelatedDocuments } from "@/modules/documents/related-documents";
 import { useStoryById } from "../hooks/story";
 import type { DetailedStory } from "../types";
 import { Activities } from "./activities";
@@ -224,6 +225,7 @@ export const MainDetails = ({
             storyId={storyId}
           />
         )}
+        <RelatedDocuments entityId={storyId} entityType="story" />
         <Box
           className={cn("md:hidden", {
             "mt-4": isNotifications && isLinksOpen && links.length > 0,

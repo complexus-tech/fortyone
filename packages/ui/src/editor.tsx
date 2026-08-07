@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import type { ComponentProps } from "react";
+import { useCallback, useState } from "react";
+import { TextSelection } from "@tiptap/pm/state";
 import { EditorContent, EditorContentProps } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 
-import { BubbleMenu as CustomBubbleMenu } from "./bubble-menu";
+import {
+  BubbleMenu as CustomBubbleMenu,
+  type BubbleMenuPanel,
+} from "./bubble-menu";
 import { cn } from "lib";
 
 type TextEditorProps = EditorContentProps & {
   asTitle?: boolean;
+  bubbleMenuShouldShow?: ComponentProps<typeof BubbleMenu>["shouldShow"];
   hideBubbleMenu?: boolean;
 };
 
@@ -16,11 +22,38 @@ export const TextEditor = ({
   editor,
   className = "",
   asTitle = false,
+  bubbleMenuShouldShow,
   hideBubbleMenu = false,
   innerRef,
   ...rest
 }: TextEditorProps) => {
-  const [isLinkOpen, setIsLinkOpen] = useState(false);
+  const [activeBubbleMenu, setActiveBubbleMenu] =
+    useState<BubbleMenuPanel>(null);
+  const shouldShowBubbleMenu = useCallback<
+    NonNullable<ComponentProps<typeof BubbleMenu>["shouldShow"]>
+  >(
+    (props) => {
+      const { doc, selection } = props.state;
+      const isNonEmptyTextSelection =
+        selection instanceof TextSelection &&
+        !selection.empty &&
+        doc.textBetween(props.from, props.to).length > 0;
+      const isMenuFocused = props.element.contains(
+        window.document.activeElement,
+      );
+
+      if (
+        !props.editor.isEditable ||
+        !isNonEmptyTextSelection ||
+        (!props.view.hasFocus() && !isMenuFocused)
+      ) {
+        return false;
+      }
+
+      return bubbleMenuShouldShow?.(props) ?? true;
+    },
+    [bubbleMenuShouldShow],
+  );
 
   return (
     <>
@@ -29,14 +62,15 @@ export const TextEditor = ({
           editor={editor}
           options={{
             onHide: () => {
-              setIsLinkOpen(false);
+              setActiveBubbleMenu(null);
             },
           }}
+          shouldShow={shouldShowBubbleMenu}
         >
           <CustomBubbleMenu
+            activeMenu={activeBubbleMenu}
             editor={editor}
-            isLinkOpen={isLinkOpen}
-            setIsLinkOpen={setIsLinkOpen}
+            setActiveMenu={setActiveBubbleMenu}
           />
         </BubbleMenu>
       )}

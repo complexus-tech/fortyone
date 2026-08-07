@@ -1,10 +1,10 @@
 import { Avatar, Badge, Button, Menu } from "ui";
 import {
   CheckIcon,
+  InviteMembersIcon,
   LogoutIcon,
   PlusIcon,
   SettingsIcon,
-  UsersAddIcon,
   WorkspaceIcon,
   ArrowDown2Icon,
   ArrowRight2Icon,
@@ -217,7 +217,7 @@ export const WorkspacesMenu = () => {
                     setPathBeforeSettings(pathname);
                   }}
                 >
-                  <UsersAddIcon className="h-[1.3rem] w-auto" />
+                  <InviteMembersIcon className="h-[1.3rem] w-auto" />
                   Invite & manage members
                 </Link>
               </Menu.Item>

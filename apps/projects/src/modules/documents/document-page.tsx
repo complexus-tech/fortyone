@@ -1,0 +1,529 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEditor } from "@tiptap/react";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
+import { Table } from "@tiptap/extension-table";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TableRow from "@tiptap/extension-table-row";
+import { toast } from "sonner";
+import {
+  Box,
+  Button,
+  Divider,
+  Flex,
+  Menu,
+  Skeleton,
+  Text,
+  TextEditor,
+  Tooltip,
+} from "ui";
+import {
+  ArchiveIcon,
+  ArrowLeftIcon,
+  CopyIcon,
+  DeleteIcon,
+  DuplicateIcon,
+  LinkIcon,
+  LockKeyholeIcon,
+  MoreHorizontalIcon,
+  UserMultiple02Icon,
+} from "icons";
+import {
+  useCopyToClipboard,
+  useLocalStorage,
+  useMediaQuery,
+  useWorkspacePath,
+} from "@/hooks";
+import { BoardDividedPanel, ConfirmDialog } from "@/components/ui";
+import { useDebouncedCallback } from "@/hooks/debounce";
+import { useSession } from "@/lib/auth/client";
+import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
+import { DocumentAccessMenu } from "./document-access-menu";
+import {
+  deleteDocumentMediaAction,
+  uploadDocumentMediaAction,
+} from "./actions";
+import {
+  DOCUMENT_MEDIA_ACCEPT,
+  DocumentImage,
+  DocumentMediaDrop,
+  DocumentVideo,
+  getPersistableDocumentContent,
+  uploadDocumentMediaFiles,
+} from "./document-media";
+import { DocumentTableMenu } from "./document-table-menu";
+import {
+  useArchiveDocument,
+  useDeleteDocument,
+  useDocument,
+  useDuplicateDocument,
+  useUpdateDocument,
+} from "./hooks";
+import { RelatedWorkPanel } from "./related-work-panel";
+import { SlashCommand } from "./slash-command";
+import type { DocumentUpdate } from "./types";
+
+const documentAccessLabels = {
+  private: "Private",
+  restricted: "Shared",
+  workspace: "Workspace",
+} as const;
+
+const DOCUMENT_MEDIA_INPUT_ID = "document-media-upload";
+
+const shouldShowDocumentTextMenu = ({
+  editor,
+}: {
+  editor: NonNullable<ReturnType<typeof useEditor>>;
+}) =>
+  !editor.isActive("image") &&
+  !editor.isActive("documentVideo") &&
+  !editor.isActive("table");
+
+const DocumentPageSkeleton = () => (
+  <Box className="h-dvh">
+    <Flex
+      align="center"
+      className="border-border/70 h-[4.5rem] border-b px-5"
+      justify="between"
+    >
+      <Skeleton className="h-5 w-44" />
+      <Skeleton className="h-8 w-24" />
+    </Flex>
+    <Box className="mx-auto w-full max-w-5xl px-8 py-16 sm:px-10 lg:px-12">
+      <Skeleton className="mb-8 h-12 w-3/4" />
+      <Skeleton className="mb-3 h-6 w-full" />
+      <Skeleton className="mb-3 h-6 w-5/6" />
+      <Skeleton className="h-6 w-2/3" />
+    </Box>
+  </Box>
+);
+
+export const DocumentPage = ({ documentId }: { documentId: string }) => {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const { withWorkspace, workspaceSlug } = useWorkspacePath();
+  const { data: document, isPending } = useDocument(documentId);
+  const updateDocument = useUpdateDocument(documentId);
+  const archiveDocument = useArchiveDocument();
+  const duplicateDocument = useDuplicateDocument();
+  const deleteDocument = useDeleteDocument();
+  const [, copyToClipboard] = useCopyToClipboard();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [titleDraft, setTitleDraft] = useState({
+    documentId: "",
+    value: "",
+  });
+  const [isRelatedWorkOpen, setIsRelatedWorkOpen] = useLocalStorage(
+    "workspace:documents:related-work:isExpanded",
+    false,
+  );
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [scrollContainer, setScrollContainer] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  const loadedDocumentIdRef = useRef<string | null>(null);
+  const closeRelatedWork = useCallback(() => {
+    setIsRelatedWorkOpen(false);
+  }, [setIsRelatedWorkOpen]);
+  const handleMediaFiles = useCallback(
+    (
+      currentEditor: NonNullable<ReturnType<typeof useEditor>>,
+      files: File[],
+      position?: number,
+    ) => {
+      void uploadDocumentMediaFiles({
+        cleanup: async (media) => {
+          const response = await deleteDocumentMediaAction(
+            documentId,
+            media.id,
+            workspaceSlug,
+          );
+          if (response.error) {
+            throw new Error(
+              response.error.message || "Could not clean up uploaded media.",
+            );
+          }
+        },
+        editor: currentEditor,
+        files,
+        position,
+        upload: async (file) => {
+          const response = await uploadDocumentMediaAction(
+            documentId,
+            file,
+            workspaceSlug,
+          );
+          if (response.error || !response.data) {
+            throw new Error(
+              response.error?.message || "Could not upload this media file.",
+            );
+          }
+          return response.data;
+        },
+        onError: (_file, error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Could not upload this media file.",
+          );
+        },
+      });
+    },
+    [documentId, workspaceSlug],
+  );
+
+  const persist = (payload: DocumentUpdate) => {
+    updateDocument.mutate(payload);
+  };
+  const { callback: saveTitle, flush: flushTitle } = useDebouncedCallback(
+    (nextTitle: string) => {
+      persist({ title: nextTitle });
+    },
+    700,
+    { flushOnUnmount: true },
+  );
+  const { callback: saveContent, flush: flushContent } = useDebouncedCallback(
+    (content: Pick<DocumentUpdate, "contentHtml" | "contentText">) => {
+      persist(content);
+    },
+    700,
+    { flushOnUnmount: true },
+  );
+
+  const editor = useEditor({
+    extensions: [
+      createRichTextStarterKit(),
+      Underline,
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Link.configure({ autolink: true }),
+      DocumentImage.configure({
+        allowBase64: false,
+        HTMLAttributes: {
+          class: "max-w-full rounded-xl border border-border",
+        },
+      }),
+      DocumentVideo,
+      DocumentMediaDrop.configure({ onFiles: handleMediaFiles }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      Placeholder.configure({ placeholder: "Type / for commands" }),
+      SlashCommand.configure({
+        onMediaRequest: () => {
+          window.document.getElementById(DOCUMENT_MEDIA_INPUT_ID)?.click();
+        },
+      }),
+    ],
+    content: "",
+    editable: false,
+    immediatelyRender: false,
+    onUpdate: ({ editor: currentEditor }) => {
+      saveContent(getPersistableDocumentContent(currentEditor));
+    },
+    onBlur: flushContent,
+  });
+
+  useEffect(() => {
+    if (!document) return;
+    editor?.setEditable(document.canEdit);
+    if (editor && loadedDocumentIdRef.current !== document.id) {
+      editor.commands.setContent(document.contentHtml, { emitUpdate: false });
+      loadedDocumentIdRef.current = document.id;
+    }
+  }, [document, editor]);
+
+  useEffect(() => {
+    const element = titleRef.current;
+    if (!element) return;
+    element.style.height = "0px";
+    element.style.height = `${element.scrollHeight}px`;
+  }, [document?.title, titleDraft]);
+
+  if (isPending) return <DocumentPageSkeleton />;
+
+  if (!document) {
+    return (
+      <Flex align="center" className="h-dvh px-8" justify="center">
+        <Box className="max-w-md text-center">
+          <Text className="mb-2" fontSize="xl" fontWeight="semibold">
+            Document unavailable
+          </Text>
+          <Text color="muted">
+            It may have been archived or you may no longer have access.
+          </Text>
+        </Box>
+      </Flex>
+    );
+  }
+
+  const title =
+    titleDraft.documentId === documentId ? titleDraft.value : document.title;
+  const canManageDocument =
+    session?.user.id === document.createdBy && document.canEdit;
+  const accessLabel = documentAccessLabels[document.visibility];
+  const AccessIcon =
+    document.visibility === "private" ? LockKeyholeIcon : UserMultiple02Icon;
+
+  const handleArchive = () => {
+    archiveDocument.mutate(document.id, {
+      onSuccess: (response) => {
+        if (!response.error) router.push(withWorkspace("/docs"));
+      },
+    });
+  };
+
+  const handleCopyLink = async () => {
+    const copied = await copyToClipboard(window.location.href);
+    if (copied) {
+      toast.success("Document link copied");
+      return;
+    }
+    toast.error("Could not copy the document link");
+  };
+
+  const handleDuplicate = async () => {
+    const content = editor
+      ? getPersistableDocumentContent(editor)
+      : {
+          contentHtml: document.contentHtml,
+          contentText: document.contentText,
+        };
+    try {
+      await updateDocument.mutateAsync({ title, ...content });
+      duplicateDocument.mutate(document.id, {
+        onSuccess: (response) => {
+          if (response.data) {
+            router.push(withWorkspace(`/docs/${response.data.id}`));
+          }
+        },
+      });
+    } catch {
+      // The update mutation surfaces a save error and prevents a stale copy.
+    }
+  };
+
+  const handleDelete = () => {
+    deleteDocument.mutate(document.id, {
+      onSuccess: (response) => {
+        if (!response.error) {
+          setIsDeleteDialogOpen(false);
+          router.push(withWorkspace("/docs"));
+        }
+      },
+    });
+  };
+
+  return (
+    <Flex className="h-dvh min-w-0" direction="column">
+      <Flex
+        align="center"
+        className="border-border/70 h-[4.5rem] shrink-0 border-b px-4 md:px-5"
+        justify="between"
+      >
+        <Flex align="center" className="min-w-0" gap={2}>
+          <Button
+            aria-label="Back to documents"
+            asIcon
+            className="md:hidden"
+            color="tertiary"
+            onClick={() => {
+              router.push(withWorkspace("/docs"));
+            }}
+            size="sm"
+            variant="naked"
+          >
+            <ArrowLeftIcon />
+          </Button>
+          <Text
+            className="max-w-80 truncate"
+            fontSize="lg"
+            fontWeight="semibold"
+          >
+            {title || "Untitled document"}
+          </Text>
+          <Menu>
+            <Menu.Button>
+              <Button
+                aria-label="Document actions"
+                asIcon
+                color="tertiary"
+                size="sm"
+                variant="naked"
+              >
+                <MoreHorizontalIcon />
+              </Button>
+            </Menu.Button>
+            <Menu.Items align="start" className="min-w-52">
+              <Menu.Group>
+                <Menu.Item onSelect={() => void handleCopyLink()}>
+                  <CopyIcon className="size-4" />
+                  Copy link
+                </Menu.Item>
+                <Menu.Item
+                  disabled={!document.canEdit || duplicateDocument.isPending}
+                  onSelect={() => void handleDuplicate()}
+                >
+                  <DuplicateIcon className="size-4" />
+                  {duplicateDocument.isPending
+                    ? "Duplicating..."
+                    : "Duplicate document"}
+                </Menu.Item>
+              </Menu.Group>
+              <Menu.Group>
+                {canManageDocument ? (
+                  <Menu.Item onSelect={handleArchive}>
+                    <ArchiveIcon className="size-4" />
+                    Archive document
+                  </Menu.Item>
+                ) : (
+                  <Menu.Item disabled>Archive unavailable</Menu.Item>
+                )}
+              </Menu.Group>
+              <Menu.Separator />
+              <Menu.Group>
+                {canManageDocument ? (
+                  <Menu.Item
+                    className="text-danger dark:!text-danger"
+                    onSelect={() => {
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    <DeleteIcon className="text-danger dark:!text-danger size-4" />
+                    Delete permanently...
+                  </Menu.Item>
+                ) : (
+                  <Menu.Item disabled>Delete unavailable</Menu.Item>
+                )}
+              </Menu.Group>
+            </Menu.Items>
+          </Menu>
+        </Flex>
+        <Flex align="center" gap={2}>
+          {canManageDocument ? (
+            <DocumentAccessMenu document={document} />
+          ) : (
+            <Button
+              aria-label={`Document access: ${accessLabel}`}
+              asIcon
+              color="tertiary"
+              disabled
+              size="sm"
+              variant="outline"
+            >
+              <AccessIcon className="size-4" />
+            </Button>
+          )}
+        </Flex>
+      </Flex>
+
+      <Box className="min-h-0 flex-1">
+        <BoardDividedPanel autoSaveId="workspace:documents:related-work:divided-panel">
+          <BoardDividedPanel.MainPanel>
+            <Box className="relative h-full min-w-0">
+              {isDesktop && !isRelatedWorkOpen ? (
+                <Box className="absolute top-6 right-0 z-20">
+                  <Tooltip title="Show related work">
+                    <Button
+                      aria-expanded="false"
+                      aria-label="Show related work"
+                      asIcon
+                      className="rounded-r-none border-r-0"
+                      color="tertiary"
+                      onClick={() => {
+                        setIsRelatedWorkOpen(true);
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <LinkIcon className="size-4" />
+                    </Button>
+                  </Tooltip>
+                </Box>
+              ) : null}
+              <input
+                accept={DOCUMENT_MEDIA_ACCEPT}
+                aria-label="Upload document media"
+                className="sr-only"
+                id={DOCUMENT_MEDIA_INPUT_ID}
+                multiple
+                onChange={(event) => {
+                  const files = Array.from(event.target.files ?? []);
+                  event.target.value = "";
+                  if (editor && files.length > 0) {
+                    handleMediaFiles(editor, files);
+                  }
+                }}
+                type="file"
+              />
+              <div
+                className="h-full min-w-0 overflow-y-auto"
+                ref={setScrollContainer}
+              >
+                <Box className="mx-auto w-full max-w-5xl px-8 pt-12 pb-32 sm:px-10 lg:px-12 lg:pt-16">
+                  <textarea
+                    aria-label="Document title"
+                    className="text-foreground placeholder:text-text-muted mb-6 block min-h-14 w-full resize-none overflow-hidden bg-transparent text-4xl leading-tight font-semibold outline-none md:text-5xl"
+                    disabled={!document.canEdit}
+                    onBlur={flushTitle}
+                    onChange={(event) => {
+                      setTitleDraft({
+                        documentId,
+                        value: event.target.value,
+                      });
+                      saveTitle(event.target.value);
+                    }}
+                    placeholder="Untitled document"
+                    ref={titleRef}
+                    rows={1}
+                    value={title}
+                  />
+                  <Divider className="mb-8" />
+                  <TextEditor
+                    bubbleMenuShouldShow={shouldShowDocumentTextMenu}
+                    className="document-editor min-h-[55dvh] text-[1.05rem] leading-7"
+                    editor={editor}
+                  />
+                  <DocumentTableMenu
+                    editor={editor}
+                    scrollTarget={scrollContainer}
+                  />
+                </Box>
+              </div>
+            </Box>
+          </BoardDividedPanel.MainPanel>
+          <BoardDividedPanel.SideBar
+            className="!h-full"
+            isExpanded={isDesktop ? isRelatedWorkOpen : false}
+          >
+            <RelatedWorkPanel document={document} onClose={closeRelatedWork} />
+          </BoardDividedPanel.SideBar>
+        </BoardDividedPanel>
+      </Box>
+      {isDeleteDialogOpen ? (
+        <ConfirmDialog
+          confirmPhrase="delete"
+          confirmText="Delete permanently"
+          description={`This will permanently delete “${title || "Untitled document"}” and cannot be undone.`}
+          isLoading={deleteDocument.isPending}
+          isOpen
+          loadingText="Deleting..."
+          onClose={() => {
+            if (!deleteDocument.isPending) setIsDeleteDialogOpen(false);
+          }}
+          onConfirm={handleDelete}
+          title="Delete document?"
+        />
+      ) : null}
+    </Flex>
+  );
+};

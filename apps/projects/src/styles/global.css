@@ -163,8 +163,8 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   @apply w-full table-auto border-collapse;
 }
 .tiptap table td,
-th {
-  @apply border-border;
+.tiptap table th {
+  @apply border-border border;
 }
 .tiptap table p {
   @apply m-0;
@@ -173,15 +173,64 @@ th {
   @apply bg-surface-muted text-foreground font-semibold;
 }
 .tiptap table td,
-th {
-  @apply relative px-2 py-2.5 text-left;
+.tiptap table th {
+  @apply relative px-2 py-1.5 text-left align-top;
 }
 .tiptap table tr {
   @apply odd:bg-surface-muted/80 hover:bg-state-hover transition;
 }
 
 .tiptap table .column-resize-handle {
-  @apply bg-border-strong pointer-events-none absolute top-0 -right-[2px] -bottom-px z-5 w-1;
+  @apply bg-border-strong pointer-events-none absolute top-0 -right-0.5 -bottom-px z-5 w-1;
+}
+
+.tiptap .tableWrapper {
+  @apply my-4 overflow-x-auto rounded-lg;
+}
+
+.tiptap table .selectedCell::after {
+  @apply bg-primary/10 pointer-events-none absolute inset-0 content-[""];
+}
+
+/* Documents use a calmer, roomier table treatment than compact story editors. */
+.document-editor .tiptap .tableWrapper {
+  @apply my-8 rounded-md;
+}
+
+.document-editor .tiptap :is(h1, h2, h3, h4, h5, h6) {
+  @apply font-semibold;
+}
+
+.document-editor .tiptap table {
+  @apply border-border dark:border-border-strong/80 overflow-hidden rounded-md border-[0.5px];
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.document-editor .tiptap table td,
+.document-editor .tiptap table th {
+  @apply border-border dark:border-border-strong/80 border-0 border-r-[0.5px] border-b-[0.5px] px-3 py-2.5;
+}
+
+.document-editor .tiptap table tr > :last-child {
+  border-right-width: 0;
+}
+
+.document-editor .tiptap table tr:last-child > * {
+  border-bottom-width: 0;
+}
+
+.document-editor .tiptap table th {
+  @apply bg-surface-muted/45 dark:bg-surface-elevated/45;
+}
+
+.document-editor .tiptap table tr,
+.document-editor .tiptap table tr:hover {
+  @apply bg-transparent;
+}
+
+.document-editor .tiptap table .selectedCell::after {
+  @apply bg-primary/10 ring-primary/80 ring-1 ring-inset;
 }
 
 .resize-cursor {

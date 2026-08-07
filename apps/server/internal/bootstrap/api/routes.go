@@ -224,11 +224,12 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	}, app)
 
 	documentshttp.Routes(documentshttp.Config{
-		DB:        cfg.DB,
-		Log:       cfg.Log,
-		SecretKey: cfg.SecretKey,
-		Cache:     cfg.Cache,
-		Service:   svcs.documents,
+		DB:          cfg.DB,
+		Log:         cfg.Log,
+		SecretKey:   cfg.SecretKey,
+		Cache:       cfg.Cache,
+		Service:     svcs.documents,
+		Attachments: svcs.attachments,
 	}, app)
 
 	stateshttp.Routes(stateshttp.Config{

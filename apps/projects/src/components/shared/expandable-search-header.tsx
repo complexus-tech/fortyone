@@ -42,8 +42,8 @@ export const ExpandableSearchHeader = ({
       <form
         className={
           isExpanded
-            ? "min-w-0 flex-1 transition-all duration-200 ease-out"
-            : "w-[2.1rem] shrink-0 transition-all duration-200 ease-out"
+            ? "min-w-0 flex-1 transition-[width,flex-grow] duration-200 ease-out"
+            : "w-[2.1rem] shrink-0 transition-[width,flex-grow] duration-200 ease-out"
         }
         onSubmit={handleSubmit}
         role="search"
@@ -52,9 +52,10 @@ export const ExpandableSearchHeader = ({
           <Input
             aria-label={label}
             autoFocus={isOpen}
-            className="h-[2.1rem]"
+            className="h-[2.1rem] text-base"
             leftIcon={<SearchIcon className="h-4" />}
             onBlur={() => {
+              setValue(initialValue);
               setIsOpen(false);
             }}
             onChange={(event) => {

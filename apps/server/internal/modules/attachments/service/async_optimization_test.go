@@ -27,7 +27,8 @@ func (testMultipartFile) Close() error {
 }
 
 type attachmentRepositoryStub struct {
-	attachment CoreAttachment
+	attachment          CoreAttachment
+	deletedAttachmentID uuid.UUID
 }
 
 func (r *attachmentRepositoryStub) CreateAttachment(_ context.Context, attachment CoreAttachment) (CoreAttachment, error) {
@@ -61,7 +62,8 @@ func (r *attachmentRepositoryStub) UpdateAttachmentStorageMetadata(_ context.Con
 	return nil
 }
 
-func (r *attachmentRepositoryStub) DeleteAttachment(_ context.Context, _ uuid.UUID) error {
+func (r *attachmentRepositoryStub) DeleteAttachment(_ context.Context, id uuid.UUID) error {
+	r.deletedAttachmentID = id
 	return nil
 }
 
@@ -70,8 +72,13 @@ func (r *attachmentRepositoryStub) LinkAttachmentToStory(_ context.Context, _, _
 }
 
 type attachmentStorageStub struct {
-	data        []byte
-	contentType string
+	data              []byte
+	contentType       string
+	uploadCount       int
+	generateCount     int
+	generatedExpiry   time.Duration
+	generatedFilename string
+	deletedFilename   string
 }
 
 func (s *attachmentStorageStub) UploadFile(_ context.Context, _, _ string, data io.Reader, contentType string) (string, error) {
@@ -81,6 +88,7 @@ func (s *attachmentStorageStub) UploadFile(_ context.Context, _, _ string, data 
 	}
 	s.data = uploaded
 	s.contentType = contentType
+	s.uploadCount++
 	return "https://storage.test/attachment", nil
 }
 
@@ -88,11 +96,15 @@ func (s *attachmentStorageStub) DownloadFile(_ context.Context, _, _ string) ([]
 	return append([]byte(nil), s.data...), s.contentType, nil
 }
 
-func (s *attachmentStorageStub) GenerateAccessURL(_ context.Context, _, _ string, _ time.Duration) (string, error) {
+func (s *attachmentStorageStub) GenerateAccessURL(_ context.Context, _, filename string, expiry time.Duration) (string, error) {
+	s.generateCount++
+	s.generatedFilename = filename
+	s.generatedExpiry = expiry
 	return "https://storage.test/attachment", nil
 }
 
-func (s *attachmentStorageStub) DeleteFile(_ context.Context, _, _ string) error {
+func (s *attachmentStorageStub) DeleteFile(_ context.Context, _, filename string) error {
+	s.deletedFilename = filename
 	return nil
 }
 

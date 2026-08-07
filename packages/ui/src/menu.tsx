@@ -61,28 +61,35 @@ const SubTrigger = forwardRef<
 ));
 
 type ContentProps = ComponentProps<typeof DropdownMenu.Content> &
-  VariantProps<typeof contentClasses>;
+  VariantProps<typeof contentClasses> & {
+    portal?: boolean;
+  };
 
 export const Items = ({
   children,
   className,
   sideOffset = 4,
   loop = true,
+  portal = true,
   rounded,
   ...rest
 }: ContentProps) => {
   const classes = cn(contentClasses({ rounded }), className);
-  return (
-    <DropdownMenu.Portal>
-      <DropdownMenu.Content
-        sideOffset={sideOffset}
-        className={classes}
-        loop={loop}
-        {...rest}
-      >
-        {children}
-      </DropdownMenu.Content>
-    </DropdownMenu.Portal>
+  const content = (
+    <DropdownMenu.Content
+      sideOffset={sideOffset}
+      className={classes}
+      loop={loop}
+      {...rest}
+    >
+      {children}
+    </DropdownMenu.Content>
+  );
+
+  return portal ? (
+    <DropdownMenu.Portal>{content}</DropdownMenu.Portal>
+  ) : (
+    content
   );
 };
 
