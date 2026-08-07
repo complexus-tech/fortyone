@@ -1,6 +1,6 @@
 "use client";
-import { Box, BreadCrumbs, Flex } from "ui";
-import { CalendarIcon, StoryIcon, UserIcon } from "icons";
+import { Box, BreadCrumbs, Button, Flex } from "ui";
+import { CalendarIcon, PlusIcon, StoryIcon, UserIcon } from "icons";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
@@ -16,10 +16,12 @@ import { useMyWork } from "./provider";
 
 export const Header = ({
   layout,
+  onScheduleCalendar,
   setLayout,
   showCalendar,
 }: {
   layout: MyWorkLayout;
+  onScheduleCalendar: () => void;
   setLayout: (value: MyWorkLayout) => void;
   showCalendar: boolean;
 }) => {
@@ -120,7 +122,20 @@ export const Header = ({
         ) : null}
         <span className="text-text-secondary hidden md:inline">|</span>
         <Box className="hidden md:block">
-          <NewStoryButton data-header-new-story-button />
+          {isCalendar ? (
+            <Button
+              className="shrink-0"
+              color="invert"
+              data-header-schedule-story-button
+              leftIcon={<PlusIcon className="text-current dark:text-current" />}
+              onClick={onScheduleCalendar}
+              size="sm"
+            >
+              Schedule {getTermDisplay("storyTerm")}
+            </Button>
+          ) : (
+            <NewStoryButton data-header-new-story-button />
+          )}
         </Box>
       </Flex>
     </HeaderContainer>

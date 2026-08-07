@@ -13,9 +13,9 @@ export default function Loading() {
   );
   if (layout === "calendar" && !isMobile) {
     return (
-      <Box className="bg-surface h-[calc(100dvh-4rem)] px-6 py-5">
-        <Skeleton className="mb-4 h-9 w-72" />
-        <Skeleton className="h-[calc(100%-3.25rem)] w-full" />
+      <Box className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden">
+        <Skeleton className="h-18 w-full shrink-0 rounded-none" />
+        <Skeleton className="min-h-0 w-full flex-1 rounded-none" />
       </Box>
     );
   }

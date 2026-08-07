@@ -122,11 +122,12 @@ export const CalendarEventDetailsDialog = ({
             <Button
               aria-label="Close event details"
               asIcon
+              className="focus-visible:ring-primary/40 focus-visible:ring-2"
               color="tertiary"
               onClick={() => {
                 onOpenChange(false);
               }}
-              size="sm"
+              rounded="full"
               variant="naked"
             >
               <CloseIcon className="size-5" />
@@ -150,7 +151,7 @@ export const CalendarEventDetailsDialog = ({
                   {visibleEvent ? getCalendarEventTitle(visibleEvent) : null}
                 </Text>
                 {!isPrivate && visibleEvent ? (
-                  <Badge className="mt-3" color="tertiary">
+                  <Badge className="mt-3 text-base" color="tertiary">
                     {getCalendarLabel(visibleEvent)}
                   </Badge>
                 ) : null}
@@ -158,7 +159,7 @@ export const CalendarEventDetailsDialog = ({
 
               <Flex align="start" gap={3}>
                 <ClockIcon className="text-text-muted mt-0.5 h-5 w-auto shrink-0" />
-                <Text>
+                <Text fontSize="md">
                   {visibleEvent
                     ? getCalendarEventTimeLabel(visibleEvent)
                     : null}
@@ -171,7 +172,7 @@ export const CalendarEventDetailsDialog = ({
                     <Flex align="center" className="flex-wrap" gap={2}>
                       {meetingUrl ? (
                         <a
-                          className="bg-background-inverse text-foreground-inverse flex h-10 w-max items-center gap-2 rounded-xl border px-3 font-medium transition hover:opacity-90"
+                          className="bg-background-inverse text-foreground-inverse flex h-10 w-max items-center gap-2 rounded-xl border px-3 text-base font-medium transition hover:opacity-90"
                           href={meetingUrl}
                           rel="noreferrer noopener"
                           target="_blank"
@@ -182,7 +183,7 @@ export const CalendarEventDetailsDialog = ({
                       ) : null}
                       {htmlLink ? (
                         <a
-                          className="border-border hover:bg-state-hover flex h-10 w-max items-center gap-2 rounded-xl border px-3 font-medium transition"
+                          className="border-border hover:bg-state-hover flex h-10 w-max items-center gap-2 rounded-xl border px-3 text-base font-medium transition"
                           href={htmlLink}
                           rel="noreferrer noopener"
                           target="_blank"
@@ -198,10 +199,13 @@ export const CalendarEventDetailsDialog = ({
                     <Flex align="start" gap={3}>
                       <CalendarIcon className="text-text-muted mt-0.5 h-5 w-auto shrink-0" />
                       <Box>
-                        <Text color="muted" fontSize="sm">
+                        <Text color="muted" fontSize="md">
                           Location
                         </Text>
-                        <Text className="mt-0.5 whitespace-pre-wrap">
+                        <Text
+                          className="mt-0.5 whitespace-pre-wrap"
+                          fontSize="md"
+                        >
                           {visibleEvent.location}
                         </Text>
                       </Box>
@@ -212,10 +216,10 @@ export const CalendarEventDetailsDialog = ({
 
                   {eventQuery.isError ? (
                     <Box className="border-border bg-surface-muted/40 rounded-xl border px-4 py-3">
-                      <Text fontWeight="medium">
+                      <Text fontSize="md" fontWeight="medium">
                         Couldn&apos;t load every detail
                       </Text>
-                      <Text className="mt-1" color="muted" fontSize="sm">
+                      <Text className="mt-1" color="muted" fontSize="md">
                         The event remains visible from the latest calendar sync.
                       </Text>
                     </Box>
@@ -225,10 +229,10 @@ export const CalendarEventDetailsDialog = ({
                     <Flex align="start" gap={3}>
                       <UserMultiple02Icon className="text-text-muted mt-0.5 h-5 w-auto shrink-0" />
                       <Box>
-                        <Text color="muted" fontSize="sm">
+                        <Text color="muted" fontSize="md">
                           Organizer
                         </Text>
-                        <Text className="mt-0.5">
+                        <Text className="mt-0.5" fontSize="md">
                           {getPersonLabel(details.organizer)}
                         </Text>
                       </Box>
@@ -239,7 +243,7 @@ export const CalendarEventDetailsDialog = ({
                     <Box>
                       <Flex align="center" className="mb-2" gap={2}>
                         <UserMultiple02Icon className="text-text-muted h-5 w-auto" />
-                        <Text fontWeight="medium">
+                        <Text fontSize="md" fontWeight="medium">
                           Attendees · {attendees.length}
                           {details?.attendeesOmitted ? "+" : ""}
                         </Text>
@@ -254,11 +258,11 @@ export const CalendarEventDetailsDialog = ({
                             key={`${attendee.email ?? attendee.displayName ?? "attendee"}-${index}`}
                           >
                             <Box className="min-w-0">
-                              <Text className="truncate">
+                              <Text className="truncate" fontSize="md">
                                 {getPersonLabel(attendee)}
                               </Text>
                               {attendee.optional ? (
-                                <Text color="muted" fontSize="sm">
+                                <Text color="muted" fontSize="md">
                                   Optional
                                 </Text>
                               ) : null}
@@ -267,7 +271,7 @@ export const CalendarEventDetailsDialog = ({
                               <Text
                                 className="shrink-0"
                                 color="muted"
-                                fontSize="sm"
+                                fontSize="md"
                               >
                                 {getResponseLabel(attendee)}
                               </Text>
@@ -280,10 +284,14 @@ export const CalendarEventDetailsDialog = ({
 
                   {details?.description ? (
                     <Box>
-                      <Text className="mb-2" fontWeight="medium">
+                      <Text className="mb-2" fontSize="md" fontWeight="medium">
                         Description
                       </Text>
-                      <Text className="whitespace-pre-wrap" color="muted">
+                      <Text
+                        className="whitespace-pre-wrap"
+                        color="muted"
+                        fontSize="md"
+                      >
                         {details.description}
                       </Text>
                     </Box>

@@ -40,6 +40,8 @@ export * from "./delete";
 export * from "./more-horizontal";
 export * from "./more-vertical";
 export * from "./clock";
+export * from "./notification-02";
+export * from "./time-schedule";
 export * from "./tags";
 export * from "./calendar";
 export * from "./calendar-plus";

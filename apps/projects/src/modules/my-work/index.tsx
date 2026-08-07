@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -15,9 +15,9 @@ const MyWorkCalendar = dynamic(
   () => import("./components/calendar").then((module) => module.MyWorkCalendar),
   {
     loading: () => (
-      <Box className="bg-surface h-[calc(100dvh-4rem)] px-6 py-5">
-        <Skeleton className="mb-4 h-9 w-72" />
-        <Skeleton className="h-[calc(100%-3.25rem)] w-full" />
+      <Box className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden">
+        <Skeleton className="h-18 w-full shrink-0 rounded-none" />
+        <Skeleton className="min-h-0 w-full flex-1 rounded-none" />
       </Box>
     ),
     ssr: false,
@@ -25,6 +25,7 @@ const MyWorkCalendar = dynamic(
 );
 
 export const ListMyStories = () => {
+  const [isCalendarScheduleOpen, setIsCalendarScheduleOpen] = useState(false);
   const searchParams = useSearchParams();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [layout, setLayout] = useLocalStorage<MyWorkLayout>(
@@ -68,11 +69,17 @@ export const ListMyStories = () => {
     <MyWorkProvider layout={storiesLayout}>
       <Header
         layout={activeLayout}
+        onScheduleCalendar={() => {
+          setIsCalendarScheduleOpen(true);
+        }}
         setLayout={setLayout}
         showCalendar={!isMobile}
       />
       {activeLayout === "calendar" ? (
-        <MyWorkCalendar />
+        <MyWorkCalendar
+          isScheduleDialogOpen={isCalendarScheduleOpen}
+          onScheduleDialogOpenChange={setIsCalendarScheduleOpen}
+        />
       ) : (
         <ListMyWork layout={activeLayout} />
       )}

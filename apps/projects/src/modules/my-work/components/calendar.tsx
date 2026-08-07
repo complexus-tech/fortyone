@@ -5,27 +5,35 @@ import Link from "next/link";
 import {
   addDays,
   addHours,
-  addWeeks,
   format,
   isSameDay,
   isSameMonth,
-  isSameYear,
   startOfDay,
-  startOfWeek,
-  subWeeks,
 } from "date-fns";
 import { cn } from "lib";
 import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  CalendarIcon,
-  ClockIcon,
+  ArrowDown2Icon,
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   DeleteIcon,
   GoogleCalendarIcon,
-  PlusIcon,
-  ReloadIcon,
+  StoryIcon,
+  TimeScheduleIcon,
 } from "icons";
-import { Box, Button, Dialog, Flex, Input, Select, Skeleton, Text } from "ui";
+import {
+  Box,
+  Button,
+  Command,
+  Dialog,
+  Divider,
+  Flex,
+  Input,
+  Menu,
+  Popover,
+  Skeleton,
+  Text,
+} from "ui";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import {
   useCalendarIntegration,
@@ -57,15 +65,22 @@ import {
   getCalendarEventTitle,
   getCalendarEventTimeLabel,
 } from "./calendar-event-details-dialog";
+import {
+  getCalendarViewDays,
+  getCalendarViewRange,
+  getCalendarViewTitle,
+  moveCalendarCursor,
+} from "./calendar-view";
+import type { CalendarView } from "./calendar-view";
 
-const weekStartsOn = 1 as const;
 const defaultVisibleStartHour = 8;
-const defaultVisibleEndHour = 18;
-const hourHeight = 84;
-const timeRailWidth = 4.25;
+const defaultVisibleEndHour = 21;
+const hourHeight = 52;
+const timeRailWidth = 8.5;
 const automaticSyncStaleAfter = 5 * 60 * 1000;
 const calendarHistoryDays = 7;
 const calendarLookaheadDays = 90;
+const calendarViews = ["day", "week", "month"] as const;
 
 type CalendarItem =
   | {
@@ -93,18 +108,36 @@ type CalendarItem =
 const toDateTimeInputValue = (value: Date | string) =>
   format(new Date(value), "yyyy-MM-dd'T'HH:mm");
 
-const toTimeLabel = (startAt: string, endAt: string) =>
-  `${format(new Date(startAt), "h:mm a")} - ${format(new Date(endAt), "h:mm a")}`;
+const toClockLabel = (value: Date, includePeriod: boolean) => {
+  const timePattern = value.getMinutes() === 0 ? "h" : "h:mm";
+  return format(
+    value,
+    includePeriod ? `${timePattern}a` : timePattern,
+  ).toLowerCase();
+};
 
-const getWeekTitle = (weekStart: Date) => {
-  const weekEnd = addDays(weekStart, 6);
-  if (isSameMonth(weekStart, weekEnd)) {
-    return format(weekStart, "MMMM yyyy");
-  }
-  if (isSameYear(weekStart, weekEnd)) {
-    return `${format(weekStart, "MMMM")} – ${format(weekEnd, "MMMM yyyy")}`;
-  }
-  return `${format(weekStart, "MMMM yyyy")} – ${format(weekEnd, "MMMM yyyy")}`;
+const toTimeLabel = (startAt: string, endAt: string) => {
+  const start = new Date(startAt);
+  const end = new Date(endAt);
+  const isSamePeriod = format(start, "a") === format(end, "a");
+  return `${toClockLabel(start, !isSamePeriod)} – ${toClockLabel(end, true)}`;
+};
+
+const getUtcOffsetLabel = (date: Date) => {
+  const offsetMinutes = -date.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const absoluteOffset = Math.abs(offsetMinutes);
+  const hours = Math.floor(absoluteOffset / 60)
+    .toString()
+    .padStart(2, "0");
+  const minutes = absoluteOffset % 60;
+  return `GMT${sign}${hours}${minutes ? `:${minutes.toString().padStart(2, "0")}` : ""}`;
+};
+
+const getLocalTimeZoneName = () => {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const location = timeZone.split("/").at(-1);
+  return location?.replaceAll("_", " ") || "Local time";
 };
 
 const roundToNextHalfHour = (date: Date) => {
@@ -173,12 +206,18 @@ const CalendarTimedBlock = ({
     top: `${layout.top}px`,
     width: `calc(${laneWidth}% - 0.5rem)`,
   };
+  const showSecondaryLine = layout.height >= 38;
+  const blockPaddingClass =
+    layout.height >= hourHeight ? "px-2.5 py-1" : "px-2.5 py-0.5";
 
   if (item.kind === "event") {
     return (
       <button
         aria-label={`Open ${getCalendarEventTitle(item.event)} details, ${getCalendarEventTimeLabel(item.event)}`}
-        className="border-border bg-surface-elevated hover:bg-state-hover absolute overflow-hidden rounded-md border border-l-2 border-l-[#3c90ff] px-2.5 py-1.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50 focus-visible:outline-none"
+        className={cn(
+          "absolute overflow-hidden rounded-lg border border-[#3c90ff]/80 bg-[#3c90ff]/[0.035] text-left transition-colors hover:bg-[#3c90ff]/[0.08] focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50 focus-visible:outline-none",
+          blockPaddingClass,
+        )}
         onClick={() => {
           onSelectEvent(item.event);
         }}
@@ -186,15 +225,22 @@ const CalendarTimedBlock = ({
         type="button"
       >
         <Text
-          className="text-foreground truncate"
-          fontSize="sm"
-          fontWeight="semibold"
+          as="span"
+          className="block truncate leading-none text-[#3c90ff]"
+          fontSize="md"
+          fontWeight="medium"
         >
           {getCalendarEventTitle(item.event)}
         </Text>
-        <Text className="text-text-muted truncate text-[0.78rem]">
-          {toTimeLabel(item.startAt, item.endAt)}
-        </Text>
+        {showSecondaryLine ? (
+          <Text
+            as="span"
+            className="block truncate leading-none text-[#3c90ff]"
+            fontSize="md"
+          >
+            {toTimeLabel(item.startAt, item.endAt)}
+          </Text>
+        ) : null}
       </button>
     );
   }
@@ -202,19 +248,24 @@ const CalendarTimedBlock = ({
   if (item.kind === "busy") {
     return (
       <Box
-        className="border-border bg-surface-muted/60 absolute overflow-hidden rounded-md border border-dashed px-2.5 py-1.5"
+        className={cn(
+          "border-border-strong/60 bg-surface-muted/35 absolute overflow-hidden rounded-lg border border-dashed",
+          blockPaddingClass,
+        )}
         style={style}
       >
         <Text
-          className="text-foreground truncate"
-          fontSize="sm"
-          fontWeight="semibold"
+          className="text-foreground truncate leading-none"
+          fontSize="md"
+          fontWeight="medium"
         >
           {getBusyWindowTitle(item.window)}
         </Text>
-        <Text className="text-text-muted truncate text-[0.78rem]">
-          {toTimeLabel(item.startAt, item.endAt)}
-        </Text>
+        {showSecondaryLine ? (
+          <Text className="truncate leading-none" color="muted" fontSize="md">
+            {toTimeLabel(item.startAt, item.endAt)}
+          </Text>
+        ) : null}
       </Box>
     );
   }
@@ -230,78 +281,67 @@ const CalendarTimedBlock = ({
       ? getStoryHref(withWorkspace, block.storyId, block.storyCode)
       : null;
   let blockColorClass =
-    "border-border bg-surface-muted/60 hover:bg-state-hover border-dashed";
+    "border-border-strong/60 bg-surface-muted/35 hover:bg-state-hover border-dashed";
   if (block.blockType === "work") {
     blockColorClass =
-      "border-border border-l-primary bg-primary/[0.045] hover:bg-primary/[0.08] border-l-2";
+      "border-primary/60 bg-primary/[0.055] hover:bg-primary/[0.1]";
   }
   if (block.hasConflict) {
     blockColorClass =
-      "border-danger/40 border-l-danger bg-danger/[0.08] hover:bg-danger/[0.12] border-l-2";
+      "border-danger/60 bg-danger/[0.08] hover:bg-danger/[0.12]";
   }
 
   return (
     <Box
       className={cn(
-        "absolute overflow-hidden rounded-md border px-2.5 py-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition",
+        "absolute overflow-hidden rounded-lg border transition-colors",
+        blockPaddingClass,
         blockColorClass,
       )}
       style={style}
     >
-      <Flex align="start" className="h-full" gap={2} justify="between">
-        <Box className="min-w-0">
-          {href ? (
-            <Link className="block" href={href}>
-              <Text
-                className="text-foreground hover:text-primary line-clamp-2"
-                fontSize="sm"
-                fontWeight="semibold"
-              >
-                {block.title}
-              </Text>
-            </Link>
-          ) : (
+      <button
+        aria-label={
+          block.hasConflict
+            ? "Resolve calendar block conflict"
+            : "Edit calendar block"
+        }
+        className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-lg focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+        onClick={() => {
+          onEdit(block);
+        }}
+        type="button"
+      />
+      <Box className="pointer-events-none relative z-10 min-w-0">
+        {href ? (
+          <Link className="pointer-events-auto block" href={href}>
             <Text
-              className={cn(
-                "line-clamp-2",
-                block.hasConflict && "text-danger",
-                !block.hasConflict && "text-foreground",
-              )}
-              fontSize="sm"
-              fontWeight="semibold"
+              className="text-foreground hover:text-primary truncate leading-none"
+              fontSize="md"
+              fontWeight="medium"
             >
               {block.title}
             </Text>
-          )}
-          <Flex align="center" className="mt-0.5 min-w-0" gap={1}>
-            <Text className="truncate text-[0.78rem]" color="muted">
-              {statusLabel}
-            </Text>
-            <span className="bg-border h-1 w-1 rounded-full" />
-            <Text className="truncate text-[0.78rem]" color="muted">
-              {toTimeLabel(block.startAt, block.endAt)}
-            </Text>
-          </Flex>
-        </Box>
-        <Button
-          aria-label={
-            block.hasConflict
-              ? "Resolve calendar block conflict"
-              : "Edit calendar block"
-          }
-          asIcon
-          className="shrink-0"
-          color="tertiary"
-          onClick={(event) => {
-            event.preventDefault();
-            onEdit(block);
-          }}
-          size="xs"
-          variant="naked"
-        >
-          <CalendarIcon className="h-3.5" />
-        </Button>
-      </Flex>
+          </Link>
+        ) : (
+          <Text
+            className={cn(
+              "truncate leading-none",
+              block.hasConflict && "text-danger",
+              !block.hasConflict && "text-foreground",
+            )}
+            fontSize="md"
+            fontWeight="medium"
+          >
+            {block.title}
+          </Text>
+        )}
+        {showSecondaryLine ? (
+          <Text className="truncate leading-none" color="muted" fontSize="md">
+            {statusLabel} · {toTimeLabel(block.startAt, block.endAt)}
+          </Text>
+        ) : null}
+      </Box>
     </Box>
   );
 };
@@ -315,7 +355,7 @@ const CalendarAllDayEvent = ({
 }) => (
   <button
     aria-label={`Open ${getCalendarEventTitle(event)} details, ${getCalendarEventTimeLabel(event)}`}
-    className="border-border bg-surface-elevated hover:bg-state-hover text-foreground w-full truncate rounded-md border border-l-2 border-l-[#3c90ff] px-2 py-1 text-left text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50 focus-visible:outline-none"
+    className="w-full truncate rounded-lg border border-[#3c90ff]/80 bg-[#3c90ff]/10 px-3 py-1.5 text-left text-base font-medium text-[#3c90ff] transition-colors hover:bg-[#3c90ff]/15 focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50 focus-visible:outline-none"
     onClick={() => {
       onSelect(event);
     }}
@@ -324,6 +364,111 @@ const CalendarAllDayEvent = ({
     {getCalendarEventTitle(event)}
   </button>
 );
+
+const CalendarStoryPicker = ({
+  onSelect,
+  selectedStoryId,
+  stories,
+  storyTerm,
+  storyTermPlural,
+}: {
+  onSelect: (storyId: string) => void;
+  selectedStoryId: string;
+  stories: Story[];
+  storyTerm: string;
+  storyTermPlural: string;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const selectedStory = stories.find((story) => story.id === selectedStoryId);
+
+  const changeOpen = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      setQuery("");
+    }
+  };
+
+  return (
+    <Popover onOpenChange={changeOpen} open={isOpen}>
+      <Popover.Trigger asChild>
+        <Button
+          align="between"
+          aria-expanded={isOpen}
+          className="min-w-0 text-base"
+          color="tertiary"
+          fullWidth
+          rightIcon={<ArrowDown2Icon className="h-4 shrink-0" />}
+          size="md"
+          variant="outline"
+        >
+          {selectedStory ? (
+            <span className="min-w-0 flex-1 truncate text-left">
+              <span className="text-text-muted mr-2">
+                {getStoryCode(selectedStory)}
+              </span>
+              {selectedStory.title}
+            </span>
+          ) : (
+            <span className="text-text-muted">Select {storyTerm}</span>
+          )}
+        </Button>
+      </Popover.Trigger>
+      <Popover.Content
+        align="start"
+        className="border-border-strong w-[var(--radix-popover-trigger-width)] max-w-[34rem] min-w-[22rem] border"
+      >
+        <Command>
+          <Command.Input
+            aria-label={`Search ${storyTermPlural}`}
+            autoFocus
+            className="text-base"
+            onValueChange={setQuery}
+            placeholder={`Search ${storyTermPlural}...`}
+            value={query}
+          />
+          <Divider className="my-2" />
+          <Command.List className="max-h-72 overflow-y-auto">
+            <Command.Empty className="py-4 text-base">
+              <Text color="muted" fontSize="md">
+                No matching {storyTermPlural}.
+              </Text>
+            </Command.Empty>
+            <Command.Group>
+              {stories.map((story) => {
+                const code = getStoryCode(story);
+                const isSelected = story.id === selectedStoryId;
+                return (
+                  <Command.Item
+                    active={isSelected}
+                    className="justify-between gap-4 py-2 text-base"
+                    key={story.id}
+                    onSelect={() => {
+                      onSelect(story.id);
+                      changeOpen(false);
+                    }}
+                    value={`${code} ${story.title}`}
+                  >
+                    <Flex align="center" className="min-w-0" gap={2}>
+                      <StoryIcon className="h-[1.1rem] shrink-0" />
+                      <Text className="min-w-0 truncate" fontSize="md">
+                        <span className="text-text-muted mr-2">{code}</span>
+                        {story.title}
+                      </Text>
+                    </Flex>
+                    {isSelected ? (
+                      <CheckIcon className="h-5 shrink-0" strokeWidth={2.1} />
+                    ) : null}
+                  </Command.Item>
+                );
+              })}
+            </Command.Group>
+          </Command.List>
+        </Command>
+      </Popover.Content>
+    </Popover>
+  );
+};
 
 const CalendarDialog = ({
   candidateStories,
@@ -355,6 +500,7 @@ const CalendarDialog = ({
     toDateTimeInputValue(editingBlock?.endAt ?? addHours(defaultStart, 1)),
   );
   const storyTerm = getTermDisplay("storyTerm");
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const selectedStory = candidateStories.find(
     (story) => story.id === selectedStoryId,
   );
@@ -431,31 +577,18 @@ const CalendarDialog = ({
         <Dialog.Body className="space-y-4">
           {isWork ? (
             <Box>
-              <Text className="mb-1.5" fontSize="sm" fontWeight="medium">
+              <Text className="mb-2" fontSize="md" fontWeight="medium">
                 {storyTerm}
               </Text>
-              <Select
-                onValueChange={(value) => {
-                  setSelectedStoryId(value);
-                }}
-                value={selectedStoryId}
-              >
-                <Select.Trigger className="bg-surface h-[2.8rem] rounded-lg">
-                  <Select.Input placeholder={`Select ${storyTerm}`} />
-                </Select.Trigger>
-                <Select.Content className="max-w-[34rem]">
-                  {candidateStories.map((story) => (
-                    <Select.Option key={story.id} value={story.id}>
-                      <span className="text-text-muted mr-2">
-                        {getStoryCode(story)}
-                      </span>
-                      {story.title}
-                    </Select.Option>
-                  ))}
-                </Select.Content>
-              </Select>
+              <CalendarStoryPicker
+                onSelect={setSelectedStoryId}
+                selectedStoryId={selectedStoryId}
+                stories={candidateStories}
+                storyTerm={storyTerm}
+                storyTermPlural={storyTermPlural}
+              />
               {candidateStories.length === 0 ? (
-                <Text className="mt-2" color="muted" fontSize="sm">
+                <Text className="mt-2" color="muted" fontSize="md">
                   No assigned{" "}
                   {getTermDisplay("storyTerm", { variant: "plural" })} found.
                 </Text>
@@ -463,7 +596,9 @@ const CalendarDialog = ({
             </Box>
           ) : (
             <Input
+              className="text-base"
               label="Title"
+              labelClassName="text-base"
               onChange={(event) => {
                 setTitle(event.target.value);
               }}
@@ -472,7 +607,9 @@ const CalendarDialog = ({
           )}
           <Box className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Input
+              className="text-base"
               label="Start"
+              labelClassName="text-base"
               max={toDateTimeInputValue(latestScheduleAt)}
               min={toDateTimeInputValue(earliestScheduleAt)}
               onChange={(event) => {
@@ -482,7 +619,9 @@ const CalendarDialog = ({
               value={startAt}
             />
             <Input
+              className="text-base"
               label="End"
+              labelClassName="text-base"
               max={toDateTimeInputValue(latestScheduleAt)}
               min={toDateTimeInputValue(earliestScheduleAt)}
               onChange={(event) => {
@@ -493,12 +632,12 @@ const CalendarDialog = ({
             />
           </Box>
           {!hasChronologicalRange ? (
-            <Text color="danger" fontSize="sm">
+            <Text color="danger" fontSize="md">
               End time must be after start time.
             </Text>
           ) : null}
           {hasChronologicalRange && !isWithinScheduleHorizon ? (
-            <Text color="danger" fontSize="sm">
+            <Text color="danger" fontSize="md">
               Choose a time from the last {calendarHistoryDays} days through the
               next {calendarLookaheadDays} days.
             </Text>
@@ -507,11 +646,11 @@ const CalendarDialog = ({
         <Dialog.Footer className="justify-between gap-3 border-0 pt-2">
           {editingBlock ? (
             <Button
+              className="text-base"
               color="danger"
               leftIcon={<DeleteIcon className="h-4" />}
               loading={deleteBlock.isPending}
               onClick={handleDelete}
-              size="sm"
               variant="naked"
             >
               Delete
@@ -521,19 +660,19 @@ const CalendarDialog = ({
           )}
           <Flex align="center" gap={2}>
             <Button
+              className="text-base"
               color="tertiary"
               onClick={close}
-              size="sm"
               variant="outline"
             >
               Cancel
             </Button>
             <Button
+              className="text-base"
               color="invert"
               disabled={!canSubmit}
               loading={isSaving}
               onClick={submit}
-              size="sm"
             >
               {editingBlock ? "Save" : "Add"}
             </Button>
@@ -544,170 +683,171 @@ const CalendarDialog = ({
   );
 };
 
-const CalendarSkeleton = () => (
-  <Box className="border-border bg-surface overflow-hidden rounded-lg border">
-    <Box
-      className="border-border bg-surface-muted/40 grid border-b"
-      style={{
-        gridTemplateColumns: `${timeRailWidth}rem repeat(7, minmax(11rem, 1fr))`,
-      }}
-    >
-      <Box />
-      {Array.from({ length: 7 }).map((_, index) => (
-        <Box className="border-border border-l px-3 py-3" key={index}>
-          <Skeleton className="h-5 w-24" />
-        </Box>
-      ))}
+const CalendarSkeleton = ({ view }: { view: CalendarView }) => {
+  if (view === "month") {
+    return (
+      <Box className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 overflow-hidden">
+        {Array.from({ length: 42 }).map((_, index) => (
+          <Box className="border-border/60 border-r border-b p-4" key={index}>
+            <Skeleton className="mb-4 h-9 w-9 rounded-full" />
+            <Skeleton className="mb-2 h-6 w-4/5" />
+            <Skeleton className="h-6 w-2/3" />
+          </Box>
+        ))}
+      </Box>
+    );
+  }
+
+  const dayCount = view === "day" ? 1 : 7;
+  const dayColumn = dayCount === 1 ? "minmax(0, 1fr)" : "minmax(9.5rem, 1fr)";
+  const gridTemplateColumns = `${timeRailWidth}rem repeat(${dayCount}, ${dayColumn})`;
+
+  return (
+    <Box className="min-h-0 flex-1 overflow-hidden">
+      <Box
+        className="border-border/70 grid h-18 border-b"
+        style={{ gridTemplateColumns }}
+      >
+        <Box />
+        {Array.from({ length: dayCount }).map((_, index) => (
+          <Box
+            className="border-border/60 flex items-center justify-center border-l px-3 py-4"
+            key={index}
+          >
+            <Skeleton className="h-12 w-12 rounded-full" />
+          </Box>
+        ))}
+      </Box>
+      <Box className="grid" style={{ gridTemplateColumns }}>
+        <Box className="border-border/60 border-r" />
+        {Array.from({ length: dayCount }).map((_, dayIndex) => (
+          <Box
+            className="border-border/60 relative border-l"
+            key={dayIndex}
+            style={{
+              height: `${(defaultVisibleEndHour - defaultVisibleStartHour) * hourHeight}px`,
+            }}
+          >
+            {Array.from({ length: 4 }).map((__, index) => (
+              <Skeleton
+                className="absolute right-3 left-3 h-14"
+                key={index}
+                style={{ top: `${(index * 2 + 1) * hourHeight}px` }}
+              />
+            ))}
+          </Box>
+        ))}
+      </Box>
     </Box>
-    <Box
-      className="grid"
-      style={{
-        gridTemplateColumns: `${timeRailWidth}rem repeat(7, minmax(11rem, 1fr))`,
-      }}
-    >
-      <Box className="border-border border-r" />
-      {Array.from({ length: 7 }).map((_, dayIndex) => (
-        <Box
-          className="border-border relative border-l"
-          key={dayIndex}
-          style={{
-            height: `${(defaultVisibleEndHour - defaultVisibleStartHour) * hourHeight}px`,
-          }}
-        >
-          {Array.from({ length: 4 }).map((__, index) => (
-            <Skeleton
-              className="absolute right-3 left-3 h-14"
-              key={index}
-              style={{ top: `${(index * 2 + 1) * hourHeight}px` }}
-            />
-          ))}
-        </Box>
-      ))}
-    </Box>
-  </Box>
-);
+  );
+};
 
 const CalendarToolbar = ({
   canNavigateNext,
   canNavigatePrevious,
-  canReadEventDetails,
-  connectHref,
-  connectionId,
-  hasIntegrationError,
-  isIntegrationPending,
-  isSyncing,
+  currentView,
   onFocus,
   onNext,
   onPrevious,
-  onSchedule,
-  onSync,
   onToday,
-  storyTerm,
-  weekStart,
+  onViewChange,
+  title,
 }: {
   canNavigateNext: boolean;
   canNavigatePrevious: boolean;
-  canReadEventDetails: boolean;
-  connectHref: string;
-  connectionId?: string;
-  hasIntegrationError: boolean;
-  isIntegrationPending: boolean;
-  isSyncing: boolean;
+  currentView: CalendarView;
   onFocus: () => void;
   onNext: () => void;
   onPrevious: () => void;
-  onSchedule: () => void;
-  onSync: (connectionId: string) => void;
   onToday: () => void;
-  storyTerm: string;
-  weekStart: Date;
+  onViewChange: (view: CalendarView) => void;
+  title: string;
 }) => (
   <Flex
     align="center"
-    className="mb-4 flex-col gap-3 md:flex-row"
+    className="border-border/70 min-h-18 shrink-0 gap-5 overflow-x-auto border-b px-5 py-3"
     justify="between"
   >
-    <Flex align="center" gap={3}>
+    <Flex align="center" className="shrink-0" gap={3}>
       <Flex align="center" gap={1}>
         <Button
-          aria-label="Previous week"
+          aria-label={`Previous ${currentView}`}
           asIcon
+          className="focus-visible:ring-primary/40 focus-visible:ring-2"
           color="tertiary"
           disabled={!canNavigatePrevious}
           onClick={onPrevious}
           size="sm"
           variant="naked"
         >
-          <ArrowLeftIcon className="h-4" />
+          <ChevronLeftIcon className="h-5" />
         </Button>
         <Button
-          aria-label="Next week"
+          aria-label={`Next ${currentView}`}
           asIcon
+          className="focus-visible:ring-primary/40 focus-visible:ring-2"
           color="tertiary"
           disabled={!canNavigateNext}
           onClick={onNext}
           size="sm"
           variant="naked"
         >
-          <ArrowRightIcon className="h-4" />
+          <ChevronRightIcon className="h-5" />
         </Button>
       </Flex>
-      <Text as="h2" fontSize="xl" fontWeight="semibold">
-        {getWeekTitle(weekStart)}
+      <Text
+        as="h2"
+        className="whitespace-nowrap"
+        fontSize="xl"
+        fontWeight="medium"
+      >
+        {title}
       </Text>
     </Flex>
-    <Flex align="center" className="flex-wrap" gap={2}>
-      <Button color="tertiary" onClick={onToday} size="sm" variant="naked">
+    <Flex align="center" className="shrink-0" gap={2}>
+      <Button color="tertiary" onClick={onToday} size="sm">
         Today
       </Button>
-      {isIntegrationPending ? <Skeleton className="h-8 w-32" /> : null}
-      {!isIntegrationPending && connectionId ? (
-        <Button
-          color="tertiary"
-          leftIcon={<ReloadIcon className="h-4" />}
-          loading={isSyncing}
-          onClick={() => {
-            onSync(connectionId);
-          }}
-          size="sm"
-          variant="outline"
-        >
-          {canReadEventDetails ? "Sync calendar" : "Sync availability"}
-        </Button>
-      ) : null}
-      {!isIntegrationPending && !hasIntegrationError && !connectionId ? (
-        <Button
-          className="shrink-0 whitespace-nowrap"
-          color="tertiary"
-          href={connectHref}
-          leftIcon={
-            <GoogleCalendarIcon
-              aria-hidden="true"
-              className="h-4 w-4 shrink-0"
-            />
-          }
-          size="sm"
-          variant="outline"
-        >
-          Connect Google Calendar
-        </Button>
-      ) : null}
+      <Menu>
+        <Menu.Button>
+          <Button
+            className="justify-between capitalize"
+            color="tertiary"
+            rightIcon={<ArrowDown2Icon className="h-4" />}
+            size="sm"
+            variant="outline"
+          >
+            {currentView}
+          </Button>
+        </Menu.Button>
+        <Menu.Items align="end" className="w-36">
+          <Menu.Group>
+            {calendarViews.map((view) => (
+              <Menu.Item
+                active={currentView === view}
+                className="py-2.5 text-base capitalize"
+                key={view}
+                onSelect={() => {
+                  onViewChange(view);
+                }}
+              >
+                {view}
+              </Menu.Item>
+            ))}
+          </Menu.Group>
+        </Menu.Items>
+      </Menu>
+      <span className="text-text-secondary mx-1 hidden opacity-40 md:inline">
+        |
+      </span>
       <Button
         color="tertiary"
-        leftIcon={<ClockIcon className="h-4" />}
+        leftIcon={<TimeScheduleIcon className="h-[1.1rem]" strokeWidth={2} />}
         onClick={onFocus}
         size="sm"
         variant="outline"
       >
         Focus time
-      </Button>
-      <Button
-        color="invert"
-        leftIcon={<PlusIcon className="h-4 text-current dark:text-current" />}
-        onClick={onSchedule}
-        size="sm"
-      >
-        Schedule {storyTerm}
       </Button>
     </Flex>
   </Flex>
@@ -738,26 +878,26 @@ const CalendarNotices = ({
 }) => (
   <>
     {!isIntegrationPending && !hasIntegrationError && !connection ? (
-      <Box className="border-border bg-surface-muted/40 mb-4 rounded-lg border px-4 py-3">
+      <Box className="border-border border-b px-5 py-3">
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" className="min-w-0" gap={3}>
-            <Box className="bg-surface-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-              <GoogleCalendarIcon aria-hidden="true" className="h-5 w-5" />
+            <Box className="flex h-10 w-10 shrink-0 items-center justify-center">
+              <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
             </Box>
             <Box className="min-w-0">
-              <Text fontSize="sm" fontWeight="medium">
+              <Text fontSize="md" fontWeight="medium">
                 Google Calendar is not connected
               </Text>
-              <Text className="line-clamp-1" color="muted" fontSize="sm">
+              <Text className="line-clamp-1" color="muted" fontSize="md">
                 FortyOne can still schedule work blocks, but availability will
                 be incomplete until you connect your primary calendar.
               </Text>
             </Box>
           </Flex>
           <Button
+            className="text-base"
             color="tertiary"
             href={connectHref}
-            size="sm"
             variant="outline"
           >
             Connect
@@ -767,27 +907,27 @@ const CalendarNotices = ({
     ) : null}
 
     {connection && !canReadEventDetails ? (
-      <Box className="border-border bg-surface-muted/40 mb-4 rounded-lg border px-4 py-3">
+      <Box className="border-border border-b px-5 py-3">
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" className="min-w-0" gap={3}>
-            <Box className="bg-surface-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-              <GoogleCalendarIcon aria-hidden="true" className="h-5 w-5" />
+            <Box className="flex h-10 w-10 shrink-0 items-center justify-center">
+              <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
             </Box>
             <Box className="min-w-0">
-              <Text fontSize="sm" fontWeight="medium">
+              <Text fontSize="md" fontWeight="medium">
                 Event details are not enabled
               </Text>
-              <Text className="line-clamp-1" color="muted" fontSize="sm">
+              <Text className="line-clamp-1" color="muted" fontSize="md">
                 Reconnect your primary Google Calendar to show event titles
                 instead of availability-only busy blocks.
               </Text>
             </Box>
           </Flex>
           <Button
+            className="text-base"
             color="tertiary"
             loading={isReconnectPending}
             onClick={onReconnect}
-            size="sm"
             variant="outline"
           >
             Reconnect
@@ -797,13 +937,13 @@ const CalendarNotices = ({
     ) : null}
 
     {connection?.syncStatus === "failed" ? (
-      <Box className="border-warning/30 bg-warning/5 mb-4 rounded-lg border px-4 py-3">
+      <Box className="border-warning/30 border-b px-5 py-3">
         <Flex align="center" gap={3} justify="between">
           <Box className="min-w-0">
-            <Text fontSize="sm" fontWeight="medium">
+            <Text fontSize="md" fontWeight="medium">
               Calendar sync failed
             </Text>
-            <Text color="muted" fontSize="sm">
+            <Text color="muted" fontSize="md">
               {connection.syncError?.trim() ||
                 "Google Calendar could not be refreshed."}{" "}
               {connection.lastSyncedAt
@@ -812,12 +952,12 @@ const CalendarNotices = ({
             </Text>
           </Box>
           <Button
+            className="text-base"
             color="tertiary"
             loading={isSyncing}
             onClick={() => {
               onSync(connection.id);
             }}
-            size="sm"
             variant="outline"
           >
             Retry
@@ -827,34 +967,32 @@ const CalendarNotices = ({
     ) : null}
 
     {conflictCount > 0 ? (
-      <Box className="border-danger/30 bg-danger/5 mb-4 rounded-lg border px-4 py-3">
-        <Text fontSize="sm" fontWeight="medium">
+      <Box className="border-danger/30 border-b px-5 py-3">
+        <Text fontSize="md" fontWeight="medium">
           {conflictCount === 1
             ? "A scheduled block now overlaps a meeting"
             : `${conflictCount} scheduled blocks now overlap meetings`}
         </Text>
-        <Text color="muted" fontSize="sm">
+        <Text color="muted" fontSize="md">
           Open a red block to choose another time. FortyOne will not move locked
           work without your approval.
         </Text>
       </Box>
     ) : null}
-
-    {connection ? (
-      <Text className="mb-2 block" color="muted" fontSize="sm">
-        Showing Google primary calendar · 7 days back, 90 days ahead
-      </Text>
-    ) : null}
   </>
 );
 
-const CalendarWeekGrid = ({
+const CalendarTimeGrid = ({
   allDayEvents,
   days,
   hours,
+  isDaySelectable,
   onEdit,
+  onSelectDay,
   onSelectEvent,
   timedCalendarItems,
+  timeZoneLabel,
+  timeZoneName,
   today,
   visibleEndHour,
   visibleStartHour,
@@ -862,198 +1000,496 @@ const CalendarWeekGrid = ({
   allDayEvents: CalendarEventSummary[];
   days: Date[];
   hours: number[];
+  isDaySelectable: (day: Date) => boolean;
   onEdit: (block: CalendarScheduleBlock) => void;
+  onSelectDay: (day: Date) => void;
   onSelectEvent: (event: CalendarEventSummary) => void;
   timedCalendarItems: CalendarItem[];
+  timeZoneLabel: string;
+  timeZoneName: string;
   today: Date;
   visibleEndHour: number;
   visibleStartHour: number;
-}) => (
-  <Box className="border-border bg-surface overflow-x-auto rounded-lg border shadow-[0_1px_8px_rgba(15,23,42,0.04)]">
-    <Box
-      className="border-border bg-surface-muted/45 grid min-w-[72rem] border-b"
-      style={{
-        gridTemplateColumns: `${timeRailWidth}rem repeat(7, minmax(9.5rem, 1fr))`,
-      }}
-    >
-      <Box className="flex items-end px-3 py-3">
-        <Text className="text-[0.78rem]" color="muted" fontWeight="medium">
-          {Intl.DateTimeFormat()
-            .resolvedOptions()
-            .timeZone.split("/")
-            .pop()
-            ?.replace("_", " ") ?? "Local"}
-        </Text>
-      </Box>
-      {days.map((day) => {
-        const isToday = isSameDay(day, today);
-        return (
-          <Box
-            className="border-border border-l px-3 py-3"
-            key={day.toISOString()}
+}) => {
+  const isDayView = days.length === 1;
+  const dayColumn = isDayView ? "minmax(0, 1fr)" : "minmax(9.5rem, 1fr)";
+  const gridTemplateColumns = `${timeRailWidth}rem repeat(${days.length}, ${dayColumn})`;
+  const minimumWidthClass = isDayView ? "min-w-full" : "min-w-[72rem]";
+
+  return (
+    <Box className="min-h-0 flex-1 overflow-auto overscroll-contain">
+      <Box
+        className={cn(
+          "border-border/70 bg-background sticky top-0 z-30 grid h-18 border-b",
+          minimumWidthClass,
+        )}
+        style={{ gridTemplateColumns }}
+      >
+        <Box className="flex flex-col items-center justify-between px-3 pt-2.5 pb-2 text-center">
+          <Text
+            className="max-w-full truncate"
+            fontSize="md"
+            fontWeight="medium"
           >
-            <Flex align="center" gap={2} justify="between">
-              <Text color={isToday ? "primary" : "muted"} fontSize="sm">
+            {timeZoneName}
+          </Text>
+          <Text className="tabular-nums" color="muted" fontSize="md">
+            {timeZoneLabel}
+          </Text>
+        </Box>
+        {days.map((day) => {
+          const isToday = isSameDay(day, today);
+          const canSelectDay = isDaySelectable(day);
+          return (
+            <Box
+              className="border-border/60 flex flex-col items-center justify-between border-l px-3 pt-2.5 pb-1"
+              key={day.toISOString()}
+            >
+              <Text
+                className="text-[0.9375rem] leading-none tracking-[0.08em]"
+                color={isToday ? "primary" : "muted"}
+                fontWeight="medium"
+                transform="uppercase"
+              >
                 {format(day, "EEE")}
               </Text>
-              <Box
+              <button
+                aria-current={isToday ? "date" : undefined}
+                aria-label={`Open ${format(day, "MMMM d, yyyy")} in day view`}
                 className={cn(
-                  "flex h-7 min-w-7 items-center justify-center rounded-md px-2",
+                  "group focus-visible:ring-primary/40 grid size-10 place-items-center rounded-full focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40",
                   isToday
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground",
+                    ? "text-primary-foreground"
+                    : "text-foreground hover:bg-state-hover",
                 )}
+                disabled={!canSelectDay}
+                onClick={() => {
+                  onSelectDay(day);
+                }}
+                type="button"
               >
                 <Text
                   as="span"
-                  className="text-current"
-                  fontSize="sm"
-                  fontWeight="semibold"
+                  className={cn(
+                    "grid place-items-center leading-none text-current tabular-nums",
+                    isToday &&
+                      "bg-primary group-hover:bg-primary/90 size-7 rounded-full transition-colors",
+                  )}
+                  fontSize="xl"
+                  fontWeight="medium"
                 >
                   {format(day, "d")}
                 </Text>
-              </Box>
-            </Flex>
-          </Box>
-        );
-      })}
-    </Box>
-    <Box
-      className="border-border bg-surface-muted/20 grid min-w-[72rem] border-b"
-      style={{
-        gridTemplateColumns: `${timeRailWidth}rem repeat(7, minmax(9.5rem, 1fr))`,
-      }}
-    >
-      <Box className="flex items-start justify-end px-3 py-2">
-        <Text className="text-[0.78rem]" color="muted">
-          All day
-        </Text>
+              </button>
+            </Box>
+          );
+        })}
       </Box>
-      {days.map((day) => {
-        const dayEvents = allDayEvents.filter((event) =>
-          calendarEventOverlapsDay(event, day),
-        );
-        return (
-          <Box
-            className="border-border min-h-11 space-y-1 border-l p-1.5"
-            key={day.toISOString()}
-          >
-            {dayEvents.map((event) => (
-              <CalendarAllDayEvent
-                event={event}
-                key={event.id}
-                onSelect={onSelectEvent}
-              />
-            ))}
+      {allDayEvents.length > 0 ? (
+        <Box
+          className={cn(
+            "border-border/70 bg-background sticky top-18 z-20 grid min-h-14 border-b",
+            minimumWidthClass,
+          )}
+          style={{ gridTemplateColumns }}
+        >
+          <Box className="flex items-center justify-center px-3 py-2">
+            <Text color="muted" fontSize="md">
+              All day
+            </Text>
           </Box>
-        );
-      })}
+          {days.map((day) => {
+            const dayEvents = allDayEvents.filter((event) =>
+              calendarEventOverlapsDay(event, day),
+            );
+            return (
+              <Box
+                className="border-border/60 min-h-14 space-y-1.5 border-l p-2"
+                key={day.toISOString()}
+              >
+                {dayEvents.map((event) => (
+                  <CalendarAllDayEvent
+                    event={event}
+                    key={event.id}
+                    onSelect={onSelectEvent}
+                  />
+                ))}
+              </Box>
+            );
+          })}
+        </Box>
+      ) : null}
+      <Box
+        className={cn("grid", minimumWidthClass)}
+        style={{ gridTemplateColumns }}
+      >
+        <Box className="relative">
+          {hours.slice(1, -1).map((hour) => (
+            <Box
+              className="absolute right-4 -translate-y-1/2"
+              key={hour}
+              style={{ top: `${(hour - visibleStartHour) * hourHeight}px` }}
+            >
+              <Text
+                className="tabular-nums"
+                color="muted"
+                fontSize="md"
+                fontWeight="medium"
+              >
+                {format(new Date(2026, 0, 1, hour), "h a")}
+              </Text>
+            </Box>
+          ))}
+        </Box>
+        {days.map((day) => {
+          const dayItems = timedCalendarItems.filter((item) =>
+            overlapsDay(item, day),
+          );
+          const layouts = buildCalendarEventLayouts({
+            day,
+            events: dayItems.map((item) => ({
+              id: `${item.kind}-${item.id}`,
+              startAt: item.startAt,
+              endAt: item.endAt,
+            })),
+            hourHeight,
+            visibleEndHour,
+            visibleStartHour,
+          });
+          const layoutById = new Map(
+            layouts.map((layout) => [layout.id, layout]),
+          );
+
+          return (
+            <Box
+              className="border-border/60 relative border-l"
+              key={day.toISOString()}
+              style={{
+                height: `${(visibleEndHour - visibleStartHour) * hourHeight}px`,
+              }}
+            >
+              {hours.slice(1, -1).map((hour) => (
+                <Box
+                  className="border-border/60 absolute inset-x-0 border-t"
+                  key={hour}
+                  style={{
+                    top: `${(hour - visibleStartHour) * hourHeight}px`,
+                  }}
+                />
+              ))}
+              {dayItems.map((item) => {
+                const key = `${item.kind}-${item.id}`;
+                const layout = layoutById.get(key);
+                if (!layout) return null;
+                return (
+                  <CalendarTimedBlock
+                    item={item}
+                    key={key}
+                    layout={layout}
+                    onEdit={onEdit}
+                    onSelectEvent={onSelectEvent}
+                  />
+                );
+              })}
+            </Box>
+          );
+        })}
+      </Box>
     </Box>
+  );
+};
+
+const getMonthItemTitle = (item: CalendarItem) => {
+  if (item.kind === "event") {
+    return getCalendarEventTitle(item.event);
+  }
+  if (item.kind === "busy") {
+    return getBusyWindowTitle(item.window);
+  }
+  return item.block.title;
+};
+
+const CalendarMonthItem = ({
+  item,
+  onEdit,
+  onSelectEvent,
+}: {
+  item: CalendarItem;
+  onEdit: (block: CalendarScheduleBlock) => void;
+  onSelectEvent: (event: CalendarEventSummary) => void;
+}) => {
+  const { withWorkspace } = useWorkspacePath();
+  const title = getMonthItemTitle(item);
+  const start = new Date(item.startAt);
+  const time = toClockLabel(start, true);
+
+  if (item.kind === "event") {
+    if (item.event.isAllDay) {
+      return (
+        <button
+          aria-label={`Open ${title} details, ${getCalendarEventTimeLabel(item.event)}`}
+          className="w-full truncate rounded-md border border-[#3c90ff]/80 bg-[#3c90ff]/10 px-2 py-1 text-left text-base font-medium text-[#3c90ff] transition-colors hover:bg-[#3c90ff]/15 focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50 focus-visible:outline-none"
+          onClick={() => {
+            onSelectEvent(item.event);
+          }}
+          type="button"
+        >
+          {title}
+        </button>
+      );
+    }
+
+    return (
+      <button
+        aria-label={`Open ${title} details, ${getCalendarEventTimeLabel(item.event)}`}
+        className="hover:bg-state-hover focus-visible:ring-primary/40 flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-base focus-visible:ring-2 focus-visible:outline-none"
+        onClick={() => {
+          onSelectEvent(item.event);
+        }}
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          className="size-2 shrink-0 rounded-full border border-[#3c90ff]"
+        />
+        <span className="shrink-0 text-[#3c90ff] tabular-nums">{time}</span>
+        <span className="text-foreground truncate">{title}</span>
+      </button>
+    );
+  }
+
+  if (item.kind === "busy") {
+    return (
+      <Flex
+        align="center"
+        className="min-w-0 gap-2 rounded-md px-2 py-1 text-base"
+      >
+        <span
+          aria-hidden="true"
+          className="border-border-strong size-2 shrink-0 rounded-full border"
+        />
+        <span className="text-text-muted shrink-0 tabular-nums">{time}</span>
+        <span className="text-foreground truncate">{title}</span>
+      </Flex>
+    );
+  }
+
+  const { block } = item;
+  const href =
+    block.blockType === "work" && block.storyId
+      ? getStoryHref(withWorkspace, block.storyId, block.storyCode)
+      : null;
+  let toneClass = "bg-surface-muted/35 text-text-muted";
+  if (block.blockType === "work") {
+    toneClass = "bg-primary/[0.07] text-primary";
+  }
+  if (block.hasConflict) {
+    toneClass = "bg-danger/[0.08] text-danger";
+  }
+
+  return (
     <Box
-      className="grid min-w-[72rem]"
-      style={{
-        gridTemplateColumns: `${timeRailWidth}rem repeat(7, minmax(9.5rem, 1fr))`,
-      }}
+      className={cn(
+        "relative flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-base",
+        toneClass,
+      )}
     >
-      <Box className="border-border relative border-r">
-        {hours.slice(0, -1).map((hour) => (
+      <button
+        aria-label={
+          block.hasConflict ? `Resolve conflict for ${title}` : `Edit ${title}`
+        }
+        className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-md focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+        onClick={() => {
+          onEdit(block);
+        }}
+        type="button"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none size-2 shrink-0 rounded-full bg-current"
+      />
+      <span className="pointer-events-none relative z-10 shrink-0 tabular-nums">
+        {time}
+      </span>
+      {href ? (
+        <Link
+          className="text-foreground hover:text-primary pointer-events-auto relative z-10 truncate"
+          href={href}
+        >
+          {title}
+        </Link>
+      ) : (
+        <span className="text-foreground pointer-events-none relative z-10 truncate">
+          {title}
+        </span>
+      )}
+    </Box>
+  );
+};
+
+const CalendarMonthGrid = ({
+  calendarItems,
+  cursor,
+  days,
+  isDaySelectable,
+  onEdit,
+  onSelectDay,
+  onSelectEvent,
+  today,
+}: {
+  calendarItems: CalendarItem[];
+  cursor: Date;
+  days: Date[];
+  isDaySelectable: (day: Date) => boolean;
+  onEdit: (block: CalendarScheduleBlock) => void;
+  onSelectDay: (day: Date) => void;
+  onSelectEvent: (event: CalendarEventSummary) => void;
+  today: Date;
+}) => {
+  const weeks = Math.ceil(days.length / 7);
+  const weekDays = days.slice(0, 7);
+  const gridTemplateRows = `3.5rem repeat(${weeks}, minmax(9rem, 1fr))`;
+
+  return (
+    <Box className="min-h-0 flex-1 overflow-auto overscroll-contain">
+      <Box
+        className="grid min-h-full min-w-[72rem] grid-cols-7"
+        style={{ gridTemplateRows }}
+      >
+        {weekDays.map((day, index) => (
           <Box
-            className="absolute right-3 -translate-y-2"
-            key={hour}
-            style={{ top: `${(hour - visibleStartHour) * hourHeight}px` }}
+            className={cn(
+              "border-border/60 bg-background sticky top-0 z-20 flex items-center justify-center border-b px-3",
+              index > 0 && "border-l",
+            )}
+            key={`weekday-${day.toISOString()}`}
           >
-            <Text className="text-[0.78rem]" color="muted">
-              {format(new Date(2026, 0, 1, hour), "ha")}
+            <Text
+              className="text-[0.9375rem] tracking-[0.08em]"
+              color="muted"
+              fontWeight="medium"
+              transform="uppercase"
+            >
+              {format(day, "EEE")}
             </Text>
           </Box>
         ))}
-      </Box>
-      {days.map((day) => {
-        const dayItems = timedCalendarItems.filter((item) =>
-          overlapsDay(item, day),
-        );
-        const layouts = buildCalendarEventLayouts({
-          day,
-          events: dayItems.map((item) => ({
-            id: `${item.kind}-${item.id}`,
-            startAt: item.startAt,
-            endAt: item.endAt,
-          })),
-          hourHeight,
-          visibleEndHour,
-          visibleStartHour,
-        });
-        const layoutById = new Map(
-          layouts.map((layout) => [layout.id, layout]),
-        );
-
-        return (
-          <Box
-            className={cn(
-              "border-border relative border-l",
-              isSameDay(day, today) && "bg-primary/[0.025]",
-            )}
-            key={day.toISOString()}
-            style={{
-              height: `${(visibleEndHour - visibleStartHour) * hourHeight}px`,
-            }}
-          >
-            {hours.slice(0, -1).map((hour) => (
-              <Box
-                className="border-border/80 absolute inset-x-0 border-t"
-                key={hour}
-                style={{
-                  top: `${(hour - visibleStartHour) * hourHeight}px`,
-                }}
-              />
-            ))}
-            {dayItems.map((item) => {
-              const key = `${item.kind}-${item.id}`;
-              const layout = layoutById.get(key);
-              if (!layout) return null;
+        {days.map((day, index) => {
+          const dayItems = calendarItems
+            .filter((item) =>
+              item.kind === "event"
+                ? calendarEventOverlapsDay(item.event, day)
+                : overlapsDay(item, day),
+            )
+            .sort((first, second) => {
+              const firstIsAllDay =
+                first.kind === "event" && first.event.isAllDay;
+              const secondIsAllDay =
+                second.kind === "event" && second.event.isAllDay;
+              if (firstIsAllDay !== secondIsAllDay) {
+                return firstIsAllDay ? -1 : 1;
+              }
               return (
-                <CalendarTimedBlock
-                  item={item}
-                  key={key}
-                  layout={layout}
-                  onEdit={onEdit}
-                  onSelectEvent={onSelectEvent}
-                />
+                new Date(first.startAt).getTime() -
+                new Date(second.startAt).getTime()
               );
-            })}
-          </Box>
-        );
-      })}
-    </Box>
-  </Box>
-);
+            });
+          const visibleItems = dayItems.slice(0, 4);
+          const hiddenItemCount = dayItems.length - visibleItems.length;
+          const isToday = isSameDay(day, today);
+          const isCurrentMonth = isSameMonth(day, cursor);
+          const canSelectDay = isDaySelectable(day);
+          const isLastColumn = index % 7 === 6;
+          const isLastRow = index >= days.length - 7;
 
-export const MyWorkCalendar = () => {
-  const [weekCursor, setWeekCursor] = useState(() =>
-    startOfWeek(new Date(), { weekStartsOn }),
+          return (
+            <Box
+              className={cn(
+                "border-border/60 min-h-36 min-w-0 overflow-hidden p-3",
+                !isLastColumn && "border-r",
+                !isLastRow && "border-b",
+              )}
+              key={day.toISOString()}
+            >
+              <button
+                aria-current={isToday ? "date" : undefined}
+                aria-label={`Open ${format(day, "MMMM d, yyyy")} in day view`}
+                className={cn(
+                  "focus-visible:ring-primary/40 mb-2 grid size-9 place-items-center rounded-full text-base font-medium tabular-nums focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40",
+                  isToday
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-state-hover",
+                  !isToday && !isCurrentMonth && "text-text-muted",
+                )}
+                disabled={!canSelectDay}
+                onClick={() => {
+                  onSelectDay(day);
+                }}
+                type="button"
+              >
+                {format(day, "d")}
+              </button>
+              <Box className="space-y-1">
+                {visibleItems.map((item) => (
+                  <CalendarMonthItem
+                    item={item}
+                    key={`${item.kind}-${item.id}`}
+                    onEdit={onEdit}
+                    onSelectEvent={onSelectEvent}
+                  />
+                ))}
+                {hiddenItemCount > 0 ? (
+                  <button
+                    className="text-text-muted hover:bg-state-hover focus-visible:ring-primary/40 w-full rounded-md px-2 py-1 text-left text-base font-medium focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={!canSelectDay}
+                    onClick={() => {
+                      onSelectDay(day);
+                    }}
+                    type="button"
+                  >
+                    +{hiddenItemCount} more
+                  </button>
+                ) : null}
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
   );
+};
+
+export const MyWorkCalendar = ({
+  isScheduleDialogOpen,
+  onScheduleDialogOpenChange,
+}: {
+  isScheduleDialogOpen: boolean;
+  onScheduleDialogOpenChange: (open: boolean) => void;
+}) => {
+  const [calendarView, setCalendarView] = useState<CalendarView>("week");
+  const [cursor, setCursor] = useState(() => new Date());
   const [dialogMode, setDialogMode] = useState<"work" | "focus" | null>(null);
   const [editingBlock, setEditingBlock] =
     useState<CalendarScheduleBlock | null>(null);
   const [selectedEvent, setSelectedEvent] =
     useState<CalendarEventSummary | null>(null);
-  const { getTermDisplay } = useTerminology();
   const { withWorkspace } = useWorkspacePath();
-  const weekStart = startOfWeek(weekCursor, { weekStartsOn });
-  const scheduleStartAt = weekStart.toISOString();
-  const scheduleEndAt = addDays(weekStart, 7).toISOString();
-  const days = Array.from({ length: 7 }, (_, index) =>
-    addDays(weekStart, index),
-  );
+  const viewRange = getCalendarViewRange(cursor, calendarView);
+  const scheduleStartAt = viewRange.start.toISOString();
+  const scheduleEndAt = viewRange.end.toISOString();
+  const days = getCalendarViewDays(cursor, calendarView);
   const today = new Date();
-  const earliestWeekStart = startOfWeek(addDays(today, -calendarHistoryDays), {
-    weekStartsOn,
-  });
-  const latestWeekStart = startOfWeek(addDays(today, calendarLookaheadDays), {
-    weekStartsOn,
-  });
-  const canNavigatePrevious = weekStart.getTime() > earliestWeekStart.getTime();
-  const canNavigateNext = weekStart.getTime() < latestWeekStart.getTime();
+  const earliestCalendarDate = startOfDay(addDays(today, -calendarHistoryDays));
+  const latestCalendarDateExclusive = addDays(
+    startOfDay(today),
+    calendarLookaheadDays + 1,
+  );
+  const previousCursor = moveCalendarCursor(cursor, calendarView, -1);
+  const nextCursor = moveCalendarCursor(cursor, calendarView, 1);
+  const previousRange = getCalendarViewRange(previousCursor, calendarView);
+  const nextRange = getCalendarViewRange(nextCursor, calendarView);
+  const canNavigatePrevious = previousRange.end > earliestCalendarDate;
+  const canNavigateNext = nextRange.start < latestCalendarDateExclusive;
   const scheduleQuery = useCalendarSchedule({
     startAt: scheduleStartAt,
     endAt: scheduleEndAt,
@@ -1062,6 +1498,8 @@ export const MyWorkCalendar = () => {
   const schedule = scheduleQuery.data;
   const integration = integrationQuery.data;
   const connection = integration?.connections[0];
+  const timeZoneLabel = getUtcOffsetLabel(viewRange.start);
+  const timeZoneName = getLocalTimeZoneName();
   const canReadEventDetails = Boolean(connection?.canReadEventDetails);
   const createConnectSession = useCreateCalendarConnectSession();
   const syncCalendar = useSyncCalendarConnection();
@@ -1135,6 +1573,7 @@ export const MyWorkCalendar = () => {
     scheduleQuery.isError || integrationQuery.isError;
   const isCalendarInitialLoading =
     scheduleQuery.isPending || integrationQuery.isPending;
+  const activeDialogMode = isScheduleDialogOpen ? "work" : dialogMode;
 
   useEffect(() => {
     if (!connectionId) {
@@ -1177,15 +1616,18 @@ export const MyWorkCalendar = () => {
   ]);
 
   const openDialog = (mode: "work" | "focus") => {
+    onScheduleDialogOpenChange(false);
     setEditingBlock(null);
     setDialogMode(mode);
   };
   const openEditDialog = (block: CalendarScheduleBlock) => {
+    onScheduleDialogOpenChange(false);
     setEditingBlock(block);
     setDialogMode(block.blockType);
   };
   const closeDialog = (value: boolean) => {
     if (!value) {
+      onScheduleDialogOpenChange(false);
       setEditingBlock(null);
       setDialogMode(null);
       return;
@@ -1199,40 +1641,22 @@ export const MyWorkCalendar = () => {
     };
     syncCalendar.mutate({ connectionId: connectionID });
   };
+  const isDaySelectable = (day: Date) => {
+    const dayStart = startOfDay(day);
+    return (
+      dayStart >= earliestCalendarDate && dayStart < latestCalendarDateExclusive
+    );
+  };
+  const selectDay = (day: Date) => {
+    if (!isDaySelectable(day)) {
+      return;
+    }
+    setCursor(day);
+    setCalendarView("day");
+  };
 
   return (
-    <Box className="bg-surface h-[calc(100dvh-4rem)] overflow-auto px-5 py-4 md:px-6">
-      <CalendarToolbar
-        canNavigateNext={canNavigateNext}
-        canNavigatePrevious={canNavigatePrevious}
-        canReadEventDetails={canReadEventDetails}
-        connectHref={withWorkspace("/settings/integrations/calendar")}
-        connectionId={connection?.id}
-        hasIntegrationError={integrationQuery.isError}
-        isIntegrationPending={integrationQuery.isPending}
-        isSyncing={syncCalendar.isPending}
-        onFocus={() => {
-          openDialog("focus");
-        }}
-        onNext={() => {
-          if (canNavigateNext) setWeekCursor((value) => addWeeks(value, 1));
-        }}
-        onPrevious={() => {
-          if (canNavigatePrevious) {
-            setWeekCursor((value) => subWeeks(value, 1));
-          }
-        }}
-        onSchedule={() => {
-          openDialog("work");
-        }}
-        onSync={syncConnection}
-        onToday={() => {
-          setWeekCursor(startOfWeek(new Date(), { weekStartsOn }));
-        }}
-        storyTerm={getTermDisplay("storyTerm")}
-        weekStart={weekStart}
-      />
-
+    <Box className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden">
       <CalendarNotices
         canReadEventDetails={canReadEventDetails}
         conflictCount={conflictingBlocks.length}
@@ -1248,57 +1672,102 @@ export const MyWorkCalendar = () => {
         onSync={syncConnection}
       />
 
-      {hasCalendarLoadError ? (
-        <Box
-          className="border-border bg-surface-muted/30 flex min-h-80 items-center justify-center rounded-lg border px-6 py-12 text-center"
-          role="alert"
-        >
-          <Box>
-            <Text fontWeight="semibold">Couldn&apos;t load your calendar</Text>
-            <Text className="mt-1" color="muted" fontSize="sm">
-              Your calendar data is still safe. Try loading this week again.
-            </Text>
-            <Button
-              className="mt-4"
-              color="tertiary"
-              loading={scheduleQuery.isFetching || integrationQuery.isFetching}
-              onClick={() => {
-                void Promise.all([
-                  scheduleQuery.refetch(),
-                  integrationQuery.refetch(),
-                ]);
-              }}
-              size="sm"
-              variant="outline"
-            >
-              Try again
-            </Button>
-          </Box>
-        </Box>
-      ) : null}
-      {!hasCalendarLoadError && isCalendarInitialLoading ? (
-        <CalendarSkeleton />
-      ) : null}
-      {!hasCalendarLoadError && !isCalendarInitialLoading ? (
-        <CalendarWeekGrid
-          allDayEvents={allDayEvents}
-          days={days}
-          hours={hours}
-          onEdit={openEditDialog}
-          onSelectEvent={setSelectedEvent}
-          timedCalendarItems={timedCalendarItems}
-          today={today}
-          visibleEndHour={visibleEndHour}
-          visibleStartHour={visibleStartHour}
+      <Box className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <CalendarToolbar
+          canNavigateNext={canNavigateNext}
+          canNavigatePrevious={canNavigatePrevious}
+          currentView={calendarView}
+          onFocus={() => {
+            openDialog("focus");
+          }}
+          onNext={() => {
+            if (canNavigateNext) setCursor(nextCursor);
+          }}
+          onPrevious={() => {
+            if (canNavigatePrevious) setCursor(previousCursor);
+          }}
+          onToday={() => {
+            setCursor(new Date());
+          }}
+          onViewChange={setCalendarView}
+          title={getCalendarViewTitle(cursor, calendarView)}
         />
-      ) : null}
 
-      {dialogMode ? (
+        {hasCalendarLoadError ? (
+          <Box
+            className="flex min-h-0 flex-1 items-center justify-center px-6 py-12 text-center"
+            role="alert"
+          >
+            <Box>
+              <Text fontSize="md" fontWeight="semibold">
+                Couldn&apos;t load your calendar
+              </Text>
+              <Text className="mt-1" color="muted" fontSize="md">
+                Your calendar data is still safe. Try loading this view again.
+              </Text>
+              <Button
+                className="mt-4 text-base"
+                color="tertiary"
+                loading={
+                  scheduleQuery.isFetching || integrationQuery.isFetching
+                }
+                onClick={() => {
+                  void Promise.all([
+                    scheduleQuery.refetch(),
+                    integrationQuery.refetch(),
+                  ]);
+                }}
+                variant="outline"
+              >
+                Try again
+              </Button>
+            </Box>
+          </Box>
+        ) : null}
+        {!hasCalendarLoadError && isCalendarInitialLoading ? (
+          <CalendarSkeleton view={calendarView} />
+        ) : null}
+        {!hasCalendarLoadError &&
+        !isCalendarInitialLoading &&
+        calendarView === "month" ? (
+          <CalendarMonthGrid
+            calendarItems={calendarItems}
+            cursor={cursor}
+            days={days}
+            isDaySelectable={isDaySelectable}
+            onEdit={openEditDialog}
+            onSelectDay={selectDay}
+            onSelectEvent={setSelectedEvent}
+            today={today}
+          />
+        ) : null}
+        {!hasCalendarLoadError &&
+        !isCalendarInitialLoading &&
+        calendarView !== "month" ? (
+          <CalendarTimeGrid
+            allDayEvents={allDayEvents}
+            days={days}
+            hours={hours}
+            isDaySelectable={isDaySelectable}
+            onEdit={openEditDialog}
+            onSelectDay={selectDay}
+            onSelectEvent={setSelectedEvent}
+            timeZoneLabel={timeZoneLabel}
+            timeZoneName={timeZoneName}
+            timedCalendarItems={timedCalendarItems}
+            today={today}
+            visibleEndHour={visibleEndHour}
+            visibleStartHour={visibleStartHour}
+          />
+        ) : null}
+      </Box>
+
+      {activeDialogMode ? (
         <CalendarDialog
           candidateStories={candidateStories}
           editingBlock={editingBlock}
-          isOpen={Boolean(dialogMode)}
-          mode={dialogMode}
+          isOpen
+          mode={activeDialogMode}
           onOpenChange={closeDialog}
         />
       ) : null}

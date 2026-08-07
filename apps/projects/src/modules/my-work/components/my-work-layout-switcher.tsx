@@ -16,7 +16,7 @@ const options = [
     value: "kanban",
   },
   {
-    icon: <CalendarIcon className="h-[1.1rem] w-auto" />,
+    icon: <CalendarIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
     label: "Calendar",
     value: "calendar",
   },

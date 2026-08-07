@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Badge, Box, Button, Flex } from "ui";
-import { BellIcon, PlusIcon, SearchIcon } from "icons";
+import { Notification02Icon, PlusIcon, SearchIcon } from "icons";
 import { useHotkeys } from "react-hotkeys-hook";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import {
@@ -78,7 +78,7 @@ export const Header = () => {
             color="tertiary"
             href={withWorkspace("/notifications")}
             leftIcon={
-              <BellIcon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
+              <Notification02Icon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
             }
             prefetch
             size="sm"
