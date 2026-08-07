@@ -1,10 +1,15 @@
-import type { Metadata } from "next";
-import { IntegrationsIndex } from "@/modules/settings/workspace/integrations";
+import { redirect } from "next/navigation";
+import { withWorkspacePath } from "@/utils";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "Settings › Integrations",
 };
 
-export default function IntegrationsPage() {
-  return <IntegrationsIndex />;
+export default async function LegacyWorkspaceIntegrationsPage({
+  params,
+}: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
+  const { workspaceSlug } = await params;
+  redirect(withWorkspacePath("/settings/integrations", workspaceSlug));
 }

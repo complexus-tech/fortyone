@@ -48,10 +48,6 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       href: withWorkspace("/settings/account/preferences"),
     },
     {
-      title: "Calendar",
-      href: withWorkspace("/settings/account/calendar"),
-    },
-    {
       title: "Notifications",
       href: withWorkspace("/settings/account/notifications"),
     },
@@ -81,11 +77,15 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
                 },
               ]
             : []),
+          // { title: "API tokens", href: withWorkspace("/settings/workspace/api") },
+        ]
+      : []),
+    ...(userRole
+      ? [
           {
             title: "Integrations",
-            href: withWorkspace("/settings/workspace/integrations"),
+            href: withWorkspace("/settings/integrations"),
           },
-          // { title: "API tokens", href: withWorkspace("/settings/workspace/api") },
         ]
       : []),
   ];
@@ -119,7 +119,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       icon: <UserIcon className="h-[1.15rem]" />,
       items: accountItems,
     },
-    ...(isAdmin
+    ...(workspaceItems.length > 0
       ? [
           {
             category: "Workspace",
@@ -216,7 +216,11 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
                   <Flex className="ml-8" direction="column" gap={1}>
                     {items.map(({ href, title }) => (
                       <NavLink
-                        active={pathname === href}
+                        active={
+                          pathname === href ||
+                          (title === "Integrations" &&
+                            pathname.startsWith(`${href}/`))
+                        }
                         className="relative -left-1 py-1.5"
                         href={href}
                         key={href}

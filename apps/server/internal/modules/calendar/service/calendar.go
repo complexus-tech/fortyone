@@ -583,7 +583,7 @@ func (s *Service) workspaceCalendarURL(workspaceSlug, query string) string {
 	if base == "" {
 		base = "/"
 	}
-	path := fmt.Sprintf("%s/%s/settings/account/calendar", base, url.PathEscape(workspaceSlug))
+	path := fmt.Sprintf("%s/%s/settings/integrations/calendar", base, url.PathEscape(workspaceSlug))
 	if strings.TrimSpace(query) == "" {
 		return path
 	}

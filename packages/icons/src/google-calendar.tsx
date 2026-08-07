@@ -1,0 +1,121 @@
+import { useId } from "react";
+import { cn } from "lib";
+import type { Icon } from "./types";
+
+export const GoogleCalendarIcon = (props: Icon) => {
+  const { className, ...rest } = props;
+  const id = useId().replace(/:/g, "");
+  const shapeMaskId = `${id}-shape-mask`;
+  const topMaskId = `${id}-top-mask`;
+  const bottomGradientId = `${id}-bottom-gradient`;
+  const topGradientId = `${id}-top-gradient`;
+  const blurFilterId = `${id}-blur-filter`;
+
+  return (
+    <svg
+      {...rest}
+      className={cn("h-5 w-auto", className)}
+      fill="none"
+      viewBox="0 0 192 192"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M32 36.8C32 20.894 44.894 8 60.8 8h70.4C147.106 8 160 20.894 160 36.8v30.4c0 15.906-12.894 28.8-28.8 28.8H60.8C44.894 96 32 83.106 32 67.2z"
+        fill="#BBE2FF"
+      />
+      <path
+        d="M19.867 49.392C17.818 33.82 29.94 20 45.645 20h100.71c15.706 0 27.827 13.82 25.778 29.392L166 96l6.133 46.608C174.182 158.18 162.061 172 146.355 172H45.645c-15.706 0-27.827-13.82-25.778-29.392L26 96z"
+        fill="#3C90FF"
+      />
+      <mask
+        height="152"
+        id={shapeMaskId}
+        maskUnits="userSpaceOnUse"
+        style={{ maskType: "alpha" }}
+        width="154"
+        x="19"
+        y="20"
+      >
+        <path
+          d="M19.867 49.392C17.818 33.82 29.94 20 45.645 20h100.71c15.706 0 27.827 13.82 25.778 29.392L166 96l6.133 46.608C174.182 158.18 162.061 172 146.355 172H45.645c-15.706 0-27.827-13.82-25.778-29.392L26 96z"
+          fill="#3C90FF"
+        />
+      </mask>
+      <g mask={`url(#${shapeMaskId})`}>
+        <path
+          d="M0 0h166v76H0z"
+          fill={`url(#${bottomGradientId})`}
+          transform="matrix(1 0 0 -1 13 172)"
+        />
+      </g>
+      <mask
+        height="152"
+        id={topMaskId}
+        maskUnits="userSpaceOnUse"
+        style={{ maskType: "alpha" }}
+        width="154"
+        x="19"
+        y="20"
+      >
+        <path
+          d="M19.867 49.392C17.818 33.82 29.94 20 45.645 20h100.71c15.706 0 27.827 13.82 25.778 29.392L166 96l6.133 46.608C174.182 158.18 162.061 172 146.355 172H45.645c-15.706 0-27.827-13.82-25.778-29.392L26 96z"
+          fill="#3186FF"
+        />
+      </mask>
+      <g mask={`url(#${topMaskId})`}>
+        <path
+          d="M32 27.2C32 16.596 40.596 8 51.2 8h89.6c10.604 0 19.2 8.596 19.2 19.2V96H32z"
+          fill={`url(#${topGradientId})`}
+          filter={`url(#${blurFilterId})`}
+        />
+      </g>
+      <path
+        d="M75.353 133.336q-6.282 0-10.777-2.043t-7.61-5.465q-3.065-3.474-4.342-6.793T51.603 115a2.07 2.07 0 0 1 1.021-1.124l5.67-2.247q.714-.357 1.43-.102.714.204 1.685 2.349 1.022 2.145 2.86 4.546a14.3 14.3 0 0 0 4.495 3.728q2.606 1.328 6.435 1.328 6.18 0 9.807-3.575 3.677-3.575 3.677-9.091 0-5.976-3.882-9.194-3.881-3.269-10.266-3.269h-5.362a1.9 1.9 0 0 1-1.328-.51q-.51-.562-.511-1.277v-5.465q0-.767.51-1.277a1.82 1.82 0 0 1 1.329-.562h4.647q5.721 0 9.194-3.116t3.473-8.07q0-4.902-3.116-7.916t-8.58-3.014q-3.065 0-5.312 1.022a11.5 11.5 0 0 0-3.882 2.86 22.7 22.7 0 0 0-2.809 3.78q-1.174 1.941-1.89 2.145-.714.153-1.379-.255l-5.363-2.605q-.664-.358-.868-1.124t1.226-3.575q1.481-2.86 4.494-5.823a21 21 0 0 1 7.049-4.597q4.035-1.635 9.398-1.634 9.96 0 15.782 5.26 5.823 5.21 5.823 13.791 0 5.925-2.86 10.266-2.81 4.34-7.968 6.13v.204q6.231 1.838 9.806 6.741 3.627 4.853 3.626 11.594 0 9.654-6.742 15.834-6.74 6.18-17.57 6.18zm51.25-1.175q-.868 0-1.533-.664a2.25 2.25 0 0 1-.612-1.583V73.118l-11.492 8.274q-.614.46-1.431.307a1.96 1.96 0 0 1-1.225-.766l-3.32-4.7a1.98 1.98 0 0 1-.358-1.43q.153-.816.817-1.276l20.379-14.557q.256-.204.562-.306.307-.153.715-.153h4.291q.868 0 1.379.613.562.56.562 1.43v69.36q0 .92-.664 1.583a2 2 0 0 1-1.533.664z"
+        fill="#FFFFFF"
+      />
+      <defs>
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={bottomGradientId}
+          x1="83"
+          x2="83"
+          y1="76"
+        >
+          <stop stopColor="#4FA0FF" />
+          <stop offset="1" stopColor="#3186FF" />
+        </linearGradient>
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={topGradientId}
+          x1="89.06"
+          x2="89.06"
+          y1="21.75"
+          y2="96.39"
+        >
+          <stop stopColor="#A9A8FF" />
+          <stop offset=".8" stopColor="#3C90FF" />
+        </linearGradient>
+        <filter
+          colorInterpolationFilters="sRGB"
+          filterUnits="userSpaceOnUse"
+          height="112"
+          id={blurFilterId}
+          width="152"
+          x="20"
+          y="-4"
+        >
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feBlend
+            in="SourceGraphic"
+            in2="BackgroundImageFix"
+            result="shape"
+          />
+          <feGaussianBlur
+            result="effect1_foregroundBlur_37330_7673"
+            stdDeviation="6"
+          />
+        </filter>
+      </defs>
+    </svg>
+  );
+};

@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
-import { SearchIcon, SlackIcon } from "icons";
+import { GoogleCalendarIcon, SearchIcon, SlackIcon } from "icons";
+import { useCalendarIntegration } from "@/lib/hooks/calendar";
 import { useGitHubIntegration } from "@/lib/hooks/github";
 import { useSlackIntegration } from "@/lib/hooks/slack";
-import { useTerminology, useWorkspacePath } from "@/hooks";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 
 const GitHubIcon = () => (
   <svg
@@ -105,11 +106,9 @@ const getIntegrationStatus = (integration: Integration) => {
 
 const IntegrationCard = ({
   integration,
-  basePath,
   showDescription = true,
 }: {
   integration: Integration;
-  basePath: string;
   showDescription?: boolean;
 }) => {
   const content = (
@@ -137,32 +136,50 @@ const IntegrationCard = ({
   );
 
   if (integration.href) {
-    return <Link href={`${basePath}/${integration.href}`}>{content}</Link>;
+    return <Link href={integration.href}>{content}</Link>;
   }
 
   return content;
 };
 
 export const IntegrationsIndex = () => {
-  const { data: integration } = useGitHubIntegration();
-  const { data: slackIntegration } = useSlackIntegration();
+  const { userRole } = useUserRole();
+  const isAdmin = userRole === "admin";
+  const { data: integration } = useGitHubIntegration({ enabled: isAdmin });
+  const { data: slackIntegration } = useSlackIntegration({ enabled: isAdmin });
+  const { data: calendarIntegration } = useCalendarIntegration();
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const [search, setSearch] = useState("");
 
-  const basePath = withWorkspace("/settings/workspace/integrations");
   const isGitHubEnabled = (integration?.installations.length ?? 0) > 0;
   const isSlackEnabled = Boolean(slackIntegration?.slackWorkspace?.isActive);
+  const isGoogleCalendarEnabled = Boolean(
+    calendarIntegration?.connections.some(
+      (connection) => connection.provider === "google",
+    ),
+  );
 
-  const allIntegrations: Integration[] = [
+  const googleCalendarIntegration: Integration = {
+    id: "google-calendar",
+    name: "Google Calendar",
+    description:
+      "Bring meetings into My work and keep scheduled work clear of your availability.",
+    icon: (
+      <GoogleCalendarIcon aria-hidden="true" className="h-8 w-8 shrink-0" />
+    ),
+    enabled: isGoogleCalendarEnabled,
+    href: withWorkspace("/settings/integrations/calendar"),
+  };
+  const workspaceIntegrations: Integration[] = [
     {
       id: "github",
       name: "GitHub",
       description: `Link PRs, branches, and commits to ${storyTermPlural}.`,
       icon: <GitHubIcon />,
       enabled: isGitHubEnabled,
-      href: "github",
+      href: withWorkspace("/settings/workspace/integrations/github"),
     },
     {
       id: "slack",
@@ -170,7 +187,7 @@ export const IntegrationsIndex = () => {
       description: `Turn conversations into ${storyTermPlural} from Slack.`,
       icon: <SlackIcon className="h-8 w-8" />,
       enabled: isSlackEnabled,
-      href: "slack",
+      href: withWorkspace("/settings/workspace/integrations/slack"),
     },
     {
       id: "gitlab",
@@ -193,6 +210,10 @@ export const IntegrationsIndex = () => {
       icon: <IntercomIcon />,
       enabled: false,
     },
+  ];
+  const allIntegrations = [
+    googleCalendarIntegration,
+    ...(isAdmin ? workspaceIntegrations : []),
   ];
 
   const enabledIntegrations = allIntegrations.filter((i) => i.enabled);
@@ -237,7 +258,6 @@ export const IntegrationsIndex = () => {
           <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filteredEnabled.map((integration) => (
               <IntegrationCard
-                basePath={basePath}
                 integration={integration}
                 key={integration.id}
                 showDescription={false}
@@ -257,7 +277,6 @@ export const IntegrationsIndex = () => {
         <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filteredIntegrations.map((integration) => (
             <IntegrationCard
-              basePath={basePath}
               integration={integration}
               key={integration.id}
             />
