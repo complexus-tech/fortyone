@@ -1,43 +1,24 @@
-@import "tailwindcss";
+@import "tailwind-config";
 @import "fumadocs-ui/css/black.css";
 @import "fumadocs-ui/css/preset.css";
 
 :root {
-  --color-fd-background: #fdfdfc;
-  --color-fd-foreground: #222322;
-  --color-fd-muted: #f1f1ed;
-  --color-fd-muted-foreground: #74746f;
-  --color-fd-popover: #ffffff;
-  --color-fd-popover-foreground: #222322;
-  --color-fd-card: #f8f8f5;
-  --color-fd-card-foreground: #222322;
-  --color-fd-border: #e7e7e2;
-  --color-fd-primary: #ea6060;
-  --color-fd-primary-foreground: #222322;
-  --color-fd-secondary: #f1f1ed;
-  --color-fd-secondary-foreground: #222322;
-  --color-fd-accent: #ecece7;
-  --color-fd-accent-foreground: #222322;
-  --color-fd-ring: #ea6060;
-}
-
-.dark {
-  --color-fd-background: #10100f;
-  --color-fd-foreground: #e7e7e2;
-  --color-fd-muted: #1b1b19;
-  --color-fd-muted-foreground: #8d8d86;
-  --color-fd-popover: #222220;
-  --color-fd-popover-foreground: #e7e7e2;
-  --color-fd-card: #1b1b19;
-  --color-fd-card-foreground: #e7e7e2;
-  --color-fd-border: #2a2a27;
-  --color-fd-primary: #ea6060;
-  --color-fd-primary-foreground: #10100f;
-  --color-fd-secondary: #222220;
-  --color-fd-secondary-foreground: #e7e7e2;
-  --color-fd-accent: #2a2a27;
-  --color-fd-accent-foreground: #e7e7e2;
-  --color-fd-ring: #ea6060;
+  --color-fd-background: var(--color-background);
+  --color-fd-foreground: var(--color-foreground);
+  --color-fd-muted: var(--color-muted);
+  --color-fd-muted-foreground: var(--color-muted-foreground);
+  --color-fd-popover: var(--color-popover);
+  --color-fd-popover-foreground: var(--color-popover-foreground);
+  --color-fd-card: var(--color-surface);
+  --color-fd-card-foreground: var(--color-surface-foreground);
+  --color-fd-border: var(--color-border);
+  --color-fd-primary: var(--color-primary);
+  --color-fd-primary-foreground: var(--color-primary-foreground);
+  --color-fd-secondary: var(--color-surface-muted);
+  --color-fd-secondary-foreground: var(--color-surface-foreground);
+  --color-fd-accent: var(--color-accent);
+  --color-fd-accent-foreground: var(--color-accent-foreground);
+  --color-fd-ring: var(--color-ring);
 }
 
 .max-w-fd-container {

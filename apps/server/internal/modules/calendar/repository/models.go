@@ -1,6 +1,8 @@
 package calendarrepository
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
@@ -9,20 +11,22 @@ import (
 )
 
 type dbConnection struct {
-	ID             uuid.UUID      `db:"connection_id"`
-	WorkspaceID    uuid.UUID      `db:"workspace_id"`
-	UserID         uuid.UUID      `db:"user_id"`
-	Provider       string         `db:"provider"`
-	ConnectedEmail string         `db:"connected_email"`
-	Timezone       string         `db:"timezone"`
-	TokenPayload   string         `db:"token_payload"`
-	Scopes         pq.StringArray `db:"scopes"`
-	SyncStatus     string         `db:"sync_status"`
-	SyncError      *string        `db:"sync_error"`
-	LastSyncedAt   *time.Time     `db:"last_synced_at"`
-	RevokedAt      *time.Time     `db:"revoked_at"`
-	CreatedAt      time.Time      `db:"created_at"`
-	UpdatedAt      time.Time      `db:"updated_at"`
+	ID                   uuid.UUID      `db:"connection_id"`
+	WorkspaceID          uuid.UUID      `db:"workspace_id"`
+	UserID               uuid.UUID      `db:"user_id"`
+	CredentialGeneration uuid.UUID      `db:"credential_generation"`
+	ProviderAccountID    string         `db:"provider_account_id"`
+	Provider             string         `db:"provider"`
+	ConnectedEmail       string         `db:"connected_email"`
+	Timezone             string         `db:"timezone"`
+	TokenPayload         string         `db:"token_payload"`
+	Scopes               pq.StringArray `db:"scopes"`
+	SyncStatus           string         `db:"sync_status"`
+	SyncError            *string        `db:"sync_error"`
+	LastSyncedAt         *time.Time     `db:"last_synced_at"`
+	RevokedAt            *time.Time     `db:"revoked_at"`
+	CreatedAt            time.Time      `db:"created_at"`
+	UpdatedAt            time.Time      `db:"updated_at"`
 }
 
 type dbBusyWindow struct {
@@ -44,6 +48,54 @@ type dbBusyWindow struct {
 	UpdatedAt       time.Time `db:"updated_at"`
 }
 
+type dbCalendarEvent struct {
+	ID               uuid.UUID  `db:"event_id"`
+	ConnectionID     uuid.UUID  `db:"connection_id"`
+	WorkspaceID      uuid.UUID  `db:"workspace_id"`
+	UserID           uuid.UUID  `db:"user_id"`
+	Provider         string     `db:"provider"`
+	CalendarID       string     `db:"calendar_id"`
+	ProviderEventID  string     `db:"provider_event_id"`
+	Title            *string    `db:"title"`
+	Description      *string    `db:"description"`
+	Location         *string    `db:"location"`
+	MeetingURL       *string    `db:"meeting_url"`
+	HTMLLink         *string    `db:"html_link"`
+	Organizer        []byte     `db:"organizer"`
+	Attendees        []byte     `db:"attendees"`
+	AttendeesOmitted bool       `db:"attendees_omitted"`
+	IsAllDay         bool       `db:"is_all_day"`
+	StartDate        *time.Time `db:"start_date"`
+	EndDate          *time.Time `db:"end_date"`
+	StartAt          time.Time  `db:"start_at"`
+	EndAt            time.Time  `db:"end_at"`
+	Visibility       string     `db:"visibility"`
+	IsPrivate        bool       `db:"is_private"`
+	SourceHash       string     `db:"source_hash"`
+	CreatedAt        time.Time  `db:"created_at"`
+	UpdatedAt        time.Time  `db:"updated_at"`
+}
+
+type dbCalendarEventSummary struct {
+	ID              uuid.UUID  `db:"event_id"`
+	ConnectionID    uuid.UUID  `db:"connection_id"`
+	Provider        string     `db:"provider"`
+	CalendarID      string     `db:"calendar_id"`
+	ProviderEventID string     `db:"provider_event_id"`
+	Title           *string    `db:"title"`
+	Location        *string    `db:"location"`
+	MeetingURL      *string    `db:"meeting_url"`
+	HTMLLink        *string    `db:"html_link"`
+	StartAt         time.Time  `db:"start_at"`
+	EndAt           time.Time  `db:"end_at"`
+	IsAllDay        bool       `db:"is_all_day"`
+	StartDate       *time.Time `db:"start_date"`
+	EndDate         *time.Time `db:"end_date"`
+	IsPrivate       bool       `db:"is_private"`
+	CreatedAt       time.Time  `db:"created_at"`
+	UpdatedAt       time.Time  `db:"updated_at"`
+}
+
 type dbScheduleBlock struct {
 	ID          uuid.UUID  `db:"block_id"`
 	WorkspaceID uuid.UUID  `db:"workspace_id"`
@@ -58,6 +110,7 @@ type dbScheduleBlock struct {
 	Title       string     `db:"title"`
 	StartAt     time.Time  `db:"start_at"`
 	EndAt       time.Time  `db:"end_at"`
+	HasConflict bool       `db:"has_conflict"`
 	IsLocked    bool       `db:"is_locked"`
 	Source      string     `db:"source"`
 	CreatedAt   time.Time  `db:"created_at"`
@@ -66,20 +119,22 @@ type dbScheduleBlock struct {
 
 func toCoreConnection(row dbConnection) calendar.CoreConnection {
 	return calendar.CoreConnection{
-		ID:             row.ID,
-		WorkspaceID:    row.WorkspaceID,
-		UserID:         row.UserID,
-		Provider:       calendar.Provider(row.Provider),
-		ConnectedEmail: row.ConnectedEmail,
-		Timezone:       row.Timezone,
-		TokenPayload:   row.TokenPayload,
-		Scopes:         []string(row.Scopes),
-		SyncStatus:     calendar.SyncStatus(row.SyncStatus),
-		SyncError:      row.SyncError,
-		LastSyncedAt:   row.LastSyncedAt,
-		RevokedAt:      row.RevokedAt,
-		CreatedAt:      row.CreatedAt,
-		UpdatedAt:      row.UpdatedAt,
+		ID:                   row.ID,
+		WorkspaceID:          row.WorkspaceID,
+		UserID:               row.UserID,
+		CredentialGeneration: row.CredentialGeneration,
+		ProviderAccountID:    row.ProviderAccountID,
+		Provider:             calendar.Provider(row.Provider),
+		ConnectedEmail:       row.ConnectedEmail,
+		Timezone:             row.Timezone,
+		TokenPayload:         row.TokenPayload,
+		Scopes:               []string(row.Scopes),
+		SyncStatus:           calendar.SyncStatus(row.SyncStatus),
+		SyncError:            row.SyncError,
+		LastSyncedAt:         row.LastSyncedAt,
+		RevokedAt:            row.RevokedAt,
+		CreatedAt:            row.CreatedAt,
+		UpdatedAt:            row.UpdatedAt,
 	}
 }
 
@@ -100,7 +155,7 @@ func toCoreBusyWindow(row dbBusyWindow) calendar.CoreBusyWindow {
 		Provider:        calendar.Provider(row.Provider),
 		ProviderEventID: row.ProviderEventID,
 		CalendarID:      row.CalendarID,
-		Title:           row.Title,
+		Title:           nil,
 		StartAt:         row.StartAt,
 		EndAt:           row.EndAt,
 		Status:          calendar.BusyStatus(row.Status),
@@ -120,6 +175,84 @@ func toCoreBusyWindows(rows []dbBusyWindow) []calendar.CoreBusyWindow {
 	return windows
 }
 
+func toCoreCalendarEvent(row dbCalendarEvent) (calendar.CoreCalendarEvent, error) {
+	attendees := []calendar.CoreCalendarParticipant{}
+	if len(row.Attendees) > 0 {
+		if err := json.Unmarshal(row.Attendees, &attendees); err != nil {
+			return calendar.CoreCalendarEvent{}, fmt.Errorf("decode calendar event attendees: %w", err)
+		}
+	}
+	var organizer *calendar.CoreCalendarParticipant
+	if len(row.Organizer) > 0 && string(row.Organizer) != "null" {
+		var value calendar.CoreCalendarParticipant
+		if err := json.Unmarshal(row.Organizer, &value); err != nil {
+			return calendar.CoreCalendarEvent{}, fmt.Errorf("decode calendar event organizer: %w", err)
+		}
+		organizer = &value
+	}
+	return calendar.CoreCalendarEvent{
+		ID:               row.ID,
+		ConnectionID:     row.ConnectionID,
+		WorkspaceID:      row.WorkspaceID,
+		UserID:           row.UserID,
+		Provider:         calendar.Provider(row.Provider),
+		CalendarID:       row.CalendarID,
+		ProviderEventID:  row.ProviderEventID,
+		Title:            row.Title,
+		Description:      row.Description,
+		Location:         row.Location,
+		MeetingURL:       row.MeetingURL,
+		HTMLLink:         row.HTMLLink,
+		Organizer:        organizer,
+		Attendees:        attendees,
+		AttendeesOmitted: row.AttendeesOmitted,
+		IsAllDay:         row.IsAllDay,
+		StartDate:        calendarDateString(row.StartDate),
+		EndDate:          calendarDateString(row.EndDate),
+		StartAt:          row.StartAt,
+		EndAt:            row.EndAt,
+		Visibility:       row.Visibility,
+		IsPrivate:        row.IsPrivate,
+		SourceHash:       row.SourceHash,
+		CreatedAt:        row.CreatedAt,
+		UpdatedAt:        row.UpdatedAt,
+	}, nil
+}
+
+func toCoreCalendarEventSummaries(rows []dbCalendarEventSummary) []calendar.CoreCalendarEventSummary {
+	events := make([]calendar.CoreCalendarEventSummary, len(rows))
+	for i, row := range rows {
+		events[i] = calendar.CoreCalendarEventSummary{
+			ID:              row.ID,
+			ConnectionID:    row.ConnectionID,
+			Provider:        calendar.Provider(row.Provider),
+			CalendarID:      row.CalendarID,
+			ProviderEventID: row.ProviderEventID,
+			Title:           row.Title,
+			Location:        row.Location,
+			MeetingURL:      row.MeetingURL,
+			HTMLLink:        row.HTMLLink,
+			StartAt:         row.StartAt,
+			EndAt:           row.EndAt,
+			IsAllDay:        row.IsAllDay,
+			StartDate:       calendarDateString(row.StartDate),
+			EndDate:         calendarDateString(row.EndDate),
+			IsPrivate:       row.IsPrivate,
+			CreatedAt:       row.CreatedAt,
+			UpdatedAt:       row.UpdatedAt,
+		}
+	}
+	return events
+}
+
+func calendarDateString(value *time.Time) *string {
+	if value == nil {
+		return nil
+	}
+	formatted := value.Format("2006-01-02")
+	return &formatted
+}
+
 func toCoreScheduleBlock(row dbScheduleBlock) calendar.CoreScheduleBlock {
 	return calendar.CoreScheduleBlock{
 		ID:          row.ID,
@@ -135,6 +268,7 @@ func toCoreScheduleBlock(row dbScheduleBlock) calendar.CoreScheduleBlock {
 		Title:       row.Title,
 		StartAt:     row.StartAt,
 		EndAt:       row.EndAt,
+		HasConflict: row.HasConflict,
 		IsLocked:    row.IsLocked,
 		Source:      calendar.ScheduleBlockSource(row.Source),
 		CreatedAt:   row.CreatedAt,

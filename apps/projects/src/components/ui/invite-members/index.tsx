@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  Button,
-  Dialog,
-  Select,
-  TextArea,
-  Text,
-  Flex,
-  Wrapper,
-  Checkbox,
-} from "ui";
+import { Button, Dialog, Select, TextArea, Text, Flex, Wrapper } from "ui";
+import { cn } from "lib";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,6 +15,7 @@ import { invitationKeys } from "@/constants/keys";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useUserRole, useWorkspacePath } from "@/hooks";
 import { FeatureGuard } from "../feature-guard";
+import { TeamColor } from "../team-color";
 
 type InviteFormState = {
   emails: string;
@@ -56,6 +49,7 @@ export const InviteMembersDialog = ({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const selectedTeamIds = new Set(formState.teamIds);
   const handleEmailsChange = (value: string) => {
     setFormState((prev) => ({ ...prev, emails: value }));
   };
@@ -65,14 +59,14 @@ export const InviteMembersDialog = ({
   };
 
   const handleTeamToggle = (teamId: string) => {
-    setFormState((prev) => {
-      if (prev.teamIds.includes(teamId) && prev.teamIds.length === 1) {
-        toast.warning("At least one team is required", {
-          description: "Members should be added to at least one team",
-        });
-        return prev;
-      }
+    if (selectedTeamIds.has(teamId) && selectedTeamIds.size === 1) {
+      toast.warning("At least one team is required", {
+        description: "Members should be added to at least one team",
+      });
+      return;
+    }
 
+    setFormState((prev) => {
       const teamIds = prev.teamIds.includes(teamId)
         ? prev.teamIds.filter((id) => id !== teamId)
         : [...prev.teamIds, teamId];
@@ -286,29 +280,35 @@ export const InviteMembersDialog = ({
               Teams - members will be added to the selected teams
             </Text>
             <Flex gap={2} wrap>
-              {teams.map((team) => (
-                <Button
-                  className="gap-2 dark:bg-transparent"
-                  color="tertiary"
-                  key={team.id}
-                  leftIcon={
-                    <Checkbox
-                      checked={formState.teamIds.includes(team.id)}
-                      className="rounded-md"
-                    />
-                  }
-                  onClick={() => {
-                    handleTeamToggle(team.id);
-                  }}
-                  rounded="xl"
-                  title={team.name}
-                  variant="outline"
-                >
-                  <span className="inline-block max-w-[12ch] truncate">
-                    {team.name}
-                  </span>
-                </Button>
-              ))}
+              {teams.map((team) => {
+                const isSelected = selectedTeamIds.has(team.id);
+
+                return (
+                  <Button
+                    aria-pressed={isSelected}
+                    className={cn("gap-2 dark:bg-transparent", {
+                      "ring-primary ring-2": isSelected,
+                    })}
+                    color="tertiary"
+                    key={team.id}
+                    leftIcon={
+                      <TeamColor
+                        className="size-2.5 shrink-0 rounded-sm"
+                        color={team.color}
+                      />
+                    }
+                    onClick={() => {
+                      handleTeamToggle(team.id);
+                    }}
+                    title={team.name}
+                    variant="outline"
+                  >
+                    <span className="inline-block max-w-[12ch] truncate">
+                      {team.name}
+                    </span>
+                  </Button>
+                );
+              })}
             </Flex>
           </Dialog.Body>
           <Dialog.Footer className="justify-end">

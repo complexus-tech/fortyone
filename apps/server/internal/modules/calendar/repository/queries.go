@@ -12,7 +12,7 @@ import (
 
 func (r *Repo) ListConnections(ctx context.Context, workspaceID uuid.UUID, userID *uuid.UUID) ([]calendar.CoreConnection, error) {
 	query := `
-		SELECT connection_id, workspace_id, user_id, provider, connected_email, timezone,
+		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
 		       token_payload, scopes, sync_status, sync_error, last_synced_at, revoked_at, created_at, updated_at
 		FROM calendar_connections
 		WHERE workspace_id = :workspace_id
@@ -37,29 +37,48 @@ func (r *Repo) ListConnections(ctx context.Context, workspaceID uuid.UUID, userI
 	return toCoreConnections(rows), nil
 }
 
-func (r *Repo) GetConnection(ctx context.Context, workspaceID, connectionID uuid.UUID) (calendar.CoreConnection, error) {
+func (r *Repo) GetOwnedConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) (calendar.CoreConnection, error) {
 	const query = `
-		SELECT connection_id, workspace_id, user_id, provider, connected_email, timezone,
+		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
 		       token_payload, scopes, sync_status, sync_error, last_synced_at, revoked_at, created_at, updated_at
 		FROM calendar_connections
 		WHERE workspace_id = $1
-			AND connection_id = $2
+			AND user_id = $2
+			AND connection_id = $3
 			AND revoked_at IS NULL
 		LIMIT 1
 	`
 	var row dbConnection
-	if err := r.db.GetContext(ctx, &row, query, workspaceID, connectionID); err != nil {
+	if err := r.db.GetContext(ctx, &row, query, workspaceID, userID, connectionID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return calendar.CoreConnection{}, calendar.ErrCalendarNotFound
 		}
-		return calendar.CoreConnection{}, fmt.Errorf("get calendar connection: %w", err)
+		return calendar.CoreConnection{}, fmt.Errorf("get owned calendar connection: %w", err)
 	}
 	return toCoreConnection(row), nil
 }
 
+func (r *Repo) WorkspaceMemberExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, error) {
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM workspace_members wm
+			INNER JOIN users u ON u.user_id = wm.user_id
+			WHERE wm.workspace_id = $1
+				AND wm.user_id = $2
+				AND u.is_active = true
+		)
+	`
+	var exists bool
+	if err := r.db.GetContext(ctx, &exists, query, workspaceID, userID); err != nil {
+		return false, fmt.Errorf("check calendar workspace membership: %w", err)
+	}
+	return exists, nil
+}
+
 func (r *Repo) GetActiveConnection(ctx context.Context, workspaceID, userID uuid.UUID, provider calendar.Provider) (calendar.CoreConnection, error) {
 	const query = `
-		SELECT connection_id, workspace_id, user_id, provider, connected_email, timezone,
+		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
 		       token_payload, scopes, sync_status, sync_error, last_synced_at, revoked_at, created_at, updated_at
 		FROM calendar_connections
 		WHERE workspace_id = $1

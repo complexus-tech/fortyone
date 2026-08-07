@@ -36,7 +36,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <Box className="bg-sidebar border-border/80 dark:bg-sidebar/40 relative flex h-dvh w-(--sidebar-width) shrink-0 flex-col justify-between border-r pb-6">
+    <Box className="bg-sidebar border-border/80 dark:bg-sidebar/40 relative flex h-dvh w-(--sidebar-width) shrink-0 flex-col justify-between border-r-[0.5px] pb-6">
       <Box className="relative z-1 px-4">
         <Header />
         <Navigation />

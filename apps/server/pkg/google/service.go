@@ -27,6 +27,7 @@ const (
 )
 
 type Identity struct {
+	Subject       string
 	Email         string
 	EmailVerified bool
 	FirstName     string
@@ -138,6 +139,7 @@ func (s *Service) VerifyToken(ctx context.Context, token string) (Identity, erro
 		picture, _ := payload.Claims["picture"].(string)
 
 		return Identity{
+			Subject:       strings.TrimSpace(payload.Subject),
 			Email:         strings.TrimSpace(email),
 			EmailVerified: emailVerified,
 			FirstName:     strings.TrimSpace(firstName),
@@ -247,9 +249,16 @@ func (s *Service) calendarIdentityFromToken(ctx context.Context, token *oauth2.T
 	}
 	idToken, _ := token.Extra("id_token").(string)
 	if strings.TrimSpace(idToken) == "" {
-		return Identity{}, nil
+		return Identity{}, fmt.Errorf("%w: google did not return an identity token", ErrInvalidToken)
 	}
-	return s.VerifyToken(ctx, idToken)
+	identity, err := s.VerifyToken(ctx, idToken)
+	if err != nil {
+		return Identity{}, err
+	}
+	if strings.TrimSpace(identity.Subject) == "" || strings.TrimSpace(identity.Email) == "" || !identity.EmailVerified {
+		return Identity{}, fmt.Errorf("%w: google account email is not verified", ErrInvalidToken)
+	}
+	return identity, nil
 }
 
 // CalendarHTTPClient returns an OAuth HTTP client for Google Calendar calls.

@@ -1,0 +1,299 @@
+"use client";
+
+import { format, isSameDay } from "date-fns";
+import {
+  CalendarIcon,
+  ClockIcon,
+  CloseIcon,
+  ExternalLinkIcon,
+  LinkIcon,
+  UserMultiple02Icon,
+} from "icons";
+import { Badge, Box, Button, Dialog, Flex, Skeleton, Text } from "ui";
+import { useCalendarEvent } from "@/lib/hooks/calendar";
+import type {
+  CalendarEventAttendee,
+  CalendarEventSummary,
+} from "@/lib/queries/calendar/types";
+import { parseCalendarDate } from "./calendar-layout";
+
+const getSafeExternalUrl = (value?: string) => {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
+export const getCalendarEventTitle = (
+  event: Pick<CalendarEventSummary, "isPrivate" | "title">,
+) => {
+  if (event.isPrivate) return "Busy";
+  return event.title?.trim() || "Untitled event";
+};
+
+export const getCalendarEventTimeLabel = (
+  event: Pick<
+    CalendarEventSummary,
+    "endAt" | "endDate" | "isAllDay" | "startAt" | "startDate"
+  >,
+) => {
+  const start = new Date(event.startAt);
+  const end = new Date(event.endAt);
+  if (event.isAllDay) {
+    const dateOnlyStart = parseCalendarDate(event.startDate);
+    const dateOnlyEnd = parseCalendarDate(event.endDate);
+    const visibleStart = dateOnlyStart ?? start;
+    const exclusiveEnd = dateOnlyEnd ?? end;
+    const inclusiveEnd = new Date(exclusiveEnd);
+    inclusiveEnd.setDate(inclusiveEnd.getDate() - 1);
+    return isSameDay(visibleStart, inclusiveEnd)
+      ? format(visibleStart, "EEEE, MMMM d")
+      : `${format(visibleStart, "MMM d")} – ${format(inclusiveEnd, "MMM d")}`;
+  }
+  if (isSameDay(start, end)) {
+    return `${format(start, "EEEE, MMMM d")} · ${format(start, "h:mm a")} – ${format(end, "h:mm a")}`;
+  }
+  return `${format(start, "MMM d, h:mm a")} – ${format(end, "MMM d, h:mm a")}`;
+};
+
+const getCalendarLabel = (event: CalendarEventSummary) => {
+  const calendarId = event.calendarId?.trim();
+  if (calendarId && calendarId !== "primary") return calendarId;
+  return event.provider === "google" ? "Google Calendar" : "External calendar";
+};
+
+const getPersonLabel = ({
+  displayName,
+  email,
+}: {
+  displayName?: string;
+  email?: string;
+}) => displayName?.trim() || email?.trim() || "Unknown attendee";
+
+const getResponseLabel = (attendee: CalendarEventAttendee) => {
+  const labels: Record<string, string> = {
+    accepted: "Accepted",
+    declined: "Declined",
+    needsAction: "Awaiting response",
+    tentative: "Tentative",
+  };
+  return attendee.responseStatus
+    ? labels[attendee.responseStatus] ?? attendee.responseStatus
+    : null;
+};
+
+const DetailsLoading = () => (
+  <Box aria-label="Loading event details" className="space-y-5" role="status">
+    <Skeleton className="h-5 w-32" />
+    <Skeleton className="h-12 w-full" />
+    <Skeleton className="h-20 w-full" />
+  </Box>
+);
+
+export const CalendarEventDetailsDialog = ({
+  event,
+  onOpenChange,
+}: {
+  event: CalendarEventSummary | null;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const eventQuery = useCalendarEvent(
+    event && !event.isPrivate ? event.id : null,
+  );
+  const details = event?.isPrivate ? undefined : eventQuery.data;
+  const visibleEvent = details ?? event;
+  const isPrivate = Boolean(visibleEvent?.isPrivate);
+  const meetingUrl = getSafeExternalUrl(visibleEvent?.meetingUrl);
+  const htmlLink = getSafeExternalUrl(visibleEvent?.htmlLink);
+  const attendees = details?.attendees ?? [];
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open={Boolean(event)}>
+      <Dialog.Content
+        className="border-border/70 shadow-shadow bg-surface-elevated mr-6 mb-8 max-w-148 rounded-3xl border-[0.5px] shadow-2xl outline-none md:mt-auto"
+        hideClose
+        overlayClassName="justify-end bg-black/10"
+      >
+        <Dialog.Header className="border-border flex min-h-16 items-center border-b px-6">
+          <Flex align="center" className="w-full min-w-0" gap={3}>
+            <Button
+              aria-label="Close event details"
+              asIcon
+              color="tertiary"
+              onClick={() => {
+                onOpenChange(false);
+              }}
+              size="sm"
+              variant="naked"
+            >
+              <CloseIcon className="size-5" />
+            </Button>
+            <Dialog.Title className="min-w-0 truncate text-lg font-semibold">
+              {visibleEvent
+                ? getCalendarEventTitle(visibleEvent)
+                : "Calendar event"}
+            </Dialog.Title>
+          </Flex>
+        </Dialog.Header>
+        <Dialog.Description className="sr-only">
+          Details for the selected calendar event.
+        </Dialog.Description>
+
+        <Dialog.Body className="h-[calc(100dvh-8rem)] max-h-[calc(100dvh-8rem)] px-6 py-6">
+          {event ? (
+            <Box className="space-y-6">
+              <Box>
+                <Text as="h2" className="text-2xl" fontWeight="semibold">
+                  {visibleEvent ? getCalendarEventTitle(visibleEvent) : null}
+                </Text>
+                {!isPrivate && visibleEvent ? (
+                  <Badge className="mt-3" color="tertiary">
+                    {getCalendarLabel(visibleEvent)}
+                  </Badge>
+                ) : null}
+              </Box>
+
+              <Flex align="start" gap={3}>
+                <ClockIcon className="text-text-muted mt-0.5 h-5 w-auto shrink-0" />
+                <Text>
+                  {visibleEvent
+                    ? getCalendarEventTimeLabel(visibleEvent)
+                    : null}
+                </Text>
+              </Flex>
+
+              {!isPrivate ? (
+                <>
+                  {meetingUrl || htmlLink ? (
+                    <Flex align="center" className="flex-wrap" gap={2}>
+                      {meetingUrl ? (
+                        <a
+                          className="bg-background-inverse text-foreground-inverse flex h-10 w-max items-center gap-2 rounded-xl border px-3 font-medium transition hover:opacity-90"
+                          href={meetingUrl}
+                          rel="noreferrer noopener"
+                          target="_blank"
+                        >
+                          <LinkIcon className="h-4 w-auto" />
+                          Join meeting
+                        </a>
+                      ) : null}
+                      {htmlLink ? (
+                        <a
+                          className="border-border hover:bg-state-hover flex h-10 w-max items-center gap-2 rounded-xl border px-3 font-medium transition"
+                          href={htmlLink}
+                          rel="noreferrer noopener"
+                          target="_blank"
+                        >
+                          <ExternalLinkIcon className="h-4 w-auto" />
+                          Open in Google Calendar
+                        </a>
+                      ) : null}
+                    </Flex>
+                  ) : null}
+
+                  {visibleEvent?.location ? (
+                    <Flex align="start" gap={3}>
+                      <CalendarIcon className="text-text-muted mt-0.5 h-5 w-auto shrink-0" />
+                      <Box>
+                        <Text color="muted" fontSize="sm">
+                          Location
+                        </Text>
+                        <Text className="mt-0.5 whitespace-pre-wrap">
+                          {visibleEvent.location}
+                        </Text>
+                      </Box>
+                    </Flex>
+                  ) : null}
+
+                  {eventQuery.isPending ? <DetailsLoading /> : null}
+
+                  {eventQuery.isError ? (
+                    <Box className="border-border bg-surface-muted/40 rounded-xl border px-4 py-3">
+                      <Text fontWeight="medium">
+                        Couldn&apos;t load every detail
+                      </Text>
+                      <Text className="mt-1" color="muted" fontSize="sm">
+                        The event remains visible from the latest calendar sync.
+                      </Text>
+                    </Box>
+                  ) : null}
+
+                  {details?.organizer ? (
+                    <Flex align="start" gap={3}>
+                      <UserMultiple02Icon className="text-text-muted mt-0.5 h-5 w-auto shrink-0" />
+                      <Box>
+                        <Text color="muted" fontSize="sm">
+                          Organizer
+                        </Text>
+                        <Text className="mt-0.5">
+                          {getPersonLabel(details.organizer)}
+                        </Text>
+                      </Box>
+                    </Flex>
+                  ) : null}
+
+                  {attendees.length > 0 ? (
+                    <Box>
+                      <Flex align="center" className="mb-2" gap={2}>
+                        <UserMultiple02Icon className="text-text-muted h-5 w-auto" />
+                        <Text fontWeight="medium">
+                          Attendees · {attendees.length}
+                          {details?.attendeesOmitted ? "+" : ""}
+                        </Text>
+                      </Flex>
+                      <Box className="border-border divide-border divide-y overflow-hidden rounded-xl border">
+                        {attendees.map((attendee, index) => (
+                          <Flex
+                            align="center"
+                            className="px-3 py-2.5"
+                            gap={3}
+                            justify="between"
+                            key={`${attendee.email ?? attendee.displayName ?? "attendee"}-${index}`}
+                          >
+                            <Box className="min-w-0">
+                              <Text className="truncate">
+                                {getPersonLabel(attendee)}
+                              </Text>
+                              {attendee.optional ? (
+                                <Text color="muted" fontSize="sm">
+                                  Optional
+                                </Text>
+                              ) : null}
+                            </Box>
+                            {getResponseLabel(attendee) ? (
+                              <Text
+                                className="shrink-0"
+                                color="muted"
+                                fontSize="sm"
+                              >
+                                {getResponseLabel(attendee)}
+                              </Text>
+                            ) : null}
+                          </Flex>
+                        ))}
+                      </Box>
+                    </Box>
+                  ) : null}
+
+                  {details?.description ? (
+                    <Box>
+                      <Text className="mb-2" fontWeight="medium">
+                        Description
+                      </Text>
+                      <Text className="whitespace-pre-wrap" color="muted">
+                        {details.description}
+                      </Text>
+                    </Box>
+                  ) : null}
+                </>
+              ) : null}
+            </Box>
+          ) : null}
+        </Dialog.Body>
+      </Dialog.Content>
+    </Dialog>
+  );
+};

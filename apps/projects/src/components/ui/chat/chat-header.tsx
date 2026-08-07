@@ -18,6 +18,8 @@ import { useAiChats } from "@/modules/ai-chats/hooks/use-ai-chats";
 import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 import { HistoryDialog } from "./history-dialog";
 
+const HEADER_ICON_STROKE_WIDTH = 2;
+
 export const ChatHeader = ({
   currentChatId,
   setIsOpen,
@@ -77,7 +79,10 @@ export const ChatHeader = ({
                 asIcon
                 color="tertiary"
                 leftIcon={
-                  <PlusIcon className="text-foreground/70" strokeWidth={2.8} />
+                  <PlusIcon
+                    className="text-foreground/70"
+                    strokeWidth={HEADER_ICON_STROKE_WIDTH}
+                  />
                 }
                 onClick={handleNewChat}
                 size="sm"
@@ -95,7 +100,7 @@ export const ChatHeader = ({
                 leftIcon={
                   <NewTabIcon
                     className="text-foreground/70"
-                    strokeWidth={2.6}
+                    strokeWidth={HEADER_ICON_STROKE_WIDTH}
                   />
                 }
                 onClick={() => {
@@ -163,7 +168,7 @@ export const ChatHeader = ({
                 leftIcon={
                   <HistoryIcon
                     className="text-foreground/70"
-                    strokeWidth={2.8}
+                    strokeWidth={HEADER_ICON_STROKE_WIDTH}
                   />
                 }
                 onClick={() => {
@@ -182,7 +187,10 @@ export const ChatHeader = ({
                 asIcon
                 color="tertiary"
                 leftIcon={
-                  <PlusIcon className="text-foreground/70" strokeWidth={2.8} />
+                  <PlusIcon
+                    className="text-foreground/70"
+                    strokeWidth={HEADER_ICON_STROKE_WIDTH}
+                  />
                 }
                 onClick={handleNewChat}
                 size="sm"
@@ -198,7 +206,10 @@ export const ChatHeader = ({
               asIcon
               color="tertiary"
               leftIcon={
-                <CloseIcon className="text-foreground/70" strokeWidth={2.8} />
+                <CloseIcon
+                  className="text-foreground/70"
+                  strokeWidth={HEADER_ICON_STROKE_WIDTH}
+                />
               }
               onClick={() => {
                 setIsOpen(false);

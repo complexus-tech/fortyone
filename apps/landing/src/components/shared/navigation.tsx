@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { cn } from "lib";
 import { Box, Button, Flex, NavigationMenu, NavLink } from "ui";
 import { Logo, Container } from "@/components/ui";
@@ -38,7 +37,7 @@ const featureMenuLinks: NavigationMenuItem[] = featureLinks.map(
   }),
 );
 
-const useCaseMenuLinks: NavigationMenuItem[] = primaryUseCaseLinks.map(
+const primaryUseCaseMenuLinks: NavigationMenuItem[] = primaryUseCaseLinks.map(
   ({ href, label }) => ({
     href,
     title: label,
@@ -50,7 +49,7 @@ const isExternalLink = (href: string) => href.startsWith("http");
 const NavigationMenuLink = ({ href, title }: NavigationMenuItem) => (
   <NavigationMenu.Link asChild>
     <Link
-      className="hover:bg-accent focus:bg-accent focus-visible:bg-accent flex w-full items-center rounded-md px-2.5 py-1.5 text-[0.95rem] leading-6 whitespace-nowrap transition-colors outline-none select-none focus-visible:outline-none"
+      className="hover:bg-accent focus:bg-accent focus-visible:bg-accent dark:hover:bg-surface-prominent dark:focus:bg-surface-prominent dark:focus-visible:bg-surface-prominent flex w-full items-center rounded-md px-2.5 py-1.5 text-[0.95rem] leading-6 whitespace-nowrap transition-colors outline-none select-none focus-visible:outline-none"
       href={href}
       prefetch={!isExternalLink(href)}
       rel={isExternalLink(href) ? "noreferrer" : undefined}
@@ -72,7 +71,7 @@ const NavigationDropdown = ({
 }) => (
   <NavigationMenu.Item className="relative">
     <NavigationMenu.Trigger
-      className="hover:bg-state-hover focus-visible:bg-state-hover data-[state=open]:bg-state-hover rounded-md px-3 py-1.5 opacity-90 transition outline-none hover:opacity-100 focus:outline-none focus-visible:outline-none data-[state=open]:opacity-100"
+      className="hover:bg-state-hover focus-visible:bg-state-hover data-[state=open]:bg-state-hover rounded-md px-3 py-1.5 transition outline-none focus:outline-none focus-visible:outline-none"
       hideArrow
     >
       {label}
@@ -80,7 +79,7 @@ const NavigationDropdown = ({
     <NavigationMenu.Content
       className={cn("top-full z-50 mt-1.5", contentClassName)}
     >
-      <Box className="bg-surface-elevated shadow-shadow rounded-lg px-1.5 py-1.5 shadow-xl">
+      <Box className="border-border/70 bg-popover text-popover-foreground shadow-shadow rounded-lg border px-1.5 py-1.5 shadow-xl">
         {items.map((item) => (
           <NavigationMenuLink key={item.href} {...item} />
         ))}
@@ -90,16 +89,9 @@ const NavigationDropdown = ({
 );
 
 const DesktopNavItem = ({ href, title }: NavigationMenuItem) => {
-  const pathname = usePathname();
-
   return (
     <NavLink
-      className={cn(
-        "hover:bg-state-hover flex items-center rounded-md px-3 py-1.5 opacity-90 transition hover:opacity-100",
-        {
-          "opacity-100 dark:text-white dark:opacity-100": pathname === href,
-        },
-      )}
+      className="hover:bg-state-hover flex items-center rounded-md px-3 py-1.5 transition"
       href={href}
       prefetch
     >
@@ -110,8 +102,8 @@ const DesktopNavItem = ({ href, title }: NavigationMenuItem) => {
 
 export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
   return (
-    <Box className="border-border/50 bg-background/70 fixed left-0 z-15 w-screen border-b backdrop-blur-xl">
-      <Container className="flex h-16 items-center justify-between gap-12">
+    <Box className="bg-background/70 fixed left-0 z-15 w-screen backdrop-blur-xl">
+      <Container className="flex h-15 items-center justify-between gap-12">
         <Logo />
         <NavigationMenu className="hidden md:flex" showViewport={false}>
           <NavigationMenu.List className="gap-4 space-x-0 lg:gap-6">
@@ -122,7 +114,7 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
             />
             <NavigationDropdown
               contentClassName="min-w-44"
-              items={useCaseMenuLinks}
+              items={primaryUseCaseMenuLinks}
               label="Use Cases"
             />
             <NavigationMenu.Item>

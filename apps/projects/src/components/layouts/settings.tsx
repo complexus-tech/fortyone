@@ -48,6 +48,10 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       href: withWorkspace("/settings/account/preferences"),
     },
     {
+      title: "Calendar",
+      href: withWorkspace("/settings/account/calendar"),
+    },
+    {
       title: "Notifications",
       href: withWorkspace("/settings/account/notifications"),
     },
@@ -77,7 +81,10 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
                 },
               ]
             : []),
-          { title: "Integrations", href: withWorkspace("/settings/workspace/integrations") },
+          {
+            title: "Integrations",
+            href: withWorkspace("/settings/workspace/integrations"),
+          },
           // { title: "API tokens", href: withWorkspace("/settings/workspace/api") },
         ]
       : []),
@@ -152,7 +159,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             </button>
           </Flex>
         </Container>
-        <Box className="border-border overflow-x-auto border-y pl-3">
+        <Box className="border-border overflow-x-auto border-y-[0.5px] pl-3">
           <Flex align="center" gap={2}>
             {mobileMenu.map(({ href, title }) => (
               <Link
@@ -171,12 +178,12 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             ))}
           </Flex>
         </Box>
-        <Box className="h-[calc(100dvh-8rem)] overflow-y-auto pt-6 pb-8">
+        <Box className="settings-card-borders h-[calc(100dvh-8rem)] overflow-y-auto pt-6 pb-8">
           <Container>{children}</Container>
         </Box>
       </Box>
       <Box className="hidden md:flex">
-        <Box className="from-sidebar border-border to-sidebar/50 w-(--sidebar-width) shrink-0 border-r bg-linear-to-br">
+        <Box className="from-sidebar border-border to-sidebar/50 w-(--sidebar-width) shrink-0 border-r-[0.5px] bg-linear-to-br">
           <Box className="flex h-16 items-center px-4">
             <Tooltip
               title={
@@ -223,7 +230,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             </Flex>
           </BodyContainer>
         </Box>
-        <Box className="h-dvh flex-1 overflow-y-auto">
+        <Box className="settings-card-borders h-dvh flex-1 overflow-y-auto">
           <Container
             className={cn("max-w-216 py-12", {
               "max-w-[80rem]": pathname.includes("billing"),

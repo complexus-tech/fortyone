@@ -5,7 +5,7 @@
   "private": true,
   "exports": {
     ".": "./shared-styles.css",
-    "./brand-theme": "./brand-theme.css",
+    "./mobile-theme": "./mobile-theme.css",
     "./postcss": "./postcss.config.js"
   },
   "devDependencies": {

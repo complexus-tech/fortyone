@@ -80,7 +80,7 @@ export const MobileNavigation = () => {
 
       <Dialog onOpenChange={setOpen} open={open}>
         <Dialog.Content
-          className="bg-background dark:bg-background m-0 mt-16 w-full rounded-none border-0 outline-none dark:border-0"
+          className="bg-background dark:bg-background m-0 mt-14 w-full rounded-none border-0 outline-none dark:border-0"
           hideClose
           overlayClassName="bg-transparent dark:bg-transparent"
         >
@@ -101,7 +101,7 @@ export const MobileNavigation = () => {
                         <Flex className="pl-4" direction="column" gap={3}>
                           {items.map(({ label: itemLabel, href: itemHref }) => (
                             <Link
-                              className="hover:bg-accent -mx-2 rounded-md px-2 py-1.5 text-base opacity-80 transition-colors hover:opacity-100"
+                              className="hover:bg-accent dark:hover:bg-surface-prominent -mx-2 rounded-md px-2 py-1.5 text-base opacity-80 transition-colors hover:opacity-100"
                               href={itemHref}
                               key={itemLabel}
                               onClick={() => {
@@ -118,7 +118,7 @@ export const MobileNavigation = () => {
 
                   return href ? (
                     <Link
-                      className="hover:bg-accent -mx-2 rounded-md px-2 py-1.5 text-lg font-medium transition-colors"
+                      className="hover:bg-accent dark:hover:bg-surface-prominent -mx-2 rounded-md px-2 py-1.5 text-lg font-medium transition-colors"
                       href={href}
                       key={label}
                       onClick={() => {

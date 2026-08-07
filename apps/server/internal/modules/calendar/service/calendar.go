@@ -25,8 +25,13 @@ var (
 	ErrCalendarNotConfigured         = errors.New("calendar integration is not configured")
 	ErrInvalidCalendarState          = errors.New("invalid calendar setup state")
 	ErrCalendarNotFound              = errors.New("calendar connection not found")
+	ErrCalendarAccessDenied          = errors.New("calendar access denied")
+	ErrCalendarCredentialsIncomplete = errors.New("calendar credentials are incomplete")
+	ErrCalendarEventNotFound         = errors.New("calendar event not found")
+	ErrCalendarSyncSuperseded        = errors.New("calendar sync was superseded by newer credentials")
 	ErrInvalidScheduleRange          = errors.New("calendar schedule range is invalid")
 	ErrInvalidScheduleBlock          = errors.New("calendar schedule block is invalid")
+	ErrCalendarScheduleConflict      = errors.New("calendar time conflicts with an existing meeting or schedule block")
 	ErrCalendarScheduleBlockNotFound = errors.New("calendar schedule block not found")
 )
 
@@ -38,18 +43,23 @@ const (
 
 type Repository interface {
 	ListConnections(ctx context.Context, workspaceID uuid.UUID, userID *uuid.UUID) ([]CoreConnection, error)
-	GetConnection(ctx context.Context, workspaceID, connectionID uuid.UUID) (CoreConnection, error)
+	GetOwnedConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) (CoreConnection, error)
 	GetActiveConnection(ctx context.Context, workspaceID, userID uuid.UUID, provider Provider) (CoreConnection, error)
+	WorkspaceMemberExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, error)
 	UpsertConnection(ctx context.Context, input CoreConnectionUpsert) (CoreConnection, error)
+	BeginConnectionSync(ctx context.Context, connection CoreConnection) (CoreConnection, error)
 	RevokeConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) error
-	ReplaceBusyWindows(ctx context.Context, connection CoreConnection, windows []CoreBusyWindow) error
+	ReplaceCalendarSnapshot(ctx context.Context, connection CoreConnection, snapshot CalendarSyncSnapshot) error
+	ListCalendarEvents(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]CoreCalendarEventSummary, error)
+	GetCalendarEvent(ctx context.Context, workspaceID, userID, eventID uuid.UUID) (CoreCalendarEvent, error)
 	ListBusyWindows(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]CoreBusyWindow, error)
 	ListScheduleBlocks(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]CoreScheduleBlock, error)
+	ScheduleStoryExists(ctx context.Context, workspaceID, userID, storyID uuid.UUID) (bool, error)
 	CreateScheduleBlock(ctx context.Context, input CoreScheduleBlockInput) (CoreScheduleBlock, error)
 	UpdateScheduleBlock(ctx context.Context, input CoreScheduleBlockInput) (CoreScheduleBlock, error)
 	DeleteScheduleBlock(ctx context.Context, workspaceID, userID, blockID uuid.UUID) error
-	MarkConnectionSynced(ctx context.Context, workspaceID, connectionID uuid.UUID, syncedAt time.Time) error
-	MarkConnectionSyncFailed(ctx context.Context, workspaceID, connectionID uuid.UUID, message string) error
+	MarkConnectionSynced(ctx context.Context, workspaceID, connectionID, credentialGeneration uuid.UUID, syncedAt time.Time) error
+	MarkConnectionSyncFailed(ctx context.Context, workspaceID, connectionID, credentialGeneration uuid.UUID, message string) error
 }
 
 type Config struct {
@@ -105,16 +115,27 @@ func (s *Service) CreateConnectSession(ctx context.Context, workspaceID, userID 
 	return CoreConnectSession{AuthURL: authURL}, nil
 }
 
-func (s *Service) CompleteConnect(ctx context.Context, code, state string) (CoreConnection, string, error) {
+func (s *Service) CompleteConnect(
+	ctx context.Context,
+	callbackUserID uuid.UUID,
+	code, state string,
+) (CoreConnection, string, error) {
 	if s.repo == nil {
 		return CoreConnection{}, "", ErrCalendarNotConfigured
 	}
-	claims, err := s.verifyState(strings.TrimSpace(state))
+	claims, err := s.verifyActiveState(state)
 	if err != nil {
 		return CoreConnection{}, "", err
 	}
-	if !s.now().Before(time.Unix(claims.ExpiresAt, 0)) {
-		return CoreConnection{}, "", fmt.Errorf("%w: expired", ErrInvalidCalendarState)
+	if callbackUserID == uuid.Nil || claims.UserID != callbackUserID {
+		return CoreConnection{}, "", ErrCalendarAccessDenied
+	}
+	isMember, err := s.repo.WorkspaceMemberExists(ctx, claims.WorkspaceID, claims.UserID)
+	if err != nil {
+		return CoreConnection{}, "", err
+	}
+	if !isMember {
+		return CoreConnection{}, "", ErrCalendarAccessDenied
 	}
 	provider, err := s.provider(claims.Provider)
 	if err != nil {
@@ -124,18 +145,23 @@ func (s *Service) CompleteConnect(ctx context.Context, code, state string) (Core
 	if err != nil {
 		return CoreConnection{}, "", err
 	}
+	token, err = s.withRetainedRefreshToken(ctx, claims, token)
+	if err != nil {
+		return CoreConnection{}, "", err
+	}
 	payload, err := s.encryptTokenPayload(token)
 	if err != nil {
 		return CoreConnection{}, "", err
 	}
 	connection, err := s.repo.UpsertConnection(ctx, CoreConnectionUpsert{
-		WorkspaceID:    claims.WorkspaceID,
-		UserID:         claims.UserID,
-		Provider:       claims.Provider,
-		ConnectedEmail: strings.TrimSpace(token.ConnectedEmail),
-		Timezone:       fallbackTimezone(token.Timezone),
-		TokenPayload:   payload,
-		Scopes:         token.Scopes,
+		WorkspaceID:       claims.WorkspaceID,
+		UserID:            claims.UserID,
+		Provider:          claims.Provider,
+		ProviderAccountID: strings.TrimSpace(token.ProviderAccountID),
+		ConnectedEmail:    strings.TrimSpace(token.ConnectedEmail),
+		Timezone:          fallbackTimezone(token.Timezone),
+		TokenPayload:      payload,
+		Scopes:            token.Scopes,
 	})
 	if err != nil {
 		return CoreConnection{}, "", err
@@ -144,6 +170,60 @@ func (s *Service) CompleteConnect(ctx context.Context, code, state string) (Core
 		s.log.Error(ctx, "failed to sync calendar connection after connect", "err", err, "connection_id", connection.ID)
 	}
 	return connection, s.workspaceCalendarURL(claims.WorkspaceSlug, "connected=1"), nil
+}
+
+func (s *Service) withRetainedRefreshToken(
+	ctx context.Context,
+	claims stateClaims,
+	token ProviderToken,
+) (ProviderToken, error) {
+	if strings.TrimSpace(token.AccessToken) == "" ||
+		strings.TrimSpace(token.ProviderAccountID) == "" ||
+		strings.TrimSpace(token.ConnectedEmail) == "" {
+		return ProviderToken{}, ErrCalendarCredentialsIncomplete
+	}
+	if strings.TrimSpace(token.RefreshToken) != "" {
+		return token, nil
+	}
+
+	existing, err := s.repo.GetActiveConnection(ctx, claims.WorkspaceID, claims.UserID, claims.Provider)
+	if err != nil {
+		if errors.Is(err, ErrCalendarNotFound) {
+			return ProviderToken{}, ErrCalendarCredentialsIncomplete
+		}
+		return ProviderToken{}, err
+	}
+	if strings.TrimSpace(existing.ProviderAccountID) == "" ||
+		existing.ProviderAccountID != token.ProviderAccountID {
+		return ProviderToken{}, ErrCalendarCredentialsIncomplete
+	}
+	previousToken, err := s.decryptTokenPayload(existing.TokenPayload)
+	if err != nil || strings.TrimSpace(previousToken.RefreshToken) == "" {
+		return ProviderToken{}, ErrCalendarCredentialsIncomplete
+	}
+	token.RefreshToken = previousToken.RefreshToken
+	return token, nil
+}
+
+// CalendarCallbackErrorURL turns a valid signed OAuth state into a safe
+// account-settings redirect without reflecting provider error text.
+func (s *Service) CalendarCallbackErrorURL(state string, callbackUserID uuid.UUID, code string) (string, error) {
+	claims, err := s.verifyActiveState(state)
+	if err != nil {
+		return "", err
+	}
+	if callbackUserID == uuid.Nil || claims.UserID != callbackUserID {
+		return "", ErrCalendarAccessDenied
+	}
+	switch code {
+	case "access_denied", "connection_failed":
+	default:
+		code = "connection_failed"
+	}
+	return s.workspaceCalendarURL(
+		claims.WorkspaceSlug,
+		"calendar_error="+url.QueryEscape(code),
+	), nil
 }
 
 func (s *Service) RevokeConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) error {
@@ -157,12 +237,9 @@ func (s *Service) SyncConnection(ctx context.Context, workspaceID, userID, conne
 	if s.repo == nil {
 		return ErrCalendarNotConfigured
 	}
-	connection, err := s.repo.GetConnection(ctx, workspaceID, connectionID)
+	connection, err := s.repo.GetOwnedConnection(ctx, workspaceID, userID, connectionID)
 	if err != nil {
 		return err
-	}
-	if connection.UserID != userID {
-		return ErrCalendarNotFound
 	}
 	return s.syncConnection(ctx, connection)
 }
@@ -201,12 +278,53 @@ func (s *Service) ListSchedule(ctx context.Context, workspaceID, userID uuid.UUI
 	}, nil
 }
 
+func (s *Service) ListCalendarView(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (CoreCalendarView, error) {
+	if s.repo == nil {
+		return CoreCalendarView{}, ErrCalendarNotConfigured
+	}
+	if err := validateScheduleRange(startAt, endAt); err != nil {
+		return CoreCalendarView{}, err
+	}
+	events, err := s.repo.ListCalendarEvents(ctx, workspaceID, userID, startAt, endAt)
+	if err != nil {
+		return CoreCalendarView{}, err
+	}
+	busyWindows, err := s.repo.ListBusyWindows(ctx, workspaceID, userID, startAt, endAt)
+	if err != nil {
+		return CoreCalendarView{}, err
+	}
+	blocks, err := s.repo.ListScheduleBlocks(ctx, workspaceID, userID, startAt, endAt)
+	if err != nil {
+		return CoreCalendarView{}, err
+	}
+	return CoreCalendarView{
+		StartAt:     startAt.UTC(),
+		EndAt:       endAt.UTC(),
+		Events:      events,
+		BusyWindows: busyWindows,
+		Blocks:      blocks,
+	}, nil
+}
+
+func (s *Service) GetCalendarEvent(ctx context.Context, workspaceID, userID, eventID uuid.UUID) (CoreCalendarEvent, error) {
+	if s.repo == nil {
+		return CoreCalendarEvent{}, ErrCalendarNotConfigured
+	}
+	if eventID == uuid.Nil {
+		return CoreCalendarEvent{}, ErrCalendarEventNotFound
+	}
+	return s.repo.GetCalendarEvent(ctx, workspaceID, userID, eventID)
+}
+
 func (s *Service) CreateScheduleBlock(ctx context.Context, input CoreScheduleBlockInput) (CoreScheduleBlock, error) {
 	if s.repo == nil {
 		return CoreScheduleBlock{}, ErrCalendarNotConfigured
 	}
-	normalized, err := normalizeScheduleBlockInput(input)
+	normalized, err := normalizeScheduleBlockInput(input, s.now())
 	if err != nil {
+		return CoreScheduleBlock{}, err
+	}
+	if err := s.validateScheduleStory(ctx, normalized); err != nil {
 		return CoreScheduleBlock{}, err
 	}
 	return s.repo.CreateScheduleBlock(ctx, normalized)
@@ -219,8 +337,11 @@ func (s *Service) UpdateScheduleBlock(ctx context.Context, input CoreScheduleBlo
 	if input.ID == uuid.Nil {
 		return CoreScheduleBlock{}, ErrInvalidScheduleBlock
 	}
-	normalized, err := normalizeScheduleBlockInput(input)
+	normalized, err := normalizeScheduleBlockInput(input, s.now())
 	if err != nil {
+		return CoreScheduleBlock{}, err
+	}
+	if err := s.validateScheduleStory(ctx, normalized); err != nil {
 		return CoreScheduleBlock{}, err
 	}
 	normalized.ID = input.ID
@@ -237,18 +358,36 @@ func (s *Service) DeleteScheduleBlock(ctx context.Context, workspaceID, userID, 
 	return s.repo.DeleteScheduleBlock(ctx, workspaceID, userID, blockID)
 }
 
-func (s *Service) syncConnection(ctx context.Context, connection CoreConnection) error {
-	provider, err := s.provider(connection.Provider)
+func (s *Service) validateScheduleStory(ctx context.Context, input CoreScheduleBlockInput) error {
+	if input.StoryID == nil {
+		return nil
+	}
+	exists, err := s.repo.ScheduleStoryExists(ctx, input.WorkspaceID, input.UserID, *input.StoryID)
 	if err != nil {
 		return err
+	}
+	if !exists {
+		return ErrInvalidScheduleBlock
+	}
+	return nil
+}
+
+func (s *Service) syncConnection(ctx context.Context, connection CoreConnection) error {
+	connection, err := s.repo.BeginConnectionSync(ctx, connection)
+	if err != nil {
+		return err
+	}
+	provider, err := s.provider(connection.Provider)
+	if err != nil {
+		return s.failConnectionSync(ctx, connection, err)
 	}
 	token, err := s.decryptTokenPayload(connection.TokenPayload)
 	if err != nil {
-		return err
+		return s.failConnectionSync(ctx, connection, err)
 	}
 	timeMin := s.now().Add(defaultSyncLookback)
 	timeMax := s.now().Add(defaultSyncLookahead)
-	windows, err := provider.ListBusyWindows(ctx, token, BusyWindowInput{
+	snapshot, err := provider.SyncCalendar(ctx, token, BusyWindowInput{
 		ConnectionID: connection.ID,
 		WorkspaceID:  connection.WorkspaceID,
 		UserID:       connection.UserID,
@@ -257,20 +396,62 @@ func (s *Service) syncConnection(ctx context.Context, connection CoreConnection)
 		Timezone:     fallbackTimezone(connection.Timezone),
 	})
 	if err != nil {
-		message := err.Error()
-		_ = s.repo.MarkConnectionSyncFailed(ctx, connection.WorkspaceID, connection.ID, message)
-		return err
+		return s.failConnectionSync(ctx, connection, err)
 	}
-	for i := range windows {
-		windows[i].ConnectionID = connection.ID
-		windows[i].WorkspaceID = connection.WorkspaceID
-		windows[i].UserID = connection.UserID
-		windows[i].Provider = connection.Provider
+	for i := range snapshot.Events {
+		snapshot.Events[i].ConnectionID = connection.ID
+		snapshot.Events[i].WorkspaceID = connection.WorkspaceID
+		snapshot.Events[i].UserID = connection.UserID
+		snapshot.Events[i].Provider = connection.Provider
+		if strings.TrimSpace(snapshot.Events[i].CalendarID) == "" {
+			snapshot.Events[i].CalendarID = "primary"
+		}
+		if strings.TrimSpace(snapshot.Events[i].Visibility) == "" {
+			snapshot.Events[i].Visibility = "default"
+		}
+		if snapshot.Events[i].Attendees == nil {
+			snapshot.Events[i].Attendees = []CoreCalendarParticipant{}
+		}
 	}
-	if err := s.repo.ReplaceBusyWindows(ctx, connection, windows); err != nil {
-		return err
+	for i := range snapshot.BusyWindows {
+		snapshot.BusyWindows[i].ConnectionID = connection.ID
+		snapshot.BusyWindows[i].WorkspaceID = connection.WorkspaceID
+		snapshot.BusyWindows[i].UserID = connection.UserID
+		snapshot.BusyWindows[i].Provider = connection.Provider
 	}
-	return s.repo.MarkConnectionSynced(ctx, connection.WorkspaceID, connection.ID, s.now().UTC())
+	if err := s.repo.ReplaceCalendarSnapshot(ctx, connection, snapshot); err != nil {
+		if errors.Is(err, ErrCalendarSyncSuperseded) {
+			return err
+		}
+		return s.failConnectionSync(ctx, connection, err)
+	}
+	return s.repo.MarkConnectionSynced(
+		ctx,
+		connection.WorkspaceID,
+		connection.ID,
+		connection.CredentialGeneration,
+		s.now().UTC(),
+	)
+}
+
+func (s *Service) failConnectionSync(ctx context.Context, connection CoreConnection, syncErr error) error {
+	if s.log != nil {
+		s.log.Error(ctx, "calendar sync failed", "err", syncErr, "connection_id", connection.ID)
+	}
+	markErr := s.repo.MarkConnectionSyncFailed(
+		ctx,
+		connection.WorkspaceID,
+		connection.ID,
+		connection.CredentialGeneration,
+		"Calendar could not be refreshed.",
+	)
+	if markErr == nil {
+		return syncErr
+	}
+	if errors.Is(markErr, ErrCalendarSyncSuperseded) {
+		return markErr
+	}
+	return errors.Join(syncErr, markErr)
 }
 
 func (s *Service) provider(provider Provider) (CalendarProvider, error) {
@@ -300,6 +481,9 @@ func (s *Service) signState(claims stateClaims) (string, error) {
 }
 
 func (s *Service) verifyState(value string) (stateClaims, error) {
+	if strings.TrimSpace(s.cfg.SecretKey) == "" {
+		return stateClaims{}, ErrCalendarNotConfigured
+	}
 	parts := strings.Split(value, ".")
 	if len(parts) != 2 {
 		return stateClaims{}, ErrInvalidCalendarState
@@ -317,6 +501,23 @@ func (s *Service) verifyState(value string) (stateClaims, error) {
 	var claims stateClaims
 	if err := json.Unmarshal(payloadBytes, &claims); err != nil {
 		return stateClaims{}, err
+	}
+	return claims, nil
+}
+
+func (s *Service) verifyActiveState(value string) (stateClaims, error) {
+	claims, err := s.verifyState(strings.TrimSpace(value))
+	if err != nil {
+		return stateClaims{}, err
+	}
+	if claims.WorkspaceID == uuid.Nil ||
+		claims.UserID == uuid.Nil ||
+		claims.Provider != ProviderGoogle ||
+		strings.TrimSpace(claims.WorkspaceSlug) == "" {
+		return stateClaims{}, ErrInvalidCalendarState
+	}
+	if !s.now().Before(time.Unix(claims.ExpiresAt, 0)) {
+		return stateClaims{}, fmt.Errorf("%w: expired", ErrInvalidCalendarState)
 	}
 	return claims, nil
 }
@@ -382,7 +583,7 @@ func (s *Service) workspaceCalendarURL(workspaceSlug, query string) string {
 	if base == "" {
 		base = "/"
 	}
-	path := fmt.Sprintf("%s/%s/settings/workspace/integrations/calendar", base, url.PathEscape(workspaceSlug))
+	path := fmt.Sprintf("%s/%s/settings/account/calendar", base, url.PathEscape(workspaceSlug))
 	if strings.TrimSpace(query) == "" {
 		return path
 	}
@@ -407,12 +608,15 @@ func validateScheduleRange(startAt, endAt time.Time) error {
 	return nil
 }
 
-func normalizeScheduleBlockInput(input CoreScheduleBlockInput) (CoreScheduleBlockInput, error) {
+func normalizeScheduleBlockInput(input CoreScheduleBlockInput, now time.Time) (CoreScheduleBlockInput, error) {
 	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil {
 		return CoreScheduleBlockInput{}, ErrInvalidScheduleBlock
 	}
 	if err := validateScheduleRange(input.StartAt, input.EndAt); err != nil {
 		return CoreScheduleBlockInput{}, err
+	}
+	if input.StartAt.Before(now.Add(defaultSyncLookback)) || input.EndAt.After(now.Add(defaultSyncLookahead)) {
+		return CoreScheduleBlockInput{}, ErrInvalidScheduleRange
 	}
 	input.Title = strings.TrimSpace(input.Title)
 	if input.Title == "" {

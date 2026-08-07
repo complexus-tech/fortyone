@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tailwind-config";
-@import "tailwind-config/brand-theme";
 @import "ui/styles.css";
 @plugin "@tailwindcss/typography";
 
@@ -16,7 +15,7 @@
 }
 
 :root {
-  --nprogress-color: #ea6060;
+  --nprogress-color: var(--color-primary);
   --landing-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 

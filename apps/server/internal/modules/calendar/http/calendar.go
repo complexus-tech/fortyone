@@ -23,6 +23,7 @@ func New(log *logger.Logger, service *calendar.Service) *Handlers {
 }
 
 func (h *Handlers) GetIntegration(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Cache-Control", "private, no-store")
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
@@ -39,6 +40,7 @@ func (h *Handlers) GetIntegration(ctx context.Context, w http.ResponseWriter, r 
 }
 
 func (h *Handlers) CreateConnectSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Cache-Control", "private, no-store")
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
@@ -93,6 +95,7 @@ func (h *Handlers) RevokeConnection(ctx context.Context, w http.ResponseWriter, 
 }
 
 func (h *Handlers) GetSchedule(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Cache-Control", "private, no-store")
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
@@ -105,11 +108,32 @@ func (h *Handlers) GetSchedule(ctx context.Context, w http.ResponseWriter, r *ht
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	schedule, err := h.service.ListSchedule(ctx, workspace.ID, userID, startAt, endAt)
+	schedule, err := h.service.ListCalendarView(ctx, workspace.ID, userID, startAt, endAt)
 	if err != nil {
 		return web.RespondError(ctx, w, err, h.statusCode(err))
 	}
 	return web.Respond(ctx, w, toAppSchedule(schedule), http.StatusOK)
+}
+
+func (h *Handlers) GetCalendarEvent(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Cache-Control", "private, no-store")
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	eventID, err := uuid.Parse(web.Params(r, "eventId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	event, err := h.service.GetCalendarEvent(ctx, workspace.ID, userID, eventID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, h.statusCode(err))
+	}
+	return web.Respond(ctx, w, toAppCalendarEvent(event), http.StatusOK)
 }
 
 func (h *Handlers) CreateScheduleBlock(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -176,15 +200,34 @@ func (h *Handlers) DeleteScheduleBlock(ctx context.Context, w http.ResponseWrite
 }
 
 func (h *Handlers) HandleGoogleCallback(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Cache-Control", "private, no-store")
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	code := r.URL.Query().Get("code")
 	state := r.URL.Query().Get("state")
 	providerError := r.URL.Query().Get("error")
 	if providerError != "" {
-		return web.RespondError(ctx, w, errors.New(providerError), http.StatusBadRequest)
+		errorCode := "connection_failed"
+		if providerError == "access_denied" {
+			errorCode = "access_denied"
+		}
+		redirectURL, err := h.service.CalendarCallbackErrorURL(state, userID, errorCode)
+		if err != nil {
+			return web.RespondError(ctx, w, err, h.statusCode(err))
+		}
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+		return nil
 	}
-	_, redirectURL, err := h.service.CompleteConnect(ctx, code, state)
+	_, redirectURL, err := h.service.CompleteConnect(ctx, userID, code, state)
 	if err != nil {
-		return web.RespondError(ctx, w, err, h.statusCode(err))
+		failureURL, redirectErr := h.service.CalendarCallbackErrorURL(state, userID, "connection_failed")
+		if redirectErr != nil {
+			return web.RespondError(ctx, w, err, h.statusCode(err))
+		}
+		http.Redirect(w, r, failureURL, http.StatusTemporaryRedirect)
+		return nil
 	}
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 	return nil
@@ -198,10 +241,20 @@ func (h *Handlers) statusCode(err error) int {
 		return http.StatusBadRequest
 	case errors.Is(err, calendar.ErrCalendarNotFound):
 		return http.StatusNotFound
+	case errors.Is(err, calendar.ErrCalendarAccessDenied):
+		return http.StatusForbidden
+	case errors.Is(err, calendar.ErrCalendarCredentialsIncomplete):
+		return http.StatusBadRequest
+	case errors.Is(err, calendar.ErrCalendarEventNotFound):
+		return http.StatusNotFound
+	case errors.Is(err, calendar.ErrCalendarSyncSuperseded):
+		return http.StatusConflict
 	case errors.Is(err, calendar.ErrInvalidScheduleRange):
 		return http.StatusBadRequest
 	case errors.Is(err, calendar.ErrInvalidScheduleBlock):
 		return http.StatusBadRequest
+	case errors.Is(err, calendar.ErrCalendarScheduleConflict):
+		return http.StatusConflict
 	case errors.Is(err, calendar.ErrCalendarScheduleBlockNotFound):
 		return http.StatusNotFound
 	default:

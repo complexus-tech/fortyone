@@ -16,7 +16,7 @@ export const SectionHeader = ({
   className,
 }: SectionHeaderProps) => {
   return (
-    <Box className={cn("border-border border-b px-6 py-4", className)}>
+    <Box className={cn("border-border border-b-[0.5px] px-6 py-4", className)}>
       <Flex align="center" gap={2} justify="between">
         <Box>
           {title ? (

@@ -27,9 +27,10 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/workspaces/{workspaceSlug}/integrations/calendar/{connectionId}/sync", h.SyncConnection, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/integrations/calendar/{connectionId}", h.RevokeConnection, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/calendar/schedule", h.GetSchedule, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/calendar/events/{eventId}", h.GetCalendarEvent, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/calendar/schedule-blocks", h.CreateScheduleBlock, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/calendar/schedule-blocks/{blockId}", h.UpdateScheduleBlock, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/calendar/schedule-blocks/{blockId}", h.DeleteScheduleBlock, auth, workspace)
 
-	app.Get("/integrations/calendar/google/callback", h.HandleGoogleCallback)
+	app.Get("/integrations/calendar/google/callback", h.HandleGoogleCallback, auth)
 }

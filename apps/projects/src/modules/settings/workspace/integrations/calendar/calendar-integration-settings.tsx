@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
-import { Badge, Box, Button, Dialog, Flex, Menu, Text } from "ui";
+import { toast } from "sonner";
+import { Badge, Box, Button, Dialog, Flex, Menu, Skeleton, Text } from "ui";
 import {
   CalendarIcon,
   ClockIcon,
@@ -69,25 +70,41 @@ const formatExactDate = (value?: string | null) => {
 
 export const CalendarIntegrationSettings = () => {
   const searchParams = useSearchParams();
-  const { data: integration } = useCalendarIntegration();
+  const integrationQuery = useCalendarIntegration();
+  const integration = integrationQuery.data;
   const { withWorkspace } = useWorkspacePath();
   const createConnectSession = useCreateCalendarConnectSession();
   const syncConnection = useSyncCalendarConnection();
   const revokeConnection = useRevokeCalendarConnection();
   const [disconnectConnection, setDisconnectConnection] =
     useState<CalendarConnection | null>(null);
+  const handledCallbackResult = useRef<string | null>(null);
 
-  const connection = useMemo(
-    () => integration?.connections.find((item) => item.provider === "google"),
-    [integration?.connections],
+  const connection = integration?.connections.find(
+    (item) => item.provider === "google",
   );
 
   useEffect(() => {
-    if (searchParams.get("connected") !== "1") {
+    const connected = searchParams.get("connected") === "1";
+    const calendarError = searchParams.get("calendar_error");
+    if (!connected && !calendarError) {
       return;
+    }
+    const callbackResult = connected ? "connected" : calendarError;
+    if (handledCallbackResult.current === callbackResult) {
+      return;
+    }
+    handledCallbackResult.current = callbackResult;
+    if (connected) {
+      toast.success("Google Calendar connected");
+    } else if (calendarError === "access_denied") {
+      toast.error("Google Calendar connection was cancelled.");
+    } else {
+      toast.error("Google Calendar could not be connected. Please try again.");
     }
     const url = new URL(window.location.href);
     url.searchParams.delete("connected");
+    url.searchParams.delete("calendar_error");
     window.history.replaceState({}, "", url.toString());
   }, [searchParams]);
 
@@ -100,31 +117,75 @@ export const CalendarIntegrationSettings = () => {
       <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           action={
-            <Button
-              color="invert"
-              loading={createConnectSession.isPending}
-              onClick={() => {
-                createConnectSession.mutate();
-              }}
-            >
-              {connection
-                ? "Reconnect Google Calendar"
-                : "Connect Google Calendar"}
-            </Button>
+            <>
+              {integrationQuery.isPending ? (
+                <Skeleton className="h-10 w-48" />
+              ) : null}
+              {integrationQuery.isError ? (
+                <Button
+                  color="tertiary"
+                  loading={integrationQuery.isFetching}
+                  onClick={() => {
+                    void integrationQuery.refetch();
+                  }}
+                  variant="outline"
+                >
+                  Try again
+                </Button>
+              ) : null}
+              {!integrationQuery.isPending && !integrationQuery.isError ? (
+                <Button
+                  color="invert"
+                  loading={createConnectSession.isPending}
+                  onClick={() => {
+                    createConnectSession.mutate();
+                  }}
+                >
+                  {connection
+                    ? "Reconnect Google Calendar"
+                    : "Connect Google Calendar"}
+                </Button>
+              ) : null}
+            </>
           }
-          description="Connect Google Calendar so FortyOne can understand real availability before recommending schedules and deadlines."
+          description="Connect your primary Google Calendar to see meetings alongside FortyOne work and help future plans respect that calendar's availability."
           title="Connected calendar"
         />
 
-        {!connection ? (
+        {integrationQuery.isPending ? (
+          <Box
+            aria-label="Loading calendar connection"
+            className="px-6 py-8"
+            role="status"
+          >
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="mt-3 h-4 w-96 max-w-full" />
+          </Box>
+        ) : null}
+        {integrationQuery.isError ? (
+          <Box className="px-6 py-8" role="alert">
+            <Text className="font-medium">
+              Couldn&apos;t load your calendar connection
+            </Text>
+            <Text className="mt-1" color="muted">
+              Try again before connecting or changing calendar access.
+            </Text>
+          </Box>
+        ) : null}
+        {!integrationQuery.isPending &&
+        !integrationQuery.isError &&
+        !connection ? (
           <Box className="px-6 py-8">
             <Text className="font-medium">No calendar connected</Text>
             <Text className="mt-1" color="muted">
-              Connect Google Calendar to sync busy/free availability for future
-              schedule planning.
+              Connect your primary Google Calendar to bring its meetings into My
+              work and keep scheduled work clear of those commitments.
             </Text>
           </Box>
-        ) : (
+        ) : null}
+        {!integrationQuery.isPending &&
+        !integrationQuery.isError &&
+        connection ? (
           <Flex align="center" className="px-6 py-4" justify="between">
             <Flex align="center" gap={3}>
               <Flex
@@ -137,7 +198,8 @@ export const CalendarIntegrationSettings = () => {
               <Box>
                 <Text className="font-medium">{connection.connectedEmail}</Text>
                 <Text color="muted">
-                  Last synced {formatSyncedAt(connection.lastSyncedAt)}
+                  Primary calendar · Last synced{" "}
+                  {formatSyncedAt(connection.lastSyncedAt)}
                 </Text>
               </Box>
             </Flex>
@@ -157,6 +219,7 @@ export const CalendarIntegrationSettings = () => {
               <Menu>
                 <Menu.Button>
                   <Button
+                    aria-label="Calendar connection actions"
                     className="px-2"
                     color="tertiary"
                     leftIcon={<MoreHorizontalIcon />}
@@ -166,11 +229,15 @@ export const CalendarIntegrationSettings = () => {
                   <Menu.Group>
                     <Menu.Item
                       onSelect={() => {
-                        syncConnection.mutate(connection.id);
+                        syncConnection.mutate({
+                          connectionId: connection.id,
+                        });
                       }}
                     >
                       <ReloadIcon />
-                      Sync availability
+                      {connection.canReadEventDetails
+                        ? "Sync calendar"
+                        : "Sync availability"}
                     </Menu.Item>
                     <Menu.Item
                       onSelect={() => {
@@ -194,12 +261,12 @@ export const CalendarIntegrationSettings = () => {
               </Menu>
             </Flex>
           </Flex>
-        )}
+        ) : null}
       </Box>
 
       <Box className="border-border bg-surface mt-6 rounded-2xl border">
         <SectionHeader
-          description="FortyOne stores synced time ranges and visible event titles from your primary calendar. Private events stay hidden, and guests, notes, locations, and descriptions are not stored."
+          description="FortyOne keeps an owner-only cache of your primary calendar so My work can show titles, locations, meeting links, descriptions, and attendees. Private events remain Busy; teammates and managers receive availability only."
           title="Calendar data"
         />
         <Box className="grid grid-cols-1 gap-3 px-6 py-5 md:grid-cols-2">
@@ -241,8 +308,8 @@ export const CalendarIntegrationSettings = () => {
       </Box>
 
       <Box className="mt-6">
-        <Link href={withWorkspace("/settings/workspace/integrations")}>
-          <Text color="muted">Back to integrations</Text>
+        <Link href={withWorkspace("/my-work?layout=calendar")}>
+          <Text color="muted">View calendar in My work</Text>
         </Link>
       </Box>
 
@@ -260,8 +327,8 @@ export const CalendarIntegrationSettings = () => {
           </Dialog.Header>
           <Dialog.Body>
             <Text color="muted">
-              FortyOne will stop syncing availability from this Google Calendar
-              connection. Existing busy windows will stop being refreshed.
+              FortyOne will stop syncing this primary Google Calendar and remove
+              its events from your My work calendar.
             </Text>
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-3 border-0 pt-2">

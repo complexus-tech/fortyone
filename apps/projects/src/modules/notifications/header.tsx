@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui";
 import { ExpandableSearchHeader, MobileMenuButton } from "@/components/shared";
+import { useWorkspacePath } from "@/hooks";
 import { useNotifications } from "./hooks/notifications";
 import { useUnreadNotifications } from "./hooks/unread";
 import { useReadAllNotificationsMutation } from "./hooks/read-all-mutation";
@@ -28,6 +29,7 @@ export const NotificationsHeader = ({
 }) => {
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isDeletingRead, setIsDeletingRead] = useState(false);
+  const { withWorkspace } = useWorkspacePath();
   const { data: notifications = [] } = useNotifications();
   const { data: unreadNotifications = 0 } = useUnreadNotifications();
   const { mutate: markAllAsRead } = useReadAllNotificationsMutation();
@@ -112,7 +114,7 @@ export const NotificationsHeader = ({
                   <Menu.Item>
                     <Link
                       className="flex items-center gap-2"
-                      href="/settings/account/notifications"
+                      href={withWorkspace("/settings/account/notifications")}
                     >
                       <SettingsIcon className="h-5 w-auto" />
                       Notification settings

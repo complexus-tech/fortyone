@@ -2,6 +2,7 @@ package google
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"golang.org/x/oauth2"
@@ -34,15 +35,12 @@ func TestCalendarTokenScopesFallsBackWhenGoogleOmitsScopeField(t *testing.T) {
 	}
 }
 
-func TestCalendarIdentityFromTokenAllowsMissingIDToken(t *testing.T) {
+func TestCalendarIdentityFromTokenRejectsMissingIDToken(t *testing.T) {
 	t.Parallel()
 
 	service := &Service{}
-	identity, err := service.calendarIdentityFromToken(context.Background(), &oauth2.Token{})
-	if err != nil {
-		t.Fatalf("calendarIdentityFromToken returned error: %v", err)
-	}
-	if identity.Email != "" {
-		t.Fatalf("expected empty identity when token has no id_token: %#v", identity)
+	_, err := service.calendarIdentityFromToken(context.Background(), &oauth2.Token{})
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Fatalf("expected invalid token, got %v", err)
 	}
 }

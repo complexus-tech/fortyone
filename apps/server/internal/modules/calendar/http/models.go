@@ -30,10 +30,61 @@ type AppCreateConnectSession struct {
 }
 
 type AppSchedule struct {
-	StartAt     time.Time          `json:"startAt"`
-	EndAt       time.Time          `json:"endAt"`
-	BusyWindows []AppBusyWindow    `json:"busyWindows"`
-	Blocks      []AppScheduleBlock `json:"blocks"`
+	StartAt     time.Time                 `json:"startAt"`
+	EndAt       time.Time                 `json:"endAt"`
+	Events      []AppCalendarEventSummary `json:"events"`
+	BusyWindows []AppBusyWindow           `json:"busyWindows"`
+	Blocks      []AppScheduleBlock        `json:"blocks"`
+}
+
+type AppCalendarEventSummary struct {
+	ID         uuid.UUID `json:"id"`
+	Provider   string    `json:"provider"`
+	CalendarID string    `json:"calendarId"`
+	Title      *string   `json:"title,omitempty"`
+	Location   *string   `json:"location,omitempty"`
+	MeetingURL *string   `json:"meetingUrl,omitempty"`
+	HTMLLink   *string   `json:"htmlLink,omitempty"`
+	StartAt    time.Time `json:"startAt"`
+	EndAt      time.Time `json:"endAt"`
+	IsAllDay   bool      `json:"isAllDay"`
+	StartDate  *string   `json:"startDate,omitempty"`
+	EndDate    *string   `json:"endDate,omitempty"`
+	IsPrivate  bool      `json:"isPrivate"`
+}
+
+type AppCalendarOrganizer struct {
+	DisplayName string `json:"displayName,omitempty"`
+	Email       string `json:"email,omitempty"`
+}
+
+type AppCalendarAttendee struct {
+	DisplayName    string `json:"displayName,omitempty"`
+	Email          string `json:"email,omitempty"`
+	ResponseStatus string `json:"responseStatus,omitempty"`
+	Optional       bool   `json:"optional"`
+	Organizer      bool   `json:"organizer"`
+	Self           bool   `json:"self"`
+}
+
+type AppCalendarEvent struct {
+	ID               uuid.UUID             `json:"id"`
+	Provider         string                `json:"provider"`
+	CalendarID       string                `json:"calendarId"`
+	Title            *string               `json:"title,omitempty"`
+	Description      *string               `json:"description,omitempty"`
+	Location         *string               `json:"location,omitempty"`
+	MeetingURL       *string               `json:"meetingUrl,omitempty"`
+	HTMLLink         *string               `json:"htmlLink,omitempty"`
+	Organizer        *AppCalendarOrganizer `json:"organizer,omitempty"`
+	Attendees        []AppCalendarAttendee `json:"attendees"`
+	AttendeesOmitted bool                  `json:"attendeesOmitted"`
+	StartAt          time.Time             `json:"startAt"`
+	EndAt            time.Time             `json:"endAt"`
+	IsAllDay         bool                  `json:"isAllDay"`
+	StartDate        *string               `json:"startDate,omitempty"`
+	EndDate          *string               `json:"endDate,omitempty"`
+	IsPrivate        bool                  `json:"isPrivate"`
 }
 
 type AppBusyWindow struct {
@@ -49,21 +100,22 @@ type AppBusyWindow struct {
 }
 
 type AppScheduleBlock struct {
-	ID         uuid.UUID  `json:"id"`
-	StoryID    *uuid.UUID `json:"storyId,omitempty"`
-	StoryTitle *string    `json:"storyTitle,omitempty"`
-	StoryCode  *string    `json:"storyCode,omitempty"`
-	TeamID     *uuid.UUID `json:"teamId,omitempty"`
-	TeamName   *string    `json:"teamName,omitempty"`
-	TeamCode   *string    `json:"teamCode,omitempty"`
-	BlockType  string     `json:"blockType"`
-	Title      string     `json:"title"`
-	StartAt    time.Time  `json:"startAt"`
-	EndAt      time.Time  `json:"endAt"`
-	IsLocked   bool       `json:"isLocked"`
-	Source     string     `json:"source"`
-	CreatedAt  time.Time  `json:"createdAt"`
-	UpdatedAt  time.Time  `json:"updatedAt"`
+	ID          uuid.UUID  `json:"id"`
+	StoryID     *uuid.UUID `json:"storyId,omitempty"`
+	StoryTitle  *string    `json:"storyTitle,omitempty"`
+	StoryCode   *string    `json:"storyCode,omitempty"`
+	TeamID      *uuid.UUID `json:"teamId,omitempty"`
+	TeamName    *string    `json:"teamName,omitempty"`
+	TeamCode    *string    `json:"teamCode,omitempty"`
+	BlockType   string     `json:"blockType"`
+	Title       string     `json:"title"`
+	StartAt     time.Time  `json:"startAt"`
+	EndAt       time.Time  `json:"endAt"`
+	HasConflict bool       `json:"hasConflict"`
+	IsLocked    bool       `json:"isLocked"`
+	Source      string     `json:"source"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
 }
 
 type AppScheduleBlockRequest struct {
@@ -103,12 +155,104 @@ func toAppConnection(connection calendar.CoreConnection) AppConnection {
 	}
 }
 
-func toAppSchedule(schedule calendar.CoreSchedule) AppSchedule {
+func toAppSchedule(schedule calendar.CoreCalendarView) AppSchedule {
 	return AppSchedule{
 		StartAt:     schedule.StartAt,
 		EndAt:       schedule.EndAt,
+		Events:      toAppCalendarEventSummaries(schedule.Events),
 		BusyWindows: toAppBusyWindows(schedule.BusyWindows),
 		Blocks:      toAppScheduleBlocks(schedule.Blocks),
+	}
+}
+
+func toAppCalendarEventSummaries(events []calendar.CoreCalendarEventSummary) []AppCalendarEventSummary {
+	out := make([]AppCalendarEventSummary, len(events))
+	for i, event := range events {
+		if event.IsPrivate {
+			out[i] = AppCalendarEventSummary{
+				ID:         event.ID,
+				Provider:   string(event.Provider),
+				CalendarID: event.CalendarID,
+				StartAt:    event.StartAt,
+				EndAt:      event.EndAt,
+				IsAllDay:   event.IsAllDay,
+				StartDate:  event.StartDate,
+				EndDate:    event.EndDate,
+				IsPrivate:  true,
+			}
+			continue
+		}
+		out[i] = AppCalendarEventSummary{
+			ID:         event.ID,
+			Provider:   string(event.Provider),
+			CalendarID: event.CalendarID,
+			Title:      event.Title,
+			Location:   event.Location,
+			MeetingURL: event.MeetingURL,
+			HTMLLink:   event.HTMLLink,
+			StartAt:    event.StartAt,
+			EndAt:      event.EndAt,
+			IsAllDay:   event.IsAllDay,
+			StartDate:  event.StartDate,
+			EndDate:    event.EndDate,
+			IsPrivate:  event.IsPrivate,
+		}
+	}
+	return out
+}
+
+func toAppCalendarEvent(event calendar.CoreCalendarEvent) AppCalendarEvent {
+	if event.IsPrivate {
+		return AppCalendarEvent{
+			ID:         event.ID,
+			Provider:   string(event.Provider),
+			CalendarID: event.CalendarID,
+			Attendees:  []AppCalendarAttendee{},
+			StartAt:    event.StartAt,
+			EndAt:      event.EndAt,
+			IsAllDay:   event.IsAllDay,
+			StartDate:  event.StartDate,
+			EndDate:    event.EndDate,
+			IsPrivate:  true,
+		}
+	}
+
+	attendees := make([]AppCalendarAttendee, len(event.Attendees))
+	for i, attendee := range event.Attendees {
+		attendees[i] = AppCalendarAttendee{
+			DisplayName:    attendee.DisplayName,
+			Email:          attendee.Email,
+			ResponseStatus: attendee.ResponseStatus,
+			Optional:       attendee.Optional,
+			Organizer:      attendee.Organizer,
+			Self:           attendee.Self,
+		}
+	}
+	var organizer *AppCalendarOrganizer
+	if event.Organizer != nil {
+		organizer = &AppCalendarOrganizer{
+			DisplayName: event.Organizer.DisplayName,
+			Email:       event.Organizer.Email,
+		}
+	}
+	return AppCalendarEvent{
+		ID:               event.ID,
+		Provider:         string(event.Provider),
+		CalendarID:       event.CalendarID,
+		Title:            event.Title,
+		Description:      event.Description,
+		Location:         event.Location,
+		MeetingURL:       event.MeetingURL,
+		HTMLLink:         event.HTMLLink,
+		Organizer:        organizer,
+		Attendees:        attendees,
+		AttendeesOmitted: event.AttendeesOmitted,
+		StartAt:          event.StartAt,
+		EndAt:            event.EndAt,
+		IsAllDay:         event.IsAllDay,
+		StartDate:        event.StartDate,
+		EndDate:          event.EndDate,
+		IsPrivate:        event.IsPrivate,
 	}
 }
 
@@ -140,20 +284,21 @@ func toAppScheduleBlocks(blocks []calendar.CoreScheduleBlock) []AppScheduleBlock
 
 func toAppScheduleBlock(block calendar.CoreScheduleBlock) AppScheduleBlock {
 	return AppScheduleBlock{
-		ID:         block.ID,
-		StoryID:    block.StoryID,
-		StoryTitle: block.StoryTitle,
-		StoryCode:  block.StoryCode,
-		TeamID:     block.TeamID,
-		TeamName:   block.TeamName,
-		TeamCode:   block.TeamCode,
-		BlockType:  string(block.BlockType),
-		Title:      block.Title,
-		StartAt:    block.StartAt,
-		EndAt:      block.EndAt,
-		IsLocked:   block.IsLocked,
-		Source:     string(block.Source),
-		CreatedAt:  block.CreatedAt,
-		UpdatedAt:  block.UpdatedAt,
+		ID:          block.ID,
+		StoryID:     block.StoryID,
+		StoryTitle:  block.StoryTitle,
+		StoryCode:   block.StoryCode,
+		TeamID:      block.TeamID,
+		TeamName:    block.TeamName,
+		TeamCode:    block.TeamCode,
+		BlockType:   string(block.BlockType),
+		Title:       block.Title,
+		StartAt:     block.StartAt,
+		EndAt:       block.EndAt,
+		HasConflict: block.HasConflict,
+		IsLocked:    block.IsLocked,
+		Source:      string(block.Source),
+		CreatedAt:   block.CreatedAt,
+		UpdatedAt:   block.UpdatedAt,
 	}
 }

@@ -170,8 +170,14 @@ export const calendarKeys = {
   all: (workspaceSlug: string) => ["calendar", workspaceSlug] as const,
   integration: (workspaceSlug: string) =>
     [...calendarKeys.all(workspaceSlug), "integration"] as const,
+  events: (workspaceSlug: string) =>
+    [...calendarKeys.all(workspaceSlug), "event"] as const,
+  event: (workspaceSlug: string, eventId: string) =>
+    [...calendarKeys.events(workspaceSlug), eventId] as const,
+  schedules: (workspaceSlug: string) =>
+    [...calendarKeys.all(workspaceSlug), "schedule"] as const,
   schedule: (workspaceSlug: string, startAt: string, endAt: string) =>
-    [...calendarKeys.all(workspaceSlug), "schedule", startAt, endAt] as const,
+    [...calendarKeys.schedules(workspaceSlug), startAt, endAt] as const,
 };
 
 export const integrationRequestKeys = {

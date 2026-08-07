@@ -1,4 +1,4 @@
-import { differenceInMinutes, startOfDay } from "date-fns";
+import { startOfDay } from "date-fns";
 
 export type CalendarLayoutEvent = {
   id: string;
@@ -12,6 +12,89 @@ export type CalendarEventLayout = {
   height: number;
   lane: number;
   laneCount: number;
+};
+
+type CalendarVisibleHoursEvent = {
+  startAt: string;
+  endAt: string;
+  isAllDay?: boolean;
+};
+
+export const parseCalendarDate = (value?: string) => {
+  const dateParts = value?.split("-") ?? [];
+  if (dateParts.length !== 3 || !/^\d{4}-\d{2}-\d{2}$/.test(value ?? "")) {
+    return null;
+  }
+
+  const year = Number(dateParts[0]);
+  const month = Number(dateParts[1]);
+  const day = Number(dateParts[2]);
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
+};
+
+// Detailed-event snapshots and availability-only snapshots are mutually
+// exclusive. The API still returns busy windows beside detailed events so
+// clients that predate event rendering continue to respect occupied time.
+export const getDisplayBusyWindows = <T>({
+  busyWindows,
+  events,
+}: {
+  busyWindows: readonly T[];
+  events: readonly unknown[];
+}) => (events.length > 0 ? [] : busyWindows);
+
+export const deriveCalendarVisibleHours = ({
+  defaultEndHour,
+  defaultStartHour,
+  events,
+}: {
+  defaultEndHour: number;
+  defaultStartHour: number;
+  events: CalendarVisibleHoursEvent[];
+}) => {
+  let visibleStartHour = defaultStartHour;
+  let visibleEndHour = defaultEndHour;
+
+  for (const event of events) {
+    if (event.isAllDay) continue;
+    const start = new Date(event.startAt);
+    const end = new Date(event.endAt);
+    if (
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime()) ||
+      end <= start
+    ) {
+      continue;
+    }
+
+    if (start.toDateString() !== end.toDateString()) {
+      visibleStartHour = 0;
+      visibleEndHour = 24;
+      continue;
+    }
+
+    visibleStartHour = Math.min(visibleStartHour, start.getHours());
+    visibleEndHour = Math.max(
+      visibleEndHour,
+      Math.ceil(end.getHours() + end.getMinutes() / 60),
+    );
+  }
+
+  return {
+    visibleStartHour: Math.max(0, visibleStartHour),
+    visibleEndHour: Math.min(
+      24,
+      Math.max(visibleStartHour + 1, visibleEndHour),
+    ),
+  };
 };
 
 type BuildCalendarEventLayoutsInput = {
@@ -39,28 +122,36 @@ export const buildCalendarEventLayouts = ({
   visibleEndHour,
 }: BuildCalendarEventLayoutsInput): CalendarEventLayout[] => {
   const dayStart = startOfDay(day);
-  const visibleStart = addMinutes(dayStart, visibleStartHour * 60);
-  const visibleEnd = addMinutes(dayStart, visibleEndHour * 60);
+  const visibleStart = atLocalHour(dayStart, visibleStartHour);
+  const visibleEnd = atLocalHour(dayStart, visibleEndHour);
   const pixelsPerMinute = hourHeight / 60;
 
   const timedEvents = events
     .map((event): TimedLayoutEvent | null => {
       const rawStart = new Date(event.startAt);
       const rawEnd = new Date(event.endAt);
-      const start = rawStart < visibleStart ? visibleStart : rawStart;
-      const end = rawEnd > visibleEnd ? visibleEnd : rawEnd;
+      const startsAtBoundary = rawStart <= visibleStart;
+      const endsAtBoundary = rawEnd >= visibleEnd;
+      const start = startsAtBoundary ? visibleStart : rawStart;
+      const end = endsAtBoundary ? visibleEnd : rawEnd;
       if (end <= start) {
         return null;
       }
+      const startMinute = startsAtBoundary
+        ? visibleStartHour * 60
+        : wallClockMinute(start);
       return {
         ...event,
         start,
         end,
         top: Math.max(
           0,
-          differenceInMinutes(start, visibleStart) * pixelsPerMinute,
+          (startMinute - visibleStartHour * 60) * pixelsPerMinute,
         ),
-        height: Math.max(24, differenceInMinutes(end, start) * pixelsPerMinute),
+        height: Math.max(
+          24,
+          ((end.getTime() - start.getTime()) / 60_000) * pixelsPerMinute,
+        ),
         lane: 0,
         laneCount: 1,
       };
@@ -113,5 +204,11 @@ export const buildCalendarEventLayouts = ({
   }));
 };
 
-const addMinutes = (date: Date, minutes: number) =>
-  new Date(date.getTime() + minutes * 60 * 1000);
+const atLocalHour = (date: Date, hour: number) => {
+  const boundary = new Date(date);
+  boundary.setHours(hour, 0, 0, 0);
+  return boundary;
+};
+
+const wallClockMinute = (date: Date) =>
+  date.getHours() * 60 + date.getMinutes();

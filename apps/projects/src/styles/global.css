@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tailwind-config";
-@import "tailwind-config/brand-theme";
 @import "ui/styles.css";
 @plugin "@tailwindcss/typography";
 
@@ -16,7 +15,7 @@
 }
 
 :root {
-  --nprogress-color: #ea6060;
+  --nprogress-color: var(--color-primary);
   --sidebar-width: 17rem;
   --story-sidebar-width: 24rem;
 }
@@ -55,7 +54,17 @@ html {
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  .settings-card-borders
+    :where(
+      div.border.rounded-lg,
+      div.border.rounded-xl,
+      div.border.rounded-2xl
+    ) {
+    border-width: 0.5px;
+  }
 }
+
 @layer base {
   input,
   textarea,

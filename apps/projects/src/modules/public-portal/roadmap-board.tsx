@@ -162,7 +162,7 @@ const RoadmapRequestCard = ({
   const authorPath = getAuthorPath(portal, request.authorId);
 
   return (
-    <Box className="border-border/70 bg-surface/50 shadow-shadow hover:bg-surface w-full rounded-xl border-[0.5px] p-4 shadow-sm backdrop-blur transition duration-200 ease-linear select-none">
+    <Box className="border-border/70 bg-surface/50 shadow-shadow hover:bg-surface dark:bg-surface dark:hover:bg-surface-elevated w-full rounded-xl border-[0.5px] p-4 shadow-sm backdrop-blur transition duration-200 ease-linear select-none">
       <Link className="group block" href={getRequestPath(portal, request)}>
         <Text
           className="line-clamp-3 text-[1.1rem] leading-[1.4rem] group-hover:opacity-90"

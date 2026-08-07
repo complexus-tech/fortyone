@@ -10,6 +10,41 @@ export type CalendarBusyWindow = {
   updatedAt: string;
 };
 
+export type CalendarEventPerson = {
+  displayName?: string;
+  email?: string;
+};
+
+export type CalendarEventAttendee = CalendarEventPerson & {
+  responseStatus?: string;
+  optional: boolean;
+  organizer: boolean;
+  self: boolean;
+};
+
+export type CalendarEventSummary = {
+  id: string;
+  provider: string;
+  calendarId?: string;
+  title?: string;
+  location?: string;
+  meetingUrl?: string;
+  htmlLink?: string;
+  startAt: string;
+  endAt: string;
+  isAllDay: boolean;
+  startDate?: string;
+  endDate?: string;
+  isPrivate: boolean;
+};
+
+export type CalendarEventDetail = CalendarEventSummary & {
+  description?: string;
+  organizer?: CalendarEventPerson;
+  attendees: CalendarEventAttendee[];
+  attendeesOmitted: boolean;
+};
+
 export type CalendarScheduleBlock = {
   id: string;
   storyId?: string;
@@ -22,6 +57,7 @@ export type CalendarScheduleBlock = {
   title: string;
   startAt: string;
   endAt: string;
+  hasConflict: boolean;
   isLocked: boolean;
   source: "user" | "maya";
   createdAt: string;
@@ -31,6 +67,7 @@ export type CalendarScheduleBlock = {
 export type CalendarSchedule = {
   startAt: string;
   endAt: string;
+  events: CalendarEventSummary[];
   busyWindows: CalendarBusyWindow[];
   blocks: CalendarScheduleBlock[];
 };

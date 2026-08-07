@@ -30,8 +30,10 @@ describe("ChatContent", () => {
     expect(popupSource).toContain("w-[min(460px,calc(100vw-36px))]");
     expect(popupSource).toContain("h-[min(760px,calc(100dvh-64px))]");
     expect(popupSource).toContain("border-border/70 dark:border-border");
+    expect(popupSource).toContain("border-[0.5px]");
+    expect(popupSource).toContain("rounded-2xl");
     expect(popupSource).toContain("bg-white/80");
-    expect(popupSource).toContain("dark:bg-surface/80");
+    expect(popupSource).toContain("dark:bg-surface-elevated/90");
     expect(popupSource).toContain("<ChatContent isPopup />");
   });
 
