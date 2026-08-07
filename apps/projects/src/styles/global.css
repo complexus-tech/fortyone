@@ -198,7 +198,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 .rich-document-editor .tiptap .tableWrapper {
-  @apply my-8 rounded-md;
+  @apply my-4 rounded-md;
 }
 
 .rich-document-editor .tiptap :is(h1, h2, h3, h4, h5, h6) {
@@ -288,7 +288,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 #nprogress .bar {
-  @apply bg-primary fixed top-0 left-0 h-[3px] w-full;
+  @apply bg-primary fixed top-0 left-0 h-0.75 w-full;
   z-index: 19031 !important;
 }
 
