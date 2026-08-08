@@ -306,15 +306,15 @@ const ObjectiveBoardCard = ({
             }
           />
         </DatePicker>
+        {!isOverlay ? (
+          <RoadmapKeyResultSummary
+            objective={objective}
+            onSelect={(keyResult) => {
+              onKeyResultSelect(objective, keyResult);
+            }}
+          />
+        ) : null}
       </Flex>
-      {!isOverlay ? (
-        <RoadmapKeyResultSummary
-          objective={objective}
-          onSelect={(keyResult) => {
-            onKeyResultSelect(objective, keyResult);
-          }}
-        />
-      ) : null}
     </div>
   );
 };

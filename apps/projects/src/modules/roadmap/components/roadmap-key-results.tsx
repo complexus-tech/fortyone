@@ -98,7 +98,7 @@ export const RoadmapKeyResultSummary = ({
         <span>
           <Popover.Trigger asChild>
             <Button
-              className="mt-3 gap-1.5 px-2"
+              className="gap-1.5 px-2"
               color="tertiary"
               leftIcon={<OKRIcon className="h-4 w-4" strokeWidth={2} />}
               size="xs"

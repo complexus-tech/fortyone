@@ -41,8 +41,16 @@ describe("Roadmap objective list selection", () => {
       "src/modules/roadmap/components/roadmap-key-results.tsx",
     );
     const cardSource = readSource("src/modules/objectives/components/card.tsx");
+    const propertiesStart = boardSource.indexOf(
+      '<Flex align="center" className="mt-1 gap-1.5" wrap>',
+    );
+    const properties = boardSource.slice(
+      propertiesStart,
+      boardSource.indexOf("</Flex>", propertiesStart),
+    );
 
     expect(boardSource).toContain("RoadmapKeyResultSummary");
+    expect(properties).toContain("RoadmapKeyResultSummary");
     expect(boardSource).toContain("RoadmapObjectiveListItem");
     expect(keyResultSource).toContain("KeyResultContextMenu");
     expect(keyResultSource).toContain("RoadmapKeyResultRow");
