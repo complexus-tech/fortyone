@@ -26,7 +26,7 @@ const isUpdatedFilter = (
   value === "today" || value === "7d" || value === "30d" || value === "90d";
 
 const isSortField = (value: string | null): value is DocumentSortField =>
-  value === "updated" || value === "created" || value === "title";
+  value === "updated" || value === "title";
 
 const isSortDirection = (
   value: string | null,
@@ -125,12 +125,8 @@ export const filterAndSortDocumentSummaries = ({
         sensitivity: "base",
       });
     } else {
-      const leftDate = getTimestamp(
-        state.sort === "created" ? left.createdAt : left.updatedAt,
-      );
-      const rightDate = getTimestamp(
-        state.sort === "created" ? right.createdAt : right.updatedAt,
-      );
+      const leftDate = getTimestamp(left.updatedAt);
+      const rightDate = getTimestamp(right.updatedAt);
       comparison = leftDate - rightDate;
     }
 

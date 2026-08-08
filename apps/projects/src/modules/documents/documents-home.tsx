@@ -4,14 +4,17 @@ import type { ComponentType } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, Flex, Menu, Skeleton, Text } from "ui";
+import { Box, Button, Flex, Menu, Popover, Select, Skeleton, Text } from "ui";
 import {
   ArchiveIcon,
   ArrowDown2Icon,
   ArrowUpDownIcon,
   CalendarIcon,
   CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   DocsIcon,
+  FilterIcon,
   LockKeyholeIcon,
   MoreHorizontalIcon,
   ObjectiveIcon,
@@ -125,67 +128,130 @@ type DocumentSortOption = {
 };
 
 const sortOptions: DocumentSortOption[] = [
-  { direction: "desc", field: "updated", label: "Updated: newest" },
-  { direction: "asc", field: "updated", label: "Updated: oldest" },
-  { direction: "desc", field: "created", label: "Created: newest" },
-  { direction: "asc", field: "created", label: "Created: oldest" },
-  { direction: "asc", field: "title", label: "Title: A–Z" },
-  { direction: "desc", field: "title", label: "Title: Z–A" },
+  { direction: "desc", field: "updated", label: "Newest" },
+  { direction: "asc", field: "updated", label: "Oldest" },
+  { direction: "asc", field: "title", label: "A to Z" },
+  { direction: "desc", field: "title", label: "Z to A" },
 ];
 
-function DocumentControlMenu<T extends string>({
-  active,
-  icon: Icon,
+function DocumentFilterSelect<T extends string>({
   label,
   onChange,
   options,
   value,
 }: {
-  active?: boolean;
-  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
   onChange: (value: T) => void;
   options: FilterOption<T>[];
   value: T;
 }) {
   return (
-    <Menu>
-      <Menu.Button>
-        <Button
-          className={cn("gap-1.5 whitespace-nowrap", {
-            "bg-state-active": active,
-          })}
-          color="tertiary"
-          leftIcon={<Icon className="h-4 w-auto" strokeWidth={2} />}
-          rightIcon={
-            <ArrowDown2Icon className="h-3.5 w-auto" strokeWidth={2} />
-          }
-          size="sm"
-          variant="outline"
-        >
-          {label}
-        </Button>
-      </Menu.Button>
-      <Menu.Items align="start" className="min-w-48 p-1">
-        {options.map((option) => (
-          <Menu.Item
-            active={option.value === value}
-            className="justify-between gap-3"
-            key={option.value}
-            onSelect={() => {
-              onChange(option.value);
-            }}
-          >
-            <span>{option.label}</span>
-            {option.value === value ? (
-              <CheckIcon className="h-4 w-auto" strokeWidth={2} />
-            ) : null}
-          </Menu.Item>
-        ))}
-      </Menu.Items>
-    </Menu>
+    <Flex align="center" className="px-4 py-2" gap={4} justify="between">
+      <Text color="muted">{label}</Text>
+      <Select
+        onValueChange={(nextValue) => {
+          onChange(nextValue as T);
+        }}
+        value={value}
+      >
+        <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-40">
+          <Select.Input />
+        </Select.Trigger>
+        <Select.Content className="ring-border/70 shadow-2xl ring-1">
+          <Select.Group>
+            {options.map((option) => (
+              <Select.Option key={option.value} value={option.value}>
+                {option.label}
+              </Select.Option>
+            ))}
+          </Select.Group>
+        </Select.Content>
+      </Select>
+    </Flex>
   );
 }
+
+const DocumentFilters = ({
+  access,
+  activeCount,
+  onAccessChange,
+  onClear,
+  onOwnerChange,
+  onUpdatedChange,
+  owner,
+  showOwner,
+  updated,
+}: {
+  access: DocumentAccessFilter;
+  activeCount: number;
+  onAccessChange: (value: DocumentAccessFilter) => void;
+  onClear: () => void;
+  onOwnerChange: (value: DocumentOwnerFilter) => void;
+  onUpdatedChange: (value: DocumentUpdatedFilter) => void;
+  owner: DocumentOwnerFilter;
+  showOwner: boolean;
+  updated: DocumentUpdatedFilter;
+}) => (
+  <Popover>
+    <Popover.Trigger asChild>
+      <Button
+        aria-label={
+          activeCount > 0 ? `Filters, ${activeCount} applied` : "Filters"
+        }
+        className="relative"
+        color="tertiary"
+        leftIcon={<FilterIcon className="h-4 w-auto" />}
+        rightIcon={<ArrowDown2Icon className="h-3.5 w-auto" />}
+        size="sm"
+        variant="outline"
+      >
+        {activeCount > 0 ? (
+          <span
+            aria-hidden="true"
+            className="bg-primary absolute -top-0.5 -right-0.5 size-2.5 rounded-full"
+          />
+        ) : null}
+        Filters
+      </Button>
+    </Popover.Trigger>
+    <Popover.Content align="start" className="min-w-[20rem] pb-2">
+      <Flex align="center" className="my-2 px-4" justify="between">
+        <Text color="muted">Apply filters</Text>
+        {activeCount > 0 ? (
+          <Button
+            className="text-primary dark:text-primary"
+            color="tertiary"
+            onClick={onClear}
+            size="sm"
+            variant="naked"
+          >
+            Clear filters
+          </Button>
+        ) : null}
+      </Flex>
+      <DocumentFilterSelect
+        label="Access"
+        onChange={onAccessChange}
+        options={accessOptions}
+        value={access}
+      />
+      {showOwner ? (
+        <DocumentFilterSelect
+          label="Owner"
+          onChange={onOwnerChange}
+          options={ownerOptions}
+          value={owner}
+        />
+      ) : null}
+      <DocumentFilterSelect
+        label="Updated"
+        onChange={onUpdatedChange}
+        options={updatedOptions}
+        value={updated}
+      />
+    </Popover.Content>
+  </Popover>
+);
 
 const DocumentSortMenu = ({
   direction,
@@ -205,19 +271,27 @@ const DocumentSortMenu = ({
     <Menu>
       <Menu.Button>
         <Button
-          className="gap-1.5 whitespace-nowrap"
+          className="gap-1.5 px-1.5 whitespace-nowrap"
           color="tertiary"
-          leftIcon={<ArrowUpDownIcon className="h-4 w-auto" strokeWidth={2} />}
+          leftIcon={
+            <ArrowUpDownIcon
+              className="text-text-muted h-4 w-auto"
+              strokeWidth={2}
+            />
+          }
           rightIcon={
-            <ArrowDown2Icon className="h-3.5 w-auto" strokeWidth={2} />
+            <ArrowDown2Icon
+              className="text-text-muted h-3.5 w-auto"
+              strokeWidth={2}
+            />
           }
           size="sm"
-          variant="outline"
+          variant="naked"
         >
           {selectedOption.label}
         </Button>
       </Menu.Button>
-      <Menu.Items align="start" className="min-w-52 p-1">
+      <Menu.Items align="end" className="min-w-44 p-1">
         {sortOptions.map((option) => {
           const isActive =
             option.field === field && option.direction === direction;
@@ -447,21 +521,11 @@ export const DocumentsHome = () => {
     ? documentTemplates
     : documentTemplates.slice(0, 5);
   const copy = scopeCopy[scope];
-  const selectedAccessLabel =
-    accessOptions.find((option) => option.value === listState.access)?.label ??
-    "All access";
-  const selectedOwnerLabel =
-    ownerOptions.find((option) => option.value === listState.owner)?.label ??
-    "Anyone";
-  const selectedUpdatedLabel =
-    updatedOptions.find((option) => option.value === listState.updated)
-      ?.label ?? "Any time";
-  const hasCustomListControls =
-    listState.access !== "all" ||
-    (scope !== "mine" && listState.owner !== "all") ||
-    listState.updated !== "all" ||
-    listState.sort !== "updated" ||
-    listState.direction !== "desc";
+  const activeFilterCount = [
+    listState.access !== "all",
+    scope !== "mine" && listState.owner !== "all",
+    listState.updated !== "all",
+  ].filter(Boolean).length;
 
   useEffect(() => {
     if (
@@ -594,105 +658,101 @@ export const DocumentsHome = () => {
           <Box>
             <Flex
               align="center"
-              className="border-border border-b-[0.5px] pb-3"
-              justify="between"
-            >
-              <Text fontSize="lg" fontWeight="semibold">
-                {search ? "Matching documents" : copy.heading}
-              </Text>
-              <Text color="muted">
-                {filteredDocuments.length}{" "}
-                {filteredDocuments.length === 1 ? "document" : "documents"}
-              </Text>
-            </Flex>
-            <Flex
-              align="center"
               className="border-border/70 border-b-[0.5px] py-3"
-              gap={2}
+              gap={3}
+              justify="between"
               wrap
             >
-              <DocumentControlMenu
-                active={listState.access !== "all"}
-                icon={LockKeyholeIcon}
-                label={
-                  listState.access === "all"
-                    ? "Access"
-                    : `Access: ${selectedAccessLabel}`
-                }
-                onChange={(access) => {
+              <DocumentFilters
+                access={listState.access}
+                activeCount={activeFilterCount}
+                onAccessChange={(access) => {
                   updateListControls({
                     access: access === "all" ? null : access,
                   });
                 }}
-                options={accessOptions}
-                value={listState.access}
-              />
-              {scope !== "mine" ? (
-                <DocumentControlMenu
-                  active={listState.owner !== "all"}
-                  icon={UserIcon}
-                  label={
-                    listState.owner === "all" ? "Owner" : selectedOwnerLabel
-                  }
-                  onChange={(owner) => {
-                    updateListControls({
-                      owner: owner === "all" ? null : owner,
-                    });
-                  }}
-                  options={ownerOptions}
-                  value={listState.owner}
-                />
-              ) : null}
-              <DocumentControlMenu
-                active={listState.updated !== "all"}
-                icon={CalendarIcon}
-                label={
-                  listState.updated === "all" ? "Updated" : selectedUpdatedLabel
-                }
-                onChange={(updated) => {
+                onClear={() => {
+                  updateListControls({
+                    access: null,
+                    owner: null,
+                    updated: null,
+                  });
+                }}
+                onOwnerChange={(owner) => {
+                  updateListControls({
+                    owner: owner === "all" ? null : owner,
+                  });
+                }}
+                onUpdatedChange={(updated) => {
                   updateListControls({
                     updated: updated === "all" ? null : updated,
                   });
                 }}
-                options={updatedOptions}
-                value={listState.updated}
+                owner={listState.owner}
+                showOwner={scope !== "mine"}
+                updated={listState.updated}
               />
-              <DocumentSortMenu
-                direction={listState.direction}
-                field={listState.sort}
-                onChange={(option) => {
-                  const isDefault =
-                    option.field === "updated" && option.direction === "desc";
-                  updateListControls({
-                    direction: isDefault ? null : option.direction,
-                    sort: isDefault ? null : option.field,
-                  });
-                }}
-              />
-              {hasCustomListControls ? (
-                <Button
-                  color="tertiary"
-                  onClick={() => {
+              <Flex align="center" gap={3}>
+                <Flex align="center" gap={1}>
+                  <Button
+                    aria-label="Previous page"
+                    asIcon
+                    className="h-9"
+                    color="tertiary"
+                    disabled={pagination.page <= 1}
+                    onClick={() => {
+                      goToPage(pagination.page - 1);
+                    }}
+                    rounded="lg"
+                    size="sm"
+                    variant="naked"
+                  >
+                    <ChevronLeftIcon className="h-5 w-auto" strokeWidth={2.5} />
+                  </Button>
+                  <Text
+                    className="min-w-24 text-center tabular-nums"
+                    color="muted"
+                  >
+                    Page {pagination.page} of {pagination.pageCount}
+                  </Text>
+                  <Button
+                    aria-label="Next page"
+                    asIcon
+                    className="h-9"
+                    color="tertiary"
+                    disabled={pagination.page >= pagination.pageCount}
+                    onClick={() => {
+                      goToPage(pagination.page + 1);
+                    }}
+                    rounded="lg"
+                    size="sm"
+                    variant="naked"
+                  >
+                    <ChevronRightIcon
+                      className="h-5 w-auto"
+                      strokeWidth={2.5}
+                    />
+                  </Button>
+                </Flex>
+                <DocumentSortMenu
+                  direction={listState.direction}
+                  field={listState.sort}
+                  onChange={(option) => {
+                    const isDefault =
+                      option.field === "updated" && option.direction === "desc";
                     updateListControls({
-                      access: null,
-                      direction: null,
-                      owner: null,
-                      sort: null,
-                      updated: null,
+                      direction: isDefault ? null : option.direction,
+                      sort: isDefault ? null : option.field,
                     });
                   }}
-                  size="sm"
-                  variant="naked"
-                >
-                  Clear
-                </Button>
-              ) : null}
+                />
+              </Flex>
             </Flex>
             {isPending ? <DocumentsTableSkeleton /> : null}
             {!isPending && filteredDocuments.length === 0 ? (
               <EmptyDocuments
                 canCreateDocuments={canCreateDocuments}
-                isFiltered={Boolean(search) || hasCustomListControls}
+                isFiltered={Boolean(search) || activeFilterCount > 0}
                 scope={scope}
               />
             ) : null}
@@ -717,39 +777,6 @@ export const DocumentsHome = () => {
                     withWorkspace={withWorkspace}
                   />
                 ))}
-                <Flex
-                  align="center"
-                  className="border-border/70 py-3"
-                  justify="between"
-                >
-                  <Text color="muted">
-                    {pagination.start}–{pagination.end} of {pagination.total}
-                  </Text>
-                  <Flex align="center" gap={2}>
-                    <Button
-                      color="tertiary"
-                      disabled={pagination.page <= 1}
-                      onClick={() => {
-                        goToPage(pagination.page - 1);
-                      }}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      color="tertiary"
-                      disabled={pagination.page >= pagination.pageCount}
-                      onClick={() => {
-                        goToPage(pagination.page + 1);
-                      }}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Next
-                    </Button>
-                  </Flex>
-                </Flex>
               </Box>
             ) : null}
           </Box>

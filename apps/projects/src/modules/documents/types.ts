@@ -49,7 +49,7 @@ export type WorkspaceDocumentSummary = Pick<
 export type DocumentAccessFilter = DocumentVisibility | "all";
 export type DocumentOwnerFilter = "all" | "mine" | "others";
 export type DocumentUpdatedFilter = "all" | "today" | "7d" | "30d" | "90d";
-export type DocumentSortField = "updated" | "created" | "title";
+export type DocumentSortField = "updated" | "title";
 export type DocumentSortDirection = "asc" | "desc";
 
 export type DocumentListState = {

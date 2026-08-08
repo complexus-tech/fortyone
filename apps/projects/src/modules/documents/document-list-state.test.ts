@@ -52,6 +52,10 @@ describe("document list state", () => {
         new URLSearchParams("access=unknown&sort=unknown&page=-2"),
       ),
     ).toEqual(defaultState);
+
+    expect(
+      getDocumentListState(new URLSearchParams("sort=created&direction=asc")),
+    ).toEqual({ ...defaultState, direction: "asc" });
   });
 
   it("filters access, owner, and updated date before sorting", () => {
