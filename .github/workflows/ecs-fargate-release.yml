@@ -85,7 +85,7 @@ jobs:
           cluster: ${{ vars.ECS_CLUSTER }}
           # The new API can read both legacy and encrypted Slack credentials.
           # Drain old API tasks before a new worker seals legacy credentials.
-          wait-for-service-stability: true
+          wait-for-service-stability: false
 
   deploy-worker:
     runs-on: ubuntu-latest
@@ -120,4 +120,4 @@ jobs:
           task-definition: ${{ steps.render-worker.outputs.task-definition }}
           service: ${{ vars.ECS_WORKER_SERVICE }}
           cluster: ${{ vars.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          wait-for-service-stability: false
