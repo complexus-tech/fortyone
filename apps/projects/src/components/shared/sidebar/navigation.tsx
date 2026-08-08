@@ -150,7 +150,7 @@ export const Navigation = () => {
         {renderLinks(primaryLinks)}
       </Flex>
       <Collapsible onOpenChange={setIsWorkspaceOpen} open={isWorkspaceOpen}>
-        <Box className="mt-5">
+        <Box className="mt-4">
           <Collapsible.Trigger asChild>
             <button
               className={cn(

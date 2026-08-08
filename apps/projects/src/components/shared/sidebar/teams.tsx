@@ -115,8 +115,8 @@ export const Teams = () => {
   };
 
   return (
-    <Box className="mt-5">
-      <Flex align="center" className="mb-3" justify="between">
+    <Box className="mt-4">
+      <Flex align="center" className="mb-2" justify="between">
         <Text className="pl-2.5 font-medium" color="muted" data-teams-heading>
           Your Teams
         </Text>
@@ -149,7 +149,7 @@ export const Teams = () => {
           items={visibleTeamIds}
           strategy={verticalListSortingStrategy}
         >
-          <Flex direction="column" gap={1}>
+          <Flex className="pl-px" direction="column" gap={1}>
             {visibleTeams.map((team) => (
               <Team
                 color={team.color}

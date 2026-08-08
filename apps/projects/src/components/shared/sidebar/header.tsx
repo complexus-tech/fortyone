@@ -69,7 +69,7 @@ export const Header = () => {
 
   return (
     <>
-      <Flex align="center" className="h-16" justify="between">
+      <Flex align="center" className="h-15" justify="between">
         <WorkspacesMenu />
         <Box data-sidebar-notifications-button>
           <Button
