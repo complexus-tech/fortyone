@@ -94,46 +94,60 @@ export const StoryStatusProperty = forwardRef<
 
 StoryStatusProperty.displayName = "StoryStatusProperty";
 
-type StoryPriorityPropertyProps = {
-  className?: string;
-  disabled?: boolean;
+type StoryPriorityPropertyProps = Omit<
+  ComponentPropsWithoutRef<"button">,
+  "children"
+> & {
   isListRow: boolean;
   priority: Story["priority"];
   readOnly?: boolean;
   showName?: boolean;
 };
 
-export const StoryPriorityProperty = ({
-  className,
-  disabled = false,
-  isListRow,
-  priority,
-  readOnly = false,
-  showName = false,
-}: StoryPriorityPropertyProps) => (
-  <button
-    aria-hidden={readOnly || undefined}
-    aria-label={priority}
-    className={cn(
-      "flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50",
+export const StoryPriorityProperty = forwardRef<
+  HTMLButtonElement,
+  StoryPriorityPropertyProps
+>(
+  (
+    {
       className,
-    )}
-    disabled={disabled}
-    tabIndex={readOnly ? -1 : undefined}
-    type="button"
-  >
-    <PriorityIcon priority={priority} />
-    <span
-      className={cn({
-        inline: showName,
-        "hidden @6xl:inline": !showName && isListRow,
-        hidden: !showName && !isListRow,
-      })}
+      disabled = false,
+      isListRow,
+      priority,
+      readOnly = false,
+      showName = false,
+      ...buttonProps
+    },
+    ref,
+  ) => (
+    <button
+      {...buttonProps}
+      aria-hidden={readOnly || undefined}
+      aria-label={priority}
+      className={cn(
+        "flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      )}
+      disabled={disabled}
+      ref={ref}
+      tabIndex={readOnly ? -1 : undefined}
+      type="button"
     >
-      {priority}
-    </span>
-  </button>
+      <PriorityIcon priority={priority} />
+      <span
+        className={cn({
+          inline: showName,
+          "hidden @6xl:inline": !showName && isListRow,
+          hidden: !showName && !isListRow,
+        })}
+      >
+        {priority}
+      </span>
+    </button>
+  ),
 );
+
+StoryPriorityProperty.displayName = "StoryPriorityProperty";
 
 const completedOrCancelled = (category?: StateCategory) => {
   return ["completed", "cancelled", "paused"].includes(category || "");
