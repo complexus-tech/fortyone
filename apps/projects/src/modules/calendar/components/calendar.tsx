@@ -76,7 +76,7 @@ import type { CalendarView } from "./calendar-view";
 const defaultVisibleStartHour = 8;
 const defaultVisibleEndHour = 21;
 const hourHeight = 52;
-const timeRailWidth = 8.5;
+const timeRailWidth = 8;
 const automaticSyncStaleAfter = 5 * 60 * 1000;
 const calendarHistoryDays = 7;
 const calendarLookaheadDays = 90;
@@ -770,7 +770,7 @@ const CalendarToolbar = ({
 }) => (
   <Flex
     align="center"
-    className="border-border/70 min-h-18 shrink-0 gap-5 overflow-x-auto border-b px-5 py-3"
+    className="border-border/70 h-16 shrink-0 gap-5 overflow-x-auto border-b px-5 py-3"
     justify="between"
   >
     <Flex align="center" className="shrink-0" gap={3}>
@@ -852,7 +852,7 @@ const CalendarToolbar = ({
         size="sm"
         variant="outline"
       >
-        Focus time
+        Block focus time
       </Button>
     </Flex>
   </Flex>
@@ -1051,7 +1051,7 @@ const CalendarTimeGrid = ({
               key={day.toISOString()}
             >
               <Text
-                className="text-[0.9375rem] leading-none tracking-[0.08em]"
+                className="text-[0.875rem] leading-none tracking-[0.08em]"
                 color={isToday ? "primary" : "muted"}
                 fontWeight="medium"
                 transform="uppercase"
@@ -1136,9 +1136,8 @@ const CalendarTimeGrid = ({
               style={{ top: `${(hour - visibleStartHour) * hourHeight}px` }}
             >
               <Text
-                className="tabular-nums"
+                className="text-[0.9375rem] tabular-nums"
                 color="muted"
-                fontSize="md"
                 fontWeight="medium"
               >
                 {format(new Date(2026, 0, 1, hour), "h a")}
@@ -1370,7 +1369,7 @@ const CalendarMonthGrid = ({
             key={`weekday-${day.toISOString()}`}
           >
             <Text
-              className="text-[0.9375rem] tracking-[0.08em]"
+              className="text-[0.875rem] tracking-[0.08em]"
               color="muted"
               fontWeight="medium"
               transform="uppercase"

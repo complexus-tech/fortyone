@@ -11,7 +11,7 @@ const PersonalCalendar = dynamic(
   {
     loading: () => (
       <Box className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden">
-        <Skeleton className="h-18 w-full shrink-0 rounded-none" />
+        <Skeleton className="h-16 w-full shrink-0 rounded-none" />
         <Skeleton className="min-h-0 w-full flex-1 rounded-none" />
       </Box>
     ),
