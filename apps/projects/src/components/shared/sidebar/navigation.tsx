@@ -4,7 +4,7 @@ import { Box, Collapsible, Flex } from "ui";
 import {
   ActiveSprintIcon,
   AiIcon,
-  CalendarIcon,
+  // CalendarIcon,
   ChevronRightIcon,
   DashboardIcon,
   DocsIcon,
@@ -70,11 +70,11 @@ export const Navigation = () => {
       icon: <UserIcon />,
       href: withWorkspace("/my-work"),
     },
-    {
-      name: "Calendar",
-      icon: <CalendarIcon />,
-      href: withWorkspace("/calendar"),
-    },
+    // {
+    //   name: "Calendar",
+    //   icon: <CalendarIcon />,
+    //   href: withWorkspace("/calendar"),
+    // },
     ...(sprintItem ? [sprintItem] : []),
     {
       name: "Summary",
