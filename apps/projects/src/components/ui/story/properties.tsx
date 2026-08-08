@@ -9,7 +9,12 @@ import {
 import { cn } from "lib";
 import { format, addDays, formatISO } from "date-fns";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import {
+  forwardRef,
+  useRef,
+  useState,
+  type ComponentPropsWithoutRef,
+} from "react";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
 import { EstimateMenu } from "@/components/ui/story/estimate-menu";
 import { Labels } from "@/components/ui/story/labels";
@@ -39,41 +44,55 @@ type StoryPropertiesProps = Story & {
   setIsExpanded?: (isExpanded: boolean) => void;
 };
 
-type StoryStatusPropertyProps = {
-  className?: string;
-  disabled?: boolean;
+type StoryStatusPropertyProps = Omit<
+  ComponentPropsWithoutRef<typeof Button>,
+  "children"
+> & {
   readOnly?: boolean;
   statusColor?: string;
   statusId: string;
   statusName?: string;
 };
 
-export const StoryStatusProperty = ({
-  className,
-  disabled = false,
-  readOnly = false,
-  statusColor,
-  statusId,
-  statusName,
-}: StoryStatusPropertyProps) => (
-  <Button
-    aria-hidden={readOnly || undefined}
-    className={cn("gap-1 pr-2", className)}
-    disabled={disabled}
-    rounded="md"
-    size="xs"
-    style={{
-      backgroundColor: hexToRgba(statusColor, 0.1),
-      borderColor: hexToRgba(statusColor, 0.2),
-    }}
-    tabIndex={readOnly ? -1 : undefined}
-    type="button"
-    variant="outline"
-  >
-    <StoryStatusIcon statusId={statusId} />
-    {statusName}
-  </Button>
+export const StoryStatusProperty = forwardRef<
+  HTMLButtonElement,
+  StoryStatusPropertyProps
+>(
+  (
+    {
+      className,
+      disabled = false,
+      readOnly = false,
+      statusColor,
+      statusId,
+      statusName,
+      ...buttonProps
+    },
+    ref,
+  ) => (
+    <Button
+      {...buttonProps}
+      aria-hidden={readOnly || undefined}
+      className={cn("gap-1 pr-2", className)}
+      disabled={disabled}
+      ref={ref}
+      rounded="md"
+      size="xs"
+      style={{
+        backgroundColor: hexToRgba(statusColor, 0.1),
+        borderColor: hexToRgba(statusColor, 0.2),
+      }}
+      tabIndex={readOnly ? -1 : undefined}
+      type="button"
+      variant="outline"
+    >
+      <StoryStatusIcon statusId={statusId} />
+      {statusName}
+    </Button>
+  ),
 );
+
+StoryStatusProperty.displayName = "StoryStatusProperty";
 
 type StoryPriorityPropertyProps = {
   className?: string;
