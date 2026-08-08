@@ -1,9 +1,10 @@
 "use client";
 import type { ReactNode } from "react";
 import { Box, Button, Flex, Menu, Text, Tooltip } from "ui";
-import { CommandIcon, DocsIcon, EmailIcon, HelpIcon } from "icons";
+import { CommandIcon, DocsIcon, EmailIcon, HelpIcon, PlusIcon } from "icons";
 import { useState } from "react";
 import { addHours, differenceInHours } from "date-fns";
+import { InviteMembersDialog } from "@/components/ui";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useUserRole, useWorkspacePath } from "@/hooks";
@@ -74,6 +75,7 @@ const SidebarFooterActions = ({
 );
 
 export const Sidebar = () => {
+  const [isInviteMembersOpen, setIsInviteMembersOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const { workspace } = useCurrentWorkspace();
   const { withWorkspace } = useWorkspacePath();
@@ -100,25 +102,39 @@ export const Sidebar = () => {
     tier === "trial"
       ? `${trialDaysRemaining} day${trialDaysRemaining !== 1 ? "s" : ""} left in trial`
       : "Upgrade";
-  const subscriptionAction =
-    tier === "free" || tier === "trial" ? (
-      <Tooltip className="ml-2 max-w-56 py-3" title={subscriptionTitle}>
-        <span>
-          <Button
-            className="text-primary border-primary/15 bg-primary/15 dark:bg-primary/10 dark:bg-border-primary/15 px-2.5"
-            href={
-              userRole === "admin"
-                ? withWorkspace("/settings/workspace/billing")
-                : undefined
-            }
-            prefetch
-            rounded="lg"
-            size="sm"
-          >
-            {subscriptionLabel}
-          </Button>
-        </span>
-      </Tooltip>
+  const showsUpgradeAction = tier === "free" || tier === "trial";
+  const subscriptionAction = showsUpgradeAction ? (
+    <Tooltip className="ml-2 max-w-56 py-3" title={subscriptionTitle}>
+      <span>
+        <Button
+          className="text-primary border-primary/15 bg-primary/15 dark:bg-primary/10 dark:bg-border-primary/15 px-2.5"
+          href={
+            userRole === "admin"
+              ? withWorkspace("/settings/workspace/billing")
+              : undefined
+          }
+          prefetch
+          rounded="lg"
+          size="sm"
+        >
+          {subscriptionLabel}
+        </Button>
+      </span>
+    </Tooltip>
+  ) : null;
+  const inviteMembersAction =
+    userRole === "admin" && !showsUpgradeAction ? (
+      <button
+        className="flex items-center justify-start gap-2 px-1 text-left"
+        data-invite-button
+        onClick={() => {
+          setIsInviteMembersOpen(true);
+        }}
+        type="button"
+      >
+        <PlusIcon />
+        <span className="line-clamp-1">Invite members</span>
+      </button>
     ) : null;
   const openKeyboardShortcuts = () => {
     setIsKeyboardShortcutsOpen(true);
@@ -171,7 +187,7 @@ export const Sidebar = () => {
             <UpcomingMeetingCard
               fallback={
                 <SidebarFooterActions
-                  leadingAction={subscriptionAction}
+                  leadingAction={subscriptionAction ?? inviteMembersAction}
                   onOpenKeyboardShortcuts={openKeyboardShortcuts}
                 />
               }
@@ -184,6 +200,10 @@ export const Sidebar = () => {
       <KeyboardShortcuts
         isOpen={isKeyboardShortcutsOpen}
         setIsOpen={setIsKeyboardShortcutsOpen}
+      />
+      <InviteMembersDialog
+        isOpen={isInviteMembersOpen}
+        setIsOpen={setIsInviteMembersOpen}
       />
       <Commands />
     </Box>

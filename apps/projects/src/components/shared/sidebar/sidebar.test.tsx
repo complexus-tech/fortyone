@@ -1,11 +1,12 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { HTMLAttributes, ReactNode } from "react";
 import { Sidebar } from "./sidebar";
 
 let mockUserRole = "admin";
 let mockHasMeeting = true;
+let mockTier = "free";
 
 jest.mock("ui", () => {
   const MockBox = ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => (
@@ -59,7 +60,7 @@ jest.mock("ui", () => {
 
 jest.mock("@/lib/hooks/subscription-features", () => ({
   useSubscriptionFeatures: () => ({
-    tier: "free",
+    tier: mockTier,
     trialDaysRemaining: 14,
   }),
 }));
@@ -73,6 +74,11 @@ jest.mock("@/hooks", () => ({
 
 jest.mock("@/lib/hooks/workspaces", () => ({
   useCurrentWorkspace: () => ({ workspace: { deletedAt: null } }),
+}));
+
+jest.mock("@/components/ui", () => ({
+  InviteMembersDialog: ({ isOpen }: { isOpen: boolean }) =>
+    isOpen ? <div>Invite members dialog</div> : null,
 }));
 
 jest.mock("@/components/shared/keyboard-shortcuts", () => ({
@@ -94,6 +100,7 @@ jest.mock("./upcoming-meeting-card", () => ({
 describe("Sidebar", () => {
   beforeEach(() => {
     mockHasMeeting = true;
+    mockTier = "free";
     mockUserRole = "admin";
   });
 
@@ -138,5 +145,32 @@ describe("Sidebar", () => {
 
     expect(screen.queryByRole("button", { name: "Invite members" })).toBeNull();
     expect(screen.getByRole("link", { name: "Upgrade" })).toBeInTheDocument();
+  });
+
+  it("shows Invite members instead of Upgrade for paid-plan admins", () => {
+    mockHasMeeting = false;
+    mockTier = "pro";
+    render(<Sidebar />);
+
+    const inviteMembers = screen.getByRole("button", {
+      name: "Invite members",
+    });
+
+    expect(inviteMembers).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Upgrade" })).toBeNull();
+
+    fireEvent.click(inviteMembers);
+
+    expect(screen.getByText("Invite members dialog")).toBeInTheDocument();
+  });
+
+  it("does not show Invite members to paid-plan non-admins", () => {
+    mockHasMeeting = false;
+    mockTier = "business";
+    mockUserRole = "member";
+    render(<Sidebar />);
+
+    expect(screen.queryByRole("button", { name: "Invite members" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Upgrade" })).toBeNull();
   });
 });
