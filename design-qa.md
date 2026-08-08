@@ -197,6 +197,55 @@ final result: blocked
 
 ---
 
+# Landing CTA, Google Signup, and Feedback Switcher Design QA
+
+## Source and implementation evidence
+
+- Inspiration screenshot: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_VZwoGF/Screenshot 2026-08-08 at 4.46.47 PM.png` (3008 × 1416 pixels).
+- Final desktop CTA capture: `/tmp/fortyone-cta-highlight-final.png` (1417 × 667 pixels, light mode).
+- Final mobile hero capture: `/tmp/fortyone-hero-mobile.png` (390 × 844 pixels, light mode).
+- Final mobile CTA capture: `/tmp/fortyone-cta-highlight-mobile.png` (390 × 844 pixels, light mode).
+- Final mobile feedback capture: `/tmp/fortyone-feedback-mobile.png` (390 × 844 pixels, dark mode, Public Roadmap selected).
+- The inspiration and final desktop capture share the same 2.124:1 aspect ratio. Their spatial proportions were compared together; pixel equality was intentionally not used because the screenshot was direction for simplicity, not a visual target.
+
+## Design intent and comparison
+
+- The CTA keeps the reference's useful idea—a quiet, centered closing statement—without copying its black surface, pill treatment, or product-specific copy.
+- The final CTA stays on FortyOne's normal semantic page surface in both themes, adds only a single top divider, and uses the same standard rounded button treatment as the rest of the landing page.
+- The previous mesh image, overlay, grayscale treatment, rounded card, and bottom border were removed.
+- The closing headline now asks “Ready to make what matters happen?”, with only “matters” and “happen?” receiving the handwritten color, ink-drop, and underline treatment. This keeps the emphasis natural instead of listing product concepts.
+- The primary action reads “Get started free”. “Continue with Google” sits beside it on wider screens and stacks below it on mobile.
+- The Google action uses the former hover surface as its resting state and moves to the stronger active surface on hover, focus, and press.
+- The feedback switcher now reads “Collect Feedback” and “Public Roadmap”.
+
+## Required fidelity surfaces
+
+- Typography: FortyOne's existing sans-serif family, semibold heading treatment, and responsive type scale are preserved.
+- Spacing and layout: the CTA remains spacious and centered without becoming a full-viewport imitation of the reference; mobile copy wraps cleanly with no forced line breaks.
+- Colors and tokens: the CTA uses the page's semantic background and border tokens; the Google action uses `bg-state-hover` by default and `bg-state-active` for interaction states.
+- Image and icon quality: the CTA has no decorative raster asset; the Google action reuses the existing full-color Google icon.
+- Copy and content: the CTA uses one concise, action-oriented question rather than repeating the hero's strategy, feedback, and work list. Both CTA actions are specific to the FortyOne signup journey.
+
+## Functional and responsive verification
+
+- Production build and focused ESLint completed successfully.
+- The landing page was tested at 1417 × 667 and 390 × 844 in both light and dark themes.
+- “Continue with Google” resolves directly to the backend Google OAuth endpoint with the FortyOne auth callback, while both “Get started free” actions retain the normal signup route.
+- The Google action's default and hover surfaces were visually checked in both themes.
+- The feedback tabs remain on one line at 390 pixels. Selecting Public Roadmap changes the active tab and mounts the matching panel.
+- No production-console errors were emitted from `localhost:3004` during the final pass.
+
+## Comparison history
+
+- Earlier P1: the first implementation treated the inspiration as a literal target and copied its black band and full-pill button. The CTA now uses the normal FortyOne surface, one top divider, and the product's standard button radius.
+- Earlier P2: the first highlighted headline forced “Strategy”, “Feedback”, and “Work” into three outcome fragments. The final copy uses a natural conversion question and highlights only the two words that carry its meaning.
+- Earlier P2: the Google action was transparent at rest and only gained a surface on hover. Its previous hover surface is now the default, with a stronger semantic hover state.
+- No P0, P1, or P2 visual issues remain in the tested production state.
+
+final result: passed
+
+---
+
 # Sidebar Team Menu Design QA
 
 ## Source and implementation evidence

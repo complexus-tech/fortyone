@@ -2,7 +2,7 @@ import Image from "next/image";
 import { cn } from "lib";
 import { Text, Box, Flex } from "ui";
 import { AiIcon, CommentIcon, GitHubIcon, SettingsIcon } from "icons";
-import { Container } from "@/components/ui";
+import { Container, UnderlinedHandwrittenAccent } from "@/components/ui";
 import meshImage from "../../../public/images/meshing.webp";
 
 const CARD_TEXT_CLASS = "text-[0.9rem] leading-[1.35]";
@@ -372,7 +372,15 @@ export const HowItWorks = () => {
       {/* Headline */}
       <Box data-landing-reveal>
         <Text as="h2" className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl">
-          One connected system, from signal to delivery.
+          One connected system, from{" "}
+          <UnderlinedHandwrittenAccent tone="danger">
+            signal
+          </UnderlinedHandwrittenAccent>{" "}
+          to{" "}
+          <UnderlinedHandwrittenAccent tone="success">
+            delivery
+          </UnderlinedHandwrittenAccent>
+          .
         </Text>
       </Box>
 

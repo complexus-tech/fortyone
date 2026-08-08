@@ -6,3 +6,4 @@ export * from "./pricing";
 export * from "./google-icon";
 export * from "./dot";
 export * from "./otp-input";
+export * from "./handwritten-accent";

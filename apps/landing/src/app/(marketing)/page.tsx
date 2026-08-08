@@ -70,27 +70,29 @@ export default function Page() {
   return (
     <>
       <JsonLd />
-      <Hero />
-      <ProductScreenshot
-        alt="FortyOne My Work board showing tasks grouped by Backlog, To Do, In Progress, and Done"
-        cropBrowserOnMobile
-        darkImage={myWorkBoardDark}
-        lightImage={myWorkBoardLight}
-        priority
-        url="https://fortyone.app/my-work"
-      />
-      <SampleClients />
-      <HowItWorks />
-      <FeedbackWorkflow />
-      <Testimonials />
-      <StrategyWorkflow />
-      <DocumentsWorkflow />
-      <CalendarWorkflow />
-      <MayaWorkflow />
-      <Integrations />
-      <Pricing className="md:pt-0 md:pb-16" />
-      <Faqs />
-      <CallToAction />
+      <main className="[&_h1]:font-semibold [&_h2]:font-semibold">
+        <Hero />
+        <ProductScreenshot
+          alt="FortyOne My Work board showing tasks grouped by Backlog, To Do, In Progress, and Done"
+          cropBrowserOnMobile
+          darkImage={myWorkBoardDark}
+          lightImage={myWorkBoardLight}
+          priority
+          url="https://fortyone.app/my-work"
+        />
+        <SampleClients />
+        <HowItWorks />
+        <FeedbackWorkflow />
+        <Testimonials />
+        <StrategyWorkflow />
+        <DocumentsWorkflow />
+        <CalendarWorkflow />
+        <MayaWorkflow />
+        <Integrations />
+        <Pricing className="md:pt-0 md:pb-16" />
+        <Faqs />
+        <CallToAction />
+      </main>
     </>
   );
 }

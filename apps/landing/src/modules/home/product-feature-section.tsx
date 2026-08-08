@@ -6,7 +6,7 @@ type ProductFeatureSectionProps = {
   children: ReactNode;
   description: string;
   id: string;
-  title: string;
+  title: ReactNode;
 };
 
 export const ProductFeatureSection = ({

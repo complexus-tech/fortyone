@@ -1,38 +1,47 @@
-import Image from "next/image";
 import { Box, Button } from "ui";
-import { Container } from "@/components/ui";
+import { Container, UnderlinedHandwrittenAccent } from "@/components/ui";
 import { SIGNUP_URL } from "@/lib/app-url";
-import meshImage from "../../../public/images/meshing.webp";
+import { GoogleSignupButton } from "./google-signup-button";
 
 export const CallToAction = () => {
   return (
-    <Container className="py-16 md:py-20">
-      <Box data-landing-reveal>
-        <Box className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl md:rounded-3xl">
-          <Image
-            alt=""
-            className="object-cover grayscale-100"
-            fill
-            sizes="100vw"
-            src={meshImage}
-          />
-          <Box className="absolute inset-0 z-1 dark:bg-black/30" />
-          <Box className="relative z-2 flex max-w-190 flex-col items-center px-6 py-24">
-            <h2 className="text-foreground text-center text-4xl font-medium tracking-tight md:text-6xl">
-              Turn what matters into work your team can deliver.
-            </h2>
+    <Box
+      aria-labelledby="marketing-cta-title"
+      as="section"
+      className="border-border border-t"
+      id="call-to-action"
+    >
+      <Container className="flex items-center justify-center py-24 text-center md:py-36">
+        <Box
+          className="flex max-w-5xl flex-col items-center"
+          data-landing-reveal
+        >
+          <h2
+            className="text-5xl leading-[0.98] font-semibold tracking-tight text-balance md:text-7xl"
+            id="marketing-cta-title"
+          >
+            Ready to make what{" "}
+            <UnderlinedHandwrittenAccent tone="primary">
+              matters
+            </UnderlinedHandwrittenAccent>{" "}
+            <UnderlinedHandwrittenAccent tone="success">
+              happen?
+            </UnderlinedHandwrittenAccent>
+          </h2>
+          <Box className="mt-8 flex flex-col items-center gap-2 sm:flex-row sm:gap-3">
             <Button
-              className="mt-8 border-0"
+              className="relative z-1 px-3 md:pr-4 md:pl-5"
               color="invert"
               href={SIGNUP_URL}
               rounded="lg"
               size="lg"
             >
-              Start free
+              Get started free
             </Button>
+            <GoogleSignupButton />
           </Box>
         </Box>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 };
