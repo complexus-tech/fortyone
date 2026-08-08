@@ -7,7 +7,6 @@ export const FeedbackWorkflow = () => {
   return (
     <ProductFeatureSection
       description="Give customers one place to submit requests, vote, and follow status. Organise feedback by board, see what rises to the top, and keep roadmap updates beside the original request."
-      eyebrow="Customer signal"
       id="feedback"
       title="Collect feedback and show customers what happens next."
     >

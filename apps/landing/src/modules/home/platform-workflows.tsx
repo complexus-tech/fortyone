@@ -9,7 +9,6 @@ export const DocumentsWorkflow = () => {
   return (
     <ProductFeatureSection
       description="Write shared project documents where planning happens, then link each document to the stories and objectives it supports."
-      eyebrow="Connected context"
       id="documents"
       title="Keep the brief connected to the work."
     >

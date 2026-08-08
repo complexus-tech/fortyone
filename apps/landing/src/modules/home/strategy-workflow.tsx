@@ -5,7 +5,6 @@ export const StrategyWorkflow = () => {
   return (
     <ProductFeatureSection
       description="Start with the ultimate goal, connect strategic pillars to objectives and key results, then sequence objectives on a roadmap with ownership, health, progress, and dates."
-      eyebrow="Company direction"
       id="strategy"
       title="Turn purpose into a plan everyone can follow."
     >

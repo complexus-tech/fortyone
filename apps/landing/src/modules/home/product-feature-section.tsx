@@ -5,7 +5,6 @@ import { Container } from "@/components/ui";
 type ProductFeatureSectionProps = {
   children: ReactNode;
   description: string;
-  eyebrow?: string;
   id: string;
   title: string;
 };
@@ -13,7 +12,6 @@ type ProductFeatureSectionProps = {
 export const ProductFeatureSection = ({
   children,
   description,
-  eyebrow,
   id,
   title,
 }: ProductFeatureSectionProps) => {
@@ -23,11 +21,6 @@ export const ProductFeatureSection = ({
         <Box className="border-border/70 border-t-[0.5px] pt-12 md:pt-16">
           <Box className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:gap-16">
             <Box data-landing-reveal>
-              {eyebrow ? (
-                <Text className="text-text-muted mb-5 font-mono text-[0.9rem] tracking-[0.16em] uppercase">
-                  {eyebrow}
-                </Text>
-              ) : null}
               <Text
                 as="h2"
                 className="max-w-4xl pb-1 text-4xl text-balance md:text-5xl"
