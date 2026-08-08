@@ -77,15 +77,20 @@ export const Navigation = () => {
     },
     ...(sprintItem ? [sprintItem] : []),
     {
-      name: "AI Assistant",
-      icon: <AiIcon />,
-      href: withWorkspace("/maya"),
-    },
-    {
       name: "Summary",
       icon: <DashboardIcon />,
       href: withWorkspace("/summary"),
     },
+    {
+      name: "AI Agent",
+      icon: <AiIcon />,
+      href: withWorkspace("/maya"),
+    },
+    // {
+    //   name: "Summary",
+    //   icon: <DashboardIcon />,
+    //   href: withWorkspace("/summary"),
+    // },
   ];
   const workspaceLinks: MenuItem[] = [
     {
