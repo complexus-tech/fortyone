@@ -588,7 +588,7 @@ export const Activity = ({
                     </Button>
                   ) : (
                     <Text color="muted" fontSize="md">
-                      ({member.username === "maya" ? "AI Assistant" : "Bot"})
+                      ({member.username === "maya" ? "AI Agent" : "Bot"})
                     </Text>
                   )}
                 </Box>

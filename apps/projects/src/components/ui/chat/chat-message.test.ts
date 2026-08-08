@@ -7,6 +7,14 @@ const readSource = (path: string) =>
   readFileSync(join(process.cwd(), path), "utf8");
 
 describe("ChatMessage", () => {
+  it("identifies Maya as FortyOne's AI agent", () => {
+    const promptSource = readSource("src/app/api/chat/system.ts");
+
+    expect(promptSource).toContain(
+      "You are Maya, FortyOne's AI agent for project management.",
+    );
+  });
+
   it("uses story-list surface colors for user prompts instead of inverse colors", () => {
     const source = readSource("src/components/ui/chat/chat-message.tsx");
 

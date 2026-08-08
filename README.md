@@ -38,9 +38,9 @@ A full-stack, open-source platform for project management and collaboration, wit
 
 ![OKR Objectives](apps/landing/public/images/product/objective.webp)
 
-#### 🤖 Maya AI Assistant
+#### 🤖 Maya AI Agent
 
-![Maya AI Assistant](apps/landing/public/images/product/maya.webp)
+![Maya AI Agent](apps/landing/public/images/product/maya.webp)
 
 ## 🚀 Quick Start
 

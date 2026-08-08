@@ -118,6 +118,9 @@ func TestNewRealtimeSessionConfigMatchesPortfolioVoice(t *testing.T) {
 	if !strings.Contains(config.Instructions, "warm, sharp, curious") {
 		t.Fatalf("Instructions do not contain the voice personality contract")
 	}
+	if !strings.Contains(config.Instructions, "FortyOne's AI agent for project management") {
+		t.Fatalf("Instructions do not contain Maya's AI agent identity")
+	}
 	if !strings.Contains(config.Instructions, `path "/maya"`) {
 		t.Fatalf("Instructions do not contain the current path")
 	}

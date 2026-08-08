@@ -48,6 +48,9 @@ func TestOpenAIAdvisorReturnsStructuredCandidateRecommendation(t *testing.T) {
 		if !strings.Contains(string(requestPayload), "Backend engineer") {
 			t.Fatalf("expected role context in request payload, got %s", requestPayload)
 		}
+		if !strings.Contains(string(requestPayload), "FortyOne's AI agent for scheduling project work") {
+			t.Fatalf("expected Maya's AI agent identity in request payload, got %s", requestPayload)
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
@@ -124,6 +127,9 @@ func TestOpenAIAdvisorReturnsStructuredBatchAssignmentRecommendations(t *testing
 		}
 		if !strings.Contains(string(requestPayload), "Frontend engineer") || !strings.Contains(string(requestPayload), "Backend engineer") {
 			t.Fatalf("expected candidate role context in request payload, got %s", requestPayload)
+		}
+		if !strings.Contains(string(requestPayload), "FortyOne's AI agent for scheduling project work") {
+			t.Fatalf("expected Maya's AI agent identity in request payload, got %s", requestPayload)
 		}
 
 		w.Header().Set("Content-Type", "application/json")

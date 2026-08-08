@@ -106,7 +106,8 @@ const Items = ({
     showMaya &&
     mayaAssignee !== undefined &&
     !excludedUserIds.has(mayaAssignee.id) &&
-    (normalizedQuery === "" || "maya ai assistant".includes(normalizedQuery))
+    (normalizedQuery === "" ||
+      "maya ai agent ai assistant".includes(normalizedQuery))
       ? mayaAssignee
       : null;
   const currentUserId = session?.user.id ?? null;
@@ -204,7 +205,7 @@ const Items = ({
                     }
                     setOpen(false);
                   }}
-                  value="Maya AI assistant"
+                  value="Maya AI agent"
                 >
                   <Flex align="center" gap={2}>
                     <MayaAvatar

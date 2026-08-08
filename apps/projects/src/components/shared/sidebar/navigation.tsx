@@ -86,11 +86,6 @@ export const Navigation = () => {
       icon: <AiIcon />,
       href: withWorkspace("/maya"),
     },
-    // {
-    //   name: "Summary",
-    //   icon: <DashboardIcon />,
-    //   href: withWorkspace("/summary"),
-    // },
   ];
   const workspaceLinks: MenuItem[] = [
     {

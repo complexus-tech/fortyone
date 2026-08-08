@@ -38,13 +38,13 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
               {
                 id: "ai-assistant-floating",
                 target: "[data-chat-button]",
-                title: "Meet Maya, Your AI Assistant",
+                title: "Meet Maya, Your AI Agent",
                 content: (
                   <Box className="space-y-3">
                     <Text color="muted">
-                      Maya is your always-on AI assistant. She can help you
-                      manage tasks, answer questions, and navigate your
-                      workspace.
+                      Maya is your always-on AI agent. She can plan and manage
+                      work, answer questions, and take action across your
+                      workspace with your confirmation.
                     </Text>
                     <Text color="muted">
                       Click here internally or press <Kbd>Shift + M</Kbd>{" "}
@@ -61,13 +61,14 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           id: "ai-assistant-nav",
           target: "[data-nav-ai-assistant]",
           title: pathname.includes("/maya")
-            ? "Meet Maya, Your AI Assistant"
+            ? "Meet Maya, Your AI Agent"
             : "Dedicated AI Space",
           content: pathname.includes("/maya") ? (
             <Box className="space-y-3">
               <Text color="muted">
-                Maya is your always-on AI assistant. She can help you manage
-                tasks, answer questions, and navigate your workspace.
+                Maya is your always-on AI agent. She can plan and manage work,
+                answer questions, and take action across your workspace with
+                your confirmation.
               </Text>
               <Text color="muted">
                 This contains your chat history and dedicated workspace for AI
@@ -233,12 +234,6 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           },
         },
       ] as WalkthroughStep[],
-    [
-      getTermDisplay,
-      pathname,
-      session?.user.name,
-      storyTerm,
-      storyTermPlural,
-    ],
+    [getTermDisplay, pathname, session?.user.name, storyTerm, storyTermPlural],
   );
 };

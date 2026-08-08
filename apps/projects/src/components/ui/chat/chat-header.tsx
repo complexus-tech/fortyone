@@ -70,7 +70,7 @@ export const ChatHeader = ({
                 Maya
               </Text>
               <Text className="text-base leading-6" color="muted">
-                AI project assistant
+                AI project agent
               </Text>
             </Box>
           ) : (

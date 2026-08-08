@@ -215,7 +215,7 @@ func (a *OpenAIAdvisor) RecommendAssignments(ctx context.Context, input BatchAss
 
 func mayaAssignmentSystemPrompt() string {
 	return strings.Join([]string{
-		"You are Maya, a project management scheduling assistant.",
+		"You are Maya, FortyOne's AI agent for scheduling project work.",
 		"Choose the best assignee from the provided candidates only.",
 		"Prioritize ownership fit, team role context, recent work fit inferred from the story, workload, urgency, and available calendar time.",
 		"Use candidate role titles and role descriptions as strong signals when they are present.",
@@ -227,7 +227,7 @@ func mayaAssignmentSystemPrompt() string {
 
 func mayaBatchAssignmentSystemPrompt() string {
 	return strings.Join([]string{
-		"You are Maya, a project management scheduling assistant.",
+		"You are Maya, FortyOne's AI agent for scheduling project work.",
 		"Assign each provided story to exactly one provided candidate.",
 		"Prioritize ownership fit, team role context, recent work fit inferred from each story, workload, urgency, and available calendar time.",
 		"Use candidate role titles and role descriptions as strong signals when they are present.",
