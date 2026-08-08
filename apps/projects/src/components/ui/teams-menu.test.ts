@@ -7,36 +7,44 @@ const readSource = (path: string) =>
   readFileSync(join(process.cwd(), path), "utf8");
 
 describe("TeamsMenu", () => {
-  it("renders one compact placeholder set while initial teams load", () => {
+  it("uses the shared nested menu pattern for overflow teams", () => {
+    const source = readSource("src/components/ui/teams-menu.tsx");
+
+    expect(source).toContain("<DropdownMenu.SubMenu");
+    expect(source).toContain("<DropdownMenu.SubTrigger");
+    expect(source).toContain("<DropdownMenu.SubItems");
+    expect(source).toContain("Search your teams");
+    expect(source).toContain("Your Teams");
+    expect(source).not.toContain("useJoinedTeamsInfinite");
+  });
+
+  it("keeps joined-team membership and pin actions distinct", () => {
+    const source = readSource("src/components/ui/teams-menu.tsx");
+
+    expect(source).toMatch(/aria-label=\{`Leave \$\{team\.name\}`\}/);
+    expect(source).toMatch(/aria-label=\{`Pin \$\{team\.name\}`\}/);
+    expect(source).toContain('<Tooltip title="Pin">');
+    expect(source).toContain('setTeam(team.id, "leave")');
+    expect(source).toContain("onPinTeam(team.id)");
+  });
+
+  it("lists joinable teams directly without the old heading", () => {
+    const source = readSource("src/components/ui/teams-menu.tsx");
+
+    expect(source).toContain("usePublicTeamsInfinite");
+    expect(source).toContain("Join team");
+    expect(source).not.toContain("Join a team");
+    expect(source.indexOf("Manage Teams")).toBeLessThan(
+      source.lastIndexOf("<YourTeamsSubMenu"),
+    );
+  });
+
+  it("renders one compact placeholder set while public teams load", () => {
     const source = readSource("src/components/ui/teams-menu.tsx");
     const initialLoaderUsages = source.match(
       /rows=\{INITIAL_TEAM_MENU_SKELETON_ROWS\}/g,
     );
 
-    expect(source).not.toContain("<MenuLoadingSkeleton rows={4} />");
     expect(initialLoaderUsages).toHaveLength(1);
-  });
-
-  it("separates joined teams from public teams", () => {
-    const menuSource = readSource("src/components/ui/teams-menu.tsx");
-    const sidebarSource = readSource("src/components/shared/sidebar/teams.tsx");
-
-    expect(menuSource).toContain("useJoinedTeamsInfinite");
-    expect(menuSource).not.toMatch(/\buseTeamsInfinite\b/);
-    expect(sidebarSource).toContain("useJoinedTeams");
-    expect(sidebarSource).not.toMatch(/\buseTeams\b/);
-  });
-
-  it("keeps actions and complete team lists inside padded groups", () => {
-    const source = readSource("src/components/ui/teams-menu.tsx");
-
-    expect(source).toContain("Your teams");
-    expect(source).toContain("joinedTeams.map");
-    expect(source).not.toContain("visibleTeamIdSet");
-    expect(source).not.toContain('<Command.Group className="px-0">');
-    expect(source.indexOf("Manage Teams")).toBeLessThan(
-      source.indexOf("Your teams"),
-    );
-    expect(source).toMatch(/`\/teams\/\$\{team\.id\}\/stories`/);
   });
 });

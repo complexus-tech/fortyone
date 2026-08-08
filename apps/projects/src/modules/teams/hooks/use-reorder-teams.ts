@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useWorkspacePath } from "@/hooks";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { teamKeys } from "@/constants/keys";
 import { reorderTeamsAction } from "../actions/reorder-teams";
 import type { Team } from "../types";
+import { reorderCachedTeams } from "./team-order-cache";
 
 export const useReorderTeamsMutation = () => {
   const queryClient = useQueryClient();
@@ -13,26 +13,51 @@ export const useReorderTeamsMutation = () => {
   const toastId = "reorder-teams";
 
   const mutation = useMutation({
-    mutationFn: (data: Parameters<typeof reorderTeamsAction>[0]) =>
-      reorderTeamsAction(data, workspaceSlug),
-    onMutate: (data) => {
+    mutationFn: async (data: Parameters<typeof reorderTeamsAction>[0]) => {
+      const response = await reorderTeamsAction(data, workspaceSlug);
+
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+
+      return response;
+    },
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({
+        queryKey: teamKeys.lists(workspaceSlug),
+      });
+
       const previousTeams = queryClient.getQueryData<Team[]>(
         teamKeys.lists(workspaceSlug),
       );
-      // reorder the teams
-      const reorderedTeams = data.teamIds.map((id) => {
-        return previousTeams?.find((t) => t.id === id);
-      });
-      queryClient.setQueryData(teamKeys.lists(workspaceSlug), reorderedTeams);
+      const previousJoinedTeams = queryClient.getQueryData<Team[]>(
+        teamKeys.joined(workspaceSlug),
+      );
 
-      return { previousTeams };
+      queryClient.setQueryData<Team[]>(teamKeys.lists(workspaceSlug), (teams) =>
+        reorderCachedTeams(teams, data.teamIds),
+      );
+      queryClient.setQueryData<Team[]>(
+        teamKeys.joined(workspaceSlug),
+        (teams) => reorderCachedTeams(teams, data.teamIds),
+      );
+
+      return { previousJoinedTeams, previousTeams };
     },
 
     onError: (error, variables, context) => {
-      queryClient.setQueryData(
-        teamKeys.lists(workspaceSlug),
-        context?.previousTeams,
-      );
+      if (context?.previousTeams) {
+        queryClient.setQueryData(
+          teamKeys.lists(workspaceSlug),
+          context.previousTeams,
+        );
+      }
+      if (context?.previousJoinedTeams) {
+        queryClient.setQueryData(
+          teamKeys.joined(workspaceSlug),
+          context.previousJoinedTeams,
+        );
+      }
       toast.error("Failed to reorder teams", {
         description:
           error.message || "An error occurred while reordering teams",
@@ -46,15 +71,7 @@ export const useReorderTeamsMutation = () => {
       });
     },
 
-    onSuccess: (res, variables) => {
-      if (res.error?.message) {
-        toast.error("Failed to reorder teams", {
-          description: res.error.message,
-          id: toastId,
-        });
-        throw new Error(res.error.message);
-      }
-
+    onSuccess: (_response, variables) => {
       analytics.track("teams_reordered", {
         newOrder: variables.teamIds,
       });

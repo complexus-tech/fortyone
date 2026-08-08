@@ -1,4 +1,4 @@
-import { Badge, Flex, Tooltip } from "ui";
+import { Button, Flex, Tooltip } from "ui";
 import { TagsIcon } from "icons";
 import { cn } from "lib";
 import { useLabels } from "@/lib/hooks/labels";
@@ -49,17 +49,18 @@ export const Labels = ({
       <span>
         <LabelsMenu>
           <LabelsMenu.Trigger>
-            <Badge
-              className={cn("h-[1.85rem] cursor-pointer text-[0.95rem]", {
-                "pointer-events-none cursor-not-allowed": userRole === "guest",
-              })}
+            <Button
+              className="gap-1 px-2"
               color="tertiary"
-              rounded={useStandardRadius ? "md" : "xl"}
+              disabled={userRole === "guest"}
+              rounded="md"
+              size="xs"
+              type="button"
               variant="outline"
             >
               <TagsIcon className="h-4" style={{ color: labels[0]?.color }} />
               {labels.length} label{labels.length > 1 ? "s" : ""}
-            </Badge>
+            </Button>
           </LabelsMenu.Trigger>
           <LabelsMenu.Items
             labelIds={storyLabels}
@@ -111,14 +112,13 @@ export const Labels = ({
           <span>
             <LabelsMenu>
               <LabelsMenu.Trigger>
-                <Badge
-                  className={cn("h-[1.85rem] cursor-pointer text-[0.95rem]", {
-                    "px-1.5": isRectangular,
-                    "pointer-events-none cursor-not-allowed":
-                      userRole === "guest",
-                  })}
+                <Button
+                  className="gap-1 px-2"
                   color="tertiary"
-                  rounded={useStandardRadius ? "md" : "xl"}
+                  disabled={userRole === "guest"}
+                  rounded="md"
+                  size="xs"
+                  type="button"
                   variant="outline"
                 >
                   <TagsIcon
@@ -127,7 +127,7 @@ export const Labels = ({
                   />{" "}
                   + {remainingLabels.length} label
                   {remainingLabels.length > 1 ? "s" : ""}
-                </Badge>
+                </Button>
               </LabelsMenu.Trigger>
               <LabelsMenu.Items
                 labelIds={storyLabels}

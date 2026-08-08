@@ -25,6 +25,7 @@ export * from "./arrow-up2";
 export * from "./search";
 export * from "./drag";
 export * from "./star";
+export * from "./pin";
 export * from "./minimize";
 export * from "./maximize";
 export * from "./users-add";

@@ -6,6 +6,7 @@ import { Teams } from "./teams";
 
 const mockReorderTeams = jest.fn();
 const mockReact = jest.requireActual("react");
+let mockActiveTeamId: string | undefined;
 const mockTeams = Array.from({ length: 6 }, (_, index) => ({
   id: `team-${index + 1}`,
   name: `Team ${index + 1}`,
@@ -14,7 +15,7 @@ const mockTeams = Array.from({ length: 6 }, (_, index) => ({
 }));
 
 jest.mock("next/navigation", () => ({
-  useParams: () => ({}),
+  useParams: () => ({ teamId: mockActiveTeamId }),
 }));
 
 jest.mock("ui", () => ({
@@ -112,7 +113,27 @@ jest.mock("@/components/ui/teams-menu", () => {
   const MockTeamsMenuTrigger = ({ children }: { children: ReactNode }) => (
     <>{children}</>
   );
-  const MockTeamsMenuItems = () => <div data-testid="teams-menu-items" />;
+  const MockTeamsMenuItems = ({
+    onPinTeam,
+    overflowTeams,
+  }: {
+    onPinTeam: (teamId: string) => void;
+    overflowTeams: typeof mockTeams;
+  }) => (
+    <div data-testid="teams-menu-items">
+      {overflowTeams.map((team) => (
+        <button
+          key={team.id}
+          onClick={() => {
+            onPinTeam(team.id);
+          }}
+          type="button"
+        >
+          Pin {team.name}
+        </button>
+      ))}
+    </div>
+  );
   MockTeamsMenu.Trigger = MockTeamsMenuTrigger;
   MockTeamsMenu.Items = MockTeamsMenuItems;
 
@@ -146,6 +167,7 @@ jest.mock("./team", () => ({
 
 describe("Teams", () => {
   beforeEach(() => {
+    mockActiveTeamId = undefined;
     mockReorderTeams.mockReset();
   });
 
@@ -179,6 +201,27 @@ describe("Teams", () => {
 
     expect(mockReorderTeams).toHaveBeenCalledWith({
       teamIds: ["team-2", "team-3", "team-1", "team-4", "team-5", "team-6"],
+    });
+  });
+
+  it("pins an overflow team first and preserves every team", () => {
+    render(<Teams />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Pin Team 5" }));
+
+    expect(mockReorderTeams).toHaveBeenCalledWith({
+      teamIds: ["team-5", "team-1", "team-2", "team-3", "team-4", "team-6"],
+    });
+  });
+
+  it("rearranges visible teams when the active team came from overflow", () => {
+    mockActiveTeamId = "team-6";
+    render(<Teams />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Reorder teams" }));
+
+    expect(mockReorderTeams).toHaveBeenCalledWith({
+      teamIds: ["team-2", "team-3", "team-1", "team-6", "team-4", "team-5"],
     });
   });
 });

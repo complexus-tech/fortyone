@@ -18,18 +18,15 @@ import { useReorderTeamsMutation } from "@/modules/teams/hooks/use-reorder-teams
 import { useTeamFeedbackSummaries } from "@/modules/team-feedback/hooks/use-team-feedback-summaries";
 import { ConfirmDialog } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
+import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 import { Team } from "./team";
-import { partitionSidebarTeams } from "./team-visibility";
+import {
+  partitionSidebarTeams,
+  pinSidebarTeam,
+  reorderVisibleSidebarTeams,
+} from "./team-visibility";
 
 const DEFAULT_EXPANDED_TEAM_ID = "__first-visible-team__";
-
-// Helper function to reorder array items
-const arrayMove = <T,>(array: T[], from: number, to: number): T[] => {
-  const newArray = [...array];
-  const [removed] = newArray.splice(from, 1);
-  newArray.splice(to, 0, removed);
-  return newArray;
-};
 
 export const Teams = () => {
   const { data: teams = [] } = useJoinedTeams();
@@ -45,8 +42,10 @@ export const Teams = () => {
   >(`sidebar:${workspaceSlug}:expanded-team`, DEFAULT_EXPANDED_TEAM_ID);
   const reorderTeams = useReorderTeamsMutation();
 
-  const { hasPromotedActiveTeam, visibleTeams, overflowTeams } =
-    partitionSidebarTeams(teams, activeTeamId);
+  const { visibleTeams, overflowTeams } = partitionSidebarTeams(
+    teams,
+    activeTeamId,
+  );
   const visibleTeamIds = visibleTeams.map((team) => team.id);
   const activeTeamIsVisible = Boolean(
     activeTeamId && visibleTeamIds.includes(activeTeamId),
@@ -80,29 +79,38 @@ export const Teams = () => {
       const team = teams.find((t) => t.id === teamId);
       if (!team) return;
       setTeam(team);
-      setIsOpen(true);
+      openDialogAfterMenuClose(setIsOpen);
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    if (hasPromotedActiveTeam) return;
+  const handlePinTeam = (teamId: string) => {
+    const reorderedTeams = pinSidebarTeam(teams, teamId);
 
+    if (reorderedTeams === teams) return;
+
+    reorderTeams.mutate({
+      teamIds: reorderedTeams.map((team) => team.id),
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
       return;
     }
 
-    const oldIndex = teams.findIndex((team) => team.id === active.id);
-    const newIndex = teams.findIndex((team) => team.id === over.id);
+    const reorderedTeams = reorderVisibleSidebarTeams(
+      teams,
+      visibleTeams,
+      String(active.id),
+      String(over.id),
+    );
 
-    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
-      return;
-    }
+    if (reorderedTeams === teams) return;
 
-    // Call the reorder teams action
     reorderTeams.mutate({
-      teamIds: arrayMove(teams, oldIndex, newIndex).map((team) => team.id),
+      teamIds: reorderedTeams.map((team) => team.id),
     });
   };
 
@@ -128,6 +136,8 @@ export const Teams = () => {
             </TeamsMenu.Trigger>
             <TeamsMenu.Items
               hideManageTeams={userRole !== "admin"}
+              onPinTeam={handlePinTeam}
+              overflowTeams={overflowTeams}
               readOnly={userRole === "guest"}
               setTeam={handleTeam}
             />
@@ -152,7 +162,7 @@ export const Teams = () => {
                 onOpenChange={(open) => {
                   setStoredExpandedTeamId(open ? team.id : null);
                 }}
-                sortingDisabled={hasPromotedActiveTeam}
+                sortingDisabled={false}
                 totalTeams={teams.length}
               />
             ))}

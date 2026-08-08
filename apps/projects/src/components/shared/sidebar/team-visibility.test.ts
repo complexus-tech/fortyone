@@ -3,6 +3,8 @@
 import {
   MAX_VISIBLE_SIDEBAR_TEAMS,
   partitionSidebarTeams,
+  pinSidebarTeam,
+  reorderVisibleSidebarTeams,
 } from "./team-visibility";
 
 const teams = Array.from({ length: 6 }, (_, index) => ({
@@ -49,5 +51,36 @@ describe("partitionSidebarTeams", () => {
 
     expect(result.visibleTeams).toHaveLength(4);
     expect(result.overflowTeams).toHaveLength(0);
+  });
+
+  it("pins an overflow team first while preserving the complete order", () => {
+    expect(pinSidebarTeam(teams, "team-6").map((team) => team.id)).toEqual([
+      "team-6",
+      "team-1",
+      "team-2",
+      "team-3",
+      "team-4",
+      "team-5",
+    ]);
+  });
+
+  it("reorders visible teams without losing the overflow order", () => {
+    const { visibleTeams } = partitionSidebarTeams(teams);
+
+    expect(
+      reorderVisibleSidebarTeams(teams, visibleTeams, "team-1", "team-3").map(
+        (team) => team.id,
+      ),
+    ).toEqual(["team-2", "team-3", "team-1", "team-4", "team-5", "team-6"]);
+  });
+
+  it("persists a promoted active team when it is rearranged", () => {
+    const { visibleTeams } = partitionSidebarTeams(teams, "team-6");
+
+    expect(
+      reorderVisibleSidebarTeams(teams, visibleTeams, "team-6", "team-1").map(
+        (team) => team.id,
+      ),
+    ).toEqual(["team-6", "team-1", "team-2", "team-3", "team-4", "team-5"]);
   });
 });

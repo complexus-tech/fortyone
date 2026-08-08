@@ -1,22 +1,16 @@
 "use client";
 
-import { Command, Flex, Popover, Text, Divider, Button, Box } from "ui";
-import {
-  createContext,
-  use,
-  useDeferredValue,
-  useState,
-  type ReactNode,
-  type UIEvent,
-} from "react";
-import { ChevronRightIcon, PlusIcon, TeamIcon } from "icons";
+import type { ReactNode, UIEvent } from "react";
+import { createContext, use, useDeferredValue, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronRightIcon, PinIcon, PlusIcon, TeamIcon } from "icons";
+import { Box, Divider, Flex, Menu as DropdownMenu, Text, Tooltip } from "ui";
+import { useWorkspacePath } from "@/hooks";
 import {
   TEAM_MENU_PAGE_SIZE,
-  useJoinedTeamsInfinite,
   usePublicTeamsInfinite,
 } from "@/modules/teams/hooks/teams";
-import { useWorkspacePath } from "@/hooks";
+import type { Team } from "@/modules/teams/types";
 import { MenuLoadingSkeleton } from "./menu-loading-skeleton";
 
 const INITIAL_TEAM_MENU_SKELETON_ROWS = 2;
@@ -36,30 +30,146 @@ export const useTeamsMenu = () => {
   return context;
 };
 
-const Menu = ({ children }: { children: ReactNode }) => {
+const MenuRoot = ({ children }: { children: ReactNode }) => {
   const { open, setOpen } = useTeamsMenu();
+
   return (
-    <Popover onOpenChange={setOpen} open={open}>
+    <DropdownMenu onOpenChange={setOpen} open={open}>
       {children}
-    </Popover>
+    </DropdownMenu>
   );
 };
 
 export const TeamsMenu = ({ children }: { children: ReactNode }) => {
   const [open, setOpen] = useState(false);
+
   return (
     <TeamsContext.Provider value={{ open, setOpen }}>
-      <Menu>{children}</Menu>
+      <MenuRoot>{children}</MenuRoot>
     </TeamsContext.Provider>
+  );
+};
+
+const YourTeamsSubMenu = ({
+  onPinTeam,
+  overflowTeams,
+  setTeam,
+}: {
+  onPinTeam: (teamId: string) => void;
+  overflowTeams: Team[];
+  setTeam: (teamId: string, action: "join" | "leave") => void;
+}) => {
+  const router = useRouter();
+  const { withWorkspace } = useWorkspacePath();
+  const { setOpen } = useTeamsMenu();
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase());
+  const filteredTeams = overflowTeams.filter((team) =>
+    team.name.toLocaleLowerCase().includes(deferredQuery),
+  );
+
+  return (
+    <DropdownMenu.SubMenu
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) setQuery("");
+      }}
+      open={isOpen}
+    >
+      <DropdownMenu.SubTrigger className="justify-between gap-4">
+        <Flex align="center" className="min-w-0" gap={2}>
+          <TeamIcon className="h-5 w-auto shrink-0" />
+          <Text>Your Teams</Text>
+        </Flex>
+        <ChevronRightIcon
+          className="text-text-muted h-4 w-auto shrink-0"
+          strokeWidth={2.4}
+        />
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubItems className="w-80 max-w-[calc(100vw-2rem)]">
+        <Box className="px-3 pt-0.5 pb-1.5">
+          <DropdownMenu.Input
+            aria-label="Search your teams"
+            autoFocus
+            onChange={(event) => {
+              setQuery(event.target.value);
+            }}
+            placeholder="Find your teams..."
+            value={query}
+          />
+        </Box>
+        <Divider className="my-1.5" />
+        <DropdownMenu.Group className="max-h-72 overflow-y-auto">
+          {filteredTeams.length === 0 ? (
+            <Text className="px-2 py-2" color="muted">
+              No teams found.
+            </Text>
+          ) : null}
+          {filteredTeams.map((team) => (
+            <Flex
+              align="center"
+              aria-label={`${team.name} actions`}
+              className="gap-1 py-0.5"
+              key={team.id}
+              role="group"
+            >
+              <DropdownMenu.Item
+                aria-label={`Open ${team.name}`}
+                className="min-w-0 flex-1"
+                onSelect={() => {
+                  router.push(withWorkspace(`/teams/${team.id}/stories`));
+                  setOpen(false);
+                }}
+              >
+                <Flex align="center" className="min-w-0" gap={2}>
+                  <Box
+                    className="size-3 shrink-0 rounded"
+                    style={{ backgroundColor: team.color }}
+                  />
+                  <Text className="truncate">{team.name}</Text>
+                </Flex>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                aria-label={`Leave ${team.name}`}
+                className="border-border/80 h-7.5 w-auto shrink-0 border px-2 py-0 text-[0.95rem]"
+                onSelect={() => {
+                  setTeam(team.id, "leave");
+                  setOpen(false);
+                }}
+              >
+                Leave
+              </DropdownMenu.Item>
+              <Tooltip title="Pin">
+                <DropdownMenu.Item
+                  aria-label={`Pin ${team.name}`}
+                  className="border-border/80 size-7.5 shrink-0 justify-center border p-0"
+                  onSelect={() => {
+                    onPinTeam(team.id);
+                    setOpen(false);
+                  }}
+                >
+                  <PinIcon className="h-4 w-auto" strokeWidth={2} />
+                </DropdownMenu.Item>
+              </Tooltip>
+            </Flex>
+          ))}
+        </DropdownMenu.Group>
+      </DropdownMenu.SubItems>
+    </DropdownMenu.SubMenu>
   );
 };
 
 const Items = ({
   hideManageTeams,
+  onPinTeam,
+  overflowTeams,
   readOnly = false,
   setTeam,
 }: {
   hideManageTeams?: boolean;
+  onPinTeam: (teamId: string) => void;
+  overflowTeams: Team[];
   readOnly?: boolean;
   setTeam: (teamId: string, action: "join" | "leave") => void;
 }) => {
@@ -68,188 +178,145 @@ const Items = ({
   const { open, setOpen } = useTeamsMenu();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const joinedTeamsQuery = useJoinedTeamsInfinite(
-    deferredQuery,
-    TEAM_MENU_PAGE_SIZE,
-    open,
-  );
   const publicTeamsQuery = usePublicTeamsInfinite(
     deferredQuery,
     TEAM_MENU_PAGE_SIZE,
     open && !readOnly,
   );
-  const joinedTeams =
-    joinedTeamsQuery.data?.pages.flatMap((page) => page.teams) ?? [];
   const publicTeams =
     publicTeamsQuery.data?.pages.flatMap((page) => page.teams) ?? [];
   const isInitialLoading =
-    (joinedTeamsQuery.isFetching && !joinedTeamsQuery.isFetchingNextPage) ||
-    (!readOnly &&
-      publicTeamsQuery.isFetching &&
-      !publicTeamsQuery.isFetchingNextPage);
+    publicTeamsQuery.isFetching && !publicTeamsQuery.isFetchingNextPage;
+  const hasActionGroup = !hideManageTeams || overflowTeams.length > 0;
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
     const distanceToBottom =
       target.scrollHeight - target.scrollTop - target.clientHeight;
 
-    if (distanceToBottom > 80) {
-      return;
-    }
+    if (distanceToBottom > 80) return;
 
-    if (joinedTeamsQuery.hasNextPage && !joinedTeamsQuery.isFetchingNextPage) {
-      void joinedTeamsQuery.fetchNextPage();
-    }
     if (publicTeamsQuery.hasNextPage && !publicTeamsQuery.isFetchingNextPage) {
       void publicTeamsQuery.fetchNextPage();
     }
   };
 
   return (
-    <Popover.Content align="start" className="w-72" sideOffset={5}>
-      <Command>
-        <Command.Input
-          onValueChange={setQuery}
-          placeholder="Join or manage teams..."
-          value={query}
-        />
-        <Divider className="my-2" />
-        <Command.List
-          className="mt-0 max-h-80 w-full overflow-y-auto border-0 bg-transparent py-0 shadow-none backdrop-blur-none dark:bg-transparent"
-          onScroll={handleScroll}
-        >
+    <DropdownMenu.Items
+      align="start"
+      className="w-72"
+      onCloseAutoFocus={() => {
+        setQuery("");
+      }}
+      sideOffset={5}
+    >
+      {!readOnly ? (
+        <>
+          <Box className="px-3 pt-0.5 pb-1.5">
+            <DropdownMenu.Input
+              aria-label="Search teams"
+              onChange={(event) => {
+                setQuery(event.target.value);
+              }}
+              placeholder="Find a team..."
+              value={query}
+            />
+          </Box>
+          <Divider className="my-1.5" />
+        </>
+      ) : null}
+
+      {hasActionGroup ? (
+        <DropdownMenu.Group>
           {!hideManageTeams ? (
             <>
-              <Command.Group>
-                <Command.Item
-                  onSelect={() => {
-                    router.push(withWorkspace("/settings/workspace/teams"));
-                    setOpen(false);
-                  }}
-                >
-                  <Flex align="center" gap={2}>
-                    <TeamIcon className="h-5 w-auto" />
-                    <Text>Manage Teams</Text>
-                  </Flex>
-                </Command.Item>
-                <Command.Item
-                  onSelect={() => {
-                    router.push(
-                      withWorkspace("/settings/workspace/teams/create"),
-                    );
-                    setOpen(false);
-                  }}
-                >
-                  <Flex align="center" gap={2}>
-                    <PlusIcon className="h-4" strokeWidth={2} />
-                    <Text>Create new team</Text>
-                  </Flex>
-                </Command.Item>
-              </Command.Group>
-              <Divider className="my-2" />
+              <DropdownMenu.Item
+                onSelect={() => {
+                  router.push(withWorkspace("/settings/workspace/teams"));
+                  setOpen(false);
+                }}
+              >
+                <TeamIcon className="h-5 w-auto" />
+                <Text>Manage Teams</Text>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onSelect={() => {
+                  router.push(
+                    withWorkspace("/settings/workspace/teams/create"),
+                  );
+                  setOpen(false);
+                }}
+              >
+                <PlusIcon className="h-4" strokeWidth={2} />
+                <Text>Create new team</Text>
+              </DropdownMenu.Item>
             </>
           ) : null}
-          {isInitialLoading ? (
-            <Command.Loading className="p-2">
-              <MenuLoadingSkeleton rows={INITIAL_TEAM_MENU_SKELETON_ROWS} />
-            </Command.Loading>
+          {overflowTeams.length > 0 ? (
+            <YourTeamsSubMenu
+              onPinTeam={onPinTeam}
+              overflowTeams={overflowTeams}
+              setTeam={setTeam}
+            />
           ) : null}
-          {!isInitialLoading &&
-          joinedTeams.length === 0 &&
-          (readOnly || publicTeams.length === 0) ? (
+        </DropdownMenu.Group>
+      ) : null}
+
+      {!readOnly && hasActionGroup ? <DropdownMenu.Separator /> : null}
+
+      {!readOnly ? (
+        <Box
+          className="max-h-80 w-full overflow-y-auto"
+          onScroll={handleScroll}
+        >
+          {isInitialLoading ? (
+            <Box className="p-2">
+              <MenuLoadingSkeleton rows={INITIAL_TEAM_MENU_SKELETON_ROWS} />
+            </Box>
+          ) : null}
+          {!isInitialLoading && publicTeams.length === 0 ? (
             <Box className="px-3 py-2">
               <Text color="muted">No teams found.</Text>
             </Box>
           ) : null}
-          {joinedTeams.length > 0 ? (
-            <Command.Group
-              heading={
-                <Text className="mb-1 px-2" color="muted" fontWeight="medium">
-                  Your teams
-                </Text>
-              }
-            >
-              {joinedTeams.map((team) => (
-                <Command.Item
-                  className="justify-between py-1 pr-1"
-                  key={team.id}
-                  onSelect={() => {
-                    router.push(withWorkspace(`/teams/${team.id}/stories`));
-                    setOpen(false);
-                  }}
-                  value={`${team.name} ${team.id}`}
-                >
-                  <Flex align="center" className="min-w-0" gap={2}>
-                    <Box
-                      className="size-3 shrink-0 rounded"
-                      style={{ backgroundColor: team.color }}
-                    />
-                    <span className="truncate">{team.name}</span>
-                  </Flex>
-                  <ChevronRightIcon className="h-4 w-auto shrink-0" />
-                </Command.Item>
-              ))}
-            </Command.Group>
-          ) : null}
-          {joinedTeamsQuery.isFetchingNextPage ? (
-            <Command.Loading className="p-2">
-              <MenuLoadingSkeleton rows={2} />
-            </Command.Loading>
-          ) : null}
-
-          {!readOnly && publicTeams.length > 0 && joinedTeams.length > 0 ? (
-            <Divider className="my-1.5" />
-          ) : null}
-
-          {!readOnly && publicTeams.length > 0 ? (
-            <Command.Group
-              heading={
-                <Text className="mb-1 px-2" color="muted" fontWeight="medium">
-                  Join a team
-                </Text>
-              }
-            >
+          {publicTeams.length > 0 ? (
+            <DropdownMenu.Group>
               {publicTeams.map((team) => (
-                <Command.Item
+                <DropdownMenu.Item
                   className="justify-between py-1 pr-1"
                   key={team.id}
                   onSelect={() => {
                     setTeam(team.id, "join");
                     setOpen(false);
                   }}
-                  value={`${team.name} ${team.id}`}
                 >
-                  <Flex align="center" gap={2}>
+                  <Flex align="center" className="min-w-0" gap={2}>
                     <Box
-                      className="size-3 rounded"
+                      className="size-3 shrink-0 rounded"
                       style={{ backgroundColor: team.color }}
                     />
-                    {team.name}
+                    <Text className="truncate">{team.name}</Text>
                   </Flex>
-                  <Button
-                    className="border-border/80 px-3"
-                    color="tertiary"
-                    size="xs"
-                  >
+                  <span className="border-border/80 bg-surface flex h-7.5 shrink-0 items-center rounded-xl border px-3 text-[0.95rem]">
                     Join team
-                  </Button>
-                </Command.Item>
+                  </span>
+                </DropdownMenu.Item>
               ))}
-            </Command.Group>
+            </DropdownMenu.Group>
           ) : null}
-          {!readOnly && publicTeamsQuery.isFetchingNextPage ? (
-            <Command.Loading className="p-2">
+          {publicTeamsQuery.isFetchingNextPage ? (
+            <Box className="p-2">
               <MenuLoadingSkeleton rows={2} />
-            </Command.Loading>
+            </Box>
           ) : null}
-        </Command.List>
-      </Command>
-    </Popover.Content>
+        </Box>
+      ) : null}
+    </DropdownMenu.Items>
   );
 };
 
 const Trigger = ({ children }: { children: ReactNode }) => (
-  <Popover.Trigger asChild>{children}</Popover.Trigger>
+  <DropdownMenu.Button>{children}</DropdownMenu.Button>
 );
 
 TeamsMenu.Trigger = Trigger;
