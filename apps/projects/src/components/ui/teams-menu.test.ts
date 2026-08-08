@@ -24,6 +24,9 @@ describe("TeamsMenu", () => {
     expect(source).toMatch(/aria-label=\{`Leave \$\{team\.name\}`\}/);
     expect(source).toMatch(/aria-label=\{`Pin \$\{team\.name\}`\}/);
     expect(source).toContain('<Tooltip title="Pin">');
+    expect(source).toContain("h-7.5 w-7.5 shrink-0");
+    expect(source).not.toContain("size-7.5 shrink-0");
+    expect(source).toContain("shrink-0 rounded-xl border");
     expect(source).toContain('setTeam(team.id, "leave")');
     expect(source).toContain("onPinTeam(team.id)");
   });
@@ -33,6 +36,7 @@ describe("TeamsMenu", () => {
 
     expect(source).toContain("usePublicTeamsInfinite");
     expect(source).toContain("Join team");
+    expect(source).toContain("rounded-xl border px-2");
     expect(source).not.toContain("Join a team");
     expect(source.indexOf("Manage Teams")).toBeLessThan(
       source.lastIndexOf("<YourTeamsSubMenu"),

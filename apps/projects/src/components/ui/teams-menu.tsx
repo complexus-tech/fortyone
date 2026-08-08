@@ -132,7 +132,7 @@ const YourTeamsSubMenu = ({
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 aria-label={`Leave ${team.name}`}
-                className="border-border/80 h-7.5 w-auto shrink-0 border px-2 py-0 text-[0.95rem]"
+                className="border-border/80 h-7.5 w-auto shrink-0 rounded-xl border px-2 py-0 text-[0.95rem]"
                 onSelect={() => {
                   setTeam(team.id, "leave");
                   setOpen(false);
@@ -143,7 +143,7 @@ const YourTeamsSubMenu = ({
               <Tooltip title="Pin">
                 <DropdownMenu.Item
                   aria-label={`Pin ${team.name}`}
-                  className="border-border/80 size-7.5 shrink-0 justify-center border p-0"
+                  className="border-border/80 h-7.5 w-7.5 shrink-0 justify-center rounded-xl border p-0"
                   onSelect={() => {
                     onPinTeam(team.id);
                     setOpen(false);
@@ -297,7 +297,7 @@ const Items = ({
                     />
                     <Text className="truncate">{team.name}</Text>
                   </Flex>
-                  <span className="border-border/80 bg-surface flex h-7.5 shrink-0 items-center rounded-xl border px-3 text-[0.95rem]">
+                  <span className="border-border/80 bg-surface flex h-7.5 shrink-0 items-center rounded-xl border px-2 text-[0.95rem]">
                     Join team
                   </span>
                 </DropdownMenu.Item>
