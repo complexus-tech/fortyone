@@ -1,7 +1,8 @@
 "use client";
 import { Box, Flex, Text, Button } from "ui";
 import { MoreHorizontalIcon } from "icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -9,7 +10,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSession } from "@/lib/auth/client";
 import { useJoinedTeams } from "@/modules/teams/hooks/teams";
-import { useUserRole } from "@/hooks";
+import { useLocalStorage, useUserRole, useWorkspacePath } from "@/hooks";
 import { TeamsMenu } from "@/components/ui/teams-menu";
 import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mutation";
 import { useAddMemberMutation } from "@/modules/teams/hooks/add-member-mutation";
@@ -18,6 +19,9 @@ import { useTeamFeedbackSummaries } from "@/modules/team-feedback/hooks/use-team
 import { ConfirmDialog } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
 import { Team } from "./team";
+import { partitionSidebarTeams } from "./team-visibility";
+
+const DEFAULT_EXPANDED_TEAM_ID = "__first-visible-team__";
 
 // Helper function to reorder array items
 const arrayMove = <T,>(array: T[], from: number, to: number): T[] => {
@@ -31,10 +35,37 @@ export const Teams = () => {
   const { data: teams = [] } = useJoinedTeams();
   const { data: feedbackSummaries = [] } = useTeamFeedbackSummaries();
   const { userRole } = useUserRole();
+  const { workspaceSlug } = useWorkspacePath();
+  const { teamId: activeTeamId } = useParams<{ teamId?: string }>();
   const { data: session } = useSession();
   const [team, setTeam] = useState<TeamType | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [storedExpandedTeamId, setStoredExpandedTeamId] = useLocalStorage<
+    string | null
+  >(`sidebar:${workspaceSlug}:expanded-team`, DEFAULT_EXPANDED_TEAM_ID);
   const reorderTeams = useReorderTeamsMutation();
+
+  const { hasPromotedActiveTeam, visibleTeams, overflowTeams } =
+    partitionSidebarTeams(teams, activeTeamId);
+  const visibleTeamIds = visibleTeams.map((team) => team.id);
+  const activeTeamIsVisible = Boolean(
+    activeTeamId && visibleTeamIds.includes(activeTeamId),
+  );
+  let expandedTeamId: string | null = storedExpandedTeamId;
+
+  if (expandedTeamId !== null && !visibleTeamIds.includes(expandedTeamId)) {
+    expandedTeamId = activeTeamIsVisible
+      ? activeTeamId ?? null
+      : visibleTeams[0]?.id ?? null;
+  }
+
+  useEffect(() => {
+    if (!activeTeamId || !activeTeamIsVisible) return;
+
+    setStoredExpandedTeamId((currentTeamId) =>
+      currentTeamId === activeTeamId ? currentTeamId : activeTeamId,
+    );
+  }, [activeTeamId, activeTeamIsVisible, setStoredExpandedTeamId]);
 
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
   const { mutate: addMember } = useAddMemberMutation();
@@ -54,6 +85,8 @@ export const Teams = () => {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (hasPromotedActiveTeam) return;
+
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
@@ -79,7 +112,7 @@ export const Teams = () => {
         <Text className="pl-2.5 font-medium" color="muted" data-teams-heading>
           Your Teams
         </Text>
-        {userRole !== "guest" && (
+        {userRole !== "guest" || overflowTeams.length > 0 ? (
           <TeamsMenu>
             <TeamsMenu.Trigger>
               <Button
@@ -95,26 +128,31 @@ export const Teams = () => {
             </TeamsMenu.Trigger>
             <TeamsMenu.Items
               hideManageTeams={userRole !== "admin"}
+              readOnly={userRole === "guest"}
               setTeam={handleTeam}
             />
           </TeamsMenu>
-        )}
+        ) : null}
       </Flex>
       <DndContext onDragEnd={handleDragEnd}>
         <SortableContext
-          items={teams.map((team) => team.id)}
+          items={visibleTeamIds}
           strategy={verticalListSortingStrategy}
         >
           <Flex direction="column" gap={1}>
-            {teams.map((team, idx) => (
+            {visibleTeams.map((team) => (
               <Team
                 color={team.color}
                 feedbackSummary={feedbackSummaryByTeamId.get(team.id)}
                 id={team.id}
-                idx={idx}
+                isOpen={expandedTeamId === team.id}
                 isPrivate={team.isPrivate}
                 key={team.id}
                 name={team.name}
+                onOpenChange={(open) => {
+                  setStoredExpandedTeamId(open ? team.id : null);
+                }}
+                sortingDisabled={hasPromotedActiveTeam}
                 totalTeams={teams.length}
               />
             ))}

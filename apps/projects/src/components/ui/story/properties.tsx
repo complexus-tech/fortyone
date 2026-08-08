@@ -1,13 +1,4 @@
-import {
-  Box,
-  Flex,
-  Button,
-  Text,
-  DatePicker,
-  Tooltip,
-  Badge,
-  Divider,
-} from "ui";
+import { Box, Flex, Button, Text, DatePicker, Tooltip, Divider } from "ui";
 import {
   ArrowRight2Icon,
   CalendarIcon,
@@ -418,17 +409,18 @@ export const StoryProperties = ({
             </Box>
           }
         >
-          <Badge
-            className="text-foreground hidden h-[1.85rem] cursor-pointer bg-transparent text-[0.95rem] md:flex"
+          <Button
+            className="hidden gap-1 px-2 md:flex"
             color="tertiary"
             onClick={() => {
               if (!asKanban) {
                 setIsExpanded?.(!isExpanded);
               }
             }}
-            role="button"
             rounded="md"
-            tabIndex={0}
+            size="xs"
+            type="button"
+            variant="outline"
           >
             <SubStoryIcon />
             {subStories.length <= 10 ? subStories.length : `10+`} sub{" "}
@@ -443,7 +435,7 @@ export const StoryProperties = ({
                 strokeWidth={3}
               />
             )}
-          </Badge>
+          </Button>
         </Tooltip>
       )}
       {isColumnVisible("Labels") && storyLabels && storyLabels.length > 0 ? (

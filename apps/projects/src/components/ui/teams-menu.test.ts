@@ -26,4 +26,17 @@ describe("TeamsMenu", () => {
     expect(sidebarSource).toContain("useJoinedTeams");
     expect(sidebarSource).not.toMatch(/\buseTeams\b/);
   });
+
+  it("keeps actions and complete team lists inside padded groups", () => {
+    const source = readSource("src/components/ui/teams-menu.tsx");
+
+    expect(source).toContain("Your teams");
+    expect(source).toContain("joinedTeams.map");
+    expect(source).not.toContain("visibleTeamIdSet");
+    expect(source).not.toContain('<Command.Group className="px-0">');
+    expect(source.indexOf("Manage Teams")).toBeLessThan(
+      source.indexOf("Your teams"),
+    );
+    expect(source).toMatch(/`\/teams\/\$\{team\.id\}\/stories`/);
+  });
 });

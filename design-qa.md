@@ -197,6 +197,56 @@ final result: blocked
 
 ---
 
+# Sidebar Team Menu Design QA
+
+## Source and implementation evidence
+
+- Source visual truth: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_KhOx7i/Screenshot 2026-08-08 at 9.37.47 AM.png` (948 × 576 pixels, dark mode).
+- Implementation screenshot: unavailable because the connected in-app browser opens `http://localhost:3000/` at `Login - FortyOne`.
+- Intended viewport and state: authenticated desktop Projects view in dark mode with the Your Teams menu open and seven joined teams available.
+- CSS viewport, implementation pixel size, and density normalization: unavailable without the authenticated implementation state.
+
+## Comparison evidence
+
+- Full-view comparison: blocked because an authenticated implementation capture could not be produced.
+- Focused menu comparison: blocked for the same reason; a combined source-and-implementation comparison input could not be created.
+- A focused source review identified two visible targets: horizontal group insets around every menu item and joined/public team rows immediately below the management actions.
+
+## Functional verification
+
+- Manage Teams, Create new team, joined-team rows, and public-team rows now render inside the shared padded `Command.Group` component.
+- Joined teams are no longer filtered out because they are already visible in the sidebar; all joined teams are listed under Your teams.
+- Public teams remain available under Join a team, and a stable empty message renders when neither collection contains a team.
+- The local `first` workspace now contains six deterministic seeded teams and six matching memberships for Joseph Mukorivo; the seed was rerun without creating duplicates.
+- Focused ESLint and Projects type checking pass. React Doctor reports only findings in pre-existing or concurrently changed components outside this focused menu change.
+- Focused Jest remains blocked before test discovery by the repository's Jest 29/TypeScript 7 `fileExists` configuration failure.
+
+## Required fidelity surfaces
+
+- Typography: existing FortyOne `Text` styles and menu heading weight are retained.
+- Spacing and layout: the shared `Command.Group` horizontal padding now applies to every actionable row; no menu group opts out with `px-0`.
+- Colors and visual tokens: existing warm menu surfaces, hover colors, borders, and team colors are unchanged.
+- Image and icon quality: existing Hugeicons-based team, plus, and chevron icons are reused at stroke width 2.
+- Copy and content: management actions remain first, followed by Your teams and Join a team sections.
+
+## Comparison history
+
+- Earlier P1: the screenshot showed no team rows below the management actions. The menu now renders complete joined and public team collections.
+- Earlier P2: menu action rows reached the container edges. All rows now inherit the shared command-group inset.
+- Post-fix visual evidence remains unavailable until the local app is authenticated in the connected browser.
+
+## Implementation checklist
+
+- [x] Restore padded groups around every menu section.
+- [x] Display every joined team below the management actions.
+- [x] Continue displaying joinable public teams.
+- [x] Seed six joined teams for overflow testing.
+- [ ] Capture and compare the authenticated open-menu state at 948 × 576.
+
+final result: blocked
+
+---
+
 # Documents Related Work Sidebar and Header Design QA
 
 ## Source and implementation evidence

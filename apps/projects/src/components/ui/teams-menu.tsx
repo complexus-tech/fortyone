@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type UIEvent,
 } from "react";
-import { PlusIcon, TeamIcon } from "icons";
+import { ChevronRightIcon, PlusIcon, TeamIcon } from "icons";
 import { useRouter } from "next/navigation";
 import {
   TEAM_MENU_PAGE_SIZE,
@@ -56,9 +56,11 @@ export const TeamsMenu = ({ children }: { children: ReactNode }) => {
 
 const Items = ({
   hideManageTeams,
+  readOnly = false,
   setTeam,
 }: {
   hideManageTeams?: boolean;
+  readOnly?: boolean;
   setTeam: (teamId: string, action: "join" | "leave") => void;
 }) => {
   const router = useRouter();
@@ -74,17 +76,17 @@ const Items = ({
   const publicTeamsQuery = usePublicTeamsInfinite(
     deferredQuery,
     TEAM_MENU_PAGE_SIZE,
-    open,
+    open && !readOnly,
   );
-  const teams =
+  const joinedTeams =
     joinedTeamsQuery.data?.pages.flatMap((page) => page.teams) ?? [];
   const publicTeams =
     publicTeamsQuery.data?.pages.flatMap((page) => page.teams) ?? [];
-  const canLeaveTeam =
-    teams.length > 1 || Boolean(joinedTeamsQuery.hasNextPage);
   const isInitialLoading =
     (joinedTeamsQuery.isFetching && !joinedTeamsQuery.isFetchingNextPage) ||
-    (publicTeamsQuery.isFetching && !publicTeamsQuery.isFetchingNextPage);
+    (!readOnly &&
+      publicTeamsQuery.isFetching &&
+      !publicTeamsQuery.isFetchingNextPage);
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -112,121 +114,135 @@ const Items = ({
           value={query}
         />
         <Divider className="my-2" />
-        {!isInitialLoading ? (
-          <Command.Empty className="py-2">
-            <Text color="muted">No teams found.</Text>
-          </Command.Empty>
-        ) : null}
-        <Command.Group
-          className="max-h-80 overflow-y-auto"
+        <Command.List
+          className="mt-0 max-h-80 w-full overflow-y-auto border-0 bg-transparent py-0 shadow-none backdrop-blur-none dark:bg-transparent"
           onScroll={handleScroll}
         >
+          {!hideManageTeams ? (
+            <>
+              <Command.Group>
+                <Command.Item
+                  onSelect={() => {
+                    router.push(withWorkspace("/settings/workspace/teams"));
+                    setOpen(false);
+                  }}
+                >
+                  <Flex align="center" gap={2}>
+                    <TeamIcon className="h-5 w-auto" />
+                    <Text>Manage Teams</Text>
+                  </Flex>
+                </Command.Item>
+                <Command.Item
+                  onSelect={() => {
+                    router.push(
+                      withWorkspace("/settings/workspace/teams/create"),
+                    );
+                    setOpen(false);
+                  }}
+                >
+                  <Flex align="center" gap={2}>
+                    <PlusIcon className="h-4" strokeWidth={2} />
+                    <Text>Create new team</Text>
+                  </Flex>
+                </Command.Item>
+              </Command.Group>
+              <Divider className="my-2" />
+            </>
+          ) : null}
           {isInitialLoading ? (
             <Command.Loading className="p-2">
               <MenuLoadingSkeleton rows={INITIAL_TEAM_MENU_SKELETON_ROWS} />
             </Command.Loading>
           ) : null}
-          {teams.map((team) => (
-            <Command.Item
-              className="justify-between py-1 pr-1"
-              disabled={!canLeaveTeam}
-              key={team.id}
-              onSelect={() => {
-                setTeam(team.id, "leave");
-                setOpen(false);
-              }}
-              value={team.name}
+          {!isInitialLoading &&
+          joinedTeams.length === 0 &&
+          (readOnly || publicTeams.length === 0) ? (
+            <Box className="px-3 py-2">
+              <Text color="muted">No teams found.</Text>
+            </Box>
+          ) : null}
+          {joinedTeams.length > 0 ? (
+            <Command.Group
+              heading={
+                <Text className="mb-1 px-2" color="muted" fontWeight="medium">
+                  Your teams
+                </Text>
+              }
             >
-              <Flex align="center" gap={2}>
-                <Box
-                  className="size-3 rounded"
-                  style={{ backgroundColor: team.color }}
-                />
-                {team.name}
-              </Flex>
-              <Button
-                className="border-border/80 px-2"
-                color="tertiary"
-                disabled={!canLeaveTeam}
-                size="xs"
-              >
-                Leave
-              </Button>
-            </Command.Item>
-          ))}
+              {joinedTeams.map((team) => (
+                <Command.Item
+                  className="justify-between py-1 pr-1"
+                  key={team.id}
+                  onSelect={() => {
+                    router.push(withWorkspace(`/teams/${team.id}/stories`));
+                    setOpen(false);
+                  }}
+                  value={`${team.name} ${team.id}`}
+                >
+                  <Flex align="center" className="min-w-0" gap={2}>
+                    <Box
+                      className="size-3 shrink-0 rounded"
+                      style={{ backgroundColor: team.color }}
+                    />
+                    <span className="truncate">{team.name}</span>
+                  </Flex>
+                  <ChevronRightIcon className="h-4 w-auto shrink-0" />
+                </Command.Item>
+              ))}
+            </Command.Group>
+          ) : null}
           {joinedTeamsQuery.isFetchingNextPage ? (
             <Command.Loading className="p-2">
               <MenuLoadingSkeleton rows={2} />
             </Command.Loading>
           ) : null}
 
-          {publicTeams.length > 0 && teams.length > 0 && (
+          {!readOnly && publicTeams.length > 0 && joinedTeams.length > 0 ? (
             <Divider className="my-1.5" />
-          )}
+          ) : null}
 
-          {publicTeams.map((team) => (
-            <Command.Item
-              className="justify-between py-1 pr-1"
-              key={team.id}
-              onSelect={() => {
-                setTeam(team.id, "join");
-                setOpen(false);
-              }}
-              value={team.name}
+          {!readOnly && publicTeams.length > 0 ? (
+            <Command.Group
+              heading={
+                <Text className="mb-1 px-2" color="muted" fontWeight="medium">
+                  Join a team
+                </Text>
+              }
             >
-              <Flex align="center" gap={2}>
-                <Box
-                  className="size-3 rounded"
-                  style={{ backgroundColor: team.color }}
-                />
-                {team.name}
-              </Flex>
-              <Button
-                className="border-border/80 px-3"
-                color="tertiary"
-                size="xs"
-              >
-                Join team
-              </Button>
-            </Command.Item>
-          ))}
-          {publicTeamsQuery.isFetchingNextPage ? (
+              {publicTeams.map((team) => (
+                <Command.Item
+                  className="justify-between py-1 pr-1"
+                  key={team.id}
+                  onSelect={() => {
+                    setTeam(team.id, "join");
+                    setOpen(false);
+                  }}
+                  value={`${team.name} ${team.id}`}
+                >
+                  <Flex align="center" gap={2}>
+                    <Box
+                      className="size-3 rounded"
+                      style={{ backgroundColor: team.color }}
+                    />
+                    {team.name}
+                  </Flex>
+                  <Button
+                    className="border-border/80 px-3"
+                    color="tertiary"
+                    size="xs"
+                  >
+                    Join team
+                  </Button>
+                </Command.Item>
+              ))}
+            </Command.Group>
+          ) : null}
+          {!readOnly && publicTeamsQuery.isFetchingNextPage ? (
             <Command.Loading className="p-2">
               <MenuLoadingSkeleton rows={2} />
             </Command.Loading>
           ) : null}
-        </Command.Group>
-        {!hideManageTeams && (
-          <>
-            <Divider className="my-2" />
-            <Command.Group>
-              <Command.Item
-                onSelect={() => {
-                  router.push(withWorkspace("/settings/workspace/teams"));
-                  setOpen(false);
-                }}
-              >
-                <Flex align="center" gap={2}>
-                  <TeamIcon className="h-5 w-auto" />
-                  <Text>Manage Teams</Text>
-                </Flex>
-              </Command.Item>
-              <Command.Item
-                onSelect={() => {
-                  router.push(
-                    withWorkspace("/settings/workspace/teams/create"),
-                  );
-                  setOpen(false);
-                }}
-              >
-                <Flex align="center" gap={2}>
-                  <PlusIcon className="h-4" strokeWidth={3} />
-                  <Text>Create new team</Text>
-                </Flex>
-              </Command.Item>
-            </Command.Group>
-          </>
-        )}
+        </Command.List>
       </Command>
     </Popover.Content>
   );

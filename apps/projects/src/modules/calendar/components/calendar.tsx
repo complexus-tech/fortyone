@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   addDays,
@@ -37,6 +37,7 @@ import {
 import { useLocalStorage, useTerminology, useWorkspacePath } from "@/hooks";
 import {
   useCalendarIntegration,
+  useCalendarAutoSync,
   useCreateCalendarConnectSession,
   useCalendarSchedule,
   useCreateCalendarScheduleBlock,
@@ -78,7 +79,6 @@ const defaultVisibleStartHour = 8;
 const defaultVisibleEndHour = 21;
 const hourHeight = 52;
 const timeRailWidth = 8;
-const automaticSyncStaleAfter = 5 * 60 * 1000;
 const calendarHistoryDays = 7;
 const calendarLookaheadDays = 90;
 const calendarViews = ["day", "week", "month"] as const;
@@ -1512,10 +1512,13 @@ export const PersonalCalendar = ({
   const canReadEventDetails = Boolean(connection?.canReadEventDetails);
   const createConnectSession = useCreateCalendarConnectSession();
   const syncCalendar = useSyncCalendarConnection();
-  const automaticSyncAttempt = useRef<{
-    connectionId: string;
-    attemptedAt: number;
-  } | null>(null);
+  const markCalendarSyncAttempt = useCalendarAutoSync({
+    connectionId: connection?.id,
+    isSyncPending: syncCalendar.isPending,
+    lastSyncedAt: connection?.lastSyncedAt,
+    sync: syncCalendar.mutate,
+    syncStatus: connection?.syncStatus,
+  });
   const { data: assignedStories } = useMyStoriesGrouped("none", {
     assignedToMe: true,
     categories: ["backlog", "unstarted", "started", "paused"],
@@ -1573,56 +1576,11 @@ export const PersonalCalendar = ({
     { length: visibleEndHour - visibleStartHour + 1 },
     (_, index) => visibleStartHour + index,
   );
-  const connectionId = connection?.id;
-  const connectionLastSyncedAt = connection?.lastSyncedAt;
-  const connectionSyncStatus = connection?.syncStatus;
-  const syncCalendarMutate = syncCalendar.mutate;
-  const syncCalendarPending = syncCalendar.isPending;
   const hasCalendarLoadError =
     scheduleQuery.isError || integrationQuery.isError;
   const isCalendarInitialLoading =
     scheduleQuery.isPending || integrationQuery.isPending;
   const activeDialogMode = isScheduleDialogOpen ? "work" : dialogMode;
-
-  useEffect(() => {
-    if (!connectionId) {
-      return;
-    }
-
-    const syncIfStale = () => {
-      const now = Date.now();
-      const lastSyncedAt = connectionLastSyncedAt
-        ? Date.parse(connectionLastSyncedAt)
-        : Number.NaN;
-      const isFresh =
-        connectionSyncStatus !== "failed" &&
-        Number.isFinite(lastSyncedAt) &&
-        now - lastSyncedAt < automaticSyncStaleAfter;
-      const previousAttempt = automaticSyncAttempt.current;
-      const attemptedRecently =
-        previousAttempt?.connectionId === connectionId &&
-        now - previousAttempt.attemptedAt < automaticSyncStaleAfter;
-
-      if (syncCalendarPending || isFresh || attemptedRecently) {
-        return;
-      }
-
-      automaticSyncAttempt.current = { connectionId, attemptedAt: now };
-      syncCalendarMutate({ connectionId, silent: true });
-    };
-
-    syncIfStale();
-    const interval = window.setInterval(syncIfStale, automaticSyncStaleAfter);
-    return () => {
-      window.clearInterval(interval);
-    };
-  }, [
-    connectionId,
-    connectionLastSyncedAt,
-    connectionSyncStatus,
-    syncCalendarMutate,
-    syncCalendarPending,
-  ]);
 
   const openDialog = (mode: "work" | "focus") => {
     onScheduleDialogOpenChange(false);
@@ -1644,10 +1602,7 @@ export const PersonalCalendar = ({
     setDialogMode(dialogMode ?? "work");
   };
   const syncConnection = (connectionID: string) => {
-    automaticSyncAttempt.current = {
-      connectionId: connectionID,
-      attemptedAt: Date.now(),
-    };
+    markCalendarSyncAttempt(connectionID);
     syncCalendar.mutate({ connectionId: connectionID });
   };
   const isDaySelectable = (day: Date) => {
