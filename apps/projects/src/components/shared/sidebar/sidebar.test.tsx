@@ -75,16 +75,11 @@ jest.mock("@/lib/hooks/workspaces", () => ({
   useCurrentWorkspace: () => ({ workspace: { deletedAt: null } }),
 }));
 
-jest.mock("@/components/ui", () => ({
-  InviteMembersDialog: () => null,
-}));
-
 jest.mock("@/components/shared/keyboard-shortcuts", () => ({
   KeyboardShortcuts: () => null,
 }));
 
 jest.mock("../commands", () => ({ Commands: () => null }));
-jest.mock("../command-bar", () => ({ CommandBar: () => null }));
 jest.mock("./header", () => ({ Header: () => <div>Header</div> }));
 jest.mock("./navigation", () => ({ Navigation: () => <div>Navigation</div> }));
 jest.mock("./teams", () => ({ Teams: () => <div>Teams</div> }));
@@ -137,7 +132,9 @@ describe("Sidebar", () => {
 
     expect(screen.getByText("Upcoming meeting")).toBeInTheDocument();
     expect(upgrade).toHaveAttribute("href", "/acme/settings/workspace/billing");
-    expect(screen.queryByRole("button", { name: "Invite members" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Invite members" }),
+    ).toBeNull();
     expect(screen.queryByText("You're on the free plan")).toBeNull();
     expect(screen.queryByText("Upgrade plan")).toBeNull();
   });
@@ -150,13 +147,11 @@ describe("Sidebar", () => {
     expect(screen.queryByRole("link", { name: "Upgrade" })).toBeNull();
   });
 
-  it("keeps Invite members when there is no meeting", () => {
+  it("keeps Upgrade in the footer action row when there is no meeting", () => {
     mockHasMeeting = false;
     render(<Sidebar />);
 
-    expect(
-      screen.getByRole("button", { name: "Invite members" }),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Invite members" })).toBeNull();
     expect(screen.getByRole("link", { name: "Upgrade" })).toBeInTheDocument();
   });
 });

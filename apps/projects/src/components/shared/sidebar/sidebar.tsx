@@ -1,16 +1,14 @@
 "use client";
 import type { ReactNode } from "react";
 import { Box, Button, Flex, Menu, Text, Tooltip } from "ui";
-import { CommandIcon, DocsIcon, EmailIcon, HelpIcon, PlusIcon } from "icons";
+import { CommandIcon, DocsIcon, EmailIcon, HelpIcon } from "icons";
 import { useState } from "react";
 import { addHours, differenceInHours } from "date-fns";
-import { InviteMembersDialog } from "@/components/ui";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useUserRole, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { Commands } from "../commands";
-import { CommandBar } from "../command-bar";
 import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
@@ -76,9 +74,7 @@ const SidebarFooterActions = ({
 );
 
 export const Sidebar = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
-  const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
   const { workspace } = useCurrentWorkspace();
   const { withWorkspace } = useWorkspacePath();
 
@@ -124,30 +120,6 @@ export const Sidebar = () => {
         </span>
       </Tooltip>
     ) : null;
-  const inviteMembersAction =
-    userRole === "admin" ? (
-      <button
-        className="flex items-center justify-start gap-2 px-1 text-left"
-        data-invite-button
-        onClick={() => {
-          setIsOpen(true);
-        }}
-        type="button"
-      >
-        <PlusIcon />
-        <span className="line-clamp-1">Invite members</span>
-      </button>
-    ) : (
-      <Button
-        color="tertiary"
-        onClick={() => {
-          setIsCommandBarOpen(true);
-        }}
-        size="xs"
-      >
-        <CommandIcon className="h-4" /> K
-      </Button>
-    );
   const openKeyboardShortcuts = () => {
     setIsKeyboardShortcutsOpen(true);
   };
@@ -164,7 +136,7 @@ export const Sidebar = () => {
         <Navigation />
         <Teams />
       </Box>
-      <Box className="relative z-1 shrink-0 pb-6" data-sidebar-footer>
+      <Box className="relative z-1 shrink-0 pb-4" data-sidebar-footer>
         <Box className="mb-2.5 px-3.5">
           {workspace?.deletedAt ? (
             <Box className="border-warning bg-warning/20 shadow-shadow mb-4 rounded-xl border-[0.5px] p-4 shadow-lg">
@@ -198,15 +170,10 @@ export const Sidebar = () => {
           ) : (
             <UpcomingMeetingCard
               fallback={
-                <>
-                  {subscriptionAction ? (
-                    <Box className="mt-3">{subscriptionAction}</Box>
-                  ) : null}
-                  <SidebarFooterActions
-                    leadingAction={inviteMembersAction}
-                    onOpenKeyboardShortcuts={openKeyboardShortcuts}
-                  />
-                </>
+                <SidebarFooterActions
+                  leadingAction={subscriptionAction}
+                  onOpenKeyboardShortcuts={openKeyboardShortcuts}
+                />
               }
             >
               <SidebarFooterActions
@@ -223,9 +190,7 @@ export const Sidebar = () => {
         isOpen={isKeyboardShortcutsOpen}
         setIsOpen={setIsKeyboardShortcutsOpen}
       />
-      <InviteMembersDialog isOpen={isOpen} setIsOpen={setIsOpen} />
       <Commands />
-      <CommandBar isOpen={isCommandBarOpen} setIsOpen={setIsCommandBarOpen} />
     </Box>
   );
 };

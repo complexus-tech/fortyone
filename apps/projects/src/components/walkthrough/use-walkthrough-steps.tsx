@@ -3,13 +3,12 @@ import { Box, Kbd, Text } from "ui";
 import confetti from "canvas-confetti";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
-import { useTerminology, useUserRole } from "@/hooks";
+import { useTerminology } from "@/hooks";
 import { type WalkthroughStep } from "./walkthrough-provider";
 
 export const useWalkthroughSteps = (): WalkthroughStep[] => {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
   const storyTerm = getTermDisplay("storyTerm");
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
@@ -185,28 +184,6 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
           ),
           position: "bottom-start",
         },
-        ...(userRole === "admin"
-          ? [
-              {
-                id: "team-collaboration",
-                target: "[data-invite-button]",
-                title: "Collaborate with Your Team",
-                content: (
-                  <Box className="space-y-3">
-                    <Text color="muted">
-                      Invite your team members to collaborate on objectives and
-                      stories together.
-                    </Text>
-                    <Text color="muted">
-                      Use <Kbd className="inline-flex">⌘ I</Kbd> to quickly
-                      invite someone to your workspace.
-                    </Text>
-                  </Box>
-                ),
-                position: "top-start",
-              },
-            ]
-          : []),
         {
           id: "keyboard-shortcuts",
           target: "[data-help-button]",
@@ -262,7 +239,6 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
       session?.user.name,
       storyTerm,
       storyTermPlural,
-      userRole,
     ],
   );
 };

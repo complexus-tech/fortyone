@@ -54,14 +54,15 @@ export const ProfileMenu = () => {
   };
 
   return (
-    <Box className="border-border border-t-[0.5px] px-3 pt-4">
+    <Box className="border-border border-t-[0.5px] px-3 pt-3">
       <Menu>
         <Menu.Button>
           <Box className="relative">
             <Button
-              className="justify-between px-2"
+              className="h-9 justify-between px-2"
               color="tertiary"
               fullWidth
+              size="sm"
               variant="naked"
             >
               <Flex align="center" className="gap-2">

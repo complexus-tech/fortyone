@@ -1,9 +1,11 @@
 import { usePathname } from "next/navigation";
-import { Flex } from "ui";
+import { cn } from "lib";
+import { Box, Collapsible, Flex } from "ui";
 import {
   ActiveSprintIcon,
   AiIcon,
   CalendarIcon,
+  ChevronRightIcon,
   DashboardIcon,
   DocsIcon,
   RoadmapIcon,
@@ -14,6 +16,7 @@ import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
 import {
   useFeatures,
+  useLocalStorage,
   useTerminology,
   useUserRole,
   useWorkspacePath,
@@ -29,12 +32,16 @@ type MenuItem = {
 
 export const Navigation = () => {
   const pathname = usePathname();
-  const { withWorkspace } = useWorkspacePath();
+  const { withWorkspace, workspaceSlug } = useWorkspacePath();
   const { data: runningSprints = [] } = useRunningSprints();
   const { getTermDisplay } = useTerminology();
   const { userRole } = useUserRole();
 
   const features = useFeatures();
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useLocalStorage(
+    `sidebar:${workspaceSlug}:workspace-expanded`,
+    true,
+  );
 
   const getSprintsItem = (): MenuItem | null => {
     if (runningSprints.length === 0 || userRole === "guest") return null;
@@ -78,6 +85,8 @@ export const Navigation = () => {
       icon: <DashboardIcon />,
       href: withWorkspace("/summary"),
     },
+  ];
+  const workspaceLinks: MenuItem[] = [
     ...(sprintItem ? [sprintItem] : []),
     {
       name: "Roadmap",
@@ -98,11 +107,14 @@ export const Navigation = () => {
     },
   ];
 
+  const isLinkActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
+
   const renderLinks = (links: MenuItem[]) =>
     links.map(({ name, icon, href, disabled }) => {
       if (disabled) return null;
 
-      const isActive = pathname === href || pathname.startsWith(`${href}/`);
+      const isActive = isLinkActive(href);
 
       return (
         <NavLink
@@ -128,9 +140,52 @@ export const Navigation = () => {
       );
     });
 
+  const workspaceIsActive = workspaceLinks.some(
+    ({ disabled, href }) => !disabled && isLinkActive(href),
+  );
+
   return (
-    <Flex className="gap-1.5" direction="column">
-      {renderLinks(primaryLinks)}
-    </Flex>
+    <Box>
+      <Flex className="gap-1.5" direction="column">
+        {renderLinks(primaryLinks)}
+      </Flex>
+      <Collapsible onOpenChange={setIsWorkspaceOpen} open={isWorkspaceOpen}>
+        <Box className="mt-5">
+          <Collapsible.Trigger asChild>
+            <button
+              className={cn(
+                "text-text-muted focus-visible:ring-primary/40 hover:text-foreground flex h-8 items-center gap-1 rounded-lg px-2.5 text-left font-medium transition-colors outline-none focus-visible:ring-2",
+                {
+                  "text-foreground": workspaceIsActive,
+                },
+              )}
+              suppressHydrationWarning
+              type="button"
+            >
+              <span>Workspace</span>
+              <ChevronRightIcon
+                className={cn(
+                  "h-3.5 w-auto transition-transform duration-200",
+                  {
+                    "rotate-90": isWorkspaceOpen,
+                  },
+                )}
+                strokeWidth={3.5}
+              />
+            </button>
+          </Collapsible.Trigger>
+          <Collapsible.Content>
+            <Flex
+              aria-label="Workspace navigation"
+              className="mt-1 gap-1.5"
+              direction="column"
+              role="group"
+            >
+              {renderLinks(workspaceLinks)}
+            </Flex>
+          </Collapsible.Content>
+        </Box>
+      </Collapsible>
+    </Box>
   );
 };
