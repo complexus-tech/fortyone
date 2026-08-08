@@ -22,9 +22,9 @@ import {
 } from "ui";
 import {
   AssigneeIcon,
-  ArrowRightIcon,
   CalendarIcon,
   CheckIcon,
+  ChevronRightIcon,
   CloseIcon,
   EstimateIcon,
   ListIcon,
@@ -1992,7 +1992,7 @@ export const StoriesFilterBar = ({
                         <Text className="truncate">{option.label}</Text>
                       </Box>
                       <Flex align="center" className="shrink-0" gap={1}>
-                        <ArrowRightIcon
+                        <ChevronRightIcon
                           className="text-text-muted h-3.5 w-auto"
                           strokeWidth={2.8}
                         />

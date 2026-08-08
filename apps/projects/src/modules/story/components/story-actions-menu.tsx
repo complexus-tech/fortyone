@@ -5,9 +5,9 @@ import { useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import {
   ArchiveIcon,
-  ArrowRightIcon,
   BellIcon,
   CheckIcon,
+  ChevronRightIcon,
   DeleteIcon,
   DuplicateIcon,
   ExternalLinkIcon,
@@ -65,7 +65,7 @@ const StoryStatusSubMenu = ({
           <StoryStatusIcon statusId={statusId} />
           Status
         </Flex>
-        <ArrowRightIcon
+        <ChevronRightIcon
           className="text-text-muted h-3.5 w-auto"
           strokeWidth={2.8}
         />
@@ -118,7 +118,7 @@ const StoryPrioritySubMenu = ({
           <PriorityIcon priority={priority} />
           Priority
         </Flex>
-        <ArrowRightIcon
+        <ChevronRightIcon
           className="text-text-muted h-3.5 w-auto"
           strokeWidth={2.8}
         />

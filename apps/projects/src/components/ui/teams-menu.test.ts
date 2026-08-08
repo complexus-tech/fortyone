@@ -27,6 +27,10 @@ describe("TeamsMenu", () => {
     expect(source).toContain("h-7.5 w-7.5 shrink-0");
     expect(source).not.toContain("size-7.5 shrink-0");
     expect(source).toContain("shrink-0 rounded-xl border");
+    expect(source).toContain("hover:bg-accent focus-within:bg-accent");
+    expect(source.match(/bg-surface hover:bg-surface-elevated/g)).toHaveLength(
+      2,
+    );
     expect(source).toContain('setTeam(team.id, "leave")');
     expect(source).toContain("onPinTeam(team.id)");
   });

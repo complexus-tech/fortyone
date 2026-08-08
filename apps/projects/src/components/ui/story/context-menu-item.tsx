@@ -1,4 +1,4 @@
-import { ArrowRightIcon, CheckIcon } from "icons";
+import { CheckIcon, ChevronRightIcon } from "icons";
 import type { ReactNode } from "react";
 import { Box, ContextMenu, Flex, Text } from "ui";
 
@@ -40,7 +40,7 @@ export const ContextMenuItem = ({
               {shortCut ? (
                 <Flex className="text-text-muted text-sm">{shortCut}</Flex>
               ) : null}
-              <ArrowRightIcon
+              <ChevronRightIcon
                 className="text-text-muted h-3.5 w-auto"
                 strokeWidth={2.8}
               />

@@ -6,7 +6,7 @@ import {
   SystemIcon,
   MoonIcon,
   SunIcon,
-  ArrowRightIcon,
+  ChevronRightIcon,
   InvitesIcon,
   ArrowRight2Icon,
   ExternalLinkIcon,
@@ -127,7 +127,7 @@ export const ProfileMenu = () => {
                           ? "Day mode"
                           : "Night mode"}
                     </Text>
-                    <ArrowRightIcon className="h-4" />
+                    <ChevronRightIcon className="h-4" />
                   </span>
                 </span>
               </Menu.SubTrigger>

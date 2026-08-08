@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import {
-  ArrowRightIcon,
+  ChevronRightIcon,
   ExternalLinkIcon,
   LogoutIcon,
   MoonIcon,
@@ -127,7 +127,7 @@ export const PublicPortalUserMenu = ({
                   >
                     {getThemeLabel(theme)}
                   </Text>
-                  <ArrowRightIcon className="h-4" />
+                  <ChevronRightIcon className="h-4" />
                 </Flex>
               </span>
             </Menu.SubTrigger>

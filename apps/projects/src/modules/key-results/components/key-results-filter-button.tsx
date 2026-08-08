@@ -5,10 +5,10 @@ import { format, formatISO } from "date-fns";
 import { cn } from "lib";
 import {
   ArrowDownIcon,
-  ArrowRightIcon,
   AssigneeIcon,
   CalendarIcon,
   CheckIcon,
+  ChevronRightIcon,
   CloseIcon,
   FilterIcon,
   ObjectiveIcon,
@@ -859,7 +859,7 @@ export const KeyResultsFilterBar = ({
                       </span>
                       <Text className="truncate">{option.label}</Text>
                     </Box>
-                    <ArrowRightIcon
+                    <ChevronRightIcon
                       className="text-text-muted h-3.5 w-auto"
                       strokeWidth={2.8}
                     />

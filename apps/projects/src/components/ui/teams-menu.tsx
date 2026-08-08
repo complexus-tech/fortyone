@@ -110,13 +110,13 @@ const YourTeamsSubMenu = ({
             <Flex
               align="center"
               aria-label={`${team.name} actions`}
-              className="gap-1 py-0.5"
+              className="hover:bg-accent focus-within:bg-accent relative isolate gap-1 rounded-md py-1 pr-1 pl-2 transition-colors"
               key={team.id}
               role="group"
             >
               <DropdownMenu.Item
                 aria-label={`Open ${team.name}`}
-                className="min-w-0 flex-1"
+                className="relative z-10 min-w-0 flex-1 rounded-none bg-transparent p-0 hover:bg-transparent focus:bg-transparent"
                 onSelect={() => {
                   router.push(withWorkspace(`/teams/${team.id}/stories`));
                   setOpen(false);
@@ -132,7 +132,7 @@ const YourTeamsSubMenu = ({
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 aria-label={`Leave ${team.name}`}
-                className="border-border/80 h-7.5 w-auto shrink-0 rounded-xl border px-2 py-0 text-[0.95rem]"
+                className="border-border/80 bg-surface hover:bg-surface-elevated focus:bg-surface-elevated focus-visible:ring-ring relative z-10 h-7.5 w-auto shrink-0 rounded-xl border px-2 py-0 text-[0.95rem] focus-visible:ring-1"
                 onSelect={() => {
                   setTeam(team.id, "leave");
                   setOpen(false);
@@ -143,7 +143,7 @@ const YourTeamsSubMenu = ({
               <Tooltip title="Pin">
                 <DropdownMenu.Item
                   aria-label={`Pin ${team.name}`}
-                  className="border-border/80 h-7.5 w-7.5 shrink-0 justify-center rounded-xl border p-0"
+                  className="border-border/80 bg-surface hover:bg-surface-elevated focus:bg-surface-elevated focus-visible:ring-ring relative z-10 h-7.5 w-7.5 shrink-0 justify-center rounded-xl border p-0 focus-visible:ring-1"
                   onSelect={() => {
                     onPinTeam(team.id);
                     setOpen(false);

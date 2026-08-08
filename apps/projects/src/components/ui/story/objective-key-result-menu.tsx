@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useDeferredValue, useState } from "react";
-import { ArrowRightIcon, CheckIcon, ObjectiveIcon, OKRIcon } from "icons";
+import { CheckIcon, ChevronRightIcon, ObjectiveIcon, OKRIcon } from "icons";
 import { Box, ContextMenu, Divider, Flex, Menu, Text } from "ui";
 import { useTerminology } from "@/hooks";
 import { useKeyResults } from "@/modules/objectives/hooks";
@@ -85,7 +85,7 @@ const ObjectiveSubMenu = ({
         </Flex>
         <Flex align="center" className="shrink-0 gap-1.5">
           {isCurrentObjective ? <CheckIcon className="h-4 w-4" /> : null}
-          <ArrowRightIcon
+          <ChevronRightIcon
             className="text-text-muted h-3.5 w-3.5"
             strokeWidth={2.4}
           />
@@ -421,7 +421,7 @@ const ObjectiveContextSubMenu = ({
         </Flex>
         <Flex align="center" className="shrink-0 gap-1.5">
           {isCurrentObjective ? <CheckIcon className="h-4 w-4" /> : null}
-          <ArrowRightIcon
+          <ChevronRightIcon
             className="text-text-muted h-3.5 w-3.5"
             strokeWidth={2.4}
           />
@@ -534,7 +534,7 @@ export const ObjectiveKeyResultContextSubMenu = ({
           <ObjectiveIcon className="h-[1.1rem]" />
           <Text>{getTermDisplay("objectiveTerm", { capitalize: true })}</Text>
         </Flex>
-        <ArrowRightIcon
+        <ChevronRightIcon
           className="text-text-muted h-3.5 w-3.5"
           strokeWidth={2.4}
         />
@@ -636,7 +636,7 @@ export const ObjectiveKeyResultSubMenu = ({
           <ObjectiveIcon className="h-[1.1rem]" />
           <Text>{getTermDisplay("objectiveTerm", { capitalize: true })}</Text>
         </Flex>
-        <ArrowRightIcon
+        <ChevronRightIcon
           className="text-text-muted h-3.5 w-3.5"
           strokeWidth={2.4}
         />

@@ -137,6 +137,7 @@ jest.mock("icons", () => {
     ArrowUpIcon: Icon,
     BellIcon: Icon,
     CheckIcon: Icon,
+    ChevronRightIcon: Icon,
     CommentIcon: Icon,
     ReplyIcon: Icon,
     CopyIcon: Icon,

@@ -7,7 +7,7 @@ import {
   SettingsIcon,
   WorkspaceIcon,
   ArrowDown2Icon,
-  ArrowRight2Icon,
+  ChevronRightIcon,
 } from "icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -142,7 +142,7 @@ export const WorkspacesMenu = () => {
                     <WorkspaceIcon className="h-5" />
                     Switch workspace
                   </span>
-                  <ArrowRight2Icon className="h-4" />
+                  <ChevronRightIcon className="h-4" />
                 </span>
               </Menu.SubTrigger>
               <Menu.SubItems className="min-w-64">
