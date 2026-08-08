@@ -11,6 +11,54 @@ const HERO_KEYWORD_COLOR_CLASS_NAMES: Partial<Record<string, string>> = {
   feedback: "text-danger",
   work: "text-success",
 };
+const HERO_KEYWORD_INK_DROP_CLASS_NAMES: Partial<
+  Record<string, readonly string[]>
+> = {
+  strategy: [
+    "-top-[0.11em] left-[20%] size-[0.045em] opacity-55",
+    "-top-[0.04em] -right-[0.1em] h-[0.085em] w-[0.05em] rotate-[18deg] opacity-65",
+    "bottom-[0.02em] -left-[0.07em] size-[0.045em] opacity-50",
+    "-top-[0.1em] right-[17%] size-[0.03em] opacity-45",
+    "-bottom-[0.01em] right-[3%] size-[0.025em] opacity-40",
+  ],
+  feedback: [
+    "-top-[0.08em] left-[7%] h-[0.05em] w-[0.075em] -rotate-12 opacity-50",
+    "top-[0.1em] -right-[0.1em] size-[0.065em] opacity-65",
+    "-bottom-[0.01em] left-[52%] size-[0.035em] opacity-45",
+    "bottom-[0.03em] -left-[0.08em] h-[0.08em] w-[0.045em] rotate-12 opacity-65",
+    "-top-[0.12em] right-[22%] size-[0.028em] opacity-45",
+  ],
+  work: [
+    "-top-[0.1em] left-[30%] size-[0.055em] opacity-55",
+    "top-[0.12em] -right-[0.11em] h-[0.045em] w-[0.075em] rotate-[20deg] opacity-55",
+    "bottom-[0.02em] -left-[0.08em] size-[0.055em] opacity-65",
+    "-top-[0.04em] -left-[0.08em] size-[0.03em] opacity-45",
+    "-bottom-[0.02em] right-[18%] size-[0.03em] opacity-45",
+  ],
+};
+
+const HeroKeywordInkDrops = ({ word }: { word: string }) => {
+  const dropClassNames = HERO_KEYWORD_INK_DROP_CLASS_NAMES[word];
+
+  if (!dropClassNames) return null;
+
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 mix-blend-multiply filter-[brightness(0.88)] dark:mix-blend-normal dark:filter-[brightness(0.68)]"
+    >
+      {dropClassNames.map((className) => (
+        <span
+          className={cn(
+            "absolute rounded-[55%_45%_60%_40%] bg-current",
+            className,
+          )}
+          key={className}
+        />
+      ))}
+    </span>
+  );
+};
 
 const HeroKeywordUnderline = () => {
   return (
@@ -59,13 +107,16 @@ export const Hero = () => {
                     className={cn(
                       "landing-hero-title-word inline-block",
                       keywordColorClassName
-                        ? "font-handwritten relative text-[1.08em] leading-[0.9] font-bold tracking-[-0.045em]"
+                        ? "font-handwritten relative text-[1.08em] leading-[0.9] tracking-[-0.045em]"
                         : undefined,
                       keywordColorClassName,
                     )}
                     style={{ animationDelay: `${60 + index * 45}ms` }}
                   >
                     {word}
+                    {keywordColorClassName ? (
+                      <HeroKeywordInkDrops word={word} />
+                    ) : null}
                     {keywordColorClassName ? <HeroKeywordUnderline /> : null}
                   </span>
                   {index < HERO_TITLE_WORDS.length - 1 ? " " : null}

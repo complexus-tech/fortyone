@@ -39,7 +39,7 @@ export const ProductScreenshot = ({
         >
           <Box
             className={cn(
-              "border-border/40 dark:border-border/30 bg-surface/90 dark:bg-surface relative border p-0.5 backdrop-blur-md md:rounded-2xl md:border-r md:p-[0.35rem]",
+              "border-border/40 dark:border-border/30 bg-surface/90 dark:bg-surface shadow-border/70 relative border p-0.5 shadow-2xl backdrop-blur-md md:rounded-2xl md:border-r md:p-[0.35rem] dark:shadow-none",
               cropBrowserOnMobile
                 ? "rounded-l-xl rounded-r-none border-r-0 pr-0"
                 : "rounded-xl",
