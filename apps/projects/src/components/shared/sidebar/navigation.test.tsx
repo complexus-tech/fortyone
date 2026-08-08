@@ -125,9 +125,9 @@ describe("Navigation", () => {
     ).toEqual([
       "My work",
       "Calendar",
+      "Active Sprint",
       "AI Assistant",
       "Summary",
-      "Active Sprint",
       "Roadmap",
       "Strategy Map",
       "Documents",
@@ -150,7 +150,13 @@ describe("Navigation", () => {
     );
     expect(
       screen.getAllByRole("link").map((link) => link.textContent.trim()),
-    ).toEqual(["My work", "Calendar", "AI Assistant", "Summary"]);
+    ).toEqual([
+      "My work",
+      "Calendar",
+      "Active Sprint",
+      "AI Assistant",
+      "Summary",
+    ]);
 
     fireEvent.click(workspaceTrigger);
 
@@ -167,7 +173,8 @@ describe("Navigation", () => {
       "aria-expanded",
       "false",
     );
-    expect(screen.queryByRole("link", { name: "Active Sprint" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Active Sprint" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Roadmap" })).toBeNull();
     expect(screen.getByRole("link", { name: "Calendar" })).toBeVisible();
   });
 });

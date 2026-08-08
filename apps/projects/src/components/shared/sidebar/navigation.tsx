@@ -75,6 +75,7 @@ export const Navigation = () => {
       icon: <CalendarIcon />,
       href: withWorkspace("/calendar"),
     },
+    ...(sprintItem ? [sprintItem] : []),
     {
       name: "AI Assistant",
       icon: <AiIcon />,
@@ -87,7 +88,6 @@ export const Navigation = () => {
     },
   ];
   const workspaceLinks: MenuItem[] = [
-    ...(sprintItem ? [sprintItem] : []),
     {
       name: "Roadmap",
       icon: <RoadmapIcon />,
