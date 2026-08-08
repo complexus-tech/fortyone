@@ -1,5 +1,5 @@
 import { Box, Button } from "ui";
-import { Container, UnderlinedHandwrittenAccent } from "@/components/ui";
+import { Container } from "@/components/ui";
 import { SIGNUP_URL } from "@/lib/app-url";
 import { GoogleSignupButton } from "./google-signup-button";
 
@@ -11,24 +11,18 @@ export const CallToAction = () => {
       className="border-border border-t"
       id="call-to-action"
     >
-      <Container className="flex items-center justify-center py-24 text-center md:py-36">
+      <Container className="flex items-center justify-center py-24 text-center md:py-32">
         <Box
-          className="flex max-w-5xl flex-col items-center"
+          className="flex max-w-2xl flex-col items-center"
           data-landing-reveal
         >
           <h2
-            className="text-5xl leading-[0.98] font-semibold tracking-tight text-balance md:text-7xl"
+            className="text-balances text-4xl leading-[1.02] font-semibold tracking-tight md:text-6xl"
             id="marketing-cta-title"
           >
-            Ready to make what{" "}
-            <UnderlinedHandwrittenAccent tone="primary">
-              matters
-            </UnderlinedHandwrittenAccent>{" "}
-            <UnderlinedHandwrittenAccent tone="success">
-              happen?
-            </UnderlinedHandwrittenAccent>
+            Ready to bring strategy, feedback, and work together?
           </h2>
-          <Box className="mt-8 flex flex-col items-center gap-2 sm:flex-row sm:gap-3">
+          <Box className="mt-12 flex flex-col items-center gap-2 sm:flex-row sm:gap-3">
             <Button
               className="relative z-1 px-3 md:pr-4 md:pl-5"
               color="invert"

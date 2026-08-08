@@ -119,7 +119,7 @@
 
 body,
 html {
-  @apply text-text-primary font-body dark:text-text-primary bg-background overflow-x-hidden scroll-smooth font-medium antialiased;
+  @apply text-text-primary font-body dark:text-text-primary bg-background overflow-x-hidden scroll-smooth text-[15px] font-medium antialiased;
 }
 
 h1,

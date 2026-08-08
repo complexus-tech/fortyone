@@ -9,11 +9,15 @@ export const StrategyWorkflow = () => {
       id="strategy"
       title={
         <>
-          Turn{" "}
+          Connect{" "}
           <UnderlinedHandwrittenAccent tone="primary">
-            purpose
+            strategy
           </UnderlinedHandwrittenAccent>{" "}
-          into a plan everyone can follow.
+          to objectives, roadmaps, and{" "}
+          <UnderlinedHandwrittenAccent tone="success">
+            daily work
+          </UnderlinedHandwrittenAccent>
+          .
         </>
       }
     >

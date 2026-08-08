@@ -35,7 +35,7 @@ export const CalendarWorkflow = () => {
         containerClassName="mt-10 md:mt-16"
         darkImage={calendarImageDark}
         lightImage={calendarImageLight}
-        url="complexus.fortyone.app/calendar"
+        url="https://fortyone.app/calendar"
       />
     </ProductFeatureSection>
   );

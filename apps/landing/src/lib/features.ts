@@ -647,12 +647,12 @@ export const features: Feature[] = [
     slug: "integrations",
     label: featureLabels.integrations,
     heroTitle: "FortyOne Integrations",
-    metaTitle: "Integrations | Turn Tools into AI Context | FortyOne",
+    metaTitle: "Project Management Integrations | FortyOne",
     metaDescription:
-      "See how FortyOne uses integrations with Slack, GitHub, Google Calendar, Figma, GitLab, and other tools to enrich project planning.",
+      "Connect FortyOne with Slack, GitHub, and Google Calendar to turn conversations into work, keep delivery context attached, and plan around availability.",
     intro: [
-      "Integrations matter because project work rarely starts inside the project management tool. It starts in chat, code, calendars, design files, support conversations, and documents.",
-      "FortyOne brings that context back into the project plan so AI and teams can make better decisions about tasks, owners, estimates, timing, and risk.",
+      "Project work rarely starts inside the project management tool. It starts in chat, code, and calendars.",
+      "FortyOne connects Slack, GitHub, and Google Calendar to the plan so teams can keep task intake, delivery context, and availability close to the work.",
       "The goal is not to replace every tool. It is to make the tools your team already uses useful inside the workflow where work is planned and tracked.",
     ],
     benefits: [
@@ -661,16 +661,16 @@ export const features: Feature[] = [
         "Source context can stay attached to tasks instead of being rewritten into status updates.",
       ],
       [
-        "Better AI recommendations",
-        "AI can use connected context when preparing assignments, estimates, and schedule suggestions.",
+        "Connected delivery context",
+        "GitHub branches, pull requests, and commits can stay linked to the work they move forward.",
       ],
       [
         "Cleaner intake",
         "Slack and other tools can become paths for turning requests into structured project work.",
       ],
       [
-        "Stronger delivery visibility",
-        "Code, design, calendar, and conversation context can inform planning and review.",
+        "More realistic scheduling",
+        "Google Calendar availability helps teams place work around existing commitments.",
       ],
     ],
     previewCards: [
@@ -706,22 +706,18 @@ export const features: Feature[] = [
             "Requests, decisions, and follow-up work from conversations",
           ],
           ["GitHub", "Issues, implementation details, and delivery context"],
-          ["Calendar", "Availability and timing signals for planning"],
-          [
-            "Design and docs",
-            "Source material connected to the work it supports",
-          ],
+          ["Google Calendar", "Availability and timing signals for planning"],
         ],
         promptTitle: "Context intake",
         prompt:
-          "Create a task from this source context, attach relevant links, summarize the request, suggest an owner, estimate the work, and show what needs review.",
+          "Turn this Slack conversation into a task, keep the source link attached, and show the work for review.",
       },
       {
         id: "ai",
-        title: "Use integrations as AI planning context",
+        title: "Plan around real availability",
         paragraphs: [
-          "AI recommendations improve when the system can see the real signals around the work. FortyOne can use connected context to prepare better owner, estimate, timing, and risk suggestions.",
-          "Teams still review the recommendation, but the first draft starts with more of the project reality included.",
+          "Google Calendar meetings and scheduled FortyOne work show the time a team member has already committed.",
+          "Maya can combine that availability with current workload to propose an owner and first work block. The team reviews the proposal before it changes the plan.",
         ],
         cards: [
           {
@@ -729,16 +725,16 @@ export const features: Feature[] = [
             subheading: "Context gathered before recommendation",
             rows: [
               { label: "Calendar", value: "Owner available Thursday" },
-              { label: "GitHub", value: "API issue linked" },
+              { label: "Workload", value: "Two active tasks" },
             ],
           },
           {
             heading: "AI recommendation",
-            subheading: "Prepared from connected tools",
+            subheading: "Prepared from workload and availability",
             badge: "Review",
             rows: [
               { label: "Owner", value: "Platform team" },
-              { label: "Estimate", value: "3 days" },
+              { label: "First block", value: "Thursday at 10:00" },
             ],
           },
         ],
@@ -748,20 +744,20 @@ export const features: Feature[] = [
         title: "Keep existing tools in the workflow",
         paragraphs: [
           "Teams should not have to abandon the tools they already use to get better planning. FortyOne connects those tools to the project workflow where decisions happen.",
-          "That keeps conversations, source links, delivery context, and availability available when managers and AI prepare the next step.",
+          "That keeps conversations, code links, delivery context, and availability visible when the team prepares the next step.",
         ],
         rows: [
           ["Create", "Turn source context into structured work"],
           ["Attach", "Keep links and summaries with the task"],
-          ["Plan", "Use context for owner, estimate, and timing suggestions"],
+          ["Plan", "Use workload and availability for owner and timing proposals"],
           ["Review", "Approve changes before they affect the project"],
         ],
       },
     ],
     questions: [
       [
-        "Which integrations matter most?",
-        "Slack, GitHub, Google Calendar, Figma, GitLab, and documents are important because they hold the context teams use to plan work.",
+        "Which integrations are available?",
+        "FortyOne currently integrates with Slack, GitHub, and Google Calendar for task intake, delivery context, and availability-aware planning.",
       ],
       [
         "Do integrations replace existing tools?",
@@ -769,7 +765,7 @@ export const features: Feature[] = [
       ],
       [
         "Can AI use integration context?",
-        "Yes. Connected context can help AI prepare better owner, estimate, timing, and risk recommendations.",
+        "Maya can use Google Calendar availability and current workload to propose an owner and work window. Teams review the proposal before it changes the plan.",
       ],
     ],
   },

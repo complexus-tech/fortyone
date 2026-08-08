@@ -6,10 +6,12 @@ import {
   DEFAULT_SOCIAL_IMAGE,
   DEFAULT_TWITTER_IMAGE,
   getCanonicalUrl,
+  HOME_METADATA_DESCRIPTION,
+  HOME_METADATA_TITLE,
 } from "@/lib/seo";
 import {
   CalendarWorkflow,
-  DocumentsWorkflow,
+  CoreValues,
   FeedbackWorkflow,
   Hero,
   HowItWorks,
@@ -24,43 +26,22 @@ import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.w
 import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
 
 export const metadata: Metadata = {
-  title: "FortyOne | Strategy, Feedback, and Project Delivery",
-  description:
-    "Connect customer feedback, strategic goals, documents, schedules, and daily work in one project plan, with AI support for risk, ownership, and next decisions.",
-  keywords: [
-    "AI project management",
-    "AI project manager",
-    "project management platform",
-    "team project management",
-    "goal tracking software",
-    "sprint planning software",
-    "task management software",
-    "OKR software",
-    "team alignment tool",
-    "project planning software",
-    "customer feedback management",
-    "feedback portal",
-    "public product roadmap",
-    "strategy map software",
-    "project documents",
-    "work scheduling software",
-  ],
+  title: HOME_METADATA_TITLE,
+  description: HOME_METADATA_DESCRIPTION,
   alternates: {
     canonical: getCanonicalUrl("/"),
   },
   openGraph: {
-    title: "FortyOne | Strategy, Feedback, and Project Delivery",
-    description:
-      "Connect customer feedback, strategic goals, documents, schedules, and daily work in one project plan, with AI support for risk, ownership, and next decisions.",
+    title: HOME_METADATA_TITLE,
+    description: HOME_METADATA_DESCRIPTION,
     url: "/",
     siteName: "FortyOne",
     type: "website",
     images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
-    title: "FortyOne | Strategy, Feedback, and Project Delivery",
-    description:
-      "Connect customer feedback, strategic goals, documents, schedules, and daily work in one project plan, with AI support for risk, ownership, and next decisions.",
+    title: HOME_METADATA_TITLE,
+    description: HOME_METADATA_DESCRIPTION,
     card: "summary_large_image",
     images: [DEFAULT_TWITTER_IMAGE],
   },
@@ -85,10 +66,10 @@ export default function Page() {
         <FeedbackWorkflow />
         <Testimonials />
         <StrategyWorkflow />
-        <DocumentsWorkflow />
-        <CalendarWorkflow />
+        <CoreValues />
         <MayaWorkflow />
         <Integrations />
+        <CalendarWorkflow />
         <Pricing className="md:pt-0 md:pb-16" />
         <Faqs />
         <CallToAction />

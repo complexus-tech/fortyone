@@ -1,27 +1,20 @@
-import Image from "next/image";
 import { cn } from "lib";
 import { Text, Box, Flex } from "ui";
-import { AiIcon, CommentIcon, GitHubIcon, SettingsIcon } from "icons";
-import { Container, UnderlinedHandwrittenAccent } from "@/components/ui";
-import meshImage from "../../../public/images/meshing.webp";
-
-const CARD_TEXT_CLASS = "text-[0.9rem] leading-[1.35]";
-const CARD_META_TEXT_CLASS = "text-[0.82rem] leading-[1.25]";
-const CARD_SURFACE_CLASS =
-  "bg-surface-elevated rounded-xl border border-border/80 shadow-lg shadow-shadow";
-
-/* ─── Brand icons (inline SVGs) ───────────────────────────── */
-function DriveIcon({ className }: { className?: string }) {
-  return (
-    <Image
-      alt=""
-      className={className}
-      height={20}
-      src="/integrations/drive.svg"
-      width={20}
-    />
-  );
-}
+import {
+  AiIcon,
+  CommentIcon,
+  GitHubIcon,
+  GoogleCalendarIcon,
+  SettingsIcon,
+} from "icons";
+import { UnderlinedHandwrittenAccent } from "@/components/ui";
+import {
+  FEATURE_STORY_META_TEXT_CLASS as CARD_META_TEXT_CLASS,
+  FEATURE_STORY_SURFACE_CLASS as CARD_SURFACE_CLASS,
+  FEATURE_STORY_TEXT_CLASS as CARD_TEXT_CLASS,
+  FeatureStoryCard,
+  FeatureStorySection,
+} from "./feature-story-section";
 
 function SlackIcon({ className }: { className?: string }) {
   return (
@@ -199,8 +192,8 @@ function IntegrationCard() {
           label="GitHub"
         />
         <IntegrationTile
-          icon={<DriveIcon className="size-4.5 shrink-0" />}
-          label="Drive"
+          icon={<GoogleCalendarIcon className="size-4.5 shrink-0" />}
+          label="Google Calendar"
         />
         <IntegrationTile
           action={
@@ -241,14 +234,14 @@ function IntegrationCard() {
   );
 }
 
-/* ─── Card 03: AI assignment plan ─────────────────────────── */
-function AIAssignmentCard() {
+/* ─── Card 03: Maya assignment plan ───────────────────────── */
+function MayaWorkPlanCard() {
   return (
     <Box className="flex h-full flex-col gap-3">
       <Box className={cn(CARD_SURFACE_CLASS, "px-4 py-3")}>
         <Flex align="center" className="gap-2.5">
-          <Box className="bg-background-inverse text-foreground-inverse flex size-7 shrink-0 items-center justify-center rounded-lg">
-            <AiIcon className="size-4 !text-white dark:!text-black" />
+          <Box className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-lg">
+            <AiIcon className="text-primary size-4" />
           </Box>
           <Box className="min-w-0">
             <Text
@@ -267,12 +260,12 @@ function AIAssignmentCard() {
         <Flex align="center" className="gap-3" justify="between">
           <Box>
             <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
-              Best owner
+              Suggested owner
             </Text>
             <Text
               className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
             >
-              Priya N.
+              Joseph
             </Text>
           </Box>
           <Text
@@ -281,18 +274,15 @@ function AIAssignmentCard() {
               "bg-success/10 text-success rounded-lg px-2.5 py-1 font-semibold",
             )}
           >
-            92% fit
+            Review
           </Text>
         </Flex>
-        <Box className="bg-surface-muted h-2 overflow-hidden rounded-full">
-          <Box className="bg-success h-full w-[92%] rounded-full" />
-        </Box>
       </Box>
 
       <Box className="grid grid-cols-2 gap-2">
         <Box className={cn(CARD_SURFACE_CLASS, "px-3 py-3")}>
           <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
-            Estimate
+            Planned effort
           </Text>
           <Text
             className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
@@ -302,7 +292,7 @@ function AIAssignmentCard() {
         </Box>
         <Box className={cn(CARD_SURFACE_CLASS, "px-3 py-3")}>
           <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
-            Work window
+            First work block
           </Text>
           <Text
             className={cn(CARD_TEXT_CLASS, "text-foreground font-semibold")}
@@ -325,88 +315,45 @@ function AIAssignmentCard() {
   );
 }
 
-/* ─── Feature card wrapper ─────────────────────────────────── */
-function FeatureCard({
-  children,
-  title,
-  description,
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  title: string;
-  description: string;
-  delay?: number;
-}) {
-  return (
-    <Box
-      className="h-full"
-      data-landing-reveal
-      style={{ transitionDelay: `${delay * 1000}ms` }}
-    >
-      <Box className="flex h-full flex-col">
-        <Box className="relative flex shrink-0 items-end overflow-hidden rounded-2xl md:h-84">
-          <Image
-            alt=""
-            className="object-cover grayscale-100 dark:opacity-40"
-            fill
-            sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
-            src={meshImage}
-          />
-          <Box className="relative z-10 w-full p-5">{children}</Box>
-        </Box>
-        <Box className="mt-5 flex flex-col">
-          <Text className="text-foreground mb-2 text-lg font-semibold">
-            {title}
-          </Text>
-          <Text className="text-text-muted">{description}</Text>
-        </Box>
-      </Box>
-    </Box>
-  );
-}
-
 /* ─── Main Section ─────────────────────────────────────────── */
 export const HowItWorks = () => {
   return (
-    <Container className="scroll-mt-24 py-16 md:pt-36" id="ai-planning">
-      {/* Headline */}
-      <Box data-landing-reveal>
-        <Text as="h2" className="mb-14 max-w-3xl pb-2 text-3xl md:text-5xl">
-          One connected system, from{" "}
+    <FeatureStorySection
+      heading={
+        <>
+          Decide what matters, plan the work with{" "}
           <UnderlinedHandwrittenAccent tone="danger">
-            signal
-          </UnderlinedHandwrittenAccent>{" "}
-          to{" "}
+            AI
+          </UnderlinedHandwrittenAccent>
+          , and deliver it{" "}
           <UnderlinedHandwrittenAccent tone="success">
-            delivery
+            together
           </UnderlinedHandwrittenAccent>
           .
-        </Text>
-      </Box>
-
-      {/* Feature cards with mesh backgrounds */}
-      <Box className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-3">
-        <FeatureCard
-          description="Turn selected feedback into work while the original request and decision stay attached."
-          title="Start with the signal."
-        >
-          <RequestToWorkCard />
-        </FeatureCard>
-        <FeatureCard
-          delay={0.1}
-          description="Let Maya use workload, estimates, and availability to propose an owner and work window."
-          title="Plan against real constraints."
-        >
-          <AIAssignmentCard />
-        </FeatureCard>
-        <FeatureCard
-          delay={0.2}
-          description="Bring conversations, files, and delivery links into the task so the team can trace the decision behind it."
-          title="Keep the evidence beside the work."
-        >
-          <IntegrationCard />
-        </FeatureCard>
-      </Box>
-    </Container>
+        </>
+      }
+      id="ai-planning"
+    >
+      <FeatureStoryCard
+        description="Bring company goals and customer feedback together, then turn the right decisions into planned work."
+        title="Choose the right work."
+      >
+        <RequestToWorkCard />
+      </FeatureStoryCard>
+      <FeatureStoryCard
+        delay={0.1}
+        description="Maya uses workload and calendar availability to suggest an owner and a workable delivery window."
+        title="Build a realistic plan."
+      >
+        <MayaWorkPlanCard />
+      </FeatureStoryCard>
+      <FeatureStoryCard
+        delay={0.2}
+        description="Keep the goal, customer request, documents, conversations, and delivery links beside the task so the team can act with full context."
+        title="Keep execution connected."
+      >
+        <IntegrationCard />
+      </FeatureStoryCard>
+    </FeatureStorySection>
   );
 };

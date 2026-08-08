@@ -23,7 +23,7 @@ const AccordionItem = ({
   const panelId = `faq-panel-${index}`;
   return (
     <Box
-      className="border-border d border-b last:border-b-0"
+      className="border-border border-b last:border-b-0"
       data-landing-reveal
       style={{ transitionDelay: `${index * 60}ms` }}
     >
@@ -31,7 +31,7 @@ const AccordionItem = ({
         aria-controls={panelId}
         aria-expanded={isOpen}
         className={cn(
-          "group font-body focus-visible:ring-ring flex w-full items-start justify-between gap-6 py-5 text-left text-lg font-medium opacity-90 transition-[opacity,transform] duration-150 ease-out outline-none hover:opacity-100 focus-visible:ring-2 focus-visible:ring-inset active:scale-[0.995] motion-reduce:transition-none md:text-xl",
+          "group font-body focus-visible:ring-ring flex w-full items-start justify-between gap-6 py-5 text-left font-medium opacity-90 transition-[opacity,transform] duration-150 ease-out outline-none hover:opacity-100 focus-visible:ring-2 focus-visible:ring-inset active:scale-[0.995] motion-reduce:transition-none md:text-lg",
         )}
         id={buttonId}
         onClick={onToggle}

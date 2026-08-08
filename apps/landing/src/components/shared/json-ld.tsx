@@ -15,6 +15,11 @@ const softwareApplication: WithContext<WebApplication> = {
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   url: getCanonicalUrl("/"),
+  provider: {
+    "@type": "Organization",
+    name: "Complexus LLC",
+    url: "https://complexus.tech",
+  },
   offers: {
     "@type": "AggregateOffer",
     priceCurrency: "USD",
@@ -65,20 +70,19 @@ const softwareApplication: WithContext<WebApplication> = {
     "Tasks",
   ],
   description:
-    "FortyOne connects customer feedback, strategic goals, project documents, schedules, and daily work, with AI support for risk, ownership, estimates, and next decisions.",
+    "FortyOne connects company strategy and customer feedback to project plans teams can deliver, with AI support for ownership, scheduling, workload, and delivery risk.",
 };
 
 const organization: WithContext<Organization> = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "FortyOne",
-  url: "https://www.fortyone.app",
-  logo: "https://www.fortyone.app/images/logo.png",
-  image: "https://www.fortyone.app/images/logo.png",
+  name: "Complexus LLC",
+  url: "https://complexus.tech",
   sameAs: [
-    "https://x.com/fortyoneapp",
     "https://www.linkedin.com/company/complexus-app/",
     "https://github.com/complexus-tech/fortyone",
+    "https://www.instagram.com/complexus_tech/",
+    "https://www.facebook.com/complexus.tech",
   ],
   contactPoint: {
     "@type": "ContactPoint",
@@ -92,12 +96,17 @@ const product: WithContext<Product> = {
   "@type": "Product",
   name: "FortyOne - AI project management platform for teams",
   description:
-    "FortyOne connects customer feedback, strategic goals, project documents, schedules, and daily work, with AI support for risk, ownership, estimates, and next decisions.",
+    "FortyOne connects company strategy and customer feedback to project plans teams can deliver, with AI support for ownership, scheduling, workload, and delivery risk.",
   category: "Software",
   brand: {
     "@type": "Brand",
     name: "FortyOne",
     logo: "https://www.fortyone.app/images/logo.png",
+  },
+  manufacturer: {
+    "@type": "Organization",
+    name: "Complexus LLC",
+    url: "https://complexus.tech",
   },
   offers: {
     "@type": "AggregateOffer",

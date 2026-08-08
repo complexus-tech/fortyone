@@ -51,6 +51,11 @@ export const Hero = () => {
               );
             })}
           </Text>
+          <Text className="sr-only">
+            FortyOne is an AI project management platform that connects company
+            strategy and customer feedback to objectives, plans, and daily work,
+            so teams can decide what matters and deliver it with context.
+          </Text>
         </Box>
 
         <Box className="landing-hero-action flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -61,7 +66,7 @@ export const Hero = () => {
             rounded="lg"
             size="lg"
           >
-            Get started free
+            Start for free
           </Button>
           <GoogleSignupButton />
         </Box>

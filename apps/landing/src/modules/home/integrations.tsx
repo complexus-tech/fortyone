@@ -1,36 +1,60 @@
+import type { ReactNode } from "react";
 import Image from "next/image";
 import { cn } from "lib";
+import { GoogleCalendarIcon } from "icons";
 import { Box, Text } from "ui";
 import { Container } from "@/components/ui";
 
-type Integration = {
+type ImageIntegration = {
+  kind: "image";
   logoClassName?: string;
   name: string;
   src: string;
 };
 
+type IconIntegration = {
+  icon: ReactNode;
+  kind: "icon";
+  name: string;
+};
+
+type Integration = IconIntegration | ImageIntegration;
+
 const integrations: readonly Integration[] = [
-  { name: "Slack", src: "/integrations/slack.svg" },
-  { name: "Intercom", src: "/integrations/intercom-icon.svg" },
+  { kind: "image", name: "Slack", src: "/integrations/slack.svg" },
   {
-    name: "Notion",
-    src: "/integrations/notion.svg",
-    logoClassName: "invert dark:invert-0",
+    kind: "image",
+    name: "Intercom",
+    src: "/integrations/intercom-icon.svg",
   },
-  { name: "Figma", src: "/integrations/figma.svg" },
+  { kind: "image", name: "Figma", src: "/integrations/figma.svg" },
   {
+    kind: "image",
+    logoClassName: "dark:invert",
     name: "GitHub",
     src: "/integrations/github.svg",
-    logoClassName: "dark:invert",
   },
-  { name: "Jira", src: "/integrations/jira.svg" },
-  { name: "Google Drive", src: "/integrations/drive.svg" },
-  { name: "GitLab", src: "/integrations/gitlab.svg" },
-  { name: "Microsoft Teams", src: "/integrations/teams.svg" },
   {
+    kind: "icon",
+    name: "Google Calendar",
+    icon: (
+      <GoogleCalendarIcon
+        aria-hidden="true"
+        className="size-9 opacity-80 grayscale md:size-10"
+      />
+    ),
+  },
+  { kind: "image", name: "GitLab", src: "/integrations/gitlab.svg" },
+  {
+    kind: "image",
+    name: "Microsoft Teams",
+    src: "/integrations/teams.svg",
+  },
+  {
+    kind: "image",
+    logoClassName: "invert dark:invert-0",
     name: "Zendesk",
     src: "/integrations/zend.svg",
-    logoClassName: "invert dark:invert-0",
   },
 ];
 
@@ -56,7 +80,7 @@ export const Integrations = () => {
           <Box data-landing-reveal style={{ transitionDelay: "70ms" }}>
             <Box
               as="ul"
-              className="border-border/80 grid grid-cols-2 border-r-[0.5px] border-b-[0.5px] sm:grid-cols-5"
+              className="border-border/80 grid grid-cols-2 border-r-[0.5px] border-b-[0.5px] sm:grid-cols-4"
             >
               {integrations.map((integration) => (
                 <Box
@@ -64,17 +88,21 @@ export const Integrations = () => {
                   className="border-border/80 bg-background/40 flex min-h-28 flex-col items-center justify-center gap-3 border-t-[0.5px] border-l-[0.5px] px-4 py-6"
                   key={integration.name}
                 >
-                  <Image
-                    alt=""
-                    aria-hidden="true"
-                    className={cn(
-                      "size-9 object-contain opacity-80 grayscale md:size-10",
-                      integration.logoClassName,
-                    )}
-                    height={40}
-                    src={integration.src}
-                    width={40}
-                  />
+                  {integration.kind === "icon" ? (
+                    integration.icon
+                  ) : (
+                    <Image
+                      alt=""
+                      aria-hidden="true"
+                      className={cn(
+                        "size-9 object-contain opacity-80 grayscale md:size-10",
+                        integration.logoClassName,
+                      )}
+                      height={40}
+                      src={integration.src}
+                      width={40}
+                    />
+                  )}
                   <Text className="text-center text-sm leading-tight opacity-60">
                     {integration.name}
                   </Text>

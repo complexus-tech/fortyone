@@ -2,6 +2,7 @@
 
 import { RoadmapIcon, StrategyIcon } from "icons";
 import { Tabs } from "ui";
+import { Container } from "@/components/ui";
 import roadmapImageDark from "../../../public/images/product/roadmap-timeline-dark.webp";
 import roadmapImageLight from "../../../public/images/product/roadmap-timeline-light.webp";
 import strategyImageDark from "../../../public/images/product/strategy-map-dark.webp";
@@ -14,37 +15,39 @@ const tabClassName =
 export const StrategyRoadmapSwitcher = () => {
   return (
     <Tabs className="mt-8 md:mt-10" defaultValue="strategy-map">
-      <Tabs.List
-        aria-label="Choose a strategy planning view"
-        className="bg-state-hover text-text-muted mx-5 w-fit gap-0.5 rounded-full p-1 md:mx-auto"
-      >
-        <Tabs.Tab
-          className={tabClassName}
-          leftIcon={
-            <StrategyIcon
-              aria-hidden="true"
-              className="text-current"
-              strokeWidth={1.8}
-            />
-          }
-          value="strategy-map"
+      <Container>
+        <Tabs.List
+          aria-label="Choose a strategy planning view"
+          className="bg-state-hover text-text-muted mx-0 w-fit gap-0.5 rounded-full p-1 md:mx-0"
         >
-          Strategy Map
-        </Tabs.Tab>
-        <Tabs.Tab
-          className={tabClassName}
-          leftIcon={
-            <RoadmapIcon
-              aria-hidden="true"
-              className="text-current"
-              strokeWidth={1.8}
-            />
-          }
-          value="roadmap"
-        >
-          Roadmap
-        </Tabs.Tab>
-      </Tabs.List>
+          <Tabs.Tab
+            className={tabClassName}
+            leftIcon={
+              <StrategyIcon
+                aria-hidden="true"
+                className="text-current"
+                strokeWidth={1.8}
+              />
+            }
+            value="strategy-map"
+          >
+            Strategy Map
+          </Tabs.Tab>
+          <Tabs.Tab
+            className={tabClassName}
+            leftIcon={
+              <RoadmapIcon
+                aria-hidden="true"
+                className="text-current"
+                strokeWidth={1.8}
+              />
+            }
+            value="roadmap"
+          >
+            Roadmap
+          </Tabs.Tab>
+        </Tabs.List>
+      </Container>
 
       <Tabs.Panel className="outline-none" value="strategy-map">
         <ProductScreenshot

@@ -7,7 +7,7 @@ export const homeFaqs: HomeFaq[] = [
   {
     question: "What makes FortyOne different from a task manager?",
     answer:
-      "Most task managers start after the work has already been chosen. FortyOne connects the customer request, company strategy, project documents, calendar plan, and delivery work, so the team can trace why something matters from the first signal to the finished result.",
+      "Most task managers start after the work has already been chosen. FortyOne connects customer feedback and company strategy to objectives, project documents, schedules, and delivery work, so the team can trace why a project matters from the decision through completion.",
   },
   {
     question: "How does customer feedback work?",
@@ -17,7 +17,7 @@ export const homeFaqs: HomeFaq[] = [
   {
     question: "What can FortyOne's AI do?",
     answer:
-      "Maya can prepare a delivery brief, suggest an owner and estimate, propose the first work window, and surface delivery risk from the project context already in FortyOne.",
+      "Maya can prepare a delivery brief, surface workload and delivery risk, and propose an owner and work window using calendar availability. Teams review important changes before they are applied.",
   },
   {
     question: "Can we review AI actions before they are applied?",
@@ -47,6 +47,6 @@ export const homeFaqs: HomeFaq[] = [
   {
     question: "Which tools does FortyOne work with?",
     answer:
-      "FortyOne works with tools including Google Calendar, Slack, GitHub, GitLab, Figma, and Google Drive. These connections bring availability and source context into the project plan.",
+      "FortyOne currently integrates with Google Calendar, Slack, and GitHub. Google Calendar brings availability into planning, Slack turns conversations into work, and GitHub keeps delivery context attached to tasks.",
   },
 ];

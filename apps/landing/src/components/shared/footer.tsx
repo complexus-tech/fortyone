@@ -1,5 +1,6 @@
 "use client";
 import type { ReactNode } from "react";
+import { useSyncExternalStore } from "react";
 import { cn } from "lib";
 import { Box, Flex, Text, Tooltip } from "ui";
 import Link from "next/link";
@@ -22,10 +23,14 @@ import { Container } from "../ui/container";
 const COPYRIGHT_YEAR = 2026;
 
 const themeOptions = [
-  { id: "system", label: "System", icon: SystemIcon },
   { id: "light", label: "Light", icon: SunIcon },
+  { id: "system", label: "System", icon: SystemIcon },
   { id: "dark", label: "Dark", icon: MoonIcon },
 ] as const;
+
+const subscribeToHydration = () => () => undefined;
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 const caseLinks = useCaseLinks.map(({ href, label }) => ({
   href,
@@ -161,6 +166,14 @@ const Copyright = () => {
 
 export const Footer = () => {
   const { theme, setTheme } = useTheme();
+  const hasMounted = useSyncExternalStore(
+    subscribeToHydration,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
+
+  const activeTheme = hasMounted ? theme ?? "system" : undefined;
+
   return (
     <Box as="footer" className="bg-surface-muted dark:bg-surface relative">
       <Container>
@@ -223,10 +236,12 @@ export const Footer = () => {
         <Flex className="mt-6" justify="between">
           <Text color="muted" fontSize="sm">
             Product of{" "}
-            <a className="text-inherit underline" href="https://complexus.tech">
+            <a
+              className="text-foreground underline underline-offset-2"
+              href="https://complexus.tech"
+            >
               Complexus
             </a>
-            .
           </Text>
           <div
             aria-label="Color theme"
@@ -237,11 +252,12 @@ export const Footer = () => {
               <Tooltip key={id} title={label}>
                 <button
                   aria-label={`Use ${label.toLowerCase()} theme`}
-                  aria-pressed={theme === id}
+                  aria-pressed={activeTheme === id}
                   className={cn(
                     "hover:text-foreground focus-visible:outline-foreground relative grid h-7 w-8 place-items-center rounded-full transition-[width,color,background-color,transform] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 active:scale-[0.94]",
                     {
-                      "bg-state-active text-foreground w-10": theme === id,
+                      "bg-state-active text-foreground w-10":
+                        activeTheme === id,
                     },
                   )}
                   onClick={() => {
@@ -249,7 +265,7 @@ export const Footer = () => {
                   }}
                   type="button"
                 >
-                  <Icon aria-hidden="true" className="size-[15px]" />
+                  <Icon aria-hidden="true" />
                 </button>
               </Tooltip>
             ))}

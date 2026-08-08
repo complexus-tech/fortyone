@@ -1,86 +1,239 @@
+import { cn } from "lib";
+import { Box, Flex, Text } from "ui";
 import {
-  GitIcon,
-  HistoryIcon,
-  OKRIcon,
-  RequestsIcon,
-  SprintsIcon,
+  AiIcon,
+  CalendarIcon,
+  CheckIcon,
+  ObjectiveIcon,
+  RoadmapIcon,
 } from "icons";
-import type { Icon } from "icons/src/types";
-import { FeatureGrid } from "@/components/shared/feature-grid";
+import {
+  FEATURE_STORY_META_TEXT_CLASS as CARD_META_TEXT_CLASS,
+  FEATURE_STORY_SURFACE_CLASS as CARD_SURFACE_CLASS,
+  FEATURE_STORY_TEXT_CLASS as CARD_TEXT_CLASS,
+  FeatureStoryCard,
+  FeatureStorySection,
+} from "./feature-story-section";
 
-function AiIcon({ className, ...props }: Icon) {
+const NEUTRAL_STATUS_CLASS = cn(
+  CARD_META_TEXT_CLASS,
+  "bg-accent text-text-secondary shrink-0 rounded-lg px-2.5 py-1 font-semibold",
+);
+
+function OutcomePlanCard() {
   return (
-    <svg
-      className={className}
-      fill="none"
-      height="24"
-      viewBox="0 0 24 24"
-      width="24"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <path
-        clipRule="evenodd"
-        d="M9.67904 3.29155C10.7467 1.56948 13.2537 1.56948 14.3214 3.29155L15.1308 4.59707C15.2462 4.7833 15.3634 4.9684 15.4823 5.15233C15.7005 5.1305 15.9185 5.10662 16.1363 5.08068L17.6626 4.89893C19.6747 4.65934 21.2396 6.61723 20.5571 8.52637L20.0401 9.97255C19.9664 10.1786 19.8947 10.3854 19.825 10.5927C19.9779 10.7493 20.1323 10.9045 20.2882 11.0583L21.3821 12.1371C22.8256 13.5609 22.2668 16.0039 20.3491 16.6605L18.895 17.1584C18.6876 17.2294 18.4809 17.3023 18.275 17.3772C18.2478 17.5943 18.2226 17.8117 18.1995 18.0294L18.0372 19.5565C17.823 21.572 15.5635 22.6577 13.8546 21.5695L12.5584 20.7442C12.3734 20.6264 12.1873 20.5103 12.0002 20.3961C11.8131 20.5103 11.627 20.6264 11.442 20.7442L10.1458 21.5695C8.4369 22.6577 6.17739 21.572 5.96321 19.5565L5.80094 18.0294C5.7778 17.8117 5.75263 17.5943 5.72541 17.3772C5.51949 17.3023 5.31282 17.2294 5.10542 17.1584L3.65133 16.6605C1.7336 16.0039 1.17475 13.5609 2.61829 12.1371L3.71216 11.0583C3.86807 10.9045 4.0225 10.7493 4.17541 10.5927C4.10567 10.3854 4.03395 10.1786 3.96028 9.97255L3.44329 8.52637C2.7608 6.61723 4.32567 4.65934 6.33777 4.89893L7.86408 5.08068C8.08191 5.10662 8.29993 5.1305 8.5181 5.15233C8.63698 4.9684 8.75417 4.7833 8.86963 4.59707L9.67904 3.29155ZM7.61407 6.4827L6.16966 6.31071C5.20357 6.19567 4.45578 7.13505 4.78207 8.04778L5.2716 9.41715C6.10452 8.48167 6.88648 7.5021 7.61407 6.4827ZM5.78854 10.961C7.04552 9.61105 8.19784 8.16742 9.23549 6.64268C11.076 6.78287 12.9244 6.78287 14.7649 6.64268C15.8026 8.16743 16.9549 9.61105 18.2119 10.961C17.6657 12.722 17.2545 14.522 16.9818 16.3454C15.2628 17.0169 13.5974 17.8181 12.0002 18.7422C10.403 17.8181 8.73761 17.0169 7.01863 16.3454C6.74592 14.522 6.3347 12.722 5.78854 10.961ZM4.65269 12.1275L3.61666 13.1494C2.92581 13.8308 3.19234 15.0006 4.11188 15.3154L5.48873 15.7868C5.27593 14.553 4.99684 13.3315 4.65269 12.1275ZM7.22343 17.9611L7.377 19.4062C7.47946 20.3704 8.56185 20.8926 9.38218 20.3703L10.6083 19.5895C9.51004 18.9865 8.38012 18.4429 7.22343 17.9611ZM13.3921 19.5895L14.6182 20.3703C15.4385 20.8926 16.5209 20.3704 16.6234 19.4062L16.777 17.9611C15.6203 18.4429 14.4903 18.9865 13.3921 19.5895ZM18.5117 15.7868L19.8885 15.3154C20.8081 15.0006 21.0746 13.8308 20.3837 13.1494L19.3477 12.1275C19.0035 13.3315 18.7245 14.553 18.5117 15.7868ZM18.7288 9.41715L19.2183 8.04778C19.5446 7.13505 18.7968 6.19567 17.8307 6.31071L16.3863 6.4827C17.1139 7.5021 17.8959 8.48167 18.7288 9.41715ZM13.8786 5.2756C12.6272 5.3429 11.3731 5.3429 10.1218 5.2756L10.8874 4.04072C11.3991 3.21542 12.6013 3.21542 13.113 4.04072L13.8786 5.2756Z"
-        fill="currentColor"
-        fillRule="evenodd"
-      />
-    </svg>
+    <Box className="flex h-full flex-col gap-3">
+      <Box className={cn(CARD_SURFACE_CLASS, "px-4 py-3")}>
+        <Flex align="center" className="gap-2.5" justify="between">
+          <Flex align="center" className="min-w-0 gap-2.5">
+            <Box className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-lg">
+              <ObjectiveIcon className="text-primary size-4" strokeWidth={2} />
+            </Box>
+            <Box className="min-w-0">
+              <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+                Company objective
+              </Text>
+              <Text
+                className={cn(
+                  CARD_TEXT_CLASS,
+                  "text-foreground truncate font-semibold",
+                )}
+              >
+                Increase activation
+              </Text>
+            </Box>
+          </Flex>
+          <Text
+            className={cn(
+              CARD_META_TEXT_CLASS,
+              "bg-success/10 text-success shrink-0 rounded-lg px-2.5 py-1 font-semibold",
+            )}
+          >
+            On track
+          </Text>
+        </Flex>
+      </Box>
+
+      <Box className={cn(CARD_SURFACE_CLASS, "flex-1 p-4")}>
+        <Flex align="center" className="mb-3 gap-2">
+          <RoadmapIcon className="text-text-muted size-4" strokeWidth={1.8} />
+          <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+            Connected roadmap
+          </Text>
+        </Flex>
+        <Box className="border-border-strong ml-2 border-l-2 border-dashed pl-4">
+          <Text className={cn(CARD_TEXT_CLASS, "font-semibold")}>
+            Improve onboarding
+          </Text>
+          <Flex align="center" className="mt-3 gap-2">
+            <Box className="border-border-strong flex size-4 shrink-0 items-center justify-center rounded border-2">
+              <CheckIcon
+                className="text-text-muted size-2.5"
+                strokeWidth={2.5}
+              />
+            </Box>
+            <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+              Redesign onboarding flow
+            </Text>
+          </Flex>
+        </Box>
+      </Box>
+
+      <Flex
+        align="center"
+        className={cn(CARD_SURFACE_CLASS, "gap-2 px-4 py-2.5")}
+      >
+        <Box className="bg-primary size-2 rounded-full" />
+        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+          Outcome visible from the work
+        </Text>
+      </Flex>
+    </Box>
   );
 }
 
-const capabilities = [
-  {
-    icon: <OKRIcon className="text-foreground h-7 md:h-9" strokeWidth={1.8} />,
-    title: "Priorities tied to outcomes.",
-    description:
-      "Connect planned work to company goals so teams understand what deserves attention first.",
-  },
-  {
-    icon: (
-      <SprintsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
-    ),
-    title: "Plans that fit capacity.",
-    description:
-      "Balance new work against availability before the same people become a bottleneck.",
-  },
-  {
-    icon: <AiIcon className="text-foreground h-7 w-auto md:h-10" />,
-    title: "Estimate before committing.",
-    description:
-      "Use AI to fill in missing estimates and give the team a realistic starting point.",
-  },
-  {
-    icon: (
-      <HistoryIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
-    ),
-    title: "One shared project plan.",
-    description:
-      "Keep owners, dates, tasks, and progress together as priorities change.",
-  },
-  {
-    icon: (
-      <RequestsIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />
-    ),
-    title: "Clear ownership and next steps.",
-    description:
-      "Give every task an owner and make the next decision easy to see.",
-  },
-  {
-    icon: <GitIcon className="text-foreground h-7 md:h-10" strokeWidth={1.6} />,
-    title: "Engineering updates stay linked.",
-    description:
-      "Connect commits and delivery activity to the tasks they move forward.",
-  },
-];
+function CapacityRow({
+  fillClassName,
+  label,
+  value,
+}: {
+  fillClassName: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <Box>
+      <Flex align="center" className="mb-2 gap-3" justify="between">
+        <Text className={cn(CARD_TEXT_CLASS, "font-semibold")}>{label}</Text>
+        <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+          {value}
+        </Text>
+      </Flex>
+      <Box className="bg-surface-muted h-2 overflow-hidden rounded-full">
+        <Box className={cn("bg-primary h-full rounded-full", fillClassName)} />
+      </Box>
+    </Box>
+  );
+}
+
+function CapacityPlanCard() {
+  return (
+    <Box className="flex h-full flex-col gap-3">
+      <Flex
+        align="center"
+        className={cn(CARD_SURFACE_CLASS, "gap-3 px-4 py-3")}
+        justify="between"
+      >
+        <Flex align="center" className="gap-2.5">
+          <Box className="bg-primary/10 flex size-7 items-center justify-center rounded-lg">
+            <CalendarIcon className="text-primary size-4" strokeWidth={2} />
+          </Box>
+          <Text className={cn(CARD_TEXT_CLASS, "font-semibold")}>
+            Team capacity
+          </Text>
+        </Flex>
+        <Text className={NEUTRAL_STATUS_CLASS}>This week</Text>
+      </Flex>
+
+      <Box className={cn(CARD_SURFACE_CLASS, "grid flex-1 gap-5 p-4")}>
+        <CapacityRow fillClassName="w-[68%]" label="Product" value="6h open" />
+        <CapacityRow
+          fillClassName="w-[84%]"
+          label="Engineering"
+          value="2h open"
+        />
+      </Box>
+
+      <Flex
+        align="center"
+        className={cn(CARD_SURFACE_CLASS, "gap-2 px-4 py-2.5")}
+      >
+        <Box className="bg-success size-2 rounded-full" />
+        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+          Capacity checked before scheduling
+        </Text>
+      </Flex>
+    </Box>
+  );
+}
+
+function ReviewablePlanCard() {
+  return (
+    <Box className="flex h-full flex-col gap-3">
+      <Flex
+        align="center"
+        className={cn(CARD_SURFACE_CLASS, "gap-2.5 px-4 py-3")}
+      >
+        <Box className="bg-primary/10 flex size-7 shrink-0 items-center justify-center rounded-lg">
+          <AiIcon className="text-primary size-4" />
+        </Box>
+        <Box className="min-w-0">
+          <Text className={cn(CARD_TEXT_CLASS, "font-semibold")}>
+            Maya&apos;s plan update
+          </Text>
+          <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+            Redesign onboarding flow
+          </Text>
+        </Box>
+      </Flex>
+
+      <Box className={cn(CARD_SURFACE_CLASS, "grid flex-1 gap-3 p-4")}>
+        <Flex align="center" justify="between">
+          <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+            Suggested owner
+          </Text>
+          <Text className={cn(CARD_TEXT_CLASS, "font-semibold")}>Joseph</Text>
+        </Flex>
+        <Box className="border-border/80 border-t" />
+        <Flex align="center" justify="between">
+          <Text className={cn(CARD_META_TEXT_CLASS, "text-text-muted")}>
+            First work block
+          </Text>
+          <Text className={cn(CARD_TEXT_CLASS, "font-semibold")}>
+            Tue 10:30
+          </Text>
+        </Flex>
+      </Box>
+
+      <Flex
+        align="center"
+        className={cn(CARD_SURFACE_CLASS, "gap-2 px-4 py-2.5")}
+      >
+        <Text className={NEUTRAL_STATUS_CLASS}>Review</Text>
+        <Text className={cn(CARD_TEXT_CLASS, "text-text-muted")}>
+          No changes applied yet
+        </Text>
+      </Flex>
+    </Box>
+  );
+}
 
 export const CoreValues = () => {
   return (
-    <FeatureGrid
-      cards={capabilities}
-      description="Once the right work is chosen, add owners, estimates, capacity, and delivery context so every team knows what happens next."
-      mainHeading="Turn priorities into a plan every team can follow."
-      // smallHeading="What's inside"
-    />
+    <FeatureStorySection
+      heading="Turn priorities into a plan every team can follow."
+      id="planning"
+    >
+      <FeatureStoryCard
+        description="Connect planned work to company goals so teams understand what deserves attention first."
+        title="Priorities tied to outcomes."
+      >
+        <OutcomePlanCard />
+      </FeatureStoryCard>
+      <FeatureStoryCard
+        delay={0.1}
+        description="Balance new work against availability before the same people become a bottleneck."
+        title="Plans that fit capacity."
+      >
+        <CapacityPlanCard />
+      </FeatureStoryCard>
+      <FeatureStoryCard
+        delay={0.2}
+        description="Let Maya suggest an owner and work window, then review the changes before they touch the plan."
+        title="AI proposals stay reviewable."
+      >
+        <ReviewablePlanCard />
+      </FeatureStoryCard>
+    </FeatureStorySection>
   );
 };
