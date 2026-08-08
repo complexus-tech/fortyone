@@ -1,4 +1,4 @@
-import { Inconsolata, Inter, Newsreader } from "next/font/google";
+import { Inconsolata, Inter, Kalam, Newsreader } from "next/font/google";
 
 export const sans = Inter({
   variable: "--font-inter",
@@ -11,6 +11,13 @@ export const mono = Inconsolata({
   variable: "--font-mono",
   display: "swap",
   subsets: ["latin"],
+});
+
+export const handwritten = Kalam({
+  variable: "--font-kalam",
+  subsets: ["latin"],
+  display: "swap",
+  weight: "700",
 });
 
 export const serif = Newsreader({

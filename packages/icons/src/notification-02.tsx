@@ -3,7 +3,7 @@ import type { Icon } from "./types";
 
 // Hugeicons Notification02Icon, Stroke Rounded (MIT).
 export const Notification02Icon = (props: Icon) => {
-  const { className, strokeWidth = 1.5, ...rest } = props;
+  const { className, strokeWidth = 2, ...rest } = props;
   return (
     <svg
       {...rest}

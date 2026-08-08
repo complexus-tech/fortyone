@@ -11,6 +11,7 @@
   --font-body: -apple-system, BlinkMacSystemFont, var(--font-inter), sans-serif;
   --font-heading: -apple-system, BlinkMacSystemFont, var(--font-inter),
     sans-serif;
+  --font-handwritten: var(--font-kalam), "Comic Sans MS", cursive;
   --font-serif: var(--font-newsreader), Georgia, serif;
 }
 
