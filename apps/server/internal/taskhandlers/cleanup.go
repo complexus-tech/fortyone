@@ -97,6 +97,19 @@ func (c *CleanupHandlers) HandleChatSessionsCleanup(ctx context.Context, t *asyn
 	return nil
 }
 
+// HandleMessagingCleanup removes expired integration nonces and retained chat data.
+func (c *CleanupHandlers) HandleMessagingCleanup(ctx context.Context, t *asynq.Task) error {
+	c.log.Info(ctx, "HANDLER: Processing MessagingCleanup task", "task_id", t.ResultWriter().TaskID())
+
+	if err := jobs.PurgeMessagingData(ctx, c.db, c.log); err != nil {
+		c.log.Error(ctx, "Failed to purge messaging data", "error", err, "task_id", t.ResultWriter().TaskID())
+		return fmt.Errorf("messaging cleanup failed: %w", err)
+	}
+
+	c.log.Info(ctx, "HANDLER: Successfully processed MessagingCleanup task", "task_id", t.ResultWriter().TaskID())
+	return nil
+}
+
 // HandleWebhookCleanup processes the webhook cleanup task
 func (c *CleanupHandlers) HandleWebhookCleanup(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing WebhookCleanup task", "task_id", t.ResultWriter().TaskID())

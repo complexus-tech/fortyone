@@ -27,6 +27,7 @@ var (
 	ErrInvalidStoryReference      = errors.New("invalid story reference")
 	ErrInvalidStoryMediaReference = errors.New("invalid story media reference")
 	ErrObjectiveKeyResultMismatch = errors.New("key result does not belong to objective")
+	ErrInvalidStoryLabels         = errors.New("one or more labels do not belong to the story's workspace and team")
 )
 
 // Repository provides access to the story storage.
@@ -71,6 +72,10 @@ type Repository interface {
 	GetNotificationAudience(ctx context.Context, storyID, workspaceID uuid.UUID) ([]uuid.UUID, error)
 }
 
+type idempotentCreateRepository interface {
+	CreateIdempotent(ctx context.Context, story *CoreSingleStory) (CoreSingleStory, bool, error)
+}
+
 // MentionsRepository provides access to comment mentions storage.
 type MentionsRepository interface {
 	SaveMentions(ctx context.Context, commentID uuid.UUID, userIDs []uuid.UUID) error
@@ -90,7 +95,7 @@ type Service struct {
 	log            *logger.Logger
 	publisher      *publisher.Publisher
 	tasksService   *tasks.Service
-	mayaAssignment *mayaAssignmentAutomation
+	mayaAssignment *mayaAssignmentPolicy
 }
 
 type createOptions struct {
@@ -190,21 +195,32 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 	}
 	story.EstimateValue = ns.EstimateValue
 	story.EstimateLabel = EstimateLabelFromValue(estimateScheme, ns.EstimateValue)
+	if err := s.validateMayaAssignment(ctx, story, nil, actorID); err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
 
-	cs, err := s.repo.Create(ctx, &story)
+	created := true
+	var cs CoreSingleStory
+	if ns.CreationKey != nil {
+		idempotentRepo, ok := s.repo.(idempotentCreateRepository)
+		if !ok {
+			return CoreSingleStory{}, errors.New("story repository does not support idempotent creation")
+		}
+		cs, created, err = idempotentRepo.CreateIdempotent(ctx, &story)
+	} else {
+		cs, err = s.repo.Create(ctx, &story)
+	}
 	if err != nil {
 		span.RecordError(err)
 		return CoreSingleStory{}, err
 	}
-	if len(ns.LabelIDs) > 0 {
-		if err := s.repo.UpdateLabels(ctx, cs.ID, workspaceId, ns.LabelIDs); err != nil {
-			span.RecordError(err)
-			return CoreSingleStory{}, err
-		}
-		cs.Labels = ns.LabelIDs
-	}
 	cs.EstimateScheme = estimateScheme
 	cs.EstimateLabel = EstimateLabelFromValue(estimateScheme, cs.EstimateValue)
+	cs.CreatedNow = created
+	if !created {
+		return cs, nil
+	}
 
 	// Record in the activity log
 	ca := CoreActivity{
@@ -244,11 +260,6 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 	if options.enqueueGitHubSync {
 		s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
 	}
-	if err := s.triggerMayaAssignment(ctx, cs, nil, actorID); err != nil {
-		span.RecordError(err)
-		return CoreSingleStory{}, err
-	}
-
 	span.AddEvent("story created.", trace.WithAttributes(
 		attribute.String("story.title", cs.Title),
 	))
@@ -637,7 +648,7 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 			s.log.Error(ctx, "failed to prepare story for Maya assignment automation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
 			return err
 		}
-		if err := s.triggerMayaAssignment(ctx, updatedStory, story.Assignee, actorID); err != nil {
+		if err := s.validateMayaAssignment(ctx, updatedStory, story.Assignee, actorID); err != nil {
 			span.RecordError(err)
 			return err
 		}

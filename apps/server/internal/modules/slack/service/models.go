@@ -5,8 +5,10 @@ import (
 	"time"
 
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
+	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 )
 
@@ -30,7 +32,7 @@ type Repository interface {
 	SearchTeamMembers(ctx context.Context, teamID uuid.UUID, query string, limit int) ([]slackrepository.TeamMemberRecord, error)
 	SearchTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID, query string, limit int) ([]slackrepository.LabelRecord, error)
 	SearchTeamObjectives(ctx context.Context, workspaceID, teamID uuid.UUID, query string, limit int) ([]slackrepository.ObjectiveRecord, error)
-	CreateStoryLink(ctx context.Context, storyID uuid.UUID, title, linkURL string) error
+	CreateStoryLink(ctx context.Context, storyID uuid.UUID, sourceKey, title, linkURL string) error
 	ListWorkspaceMembersForSlackLinking(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.WorkspaceMemberRecord, error)
 	UpsertSlackUserLinks(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, slackTeamID string, links []slackrepository.SlackUserLinkUpsert) error
 	FindLinkedUserIDBySlackUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string) (*uuid.UUID, error)
@@ -38,7 +40,11 @@ type Repository interface {
 	UpsertSlackWorkspace(ctx context.Context, workspaceID, installedByUserID uuid.UUID, payload slackrepository.OAuthInstallPayload) (slackrepository.SlackWorkspaceRecord, error)
 	GetSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) (slackrepository.SlackWorkspaceRecord, error)
 	GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID string) (slackrepository.SlackWorkspaceRecord, error)
-	DisconnectSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) error
+	DisconnectSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) (slackrepository.SlackUninstallRecord, error)
+	EnqueueSlackUninstall(ctx context.Context, input slackrepository.SlackUninstallInput) (slackrepository.SlackUninstallRecord, error)
+	ClaimSlackUninstall(ctx context.Context, id uuid.UUID) (slackrepository.SlackUninstallRecord, bool, error)
+	CompleteSlackUninstall(ctx context.Context, id uuid.UUID, message string) error
+	FailSlackUninstall(ctx context.Context, id uuid.UUID, message string, nextAttemptAt *time.Time) error
 	UpsertChannels(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, channels []slackrepository.SlackChannelPayload) error
 	ListChannels(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.SlackChannelRecord, error)
 	InsertRequestLog(ctx context.Context, entry slackrepository.SlackRequestLogInsert) error
@@ -46,13 +52,34 @@ type Repository interface {
 	FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error)
 }
 
+type EventQueue interface {
+	EnqueueSlackEvent(ctx context.Context, payload tasks.SlackEventPayload) error
+}
+
+type EventInbox interface {
+	RegisterInboundEvent(ctx context.Context, input messagingrepository.InboundEventInput) (messagingrepository.InboundEventRecord, bool, error)
+	MarkInboundEventQueued(ctx context.Context, id uuid.UUID) error
+}
+
+type OutboundStore interface {
+	StartOutboundDelivery(ctx context.Context, input messagingrepository.OutboundDeliveryInput) (messagingrepository.OutboundDeliveryRecord, bool, error)
+	SetOutboundDeliveryContent(ctx context.Context, id uuid.UUID, content string) error
+	CompleteOutboundDelivery(ctx context.Context, id uuid.UUID, externalMessageID string) error
+	FailOutboundDelivery(ctx context.Context, id uuid.UUID, message string) error
+	CancelOutboundDelivery(ctx context.Context, id uuid.UUID, message string) error
+}
+
+type NonceStore interface {
+	CreateNonce(ctx context.Context, input messagingrepository.NonceInput) error
+	ConsumeNonce(ctx context.Context, input messagingrepository.NonceConsumeInput) (messagingrepository.NonceRecord, error)
+}
+
 type RequestStore interface {
 	UpsertPending(ctx context.Context, input integrationrequests.CoreUpsertRequestInput) (integrationrequests.CoreIntegrationRequest, error)
 }
 
 type StoryService interface {
-	CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
-	UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error
+	Create(ctx context.Context, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
 }
 
 type Config struct {
@@ -143,6 +170,14 @@ type viewSubmissionData struct {
 	LabelIDs    []uuid.UUID
 	ObjectiveID *uuid.UUID
 	Source      requestSourceContext
+	BlockIDs    modalDependentBlockIDs
+}
+
+type modalDependentBlockIDs struct {
+	Status    string
+	Assignee  string
+	Labels    string
+	Objective string
 }
 
 type requestSourceContext struct {
@@ -155,6 +190,7 @@ type requestSourceContext struct {
 	SlackUserID     string `json:"slack_user_id,omitempty"`
 	SlackUsername   string `json:"slack_username,omitempty"`
 	SlackText       string `json:"slack_text,omitempty"`
+	ResponseURL     string `json:"response_url,omitempty"`
 }
 
 type CoreRequestLogInput struct {
@@ -165,71 +201,6 @@ type CoreRequestLogInput struct {
 	ResponseCode int
 	Outcome      string
 	ErrorMessage string
-}
-
-type CoreRuntimeActor struct {
-	SlackTeamID    string
-	SlackUserID    string
-	SlackUserName  string
-	SlackChannelID string
-	SlackChannel   string
-	SlackMessageTS string
-	SlackThreadTS  string
-}
-
-type CoreRuntimeOption struct {
-	Label string `json:"label"`
-	Value string `json:"value"`
-}
-
-type CoreRuntimeCreateStoryInput struct {
-	Title       string
-	Description string
-	TeamID      string
-	StatusID    string
-	Priority    string
-	AssigneeID  string
-	ObjectiveID string
-	LabelIDs    []string
-	Source      struct {
-		SlackTeamID    string `json:"teamId"`
-		SlackUserID    string `json:"userId"`
-		SlackUserName  string `json:"userName"`
-		SlackChannelID string `json:"channelId"`
-		SlackChannel   string `json:"channelName"`
-		SlackMessageTS string `json:"messageTs"`
-		SlackThreadTS  string `json:"threadTs"`
-		SlackText      string `json:"messageText"`
-	} `json:"source"`
-}
-
-type CoreRuntimeCreatedStory struct {
-	ID    string `json:"id"`
-	Ref   string `json:"ref"`
-	Title string `json:"title"`
-	URL   string `json:"url"`
-}
-
-type CoreRuntimeSlackInstallation struct {
-	BotToken  string
-	BotUserID string
-	TeamName  string
-}
-
-type CoreRuntimeIdentity struct {
-	WorkspaceID   uuid.UUID
-	WorkspaceSlug string
-	UserID        *uuid.UUID
-	ConnectURL    string
-}
-
-type CoreRuntimeLogInput struct {
-	Actor        CoreRuntimeActor
-	Endpoint     string
-	ErrorMessage string
-	Outcome      string
-	RequestType  string
-	ResponseCode int
 }
 
 type ProviderAccepter interface {

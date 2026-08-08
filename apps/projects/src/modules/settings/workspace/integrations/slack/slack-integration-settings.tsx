@@ -1,50 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { Badge, Box, Button, Dialog, Flex, Menu, Text } from "ui";
-import { MoreHorizontalIcon, ReloadIcon, SlackIcon, UnlinkIcon } from "icons";
+import { MoreHorizontalIcon, SlackIcon, UnlinkIcon } from "icons";
 import { useWorkspacePath } from "@/hooks";
 import { SectionHeader } from "@/modules/settings/components";
 import {
   useCreateSlackInstallSession,
   useDisconnectSlackWorkspace,
-  useLinkSlackAccount,
-  useResyncSlackChannels,
+  useSlackAccountLinkToken,
   useSlackIntegration,
 } from "@/lib/hooks/slack";
 
-let slackLinkTokenConsumed = false;
-
 export const SlackIntegrationSettings = () => {
-  const searchParams = useSearchParams();
   const { data: integration } = useSlackIntegration();
   const { withWorkspace } = useWorkspacePath();
 
   const createInstallSession = useCreateSlackInstallSession();
   const disconnectWorkspace = useDisconnectSlackWorkspace();
-  const linkSlackAccount = useLinkSlackAccount();
-  const resyncChannels = useResyncSlackChannels();
+  useSlackAccountLinkToken();
   const [isDisconnectOpen, setIsDisconnectOpen] = useState(false);
 
   const isConnected = Boolean(integration?.slackWorkspace?.isActive);
   const slackWorkspace = integration?.slackWorkspace;
-
-  useEffect(() => {
-    const token = searchParams.get("slack_link_token");
-    if (!token || slackLinkTokenConsumed) {
-      return;
-    }
-    slackLinkTokenConsumed = true;
-    linkSlackAccount.mutate(token, {
-      onSettled: () => {
-        const url = new URL(window.location.href);
-        url.searchParams.delete("slack_link_token");
-        window.history.replaceState({}, "", url.toString());
-      },
-    });
-  }, [linkSlackAccount, searchParams]);
 
   return (
     <Box>
@@ -113,14 +92,6 @@ export const SlackIntegrationSettings = () => {
                   </Menu.Button>
                   <Menu.Items align="end">
                     <Menu.Group>
-                      <Menu.Item
-                        onSelect={() => {
-                          resyncChannels.mutate();
-                        }}
-                      >
-                        <ReloadIcon />
-                        Resync channels
-                      </Menu.Item>
                       <Menu.Item
                         onSelect={() => {
                           createInstallSession.mutate();

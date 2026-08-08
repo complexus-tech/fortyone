@@ -60,6 +60,7 @@ type dbStory struct {
 	SubStories           *json.RawMessage `db:"sub_stories"`
 	Labels               *json.RawMessage `db:"labels"`
 	Associations         *json.RawMessage `db:"associations"`
+	CreationKey          *string          `db:"external_creation_key"`
 }
 
 func toCoreTeamSummary(story dbStory) *stories.CoreTeamSummary {
@@ -179,6 +180,7 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		SubStories:      subStories,
 		Labels:          labels,
 		Associations:    associations,
+		CreationKey:     i.CreationKey,
 	}
 }
 
@@ -268,6 +270,7 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 		UpdatedAt:       i.UpdatedAt,
 		DeletedAt:       i.DeletedAt,
 		CompletedAt:     i.CompletedAt,
+		CreationKey:     i.CreationKey,
 	}
 }
 

@@ -80,8 +80,18 @@ type Config struct {
 		ForcePathStyle  bool   `default:"false" env:"APP_AWS_FORCE_PATH_STYLE"`
 		Bucket          string `env:"APP_AWS_BUCKET" default:"fortyone"`
 	}
-	AIAPIKey string `env:"OPENAI_API_KEY"`
-	GitHub   struct {
+	AIAPIKey           string `env:"OPENAI_API_KEY"`
+	AIModel            string `default:"gpt-5.4-mini" env:"OPENAI_MODEL"`
+	MessagingAssistant struct {
+		UserCallsPerMinute      int64 `default:"12" env:"OPENAI_ASSISTANT_USER_CALLS_PER_MINUTE"`
+		WorkspaceCallsPerMinute int64 `default:"120" env:"OPENAI_ASSISTANT_WORKSPACE_CALLS_PER_MINUTE"`
+		WorkspaceTokensPerDay   int64 `default:"1000000" env:"OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY"`
+	}
+	Slack struct {
+		ClientID     string `env:"SLACK_CLIENT_ID"`
+		ClientSecret string `env:"SLACK_CLIENT_SECRET"`
+	}
+	GitHub struct {
 		AppID            int64  `env:"APP_GITHUB_APP_ID"`
 		AppSlug          string `env:"GITHUB_APP_SLUG"`
 		PrivateKeyBase64 string `env:"GITHUB_PRIVATE_KEY_BASE64"`

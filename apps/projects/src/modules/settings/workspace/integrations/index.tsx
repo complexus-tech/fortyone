@@ -148,7 +148,7 @@ export const IntegrationsIndex = () => {
   const { userRole } = useUserRole();
   const isAdmin = userRole === "admin";
   const { data: integration } = useGitHubIntegration({ enabled: isAdmin });
-  const { data: slackIntegration } = useSlackIntegration({ enabled: isAdmin });
+  const { data: slackIntegration } = useSlackIntegration();
   const calendarIntegrationQuery = useCalendarIntegration();
   const calendarIntegration = calendarIntegrationQuery.data;
   const { withWorkspace } = useWorkspacePath();
@@ -197,7 +197,11 @@ export const IntegrationsIndex = () => {
       description: `Turn conversations into ${storyTermPlural} from Slack.`,
       icon: <SlackIcon className="h-8 w-8" />,
       enabled: isSlackEnabled,
-      href: withWorkspace("/settings/workspace/integrations/slack"),
+      href: withWorkspace(
+        isAdmin
+          ? "/settings/workspace/integrations/slack"
+          : "/settings/integrations/slack",
+      ),
     },
     {
       id: "gitlab",
@@ -221,9 +225,12 @@ export const IntegrationsIndex = () => {
       enabled: false,
     },
   ];
+  const visibleWorkspaceIntegrations = isAdmin
+    ? workspaceIntegrations
+    : workspaceIntegrations.filter(({ id }) => id === "slack");
   const allIntegrations = [
     googleCalendarIntegration,
-    ...(isAdmin ? workspaceIntegrations : []),
+    ...visibleWorkspaceIntegrations,
   ];
 
   const enabledIntegrations = allIntegrations.filter((i) => i.enabled);

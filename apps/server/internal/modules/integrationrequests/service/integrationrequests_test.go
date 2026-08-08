@@ -155,6 +155,46 @@ func TestAcceptAllPendingByTeamAcceptsEveryPendingRequest(t *testing.T) {
 	require.Len(t, repo.createdStories, 2)
 	require.Equal(t, "High", repo.createdStories[0].Priority)
 	require.Equal(t, "No Priority", repo.createdStories[1].Priority)
+	for index, created := range repo.createdStories {
+		require.NotNil(t, created.CreationKey, "story %d has no idempotency key", index)
+		require.Contains(t, *created.CreationKey, workspaceID.String())
+	}
+}
+
+func TestAcceptPreservesValidatedSlackRequestLabels(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	actorID := uuid.New()
+	requestID := uuid.New()
+	firstLabelID := uuid.New()
+	secondLabelID := uuid.New()
+	repo := &requestRepoStub{
+		statusID: uuid.New(),
+		requests: []CoreIntegrationRequest{{
+			ID:               requestID,
+			WorkspaceID:      workspaceID,
+			TeamID:           teamID,
+			Provider:         ProviderSlack,
+			SourceType:       "message",
+			SourceExternalID: "Ev1",
+			Title:            "Create from Slack",
+			Status:           StatusPending,
+			Metadata: map[string]any{
+				"label_ids": []any{firstLabelID.String(), secondLabelID.String(), firstLabelID.String()},
+			},
+		}},
+	}
+	service := New(nil, repo, storyServiceStub{repo: repo}, map[string]ProviderAccepter{
+		ProviderSlack: providerAccepterStub{},
+	})
+
+	_, err := service.Accept(context.Background(), workspaceID, requestID, actorID)
+
+	require.NoError(t, err)
+	require.Len(t, repo.createdStories, 1)
+	require.Equal(t, []uuid.UUID{firstLabelID, secondLabelID}, repo.createdStories[0].LabelIDs)
+	require.NotNil(t, repo.createdStories[0].CreationKey)
+	require.Equal(t, "integration-request:"+workspaceID.String()+":"+requestID.String(), *repo.createdStories[0].CreationKey)
 }
 
 func TestListByTeamSupportsPagination(t *testing.T) {

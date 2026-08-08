@@ -15,8 +15,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, notificationsService *notifications.Service, systemUserID uuid.UUID) *asynq.ServeMux {
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, systemUserID)
+func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, systemUserID uuid.UUID) *asynq.ServeMux {
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, slackEvents, systemUserID)
 	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, systemUserID, notificationsService)
 
 	mux := asynq.NewServeMux()
@@ -31,6 +31,9 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeGitHubStorySync, workerTaskService.HandleGitHubStorySync)
 	mux.HandleFunc(tasks.TypeMayaBatchAssignment, workerTaskService.HandleMayaBatchAssignment)
 	mux.HandleFunc(tasks.TypeAttachmentImageOptimization, workerTaskService.HandleAttachmentImageOptimization)
+	mux.HandleFunc(tasks.TypeSlackEvent, workerTaskService.HandleSlackEvent)
+	mux.HandleFunc(tasks.TypeSlackCredentialBackfill, workerTaskService.HandleSlackCredentialBackfill)
+	mux.HandleFunc(tasks.TypeSlackInboxRecovery, workerTaskService.HandleSlackInboxRecovery)
 
 	// Cleanup handlers
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)
@@ -38,6 +41,7 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeDeleteFeedback, cleanupHandlers.HandleDeleteFeedback)
 	mux.HandleFunc(tasks.TypeWebhookCleanup, cleanupHandlers.HandleWebhookCleanup)
 	mux.HandleFunc(tasks.TypeChatSessionsCleanup, cleanupHandlers.HandleChatSessionsCleanup)
+	mux.HandleFunc(tasks.TypeMessagingCleanup, cleanupHandlers.HandleMessagingCleanup)
 	mux.HandleFunc(tasks.TypeWorkspaceCleanup, cleanupHandlers.HandleWorkspaceCleanup)
 
 	// Automation handlers

@@ -112,6 +112,8 @@ type CoreSingleStory struct {
 	SubStories      []CoreStoryList
 	Labels          []uuid.UUID
 	Associations    []CoreStoryAssociation
+	CreationKey     *string
+	CreatedNow      bool
 }
 
 type CoreNewStory struct {
@@ -134,6 +136,7 @@ type CoreNewStory struct {
 	StartDate       *time.Time  `json:"startDate"`
 	EndDate         *time.Time  `json:"endDate"`
 	Team            uuid.UUID   `json:"teamId"`
+	CreationKey     *string     `json:"-"`
 }
 
 type CoreUpdateStory struct {
@@ -176,9 +179,11 @@ func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 		Priority:        ns.Priority,
 		Sprint:          ns.Sprint,
 		KeyResult:       ns.KeyResult,
+		Labels:          append([]uuid.UUID(nil), ns.LabelIDs...),
 		StartDate:       ns.StartDate,
 		EndDate:         ns.EndDate,
 		Team:            ns.Team,
+		CreationKey:     ns.CreationKey,
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}

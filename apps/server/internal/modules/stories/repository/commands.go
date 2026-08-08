@@ -12,6 +12,8 @@ import (
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -19,12 +21,21 @@ import (
 const activityCompactionWindowSQL = "30 seconds"
 
 func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error) {
-	// Start a transaction
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return 0, nil, nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
+	currentSequence, err := r.getNextSequenceID(ctx, tx, teamID, workspaceId)
+	if err != nil {
+		_ = tx.Rollback()
+		return 0, nil, nil, err
+	}
+
+	return currentSequence, tx.Commit, tx.Rollback, nil
+}
+
+func (r *repo) getNextSequenceID(ctx context.Context, tx *sqlx.Tx, teamID, workspaceID uuid.UUID) (int, error) {
 	query := `
 		INSERT INTO team_story_sequences (workspace_id, team_id, current_sequence) 
 		VALUES (:workspace_id, :team_id, 0) 
@@ -35,63 +46,95 @@ func (r *repo) GetNextSequenceID(ctx context.Context, teamID uuid.UUID, workspac
 
 	params := map[string]any{
 		"team_id":      teamID,
-		"workspace_id": workspaceId,
+		"workspace_id": workspaceID,
 	}
 
 	stmt, err := tx.PrepareNamedContext(ctx, query)
 	if err != nil {
-		tx.Rollback()
-		return 0, nil, nil, fmt.Errorf("failed to prepare named statement: %w", err)
+		return 0, fmt.Errorf("failed to prepare named statement: %w", err)
 	}
 	defer stmt.Close()
 
 	var currentSequence int
-	err = stmt.GetContext(ctx, &currentSequence, params)
-	if err != nil {
-		tx.Rollback()
-		return 0, nil, nil, fmt.Errorf("failed to get/update sequence: %w", err)
+	if err := stmt.GetContext(ctx, &currentSequence, params); err != nil {
+		return 0, fmt.Errorf("failed to get/update sequence: %w", err)
 	}
 
-	commit := func() error {
-		return tx.Commit()
-	}
+	return currentSequence, nil
+}
 
-	rollback := func() error {
-		return tx.Rollback()
-	}
+type storyCreateTransaction interface {
+	NextSequence(ctx context.Context, teamID, workspaceID uuid.UUID) (int, error)
+	InsertStory(ctx context.Context, story *stories.CoreSingleStory) (dbStory, error)
+	InsertLabels(ctx context.Context, storyID, workspaceID, teamID uuid.UUID, labelIDs []uuid.UUID) error
+	Commit() error
+	Rollback() error
+}
 
-	return currentSequence, commit, rollback, nil
+type sqlStoryCreateTransaction struct {
+	repo *repo
+	tx   *sqlx.Tx
+}
+
+func (tx *sqlStoryCreateTransaction) NextSequence(ctx context.Context, teamID, workspaceID uuid.UUID) (int, error) {
+	return tx.repo.getNextSequenceID(ctx, tx.tx, teamID, workspaceID)
+}
+
+func (tx *sqlStoryCreateTransaction) InsertStory(ctx context.Context, story *stories.CoreSingleStory) (dbStory, error) {
+	return tx.repo.insertStory(ctx, tx.tx, story)
+}
+
+func (tx *sqlStoryCreateTransaction) InsertLabels(
+	ctx context.Context,
+	storyID, workspaceID, teamID uuid.UUID,
+	labelIDs []uuid.UUID,
+) error {
+	return tx.repo.insertStoryLabels(ctx, tx.tx, storyID, workspaceID, teamID, labelIDs)
+}
+
+func (tx *sqlStoryCreateTransaction) Commit() error {
+	return tx.tx.Commit()
+}
+
+func (tx *sqlStoryCreateTransaction) Rollback() error {
+	return tx.tx.Rollback()
 }
 
 // Create creates a new story with automatic sequence recovery on conflicts.
 func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) (stories.CoreSingleStory, error) {
+	created, _, err := r.CreateIdempotent(ctx, story)
+	return created, err
+}
+
+// CreateIdempotent creates a story once when ExternalCreationKey is set and
+// reports whether this call performed the insert. A concurrent retry blocks on
+// the unique key and then returns the already-committed story.
+func (r *repo) CreateIdempotent(ctx context.Context, story *stories.CoreSingleStory) (stories.CoreSingleStory, bool, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Create")
 	defer span.End()
 
 	// Validate status belongs to the same team
 	if story.Status != nil {
 		if err := r.validateStatusTeam(ctx, *story.Status, story.Team); err != nil {
-			return stories.CoreSingleStory{}, err
+			return stories.CoreSingleStory{}, false, err
 		}
 	}
 
 	const maxRetries = 3
 	var lastErr error
+	labelIDs := deduplicateLabelIDs(story.Labels)
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		lastSequence, commit, rollback, err := r.GetNextSequenceID(ctx, story.Team, story.Workspace)
+		cs, err := r.createStoryAttempt(ctx, story, labelIDs)
 		if err != nil {
-			return stories.CoreSingleStory{}, fmt.Errorf("failed to get next sequence ID: %w", err)
-		}
-		story.SequenceID = lastSequence + 1
-
-		cs, err := r.insertStory(ctx, story)
-		if err != nil {
-			rollback()
-
-			// Check if this is a duplicate sequence ID error
-			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") &&
-				strings.Contains(err.Error(), "unique_team_sequence") {
+			if isExternalCreationKeyConflict(err) && story.CreationKey != nil {
+				existing, lookupErr := r.findByExternalCreationKey(ctx, story.Workspace, *story.CreationKey)
+				if lookupErr != nil {
+					return stories.CoreSingleStory{}, false, fmt.Errorf("load idempotent story: %w", lookupErr)
+				}
+				return existing, false, nil
+			}
+			if isStorySequenceConflict(err) {
 				r.log.Info(ctx, "sequence out of sync, retrying with corrected sequence",
 					"attempt", attempt,
 					"team_id", story.Team,
@@ -100,26 +143,119 @@ func (r *repo) Create(ctx context.Context, story *stories.CoreSingleStory) (stor
 				// Sync the sequence to the correct value
 				if syncErr := r.syncSequence(ctx, story.Team, story.Workspace); syncErr != nil {
 					r.log.Error(ctx, "failed to sync sequence", "error", syncErr)
-					return stories.CoreSingleStory{}, fmt.Errorf("failed to sync sequence: %w", syncErr)
+					return stories.CoreSingleStory{}, false, fmt.Errorf("failed to sync sequence: %w", syncErr)
 				}
 
 				lastErr = err
 				continue // Retry
 			}
 
-			// Different error, return immediately
-			return stories.CoreSingleStory{}, fmt.Errorf("failed to insert story: %w", err)
+			return stories.CoreSingleStory{}, false, fmt.Errorf("failed to create story: %w", err)
 		}
 
-		if err := commit(); err != nil {
-			return stories.CoreSingleStory{}, fmt.Errorf("failed to commit transaction: %w", err)
-		}
-
-		return toCoreStory(cs), nil
+		createdStory := toCoreStory(cs)
+		createdStory.Labels = labelIDs
+		createdStory.CreatedNow = true
+		return createdStory, true, nil
 	}
 
 	// Exhausted retries
-	return stories.CoreSingleStory{}, fmt.Errorf("failed to create story after %d retries: %w", maxRetries, lastErr)
+	return stories.CoreSingleStory{}, false, fmt.Errorf("failed to create story after %d retries: %w", maxRetries, lastErr)
+}
+
+func (r *repo) createStoryAttempt(
+	ctx context.Context,
+	story *stories.CoreSingleStory,
+	labelIDs []uuid.UUID,
+) (dbStory, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return dbStory{}, fmt.Errorf("begin story creation transaction: %w", err)
+	}
+
+	return executeStoryCreateTransaction(ctx, &sqlStoryCreateTransaction{repo: r, tx: tx}, story, labelIDs)
+}
+
+func executeStoryCreateTransaction(
+	ctx context.Context,
+	tx storyCreateTransaction,
+	story *stories.CoreSingleStory,
+	labelIDs []uuid.UUID,
+) (created dbStory, err error) {
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	lastSequence, err := tx.NextSequence(ctx, story.Team, story.Workspace)
+	if err != nil {
+		return dbStory{}, fmt.Errorf("advance story sequence: %w", err)
+	}
+	story.SequenceID = lastSequence + 1
+
+	created, err = tx.InsertStory(ctx, story)
+	if err != nil {
+		return dbStory{}, fmt.Errorf("insert story: %w", err)
+	}
+	if err := tx.InsertLabels(ctx, created.ID, story.Workspace, story.Team, labelIDs); err != nil {
+		return dbStory{}, fmt.Errorf("insert story labels: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return dbStory{}, fmt.Errorf("commit story creation transaction: %w", err)
+	}
+	committed = true
+
+	return created, nil
+}
+
+func isStorySequenceConflict(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var postgresError *pgconn.PgError
+	if errors.As(err, &postgresError) {
+		return postgresError.Code == "23505" && postgresError.ConstraintName == "unique_team_sequence"
+	}
+
+	return strings.Contains(err.Error(), "duplicate key value violates unique constraint") &&
+		strings.Contains(err.Error(), "unique_team_sequence")
+}
+
+func isExternalCreationKeyConflict(err error) bool {
+	if err == nil {
+		return false
+	}
+	var postgresError *pgconn.PgError
+	return errors.As(err, &postgresError) &&
+		postgresError.Code == "23505" &&
+		postgresError.ConstraintName == "stories_external_creation_key_key"
+}
+
+func (r *repo) findByExternalCreationKey(ctx context.Context, workspaceID uuid.UUID, key string) (stories.CoreSingleStory, error) {
+	var row dbStory
+	err := r.db.GetContext(ctx, &row, `
+		SELECT s.id, s.sequence_id, s.title, s.description, s.description_html,
+		       s.parent_id, s.objective_id, s.status_id, s.assignee_id,
+		       s.blocked_by_id, s.blocking_id, s.related_id, s.reporter_id,
+		       s.priority, s.estimate_unit, s.sprint_id, s.key_result_id,
+		       s.team_id, s.workspace_id, s.start_date, s.end_date,
+		       s.created_at, s.updated_at, s.external_creation_key,
+		       COALESCE(
+		           (SELECT json_agg(sl.label_id) FROM story_labels sl WHERE sl.story_id = s.id),
+		           CAST('[]' AS json)
+		       ) AS labels
+		FROM stories s
+		WHERE s.workspace_id = $1
+		  AND s.external_creation_key = $2
+		LIMIT 1
+	`, workspaceID, strings.TrimSpace(key))
+	if err != nil {
+		return stories.CoreSingleStory{}, err
+	}
+	return toCoreStory(row), nil
 }
 
 // syncSequence syncs the team_story_sequences table with the actual max sequence_id in the stories table.
@@ -179,7 +315,7 @@ func (r *repo) syncSequence(ctx context.Context, teamID, workspaceID uuid.UUID) 
 	return nil
 }
 
-func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) (dbStory, error) {
+func (r *repo) insertStory(ctx context.Context, tx *sqlx.Tx, story *stories.CoreSingleStory) (dbStory, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.insertStory")
 	defer span.End()
 
@@ -189,17 +325,17 @@ func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) 
 					parent_id, objective_id, status_id, assignee_id, 
 					blocked_by_id, blocking_id, related_id, reporter_id,
 					priority, estimate_unit, sprint_id, key_result_id, team_id, workspace_id, start_date, 
-					end_date, created_at, updated_at
+					end_date, external_creation_key, created_at, updated_at
 			) VALUES (
 					:sequence_id, :title, :description, :description_html,
 					:parent_id, :objective_id, :status_id, :assignee_id, :blocked_by_id,
 					:blocking_id, :related_id, :reporter_id, :priority, :estimate_unit, :sprint_id,
-					:key_result_id, :team_id, :workspace_id, :start_date, :end_date, :created_at, :updated_at
-			) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.sprint_id, stories.key_result_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
+					:key_result_id, :team_id, :workspace_id, :start_date, :end_date, :external_creation_key, :created_at, :updated_at
+			) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.sprint_id, stories.key_result_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.external_creation_key, stories.created_at, stories.updated_at;
 		`
 
 	var cs dbStory
-	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	stmt, err := tx.PrepareNamedContext(ctx, q)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to prepare named statement: %s", err)
 		r.log.Error(ctx, errMsg)
@@ -224,20 +360,103 @@ func (r *repo) insertStory(ctx context.Context, story *stories.CoreSingleStory) 
 	return cs, err
 }
 
+func deduplicateLabelIDs(labelIDs []uuid.UUID) []uuid.UUID {
+	seen := make(map[uuid.UUID]struct{}, len(labelIDs))
+	unique := make([]uuid.UUID, 0, len(labelIDs))
+	for _, labelID := range labelIDs {
+		if _, exists := seen[labelID]; exists {
+			continue
+		}
+		seen[labelID] = struct{}{}
+		unique = append(unique, labelID)
+	}
+	return unique
+}
+
+func (r *repo) insertStoryLabels(
+	ctx context.Context,
+	tx *sqlx.Tx,
+	storyID, workspaceID, teamID uuid.UUID,
+	labelIDs []uuid.UUID,
+) error {
+	labelIDs = deduplicateLabelIDs(labelIDs)
+	if len(labelIDs) == 0 {
+		return nil
+	}
+
+	query, args, err := sqlx.Named(`
+		INSERT INTO story_labels (story_id, label_id)
+		SELECT :story_id, labels.label_id
+		FROM labels
+		WHERE labels.label_id IN (:label_ids)
+			AND labels.workspace_id = :workspace_id
+			AND (labels.team_id = :team_id OR labels.team_id IS NULL)
+		RETURNING label_id
+	`, map[string]any{
+		"story_id":     storyID,
+		"workspace_id": workspaceID,
+		"team_id":      teamID,
+		"label_ids":    labelIDs,
+	})
+	if err != nil {
+		return fmt.Errorf("bind story labels: %w", err)
+	}
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return fmt.Errorf("expand story labels: %w", err)
+	}
+
+	rows, err := tx.QueryxContext(ctx, tx.Rebind(query), args...)
+	if err != nil {
+		return fmt.Errorf("insert story labels: %w", err)
+	}
+	defer rows.Close()
+
+	inserted := 0
+	for rows.Next() {
+		var labelID uuid.UUID
+		if err := rows.Scan(&labelID); err != nil {
+			return fmt.Errorf("scan inserted story label: %w", err)
+		}
+		inserted++
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("read inserted story labels: %w", err)
+	}
+	if inserted != len(labelIDs) {
+		return fmt.Errorf("%w: %d of %d labels are authorized", stories.ErrInvalidStoryLabels, inserted, len(labelIDs))
+	}
+
+	return nil
+}
+
 func (r *repo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.UpdateLabels")
 	defer span.End()
 
-	// Start a transaction
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
+	committed := false
 	defer func() {
-		if err != nil {
-			tx.Rollback()
+		if !committed {
+			_ = tx.Rollback()
 		}
 	}()
+
+	var teamID uuid.UUID
+	if err := tx.GetContext(ctx, &teamID, `
+		SELECT team_id
+		FROM stories
+		WHERE id = $1 AND workspace_id = $2
+		FOR UPDATE
+	`, id, workspaceId); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return stories.ErrNotFound
+		}
+		return fmt.Errorf("load story team: %w", err)
+	}
 
 	// First, delete all existing labels for the story
 	deleteQuery := `
@@ -258,31 +477,14 @@ func (r *repo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.
 		return fmt.Errorf("failed to delete existing labels: %w", err)
 	}
 
-	// If we have new labels to insert
-	if len(labels) > 0 {
-		// Prepare values for bulk insert
-		values := make([]string, len(labels))
-		args := make([]any, 0, len(labels)*2)
-		for i, labelID := range labels {
-			values[i] = fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2)
-			args = append(args, id, labelID)
-		}
-
-		// Insert new labels
-		insertQuery := fmt.Sprintf(`
-			INSERT INTO story_labels (story_id, label_id)
-			VALUES %s
-		`, strings.Join(values, ","))
-
-		if _, err = tx.ExecContext(ctx, insertQuery, args...); err != nil {
-			return fmt.Errorf("failed to insert new labels: %w", err)
-		}
+	if err := r.insertStoryLabels(ctx, tx, id, workspaceId, teamID, labels); err != nil {
+		return err
 	}
 
-	// Commit the transaction
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
+	committed = true
 
 	return nil
 }

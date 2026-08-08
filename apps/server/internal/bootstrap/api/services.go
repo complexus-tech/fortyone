@@ -38,6 +38,7 @@ import (
 	mayarepository "github.com/complexus-tech/projects-api/internal/modules/maya/repository"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
 	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
+	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
@@ -133,6 +134,7 @@ func buildServices(cfg mux.Config) services {
 	)
 	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher, cfg.TasksService)
 	integrationRequestsRepo := integrationrequestsrepository.New(cfg.Log, cfg.DB)
+	messagingRepo := messagingrepository.New(cfg.DB)
 	commentsService := comments.New(cfg.Log, commentsrepository.New(cfg.Log, cfg.DB), mentionsRepo)
 	linksService := links.New(cfg.Log, linksrepository.New(cfg.Log, cfg.DB))
 	workspacesService := workspaces.New(
@@ -193,6 +195,8 @@ func buildServices(cfg mux.Config) services {
 			WebsiteURL:    cfg.WebsiteURL,
 			SecretKey:     cfg.SecretKey,
 		},
+		slack.WithEventRuntime(cfg.TasksService, messagingRepo),
+		slack.WithNonceStore(messagingRepo),
 	)
 	calendarService := calendar.New(
 		cfg.Log,

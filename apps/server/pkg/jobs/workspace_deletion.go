@@ -19,26 +19,24 @@ func ProcessWorkspaceDeletion(ctx context.Context, db *sqlx.DB, log *logger.Logg
 
 	log.Info(ctx, "Permanently deleting workspaces inactive for 6+ months with 30-day grace period")
 
-	deleteQuery := `
-		DELETE FROM workspaces
+	candidateSelect := `
+		SELECT workspace_id
+		FROM workspaces
 		WHERE last_accessed_at < NOW() - INTERVAL '6 months 30 days'
-		AND deleted_at IS NULL
-		AND inactivity_warning_sent_at IS NOT NULL
+		  AND deleted_at IS NULL
+		  AND inactivity_warning_sent_at IS NOT NULL
 	`
-	result, err := db.ExecContext(ctx, deleteQuery)
+	rowsAffected, blocked, err := deleteWorkspacesWithSlackCleanup(ctx, db, candidateSelect)
 	if err != nil {
 		span.RecordError(err)
 		return fmt.Errorf("failed to delete workspaces: %w", err)
 	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		span.RecordError(err)
-		return fmt.Errorf("failed to get rows affected: %w", err)
+	if blocked > 0 {
+		log.Warn(ctx, "Deferred inactive workspace deletion until Slack credentials are encrypted", "workspaces", blocked)
 	}
 
 	span.AddEvent("workspaces_deleted", trace.WithAttributes(
-		attribute.Int("rows_affected", int(rowsAffected)),
+		attribute.Int64("rows_affected", rowsAffected),
 	))
 	log.Info(ctx, fmt.Sprintf("Permanently deleted %d workspaces", rowsAffected))
 	return nil

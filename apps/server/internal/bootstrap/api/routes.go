@@ -102,7 +102,6 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		SecretKey: cfg.SecretKey,
 		Cache:     cfg.Cache,
 		Service:   svcs.slack,
-		BotToken:  cfg.BotToken,
 	}, app)
 	calendarhttp.Routes(calendarhttp.Config{
 		DB:        cfg.DB,

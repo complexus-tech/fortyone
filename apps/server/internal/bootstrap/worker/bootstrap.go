@@ -105,8 +105,9 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	server := asynq.NewServer(
 		redisOpt,
 		asynq.Config{
-			Concurrency: 10,
-			Queues:      cfg.Queues,
+			Concurrency:    10,
+			Queues:         cfg.Queues,
+			RetryDelayFunc: integrationRetryDelay,
 		},
 	)
 
@@ -186,7 +187,20 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	)
 
 	mayaService := buildMayaService(log, db, cfg, systemUserID)
-	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, notificationsService, systemUserID)
+	slackEvents, err := buildSlackEventProcessor(log, db, redisClient, cfg, tasksService)
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("initialize Slack event processor: %w", err)
+	}
+	upgradedCredentials, err := slackEvents.BackfillLegacyCredentials(ctx)
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("encrypt legacy Slack credentials: %w", err)
+	}
+	if upgradedCredentials > 0 {
+		log.Info(ctx, "Encrypted legacy Slack credentials", "count", upgradedCredentials)
+	}
+	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, notificationsService, slackEvents, systemUserID)
 	resourcesTransferred = true
 
 	return App{

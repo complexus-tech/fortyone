@@ -95,6 +95,11 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 	if priority == "" {
 		priority = "No Priority"
 	}
+	labelIDs, err := metadataUUIDs(request.Metadata, "label_ids")
+	if err != nil {
+		return CoreIntegrationRequest{}, err
+	}
+	creationKey := fmt.Sprintf("integration-request:%s:%s", workspaceID, request.ID)
 
 	story, err := s.stories.CreateExternal(ctx, actorID, stories.CoreNewStory{
 		Title:         request.Title,
@@ -110,6 +115,8 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 		Sprint:        request.SprintID,
 		StartDate:     request.StartDate,
 		EndDate:       request.EndDate,
+		LabelIDs:      labelIDs,
+		CreationKey:   &creationKey,
 	}, workspaceID)
 	if err != nil {
 		return CoreIntegrationRequest{}, err
@@ -119,7 +126,56 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 		return CoreIntegrationRequest{}, err
 	}
 
-	return s.repo.MarkAccepted(ctx, workspaceID, requestID, story.ID, actorID)
+	accepted, err := s.repo.MarkAccepted(ctx, workspaceID, requestID, story.ID, actorID)
+	if err == nil {
+		return accepted, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return CoreIntegrationRequest{}, err
+	}
+	current, getErr := s.repo.Get(ctx, workspaceID, requestID)
+	if getErr == nil && current.Status == StatusAccepted && current.AcceptedStoryID != nil && *current.AcceptedStoryID == story.ID {
+		return current, nil
+	}
+	return CoreIntegrationRequest{}, err
+}
+
+func metadataUUIDs(metadata map[string]any, key string) ([]uuid.UUID, error) {
+	value, ok := metadata[key]
+	if !ok || value == nil {
+		return nil, nil
+	}
+	var rawValues []string
+	switch values := value.(type) {
+	case []string:
+		rawValues = values
+	case []any:
+		rawValues = make([]string, 0, len(values))
+		for _, raw := range values {
+			text, ok := raw.(string)
+			if !ok {
+				return nil, fmt.Errorf("integration request metadata %q contains a non-string value", key)
+			}
+			rawValues = append(rawValues, text)
+		}
+	default:
+		return nil, fmt.Errorf("integration request metadata %q is not a list", key)
+	}
+
+	result := make([]uuid.UUID, 0, len(rawValues))
+	seen := make(map[uuid.UUID]struct{}, len(rawValues))
+	for _, raw := range rawValues {
+		parsed, err := uuid.Parse(strings.TrimSpace(raw))
+		if err != nil {
+			return nil, fmt.Errorf("parse integration request metadata %q: %w", key, err)
+		}
+		if _, exists := seen[parsed]; exists {
+			continue
+		}
+		seen[parsed] = struct{}{}
+		result = append(result, parsed)
+	}
+	return result, nil
 }
 
 func (s *Service) AcceptAllPendingByTeam(ctx context.Context, workspaceID, teamID, actorID uuid.UUID) (CoreBulkRequestResult, error) {

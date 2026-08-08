@@ -144,10 +144,7 @@ type Config struct {
 		ClientID      string `env:"SLACK_CLIENT_ID"`
 		ClientSecret  string `env:"SLACK_CLIENT_SECRET"`
 		SigningSecret string `env:"SLACK_SIGNING_SECRET"`
-		RedirectURL   string `env:"SLACK_REDIRECT_URL"`
-	}
-	Bot struct {
-		Token string `env:"FORTYONE_BOT_TOKEN"`
+		RedirectURL   string `default:"https://api.fortyone.app/integrations/slack/setup" env:"SLACK_REDIRECT_URL"`
 	}
 }
 
@@ -414,7 +411,6 @@ func run(ctx context.Context, log *logger.Logger) error {
 		SlackClientID:      cfg.Slack.ClientID,
 		SlackClientSecret:  cfg.Slack.ClientSecret,
 		SlackRedirectURL:   cfg.Slack.RedirectURL,
-		BotToken:           cfg.Bot.Token,
 		AIAPIKey:           strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
 		SSEHub:             sseHub,
 		CorsOrigin:         "*",

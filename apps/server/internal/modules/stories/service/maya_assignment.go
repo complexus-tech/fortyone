@@ -12,38 +12,38 @@ type MayaAssignmentInput struct {
 	TriggeredBy uuid.UUID
 }
 
-type MayaAssignmentHandler func(ctx context.Context, input MayaAssignmentInput) error
+type MayaAssignmentValidator func(ctx context.Context, input MayaAssignmentInput) error
 
-type mayaAssignmentAutomation struct {
+type mayaAssignmentPolicy struct {
 	assigneeID uuid.UUID
-	handler    MayaAssignmentHandler
+	validate   MayaAssignmentValidator
 }
 
-func (s *Service) ConfigureMayaAssignment(assigneeID uuid.UUID, handler MayaAssignmentHandler) {
-	if assigneeID == uuid.Nil || handler == nil {
+func (s *Service) ConfigureMayaAssignment(assigneeID uuid.UUID, validator MayaAssignmentValidator) {
+	if assigneeID == uuid.Nil || validator == nil {
 		s.mayaAssignment = nil
 		return
 	}
 
-	s.mayaAssignment = &mayaAssignmentAutomation{
+	s.mayaAssignment = &mayaAssignmentPolicy{
 		assigneeID: assigneeID,
-		handler:    handler,
+		validate:   validator,
 	}
 }
 
-func (s *Service) triggerMayaAssignment(ctx context.Context, story CoreSingleStory, previousAssignee *uuid.UUID, triggeredBy uuid.UUID) error {
+func (s *Service) validateMayaAssignment(ctx context.Context, story CoreSingleStory, previousAssignee *uuid.UUID, triggeredBy uuid.UUID) error {
 	if s.mayaAssignment == nil {
 		return nil
 	}
 	if !shouldTriggerMayaAssignment(previousAssignee, story.Assignee, s.mayaAssignment.assigneeID) {
 		return nil
 	}
-	if err := s.mayaAssignment.handler(ctx, MayaAssignmentInput{
+	if err := s.mayaAssignment.validate(ctx, MayaAssignmentInput{
 		Story:       story,
 		TriggeredBy: triggeredBy,
 	}); err != nil {
-		s.log.Error(ctx, "failed to run Maya assignment automation", "story_id", story.ID, "workspace_id", story.Workspace, "error", err)
-		return fmt.Errorf("run Maya assignment automation: %w", err)
+		s.log.Error(ctx, "Maya assignment validation failed", "story_id", story.ID, "workspace_id", story.Workspace, "error", err)
+		return fmt.Errorf("validate Maya assignment: %w", err)
 	}
 	return nil
 }
