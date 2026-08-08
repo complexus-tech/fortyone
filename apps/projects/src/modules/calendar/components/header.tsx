@@ -16,7 +16,7 @@ export const CalendarHeader = ({ onSchedule }: { onSchedule: () => void }) => {
           breadCrumbs={[
             {
               name: "Calendar",
-              icon: <CalendarIcon strokeWidth={2} />,
+              icon: <CalendarIcon />,
             },
           ]}
         />

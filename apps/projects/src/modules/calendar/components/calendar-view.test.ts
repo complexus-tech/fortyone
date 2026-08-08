@@ -5,6 +5,7 @@ import {
   getCalendarViewRange,
   getCalendarViewTitle,
   moveCalendarCursor,
+  normalizeCalendarView,
 } from "./calendar-view";
 
 const expectLocalDate = (
@@ -22,6 +23,14 @@ const expectLocalDate = (
 
 describe("calendar view", () => {
   const augustSeventh = new Date(2026, 7, 7, 16, 45);
+
+  it("normalizes persisted calendar views", () => {
+    expect(normalizeCalendarView("day")).toBe("day");
+    expect(normalizeCalendarView("week")).toBe("week");
+    expect(normalizeCalendarView("month")).toBe("month");
+    expect(normalizeCalendarView("agenda")).toBe("week");
+    expect(normalizeCalendarView(null)).toBe("week");
+  });
 
   it("builds a half-open local day range", () => {
     const range = getCalendarViewRange(augustSeventh, "day");

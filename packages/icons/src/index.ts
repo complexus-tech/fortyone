@@ -161,3 +161,4 @@ export * from "./align-horizontal-center";
 export * from "./align-right";
 export * from "./lock-keyhole";
 export * from "./user-multiple-02";
+export * from "./video-02";

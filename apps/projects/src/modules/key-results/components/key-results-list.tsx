@@ -101,7 +101,7 @@ const KeyResultDateRange = ({
                 type="button"
                 variant="outline"
               >
-                <CalendarIcon className="h-4" strokeWidth={3} />
+                <CalendarIcon className="h-4" />
                 {format(startDate, "MMM d")}
               </Button>
             </DatePicker.Trigger>
@@ -142,10 +142,7 @@ const KeyResultDateRange = ({
                 type="button"
                 variant="outline"
               >
-                <CalendarIcon
-                  className={cn("h-4", endDateColor)}
-                  strokeWidth={3}
-                />
+                <CalendarIcon className={cn("h-4", endDateColor)} />
                 {format(endDate, "MMM d")}
               </Button>
             </DatePicker.Trigger>

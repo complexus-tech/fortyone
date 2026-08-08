@@ -34,7 +34,7 @@ import {
   Skeleton,
   Text,
 } from "ui";
-import { useTerminology, useWorkspacePath } from "@/hooks";
+import { useLocalStorage, useTerminology, useWorkspacePath } from "@/hooks";
 import {
   useCalendarIntegration,
   useCreateCalendarConnectSession,
@@ -70,6 +70,7 @@ import {
   getCalendarViewRange,
   getCalendarViewTitle,
   moveCalendarCursor,
+  normalizeCalendarView,
 } from "./calendar-view";
 import type { CalendarView } from "./calendar-view";
 
@@ -1470,7 +1471,11 @@ export const PersonalCalendar = ({
   isScheduleDialogOpen: boolean;
   onScheduleDialogOpenChange: (open: boolean) => void;
 }) => {
-  const [calendarView, setCalendarView] = useState<CalendarView>("week");
+  const [storedCalendarView, setCalendarView] = useLocalStorage<CalendarView>(
+    "calendarView",
+    "week",
+  );
+  const calendarView = normalizeCalendarView(storedCalendarView);
   const [cursor, setCursor] = useState(() => new Date());
   const [dialogMode, setDialogMode] = useState<"work" | "focus" | null>(null);
   const [editingBlock, setEditingBlock] =

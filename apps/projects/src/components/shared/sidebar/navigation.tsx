@@ -33,7 +33,7 @@ export const Navigation = () => {
     },
     {
       name: "Calendar",
-      icon: <CalendarIcon strokeWidth={2} />,
+      icon: <CalendarIcon />,
       href: withWorkspace("/calendar"),
     },
     {

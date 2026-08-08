@@ -4,12 +4,11 @@ import { format, isSameDay } from "date-fns";
 import {
   CalendarIcon,
   ClockIcon,
-  CloseIcon,
   ExternalLinkIcon,
-  LinkIcon,
   UserMultiple02Icon,
+  Video02Icon,
 } from "icons";
-import { Badge, Box, Button, Dialog, Flex, Skeleton, Text } from "ui";
+import { Badge, Box, Dialog, Flex, Skeleton, Text } from "ui";
 import { useCalendarEvent } from "@/lib/hooks/calendar";
 import type {
   CalendarEventAttendee,
@@ -114,30 +113,14 @@ export const CalendarEventDetailsDialog = ({
     <Dialog onOpenChange={onOpenChange} open={Boolean(event)}>
       <Dialog.Content
         className="border-border/70 shadow-shadow bg-surface-elevated mr-6 mb-8 max-w-148 rounded-3xl border-[0.5px] shadow-2xl outline-none md:mt-auto"
-        hideClose
         overlayClassName="justify-end bg-black/10"
       >
-        <Dialog.Header className="border-border flex min-h-16 items-center border-b px-6">
-          <Flex align="center" className="w-full min-w-0" gap={3}>
-            <Button
-              aria-label="Close event details"
-              asIcon
-              className="focus-visible:ring-primary/40 focus-visible:ring-2"
-              color="tertiary"
-              onClick={() => {
-                onOpenChange(false);
-              }}
-              rounded="full"
-              variant="naked"
-            >
-              <CloseIcon className="size-5" />
-            </Button>
-            <Dialog.Title className="min-w-0 truncate text-lg font-semibold">
-              {visibleEvent
-                ? getCalendarEventTitle(visibleEvent)
-                : "Calendar event"}
-            </Dialog.Title>
-          </Flex>
+        <Dialog.Header className="border-border flex min-h-16 items-center border-b-[0.5px] px-6 pr-16">
+          <Dialog.Title className="min-w-0 truncate text-lg font-semibold">
+            {visibleEvent
+              ? getCalendarEventTitle(visibleEvent)
+              : "Calendar event"}
+          </Dialog.Title>
         </Dialog.Header>
         <Dialog.Description className="sr-only">
           Details for the selected calendar event.
@@ -151,7 +134,10 @@ export const CalendarEventDetailsDialog = ({
                   {visibleEvent ? getCalendarEventTitle(visibleEvent) : null}
                 </Text>
                 {!isPrivate && visibleEvent ? (
-                  <Badge className="mt-3 text-base" color="tertiary">
+                  <Badge
+                    className="bg-surface-muted/70 mt-3 h-7.5 border-0 px-2 py-0 text-base dark:bg-white/[0.06]"
+                    color="tertiary"
+                  >
                     {getCalendarLabel(visibleEvent)}
                   </Badge>
                 ) : null}
@@ -177,7 +163,11 @@ export const CalendarEventDetailsDialog = ({
                           rel="noreferrer noopener"
                           target="_blank"
                         >
-                          <LinkIcon className="h-4 w-auto" />
+                          <Video02Icon
+                            aria-hidden="true"
+                            className="text-foreground-inverse dark:text-foreground-inverse h-4 w-auto"
+                            strokeWidth={2}
+                          />
                           Join meeting
                         </a>
                       ) : null}
@@ -248,7 +238,7 @@ export const CalendarEventDetailsDialog = ({
                           {details?.attendeesOmitted ? "+" : ""}
                         </Text>
                       </Flex>
-                      <Box className="border-border divide-border divide-y overflow-hidden rounded-xl border">
+                      <Box className="divide-border bg-surface-muted/60 divide-y overflow-hidden rounded-lg dark:divide-white/[0.08] dark:bg-white/[0.04]">
                         {attendees.map((attendee, index) => (
                           <Flex
                             align="center"

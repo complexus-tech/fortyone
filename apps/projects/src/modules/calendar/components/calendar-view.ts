@@ -11,6 +11,9 @@ import {
 
 export type CalendarView = "day" | "week" | "month";
 
+export const normalizeCalendarView = (value: unknown): CalendarView =>
+  value === "day" || value === "month" || value === "week" ? value : "week";
+
 export type CalendarViewRange = {
   start: Date;
   end: Date;

@@ -17,10 +17,9 @@ jest.mock("@/lib/hooks/calendar", () => ({
 jest.mock("icons", () => ({
   CalendarIcon: () => <span aria-hidden>Calendar icon</span>,
   ClockIcon: () => <span aria-hidden>Clock icon</span>,
-  CloseIcon: () => <span aria-hidden>Close icon</span>,
   ExternalLinkIcon: () => <span aria-hidden>External link icon</span>,
-  LinkIcon: () => <span aria-hidden>Link icon</span>,
   UserMultiple02Icon: () => <span aria-hidden>People icon</span>,
+  Video02Icon: () => <span aria-hidden>Video icon</span>,
 }));
 
 jest.mock("ui", () => {
@@ -39,17 +38,6 @@ jest.mock("ui", () => {
   return {
     Badge: Container,
     Box: Container,
-    Button: ({
-      children,
-      onClick,
-    }: {
-      children: ReactNode;
-      onClick?: () => void;
-    }) => (
-      <button onClick={onClick} type="button">
-        {children}
-      </button>
-    ),
     Dialog,
     Flex: Container,
     Skeleton: Container,
