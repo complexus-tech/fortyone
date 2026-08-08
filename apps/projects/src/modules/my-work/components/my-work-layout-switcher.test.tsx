@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { MyWorkLayoutSwitcher } from "./my-work-layout-switcher";
 
 jest.mock("icons", () => ({
-  CalendarIcon: () => <span aria-hidden>Calendar icon</span>,
   KanbanIcon: () => <span aria-hidden>Board icon</span>,
   ListIcon: () => <span aria-hidden>List icon</span>,
 }));
@@ -19,7 +18,7 @@ jest.mock("ui", () => ({
 }));
 
 describe("MyWorkLayoutSwitcher", () => {
-  it("offers calendar without changing the shared story layout switcher", () => {
+  it("switches between list and board views", () => {
     const setLayout = jest.fn();
 
     render(<MyWorkLayoutSwitcher layout="list" setLayout={setLayout} />);
@@ -28,19 +27,8 @@ describe("MyWorkLayoutSwitcher", () => {
       "aria-pressed",
       "true",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
-    expect(setLayout).toHaveBeenCalledWith("calendar");
-  });
-
-  it("keeps the calendar option desktop-only", () => {
-    render(
-      <MyWorkLayoutSwitcher
-        layout="list"
-        setLayout={jest.fn()}
-        showCalendar={false}
-      />,
-    );
-
+    fireEvent.click(screen.getByRole("button", { name: "Board" }));
+    expect(setLayout).toHaveBeenCalledWith("kanban");
     expect(screen.queryByRole("button", { name: "Calendar" })).toBeNull();
   });
 });

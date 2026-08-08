@@ -1464,7 +1464,7 @@ const CalendarMonthGrid = ({
   );
 };
 
-export const MyWorkCalendar = ({
+export const PersonalCalendar = ({
   isScheduleDialogOpen,
   onScheduleDialogOpenChange,
 }: {

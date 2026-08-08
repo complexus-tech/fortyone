@@ -1,6 +1,6 @@
 "use client";
-import { Box, BreadCrumbs, Button, Flex } from "ui";
-import { CalendarIcon, PlusIcon, StoryIcon, UserIcon } from "icons";
+import { Box, BreadCrumbs, Flex } from "ui";
+import { StoryIcon, UserIcon } from "icons";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
@@ -16,14 +16,10 @@ import { useMyWork } from "./provider";
 
 export const Header = ({
   layout,
-  onScheduleCalendar,
   setLayout,
-  showCalendar,
 }: {
   layout: MyWorkLayout;
-  onScheduleCalendar: () => void;
   setLayout: (value: MyWorkLayout) => void;
-  showCalendar: boolean;
 }) => {
   const { getTermDisplay } = useTerminology();
   const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
@@ -41,11 +37,8 @@ export const Header = ({
     "tab",
     parseAsStringLiteral(tabs).withDefault("all"),
   );
-  const isCalendar = layout === "calendar";
   let tabLabel: string = tab;
-  if (isCalendar) {
-    tabLabel = "Calendar";
-  } else if (tab === "all") {
+  if (tab === "all") {
     tabLabel = `All ${getTermDisplay("storyTerm", { variant: "plural" })}`;
   }
 
@@ -56,14 +49,6 @@ export const Header = ({
   useHotkeys("v+k", () => {
     setLayout("kanban");
   });
-
-  useHotkeys(
-    "v+c",
-    () => {
-      setLayout("calendar");
-    },
-    { enabled: showCalendar },
-  );
 
   return (
     <HeaderContainer className="justify-between">
@@ -88,11 +73,7 @@ export const Header = ({
               },
               {
                 name: tabLabel,
-                icon: isCalendar ? (
-                  <CalendarIcon strokeWidth={2} />
-                ) : (
-                  <StoryIcon strokeWidth={2} />
-                ),
+                icon: <StoryIcon strokeWidth={2} />,
                 className: "capitalize",
               },
             ]}
@@ -100,42 +81,21 @@ export const Header = ({
         </Box>
       </Flex>
       <Flex align="center" gap={2}>
-        <MyWorkLayoutSwitcher
-          layout={layout}
-          setLayout={setLayout}
-          showCalendar={showCalendar}
+        <MyWorkLayoutSwitcher layout={layout} setLayout={setLayout} />
+        <StoriesFilterButton
+          filters={filters}
+          resetFilters={resetFilters}
+          setFilters={setFilters}
         />
-        {!isCalendar ? (
-          <>
-            <StoriesFilterButton
-              filters={filters}
-              resetFilters={resetFilters}
-              setFilters={setFilters}
-            />
-            <StoriesViewOptionsButton
-              groupByOptions={["status", "priority", "assignee"]}
-              layout={layout}
-              setViewOptions={setViewOptions}
-              viewOptions={viewOptions}
-            />
-          </>
-        ) : null}
+        <StoriesViewOptionsButton
+          groupByOptions={["status", "priority", "assignee"]}
+          layout={layout}
+          setViewOptions={setViewOptions}
+          viewOptions={viewOptions}
+        />
         <span className="text-text-secondary hidden md:inline">|</span>
         <Box className="hidden md:block">
-          {isCalendar ? (
-            <Button
-              className="shrink-0"
-              color="invert"
-              data-header-schedule-story-button
-              leftIcon={<PlusIcon className="text-current dark:text-current" />}
-              onClick={onScheduleCalendar}
-              size="sm"
-            >
-              Schedule {getTermDisplay("storyTerm")}
-            </Button>
-          ) : (
-            <NewStoryButton data-header-new-story-button />
-          )}
+          <NewStoryButton data-header-new-story-button />
         </Box>
       </Flex>
     </HeaderContainer>

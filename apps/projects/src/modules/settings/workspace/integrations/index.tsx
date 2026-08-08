@@ -174,7 +174,7 @@ export const IntegrationsIndex = () => {
     id: "google-calendar",
     name: "Google Calendar",
     description:
-      "Bring meetings into My work and keep scheduled work clear of your availability.",
+      "Bring meetings into Calendar and keep scheduled work clear of your availability.",
     icon: (
       <GoogleCalendarIcon aria-hidden="true" className="h-8 w-8 shrink-0" />
     ),

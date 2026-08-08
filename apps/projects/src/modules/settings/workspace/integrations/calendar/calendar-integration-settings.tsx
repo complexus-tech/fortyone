@@ -169,8 +169,8 @@ export const CalendarIntegrationSettings = () => {
           <Box className="px-6 py-8">
             <Text className="font-medium">No calendar connected</Text>
             <Text className="mt-1" color="muted">
-              Connect your primary Google Calendar to bring its meetings into My
-              work and keep scheduled work clear of those commitments.
+              Connect your primary Google Calendar to bring its meetings into
+              Calendar and keep scheduled work clear of those commitments.
             </Text>
           </Box>
         ) : null}
@@ -262,7 +262,7 @@ export const CalendarIntegrationSettings = () => {
 
       <Box className="border-border bg-surface mt-6 rounded-2xl border">
         <SectionHeader
-          description="FortyOne keeps an owner-only cache of your primary calendar so My work can show titles, locations, meeting links, descriptions, and attendees. Private events remain Busy; teammates and managers receive availability only."
+          description="FortyOne keeps an owner-only cache of your primary calendar so Calendar can show titles, locations, meeting links, descriptions, and attendees. Private events remain Busy; teammates and managers receive availability only."
           title="Calendar data"
         />
         <Box className="grid grid-cols-1 gap-3 px-6 py-5 md:grid-cols-2">
@@ -324,7 +324,7 @@ export const CalendarIntegrationSettings = () => {
           <Dialog.Body>
             <Text color="muted">
               FortyOne will stop syncing this primary Google Calendar and remove
-              its events from your My work calendar.
+              its events from your FortyOne calendar.
             </Text>
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-3 border-0 pt-2">

@@ -1,8 +1,8 @@
 import { usePathname } from "next/navigation";
 import { Flex } from "ui";
 import {
-  ActiveSprintIcon,
   AiIcon,
+  CalendarIcon,
   DashboardIcon,
   DocsIcon,
   RoadmapIcon,
@@ -11,13 +11,7 @@ import {
 } from "icons";
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
-import {
-  useWorkspacePath,
-  useFeatures,
-  useTerminology,
-  useUserRole,
-} from "@/hooks";
-import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
+import { useWorkspacePath, useFeatures } from "@/hooks";
 
 type MenuItem = {
   name: string;
@@ -29,35 +23,18 @@ type MenuItem = {
 export const Navigation = () => {
   const pathname = usePathname();
   const { withWorkspace } = useWorkspacePath();
-  const { data: runningSprints = [] } = useRunningSprints();
-  const { getTermDisplay } = useTerminology();
-  const { userRole } = useUserRole();
 
   const features = useFeatures();
-
-  const getSprintsItem = (): MenuItem | null => {
-    if (runningSprints.length === 0 || userRole === "guest") return null;
-    const sprint = runningSprints[0];
-    return {
-      name: `Active ${getTermDisplay("sprintTerm", {
-        variant: runningSprints.length > 1 ? "plural" : "singular",
-      })}`,
-      icon: <ActiveSprintIcon />,
-      href:
-        runningSprints.length > 1
-          ? withWorkspace("/sprints")
-          : withWorkspace(
-              `/teams/${sprint.teamId}/sprints/${sprint.id}/stories`,
-            ),
-    };
-  };
-
-  const sprintItem = getSprintsItem();
   const primaryLinks: MenuItem[] = [
     {
       name: "My work",
       icon: <UserIcon />,
       href: withWorkspace("/my-work"),
+    },
+    {
+      name: "Calendar",
+      icon: <CalendarIcon strokeWidth={2} />,
+      href: withWorkspace("/calendar"),
     },
     {
       name: "AI Assistant",
@@ -69,7 +46,6 @@ export const Navigation = () => {
       icon: <DashboardIcon />,
       href: withWorkspace("/summary"),
     },
-    ...(sprintItem ? [sprintItem] : []),
     {
       name: "Roadmap",
       icon: <RoadmapIcon />,
@@ -98,9 +74,13 @@ export const Navigation = () => {
       return (
         <NavLink
           active={isActive}
+          aria-current={isActive ? "page" : undefined}
           className={isActive ? "text-foreground" : undefined}
           data-nav-ai-assistant={
             href === withWorkspace("/maya") ? "" : undefined
+          }
+          data-nav-calendar={
+            href === withWorkspace("/calendar") ? "" : undefined
           }
           data-nav-my-work={href === withWorkspace("/my-work") ? "" : undefined}
           data-nav-summary={href === withWorkspace("/summary") ? "" : undefined}
