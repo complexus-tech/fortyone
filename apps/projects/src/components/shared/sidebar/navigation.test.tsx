@@ -9,6 +9,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("icons", () => ({
+  ActiveSprintIcon: () => null,
   AiIcon: () => null,
   CalendarIcon: () => null,
   DashboardIcon: () => null,
@@ -40,13 +41,23 @@ jest.mock("@/components/ui", () => ({
 
 jest.mock("@/hooks", () => ({
   useFeatures: () => ({ objectiveEnabled: true }),
+  useTerminology: () => ({
+    getTermDisplay: () => "sprint",
+  }),
+  useUserRole: () => ({ userRole: "member" }),
   useWorkspacePath: () => ({
     withWorkspace: (path: string) => `/acme${path}`,
   }),
 }));
 
+jest.mock("@/modules/sprints/hooks/running-sprints", () => ({
+  useRunningSprints: () => ({
+    data: [{ id: "sprint-1", teamId: "team-1" }],
+  }),
+}));
+
 describe("Navigation", () => {
-  it("shows Calendar as a top-level destination without Active sprint", () => {
+  it("shows Calendar and the active sprint as top-level destinations", () => {
     render(<Navigation />);
 
     expect(
@@ -56,6 +67,7 @@ describe("Navigation", () => {
       "Calendar",
       "AI Assistant",
       "Summary",
+      "Active Sprint",
       "Roadmap",
       "Strategy Map",
       "Documents",
@@ -64,6 +76,10 @@ describe("Navigation", () => {
     const calendarLink = screen.getByRole("link", { name: "Calendar" });
     expect(calendarLink).toHaveAttribute("href", "/acme/calendar");
     expect(calendarLink).toHaveAttribute("aria-current", "page");
-    expect(screen.queryByText(/active sprint/i)).toBeNull();
+
+    expect(screen.getByRole("link", { name: "Active Sprint" })).toHaveAttribute(
+      "href",
+      "/acme/teams/team-1/sprints/sprint-1/stories",
+    );
   });
 });

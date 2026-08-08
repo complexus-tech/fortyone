@@ -1,6 +1,7 @@
 import { usePathname } from "next/navigation";
 import { Flex } from "ui";
 import {
+  ActiveSprintIcon,
   AiIcon,
   CalendarIcon,
   DashboardIcon,
@@ -11,7 +12,13 @@ import {
 } from "icons";
 import type { ReactNode } from "react";
 import { NavLink } from "@/components/ui";
-import { useWorkspacePath, useFeatures } from "@/hooks";
+import {
+  useFeatures,
+  useTerminology,
+  useUserRole,
+  useWorkspacePath,
+} from "@/hooks";
+import { useRunningSprints } from "@/modules/sprints/hooks/running-sprints";
 
 type MenuItem = {
   name: string;
@@ -23,8 +30,33 @@ type MenuItem = {
 export const Navigation = () => {
   const pathname = usePathname();
   const { withWorkspace } = useWorkspacePath();
+  const { data: runningSprints = [] } = useRunningSprints();
+  const { getTermDisplay } = useTerminology();
+  const { userRole } = useUserRole();
 
   const features = useFeatures();
+
+  const getSprintsItem = (): MenuItem | null => {
+    if (runningSprints.length === 0 || userRole === "guest") return null;
+
+    const sprint = runningSprints[0];
+    const sprintTerm = getTermDisplay("sprintTerm", {
+      variant: runningSprints.length > 1 ? "plural" : "singular",
+    });
+
+    return {
+      name: `Active ${sprintTerm.charAt(0).toUpperCase()}${sprintTerm.slice(1)}`,
+      icon: <ActiveSprintIcon />,
+      href:
+        runningSprints.length > 1
+          ? withWorkspace("/sprints")
+          : withWorkspace(
+              `/teams/${sprint.teamId}/sprints/${sprint.id}/stories`,
+            ),
+    };
+  };
+
+  const sprintItem = getSprintsItem();
   const primaryLinks: MenuItem[] = [
     {
       name: "My work",
@@ -46,6 +78,7 @@ export const Navigation = () => {
       icon: <DashboardIcon />,
       href: withWorkspace("/summary"),
     },
+    ...(sprintItem ? [sprintItem] : []),
     {
       name: "Roadmap",
       icon: <RoadmapIcon />,
