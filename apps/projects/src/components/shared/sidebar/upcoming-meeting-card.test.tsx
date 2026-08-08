@@ -108,14 +108,11 @@ describe("UpcomingMeetingCard", () => {
     useCalendarSchedule.mockReturnValue({ data: createSchedule() });
 
     const { unmount } = render(
-      <UpcomingMeetingCard fallback={<div>Normal footer</div>}>
-        <div>Meeting actions</div>
-      </UpcomingMeetingCard>,
+      <UpcomingMeetingCard fallback={<div>Normal footer</div>} />,
     );
 
     expect(screen.getByText("Weekly planning")).toBeInTheDocument();
     expect(screen.getByText("Starts in 10 min")).toBeInTheDocument();
-    expect(screen.getByText("Meeting actions")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /join meeting/i })).toHaveAttribute(
       "href",
       "https://meet.google.com/abc-defg-hij",
@@ -124,7 +121,6 @@ describe("UpcomingMeetingCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Dismiss meeting" }));
 
     expect(screen.getByText("Normal footer")).toBeInTheDocument();
-    expect(screen.queryByText("Meeting actions")).toBeNull();
     expect(screen.queryByRole("link", { name: /join meeting/i })).toBeNull();
 
     unmount();

@@ -9,9 +9,9 @@ import { Toaster } from "./toaster";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "FortyOne | Customer Feedback and Project Management",
+  title: "FortyOne | Strategy, Feedback, and Project Delivery",
   description:
-    "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
+    "Connect customer feedback, strategic goals, documents, schedules, and daily work in one project plan, with AI support for risk, ownership, and next decisions.",
   metadataBase: new URL("https://www.fortyone.app"),
   keywords: [
     "project management platform",
@@ -34,6 +34,9 @@ export const metadata: Metadata = {
     "feedback portal",
     "public product roadmap",
     "team objectives",
+    "strategy map software",
+    "project documents",
+    "work scheduling software",
     "productivity tools",
     "work management",
     "team performance",
@@ -42,9 +45,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "FortyOne | Customer Feedback and Project Management",
+    title: "FortyOne | Strategy, Feedback, and Project Delivery",
     description:
-      "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
+      "Connect customer feedback, strategic goals, documents, schedules, and daily work in one project plan, with AI support for risk, ownership, and next decisions.",
     images: [DEFAULT_SOCIAL_IMAGE],
     siteName: "FortyOne",
     url: "/",
@@ -53,9 +56,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@fortyoneapp",
     creator: "@fortyoneapp",
-    title: "FortyOne | Customer Feedback and Project Management",
+    title: "FortyOne | Strategy, Feedback, and Project Delivery",
     description:
-      "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
+      "Connect customer feedback, strategic goals, documents, schedules, and daily work in one project plan, with AI support for risk, ownership, and next decisions.",
     images: [DEFAULT_TWITTER_IMAGE],
   },
 };

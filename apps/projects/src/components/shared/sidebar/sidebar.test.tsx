@@ -87,21 +87,8 @@ jest.mock("./profile-menu", () => ({
   ProfileMenu: () => <div>Profile</div>,
 }));
 jest.mock("./upcoming-meeting-card", () => ({
-  UpcomingMeetingCard: ({
-    children,
-    fallback,
-  }: {
-    children: ReactNode;
-    fallback: ReactNode;
-  }) =>
-    mockHasMeeting ? (
-      <div>
-        Upcoming meeting
-        {children}
-      </div>
-    ) : (
-      fallback
-    ),
+  UpcomingMeetingCard: ({ fallback }: { fallback: ReactNode }) =>
+    mockHasMeeting ? <div>Upcoming meeting</div> : fallback,
 }));
 
 describe("Sidebar", () => {
@@ -125,21 +112,19 @@ describe("Sidebar", () => {
     expect(header?.parentElement).toHaveClass("h-dvh", "overflow-hidden");
   });
 
-  it("renders the compact free-plan Upgrade action", () => {
+  it("replaces the footer actions with an upcoming meeting", () => {
     render(<Sidebar />);
 
-    const upgrade = screen.getByRole("link", { name: "Upgrade" });
-
     expect(screen.getByText("Upcoming meeting")).toBeInTheDocument();
-    expect(upgrade).toHaveAttribute("href", "/acme/settings/workspace/billing");
-    expect(
-      screen.queryByRole("button", { name: "Invite members" }),
-    ).toBeNull();
+    expect(screen.queryByRole("link", { name: "Upgrade" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Upgrade" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Invite members" })).toBeNull();
     expect(screen.queryByText("You're on the free plan")).toBeNull();
     expect(screen.queryByText("Upgrade plan")).toBeNull();
   });
 
   it("keeps the Upgrade action non-navigational for members", () => {
+    mockHasMeeting = false;
     mockUserRole = "member";
     render(<Sidebar />);
 

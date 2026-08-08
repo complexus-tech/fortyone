@@ -56,11 +56,16 @@ const softwareApplication: WithContext<WebApplication> = {
     "Customer Feedback Management",
     "Feedback Portals",
     "Public Product Roadmaps",
+    "Strategy Maps",
+    "Connected OKRs",
+    "Project Documents",
+    "Calendar Planning",
+    "Work Scheduling",
     "Analytics & Insights",
     "Tasks",
   ],
   description:
-    "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
+    "FortyOne connects customer feedback, strategic goals, project documents, schedules, and daily work, with AI support for risk, ownership, estimates, and next decisions.",
 };
 
 const organization: WithContext<Organization> = {
@@ -87,7 +92,7 @@ const product: WithContext<Product> = {
   "@type": "Product",
   name: "FortyOne - AI project management platform for teams",
   description:
-    "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
+    "FortyOne connects customer feedback, strategic goals, project documents, schedules, and daily work, with AI support for risk, ownership, estimates, and next decisions.",
   category: "Software",
   brand: {
     "@type": "Brand",

@@ -9,7 +9,7 @@ import { Container } from "@/components/ui";
 const AUTO_ADVANCE_MS = 8_000;
 
 const testimonialButtonClassName =
-  "border-border text-text-muted hover:border-border-strong hover:bg-state-hover hover:text-foreground focus-visible:outline-foreground min-h-10 cursor-pointer rounded-none border bg-transparent font-normal transition-[background-color,border-color,color,transform] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-[3px] active:scale-[0.96]";
+  "border-border text-text-muted hover:border-border-strong hover:bg-state-hover hover:text-foreground focus-visible:outline-foreground min-h-10 cursor-pointer rounded-lg border bg-transparent font-normal transition-[background-color,border-color,color,transform] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-[3px] active:scale-[0.96]";
 
 const testimonials = [
   {
@@ -34,7 +34,7 @@ const TestimonialArrow = ({ direction }: { direction: "left" | "right" }) => {
   return (
     <svg
       aria-hidden="true"
-      className="h-[18px] w-[18px] fill-none stroke-current [stroke-width:1.3] [stroke-linecap:round] [stroke-linejoin:round]"
+      className="h-4.5 w-4.5 fill-none stroke-current stroke-[1.3] [stroke-linecap:round] [stroke-linejoin:round]"
       viewBox="0 0 18 18"
     >
       <path
@@ -188,10 +188,10 @@ export const Testimonials = () => {
         <Box
           aria-atomic="true"
           aria-live={isInteracting ? "polite" : "off"}
-          className="flex min-h-[330px] items-start pb-8 max-[760px]:min-h-[410px] max-[760px]:pb-[26px]"
+          className="flex min-h-82.5 items-start pb-8 max-[760px]:min-h-102.5 max-[760px]:pb-6.5"
         >
           <blockquote
-            className="m-0 grid w-full grid-cols-[22px_minmax(0,1fr)] gap-[18px] max-[760px]:grid-cols-[18px_minmax(0,1fr)] max-[760px]:gap-3.5"
+            className="m-0 grid w-full grid-cols-[22px_minmax(0,1fr)] gap-4.5 max-[760px]:grid-cols-[18px_minmax(0,1fr)] max-[760px]:gap-3.5"
             ref={slideRef}
           >
             <span
@@ -204,7 +204,7 @@ export const Testimonials = () => {
               <Text className="m-0 font-serif text-[clamp(23px,2.5vw,30px)] leading-[1.42] font-normal tracking-[-0.025em] italic max-[760px]:text-[22px] max-[760px]:leading-[1.45]">
                 {testimonial.quote}
               </Text>
-              <Box as="footer" className="mt-[26px] flex flex-col gap-1">
+              <Box as="footer" className="mt-6.5 flex flex-col gap-1">
                 <Text as="cite" className="text-base font-medium not-italic">
                   {testimonial.author}
                 </Text>
@@ -219,7 +219,7 @@ export const Testimonials = () => {
           </blockquote>
         </Box>
 
-        <Box className="border-border flex items-center justify-between gap-6 border-t py-[18px] max-[760px]:py-3.5">
+        <Box className="border-border flex items-center justify-between gap-6 border-t py-4.5 max-[760px]:py-3.5">
           <Text
             aria-hidden="true"
             as="span"

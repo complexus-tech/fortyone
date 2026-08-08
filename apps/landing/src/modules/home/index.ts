@@ -2,6 +2,8 @@ export * from "./hero";
 export * from "./product-screenshot";
 export * from "./feedback-workflow";
 export * from "./maya-workflow";
+export * from "./platform-workflows";
+export * from "./strategy-workflow";
 export * from "./testimonials";
 export * from "./clients";
 export * from "./integrations";

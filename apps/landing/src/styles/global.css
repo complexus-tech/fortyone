@@ -51,10 +51,6 @@
   animation: landing-hero-title-enter 1000ms var(--landing-ease-out) both;
 }
 
-.landing-hero-copy {
-  animation: landing-hero-support-enter 780ms var(--landing-ease-out) 520ms both;
-}
-
 .landing-hero-action {
   animation: landing-hero-support-enter 780ms var(--landing-ease-out) 620ms both;
 }
@@ -77,7 +73,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .landing-hero-title-word,
-  .landing-hero-copy,
   .landing-hero-action {
     animation: none;
   }

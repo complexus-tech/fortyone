@@ -32,7 +32,7 @@ A full-stack, open-source platform for project management and collaboration, wit
 
 #### 📊 Kanban Board - Task Workflow
 
-![Kanban Board](apps/landing/public/images/product/kanban-light.webp)
+![My Work board](apps/landing/public/images/product/my-work-board-light.webp)
 
 #### 🎯 OKR Objectives - Goal Tracking
 

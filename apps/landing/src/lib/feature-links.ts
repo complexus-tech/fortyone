@@ -5,7 +5,10 @@ export const featureLinks = [
     slug: "customer-feedback",
   },
   { href: "/features/goals", label: "Goals", slug: "goals" },
+  { href: "/#strategy", label: "Strategy Map", slug: "strategy-map" },
   { href: "/features/tasks", label: "Tasks", slug: "tasks" },
+  { href: "/#documents", label: "Documents", slug: "documents" },
+  { href: "/#calendar", label: "Calendar", slug: "calendar" },
   {
     href: "/features/ai-planning",
     label: "AI Planning",

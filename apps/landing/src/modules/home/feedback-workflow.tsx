@@ -1,36 +1,23 @@
-import { Box, Text } from "ui";
-import { Container } from "@/components/ui";
-import feedbackImageLight from "../../../public/images/product/feedback-light.webp";
-import feedbackImageDark from "../../../public/images/product/feedback.webp";
+import feedbackImageDark from "../../../public/images/product/feedback-portal-dark.webp";
+import feedbackImageLight from "../../../public/images/product/feedback-portal-light.webp";
+import { ProductFeatureSection } from "./product-feature-section";
 import { ProductScreenshot } from "./product-screenshot";
 
 export const FeedbackWorkflow = () => {
   return (
-    <Box className="py-16 md:py-24" id="feedback">
-      <Container>
-        <Box className="flex flex-col gap-6 md:flex-row md:items-baseline md:justify-between md:gap-16">
-          <Box data-landing-reveal>
-            <Text as="h2" className="max-w-4xl pb-1 text-4xl md:text-5xl">
-              Collect feedback and show customers what happens next.
-            </Text>
-          </Box>
-          <Box data-landing-reveal style={{ transitionDelay: "70ms" }}>
-            <Text className="w-full max-w-xl leading-relaxed opacity-70 md:mb-0.5">
-              Give customers one place to submit requests and vote on ideas.
-              Prioritise what matters, move accepted feedback into the project
-              plan, and let customers follow progress on a public roadmap.
-            </Text>
-          </Box>
-        </Box>
-      </Container>
-
+    <ProductFeatureSection
+      description="Give customers one place to submit requests, vote, and follow status. Organise feedback by board, see what rises to the top, and keep roadmap updates beside the original request."
+      eyebrow="Customer signal"
+      id="feedback"
+      title="Collect feedback and show customers what happens next."
+    >
       <ProductScreenshot
-        alt="FortyOne feedback portal showing customer requests grouped by board and delivery status"
+        alt="Public FortyOne feedback portal showing customer requests, votes, boards, and delivery statuses"
         containerClassName="mt-10 md:mt-16"
         darkImage={feedbackImageDark}
         lightImage={feedbackImageLight}
-        url="complexus.fortyone.app/feedback"
+        url="https://fortyone.app/feedback"
       />
-    </Box>
+    </ProductFeatureSection>
   );
 };

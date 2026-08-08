@@ -175,12 +175,7 @@ export const Sidebar = () => {
                   onOpenKeyboardShortcuts={openKeyboardShortcuts}
                 />
               }
-            >
-              <SidebarFooterActions
-                leadingAction={subscriptionAction}
-                onOpenKeyboardShortcuts={openKeyboardShortcuts}
-              />
-            </UpcomingMeetingCard>
+            />
           )}
         </Box>
         <ProfileMenu />

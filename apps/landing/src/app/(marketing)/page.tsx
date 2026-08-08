@@ -8,23 +8,25 @@ import {
   getCanonicalUrl,
 } from "@/lib/seo";
 import {
+  CalendarWorkflow,
+  DocumentsWorkflow,
+  FeedbackWorkflow,
   Hero,
+  HowItWorks,
+  Integrations,
+  MayaWorkflow,
   ProductScreenshot,
   SampleClients,
-  Integrations,
-  FeedbackWorkflow,
-  HowItWorks,
-  MayaWorkflow,
-  PlatformWorkflow,
+  StrategyWorkflow,
   Testimonials,
 } from "@/modules/home";
-import kanbanImgLight from "../../../public/images/product/kanban-light.webp";
-import kanbanImg from "../../../public/images/product/kanban.webp";
+import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.webp";
+import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
 
 export const metadata: Metadata = {
-  title: "FortyOne | Customer Feedback and Project Management",
+  title: "FortyOne | Strategy, Feedback, and Project Delivery",
   description:
-    "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
+    "Connect customer feedback, strategic goals, documents, schedules, and daily work in one project plan, with AI support for risk, ownership, and next decisions.",
   keywords: [
     "AI project management",
     "AI project manager",
@@ -39,23 +41,26 @@ export const metadata: Metadata = {
     "customer feedback management",
     "feedback portal",
     "public product roadmap",
+    "strategy map software",
+    "project documents",
+    "work scheduling software",
   ],
   alternates: {
     canonical: getCanonicalUrl("/"),
   },
   openGraph: {
-    title: "FortyOne | Customer Feedback and Project Management",
+    title: "FortyOne | Strategy, Feedback, and Project Delivery",
     description:
-      "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
+      "Connect customer feedback, strategic goals, documents, schedules, and daily work in one project plan, with AI support for risk, ownership, and next decisions.",
     url: "/",
     siteName: "FortyOne",
     type: "website",
     images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
-    title: "FortyOne | Customer Feedback and Project Management",
+    title: "FortyOne | Strategy, Feedback, and Project Delivery",
     description:
-      "Collect requests, decide what matters, and move accepted feedback into project plans with clear goals, owners, estimates, schedules, and delivery tracking.",
+      "Connect customer feedback, strategic goals, documents, schedules, and daily work in one project plan, with AI support for risk, ownership, and next decisions.",
     card: "summary_large_image",
     images: [DEFAULT_TWITTER_IMAGE],
   },
@@ -67,19 +72,21 @@ export default function Page() {
       <JsonLd />
       <Hero />
       <ProductScreenshot
-        alt="FortyOne project board showing planned work, active tasks, and MyAI project guidance"
+        alt="FortyOne My Work board showing tasks grouped by Backlog, To Do, In Progress, and Done"
         cropBrowserOnMobile
-        darkImage={kanbanImg}
-        lightImage={kanbanImgLight}
+        darkImage={myWorkBoardDark}
+        lightImage={myWorkBoardLight}
         priority
-        url="complexus.fortyone.app/my-work"
+        url="https://fortyone.app/my-work"
       />
       <SampleClients />
       <HowItWorks />
       <FeedbackWorkflow />
       <Testimonials />
+      <StrategyWorkflow />
+      <DocumentsWorkflow />
+      <CalendarWorkflow />
       <MayaWorkflow />
-      <PlatformWorkflow />
       <Integrations />
       <Pricing className="md:pt-0 md:pb-16" />
       <Faqs />

@@ -39,7 +39,7 @@ export const ProductScreenshot = ({
         >
           <Box
             className={cn(
-              "border-border/70 bg-surface/90 dark:bg-surface/65 relative border p-0.5 backdrop-blur-md md:rounded-2xl md:border-r md:p-[0.35rem]",
+              "border-border/40 dark:border-border/30 bg-surface/90 dark:bg-surface relative border p-0.5 backdrop-blur-md md:rounded-2xl md:border-r md:p-[0.35rem]",
               cropBrowserOnMobile
                 ? "rounded-l-xl rounded-r-none border-r-0 pr-0"
                 : "rounded-xl",
@@ -65,7 +65,7 @@ export const ProductScreenshot = ({
                 />
                 <Text
                   as="span"
-                  className="bg-surface-muted text-text-muted dark:bg-surface-elevated max-w-[calc(100vw-7rem)] truncate rounded-md px-2 py-0.5 text-[0.625rem] leading-4 font-medium md:max-w-md md:text-center md:text-xs"
+                  className="bg-surface-muted text-text-muted dark:bg-surface-elevated max-w-[calc(100vw-7rem)] truncate rounded-xl px-2 py-0.5 text-[0.625rem] leading-4 font-medium md:max-w-md md:text-center md:text-xs"
                 >
                   {url}
                 </Text>
@@ -93,13 +93,12 @@ export const ProductScreenshot = ({
               <Image
                 alt={alt}
                 className={cn(
-                  "border-border/50 relative hidden border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:block",
+                  "border-border/50 dark:border-border/30 relative hidden border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:block",
                   cropBrowserOnMobile
                     ? "h-96 w-auto max-w-none rounded-l-lg rounded-r-none border-r-0 md:border-r"
                     : "h-auto w-full max-w-full rounded-lg",
                 )}
                 priority={priority}
-                quality={100}
                 sizes={
                   cropBrowserOnMobile
                     ? "(max-width: 767px) 150vw, 100vw"
@@ -110,13 +109,12 @@ export const ProductScreenshot = ({
               <Image
                 alt={alt}
                 className={cn(
-                  "border-border/40 relative border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:hidden",
+                  "border-border/30 relative border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:hidden",
                   cropBrowserOnMobile
                     ? "h-96 w-auto max-w-none rounded-l-lg rounded-r-none border-r-0 md:border-r"
                     : "h-auto w-full max-w-full rounded-lg",
                 )}
                 priority={priority}
-                quality={100}
                 sizes={
                   cropBrowserOnMobile
                     ? "(max-width: 767px) 150vw, 100vw"
