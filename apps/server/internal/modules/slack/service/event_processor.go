@@ -165,6 +165,7 @@ type EventProcessor struct {
 	usageBudget              AssistantUsageBudget
 	contextProvider          AssistantContextProvider
 	sender                   SlackMessageSender
+	statusSetter             SlackAssistantStatusSetter
 	webClient                *slackWebClient
 	codec                    *credentialCodec
 	website                  string
@@ -227,6 +228,7 @@ func NewEventProcessor(
 		usageBudget:              cfg.UsageBudget,
 		contextProvider:          cfg.ContextProvider,
 		sender:                   &slackAPISender{client: webClient},
+		statusSetter:             &slackAssistantStatusSetter{client: webClient},
 		webClient:                webClient,
 		codec:                    codec,
 		website:                  strings.TrimRight(strings.TrimSpace(cfg.WebsiteURL), "/"),
@@ -633,7 +635,14 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 			return err
 		}
 	}
+	thinkingStatusActive := false
+	defer func() {
+		if thinkingStatusActive {
+			p.clearAssistantThinkingStatus(ctx, event, botToken)
+		}
+	}()
 	if reply == "" {
+		thinkingStatusActive = p.startAssistantThinkingStatus(ctx, event, botToken)
 		history, historyErr := p.store.ListRecentMessages(ctx, conversationID, slackConversationHistoryLimit)
 		if historyErr != nil {
 			return historyErr
@@ -813,6 +822,10 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		}
 		return err
 	}
+	// Slack clears the native assistant status automatically after the app
+	// posts its reply. Do not spend a second API call clearing a status that is
+	// already gone.
+	thinkingStatusActive = false
 	if err := p.store.CompleteOutboundDelivery(ctx, delivery.ID, externalMessageID); err != nil {
 		return err
 	}

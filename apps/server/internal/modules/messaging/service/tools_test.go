@@ -53,6 +53,38 @@ func TestFortyOneToolExecutorCatalogIsSmallReadOnlyAndStrict(t *testing.T) {
 	}
 }
 
+func TestFortyOneToolDefinitionsSerializeEmptyRequiredAsArray(t *testing.T) {
+	t.Parallel()
+
+	executor := newToolExecutorForTest(t, &teamsServiceStub{}, &storiesServiceStub{}, &searchServiceStub{}, &objectivesServiceStub{})
+	definitions := cloneToolDefinitions(executor.Definitions())
+	if err := validateToolDefinitions(definitions); err != nil {
+		t.Fatalf("validateToolDefinitions() error = %v", err)
+	}
+
+	var listTeams ToolDefinition
+	for _, definition := range definitions {
+		if definition.Name == toolListTeams {
+			listTeams = definition
+			break
+		}
+	}
+	if listTeams.Name == "" {
+		t.Fatal("list_teams definition is missing")
+	}
+
+	payload, err := json.Marshal(listTeams)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+	if strings.Contains(string(payload), `"required":null`) {
+		t.Fatalf("list_teams schema contains a null required value: %s", payload)
+	}
+	if !strings.Contains(string(payload), `"required":[]`) {
+		t.Fatalf("list_teams schema does not contain an empty required array: %s", payload)
+	}
+}
+
 func TestFortyOneToolExecutorListTeamsUsesJoinedOnlyScope(t *testing.T) {
 	t.Parallel()
 

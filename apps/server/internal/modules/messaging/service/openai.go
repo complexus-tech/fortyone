@@ -597,10 +597,16 @@ func requiredSet(value any) (map[string]struct{}, error) {
 	result := map[string]struct{}{}
 	switch required := value.(type) {
 	case []string:
+		if required == nil {
+			return nil, errors.New("required must be a non-null array")
+		}
 		for _, name := range required {
 			result[name] = struct{}{}
 		}
 	case []any:
+		if required == nil {
+			return nil, errors.New("required must be a non-null array")
+		}
 		for _, value := range required {
 			name, ok := value.(string)
 			if !ok {
@@ -633,7 +639,13 @@ func cloneStringAnyMap(value map[string]any) map[string]any {
 		case map[string]any:
 			cloned[key] = cloneStringAnyMap(typed)
 		case []string:
-			cloned[key] = append([]string(nil), typed...)
+			if typed == nil {
+				cloned[key] = []string(nil)
+				break
+			}
+			items := make([]string, len(typed))
+			copy(items, typed)
+			cloned[key] = items
 		case []any:
 			items := make([]any, len(typed))
 			for index, nested := range typed {

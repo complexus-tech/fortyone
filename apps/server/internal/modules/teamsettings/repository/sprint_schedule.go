@@ -189,7 +189,7 @@ func recordSprintScheduleAuditEvent(
 		INSERT INTO audit_events (
 			workspace_id, team_id, actor_type, actor_id,
 			entity_type, entity_id, event_type, metadata
-		) VALUES ($1, $2, $3, $4, 'sprint', $5, 'sprint.auto_rescheduled', $6::jsonb)
+		) VALUES ($1, $2, $3, $4, 'sprint', $5, 'sprint.auto_rescheduled', CAST($6 AS jsonb))
 	`, settings.WorkspaceID, settings.TeamID, actorType, actorID, sprint.ID, string(metadata)); err != nil {
 		return fmt.Errorf("record sprint schedule audit event: %w", err)
 	}

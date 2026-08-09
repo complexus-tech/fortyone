@@ -89,7 +89,7 @@ func (h *Handlers) completeRealtimeToolCall(ctx context.Context, req AppRealtime
 	}
 	result, err := h.db.ExecContext(ctx, `
 		UPDATE maya_realtime_voice_tool_calls
-		SET response = $3::jsonb,
+		SET response = CAST($3 AS jsonb),
 			completed_at = NOW(),
 			updated_at = NOW()
 		WHERE session_id = $1

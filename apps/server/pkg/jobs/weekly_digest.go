@@ -160,14 +160,14 @@ func getWeeklyDigestStats(ctx context.Context, db *sqlx.DB, userID, workspaceID 
 
 	query := `
 		SELECT
-			(
+			CAST((
 				SELECT COUNT(*)
 				FROM notifications n
 				WHERE n.recipient_id = :user_id
 					AND n.workspace_id = :workspace_id
 					AND n.read_at IS NULL
-			)::int AS unread_notifications,
-			(
+			) AS int) AS unread_notifications,
+			CAST((
 				SELECT COUNT(*)
 				FROM notifications n
 				WHERE n.recipient_id = :user_id
@@ -175,8 +175,8 @@ func getWeeklyDigestStats(ctx context.Context, db *sqlx.DB, userID, workspaceID 
 					AND n.read_at IS NULL
 					AND n.created_at >= NOW() - INTERVAL '7 days'
 					AND n.type IN ('mention', 'comment_reply')
-			)::int AS unread_priority_notifications,
-			(
+			) AS int) AS unread_priority_notifications,
+			CAST((
 				SELECT COUNT(*)
 				FROM stories s
 				INNER JOIN statuses st ON s.status_id = st.status_id
@@ -187,8 +187,8 @@ func getWeeklyDigestStats(ctx context.Context, db *sqlx.DB, userID, workspaceID 
 					AND s.deleted_at IS NULL
 					AND s.archived_at IS NULL
 					AND s.completed_at IS NULL
-			)::int AS overdue_stories,
-			(
+			) AS int) AS overdue_stories,
+			CAST((
 				SELECT COUNT(*)
 				FROM stories s
 				INNER JOIN statuses st ON s.status_id = st.status_id
@@ -199,8 +199,8 @@ func getWeeklyDigestStats(ctx context.Context, db *sqlx.DB, userID, workspaceID 
 					AND s.deleted_at IS NULL
 					AND s.archived_at IS NULL
 					AND s.completed_at IS NULL
-			)::int AS due_this_week_stories,
-			(
+			) AS int) AS due_this_week_stories,
+			CAST((
 				SELECT COUNT(*)
 				FROM objectives o
 				INNER JOIN objective_statuses os ON o.status_id = os.status_id
@@ -210,8 +210,8 @@ func getWeeklyDigestStats(ctx context.Context, db *sqlx.DB, userID, workspaceID 
 					AND o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
 					AND os.category NOT IN ('completed', 'cancelled', 'paused')
 					AND ws.objective_enabled = true
-			)::int AS objective_risks,
-			(
+			) AS int) AS objective_risks,
+			CAST((
 				SELECT COUNT(*)
 				FROM story_comments sc
 				INNER JOIN stories s ON sc.story_id = s.id
@@ -219,7 +219,7 @@ func getWeeklyDigestStats(ctx context.Context, db *sqlx.DB, userID, workspaceID 
 					AND sc.commenter_id <> :user_id
 					AND sc.created_at >= NOW() - INTERVAL '7 days'
 					AND s.deleted_at IS NULL
-			)::int AS team_comments;
+			) AS int) AS team_comments;
 	`
 
 	params := map[string]any{

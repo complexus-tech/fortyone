@@ -537,6 +537,32 @@ type messageSenderStub struct {
 	botTokens         []string
 }
 
+type assistantStatusCall struct {
+	botToken string
+	channel  string
+	threadTS string
+	status   string
+}
+
+type assistantStatusSetterStub struct {
+	calls  []assistantStatusCall
+	errors []error
+}
+
+func (s *assistantStatusSetterStub) SetStatus(_ context.Context, botToken, channelID, threadTS, status string) error {
+	s.calls = append(s.calls, assistantStatusCall{
+		botToken: botToken,
+		channel:  channelID,
+		threadTS: threadTS,
+		status:   status,
+	})
+	index := len(s.calls) - 1
+	if index < len(s.errors) {
+		return s.errors[index]
+	}
+	return nil
+}
+
 func (s *messageSenderStub) Send(_ context.Context, botToken string, message SlackOutboundMessage) (string, error) {
 	s.botTokens = append(s.botTokens, botToken)
 	s.messages = append(s.messages, message)
@@ -590,8 +616,60 @@ func newTestEventProcessorWithBudgets(
 		t.Fatalf("NewEventProcessor() error = %v", err)
 	}
 	processor.sender = sender
+	processor.statusSetter = &assistantStatusSetterStub{}
 	processor.random = bytes.NewReader(make([]byte, 64))
 	return processor
+}
+
+func TestEventProcessorSetsNativeThinkingStatusBeforeAssistantResponse(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	store := newEventStoreStub()
+	assistant := &assistantStub{response: messaging.Response{Text: "You have three open stories."}}
+	sender := &messageSenderStub{externalMessageID: "10.2"}
+	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender)
+	statusSetter := processor.statusSetter.(*assistantStatusSetterStub)
+	assistant.onRespond = func() {
+		if len(statusSetter.calls) != 1 || statusSetter.calls[0].status != slackAssistantThinkingStatus {
+			t.Fatalf("status calls before Respond() = %+v", statusSetter.calls)
+		}
+	}
+
+	if err := processor.Process(context.Background(), []byte(directMessageEvent("Ev-thinking", "show my work"))); err != nil {
+		t.Fatalf("Process() error = %v", err)
+	}
+	if len(statusSetter.calls) != 1 {
+		t.Fatalf("status calls = %+v, want one thinking call and Slack auto-clear after reply", statusSetter.calls)
+	}
+	call := statusSetter.calls[0]
+	if call.botToken != "xoxb-test-token" || call.channel != "D1" || call.threadTS != "10.1" || call.status != slackAssistantThinkingStatus {
+		t.Fatalf("thinking status call = %+v", call)
+	}
+}
+
+func TestEventProcessorClearsNativeThinkingStatusWhenAssistantFails(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	store := newEventStoreStub()
+	responseErr := errors.New("temporary assistant failure")
+	assistant := &assistantStub{err: responseErr}
+	processor := newTestEventProcessor(
+		t,
+		repo,
+		store,
+		assistant,
+		&accessCheckerStub{allowed: true},
+		&messageSenderStub{},
+	)
+	statusSetter := processor.statusSetter.(*assistantStatusSetterStub)
+
+	err := processor.Process(context.Background(), []byte(directMessageEvent("Ev-thinking-error", "show my work")))
+	if !errors.Is(err, responseErr) {
+		t.Fatalf("Process() error = %v, want %v", err, responseErr)
+	}
+	if len(statusSetter.calls) != 2 || statusSetter.calls[0].status != slackAssistantThinkingStatus || statusSetter.calls[1].status != "" {
+		t.Fatalf("status calls = %+v, want thinking then explicit clear", statusSetter.calls)
+	}
 }
 
 func TestEventProcessorDeduplicatesCompletedInboundEvent(t *testing.T) {

@@ -889,7 +889,7 @@ func (r *repo) annotateWorkspaceIntegrations(ctx context.Context, rows []dbWorks
 			SELECT DISTINCT workspace_id
 			FROM public.slack_workspaces
 			WHERE is_active = true
-				AND workspace_id = ANY($1::uuid[])
+				AND workspace_id = ANY(CAST($1 AS uuid[]))
 		`, workspaceIDs)
 		if err != nil {
 			if r.log != nil {
@@ -907,7 +907,7 @@ func (r *repo) annotateWorkspaceIntegrations(ctx context.Context, rows []dbWorks
 			SELECT DISTINCT workspace_id
 			FROM public.github_installations
 			WHERE is_active = true
-				AND workspace_id = ANY($1::uuid[])
+				AND workspace_id = ANY(CAST($1 AS uuid[]))
 		`, workspaceIDs)
 		if err != nil {
 			if r.log != nil {

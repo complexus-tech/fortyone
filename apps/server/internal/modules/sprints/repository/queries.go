@@ -677,7 +677,7 @@ func (r *repo) getTeamWorkingDays(ctx context.Context, teamID, workspaceID uuid.
 				FROM team_sprint_settings
 				WHERE team_id = $1 AND workspace_id = $2
 			),
-			ARRAY[1, 2, 3, 4, 5]::smallint[]
+			CAST(ARRAY[1, 2, 3, 4, 5] AS smallint[])
 		)
 	`, teamID, workspaceID); err != nil {
 		return nil, fmt.Errorf("get team working days: %w", err)

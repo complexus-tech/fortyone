@@ -24,11 +24,11 @@ func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, search s
 		FROM notifications
 		WHERE recipient_id = :user_id 
 		AND workspace_id = :workspace_id
-		AND entity_type::text <> 'feedback'
+		AND CAST(entity_type AS text) <> 'feedback'
 		AND (
 			:search = ''
 			OR title ILIKE '%' || :search || '%'
-			OR message::text ILIKE '%' || :search || '%'
+			OR CAST(message AS text) ILIKE '%' || :search || '%'
 		)
 		ORDER BY created_at DESC
 		LIMIT :limit OFFSET :offset;
@@ -82,7 +82,7 @@ func (r *repo) GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID
 		SELECT COUNT(*) FROM notifications
 		WHERE recipient_id = :user_id
 		AND workspace_id = :workspace_id
-		AND entity_type::text <> 'feedback'
+		AND CAST(entity_type AS text) <> 'feedback'
 		AND read_at IS NULL;
 	`
 
@@ -182,8 +182,8 @@ func (r *repo) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalS
 			AND w.slug = $2
 			AND fp.is_public = true
 			AND fi.deleted_at IS NULL
-			AND n.entity_type::text = 'feedback'
-			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
+			AND CAST(n.entity_type AS text) = 'feedback'
+			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update')
 			AND ($3 = false OR n.read_at IS NULL)
 		ORDER BY n.created_at DESC
 		LIMIT $4 OFFSET $5
@@ -216,8 +216,8 @@ func (r *repo) GetPortalFeedbackUnreadCount(ctx context.Context, userID uuid.UUI
 			AND w.slug = $2
 			AND fp.is_public = true
 			AND fi.deleted_at IS NULL
-			AND n.entity_type::text = 'feedback'
-			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
+			AND CAST(n.entity_type AS text) = 'feedback'
+			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update')
 			AND n.read_at IS NULL
 	`, userID, portalSlug); err != nil {
 		span.RecordError(err)

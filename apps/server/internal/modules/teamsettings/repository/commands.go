@@ -321,7 +321,7 @@ func (r *repo) createDefaultSprintSettings(ctx context.Context, teamID, workspac
 			2,
 			2,
 			'Monday',
-			ARRAY[1, 2, 3, 4, 5]::smallint[],
+			CAST(ARRAY[1, 2, 3, 4, 5] AS smallint[]),
 			true,
 			0,
 			1

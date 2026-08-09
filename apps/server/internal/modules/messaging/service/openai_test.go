@@ -527,6 +527,20 @@ func TestNewOpenAIAssistantRejectsNonStrictOrUnapprovedTools(t *testing.T) {
 				Parameters: strictObjectSchema(map[string]any{}, []string{}),
 			},
 		},
+		{
+			name: "null required array",
+			definition: ToolDefinition{
+				Type:   "function",
+				Name:   toolListTeams,
+				Strict: true,
+				Parameters: map[string]any{
+					"type":                 "object",
+					"properties":           map[string]any{},
+					"required":             []string(nil),
+					"additionalProperties": false,
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		test := test

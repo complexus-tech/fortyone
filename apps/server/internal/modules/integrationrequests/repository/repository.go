@@ -303,7 +303,7 @@ func teamRequestFilterQuery(workspaceID, teamID, userID uuid.UUID, filter integr
 			title ILIKE ` + placeholder + `
 			OR COALESCE(description, '') ILIKE ` + placeholder + `
 			OR source_external_id ILIKE ` + placeholder + `
-			OR COALESCE(source_number::text, '') ILIKE ` + placeholder + `
+			OR COALESCE(CAST(source_number AS text), '') ILIKE ` + placeholder + `
 		)`
 	}
 	if filter.Provider != "" {

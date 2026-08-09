@@ -446,7 +446,7 @@ func feedbackDigestItemsQuery() string {
 	return `
 		WITH board_windows AS (
 			SELECT board_id, window_start
-			FROM UNNEST($3::uuid[], $4::timestamptz[]) AS windows(board_id, window_start)
+			FROM UNNEST(CAST($3 AS uuid[]), CAST($4 AS timestamptz[])) AS windows(board_id, window_start)
 		), eligible_items AS (
 			SELECT
 				fi.id,
@@ -492,8 +492,8 @@ func feedbackDigestItemsQuery() string {
 			title,
 			author_name,
 			team_name,
-			COUNT(*) OVER ()::int AS total_count,
-			COUNT(*) FILTER (WHERE status IN ('pending', 'reviewing')) OVER ()::int AS pending_review_count
+			CAST(COUNT(*) OVER () AS int) AS total_count,
+			CAST(COUNT(*) FILTER (WHERE status IN ('pending', 'reviewing')) OVER () AS int) AS pending_review_count
 		FROM eligible_items
 		ORDER BY created_at DESC, id DESC
 		LIMIT $6;
@@ -544,7 +544,7 @@ func completeFeedbackDigestDelivery(
 		WHERE fbs.board_id = fb.id
 			AND fbs.user_id = $3
 			AND fb.workspace_id = $4
-			AND fbs.board_id = ANY($5::uuid[]);
+			AND fbs.board_id = ANY(CAST($5 AS uuid[]));
 	`, deliveryAt, windowEnd, recipient.UserID, recipient.WorkspaceID, pq.Array(boardIDs))
 	if err != nil {
 		return fmt.Errorf("advance feedback digest subscription cursors: %w", err)
@@ -588,7 +588,7 @@ func failFeedbackDigestDelivery(ctx context.Context, db *sqlx.DB, deliveryID uui
 	_, updateErr := db.ExecContext(ctx, `
 		UPDATE feedback_digest_deliveries
 		SET status = 'failed',
-			last_error = LEFT($1::text, 2000),
+			last_error = LEFT(CAST($1 AS text), 2000),
 			updated_at = NOW()
 		WHERE id = $2
 			AND status = 'processing';

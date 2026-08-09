@@ -141,7 +141,7 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 			INNER JOIN users u ON n.recipient_id = u.user_id
 			INNER JOIN workspaces w ON n.workspace_id = w.workspace_id
 			INNER JOIN users actor_u ON n.actor_id = actor_u.user_id
-			LEFT JOIN feedback_items fi ON n.entity_type::text = 'feedback' AND fi.id = n.entity_id
+			LEFT JOIN feedback_items fi ON CAST(n.entity_type AS TEXT) = 'feedback' AND fi.id = n.entity_id
 			LEFT JOIN notification_preferences np ON n.recipient_id = np.user_id
 			AND n.workspace_id = np.workspace_id
 		WHERE
@@ -151,7 +151,7 @@ func (h *handlers) getNotificationEmailData(ctx context.Context, notificationID 
 			AND u.is_active = true
 			AND u.is_system = false
 			AND (
-				n.entity_type::text <> 'feedback'
+				CAST(n.entity_type AS TEXT) <> 'feedback'
 				OR (fi.id IS NOT NULL AND fi.deleted_at IS NULL)
 			)
 			AND NULLIF(TRIM(u.email), '') IS NOT NULL;
@@ -202,7 +202,7 @@ func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipient
 			INNER JOIN users u ON n.recipient_id = u.user_id
 			INNER JOIN workspaces w ON n.workspace_id = w.workspace_id
 			INNER JOIN users actor_u ON n.actor_id = actor_u.user_id
-			LEFT JOIN feedback_items fi ON n.entity_type::text = 'feedback' AND fi.id = n.entity_id
+			LEFT JOIN feedback_items fi ON CAST(n.entity_type AS TEXT) = 'feedback' AND fi.id = n.entity_id
 			LEFT JOIN notification_preferences np ON n.recipient_id = np.user_id
 				AND n.workspace_id = np.workspace_id
 		WHERE
@@ -213,7 +213,7 @@ func (h *handlers) getNotificationEmailDigestData(ctx context.Context, recipient
 			AND u.is_active = true
 			AND u.is_system = false
 			AND (
-				n.entity_type::text <> 'feedback'
+				CAST(n.entity_type AS TEXT) <> 'feedback'
 				OR (fi.id IS NOT NULL AND fi.deleted_at IS NULL)
 			)
 			AND NULLIF(TRIM(u.email), '') IS NOT NULL

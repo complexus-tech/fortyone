@@ -406,7 +406,7 @@ func (r *Repo) ListBoardReviewers(ctx context.Context, workspaceID, boardID uuid
 			COALESCE(NULLIF(trim(u.full_name), ''), u.email) AS name,
 			u.email,
 			u.avatar_url,
-			wm.role::text AS role,
+			CAST(wm.role AS text) AS role,
 			COALESCE(fbs.email_frequency, $3) AS email_frequency
 		FROM feedback_boards fb
 		INNER JOIN team_members tm ON tm.team_id = fb.team_id
@@ -447,7 +447,7 @@ func (r *Repo) SetBoardReviewer(ctx context.Context, input feedback.CoreBoardRev
 				COALESCE(NULLIF(trim(u.full_name), ''), u.email) AS name,
 				u.email,
 				u.avatar_url,
-				wm.role::text AS role
+				CAST(wm.role AS text) AS role
 			FROM feedback_boards fb
 			INNER JOIN team_members tm
 				ON tm.team_id = fb.team_id
@@ -489,7 +489,7 @@ func (r *Repo) removeBoardReviewer(ctx context.Context, input feedback.CoreBoard
 				COALESCE(NULLIF(trim(u.full_name), ''), u.email) AS name,
 				u.email,
 				u.avatar_url,
-				wm.role::text AS role
+				CAST(wm.role AS text) AS role
 			FROM feedback_boards fb
 			INNER JOIN team_members tm
 				ON tm.team_id = fb.team_id
@@ -879,8 +879,8 @@ func (r *Repo) ListTeamSummaries(ctx context.Context, workspaceID, userID uuid.U
 	if err := r.db.SelectContext(ctx, &rows, `
 		SELECT fb.team_id,
 			true AS enabled,
-			COUNT(fi.id)::int AS total_count,
-			COUNT(fi.id) FILTER (WHERE fi.id IS NOT NULL AND fir.item_id IS NULL)::int AS unread_count
+			CAST(COUNT(fi.id) AS int) AS total_count,
+			CAST(COUNT(fi.id) FILTER (WHERE fi.id IS NOT NULL AND fir.item_id IS NULL) AS int) AS unread_count
 		FROM feedback_boards fb
 		INNER JOIN team_members tm ON tm.team_id = fb.team_id AND tm.user_id = $2
 		LEFT JOIN feedback_items fi ON fi.board_id = fb.id
@@ -1085,7 +1085,7 @@ func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UU
 			CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = updated.id), 0) AS integer) AS vote_count,
 			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = updated.id AND fv.direction = 1) AS integer) AS upvote_count,
 			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = updated.id AND fv.direction = -1) AS integer) AS downvote_count,
-			(SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = updated.id)::int AS comment_count,
+			CAST((SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = updated.id) AS int) AS comment_count,
 			updated.roadmap_summary,
 			fb.team_id AS board_team_id, fb.name AS board_name, fb.slug AS board_slug,
 			fb.color AS board_color, fb.order_index AS board_order_index,

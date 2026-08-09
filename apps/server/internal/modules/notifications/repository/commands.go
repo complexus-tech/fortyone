@@ -97,7 +97,7 @@ func (r *repo) MarkAsRead(ctx context.Context, notificationID, userID uuid.UUID)
 		SET read_at = CURRENT_TIMESTAMP
 		WHERE notification_id = :notification_id
 		AND recipient_id = :user_id
-		AND entity_type::text <> 'feedback';
+		AND CAST(entity_type AS text) <> 'feedback';
 	`
 
 	params := map[string]any{
@@ -275,7 +275,7 @@ func (r *repo) MarkAllAsRead(ctx context.Context, userID, workspaceID uuid.UUID)
 		SET read_at = CURRENT_TIMESTAMP
 		WHERE recipient_id = :user_id
 		AND workspace_id = :workspace_id
-		AND entity_type::text <> 'feedback'
+		AND CAST(entity_type AS text) <> 'feedback'
 		AND read_at IS NULL;
 	`
 
@@ -321,7 +321,7 @@ func (r *repo) DeleteNotification(ctx context.Context, notificationID, userID uu
 		DELETE FROM notifications
 		WHERE notification_id = :notification_id
 		AND recipient_id = :user_id
-		AND entity_type::text <> 'feedback';
+		AND CAST(entity_type AS text) <> 'feedback';
 	`
 
 	params := map[string]any{
@@ -370,7 +370,7 @@ func (r *repo) DeleteAllNotifications(ctx context.Context, userID, workspaceID u
 		DELETE FROM notifications
 		WHERE recipient_id = :user_id
 		AND workspace_id = :workspace_id
-		AND entity_type::text <> 'feedback';
+		AND CAST(entity_type AS text) <> 'feedback';
 	`
 
 	params := map[string]any{
@@ -415,7 +415,7 @@ func (r *repo) DeleteReadNotifications(ctx context.Context, userID, workspaceID 
 		DELETE FROM notifications
 		WHERE recipient_id = :user_id
 		AND workspace_id = :workspace_id
-		AND entity_type::text <> 'feedback'
+		AND CAST(entity_type AS text) <> 'feedback'
 		AND read_at IS NOT NULL;
 	`
 
@@ -462,7 +462,7 @@ func (r *repo) MarkAsUnread(ctx context.Context, notificationID, userID uuid.UUI
 		SET read_at = NULL
 		WHERE notification_id = :notification_id
 		AND recipient_id = :user_id
-		AND entity_type::text <> 'feedback';
+		AND CAST(entity_type AS text) <> 'feedback';
 	`
 
 	params := map[string]any{
@@ -520,8 +520,8 @@ func (r *repo) MarkPortalFeedbackAsRead(ctx context.Context, notificationID, use
 			AND fi.id = n.entity_id
 			AND fi.workspace_id = n.workspace_id
 			AND fi.deleted_at IS NULL
-			AND n.entity_type::text = 'feedback'
-			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
+			AND CAST(n.entity_type AS text) = 'feedback'
+			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update')
 	`, notificationID, userID, portalSlug)
 	if err != nil {
 		span.RecordError(err)
@@ -554,8 +554,8 @@ func (r *repo) MarkAllPortalFeedbackAsRead(ctx context.Context, userID uuid.UUID
 			AND fi.id = n.entity_id
 			AND fi.workspace_id = n.workspace_id
 			AND fi.deleted_at IS NULL
-			AND n.entity_type::text = 'feedback'
-			AND n.type::text IN ('feedback_comment', 'feedback_status_update')
+			AND CAST(n.entity_type AS text) = 'feedback'
+			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update')
 			AND n.read_at IS NULL
 	`, userID, portalSlug)
 	if err != nil {
