@@ -282,7 +282,7 @@ and different workflows, and two users: one linked and one unlinked.
   rejected without side effects.
 - Run `/fortyone create Example title`; confirm acknowledgement is under three
   seconds and the modal opens.
-- Use **Create a FortyOne task** on an existing message; confirm its text and
+- Use **Create a story** on an existing message; confirm its text and
   permalink context are prefilled without message-history scopes.
 - Confirm the team selector contains only teams the linked user belongs to.
 - Switch teams and confirm statuses, assignees, labels, and objectives refresh

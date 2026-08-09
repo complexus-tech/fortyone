@@ -623,6 +623,7 @@ type mockStoryService struct {
 	lastWorkspace uuid.UUID
 	lastStory     stories.CoreNewStory
 	createCalls   int
+	sequenceID    int
 }
 
 func (m *mockStoryService) Create(ctx context.Context, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
@@ -632,7 +633,7 @@ func (m *mockStoryService) Create(ctx context.Context, ns stories.CoreNewStory, 
 	}
 	m.lastWorkspace = workspaceID
 	m.lastStory = ns
-	return stories.CoreSingleStory{ID: uuid.New(), Title: ns.Title, CreatedNow: true}, nil
+	return stories.CoreSingleStory{ID: uuid.New(), SequenceID: m.sequenceID, Title: ns.Title, CreatedNow: true}, nil
 }
 
 func newTestService(repo Repository, requests RequestStore, storyService StoryService, cfg Config) *Service {
@@ -1192,6 +1193,7 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 	assigneeID := uuid.New()
 	labelID := uuid.New()
 	objectiveID := uuid.New()
+	installGeneration := uuid.New()
 
 	repo := &mockRepo{
 		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme", Name: "Acme"},
@@ -1213,14 +1215,26 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 			SlackTeamDomain:   "acme",
 			BotAccessToken:    "xoxb-token",
 			InstalledByUserID: &installedBy,
+			InstallGeneration: installGeneration,
+			IsActive:          true,
 		},
 		slackUserLinks: map[string]uuid.UUID{
 			"T123:U999": mappedActorID,
 		},
 	}
 	requests := &mockRequestStore{}
-	storyService := &mockStoryService{}
+	storyService := &mockStoryService{sequenceID: 123}
 	service := newTestService(repo, requests, storyService, Config{WebsiteURL: "https://app.example.com"})
+	store := newEventStoreStub()
+	service.outbound = store
+	service.client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		require.Equal(t, "https://slack.com/api/chat.postMessage", req.URL.String())
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(`{"ok":true,"ts":"171.200"}`)),
+			Header:     make(http.Header),
+		}, nil
+	})}
 
 	interaction := map[string]any{
 		"type": "view_submission",
@@ -1274,6 +1288,10 @@ func TestHandleViewSubmissionCreatesStoryWhenNonTriageStatusSelected(t *testing.
 	require.Equal(t, "Urgent", storyService.lastStory.Priority)
 	require.Equal(t, []uuid.UUID{labelID}, storyService.lastStory.LabelIDs)
 	require.Contains(t, repo.lastStoryLink.url, "https://acme.slack.com/archives/C123/")
+	require.Len(t, store.outboundInputs, 1)
+	require.Equal(t, "Slack Actor created <https://acme.app.example.com/work/ENG-123|ENG-123>", store.outboundInputs[0].Content)
+	require.Equal(t, "C123", store.outboundInputs[0].ExternalChannelID)
+	require.Empty(t, store.outboundInputs[0].ExternalThreadID)
 }
 
 func TestHandleViewSubmissionRejectsTeamOutsideActorsMembership(t *testing.T) {
@@ -2489,6 +2507,161 @@ func TestPostSlackCreationAckPersistsSlackTeamBinding(t *testing.T) {
 	require.Equal(t, "T1", store.outboundInputs[0].ExternalWorkspaceID)
 	require.Equal(t, installGeneration, *store.outboundInputs[0].InstallGeneration)
 	require.Len(t, store.completedDeliveries, 1)
+}
+
+func TestPostSlackCreationAckRoutesToSourceConversation(t *testing.T) {
+	tests := []struct {
+		name         string
+		source       requestSourceContext
+		wantChannel  string
+		wantThreadTS string
+	}{
+		{
+			name: "source channel root",
+			source: requestSourceContext{
+				SlackTeamID:    "T1",
+				SlackChannelID: "C1",
+				SlackMessageTS: "171.100",
+				SlackUserID:    "U1",
+			},
+			wantChannel: "C1",
+		},
+		{
+			name: "existing source thread",
+			source: requestSourceContext{
+				SlackTeamID:    "T1",
+				SlackChannelID: "C1",
+				SlackMessageTS: "171.200",
+				SlackThreadTS:  "171.100",
+				SlackUserID:    "U1",
+			},
+			wantChannel:  "C1",
+			wantThreadTS: "171.100",
+		},
+		{
+			name: "user fallback without source channel",
+			source: requestSourceContext{
+				SlackTeamID:   "T1",
+				SlackThreadTS: "171.100",
+				SlackUserID:   "U1",
+			},
+			wantChannel: "U1",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			store := newEventStoreStub()
+			workspaceID := uuid.New()
+			installGeneration := uuid.New()
+			service := newTestService(&mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
+				WorkspaceID:       workspaceID,
+				SlackTeamID:       "T1",
+				InstallGeneration: installGeneration,
+				IsActive:          true,
+			}}, &mockRequestStore{}, &mockStoryService{}, Config{})
+			service.outbound = store
+			service.client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				require.Equal(t, "https://slack.com/api/chat.postMessage", req.URL.String())
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(strings.NewReader(`{"ok":true,"ts":"171.300"}`)),
+					Header:     make(http.Header),
+				}, nil
+			})}
+
+			service.postSlackCreationAck(
+				context.Background(),
+				workspaceID,
+				installGeneration,
+				"slack:view:V1:confirmation:"+test.name,
+				test.source,
+				"xoxb-token",
+				"Joseph Mukorivo created WEB-123",
+			)
+
+			require.Len(t, store.outboundInputs, 1)
+			require.Equal(t, test.wantChannel, store.outboundInputs[0].ExternalChannelID)
+			require.Equal(t, test.wantThreadTS, store.outboundInputs[0].ExternalThreadID)
+		})
+	}
+}
+
+func TestBuildSlackStoryCreatedText(t *testing.T) {
+	storyCode := buildStoryCode(" web ", 123)
+	require.Equal(t, "WEB-123", storyCode)
+	require.Equal(
+		t,
+		"Joseph Mukorivo created <https://acme.fortyone.app/work/WEB-123|WEB-123>",
+		buildSlackStoryCreatedText("Joseph Mukorivo", storyCode, "https://acme.fortyone.app/work/WEB-123"),
+	)
+	require.Equal(
+		t,
+		"Joseph &lt;@U123&gt; &amp; Team created WEB-123",
+		buildSlackStoryCreatedText("Joseph <@U123> & Team", storyCode, ""),
+	)
+	fallback := buildSlackStoryCreatedText(" ", "", "https://acme.fortyone.app/work/story-id")
+	require.Equal(t, "A team member created <https://acme.fortyone.app/work/story-id|a story>", fallback)
+	require.NotContains(t, fallback, "✅")
+	require.NotContains(t, fallback, "in FortyOne")
+}
+
+func TestAcceptIntegrationRequestPostsCreatorAndCanonicalStoryCode(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	actorID := uuid.New()
+	installGeneration := uuid.New()
+	repo := &mockRepo{
+		teamMembers: []slackrepository.TeamMemberRecord{{
+			UserID:   actorID,
+			Username: "joseph",
+			FullName: "Joseph Mukorivo",
+			Email:    "joseph@example.com",
+		}},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			WorkspaceID:       workspaceID,
+			SlackTeamID:       "T1",
+			BotAccessToken:    "xoxb-token",
+			InstallGeneration: installGeneration,
+			IsActive:          true,
+		},
+	}
+	store := newEventStoreStub()
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{WebsiteURL: "https://app.example.com"})
+	service.outbound = store
+	service.client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		require.Equal(t, "https://slack.com/api/chat.postMessage", req.URL.String())
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(`{"ok":true,"ts":"171.200"}`)),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	err := service.AcceptIntegrationRequest(context.Background(), integrationrequests.CoreIntegrationRequest{
+		ID:          uuid.New(),
+		WorkspaceID: workspaceID,
+		TeamID:      teamID,
+		Provider:    integrationrequests.ProviderSlack,
+		Metadata: map[string]any{
+			"slack_channel_id": "C1",
+			"slack_message_ts": "171.100",
+			"slack_team_id":    "T1",
+			"workspace_slug":   "acme",
+			"team_code":        "web",
+		},
+	}, stories.CoreSingleStory{
+		ID:         uuid.New(),
+		SequenceID: 123,
+		Team:       teamID,
+		Reporter:   &actorID,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, store.outboundInputs, 1)
+	require.Equal(t, "Joseph Mukorivo created <https://acme.app.example.com/work/WEB-123|WEB-123>", store.outboundInputs[0].Content)
+	require.Equal(t, "C1", store.outboundInputs[0].ExternalChannelID)
+	require.Equal(t, "171.100", store.outboundInputs[0].ExternalThreadID)
 }
 
 func TestPostSlackCreationAckCancelsWhenInstallationGenerationChanges(t *testing.T) {

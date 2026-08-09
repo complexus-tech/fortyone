@@ -3,7 +3,18 @@ _metadata:
 
 display_information:
   name: FortyOne
-  description: Create, find, and discuss FortyOne work without leaving Slack.
+  description: Create stories from Slack messages and ask Maya about your FortyOne work.
+  long_description: |
+    FortyOne brings planning and delivery into the Slack conversations where work begins.
+
+    With FortyOne for Slack, you can:
+    - Turn any Slack message into a story.
+    - Choose the team, status, assignee, objective, labels, and priority.
+    - Ask Maya to find stories, objectives, and work assigned to you.
+    - Open every created story directly from its Slack confirmation.
+
+    FortyOne only shows teams and work your account is allowed to access.
+  background_color: "#111827"
 
 features:
   app_home:
@@ -14,16 +25,16 @@ features:
     display_name: fortyone
     always_online: true
   shortcuts:
-    - name: Create a FortyOne task
+    - name: Create a story
       type: message
       callback_id: fortyone_create_task
-      description: Turn this Slack message into a task in FortyOne.
+      description: Turn this Slack message into a FortyOne story.
   slash_commands:
     - command: /fortyone
       url: https://api.fortyone.app/integrations/slack/commands
-      description: Create or find work in FortyOne.
-      usage_hint: create [title]
-      should_escape: true
+      description: Create a story in FortyOne.
+      usage_hint: "[story title]"
+      should_escape: false
 
 oauth_config:
   redirect_urls:
@@ -34,6 +45,7 @@ oauth_config:
       - chat:write
       - commands
       - im:history
+  pkce_enabled: false
 
 settings:
   event_subscriptions:
@@ -50,3 +62,4 @@ settings:
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false
+  is_mcp_enabled: false

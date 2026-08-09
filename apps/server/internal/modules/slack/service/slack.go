@@ -42,6 +42,7 @@ var (
 	ErrSlackInteractionActorMismatch   = errors.New("slack interaction actor does not match the modal source")
 	ErrSlackEventRuntimeNotConfigured  = errors.New("slack event runtime is not configured")
 	ErrSlackInvalidEventPayload        = errors.New("invalid slack event payload")
+	slackMrkdwnTextEscaper             = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
 )
 
 const (
@@ -1154,6 +1155,13 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		return interactionClearResponse()
 	}
 
+	creator, err := s.repo.FindTeamMemberByID(ctx, team.ID, actorID)
+	if err != nil {
+		s.log.Error(ctx, "failed loading story creator for Slack confirmation", "error", err, "workspace_id", workspace.ID, "team_id", team.ID, "actor_id", actorID)
+		return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
+	}
+	creatorName := storyCreatorDisplayName(creator)
+
 	var statusID *uuid.UUID
 	if submission.StatusID != nil {
 		statusID = submission.StatusID
@@ -1192,7 +1200,7 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		}
 	}
 
-	s.postSlackTaskAck(ctx, workspace.ID, slackWorkspace.InstallGeneration, creationKey+":confirmation", submission.Source, botToken, workspace.Slug, team.Code, story)
+	s.postSlackTaskAck(ctx, workspace.ID, slackWorkspace.InstallGeneration, creationKey+":confirmation", submission.Source, botToken, workspace.Slug, team.Code, creatorName, story)
 	return interactionClearResponse()
 }
 
@@ -1554,16 +1562,19 @@ func (s *Service) AcceptIntegrationRequest(ctx context.Context, request integrat
 		return err
 	}
 	workspaceSlug := metadataString(request.Metadata, "workspace_slug")
-	storyURL := buildTaskURL(
-		s.cfg.WebsiteURL,
-		workspaceSlug,
-		buildStoryReference(story.TeamCode, story.SequenceID, story.ID.String()),
-	)
-	text := fmt.Sprintf("✅ Request accepted in FortyOne: %s", story.Title)
-	if storyURL != "" {
-		text = fmt.Sprintf("✅ Request accepted in FortyOne: <%s|%s>", storyURL, story.Title)
+	teamCode := strings.TrimSpace(story.TeamCode)
+	if teamCode == "" {
+		teamCode = metadataString(request.Metadata, "team_code")
 	}
-	s.postSlackCreationAck(
+	creatorName := "A team member"
+	if story.Reporter != nil && *story.Reporter != uuid.Nil {
+		creator, creatorErr := s.repo.FindTeamMemberByID(ctx, request.TeamID, *story.Reporter)
+		if creatorErr != nil {
+			return fmt.Errorf("find accepted Slack request story creator: %w", creatorErr)
+		}
+		creatorName = storyCreatorDisplayName(creator)
+	}
+	s.postSlackTaskAck(
 		ctx,
 		request.WorkspaceID,
 		slackWorkspace.InstallGeneration,
@@ -1574,7 +1585,10 @@ func (s *Service) AcceptIntegrationRequest(ctx context.Context, request integrat
 			SlackThreadTS:  threadTS,
 		},
 		botToken,
-		text,
+		workspaceSlug,
+		teamCode,
+		creatorName,
+		story,
 	)
 	return nil
 }
@@ -2155,29 +2169,39 @@ func (s *Service) postSlackRequestAck(ctx context.Context, workspaceID, installG
 	s.postSlackCreationAck(ctx, workspaceID, installGeneration, idempotencyKey, source, botToken, text)
 }
 
-func (s *Service) postSlackTaskAck(ctx context.Context, workspaceID, installGeneration uuid.UUID, idempotencyKey string, source requestSourceContext, botToken, workspaceSlug, teamCode string, story stories.CoreSingleStory) {
+func (s *Service) postSlackTaskAck(ctx context.Context, workspaceID, installGeneration uuid.UUID, idempotencyKey string, source requestSourceContext, botToken, workspaceSlug, teamCode, creatorName string, story stories.CoreSingleStory) {
+	storyCode := buildStoryCode(teamCode, story.SequenceID)
 	taskURL := buildTaskURL(
 		s.cfg.WebsiteURL,
 		workspaceSlug,
 		buildStoryReference(teamCode, story.SequenceID, story.ID.String()),
 	)
-	text := fmt.Sprintf("✅ Task created in FortyOne: %s", story.Title)
-	if taskURL != "" {
-		text = fmt.Sprintf("✅ Task created in FortyOne: <%s|%s>", taskURL, story.Title)
-	}
+	text := buildSlackStoryCreatedText(creatorName, storyCode, taskURL)
 	s.postSlackCreationAck(ctx, workspaceID, installGeneration, idempotencyKey, source, botToken, text)
+}
+
+func buildSlackStoryCreatedText(creatorName, storyCode, taskURL string) string {
+	creatorLabel := slackMrkdwnTextEscaper.Replace(strings.TrimSpace(creatorName))
+	if creatorLabel == "" {
+		creatorLabel = "A team member"
+	}
+	storyLabel := strings.TrimSpace(storyCode)
+	if storyLabel == "" {
+		storyLabel = "a story"
+	}
+	if taskURL := strings.TrimSpace(taskURL); taskURL != "" {
+		storyLabel = fmt.Sprintf("<%s|%s>", taskURL, storyLabel)
+	}
+	return fmt.Sprintf("%s created %s", creatorLabel, storyLabel)
 }
 
 func (s *Service) postSlackCreationAck(ctx context.Context, workspaceID, installGeneration uuid.UUID, idempotencyKey string, source requestSourceContext, botToken, text string) {
 	externalWorkspaceID := strings.TrimSpace(source.SlackTeamID)
-	channelID := strings.TrimSpace(source.SlackUserID)
-	threadTS := ""
+	channelID := strings.TrimSpace(source.SlackChannelID)
+	threadTS := strings.TrimSpace(source.SlackThreadTS)
 	if channelID == "" {
-		channelID = strings.TrimSpace(source.SlackChannelID)
-		threadTS = strings.TrimSpace(source.SlackThreadTS)
-		if threadTS == "" {
-			threadTS = strings.TrimSpace(source.SlackMessageTS)
-		}
+		channelID = strings.TrimSpace(source.SlackUserID)
+		threadTS = ""
 	}
 	if workspaceID == uuid.Nil || installGeneration == uuid.Nil || externalWorkspaceID == "" || channelID == "" || strings.TrimSpace(idempotencyKey) == "" {
 		return
@@ -3001,6 +3025,19 @@ func teamMemberDisplayName(member slackrepository.TeamMemberRecord) string {
 	return member.UserID.String()
 }
 
+func storyCreatorDisplayName(member slackrepository.TeamMemberRecord) string {
+	if fullName := strings.TrimSpace(member.FullName); fullName != "" {
+		return fullName
+	}
+	if username := strings.TrimSpace(member.Username); username != "" {
+		return username
+	}
+	if email := strings.TrimSpace(member.Email); email != "" {
+		return email
+	}
+	return "A team member"
+}
+
 func teamMemberExists(members []slackrepository.TeamMemberRecord, userID uuid.UUID) bool {
 	for _, member := range members {
 		if member.UserID == userID {
@@ -3186,11 +3223,18 @@ func buildWorkspaceURL(websiteURL, workspaceSlug string, routeSegments ...string
 }
 
 func buildStoryReference(teamCode string, sequenceID int, fallbackID string) string {
-	normalizedCode := strings.ToUpper(strings.TrimSpace(teamCode))
-	if normalizedCode != "" && sequenceID > 0 {
-		return fmt.Sprintf("%s-%d", normalizedCode, sequenceID)
+	if storyCode := buildStoryCode(teamCode, sequenceID); storyCode != "" {
+		return storyCode
 	}
 	return strings.TrimSpace(fallbackID)
+}
+
+func buildStoryCode(teamCode string, sequenceID int) string {
+	normalizedCode := strings.ToUpper(strings.TrimSpace(teamCode))
+	if normalizedCode == "" || sequenceID <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("%s-%d", normalizedCode, sequenceID)
 }
 
 func buildTaskURL(websiteURL, workspaceSlug, storyReference string) string {
