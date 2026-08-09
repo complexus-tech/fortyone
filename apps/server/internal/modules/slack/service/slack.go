@@ -556,10 +556,33 @@ func (s *Service) HandleEvents(ctx context.Context, rawBody []byte) (EventRespon
 	}
 	event, supported := normalizeSlackEvent(payload)
 	if !supported {
+		if strings.TrimSpace(payload.Event.Type) == slackEventLinkShared && s.log != nil {
+			s.log.Warn(ctx, "Slack story preview event ignored at ingress",
+				"event_id", payload.EventID,
+				"slack_team_id", payload.TeamID,
+				"slack_channel_id", firstNonEmptyString(payload.Event.Channel, payload.Event.ChannelID),
+				"unfurl_source", strings.TrimSpace(payload.Event.Source),
+				"has_unfurl_id", strings.TrimSpace(payload.Event.UnfurlID) != "",
+				"has_message_ts", strings.TrimSpace(payload.Event.MessageTS) != "" || strings.TrimSpace(payload.Event.TS) != "",
+				"link_count", len(payload.Event.Links),
+				"is_external_shared_channel", payload.IsExtSharedChannel,
+				"reason", "unsupported_event_shape",
+			)
+		}
 		// message.channels and message.groups are intentionally broad. Discard
 		// unrelated roots, bot messages, edits, and unsupported event shapes
 		// before encrypting or retaining their content in the durable inbox.
 		return EventResponse{}, nil
+	}
+	if event.Kind == slackEventKindLinkShared && s.log != nil {
+		s.log.Info(ctx, "Slack story preview event received",
+			"event_id", event.EventID,
+			"slack_team_id", event.TeamID,
+			"slack_channel_id", event.ChannelID,
+			"unfurl_source", slackStoryPreviewSource(event),
+			"unfurl_destination", slackStoryPreviewDestination(event),
+			"link_count", len(event.Links),
+		)
 	}
 	if event.Kind == slackEventKindEntityDetails {
 		workCtx, cancel := s.newSlackWorkObjectTriggerContext(ctx)
@@ -595,6 +618,15 @@ func (s *Service) HandleEvents(ctx context.Context, rawBody []byte) (EventRespon
 		workspaceID = &workspace
 		installGeneration = &generation
 	} else if slackrepository.IsNotFound(installationErr) {
+		if event.Kind == slackEventKindLinkShared && s.log != nil {
+			s.log.Warn(ctx, "Slack story preview event ignored at ingress",
+				"event_id", event.EventID,
+				"slack_team_id", event.TeamID,
+				"slack_channel_id", event.ChannelID,
+				"unfurl_source", slackStoryPreviewSource(event),
+				"reason", "installation_not_found",
+			)
+		}
 		// A valid Slack signature proves the sender is Slack, not that FortyOne
 		// still owns this installation. Disconnected and orphaned installations
 		// have no recoverable work, so do not retain their message content.
@@ -664,6 +696,17 @@ func (s *Service) HandleEvents(ctx context.Context, rawBody []byte) (EventRespon
 	}
 	if err := s.eventInbox.MarkInboundEventQueued(ctx, receipt.ID); err != nil {
 		return EventResponse{}, fmt.Errorf("record Slack event queue handoff: %w", err)
+	}
+	if event.Kind == slackEventKindLinkShared && s.log != nil {
+		s.log.Info(ctx, "Slack story preview event queued",
+			"event_id", event.EventID,
+			"workspace_id", installation.WorkspaceID,
+			"slack_team_id", event.TeamID,
+			"slack_channel_id", event.ChannelID,
+			"unfurl_source", slackStoryPreviewSource(event),
+			"unfurl_destination", slackStoryPreviewDestination(event),
+			"link_count", len(event.Links),
+		)
 	}
 	return EventResponse{}, nil
 }

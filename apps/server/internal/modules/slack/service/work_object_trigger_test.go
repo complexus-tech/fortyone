@@ -1,10 +1,12 @@
 package slack
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,6 +59,8 @@ func TestHandleEventsKeepsLinkSharedOnDurableQueue(t *testing.T) {
 		Config{SecretKey: "event-secret"},
 	)
 	WithEventRuntime(queue, inbox)(service)
+	var logs bytes.Buffer
+	service.log = logger.NewWithJSON(&logs, slog.LevelInfo, "test")
 
 	_, err := service.HandleEvents(context.Background(), []byte(
 		`{"type":"event_callback","team_id":"T123","event_id":"Ev-link-durable","event":{"type":"link_shared","user":"U123","channel":"C123","message_ts":"1754700000.123","links":[{"domain":"fortyone.app","url":"https://acme.fortyone.app/work/WEB-123"}]}}`,
@@ -65,6 +70,10 @@ func TestHandleEventsKeepsLinkSharedOnDurableQueue(t *testing.T) {
 	require.Equal(t, 1, inbox.registrations)
 	require.Len(t, queue.payloads, 1)
 	require.Equal(t, "Ev-link-durable", queue.payloads[0].EventID)
+	require.Contains(t, logs.String(), `"msg":"Slack story preview event received"`)
+	require.Contains(t, logs.String(), `"msg":"Slack story preview event queued"`)
+	require.Contains(t, logs.String(), `"event_id":"Ev-link-durable"`)
+	require.NotContains(t, logs.String(), "WEB-123", "ingress logs must not retain story URLs")
 }
 
 func TestHandleEventsTreatsInvalidEntityTriggerAsTerminal(t *testing.T) {

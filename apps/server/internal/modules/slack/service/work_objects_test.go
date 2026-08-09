@@ -1,14 +1,18 @@
 package slack
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -224,6 +228,43 @@ func TestSlackWorkObjectPublisherUsesComposerDestination(t *testing.T) {
 	request.UnfurlID = "unfurl-123"
 	request.Source = "composer"
 	require.NoError(t, publisher.Unfurl(context.Background(), "xoxb-test", request))
+}
+
+func TestPublishSlackStoryUnfurlLogsProviderErrorCode(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"ok":false,"error":"cannot_unfurl_url"}`))
+	}))
+	defer server.Close()
+
+	client := newSlackWebClient(server.Client())
+	client.baseURL = server.URL
+	var logs bytes.Buffer
+	processor := &EventProcessor{
+		log:         logger.NewWithJSON(&logs, slog.LevelInfo, "test"),
+		workObjects: newSlackWorkObjectPublisher(client),
+	}
+	request, err := BuildSlackStoryUnfurlRequest("C123", "1754700000.123", SlackStoryWorkObjectInput{
+		AccessGranted: true,
+		StoryURL:      "https://complexus.fortyone.app/work/WEB-544",
+		Title:         "Private story title that must not be logged",
+	})
+	require.NoError(t, err)
+
+	err = processor.publishSlackStoryUnfurl(context.Background(), normalizedSlackEvent{
+		EventID:   "Ev-preview",
+		TeamID:    "T123",
+		UserID:    "U123",
+		ChannelID: "C123",
+		MessageTS: "1754700000.123",
+	}, uuid.MustParse("11111111-1111-4111-8111-111111111111"), request, 1, false, "xoxb-test")
+
+	require.Error(t, err)
+	require.Contains(t, logs.String(), `"msg":"Slack story preview publish failed"`)
+	require.Contains(t, logs.String(), `"slack_error_code":"cannot_unfurl_url"`)
+	require.Contains(t, logs.String(), `"event_id":"Ev-preview"`)
+	require.NotContains(t, logs.String(), "Private story title that must not be logged")
 }
 
 func TestApplySlackUnfurlEventDestinationUsesComposerIdentity(t *testing.T) {

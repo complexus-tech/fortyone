@@ -59,11 +59,46 @@ func (p *EventProcessor) processSlackLinkShared(
 	event normalizedSlackEvent,
 	botToken string,
 ) error {
+	if p.log != nil {
+		p.log.Info(ctx, "Slack story preview processing started",
+			"event_id", event.EventID,
+			"workspace_id", workspace.ID,
+			"workspace_slug", workspace.Slug,
+			"slack_team_id", event.TeamID,
+			"slack_channel_id", event.ChannelID,
+			"slack_user_id", event.UserID,
+			"unfurl_source", slackStoryPreviewSource(event),
+			"unfurl_destination", slackStoryPreviewDestination(event),
+			"link_count", len(event.Links),
+		)
+	}
 	links := make([]FortyOneStoryLink, 0, len(event.Links))
 	seen := make(map[string]struct{}, len(event.Links))
 	for _, shared := range event.Links {
 		link, err := ParseFortyOneStoryURL(shared.URL)
-		if err != nil || !strings.EqualFold(link.WorkspaceSlug, workspace.Slug) {
+		if err != nil {
+			if p.log != nil {
+				p.log.Warn(ctx, "Slack story preview link ignored",
+					"event_id", event.EventID,
+					"slack_team_id", event.TeamID,
+					"slack_channel_id", event.ChannelID,
+					"link_domain", strings.TrimSpace(shared.Domain),
+					"reason", "invalid_story_url",
+				)
+			}
+			continue
+		}
+		if !strings.EqualFold(link.WorkspaceSlug, workspace.Slug) {
+			if p.log != nil {
+				p.log.Warn(ctx, "Slack story preview link ignored",
+					"event_id", event.EventID,
+					"workspace_id", workspace.ID,
+					"workspace_slug", workspace.Slug,
+					"link_workspace_slug", link.WorkspaceSlug,
+					"story_reference", link.StoryReference,
+					"reason", "workspace_slug_mismatch",
+				)
+			}
 			continue
 		}
 		if _, exists := seen[link.CanonicalURL]; exists {
@@ -73,9 +108,30 @@ func (p *EventProcessor) processSlackLinkShared(
 		links = append(links, link)
 	}
 	if len(links) == 0 {
+		if p.log != nil {
+			p.log.Warn(ctx, "Slack story preview produced no eligible links",
+				"event_id", event.EventID,
+				"workspace_id", workspace.ID,
+				"workspace_slug", workspace.Slug,
+				"slack_team_id", event.TeamID,
+				"slack_channel_id", event.ChannelID,
+				"unfurl_source", slackStoryPreviewSource(event),
+				"received_link_count", len(event.Links),
+			)
+		}
 		return nil
 	}
 	if linkedUserID == nil || *linkedUserID == uuid.Nil {
+		if p.log != nil {
+			p.log.Info(ctx, "Slack story preview requires account link",
+				"event_id", event.EventID,
+				"workspace_id", workspace.ID,
+				"slack_team_id", event.TeamID,
+				"slack_channel_id", event.ChannelID,
+				"slack_user_id", event.UserID,
+				"eligible_link_count", len(links),
+			)
+		}
 		authURL, err := p.accountLinkURL(ctx, workspace, event)
 		if err != nil {
 			return err
@@ -85,7 +141,7 @@ func (p *EventProcessor) processSlackLinkShared(
 			return err
 		}
 		applySlackUnfurlEventDestination(&request, event)
-		return p.workObjects.Unfurl(ctx, botToken, request)
+		return p.publishSlackStoryUnfurl(ctx, event, workspace.ID, request, 0, true, botToken)
 	}
 
 	metadata := SlackWorkObjectMetadata{Entities: make([]SlackWorkObjectEntity, 0, len(links))}
@@ -93,6 +149,13 @@ func (p *EventProcessor) processSlackLinkShared(
 		story, err := p.storyReader.QueryByRef(ctx, workspace.ID, link.StoryReference)
 		if err != nil {
 			if errors.Is(err, stories.ErrNotFound) || errors.Is(err, stories.ErrInvalidStoryReference) || slackrepository.IsNotFound(err) {
+				if p.log != nil {
+					p.log.Warn(ctx, "Slack story preview story not found",
+						"event_id", event.EventID,
+						"workspace_id", workspace.ID,
+						"story_reference", link.StoryReference,
+					)
+				}
 				continue
 			}
 			return err
@@ -110,6 +173,17 @@ func (p *EventProcessor) processSlackLinkShared(
 			return err
 		}
 		if !accessGranted {
+			if p.log != nil {
+				p.log.Warn(ctx, "Slack story preview access denied",
+					"event_id", event.EventID,
+					"workspace_id", workspace.ID,
+					"user_id", *linkedUserID,
+					"story_reference", link.StoryReference,
+					"story_team_id", story.Team,
+					"slack_channel_id", event.ChannelID,
+					"unfurl_source", slackStoryPreviewSource(event),
+				)
+			}
 			// A linked but unauthorized actor gets no card and no indication that
 			// the reference exists.
 			continue
@@ -125,6 +199,15 @@ func (p *EventProcessor) processSlackLinkShared(
 		metadata.Entities = append(metadata.Entities, request.Metadata.Entities...)
 	}
 	if len(metadata.Entities) == 0 {
+		if p.log != nil {
+			p.log.Warn(ctx, "Slack story preview produced no authorized entities",
+				"event_id", event.EventID,
+				"workspace_id", workspace.ID,
+				"slack_team_id", event.TeamID,
+				"slack_channel_id", event.ChannelID,
+				"eligible_link_count", len(links),
+			)
+		}
 		return nil
 	}
 	request := SlackChatUnfurlRequest{
@@ -133,7 +216,83 @@ func (p *EventProcessor) processSlackLinkShared(
 		Metadata: &metadata,
 	}
 	applySlackUnfurlEventDestination(&request, event)
-	return p.workObjects.Unfurl(ctx, botToken, request)
+	return p.publishSlackStoryUnfurl(ctx, event, workspace.ID, request, len(metadata.Entities), false, botToken)
+}
+
+func (p *EventProcessor) publishSlackStoryUnfurl(
+	ctx context.Context,
+	event normalizedSlackEvent,
+	workspaceID uuid.UUID,
+	request SlackChatUnfurlRequest,
+	entityCount int,
+	authRequired bool,
+	botToken string,
+) error {
+	if p.log != nil {
+		p.log.Info(ctx, "Publishing Slack story preview",
+			"event_id", event.EventID,
+			"workspace_id", workspaceID,
+			"slack_team_id", event.TeamID,
+			"slack_channel_id", event.ChannelID,
+			"slack_user_id", event.UserID,
+			"unfurl_source", slackStoryPreviewSource(event),
+			"unfurl_destination", slackStoryPreviewDestination(event),
+			"entity_count", entityCount,
+			"authentication_required", authRequired,
+		)
+	}
+	err := p.workObjects.Unfurl(ctx, botToken, request)
+	if err != nil {
+		if p.log != nil {
+			fields := []any{
+				"error", err,
+				"event_id", event.EventID,
+				"workspace_id", workspaceID,
+				"slack_team_id", event.TeamID,
+				"slack_channel_id", event.ChannelID,
+				"unfurl_source", slackStoryPreviewSource(event),
+				"unfurl_destination", slackStoryPreviewDestination(event),
+				"entity_count", entityCount,
+				"authentication_required", authRequired,
+			}
+			if code, ok := SlackAPIErrorCode(err); ok {
+				fields = append(fields, "slack_error_code", code)
+			}
+			if retryAfter, ok := SlackRetryAfter(err); ok {
+				fields = append(fields, "retry_after", retryAfter.String())
+			}
+			p.log.Error(ctx, "Slack story preview publish failed", fields...)
+		}
+		return err
+	}
+	if p.log != nil {
+		p.log.Info(ctx, "Slack story preview published",
+			"event_id", event.EventID,
+			"workspace_id", workspaceID,
+			"slack_team_id", event.TeamID,
+			"slack_channel_id", event.ChannelID,
+			"unfurl_source", slackStoryPreviewSource(event),
+			"unfurl_destination", slackStoryPreviewDestination(event),
+			"entity_count", entityCount,
+			"authentication_required", authRequired,
+		)
+	}
+	return nil
+}
+
+func slackStoryPreviewSource(event normalizedSlackEvent) string {
+	source := strings.ToLower(strings.TrimSpace(event.Source))
+	if source == "" {
+		return "conversations_history"
+	}
+	return source
+}
+
+func slackStoryPreviewDestination(event normalizedSlackEvent) string {
+	if slackStoryPreviewSource(event) == "composer" {
+		return "composer"
+	}
+	return "message"
 }
 
 func validSlackUnfurlEventDestination(event normalizedSlackEvent) bool {
