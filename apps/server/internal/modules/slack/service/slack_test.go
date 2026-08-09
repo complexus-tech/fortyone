@@ -1600,7 +1600,7 @@ func TestHandleViewSubmissionRejectsTeamOutsideActorsMembership(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Contains(t, string(resp.Body), modalBlockTeam)
-	require.Contains(t, string(resp.Body), "not available from this Slack channel")
+	require.Contains(t, string(resp.Body), "no longer available to you")
 	require.Zero(t, requests.calls)
 	require.Zero(t, storyService.createCalls)
 }
@@ -2939,8 +2939,9 @@ func TestHandleMutationActionRechecksScopeAndReplacesButtonsWithLinkedReceipt(t 
 	require.Empty(t, providerRequest["blocks"])
 }
 
-func TestHandleMutationActionHonorsCurrentDisabledSettings(t *testing.T) {
+func TestHandleMutationActionIgnoresLegacyDisabledSettings(t *testing.T) {
 	workspaceID := uuid.New()
+	teamID := uuid.New()
 	actorID := uuid.New()
 	repo := &mockRepo{
 		workspace: slackrepository.WorkspaceRecord{ID: workspaceID, Slug: "acme"},
@@ -2952,14 +2953,26 @@ func TestHandleMutationActionHonorsCurrentDisabledSettings(t *testing.T) {
 			InstallGeneration: uuid.New(),
 			IsActive:          true,
 		},
-		slackUserLinks: map[string]uuid.UUID{"T1:U1": actorID},
+		slackUserLinks:    map[string]uuid.UUID{"T1:U1": actorID},
+		authorizedTeamIDs: []uuid.UUID{teamID},
+		teamMembers: []slackrepository.TeamMemberRecord{{
+			UserID:   actorID,
+			FullName: "Joseph Mukorivo",
+		}},
 		agentSettings: slackrepository.AgentSettingsRecord{
 			AssistantEnabled:       true,
 			WorkflowActionsEnabled: false,
 			Guidance:               "configured",
 		},
 	}
-	confirmer := &mutationConfirmerStub{}
+	confirmer := &mutationConfirmerStub{result: messaging.StoryMutationResult{
+		Status:    "applied",
+		Operation: messaging.StoryMutationCreate,
+		StoryID:   uuid.New(),
+		Reference: "WEB-123",
+		TeamID:    teamID,
+		Title:     "Fix login",
+	}}
 	var providerRequest map[string]any
 	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		require.NoError(t, json.NewDecoder(request.Body).Decode(&providerRequest))
@@ -2984,8 +2997,8 @@ func TestHandleMutationActionHonorsCurrentDisabledSettings(t *testing.T) {
 
 	_, err = service.handleMutationAction(context.Background(), payload)
 	require.NoError(t, err)
-	require.Empty(t, confirmer.tokens)
-	require.Contains(t, providerRequest["text"], "workflow actions are disabled")
+	require.Equal(t, []string{"opaque-token"}, confirmer.tokens)
+	require.Contains(t, providerRequest["text"], "created")
 	require.Empty(t, providerRequest["blocks"])
 }
 
@@ -3364,6 +3377,43 @@ func TestBuildCreateTaskModalViewMarksDescriptionOptional(t *testing.T) {
 	require.Equal(t, true, descriptionBlock["optional"])
 }
 
+func TestBuildCreateTaskModalViewPreservesPersonalTeamOrdering(t *testing.T) {
+	workspaceID := uuid.New()
+	actorID := uuid.New()
+	firstTeam := slackrepository.TeamRecord{ID: uuid.New(), Code: "WEB", Name: "Web"}
+	secondTeam := slackrepository.TeamRecord{ID: uuid.New(), Code: "ENG", Name: "Engineering"}
+	repo := &mockRepo{
+		// ListWorkspaceTeamsForUser returns the repository's personal order.
+		// Keep it deliberately different from alphabetical order.
+		teams:       []slackrepository.TeamRecord{firstTeam, secondTeam},
+		teamMembers: []slackrepository.TeamMemberRecord{{UserID: actorID}},
+		statusesByTeam: map[uuid.UUID][]slackrepository.StatusRecord{
+			firstTeam.ID: {{ID: uuid.New(), Name: "To Do", Category: "unstarted"}},
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+
+	view, err := service.buildCreateTaskModalView(context.Background(), createTaskModalViewInput{
+		Title:       "Ordered story",
+		WorkspaceID: workspaceID,
+		ActorID:     actorID,
+		Source: requestSourceContext{
+			SlackTeamID:    "T123",
+			SlackChannelID: "C123",
+		},
+	})
+	require.NoError(t, err)
+
+	blocks := view["blocks"].([]map[string]any)
+	teamElement := findBlockElement(blocks, modalBlockTeam)
+	require.Equal(t, firstTeam.ID.String(), selectedOptionValue(t, teamElement["initial_option"]))
+
+	options := slackTeamSuggestionOptions([]slackrepository.TeamRecord{firstTeam, secondTeam}, "")
+	require.Len(t, options, 2)
+	require.Equal(t, firstTeam.ID.String(), selectedOptionValue(t, options[0]))
+	require.Equal(t, secondTeam.ID.String(), selectedOptionValue(t, options[1]))
+}
+
 func TestHandleInteractivityBlockSuggestionSearchesAllAuthorizedTeams(t *testing.T) {
 	workspaceID := uuid.New()
 	actorID := uuid.New()
@@ -3549,6 +3599,59 @@ func TestHandleInteractivityBlockSuggestionReturnsTeamScopedAssigneeOptions(t *t
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Equal(t, "application/json", resp.ContentType)
 	require.Contains(t, string(resp.Body), memberID.String())
+}
+
+func TestHandleInteractivityBlockSuggestionUsesScopedActionTeamWhenMetadataIsStale(t *testing.T) {
+	workspaceID := uuid.New()
+	actorID := uuid.New()
+	oldTeamID := uuid.New()
+	selectedTeamID := uuid.New()
+	selectedMemberID := uuid.New()
+	repo := &mockRepo{
+		teams: []slackrepository.TeamRecord{
+			{ID: oldTeamID, Code: "OLD", Name: "Old Team"},
+			{ID: selectedTeamID, Code: "NEW", Name: "Selected Team"},
+		},
+		membersByTeam: map[uuid.UUID][]slackrepository.TeamMemberRecord{
+			oldTeamID: {{UserID: actorID, FullName: "Slack Actor"}},
+			selectedTeamID: {
+				{UserID: actorID, FullName: "Slack Actor"},
+				{UserID: selectedMemberID, FullName: "Joseph Selected"},
+			},
+		},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			WorkspaceID: workspaceID,
+			SlackTeamID: "T123",
+		},
+		slackUserLinks: map[string]uuid.UUID{"T123:U123": actorID},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+
+	interaction := map[string]any{
+		"type":      "block_suggestion",
+		"action_id": modalTeamScopedID(modalActionAssigneeSelect, selectedTeamID),
+		"block_id":  modalTeamScopedID(modalBlockAssignee, selectedTeamID),
+		"value":     "jo",
+		"team":      map[string]any{"id": "T123"},
+		"user":      map[string]any{"id": "U123"},
+		"view": map[string]any{
+			"callback_id": "fortyone_create_task",
+			// Slack can preserve metadata from the prior view while dispatching
+			// from the newly rendered, team-scoped input.
+			"private_metadata": `{"source":{"slack_team_id":"T123","slack_user_id":"U123"},"selected_team_id":"` +
+				oldTeamID.String() + `"}`,
+			"state": map[string]any{"values": map[string]any{}},
+		},
+	}
+	payloadBytes, err := json.Marshal(interaction)
+	require.NoError(t, err)
+	form := url.Values{}
+	form.Set("payload", string(payloadBytes))
+
+	response, err := service.HandleInteractivity(context.Background(), []byte(form.Encode()))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, response.StatusCode)
+	require.Contains(t, string(response.Body), selectedMemberID.String())
 }
 
 func TestHandleInteractivityBlockSuggestionRejectsTeamOutsideActorsMembership(t *testing.T) {

@@ -1,325 +1,74 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import {
-  Badge,
-  Box,
-  Button,
-  Command,
-  Dialog,
-  Divider,
-  Flex,
-  Menu,
-  Popover,
-  Switch,
-  Text,
-  TextArea,
-} from "ui";
-import {
-  CheckIcon,
-  LockIcon,
-  MoreHorizontalIcon,
-  RefreshIcon,
-  SlackIcon,
-  UnlinkIcon,
-} from "icons";
+import { useState } from "react";
+import { Badge, Box, Button, Dialog, Flex, Menu, Text, TextArea } from "ui";
+import { MoreHorizontalIcon, SlackIcon, UnlinkIcon } from "icons";
 import { useWorkspacePath } from "@/hooks";
 import { SectionHeader } from "@/modules/settings/components";
-import { useTeams } from "@/modules/teams/hooks/teams";
-import type { Team } from "@/modules/teams/types";
-import { TeamColor } from "@/components/ui/team-color";
 import {
   useCreateSlackInstallSession,
   useDisconnectSlackWorkspace,
-  useResyncSlackChannels,
   useSlackAccountLinkToken,
   useSlackAgentSettings,
-  useSlackChannelAudiences,
   useSlackIntegration,
   useUpdateSlackAgentSettings,
-  useUpdateSlackChannelAudience,
 } from "@/lib/hooks/slack";
-import type { SlackAgentSettings, SlackChannelAudience } from "./types";
-
-const ChannelAudienceSelector = ({
-  audience,
-  teams,
-}: {
-  audience: SlackChannelAudience;
-  teams: Team[];
-}) => {
-  const updateAudience = useUpdateSlackChannelAudience();
-  const [query, setQuery] = useState("");
-
-  const selectedTeamIds = audience.teamIds;
-  const selectedTeams = teams.filter((team) =>
-    selectedTeamIds.includes(team.id),
-  );
-  const filteredTeams = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return teams;
-    return teams.filter((team) =>
-      `${team.name} ${team.code}`.toLowerCase().includes(normalizedQuery),
-    );
-  }, [query, teams]);
-
-  const updateTeamIds = (teamIds: string[]) => {
-    updateAudience.mutate({
-      channelId: audience.channel.slackChannelId,
-      teamIds,
-    });
-  };
-
-  return (
-    <Popover>
-      <Popover.Trigger asChild>
-        <Button
-          className="min-w-44 justify-between"
-          color="tertiary"
-          loading={updateAudience.isPending}
-        >
-          {selectedTeams.length === 0
-            ? "Public teams only"
-            : selectedTeams.length === 1
-              ? selectedTeams[0].name
-              : `${selectedTeams.length} teams`}
-        </Button>
-      </Popover.Trigger>
-      <Popover.Content align="end" className="w-80 p-0">
-        <Command>
-          <Command.Input
-            onValueChange={setQuery}
-            placeholder="Search teams..."
-            value={query}
-          />
-          <Divider className="my-2" />
-          <Command.List className="max-h-72 w-full overflow-y-auto border-0 bg-transparent py-0 shadow-none">
-            <Command.Empty>No teams found</Command.Empty>
-            <Command.Group>
-              <Command.Item
-                className="justify-between"
-                onSelect={() => {
-                  updateTeamIds([]);
-                }}
-              >
-                <Box>
-                  <Text>Public teams only</Text>
-                  <Text color="muted">
-                    Use the requesting member&apos;s public teams
-                  </Text>
-                </Box>
-                {selectedTeamIds.length === 0 ? (
-                  <CheckIcon className="h-4 w-auto shrink-0" />
-                ) : null}
-              </Command.Item>
-              {filteredTeams.map((team) => {
-                const isSelected = selectedTeamIds.includes(team.id);
-                return (
-                  <Command.Item
-                    className="justify-between"
-                    key={team.id}
-                    onSelect={() => {
-                      updateTeamIds(
-                        isSelected
-                          ? selectedTeamIds.filter((id) => id !== team.id)
-                          : [...selectedTeamIds, team.id],
-                      );
-                    }}
-                  >
-                    <Flex align="center" gap={2}>
-                      <TeamColor color={team.color} />
-                      <Text>{team.name}</Text>
-                      {team.isPrivate ? (
-                        <LockIcon className="text-icon-muted h-4 w-auto" />
-                      ) : null}
-                    </Flex>
-                    {isSelected ? (
-                      <CheckIcon className="h-4 w-auto shrink-0" />
-                    ) : null}
-                  </Command.Item>
-                );
-              })}
-            </Command.Group>
-          </Command.List>
-        </Command>
-      </Popover.Content>
-    </Popover>
-  );
-};
-
-const SlackChannelAccess = () => {
-  const { data: audiences = [], isLoading } = useSlackChannelAudiences();
-  const { data: teams = [] } = useTeams();
-  const resyncChannels = useResyncSlackChannels();
-
-  return (
-    <Box className="border-border bg-surface mt-6 rounded-2xl border">
-      <SectionHeader
-        action={
-          <Button
-            color="tertiary"
-            leftIcon={<RefreshIcon className="h-4 w-auto" />}
-            loading={resyncChannels.isPending}
-            onClick={() => {
-              resyncChannels.mutate();
-            }}
-          >
-            Refresh channels
-          </Button>
-        }
-        description="Choose which FortyOne teams the assistant may use in each Slack channel. Without an explicit mapping, only public teams the requesting member belongs to are available."
-        title="Channel access"
-      />
-
-      {isLoading ? (
-        <Box className="px-6 py-8">
-          <Text color="muted">Loading Slack channels...</Text>
-        </Box>
-      ) : audiences.length === 0 ? (
-        <Box className="px-6 py-8">
-          <Text className="font-medium">No Slack channels found</Text>
-          <Text className="mt-1" color="muted">
-            Invite FortyOne to a channel, then refresh the channel list.
-          </Text>
-        </Box>
-      ) : (
-        <Box>
-          {audiences.map((audience, index) => (
-            <Flex
-              align="center"
-              className={
-                index === 0 ? "px-6 py-4" : "border-border border-t px-6 py-4"
-              }
-              gap={4}
-              justify="between"
-              key={audience.channel.slackChannelId}
-            >
-              <Box className="min-w-0">
-                <Flex align="center" gap={2}>
-                  <Text className="truncate font-medium">
-                    #{audience.channel.name}
-                  </Text>
-                  {audience.channel.isPrivate ? (
-                    <LockIcon className="text-icon-muted h-4 w-auto shrink-0" />
-                  ) : null}
-                </Flex>
-                <Text color="muted">
-                  {audience.teamIds.length === 0
-                    ? "Uses public teams the requesting member can access"
-                    : "Restricted to the selected teams and each member's permissions"}
-                </Text>
-              </Box>
-              <ChannelAudienceSelector audience={audience} teams={teams} />
-            </Flex>
-          ))}
-        </Box>
-      )}
-    </Box>
-  );
-};
 
 const SlackAgentConfiguration = () => {
   const { data: settings, isLoading } = useSlackAgentSettings();
   const updateSettings = useUpdateSlackAgentSettings();
-  const [draft, setDraft] = useState<SlackAgentSettings | null>(null);
+  const [draftGuidance, setDraftGuidance] = useState<string | null>(null);
 
-  const effectiveDraft = draft ?? settings ?? null;
-
-  const updateDraft = (updates: Partial<SlackAgentSettings>) => {
-    setDraft((current) => {
-      const base = current ?? settings;
-      return base ? { ...base, ...updates } : current;
-    });
-  };
-
+  const effectiveGuidance = draftGuidance ?? settings?.guidance ?? "";
   const hasChanges = Boolean(
-    settings &&
-      effectiveDraft &&
-      (settings.assistantEnabled !== effectiveDraft.assistantEnabled ||
-        settings.workflowActionsEnabled !==
-          effectiveDraft.workflowActionsEnabled ||
-        settings.guidance !== effectiveDraft.guidance),
+    settings && settings.guidance !== effectiveGuidance,
   );
 
   return (
     <Box className="border-border bg-surface mt-6 rounded-2xl border">
       <SectionHeader
-        description="Control Maya's Slack behavior and give it workspace-specific guidance. Team and channel permissions are still enforced for every message and action."
-        title="Slack agent"
+        description="Give Maya workspace-specific terminology, response style, or operating rules to follow in Slack."
+        title="Custom guidance"
       />
 
-      {isLoading || !effectiveDraft ? (
+      {isLoading || !settings ? (
         <Box className="px-6 py-8">
-          <Text color="muted">Loading Slack agent settings...</Text>
+          <Text color="muted">Loading custom guidance...</Text>
         </Box>
       ) : (
         <Box className="px-6 py-5">
-          <Flex align="center" gap={6} justify="between">
-            <Box>
-              <Text className="font-medium">Enable Maya in Slack</Text>
-              <Text color="muted">
-                Answer mentions, direct messages, and subscribed thread replies.
-              </Text>
-            </Box>
-            <Switch
-              aria-label="Enable Maya in Slack"
-              checked={effectiveDraft.assistantEnabled}
-              onCheckedChange={(checked) => {
-                updateDraft({ assistantEnabled: checked });
-              }}
-            />
-          </Flex>
-
-          <Divider className="my-5" />
-
-          <Flex align="center" gap={6} justify="between">
-            <Box>
-              <Text className="font-medium">Allow confirmed story actions</Text>
-              <Text color="muted">
-                Maya may prepare story creation and updates, but a person must
-                confirm every change in Slack.
-              </Text>
-            </Box>
-            <Switch
-              aria-label="Allow confirmed story actions"
-              checked={effectiveDraft.workflowActionsEnabled}
-              disabled={!effectiveDraft.assistantEnabled}
-              onCheckedChange={(checked) => {
-                updateDraft({ workflowActionsEnabled: checked });
-              }}
-            />
-          </Flex>
-
-          <Divider className="my-5" />
-
           <TextArea
             className="min-h-32 resize-y py-3 leading-6"
-            label="Workspace guidance"
+            label="Guidance"
             maxLength={4000}
             onChange={(event) => {
-              updateDraft({ guidance: event.target.value });
+              setDraftGuidance(event.target.value);
             }}
             placeholder="Explain terminology, response style, or operating rules Maya should follow in Slack."
-            value={effectiveDraft.guidance}
+            value={effectiveGuidance}
           />
           <Flex align="center" className="mt-3" justify="between">
             <Text color="muted">
-              {effectiveDraft.guidance.length}/4000 characters
+              {effectiveGuidance.length}/4000 characters
             </Text>
             <Button
               color="invert"
               disabled={!hasChanges}
               loading={updateSettings.isPending}
               onClick={() => {
-                updateSettings.mutate(effectiveDraft, {
-                  onSuccess: (response) => {
-                    if (response.data) setDraft(response.data);
+                updateSettings.mutate(
+                  { guidance: effectiveGuidance },
+                  {
+                    onSuccess: (response) => {
+                      if (response.data)
+                        setDraftGuidance(response.data.guidance);
+                    },
                   },
-                });
+                );
               }}
             >
-              Save agent settings
+              Save guidance
             </Button>
           </Flex>
         </Box>
@@ -433,12 +182,7 @@ export const SlackIntegrationSettings = () => {
         )}
       </Box>
 
-      {isConnected ? (
-        <>
-          <SlackChannelAccess />
-          <SlackAgentConfiguration />
-        </>
-      ) : null}
+      {isConnected ? <SlackAgentConfiguration /> : null}
 
       <Box className="mt-6">
         <Link href={withWorkspace("/settings/integrations")}>

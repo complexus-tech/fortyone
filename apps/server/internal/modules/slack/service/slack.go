@@ -1158,7 +1158,7 @@ func (s *Service) handleBlockActions(ctx context.Context, payload interactionPay
 		}
 		return InteractionResponse{}, err
 	}
-	if err := s.ensureTeamAvailableForSlackSource(ctx, slackWorkspace.WorkspaceID, actorID, submission.TeamID, submission.Source); err != nil {
+	if err := s.ensureTeamAvailableForSlackCreation(ctx, slackWorkspace.WorkspaceID, actorID, submission.TeamID); err != nil {
 		if errors.Is(err, ErrSlackTeamNotAvailable) {
 			s.log.Warn(ctx, "rejected slack team change outside actor membership", "actor_id", actorID, "team_id", submission.TeamID)
 			return InteractionResponse{}, ErrSlackTeamNotAvailable
@@ -1273,11 +1273,11 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 	if submission.TeamID == uuid.Nil {
 		return interactionValidationErrors(map[string]string{modalBlockTeam: "Team is required"})
 	}
-	if err := s.ensureTeamAvailableForSlackSource(ctx, workspace.ID, actorID, submission.TeamID, submission.Source); err != nil {
+	if err := s.ensureTeamAvailableForSlackCreation(ctx, workspace.ID, actorID, submission.TeamID); err != nil {
 		if errors.Is(err, ErrSlackTeamNotAvailable) {
-			return interactionValidationErrors(map[string]string{modalBlockTeam: "Selected team is not available from this Slack channel"})
+			return interactionValidationErrors(map[string]string{modalBlockTeam: "Selected team is no longer available to you"})
 		}
-		s.log.Error(ctx, "failed validating Slack channel team audience", "error", err, "workspace_id", workspace.ID, "team_id", submission.TeamID, "actor_id", actorID)
+		s.log.Error(ctx, "failed validating Slack story creation team membership", "error", err, "workspace_id", workspace.ID, "team_id", submission.TeamID, "actor_id", actorID)
 		return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
 	}
 	team, err := s.findTeamForActor(ctx, workspace.ID, actorID, submission.TeamID)
@@ -1514,7 +1514,7 @@ func (s *Service) handleBlockSuggestion(ctx context.Context, payload interaction
 			})
 			return interactionOptionsResponse(nil)
 		}
-		teams, teamsErr := s.availableTeamsForSlackSource(ctx, slackWorkspace.WorkspaceID, actorID, source)
+		teams, teamsErr := s.availableTeamsForSlackCreation(ctx, slackWorkspace.WorkspaceID, actorID)
 		if teamsErr != nil {
 			s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
 				Outcome:     "suggestion_search_error_teams",
@@ -1538,18 +1538,21 @@ func (s *Service) handleBlockSuggestion(ctx context.Context, payload interaction
 		return interactionOptionsResponse(options)
 	}
 
-	teamID, err := s.resolveTeamIDForSuggestion(ctx, payload, slackWorkspace.WorkspaceID, actorID, source)
-	if err != nil {
+	_, teamID, actionCarriesTeam := modalDependentActionScope(rawActionID)
+	if !actionCarriesTeam {
+		teamID, err = s.resolveTeamIDForSuggestion(ctx, payload, slackWorkspace.WorkspaceID, actorID, source)
+	}
+	if err != nil || teamID == uuid.Nil {
 		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
 			Outcome:      "suggestion_skipped_team_resolution_failed",
-			Reason:       err.Error(),
+			Reason:       errorString(err, "selected team is missing"),
 			SlackTeamID:  source.SlackTeamID,
 			WorkspaceID:  slackWorkspace.WorkspaceID,
 			ResolvedTeam: uuid.Nil,
 		})
 		return interactionOptionsResponse(nil)
 	}
-	if err := s.ensureTeamAvailableForSlackSource(ctx, slackWorkspace.WorkspaceID, actorID, teamID, source); err != nil {
+	if err := s.ensureTeamAvailableForSlackCreation(ctx, slackWorkspace.WorkspaceID, actorID, teamID); err != nil {
 		s.recordSuggestionDebug(ctx, payload, suggestionDebugInput{
 			Outcome:      "suggestion_skipped_team_not_available",
 			Reason:       err.Error(),
@@ -1729,6 +1732,27 @@ func (s *Service) recordSuggestionDebug(ctx context.Context, payload interaction
 	slackUserID := optionalString(payload.User.ID)
 	slackChannelID := optionalString(payload.Channel.ID)
 	errorMessage := optionalString(input.Reason)
+	logFields := []any{
+		"outcome", strings.TrimSpace(input.Outcome),
+		"reason", strings.TrimSpace(input.Reason),
+		"action_id", strings.TrimSpace(input.ActionID),
+		"query_length", len([]rune(strings.TrimSpace(input.Query))),
+		"result_count", input.ResultCount,
+		"slack_team_id", strings.TrimSpace(input.SlackTeamID),
+		"slack_user_id", strings.TrimSpace(payload.User.ID),
+		"workspace_id", input.WorkspaceID,
+		"resolved_team_id", input.ResolvedTeam,
+	}
+	if s.log != nil {
+		switch {
+		case strings.Contains(input.Outcome, "_error_"):
+			s.log.Error(ctx, "Slack modal suggestion search failed", logFields...)
+		case strings.Contains(input.Outcome, "_skipped_"):
+			s.log.Warn(ctx, "Slack modal suggestion search was rejected", logFields...)
+		case input.ResultCount == 0:
+			s.log.Info(ctx, "Slack modal suggestion search returned no options", logFields...)
+		}
+	}
 
 	if insertErr := s.repo.InsertRequestLog(ctx, slackrepository.SlackRequestLogInsert{
 		RequestType:  "suggestion_search",
@@ -1744,6 +1768,16 @@ func (s *Service) recordSuggestionDebug(ctx context.Context, payload interaction
 	}); insertErr != nil {
 		s.log.Warn(ctx, "failed writing suggestion diagnostic log", "error", insertErr)
 	}
+}
+
+func errorString(err error, fallback string) string {
+	if err == nil {
+		return fallback
+	}
+	if message := strings.TrimSpace(err.Error()); message != "" {
+		return message
+	}
+	return fallback
 }
 
 func suggestionActionID(payload interactionPayload) string {
@@ -1906,7 +1940,7 @@ func (s *Service) buildCreateTaskModalView(ctx context.Context, input createTask
 	if input.ActorID == uuid.Nil {
 		return nil, errors.New("actor id is required")
 	}
-	teams, err := s.availableTeamsForSlackSource(ctx, input.WorkspaceID, input.ActorID, input.Source)
+	teams, err := s.availableTeamsForSlackCreation(ctx, input.WorkspaceID, input.ActorID)
 	if err != nil {
 		return nil, err
 	}
@@ -2408,7 +2442,7 @@ func (s *Service) resolveTeamIDForSuggestion(ctx context.Context, payload intera
 		}
 	}
 
-	teams, err := s.availableTeamsForSlackSource(ctx, workspaceID, actorID, source)
+	teams, err := s.availableTeamsForSlackCreation(ctx, workspaceID, actorID)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -2428,6 +2462,7 @@ func (s *Service) postSlackRequestAck(ctx context.Context, workspaceID, installG
 		Authorization: &SlackDeliveryAuthorization{
 			AllowedTeamIDs: []uuid.UUID{teamID},
 			ActorUserID:    &actorID,
+			Scope:          slackDeliveryAuthorizationScopeActorMembership,
 		},
 		RequestThreadBinding: &SlackRequestThreadBinding{
 			IntegrationRequestID:    requestID,
@@ -2445,7 +2480,10 @@ func (s *Service) postSlackTaskAck(ctx context.Context, workspaceID, installGene
 		buildStoryReference(teamCode, story.SequenceID, story.ID.String()),
 	)
 	text := buildSlackStoryCreatedText(creatorName, storyCode, taskURL)
-	authorization := &SlackDeliveryAuthorization{AllowedTeamIDs: []uuid.UUID{story.Team}}
+	authorization := &SlackDeliveryAuthorization{
+		AllowedTeamIDs: []uuid.UUID{story.Team},
+		Scope:          slackDeliveryAuthorizationScopeActorMembership,
+	}
 	if story.Reporter != nil && *story.Reporter != uuid.Nil {
 		authorization.ActorUserID = story.Reporter
 	} else if strings.HasPrefix(strings.ToUpper(strings.TrimSpace(source.SlackChannelID)), "D") {

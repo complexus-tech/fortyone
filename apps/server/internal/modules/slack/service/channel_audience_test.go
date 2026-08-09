@@ -158,23 +158,100 @@ func TestAuthorizedChannelTeamIDsDelegatesAuthoritativeScope(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
+func TestCreationDeliveryUsesCurrentActorMembershipWithoutChannelMapping(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	installationID := uuid.New()
+	actorID := uuid.New()
+	teamID := uuid.New()
+	repo := &channelAudienceRepoStub{
+		mockRepo: &mockRepo{
+			teams:       []slackrepository.TeamRecord{{ID: teamID, Name: "Private team"}},
+			teamMembers: []slackrepository.TeamMemberRecord{{UserID: actorID}},
+			slackWorkspace: slackrepository.SlackWorkspaceRecord{
+				ID:          installationID,
+				WorkspaceID: workspaceID,
+				SlackTeamID: "T1",
+			},
+		},
+		authorized: nil,
+	}
+	service := New(nil, repo, nil, nil, Config{})
+
+	current, err := service.slackDeliveryAuthorizationCurrent(
+		context.Background(),
+		workspaceID,
+		"T1",
+		"C1",
+		"U1",
+		SlackProviderPayload{Authorization: &SlackDeliveryAuthorization{
+			AllowedTeamIDs: []uuid.UUID{teamID},
+			ActorUserID:    &actorID,
+			Scope:          slackDeliveryAuthorizationScopeActorMembership,
+		}},
+	)
+
+	require.NoError(t, err)
+	require.True(t, current)
+
+	current, err = service.slackDeliveryAuthorizationCurrent(
+		context.Background(),
+		workspaceID,
+		"T1",
+		"C1",
+		"U1",
+		SlackProviderPayload{Authorization: &SlackDeliveryAuthorization{
+			AllowedTeamIDs: []uuid.UUID{teamID},
+			ActorUserID:    &actorID,
+		}},
+	)
+
+	require.NoError(t, err)
+	require.False(t, current)
+}
+
 func TestUpdateAgentSettingsRoundTripsProviderNeutralConfiguration(t *testing.T) {
 	t.Parallel()
 
 	workspaceID := uuid.New()
 	repo := &channelAudienceRepoStub{mockRepo: &mockRepo{}}
 	service := New(nil, repo, nil, nil, Config{})
+	input := CoreSlackAgentSettings{Guidance: "Use customer-facing language."}
 	want := CoreSlackAgentSettings{
 		AssistantEnabled:       true,
-		WorkflowActionsEnabled: false,
-		Guidance:               "Use customer-facing language.",
+		WorkflowActionsEnabled: true,
+		Guidance:               input.Guidance,
 	}
 
-	updated, err := service.UpdateAgentSettings(context.Background(), workspaceID, want)
+	updated, err := service.UpdateAgentSettings(context.Background(), workspaceID, input)
 
 	require.NoError(t, err)
 	require.Equal(t, want, updated)
 	loaded, err := service.GetAgentSettings(context.Background(), workspaceID)
 	require.NoError(t, err)
 	require.Equal(t, want, loaded)
+}
+
+func TestGetAgentSettingsKeepsAssistantAndActionsAlwaysEnabled(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	repo := &channelAudienceRepoStub{
+		mockRepo: &mockRepo{},
+		agent: slackrepository.AgentSettingsRecord{
+			WorkspaceID:            workspaceID,
+			AssistantEnabled:       false,
+			WorkflowActionsEnabled: false,
+			Guidance:               "Keep responses concise.",
+		},
+	}
+	service := New(nil, repo, nil, nil, Config{})
+
+	settings, err := service.GetAgentSettings(context.Background(), workspaceID)
+
+	require.NoError(t, err)
+	require.True(t, settings.AssistantEnabled)
+	require.True(t, settings.WorkflowActionsEnabled)
+	require.Equal(t, "Keep responses concise.", settings.Guidance)
 }

@@ -165,6 +165,33 @@ func (s *Service) availableTeamsForSlackSource(
 	return filtered, nil
 }
 
+// availableTeamsForSlackCreation returns the actor's teams in the same
+// personal order used by FortyOne. Story creation is an explicit, confirmed
+// action, so the selected team is constrained by current membership rather
+// than by the assistant's channel disclosure boundary.
+func (s *Service) availableTeamsForSlackCreation(
+	ctx context.Context,
+	workspaceID, userID uuid.UUID,
+) ([]slackrepository.TeamRecord, error) {
+	return s.repo.ListWorkspaceTeamsForUser(ctx, workspaceID, userID)
+}
+
+func (s *Service) ensureTeamAvailableForSlackCreation(
+	ctx context.Context,
+	workspaceID, userID, teamID uuid.UUID,
+) error {
+	teams, err := s.availableTeamsForSlackCreation(ctx, workspaceID, userID)
+	if err != nil {
+		return err
+	}
+	for _, team := range teams {
+		if team.ID == teamID {
+			return nil
+		}
+	}
+	return ErrSlackTeamNotAvailable
+}
+
 func (s *Service) ensureTeamAvailableForSlackSource(
 	ctx context.Context,
 	workspaceID, userID, teamID uuid.UUID,
@@ -226,6 +253,9 @@ func (s *Service) slackDeliveryAuthorizationCurrent(
 			return false, err
 		}
 		return uuidSubset(authorization.AllowedTeamIDs, slackTeamRecordIDs(recipientTeams)), nil
+	}
+	if authorization.Scope == slackDeliveryAuthorizationScopeActorMembership {
+		return true, nil
 	}
 	teamIDs, err := s.authorizedChannelTeamIDs(ctx, workspaceID, installation.ID, channelID, *authorization.ActorUserID)
 	if err != nil {

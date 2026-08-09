@@ -211,7 +211,10 @@ type SlackProviderPayload struct {
 type SlackDeliveryAuthorization struct {
 	AllowedTeamIDs []uuid.UUID `json:"allowed_team_ids"`
 	ActorUserID    *uuid.UUID  `json:"actor_user_id,omitempty"`
+	Scope          string      `json:"scope,omitempty"`
 }
+
+const slackDeliveryAuthorizationScopeActorMembership = "actor_membership"
 
 // SlackRequestThreadBinding is a durable continuation executed only after the
 // acknowledgement has a provider message ID. It is never forwarded to Slack.

@@ -673,6 +673,17 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 			Conversation:   turns,
 			Prompt:         prompt,
 		})
+		if responseErr != nil {
+			p.logAssistantResponseError(
+				ctx,
+				responseErr,
+				workspace.ID,
+				*linkedUserID,
+				receipt.ID,
+				receipt.AttemptCount,
+				event,
+			)
+		}
 		_, usageErr := p.recordAssistantUsage(ctx, messagingrepository.DailyUsageRecordInput{
 			InboundEventID:      receipt.ID,
 			WorkspaceID:         workspace.ID,
@@ -812,6 +823,46 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 	}
 	status = "completed"
 	return nil
+}
+
+func (p *EventProcessor) logAssistantResponseError(
+	ctx context.Context,
+	err error,
+	workspaceID, userID, inboundEventID uuid.UUID,
+	attemptCount int,
+	event normalizedSlackEvent,
+) {
+	if p.log == nil || err == nil {
+		return
+	}
+
+	classification := "retryable"
+	switch {
+	case errors.Is(err, messaging.ErrAssistantNotConfigured):
+		classification = "not_configured"
+	case messaging.IsPermanentOpenAIError(err):
+		classification = "permanent_provider_error"
+	}
+	fields := []any{
+		"error", err,
+		"classification", classification,
+		"workspace_id", workspaceID,
+		"user_id", userID,
+		"inbound_event_id", inboundEventID,
+		"attempt_count", attemptCount,
+		"slack_event_id", event.EventID,
+		"slack_team_id", event.TeamID,
+		"slack_channel_id", event.ChannelID,
+	}
+	var apiError *messaging.APIError
+	if errors.As(err, &apiError) && apiError != nil {
+		fields = append(fields,
+			"openai_status_code", apiError.StatusCode,
+			"openai_error_code", strings.TrimSpace(apiError.Code),
+			"openai_request_id", strings.TrimSpace(apiError.RequestID),
+		)
+	}
+	p.log.Error(context.WithoutCancel(ctx), "Slack Maya assistant response failed", fields...)
 }
 
 func inboundReceiptMatchesInstallation(receipt messagingrepository.InboundEventRecord, installation slackrepository.SlackWorkspaceRecord) bool {
@@ -1265,6 +1316,9 @@ func (p *EventProcessor) slackChannelDeliveryAuthorizationCurrent(
 			return false, err
 		}
 		return uuidSubset(authorization.AllowedTeamIDs, slackTeamRecordIDs(recipientTeams)), nil
+	}
+	if authorization.Scope == slackDeliveryAuthorizationScopeActorMembership {
+		return true, nil
 	}
 	if channelID == "" {
 		return false, nil

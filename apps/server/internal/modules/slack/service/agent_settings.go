@@ -45,8 +45,8 @@ func (s *Service) UpdateAgentSettings(
 		return CoreSlackAgentSettings{}, errors.New("Slack agent settings repository is not configured")
 	}
 	record, err := repository.UpsertAgentSettings(ctx, workspaceID, slackrepository.AgentSettingsInput{
-		AssistantEnabled:       input.AssistantEnabled,
-		WorkflowActionsEnabled: input.WorkflowActionsEnabled,
+		AssistantEnabled:       true,
+		WorkflowActionsEnabled: true,
 		Guidance:               input.Guidance,
 	})
 	if err != nil {
@@ -57,8 +57,8 @@ func (s *Service) UpdateAgentSettings(
 
 func toCoreSlackAgentSettings(record slackrepository.AgentSettingsRecord) CoreSlackAgentSettings {
 	return CoreSlackAgentSettings{
-		AssistantEnabled:       record.AssistantEnabled,
-		WorkflowActionsEnabled: record.WorkflowActionsEnabled,
+		AssistantEnabled:       true,
+		WorkflowActionsEnabled: true,
 		Guidance:               record.Guidance,
 	}
 }

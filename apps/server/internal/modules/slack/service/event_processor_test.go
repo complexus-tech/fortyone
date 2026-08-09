@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -1443,7 +1445,7 @@ func TestEventProcessorPersistsAndRoutesLinkedAssistantResponse(t *testing.T) {
 	}
 }
 
-func TestEventProcessorCancelsImmediateChannelResponseWhenAgentIsDisabledDuringModelCall(t *testing.T) {
+func TestEventProcessorKeepsAgentAvailableWhenLegacySettingChangesDuringModelCall(t *testing.T) {
 	repo := newEventRepositoryStub()
 	repo.linkedUserID = uuidPointer(testLinkedUserID)
 	store := newEventStoreStub()
@@ -1458,9 +1460,9 @@ func TestEventProcessorCancelsImmediateChannelResponseWhenAgentIsDisabledDuringM
 	if err != nil {
 		t.Fatalf("Process() error = %v", err)
 	}
-	assertSingleInboundStatus(t, store, "ignored")
-	if len(sender.messages) != 0 || len(store.cancelledDeliveries) != 1 {
-		t.Fatalf("sent/cancelled = %d/%d, want 0/1", len(sender.messages), len(store.cancelledDeliveries))
+	assertSingleInboundStatus(t, store, "completed")
+	if len(sender.messages) != 1 || len(store.cancelledDeliveries) != 0 {
+		t.Fatalf("sent/cancelled = %d/%d, want 1/0", len(sender.messages), len(store.cancelledDeliveries))
 	}
 }
 
@@ -1888,6 +1890,8 @@ func TestEventProcessorReportsUnavailableAssistantWithoutRetry(t *testing.T) {
 	access := &accessCheckerStub{allowed: true}
 	sender := &messageSenderStub{externalMessageID: "10.2"}
 	processor := newTestEventProcessor(t, repo, store, assistant, access, sender)
+	var logs bytes.Buffer
+	processor.log = logger.NewWithJSON(&logs, slog.LevelError, "test")
 
 	if err := processor.Process(context.Background(), []byte(directMessageEvent("Ev-unavailable", "show my work"))); err != nil {
 		t.Fatalf("Process() error = %v", err)
@@ -1899,6 +1903,10 @@ func TestEventProcessorReportsUnavailableAssistantWithoutRetry(t *testing.T) {
 	if len(store.failedDeliveries) != 0 || len(store.completedDeliveries) != 1 {
 		t.Fatalf("delivery failure/completion counts = %d/%d, want 0/1", len(store.failedDeliveries), len(store.completedDeliveries))
 	}
+	require.Contains(t, logs.String(), `"msg":"Slack Maya assistant response failed"`)
+	require.Contains(t, logs.String(), `"classification":"not_configured"`)
+	require.Contains(t, logs.String(), "missing API key")
+	require.Contains(t, logs.String(), `"slack_event_id":"Ev-unavailable"`)
 }
 
 func TestEventProcessorClassifiesOpenAIErrorsAfterRecordingPartialUsage(t *testing.T) {
@@ -1909,7 +1917,7 @@ func TestEventProcessorClassifiesOpenAIErrorsAfterRecordingPartialUsage(t *testi
 	}{
 		{
 			name:      "deterministic bad request becomes durable safe reply",
-			apiError:  &messaging.APIError{StatusCode: http.StatusBadRequest, Code: "invalid_request_error", Message: "invalid model input"},
+			apiError:  &messaging.APIError{StatusCode: http.StatusBadRequest, Code: "invalid_request_error", Message: "invalid model input", RequestID: "req_test_permanent"},
 			permanent: true,
 		},
 		{
@@ -1937,8 +1945,12 @@ func TestEventProcessorClassifiesOpenAIErrorsAfterRecordingPartialUsage(t *testi
 				&callLimiterStub{decision: messagingbudget.AdmissionDecision{Allowed: true}},
 				usage,
 			)
+			var logs bytes.Buffer
+			processor.log = logger.NewWithJSON(&logs, slog.LevelError, "test")
 
 			err := processor.Process(context.Background(), []byte(directMessageEvent("Ev-openai-error", "show my work")))
+			require.Contains(t, logs.String(), `"msg":"Slack Maya assistant response failed"`)
+			require.Contains(t, logs.String(), test.apiError.Code)
 
 			if len(usage.recordInputs) != 1 {
 				t.Fatalf("partial usage records = %+v, want one", usage.recordInputs)
@@ -1948,6 +1960,9 @@ func TestEventProcessorClassifiesOpenAIErrorsAfterRecordingPartialUsage(t *testi
 				t.Fatalf("partial usage record = %+v", recorded)
 			}
 			if test.permanent {
+				require.Contains(t, logs.String(), `"classification":"permanent_provider_error"`)
+				require.Contains(t, logs.String(), `"openai_status_code":400`)
+				require.Contains(t, logs.String(), `"openai_request_id":"req_test_permanent"`)
 				if err != nil {
 					t.Fatalf("Process() error = %v", err)
 				}
@@ -1960,6 +1975,7 @@ func TestEventProcessorClassifiesOpenAIErrorsAfterRecordingPartialUsage(t *testi
 				}
 				return
 			}
+			require.Contains(t, logs.String(), `"classification":"retryable"`)
 
 			if !errors.Is(err, test.apiError) {
 				t.Fatalf("Process() error = %v, want %v", err, test.apiError)

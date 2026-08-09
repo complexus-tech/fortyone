@@ -84,6 +84,31 @@ func modalDependentActionBase(actionID string, teamID uuid.UUID) (string, bool) 
 	return "", false
 }
 
+// modalDependentActionScope extracts the team encoded into a team-dependent
+// action ID. The scoped ID is the most authoritative selection available in a
+// block_suggestion payload: Slack may preserve stale view metadata while the
+// rendered element already belongs to the newly selected team.
+func modalDependentActionScope(actionID string) (string, uuid.UUID, bool) {
+	actionID = strings.TrimSpace(actionID)
+	for _, base := range []string{
+		modalActionStatusSelect,
+		modalActionAssigneeSelect,
+		modalActionLabelsMultiSelect,
+		modalActionObjectiveSelect,
+	} {
+		prefix := base + modalTeamScopedIDSeparator
+		if !strings.HasPrefix(actionID, prefix) {
+			continue
+		}
+		teamID, err := uuid.Parse(strings.TrimPrefix(actionID, prefix))
+		if err != nil || teamID == uuid.Nil {
+			return "", uuid.Nil, false
+		}
+		return base, teamID, true
+	}
+	return "", uuid.Nil, false
+}
+
 func modalDependentBlockMatches(blockID, blockBase string, teamID uuid.UUID) bool {
 	blockID = strings.TrimSpace(blockID)
 	return blockID == "" || blockID == blockBase || blockID == modalTeamScopedID(blockBase, teamID)

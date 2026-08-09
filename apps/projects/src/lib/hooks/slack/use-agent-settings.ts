@@ -25,7 +25,7 @@ export const useUpdateSlackAgentSettings = () => {
       updateSlackAgentSettingsAction(workspaceSlug, input),
     onSuccess: (response) => {
       if (response.error?.message) {
-        toast.error("Slack agent settings", {
+        toast.error("Custom guidance", {
           description: response.error.message,
         });
         return;
@@ -36,7 +36,7 @@ export const useUpdateSlackAgentSettings = () => {
           response.data,
         );
       }
-      toast.success("Slack agent settings updated");
+      toast.success("Custom guidance updated");
     },
   });
 };
