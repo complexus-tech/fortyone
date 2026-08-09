@@ -2,6 +2,10 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { withTracing } from "@posthog/ai";
+import {
+  OPENAI_DEFAULT_REASONING_EFFORT,
+  OPENAI_TEXT_MODEL,
+} from "@/lib/ai/models";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
 import {
@@ -24,17 +28,13 @@ export async function POST(request: Request) {
     // eslint-disable-next-line turbo/no-undeclared-env-vars -- server-only secret
     apiKey: process.env.OPENAI_API_KEY,
   });
-  const model = withTracing(
-    openaiClient("gpt-5-nano-2025-08-07"),
-    posthogServer(),
-    {
-      posthogDistinctId: session.user.email,
-      posthogProperties: {
-        action: "assess_okr_quality",
-        kind: parsed.data.kind,
-      },
+  const model = withTracing(openaiClient(OPENAI_TEXT_MODEL), posthogServer(), {
+    posthogDistinctId: session.user.email,
+    posthogProperties: {
+      action: "assess_okr_quality",
+      kind: parsed.data.kind,
     },
-  );
+  });
 
   const criteria =
     parsed.data.kind === "objective"
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     schema: okrQualityAssessmentSchema,
     providerOptions: {
       openai: {
-        reasoningEffort: "minimal",
+        reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
         textVerbosity: "low",
       } satisfies OpenAIResponsesProviderOptions,
     },

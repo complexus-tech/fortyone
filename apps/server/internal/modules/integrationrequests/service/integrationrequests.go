@@ -8,76 +8,177 @@ import (
 	"strings"
 
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 )
 
 var (
-	ErrUnsupportedProvider = errors.New("unsupported integration request provider")
-	ErrRequestNotPending   = errors.New("integration request is not pending")
+	ErrUnsupportedProvider    = errors.New("unsupported integration request provider")
+	ErrRequestNotPending      = errors.New("integration request is not pending")
+	ErrInvalidRequestProperty = errors.New("invalid integration request property")
+	ErrProviderThreadNotFound = errors.New("integration request provider thread not found")
+	ErrIdempotencyConflict    = errors.New("comment idempotency key was already used for different content")
 )
+
+var supportedRequestPriorities = map[string]string{
+	"No Priority": "No Priority",
+	"Low":         "Low",
+	"Medium":      "Medium",
+	"High":        "High",
+	"Urgent":      "Urgent",
+}
 
 type Repository interface {
 	UpsertPending(ctx context.Context, input CoreUpsertRequestInput) (CoreIntegrationRequest, error)
-	ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) ([]CoreIntegrationRequest, error)
-	CountByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) (int, error)
-	Get(ctx context.Context, workspaceID, requestID uuid.UUID) (CoreIntegrationRequest, error)
+	AuthorizeTeam(ctx context.Context, workspaceID, teamID, userID uuid.UUID) error
+	ListByTeam(ctx context.Context, workspaceID, teamID, userID uuid.UUID, filter CoreListRequestsFilter) ([]CoreIntegrationRequest, error)
+	CountByTeam(ctx context.Context, workspaceID, teamID, userID uuid.UUID, filter CoreListRequestsFilter) (int, error)
+	GetForUser(ctx context.Context, workspaceID, requestID, userID uuid.UUID) (CoreIntegrationRequest, error)
 	FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error)
-	UpdatePending(ctx context.Context, workspaceID, requestID uuid.UUID, input CoreUpdateRequestInput) (CoreIntegrationRequest, error)
+	UpdatePending(ctx context.Context, workspaceID, requestID, userID uuid.UUID, input CoreUpdateRequestInput) (CoreIntegrationRequest, error)
+	ReserveAcceptance(ctx context.Context, workspaceID, requestID, userID uuid.UUID) (CoreIntegrationRequest, error)
 	MarkAccepted(ctx context.Context, workspaceID, requestID, storyID, acceptedByUserID uuid.UUID) (CoreIntegrationRequest, error)
 	MarkDeclined(ctx context.Context, workspaceID, requestID, declinedByUserID uuid.UUID) (CoreIntegrationRequest, error)
+	BindProviderThread(ctx context.Context, input CoreBindProviderThreadInput) (CoreProviderThread, error)
+	HasAuthorizedProviderThread(ctx context.Context, input CoreProviderThreadMatchInput) (bool, error)
+	HasCurrentProviderThread(ctx context.Context, input CoreProviderThreadLookupInput) (bool, error)
+	FindProviderThread(ctx context.Context, workspaceID, requestID uuid.UUID, provider string) (CoreProviderThread, error)
+	GetThreadActivityForRequest(ctx context.Context, workspaceID, requestID, userID uuid.UUID) (CoreThreadActivity, error)
+	ListProviderThreadsForStory(ctx context.Context, workspaceID, storyID, userID uuid.UUID) ([]CoreProviderThread, error)
+	CreateOutboundComment(ctx context.Context, input CoreCreateCommentInput, prepared CorePreparedProviderComment) (CoreProviderThread, CoreIntegrationRequestComment, error)
+	GetCommentForUser(ctx context.Context, workspaceID, commentID, userID uuid.UUID) (CoreIntegrationRequestComment, error)
 }
 
 type Service struct {
-	log               *logger.Logger
-	repo              Repository
-	stories           StoryService
-	providerAccepters map[string]ProviderAccepter
+	log                *logger.Logger
+	repo               Repository
+	stories            StoryService
+	providerAccepters  map[string]ProviderAccepter
+	providerCommenters map[string]ProviderCommenter
 }
 
-func New(log *logger.Logger, repo Repository, stories StoryService, providerAccepters map[string]ProviderAccepter) *Service {
-	return &Service{
-		log:               log,
-		repo:              repo,
-		stories:           stories,
-		providerAccepters: providerAccepters,
+type Option func(*Service)
+
+func WithProviderCommenter(provider string, commenter ProviderCommenter) Option {
+	return func(service *Service) {
+		provider = strings.TrimSpace(provider)
+		if provider != "" && commenter != nil {
+			service.providerCommenters[provider] = commenter
+		}
 	}
+}
+
+func New(log *logger.Logger, repo Repository, stories StoryService, providerAccepters map[string]ProviderAccepter, options ...Option) *Service {
+	service := &Service{
+		log:                log,
+		repo:               repo,
+		stories:            stories,
+		providerAccepters:  providerAccepters,
+		providerCommenters: make(map[string]ProviderCommenter),
+	}
+	for _, option := range options {
+		if option != nil {
+			option(service)
+		}
+	}
+	return service
 }
 
 func (s *Service) UpsertPending(ctx context.Context, input CoreUpsertRequestInput) (CoreIntegrationRequest, error) {
 	if err := validateUpsertInput(input); err != nil {
 		return CoreIntegrationRequest{}, err
 	}
+	priority, err := normalizeRequestPriority(input.Priority)
+	if err != nil {
+		return CoreIntegrationRequest{}, err
+	}
+	input.Priority = priority
 	return s.repo.UpsertPending(ctx, input)
 }
 
-func (s *Service) ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) ([]CoreIntegrationRequest, error) {
-	return s.repo.ListByTeam(ctx, workspaceID, teamID, filter)
+func (s *Service) ListByTeam(ctx context.Context, workspaceID, teamID, userID uuid.UUID, filter CoreListRequestsFilter) ([]CoreIntegrationRequest, error) {
+	if err := s.repo.AuthorizeTeam(ctx, workspaceID, teamID, userID); err != nil {
+		return nil, err
+	}
+	return s.repo.ListByTeam(ctx, workspaceID, teamID, userID, filter)
 }
 
-func (s *Service) CountByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter CoreListRequestsFilter) (int, error) {
-	return s.repo.CountByTeam(ctx, workspaceID, teamID, filter)
+func (s *Service) CountByTeam(ctx context.Context, workspaceID, teamID, userID uuid.UUID, filter CoreListRequestsFilter) (int, error) {
+	if err := s.repo.AuthorizeTeam(ctx, workspaceID, teamID, userID); err != nil {
+		return 0, err
+	}
+	return s.repo.CountByTeam(ctx, workspaceID, teamID, userID, filter)
 }
 
+// Get resolves an integration request for the authenticated actor stored in
+// the context. Provider-specific HTTP services use this compatibility method;
+// callers that already have the actor ID should use GetForUser directly.
 func (s *Service) Get(ctx context.Context, workspaceID, requestID uuid.UUID) (CoreIntegrationRequest, error) {
-	return s.repo.Get(ctx, workspaceID, requestID)
+	userID, err := platformauth.GetUserID(ctx)
+	if err != nil {
+		return CoreIntegrationRequest{}, fmt.Errorf("resolve integration request actor: %w", err)
+	}
+	return s.GetForUser(ctx, workspaceID, requestID, userID)
 }
 
-func (s *Service) UpdatePending(ctx context.Context, workspaceID, requestID uuid.UUID, input CoreUpdateRequestInput) (CoreIntegrationRequest, error) {
-	return s.repo.UpdatePending(ctx, workspaceID, requestID, input)
+func (s *Service) GetForUser(ctx context.Context, workspaceID, requestID, userID uuid.UUID) (CoreIntegrationRequest, error) {
+	return s.repo.GetForUser(ctx, workspaceID, requestID, userID)
+}
+
+func (s *Service) UpdatePending(ctx context.Context, workspaceID, requestID, userID uuid.UUID, input CoreUpdateRequestInput) (CoreIntegrationRequest, error) {
+	if input.Title != nil && strings.TrimSpace(*input.Title) == "" {
+		return CoreIntegrationRequest{}, fmt.Errorf("%w: title is required", ErrInvalidRequestProperty)
+	}
+	if input.Priority != nil {
+		priority, err := normalizeRequestPriority(*input.Priority)
+		if err != nil {
+			return CoreIntegrationRequest{}, err
+		}
+		input.Priority = &priority
+	}
+	return s.repo.UpdatePending(ctx, workspaceID, requestID, userID, input)
 }
 
 func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uuid.UUID) (CoreIntegrationRequest, error) {
-	request, err := s.repo.Get(ctx, workspaceID, requestID)
+	request, err := s.repo.GetForUser(ctx, workspaceID, requestID, actorID)
 	if err != nil {
 		return CoreIntegrationRequest{}, err
+	}
+	if request.Status == StatusAccepted && request.AcceptedStoryID != nil {
+		return request, nil
 	}
 	if request.Status != StatusPending {
 		return CoreIntegrationRequest{}, ErrRequestNotPending
 	}
+	if _, err := normalizeRequestPriority(request.Priority); err != nil {
+		return CoreIntegrationRequest{}, err
+	}
 	accepter := s.providerAccepters[request.Provider]
 	if accepter == nil {
 		return CoreIntegrationRequest{}, fmt.Errorf("%w: %s", ErrUnsupportedProvider, request.Provider)
+	}
+
+	// Reserve conversion before creating the story. The repository locks and
+	// revalidates the pending row, then durably fences edits and declines. A
+	// retry resumes the same reservation and relies on CreationKey for exactly
+	// one story even after a process crash.
+	request, err = s.repo.ReserveAcceptance(ctx, workspaceID, requestID, actorID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			current, getErr := s.repo.GetForUser(ctx, workspaceID, requestID, actorID)
+			if getErr == nil && current.Status == StatusAccepted && current.AcceptedStoryID != nil {
+				return current, nil
+			}
+			if getErr == nil {
+				return CoreIntegrationRequest{}, ErrRequestNotPending
+			}
+		}
+		return CoreIntegrationRequest{}, err
+	}
+	conversionActorID := actorID
+	if request.AcceptanceStartedByUserID != nil {
+		conversionActorID = *request.AcceptanceStartedByUserID
 	}
 
 	statusID := request.StatusID
@@ -91,21 +192,17 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 			return CoreIntegrationRequest{}, errors.New("team has no unstarted status configured")
 		}
 	}
-	priority := strings.TrimSpace(request.Priority)
-	if priority == "" {
-		priority = "No Priority"
-	}
-	labelIDs, err := metadataUUIDs(request.Metadata, "label_ids")
+	priority, err := normalizeRequestPriority(request.Priority)
 	if err != nil {
 		return CoreIntegrationRequest{}, err
 	}
 	creationKey := fmt.Sprintf("integration-request:%s:%s", workspaceID, request.ID)
 
-	story, err := s.stories.CreateExternal(ctx, actorID, stories.CoreNewStory{
+	story, err := s.stories.CreateExternalUserAction(ctx, conversionActorID, stories.CoreNewStory{
 		Title:         request.Title,
 		Description:   request.Description,
 		Status:        statusID,
-		Reporter:      &actorID,
+		Reporter:      &conversionActorID,
 		Assignee:      request.AssigneeID,
 		Team:          request.TeamID,
 		Priority:      priority,
@@ -115,7 +212,7 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 		Sprint:        request.SprintID,
 		StartDate:     request.StartDate,
 		EndDate:       request.EndDate,
-		LabelIDs:      labelIDs,
+		LabelIDs:      request.LabelIDs,
 		CreationKey:   &creationKey,
 	}, workspaceID)
 	if err != nil {
@@ -126,60 +223,22 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 		return CoreIntegrationRequest{}, err
 	}
 
-	accepted, err := s.repo.MarkAccepted(ctx, workspaceID, requestID, story.ID, actorID)
+	accepted, err := s.repo.MarkAccepted(ctx, workspaceID, requestID, story.ID, conversionActorID)
 	if err == nil {
 		return accepted, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return CoreIntegrationRequest{}, err
 	}
-	current, getErr := s.repo.Get(ctx, workspaceID, requestID)
+	current, getErr := s.repo.GetForUser(ctx, workspaceID, requestID, actorID)
 	if getErr == nil && current.Status == StatusAccepted && current.AcceptedStoryID != nil && *current.AcceptedStoryID == story.ID {
 		return current, nil
 	}
 	return CoreIntegrationRequest{}, err
 }
 
-func metadataUUIDs(metadata map[string]any, key string) ([]uuid.UUID, error) {
-	value, ok := metadata[key]
-	if !ok || value == nil {
-		return nil, nil
-	}
-	var rawValues []string
-	switch values := value.(type) {
-	case []string:
-		rawValues = values
-	case []any:
-		rawValues = make([]string, 0, len(values))
-		for _, raw := range values {
-			text, ok := raw.(string)
-			if !ok {
-				return nil, fmt.Errorf("integration request metadata %q contains a non-string value", key)
-			}
-			rawValues = append(rawValues, text)
-		}
-	default:
-		return nil, fmt.Errorf("integration request metadata %q is not a list", key)
-	}
-
-	result := make([]uuid.UUID, 0, len(rawValues))
-	seen := make(map[uuid.UUID]struct{}, len(rawValues))
-	for _, raw := range rawValues {
-		parsed, err := uuid.Parse(strings.TrimSpace(raw))
-		if err != nil {
-			return nil, fmt.Errorf("parse integration request metadata %q: %w", key, err)
-		}
-		if _, exists := seen[parsed]; exists {
-			continue
-		}
-		seen[parsed] = struct{}{}
-		result = append(result, parsed)
-	}
-	return result, nil
-}
-
 func (s *Service) AcceptAllPendingByTeam(ctx context.Context, workspaceID, teamID, actorID uuid.UUID) (CoreBulkRequestResult, error) {
-	requests, err := s.repo.ListByTeam(ctx, workspaceID, teamID, CoreListRequestsFilter{Status: StatusPending})
+	requests, err := s.ListByTeam(ctx, workspaceID, teamID, actorID, CoreListRequestsFilter{Status: StatusPending})
 	if err != nil {
 		return CoreBulkRequestResult{}, err
 	}
@@ -198,18 +257,18 @@ func (s *Service) AcceptAllPendingByTeam(ctx context.Context, workspaceID, teamI
 }
 
 func (s *Service) Decline(ctx context.Context, workspaceID, requestID, actorID uuid.UUID) (CoreIntegrationRequest, error) {
-	request, err := s.repo.Get(ctx, workspaceID, requestID)
+	request, err := s.repo.GetForUser(ctx, workspaceID, requestID, actorID)
 	if err != nil {
 		return CoreIntegrationRequest{}, err
 	}
-	if request.Status != StatusPending {
+	if request.Status != StatusPending || request.AcceptanceState == AcceptanceStateReserved {
 		return CoreIntegrationRequest{}, ErrRequestNotPending
 	}
 	return s.repo.MarkDeclined(ctx, workspaceID, requestID, actorID)
 }
 
 func (s *Service) DeclineAllPendingByTeam(ctx context.Context, workspaceID, teamID, actorID uuid.UUID) (CoreBulkRequestResult, error) {
-	requests, err := s.repo.ListByTeam(ctx, workspaceID, teamID, CoreListRequestsFilter{Status: StatusPending})
+	requests, err := s.ListByTeam(ctx, workspaceID, teamID, actorID, CoreListRequestsFilter{Status: StatusPending})
 	if err != nil {
 		return CoreBulkRequestResult{}, err
 	}
@@ -247,6 +306,17 @@ func validateUpsertInput(input CoreUpsertRequestInput) error {
 		return errors.New("title is required")
 	}
 	return nil
+}
+
+func normalizeRequestPriority(value string) (string, error) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "No Priority", nil
+	}
+	if priority, ok := supportedRequestPriorities[trimmed]; ok {
+		return priority, nil
+	}
+	return "", fmt.Errorf("%w: unsupported priority %q", ErrInvalidRequestProperty, trimmed)
 }
 
 func IsNotFound(err error) bool {

@@ -36,6 +36,7 @@ func buildMayaService(log *logger.Logger, db *sqlx.DB, cfg Config, mayaActorID u
 	if strings.TrimSpace(cfg.AIAPIKey) != "" {
 		aiClient := maya.NewOpenAICompatibleClient(maya.OpenAICompatibleConfig{
 			APIKey: strings.TrimSpace(cfg.AIAPIKey),
+			Model:  strings.TrimSpace(cfg.AIModel),
 		})
 		planner = maya.NewPlannerWithAdvisor(maya.NewOpenAIAdvisor(aiClient))
 	}

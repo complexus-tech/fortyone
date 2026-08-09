@@ -386,7 +386,14 @@ type ConversationInput struct {
 	ExternalChannelID   string
 	ExternalThreadID    string
 	UserID              uuid.UUID
+	AudienceScope       string
+	AudienceFingerprint string
 }
+
+const (
+	ConversationAudienceActor   = "actor"
+	ConversationAudienceChannel = "channel"
+)
 
 type MessageRecord struct {
 	ExternalMessageID *string   `db:"external_message_id"`
@@ -401,16 +408,49 @@ type ConversationRecord struct {
 }
 
 func (r *Repository) UpsertConversation(ctx context.Context, input ConversationInput) (uuid.UUID, error) {
+	audienceScope := normalizeConversationAudience(input.AudienceScope)
+	audienceFingerprint := strings.TrimSpace(input.AudienceFingerprint)
+	if audienceScope == ConversationAudienceChannel && audienceFingerprint == "" {
+		return uuid.Nil, errors.New("channel conversation audience fingerprint is required")
+	}
+	if audienceScope == ConversationAudienceActor && audienceFingerprint != "" {
+		return uuid.Nil, errors.New("actor conversation cannot have an audience fingerprint")
+	}
 	var id uuid.UUID
-	err := r.db.GetContext(ctx, &id, `
+	query := `
 		INSERT INTO messaging_conversations (
-			provider, workspace_id, external_workspace_id, external_channel_id, external_thread_id, user_id
-		) VALUES ($1, $2, $3, $4, $5, $6)
+			provider, workspace_id, external_workspace_id, external_channel_id, external_thread_id,
+			user_id, audience_scope, audience_fingerprint
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`
+	if audienceScope == ConversationAudienceChannel {
+		query += `
+		ON CONFLICT (
+			provider, workspace_id, external_workspace_id, external_channel_id, external_thread_id,
+			audience_fingerprint
+		) WHERE audience_scope = 'channel'
+		DO UPDATE SET updated_at = NOW()
+		RETURNING id
+		`
+	} else {
+		query += `
 		ON CONFLICT (
 			provider, workspace_id, external_workspace_id, external_channel_id, external_thread_id, user_id
-		) DO UPDATE SET updated_at = NOW()
+		) WHERE audience_scope = 'actor'
+		DO UPDATE SET updated_at = NOW()
 		RETURNING id
-	`, input.Provider, input.WorkspaceID, input.ExternalWorkspaceID, input.ExternalChannelID, input.ExternalThreadID, input.UserID)
+		`
+	}
+	err := r.db.GetContext(ctx, &id, query,
+		input.Provider,
+		input.WorkspaceID,
+		input.ExternalWorkspaceID,
+		input.ExternalChannelID,
+		input.ExternalThreadID,
+		input.UserID,
+		audienceScope,
+		audienceFingerprint,
+	)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("upsert messaging conversation: %w", err)
 	}
@@ -426,7 +466,8 @@ func (r *Repository) FindConversation(ctx context.Context, input ConversationInp
 		return ConversationRecord{}, errors.New("messaging repository is not configured")
 	}
 	var record ConversationRecord
-	err := r.db.GetContext(ctx, &record, `
+	audienceScope := normalizeConversationAudience(input.AudienceScope)
+	query := `
 		SELECT id, updated_at
 		FROM messaging_conversations
 		WHERE provider = $1
@@ -434,12 +475,44 @@ func (r *Repository) FindConversation(ctx context.Context, input ConversationInp
 		  AND external_workspace_id = $3
 		  AND external_channel_id = $4
 		  AND external_thread_id = $5
-		  AND user_id = $6
-	`, input.Provider, input.WorkspaceID, input.ExternalWorkspaceID, input.ExternalChannelID, input.ExternalThreadID, input.UserID)
+		  AND audience_scope = $6
+	`
+	args := []any{
+		input.Provider,
+		input.WorkspaceID,
+		input.ExternalWorkspaceID,
+		input.ExternalChannelID,
+		input.ExternalThreadID,
+		audienceScope,
+	}
+	if audienceScope == ConversationAudienceActor {
+		query += " AND user_id = $7"
+		args = append(args, input.UserID)
+	} else if audienceFingerprint := strings.TrimSpace(input.AudienceFingerprint); audienceFingerprint != "" {
+		query += " AND audience_fingerprint = $7"
+		args = append(args, audienceFingerprint)
+	}
+	query += " ORDER BY updated_at DESC LIMIT 1"
+	err := r.db.GetContext(ctx, &record, query, args...)
 	if err != nil {
 		return ConversationRecord{}, fmt.Errorf("find messaging conversation: %w", err)
 	}
 	return record, nil
+}
+
+// FindChannelConversation returns the shared conversation for a provider
+// thread. The caller must independently authorize the current actor and the
+// channel audience before loading any messages from the returned conversation.
+func (r *Repository) FindChannelConversation(ctx context.Context, input ConversationInput) (ConversationRecord, error) {
+	input.AudienceScope = ConversationAudienceChannel
+	return r.FindConversation(ctx, input)
+}
+
+func normalizeConversationAudience(value string) string {
+	if strings.EqualFold(strings.TrimSpace(value), ConversationAudienceChannel) {
+		return ConversationAudienceChannel
+	}
+	return ConversationAudienceActor
 }
 
 func (r *Repository) AppendMessage(ctx context.Context, conversationID uuid.UUID, externalMessageID, role, content string) error {
@@ -490,6 +563,7 @@ type OutboundDeliveryInput struct {
 	ExternalChannelID       string
 	ExternalThreadID        string
 	Content                 string
+	ProviderPayload         []byte
 	Purpose                 string
 	ExpiresAt               *time.Time
 }
@@ -507,6 +581,7 @@ type OutboundDeliveryRecord struct {
 	ExternalThreadID        *string    `db:"external_thread_id"`
 	ExternalMessageID       *string    `db:"external_message_id"`
 	Content                 *string    `db:"content"`
+	ProviderPayload         []byte     `db:"provider_payload"`
 	Status                  string     `db:"status"`
 	AttemptCount            int        `db:"attempt_count"`
 	Purpose                 string     `db:"purpose"`
@@ -526,7 +601,7 @@ func (r *Repository) ListRecoverableOutboundDeliveries(ctx context.Context, prov
 	err := r.db.SelectContext(ctx, &records, `
 			SELECT id, workspace_id, user_id, installation_generation, external_workspace_id, external_recipient_user_id, inbound_event_id, idempotency_key,
 			       external_channel_id, external_thread_id, external_message_id,
-			       content, purpose, expires_at, status, attempt_count
+			       content, provider_payload, purpose, expires_at, status, attempt_count
 		FROM messaging_outbound_deliveries
 		WHERE provider = $1
 		  AND content IS NOT NULL
@@ -556,18 +631,23 @@ func (r *Repository) StartOutboundDelivery(ctx context.Context, input OutboundDe
 	if purpose == "" {
 		purpose = "provider_message"
 	}
+	providerPayload := strings.TrimSpace(string(input.ProviderPayload))
+	if providerPayload != "" && !json.Valid([]byte(providerPayload)) {
+		return OutboundDeliveryRecord{}, false, errors.New("messaging outbound delivery provider payload must be valid JSON")
+	}
 	var row OutboundDeliveryRecord
 	err := r.db.GetContext(ctx, &row, `
 		INSERT INTO messaging_outbound_deliveries (
 			provider, workspace_id, user_id, installation_generation, external_workspace_id, external_recipient_user_id,
 			inbound_event_id, idempotency_key, external_channel_id, external_thread_id,
-			content, purpose, expires_at, status, attempt_count
+			content, provider_payload, purpose, expires_at, status, attempt_count
 		) VALUES ($1, $2, $3, $4, $5, NULLIF($6, ''), $7, $8, $9, NULLIF($10, ''),
-		          NULLIF($11, ''), $12, $13, 'delivering', 1)
+		          NULLIF($11, ''), CAST(NULLIF($12, '') AS jsonb), $13, $14, 'delivering', 1)
 		ON CONFLICT (provider, workspace_id, idempotency_key) DO UPDATE SET
 			status = 'delivering',
 			attempt_count = messaging_outbound_deliveries.attempt_count + 1,
 			content = COALESCE(messaging_outbound_deliveries.content, EXCLUDED.content),
+			provider_payload = COALESCE(messaging_outbound_deliveries.provider_payload, EXCLUDED.provider_payload),
 			user_id = COALESCE(messaging_outbound_deliveries.user_id, EXCLUDED.user_id),
 			installation_generation = COALESCE(messaging_outbound_deliveries.installation_generation, EXCLUDED.installation_generation),
 			external_recipient_user_id = COALESCE(messaging_outbound_deliveries.external_recipient_user_id, EXCLUDED.external_recipient_user_id),
@@ -578,7 +658,7 @@ func (r *Repository) StartOutboundDelivery(ctx context.Context, input OutboundDe
 			messaging_outbound_deliveries.status IN ('pending', 'failed')
 			OR (
 			messaging_outbound_deliveries.status = 'delivering'
-				AND messaging_outbound_deliveries.updated_at < NOW() - ($14 * INTERVAL '1 second')
+				AND messaging_outbound_deliveries.updated_at < NOW() - ($15 * INTERVAL '1 second')
 			)
 		)
 		AND messaging_outbound_deliveries.external_workspace_id = EXCLUDED.external_workspace_id
@@ -587,10 +667,10 @@ func (r *Repository) StartOutboundDelivery(ctx context.Context, input OutboundDe
 		AND messaging_outbound_deliveries.installation_generation IS NOT DISTINCT FROM EXCLUDED.installation_generation
 		AND messaging_outbound_deliveries.external_recipient_user_id IS NOT DISTINCT FROM EXCLUDED.external_recipient_user_id
 		RETURNING id, workspace_id, user_id, installation_generation, external_workspace_id, external_recipient_user_id, inbound_event_id, idempotency_key,
-		          external_channel_id, external_thread_id, external_message_id, content, purpose, expires_at, status, attempt_count
+		          external_channel_id, external_thread_id, external_message_id, content, provider_payload, purpose, expires_at, status, attempt_count
 	`, input.Provider, input.WorkspaceID, input.UserID, input.InstallGeneration, externalWorkspaceID, input.ExternalRecipientUserID,
 		input.InboundEventID, input.IdempotencyKey, input.ExternalChannelID, input.ExternalThreadID,
-		input.Content, purpose, input.ExpiresAt, int64(messagingLeaseDuration/time.Second))
+		input.Content, providerPayload, purpose, input.ExpiresAt, int64(messagingLeaseDuration/time.Second))
 	if err == nil {
 		return row, true, nil
 	}
@@ -599,7 +679,7 @@ func (r *Repository) StartOutboundDelivery(ctx context.Context, input OutboundDe
 	}
 	err = r.db.GetContext(ctx, &row, `
 		SELECT id, workspace_id, user_id, installation_generation, external_workspace_id, external_recipient_user_id, inbound_event_id, idempotency_key,
-		       external_channel_id, external_thread_id, external_message_id, content, purpose, expires_at, status, attempt_count
+		       external_channel_id, external_thread_id, external_message_id, content, provider_payload, purpose, expires_at, status, attempt_count
 		FROM messaging_outbound_deliveries
 		WHERE provider = $1 AND workspace_id = $2 AND idempotency_key = $3
 	`, input.Provider, input.WorkspaceID, input.IdempotencyKey)
@@ -653,6 +733,38 @@ func (r *Repository) SetOutboundDeliveryContent(ctx context.Context, id uuid.UUI
 		return err
 	}
 	return nil
+}
+
+// SetOutboundDeliveryContentAndProviderPayload atomically freezes the visible
+// fallback text and provider-native payload before a send. Recovery therefore
+// replays the same buttons/cards instead of silently degrading to plain text.
+func (r *Repository) SetOutboundDeliveryContentAndProviderPayload(
+	ctx context.Context,
+	id uuid.UUID,
+	content string,
+	providerPayload []byte,
+) error {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return errors.New("messaging outbound delivery content is required")
+	}
+	payload := strings.TrimSpace(string(providerPayload))
+	if payload == "" || !json.Valid([]byte(payload)) {
+		return errors.New("messaging outbound delivery provider payload must be valid JSON")
+	}
+	result, err := r.db.ExecContext(ctx, `
+		UPDATE messaging_outbound_deliveries
+		SET content = $2,
+		    provider_payload = CAST($3 AS jsonb),
+		    updated_at = NOW()
+		WHERE id = $1
+		  AND status = 'delivering'
+		  AND external_message_id IS NULL
+	`, id, content, payload)
+	if err != nil {
+		return fmt.Errorf("set messaging outbound delivery content and provider payload: %w", err)
+	}
+	return requireAffectedRow(result, "set messaging outbound delivery content and provider payload")
 }
 
 // SetOutboundDeliveryContentAndDestination atomically persists an unsent

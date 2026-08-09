@@ -28,6 +28,7 @@ import {
   ObjectiveIcon,
   SlackIcon,
   SprintsIcon,
+  TagsIcon,
 } from "icons";
 import {
   Avatar,
@@ -51,10 +52,12 @@ import {
   PriorityIcon,
   StatusesMenu,
   StoryStatusIcon,
+  LabelsMenu,
 } from "@/components/ui";
-import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
+import { ObjectiveKeyResultMenu } from "@/components/ui/story/objective-key-result-menu";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
-import { useDebounce, useTerminology, useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
+import { useDebouncedCallback } from "@/hooks/debounce";
 import {
   formatEstimate,
   getEstimateOptions,
@@ -64,6 +67,7 @@ import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useSession } from "@/lib/auth/client";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
+import { useLabels } from "@/lib/hooks/labels";
 import { BodyContainer } from "@/components/shared";
 import type { Member } from "@/types";
 import type { State } from "@/types/states";
@@ -72,6 +76,7 @@ import type { StoryPriority } from "@/modules/stories/types";
 import { Option } from "@/modules/story/components/options";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
+import { useKeyResults } from "@/modules/objectives/hooks";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import {
@@ -84,6 +89,7 @@ import { useIntegrationRequest } from "./hooks/use-request";
 import { usePostRequestGitHubComment } from "./hooks/use-post-request-github-comment";
 import { useRequestGitHubComments } from "./hooks/use-request-github-comments";
 import { useUpdateIntegrationRequest } from "./hooks/use-update-request";
+import { IntegrationRequestThreadActivity } from "./thread-activity";
 import type {
   IntegrationRequest,
   UpdateIntegrationRequestInput,
@@ -200,7 +206,7 @@ const GitHubCommentInput = ({ requestId }: { requestId: string }) => {
   );
 };
 
-const RequestIntegrationBanner = ({
+export const RequestIntegrationBanner = ({
   canEditRequest,
   icon,
   onAccept,
@@ -236,8 +242,8 @@ const RequestIntegrationBanner = ({
           </Text>
         ) : null}
       </Flex>
-      {sourceUrl ? (
-        <Flex align="center" gap={1}>
+      <Flex align="center" className="shrink-0" gap={1}>
+        {sourceUrl ? (
           <a
             className="text-primary hover:text-primary/80 rounded-md p-1 transition"
             href={sourceUrl}
@@ -247,18 +253,20 @@ const RequestIntegrationBanner = ({
           >
             <LinkIcon className="text-current" />
           </a>
-          <Menu>
-            <Menu.Button>
-              <button
-                aria-label="Intake actions"
-                className="text-primary hover:text-primary/80 rounded-md p-1 transition"
-                type="button"
-              >
-                <MoreHorizontalIcon className="h-5 text-current" />
-              </button>
-            </Menu.Button>
-            <Menu.Items align="end">
-              <Menu.Group>
+        ) : null}
+        <Menu>
+          <Menu.Button>
+            <button
+              aria-label="Intake actions"
+              className="text-primary hover:text-primary/80 rounded-md p-1 transition"
+              type="button"
+            >
+              <MoreHorizontalIcon className="h-5 text-current" />
+            </button>
+          </Menu.Button>
+          <Menu.Items align="end">
+            <Menu.Group>
+              {sourceUrl ? (
                 <Menu.Item
                   onSelect={() => {
                     window.open(sourceUrl, "_blank", "noopener,noreferrer");
@@ -267,6 +275,8 @@ const RequestIntegrationBanner = ({
                   <LinkIcon className="text-icon h-5 w-auto" />
                   {openLabel}
                 </Menu.Item>
+              ) : null}
+              {sourceUrl ? (
                 <Menu.Item
                   onSelect={() => {
                     navigator.clipboard.writeText(sourceUrl);
@@ -275,23 +285,23 @@ const RequestIntegrationBanner = ({
                   <CopyIcon className="text-icon h-5 w-auto" />
                   Copy link
                 </Menu.Item>
-                <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
-                  <CheckIcon className="text-icon h-5 w-auto" />
-                  Accept intake item
-                </Menu.Item>
-                <Menu.Item
-                  className="text-danger"
-                  disabled={!canEditRequest}
-                  onSelect={onDecline}
-                >
-                  <CloseIcon className="text-danger" />
-                  Decline intake item...
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Flex>
-      ) : null}
+              ) : null}
+              <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
+                <CheckIcon className="text-icon h-5 w-auto" />
+                Accept intake item
+              </Menu.Item>
+              <Menu.Item
+                className="text-danger"
+                disabled={!canEditRequest}
+                onSelect={onDecline}
+              >
+                <CloseIcon className="text-danger" />
+                Decline intake item...
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
+      </Flex>
     </Flex>
   </Box>
 );
@@ -364,7 +374,7 @@ const getRequestSourceBanner = ({
       return {
         icon: <SlackIcon className="h-5 shrink-0" />,
         openLabel: "Open on Slack",
-        primaryText: "Message synced with Slack",
+        primaryText: "Request from Slack",
         secondaryText: slackChannel ? `#${slackChannel}` : null,
       };
     case "intercom":
@@ -406,6 +416,18 @@ const RequestProperties = ({
   const { data: selectedObjective } = useObjective(
     request.objectiveId ?? null,
     teamId,
+  );
+  const { data: keyResults = [] } = useKeyResults(
+    request.objectiveId ?? "",
+    Boolean(request.objectiveId),
+  );
+  const selectedKeyResult = keyResults.find(
+    (keyResult) => keyResult.id === request.keyResultId,
+  );
+  const { data: allLabels = [] } = useLabels({ teamId });
+  const selectedLabelIds = new Set(request.labelIds);
+  const selectedLabels = allLabels.filter((label) =>
+    selectedLabelIds.has(label.id),
   );
   const { data: selectedSprint } = useSprint(request.sprintId ?? null, teamId);
   const estimateScheme = (teamSettings?.estimationSettings.scheme ??
@@ -516,7 +538,7 @@ const RequestProperties = ({
               <AssigneesMenu.Items
                 assigneeId={request.assigneeId}
                 onAssigneeSelected={(assigneeId) => {
-                  onUpdate({ assigneeId: assigneeId ?? undefined });
+                  onUpdate({ assigneeId: assigneeId ?? null });
                 }}
                 teamId={teamId}
               />
@@ -541,6 +563,18 @@ const RequestProperties = ({
               </Menu.Button>
               <Menu.Items align="start">
                 <Menu.Group>
+                  {request.estimateValue ? (
+                    <>
+                      <Menu.Item
+                        onSelect={() => {
+                          onUpdate({ estimateValue: null });
+                        }}
+                      >
+                        No estimate
+                      </Menu.Item>
+                      <Menu.Separator />
+                    </>
+                  ) : null}
                   {getEstimateOptions(estimateScheme).map(
                     ({ label, value }) => (
                       <Menu.Item
@@ -563,31 +597,62 @@ const RequestProperties = ({
           isNotifications={isInline}
           label={getTermDisplay("objectiveTerm", { capitalize: true })}
           value={
-            <ObjectivesMenu>
-              <ObjectivesMenu.Trigger>
+            <ObjectiveKeyResultMenu
+              keyResultId={request.keyResultId ?? null}
+              objectiveId={request.objectiveId ?? null}
+              onChange={({ keyResultId, objectiveId }) => {
+                onUpdate({
+                  objectiveId: objectiveId ?? null,
+                  keyResultId: keyResultId ?? null,
+                });
+              }}
+              teamId={teamId}
+            >
+              <Button
+                color="tertiary"
+                disabled={!canEditRequest}
+                leftIcon={<ObjectiveIcon className="h-4" />}
+                size="sm"
+                variant={isInline ? "solid" : "naked"}
+              >
+                <span className="max-w-40 truncate">
+                  {selectedKeyResult?.name ??
+                    selectedObjective?.name ??
+                    getTermDisplay("objectiveTerm", { capitalize: true })}
+                </span>
+              </Button>
+            </ObjectiveKeyResultMenu>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Labels"
+          value={
+            <LabelsMenu>
+              <LabelsMenu.Trigger>
                 <Button
                   color="tertiary"
                   disabled={!canEditRequest}
-                  leftIcon={<ObjectiveIcon className="h-4" />}
+                  leftIcon={<TagsIcon className="h-4" />}
                   size="sm"
                   variant={isInline ? "solid" : "naked"}
                 >
                   <span className="max-w-40 truncate">
-                    {selectedObjective?.name ??
-                      getTermDisplay("objectiveTerm", { capitalize: true })}
+                    {selectedLabels.length > 0
+                      ? selectedLabels.map((label) => label.name).join(", ")
+                      : "Add labels"}
                   </span>
                 </Button>
-              </ObjectivesMenu.Trigger>
-              <ObjectivesMenu.Items
-                objectiveId={request.objectiveId}
-                setObjectiveId={(objectiveId) => {
-                  if (objectiveId) {
-                    onUpdate({ objectiveId });
-                  }
+              </LabelsMenu.Trigger>
+              <LabelsMenu.Items
+                labelIds={request.labelIds}
+                setLabelIds={(labelIds) => {
+                  onUpdate({ labelIds });
                 }}
                 teamId={teamId}
               />
-            </ObjectivesMenu>
+            </LabelsMenu>
           }
         />
         <Option
@@ -612,9 +677,7 @@ const RequestProperties = ({
               </SprintsMenu.Trigger>
               <SprintsMenu.Items
                 setSprintId={(sprintId) => {
-                  if (sprintId) {
-                    onUpdate({ sprintId });
-                  }
+                  onUpdate({ sprintId: sprintId ?? null });
                 }}
                 sprintId={request.sprintId}
                 teamId={teamId}
@@ -633,6 +696,24 @@ const RequestProperties = ({
                   color="tertiary"
                   disabled={!canEditRequest}
                   leftIcon={<CalendarIcon className="h-4" />}
+                  rightIcon={
+                    request.startDate ? (
+                      <CloseIcon
+                        aria-label="Remove start date"
+                        className="h-4"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onUpdate({ startDate: null });
+                        }}
+                        onPointerDown={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        role="button"
+                      />
+                    ) : null
+                  }
                   size="sm"
                   variant={isInline ? "solid" : "naked"}
                 >
@@ -665,6 +746,24 @@ const RequestProperties = ({
                   color="tertiary"
                   disabled={!canEditRequest}
                   leftIcon={<CalendarIcon className="h-4" />}
+                  rightIcon={
+                    request.endDate ? (
+                      <CloseIcon
+                        aria-label="Remove deadline"
+                        className="h-4"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onUpdate({ endDate: null });
+                        }}
+                        onPointerDown={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        role="button"
+                      />
+                    ) : null
+                  }
                   size="sm"
                   variant={isInline ? "solid" : "naked"}
                 >
@@ -841,7 +940,8 @@ export const IntegrationRequestDetails = ({
   const { getTermDisplay } = useTerminology();
   const [isDeclining, setIsDeclining] = useState(false);
   const { data: request, isPending } = useIntegrationRequest(requestId);
-  const { data: statuses = [] } = useTeamStatuses(teamId);
+  const requestTeamId = request?.teamId ?? teamId;
+  const { data: statuses = [] } = useTeamStatuses(requestTeamId);
   const { data: members = [] } = useMembers();
   const { mutate: updateRequest } = useUpdateIntegrationRequest();
   const acceptRequest = useAcceptIntegrationRequest();
@@ -861,7 +961,16 @@ export const IntegrationRequestDetails = ({
     },
     [requestIdForUpdate, updateRequest],
   );
-  const debouncedHandleUpdate = useDebounce(handleUpdate, DEBOUNCE_DELAY);
+  const {
+    callback: debouncedDescriptionUpdate,
+    flush: flushDescriptionUpdate,
+  } = useDebouncedCallback(handleUpdate, DEBOUNCE_DELAY, {
+    flushOnUnmount: true,
+  });
+  const { callback: debouncedTitleUpdate, flush: flushTitleUpdate } =
+    useDebouncedCallback(handleUpdate, DEBOUNCE_DELAY, {
+      flushOnUnmount: true,
+    });
 
   const descriptionEditor = useEditor({
     extensions: [
@@ -875,10 +984,11 @@ export const IntegrationRequestDetails = ({
     content: request?.description ?? "",
     editable: request?.status === "pending",
     onUpdate: ({ editor }) => {
-      debouncedHandleUpdate({
+      debouncedDescriptionUpdate({
         description: editor.getHTML(),
       });
     },
+    onBlur: flushDescriptionUpdate,
     immediatelyRender: false,
   });
 
@@ -892,29 +1002,42 @@ export const IntegrationRequestDetails = ({
     content: request?.title ?? "",
     editable: request?.status === "pending",
     onUpdate: ({ editor }) => {
-      debouncedHandleUpdate({
+      debouncedTitleUpdate({
         title: editor.getText(),
       });
     },
+    onBlur: flushTitleUpdate,
     immediatelyRender: false,
   });
 
   useEffect(() => {
     if (
       titleEditor &&
+      !titleEditor.isFocused &&
       request?.title &&
       titleEditor.getText() !== request.title
     ) {
-      titleEditor.commands.setContent(request.title);
+      titleEditor.commands.setContent(request.title, { emitUpdate: false });
     }
     if (
       descriptionEditor &&
+      !descriptionEditor.isFocused &&
       request?.description &&
       descriptionEditor.getHTML() !== request.description
     ) {
-      descriptionEditor.commands.setContent(request.description);
+      descriptionEditor.commands.setContent(request.description, {
+        emitUpdate: false,
+      });
     }
   }, [descriptionEditor, request?.description, request?.title, titleEditor]);
+
+  useEffect(
+    () => () => {
+      flushDescriptionUpdate();
+      flushTitleUpdate();
+    },
+    [flushDescriptionUpdate, flushTitleUpdate, requestId],
+  );
 
   if (isPending) {
     return (
@@ -973,7 +1096,7 @@ export const IntegrationRequestDetails = ({
 
   return (
     <Box className="h-dvh">
-      <Box className="notification-story-container hidden h-full md:flex">
+      <Box className="notification-story-container flex h-full flex-col md:flex-row">
         <Box className="min-w-0 flex-1">
           <BodyContainer className="h-dvh overflow-y-auto pb-8">
             <Container className="max-w-7xl pt-7">
@@ -1002,7 +1125,7 @@ export const IntegrationRequestDetails = ({
                   request={request}
                   selectedStatus={selectedStatus}
                   statusId={statusId}
-                  teamId={teamId}
+                  teamId={request.teamId}
                   variant="inline"
                 />
               </Box>
@@ -1034,27 +1157,41 @@ export const IntegrationRequestDetails = ({
                     </Tabs.Panel>
                   </Tabs>
                 </Box>
-              ) : (
+              ) : request.provider === "slack" ? (
                 <Box>
                   <Text
                     as="h4"
-                    className="mb-2 flex items-center gap-1"
+                    className="mb-4 flex items-center gap-1"
                     fontWeight="medium"
                   >
                     <ClockIcon className="relative -top-px" />
                     Activity feed
                   </Text>
-                  <Text color="muted">
-                    Slack story details are captured in the source link and
-                    metadata.
-                  </Text>
+                  <Tabs defaultValue="slack">
+                    <Tabs.List className="mx-0 mb-5">
+                      <Tabs.Tab
+                        className="gap-1 px-2"
+                        leftIcon={<SlackIcon className="h-[1.05rem]" />}
+                        value="slack"
+                      >
+                        Slack
+                      </Tabs.Tab>
+                    </Tabs.List>
+                    <Tabs.Panel value="slack">
+                      <IntegrationRequestThreadActivity
+                        requestId={request.id}
+                      />
+                    </Tabs.Panel>
+                  </Tabs>
                 </Box>
+              ) : (
+                <Text color="muted">No integration activity is available.</Text>
               )}
             </Container>
           </BodyContainer>
         </Box>
 
-        <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px] bg-linear-to-br md:h-dvh md:overflow-y-auto md:pb-6">
+        <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border w-full shrink-0 border-t-[0.5px] bg-linear-to-br pb-6 md:h-dvh md:w-(--story-sidebar-width) md:overflow-y-auto md:border-t-0 md:border-l-[0.5px]">
           <RequestProperties
             assignee={assignee}
             canEditRequest={canEditRequest}
@@ -1063,7 +1200,7 @@ export const IntegrationRequestDetails = ({
             request={request}
             selectedStatus={selectedStatus}
             statusId={statusId}
-            teamId={teamId}
+            teamId={request.teamId}
           />
         </Box>
       </Box>
@@ -1084,7 +1221,7 @@ export const IntegrationRequestDetails = ({
             onSuccess: (res) => {
               if (!res.error?.message) {
                 setIsDeclining(false);
-                router.push(withWorkspace(`/teams/${teamId}/requests`));
+                router.push(withWorkspace(`/teams/${request.teamId}/requests`));
               }
             },
           });

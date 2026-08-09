@@ -25,9 +25,15 @@ export const useUpdateIntegrationRequest = () => {
       await queryClient.cancelQueries({ queryKey: detailKey });
       const previous = queryClient.getQueryData<IntegrationRequest>(detailKey);
       if (previous) {
+        const optimisticPayload = Object.fromEntries(
+          Object.entries(payload).map(([key, value]) => [
+            key,
+            value === null ? undefined : value,
+          ]),
+        ) as Partial<IntegrationRequest>;
         queryClient.setQueryData<IntegrationRequest>(detailKey, {
           ...previous,
-          ...payload,
+          ...optimisticPayload,
           updatedAt: new Date().toISOString(),
         });
       }

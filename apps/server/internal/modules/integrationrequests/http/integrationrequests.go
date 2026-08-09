@@ -31,6 +31,10 @@ func (h *Handlers) ListTeamRequests(ctx context.Context, w http.ResponseWriter, 
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	teamID, err := uuid.Parse(web.Params(r, "teamId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -62,13 +66,13 @@ func (h *Handlers) ListTeamRequests(ctx context.Context, w http.ResponseWriter, 
 		Page:          page,
 		PageSize:      pageSize + 1,
 	}
-	requests, err := h.requests.ListByTeam(ctx, workspace.ID, teamID, filter)
+	requests, err := h.requests.ListByTeam(ctx, workspace.ID, teamID, userID, filter)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
 	}
-	totalCount, err := h.requests.CountByTeam(ctx, workspace.ID, teamID, filter)
+	totalCount, err := h.requests.CountByTeam(ctx, workspace.ID, teamID, userID, filter)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
 	}
 	hasMore := len(requests) > pageSize
 	if hasMore {
@@ -82,11 +86,15 @@ func (h *Handlers) GetRequest(ctx context.Context, w http.ResponseWriter, r *htt
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	requestID, err := uuid.Parse(web.Params(r, "requestId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	request, err := h.requests.Get(ctx, workspace.ID, requestID)
+	request, err := h.requests.GetForUser(ctx, workspace.ID, requestID, userID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if integrationrequests.IsNotFound(err) {
@@ -102,6 +110,10 @@ func (h *Handlers) UpdateRequest(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	requestID, err := uuid.Parse(web.Params(r, "requestId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -110,23 +122,98 @@ func (h *Handlers) UpdateRequest(ctx context.Context, w http.ResponseWriter, r *
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	request, err := h.requests.UpdatePending(ctx, workspace.ID, requestID, integrationrequests.CoreUpdateRequestInput{
+	request, err := h.requests.UpdatePending(ctx, workspace.ID, requestID, userID, integrationrequests.CoreUpdateRequestInput{
 		Title:         input.Title,
-		Description:   input.Description,
-		StatusID:      input.StatusID,
+		Description:   toCoreOptionalValue(input.Description),
+		StatusID:      toCoreOptionalValue(input.StatusID),
 		Priority:      input.Priority,
-		AssigneeID:    input.AssigneeID,
-		EstimateValue: input.EstimateValue,
-		ObjectiveID:   input.ObjectiveID,
-		KeyResultID:   input.KeyResultID,
-		SprintID:      input.SprintID,
-		StartDate:     input.StartDate.TimePtr(),
-		EndDate:       input.EndDate.TimePtr(),
+		AssigneeID:    toCoreOptionalValue(input.AssigneeID),
+		EstimateValue: toCoreOptionalValue(input.EstimateValue),
+		ObjectiveID:   toCoreOptionalValue(input.ObjectiveID),
+		KeyResultID:   toCoreOptionalValue(input.KeyResultID),
+		SprintID:      toCoreOptionalValue(input.SprintID),
+		StartDate:     toCoreOptionalDate(input.StartDate),
+		EndDate:       toCoreOptionalDate(input.EndDate),
+		LabelIDs:      input.LabelIDs,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, requestErrorStatus(err))
 	}
 	return web.Respond(ctx, w, toAppRequest(request), http.StatusOK)
+}
+
+func (h *Handlers) GetRequestThreadActivity(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	requestID, err := uuid.Parse(web.Params(r, "requestId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	activity, err := h.requests.GetThreadActivityForRequest(ctx, workspace.ID, requestID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
+	}
+	return web.Respond(ctx, w, toAppThreadActivity(activity), http.StatusOK)
+}
+
+func (h *Handlers) CreateRequestComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	requestID, err := uuid.Parse(web.Params(r, "requestId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	var input AppCreateIntegrationRequestComment
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	comment, err := h.requests.CreateComment(ctx, integrationrequests.CoreCreateCommentInput{
+		WorkspaceID:          workspace.ID,
+		RequestID:            requestID,
+		AuthorID:             userID,
+		ClientIdempotencyKey: input.IdempotencyKey,
+		Body:                 input.Body,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
+	}
+	return web.Respond(ctx, w, toAppComment(comment), http.StatusCreated)
+}
+
+func (h *Handlers) GetStoryProviderThreads(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	storyID, err := uuid.Parse(web.Params(r, "storyId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	threads, err := h.requests.ListProviderThreadsForStory(ctx, workspace.ID, storyID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
+	}
+	response := make([]AppProviderThread, 0, len(threads))
+	for _, thread := range threads {
+		response = append(response, toAppProviderThread(thread))
+	}
+	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
 func (h *Handlers) AcceptRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -213,8 +300,14 @@ func requestErrorStatus(err error) int {
 	switch {
 	case integrationrequests.IsNotFound(err):
 		return http.StatusNotFound
+	case errors.Is(err, integrationrequests.ErrProviderThreadNotFound):
+		return http.StatusNotFound
 	case errors.Is(err, integrationrequests.ErrRequestNotPending):
 		return http.StatusConflict
+	case errors.Is(err, integrationrequests.ErrIdempotencyConflict):
+		return http.StatusConflict
+	case errors.Is(err, integrationrequests.ErrInvalidRequestProperty):
+		return http.StatusBadRequest
 	case errors.Is(err, integrationrequests.ErrUnsupportedProvider):
 		return http.StatusBadRequest
 	default:

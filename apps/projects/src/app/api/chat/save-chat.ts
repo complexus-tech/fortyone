@@ -4,6 +4,10 @@ import type { UIMessage } from "ai";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { withTracing } from "@posthog/ai";
+import {
+  OPENAI_DEFAULT_REASONING_EFFORT,
+  OPENAI_TEXT_MODEL,
+} from "@/lib/ai/models";
 import { saveAiChatMessagesAction } from "@/modules/ai-chats/actions/save-ai-chat-messages";
 import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
 import { auth } from "@/auth";
@@ -28,8 +32,8 @@ export const saveChat = async ({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const model = withTracing(openaiClient("gpt-5-nano-2025-08-07"), phClient, {
-    posthogDistinctId: session?.user?.email ?? undefined,
+  const model = withTracing(openaiClient(OPENAI_TEXT_MODEL), phClient, {
+    posthogDistinctId: session?.user.email ?? undefined,
     posthogProperties: {
       conversation_id: id,
     },
@@ -50,7 +54,7 @@ export const saveChat = async ({
       }),
       providerOptions: {
         openai: {
-          reasoningEffort: "minimal",
+          reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
           textVerbosity: "low",
         } satisfies OpenAIResponsesProviderOptions,
       },

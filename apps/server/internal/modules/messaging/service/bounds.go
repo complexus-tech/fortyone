@@ -20,6 +20,10 @@ const (
 	MaximumConversationBytes = 48 << 10
 
 	MaximumConversationTurns = 20
+
+	// MaximumGuidanceRunes bounds trusted workspace-admin instructions appended
+	// to the assistant's base instructions for a single request.
+	MaximumGuidanceRunes = 4_000
 )
 
 // NormalizeRequest validates the authoritative identity and current prompt,
@@ -42,9 +46,50 @@ func NormalizeRequest(request Request) (Request, error) {
 			return Request{}, fmt.Errorf("%w: turn %d has empty text", ErrInvalidRequest, index)
 		}
 	}
+	allowedTeamIDs, err := normalizedAllowedTeamIDs(request.AllowedTeamIDs)
+	if err != nil {
+		return Request{}, err
+	}
+	runtimeContext, err := normalizeRuntimeContext(request.RuntimeContext)
+	if err != nil {
+		return Request{}, err
+	}
 
+	request.AllowedTeamIDs = allowedTeamIDs
+	request.RuntimeContext = runtimeContext
+	request.Guidance = strings.TrimSpace(request.Guidance)
+	if guidanceRunes := len([]rune(request.Guidance)); guidanceRunes > MaximumGuidanceRunes {
+		return Request{}, fmt.Errorf("%w: workspace guidance is %d characters; maximum is %d", ErrInvalidRequest, guidanceRunes, MaximumGuidanceRunes)
+	}
 	request.Conversation = newestBoundedConversation(request.Conversation)
 	return request, nil
+}
+
+func normalizedAllowedTeamIDs(teamIDs []uuid.UUID) ([]uuid.UUID, error) {
+	if teamIDs == nil {
+		return nil, nil
+	}
+
+	result := make([]uuid.UUID, 0, len(teamIDs))
+	seen := make(map[uuid.UUID]struct{}, len(teamIDs))
+	for _, teamID := range teamIDs {
+		if teamID == uuid.Nil {
+			return nil, fmt.Errorf("%w: allowed team IDs must not contain a nil UUID", ErrInvalidRequest)
+		}
+		if _, duplicate := seen[teamID]; duplicate {
+			continue
+		}
+		seen[teamID] = struct{}{}
+		result = append(result, teamID)
+	}
+	return result, nil
+}
+
+func cloneOptionalUUIDs(values []uuid.UUID) []uuid.UUID {
+	if values == nil {
+		return nil
+	}
+	return append(make([]uuid.UUID, 0, len(values)), values...)
 }
 
 // ValidatePrompt validates a current provider message before adapters persist

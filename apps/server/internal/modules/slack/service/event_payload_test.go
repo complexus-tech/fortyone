@@ -102,6 +102,20 @@ func TestNormalizeSlackEvent(t *testing.T) {
 			kind: slackEventKindUninstalled,
 			ok:   true,
 		},
+		{
+			name:     "story link shared",
+			body:     `{"type":"event_callback","team_id":"T1","event_id":"Ev7","event":{"type":"link_shared","user":"U1","channel":"C1","message_ts":"10.7","links":[{"domain":"fortyone.app","url":"https://acme.fortyone.app/work/WEB-123"}]}}`,
+			kind:     slackEventKindLinkShared,
+			threadTS: "10.7",
+			ok:       true,
+		},
+		{
+			name:     "story entity details requested",
+			body:     `{"type":"event_callback","team_id":"T1","event_id":"Ev8","event":{"type":"entity_details_requested","user":"U1","channel":"C1","message_ts":"10.7","trigger_id":"trigger","external_ref":{"id":"WEB-123","type":"story"},"entity_url":"https://acme.fortyone.app/work/WEB-123"}}`,
+			kind:     slackEventKindEntityDetails,
+			threadTS: "10.7",
+			ok:       true,
+		},
 	}
 
 	for _, test := range tests {

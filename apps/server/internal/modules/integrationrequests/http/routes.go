@@ -26,7 +26,10 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/workspaces/{workspaceSlug}/teams/{teamId}/integration-requests/accept-all", h.AcceptAllTeamRequests, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/teams/{teamId}/integration-requests/decline-all", h.DeclineAllTeamRequests, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/integration-requests/{requestId}", h.GetRequest, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/integration-requests/{requestId}/thread", h.GetRequestThreadActivity, auth, workspace)
 	app.Put("/workspaces/{workspaceSlug}/integration-requests/{requestId}", h.UpdateRequest, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/integration-requests/{requestId}/comments", h.CreateRequestComment, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/integration-requests/{requestId}/accept", h.AcceptRequest, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/integration-requests/{requestId}/decline", h.DeclineRequest, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/stories/{storyId}/integration-request-links", h.GetStoryProviderThreads, auth, workspace)
 }

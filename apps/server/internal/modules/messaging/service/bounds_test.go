@@ -110,6 +110,57 @@ func TestNormalizeRequestRejectsInvalidHistoryEvenWhenItWouldBeTrimmed(t *testin
 	require.True(t, errors.Is(err, ErrInvalidRequest))
 }
 
+func TestNormalizeRequestPreservesAndCopiesAllowedTeamScope(t *testing.T) {
+	t.Parallel()
+
+	teamID := uuid.MustParse("33333333-3333-3333-3333-333333333333")
+	request := boundedTestRequest()
+	request.AllowedTeamIDs = []uuid.UUID{teamID, teamID}
+
+	normalized, err := NormalizeRequest(request)
+
+	require.NoError(t, err)
+	require.Equal(t, []uuid.UUID{teamID}, normalized.AllowedTeamIDs)
+	request.AllowedTeamIDs[0] = uuid.New()
+	require.Equal(t, teamID, normalized.AllowedTeamIDs[0], "normalized scope must not alias provider input")
+
+	empty := boundedTestRequest()
+	empty.AllowedTeamIDs = []uuid.UUID{}
+	normalizedEmpty, err := NormalizeRequest(empty)
+	require.NoError(t, err)
+	require.NotNil(t, normalizedEmpty.AllowedTeamIDs, "an explicit empty channel policy must not become unrestricted")
+	require.Empty(t, normalizedEmpty.AllowedTeamIDs)
+
+	unrestricted, err := NormalizeRequest(boundedTestRequest())
+	require.NoError(t, err)
+	require.Nil(t, unrestricted.AllowedTeamIDs)
+}
+
+func TestNormalizeRequestRejectsNilAllowedTeamID(t *testing.T) {
+	t.Parallel()
+
+	request := boundedTestRequest()
+	request.AllowedTeamIDs = []uuid.UUID{uuid.Nil}
+
+	_, err := NormalizeRequest(request)
+
+	require.ErrorIs(t, err, ErrInvalidRequest)
+}
+
+func TestNormalizeRequestBoundsWorkspaceGuidance(t *testing.T) {
+	t.Parallel()
+
+	request := boundedTestRequest()
+	request.Guidance = "  Keep answers concise.  "
+	normalized, err := NormalizeRequest(request)
+	require.NoError(t, err)
+	require.Equal(t, "Keep answers concise.", normalized.Guidance)
+
+	request.Guidance = strings.Repeat("x", MaximumGuidanceRunes+1)
+	_, err = NormalizeRequest(request)
+	require.ErrorIs(t, err, ErrInvalidRequest)
+}
+
 func boundedTestRequest() Request {
 	return Request{
 		WorkspaceID: uuid.MustParse("11111111-1111-1111-1111-111111111111"),

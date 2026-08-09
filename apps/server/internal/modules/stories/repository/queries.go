@@ -59,6 +59,31 @@ func (r *repo) GetTeamEstimateScheme(ctx context.Context, teamID, workspaceID uu
 	return scheme, nil
 }
 
+func (r *repo) FindFirstStatusByCategory(ctx context.Context, teamID, workspaceID uuid.UUID, category string) (*uuid.UUID, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.FindFirstStatusByCategory")
+	defer span.End()
+
+	var statusID uuid.UUID
+	err := r.db.GetContext(ctx, &statusID, `
+		SELECT s.status_id
+		FROM statuses s
+		JOIN teams t ON t.team_id = s.team_id
+		WHERE s.team_id = $1
+		  AND t.workspace_id = $2
+		  AND s.category = $3
+		ORDER BY s.order_index ASC
+		LIMIT 1
+	`, teamID, workspaceID, category)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+	return &statusID, nil
+}
+
 func (r *repo) ResolveKeyResult(ctx context.Context, keyResultID, workspaceID uuid.UUID) (stories.CoreKeyResultReference, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.ResolveKeyResult")
 	defer span.End()

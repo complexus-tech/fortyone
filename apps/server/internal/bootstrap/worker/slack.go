@@ -5,8 +5,10 @@ import (
 	"strings"
 	"time"
 
+	integrationrequestsrepository "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/repository"
 	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
 	messagingbudget "github.com/complexus-tech/projects-api/internal/modules/messaging/budget"
+	messagingcontext "github.com/complexus-tech/projects-api/internal/modules/messaging/context"
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
 	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
@@ -17,10 +19,15 @@ import (
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
 	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
+	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
+	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
 	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	teamsrepository "github.com/complexus-tech/projects-api/internal/modules/teams/repository"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
+	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	"github.com/complexus-tech/projects-api/internal/platform/billing"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
@@ -37,7 +44,10 @@ func (a workspaceAssistantAccess) CanUseAssistant(ctx context.Context, workspace
 }
 
 func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redis.Client, cfg Config, eventQueue slack.EventQueue) (*slack.EventProcessor, error) {
+	messagingRepo := messagingrepository.New(db)
 	teamsService := teams.New(log, teamsrepository.New(log, db))
+	statesService := states.New(log, statesrepository.New(log, db))
+	usersService := users.New(log, usersrepository.New(log, db), nil)
 	storiesService := stories.New(
 		log,
 		storiesrepository.New(log, db),
@@ -52,12 +62,26 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 		objectivesrepository.New(log, db),
 		okrActivitiesService,
 	)
+	contextProvider, err := messagingcontext.New(
+		usersService,
+		workspacesrepository.New(log, db),
+		teamsService,
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	toolExecutor, err := messaging.NewFortyOneToolExecutor(
 		teamsService,
 		storiesService,
 		searchService,
 		objectivesService,
+		messaging.WithOperationalTools(messaging.OperationalToolServices{
+			States: statesService,
+			Users:  usersService,
+		}),
+		messaging.WithStoryMutations(cfg.Auth.SecretKey),
+		messaging.WithStoryMutationConfirmationStore(messagingRepo),
 	)
 	if err != nil {
 		return nil, err
@@ -86,11 +110,15 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 	processorConfig := slackEventProcessorConfig(cfg, eventQueue)
 	processorConfig.CallLimiter = callLimiter
 	processorConfig.UsageBudget = messagingrepository.NewDailyUsageRepository(db)
+	processorConfig.ContextProvider = contextProvider
+	processorConfig.ThreadSync = integrationrequestsrepository.New(log, db)
+	processorConfig.StoryReader = storiesService
+	processorConfig.MutationConfirmer = toolExecutor
 
 	return slack.NewEventProcessor(
 		log,
 		slackrepository.New(log, db),
-		messagingrepository.New(db),
+		messagingRepo,
 		assistant,
 		workspaceAssistantAccess{db: db},
 		processorConfig,

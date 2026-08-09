@@ -28,6 +28,7 @@ var (
 	ErrInvalidStoryMediaReference = errors.New("invalid story media reference")
 	ErrObjectiveKeyResultMismatch = errors.New("key result does not belong to objective")
 	ErrInvalidStoryLabels         = errors.New("one or more labels do not belong to the story's workspace and team")
+	ErrStoryChanged               = errors.New("story changed before the update was applied")
 )
 
 // Repository provides access to the story storage.
@@ -76,6 +77,14 @@ type idempotentCreateRepository interface {
 	CreateIdempotent(ctx context.Context, story *CoreSingleStory) (CoreSingleStory, bool, error)
 }
 
+type conditionalUpdateRepository interface {
+	UpdateIfUnchanged(ctx context.Context, id, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any) (bool, error)
+}
+
+type defaultStatusRepository interface {
+	FindFirstStatusByCategory(ctx context.Context, teamID, workspaceID uuid.UUID, category string) (*uuid.UUID, error)
+}
+
 // MentionsRepository provides access to comment mentions storage.
 type MentionsRepository interface {
 	SaveMentions(ctx context.Context, commentID uuid.UUID, userIDs []uuid.UUID) error
@@ -111,6 +120,7 @@ type updateOptions struct {
 	reconcileMedia           bool
 	referencedMediaIDs       []uuid.UUID
 	orphanedMediaIDs         *[]uuid.UUID
+	expectedUpdatedAt        *time.Time
 }
 
 type commentOptions struct {
@@ -145,6 +155,20 @@ func (s *Service) CreateExternal(ctx context.Context, actorID uuid.UUID, ns Core
 		ns.Reporter = &actorID
 	}
 	return s.createWithOptions(ctx, ns, workspaceID, actorID, createOptions{})
+}
+
+// CreateExternalUserAction creates a story from a user-initiated external
+// surface such as Slack. Unlike provider ingestion, this preserves the normal
+// FortyOne event and GitHub-sync side effects while retaining the explicit
+// actor and external idempotency key.
+func (s *Service) CreateExternalUserAction(ctx context.Context, actorID uuid.UUID, ns CoreNewStory, workspaceID uuid.UUID) (CoreSingleStory, error) {
+	if ns.Reporter == nil {
+		ns.Reporter = &actorID
+	}
+	return s.createWithOptions(ctx, ns, workspaceID, actorID, createOptions{
+		publishEvents:     true,
+		enqueueGitHubSync: true,
+	})
 }
 
 func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, workspaceId, actorID uuid.UUID, options createOptions) (CoreSingleStory, error) {
@@ -453,6 +477,20 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 	return story, nil
 }
 
+// FindFirstStatusByCategory returns the first workflow status in a category for
+// a team. The workspace constraint prevents a caller from resolving workflow
+// state through a cross-workspace team identifier.
+func (s *Service) FindFirstStatusByCategory(ctx context.Context, teamID, workspaceID uuid.UUID, category string) (*uuid.UUID, error) {
+	repo, ok := s.repo.(defaultStatusRepository)
+	if !ok {
+		return nil, errors.New("story repository does not support default status lookup")
+	}
+	if teamID == uuid.Nil || workspaceID == uuid.Nil || strings.TrimSpace(category) == "" {
+		return nil, errors.New("team, workspace, and status category are required")
+	}
+	return repo.FindFirstStatusByCategory(ctx, teamID, workspaceID, strings.TrimSpace(category))
+}
+
 // List returns a list of stories for a workspace with additional filters.
 func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error) {
 	s.log.Info(ctx, "business.core.stories.List")
@@ -550,6 +588,46 @@ func (s *Service) UpdateExternalWithReason(ctx context.Context, actorID, storyID
 	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
 		recordDescriptionUpdates: true,
 		activityReason:           reason,
+	})
+}
+
+// UpdateExternalIfUnchanged applies an integration-originated update only when
+// the story still has the version the caller inspected. This closes the race
+// between confirmation-time validation and the repository write.
+func (s *Service) UpdateExternalIfUnchanged(
+	ctx context.Context,
+	actorID, storyID, workspaceID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	updates map[string]any,
+) error {
+	if expectedUpdatedAt.IsZero() {
+		return errors.New("expected story update time is required")
+	}
+	expectedUpdatedAt = expectedUpdatedAt.UTC()
+	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
+		recordDescriptionUpdates: true,
+		expectedUpdatedAt:        &expectedUpdatedAt,
+	})
+}
+
+// UpdateExternalUserActionIfUnchanged applies a user-initiated external edit
+// with compare-and-swap protection and the same downstream event and GitHub
+// synchronization behavior as an in-app update.
+func (s *Service) UpdateExternalUserActionIfUnchanged(
+	ctx context.Context,
+	actorID, storyID, workspaceID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	updates map[string]any,
+) error {
+	if expectedUpdatedAt.IsZero() {
+		return errors.New("expected story update time is required")
+	}
+	expectedUpdatedAt = expectedUpdatedAt.UTC()
+	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
+		publishEvents:            true,
+		enqueueGitHubSync:        true,
+		recordDescriptionUpdates: true,
+		expectedUpdatedAt:        &expectedUpdatedAt,
 	})
 }
 
@@ -678,7 +756,25 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 			*options.orphanedMediaIDs = append((*options.orphanedMediaIDs)[:0], orphanedMediaIDs...)
 		}
 	} else {
-		updateErr = s.repo.Update(ctx, storyID, workspaceID, updates)
+		if options.expectedUpdatedAt == nil {
+			updateErr = s.repo.Update(ctx, storyID, workspaceID, updates)
+		} else {
+			conditionalRepo, ok := s.repo.(conditionalUpdateRepository)
+			if !ok {
+				return errors.New("story repository does not support conditional updates")
+			}
+			var updated bool
+			updated, updateErr = conditionalRepo.UpdateIfUnchanged(
+				ctx,
+				storyID,
+				workspaceID,
+				*options.expectedUpdatedAt,
+				updates,
+			)
+			if updateErr == nil && !updated {
+				updateErr = ErrStoryChanged
+			}
+		}
 	}
 	if updateErr != nil {
 		span.RecordError(updateErr)

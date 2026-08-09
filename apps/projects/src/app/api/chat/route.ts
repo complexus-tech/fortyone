@@ -12,6 +12,10 @@ import {
 } from "ai";
 import type { NextRequest } from "next/server";
 import { withTracing } from "@posthog/ai";
+import {
+  OPENAI_DEFAULT_REASONING_EFFORT,
+  OPENAI_TEXT_MODEL,
+} from "@/lib/ai/models";
 import { tools } from "@/lib/ai/tools";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
@@ -75,7 +79,7 @@ export async function POST(req: NextRequest) {
 
   let client =
     provider === "openai"
-      ? openaiClient("gpt-5.6-luna")
+      ? openaiClient(OPENAI_TEXT_MODEL)
       : googleClient("gemini-3-flash-preview");
 
   if (process.env.NODE_ENV === "development") {
@@ -114,7 +118,7 @@ export async function POST(req: NextRequest) {
       providerOptions: {
         openai: {
           promptCacheKey: `${MAYA_PROMPT_CACHE_NAMESPACE}:${workspace?.id ?? "unknown"}`,
-          reasoningEffort: "low",
+          reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
           textVerbosity: "low",
         } satisfies OpenAIResponsesProviderOptions,
         google: {

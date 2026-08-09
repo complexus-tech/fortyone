@@ -10,7 +10,10 @@ links, authorization, story creation, AI request dispatch, and diagnostics.
 Slack's `team_id` identifies a Slack workspace installation. It is never a
 FortyOne team ID. Every action resolves the installation first, then resolves
 the Slack user to a FortyOne user in that workspace, and finally applies normal
-FortyOne membership and permission checks.
+FortyOne membership and permission checks. Channel assistant conversations add
+one more boundary: an admin may map a Slack channel to allowed FortyOne teams.
+Without an explicit mapping, the channel can expose only public teams that the
+current linked actor has joined.
 
 ## Source-Controlled Slack Configuration
 
@@ -27,9 +30,10 @@ manifest in another environment; do not change the paths.
 | Interactivity and options | `POST /integrations/slack/interactivity` |
 | `/fortyone` command       | `POST /integrations/slack/commands`      |
 
-The message shortcut callback ID is `fortyone_create_task`. Modal submissions
-use the same callback ID. External-select option requests are interaction
-payloads and use the interactivity URL.
+The message shortcut callback ID is `fortyone_create_task`. Its user-facing
+name is **Create a story**. Modal submissions use the same callback ID.
+External-select option requests and assistant confirmation buttons are
+interaction payloads and use the interactivity URL.
 
 ## Required Server Configuration
 
@@ -53,10 +57,15 @@ different environment, such as local development or staging.
 The API and worker must share the same strong `APP_AUTH_SECRET_KEY`; changing it
 without a credential rotation procedure makes encrypted installation,
 recoverable inbox, and uninstall-outbox payloads unreadable.
-The worker also requires `OPENAI_API_KEY` for Maya responses. `OPENAI_MODEL` is
-optional and defaults to `gpt-5.4-mini`, including when the value passed to the
-assistant is blank. Without an API key, task creation remains available and
-Maya returns a clear configuration message.
+The API and worker use `OPENAI_API_KEY` for AI-backed functionality. The
+worker-only `OPENAI_MODEL` override is optional and defaults to
+`gpt-5.6-luna`, including when the value is blank. The same worker override is
+used by Slack Maya and the AI assignment advisor. GPT-5.6 Luna uses `medium`
+reasoning by default; `high` or `xhigh` must be an explicit, workload-specific
+override where evaluation shows a meaningful quality gain.
+Without an API key, assignment planning uses its deterministic fallback, task
+creation remains available, and messaging returns a clear configuration
+message.
 
 The worker applies these launch safeguards by default; set the environment
 variables only when an environment needs different limits:
@@ -64,6 +73,12 @@ variables only when an environment needs different limits:
 - `OPENAI_ASSISTANT_USER_CALLS_PER_MINUTE=12`
 - `OPENAI_ASSISTANT_WORKSPACE_CALLS_PER_MINUTE=120`
 - `OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY=1000000`
+
+Maya's actor name, workspace, terminology, ordered team hints, and local
+date/time are loaded from FortyOne on each fresh model turn. The user's
+persisted IANA timezone is authoritative, with UTC as a safe fallback for a
+blank or invalid legacy value. This context requires no deployment environment
+variables and is filtered to the current Slack conversation's team audience.
 
 The per-minute limits are atomic in Redis and idempotent for a replayed Slack
 event. The token ceiling is shared by every messaging provider in a FortyOne
@@ -82,27 +97,41 @@ cutover will create expiring access tokens the runtime cannot refresh.
 
 ## Permission Model
 
-The core install requires only:
+The production install requires:
 
 - `app_mentions:read` for `app_mention`
-- `channels:history` for actor-bound follow-ups in subscribed public-channel threads
-- `chat:write` for replies and task confirmations
+- `channels:history` for subscribed public-channel thread replies
+- `channels:read` for the admin channel-audience configuration
+- `chat:write` for replies and story confirmations
 - `commands` for `/fortyone` and the message shortcut
-- `groups:history` for actor-bound follow-ups in subscribed private-channel threads
+- `groups:history` for subscribed private-channel thread replies
+- `groups:read` for private-channel audience configuration
 - `im:history` for `message.im`
+- `links:read` for `link_shared`
+- `links:write` for authorized story unfurls and Work Object details
+- `chat:write.public` so message-shortcut receipts can be posted back to public
+  channels without requiring a prior bot invitation; private channels still
+  require inviting FortyOne
 
-Channel inventory and email-based account matching are intentionally excluded.
-Account binding uses a short-lived, single-use link nonce instead of trusting
-email identity. If channel routing is later enabled, add `channels:read` and
-`groups:read` as optional scopes and handle `missing_scope` without breaking the
-core command, shortcut, mention, and DM flows.
+Email-based account matching is intentionally excluded. Account binding uses a
+short-lived, single-use link nonce instead of trusting email identity.
 
-The channel history scopes are not used to create a task from a message
+The channel history scopes are not used to create a story from a message
 shortcut; Slack includes the selected message in the shortcut payload. They are
 used only to continue a Maya conversation after an explicit `@FortyOne`
-mention. The runtime ignores channel roots, unrelated threads, bot messages,
-edits, messages from another actor, expired or pre-reinstall conversations, and
-Slack Connect channels before durable payload retention.
+mention or to synchronize a Slack-backed Request thread. The runtime ignores
+unrelated channel roots, bot messages, edits, expired or pre-reinstall
+conversations, and Slack Connect channels before durable payload retention.
+
+An explicit mention creates one channel-scoped conversation. Other linked
+FortyOne users may continue that same Slack thread, but each message is
+re-authorized and the effective Maya tool scope is recalculated as the
+intersection of the actor's current team memberships and the channel's current
+audience policy. Channel history is partitioned by a canonical fingerprint of
+that effective team set, so changing the channel allowlist or the actor's team
+access cannot feed older, broader context into a later model request. Direct
+messages remain actor-scoped. Disabling the Slack agent or workflow actions in
+workspace settings takes effect on the next message or confirmation click.
 
 ## Events and Interaction Timing
 
@@ -112,6 +141,8 @@ Subscribe to:
 - `message.channels`
 - `message.groups`
 - `message.im`
+- `link_shared`
+- `entity_details_requested`
 - `app_uninstalled`
 - `tokens_revoked`
 
@@ -137,18 +168,27 @@ Commands, shortcuts, and team-change actions acknowledge before their bounded
 modal/provider work. External option requests and modal submissions remain
 synchronous because Slack requires their response bodies. Submission performs
 authorization and one idempotent product write inside the deadline; source
-links and confirmations have stable keys and recoverable delivery records.
+links, confirmations, rich Block Kit payloads, unfurls, and provider metadata
+have stable keys and recoverable delivery records.
 
-When a user changes the team in the create-task modal, acknowledge the block
+When a user changes the team in the create-story modal, acknowledge the block
 action first, recalculate status, assignee, label, and objective choices from
 that linked user's permitted FortyOne data, then call `views.update` with both
-the modal `view_id` and latest `hash`. Team search is an authorized external
-select so users with more than 100 memberships can reach every team. Status
+the modal `view_id` and latest `hash`. Team search follows the linked user's
+personal FortyOne team order and is an authorized external select so users
+with more than 100 memberships can reach every team. Status
 uses a static menu through Slack's limit and authorized external search beyond
 it. The first permitted team and its first workflow status are selected by
-default so the primary path creates a task; `Request` remains an explicit
+default so the primary path creates a story; `Request` remains an explicit
 status choice for triage. Never trust a rendered option; revalidate membership
 and every dependent ID at submission.
+
+Maya's natural-language story mutations are proposals, not direct writes. A
+create or update proposal returns Confirm and Cancel controls backed by a
+short-lived signed token. Confirm re-resolves the linked user, workspace agent
+settings, channel audience, current team membership, and story version before
+performing an idempotent create or compare-and-swap update. Cancel performs no
+mutation. Mutation arguments are never trusted from a Slack client payload.
 
 ## Disconnect and Remote Uninstall Recovery
 
@@ -198,10 +238,20 @@ secrets, raw Slack payloads, or decrypted message content.
 
 ## Deployment and Data Migration
 
-1. Apply migrations `000107_messaging_integrations` and
-   `000108_messaging_assistant_daily_usage` before deploying either the API or
-   worker. Migration `000108` adds the UTC daily aggregate and the per-inbox-
-   attempt usage ledger used for idempotent Responses API accounting.
+1. Apply migrations `000107_messaging_integrations`,
+   `000108_messaging_assistant_daily_usage`,
+   `000109_slack_channel_audience`, and
+   `000110_integration_request_threads` through
+   `000114_messaging_conversation_audience_fingerprint` before deploying either the
+   API or worker. Migration `000108` adds idempotent Responses API accounting;
+   `000109` adds channel-scoped conversations, durable rich provider payloads,
+   channel-team audience policy, and agent settings; `000110` adds durable
+   Slack Request threads, comments, and retained labels; `000111` adds
+   one-time, race-safe story-mutation confirmations; `000112` adds resumable
+   Request-conversion reservations and priority validation; `000113` adds
+   idempotent comments with durable provider-delivery state; and `000114`
+   partitions assistant history whenever the effective channel-team audience
+   changes.
 2. Deploy the expand-compatible API with the shared `APP_AUTH_SECRET_KEY` and
    Slack secrets, and wait for the service to become stable so every legacy API
    task has drained. During this window, OAuth dual-writes the legacy plaintext
@@ -237,7 +287,10 @@ secrets, raw Slack payloads, or decrypted message content.
 Migration `000107` intentionally refuses to roll back while encrypted Slack
 credentials exist. An application-assisted decrypt/disconnect procedure is
 required before schema rollback; never force the migration version past that
-guard.
+guard. Migration `000114` likewise refuses to collapse multiple audience
+histories for one Slack thread into an ambiguous legacy row. Let the normal
+30-day conversation retention remove obsolete partitions, or use an approved
+data-migration procedure, before rolling it back.
 
 ## Applying the Manifest
 
@@ -263,6 +316,10 @@ checks below. Keep separate Slack app credentials per environment.
 
 - A FortyOne workspace admin starts installation from the workspace integration
   settings page.
+- The same admin surface controls channel-to-team audience policy, assistant
+  enablement, confirmed workflow actions, and Slack-specific workspace
+  guidance. Ordinary members can link their own Slack identity but cannot
+  modify installation or audience settings.
 - OAuth state is an opaque, short-lived nonce bound to the initiating FortyOne
   user and workspace, stored only as a hash, consumed once, and verified before
   token exchange.
@@ -293,19 +350,54 @@ and different workflows, and two users: one linked and one unlinked.
 - Switch teams and confirm statuses, assignees, labels, and objectives refresh
   immediately and stale selections are cleared.
 - Submit once, then replay the same delivery; confirm one story/request, one
-  source mapping, and one private creation confirmation.
-- Mention the app in a channel; confirm Maya sends the linked user a normal,
-  durable direct message and does not expose workspace data in the channel. DM
-  it and confirm continuity in the app conversation.
+  source mapping, and one source-conversation confirmation in the form
+  `Joseph created WEB-123`, followed by the authorized rich story card. A
+  shortcut on a channel root must post the receipt at the channel root; an
+  action started inside an existing thread must stay in that thread.
+- Confirm the first team in the modal matches the linked user's personal team
+  ordering in FortyOne.
+- Create a Request, reply in its Slack thread, and confirm that the inbound
+  comment appears on the Request. Reply from FortyOne and confirm one Slack
+  thread message. Convert the Request to a story and repeat from the story's
+  expandable Slack thread section.
+- Mention the app in a non-Slack-Connect channel; confirm Maya answers in that
+  thread. Continue as another linked user and confirm one shared conversation,
+  while every answer is limited by that user's current membership and the
+  channel's configured team audience. Confirm DMs remain private and
+  actor-scoped.
+- Ask Maya for the current time and confirm it uses the linked user's persisted
+  timezone rather than the API or worker host timezone. Ask who is speaking and
+  confirm it uses the linked FortyOne profile, not the Slack display name.
+- Ask for pending work and confirm only active stories assigned to that user
+  are returned with human-readable team, status, assignee, priority, and due
+  date details. Exercise status listing, team-member lookup, and a direct
+  human-readable story reference such as `WEB-123`; repeat outside the current
+  channel audience and confirm no disallowed rows are returned.
+- Configure one channel with an explicit team allowlist and another with no
+  mapping. Confirm the first can access only mapped teams and the second only
+  public teams joined by the actor. Confirm private-team data is never returned
+  outside an explicit mapping. Narrow the mapped channel's allowlist and
+  confirm the next assistant turn receives no history from the removed team.
+- Ask Maya to create or update a story. Confirm no write occurs before clicking
+  Confirm; Cancel performs no write; Confirm creates/updates once; replay is
+  idempotent; and a stale update, expired token, disabled workflow setting, or
+  changed channel audience is rejected without mutation.
+- Paste an authorized FortyOne story URL and confirm a rich preview appears.
+  Repeat while unlinked, outside the story's team, and in a Slack Connect
+  channel; confirm no private data is unfurled. Open Work Object details and
+  verify identifier, title, description, status, assignee, priority, and due
+  date. Edit each supported property in the detail pane and confirm FortyOne
+  updates once and Slack presents refreshed metadata. Repeat after revoking the
+  actor's team access or channel audience, and with a concurrently changed
+  story, to confirm the edit is rejected without overwriting newer data.
 - In a test environment with reduced limits, exhaust the user, workspace, and
   daily token budgets independently. Confirm Maya makes no additional model
-  call, persists a safe outbox reply, completes the inbound event, and keeps a
-  channel mention's reply in the user's direct message. Replay the same event
-  and confirm it does not consume another rate-limit slot or duplicate recorded
-  usage for the same inbox attempt.
+  call, persists a safe outbox reply, and completes the inbound event. Replay
+  the same event and confirm it does not consume another rate-limit slot or
+  duplicate recorded usage for the same inbox attempt.
 - Send a message larger than 16 KiB and confirm it is neither stored in the
-  conversation nor sent to OpenAI. Confirm Maya returns the durable shortening
-  prompt privately for a channel mention.
+  conversation nor sent to OpenAI. Confirm Maya returns a durable shortening
+  prompt without exposing workspace data.
 - As an unlinked channel user, confirm the one-time account URL is sent only to
   that user's app conversation and never appears in the public channel.
 - As the unlinked user, invoke every entry point and confirm the single-use
@@ -350,6 +442,8 @@ If the integration is sending incorrect or unauthorized messages:
 - [Using token rotation](https://docs.slack.dev/authentication/using-token-rotation/)
 - [Verifying requests from Slack](https://docs.slack.dev/authentication/verifying-requests-from-slack/)
 - [Events API](https://docs.slack.dev/apis/events-api/)
+- [Link unfurls](https://docs.slack.dev/messaging/unfurling-links-in-messages/)
+- [Work Objects](https://docs.slack.dev/messaging/work-objects-implementation/)
 - [Handling user interaction](https://docs.slack.dev/interactivity/handling-user-interaction/)
 - [Modals and `views.update`](https://docs.slack.dev/surfaces/modals/)
 - [Web API rate limits](https://docs.slack.dev/apis/web-api/rate-limits/)

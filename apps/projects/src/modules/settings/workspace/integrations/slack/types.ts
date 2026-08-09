@@ -29,6 +29,17 @@ export type SlackIntegration = {
   channels: SlackChannel[];
 };
 
+export type SlackChannelAudience = {
+  channel: SlackChannel;
+  teamIds: string[];
+};
+
+export type SlackAgentSettings = {
+  assistantEnabled: boolean;
+  workflowActionsEnabled: boolean;
+  guidance: string;
+};
+
 export type CreateSlackInstallSessionResponse = {
   installUrl: string;
 };

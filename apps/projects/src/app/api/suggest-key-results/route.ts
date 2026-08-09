@@ -2,6 +2,10 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamObject } from "ai";
 import { withTracing } from "@posthog/ai";
+import {
+  OPENAI_DEFAULT_REASONING_EFFORT,
+  OPENAI_TEXT_MODEL,
+} from "@/lib/ai/models";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
 import { keyResultGenerationSchema } from "@/modules/objectives/schemas/key-result-generation";
@@ -29,7 +33,7 @@ export async function POST(req: Request) {
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const model = withTracing(openaiClient("gpt-5-nano-2025-08-07"), phClient, {
+  const model = withTracing(openaiClient(OPENAI_TEXT_MODEL), phClient, {
     posthogDistinctId: session.user.email,
     posthogProperties: {
       action: "generate_key_results",
@@ -90,7 +94,7 @@ export async function POST(req: Request) {
       prompt: improvedPrompt,
       providerOptions: {
         openai: {
-          reasoningEffort: "minimal",
+          reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
           textVerbosity: "low",
         } satisfies OpenAIResponsesProviderOptions,
       },

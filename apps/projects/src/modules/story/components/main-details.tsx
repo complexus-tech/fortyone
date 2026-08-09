@@ -30,6 +30,7 @@ import { Associations } from "./associations";
 import { Attachments } from "./attachments";
 import { FeedbackSection } from "./feedback-section";
 import { GitHubSection } from "./github-section";
+import { IntegrationRequestSection } from "./integration-request-section";
 import { Links } from "./links";
 import { SubStories } from "./sub-stories";
 import { LinksSkeleton } from "./links-skeleton";
@@ -203,6 +204,7 @@ export const MainDetails = ({
         ) : null}
         <GitHubSection.Banner storyId={storyId} />
         <FeedbackSection.Banner storyId={storyId} />
+        <IntegrationRequestSection.Banner storyId={storyId} />
         <TextEditor
           asTitle
           className="text-foreground relative -left-px mb-6 text-3xl font-semibold md:text-4xl"

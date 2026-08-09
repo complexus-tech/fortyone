@@ -39,6 +39,7 @@ import (
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
 	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
+	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
 	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
@@ -167,6 +168,18 @@ func buildServices(cfg mux.Config) services {
 	okrActivitiesService := okractivities.New(cfg.Log, okractivitiesrepository.New(cfg.Log, cfg.DB))
 	keyResultsService := keyresults.New(cfg.Log, keyresultsrepository.New(cfg.Log, cfg.DB), okrActivitiesService, keyresults.WithPublisher(cfg.Publisher))
 	objectivesService := objectives.New(cfg.Log, objectivesrepository.New(cfg.Log, cfg.DB), okrActivitiesService, objectives.WithPublisher(cfg.Publisher))
+	searchService := search.New(cfg.Log, searchrepository.New(cfg.Log, cfg.DB))
+	mutationConfirmer, err := messaging.NewFortyOneToolExecutor(
+		teamsService,
+		storiesService,
+		searchService,
+		objectivesService,
+		messaging.WithStoryMutations(cfg.SecretKey),
+		messaging.WithStoryMutationConfirmationStore(messagingRepo),
+	)
+	if err != nil {
+		panic("failed to initialize Slack mutation confirmer: " + err.Error())
+	}
 	githubService, err := github.New(cfg.Log, githubrepository.New(cfg.Log, cfg.DB), storiesService, integrationRequestsRepo, attachmentsService, github.Config{
 		AppID:            cfg.GitHubAppID,
 		AppSlug:          cfg.GitHubAppSlug,
@@ -197,6 +210,7 @@ func buildServices(cfg mux.Config) services {
 		},
 		slack.WithEventRuntime(cfg.TasksService, messagingRepo),
 		slack.WithNonceStore(messagingRepo),
+		slack.WithMutationConfirmer(mutationConfirmer),
 	)
 	calendarService := calendar.New(
 		cfg.Log,
@@ -247,6 +261,7 @@ func buildServices(cfg mux.Config) services {
 			integrationrequests.ProviderGitHub: githubService,
 			integrationrequests.ProviderSlack:  slackService,
 		},
+		integrationrequests.WithProviderCommenter(integrationrequests.ProviderSlack, slackService),
 	)
 	feedbackService := feedback.New(
 		feedbackrepository.New(cfg.Log, cfg.DB),
@@ -281,7 +296,7 @@ func buildServices(cfg mux.Config) services {
 		objectiveStats:      objectiveStatusService,
 		okrActivities:       okrActivitiesService,
 		reports:             reportsService,
-		search:              search.New(cfg.Log, searchrepository.New(cfg.Log, cfg.DB)),
+		search:              searchService,
 		sprints:             sprints.New(cfg.Log, sprintsrepository.New(cfg.Log, cfg.DB)),
 		states:              statesService,
 		stories:             storiesService,

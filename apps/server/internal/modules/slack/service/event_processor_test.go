@@ -11,12 +11,14 @@ import (
 	"testing"
 	"time"
 
+	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	messagingbudget "github.com/complexus-tech/projects-api/internal/modules/messaging/budget"
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 const testSlackCredentialSecret = "test-slack-credential-secret"
@@ -25,6 +27,7 @@ var (
 	testSlackWorkspaceID    = uuid.MustParse("11111111-1111-4111-8111-111111111111")
 	testWorkspaceID         = uuid.MustParse("22222222-2222-4222-8222-222222222222")
 	testLinkedUserID        = uuid.MustParse("33333333-3333-4333-8333-333333333333")
+	testAllowedTeamID       = uuid.MustParse("88888888-8888-4888-8888-888888888888")
 	testInboundReceiptID    = uuid.MustParse("44444444-4444-4444-8444-444444444444")
 	testConversationID      = uuid.MustParse("55555555-5555-4555-8555-555555555555")
 	testOutboundDeliveryID  = uuid.MustParse("66666666-6666-4666-8666-666666666666")
@@ -35,9 +38,11 @@ var (
 )
 
 type eventRepositoryStub struct {
-	installation slackrepository.SlackWorkspaceRecord
-	workspace    slackrepository.WorkspaceRecord
-	linkedUserID *uuid.UUID
+	installation      slackrepository.SlackWorkspaceRecord
+	workspace         slackrepository.WorkspaceRecord
+	linkedUserID      *uuid.UUID
+	agentSettings     slackrepository.AgentSettingsRecord
+	authorizedTeamIDs []uuid.UUID
 
 	getInstallationCalls       int
 	requestedTeamIDs           []string
@@ -52,6 +57,22 @@ type eventRepositoryStub struct {
 	recoverableUninstalls      []slackrepository.SlackUninstallRecord
 	completedUninstalls        []uuid.UUID
 	failedUninstalls           []uuid.UUID
+}
+
+func (r *eventRepositoryStub) GetAgentSettings(_ context.Context, _ uuid.UUID) (slackrepository.AgentSettingsRecord, error) {
+	return r.agentSettings, nil
+}
+
+func (r *eventRepositoryStub) ListAuthorizedChannelTeamIDs(_ context.Context, _, _ uuid.UUID, _ string, _ uuid.UUID) ([]uuid.UUID, error) {
+	return append([]uuid.UUID(nil), r.authorizedTeamIDs...), nil
+}
+
+func (r *eventRepositoryStub) ListWorkspaceTeamsForUser(_ context.Context, _, _ uuid.UUID) ([]slackrepository.TeamRecord, error) {
+	teams := make([]slackrepository.TeamRecord, 0, len(r.authorizedTeamIDs))
+	for _, teamID := range r.authorizedTeamIDs {
+		teams = append(teams, slackrepository.TeamRecord{ID: teamID})
+	}
+	return teams, nil
 }
 
 func newEventRepositoryStub() *eventRepositoryStub {
@@ -72,6 +93,12 @@ func newEventRepositoryStub() *eventRepositoryStub {
 			Slug: "acme",
 			Name: "Acme",
 		},
+		agentSettings: slackrepository.AgentSettingsRecord{
+			AssistantEnabled:       true,
+			WorkflowActionsEnabled: true,
+			Guidance:               "Keep answers concise.",
+		},
+		authorizedTeamIDs: []uuid.UUID{testAllowedTeamID},
 	}
 }
 
@@ -318,6 +345,11 @@ func (s *eventStoreStub) FindConversation(_ context.Context, input messagingrepo
 	return s.conversation, nil
 }
 
+func (s *eventStoreStub) FindChannelConversation(ctx context.Context, input messagingrepository.ConversationInput) (messagingrepository.ConversationRecord, error) {
+	input.AudienceScope = messagingrepository.ConversationAudienceChannel
+	return s.FindConversation(ctx, input)
+}
+
 func (s *eventStoreStub) AppendMessage(_ context.Context, conversationID uuid.UUID, externalMessageID, role, content string) error {
 	s.appendedMessages = append(s.appendedMessages, appendedMessage{
 		conversationID:    conversationID,
@@ -356,6 +388,7 @@ func (s *eventStoreStub) StartOutboundDelivery(_ context.Context, input messagin
 		ExternalThreadID:        externalThreadID,
 		Status:                  s.deliveryStatus,
 		Content:                 s.deliveryContent,
+		ProviderPayload:         append([]byte(nil), input.ProviderPayload...),
 		ExternalMessageID:       s.deliveryMessageID,
 		AttemptCount:            len(s.outboundInputs),
 		Purpose:                 input.Purpose,
@@ -366,6 +399,15 @@ func (s *eventStoreStub) StartOutboundDelivery(_ context.Context, input messagin
 func (s *eventStoreStub) SetOutboundDeliveryContent(_ context.Context, _ uuid.UUID, content string) error {
 	s.setDeliveryContents = append(s.setDeliveryContents, content)
 	s.deliveryContent = stringPointer(content)
+	return nil
+}
+
+func (s *eventStoreStub) SetOutboundDeliveryContentAndProviderPayload(_ context.Context, _ uuid.UUID, content string, providerPayload []byte) error {
+	s.setDeliveryContents = append(s.setDeliveryContents, content)
+	s.deliveryContent = stringPointer(content)
+	if len(s.outboundInputs) > 0 {
+		s.outboundInputs[len(s.outboundInputs)-1].ProviderPayload = append([]byte(nil), providerPayload...)
+	}
 	return nil
 }
 
@@ -396,13 +438,17 @@ func (s *eventStoreStub) CancelOutboundDelivery(_ context.Context, id uuid.UUID,
 }
 
 type assistantStub struct {
-	response messaging.Response
-	err      error
-	requests []messaging.Request
+	response  messaging.Response
+	err       error
+	requests  []messaging.Request
+	onRespond func()
 }
 
 func (a *assistantStub) Respond(_ context.Context, request messaging.Request) (messaging.Response, error) {
 	a.requests = append(a.requests, request)
+	if a.onRespond != nil {
+		a.onRespond()
+	}
 	return a.response, a.err
 }
 
@@ -432,6 +478,37 @@ type usageBudgetStub struct {
 	checkWorkspaces []uuid.UUID
 	recordInputs    []messagingrepository.DailyUsageRecordInput
 	recordLimits    []int64
+}
+
+type assistantContextCall struct {
+	workspaceID    uuid.UUID
+	userID         uuid.UUID
+	allowedTeamIDs []uuid.UUID
+	surface        messaging.RuntimeSurfaceContext
+	now            time.Time
+}
+
+type assistantContextProviderStub struct {
+	runtime *messaging.RuntimeContext
+	err     error
+	calls   []assistantContextCall
+}
+
+func (p *assistantContextProviderStub) Load(
+	_ context.Context,
+	workspaceID, userID uuid.UUID,
+	allowedTeamIDs []uuid.UUID,
+	surface messaging.RuntimeSurfaceContext,
+	now time.Time,
+) (*messaging.RuntimeContext, error) {
+	p.calls = append(p.calls, assistantContextCall{
+		workspaceID:    workspaceID,
+		userID:         userID,
+		allowedTeamIDs: append([]uuid.UUID(nil), allowedTeamIDs...),
+		surface:        surface,
+		now:            now,
+	})
+	return p.runtime, p.err
 }
 
 func (b *usageBudgetStub) Check(_ context.Context, workspaceID uuid.UUID, limit int64) (messagingrepository.DailyUsageSnapshot, error) {
@@ -504,6 +581,7 @@ func newTestEventProcessorWithBudgets(
 		SecretKey:                testSlackCredentialSecret,
 		CallLimiter:              limiter,
 		UsageBudget:              usage,
+		ContextProvider:          &assistantContextProviderStub{},
 		DailyWorkspaceTokenLimit: 1_000_000,
 	})
 	if err != nil {
@@ -751,6 +829,96 @@ func TestEventProcessorCancelsAssistantRecoveryAfterActorLosesAccess(t *testing.
 	processor.eventQueue = &eventQueueStub{}
 
 	recovered, err := processor.RecoverPendingEvents(context.Background())
+	if err != nil {
+		t.Fatalf("RecoverPendingEvents() error = %v", err)
+	}
+	if recovered != 0 || len(sender.messages) != 0 || len(store.cancelledDeliveries) != 1 {
+		t.Fatalf("recovered/sent/cancelled = %d/%d/%d, want 0/0/1", recovered, len(sender.messages), len(store.cancelledDeliveries))
+	}
+}
+
+func TestEventProcessorCancelsAssistantRecoveryAfterChannelAudienceNarrows(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	repo.authorizedTeamIDs = nil
+	store := newEventStoreStub()
+	content := "Private team answer"
+	recipient := "U1"
+	expiresAt := time.Now().UTC().Add(time.Hour)
+	providerPayload, err := EncodeSlackProviderPayload(SlackProviderPayload{
+		Authorization: &SlackDeliveryAuthorization{AllowedTeamIDs: []uuid.UUID{testAllowedTeamID}},
+	})
+	if err != nil {
+		t.Fatalf("EncodeSlackProviderPayload() error = %v", err)
+	}
+	store.deliveryContent = &content
+	store.recoverableOutbound = []messagingrepository.OutboundDeliveryRecord{{
+		ID:                      testOutboundDeliveryID,
+		WorkspaceID:             testWorkspaceID,
+		UserID:                  uuidPointer(testLinkedUserID),
+		InstallGeneration:       uuidPointer(testInstallGeneration),
+		ExternalWorkspaceID:     "T1",
+		ExternalRecipientUserID: &recipient,
+		IdempotencyKey:          "slack:channel-assistant",
+		ExternalChannelID:       "C1",
+		Content:                 &content,
+		ProviderPayload:         providerPayload,
+		Purpose:                 "assistant",
+		ExpiresAt:               &expiresAt,
+		Status:                  "failed",
+		AttemptCount:            2,
+	}}
+	sender := &messageSenderStub{externalMessageID: "171.200"}
+	processor := newTestEventProcessor(t, repo, store, &assistantStub{}, &accessCheckerStub{allowed: true}, sender)
+	processor.eventQueue = &eventQueueStub{}
+
+	recovered, err := processor.RecoverPendingEvents(context.Background())
+	if err != nil {
+		t.Fatalf("RecoverPendingEvents() error = %v", err)
+	}
+	if recovered != 0 || len(sender.messages) != 0 || len(store.cancelledDeliveries) != 1 {
+		t.Fatalf("recovered/sent/cancelled = %d/%d/%d, want 0/0/1", recovered, len(sender.messages), len(store.cancelledDeliveries))
+	}
+}
+
+func TestEventProcessorCancelsRecoveredRequestCommentAfterDMRecipientLosesTeamAccess(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = nil
+	store := newEventStoreStub()
+	content := "Follow-up from FortyOne"
+	recipient := "U1"
+	providerPayload, err := EncodeSlackProviderPayload(SlackProviderPayload{
+		Authorization: &SlackDeliveryAuthorization{
+			AllowedTeamIDs: []uuid.UUID{testAllowedTeamID},
+			ActorUserID:    uuidPointer(testLinkedUserID),
+		},
+	})
+	if err != nil {
+		t.Fatalf("EncodeSlackProviderPayload() error = %v", err)
+	}
+	store.deliveryContent = &content
+	store.recoverableOutbound = []messagingrepository.OutboundDeliveryRecord{{
+		ID:                      testOutboundDeliveryID,
+		WorkspaceID:             testWorkspaceID,
+		UserID:                  uuidPointer(testLinkedUserID),
+		InstallGeneration:       uuidPointer(testInstallGeneration),
+		ExternalWorkspaceID:     "T1",
+		ExternalRecipientUserID: &recipient,
+		IdempotencyKey:          "integration-request-comment:recover-dm",
+		ExternalChannelID:       "D1",
+		ExternalThreadID:        stringPointer("171.100"),
+		Content:                 &content,
+		ProviderPayload:         providerPayload,
+		Purpose:                 "provider_message",
+		Status:                  "failed",
+		AttemptCount:            2,
+	}}
+	sender := &messageSenderStub{externalMessageID: "171.200"}
+	processor := newTestEventProcessor(t, repo, store, &assistantStub{}, &accessCheckerStub{allowed: true}, sender)
+	processor.eventQueue = &eventQueueStub{}
+
+	recovered, err := processor.RecoverPendingEvents(context.Background())
+
 	if err != nil {
 		t.Fatalf("RecoverPendingEvents() error = %v", err)
 	}
@@ -1173,6 +1341,11 @@ func TestEventProcessorPersistsAndRoutesLinkedAssistantResponse(t *testing.T) {
 			limiter := &callLimiterStub{decision: messagingbudget.AdmissionDecision{Allowed: true}}
 			usage := &usageBudgetStub{}
 			processor := newTestEventProcessorWithBudgets(t, repo, store, assistant, access, sender, limiter, usage)
+			contextProvider := processor.contextProvider.(*assistantContextProviderStub)
+			contextProvider.runtime = &messaging.RuntimeContext{
+				Actor:     messaging.RuntimeActorContext{DisplayName: "Joseph Mukorivo", Username: "joseph"},
+				LocalTime: time.Date(2026, time.August, 9, 7, 36, 0, 0, time.FixedZone("Africa/Harare", 2*60*60)),
+			}
 
 			if err := processor.Process(context.Background(), []byte(test.raw)); err != nil {
 				t.Fatalf("Process() error = %v", err)
@@ -1208,6 +1381,32 @@ func TestEventProcessorPersistsAndRoutesLinkedAssistantResponse(t *testing.T) {
 			if request.WorkspaceID != testWorkspaceID || request.UserID != testLinkedUserID || request.Prompt != test.wantPrompt {
 				t.Fatalf("assistant request identity/prompt = %+v", request)
 			}
+			if request.Guidance != "Keep answers concise." || !request.AllowMutations {
+				t.Fatalf("assistant settings = guidance %q / mutations %t", request.Guidance, request.AllowMutations)
+			}
+			if request.RuntimeContext == nil || request.RuntimeContext.Actor.DisplayName != "Joseph Mukorivo" || request.RuntimeContext.LocalTime.Hour() != 7 {
+				t.Fatalf("assistant runtime context = %+v", request.RuntimeContext)
+			}
+			if len(contextProvider.calls) != 1 {
+				t.Fatalf("assistant context calls = %+v, want one", contextProvider.calls)
+			}
+			contextCall := contextProvider.calls[0]
+			if contextCall.workspaceID != testWorkspaceID || contextCall.userID != testLinkedUserID || len(contextCall.allowedTeamIDs) != 1 || contextCall.allowedTeamIDs[0] != testAllowedTeamID || contextCall.surface.Provider != "slack" {
+				t.Fatalf("assistant context input = %+v", contextCall)
+			}
+			if test.name == "direct message" && contextCall.surface.Kind != messaging.RuntimeSurfaceDirect {
+				t.Fatalf("direct message surface = %q", contextCall.surface.Kind)
+			}
+			if test.name != "direct message" && contextCall.surface.Kind != messaging.RuntimeSurfaceThread {
+				t.Fatalf("channel surface = %q", contextCall.surface.Kind)
+			}
+			if test.name == "direct message" {
+				if len(request.AllowedTeamIDs) != 1 || request.AllowedTeamIDs[0] != testAllowedTeamID || conversation.AudienceScope != messagingrepository.ConversationAudienceActor {
+					t.Fatalf("direct assistant scope = teams %v / audience %q", request.AllowedTeamIDs, conversation.AudienceScope)
+				}
+			} else if len(request.AllowedTeamIDs) != 1 || request.AllowedTeamIDs[0] != testAllowedTeamID || conversation.AudienceScope != messagingrepository.ConversationAudienceChannel {
+				t.Fatalf("channel assistant scope = teams %v / audience %q", request.AllowedTeamIDs, conversation.AudienceScope)
+			}
 			if len(request.Conversation) != test.wantConversationTurn || request.Conversation[0].Role != messaging.RoleUser || request.Conversation[1].Role != messaging.RoleAssistant {
 				t.Fatalf("assistant conversation = %+v", request.Conversation)
 			}
@@ -1233,7 +1432,60 @@ func TestEventProcessorPersistsAndRoutesLinkedAssistantResponse(t *testing.T) {
 			if len(store.outboundInputs) != 1 || store.outboundInputs[0].ExternalWorkspaceID != "T1" || store.outboundInputs[0].ExternalChannelID != test.wantChannelID || store.outboundInputs[0].ExternalRecipientUserID != "U1" || store.outboundInputs[0].Purpose != "assistant" || store.outboundInputs[0].UserID == nil || *store.outboundInputs[0].UserID != testLinkedUserID {
 				t.Fatalf("persisted assistant delivery binding = %+v, want Slack team T1", store.outboundInputs)
 			}
+			payload, err := DecodeSlackProviderPayload(store.outboundInputs[0].ProviderPayload)
+			if err != nil {
+				t.Fatalf("DecodeSlackProviderPayload() error = %v", err)
+			}
+			if payload.Authorization == nil || payload.Authorization.ActorUserID == nil || *payload.Authorization.ActorUserID != testLinkedUserID || len(payload.Authorization.AllowedTeamIDs) != 1 || payload.Authorization.AllowedTeamIDs[0] != testAllowedTeamID {
+				t.Fatalf("persisted assistant authorization = %+v", payload.Authorization)
+			}
 		})
+	}
+}
+
+func TestEventProcessorCancelsImmediateChannelResponseWhenAgentIsDisabledDuringModelCall(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	store := newEventStoreStub()
+	assistant := &assistantStub{response: messaging.Response{Text: "Private team answer"}}
+	assistant.onRespond = func() {
+		repo.agentSettings.AssistantEnabled = false
+	}
+	sender := &messageSenderStub{externalMessageID: "10.2"}
+	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender)
+
+	err := processor.Process(context.Background(), []byte(mentionEvent("Ev-settings-race", "<@B1> show private work")))
+	if err != nil {
+		t.Fatalf("Process() error = %v", err)
+	}
+	assertSingleInboundStatus(t, store, "ignored")
+	if len(sender.messages) != 0 || len(store.cancelledDeliveries) != 1 {
+		t.Fatalf("sent/cancelled = %d/%d, want 0/1", len(sender.messages), len(store.cancelledDeliveries))
+	}
+}
+
+func TestEventProcessorRetriesWhenAuthoritativeAssistantContextCannotLoad(t *testing.T) {
+	t.Parallel()
+
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	store := newEventStoreStub()
+	assistant := &assistantStub{response: messaging.Response{Text: "must not be used"}}
+	sender := &messageSenderStub{}
+	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender)
+	contextProvider := processor.contextProvider.(*assistantContextProviderStub)
+	contextProvider.err = errors.New("context database unavailable")
+
+	err := processor.Process(context.Background(), []byte(directMessageEvent("Ev-context-failed", "What time is it?")))
+
+	if err == nil || !strings.Contains(err.Error(), "context database unavailable") {
+		t.Fatalf("Process() error = %v, want context failure", err)
+	}
+	if len(assistant.requests) != 0 || len(sender.messages) != 0 {
+		t.Fatalf("context failure reached model or delivery: requests=%d sends=%d", len(assistant.requests), len(sender.messages))
+	}
+	if len(store.failedDeliveries) != 1 {
+		t.Fatalf("failed deliveries = %+v, want one retryable failure", store.failedDeliveries)
 	}
 }
 
@@ -1967,4 +2219,155 @@ func uuidPointer(value uuid.UUID) *uuid.UUID {
 
 func stringPointer(value string) *string {
 	return &value
+}
+
+type threadSyncStub struct {
+	input     integrationrequests.CoreInboundProviderCommentInput
+	bindInput integrationrequests.CoreBindProviderThreadInput
+}
+
+func (s *threadSyncStub) IngestInboundProviderComment(_ context.Context, input integrationrequests.CoreInboundProviderCommentInput) (bool, error) {
+	s.input = input
+	return true, nil
+}
+
+func (s *threadSyncStub) BindProviderThread(_ context.Context, input integrationrequests.CoreBindProviderThreadInput) (integrationrequests.CoreProviderThread, error) {
+	s.bindInput = input
+	return integrationrequests.CoreProviderThread{ID: uuid.New()}, nil
+}
+
+func TestSyncIntegrationRequestThreadReplyPreservesCanonicalThreadAndActor(t *testing.T) {
+	syncer := &threadSyncStub{}
+	processor := &EventProcessor{threadSync: syncer}
+	event := normalizedSlackEvent{
+		TeamID: "T1", UserID: "U1", ChannelID: "C1",
+		MessageTS: "1710000000.002", ThreadTS: "1710000000.001", Text: "Customer confirmed",
+	}
+
+	handled, err := processor.syncIntegrationRequestThreadReply(
+		context.Background(),
+		slackrepository.SlackWorkspaceRecord{SlackTeamID: "T1", InstallGeneration: testInstallGeneration},
+		&testLinkedUserID,
+		event,
+	)
+
+	if err != nil || !handled {
+		t.Fatalf("sync reply handled = %v, error = %v", handled, err)
+	}
+	if syncer.input.ExternalThreadID != event.ThreadTS || syncer.input.ExternalMessageID != event.MessageTS {
+		t.Fatalf("thread binding = %#v, want thread %q message %q", syncer.input, event.ThreadTS, event.MessageTS)
+	}
+	if syncer.input.AuthorUserID == nil || *syncer.input.AuthorUserID != testLinkedUserID || syncer.input.InstallationGeneration != testInstallGeneration {
+		t.Fatalf("actor/install binding = %#v", syncer.input)
+	}
+	if want := time.Unix(1710000000, 0).UTC(); !syncer.input.CreatedAt.Equal(want) {
+		t.Fatalf("created at = %s, want %s", syncer.input.CreatedAt, want)
+	}
+}
+
+func TestEventProcessorIngestsBoundRequestReplyFromUnlinkedActorWithoutMaya(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = nil
+	store := newEventStoreStub()
+	assistant := &assistantStub{}
+	access := &accessCheckerStub{allowed: true}
+	sender := &messageSenderStub{}
+	processor := newTestEventProcessor(t, repo, store, assistant, access, sender)
+	syncer := &threadSyncStub{}
+	processor.threadSync = syncer
+
+	err := processor.Process(context.Background(), []byte(channelThreadEvent("Ev-unlinked-request-reply", "U-external", "Customer confirmed")))
+
+	require.NoError(t, err)
+	assertSingleInboundStatus(t, store, "completed")
+	require.Nil(t, syncer.input.AuthorUserID)
+	require.Equal(t, "U-external", syncer.input.ExternalAuthorID)
+	require.Equal(t, "10.1", syncer.input.ExternalThreadID)
+	require.Equal(t, "10.2", syncer.input.ExternalMessageID)
+	require.Empty(t, store.conversationLookups)
+	require.Empty(t, assistant.requests)
+	require.Empty(t, store.conversations)
+	require.Empty(t, store.outboundInputs)
+	require.Empty(t, sender.messages)
+}
+
+func TestEventProcessorComposesBoundRequestReplyWithSubscribedMayaThread(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0).UTC()
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	repo.installation.AuthorizedAt = now.Add(-time.Hour)
+	store := newEventStoreStub()
+	store.conversation = messagingrepository.ConversationRecord{ID: testConversationID, UpdatedAt: now}
+	assistant := &assistantStub{response: messaging.Response{Text: "The customer confirmation is now part of this thread."}}
+	sender := &messageSenderStub{externalMessageID: "10.3"}
+	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender)
+	processor.clock = fixedClock{now: now}
+	syncer := &threadSyncStub{}
+	processor.threadSync = syncer
+
+	err := processor.Process(context.Background(), []byte(channelThreadEvent("Ev-composed-request-reply", "U1", "Customer confirmed")))
+
+	require.NoError(t, err)
+	assertSingleInboundStatus(t, store, "completed")
+	require.Equal(t, &testLinkedUserID, syncer.input.AuthorUserID)
+	require.Len(t, store.conversationLookups, 1)
+	lookup := store.conversationLookups[0]
+	require.Equal(t, testLinkedUserID, lookup.UserID)
+	require.Equal(t, "C1", lookup.ExternalChannelID)
+	require.Equal(t, "10.1", lookup.ExternalThreadID)
+	require.Equal(t, messagingrepository.ConversationAudienceChannel, lookup.AudienceScope)
+	require.Equal(t, assistantAudienceFingerprint([]uuid.UUID{testAllowedTeamID}), lookup.AudienceFingerprint)
+	require.Len(t, assistant.requests, 1)
+	require.Equal(t, "Customer confirmed", assistant.requests[0].Prompt)
+	require.Len(t, sender.messages, 1)
+	require.Equal(t, "10.1", sender.messages[0].ThreadTS)
+}
+
+func TestEventProcessorKeepsBoundRequestReplyCommentOnlyWithoutMayaSubscription(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0).UTC()
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	repo.installation.AuthorizedAt = now.Add(-time.Hour)
+	store := newEventStoreStub()
+	assistant := &assistantStub{}
+	sender := &messageSenderStub{}
+	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender)
+	processor.clock = fixedClock{now: now}
+	syncer := &threadSyncStub{}
+	processor.threadSync = syncer
+
+	err := processor.Process(context.Background(), []byte(channelThreadEvent("Ev-request-comment-only", "U1", "Customer confirmed")))
+
+	require.NoError(t, err)
+	assertSingleInboundStatus(t, store, "completed")
+	require.Equal(t, &testLinkedUserID, syncer.input.AuthorUserID)
+	require.Len(t, store.conversationLookups, 1)
+	require.Equal(t, assistantAudienceFingerprint([]uuid.UUID{testAllowedTeamID}), store.conversationLookups[0].AudienceFingerprint)
+	require.Empty(t, assistant.requests)
+	require.Empty(t, store.conversations)
+	require.Empty(t, store.outboundInputs)
+	require.Empty(t, sender.messages)
+}
+
+func TestEventProcessorSuppressesBroadMentionCopyAfterBoundRequestSync(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0).UTC()
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	repo.installation.AuthorizedAt = now.Add(-time.Hour)
+	store := newEventStoreStub()
+	store.conversation = messagingrepository.ConversationRecord{ID: testConversationID, UpdatedAt: now}
+	assistant := &assistantStub{}
+	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, &messageSenderStub{})
+	processor.clock = fixedClock{now: now}
+	syncer := &threadSyncStub{}
+	processor.threadSync = syncer
+
+	err := processor.Process(context.Background(), []byte(channelThreadEvent("Ev-request-mention-copy", "U1", "<@B1> summarize this")))
+
+	require.NoError(t, err)
+	assertSingleInboundStatus(t, store, "ignored")
+	require.Equal(t, "10.2", syncer.input.ExternalMessageID)
+	require.Empty(t, store.conversationLookups)
+	require.Empty(t, assistant.requests)
+	require.Empty(t, store.outboundInputs)
 }

@@ -28,6 +28,11 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceSlug}/integrations/slack/logs", h.GetRequestLogs, auth, workspace, admin)
 	app.Post("/workspaces/{workspaceSlug}/integrations/slack/install-session", h.CreateInstallSession, auth, workspace, admin)
 	app.Post("/workspaces/{workspaceSlug}/integrations/slack/link-account", h.LinkAccount, auth, workspace, member)
+	app.Post("/workspaces/{workspaceSlug}/integrations/slack/channels/resync", h.ResyncChannels, auth, workspace, admin)
+	app.Get("/workspaces/{workspaceSlug}/integrations/slack/channel-audiences", h.ListChannelAudiences, auth, workspace, admin)
+	app.Put("/workspaces/{workspaceSlug}/integrations/slack/channel-audiences/{channelId}", h.UpdateChannelAudience, auth, workspace, admin)
+	app.Get("/workspaces/{workspaceSlug}/integrations/slack/agent-settings", h.GetAgentSettings, auth, workspace, admin)
+	app.Put("/workspaces/{workspaceSlug}/integrations/slack/agent-settings", h.UpdateAgentSettings, auth, workspace, admin)
 	app.Delete("/workspaces/{workspaceSlug}/integrations/slack", h.DisconnectWorkspace, auth, workspace, admin)
 
 	app.Get("/integrations/slack/setup", h.HandleSetup)

@@ -30,9 +30,10 @@ func TestOpenAIAdvisorReturnsStructuredCandidateRecommendation(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Fatalf("decode request body: %v", err)
 		}
-		if body["model"] != "test-model" {
-			t.Fatalf("expected model test-model, got %v", body["model"])
+		if body["model"] != "gpt-5.6-luna" {
+			t.Fatalf("expected model gpt-5.6-luna, got %v", body["model"])
 		}
+		assertAssignmentReasoning(t, body)
 		text, ok := body["text"].(map[string]any)
 		if !ok {
 			t.Fatalf("expected text config, got %#v", body["text"])
@@ -67,7 +68,7 @@ func TestOpenAIAdvisorReturnsStructuredCandidateRecommendation(t *testing.T) {
 
 	advisor := NewOpenAIAdvisor(NewOpenAICompatibleClient(OpenAICompatibleConfig{
 		APIKey:     "test-key",
-		Model:      "test-model",
+		Model:      "gpt-5.6-luna",
 		BaseURL:    server.URL,
 		HTTPClient: server.Client(),
 	}))
@@ -118,6 +119,7 @@ func TestOpenAIAdvisorReturnsStructuredBatchAssignmentRecommendations(t *testing
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Fatalf("decode request body: %v", err)
 		}
+		assertAssignmentReasoning(t, body)
 		requestPayload, err := json.Marshal(body["input"])
 		if err != nil {
 			t.Fatalf("marshal request input: %v", err)
@@ -147,7 +149,7 @@ func TestOpenAIAdvisorReturnsStructuredBatchAssignmentRecommendations(t *testing
 
 	advisor := NewOpenAIAdvisor(NewOpenAICompatibleClient(OpenAICompatibleConfig{
 		APIKey:     "test-key",
-		Model:      "test-model",
+		Model:      "gpt-5.6-luna",
 		BaseURL:    server.URL,
 		HTTPClient: server.Client(),
 	}))
@@ -194,5 +196,41 @@ func TestOpenAIAdvisorReturnsStructuredBatchAssignmentRecommendations(t *testing
 	}
 	if results.Assignments[1].StoryID != secondStoryID || results.Assignments[1].AssigneeID != secondUserID {
 		t.Fatalf("unexpected second assignment %#v", results.Assignments[1])
+	}
+}
+
+func TestOpenAICompatibleClientDefaultsToGPT56Luna(t *testing.T) {
+	client := NewOpenAICompatibleClient(OpenAICompatibleConfig{})
+
+	if client.model != "gpt-5.6-luna" {
+		t.Fatalf("expected default model gpt-5.6-luna, got %q", client.model)
+	}
+}
+
+func TestAssignmentReasoningForModel(t *testing.T) {
+	t.Parallel()
+
+	if reasoning := assignmentReasoningForModel("gpt-5.6-luna"); reasoning == nil {
+		t.Fatal("expected GPT-5.6 reasoning configuration")
+	} else if reasoning.Effort != "medium" || reasoning.Context != "current_turn" {
+		t.Fatalf("unexpected GPT-5.6 reasoning configuration %#v", reasoning)
+	}
+	if reasoning := assignmentReasoningForModel("custom-model"); reasoning != nil {
+		t.Fatalf("expected custom model override to omit GPT-5.6 reasoning, got %#v", reasoning)
+	}
+}
+
+func assertAssignmentReasoning(t *testing.T, body map[string]any) {
+	t.Helper()
+
+	reasoning, ok := body["reasoning"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected reasoning config, got %#v", body["reasoning"])
+	}
+	if reasoning["effort"] != "medium" {
+		t.Fatalf("expected medium reasoning effort, got %v", reasoning["effort"])
+	}
+	if reasoning["context"] != "current_turn" {
+		t.Fatalf("expected current_turn reasoning context, got %v", reasoning["context"])
 	}
 }

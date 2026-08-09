@@ -296,11 +296,12 @@ func (r *Repo) UpsertSlackWorkspace(ctx context.Context, workspaceID, installedB
 	}
 
 	var activeInstallations []struct {
-		WorkspaceID uuid.UUID `db:"workspace_id"`
-		SlackTeamID string    `db:"slack_team_id"`
+		WorkspaceID       uuid.UUID `db:"workspace_id"`
+		SlackTeamID       string    `db:"slack_team_id"`
+		InstallGeneration uuid.UUID `db:"installation_generation"`
 	}
 	if err = tx.SelectContext(ctx, &activeInstallations, `
-		SELECT workspace_id, slack_team_id
+		SELECT workspace_id, slack_team_id, installation_generation
 		FROM slack_workspaces
 		WHERE is_active = true
 		  AND (workspace_id = $1 OR slack_team_id = $2)
@@ -309,12 +310,14 @@ func (r *Repo) UpsertSlackWorkspace(ctx context.Context, workspaceID, installedB
 		return SlackWorkspaceRecord{}, err
 	}
 	refreshingActiveInstallation := false
+	previousInstallGeneration := uuid.Nil
 	workspaceConflict := false
 	teamConflict := false
 	for _, installation := range activeInstallations {
 		switch {
 		case installation.WorkspaceID == workspaceID && installation.SlackTeamID == payload.SlackTeamID:
 			refreshingActiveInstallation = true
+			previousInstallGeneration = installation.InstallGeneration
 		case installation.SlackTeamID == payload.SlackTeamID:
 			teamConflict = true
 		case installation.WorkspaceID == workspaceID:
@@ -432,6 +435,18 @@ func (r *Repo) UpsertSlackWorkspace(ctx context.Context, workspaceID, installedB
 	)
 	if err != nil {
 		return SlackWorkspaceRecord{}, err
+	}
+	if refreshingActiveInstallation {
+		if err = rebindSlackRequestThreadsTx(
+			ctx,
+			tx,
+			workspaceID,
+			payload.SlackTeamID,
+			previousInstallGeneration,
+			row.InstallGeneration,
+		); err != nil {
+			return SlackWorkspaceRecord{}, err
+		}
 	}
 
 	authedUserID := ""
@@ -569,9 +584,6 @@ func (r *Repo) DisconnectSlackWorkspace(ctx context.Context, workspaceID uuid.UU
 	if _, err = tx.ExecContext(ctx, `DELETE FROM slack_user_links WHERE workspace_id = $1`, workspaceID); err != nil {
 		return SlackUninstallRecord{}, err
 	}
-	if _, err = tx.ExecContext(ctx, `UPDATE slack_team_channel_links SET is_active = false, updated_at = NOW() WHERE workspace_id = $1`, workspaceID); err != nil {
-		return SlackUninstallRecord{}, err
-	}
 	if _, err = tx.ExecContext(ctx, `DELETE FROM slack_workspaces WHERE id = $1`, installation.ID); err != nil {
 		return SlackUninstallRecord{}, err
 	}
@@ -614,6 +626,48 @@ func cancelSlackMessagingTx(ctx context.Context, tx *sqlx.Tx, slackTeamID, reaso
 		  AND status IN ('pending', 'delivering', 'failed')
 	`, slackTeamID, reason); err != nil {
 		return err
+	}
+	return nil
+}
+
+const rebindSlackRequestThreadsQuery = `
+	UPDATE integration_request_threads
+	SET installation_generation = $4,
+	    updated_at = NOW()
+	WHERE workspace_id = $1
+	  AND provider = 'slack'
+	  AND external_workspace_id = $2
+	  AND installation_generation = $3
+`
+
+type slackRequestThreadRebindExecer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func rebindSlackRequestThreadsTx(
+	ctx context.Context,
+	execer slackRequestThreadRebindExecer,
+	workspaceID uuid.UUID,
+	slackTeamID string,
+	previousGeneration uuid.UUID,
+	currentGeneration uuid.UUID,
+) error {
+	slackTeamID = strings.TrimSpace(slackTeamID)
+	if workspaceID == uuid.Nil || slackTeamID == "" || previousGeneration == uuid.Nil || currentGeneration == uuid.Nil {
+		return errors.New("rebind Slack request threads requires workspace, team, and installation generations")
+	}
+	if previousGeneration == currentGeneration {
+		return errors.New("rebind Slack request threads requires a rotated installation generation")
+	}
+	if _, err := execer.ExecContext(
+		ctx,
+		rebindSlackRequestThreadsQuery,
+		workspaceID,
+		slackTeamID,
+		previousGeneration,
+		currentGeneration,
+	); err != nil {
+		return fmt.Errorf("rebind Slack request threads to refreshed installation: %w", err)
 	}
 	return nil
 }
@@ -901,9 +955,6 @@ func (r *Repo) DeactivateSlackWorkspaceByTeamID(ctx context.Context, slackTeamID
 	if _, err = tx.ExecContext(ctx, `DELETE FROM slack_user_links WHERE workspace_id = $1`, installation.WorkspaceID); err != nil {
 		return err
 	}
-	if _, err = tx.ExecContext(ctx, `UPDATE slack_team_channel_links SET is_active = false, updated_at = NOW() WHERE workspace_id = $1`, installation.WorkspaceID); err != nil {
-		return err
-	}
 	if _, err = tx.ExecContext(ctx, `DELETE FROM slack_workspaces WHERE id = $1`, installation.ID); err != nil {
 		return err
 	}
@@ -994,19 +1045,28 @@ func (r *Repo) ListWorkspaceTeams(ctx context.Context, workspaceID uuid.UUID) ([
 	return rows, nil
 }
 
+const listWorkspaceTeamsForUserQuery = `
+	SELECT t.team_id, t.code, t.name, t.color
+	FROM teams t
+	JOIN team_members tm ON tm.team_id = t.team_id
+	JOIN workspace_members wm ON wm.workspace_id = t.workspace_id AND wm.user_id = tm.user_id
+	JOIN users u ON u.user_id = tm.user_id
+	LEFT JOIN user_team_orders uto ON uto.team_id = t.team_id
+		AND uto.user_id = $2
+		AND uto.workspace_id = $1
+	WHERE t.workspace_id = $1
+	  AND tm.user_id = $2
+	  AND u.is_active = true
+	ORDER BY
+		CASE WHEN uto.order_index IS NOT NULL THEN 0 ELSE 1 END,
+		uto.order_index ASC NULLS LAST,
+		t.created_at DESC,
+		t.team_id ASC
+`
+
 func (r *Repo) ListWorkspaceTeamsForUser(ctx context.Context, workspaceID, userID uuid.UUID) ([]TeamRecord, error) {
 	rows := make([]TeamRecord, 0)
-	err := r.db.SelectContext(ctx, &rows, `
-		SELECT t.team_id, t.code, t.name, t.color
-		FROM teams t
-		JOIN team_members tm ON tm.team_id = t.team_id
-		JOIN workspace_members wm ON wm.workspace_id = t.workspace_id AND wm.user_id = tm.user_id
-		JOIN users u ON u.user_id = tm.user_id
-		WHERE t.workspace_id = $1
-		  AND tm.user_id = $2
-		  AND u.is_active = true
-		ORDER BY t.name ASC
-	`, workspaceID, userID)
+	err := r.db.SelectContext(ctx, &rows, listWorkspaceTeamsForUserQuery, workspaceID, userID)
 	if err != nil {
 		return nil, err
 	}

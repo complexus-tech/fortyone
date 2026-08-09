@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
+	"time"
 
 	commentsrepository "github.com/complexus-tech/projects-api/internal/modules/comments/repository"
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
@@ -861,6 +863,106 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	span.AddEvent("Story updated.", trace.WithAttributes(attribute.String("story.id", id.String())))
 
 	return nil
+}
+
+// UpdateIfUnchanged atomically applies updates only when updated_at still
+// matches the version inspected by the caller. It returns false without
+// changing the story when another writer won the race.
+func (r *repo) UpdateIfUnchanged(
+	ctx context.Context,
+	id, workspaceID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	updates map[string]any,
+) (bool, error) {
+	r.log.Info(ctx, "business.repository.stories.UpdateIfUnchanged")
+	ctx, span := web.AddSpan(ctx, "business.repository.stories.UpdateIfUnchanged")
+	defer span.End()
+
+	if len(updates) == 0 {
+		return false, errors.New("conditional story update requires at least one field")
+	}
+	if statusID, ok := updates["status_id"].(uuid.UUID); ok {
+		var teamID uuid.UUID
+		if err := r.db.GetContext(ctx, &teamID, `SELECT team_id FROM stories WHERE id = $1 AND workspace_id = $2`, id, workspaceID); err != nil {
+			span.RecordError(err)
+			return false, fmt.Errorf("load story team for conditional update: %w", err)
+		}
+		if err := r.validateStatusTeam(ctx, statusID, teamID); err != nil {
+			return false, err
+		}
+	}
+
+	fields := make([]string, 0, len(updates))
+	for field := range updates {
+		if !isConditionalStoryUpdateField(field) {
+			return false, fmt.Errorf("unsupported conditional story update field %q", field)
+		}
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+	setClauses := make([]string, 0, len(fields)+1)
+	params := map[string]any{
+		"id":                  id,
+		"workspace_id":        workspaceID,
+		"expected_updated_at": expectedUpdatedAt.UTC(),
+	}
+	for _, field := range fields {
+		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+		params[field] = updates[field]
+	}
+	setClauses = append(setClauses, "updated_at = NOW()")
+
+	query := `WITH updated_story AS (
+		UPDATE stories
+		SET ` + strings.Join(setClauses, ", ") + `
+		WHERE id = :id
+		  AND workspace_id = :workspace_id
+		  AND updated_at = :expected_updated_at
+		RETURNING id, assignee_id
+	), deleted_collaborators AS (
+		DELETE FROM story_collaborators sc
+		USING updated_story us
+		WHERE sc.story_id = us.id
+		  AND sc.user_id = us.assignee_id
+		RETURNING sc.story_id
+	)
+	SELECT EXISTS (SELECT 1 FROM updated_story)`
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		span.RecordError(err)
+		return false, fmt.Errorf("prepare conditional story update: %w", err)
+	}
+	defer stmt.Close()
+
+	var updated bool
+	if err := stmt.GetContext(ctx, &updated, params); err != nil {
+		span.RecordError(err)
+		return false, fmt.Errorf("execute conditional story update: %w", err)
+	}
+	return updated, nil
+}
+
+func isConditionalStoryUpdateField(field string) bool {
+	switch field {
+	case "title",
+		"estimate_unit",
+		"description",
+		"description_html",
+		"parent_id",
+		"objective_id",
+		"status_id",
+		"assignee_id",
+		"priority",
+		"sprint_id",
+		"key_result_id",
+		"start_date",
+		"end_date",
+		"completed_at":
+		return true
+	default:
+		return false
+	}
 }
 
 // BulkUpdate updates the stories with the specified IDs.

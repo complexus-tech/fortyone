@@ -44,3 +44,10 @@ func TestMessagingAssistantBudgetDefaults(t *testing.T) {
 	require.Equal(t, "120", workspaceLimit.Tag.Get("default"))
 	require.Equal(t, "1000000", dailyTokenLimit.Tag.Get("default"))
 }
+
+func TestMessagingAssistantModelDefault(t *testing.T) {
+	configType := reflect.TypeOf(Config{})
+	model, found := configType.FieldByName("AIModel")
+	require.True(t, found)
+	require.Equal(t, "gpt-5.6-luna", model.Tag.Get("default"))
+}

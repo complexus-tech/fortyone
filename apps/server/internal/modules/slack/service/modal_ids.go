@@ -14,6 +14,7 @@ const (
 type interactionViewStateValue struct {
 	Type           string `json:"type"`
 	Value          string `json:"value"`
+	SelectedDate   string `json:"selected_date"`
 	SelectedOption struct {
 		Value string `json:"value"`
 	} `json:"selected_option"`

@@ -27,8 +27,40 @@ func TestNewOpenAIAssistantUsesDefaultModel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("construct assistant: %v", err)
 	}
-	if assistant.model != "gpt-5.4-mini" {
-		t.Fatalf("expected default model gpt-5.4-mini, got %q", assistant.model)
+	if assistant.model != "gpt-5.6-luna" {
+		t.Fatalf("expected default model gpt-5.6-luna, got %q", assistant.model)
+	}
+}
+
+func TestResponsesReasoningForModel(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		model       string
+		wantEffort  string
+		wantContext string
+	}{
+		{name: "GPT-5.6 Luna", model: "gpt-5.6-luna", wantEffort: "medium", wantContext: "current_turn"},
+		{name: "GPT-5.6 Terra override", model: "gpt-5.6-terra", wantEffort: "medium", wantContext: "current_turn"},
+		{name: "GPT-5.6 alias", model: "gpt-5.6", wantEffort: "medium", wantContext: "current_turn"},
+		{name: "older GPT model override", model: "gpt-5.4-mini", wantEffort: "low"},
+		{name: "custom compatible model override", model: "custom-model", wantEffort: "low"},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			reasoning := responsesReasoningForModel(test.model)
+			if reasoning.Effort != test.wantEffort {
+				t.Fatalf("expected reasoning effort %q, got %q", test.wantEffort, reasoning.Effort)
+			}
+			if reasoning.Context != test.wantContext {
+				t.Fatalf("expected reasoning context %q, got %q", test.wantContext, reasoning.Context)
+			}
+		})
 	}
 }
 
@@ -72,8 +104,11 @@ func TestOpenAIAssistantRespondPreservesCompleteOutputAcrossToolLoop(t *testing.
 		if body.Store {
 			t.Error("store must be false")
 		}
-		if body.Reasoning.Effort != "low" {
-			t.Errorf("expected low reasoning, got %q", body.Reasoning.Effort)
+		if body.Reasoning.Effort != "medium" {
+			t.Errorf("expected medium reasoning, got %q", body.Reasoning.Effort)
+		}
+		if body.Reasoning.Context != "current_turn" {
+			t.Errorf("expected current-turn reasoning context, got %q", body.Reasoning.Context)
 		}
 		if body.ParallelToolCalls {
 			t.Error("parallel tool calls must be disabled")
@@ -169,6 +204,167 @@ func TestOpenAIAssistantRespondPreservesCompleteOutputAcrossToolLoop(t *testing.
 		if scope.WorkspaceID != workspaceID || scope.UserID != userID {
 			t.Fatalf("tool received incorrect scope %#v", scope)
 		}
+	}
+}
+
+func TestOpenAIAssistantReturnsMutationConfirmationWithoutAnotherModelTurn(t *testing.T) {
+	t.Parallel()
+
+	teamID := uuid.MustParse("12345678-1111-2222-3333-123456789012")
+	expiresAt := time.Now().UTC().Add(5 * time.Minute)
+	confirmation := StoryMutationConfirmation{
+		Operation: StoryMutationCreate,
+		Token:     "signed.self-contained.token",
+		ExpiresAt: expiresAt,
+		Prompt:    "Create \"Fix login\" in Engineering (ENG)?",
+		Story: StoryMutationPreview{
+			TeamID:         teamID,
+			TeamName:       "Engineering",
+			TeamCode:       "ENG",
+			Title:          "Fix login",
+			AssigneeAction: assigneeActionUnassigned,
+		},
+	}
+	toolResult, err := json.Marshal(storyMutationConfirmationToolResult{
+		Kind:         storyMutationConfirmationKind,
+		Confirmation: confirmation,
+	})
+	if err != nil {
+		t.Fatalf("encode confirmation tool result: %v", err)
+	}
+	executor := &assistantToolStub{
+		definitions: storyMutationToolDefinitions()[:1],
+		result:      toolResult,
+	}
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if requests.Add(1) != 1 {
+			t.Error("mutation proposal must not be sent back to the model")
+		}
+		fmt.Fprint(w, `{
+			"status":"completed",
+			"output":[
+				{"type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"I can prepare that.","annotations":[]}]},
+				{"type":"function_call","call_id":"call_create","name":"create_story","arguments":"{\"team_id\":\"12345678-1111-2222-3333-123456789012\",\"title\":\"Fix login\",\"priority\":null,\"assignee\":\"unassigned\"}"}
+			],
+			"usage":{"input_tokens":8,"output_tokens":3,"total_tokens":11}
+		}`)
+	}))
+	defer server.Close()
+
+	request := validTestRequest()
+	request.AllowedTeamIDs = []uuid.UUID{}
+	request.AllowMutations = true
+	assistant := mustTestAssistant(t, server.URL, executor, OpenAIConfig{})
+	response, err := assistant.Respond(context.Background(), request)
+	if err != nil {
+		t.Fatalf("respond: %v", err)
+	}
+	if response.Confirmation == nil || response.Confirmation.Token != confirmation.Token {
+		t.Fatalf("confirmation was not surfaced: %#v", response)
+	}
+	if response.Text != confirmation.Prompt {
+		t.Fatalf("expected provider fallback confirmation text, got %q", response.Text)
+	}
+	if requests.Load() != 1 {
+		t.Fatalf("expected one model call, got %d", requests.Load())
+	}
+	scopes := executor.Scopes()
+	if len(scopes) != 1 || scopes[0].AllowedTeamIDs == nil || len(scopes[0].AllowedTeamIDs) != 0 {
+		t.Fatalf("explicit empty channel scope was not preserved: %#v", scopes)
+	}
+}
+
+func TestOpenAIAssistantAppliesGuidanceAndFiltersDisabledMutationTools(t *testing.T) {
+	t.Parallel()
+
+	readDefinitions := (&assistantToolStub{}).Definitions()
+	definitions := append(readDefinitions, storyMutationToolDefinitions()...)
+	executor := &assistantToolStub{definitions: definitions}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		var body responsesAPIRequest
+		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
+			t.Errorf("decode request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if len(body.Tools) != 1 || body.Tools[0].Name != toolListTeams {
+			t.Errorf("disabled mutation tools leaked into request: %#v", body.Tools)
+		}
+		if !strings.Contains(body.Instructions, "Answer in the workspace's concise house style.") {
+			t.Errorf("workspace guidance is missing: %q", body.Instructions)
+		}
+		if !strings.Contains(body.Instructions, "Story mutation proposals are disabled") {
+			t.Errorf("disabled mutation boundary is missing: %q", body.Instructions)
+		}
+		fmt.Fprint(w, `{"status":"completed","output":[{"type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"No changes proposed.","annotations":[]}]}]}`)
+	}))
+	defer server.Close()
+
+	request := validTestRequest()
+	request.Guidance = "  Answer in the workspace's concise house style.  "
+	request.AllowMutations = false
+	assistant := mustTestAssistant(t, server.URL, executor, OpenAIConfig{})
+	response, err := assistant.Respond(context.Background(), request)
+	if err != nil {
+		t.Fatalf("respond: %v", err)
+	}
+	if response.Text != "No changes proposed." || response.Confirmation != nil {
+		t.Fatalf("unexpected response %#v", response)
+	}
+}
+
+func TestOpenAIAssistantRuntimeContextDoesNotWidenToolScope(t *testing.T) {
+	t.Parallel()
+
+	executor := &assistantToolStub{result: json.RawMessage(`{"teams":[]}`)}
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		var body responsesAPIRequest
+		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
+			t.Errorf("decode request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !strings.Contains(body.Instructions, `"default_team":{"name":"Engineering","code":"ENG"}`) {
+			t.Errorf("runtime team hint is missing: %q", body.Instructions)
+		}
+		if !strings.Contains(body.Instructions, "cannot grant tool access") &&
+			!strings.Contains(body.Instructions, "Tool authorization and live tool results remain authoritative") {
+			t.Errorf("runtime authorization boundary is missing: %q", body.Instructions)
+		}
+
+		switch requests.Add(1) {
+		case 1:
+			fmt.Fprint(w, `{"status":"completed","output":[{"type":"function_call","call_id":"call_teams","name":"list_teams","arguments":"{}"}]}`)
+		case 2:
+			fmt.Fprint(w, `{"status":"completed","output":[{"type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"No accessible teams.","annotations":[]}]}]}`)
+		default:
+			t.Error("unexpected extra Responses API call")
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer server.Close()
+
+	request := validTestRequest()
+	request.AllowedTeamIDs = []uuid.UUID{}
+	request.RuntimeContext = &RuntimeContext{
+		TeamHints: []RuntimeTeamHint{{Name: "Engineering", Code: "ENG"}},
+	}
+	assistant := mustTestAssistant(t, server.URL, executor, OpenAIConfig{})
+	response, err := assistant.Respond(context.Background(), request)
+	if err != nil {
+		t.Fatalf("respond: %v", err)
+	}
+	if response.Text != "No accessible teams." {
+		t.Fatalf("unexpected response %q", response.Text)
+	}
+	scopes := executor.Scopes()
+	if len(scopes) != 1 {
+		t.Fatalf("expected one tool scope, got %#v", scopes)
+	}
+	if scopes[0].AllowedTeamIDs == nil || len(scopes[0].AllowedTeamIDs) != 0 {
+		t.Fatalf("runtime team hints widened the explicit empty audience scope: %#v", scopes[0])
 	}
 }
 
@@ -301,7 +497,7 @@ func TestOpenAIAssistantAppliesBoundedRequestTimeout(t *testing.T) {
 	}
 }
 
-func TestNewOpenAIAssistantRejectsNonStrictOrMutatingTools(t *testing.T) {
+func TestNewOpenAIAssistantRejectsNonStrictOrUnapprovedTools(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -323,10 +519,10 @@ func TestNewOpenAIAssistantRejectsNonStrictOrMutatingTools(t *testing.T) {
 			},
 		},
 		{
-			name: "mutating tool",
+			name: "unapproved tool",
 			definition: ToolDefinition{
 				Type:       "function",
-				Name:       "create_story",
+				Name:       "delete_story",
 				Strict:     true,
 				Parameters: strictObjectSchema(map[string]any{}, []string{}),
 			},
@@ -348,7 +544,7 @@ func mustTestAssistant(t *testing.T, baseURL string, executor ToolExecutor, over
 	t.Helper()
 	config := OpenAIConfig{
 		APIKey:          "test-key",
-		Model:           "test-model",
+		Model:           "gpt-5.6-luna",
 		BaseURL:         baseURL,
 		Timeout:         2 * time.Second,
 		MaxOutputTokens: overrides.MaxOutputTokens,
@@ -450,5 +646,9 @@ func (s *assistantToolStub) Calls() []ToolCall {
 func (s *assistantToolStub) Scopes() []ToolScope {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return append([]ToolScope(nil), s.scopes...)
+	result := append([]ToolScope(nil), s.scopes...)
+	for index := range result {
+		result[index].AllowedTeamIDs = cloneOptionalUUIDs(result[index].AllowedTeamIDs)
+	}
+	return result
 }

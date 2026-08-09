@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -72,6 +73,22 @@ type SlackEventStore interface {
 	CancelOutboundDelivery(ctx context.Context, id uuid.UUID, message string) error
 }
 
+type slackProviderPayloadStore interface {
+	SetOutboundDeliveryContentAndProviderPayload(ctx context.Context, id uuid.UUID, content string, providerPayload []byte) error
+}
+
+type slackOutboundContentStore interface {
+	SetOutboundDeliveryContent(ctx context.Context, id uuid.UUID, content string) error
+}
+
+type slackChannelConversationFinder interface {
+	FindChannelConversation(ctx context.Context, input messagingrepository.ConversationInput) (messagingrepository.ConversationRecord, error)
+}
+
+type slackConversationFinder interface {
+	FindConversation(ctx context.Context, input messagingrepository.ConversationInput) (messagingrepository.ConversationRecord, error)
+}
+
 type recoverableSlackEventStore interface {
 	ClaimRecoverableInboundEvents(ctx context.Context, provider string, limit int) ([]messagingrepository.InboundEventRecord, error)
 	ReleaseInboundEventRecovery(ctx context.Context, id uuid.UUID, generation int) error
@@ -90,6 +107,7 @@ type SlackOutboundMessage struct {
 	Text            string
 	ClientMessageID string
 	Ephemeral       bool
+	ProviderPayload SlackProviderPayload
 }
 
 type SlackMessageSender interface {
@@ -109,6 +127,19 @@ type AssistantUsageBudget interface {
 	Record(ctx context.Context, input messagingrepository.DailyUsageRecordInput, limit int64) (messagingrepository.DailyUsageSnapshot, error)
 }
 
+// AssistantContextProvider loads descriptive, server-authoritative context for
+// one assistant turn. Authorization remains in the separately supplied
+// workspace, actor, and allowed-team scope.
+type AssistantContextProvider interface {
+	Load(
+		ctx context.Context,
+		workspaceID, userID uuid.UUID,
+		allowedTeamIDs []uuid.UUID,
+		surface messaging.RuntimeSurfaceContext,
+		now time.Time,
+	) (*messaging.RuntimeContext, error)
+}
+
 type EventProcessorConfig struct {
 	WebsiteURL               string
 	SecretKey                string
@@ -117,7 +148,11 @@ type EventProcessorConfig struct {
 	EventQueue               EventQueue
 	CallLimiter              AssistantCallLimiter
 	UsageBudget              AssistantUsageBudget
+	ContextProvider          AssistantContextProvider
 	DailyWorkspaceTokenLimit int64
+	ThreadSync               SlackThreadSync
+	StoryReader              SlackStoryReader
+	MutationConfirmer        messaging.StoryMutationConfirmer
 }
 
 type EventProcessor struct {
@@ -128,6 +163,7 @@ type EventProcessor struct {
 	access                   AssistantAccessChecker
 	callLimiter              AssistantCallLimiter
 	usageBudget              AssistantUsageBudget
+	contextProvider          AssistantContextProvider
 	sender                   SlackMessageSender
 	webClient                *slackWebClient
 	codec                    *credentialCodec
@@ -138,6 +174,10 @@ type EventProcessor struct {
 	clock                    Clock
 	eventQueue               EventQueue
 	dailyWorkspaceTokenLimit int64
+	threadSync               SlackThreadSync
+	storyReader              SlackStoryReader
+	mutationConfirmer        messaging.StoryMutationConfirmer
+	workObjects              *slackWorkObjectPublisher
 }
 
 func NewEventProcessor(
@@ -166,6 +206,9 @@ func NewEventProcessor(
 	if cfg.UsageBudget == nil {
 		return nil, errors.New("slack assistant usage budget is required")
 	}
+	if cfg.ContextProvider == nil {
+		return nil, errors.New("slack assistant context provider is required")
+	}
 	if cfg.DailyWorkspaceTokenLimit < 0 {
 		return nil, errors.New("slack assistant daily workspace token limit cannot be negative")
 	}
@@ -182,6 +225,7 @@ func NewEventProcessor(
 		access:                   access,
 		callLimiter:              cfg.CallLimiter,
 		usageBudget:              cfg.UsageBudget,
+		contextProvider:          cfg.ContextProvider,
 		sender:                   &slackAPISender{client: webClient},
 		webClient:                webClient,
 		codec:                    codec,
@@ -192,6 +236,10 @@ func NewEventProcessor(
 		clock:                    realClock{},
 		eventQueue:               cfg.EventQueue,
 		dailyWorkspaceTokenLimit: cfg.DailyWorkspaceTokenLimit,
+		threadSync:               cfg.ThreadSync,
+		storyReader:              cfg.StoryReader,
+		mutationConfirmer:        cfg.MutationConfirmer,
+		workObjects:              newSlackWorkObjectPublisher(webClient),
 	}, nil
 }
 
@@ -277,6 +325,13 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		status = "ignored"
 		return nil
 	}
+	if event.Kind == slackEventKindEntityDetails {
+		// Entity detail triggers are single-use and expire before a durable worker
+		// can safely consume them. The API handles new requests synchronously;
+		// ignore legacy inbox rows so recovery never spends a stale trigger.
+		status = "ignored"
+		return nil
+	}
 
 	installation, err := p.repo.GetSlackWorkspaceByTeamID(ctx, event.TeamID)
 	if err != nil {
@@ -322,6 +377,39 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 	if err != nil {
 		return err
 	}
+	if isSlackWorkObjectEvent(event.Kind) {
+		if err := p.processSlackWorkObjectEvent(ctx, workspace, installation, linkedUserID, event, botToken); err != nil {
+			return err
+		}
+		status = "completed"
+		return nil
+	}
+	requestThreadAssistantSubscribed := false
+	if p.threadSync != nil {
+		handled, syncErr := p.syncIntegrationRequestThreadReply(ctx, installation, linkedUserID, event)
+		if syncErr != nil {
+			return syncErr
+		}
+		if handled && event.Kind != slackEventKindMention {
+			broadMentionDuplicate := event.Kind == slackEventKindChannelThread &&
+				installation.BotUserID != nil &&
+				containsSlackUserMention(event.Text, *installation.BotUserID)
+			if !broadMentionDuplicate {
+				if linkedUserID == nil || *linkedUserID == uuid.Nil {
+					status = "completed"
+					return nil
+				}
+				requestThreadAssistantSubscribed, syncErr = p.channelThreadIsSubscribed(ctx, workspace.ID, *linkedUserID, installation, event)
+				if syncErr != nil {
+					return syncErr
+				}
+				if !requestThreadAssistantSubscribed {
+					status = "completed"
+					return nil
+				}
+			}
+		}
+	}
 	if event.Kind == slackEventKindChannelThread {
 		// An explicit app_mention event owns messages that mention the bot. Slack
 		// can also emit the same Slack message through message.channels/groups;
@@ -334,13 +422,15 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 			status = "ignored"
 			return nil
 		}
-		subscribed, subscriptionErr := p.channelThreadIsSubscribed(ctx, workspace.ID, *linkedUserID, installation, event)
-		if subscriptionErr != nil {
-			return subscriptionErr
-		}
-		if !subscribed {
-			status = "ignored"
-			return nil
+		if !requestThreadAssistantSubscribed {
+			subscribed, subscriptionErr := p.channelThreadIsSubscribed(ctx, workspace.ID, *linkedUserID, installation, event)
+			if subscriptionErr != nil {
+				return subscriptionErr
+			}
+			if !subscribed {
+				status = "ignored"
+				return nil
+			}
 		}
 	}
 	if linkedUserID == nil || *linkedUserID == uuid.Nil {
@@ -349,6 +439,29 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 			return linkErr
 		}
 		if err := p.deliver(ctx, receipt.ID, workspace.ID, installation.InstallGeneration, nil, event, botToken, "link", text); err != nil {
+			return err
+		}
+		status = "completed"
+		return nil
+	}
+
+	agentSettings, err := p.agentSettings(ctx, workspace.ID)
+	if err != nil {
+		return err
+	}
+	if !agentSettings.AssistantEnabled {
+		if err := p.deliver(ctx, receipt.ID, workspace.ID, installation.InstallGeneration, linkedUserID, event, botToken, "assistant-disabled", "Maya is disabled for this FortyOne workspace. Ask a workspace administrator to enable the Slack agent."); err != nil {
+			return err
+		}
+		status = "completed"
+		return nil
+	}
+	allowedTeamIDs, err := p.authorizedAssistantTeamIDs(ctx, workspace.ID, installation, *linkedUserID, event)
+	if err != nil {
+		return err
+	}
+	if event.Kind != slackEventKindDirect && len(allowedTeamIDs) == 0 {
+		if err := p.deliver(ctx, receipt.ID, workspace.ID, installation.InstallGeneration, linkedUserID, event, botToken, "channel-access", "I can't access any FortyOne teams for you from this Slack channel. Ask a workspace administrator to configure the channel audience."); err != nil {
 			return err
 		}
 		status = "completed"
@@ -388,6 +501,21 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 	deliveryChannelID := event.ChannelID
 	deliveryThreadTS := event.ReplyTS
 	deliveryExpiresAt := p.clock.Now().UTC().Add(time.Hour)
+	providerPayload := SlackProviderPayload{}
+	if len(allowedTeamIDs) > 0 {
+		actorID := *linkedUserID
+		providerPayload.Authorization = &SlackDeliveryAuthorization{
+			AllowedTeamIDs: append([]uuid.UUID(nil), allowedTeamIDs...),
+			ActorUserID:    &actorID,
+		}
+	}
+	var encodedProviderPayload []byte
+	if !slackProviderPayloadIsEmpty(providerPayload) {
+		encodedProviderPayload, err = EncodeSlackProviderPayload(providerPayload)
+		if err != nil {
+			return err
+		}
+	}
 	delivery, shouldDeliver, err := p.store.StartOutboundDelivery(ctx, messagingrepository.OutboundDeliveryInput{
 		Provider:                "slack",
 		WorkspaceID:             workspace.ID,
@@ -399,6 +527,7 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		IdempotencyKey:          deliveryKey,
 		ExternalChannelID:       deliveryChannelID,
 		ExternalThreadID:        deliveryThreadTS,
+		ProviderPayload:         encodedProviderPayload,
 		Purpose:                 "assistant",
 		ExpiresAt:               &deliveryExpiresAt,
 	})
@@ -420,7 +549,7 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		if delivery.Status == "delivered" && delivery.Content != nil && delivery.ExternalMessageID != nil {
 			content := strings.TrimSpace(*delivery.Content)
 			if !isAssistantBudgetNotice(content) {
-				conversationID, conversationErr := p.persistAssistantPrompt(ctx, workspace.ID, *linkedUserID, event, prompt)
+				conversationID, conversationErr := p.persistAssistantPrompt(ctx, workspace.ID, *linkedUserID, event, prompt, allowedTeamIDs)
 				if conversationErr != nil {
 					return conversationErr
 				}
@@ -433,6 +562,14 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		return nil
 	}
 
+	persistedProviderPayload, payloadErr := DecodeSlackProviderPayload(delivery.ProviderPayload)
+	if payloadErr != nil {
+		if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack assistant delivery has an invalid provider payload"); cancelErr != nil {
+			return errors.Join(payloadErr, cancelErr)
+		}
+		return payloadErr
+	}
+	providerPayload = persistedProviderPayload
 	reply := ""
 	if delivery.Content != nil {
 		reply = strings.TrimSpace(*delivery.Content)
@@ -491,7 +628,7 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 
 	conversationID := uuid.Nil
 	if persistConversation {
-		conversationID, err = p.persistAssistantPrompt(ctx, workspace.ID, *linkedUserID, event, prompt)
+		conversationID, err = p.persistAssistantPrompt(ctx, workspace.ID, *linkedUserID, event, prompt, allowedTeamIDs)
 		if err != nil {
 			return err
 		}
@@ -512,11 +649,29 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 			}
 			turns = append(turns, messaging.ConversationTurn{Role: role, Text: message.Content})
 		}
+		runtimeContext, contextErr := p.contextProvider.Load(
+			ctx,
+			workspace.ID,
+			*linkedUserID,
+			allowedTeamIDs,
+			assistantSurfaceForSlackEvent(event),
+			p.clock.Now(),
+		)
+		if contextErr != nil {
+			if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(contextErr)); failErr != nil {
+				return errors.Join(contextErr, failErr)
+			}
+			return contextErr
+		}
 		response, responseErr := p.assistant.Respond(ctx, messaging.Request{
-			WorkspaceID:  workspace.ID,
-			UserID:       *linkedUserID,
-			Conversation: turns,
-			Prompt:       prompt,
+			WorkspaceID:    workspace.ID,
+			UserID:         *linkedUserID,
+			AllowedTeamIDs: allowedTeamIDs,
+			RuntimeContext: runtimeContext,
+			Guidance:       agentSettings.Guidance,
+			AllowMutations: agentSettings.WorkflowActionsEnabled,
+			Conversation:   turns,
+			Prompt:         prompt,
 		})
 		_, usageErr := p.recordAssistantUsage(ctx, messagingrepository.DailyUsageRecordInput{
 			InboundEventID:      receipt.ID,
@@ -542,6 +697,18 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 				}
 				return responseErr
 			}
+		} else if response.Confirmation != nil {
+			reply = truncateSlackText(response.Confirmation.Prompt)
+			confirmationPayload, confirmationErr := BuildSlackMutationConfirmationProviderPayload(reply, response.Confirmation.Token, event.UserID)
+			payloadErr = confirmationErr
+			if payloadErr != nil {
+				if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(payloadErr)); failErr != nil {
+					return errors.Join(payloadErr, failErr)
+				}
+				return payloadErr
+			}
+			confirmationPayload.Authorization = providerPayload.Authorization
+			providerPayload = confirmationPayload
 		} else {
 			reply = truncateSlackText(response.Text)
 		}
@@ -550,7 +717,7 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		}
 	}
 	if !contentPersisted {
-		if err := p.store.SetOutboundDeliveryContent(ctx, delivery.ID, reply); err != nil {
+		if err := persistSlackOutboundContent(ctx, p.store, delivery.ID, reply, providerPayload); err != nil {
 			return err
 		}
 	}
@@ -585,6 +752,40 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		}
 		return err
 	}
+	if current, audienceErr := p.slackChannelDeliveryAuthorizationCurrent(
+		ctx,
+		workspace.ID,
+		installation,
+		*linkedUserID,
+		deliveryChannelID,
+		event.UserID,
+		providerPayload,
+	); audienceErr != nil {
+		if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(audienceErr)); failErr != nil {
+			return errors.Join(audienceErr, failErr)
+		}
+		return audienceErr
+	} else if !current {
+		if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack channel audience narrowed before assistant delivery"); cancelErr != nil {
+			return cancelErr
+		}
+		status = "ignored"
+		return nil
+	}
+	currentSettings, settingsErr := p.agentSettings(ctx, workspace.ID)
+	if settingsErr != nil {
+		if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(settingsErr)); failErr != nil {
+			return errors.Join(settingsErr, failErr)
+		}
+		return settingsErr
+	}
+	if !assistantSettingsAllowDelivery(currentSettings, providerPayload) {
+		if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack agent settings changed before assistant delivery"); cancelErr != nil {
+			return cancelErr
+		}
+		status = "ignored"
+		return nil
+	}
 
 	externalMessageID, err := p.sender.Send(ctx, botToken, SlackOutboundMessage{
 		ChannelID:       deliveryChannelID,
@@ -593,6 +794,7 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		Text:            reply,
 		ClientMessageID: deterministicSlackMessageID(deliveryKey),
 		Ephemeral:       false,
+		ProviderPayload: providerPayload,
 	})
 	if err != nil {
 		if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(err)); failErr != nil {
@@ -806,6 +1008,7 @@ func (p *EventProcessor) recoverPendingOutboundDeliveries(ctx context.Context, s
 			ExternalChannelID:       record.ExternalChannelID,
 			ExternalThreadID:        threadID,
 			Content:                 valueOrEmpty(record.Content),
+			ProviderPayload:         append([]byte(nil), record.ProviderPayload...),
 			Purpose:                 record.Purpose,
 			ExpiresAt:               record.ExpiresAt,
 		})
@@ -837,6 +1040,14 @@ func (p *EventProcessor) recoverPendingOutboundDeliveries(ctx context.Context, s
 			recoveryErrors = append(recoveryErrors, fmt.Errorf("recover Slack delivery %s: %w", record.IdempotencyKey, err))
 			continue
 		}
+		providerPayload, payloadErr := DecodeSlackProviderPayload(delivery.ProviderPayload)
+		if payloadErr != nil {
+			if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack outbound delivery has an invalid provider payload"); cancelErr != nil {
+				recoveryErrors = append(recoveryErrors, fmt.Errorf("cancel invalid Slack delivery %s: %w", record.IdempotencyKey, cancelErr))
+			}
+			recoveryErrors = append(recoveryErrors, fmt.Errorf("recover Slack delivery %s provider payload: %w", record.IdempotencyKey, payloadErr))
+			continue
+		}
 		installation, err := p.repo.GetSlackWorkspaceByTeamID(ctx, externalWorkspaceID)
 		if err != nil {
 			if slackrepository.IsNotFound(err) {
@@ -857,29 +1068,82 @@ func (p *EventProcessor) recoverPendingOutboundDeliveries(ctx context.Context, s
 			}
 			continue
 		}
-		if delivery.Purpose == "assistant" {
-			if delivery.UserID == nil || delivery.ExternalRecipientUserID == nil || strings.TrimSpace(*delivery.ExternalRecipientUserID) == "" {
-				if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack assistant delivery is missing its actor binding"); cancelErr != nil {
+		if delivery.Purpose == "assistant" || providerPayload.Authorization != nil {
+			if delivery.UserID == nil {
+				if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack delivery is missing its actor binding"); cancelErr != nil {
 					recoveryErrors = append(recoveryErrors, fmt.Errorf("cancel unbound Slack delivery %s: %w", record.IdempotencyKey, cancelErr))
 				}
 				continue
 			}
-			linkedUserID, linkErr := p.repo.FindLinkedUserIDBySlackUser(
-				ctx,
-				installation.WorkspaceID,
-				externalWorkspaceID,
-				strings.TrimSpace(*delivery.ExternalRecipientUserID),
-			)
-			if linkErr != nil {
-				recoveryErrors = append(recoveryErrors, fmt.Errorf("revalidate Slack delivery %s actor: %w", record.IdempotencyKey, linkErr))
-				if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(linkErr)); failErr != nil {
-					recoveryErrors = append(recoveryErrors, fmt.Errorf("release Slack delivery %s after actor lookup: %w", record.IdempotencyKey, failErr))
+			if providerPayload.Authorization != nil && providerPayload.Authorization.ActorUserID != nil && *providerPayload.Authorization.ActorUserID != *delivery.UserID {
+				if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack delivery actor binding does not match its authorization payload"); cancelErr != nil {
+					recoveryErrors = append(recoveryErrors, fmt.Errorf("cancel mismatched Slack delivery %s: %w", record.IdempotencyKey, cancelErr))
 				}
 				continue
 			}
-			if linkedUserID == nil || *linkedUserID != *delivery.UserID {
-				if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack assistant actor is no longer linked or active"); cancelErr != nil {
-					recoveryErrors = append(recoveryErrors, fmt.Errorf("cancel unauthorized Slack delivery %s: %w", record.IdempotencyKey, cancelErr))
+			requireLinkedActor := delivery.Purpose == "assistant"
+			if requireLinkedActor {
+				if delivery.ExternalRecipientUserID == nil || strings.TrimSpace(*delivery.ExternalRecipientUserID) == "" {
+					if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack delivery is missing its recipient binding"); cancelErr != nil {
+						recoveryErrors = append(recoveryErrors, fmt.Errorf("cancel unbound Slack delivery %s: %w", record.IdempotencyKey, cancelErr))
+					}
+					continue
+				}
+				linkedUserID, linkErr := p.repo.FindLinkedUserIDBySlackUser(
+					ctx,
+					installation.WorkspaceID,
+					externalWorkspaceID,
+					strings.TrimSpace(*delivery.ExternalRecipientUserID),
+				)
+				if linkErr != nil {
+					recoveryErrors = append(recoveryErrors, fmt.Errorf("revalidate Slack delivery %s actor: %w", record.IdempotencyKey, linkErr))
+					if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(linkErr)); failErr != nil {
+						recoveryErrors = append(recoveryErrors, fmt.Errorf("release Slack delivery %s after actor lookup: %w", record.IdempotencyKey, failErr))
+					}
+					continue
+				}
+				if linkedUserID == nil || *linkedUserID != *delivery.UserID {
+					if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack delivery actor is no longer linked or active"); cancelErr != nil {
+						recoveryErrors = append(recoveryErrors, fmt.Errorf("cancel unauthorized Slack delivery %s: %w", record.IdempotencyKey, cancelErr))
+					}
+					continue
+				}
+			}
+			current, audienceErr := p.slackChannelDeliveryAuthorizationCurrent(
+				ctx,
+				installation.WorkspaceID,
+				installation,
+				*delivery.UserID,
+				delivery.ExternalChannelID,
+				valueOrEmpty(delivery.ExternalRecipientUserID),
+				providerPayload,
+			)
+			if audienceErr != nil {
+				if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(audienceErr)); failErr != nil {
+					recoveryErrors = append(recoveryErrors, fmt.Errorf("release Slack delivery %s after audience lookup: %w", record.IdempotencyKey, failErr))
+				}
+				recoveryErrors = append(recoveryErrors, fmt.Errorf("revalidate Slack delivery %s channel audience: %w", record.IdempotencyKey, audienceErr))
+				continue
+			}
+			if !current {
+				if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack channel audience narrowed before delivery recovery"); cancelErr != nil {
+					recoveryErrors = append(recoveryErrors, fmt.Errorf("cancel narrowed Slack delivery %s: %w", record.IdempotencyKey, cancelErr))
+				}
+				continue
+			}
+		}
+		if delivery.Purpose == "assistant" {
+			currentSettings, settingsErr := p.agentSettings(ctx, installation.WorkspaceID)
+			if settingsErr != nil {
+				if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(settingsErr)); failErr != nil {
+					recoveryErrors = append(recoveryErrors, fmt.Errorf("release Slack delivery %s after settings lookup: %w", record.IdempotencyKey, failErr))
+				}
+				recoveryErrors = append(recoveryErrors, fmt.Errorf("revalidate Slack delivery %s agent settings: %w", record.IdempotencyKey, settingsErr))
+				continue
+			}
+			if !assistantSettingsAllowDelivery(currentSettings, providerPayload) {
+				if cancelErr := cancelOutboundDeliveryDetached(ctx, p.store, delivery.ID, "Slack agent settings changed before assistant delivery recovery"); cancelErr != nil {
+					recoveryErrors = append(recoveryErrors, fmt.Errorf("cancel disabled Slack delivery %s: %w", record.IdempotencyKey, cancelErr))
 				}
 				continue
 			}
@@ -910,12 +1174,20 @@ func (p *EventProcessor) recoverPendingOutboundDeliveries(ctx context.Context, s
 			ThreadTS:        threadID,
 			Text:            content,
 			ClientMessageID: deterministicSlackMessageID(record.IdempotencyKey),
+			ProviderPayload: providerPayload,
 		})
 		if err != nil {
 			if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(err)); failErr != nil {
 				recoveryErrors = append(recoveryErrors, fmt.Errorf("release Slack delivery %s after send failure: %w", record.IdempotencyKey, failErr))
 			}
 			recoveryErrors = append(recoveryErrors, fmt.Errorf("send Slack delivery %s: %w", record.IdempotencyKey, err))
+			continue
+		}
+		if err := bindSlackRequestThreadContinuation(ctx, p.threadSync, record.WorkspaceID, installation.InstallGeneration, externalWorkspaceID, record.ExternalChannelID, threadID, externalMessageID, providerPayload); err != nil {
+			if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(err)); failErr != nil {
+				recoveryErrors = append(recoveryErrors, fmt.Errorf("release Slack delivery %s after thread binding: %w", record.IdempotencyKey, failErr))
+			}
+			recoveryErrors = append(recoveryErrors, fmt.Errorf("bind Slack request thread for delivery %s: %w", record.IdempotencyKey, err))
 			continue
 		}
 		if err := p.store.CompleteOutboundDelivery(ctx, delivery.ID, externalMessageID); err != nil {
@@ -925,6 +1197,110 @@ func (p *EventProcessor) recoverPendingOutboundDeliveries(ctx context.Context, s
 		recovered++
 	}
 	return recovered, errors.Join(recoveryErrors...)
+}
+
+func uuidSubset(required, available []uuid.UUID) bool {
+	if len(required) == 0 {
+		return false
+	}
+	set := make(map[uuid.UUID]struct{}, len(available))
+	for _, id := range available {
+		if id != uuid.Nil {
+			set[id] = struct{}{}
+		}
+	}
+	for _, id := range required {
+		if _, ok := set[id]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *EventProcessor) slackChannelDeliveryAuthorizationCurrent(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	installation slackrepository.SlackWorkspaceRecord,
+	userID uuid.UUID,
+	channelID string,
+	externalRecipientUserID string,
+	providerPayload SlackProviderPayload,
+) (bool, error) {
+	authorization := providerPayload.Authorization
+	channelID = strings.TrimSpace(channelID)
+	if authorization == nil {
+		// A DM actor with no joined teams has no workspace data scope to freeze.
+		// The assistant path already revalidates the linked actor and recipient;
+		// an unscoped public-channel delivery is never allowed.
+		return strings.HasPrefix(strings.ToUpper(channelID), "D"), nil
+	}
+	if authorization.ActorUserID == nil || *authorization.ActorUserID != userID {
+		return false, nil
+	}
+	memberships, ok := p.repo.(eventTeamMembershipRepository)
+	if !ok {
+		return false, errors.New("Slack team membership repository is not configured")
+	}
+	actorTeams, err := memberships.ListWorkspaceTeamsForUser(ctx, workspaceID, userID)
+	if err != nil {
+		return false, err
+	}
+	if !uuidSubset(authorization.AllowedTeamIDs, slackTeamRecordIDs(actorTeams)) {
+		return false, nil
+	}
+	if strings.HasPrefix(strings.ToUpper(channelID), "D") {
+		externalRecipientUserID = strings.TrimSpace(externalRecipientUserID)
+		if externalRecipientUserID == "" {
+			return false, nil
+		}
+		recipientUserID, err := p.repo.FindLinkedUserIDBySlackUser(ctx, workspaceID, installation.SlackTeamID, externalRecipientUserID)
+		if err != nil {
+			return false, err
+		}
+		if recipientUserID == nil || *recipientUserID == uuid.Nil {
+			return false, nil
+		}
+		recipientTeams, err := memberships.ListWorkspaceTeamsForUser(ctx, workspaceID, *recipientUserID)
+		if err != nil {
+			return false, err
+		}
+		return uuidSubset(authorization.AllowedTeamIDs, slackTeamRecordIDs(recipientTeams)), nil
+	}
+	if channelID == "" {
+		return false, nil
+	}
+	repository, ok := p.repo.(eventChannelAudienceRepository)
+	if !ok {
+		return false, errors.New("Slack channel audience repository is not configured")
+	}
+	currentTeamIDs, err := repository.ListAuthorizedChannelTeamIDs(
+		ctx,
+		workspaceID,
+		installation.ID,
+		channelID,
+		userID,
+	)
+	if err != nil {
+		return false, err
+	}
+	return uuidSubset(authorization.AllowedTeamIDs, currentTeamIDs), nil
+}
+
+func assistantSettingsAllowDelivery(settings CoreSlackAgentSettings, payload SlackProviderPayload) bool {
+	if !settings.AssistantEnabled {
+		return false
+	}
+	if settings.WorkflowActionsEnabled {
+		return true
+	}
+	for _, block := range payload.Blocks {
+		for _, element := range block.Elements {
+			if element.ActionID == slackConfirmMutationActionID || element.ActionID == slackCancelMutationActionID {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func validateOutboundInstallation(record messagingrepository.OutboundDeliveryRecord, installation slackrepository.SlackWorkspaceRecord) error {
@@ -988,6 +1364,14 @@ func (p *EventProcessor) botToken(ctx context.Context, installation slackreposit
 }
 
 func (p *EventProcessor) accountLinkMessage(ctx context.Context, workspace slackrepository.WorkspaceRecord, event normalizedSlackEvent) (string, error) {
+	link, err := p.accountLinkURL(ctx, workspace, event)
+	if err != nil {
+		return "", err
+	}
+	return "Connect your FortyOne account before using Maya in Slack: " + link, nil
+}
+
+func (p *EventProcessor) accountLinkURL(ctx context.Context, workspace slackrepository.WorkspaceRecord, event normalizedSlackEvent) (string, error) {
 	nonce := make([]byte, 32)
 	if _, err := io.ReadFull(p.random, nonce); err != nil {
 		return "", fmt.Errorf("generate Slack account-link nonce: %w", err)
@@ -1000,13 +1384,13 @@ func (p *EventProcessor) accountLinkMessage(ctx context.Context, workspace slack
 		WorkspaceID:         workspace.ID,
 		ExternalWorkspaceID: event.TeamID,
 		ExternalUserID:      event.UserID,
-		ExpiresAt:           time.Now().UTC().Add(15 * time.Minute),
+		ExpiresAt:           p.clock.Now().UTC().Add(15 * time.Minute),
 	}); err != nil {
 		return "", err
 	}
 	link := p.website + "/" + url.PathEscape(workspace.Slug) + "/settings/integrations/slack"
 	link += "?slack_link_token=" + url.QueryEscape(base64.RawURLEncoding.EncodeToString(nonce))
-	return "Connect your FortyOne account before using Maya in Slack: " + link, nil
+	return link, nil
 }
 
 func (p *EventProcessor) deliver(ctx context.Context, inboundEventID uuid.UUID, workspaceID, installGeneration uuid.UUID, userID *uuid.UUID, event normalizedSlackEvent, botToken, suffix, text string) error {
@@ -1081,8 +1465,18 @@ func (p *EventProcessor) recordAssistantUsage(parent context.Context, input mess
 	return p.usageBudget.Record(usageCtx, input, p.dailyWorkspaceTokenLimit)
 }
 
-func (p *EventProcessor) persistAssistantPrompt(ctx context.Context, workspaceID, userID uuid.UUID, event normalizedSlackEvent, prompt string) (uuid.UUID, error) {
-	conversationID, err := p.store.UpsertConversation(ctx, assistantConversationInput(workspaceID, userID, event))
+func (p *EventProcessor) persistAssistantPrompt(
+	ctx context.Context,
+	workspaceID, userID uuid.UUID,
+	event normalizedSlackEvent,
+	prompt string,
+	allowedTeamIDs []uuid.UUID,
+) (uuid.UUID, error) {
+	input := assistantConversationInput(workspaceID, userID, event)
+	if input.AudienceScope == messagingrepository.ConversationAudienceChannel {
+		input.AudienceFingerprint = assistantAudienceFingerprint(allowedTeamIDs)
+	}
+	conversationID, err := p.store.UpsertConversation(ctx, input)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -1098,7 +1492,18 @@ func (p *EventProcessor) channelThreadIsSubscribed(
 	installation slackrepository.SlackWorkspaceRecord,
 	event normalizedSlackEvent,
 ) (bool, error) {
-	record, err := p.store.FindConversation(ctx, assistantConversationInput(workspaceID, userID, event))
+	input := assistantConversationInput(workspaceID, userID, event)
+	if input.AudienceScope == messagingrepository.ConversationAudienceChannel {
+		allowedTeamIDs, err := p.authorizedAssistantTeamIDs(ctx, workspaceID, installation, userID, event)
+		if err != nil {
+			return false, err
+		}
+		if len(allowedTeamIDs) == 0 {
+			return false, nil
+		}
+		input.AudienceFingerprint = assistantAudienceFingerprint(allowedTeamIDs)
+	}
+	record, err := findSlackConversation(ctx, p.store, input)
 	if err != nil {
 		if errors.Is(err, messagingrepository.ErrNotFound) {
 			return false, nil
@@ -1124,6 +1529,10 @@ func slackThreadSubscriptionIsCurrent(
 }
 
 func assistantConversationInput(workspaceID, userID uuid.UUID, event normalizedSlackEvent) messagingrepository.ConversationInput {
+	audienceScope := messagingrepository.ConversationAudienceActor
+	if event.Kind != slackEventKindDirect {
+		audienceScope = messagingrepository.ConversationAudienceChannel
+	}
 	return messagingrepository.ConversationInput{
 		Provider:            "slack",
 		WorkspaceID:         workspaceID,
@@ -1131,7 +1540,133 @@ func assistantConversationInput(workspaceID, userID uuid.UUID, event normalizedS
 		ExternalChannelID:   event.ChannelID,
 		ExternalThreadID:    conversationThreadID(event),
 		UserID:              userID,
+		AudienceScope:       audienceScope,
 	}
+}
+
+func assistantAudienceFingerprint(teamIDs []uuid.UUID) string {
+	values := make([]string, 0, len(teamIDs))
+	seen := make(map[uuid.UUID]struct{}, len(teamIDs))
+	for _, teamID := range teamIDs {
+		if teamID == uuid.Nil {
+			continue
+		}
+		if _, exists := seen[teamID]; exists {
+			continue
+		}
+		seen[teamID] = struct{}{}
+		values = append(values, teamID.String())
+	}
+	sort.Strings(values)
+
+	hash := sha256.New()
+	_, _ = hash.Write([]byte("slack-channel-audience-v1\x00"))
+	for _, value := range values {
+		_, _ = hash.Write([]byte(value))
+		_, _ = hash.Write([]byte{0})
+	}
+	return "v1:" + hex.EncodeToString(hash.Sum(nil))
+}
+
+func findSlackConversation(
+	ctx context.Context,
+	store slackConversationFinder,
+	input messagingrepository.ConversationInput,
+) (messagingrepository.ConversationRecord, error) {
+	if input.AudienceScope == messagingrepository.ConversationAudienceChannel {
+		if finder, ok := store.(slackChannelConversationFinder); ok {
+			return finder.FindChannelConversation(ctx, input)
+		}
+	}
+	return store.FindConversation(ctx, input)
+}
+
+type eventAgentSettingsRepository interface {
+	GetAgentSettings(ctx context.Context, workspaceID uuid.UUID) (slackrepository.AgentSettingsRecord, error)
+}
+
+type eventChannelAudienceRepository interface {
+	ListAuthorizedChannelTeamIDs(
+		ctx context.Context,
+		workspaceID, slackWorkspaceID uuid.UUID,
+		slackChannelID string,
+		userID uuid.UUID,
+	) ([]uuid.UUID, error)
+}
+
+type eventTeamMembershipRepository interface {
+	ListWorkspaceTeamsForUser(ctx context.Context, workspaceID, userID uuid.UUID) ([]slackrepository.TeamRecord, error)
+}
+
+func (p *EventProcessor) agentSettings(ctx context.Context, workspaceID uuid.UUID) (CoreSlackAgentSettings, error) {
+	repository, ok := p.repo.(eventAgentSettingsRepository)
+	if !ok {
+		// Test and alternate adapters written before workspace-level agent
+		// settings retain the secure product defaults. The production Slack
+		// repository implements this interface and persists administrator choices.
+		return CoreSlackAgentSettings{AssistantEnabled: true, WorkflowActionsEnabled: true}, nil
+	}
+	record, err := repository.GetAgentSettings(ctx, workspaceID)
+	if err != nil {
+		return CoreSlackAgentSettings{}, err
+	}
+	return toCoreSlackAgentSettings(record), nil
+}
+
+func (p *EventProcessor) authorizedAssistantTeamIDs(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	installation slackrepository.SlackWorkspaceRecord,
+	userID uuid.UUID,
+	event normalizedSlackEvent,
+) ([]uuid.UUID, error) {
+	if event.Kind == slackEventKindDirect {
+		repository, ok := p.repo.(eventTeamMembershipRepository)
+		if !ok {
+			return nil, errors.New("Slack team membership repository is not configured")
+		}
+		teams, err := repository.ListWorkspaceTeamsForUser(ctx, workspaceID, userID)
+		if err != nil {
+			return nil, err
+		}
+		return slackTeamRecordIDs(teams), nil
+	}
+	repository, ok := p.repo.(eventChannelAudienceRepository)
+	if !ok {
+		return nil, errors.New("Slack channel audience repository is not configured")
+	}
+	return repository.ListAuthorizedChannelTeamIDs(
+		ctx,
+		workspaceID,
+		installation.ID,
+		event.ChannelID,
+		userID,
+	)
+}
+
+func persistSlackOutboundContent(
+	ctx context.Context,
+	store slackOutboundContentStore,
+	deliveryID uuid.UUID,
+	content string,
+	providerPayload SlackProviderPayload,
+) error {
+	if slackProviderPayloadIsEmpty(providerPayload) {
+		return store.SetOutboundDeliveryContent(ctx, deliveryID, content)
+	}
+	payloadStore, ok := store.(slackProviderPayloadStore)
+	if !ok {
+		return errors.New("Slack provider payload store is not configured")
+	}
+	encoded, err := EncodeSlackProviderPayload(providerPayload)
+	if err != nil {
+		return err
+	}
+	return payloadStore.SetOutboundDeliveryContentAndProviderPayload(ctx, deliveryID, content, encoded)
+}
+
+func slackProviderPayloadIsEmpty(payload SlackProviderPayload) bool {
+	return len(payload.Blocks) == 0 && payload.Metadata == nil && payload.UnfurlLinks == nil && payload.UnfurlMedia == nil && payload.Authorization == nil && payload.RequestThreadBinding == nil
 }
 
 func isAssistantBudgetNotice(content string) bool {
@@ -1160,6 +1695,17 @@ func conversationThreadID(event normalizedSlackEvent) string {
 		return "dm:" + event.ChannelID
 	}
 	return event.ThreadTS
+}
+
+func assistantSurfaceForSlackEvent(event normalizedSlackEvent) messaging.RuntimeSurfaceContext {
+	kind := messaging.RuntimeSurfaceThread
+	if event.Kind == slackEventKindDirect {
+		kind = messaging.RuntimeSurfaceDirect
+	}
+	return messaging.RuntimeSurfaceContext{
+		Provider: "slack",
+		Kind:     kind,
+	}
 }
 
 func deterministicSlackMessageID(value string) string {
@@ -1203,6 +1749,12 @@ func (s *slackAPISender) Send(ctx context.Context, botToken string, message Slac
 	payload := map[string]any{
 		"channel": message.ChannelID,
 		"text":    message.Text,
+	}
+	if !slackProviderPayloadIsEmpty(message.ProviderPayload) {
+		if _, err := EncodeSlackProviderPayload(message.ProviderPayload); err != nil {
+			return "", err
+		}
+		applySlackProviderPayload(payload, message.ProviderPayload)
 	}
 	if strings.TrimSpace(message.ThreadTS) != "" {
 		payload["thread_ts"] = message.ThreadTS

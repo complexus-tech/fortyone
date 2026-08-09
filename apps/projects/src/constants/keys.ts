@@ -164,6 +164,10 @@ export const githubKeys = {
 export const slackKeys = {
   integration: (workspaceSlug: string) =>
     ["slack", workspaceSlug, "integration"] as const,
+  channelAudiences: (workspaceSlug: string) =>
+    ["slack", workspaceSlug, "channel-audiences"] as const,
+  agentSettings: (workspaceSlug: string) =>
+    ["slack", workspaceSlug, "agent-settings"] as const,
 };
 
 export const calendarKeys = {
@@ -191,6 +195,17 @@ export const integrationRequestKeys = {
     [...integrationRequestKeys.all(workspaceSlug), "detail"] as const,
   detail: (workspaceSlug: string, requestId: string) =>
     [...integrationRequestKeys.details(workspaceSlug), requestId] as const,
+  thread: (workspaceSlug: string, requestId: string) =>
+    [
+      ...integrationRequestKeys.detail(workspaceSlug, requestId),
+      "thread",
+    ] as const,
+  storyLinks: (workspaceSlug: string, storyId: string) =>
+    [
+      ...integrationRequestKeys.all(workspaceSlug),
+      "story-links",
+      storyId,
+    ] as const,
 };
 
 export const feedbackKeys = {

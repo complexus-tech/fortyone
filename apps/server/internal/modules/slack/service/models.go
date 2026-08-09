@@ -77,6 +77,10 @@ type NonceStore interface {
 
 type RequestStore interface {
 	UpsertPending(ctx context.Context, input integrationrequests.CoreUpsertRequestInput) (integrationrequests.CoreIntegrationRequest, error)
+	BindProviderThread(ctx context.Context, input integrationrequests.CoreBindProviderThreadInput) (integrationrequests.CoreProviderThread, error)
+	HasAuthorizedProviderThread(ctx context.Context, input integrationrequests.CoreProviderThreadMatchInput) (bool, error)
+	HasCurrentProviderThread(ctx context.Context, input integrationrequests.CoreProviderThreadLookupInput) (bool, error)
+	FindProviderThread(ctx context.Context, workspaceID, requestID uuid.UUID, provider string) (integrationrequests.CoreProviderThread, error)
 }
 
 type StoryService interface {
