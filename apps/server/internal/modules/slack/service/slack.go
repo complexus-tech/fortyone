@@ -82,6 +82,7 @@ const (
 	modalSourceTextMaxRunes  = 1000
 
 	slackInteractiveWorkTimeout   = 2500 * time.Millisecond
+	slackModalHydrationTimeout    = 8 * time.Second
 	slackWorkObjectTriggerTimeout = 2500 * time.Millisecond
 	slackFailureFeedbackTimeout   = 2 * time.Second
 )
@@ -694,10 +695,10 @@ func (s *Service) HandleCommand(ctx context.Context, rawBody []byte) (CommandRes
 	title := parseCommandTitle(values.Get("text"))
 	s.dispatchCommand(ctx, triggerID, title, source)
 
-	return CommandResponse{
-		ResponseType: "ephemeral",
-		Text:         "Opening FortyOne create story form...",
-	}, nil
+	// A successful slash command opens a modal and needs no conversational
+	// acknowledgement. Returning an empty response prevents Slack from adding a
+	// noisy ephemeral "Opening..." message to the channel.
+	return CommandResponse{}, nil
 }
 
 func (s *Service) HandleInteractivity(ctx context.Context, rawBody []byte) (InteractionResponse, error) {
@@ -1899,7 +1900,28 @@ func (s *Service) openCreateTaskModal(ctx context.Context, triggerID, title, des
 		return errors.New("missing actor id")
 	}
 
-	view, err := s.buildCreateTaskModalView(ctx, createTaskModalViewInput{
+	var opened struct {
+		View struct {
+			ID string `json:"id"`
+		} `json:"view"`
+	}
+	if err := s.callSlackAPI(ctx, botToken, "https://slack.com/api/views.open", map[string]any{
+		"trigger_id": triggerID,
+		"view":       createTaskLoadingModalView(),
+	}, &opened); err != nil {
+		return err
+	}
+	viewID := strings.TrimSpace(opened.View.ID)
+	if viewID == "" {
+		return errors.New("Slack did not return an opened modal view ID")
+	}
+
+	// The trigger is now safely consumed. Team/status/member lookups can finish
+	// under a separate bounded context without risking Slack's three-second
+	// trigger expiry and generic shortcut error.
+	hydrationCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), slackModalHydrationTimeout)
+	defer cancel()
+	view, err := s.buildCreateTaskModalView(hydrationCtx, createTaskModalViewInput{
 		Title:       title,
 		Description: description,
 		Source:      source,
@@ -1907,14 +1929,72 @@ func (s *Service) openCreateTaskModal(ctx context.Context, triggerID, title, des
 		ActorID:     actorID,
 	})
 	if err != nil {
+		s.replaceCreateTaskModalWithError(hydrationCtx, botToken, viewID)
 		return err
 	}
 
 	payload := map[string]any{
-		"trigger_id": triggerID,
-		"view":       view,
+		"view_id": viewID,
+		"view":    view,
 	}
-	return s.callSlackAPI(ctx, botToken, "https://slack.com/api/views.open", payload, nil)
+	if err := s.callSlackAPI(hydrationCtx, botToken, "https://slack.com/api/views.update", payload, nil); err != nil {
+		s.replaceCreateTaskModalWithError(hydrationCtx, botToken, viewID)
+		return err
+	}
+	return nil
+}
+
+func createTaskLoadingModalView() map[string]any {
+	return map[string]any{
+		"type":        "modal",
+		"callback_id": "fortyone_create_task",
+		"title": map[string]string{
+			"type": "plain_text",
+			"text": "Create Story",
+		},
+		"close": map[string]string{
+			"type": "plain_text",
+			"text": "Cancel",
+		},
+		"blocks": []map[string]any{{
+			"type": "section",
+			"text": map[string]string{
+				"type": "plain_text",
+				"text": "Loading story form…",
+			},
+		}},
+	}
+}
+
+func createTaskErrorModalView() map[string]any {
+	return map[string]any{
+		"type":        "modal",
+		"callback_id": "fortyone_create_task",
+		"title": map[string]string{
+			"type": "plain_text",
+			"text": "Create Story",
+		},
+		"close": map[string]string{
+			"type": "plain_text",
+			"text": "Close",
+		},
+		"blocks": []map[string]any{{
+			"type": "section",
+			"text": map[string]string{
+				"type": "plain_text",
+				"text": "FortyOne couldn't load this form. Close it and try again.",
+			},
+		}},
+	}
+}
+
+func (s *Service) replaceCreateTaskModalWithError(ctx context.Context, botToken, viewID string) {
+	if err := s.callSlackAPI(ctx, botToken, "https://slack.com/api/views.update", map[string]any{
+		"view_id": strings.TrimSpace(viewID),
+		"view":    createTaskErrorModalView(),
+	}, nil); err != nil && s.log != nil {
+		s.log.Warn(ctx, "failed replacing Slack create story modal with error state", "error", err, "view_id", viewID)
+	}
 }
 
 type createTaskModalViewInput struct {

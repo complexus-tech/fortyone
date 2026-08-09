@@ -196,6 +196,64 @@ func TestSlackWorkObjectPublisherUnfurlsTypedMetadata(t *testing.T) {
 	require.NoError(t, publisher.Unfurl(context.Background(), "xoxb-test", request))
 }
 
+func TestSlackWorkObjectPublisherUsesComposerDestination(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		var payload map[string]any
+		require.NoError(t, json.NewDecoder(req.Body).Decode(&payload))
+		require.Equal(t, "unfurl-123", payload["unfurl_id"])
+		require.Equal(t, "composer", payload["source"])
+		require.NotContains(t, payload, "channel")
+		require.NotContains(t, payload, "ts")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer server.Close()
+
+	client := newSlackWebClient(server.Client())
+	client.baseURL = server.URL
+	publisher := newSlackWorkObjectPublisher(client)
+	request, err := BuildSlackStoryUnfurlRequest("COMPOSER", "draft-ts", SlackStoryWorkObjectInput{
+		AccessGranted: true,
+		StoryURL:      "https://acme.fortyone.app/work/WEB-123",
+		Title:         "Fix workspace login",
+	})
+	require.NoError(t, err)
+	request.Channel = ""
+	request.TS = ""
+	request.UnfurlID = "unfurl-123"
+	request.Source = "composer"
+	require.NoError(t, publisher.Unfurl(context.Background(), "xoxb-test", request))
+}
+
+func TestApplySlackUnfurlEventDestinationUsesComposerIdentity(t *testing.T) {
+	t.Parallel()
+
+	request := SlackChatUnfurlRequest{Channel: "COMPOSER", TS: "draft-ts"}
+	applySlackUnfurlEventDestination(&request, normalizedSlackEvent{
+		Source:   "composer",
+		UnfurlID: "unfurl-123",
+	})
+
+	require.Empty(t, request.Channel)
+	require.Empty(t, request.TS)
+	require.Equal(t, "unfurl-123", request.UnfurlID)
+	require.Equal(t, "composer", request.Source)
+	require.NoError(t, validateSlackUnfurlRequestDestination(request))
+}
+
+func TestValidateSlackUnfurlRequestDestinationRejectsMixedPairs(t *testing.T) {
+	t.Parallel()
+
+	err := validateSlackUnfurlRequestDestination(SlackChatUnfurlRequest{
+		Channel:  "C123",
+		TS:       "1754700000.123",
+		UnfurlID: "unfurl-123",
+		Source:   "composer",
+	})
+	require.ErrorContains(t, err, "exactly one destination pair")
+}
+
 func TestSlackWorkObjectPublisherPresentsEntityDetailsWithoutAppUnfurlURL(t *testing.T) {
 	t.Parallel()
 

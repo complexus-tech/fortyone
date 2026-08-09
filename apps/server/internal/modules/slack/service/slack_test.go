@@ -162,6 +162,12 @@ type blockingSlackWorkspaceRepo struct {
 	release chan struct{}
 }
 
+type blockingTeamListRepo struct {
+	*mockRepo
+	started chan struct{}
+	release chan struct{}
+}
+
 type eventInboxCapture struct {
 	registrations       int
 	inputs              []messagingrepository.InboundEventInput
@@ -206,6 +212,19 @@ func (r *blockingSlackWorkspaceRepo) GetSlackWorkspaceByTeamID(ctx context.Conte
 		return r.mockRepo.GetSlackWorkspaceByTeamID(ctx, slackTeamID)
 	case <-ctx.Done():
 		return slackrepository.SlackWorkspaceRecord{}, ctx.Err()
+	}
+}
+
+func (r *blockingTeamListRepo) ListWorkspaceTeamsForUser(ctx context.Context, workspaceID, userID uuid.UUID) ([]slackrepository.TeamRecord, error) {
+	select {
+	case r.started <- struct{}{}:
+	default:
+	}
+	select {
+	case <-r.release:
+		return r.mockRepo.ListWorkspaceTeamsForUser(ctx, workspaceID, userID)
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 }
 
@@ -2348,16 +2367,24 @@ func TestHandleMessageActionAcknowledgesBeforeWorkAndSurvivesRequestCancellation
 	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
 	modalOpened := make(chan error, 1)
 	service.client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-		if req.URL.String() != "https://slack.com/api/views.open" {
-			modalOpened <- fmt.Errorf("unexpected Slack endpoint %q", req.URL.String())
-		} else {
+		switch req.URL.String() {
+		case "https://slack.com/api/views.open":
 			modalOpened <- req.Context().Err()
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true,"view":{"id":"V123"}}`)),
+				Header:     make(http.Header),
+			}, nil
+		case "https://slack.com/api/views.update":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true}`)),
+				Header:     make(http.Header),
+			}, nil
+		default:
+			modalOpened <- fmt.Errorf("unexpected Slack endpoint %q", req.URL.String())
+			return nil, fmt.Errorf("unexpected Slack endpoint %q", req.URL.String())
 		}
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(strings.NewReader(`{"ok":true}`)),
-			Header:     make(http.Header),
-		}, nil
 	})}
 
 	interaction := map[string]any{
@@ -2406,6 +2433,105 @@ func TestHandleMessageActionAcknowledgesBeforeWorkAndSurvivesRequestCancellation
 		require.NoError(t, openErr)
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for message-action modal after request cancellation")
+	}
+}
+
+func TestOpenCreateTaskModalConsumesTriggerBeforeTeamLookups(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	actorID := uuid.New()
+	repo := &blockingTeamListRepo{
+		mockRepo: &mockRepo{
+			teams: []slackrepository.TeamRecord{{ID: teamID, Code: "WEB", Name: "Web"}},
+			statusesByTeam: map[uuid.UUID][]slackrepository.StatusRecord{
+				teamID: {{ID: uuid.New(), Name: "Todo", Category: "unstarted"}},
+			},
+			teamMembers: []slackrepository.TeamMemberRecord{{UserID: actorID}},
+		},
+		started: make(chan struct{}, 1),
+		release: make(chan struct{}),
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+	modalOpened := make(chan struct{}, 1)
+	modalUpdated := make(chan struct{}, 1)
+	requestErrors := make(chan error, 2)
+	service.client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		var payload map[string]any
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+			requestErrors <- err
+		}
+		switch req.URL.String() {
+		case "https://slack.com/api/views.open":
+			view, _ := payload["view"].(map[string]any)
+			if _, hasSubmit := view["submit"]; hasSubmit {
+				requestErrors <- errors.New("loading modal must not expose submit before hydration")
+			}
+			modalOpened <- struct{}{}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true,"view":{"id":"V-loading"}}`)),
+				Header:     make(http.Header),
+			}, nil
+		case "https://slack.com/api/views.update":
+			if payload["view_id"] != "V-loading" {
+				requestErrors <- fmt.Errorf("updated view id = %#v", payload["view_id"])
+			}
+			view, _ := payload["view"].(map[string]any)
+			if _, hasSubmit := view["submit"]; !hasSubmit {
+				requestErrors <- errors.New("hydrated modal is missing submit")
+			}
+			modalUpdated <- struct{}{}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true}`)),
+				Header:     make(http.Header),
+			}, nil
+		default:
+			return nil, fmt.Errorf("unexpected Slack endpoint %q", req.URL.String())
+		}
+	})}
+
+	result := make(chan error, 1)
+	go func() {
+		result <- service.openCreateTaskModal(
+			context.Background(),
+			"trigger",
+			"Ship it",
+			"Created from Slack",
+			requestSourceContext{SlackTeamID: "T123", SlackUserID: "U123"},
+			workspaceID,
+			actorID,
+			"xoxb-token",
+		)
+	}()
+
+	select {
+	case <-modalOpened:
+	case <-time.After(time.Second):
+		close(repo.release)
+		t.Fatal("loading modal was not opened before team lookup")
+	}
+	select {
+	case <-repo.started:
+	case <-time.After(time.Second):
+		close(repo.release)
+		t.Fatal("team lookup did not start after opening the loading modal")
+	}
+	close(repo.release)
+	select {
+	case err := <-result:
+		require.NoError(t, err)
+	case <-time.After(time.Second):
+		t.Fatal("timed out hydrating create story modal")
+	}
+	select {
+	case <-modalUpdated:
+	default:
+		t.Fatal("create story modal was not hydrated")
+	}
+	close(requestErrors)
+	for err := range requestErrors {
+		require.NoError(t, err)
 	}
 }
 
@@ -2574,8 +2700,8 @@ func TestHandleCommandRespondsEvenWhenOpeningModalFails(t *testing.T) {
 
 	resp, err := service.HandleCommand(context.Background(), []byte(form.Encode()))
 	require.NoError(t, err)
-	require.Equal(t, "ephemeral", resp.ResponseType)
-	require.Contains(t, resp.Text, "Opening")
+	require.Empty(t, resp.ResponseType)
+	require.Empty(t, resp.Text)
 	select {
 	case failure := <-failureResponse:
 		require.Equal(t, "ephemeral", failure.ResponseType)
@@ -2611,16 +2737,24 @@ func TestHandleCommandAcknowledgesBeforeWorkAndSurvivesRequestCancellation(t *te
 	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
 	modalOpened := make(chan error, 1)
 	service.client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-		if req.URL.String() != "https://slack.com/api/views.open" {
-			modalOpened <- fmt.Errorf("unexpected Slack endpoint %q", req.URL.String())
-		} else {
+		switch req.URL.String() {
+		case "https://slack.com/api/views.open":
 			modalOpened <- req.Context().Err()
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true,"view":{"id":"V123"}}`)),
+				Header:     make(http.Header),
+			}, nil
+		case "https://slack.com/api/views.update":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true}`)),
+				Header:     make(http.Header),
+			}, nil
+		default:
+			modalOpened <- fmt.Errorf("unexpected Slack endpoint %q", req.URL.String())
+			return nil, fmt.Errorf("unexpected Slack endpoint %q", req.URL.String())
 		}
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(strings.NewReader(`{"ok":true}`)),
-			Header:     make(http.Header),
-		}, nil
 	})}
 
 	form := url.Values{}
@@ -2645,7 +2779,8 @@ func TestHandleCommandAcknowledgesBeforeWorkAndSurvivesRequestCancellation(t *te
 	select {
 	case command := <-result:
 		require.NoError(t, command.err)
-		require.Contains(t, command.response.Text, "Opening")
+		require.Empty(t, command.response.ResponseType)
+		require.Empty(t, command.response.Text)
 	case <-time.After(250 * time.Millisecond):
 		close(repo.release)
 		t.Fatal("slash command was not acknowledged before workspace lookup completed")
@@ -2721,8 +2856,8 @@ func TestHandleCommandPromptsAccountLinkWhenSlackUserIsUnmapped(t *testing.T) {
 
 	resp, err := service.HandleCommand(context.Background(), []byte(form.Encode()))
 	require.NoError(t, err)
-	require.Equal(t, "ephemeral", resp.ResponseType)
-	require.Contains(t, resp.Text, "Opening")
+	require.Empty(t, resp.ResponseType)
+	require.Empty(t, resp.Text)
 	select {
 	case connect := <-connectResponse:
 		require.NoError(t, connect.err)

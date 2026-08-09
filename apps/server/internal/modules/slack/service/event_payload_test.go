@@ -110,6 +110,13 @@ func TestNormalizeSlackEvent(t *testing.T) {
 			ok:       true,
 		},
 		{
+			name:     "story link pasted in composer",
+			body:     `{"type":"event_callback","team_id":"T1","event_id":"Ev7-composer","event":{"type":"link_shared","user":"U1","channel_id":"COMPOSER","message_ts":"draft-ts","unfurl_id":"unfurl-123","source":"composer","links":[{"domain":"fortyone.app","url":"https://acme.fortyone.app/work/WEB-123"}]}}`,
+			kind:     slackEventKindLinkShared,
+			threadTS: "draft-ts",
+			ok:       true,
+		},
+		{
 			name:     "story entity details requested",
 			body:     `{"type":"event_callback","team_id":"T1","event_id":"Ev8","event":{"type":"entity_details_requested","user":"U1","channel":"C1","message_ts":"10.7","trigger_id":"trigger","external_ref":{"id":"WEB-123","type":"story"},"entity_url":"https://acme.fortyone.app/work/WEB-123"}}`,
 			kind:     slackEventKindEntityDetails,
@@ -135,6 +142,24 @@ func TestNormalizeSlackEvent(t *testing.T) {
 				t.Fatalf("normalizeSlackEvent() thread/reply = %q/%q, want %q/%q", event.ThreadTS, event.ReplyTS, test.threadTS, test.replyTS)
 			}
 		})
+	}
+}
+
+func TestNormalizeSlackComposerUnfurlPreservesProviderIdentity(t *testing.T) {
+	t.Parallel()
+
+	envelope, err := decodeSlackEvent([]byte(
+		`{"type":"event_callback","team_id":"T1","event_id":"Ev-composer","event":{"type":"link_shared","user":"U1","channel_id":"COMPOSER","message_ts":"draft-ts","unfurl_id":"unfurl-123","source":"composer","links":[{"domain":"fortyone.app","url":"https://acme.fortyone.app/work/WEB-123"}]}}`,
+	))
+	if err != nil {
+		t.Fatalf("decodeSlackEvent() error = %v", err)
+	}
+	event, ok := normalizeSlackEvent(envelope)
+	if !ok {
+		t.Fatal("normalizeSlackEvent() ok = false, want true")
+	}
+	if event.ChannelID != "COMPOSER" || event.UnfurlID != "unfurl-123" || event.Source != "composer" {
+		t.Fatalf("normalizeSlackEvent() destination = %q/%q/%q", event.ChannelID, event.UnfurlID, event.Source)
 	}
 }
 

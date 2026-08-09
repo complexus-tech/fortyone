@@ -246,6 +246,10 @@ func (h *Handlers) HandleCommands(ctx context.Context, w http.ResponseWriter, r 
 		})
 	}
 	outcome = "acknowledged"
+	if response.ResponseType == "" && response.Text == "" {
+		w.WriteHeader(http.StatusOK)
+		return nil
+	}
 	return writeRawJSON(w, http.StatusOK, response)
 }
 

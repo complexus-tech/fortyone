@@ -101,13 +101,14 @@ type outboundDeliveryStateStore interface {
 }
 
 type SlackOutboundMessage struct {
-	ChannelID       string
-	UserID          string
-	ThreadTS        string
-	Text            string
-	ClientMessageID string
-	Ephemeral       bool
-	ProviderPayload SlackProviderPayload
+	ChannelID        string
+	UserID           string
+	ThreadTS         string
+	Text             string
+	ClientMessageID  string
+	Ephemeral        bool
+	StandardMarkdown bool
+	ProviderPayload  SlackProviderPayload
 }
 
 type SlackMessageSender interface {
@@ -808,13 +809,14 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 	}
 
 	externalMessageID, err := p.sender.Send(ctx, botToken, SlackOutboundMessage{
-		ChannelID:       deliveryChannelID,
-		UserID:          event.UserID,
-		ThreadTS:        deliveryThreadTS,
-		Text:            reply,
-		ClientMessageID: deterministicSlackMessageID(deliveryKey),
-		Ephemeral:       false,
-		ProviderPayload: providerPayload,
+		ChannelID:        deliveryChannelID,
+		UserID:           event.UserID,
+		ThreadTS:         deliveryThreadTS,
+		Text:             reply,
+		ClientMessageID:  deterministicSlackMessageID(deliveryKey),
+		Ephemeral:        false,
+		StandardMarkdown: len(providerPayload.Blocks) == 0,
+		ProviderPayload:  providerPayload,
 	})
 	if err != nil {
 		if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(err)); failErr != nil {
@@ -822,10 +824,13 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		}
 		return err
 	}
-	// Slack clears the native assistant status automatically after the app
-	// posts its reply. Do not spend a second API call clearing a status that is
-	// already gone.
-	thinkingStatusActive = false
+	// Slack only auto-clears status when the response is posted into the exact
+	// status thread. Direct-message replies may be posted as new messages, so
+	// explicitly clear after every successful response. If this call fails, the
+	// deferred cleanup makes one more bounded attempt.
+	if thinkingStatusActive && p.clearAssistantThinkingStatus(ctx, event, botToken) {
+		thinkingStatusActive = false
+	}
 	if err := p.store.CompleteOutboundDelivery(ctx, delivery.ID, externalMessageID); err != nil {
 		return err
 	}
@@ -1234,11 +1239,12 @@ func (p *EventProcessor) recoverPendingOutboundDeliveries(ctx context.Context, s
 			continue
 		}
 		externalMessageID, err := p.sender.Send(ctx, botToken, SlackOutboundMessage{
-			ChannelID:       record.ExternalChannelID,
-			ThreadTS:        threadID,
-			Text:            content,
-			ClientMessageID: deterministicSlackMessageID(record.IdempotencyKey),
-			ProviderPayload: providerPayload,
+			ChannelID:        record.ExternalChannelID,
+			ThreadTS:         threadID,
+			Text:             content,
+			ClientMessageID:  deterministicSlackMessageID(record.IdempotencyKey),
+			StandardMarkdown: delivery.Purpose == "assistant" && len(providerPayload.Blocks) == 0,
+			ProviderPayload:  providerPayload,
 		})
 		if err != nil {
 			if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(err)); failErr != nil {
@@ -1815,7 +1821,14 @@ func (s *slackAPISender) Send(ctx context.Context, botToken string, message Slac
 	method := "chat.postMessage"
 	payload := map[string]any{
 		"channel": message.ChannelID,
-		"text":    message.Text,
+	}
+	if message.StandardMarkdown {
+		if len(message.ProviderPayload.Blocks) > 0 {
+			return "", errors.New("Slack standard Markdown cannot be combined with Block Kit blocks")
+		}
+		payload["markdown_text"] = message.Text
+	} else {
+		payload["text"] = message.Text
 	}
 	if !slackProviderPayloadIsEmpty(message.ProviderPayload) {
 		if _, err := EncodeSlackProviderPayload(message.ProviderPayload); err != nil {

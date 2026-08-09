@@ -625,7 +625,8 @@ func TestEventProcessorSetsNativeThinkingStatusBeforeAssistantResponse(t *testin
 	repo := newEventRepositoryStub()
 	repo.linkedUserID = uuidPointer(testLinkedUserID)
 	store := newEventStoreStub()
-	assistant := &assistantStub{response: messaging.Response{Text: "You have three open stories."}}
+	assistantText := "That's **WEB-545**.\n\n- **Status:** Todo"
+	assistant := &assistantStub{response: messaging.Response{Text: assistantText}}
 	sender := &messageSenderStub{externalMessageID: "10.2"}
 	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender)
 	statusSetter := processor.statusSetter.(*assistantStatusSetterStub)
@@ -638,12 +639,43 @@ func TestEventProcessorSetsNativeThinkingStatusBeforeAssistantResponse(t *testin
 	if err := processor.Process(context.Background(), []byte(directMessageEvent("Ev-thinking", "show my work"))); err != nil {
 		t.Fatalf("Process() error = %v", err)
 	}
-	if len(statusSetter.calls) != 1 {
-		t.Fatalf("status calls = %+v, want one thinking call and Slack auto-clear after reply", statusSetter.calls)
+	if len(statusSetter.calls) != 2 {
+		t.Fatalf("status calls = %+v, want thinking then explicit clear", statusSetter.calls)
 	}
 	call := statusSetter.calls[0]
 	if call.botToken != "xoxb-test-token" || call.channel != "D1" || call.threadTS != "10.1" || call.status != slackAssistantThinkingStatus {
 		t.Fatalf("thinking status call = %+v", call)
+	}
+	if clearCall := statusSetter.calls[1]; clearCall.channel != call.channel || clearCall.threadTS != call.threadTS || clearCall.status != "" {
+		t.Fatalf("clear status call = %+v, thinking call = %+v", clearCall, call)
+	}
+	if len(sender.messages) != 1 || !sender.messages[0].StandardMarkdown || sender.messages[0].Text != assistantText {
+		t.Fatalf("assistant Markdown message = %+v", sender.messages)
+	}
+}
+
+func TestEventProcessorRetriesNativeThinkingStatusClearOnce(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	processor := newTestEventProcessor(
+		t,
+		repo,
+		newEventStoreStub(),
+		&assistantStub{response: messaging.Response{Text: "Done."}},
+		&accessCheckerStub{allowed: true},
+		&messageSenderStub{externalMessageID: "10.2"},
+	)
+	statusSetter := processor.statusSetter.(*assistantStatusSetterStub)
+	statusSetter.errors = []error{nil, errors.New("temporary clear failure"), nil}
+
+	if err := processor.Process(context.Background(), []byte(directMessageEvent("Ev-thinking-clear-retry", "show my work"))); err != nil {
+		t.Fatalf("Process() error = %v", err)
+	}
+	if len(statusSetter.calls) != 3 {
+		t.Fatalf("status calls = %+v, want thinking, failed clear, deferred clear retry", statusSetter.calls)
+	}
+	if statusSetter.calls[0].status != slackAssistantThinkingStatus || statusSetter.calls[1].status != "" || statusSetter.calls[2].status != "" {
+		t.Fatalf("status calls = %+v", statusSetter.calls)
 	}
 }
 
@@ -2278,6 +2310,9 @@ func TestEventProcessorPropagatesRateLimitAndReusesReplyOnRetry(t *testing.T) {
 	}
 	if len(sender.messages) != 2 || sender.messages[0].Text != sender.messages[1].Text || sender.messages[0].ClientMessageID != sender.messages[1].ClientMessageID {
 		t.Fatalf("retry messages differ = %+v", sender.messages)
+	}
+	if !sender.messages[0].StandardMarkdown || !sender.messages[1].StandardMarkdown {
+		t.Fatalf("retry messages lost standard Markdown mode = %+v", sender.messages)
 	}
 	if len(store.completedDeliveries) != 1 || len(store.completions) != 2 || store.completions[1].status != "completed" {
 		t.Fatalf("retry delivery/inbound completion = %+v / %+v", store.completedDeliveries, store.completions)

@@ -84,6 +84,7 @@ func (p *EventProcessor) processSlackLinkShared(
 		if err != nil {
 			return err
 		}
+		applySlackUnfurlEventDestination(&request, event)
 		return p.workObjects.Unfurl(ctx, botToken, request)
 	}
 
@@ -96,7 +97,15 @@ func (p *EventProcessor) processSlackLinkShared(
 			}
 			return err
 		}
-		accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, event.ChannelID, story.Team)
+		accessChannelID := event.ChannelID
+		if strings.EqualFold(strings.TrimSpace(event.Source), "composer") {
+			// A composer preview is visible only to the author and is not yet part
+			// of a channel audience. Authorize it from current team membership;
+			// Slack will deliver a posted-message event that is checked against the
+			// final channel before displaying the public unfurl.
+			accessChannelID = ""
+		}
+		accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, story.Team)
 		if err != nil {
 			return err
 		}
@@ -118,11 +127,30 @@ func (p *EventProcessor) processSlackLinkShared(
 	if len(metadata.Entities) == 0 {
 		return nil
 	}
-	return p.workObjects.Unfurl(ctx, botToken, SlackChatUnfurlRequest{
+	request := SlackChatUnfurlRequest{
 		Channel:  event.ChannelID,
 		TS:       event.MessageTS,
 		Metadata: &metadata,
-	})
+	}
+	applySlackUnfurlEventDestination(&request, event)
+	return p.workObjects.Unfurl(ctx, botToken, request)
+}
+
+func validSlackUnfurlEventDestination(event normalizedSlackEvent) bool {
+	if strings.EqualFold(strings.TrimSpace(event.Source), "composer") {
+		return strings.TrimSpace(event.UnfurlID) != ""
+	}
+	return strings.TrimSpace(event.ChannelID) != "" && strings.TrimSpace(event.MessageTS) != ""
+}
+
+func applySlackUnfurlEventDestination(request *SlackChatUnfurlRequest, event normalizedSlackEvent) {
+	if request == nil || !strings.EqualFold(strings.TrimSpace(event.Source), "composer") {
+		return
+	}
+	request.Channel = ""
+	request.TS = ""
+	request.UnfurlID = strings.TrimSpace(event.UnfurlID)
+	request.Source = "composer"
 }
 
 func (p *EventProcessor) slackStoryAccessGranted(

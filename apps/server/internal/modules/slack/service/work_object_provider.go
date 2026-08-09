@@ -36,7 +36,7 @@ func (p *slackWorkObjectPublisher) Unfurl(ctx context.Context, botToken string, 
 	if strings.TrimSpace(botToken) == "" {
 		return errors.New("Slack bot token is required")
 	}
-	if err := validateSlackUnfurlDestination(request.Channel, request.TS); err != nil {
+	if err := validateSlackUnfurlRequestDestination(request); err != nil {
 		return err
 	}
 	if request.Metadata != nil {

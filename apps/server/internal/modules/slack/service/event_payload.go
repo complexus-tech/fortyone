@@ -36,11 +36,13 @@ type slackInnerEvent struct {
 	User         string                `json:"user"`
 	Text         string                `json:"text"`
 	Channel      string                `json:"channel"`
+	ChannelID    string                `json:"channel_id"`
 	ChannelType  string                `json:"channel_type"`
 	TS           string                `json:"ts"`
 	MessageTS    string                `json:"message_ts"`
 	ThreadTS     string                `json:"thread_ts"`
 	Source       string                `json:"source"`
+	UnfurlID     string                `json:"unfurl_id"`
 	TriggerID    string                `json:"trigger_id"`
 	EntityURL    string                `json:"entity_url"`
 	AppUnfurlURL string                `json:"app_unfurl_url"`
@@ -87,6 +89,7 @@ type normalizedSlackEvent struct {
 	ReplyTS             string
 	Text                string
 	Source              string
+	UnfurlID            string
 	TriggerID           string
 	EntityURL           string
 	AppUnfurlURL        string
@@ -130,6 +133,7 @@ func normalizeSlackEvent(envelope slackEventEnvelope) (normalizedSlackEvent, boo
 		ThreadTS:     strings.TrimSpace(event.ThreadTS),
 		Text:         strings.TrimSpace(event.Text),
 		Source:       strings.TrimSpace(event.Source),
+		UnfurlID:     strings.TrimSpace(event.UnfurlID),
 		TriggerID:    strings.TrimSpace(event.TriggerID),
 		EntityURL:    strings.TrimSpace(event.EntityURL),
 		AppUnfurlURL: strings.TrimSpace(event.AppUnfurlURL),
@@ -139,6 +143,9 @@ func normalizeSlackEvent(envelope slackEventEnvelope) (normalizedSlackEvent, boo
 		},
 		RevokedOAuthUserIDs: append([]string(nil), event.Tokens.OAuth...),
 		RevokedBotUserIDs:   append([]string(nil), event.Tokens.Bot...),
+	}
+	if normalized.ChannelID == "" {
+		normalized.ChannelID = strings.TrimSpace(event.ChannelID)
 	}
 	normalized.ReplyTS = normalized.ThreadTS
 	if messageTS := strings.TrimSpace(event.MessageTS); messageTS != "" {
@@ -174,7 +181,7 @@ func normalizeSlackEvent(envelope slackEventEnvelope) (normalizedSlackEvent, boo
 		return normalized, true
 	case slackEventLinkShared:
 		normalized.Kind = slackEventKindLinkShared
-		if envelope.IsExtSharedChannel || normalized.UserID == "" || normalized.ChannelID == "" || normalized.MessageTS == "" {
+		if envelope.IsExtSharedChannel || normalized.UserID == "" || !validSlackUnfurlEventDestination(normalized) {
 			return normalizedSlackEvent{}, false
 		}
 		for _, link := range event.Links {

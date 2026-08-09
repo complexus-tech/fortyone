@@ -168,8 +168,10 @@ type SlackWorkObjectAction struct {
 // authorization request deliberately carries no entity metadata so it cannot
 // disclose a story before the Slack user is linked.
 type SlackChatUnfurlRequest struct {
-	Channel          string                   `json:"channel"`
-	TS               string                   `json:"ts"`
+	Channel          string                   `json:"channel,omitempty"`
+	TS               string                   `json:"ts,omitempty"`
+	UnfurlID         string                   `json:"unfurl_id,omitempty"`
+	Source           string                   `json:"source,omitempty"`
 	Metadata         *SlackWorkObjectMetadata `json:"metadata,omitempty"`
 	UserAuthRequired bool                     `json:"user_auth_required,omitempty"`
 	UserAuthURL      string                   `json:"user_auth_url,omitempty"`
@@ -706,6 +708,26 @@ func validateSlackUnfurlDestination(channelID, messageTS string) error {
 	messageTS = strings.TrimSpace(messageTS)
 	if channelID == "" || messageTS == "" || strings.ContainsAny(channelID+messageTS, " \t\r\n") {
 		return errors.New("Slack unfurl channel and timestamp are required")
+	}
+	return nil
+}
+
+func validateSlackUnfurlRequestDestination(request SlackChatUnfurlRequest) error {
+	channelID := strings.TrimSpace(request.Channel)
+	messageTS := strings.TrimSpace(request.TS)
+	unfurlID := strings.TrimSpace(request.UnfurlID)
+	source := strings.TrimSpace(request.Source)
+
+	hasConversationDestination := channelID != "" || messageTS != ""
+	hasEventDestination := unfurlID != "" || source != ""
+	if hasConversationDestination == hasEventDestination {
+		return errors.New("Slack unfurl requires exactly one destination pair")
+	}
+	if hasConversationDestination {
+		return validateSlackUnfurlDestination(channelID, messageTS)
+	}
+	if unfurlID == "" || (source != "composer" && source != "conversations_history") {
+		return errors.New("Slack unfurl ID and valid source are required")
 	}
 	return nil
 }

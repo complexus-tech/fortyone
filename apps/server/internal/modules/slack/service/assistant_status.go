@@ -67,18 +67,22 @@ func (p *EventProcessor) startAssistantThinkingStatus(
 	return true
 }
 
-func (p *EventProcessor) clearAssistantThinkingStatus(ctx context.Context, event normalizedSlackEvent, botToken string) {
+func (p *EventProcessor) clearAssistantThinkingStatus(ctx context.Context, event normalizedSlackEvent, botToken string) bool {
 	if p == nil || p.statusSetter == nil || strings.TrimSpace(event.ChannelID) == "" || strings.TrimSpace(event.ThreadTS) == "" {
-		return
+		return false
 	}
 	statusCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), slackAssistantStatusTimeout)
 	defer cancel()
-	if err := p.statusSetter.SetStatus(statusCtx, botToken, event.ChannelID, event.ThreadTS, ""); err != nil && p.log != nil {
-		p.log.Warn(statusCtx, "failed clearing Slack Maya thinking status",
-			"error", err,
-			"slack_event_id", event.EventID,
-			"slack_team_id", event.TeamID,
-			"slack_channel_id", event.ChannelID,
-		)
+	if err := p.statusSetter.SetStatus(statusCtx, botToken, event.ChannelID, event.ThreadTS, ""); err != nil {
+		if p.log != nil {
+			p.log.Warn(statusCtx, "failed clearing Slack Maya thinking status",
+				"error", err,
+				"slack_event_id", event.EventID,
+				"slack_team_id", event.TeamID,
+				"slack_channel_id", event.ChannelID,
+			)
+		}
+		return false
 	}
+	return true
 }
