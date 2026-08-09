@@ -56,6 +56,8 @@ export type MarketingDetail = {
   questions: [string, string][];
   sections: MarketingSection[];
   slug: string;
+  updatedDate?: string;
+  updatedLabel?: string;
 };
 
 function PromptCard({
@@ -345,9 +347,9 @@ export function MarketingDetailPage({
               </div>
               <time
                 className="text-text-muted mt-5 block text-sm font-medium"
-                dateTime={UPDATED_DATE}
+                dateTime={detail.updatedDate ?? UPDATED_DATE}
               >
-                {UPDATED_LABEL}
+                {detail.updatedLabel ?? UPDATED_LABEL}
               </time>
             </header>
 

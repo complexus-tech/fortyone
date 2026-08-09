@@ -35,8 +35,7 @@ export const metadata: Metadata = {
 async function getPrivacyPolicy() {
   try {
     const filePath = join(process.cwd(), "src/content/privacy-policy.md");
-    const content = await readFile(filePath, "utf8");
-    return content.replace("{{date}}", new Date().toLocaleDateString());
+    return await readFile(filePath, "utf8");
   } catch (error) {
     notFound();
   }

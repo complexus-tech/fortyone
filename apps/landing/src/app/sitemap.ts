@@ -3,6 +3,7 @@ import { comparisons } from "@/lib/comparisons";
 import { features } from "@/lib/features";
 import { getAllPosts } from "@/lib/posts";
 import { getCanonicalUrl } from "@/lib/seo";
+import { integrations } from "@/lib/integrations";
 import { useCases } from "@/lib/use-cases";
 
 const useCaseRoutes: MetadataRoute.Sitemap = useCases.map(({ slug }) => ({
@@ -16,6 +17,12 @@ const featureRoutes: MetadataRoute.Sitemap = features.map(({ slug }) => ({
 const comparisonRoutes: MetadataRoute.Sitemap = comparisons.map(({ slug }) => ({
   url: getCanonicalUrl(`/compare/${slug}`),
 }));
+
+const integrationRoutes: MetadataRoute.Sitemap = integrations.map(
+  ({ slug }) => ({
+    url: getCanonicalUrl(`/integrations/${slug}`),
+  }),
+);
 
 const routes: MetadataRoute.Sitemap = [
   { url: getCanonicalUrl("/") },
@@ -39,6 +46,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...routes,
     ...featureRoutes,
     ...useCaseRoutes,
+    ...integrationRoutes,
     ...comparisonRoutes,
     ...blogRoutes,
   ];

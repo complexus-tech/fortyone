@@ -93,6 +93,21 @@ const resources = [
   },
 ];
 
+const integrations = [
+  {
+    title: "Google Calendar",
+    href: "/integrations/google-calendar",
+  },
+  {
+    title: "Slack",
+    href: "/integrations/slack",
+  },
+  {
+    title: "GitHub",
+    href: "/integrations/github",
+  },
+];
+
 const FooterLink = ({
   href,
   children,
@@ -220,6 +235,14 @@ export const Footer = () => {
                 {title}
               </FooterLink>
             ))}
+            <Box className="mt-8">
+              <Text className="text-text-muted mb-4">Integrations</Text>
+              {integrations.map(({ href, title }) => (
+                <FooterLink href={href} key={href}>
+                  {title}
+                </FooterLink>
+              ))}
+            </Box>
           </Box>
           <Box>
             <Text className="text-text-muted mb-4">Legal</Text>
