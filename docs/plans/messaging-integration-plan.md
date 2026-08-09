@@ -132,10 +132,9 @@ Workspace-authenticated management routes remain under
 `/workspaces/{workspaceSlug}/integrations/slack`. Slack must never be configured
 to call an `apps/bot` webhook or an `/internal/bot/slack/*` route.
 
-The source-controlled configuration is
-`apps/server/slack-app-manifest.yaml`. Its core scopes are
-`app_mentions:read`, `chat:write`, `commands`, and `im:history`. Channel
-inventory and user-directory/email scopes are outside the launch manifest.
+The Slack app's core scopes are `app_mentions:read`, `channels:history`,
+`chat:write`, `commands`, `groups:history`, and `im:history`. Channel inventory
+and user-directory/email scopes remain outside the launch configuration.
 
 ## Security and Data Model
 
@@ -266,7 +265,8 @@ not justify channel-history scopes.
 
 ### Mention and direct message
 
-1. Normalize `app_mention` or `message.im`, excluding bot-authored/self events.
+1. Normalize `app_mention`, `message.im`, or an actor-bound reply in a
+   subscribed public/private channel thread, excluding bot-authored/self events.
 2. Persist/deduplicate before acknowledgement.
 3. Resolve the linked FortyOne actor and conversation/thread mapping.
 4. Invoke Maya with a bounded context and the same tool permissions used by the
@@ -275,8 +275,10 @@ not justify channel-history scopes.
 6. Store the provider message identity and a minimal conversation record.
 
 Channel mentions require the app to be present in the channel. DMs operate in
-the app's Messages tab. Do not subscribe to broad `message.channels` or
-`message.groups` events for the launch release.
+the app's Messages tab. Broad `message.channels` and `message.groups` events are
+filtered before durable retention: only a human reply in an existing,
+same-actor conversation started by `@FortyOne` is eligible. Slack Connect
+channels are excluded until channel-audience authorization exists.
 
 ### Uninstall and revocation
 

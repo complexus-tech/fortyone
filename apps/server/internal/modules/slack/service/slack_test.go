@@ -138,16 +138,32 @@ type blockingSlackWorkspaceRepo struct {
 }
 
 type eventInboxCapture struct {
-	registrations int
+	registrations       int
+	inputs              []messagingrepository.InboundEventInput
+	conversation        messagingrepository.ConversationRecord
+	conversationErr     error
+	conversationLookups []messagingrepository.ConversationInput
 }
 
-func (s *eventInboxCapture) RegisterInboundEvent(_ context.Context, _ messagingrepository.InboundEventInput) (messagingrepository.InboundEventRecord, bool, error) {
+func (s *eventInboxCapture) RegisterInboundEvent(_ context.Context, input messagingrepository.InboundEventInput) (messagingrepository.InboundEventRecord, bool, error) {
 	s.registrations++
+	s.inputs = append(s.inputs, input)
 	return messagingrepository.InboundEventRecord{ID: uuid.New()}, true, nil
 }
 
 func (s *eventInboxCapture) MarkInboundEventQueued(_ context.Context, _ uuid.UUID) error {
 	return nil
+}
+
+func (s *eventInboxCapture) FindConversation(_ context.Context, input messagingrepository.ConversationInput) (messagingrepository.ConversationRecord, error) {
+	s.conversationLookups = append(s.conversationLookups, input)
+	if s.conversationErr != nil {
+		return messagingrepository.ConversationRecord{}, s.conversationErr
+	}
+	if s.conversation.ID == uuid.Nil {
+		return messagingrepository.ConversationRecord{}, messagingrepository.ErrNotFound
+	}
+	return s.conversation, nil
 }
 
 func (r *blockingSlackWorkspaceRepo) GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID string) (slackrepository.SlackWorkspaceRecord, error) {
@@ -672,6 +688,107 @@ func TestHandleEventsDropsUnknownSlackInstallationBeforePersistence(t *testing.T
 	require.Empty(t, queue.payloads)
 }
 
+func TestHandleEventsDropsUnrelatedChannelMessagesBeforePersistence(t *testing.T) {
+	repo := &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
+		WorkspaceID:       uuid.New(),
+		SlackTeamID:       "T1",
+		InstallGeneration: uuid.New(),
+	}}
+	queue := &eventQueueStub{}
+	inbox := &eventInboxCapture{}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{SecretKey: "event-secret"})
+	WithEventRuntime(queue, inbox)(service)
+
+	response, err := service.HandleEvents(context.Background(), []byte(`{"type":"event_callback","team_id":"T1","event_id":"Ev-root","event":{"type":"message","channel_type":"channel","user":"U1","channel":"C1","ts":"10.1","text":"unrelated channel message"}}`))
+
+	require.NoError(t, err)
+	require.Empty(t, response.Challenge)
+	require.Zero(t, inbox.registrations)
+	require.Empty(t, queue.payloads)
+}
+
+func TestHandleEventsPersistsCandidateChannelThreadReply(t *testing.T) {
+	workspaceID := uuid.New()
+	installGeneration := uuid.New()
+	linkedUserID := uuid.New()
+	repo := &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
+		WorkspaceID:       workspaceID,
+		SlackTeamID:       "T1",
+		InstallGeneration: installGeneration,
+		AuthorizedAt:      time.Unix(1_700_000_000, 0).UTC(),
+	}, slackUserLinks: map[string]uuid.UUID{"T1:U1": linkedUserID}}
+	queue := &eventQueueStub{}
+	inbox := &eventInboxCapture{conversation: messagingrepository.ConversationRecord{
+		ID:        uuid.New(),
+		UpdatedAt: time.Unix(1_700_000_000, 0).UTC(),
+	}}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{SecretKey: "event-secret"})
+	WithEventRuntime(queue, inbox)(service)
+
+	response, err := service.HandleEvents(context.Background(), []byte(channelThreadEvent("Ev-thread", "U1", "what about urgent work?")))
+
+	require.NoError(t, err)
+	require.Empty(t, response.Challenge)
+	require.Equal(t, 1, inbox.registrations)
+	require.Len(t, inbox.inputs, 1)
+	require.Equal(t, workspaceID, *inbox.inputs[0].WorkspaceID)
+	require.Equal(t, installGeneration, *inbox.inputs[0].InstallGeneration)
+	require.Equal(t, "message", inbox.inputs[0].EventType)
+	require.NotEmpty(t, inbox.inputs[0].PayloadEncrypted)
+	require.Len(t, inbox.conversationLookups, 1)
+	require.Equal(t, linkedUserID, inbox.conversationLookups[0].UserID)
+	require.Equal(t, "10.1", inbox.conversationLookups[0].ExternalThreadID)
+	require.Len(t, queue.payloads, 1)
+	require.Equal(t, "Ev-thread", queue.payloads[0].EventID)
+}
+
+func TestHandleEventsDropsUnsubscribedChannelThreadBeforePersistence(t *testing.T) {
+	workspaceID := uuid.New()
+	linkedUserID := uuid.New()
+	repo := &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
+		WorkspaceID:       workspaceID,
+		SlackTeamID:       "T1",
+		InstallGeneration: uuid.New(),
+		AuthorizedAt:      time.Unix(1_700_000_000, 0).UTC(),
+	}, slackUserLinks: map[string]uuid.UUID{"T1:U1": linkedUserID}}
+	queue := &eventQueueStub{}
+	inbox := &eventInboxCapture{}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{SecretKey: "event-secret"})
+	WithEventRuntime(queue, inbox)(service)
+
+	response, err := service.HandleEvents(context.Background(), []byte(channelThreadEvent("Ev-unsubscribed", "U1", "unrelated reply")))
+
+	require.NoError(t, err)
+	require.Empty(t, response.Challenge)
+	require.Len(t, inbox.conversationLookups, 1)
+	require.Zero(t, inbox.registrations)
+	require.Empty(t, queue.payloads)
+}
+
+func TestHandleEventsDropsBroadDuplicateOfAppMentionBeforePersistence(t *testing.T) {
+	workspaceID := uuid.New()
+	botUserID := "B1"
+	repo := &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
+		WorkspaceID:       workspaceID,
+		SlackTeamID:       "T1",
+		BotUserID:         &botUserID,
+		InstallGeneration: uuid.New(),
+		AuthorizedAt:      time.Unix(1_700_000_000, 0).UTC(),
+	}}
+	queue := &eventQueueStub{}
+	inbox := &eventInboxCapture{}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{SecretKey: "event-secret"})
+	WithEventRuntime(queue, inbox)(service)
+
+	response, err := service.HandleEvents(context.Background(), []byte(channelThreadEvent("Ev-mention-copy", "U1", "<@B1> show my work")))
+
+	require.NoError(t, err)
+	require.Empty(t, response.Challenge)
+	require.Empty(t, inbox.conversationLookups)
+	require.Zero(t, inbox.registrations)
+	require.Empty(t, queue.payloads)
+}
+
 func TestCreateInstallSessionStoresOpaqueBoundStateWithCoreScopes(t *testing.T) {
 	workspaceID := uuid.New()
 	userID := uuid.New()
@@ -686,7 +803,7 @@ func TestCreateInstallSessionStoresOpaqueBoundStateWithCoreScopes(t *testing.T) 
 	require.NoError(t, err)
 	installURL, err := url.Parse(session.InstallURL)
 	require.NoError(t, err)
-	require.Equal(t, "app_mentions:read,chat:write,commands,im:history", installURL.Query().Get("scope"))
+	require.Equal(t, "app_mentions:read,channels:history,chat:write,commands,groups:history,im:history", installURL.Query().Get("scope"))
 	state := installURL.Query().Get("state")
 	require.NotEmpty(t, state)
 	require.NotContains(t, state, ".")

@@ -85,8 +85,10 @@ cutover will create expiring access tokens the runtime cannot refresh.
 The core install requires only:
 
 - `app_mentions:read` for `app_mention`
+- `channels:history` for actor-bound follow-ups in subscribed public-channel threads
 - `chat:write` for replies and task confirmations
 - `commands` for `/fortyone` and the message shortcut
+- `groups:history` for actor-bound follow-ups in subscribed private-channel threads
 - `im:history` for `message.im`
 
 Channel inventory and email-based account matching are intentionally excluded.
@@ -95,17 +97,20 @@ email identity. If channel routing is later enabled, add `channels:read` and
 `groups:read` as optional scopes and handle `missing_scope` without breaking the
 core command, shortcut, mention, and DM flows.
 
-Do not add channel/message history scopes merely to create a task from a
-message shortcut: Slack includes the selected message in the shortcut payload.
-Untagged public/private-channel thread listening is a separate feature and
-would require an explicit privacy review plus the appropriate history scopes
-and message event subscriptions.
+The channel history scopes are not used to create a task from a message
+shortcut; Slack includes the selected message in the shortcut payload. They are
+used only to continue a Maya conversation after an explicit `@FortyOne`
+mention. The runtime ignores channel roots, unrelated threads, bot messages,
+edits, messages from another actor, expired or pre-reinstall conversations, and
+Slack Connect channels before durable payload retention.
 
 ## Events and Interaction Timing
 
 Subscribe to:
 
 - `app_mention`
+- `message.channels`
+- `message.groups`
 - `message.im`
 - `app_uninstalled`
 - `tokens_revoked`

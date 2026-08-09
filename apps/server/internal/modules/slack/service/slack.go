@@ -226,8 +226,10 @@ func (s *Service) CreateInstallSession(ctx context.Context, workspaceID, userID 
 		url.QueryEscape(s.cfg.ClientID),
 		url.QueryEscape(strings.Join([]string{
 			"app_mentions:read",
+			"channels:history",
 			"chat:write",
 			"commands",
+			"groups:history",
 			"im:history",
 		}, ",")),
 		url.QueryEscape(state),
@@ -547,6 +549,13 @@ func (s *Service) HandleEvents(ctx context.Context, rawBody []byte) (EventRespon
 	if payload.EventID == "" || payload.TeamID == "" {
 		return EventResponse{}, fmt.Errorf("%w: callback is missing event_id or team_id", ErrSlackInvalidEventPayload)
 	}
+	event, supported := normalizeSlackEvent(payload)
+	if !supported {
+		// message.channels and message.groups are intentionally broad. Discard
+		// unrelated roots, bot messages, edits, and unsupported event shapes
+		// before encrypting or retaining their content in the durable inbox.
+		return EventResponse{}, nil
+	}
 	if s.eventQueue == nil || s.eventInbox == nil {
 		return EventResponse{}, ErrSlackEventRuntimeNotConfigured
 	}
@@ -567,6 +576,28 @@ func (s *Service) HandleEvents(ctx context.Context, rawBody []byte) (EventRespon
 		return EventResponse{}, nil
 	} else {
 		return EventResponse{}, fmt.Errorf("resolve Slack installation for event receipt: %w", installationErr)
+	}
+	if event.Kind == slackEventKindChannelThread {
+		if installation.BotUserID != nil && containsSlackUserMention(event.Text, *installation.BotUserID) {
+			return EventResponse{}, nil
+		}
+		linkedUserID, linkErr := s.repo.FindLinkedUserIDBySlackUser(ctx, installation.WorkspaceID, event.TeamID, event.UserID)
+		if linkErr != nil {
+			return EventResponse{}, fmt.Errorf("resolve Slack thread actor: %w", linkErr)
+		}
+		if linkedUserID == nil || *linkedUserID == uuid.Nil {
+			return EventResponse{}, nil
+		}
+		conversation, conversationErr := s.eventInbox.FindConversation(ctx, assistantConversationInput(installation.WorkspaceID, *linkedUserID, event))
+		if conversationErr != nil {
+			if errors.Is(conversationErr, messagingrepository.ErrNotFound) {
+				return EventResponse{}, nil
+			}
+			return EventResponse{}, fmt.Errorf("resolve Slack thread subscription: %w", conversationErr)
+		}
+		if !slackThreadSubscriptionIsCurrent(conversation, installation, s.clock.Now()) {
+			return EventResponse{}, nil
+		}
 	}
 	encryptedPayload, err := s.credentials.sealPayload(rawBody)
 	if err != nil {

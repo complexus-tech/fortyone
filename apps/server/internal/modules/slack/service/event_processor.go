@@ -24,6 +24,7 @@ import (
 
 const (
 	slackConversationHistoryLimit = 20
+	slackThreadSubscriptionTTL    = 30 * 24 * time.Hour
 	slackMessageTextLimit         = 3900
 	legacyCredentialBatchSize     = 100
 	slackStateWriteTimeout        = 5 * time.Second
@@ -60,10 +61,12 @@ type SlackEventStore interface {
 	StartInboundEvent(ctx context.Context, provider, externalWorkspaceID, externalEventID string) (record messagingrepository.InboundEventRecord, claimed bool, err error)
 	CompleteInboundEvent(ctx context.Context, id uuid.UUID, status, message string) error
 	UpsertConversation(ctx context.Context, input messagingrepository.ConversationInput) (uuid.UUID, error)
+	FindConversation(ctx context.Context, input messagingrepository.ConversationInput) (messagingrepository.ConversationRecord, error)
 	AppendMessage(ctx context.Context, conversationID uuid.UUID, externalMessageID, role, content string) error
 	ListRecentMessages(ctx context.Context, conversationID uuid.UUID, limit int) ([]messagingrepository.MessageRecord, error)
 	StartOutboundDelivery(ctx context.Context, input messagingrepository.OutboundDeliveryInput) (record messagingrepository.OutboundDeliveryRecord, claimed bool, err error)
 	SetOutboundDeliveryContent(ctx context.Context, id uuid.UUID, content string) error
+	SetOutboundDeliveryContentAndDestination(ctx context.Context, id uuid.UUID, content, externalChannelID, externalThreadID string) error
 	CompleteOutboundDelivery(ctx context.Context, id uuid.UUID, externalMessageID string) error
 	FailOutboundDelivery(ctx context.Context, id uuid.UUID, message string) error
 	CancelOutboundDelivery(ctx context.Context, id uuid.UUID, message string) error
@@ -319,6 +322,27 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 	if err != nil {
 		return err
 	}
+	if event.Kind == slackEventKindChannelThread {
+		// An explicit app_mention event owns messages that mention the bot. Slack
+		// can also emit the same Slack message through message.channels/groups;
+		// ignoring that broad event prevents two answers with different event IDs.
+		if installation.BotUserID != nil && containsSlackUserMention(event.Text, *installation.BotUserID) {
+			status = "ignored"
+			return nil
+		}
+		if linkedUserID == nil || *linkedUserID == uuid.Nil {
+			status = "ignored"
+			return nil
+		}
+		subscribed, subscriptionErr := p.channelThreadIsSubscribed(ctx, workspace.ID, *linkedUserID, installation, event)
+		if subscriptionErr != nil {
+			return subscriptionErr
+		}
+		if !subscribed {
+			status = "ignored"
+			return nil
+		}
+	}
 	if linkedUserID == nil || *linkedUserID == uuid.Nil {
 		text, linkErr := p.accountLinkMessage(ctx, workspace, event)
 		if linkErr != nil {
@@ -363,10 +387,6 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 	deliveryKey := event.EventID + ":assistant"
 	deliveryChannelID := event.ChannelID
 	deliveryThreadTS := event.ReplyTS
-	if event.Kind == slackEventKindMention {
-		deliveryChannelID = event.UserID
-		deliveryThreadTS = ""
-	}
 	deliveryExpiresAt := p.clock.Now().UTC().Add(time.Hour)
 	delivery, shouldDeliver, err := p.store.StartOutboundDelivery(ctx, messagingrepository.OutboundDeliveryInput{
 		Provider:                "slack",
@@ -387,6 +407,14 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 	}
 	if delivery.ExpiresAt != nil {
 		deliveryExpiresAt = delivery.ExpiresAt.UTC()
+	}
+	if strings.TrimSpace(delivery.ExternalChannelID) != "" {
+		deliveryChannelID = strings.TrimSpace(delivery.ExternalChannelID)
+	}
+	if delivery.ExternalThreadID != nil {
+		deliveryThreadTS = strings.TrimSpace(*delivery.ExternalThreadID)
+	} else if deliveryChannelID != event.ChannelID {
+		deliveryThreadTS = ""
 	}
 	if !shouldDeliver {
 		if delivery.Status == "delivered" && delivery.Content != nil && delivery.ExternalMessageID != nil {
@@ -451,6 +479,14 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 			}
 			persistConversation = false
 		}
+	}
+	if event.Kind != slackEventKindDirect && isAssistantBudgetNotice(reply) && deliveryChannelID != event.UserID {
+		if err := p.store.SetOutboundDeliveryContentAndDestination(ctx, delivery.ID, reply, event.UserID, ""); err != nil {
+			return err
+		}
+		deliveryChannelID = event.UserID
+		deliveryThreadTS = ""
+		contentPersisted = true
 	}
 
 	conversationID := uuid.Nil
@@ -976,7 +1012,7 @@ func (p *EventProcessor) accountLinkMessage(ctx context.Context, workspace slack
 func (p *EventProcessor) deliver(ctx context.Context, inboundEventID uuid.UUID, workspaceID, installGeneration uuid.UUID, userID *uuid.UUID, event normalizedSlackEvent, botToken, suffix, text string) error {
 	channelID := event.ChannelID
 	threadTS := event.ReplyTS
-	if event.Kind == slackEventKindMention {
+	if event.Kind != slackEventKindDirect {
 		channelID = event.UserID
 		threadTS = ""
 	}
@@ -1046,14 +1082,7 @@ func (p *EventProcessor) recordAssistantUsage(parent context.Context, input mess
 }
 
 func (p *EventProcessor) persistAssistantPrompt(ctx context.Context, workspaceID, userID uuid.UUID, event normalizedSlackEvent, prompt string) (uuid.UUID, error) {
-	conversationID, err := p.store.UpsertConversation(ctx, messagingrepository.ConversationInput{
-		Provider:            "slack",
-		WorkspaceID:         workspaceID,
-		ExternalWorkspaceID: event.TeamID,
-		ExternalChannelID:   event.ChannelID,
-		ExternalThreadID:    conversationThreadID(event),
-		UserID:              userID,
-	})
+	conversationID, err := p.store.UpsertConversation(ctx, assistantConversationInput(workspaceID, userID, event))
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -1061,6 +1090,48 @@ func (p *EventProcessor) persistAssistantPrompt(ctx context.Context, workspaceID
 		return uuid.Nil, err
 	}
 	return conversationID, nil
+}
+
+func (p *EventProcessor) channelThreadIsSubscribed(
+	ctx context.Context,
+	workspaceID, userID uuid.UUID,
+	installation slackrepository.SlackWorkspaceRecord,
+	event normalizedSlackEvent,
+) (bool, error) {
+	record, err := p.store.FindConversation(ctx, assistantConversationInput(workspaceID, userID, event))
+	if err != nil {
+		if errors.Is(err, messagingrepository.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return slackThreadSubscriptionIsCurrent(record, installation, p.clock.Now()), nil
+}
+
+func slackThreadSubscriptionIsCurrent(
+	record messagingrepository.ConversationRecord,
+	installation slackrepository.SlackWorkspaceRecord,
+	now time.Time,
+) bool {
+	if record.ID == uuid.Nil || record.UpdatedAt.IsZero() {
+		return false
+	}
+	updatedAt := record.UpdatedAt.UTC()
+	if installation.AuthorizedAt.IsZero() || updatedAt.Before(installation.AuthorizedAt.UTC()) {
+		return false
+	}
+	return updatedAt.After(now.UTC().Add(-slackThreadSubscriptionTTL))
+}
+
+func assistantConversationInput(workspaceID, userID uuid.UUID, event normalizedSlackEvent) messagingrepository.ConversationInput {
+	return messagingrepository.ConversationInput{
+		Provider:            "slack",
+		WorkspaceID:         workspaceID,
+		ExternalWorkspaceID: event.TeamID,
+		ExternalChannelID:   event.ChannelID,
+		ExternalThreadID:    conversationThreadID(event),
+		UserID:              userID,
+	}
 }
 
 func isAssistantBudgetNotice(content string) bool {

@@ -59,6 +59,7 @@ type EventQueue interface {
 type EventInbox interface {
 	RegisterInboundEvent(ctx context.Context, input messagingrepository.InboundEventInput) (messagingrepository.InboundEventRecord, bool, error)
 	MarkInboundEventQueued(ctx context.Context, id uuid.UUID) error
+	FindConversation(ctx context.Context, input messagingrepository.ConversationInput) (messagingrepository.ConversationRecord, error)
 }
 
 type OutboundStore interface {

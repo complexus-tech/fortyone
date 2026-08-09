@@ -170,6 +170,12 @@ type failedDelivery struct {
 	message string
 }
 
+type deliveryDestination struct {
+	id        uuid.UUID
+	channelID string
+	threadID  string
+}
+
 type eventStoreStub struct {
 	processInbound  bool
 	processOutbound bool
@@ -177,19 +183,25 @@ type eventStoreStub struct {
 	outboundErr     error
 	deliveryStatus  string
 	history         []messagingrepository.MessageRecord
+	conversation    messagingrepository.ConversationRecord
+	conversationErr error
 
 	startedEventIDs     []string
 	completions         []inboundCompletion
 	nonces              []messagingrepository.NonceInput
 	conversations       []messagingrepository.ConversationInput
+	conversationLookups []messagingrepository.ConversationInput
 	appendedMessages    []appendedMessage
 	outboundInputs      []messagingrepository.OutboundDeliveryInput
 	setDeliveryContents []string
+	destinationUpdates  []deliveryDestination
 	completedDeliveries []completedDelivery
 	failedDeliveries    []failedDelivery
 	deliveryContent     *string
 	deliveryMessageID   *string
 	deliveryExpiresAt   *time.Time
+	deliveryChannelID   string
+	deliveryThreadID    *string
 	recoverableEvents   []messagingrepository.InboundEventRecord
 	releasedRecoveries  []messagingrepository.InboundEventRecord
 	recoverableOutbound []messagingrepository.OutboundDeliveryRecord
@@ -295,6 +307,17 @@ func (s *eventStoreStub) UpsertConversation(_ context.Context, input messagingre
 	return testConversationID, nil
 }
 
+func (s *eventStoreStub) FindConversation(_ context.Context, input messagingrepository.ConversationInput) (messagingrepository.ConversationRecord, error) {
+	s.conversationLookups = append(s.conversationLookups, input)
+	if s.conversationErr != nil {
+		return messagingrepository.ConversationRecord{}, s.conversationErr
+	}
+	if s.conversation.ID == uuid.Nil {
+		return messagingrepository.ConversationRecord{}, messagingrepository.ErrNotFound
+	}
+	return s.conversation, nil
+}
+
 func (s *eventStoreStub) AppendMessage(_ context.Context, conversationID uuid.UUID, externalMessageID, role, content string) error {
 	s.appendedMessages = append(s.appendedMessages, appendedMessage{
 		conversationID:    conversationID,
@@ -314,6 +337,14 @@ func (s *eventStoreStub) StartOutboundDelivery(_ context.Context, input messagin
 	if s.deliveryExpiresAt == nil {
 		s.deliveryExpiresAt = input.ExpiresAt
 	}
+	externalChannelID := input.ExternalChannelID
+	if s.deliveryChannelID != "" {
+		externalChannelID = s.deliveryChannelID
+	}
+	externalThreadID := s.deliveryThreadID
+	if s.deliveryChannelID == "" && externalThreadID == nil && input.ExternalThreadID != "" {
+		externalThreadID = stringPointer(input.ExternalThreadID)
+	}
 	return messagingrepository.OutboundDeliveryRecord{
 		ID:                      testOutboundDeliveryID,
 		WorkspaceID:             input.WorkspaceID,
@@ -321,6 +352,8 @@ func (s *eventStoreStub) StartOutboundDelivery(_ context.Context, input messagin
 		InstallGeneration:       input.InstallGeneration,
 		ExternalWorkspaceID:     input.ExternalWorkspaceID,
 		ExternalRecipientUserID: stringPointer(input.ExternalRecipientUserID),
+		ExternalChannelID:       externalChannelID,
+		ExternalThreadID:        externalThreadID,
 		Status:                  s.deliveryStatus,
 		Content:                 s.deliveryContent,
 		ExternalMessageID:       s.deliveryMessageID,
@@ -333,6 +366,17 @@ func (s *eventStoreStub) StartOutboundDelivery(_ context.Context, input messagin
 func (s *eventStoreStub) SetOutboundDeliveryContent(_ context.Context, _ uuid.UUID, content string) error {
 	s.setDeliveryContents = append(s.setDeliveryContents, content)
 	s.deliveryContent = stringPointer(content)
+	return nil
+}
+
+func (s *eventStoreStub) SetOutboundDeliveryContentAndDestination(_ context.Context, id uuid.UUID, content, externalChannelID, externalThreadID string) error {
+	s.setDeliveryContents = append(s.setDeliveryContents, content)
+	s.deliveryContent = stringPointer(content)
+	s.destinationUpdates = append(s.destinationUpdates, deliveryDestination{
+		id:        id,
+		channelID: externalChannelID,
+		threadID:  externalThreadID,
+	})
 	return nil
 }
 
@@ -1094,10 +1138,10 @@ func TestEventProcessorPersistsAndRoutesLinkedAssistantResponse(t *testing.T) {
 			name:                      "public mention",
 			raw:                       mentionEvent("Ev-mention", "<@B1> What is due?"),
 			wantPrompt:                "What is due?",
-			wantChannelID:             "U1",
+			wantChannelID:             "C1",
 			wantConversationChannelID: "C1",
 			wantConversationID:        "10.1",
-			wantReplyTS:               "",
+			wantReplyTS:               "10.1",
 			wantEphemeral:             false,
 			wantConversationTurn:      2,
 		},
@@ -1188,6 +1232,217 @@ func TestEventProcessorPersistsAndRoutesLinkedAssistantResponse(t *testing.T) {
 			}
 			if len(store.outboundInputs) != 1 || store.outboundInputs[0].ExternalWorkspaceID != "T1" || store.outboundInputs[0].ExternalChannelID != test.wantChannelID || store.outboundInputs[0].ExternalRecipientUserID != "U1" || store.outboundInputs[0].Purpose != "assistant" || store.outboundInputs[0].UserID == nil || *store.outboundInputs[0].UserID != testLinkedUserID {
 				t.Fatalf("persisted assistant delivery binding = %+v, want Slack team T1", store.outboundInputs)
+			}
+		})
+	}
+}
+
+func TestEventProcessorContinuesSubscribedChannelThread(t *testing.T) {
+	tests := []struct {
+		name      string
+		raw       string
+		channelID string
+	}{
+		{
+			name:      "public channel",
+			raw:       channelThreadEvent("Ev-channel-followup", "U1", "Only show urgent items"),
+			channelID: "C1",
+		},
+		{
+			name:      "private channel",
+			raw:       privateChannelThreadEvent("Ev-private-followup", "U1", "Only show urgent items"),
+			channelID: "G1",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			now := time.Unix(1_800_000_000, 0).UTC()
+			repo := newEventRepositoryStub()
+			repo.linkedUserID = uuidPointer(testLinkedUserID)
+			repo.installation.AuthorizedAt = now.Add(-time.Hour)
+			store := newEventStoreStub()
+			store.conversation = messagingrepository.ConversationRecord{
+				ID:        testConversationID,
+				UpdatedAt: now,
+			}
+			previousQuestionID := "10.1"
+			currentQuestionID := "10.2"
+			store.history = []messagingrepository.MessageRecord{
+				{ExternalMessageID: &previousQuestionID, Role: "user", Content: "What work is pending?"},
+				{Role: "assistant", Content: "You have four open stories."},
+				{ExternalMessageID: &currentQuestionID, Role: "user", Content: "Only show urgent items"},
+			}
+			assistant := &assistantStub{response: messaging.Response{Text: "ENG-3 is urgent."}}
+			access := &accessCheckerStub{allowed: true}
+			sender := &messageSenderStub{externalMessageID: "10.3"}
+			processor := newTestEventProcessor(t, repo, store, assistant, access, sender)
+			processor.clock = fixedClock{now: now}
+
+			if err := processor.Process(context.Background(), []byte(test.raw)); err != nil {
+				t.Fatalf("Process() error = %v", err)
+			}
+
+			assertSingleInboundStatus(t, store, "completed")
+			if len(store.conversationLookups) != 1 {
+				t.Fatalf("conversation lookups = %d, want 1", len(store.conversationLookups))
+			}
+			lookup := store.conversationLookups[0]
+			if lookup.WorkspaceID != testWorkspaceID || lookup.UserID != testLinkedUserID || lookup.ExternalWorkspaceID != "T1" || lookup.ExternalChannelID != test.channelID || lookup.ExternalThreadID != "10.1" {
+				t.Fatalf("conversation lookup = %+v", lookup)
+			}
+			if len(assistant.requests) != 1 || assistant.requests[0].Prompt != "Only show urgent items" || len(assistant.requests[0].Conversation) != 2 {
+				t.Fatalf("assistant requests = %+v", assistant.requests)
+			}
+			if len(sender.messages) != 1 {
+				t.Fatalf("sent messages = %d, want 1", len(sender.messages))
+			}
+			message := sender.messages[0]
+			if message.ChannelID != test.channelID || message.ThreadTS != "10.1" || message.Text != "ENG-3 is urgent." || message.Ephemeral {
+				t.Fatalf("thread response = %+v", message)
+			}
+		})
+	}
+}
+
+func TestEventProcessorKeepsSubscribedThreadOperationalNoticePrivate(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0).UTC()
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	repo.installation.AuthorizedAt = now.Add(-time.Hour)
+	store := newEventStoreStub()
+	store.conversation = messagingrepository.ConversationRecord{
+		ID:        testConversationID,
+		UpdatedAt: now,
+	}
+	sender := &messageSenderStub{externalMessageID: "10.3"}
+	processor := newTestEventProcessor(t, repo, store, &assistantStub{}, &accessCheckerStub{allowed: false}, sender)
+	processor.clock = fixedClock{now: now}
+
+	if err := processor.Process(context.Background(), []byte(channelThreadEvent("Ev-channel-access", "U1", "show my work"))); err != nil {
+		t.Fatalf("Process() error = %v", err)
+	}
+
+	assertSingleInboundStatus(t, store, "completed")
+	if len(sender.messages) != 1 || sender.messages[0].ChannelID != "U1" || sender.messages[0].ThreadTS != "" || sender.messages[0].Text != "Maya is available on FortyOne paid plans and active trials." {
+		t.Fatalf("private operational notice = %+v", sender.messages)
+	}
+}
+
+func TestEventProcessorKeepsSubscribedThreadRateLimitPrivate(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0).UTC()
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	repo.installation.AuthorizedAt = now.Add(-time.Hour)
+	store := newEventStoreStub()
+	store.conversation = messagingrepository.ConversationRecord{
+		ID:        testConversationID,
+		UpdatedAt: now,
+	}
+	sender := &messageSenderStub{externalMessageID: "10.3"}
+	limiter := &callLimiterStub{decision: messagingbudget.AdmissionDecision{LimitedScope: "user"}}
+	processor := newTestEventProcessorWithBudgets(t, repo, store, &assistantStub{}, &accessCheckerStub{allowed: true}, sender, limiter, &usageBudgetStub{})
+	processor.clock = fixedClock{now: now}
+
+	if err := processor.Process(context.Background(), []byte(channelThreadEvent("Ev-channel-rate", "U1", "show my work"))); err != nil {
+		t.Fatalf("Process() error = %v", err)
+	}
+
+	assertSingleInboundStatus(t, store, "completed")
+	if len(sender.messages) != 1 || sender.messages[0].ChannelID != "U1" || sender.messages[0].ThreadTS != "" || sender.messages[0].Text != assistantUserRateLimitReply {
+		t.Fatalf("private rate-limit notice = %+v", sender.messages)
+	}
+	if len(store.destinationUpdates) != 1 || store.destinationUpdates[0].channelID != "U1" || store.destinationUpdates[0].threadID != "" {
+		t.Fatalf("private rate-limit destination update = %+v", store.destinationUpdates)
+	}
+}
+
+func TestEventProcessorIgnoresUnsubscribedChannelThreadMessages(t *testing.T) {
+	tests := []struct {
+		name            string
+		raw             string
+		linkedUserID    *uuid.UUID
+		conversation    messagingrepository.ConversationRecord
+		authorizedAt    time.Time
+		wantLookupCount int
+	}{
+		{
+			name:            "unlinked actor",
+			raw:             channelThreadEvent("Ev-thread-unlinked", "U1", "show my work"),
+			wantLookupCount: 0,
+		},
+		{
+			name:            "thread was never subscribed",
+			raw:             channelThreadEvent("Ev-thread-new", "U1", "show my work"),
+			linkedUserID:    uuidPointer(testLinkedUserID),
+			wantLookupCount: 1,
+		},
+		{
+			name:            "thread belongs to a different actor",
+			raw:             channelThreadEvent("Ev-thread-other-actor", "U2", "show my work"),
+			linkedUserID:    uuidPointer(testLinkedUserID),
+			wantLookupCount: 1,
+		},
+		{
+			name:         "thread predates current installation",
+			raw:          channelThreadEvent("Ev-thread-old-install", "U1", "show my work"),
+			linkedUserID: uuidPointer(testLinkedUserID),
+			conversation: messagingrepository.ConversationRecord{
+				ID:        testConversationID,
+				UpdatedAt: testSlackAuthorizedAt.Add(-time.Second),
+			},
+			authorizedAt:    testSlackAuthorizedAt,
+			wantLookupCount: 1,
+		},
+		{
+			name:         "thread subscription expired",
+			raw:          channelThreadEvent("Ev-thread-expired", "U1", "show my work"),
+			linkedUserID: uuidPointer(testLinkedUserID),
+			conversation: messagingrepository.ConversationRecord{
+				ID:        testConversationID,
+				UpdatedAt: testSlackAuthorizedAt.Add(-31 * 24 * time.Hour),
+			},
+			authorizedAt:    testSlackAuthorizedAt.Add(-60 * 24 * time.Hour),
+			wantLookupCount: 1,
+		},
+		{
+			name:         "duplicate broad event for explicit mention",
+			raw:          channelThreadEvent("Ev-thread-mention-copy", "U1", "<@B1> show my work"),
+			linkedUserID: uuidPointer(testLinkedUserID),
+			conversation: messagingrepository.ConversationRecord{
+				ID:        testConversationID,
+				UpdatedAt: testSlackAuthorizedAt,
+			},
+			wantLookupCount: 0,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repo := newEventRepositoryStub()
+			repo.linkedUserID = test.linkedUserID
+			if !test.authorizedAt.IsZero() {
+				repo.installation.AuthorizedAt = test.authorizedAt
+			}
+			store := newEventStoreStub()
+			store.conversation = test.conversation
+			assistant := &assistantStub{}
+			access := &accessCheckerStub{allowed: true}
+			sender := &messageSenderStub{}
+			limiter := &callLimiterStub{decision: messagingbudget.AdmissionDecision{Allowed: true}}
+			usage := &usageBudgetStub{}
+			processor := newTestEventProcessorWithBudgets(t, repo, store, assistant, access, sender, limiter, usage)
+
+			if err := processor.Process(context.Background(), []byte(test.raw)); err != nil {
+				t.Fatalf("Process() error = %v", err)
+			}
+
+			assertSingleInboundStatus(t, store, "ignored")
+			if len(store.conversationLookups) != test.wantLookupCount {
+				t.Fatalf("conversation lookups = %d, want %d", len(store.conversationLookups), test.wantLookupCount)
+			}
+			if len(store.nonces) != 0 || len(store.conversations) != 0 || len(store.outboundInputs) != 0 || len(access.workspaceIDs) != 0 || len(limiter.inputs) != 0 || len(usage.checkWorkspaces) != 0 || len(assistant.requests) != 0 || len(sender.messages) != 0 {
+				t.Fatalf("ignored thread performed work: nonces=%d conversations=%d outbound=%d access=%d limits=%d usage=%d assistant=%d sends=%d", len(store.nonces), len(store.conversations), len(store.outboundInputs), len(access.workspaceIDs), len(limiter.inputs), len(usage.checkWorkspaces), len(assistant.requests), len(sender.messages))
 			}
 		})
 	}
@@ -1296,6 +1551,9 @@ func TestEventProcessorReturnsDurableScopedRateLimitReplies(t *testing.T) {
 			if test.wantDM && (sender.messages[0].ChannelID != "U1" || sender.messages[0].ThreadTS != "") {
 				t.Fatalf("mention rate-limit response was not private = %+v", sender.messages[0])
 			}
+			if test.wantDM && (len(store.destinationUpdates) != 1 || store.destinationUpdates[0].channelID != "U1" || store.destinationUpdates[0].threadID != "") {
+				t.Fatalf("mention rate-limit destination update = %+v", store.destinationUpdates)
+			}
 			if len(store.outboundInputs) != 1 || store.outboundInputs[0].Purpose != "assistant" || len(store.setDeliveryContents) != 1 || store.setDeliveryContents[0] != test.wantReply {
 				t.Fatalf("rate-limit durable delivery = inputs %+v, contents %v", store.outboundInputs, store.setDeliveryContents)
 			}
@@ -1327,6 +1585,9 @@ func TestEventProcessorReturnsDurableDailyUsageLimitReply(t *testing.T) {
 	}
 	if len(sender.messages) != 1 || sender.messages[0].Text != assistantDailyLimitReply || sender.messages[0].ChannelID != "U1" || sender.messages[0].ThreadTS != "" {
 		t.Fatalf("daily-limit response = %+v", sender.messages)
+	}
+	if len(store.destinationUpdates) != 1 || store.destinationUpdates[0].channelID != "U1" || store.destinationUpdates[0].threadID != "" {
+		t.Fatalf("daily-limit destination update = %+v", store.destinationUpdates)
 	}
 	if len(store.outboundInputs) != 1 || store.outboundInputs[0].Purpose != "assistant" || len(store.setDeliveryContents) != 1 || store.setDeliveryContents[0] != assistantDailyLimitReply {
 		t.Fatalf("daily-limit durable delivery = inputs %+v, contents %v", store.outboundInputs, store.setDeliveryContents)
@@ -1528,6 +1789,31 @@ func TestEventProcessorPersistedReplyBypassesNewBudgetDenials(t *testing.T) {
 	}
 }
 
+func TestEventProcessorPersistedPrivateBudgetNoticeUsesPersistedDestination(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	store := newEventStoreStub()
+	store.deliveryContent = stringPointer(assistantDailyLimitReply)
+	store.deliveryChannelID = "U1"
+	assistant := &assistantStub{}
+	sender := &messageSenderStub{externalMessageID: "10.2"}
+	limiter := &callLimiterStub{decision: messagingbudget.AdmissionDecision{Allowed: true}}
+	usage := &usageBudgetStub{}
+	processor := newTestEventProcessorWithBudgets(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender, limiter, usage)
+
+	if err := processor.Process(context.Background(), []byte(mentionEvent("Ev-persisted-private-budget", "<@B1> show my work"))); err != nil {
+		t.Fatalf("Process() error = %v", err)
+	}
+
+	assertSingleInboundStatus(t, store, "completed")
+	if len(sender.messages) != 1 || sender.messages[0].ChannelID != "U1" || sender.messages[0].ThreadTS != "" || sender.messages[0].Text != assistantDailyLimitReply {
+		t.Fatalf("persisted private budget delivery = %+v", sender.messages)
+	}
+	if len(usage.checkWorkspaces) != 0 || len(limiter.inputs) != 0 || len(assistant.requests) != 0 || len(store.destinationUpdates) != 0 {
+		t.Fatalf("persisted private budget notice re-entered work: checks=%d admissions=%d assistant=%d destinations=%d", len(usage.checkWorkspaces), len(limiter.inputs), len(assistant.requests), len(store.destinationUpdates))
+	}
+}
+
 func TestEventProcessorDeliveredBudgetNoticeReplayDoesNotPersistConversation(t *testing.T) {
 	repo := newEventRepositoryStub()
 	repo.linkedUserID = uuidPointer(testLinkedUserID)
@@ -1665,6 +1951,14 @@ func mentionEvent(eventID, text string) string {
 
 func directMessageEvent(eventID, text string) string {
 	return `{"type":"event_callback","team_id":"T1","event_id":"` + eventID + `","event":{"type":"message","channel_type":"im","user":"U1","channel":"D1","ts":"10.1","text":"` + text + `"}}`
+}
+
+func channelThreadEvent(eventID, userID, text string) string {
+	return `{"type":"event_callback","team_id":"T1","event_id":"` + eventID + `","event":{"type":"message","channel_type":"channel","user":"` + userID + `","channel":"C1","ts":"10.2","thread_ts":"10.1","text":"` + text + `"}}`
+}
+
+func privateChannelThreadEvent(eventID, userID, text string) string {
+	return `{"type":"event_callback","team_id":"T1","event_id":"` + eventID + `","event":{"type":"message","channel_type":"group","user":"` + userID + `","channel":"G1","ts":"10.2","thread_ts":"10.1","text":"` + text + `"}}`
 }
 
 func uuidPointer(value uuid.UUID) *uuid.UUID {

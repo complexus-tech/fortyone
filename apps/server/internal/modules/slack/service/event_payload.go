@@ -18,13 +18,14 @@ const (
 )
 
 type slackEventEnvelope struct {
-	Type      string          `json:"type"`
-	Challenge string          `json:"challenge"`
-	TeamID    string          `json:"team_id"`
-	APIAppID  string          `json:"api_app_id"`
-	EventID   string          `json:"event_id"`
-	EventTime int64           `json:"event_time"`
-	Event     slackInnerEvent `json:"event"`
+	Type               string          `json:"type"`
+	Challenge          string          `json:"challenge"`
+	TeamID             string          `json:"team_id"`
+	APIAppID           string          `json:"api_app_id"`
+	EventID            string          `json:"event_id"`
+	EventTime          int64           `json:"event_time"`
+	IsExtSharedChannel bool            `json:"is_ext_shared_channel"`
+	Event              slackInnerEvent `json:"event"`
 }
 
 type slackInnerEvent struct {
@@ -47,10 +48,11 @@ type slackInnerEvent struct {
 type slackEventKind string
 
 const (
-	slackEventKindMention     slackEventKind = "mention"
-	slackEventKindDirect      slackEventKind = "direct_message"
-	slackEventKindUninstalled slackEventKind = "app_uninstalled"
-	slackEventKindRevoked     slackEventKind = "tokens_revoked"
+	slackEventKindMention       slackEventKind = "mention"
+	slackEventKindDirect        slackEventKind = "direct_message"
+	slackEventKindChannelThread slackEventKind = "channel_thread"
+	slackEventKindUninstalled   slackEventKind = "app_uninstalled"
+	slackEventKindRevoked       slackEventKind = "tokens_revoked"
 )
 
 type normalizedSlackEvent struct {
@@ -112,10 +114,20 @@ func normalizeSlackEvent(envelope slackEventEnvelope) (normalizedSlackEvent, boo
 		normalized.Kind = slackEventKindMention
 		normalized.ReplyTS = normalized.ThreadTS
 	case slackEventMessage:
-		if strings.TrimSpace(event.ChannelType) != "im" {
+		switch strings.TrimSpace(event.ChannelType) {
+		case "im":
+			normalized.Kind = slackEventKindDirect
+		case "channel", "group":
+			// Channel message subscriptions deliver every message visible to the
+			// app. Only real thread replies are candidates for an existing Maya
+			// conversation; a root message must never subscribe a thread.
+			if normalized.ReplyTS == "" {
+				return normalizedSlackEvent{}, false
+			}
+			normalized.Kind = slackEventKindChannelThread
+		default:
 			return normalizedSlackEvent{}, false
 		}
-		normalized.Kind = slackEventKindDirect
 	case slackEventUninstalled:
 		normalized.Kind = slackEventKindUninstalled
 		return normalized, true
@@ -128,10 +140,22 @@ func normalizeSlackEvent(envelope slackEventEnvelope) (normalizedSlackEvent, boo
 	if strings.TrimSpace(event.Subtype) != "" || strings.TrimSpace(event.BotID) != "" || event.BotProfile != nil {
 		return normalizedSlackEvent{}, false
 	}
+	if envelope.IsExtSharedChannel && (normalized.Kind == slackEventKindMention || normalized.Kind == slackEventKindChannelThread) {
+		// Channel audiences in Slack Connect can include users outside the
+		// FortyOne workspace. Ignore these events until channel-level access
+		// policy can be enforced authoritatively.
+		return normalizedSlackEvent{}, false
+	}
 	if normalized.UserID == "" || normalized.ChannelID == "" || normalized.MessageTS == "" || normalized.Text == "" {
 		return normalizedSlackEvent{}, false
 	}
 	return normalized, true
+}
+
+func containsSlackUserMention(text, userID string) bool {
+	text = strings.TrimSpace(text)
+	userID = strings.TrimSpace(userID)
+	return userID != "" && strings.Contains(text, "<@"+userID+">")
 }
 
 func removeBotMention(text, botUserID string) string {

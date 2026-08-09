@@ -395,6 +395,11 @@ type MessageRecord struct {
 	CreatedAt         time.Time `db:"created_at"`
 }
 
+type ConversationRecord struct {
+	ID        uuid.UUID `db:"id"`
+	UpdatedAt time.Time `db:"updated_at"`
+}
+
 func (r *Repository) UpsertConversation(ctx context.Context, input ConversationInput) (uuid.UUID, error) {
 	var id uuid.UUID
 	err := r.db.GetContext(ctx, &id, `
@@ -410,6 +415,31 @@ func (r *Repository) UpsertConversation(ctx context.Context, input ConversationI
 		return uuid.Nil, fmt.Errorf("upsert messaging conversation: %w", err)
 	}
 	return id, nil
+}
+
+// FindConversation returns an existing actor-bound provider conversation
+// without creating or refreshing it. Provider adapters use this read-only
+// lookup to decide whether an otherwise broad channel event belongs to a
+// conversation the actor explicitly started.
+func (r *Repository) FindConversation(ctx context.Context, input ConversationInput) (ConversationRecord, error) {
+	if r == nil || r.db == nil {
+		return ConversationRecord{}, errors.New("messaging repository is not configured")
+	}
+	var record ConversationRecord
+	err := r.db.GetContext(ctx, &record, `
+		SELECT id, updated_at
+		FROM messaging_conversations
+		WHERE provider = $1
+		  AND workspace_id = $2
+		  AND external_workspace_id = $3
+		  AND external_channel_id = $4
+		  AND external_thread_id = $5
+		  AND user_id = $6
+	`, input.Provider, input.WorkspaceID, input.ExternalWorkspaceID, input.ExternalChannelID, input.ExternalThreadID, input.UserID)
+	if err != nil {
+		return ConversationRecord{}, fmt.Errorf("find messaging conversation: %w", err)
+	}
+	return record, nil
 }
 
 func (r *Repository) AppendMessage(ctx context.Context, conversationID uuid.UUID, externalMessageID, role, content string) error {
@@ -623,6 +653,35 @@ func (r *Repository) SetOutboundDeliveryContent(ctx context.Context, id uuid.UUI
 		return err
 	}
 	return nil
+}
+
+// SetOutboundDeliveryContentAndDestination atomically persists an unsent
+// claimed delivery's content and final provider destination. This is used when
+// a response initially eligible for a public thread resolves to a private
+// operational notice.
+func (r *Repository) SetOutboundDeliveryContentAndDestination(ctx context.Context, id uuid.UUID, content, externalChannelID, externalThreadID string) error {
+	externalChannelID = strings.TrimSpace(externalChannelID)
+	if externalChannelID == "" {
+		return errors.New("messaging outbound delivery channel id is required")
+	}
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return errors.New("messaging outbound delivery content is required")
+	}
+	result, err := r.db.ExecContext(ctx, `
+		UPDATE messaging_outbound_deliveries
+		SET content = $2,
+		    external_channel_id = $3,
+		    external_thread_id = NULLIF($4, ''),
+		    updated_at = NOW()
+		WHERE id = $1
+		  AND status = 'delivering'
+		  AND external_message_id IS NULL
+	`, id, content, externalChannelID, strings.TrimSpace(externalThreadID))
+	if err != nil {
+		return fmt.Errorf("set messaging outbound delivery content and destination: %w", err)
+	}
+	return requireAffectedRow(result, "set messaging outbound delivery content and destination")
 }
 
 func (r *Repository) CompleteOutboundDelivery(ctx context.Context, id uuid.UUID, externalMessageID string) error {
