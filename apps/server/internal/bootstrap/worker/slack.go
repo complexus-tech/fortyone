@@ -111,8 +111,10 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 	processorConfig.CallLimiter = callLimiter
 	processorConfig.UsageBudget = messagingrepository.NewDailyUsageRepository(db)
 	processorConfig.ContextProvider = contextProvider
-	processorConfig.ThreadSync = integrationrequestsrepository.New(log, db)
+	requestRepository := integrationrequestsrepository.New(log, db)
+	processorConfig.ThreadSync = requestRepository
 	processorConfig.StoryReader = storiesService
+	processorConfig.RequestReader = requestRepository
 	processorConfig.MutationConfirmer = toolExecutor
 
 	return slack.NewEventProcessor(

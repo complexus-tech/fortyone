@@ -12,7 +12,7 @@ const contactRoutes = [
     heading: "Implementation support",
     email: "hello@complexus.tech",
     description:
-      "For setup, integrations, workspace planning, or help rolling FortyOne out to a team.",
+      "For setup, integrations, workspace planning, or help rolling FortyOne out to a team. We respond to support requests within two business days.",
   },
 ];
 

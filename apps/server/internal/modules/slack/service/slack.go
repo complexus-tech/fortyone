@@ -496,13 +496,17 @@ func (s *Service) LinkSlackAccount(ctx context.Context, workspaceID, userID uuid
 		return errors.New("slack workspace does not belong to this workspace")
 	}
 
-	return s.repo.UpsertSlackUserLinks(ctx, workspaceID, slackWorkspace.ID, slackTeamID, []slackrepository.SlackUserLinkUpsert{
+	if err := s.repo.UpsertSlackUserLinks(ctx, workspaceID, slackWorkspace.ID, slackTeamID, []slackrepository.SlackUserLinkUpsert{
 		{
 			SlackUserID: slackUserID,
 			UserID:      userID,
 			LinkedVia:   "manual_link",
 		},
-	})
+	}); err != nil {
+		return err
+	}
+	s.dispatchFirstInteractionGuide(ctx, slackWorkspace, slackUserID)
+	return nil
 }
 
 func IsNotFound(err error) bool {
@@ -599,6 +603,7 @@ func (s *Service) HandleEvents(ctx context.Context, rawBody []byte) (EventRespon
 				"slack_user_id", event.UserID,
 			)
 		}
+		s.dispatchFirstInteractionGuideByTeam(ctx, event.TeamID, event.UserID)
 		// entity_details_requested carries a single-use trigger that expires in
 		// three seconds. It is intentionally never persisted, queued, or retried;
 		// the user can request a fresh trigger by refreshing the flexpane.
@@ -669,6 +674,9 @@ func (s *Service) HandleEvents(ctx context.Context, rawBody []byte) (EventRespon
 			return EventResponse{}, nil
 		}
 	}
+	if slackEventCountsAsFirstInteraction(event.Kind) {
+		s.dispatchFirstInteractionGuide(ctx, installation, event.UserID)
+	}
 	encryptedPayload, err := s.credentials.sealPayload(rawBody)
 	if err != nil {
 		return EventResponse{}, err
@@ -737,6 +745,7 @@ func (s *Service) HandleCommand(ctx context.Context, rawBody []byte) (CommandRes
 	}
 	title := parseCommandTitle(values.Get("text"))
 	s.dispatchCommand(ctx, triggerID, title, source)
+	s.dispatchFirstInteractionGuideByTeam(ctx, source.SlackTeamID, source.SlackUserID)
 
 	// A successful slash command opens a modal and needs no conversational
 	// acknowledgement. Returning an empty response prevents Slack from adding a
@@ -762,10 +771,12 @@ func (s *Service) HandleInteractivity(ctx context.Context, rawBody []byte) (Inte
 	switch payload.Type {
 	case "message_action":
 		s.dispatchInteraction(ctx, payload.Type, payload, s.handleMessageAction)
+		s.dispatchFirstInteractionGuideByTeam(ctx, payload.Team.ID, payload.User.ID)
 		return InteractionResponse{StatusCode: http.StatusOK}, nil
 	case "view_submission":
 		if isSlackWorkObjectEditSubmission(payload) {
 			s.dispatchSlackWorkObjectEdit(ctx, payload)
+			s.dispatchFirstInteractionGuideByTeam(ctx, payload.Team.ID, payload.User.ID)
 			return InteractionResponse{StatusCode: http.StatusOK}, nil
 		}
 		response, err := s.handleViewSubmission(ctx, payload)
@@ -782,6 +793,7 @@ func (s *Service) HandleInteractivity(ctx context.Context, rawBody []byte) (Inte
 		} else {
 			s.dispatchInteraction(ctx, payload.Type, payload, s.handleBlockActions)
 		}
+		s.dispatchFirstInteractionGuideByTeam(ctx, payload.Team.ID, payload.User.ID)
 		return InteractionResponse{StatusCode: http.StatusOK}, nil
 	case "block_suggestion":
 		return s.handleBlockSuggestion(ctx, payload)
@@ -1425,6 +1437,13 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		}
 	}
 
+	creator, err := s.repo.FindTeamMemberByID(ctx, team.ID, actorID)
+	if err != nil {
+		s.log.Error(ctx, "failed loading Slack submission creator for confirmation", "error", err, "workspace_id", workspace.ID, "team_id", team.ID, "actor_id", actorID)
+		return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
+	}
+	creatorName := storyCreatorDisplayName(creator)
+
 	if sendToRequests {
 		metadata["label_ids"] = uuidStrings(labelIDs)
 		requestInput := integrationrequests.CoreUpsertRequestInput{
@@ -1451,16 +1470,9 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 			return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
 		}
 		ackKey := fmt.Sprintf("slack:%s:request:%s:confirmation", workspace.ID, sourceExternalID)
-		s.postSlackRequestAck(ctx, workspace.ID, slackWorkspace.InstallGeneration, ackKey, submission.Source, botToken, workspace.Slug, team.ID, request.ID, actorID)
+		s.postSlackRequestAck(ctx, workspace.ID, slackWorkspace.InstallGeneration, ackKey, submission.Source, botToken, workspace.Slug, request, actorID, creatorName)
 		return interactionClearResponse()
 	}
-
-	creator, err := s.repo.FindTeamMemberByID(ctx, team.ID, actorID)
-	if err != nil {
-		s.log.Error(ctx, "failed loading story creator for Slack confirmation", "error", err, "workspace_id", workspace.ID, "team_id", team.ID, "actor_id", actorID)
-		return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
-	}
-	creatorName := storyCreatorDisplayName(creator)
 
 	var statusID *uuid.UUID
 	if submission.StatusID != nil {
@@ -1490,7 +1502,7 @@ func (s *Service) handleViewSubmission(ctx context.Context, payload interactionP
 		return interactionValidationErrors(map[string]string{"title": interactionErrorMessage(err)})
 	}
 
-	s.postSlackTaskAck(ctx, workspace.ID, slackWorkspace.InstallGeneration, creationKey+":confirmation", submission.Source, botToken, workspace.Slug, team.Code, creatorName, story)
+	s.postSlackTaskAck(ctx, workspace.ID, slackWorkspace.InstallGeneration, creationKey+":confirmation", submission.Source, botToken, workspace.Slug, team.Code, creatorName, submission.Source.SlackUserID, slackStoryReceiptActionCreated, story)
 	return interactionClearResponse()
 }
 
@@ -1924,6 +1936,8 @@ func (s *Service) AcceptIntegrationRequest(ctx context.Context, request integrat
 		workspaceSlug,
 		teamCode,
 		creatorName,
+		"",
+		slackStoryReceiptActionLinkedRequest,
 		story,
 	)
 	return nil
@@ -2575,34 +2589,52 @@ func (s *Service) resolveTeamIDForSuggestion(ctx context.Context, payload intera
 	return teams[0].ID, nil
 }
 
-func (s *Service) postSlackRequestAck(ctx context.Context, workspaceID, installGeneration uuid.UUID, idempotencyKey string, source requestSourceContext, botToken, workspaceSlug string, teamID, requestID, actorID uuid.UUID) string {
-	requestURL := buildRequestURL(s.cfg.WebsiteURL, workspaceSlug, teamID.String(), requestID.String())
-	text := "📥 Request created in FortyOne."
-	if requestURL != "" {
-		text = fmt.Sprintf("📥 Request created in FortyOne: <%s|Open request>", requestURL)
-	}
-	return s.postSlackCreationAckWithPayload(ctx, workspaceID, installGeneration, idempotencyKey, source, botToken, text, SlackProviderPayload{
+type slackStoryReceiptAction string
+
+const (
+	slackStoryReceiptActionCreated       slackStoryReceiptAction = "created"
+	slackStoryReceiptActionLinkedRequest slackStoryReceiptAction = "linked_request"
+)
+
+func (s *Service) postSlackRequestAck(ctx context.Context, workspaceID, installGeneration uuid.UUID, idempotencyKey string, source requestSourceContext, botToken, workspaceSlug string, request integrationrequests.CoreIntegrationRequest, actorID uuid.UUID, creatorName string) string {
+	requestURL := buildRequestURL(s.cfg.WebsiteURL, workspaceSlug, request.TeamID.String(), request.ID.String())
+	text := buildSlackRequestOpenedText(creatorName, requestURL)
+	disableUnfurls := false
+	providerPayload := SlackProviderPayload{
+		UnfurlLinks: &disableUnfurls,
+		UnfurlMedia: &disableUnfurls,
 		Authorization: &SlackDeliveryAuthorization{
-			AllowedTeamIDs: []uuid.UUID{teamID},
+			AllowedTeamIDs: []uuid.UUID{request.TeamID},
 			ActorUserID:    &actorID,
 			Scope:          slackDeliveryAuthorizationScopeActorMembership,
 		},
 		RequestThreadBinding: &SlackRequestThreadBinding{
-			IntegrationRequestID:    requestID,
+			IntegrationRequestID:    request.ID,
 			ExternalSourceMessageID: strings.TrimSpace(source.SlackMessageTS),
 			SourceURL:               permalinkFromContext(source),
 		},
-	})
+	}
+	receipt, err := s.buildSlackRequestCreationReceipt(ctx, actorID, source.SlackUserID, requestURL, creatorName, request)
+	if err != nil {
+		if s.log != nil {
+			s.log.Warn(ctx, "failed building rich Slack request receipt", "error", err, "workspace_id", workspaceID, "request_id", request.ID)
+		}
+	} else {
+		providerPayload.Metadata = receipt.ProviderPayload.Metadata
+		providerPayload.UnfurlLinks = receipt.ProviderPayload.UnfurlLinks
+		providerPayload.UnfurlMedia = receipt.ProviderPayload.UnfurlMedia
+	}
+	return s.postSlackCreationAckWithPayload(ctx, workspaceID, installGeneration, idempotencyKey, source, botToken, text, providerPayload)
 }
 
-func (s *Service) postSlackTaskAck(ctx context.Context, workspaceID, installGeneration uuid.UUID, idempotencyKey string, source requestSourceContext, botToken, workspaceSlug, teamCode, creatorName string, story stories.CoreSingleStory) string {
+func (s *Service) postSlackTaskAck(ctx context.Context, workspaceID, installGeneration uuid.UUID, idempotencyKey string, source requestSourceContext, botToken, workspaceSlug, teamCode, creatorName, creatorSlackUserID string, action slackStoryReceiptAction, story stories.CoreSingleStory) string {
 	storyCode := buildStoryCode(teamCode, story.SequenceID)
 	taskURL := buildTaskURL(
 		s.cfg.WebsiteURL,
 		workspaceSlug,
 		buildStoryReference(teamCode, story.SequenceID, story.ID.String()),
 	)
-	text := buildSlackStoryCreatedText(creatorName, storyCode, taskURL)
+	text := buildSlackStoryReceiptText(action, creatorName, storyCode, taskURL)
 	authorization := &SlackDeliveryAuthorization{
 		AllowedTeamIDs: []uuid.UUID{story.Team},
 		Scope:          slackDeliveryAuthorizationScopeActorMembership,
@@ -2617,18 +2649,32 @@ func (s *Service) postSlackTaskAck(ctx context.Context, workspaceID, installGene
 			authorization.ActorUserID = linkedUserID
 		}
 	}
-	receipt, err := s.buildSlackStoryCreationReceipt(ctx, source, taskURL, creatorName, story)
+	receipt, err := s.buildSlackStoryCreationReceipt(ctx, creatorSlackUserID, taskURL, creatorName, story)
 	if err != nil {
 		if s.log != nil {
 			s.log.Warn(ctx, "failed building rich Slack story receipt", "error", err, "workspace_id", workspaceID, "story_id", story.ID)
 		}
-		return s.postSlackCreationAckWithPayload(ctx, workspaceID, installGeneration, idempotencyKey, source, botToken, text, SlackProviderPayload{Authorization: authorization})
+		disableUnfurls := false
+		return s.postSlackCreationAckWithPayload(ctx, workspaceID, installGeneration, idempotencyKey, source, botToken, text, SlackProviderPayload{
+			UnfurlLinks:   &disableUnfurls,
+			UnfurlMedia:   &disableUnfurls,
+			Authorization: authorization,
+		})
 	}
+	receipt.Text = text
 	receipt.ProviderPayload.Authorization = authorization
 	return s.postSlackCreationAckWithPayload(ctx, workspaceID, installGeneration, idempotencyKey, source, botToken, receipt.Text, receipt.ProviderPayload)
 }
 
 func buildSlackStoryCreatedText(creatorName, storyCode, taskURL string) string {
+	return buildSlackStoryReceiptText(slackStoryReceiptActionCreated, creatorName, storyCode, taskURL)
+}
+
+func buildSlackStoryLinkedRequestText(creatorName, storyCode, taskURL string) string {
+	return buildSlackStoryReceiptText(slackStoryReceiptActionLinkedRequest, creatorName, storyCode, taskURL)
+}
+
+func buildSlackStoryReceiptText(action slackStoryReceiptAction, creatorName, storyCode, taskURL string) string {
 	creatorLabel := slackMrkdwnTextEscaper.Replace(strings.TrimSpace(creatorName))
 	if creatorLabel == "" {
 		creatorLabel = "A team member"
@@ -2640,12 +2686,44 @@ func buildSlackStoryCreatedText(creatorName, storyCode, taskURL string) string {
 	if taskURL = strings.TrimSpace(taskURL); taskURL != "" {
 		storyLabel = fmt.Sprintf("<%s|%s>", taskURL, storyLabel)
 	}
+	if action == slackStoryReceiptActionLinkedRequest {
+		return fmt.Sprintf("%s linked a request to %s", creatorLabel, storyLabel)
+	}
 	return fmt.Sprintf("%s created %s", creatorLabel, storyLabel)
+}
+
+func buildSlackRequestOpenedText(creatorName, requestURL string) string {
+	creatorLabel := slackMrkdwnTextEscaper.Replace(strings.TrimSpace(creatorName))
+	if creatorLabel == "" {
+		creatorLabel = "A team member"
+	}
+	requestLabel := "opened a request"
+	if requestURL = strings.TrimSpace(requestURL); requestURL != "" {
+		requestLabel = fmt.Sprintf("<%s|%s>", requestURL, requestLabel)
+	}
+	return fmt.Sprintf("%s %s", creatorLabel, requestLabel)
+}
+
+func (s *Service) buildSlackRequestCreationReceipt(
+	ctx context.Context,
+	actorID uuid.UUID,
+	actorSlackUserID, requestURL, creatorName string,
+	request integrationrequests.CoreIntegrationRequest,
+) (SlackRequestCreationReceipt, error) {
+	repository, ok := s.repo.(slackWorkObjectRepository)
+	if !ok {
+		return SlackRequestCreationReceipt{}, errors.New("Slack Work Object repository is not configured")
+	}
+	input, err := buildSlackRequestWorkObjectInput(ctx, repository, actorID, actorSlackUserID, requestURL, request)
+	if err != nil {
+		return SlackRequestCreationReceipt{}, err
+	}
+	return BuildSlackRequestCreationReceipt(creatorName, input)
 }
 
 func (s *Service) buildSlackStoryCreationReceipt(
 	ctx context.Context,
-	source requestSourceContext,
+	creatorSlackUserID string,
 	storyURL, creatorName string,
 	story stories.CoreSingleStory,
 ) (SlackStoryCreationReceipt, error) {
@@ -2673,7 +2751,7 @@ func (s *Service) buildSlackStoryCreationReceipt(
 			assigneeName = slackMemberDisplayName(member)
 		}
 		if story.Reporter != nil && *story.Reporter == *story.Assignee {
-			assigneeSlackUserID = strings.TrimSpace(source.SlackUserID)
+			assigneeSlackUserID = strings.TrimSpace(creatorSlackUserID)
 		}
 	}
 	description := ""
@@ -2690,7 +2768,7 @@ func (s *Service) buildSlackStoryCreationReceipt(
 		Priority:            story.Priority,
 		AssigneeSlackUserID: assigneeSlackUserID,
 		AssigneeName:        assigneeName,
-		CreatorSlackUserID:  strings.TrimSpace(source.SlackUserID),
+		CreatorSlackUserID:  strings.TrimSpace(creatorSlackUserID),
 		CreatorName:         creatorName,
 		DueDate:             story.EndDate,
 		CreatedAt:           story.CreatedAt,

@@ -13,7 +13,7 @@ The FortyOne Slack integration helps your team move between conversation and exe
 - Turn an existing Slack message into a story with the **Create a story** message shortcut.
 - Ask Maya about accessible FortyOne work in a direct message or by mentioning the FortyOne app.
 - Continue supported Maya and request conversations in their Slack threads.
-- See permission-aware previews when supported FortyOne story links are shared.
+- See permission-aware previews when supported FortyOne story or request links are shared.
 
 FortyOne links each Slack identity to a FortyOne account before returning workspace data or creating work. The integration applies the linked person's existing workspace and team permissions.
 
@@ -49,6 +49,8 @@ If Slack requires administrator approval, submit the request in Slack and comple
 FortyOne must match your Slack identity to the correct FortyOne member before you can create stories, ask Maya about workspace data, or open private story previews.
 
 Use `/fortyone`, message Maya, mention the FortyOne app, or open a supported FortyOne link. If your account is not linked, FortyOne sends you a private connection link. Open it while signed in to FortyOne and confirm the connection. The one-time link expires after 15 minutes; repeat the Slack action to receive a new link if necessary.
+
+The first time you interact with FortyOne in a Slack workspace, the app also sends you one private getting-started message. It explains how to work with Maya, create stories or requests, share previews, and continue conversations in threads. FortyOne does not post this introduction publicly or repeat it on later interactions.
 
 Never forward your personal connection link. It is created for one Slack identity and one FortyOne workspace.
 
@@ -104,17 +106,19 @@ Maya uses your linked FortyOne identity and the Slack conversation surface to de
 
 Workspace administrators can add custom guidance from the Slack integration settings to explain workspace terminology, response style, or operating rules Maya should follow.
 
-## Story previews and access
+## Story and request previews
 
-When someone shares a supported FortyOne story link, Slack can show a rich preview with useful project details such as status, priority, owner, or dates.
+When someone shares a supported FortyOne story or request link, Slack can show a rich preview with useful work details such as status, priority, owner, or dates.
 
-Before returning the preview, FortyOne checks the viewer's linked account and access to the story. If the viewer has not linked an account, FortyOne provides a private connection prompt. If the linked account cannot access the story, the integration does not reveal its details.
+Before returning the preview, FortyOne checks the viewer's linked account and access to the work item. If the viewer has not linked an account, FortyOne provides a private connection prompt. If the linked account cannot access it, the integration does not reveal its details.
 
 ## Data and privacy
 
 FortyOne processes the Slack workspace, channel, user, command, interaction, and message data needed to deliver the feature a person invokes. Unsupported root channel messages, bot messages, edits, and replies in threads that are not connected to FortyOne are rejected before their content enters the durable messaging system.
 
 Accepted Slack payloads and connection credentials are encrypted at rest. Conversation and assistant message content used for short-term thread continuity is retained for up to 30 days. FortyOne does not use Slack API data to train general-purpose artificial intelligence models.
+
+To prevent the private getting-started message from repeating, FortyOne retains a one-way digest of the Slack workspace and user identity, plus the time that identity was first observed, for as long as the FortyOne workspace exists. This receipt does not contain the Slack message, Slack user ID, or Slack workspace ID.
 
 Read the [FortyOne Slack integration page](https://www.fortyone.app/integrations/slack) for a product overview and the [FortyOne Privacy Policy](https://www.fortyone.app/privacy) for the full data, retention, access, and deletion disclosures.
 
@@ -129,7 +133,7 @@ Read the [FortyOne Slack integration page](https://www.fortyone.app/integrations
   <Step>Select **Disconnect workspace** and confirm.</Step>
 </Steps>
 
-Disconnecting stops slash commands, message actions, Maya responses, and story previews for that installation. FortyOne removes the active connection credentials and associated connection records, subject to the limited security, diagnostic, backup, and legal retention described in the Privacy Policy.
+Disconnecting stops slash commands, message actions, Maya responses, and work-item previews for that installation. FortyOne removes the active connection credentials and active connection records. The one-way first-use receipt described above remains so reconnecting the same integration does not repeat the getting-started message, subject to the retention described in the Privacy Policy.
 
 ## Troubleshooting
 

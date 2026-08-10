@@ -340,6 +340,10 @@ and different workflows, and two users: one linked and one unlinked.
 
 - Install from FortyOne and confirm exactly one active installation maps to the
   expected Slack `team_id`.
+- As a Slack user who has never interacted with that FortyOne workspace, invoke
+  the app once and confirm one private getting-started message appears. Repeat
+  through a DM, mention, `/fortyone`, message shortcut, and supported link;
+  confirm the guide is never posted publicly and is not sent again.
 - Confirm an invalid/expired OAuth state and an invalid Slack signature are
   rejected without side effects.
 - Run `/fortyone create Example title`; confirm acknowledgement is under three

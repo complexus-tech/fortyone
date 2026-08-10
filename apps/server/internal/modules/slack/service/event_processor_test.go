@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +19,7 @@ import (
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
@@ -67,6 +70,18 @@ func (r *eventRepositoryStub) GetAgentSettings(_ context.Context, _ uuid.UUID) (
 
 func (r *eventRepositoryStub) ListAuthorizedChannelTeamIDs(_ context.Context, _, _ uuid.UUID, _ string, _ uuid.UUID) ([]uuid.UUID, error) {
 	return append([]uuid.UUID(nil), r.authorizedTeamIDs...), nil
+}
+
+func (r *eventRepositoryStub) ListTeamStatuses(_ context.Context, _ uuid.UUID) ([]slackrepository.StatusRecord, error) {
+	return nil, nil
+}
+
+func (r *eventRepositoryStub) ListTeamMembers(_ context.Context, _ uuid.UUID) ([]slackrepository.TeamMemberRecord, error) {
+	return nil, nil
+}
+
+func (r *eventRepositoryStub) FindTeamMemberByID(_ context.Context, _, _ uuid.UUID) (slackrepository.TeamMemberRecord, error) {
+	return slackrepository.TeamMemberRecord{}, sql.ErrNoRows
 }
 
 func (r *eventRepositoryStub) ListWorkspaceTeamsForUser(_ context.Context, _, _ uuid.UUID) ([]slackrepository.TeamRecord, error) {
@@ -174,6 +189,32 @@ func (r *eventRepositoryStub) CompleteSlackUninstall(_ context.Context, id uuid.
 func (r *eventRepositoryStub) FailSlackUninstall(_ context.Context, id uuid.UUID, _ string, _ *time.Time) error {
 	r.failedUninstalls = append(r.failedUninstalls, id)
 	return nil
+}
+
+type eventStoryReaderStub struct {
+	story        stories.CoreSingleStory
+	workspaceIDs []uuid.UUID
+	references   []string
+}
+
+type eventRequestReaderStub struct {
+	request      integrationrequests.CoreIntegrationRequest
+	workspaceIDs []uuid.UUID
+	requestIDs   []uuid.UUID
+	userIDs      []uuid.UUID
+}
+
+func (s *eventRequestReaderStub) GetForUser(_ context.Context, workspaceID, requestID, userID uuid.UUID) (integrationrequests.CoreIntegrationRequest, error) {
+	s.workspaceIDs = append(s.workspaceIDs, workspaceID)
+	s.requestIDs = append(s.requestIDs, requestID)
+	s.userIDs = append(s.userIDs, userID)
+	return s.request, nil
+}
+
+func (s *eventStoryReaderStub) QueryByRef(_ context.Context, workspaceID uuid.UUID, reference string) (stories.CoreSingleStory, error) {
+	s.workspaceIDs = append(s.workspaceIDs, workspaceID)
+	s.references = append(s.references, reference)
+	return s.story, nil
 }
 
 type inboundCompletion struct {
@@ -911,6 +952,48 @@ func TestEventProcessorRecoversPersistedOutboundDelivery(t *testing.T) {
 	}
 }
 
+func TestEventProcessorRecoversFirstUseGuideWithoutLinkedUser(t *testing.T) {
+	repo := newEventRepositoryStub()
+	store := newEventStoreStub()
+	content := "*Welcome to FortyOne in Slack*"
+	recipient := "U-first-use"
+	store.deliveryContent = &content
+	store.recoverableOutbound = []messagingrepository.OutboundDeliveryRecord{
+		{
+			ID:                      testOutboundDeliveryID,
+			WorkspaceID:             testWorkspaceID,
+			InstallGeneration:       uuidPointer(testInstallGeneration),
+			ExternalWorkspaceID:     "T1",
+			ExternalRecipientUserID: &recipient,
+			IdempotencyKey:          "slack-onboarding:generation:U-first-use",
+			ExternalChannelID:       recipient,
+			Content:                 &content,
+			Purpose:                 slackOnboardingPurpose,
+			Status:                  "failed",
+			AttemptCount:            2,
+		},
+	}
+	sender := &messageSenderStub{externalMessageID: "171.200"}
+	processor := newTestEventProcessor(t, repo, store, &assistantStub{}, &accessCheckerStub{allowed: true}, sender)
+	processor.eventQueue = &eventQueueStub{}
+
+	recovered, err := processor.RecoverPendingEvents(context.Background())
+
+	require.NoError(t, err)
+	require.Equal(t, 1, recovered)
+	require.Len(t, sender.messages, 1)
+	require.Equal(t, recipient, sender.messages[0].ChannelID)
+	require.Equal(t, content, sender.messages[0].Text)
+	require.Equal(
+		t,
+		deterministicSlackMessageID(slackFirstInteractionGuideProviderKey(testWorkspaceID, "T1", recipient)),
+		sender.messages[0].ClientMessageID,
+	)
+	require.Len(t, store.completedDeliveries, 1)
+	require.Len(t, store.outboundInputs, 1)
+	require.Nil(t, store.outboundInputs[0].UserID)
+}
+
 func TestEventProcessorCancelsAssistantRecoveryAfterActorLosesAccess(t *testing.T) {
 	repo := newEventRepositoryStub()
 	repo.linkedUserID = nil
@@ -1122,6 +1205,191 @@ func TestEventProcessorLoadsAndDecryptsCanonicalInboxPayload(t *testing.T) {
 		t.Fatalf("ProcessEvent() error = %v", err)
 	}
 	assertSingleInboundStatus(t, store, "ignored")
+}
+
+func TestEventProcessorQueuedLinkSharedPublishesWorkObjectUnfurl(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	store := newEventStoreStub()
+	storyID := uuid.MustParse("99999999-9999-4999-8999-999999999999")
+	createdAt := time.Date(2026, time.August, 9, 7, 0, 0, 0, time.UTC)
+	updatedAt := createdAt.Add(2 * time.Hour)
+	storyReader := &eventStoryReaderStub{story: stories.CoreSingleStory{
+		ID:         storyID,
+		SequenceID: 123,
+		Title:      "Fix workspace login",
+		Priority:   "High",
+		Team:       testAllowedTeamID,
+		TeamCode:   "WEB",
+		Workspace:  testWorkspaceID,
+		CreatedAt:  createdAt,
+		UpdatedAt:  updatedAt,
+	}}
+	processor, err := NewEventProcessor(nil, repo, store, &assistantStub{}, &accessCheckerStub{allowed: true}, EventProcessorConfig{
+		WebsiteURL:               "https://app.fortyone.com",
+		SecretKey:                testSlackCredentialSecret,
+		CallLimiter:              &callLimiterStub{decision: messagingbudget.AdmissionDecision{Allowed: true}},
+		UsageBudget:              &usageBudgetStub{},
+		ContextProvider:          &assistantContextProviderStub{},
+		DailyWorkspaceTokenLimit: 1_000_000,
+		StoryReader:              storyReader,
+	})
+	require.NoError(t, err)
+
+	type unfurlCapture struct {
+		path          string
+		authorization string
+		payload       SlackChatUnfurlRequest
+		decodeErr     error
+	}
+	captures := make(chan unfurlCapture, 1)
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		var payload SlackChatUnfurlRequest
+		decodeErr := json.NewDecoder(request.Body).Decode(&payload)
+		captures <- unfurlCapture{
+			path:          request.URL.Path,
+			authorization: request.Header.Get("Authorization"),
+			payload:       payload,
+			decodeErr:     decodeErr,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer provider.Close()
+	processor.webClient.client = provider.Client()
+	processor.webClient.baseURL = provider.URL
+
+	const eventID = "Ev-link-work-object"
+	rawBody := []byte(`{"type":"event_callback","team_id":"T1","event_id":"Ev-link-work-object","event":{"type":"link_shared","user":"U1","channel":"C1","message_ts":"1754700000.123","links":[{"domain":"fortyone.app","url":"https://acme.fortyone.app/work/WEB-123"}]}}`)
+	encrypted, err := processor.codec.sealPayload(rawBody)
+	require.NoError(t, err)
+	store.inboundRecords[eventID] = messagingrepository.InboundEventRecord{
+		ID:                  testInboundReceiptID,
+		InstallGeneration:   uuidPointer(testInstallGeneration),
+		ExternalWorkspaceID: "T1",
+		ExternalEventID:     eventID,
+		Status:              "pending",
+		PayloadEncrypted:    &encrypted,
+	}
+
+	require.NoError(t, processor.ProcessEvent(context.Background(), "T1", eventID))
+
+	var capture unfurlCapture
+	select {
+	case capture = <-captures:
+	case <-time.After(time.Second):
+		t.Fatal("queued link_shared event did not reach chat.unfurl")
+	}
+	require.NoError(t, capture.decodeErr)
+	require.Equal(t, "/chat.unfurl", capture.path)
+	require.Equal(t, "Bearer "+testSlackBotAccessToken, capture.authorization)
+	require.Equal(t, "C1", capture.payload.Channel)
+	require.Equal(t, "1754700000.123", capture.payload.TS)
+	require.False(t, capture.payload.UserAuthRequired)
+	require.NotNil(t, capture.payload.Metadata)
+	require.Len(t, capture.payload.Metadata.Entities, 1)
+	entity := capture.payload.Metadata.Entities[0]
+	require.Equal(t, slackTaskEntityType, entity.EntityType)
+	require.Equal(t, "https://acme.fortyone.app/work/WEB-123", entity.AppUnfurlURL)
+	require.Equal(t, "https://acme.fortyone.app/work/WEB-123", entity.URL)
+	require.Equal(t, "acme:"+storyID.String(), entity.ExternalRef.ID)
+	require.Equal(t, slackStoryExternalRefType, entity.ExternalRef.Type)
+	require.Equal(t, "Fix workspace login", entity.EntityPayload.Attributes.Title.Text)
+	require.Equal(t, "WEB-123", entity.EntityPayload.Attributes.DisplayID)
+	require.Equal(t, updatedAt.Unix(), entity.EntityPayload.Attributes.MetadataLastModified)
+	require.Equal(t, "High", entity.EntityPayload.Fields["priority"].Value)
+	require.Equal(t, []uuid.UUID{testWorkspaceID}, storyReader.workspaceIDs)
+	require.Equal(t, []string{"WEB-123"}, storyReader.references)
+	assertSingleInboundStatus(t, store, "completed")
+}
+
+func TestEventProcessorLinkSharedPublishesAuthorizedRequestWorkObject(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	store := newEventStoreStub()
+	requestID := uuid.MustParse("99999999-9999-4999-8999-999999999998")
+	createdAt := time.Date(2026, time.August, 10, 6, 0, 0, 0, time.UTC)
+	updatedAt := createdAt.Add(time.Hour)
+	requestReader := &eventRequestReaderStub{request: integrationrequests.CoreIntegrationRequest{
+		ID:              requestID,
+		WorkspaceID:     testWorkspaceID,
+		TeamID:          testAllowedTeamID,
+		Title:           "Investigate mobile login",
+		Status:          integrationrequests.StatusPending,
+		Priority:        "High",
+		CreatedByUserID: uuidPointer(testLinkedUserID),
+		CreatedAt:       createdAt,
+		UpdatedAt:       updatedAt,
+	}}
+	processor, err := NewEventProcessor(nil, repo, store, &assistantStub{}, &accessCheckerStub{allowed: true}, EventProcessorConfig{
+		WebsiteURL:               "https://fortyone.app",
+		SecretKey:                testSlackCredentialSecret,
+		CallLimiter:              &callLimiterStub{decision: messagingbudget.AdmissionDecision{Allowed: true}},
+		UsageBudget:              &usageBudgetStub{},
+		ContextProvider:          &assistantContextProviderStub{},
+		DailyWorkspaceTokenLimit: 1_000_000,
+		RequestReader:            requestReader,
+	})
+	require.NoError(t, err)
+
+	type requestUnfurlCapture struct {
+		path          string
+		authorization string
+		payload       SlackChatUnfurlRequest
+		decodeErr     error
+	}
+	captures := make(chan requestUnfurlCapture, 1)
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		var payload SlackChatUnfurlRequest
+		decodeErr := json.NewDecoder(request.Body).Decode(&payload)
+		captures <- requestUnfurlCapture{
+			path:          request.URL.Path,
+			authorization: request.Header.Get("Authorization"),
+			payload:       payload,
+			decodeErr:     decodeErr,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer provider.Close()
+	processor.webClient.client = provider.Client()
+	processor.webClient.baseURL = provider.URL
+
+	requestURL := fmt.Sprintf("https://acme.fortyone.app/teams/%s/requests/%s", testAllowedTeamID, requestID)
+	body := fmt.Sprintf(
+		`{"type":"event_callback","team_id":"T1","event_id":"Ev-request-unfurl","event":{"type":"link_shared","user":"U1","channel":"C1","message_ts":"1754786400.123","links":[{"domain":"fortyone.app","url":%q}]}}`,
+		requestURL,
+	)
+	require.NoError(t, processor.Process(context.Background(), []byte(body)))
+
+	select {
+	case capture := <-captures:
+		require.NoError(t, capture.decodeErr)
+		require.Equal(t, "/chat.unfurl", capture.path)
+		require.Equal(t, "Bearer "+testSlackBotAccessToken, capture.authorization)
+		payload := capture.payload
+		require.Equal(t, "C1", payload.Channel)
+		require.Equal(t, "1754786400.123", payload.TS)
+		require.NotNil(t, payload.Metadata)
+		require.Len(t, payload.Metadata.Entities, 1)
+		entity := payload.Metadata.Entities[0]
+		require.Equal(t, requestURL, entity.AppUnfurlURL)
+		require.Equal(t, requestURL, entity.URL)
+		require.Equal(t, slackRequestExternalRefType, entity.ExternalRef.Type)
+		require.Equal(t, fmt.Sprintf("acme:%s:%s", testAllowedTeamID, requestID), entity.ExternalRef.ID)
+		require.Equal(t, "Investigate mobile login", entity.EntityPayload.Attributes.Title.Text)
+		require.Equal(t, updatedAt.Unix(), entity.EntityPayload.Attributes.MetadataLastModified)
+		require.Equal(t, "Pending", entity.EntityPayload.Fields["status"].Value)
+		require.Equal(t, "High", entity.EntityPayload.Fields["priority"].Value)
+		require.Equal(t, "U1", entity.EntityPayload.Fields["created_by"].User.UserID)
+		require.Nil(t, entity.EntityPayload.Attributes.Title.Edit)
+	case <-time.After(time.Second):
+		t.Fatal("request link_shared event did not reach chat.unfurl")
+	}
+	require.Equal(t, []uuid.UUID{testWorkspaceID}, requestReader.workspaceIDs)
+	require.Equal(t, []uuid.UUID{requestID}, requestReader.requestIDs)
+	require.Equal(t, []uuid.UUID{testLinkedUserID}, requestReader.userIDs)
+	assertSingleInboundStatus(t, store, "completed")
 }
 
 func TestEventProcessorFailsUnreadableCanonicalInboxPayload(t *testing.T) {

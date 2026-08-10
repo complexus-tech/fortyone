@@ -39,6 +39,7 @@ func (s *Service) PrepareIntegrationRequestComment(
 		Authorization: &SlackDeliveryAuthorization{
 			AllowedTeamIDs: []uuid.UUID{request.TeamID},
 			ActorUserID:    &input.AuthorID,
+			Scope:          slackDeliveryAuthorizationScopeActorMembership,
 		},
 	})
 	if err != nil {

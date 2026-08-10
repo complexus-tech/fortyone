@@ -21,7 +21,9 @@ const (
 	slackUserFieldType            = "slack#/types/user"
 	slackDateFieldType            = "slack#/types/date"
 	slackStoryExternalRefType     = "story"
+	slackRequestExternalRefType   = "request"
 	slackOpenStoryActionID        = "fortyone_open_story"
+	slackOpenRequestActionID      = "fortyone_open_request"
 	slackConfirmMutationActionID  = "fortyone_confirm_story_mutation"
 	slackCancelMutationActionID   = "fortyone_cancel_story_mutation"
 	slackWorkObjectTitleLimit     = 3000
@@ -31,8 +33,10 @@ const (
 )
 
 var (
-	ErrSlackStoryPreviewAccessDenied = errors.New("Slack story preview access was not granted")
-	ErrInvalidFortyOneStoryURL       = errors.New("invalid FortyOne story URL")
+	ErrSlackStoryPreviewAccessDenied   = errors.New("Slack story preview access was not granted")
+	ErrInvalidFortyOneStoryURL         = errors.New("invalid FortyOne story URL")
+	ErrSlackRequestPreviewAccessDenied = errors.New("Slack request preview access was not granted")
+	ErrInvalidFortyOneRequestURL       = errors.New("invalid FortyOne request URL")
 
 	workspaceSlugPattern  = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
 	storyReferencePattern = regexp.MustCompile(`^[A-Z_]+-[1-9][0-9]*$`)
@@ -46,6 +50,16 @@ type FortyOneStoryLink struct {
 	CanonicalURL   string
 	WorkspaceSlug  string
 	StoryReference string
+}
+
+// FortyOneRequestLink is the trusted canonical identity extracted from a
+// production FortyOne integration-request URL.
+type FortyOneRequestLink struct {
+	PostedURL     string
+	CanonicalURL  string
+	WorkspaceSlug string
+	TeamID        uuid.UUID
+	RequestID     uuid.UUID
 }
 
 // SlackStoryWorkObjectInput contains already-authorized story data. Callers
@@ -66,6 +80,25 @@ type SlackStoryWorkObjectInput struct {
 	Priority            string
 	AssigneeID          string
 	AssigneeOptions     []SlackWorkObjectSelectOption
+	AssigneeSlackUserID string
+	AssigneeName        string
+	CreatorSlackUserID  string
+	CreatorName         string
+	DueDate             *time.Time
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+}
+
+// SlackRequestWorkObjectInput contains already-authorized request data. Request
+// Work Objects are deliberately read-only: triage and conversion remain in
+// FortyOne, while Slack presents the current request state and canonical link.
+type SlackRequestWorkObjectInput struct {
+	AccessGranted       bool
+	RequestURL          string
+	Title               string
+	Description         string
+	Status              string
+	Priority            string
 	AssigneeSlackUserID string
 	AssigneeName        string
 	CreatorSlackUserID  string
@@ -257,6 +290,10 @@ type SlackStoryCreationReceipt struct {
 	ProviderPayload SlackProviderPayload
 }
 
+// SlackRequestCreationReceipt shares the durable Work Object delivery envelope
+// with story receipts while preserving a request-specific builder and copy.
+type SlackRequestCreationReceipt = SlackStoryCreationReceipt
+
 // ParseFortyOneStoryURL accepts only canonical production story routes under a
 // single FortyOne workspace subdomain. This rejects look-alike hosts, API/docs
 // routes, credentials, ports, and encoded path separators before any lookup.
@@ -305,6 +342,58 @@ func ParseFortyOneStoryURL(rawURL string) (FortyOneStoryLink, error) {
 	}, nil
 }
 
+// ParseFortyOneRequestURL accepts only canonical production request routes
+// under one FortyOne workspace subdomain. Team and request identities must be
+// UUIDs, and encoded path data cannot alter the route boundary.
+func ParseFortyOneRequestURL(rawURL string) (FortyOneRequestLink, error) {
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil || !strings.EqualFold(parsed.Scheme, "https") || parsed.User != nil || parsed.Port() != "" {
+		return FortyOneRequestLink{}, ErrInvalidFortyOneRequestURL
+	}
+
+	host := strings.ToLower(strings.TrimSuffix(parsed.Hostname(), "."))
+	const domainSuffix = ".fortyone.app"
+	if !strings.HasSuffix(host, domainSuffix) {
+		return FortyOneRequestLink{}, ErrInvalidFortyOneRequestURL
+	}
+	workspaceSlug := strings.TrimSuffix(host, domainSuffix)
+	if strings.Contains(workspaceSlug, ".") || !workspaceSlugPattern.MatchString(workspaceSlug) {
+		return FortyOneRequestLink{}, ErrInvalidFortyOneRequestURL
+	}
+
+	if parsed.EscapedPath() != parsed.Path {
+		return FortyOneRequestLink{}, ErrInvalidFortyOneRequestURL
+	}
+	segments := strings.Split(strings.TrimSuffix(parsed.Path, "/"), "/")
+	if len(segments) != 5 || segments[0] != "" || segments[1] != "teams" || segments[3] != "requests" {
+		return FortyOneRequestLink{}, ErrInvalidFortyOneRequestURL
+	}
+	teamID, err := uuid.Parse(segments[2])
+	if err != nil || teamID == uuid.Nil || segments[2] != teamID.String() {
+		return FortyOneRequestLink{}, ErrInvalidFortyOneRequestURL
+	}
+	requestID, err := uuid.Parse(segments[4])
+	if err != nil || requestID == uuid.Nil || segments[4] != requestID.String() {
+		return FortyOneRequestLink{}, ErrInvalidFortyOneRequestURL
+	}
+
+	postedURL := *parsed
+	postedURL.Scheme = "https"
+	postedURL.Host = host
+	canonicalURL := url.URL{
+		Scheme: "https",
+		Host:   host,
+		Path:   "/teams/" + teamID.String() + "/requests/" + requestID.String(),
+	}
+	return FortyOneRequestLink{
+		PostedURL:     postedURL.String(),
+		CanonicalURL:  canonicalURL.String(),
+		WorkspaceSlug: workspaceSlug,
+		TeamID:        teamID,
+		RequestID:     requestID,
+	}, nil
+}
+
 // BuildSlackStoryUnfurlRequest creates a Work Object response for one
 // link_shared event after the caller has proven the actor can read the story.
 func BuildSlackStoryUnfurlRequest(channelID, messageTS string, input SlackStoryWorkObjectInput) (SlackChatUnfurlRequest, error) {
@@ -312,6 +401,24 @@ func BuildSlackStoryUnfurlRequest(channelID, messageTS string, input SlackStoryW
 		return SlackChatUnfurlRequest{}, err
 	}
 	entity, _, err := buildSlackStoryWorkObject(input, true)
+	if err != nil {
+		return SlackChatUnfurlRequest{}, err
+	}
+	metadata := SlackWorkObjectMetadata{Entities: []SlackWorkObjectEntity{entity}}
+	return SlackChatUnfurlRequest{
+		Channel:  strings.TrimSpace(channelID),
+		TS:       strings.TrimSpace(messageTS),
+		Metadata: &metadata,
+	}, nil
+}
+
+// BuildSlackRequestUnfurlRequest creates a read-only Work Object response for
+// one request link after the caller has proven the actor can read its team.
+func BuildSlackRequestUnfurlRequest(channelID, messageTS string, input SlackRequestWorkObjectInput) (SlackChatUnfurlRequest, error) {
+	if err := validateSlackUnfurlDestination(channelID, messageTS); err != nil {
+		return SlackChatUnfurlRequest{}, err
+	}
+	entity, _, err := buildSlackRequestWorkObject(input, true)
 	if err != nil {
 		return SlackChatUnfurlRequest{}, err
 	}
@@ -348,6 +455,20 @@ func BuildSlackStoryEntityDetailsRequest(triggerID string, input SlackStoryWorkO
 		return SlackEntityDetailsRequest{}, errors.New("Slack entity details trigger is required")
 	}
 	entity, _, err := buildSlackStoryWorkObject(input, false)
+	if err != nil {
+		return SlackEntityDetailsRequest{}, err
+	}
+	return SlackEntityDetailsRequest{TriggerID: triggerID, Metadata: &entity}, nil
+}
+
+// BuildSlackRequestEntityDetailsRequest presents the same read-only request
+// entity without app_unfurl_url, as required by entity.presentDetails.
+func BuildSlackRequestEntityDetailsRequest(triggerID string, input SlackRequestWorkObjectInput) (SlackEntityDetailsRequest, error) {
+	triggerID = strings.TrimSpace(triggerID)
+	if triggerID == "" {
+		return SlackEntityDetailsRequest{}, errors.New("Slack entity details trigger is required")
+	}
+	entity, _, err := buildSlackRequestWorkObject(input, false)
 	if err != nil {
 		return SlackEntityDetailsRequest{}, err
 	}
@@ -394,14 +515,29 @@ func BuildSlackStoryCreationReceipt(creatorName string, input SlackStoryWorkObje
 	if err != nil {
 		return SlackStoryCreationReceipt{}, err
 	}
-	creatorLabel := slackMrkdwnTextEscaper.Replace(strings.Join(strings.Fields(creatorName), " "))
-	if creatorLabel == "" {
-		creatorLabel = "A team member"
-	}
 	disableUnfurls := false
 	metadata := SlackWorkObjectMetadata{Entities: []SlackWorkObjectEntity{entity}}
 	return SlackStoryCreationReceipt{
-		Text: fmt.Sprintf("%s created <%s|%s>", creatorLabel, link.CanonicalURL, link.StoryReference),
+		Text: fmt.Sprintf("%s created <%s|%s>", slackWorkObjectCreatorLabel(creatorName), link.CanonicalURL, link.StoryReference),
+		ProviderPayload: SlackProviderPayload{
+			Metadata:    &metadata,
+			UnfurlLinks: &disableUnfurls,
+			UnfurlMedia: &disableUnfurls,
+		},
+	}, nil
+}
+
+// BuildSlackRequestCreationReceipt builds a read-only Work Object receipt while
+// keeping the request-opening phrase itself as the canonical link.
+func BuildSlackRequestCreationReceipt(creatorName string, input SlackRequestWorkObjectInput) (SlackRequestCreationReceipt, error) {
+	entity, link, err := buildSlackRequestWorkObject(input, false)
+	if err != nil {
+		return SlackRequestCreationReceipt{}, err
+	}
+	disableUnfurls := false
+	metadata := SlackWorkObjectMetadata{Entities: []SlackWorkObjectEntity{entity}}
+	return SlackRequestCreationReceipt{
+		Text: fmt.Sprintf("%s <%s|opened a request>", slackWorkObjectCreatorLabel(creatorName), link.CanonicalURL),
 		ProviderPayload: SlackProviderPayload{
 			Metadata:    &metadata,
 			UnfurlLinks: &disableUnfurls,
@@ -626,6 +762,90 @@ func buildSlackStoryWorkObject(input SlackStoryWorkObjectInput, includeAppUnfurl
 	return entity, link, nil
 }
 
+func buildSlackRequestWorkObject(input SlackRequestWorkObjectInput, includeAppUnfurlURL bool) (SlackWorkObjectEntity, FortyOneRequestLink, error) {
+	if !input.AccessGranted {
+		return SlackWorkObjectEntity{}, FortyOneRequestLink{}, ErrSlackRequestPreviewAccessDenied
+	}
+	link, err := ParseFortyOneRequestURL(input.RequestURL)
+	if err != nil {
+		return SlackWorkObjectEntity{}, FortyOneRequestLink{}, err
+	}
+	title := truncateSlackWorkObjectText(input.Title, slackWorkObjectTitleLimit)
+	if title == "" {
+		return SlackWorkObjectEntity{}, FortyOneRequestLink{}, errors.New("Slack request Work Object title is required")
+	}
+
+	fields := make(map[string]SlackWorkObjectField, 8)
+	if description := truncateSlackWorkObjectText(slackWorkObjectDescription(input.Description), slackWorkObjectTextFieldLimit); description != "" {
+		fields["description"] = SlackWorkObjectField{Value: description, Format: "markdown"}
+	}
+	if createdBy := slackWorkObjectUser(input.CreatorSlackUserID, input.CreatorName); createdBy != nil {
+		fields["created_by"] = SlackWorkObjectField{Type: slackUserFieldType, User: createdBy}
+	}
+	if !input.CreatedAt.IsZero() {
+		fields["date_created"] = SlackWorkObjectField{Value: input.CreatedAt.UTC().Unix()}
+	}
+	if !input.UpdatedAt.IsZero() {
+		fields["date_updated"] = SlackWorkObjectField{Value: input.UpdatedAt.UTC().Unix()}
+	}
+	if assignee := slackWorkObjectUser(input.AssigneeSlackUserID, input.AssigneeName); assignee != nil {
+		fields["assignee"] = SlackWorkObjectField{Type: slackUserFieldType, User: assignee}
+	}
+	if status := truncateSlackWorkObjectText(input.Status, 255); status != "" {
+		fields["status"] = SlackWorkObjectField{Value: status}
+	}
+	if input.DueDate != nil && !input.DueDate.IsZero() {
+		fields["due_date"] = SlackWorkObjectField{
+			Value: input.DueDate.UTC().Format(time.DateOnly),
+			Type:  slackDateFieldType,
+		}
+	}
+	if priority := truncateSlackWorkObjectText(input.Priority, 255); priority != "" {
+		fields["priority"] = SlackWorkObjectField{Value: priority}
+	}
+
+	lastModified := input.UpdatedAt
+	if lastModified.IsZero() {
+		lastModified = input.CreatedAt
+	}
+	entity := SlackWorkObjectEntity{
+		URL: link.CanonicalURL,
+		ExternalRef: SlackWorkObjectExternalRef{
+			ID:   slackRequestExternalRefID(link),
+			Type: slackRequestExternalRefType,
+		},
+		EntityType: slackTaskEntityType,
+		EntityPayload: SlackWorkObjectEntityPayload{
+			Attributes: SlackWorkObjectAttributes{
+				Title:                SlackWorkObjectTitle{Text: title},
+				MetadataLastModified: unixTimestamp(lastModified),
+			},
+			Fields: fields,
+			Actions: &SlackWorkObjectActions{
+				PrimaryActions: []SlackWorkObjectAction{{
+					Text:               "Open in FortyOne",
+					ActionID:           slackOpenRequestActionID,
+					Value:              link.RequestID.String(),
+					URL:                link.CanonicalURL,
+					AccessibilityLabel: "Open request in FortyOne",
+				}},
+			},
+		},
+	}
+	if includeAppUnfurlURL {
+		entity.AppUnfurlURL = link.PostedURL
+	}
+	return entity, link, nil
+}
+
+func slackWorkObjectCreatorLabel(creatorName string) string {
+	creatorLabel := slackMrkdwnTextEscaper.Replace(strings.Join(strings.Fields(creatorName), " "))
+	if creatorLabel == "" {
+		return "A team member"
+	}
+	return creatorLabel
+}
+
 func slackStoryTitleEdit(enabled bool) *SlackWorkObjectEdit {
 	if !enabled {
 		return nil
@@ -701,6 +921,14 @@ func slackStoryExternalRefMatches(link FortyOneStoryLink, externalID, actual str
 	return actual == slackStoryExternalRefID(link, externalID) ||
 		actual == slackStoryExternalRefID(link, "") ||
 		strings.EqualFold(actual, link.StoryReference)
+}
+
+func slackRequestExternalRefID(link FortyOneRequestLink) string {
+	return strings.ToLower(link.WorkspaceSlug) + ":" + link.TeamID.String() + ":" + link.RequestID.String()
+}
+
+func validSlackRequestExternalRef(link FortyOneRequestLink, externalRefID string) bool {
+	return strings.TrimSpace(externalRefID) == slackRequestExternalRefID(link)
 }
 
 func validateSlackUnfurlDestination(channelID, messageTS string) error {

@@ -64,11 +64,22 @@ func (s *Service) processSlackEntityDetailsEvent(
 	if err != nil {
 		return err
 	}
-	link, err := ParseFortyOneStoryURL(event.EntityURL)
-	if err != nil || !strings.EqualFold(link.WorkspaceSlug, workspace.Slug) {
+	storyLink, storyLinkErr := ParseFortyOneStoryURL(event.EntityURL)
+	requestLink, requestLinkErr := ParseFortyOneRequestURL(event.EntityURL)
+	if storyLinkErr != nil && requestLinkErr != nil {
 		return nil
 	}
-	if event.ExternalRef.Type != "" && !strings.EqualFold(event.ExternalRef.Type, slackStoryExternalRefType) {
+	isRequest := requestLinkErr == nil
+	linkWorkspaceSlug := storyLink.WorkspaceSlug
+	externalRefType := slackStoryExternalRefType
+	if isRequest {
+		linkWorkspaceSlug = requestLink.WorkspaceSlug
+		externalRefType = slackRequestExternalRefType
+	}
+	if !strings.EqualFold(linkWorkspaceSlug, workspace.Slug) {
+		return nil
+	}
+	if event.ExternalRef.Type != "" && !strings.EqualFold(event.ExternalRef.Type, externalRefType) {
 		return nil
 	}
 
@@ -95,19 +106,22 @@ func (s *Service) processSlackEntityDetailsEvent(
 		}
 		return publisher.PresentDetails(ctx, botToken, request)
 	}
+	if isRequest {
+		return s.presentSlackRequestEntityDetails(ctx, publisher, botToken, workspace, installation, event, *linkedUserID, requestLink)
+	}
 
 	storyReader, ok := s.stories.(SlackStoryReader)
 	if !ok {
 		return errors.New("Slack Work Object story reader is not configured")
 	}
-	story, err := storyReader.QueryByRef(ctx, workspace.ID, link.StoryReference)
+	story, err := storyReader.QueryByRef(ctx, workspace.ID, storyLink.StoryReference)
 	if err != nil {
 		if errors.Is(err, stories.ErrNotFound) || errors.Is(err, stories.ErrInvalidStoryReference) || slackrepository.IsNotFound(err) {
 			return nil
 		}
 		return err
 	}
-	if !slackStoryExternalRefMatches(link, story.ID.String(), event.ExternalRef.ID) {
+	if !slackStoryExternalRefMatches(storyLink, story.ID.String(), event.ExternalRef.ID) {
 		return nil
 	}
 	source := requestSourceContext{
@@ -127,7 +141,7 @@ func (s *Service) processSlackEntityDetailsEvent(
 	if !ok {
 		return errors.New("Slack Work Object repository is not configured")
 	}
-	input, err := buildSlackStoryWorkObjectInput(ctx, repository, *linkedUserID, event.UserID, link.CanonicalURL, story, true)
+	input, err := buildSlackStoryWorkObjectInput(ctx, repository, *linkedUserID, event.UserID, storyLink.CanonicalURL, story, true)
 	if err != nil {
 		return err
 	}
@@ -148,4 +162,64 @@ func (s *Service) processSlackEntityDetailsEvent(
 		return err
 	}
 	return publisher.PresentDetails(ctx, botToken, request)
+}
+
+func (s *Service) presentSlackRequestEntityDetails(
+	ctx context.Context,
+	publisher *slackWorkObjectPublisher,
+	botToken string,
+	workspace slackrepository.WorkspaceRecord,
+	installation slackrepository.SlackWorkspaceRecord,
+	event normalizedSlackEvent,
+	actorID uuid.UUID,
+	link FortyOneRequestLink,
+) error {
+	request, err := s.requests.GetForUser(ctx, workspace.ID, link.RequestID, actorID)
+	if err != nil {
+		if slackrepository.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if request.ID != link.RequestID || request.WorkspaceID != workspace.ID || request.TeamID != link.TeamID || !validSlackRequestExternalRef(link, event.ExternalRef.ID) {
+		return nil
+	}
+	source := requestSourceContext{
+		SlackTeamID:    event.TeamID,
+		SlackChannelID: event.ChannelID,
+		SlackMessageTS: event.MessageTS,
+		SlackThreadTS:  event.ThreadTS,
+		SlackUserID:    event.UserID,
+	}
+	if err := s.ensureTeamAvailableForSlackSource(ctx, workspace.ID, actorID, request.TeamID, source); err != nil {
+		if errors.Is(err, ErrSlackTeamNotAvailable) {
+			return nil
+		}
+		return err
+	}
+	repository, ok := s.repo.(slackWorkObjectRepository)
+	if !ok {
+		return errors.New("Slack Work Object repository is not configured")
+	}
+	input, err := buildSlackRequestWorkObjectInput(ctx, repository, actorID, event.UserID, link.CanonicalURL, request)
+	if err != nil {
+		return err
+	}
+	details, err := BuildSlackRequestEntityDetailsRequest(event.TriggerID, input)
+	if err != nil {
+		return err
+	}
+	if err := s.requireCurrentSlackInteractionActor(ctx, workspace.ID, actorID, source); err != nil {
+		return err
+	}
+	if err := s.ensureTeamAvailableForSlackSource(ctx, workspace.ID, actorID, request.TeamID, source); err != nil {
+		if errors.Is(err, ErrSlackTeamNotAvailable) {
+			return nil
+		}
+		return err
+	}
+	if err := s.requireCurrentSlackInstallation(ctx, workspace.ID, event.TeamID, installation.InstallGeneration); err != nil {
+		return err
+	}
+	return publisher.PresentDetails(ctx, botToken, details)
 }

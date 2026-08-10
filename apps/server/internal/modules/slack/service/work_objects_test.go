@@ -51,6 +51,76 @@ func TestParseFortyOneStoryURLRejectsUntrustedOrNonStoryURLs(t *testing.T) {
 	}
 }
 
+func TestParseFortyOneRequestURL(t *testing.T) {
+	t.Parallel()
+
+	teamID := uuid.MustParse("11111111-1111-4111-8111-111111111111")
+	requestID := uuid.MustParse("22222222-2222-4222-8222-222222222222")
+	link, err := ParseFortyOneRequestURL(
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222?from=slack",
+	)
+	require.NoError(t, err)
+	require.Equal(t, "acme", link.WorkspaceSlug)
+	require.Equal(t, teamID, link.TeamID)
+	require.Equal(t, requestID, link.RequestID)
+	require.Equal(t,
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222",
+		link.CanonicalURL,
+	)
+	require.Equal(t,
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222?from=slack",
+		link.PostedURL,
+	)
+
+	trailingSlashLink, err := ParseFortyOneRequestURL(
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222/",
+	)
+	require.NoError(t, err)
+	require.Equal(t, link.CanonicalURL, trailingSlashLink.CanonicalURL)
+	require.Equal(t,
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222/",
+		trailingSlashLink.PostedURL,
+	)
+}
+
+func TestParseFortyOneRequestURLRejectsUntrustedOrNonCanonicalURLs(t *testing.T) {
+	t.Parallel()
+
+	const canonicalPath = "/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222"
+	invalidURLs := []string{
+		"http://acme.fortyone.app" + canonicalPath,
+		"https://fortyone.app" + canonicalPath,
+		"https://acme.fortyone.app.evil.example" + canonicalPath,
+		"https://one.two.fortyone.app" + canonicalPath,
+		"https://acme.fortyone.app:8443" + canonicalPath,
+		"https://user@acme.fortyone.app" + canonicalPath,
+		"https://acme.fortyone.app/feedback/22222222-2222-4222-8222-222222222222",
+		"https://acme.fortyone.app/teams/not-a-uuid/requests/22222222-2222-4222-8222-222222222222",
+		"https://acme.fortyone.app/teams/00000000-0000-0000-0000-000000000000/requests/22222222-2222-4222-8222-222222222222",
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/not-a-uuid",
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/00000000-0000-0000-0000-000000000000",
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222/activity",
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222//",
+		"https://acme.fortyone.app//teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222",
+		"https://acme.fortyone.app/Teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222",
+		"https://acme.fortyone.app/teams/AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA/requests/22222222-2222-4222-8222-222222222222",
+		"https://acme.fortyone.app/teams/11111111111141118111111111111111/requests/22222222-2222-4222-8222-222222222222",
+		"https://acme.fortyone.app/teams/{11111111-1111-4111-8111-111111111111}/requests/22222222-2222-4222-8222-222222222222",
+		"https://acme.fortyone.app/teams/urn:uuid:11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222",
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222%2Fprivate",
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222%5Cprivate",
+		"https://acme.fortyone.app/teams/11111111%2D1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222",
+	}
+	for _, rawURL := range invalidURLs {
+		rawURL := rawURL
+		t.Run(rawURL, func(t *testing.T) {
+			t.Parallel()
+			_, err := ParseFortyOneRequestURL(rawURL)
+			require.ErrorIs(t, err, ErrInvalidFortyOneRequestURL)
+		})
+	}
+}
+
 func TestBuildSlackStoryUnfurlRequestRequiresAccessAndBuildsTaskMetadata(t *testing.T) {
 	t.Parallel()
 
@@ -96,6 +166,66 @@ func TestBuildSlackStoryUnfurlRequestRequiresAccessAndBuildsTaskMetadata(t *test
 	input.Title = "A private story title"
 	_, err = BuildSlackStoryUnfurlRequest("C123", "1754700000.123", input)
 	require.ErrorIs(t, err, ErrSlackStoryPreviewAccessDenied)
+}
+
+func TestBuildSlackRequestUnfurlRequestRequiresAccessAndBuildsReadOnlyTaskMetadata(t *testing.T) {
+	t.Parallel()
+
+	dueDate := time.Date(2026, time.August, 19, 16, 30, 0, 0, time.FixedZone("CAT", 2*60*60))
+	createdAt := time.Date(2026, time.August, 9, 7, 0, 0, 0, time.UTC)
+	updatedAt := createdAt.Add(2 * time.Hour)
+	input := SlackRequestWorkObjectInput{
+		AccessGranted:       true,
+		RequestURL:          "https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222?from=slack",
+		Title:               "Fix workspace login",
+		Description:         "<p>Users cannot sign in after accepting an invite.</p>",
+		Status:              "Pending",
+		Priority:            "High",
+		AssigneeSlackUserID: "U123ABC",
+		CreatorName:         "Joseph Mukorivo",
+		DueDate:             &dueDate,
+		CreatedAt:           createdAt,
+		UpdatedAt:           updatedAt,
+	}
+
+	request, err := BuildSlackRequestUnfurlRequest("C123", "1754700000.123", input)
+	require.NoError(t, err)
+	require.NotNil(t, request.Metadata)
+	require.Len(t, request.Metadata.Entities, 1)
+	entity := request.Metadata.Entities[0]
+	require.Equal(t, slackTaskEntityType, entity.EntityType)
+	require.Equal(t, slackRequestExternalRefType, entity.ExternalRef.Type)
+	require.Equal(t,
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222?from=slack",
+		entity.AppUnfurlURL,
+	)
+	require.Equal(t,
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222",
+		entity.URL,
+	)
+	require.Equal(t,
+		"acme:11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222",
+		entity.ExternalRef.ID,
+	)
+	require.Equal(t, "Fix workspace login", entity.EntityPayload.Attributes.Title.Text)
+	require.Empty(t, entity.EntityPayload.Attributes.DisplayID)
+	require.Nil(t, entity.EntityPayload.Attributes.Title.Edit)
+	require.Equal(t, updatedAt.Unix(), entity.EntityPayload.Attributes.MetadataLastModified)
+	require.Equal(t, "Pending", entity.EntityPayload.Fields["status"].Value)
+	require.Equal(t, "Users cannot sign in after accepting an invite.", entity.EntityPayload.Fields["description"].Value)
+	require.Equal(t, "U123ABC", entity.EntityPayload.Fields["assignee"].User.UserID)
+	require.Equal(t, "2026-08-19", entity.EntityPayload.Fields["due_date"].Value)
+	require.Equal(t, slackDateFieldType, entity.EntityPayload.Fields["due_date"].Type)
+	for _, field := range entity.EntityPayload.Fields {
+		require.Nil(t, field.Edit)
+	}
+	require.Equal(t, slackOpenRequestActionID, entity.EntityPayload.Actions.PrimaryActions[0].ActionID)
+	require.Equal(t, "22222222-2222-4222-8222-222222222222", entity.EntityPayload.Actions.PrimaryActions[0].Value)
+
+	input.AccessGranted = false
+	input.Title = "A private request title"
+	_, err = BuildSlackRequestUnfurlRequest("C123", "1754700000.123", input)
+	require.ErrorIs(t, err, ErrSlackRequestPreviewAccessDenied)
 }
 
 func TestSlackWorkObjectDescriptionConvertsRichTextWithoutDamagingPlainText(t *testing.T) {
@@ -148,6 +278,78 @@ func TestBuildSlackStoryCreationReceiptUsesExactTopLineAndDurableWorkObject(t *t
 	restored, err := DecodeSlackProviderPayload(encoded)
 	require.NoError(t, err)
 	require.Equal(t, receipt.ProviderPayload, restored)
+}
+
+func TestBuildSlackRequestCreationReceiptUsesLinkedOpeningCopyAndDurableWorkObject(t *testing.T) {
+	t.Parallel()
+
+	receipt, err := BuildSlackRequestCreationReceipt("Joseph", SlackRequestWorkObjectInput{
+		AccessGranted: true,
+		RequestURL:    "https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222",
+		Title:         "Fix workspace login",
+		Status:        "Pending",
+	})
+	require.NoError(t, err)
+	require.Equal(t,
+		"Joseph <https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222|opened a request>",
+		receipt.Text,
+	)
+	require.NotContains(t, receipt.Text, "📥")
+	require.NotContains(t, receipt.Text, "in FortyOne")
+	require.NotNil(t, receipt.ProviderPayload.Metadata)
+	entity := receipt.ProviderPayload.Metadata.Entities[0]
+	require.Equal(t, slackRequestExternalRefType, entity.ExternalRef.Type)
+	require.Empty(t, entity.AppUnfurlURL)
+
+	encoded, err := EncodeSlackProviderPayload(receipt.ProviderPayload)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"unfurl_links":false`)
+	require.Contains(t, string(encoded), `"unfurl_media":false`)
+	restored, err := DecodeSlackProviderPayload(encoded)
+	require.NoError(t, err)
+	require.Equal(t, receipt.ProviderPayload, restored)
+}
+
+func TestBuildSlackRequestCreationReceiptEscapesActorAndFallsBack(t *testing.T) {
+	t.Parallel()
+
+	input := SlackRequestWorkObjectInput{
+		AccessGranted: true,
+		RequestURL:    "https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222",
+		Title:         "Fix workspace login",
+	}
+	receipt, err := BuildSlackRequestCreationReceipt(" Joseph  <@U123> & Team ", input)
+	require.NoError(t, err)
+	require.Equal(t,
+		"Joseph &lt;@U123&gt; &amp; Team <https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222|opened a request>",
+		receipt.Text,
+	)
+
+	receipt, err = BuildSlackRequestCreationReceipt("   ", input)
+	require.NoError(t, err)
+	require.Equal(t,
+		"A team member <https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222|opened a request>",
+		receipt.Text,
+	)
+}
+
+func TestBuildSlackRequestEntityDetailsRequestOmitsAppUnfurlURL(t *testing.T) {
+	t.Parallel()
+
+	request, err := BuildSlackRequestEntityDetailsRequest(" trigger-123 ", SlackRequestWorkObjectInput{
+		AccessGranted: true,
+		RequestURL:    "https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222?from=slack",
+		Title:         "Fix workspace login",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "trigger-123", request.TriggerID)
+	require.NotNil(t, request.Metadata)
+	require.Equal(t, slackRequestExternalRefType, request.Metadata.ExternalRef.Type)
+	require.Empty(t, request.Metadata.AppUnfurlURL)
+	require.Equal(t,
+		"https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/requests/22222222-2222-4222-8222-222222222222",
+		request.Metadata.URL,
+	)
 }
 
 func TestBuildSlackMutationConfirmationProviderPayloadUsesOpaqueButtonValues(t *testing.T) {

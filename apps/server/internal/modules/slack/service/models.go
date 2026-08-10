@@ -50,6 +50,7 @@ type Repository interface {
 	InsertRequestLog(ctx context.Context, entry slackrepository.SlackRequestLogInsert) error
 	ListRequestLogs(ctx context.Context, workspaceID uuid.UUID, limit int) ([]slackrepository.SlackRequestLogRecord, error)
 	FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error)
+	HasSlackUserOnboardingReceipt(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string) (bool, error)
 }
 
 type EventQueue interface {
@@ -77,6 +78,7 @@ type NonceStore interface {
 
 type RequestStore interface {
 	UpsertPending(ctx context.Context, input integrationrequests.CoreUpsertRequestInput) (integrationrequests.CoreIntegrationRequest, error)
+	GetForUser(ctx context.Context, workspaceID, requestID, userID uuid.UUID) (integrationrequests.CoreIntegrationRequest, error)
 	BindProviderThread(ctx context.Context, input integrationrequests.CoreBindProviderThreadInput) (integrationrequests.CoreProviderThread, error)
 	HasAuthorizedProviderThread(ctx context.Context, input integrationrequests.CoreProviderThreadMatchInput) (bool, error)
 	HasCurrentProviderThread(ctx context.Context, input integrationrequests.CoreProviderThreadLookupInput) (bool, error)

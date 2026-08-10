@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
@@ -14,6 +15,13 @@ import (
 // a story and never bypass the actor/channel authorization checks below.
 type SlackStoryReader interface {
 	QueryByRef(ctx context.Context, workspaceID uuid.UUID, storyRef string) (stories.CoreSingleStory, error)
+}
+
+// SlackRequestReader is deliberately permission-aware and read-only. Its
+// contract requires the current FortyOne actor so request previews cannot
+// bypass workspace or team membership.
+type SlackRequestReader interface {
+	GetForUser(ctx context.Context, workspaceID, requestID, userID uuid.UUID) (integrationrequests.CoreIntegrationRequest, error)
 }
 
 type slackWorkObjectRepository interface {
@@ -40,7 +48,7 @@ func (p *EventProcessor) processSlackWorkObjectEvent(
 	event normalizedSlackEvent,
 	botToken string,
 ) error {
-	if p.storyReader == nil || p.workObjects == nil {
+	if (p.storyReader == nil && p.requestReader == nil) || p.workObjects == nil {
 		return errors.New("Slack Work Object runtime is not configured")
 	}
 	switch event.Kind {
@@ -60,7 +68,7 @@ func (p *EventProcessor) processSlackLinkShared(
 	botToken string,
 ) error {
 	if p.log != nil {
-		p.log.Info(ctx, "Slack story preview processing started",
+		p.log.Info(ctx, "Slack work item preview processing started",
 			"event_id", event.EventID,
 			"workspace_id", workspace.ID,
 			"workspace_slug", workspace.Slug,
@@ -72,44 +80,50 @@ func (p *EventProcessor) processSlackLinkShared(
 			"link_count", len(event.Links),
 		)
 	}
-	links := make([]FortyOneStoryLink, 0, len(event.Links))
+	storyLinks := make([]FortyOneStoryLink, 0, len(event.Links))
+	requestLinks := make([]FortyOneRequestLink, 0, len(event.Links))
 	seen := make(map[string]struct{}, len(event.Links))
 	for _, shared := range event.Links {
-		link, err := ParseFortyOneStoryURL(shared.URL)
-		if err != nil {
-			if p.log != nil {
-				p.log.Warn(ctx, "Slack story preview link ignored",
-					"event_id", event.EventID,
-					"slack_team_id", event.TeamID,
-					"slack_channel_id", event.ChannelID,
-					"link_domain", strings.TrimSpace(shared.Domain),
-					"reason", "invalid_story_url",
-				)
+		storyLink, storyErr := ParseFortyOneStoryURL(shared.URL)
+		if storyErr == nil {
+			if p.storyReader == nil || !strings.EqualFold(storyLink.WorkspaceSlug, workspace.Slug) {
+				continue
 			}
-			continue
-		}
-		if !strings.EqualFold(link.WorkspaceSlug, workspace.Slug) {
-			if p.log != nil {
-				p.log.Warn(ctx, "Slack story preview link ignored",
-					"event_id", event.EventID,
-					"workspace_id", workspace.ID,
-					"workspace_slug", workspace.Slug,
-					"link_workspace_slug", link.WorkspaceSlug,
-					"story_reference", link.StoryReference,
-					"reason", "workspace_slug_mismatch",
-				)
+			if _, exists := seen[storyLink.CanonicalURL]; exists {
+				continue
 			}
+			seen[storyLink.CanonicalURL] = struct{}{}
+			storyLinks = append(storyLinks, storyLink)
 			continue
 		}
-		if _, exists := seen[link.CanonicalURL]; exists {
+
+		requestLink, requestErr := ParseFortyOneRequestURL(shared.URL)
+		if requestErr == nil {
+			if p.requestReader == nil || !strings.EqualFold(requestLink.WorkspaceSlug, workspace.Slug) {
+				continue
+			}
+			if _, exists := seen[requestLink.CanonicalURL]; exists {
+				continue
+			}
+			seen[requestLink.CanonicalURL] = struct{}{}
+			requestLinks = append(requestLinks, requestLink)
 			continue
 		}
-		seen[link.CanonicalURL] = struct{}{}
-		links = append(links, link)
-	}
-	if len(links) == 0 {
+
 		if p.log != nil {
-			p.log.Warn(ctx, "Slack story preview produced no eligible links",
+			p.log.Warn(ctx, "Slack work item preview link ignored",
+				"event_id", event.EventID,
+				"slack_team_id", event.TeamID,
+				"slack_channel_id", event.ChannelID,
+				"link_domain", strings.TrimSpace(shared.Domain),
+				"reason", "invalid_fortyone_url",
+			)
+		}
+	}
+	eligibleLinkCount := len(storyLinks) + len(requestLinks)
+	if eligibleLinkCount == 0 {
+		if p.log != nil {
+			p.log.Warn(ctx, "Slack work item preview produced no eligible links",
 				"event_id", event.EventID,
 				"workspace_id", workspace.ID,
 				"workspace_slug", workspace.Slug,
@@ -123,13 +137,13 @@ func (p *EventProcessor) processSlackLinkShared(
 	}
 	if linkedUserID == nil || *linkedUserID == uuid.Nil {
 		if p.log != nil {
-			p.log.Info(ctx, "Slack story preview requires account link",
+			p.log.Info(ctx, "Slack work item preview requires account link",
 				"event_id", event.EventID,
 				"workspace_id", workspace.ID,
 				"slack_team_id", event.TeamID,
 				"slack_channel_id", event.ChannelID,
 				"slack_user_id", event.UserID,
-				"eligible_link_count", len(links),
+				"eligible_link_count", eligibleLinkCount,
 			)
 		}
 		authURL, err := p.accountLinkURL(ctx, workspace, event)
@@ -144,8 +158,15 @@ func (p *EventProcessor) processSlackLinkShared(
 		return p.publishSlackStoryUnfurl(ctx, event, workspace.ID, request, 0, true, botToken)
 	}
 
-	metadata := SlackWorkObjectMetadata{Entities: make([]SlackWorkObjectEntity, 0, len(links))}
-	for _, link := range links {
+	metadata := SlackWorkObjectMetadata{Entities: make([]SlackWorkObjectEntity, 0, eligibleLinkCount)}
+	accessChannelID := event.ChannelID
+	if strings.EqualFold(strings.TrimSpace(event.Source), "composer") {
+		// A composer preview is visible only to the author and is not yet part
+		// of a channel audience. Slack sends another event after posting, when
+		// the final channel audience is authorized independently.
+		accessChannelID = ""
+	}
+	for _, link := range storyLinks {
 		story, err := p.storyReader.QueryByRef(ctx, workspace.ID, link.StoryReference)
 		if err != nil {
 			if errors.Is(err, stories.ErrNotFound) || errors.Is(err, stories.ErrInvalidStoryReference) || slackrepository.IsNotFound(err) {
@@ -159,14 +180,6 @@ func (p *EventProcessor) processSlackLinkShared(
 				continue
 			}
 			return err
-		}
-		accessChannelID := event.ChannelID
-		if strings.EqualFold(strings.TrimSpace(event.Source), "composer") {
-			// A composer preview is visible only to the author and is not yet part
-			// of a channel audience. Authorize it from current team membership;
-			// Slack will deliver a posted-message event that is checked against the
-			// final channel before displaying the public unfurl.
-			accessChannelID = ""
 		}
 		accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, story.Team)
 		if err != nil {
@@ -198,14 +211,42 @@ func (p *EventProcessor) processSlackLinkShared(
 		}
 		metadata.Entities = append(metadata.Entities, request.Metadata.Entities...)
 	}
+	for _, link := range requestLinks {
+		request, err := p.requestReader.GetForUser(ctx, workspace.ID, link.RequestID, *linkedUserID)
+		if err != nil {
+			if slackrepository.IsNotFound(err) {
+				continue
+			}
+			return err
+		}
+		if request.WorkspaceID != workspace.ID || request.TeamID != link.TeamID || request.ID != link.RequestID {
+			continue
+		}
+		accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, request.TeamID)
+		if err != nil {
+			return err
+		}
+		if !accessGranted {
+			continue
+		}
+		input, err := p.slackRequestWorkObjectInput(ctx, *linkedUserID, event.UserID, link.PostedURL, request)
+		if err != nil {
+			return err
+		}
+		unfurl, err := BuildSlackRequestUnfurlRequest(event.ChannelID, event.MessageTS, input)
+		if err != nil {
+			return err
+		}
+		metadata.Entities = append(metadata.Entities, unfurl.Metadata.Entities...)
+	}
 	if len(metadata.Entities) == 0 {
 		if p.log != nil {
-			p.log.Warn(ctx, "Slack story preview produced no authorized entities",
+			p.log.Warn(ctx, "Slack work item preview produced no authorized entities",
 				"event_id", event.EventID,
 				"workspace_id", workspace.ID,
 				"slack_team_id", event.TeamID,
 				"slack_channel_id", event.ChannelID,
-				"eligible_link_count", len(links),
+				"eligible_link_count", eligibleLinkCount,
 			)
 		}
 		return nil
@@ -361,6 +402,19 @@ func (p *EventProcessor) slackStoryWorkObjectInput(
 	return buildSlackStoryWorkObjectInput(ctx, repository, actorID, actorSlackUserID, storyURL, story, editable)
 }
 
+func (p *EventProcessor) slackRequestWorkObjectInput(
+	ctx context.Context,
+	actorID uuid.UUID,
+	actorSlackUserID, requestURL string,
+	request integrationrequests.CoreIntegrationRequest,
+) (SlackRequestWorkObjectInput, error) {
+	repository, ok := p.repo.(slackWorkObjectRepository)
+	if !ok {
+		return SlackRequestWorkObjectInput{}, errors.New("Slack Work Object repository is not configured")
+	}
+	return buildSlackRequestWorkObjectInput(ctx, repository, actorID, actorSlackUserID, requestURL, request)
+}
+
 func buildSlackStoryWorkObjectInput(
 	ctx context.Context,
 	repository slackWorkObjectRepository,
@@ -450,4 +504,73 @@ func buildSlackStoryWorkObjectInput(
 		CreatedAt:           story.CreatedAt,
 		UpdatedAt:           story.UpdatedAt,
 	}, nil
+}
+
+func buildSlackRequestWorkObjectInput(
+	ctx context.Context,
+	repository slackWorkObjectRepository,
+	actorID uuid.UUID,
+	actorSlackUserID, requestURL string,
+	request integrationrequests.CoreIntegrationRequest,
+) (SlackRequestWorkObjectInput, error) {
+	assigneeName, assigneeSlackUserID := "", ""
+	if request.AssigneeID != nil && *request.AssigneeID != uuid.Nil {
+		member, err := repository.FindTeamMemberByID(ctx, request.TeamID, *request.AssigneeID)
+		if err != nil && !slackrepository.IsNotFound(err) {
+			return SlackRequestWorkObjectInput{}, err
+		}
+		if err == nil {
+			assigneeName = slackMemberDisplayName(member)
+		}
+		if *request.AssigneeID == actorID {
+			assigneeSlackUserID = strings.TrimSpace(actorSlackUserID)
+		}
+	}
+
+	creatorName, creatorSlackUserID := "", ""
+	if request.CreatedByUserID != nil && *request.CreatedByUserID != uuid.Nil {
+		member, err := repository.FindTeamMemberByID(ctx, request.TeamID, *request.CreatedByUserID)
+		if err != nil && !slackrepository.IsNotFound(err) {
+			return SlackRequestWorkObjectInput{}, err
+		}
+		if err == nil {
+			creatorName = slackMemberDisplayName(member)
+		}
+		if *request.CreatedByUserID == actorID {
+			creatorSlackUserID = strings.TrimSpace(actorSlackUserID)
+		}
+	}
+
+	description := ""
+	if request.Description != nil {
+		description = *request.Description
+	}
+	return SlackRequestWorkObjectInput{
+		AccessGranted:       true,
+		RequestURL:          requestURL,
+		Title:               request.Title,
+		Description:         description,
+		Status:              slackRequestStatusLabel(request.Status),
+		Priority:            request.Priority,
+		AssigneeSlackUserID: assigneeSlackUserID,
+		AssigneeName:        assigneeName,
+		CreatorSlackUserID:  creatorSlackUserID,
+		CreatorName:         creatorName,
+		DueDate:             request.EndDate,
+		CreatedAt:           request.CreatedAt,
+		UpdatedAt:           request.UpdatedAt,
+	}, nil
+}
+
+func slackRequestStatusLabel(status string) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case integrationrequests.StatusPending:
+		return "Pending"
+	case integrationrequests.StatusAccepted:
+		return "Accepted"
+	case integrationrequests.StatusDeclined:
+		return "Declined"
+	default:
+		return strings.TrimSpace(status)
+	}
 }

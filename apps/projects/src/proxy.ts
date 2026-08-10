@@ -5,7 +5,7 @@ import {
   getInternalPublicPath,
   isPublicPath,
 } from "./public-portal-routes";
-import { isSlackStoryLinkPreview } from "./story-link-preview";
+import { isSlackMinimalLinkPreview } from "./story-link-preview";
 
 const AUTH_HOST = process.env.NEXT_PUBLIC_AUTH_HOST ?? "cloud.fortyone.app";
 const DOMAIN_SUFFIX = ".fortyone.app";
@@ -56,7 +56,7 @@ export default async function proxy(req: NextRequest) {
   const hostname = getHostname(req);
   const userAgent = req.headers.get("user-agent");
 
-  if (isSlackStoryLinkPreview(pathname, userAgent)) {
+  if (isSlackMinimalLinkPreview(pathname, userAgent)) {
     const previewUrl = req.nextUrl.clone();
     previewUrl.pathname = "/api/story-link-preview";
     previewUrl.search = "";

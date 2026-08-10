@@ -42,9 +42,10 @@ func TestPrepareIntegrationRequestCommentFreezesSelectedTeamActorAndDMRecipient(
 	require.NotNil(t, payload.Authorization)
 	require.Equal(t, []uuid.UUID{teamID}, payload.Authorization.AllowedTeamIDs)
 	require.Equal(t, &actorID, payload.Authorization.ActorUserID)
+	require.Equal(t, slackDeliveryAuthorizationScopeActorMembership, payload.Authorization.Scope)
 }
 
-func TestDeliverIntegrationRequestCommentRevalidatesPublicAudienceBeforeFirstSend(t *testing.T) {
+func TestDeliverIntegrationRequestCommentSendsToBoundPublicThreadWithoutChannelAudienceMapping(t *testing.T) {
 	workspaceID := uuid.New()
 	teamID := uuid.New()
 	requestID := uuid.New()
@@ -76,6 +77,74 @@ func TestDeliverIntegrationRequestCommentRevalidatesPublicAudienceBeforeFirstSen
 		teamMembers:       []slackrepository.TeamMemberRecord{{UserID: actorID}},
 		authorizedTeamIDs: []uuid.UUID{},
 	}
+	providerCalls := 0
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		providerCalls++
+		require.Equal(t, "/chat.postMessage", request.URL.Path)
+		var body map[string]any
+		require.NoError(t, json.NewDecoder(request.Body).Decode(&body))
+		require.Equal(t, "C1", body["channel"])
+		require.Equal(t, "1710000000.001", body["thread_ts"])
+		require.Equal(t, comment.Body, body["text"])
+		_, _ = w.Write([]byte(`{"ok":true,"ts":"1710000000.002"}`))
+	}))
+	defer provider.Close()
+	store := newEventStoreStub()
+	store.deliveryContent = stringPointer(comment.Body)
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+	service.outbound = store
+	service.client = provider.Client()
+	service.webClient = newSlackWebClient(service.client)
+	service.webClient.baseURL = provider.URL
+	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, integrationrequests.CoreCreateCommentInput{AuthorID: actorID})
+	require.NoError(t, err)
+
+	err = service.DeliverIntegrationRequestComment(context.Background(), request, thread, comment, prepared)
+
+	require.NoError(t, err)
+	require.Len(t, store.outboundInputs, 1)
+	require.Equal(t, 1, providerCalls)
+	require.Empty(t, store.cancelledDeliveries)
+	require.Len(t, store.completedDeliveries, 1)
+	payload, err := DecodeSlackProviderPayload(store.outboundInputs[0].ProviderPayload)
+	require.NoError(t, err)
+	require.Equal(t, []uuid.UUID{teamID}, payload.Authorization.AllowedTeamIDs)
+	require.Equal(t, &actorID, payload.Authorization.ActorUserID)
+	require.Equal(t, slackDeliveryAuthorizationScopeActorMembership, payload.Authorization.Scope)
+}
+
+func TestDeliverIntegrationRequestCommentCancelsWhenAuthorLosesRequestTeamAccess(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	requestID := uuid.New()
+	actorID := uuid.New()
+	generation := uuid.New()
+	request := integrationrequests.CoreIntegrationRequest{
+		ID: requestID, WorkspaceID: workspaceID, TeamID: teamID,
+		Provider: integrationrequests.ProviderSlack,
+	}
+	thread := integrationrequests.CoreProviderThread{
+		ID: uuid.New(), WorkspaceID: workspaceID, IntegrationRequestID: requestID,
+		TeamID: teamID, Provider: integrationrequests.ProviderSlack,
+		ExternalWorkspaceID: "T1", InstallationGeneration: &generation,
+		ExternalChannelID: "C1", ExternalThreadID: "1710000000.001",
+	}
+	idempotencyKey := "integration-request-comment:" + uuid.NewString()
+	comment := integrationrequests.CoreIntegrationRequestComment{
+		ID: uuid.New(), WorkspaceID: workspaceID, ThreadID: thread.ID,
+		Direction:    integrationrequests.CommentDirectionOutbound,
+		AuthorUserID: &actorID, OutboundIdempotencyKey: &idempotencyKey,
+		Body: "Reply from FortyOne",
+	}
+	repo := &mockRepo{
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			ID: uuid.New(), WorkspaceID: workspaceID, SlackTeamID: "T1",
+			BotAccessToken: "xoxb-token", InstallGeneration: generation, IsActive: true,
+		},
+		team:              slackrepository.TeamRecord{ID: teamID},
+		teamMembers:       []slackrepository.TeamMemberRecord{},
+		authorizedTeamIDs: []uuid.UUID{teamID},
+	}
 	store := newEventStoreStub()
 	store.deliveryContent = stringPointer(comment.Body)
 	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
@@ -89,10 +158,6 @@ func TestDeliverIntegrationRequestCommentRevalidatesPublicAudienceBeforeFirstSen
 	require.Len(t, store.outboundInputs, 1)
 	require.Len(t, store.cancelledDeliveries, 1)
 	require.Empty(t, store.completedDeliveries)
-	payload, err := DecodeSlackProviderPayload(store.outboundInputs[0].ProviderPayload)
-	require.NoError(t, err)
-	require.Equal(t, []uuid.UUID{teamID}, payload.Authorization.AllowedTeamIDs)
-	require.Equal(t, &actorID, payload.Authorization.ActorUserID)
 }
 
 func TestDeliverIntegrationRequestCommentRevalidatesDMRecipientBeforeFirstSend(t *testing.T) {

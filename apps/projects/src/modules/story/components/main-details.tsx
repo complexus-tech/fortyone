@@ -204,7 +204,6 @@ export const MainDetails = ({
         ) : null}
         <GitHubSection.Banner storyId={storyId} />
         <FeedbackSection.Banner storyId={storyId} />
-        <IntegrationRequestSection.Banner storyId={storyId} />
         <TextEditor
           asTitle
           className="text-foreground relative -left-px mb-6 text-3xl font-semibold md:text-4xl"
@@ -267,6 +266,7 @@ export const MainDetails = ({
 
         <Attachments className="mt-4" storyId={storyId} />
         <Divider className="my-6" />
+        <IntegrationRequestSection.Banner storyId={storyId} />
         <Activities isDialog={isDialog} storyId={storyId} teamId={teamId} />
       </Container>
     </BodyContainer>

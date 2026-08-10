@@ -153,6 +153,7 @@ type EventProcessorConfig struct {
 	DailyWorkspaceTokenLimit int64
 	ThreadSync               SlackThreadSync
 	StoryReader              SlackStoryReader
+	RequestReader            SlackRequestReader
 	MutationConfirmer        messaging.StoryMutationConfirmer
 }
 
@@ -178,6 +179,7 @@ type EventProcessor struct {
 	dailyWorkspaceTokenLimit int64
 	threadSync               SlackThreadSync
 	storyReader              SlackStoryReader
+	requestReader            SlackRequestReader
 	mutationConfirmer        messaging.StoryMutationConfirmer
 	workObjects              *slackWorkObjectPublisher
 }
@@ -241,6 +243,7 @@ func NewEventProcessor(
 		dailyWorkspaceTokenLimit: cfg.DailyWorkspaceTokenLimit,
 		threadSync:               cfg.ThreadSync,
 		storyReader:              cfg.StoryReader,
+		requestReader:            cfg.RequestReader,
 		mutationConfirmer:        cfg.MutationConfirmer,
 		workObjects:              newSlackWorkObjectPublisher(webClient),
 	}, nil
@@ -1238,11 +1241,19 @@ func (p *EventProcessor) recoverPendingOutboundDeliveries(ctx context.Context, s
 			recoveryErrors = append(recoveryErrors, fmt.Errorf("recheck Slack installation for delivery %s: %w", record.IdempotencyKey, err))
 			continue
 		}
+		providerIdempotencyKey := record.IdempotencyKey
+		if delivery.Purpose == slackOnboardingPurpose {
+			providerIdempotencyKey = slackFirstInteractionGuideProviderKey(
+				record.WorkspaceID,
+				externalWorkspaceID,
+				valueOrEmpty(delivery.ExternalRecipientUserID),
+			)
+		}
 		externalMessageID, err := p.sender.Send(ctx, botToken, SlackOutboundMessage{
 			ChannelID:        record.ExternalChannelID,
 			ThreadTS:         threadID,
 			Text:             content,
-			ClientMessageID:  deterministicSlackMessageID(record.IdempotencyKey),
+			ClientMessageID:  deterministicSlackMessageID(providerIdempotencyKey),
 			StandardMarkdown: delivery.Purpose == "assistant" && len(providerPayload.Blocks) == 0,
 			ProviderPayload:  providerPayload,
 		})

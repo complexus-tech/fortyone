@@ -14,8 +14,10 @@ import (
 	"testing"
 	"time"
 
+	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,6 +44,64 @@ func TestHandleEventsPresentsEntityDetailsWithoutDurableQueue(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, response.Challenge)
 	require.EqualValues(t, 1, calls.Load())
+	require.Zero(t, inbox.registrations)
+	require.Empty(t, queue.payloads)
+}
+
+func TestHandleEventsPresentsReadOnlyRequestEntityDetails(t *testing.T) {
+	t.Parallel()
+
+	fixture := newWorkObjectEditFixture(t)
+	requestID := uuid.New()
+	requestStore := &mockRequestStore{request: integrationrequests.CoreIntegrationRequest{
+		ID:              requestID,
+		WorkspaceID:     fixture.repo.workspace.ID,
+		TeamID:          fixture.repo.team.ID,
+		Title:           "Investigate mobile login",
+		Status:          integrationrequests.StatusPending,
+		Priority:        "High",
+		AssigneeID:      &fixture.actorID,
+		CreatedByUserID: &fixture.actorID,
+		CreatedAt:       time.Date(2026, time.August, 10, 6, 0, 0, 0, time.UTC),
+		UpdatedAt:       time.Date(2026, time.August, 10, 7, 0, 0, 0, time.UTC),
+	}}
+	fixture.service.requests = requestStore
+	queue := &eventQueueStub{}
+	inbox := &eventInboxCapture{}
+	WithEventRuntime(queue, inbox)(fixture.service)
+
+	presented := make(chan SlackEntityDetailsRequest, 1)
+	fixture.service.webClient.client = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		require.Equal(t, "/api/entity.presentDetails", request.URL.Path)
+		var payload SlackEntityDetailsRequest
+		require.NoError(t, json.NewDecoder(request.Body).Decode(&payload))
+		presented <- payload
+		return slackWebAPIResponse(`{"ok":true}`), nil
+	})}
+
+	requestURL := fmt.Sprintf("https://acme.fortyone.app/teams/%s/requests/%s", fixture.repo.team.ID, requestID)
+	externalRef := fmt.Sprintf("acme:%s:%s", fixture.repo.team.ID, requestID)
+	body := fmt.Sprintf(
+		`{"type":"event_callback","team_id":"T123","event_id":"Ev-request-details","event":{"type":"entity_details_requested","user":"U123","channel":"C123","message_ts":"1754700000.123","trigger_id":"trigger-request","external_ref":{"id":%q,"type":"request"},"entity_url":%q}}`,
+		externalRef,
+		requestURL,
+	)
+
+	_, err := fixture.service.HandleEvents(context.Background(), []byte(body))
+	require.NoError(t, err)
+
+	select {
+	case payload := <-presented:
+		require.NotNil(t, payload.Metadata)
+		require.Equal(t, slackRequestExternalRefType, payload.Metadata.ExternalRef.Type)
+		require.Equal(t, requestURL, payload.Metadata.URL)
+		require.Equal(t, "Investigate mobile login", payload.Metadata.EntityPayload.Attributes.Title.Text)
+		require.Nil(t, payload.Metadata.EntityPayload.Attributes.Title.Edit)
+		require.Equal(t, "Pending", payload.Metadata.EntityPayload.Fields["status"].Value)
+		require.Nil(t, payload.Metadata.EntityPayload.Fields["assignee"].Edit)
+	case <-time.After(time.Second):
+		t.Fatal("request entity details were not presented")
+	}
 	require.Zero(t, inbox.registrations)
 	require.Empty(t, queue.payloads)
 }
