@@ -36,6 +36,7 @@ type Repository interface {
 	ListWorkspaceMembersForSlackLinking(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.WorkspaceMemberRecord, error)
 	UpsertSlackUserLinks(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, slackTeamID string, links []slackrepository.SlackUserLinkUpsert) error
 	FindLinkedUserIDBySlackUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string) (*uuid.UUID, error)
+	FindSlackUserLinkByUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID string, userID uuid.UUID) (*slackrepository.SlackUserLinkRecord, error)
 	GetWorkspaceBySlackTeamID(ctx context.Context, slackTeamID string) (slackrepository.WorkspaceRecord, error)
 	UpsertSlackWorkspace(ctx context.Context, workspaceID, installedByUserID uuid.UUID, payload slackrepository.OAuthInstallPayload) (slackrepository.SlackWorkspaceRecord, error)
 	GetSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) (slackrepository.SlackWorkspaceRecord, error)
@@ -148,6 +149,12 @@ type CoreRequestLog struct {
 }
 
 type CoreCreateInstallSession struct {
+	InstallURL string
+}
+
+type CoreCreateAccountLinkSession struct {
+	Linked     bool
+	CanLink    bool
 	InstallURL string
 }
 

@@ -50,6 +50,9 @@ func DecodeSlackProviderPayload(raw []byte) (SlackProviderPayload, error) {
 }
 
 func validateSlackProviderPayload(payload SlackProviderPayload) error {
+	if authorSlackUserID := strings.TrimSpace(payload.AuthorSlackUserID); authorSlackUserID != "" && !validSlackUserID(authorSlackUserID) {
+		return errors.New("Slack provider payload contains an invalid author user ID")
+	}
 	if payload.RequestThreadBinding != nil && payload.RequestThreadBinding.IntegrationRequestID == uuid.Nil {
 		return errors.New("Slack request thread binding requires an integration request ID")
 	}

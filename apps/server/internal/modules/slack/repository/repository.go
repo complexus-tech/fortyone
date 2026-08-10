@@ -83,6 +83,11 @@ type SlackUserLinkUpsert struct {
 	LinkedVia   string
 }
 
+type SlackUserLinkRecord struct {
+	SlackUserID string    `db:"slack_user_id"`
+	UserID      uuid.UUID `db:"user_id"`
+}
+
 type SlackWorkspaceRecord struct {
 	ID                uuid.UUID  `db:"id"`
 	WorkspaceID       uuid.UUID  `db:"workspace_id"`
@@ -1339,6 +1344,28 @@ func (r *Repo) FindLinkedUserIDBySlackUser(ctx context.Context, workspaceID uuid
 		return nil, err
 	}
 	return &userID, nil
+}
+
+func (r *Repo) FindSlackUserLinkByUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID string, userID uuid.UUID) (*SlackUserLinkRecord, error) {
+	var row SlackUserLinkRecord
+	err := r.db.GetContext(ctx, &row, `
+		SELECT sul.slack_user_id, sul.user_id
+		FROM slack_user_links sul
+		JOIN users u ON u.user_id = sul.user_id
+		JOIN workspace_members wm ON wm.workspace_id = sul.workspace_id AND wm.user_id = sul.user_id
+		WHERE sul.workspace_id = $1
+		  AND sul.slack_team_id = $2
+		  AND sul.user_id = $3
+		  AND u.is_active = true
+		LIMIT 1
+	`, workspaceID, strings.TrimSpace(slackTeamID), userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &row, nil
 }
 
 func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {

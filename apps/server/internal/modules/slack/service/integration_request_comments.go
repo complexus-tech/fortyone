@@ -13,7 +13,7 @@ import (
 )
 
 func (s *Service) PrepareIntegrationRequestComment(
-	_ context.Context,
+	ctx context.Context,
 	request integrationrequests.CoreIntegrationRequest,
 	thread integrationrequests.CoreProviderThread,
 	input integrationrequests.CoreCreateCommentInput,
@@ -27,6 +27,10 @@ func (s *Service) PrepareIntegrationRequestComment(
 	if input.AuthorID == uuid.Nil {
 		return integrationrequests.CorePreparedProviderComment{}, errors.New("Slack comment author is required")
 	}
+	authorSlackUserID, err := s.findSlackCommentAuthorID(ctx, request.WorkspaceID, thread.ExternalWorkspaceID, input.AuthorID)
+	if err != nil {
+		return integrationrequests.CorePreparedProviderComment{}, fmt.Errorf("resolve Slack comment author: %w", err)
+	}
 
 	externalRecipientUserID := ""
 	if strings.HasPrefix(strings.ToUpper(strings.TrimSpace(thread.ExternalChannelID)), "D") {
@@ -36,6 +40,7 @@ func (s *Service) PrepareIntegrationRequestComment(
 		}
 	}
 	payload, err := EncodeSlackProviderPayload(SlackProviderPayload{
+		AuthorSlackUserID: authorSlackUserID,
 		Authorization: &SlackDeliveryAuthorization{
 			AllowedTeamIDs: []uuid.UUID{request.TeamID},
 			ActorUserID:    &input.AuthorID,
@@ -125,10 +130,22 @@ func (s *Service) DeliverIntegrationRequestComment(
 		}
 		return err
 	}
+	deliveryContent := strings.TrimSpace(valueOrEmpty(delivery.Content))
+	if deliveryContent == strings.TrimSpace(comment.Body) {
+		formattedContent := formatSlackIntegrationRequestComment(comment.AuthorName, providerPayload.AuthorSlackUserID, deliveryContent)
+		if formattedContent != deliveryContent {
+			if err := s.outbound.SetOutboundDeliveryContent(ctx, delivery.ID, formattedContent); err != nil {
+				if failErr := failOutboundDeliveryDetached(ctx, s.outbound, delivery.ID, truncateError(err)); failErr != nil {
+					return errors.Join(err, failErr)
+				}
+				return err
+			}
+			deliveryContent = formattedContent
+		}
+	}
 	deliveryChannelID := strings.TrimSpace(delivery.ExternalChannelID)
 	deliveryThreadID := strings.TrimSpace(valueOrEmpty(delivery.ExternalThreadID))
 	deliveryRecipientUserID := strings.TrimSpace(valueOrEmpty(delivery.ExternalRecipientUserID))
-	deliveryContent := strings.TrimSpace(valueOrEmpty(delivery.Content))
 	if deliveryChannelID == "" || deliveryContent == "" {
 		err := errors.New("Slack comment delivery is missing its durable destination or content")
 		if cancelErr := cancelOutboundDeliveryDetached(ctx, s.outbound, delivery.ID, err.Error()); cancelErr != nil {
@@ -188,6 +205,50 @@ func validateIntegrationRequestCommentAuthorization(payload SlackProviderPayload
 		return errors.New("Slack integration request comment authorization does not match its request")
 	}
 	return nil
+}
+
+func (s *Service) findSlackCommentAuthorID(ctx context.Context, workspaceID uuid.UUID, slackTeamID string, userID uuid.UUID) (string, error) {
+	if s == nil || s.repo == nil {
+		return "", nil
+	}
+	link, err := s.repo.FindSlackUserLinkByUser(ctx, workspaceID, slackTeamID, userID)
+	if err != nil || link == nil {
+		return "", err
+	}
+	return strings.TrimSpace(link.SlackUserID), nil
+}
+
+func formatSlackIntegrationRequestComment(authorName, authorSlackUserID, body string) string {
+	authorSlackUserID = strings.TrimSpace(authorSlackUserID)
+	authorName = strings.TrimSpace(authorName)
+	body = strings.TrimSpace(body)
+
+	identity := ""
+	if validSlackUserID(authorSlackUserID) {
+		identity = "<@" + authorSlackUserID + ">"
+	} else if authorName != "" {
+		identity = slackMrkdwnTextEscaper.Replace(authorName)
+	}
+	if identity == "" {
+		return body
+	}
+	if body == "" {
+		return identity + " via FortyOne"
+	}
+	return identity + " via FortyOne: " + body
+}
+
+func validSlackUserID(value string) bool {
+	value = strings.TrimSpace(value)
+	if len(value) < 2 || (value[0] != 'U' && value[0] != 'W') {
+		return false
+	}
+	for _, char := range value[1:] {
+		if (char < 'A' || char > 'Z') && (char < '0' || char > '9') {
+			return false
+		}
+	}
+	return true
 }
 
 var _ integrationrequests.ProviderCommenter = (*Service)(nil)

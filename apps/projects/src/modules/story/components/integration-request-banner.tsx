@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  CommentIcon,
-  CopyIcon,
-  LinkIcon,
-  MoreHorizontalIcon,
-  SlackIcon,
-} from "icons";
+import { CopyIcon, LinkIcon, MoreHorizontalIcon, SlackIcon } from "icons";
 import { cn } from "lib";
 import { Box, Button, Collapsible, Flex, Menu, Text } from "ui";
 import { useWorkspacePath } from "@/hooks";
@@ -20,7 +14,7 @@ const IntegrationRequestBannerRow = ({
 }: {
   link: IntegrationRequestProviderThread;
 }) => {
-  const [isThreadOpen, setIsThreadOpen] = useState(false);
+  const [isThreadOpen, setIsThreadOpen] = useState(true);
   const { withWorkspace } = useWorkspacePath();
   const requestHref = withWorkspace(
     `/teams/${link.teamId}/requests/${link.integrationRequestId}`,
@@ -36,9 +30,15 @@ const IntegrationRequestBannerRow = ({
         )}
         justify="between"
       >
-        <Link className="min-w-0 flex-1" href={requestHref}>
-          <Flex align="center" className="min-w-0" gap={2}>
-            <SlackIcon className="h-5 shrink-0" />
+        <Collapsible.Trigger asChild>
+          <Button
+            aria-label={`Toggle Slack conversation for ${link.requestTitle}`}
+            className="text-primary -my-3 h-auto min-w-0 flex-1 justify-start gap-2 rounded-lg px-0 py-3 text-left hover:bg-transparent"
+            color="tertiary"
+            leftIcon={<SlackIcon className="h-5 shrink-0" />}
+            size="sm"
+            variant="naked"
+          >
             <Text
               as="span"
               className="min-w-0 truncate"
@@ -47,25 +47,9 @@ const IntegrationRequestBannerRow = ({
             >
               From Slack request · {link.requestTitle}
             </Text>
-          </Flex>
-        </Link>
+          </Button>
+        </Collapsible.Trigger>
         <Flex align="center" className="shrink-0" gap={1}>
-          <Collapsible.Trigger asChild>
-            <Button
-              aria-label={
-                isThreadOpen
-                  ? "Hide Slack conversation"
-                  : "View Slack conversation"
-              }
-              className="text-primary"
-              color="tertiary"
-              leftIcon={<CommentIcon className="h-4 text-current" />}
-              size="sm"
-              variant="naked"
-            >
-              Slack thread
-            </Button>
-          </Collapsible.Trigger>
           <Link
             aria-label="Open Slack request"
             className="text-primary hover:text-primary/80 rounded-md p-1 transition"

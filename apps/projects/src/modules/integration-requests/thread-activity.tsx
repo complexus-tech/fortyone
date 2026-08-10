@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useEditor } from "@tiptap/react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { toast } from "sonner";
 import { cn } from "lib";
 import {
   Avatar,
@@ -20,6 +21,7 @@ import {
   getStoryCommentEditorExtensions,
   serializeStoryCommentToGitHubMarkdown,
 } from "@/modules/story/components/story-comment-editor";
+import { useCreateSlackAccountLinkSession } from "@/lib/hooks/slack";
 import { getCommentDeliveryLabel } from "./delivery-status";
 import { usePostIntegrationRequestComment } from "./hooks/use-post-request-comment";
 import { useIntegrationRequestThread } from "./hooks/use-request-thread";
@@ -33,6 +35,7 @@ const SlackCommentComposer = ({
 }) => {
   const { data: session } = useSession();
   const postComment = usePostIntegrationRequestComment(requestId);
+  const accountLinkSession = useCreateSlackAccountLinkSession();
   const retryRef = useRef<{ body: string; idempotencyKey: string } | null>(
     null,
   );
@@ -45,7 +48,7 @@ const SlackCommentComposer = ({
     immediatelyRender: false,
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!editor || editor.isEmpty) return;
 
     const body = serializeStoryCommentToGitHubMarkdown(editor.getJSON());
@@ -57,6 +60,26 @@ const SlackCommentComposer = ({
         ? previousAttempt.idempotencyKey
         : globalThis.crypto.randomUUID();
     retryRef.current = { body, idempotencyKey };
+
+    const linkResponse = await accountLinkSession.mutateAsync(
+      window.location.href,
+    );
+    if (linkResponse.error?.message) {
+      toast.error("Slack", { description: linkResponse.error.message });
+      return;
+    }
+    if (!linkResponse.data?.linked && linkResponse.data?.canLink) {
+      const installUrl = linkResponse.data.installUrl;
+      if (!installUrl) {
+        toast.error("Slack", {
+          description: "FortyOne could not start Slack account linking.",
+        });
+        return;
+      }
+      toast.info("Connect your Slack account, then post again.");
+      window.location.assign(installUrl);
+      return;
+    }
 
     editor.commands.clearContent();
     postComment.mutate(
@@ -100,9 +123,11 @@ const SlackCommentComposer = ({
         <Flex justify="end">
           <Button
             color="tertiary"
-            disabled={postComment.isPending}
-            loading={postComment.isPending}
-            loadingText="Posting..."
+            disabled={postComment.isPending || accountLinkSession.isPending}
+            loading={postComment.isPending || accountLinkSession.isPending}
+            loadingText={
+              accountLinkSession.isPending ? "Connecting..." : "Posting..."
+            }
             onClick={handleSubmit}
             size="sm"
             variant="outline"

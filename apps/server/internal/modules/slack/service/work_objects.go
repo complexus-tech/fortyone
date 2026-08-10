@@ -238,6 +238,7 @@ type SlackProviderPayload struct {
 	UnfurlMedia          *bool                       `json:"unfurl_media,omitempty"`
 	Authorization        *SlackDeliveryAuthorization `json:"authorization,omitempty"`
 	RequestThreadBinding *SlackRequestThreadBinding  `json:"request_thread_binding,omitempty"`
+	AuthorSlackUserID    string                      `json:"author_slack_user_id,omitempty"`
 }
 
 // SlackDeliveryAuthorization freezes the team boundary used to generate a

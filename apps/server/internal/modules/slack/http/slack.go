@@ -83,6 +83,30 @@ func (h *Handlers) CreateInstallSession(ctx context.Context, w http.ResponseWrit
 	return web.Respond(ctx, w, AppCreateInstallSession{InstallURL: session.InstallURL}, http.StatusOK)
 }
 
+func (h *Handlers) CreateAccountLinkSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	var input AppCreateAccountLinkSessionRequest
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	session, err := h.service.CreateAccountLinkSession(ctx, workspace.ID, userID, workspace.Slug, input.ReturnURL)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	return web.Respond(ctx, w, AppCreateAccountLinkSession{
+		Linked:     session.Linked,
+		CanLink:    session.CanLink,
+		InstallURL: session.InstallURL,
+	}, http.StatusOK)
+}
+
 func (h *Handlers) LinkAccount(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {

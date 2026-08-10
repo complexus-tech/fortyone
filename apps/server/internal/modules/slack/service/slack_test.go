@@ -666,6 +666,25 @@ func (m *mockRepo) FindLinkedUserIDBySlackUser(ctx context.Context, workspaceID 
 	return &userID, nil
 }
 
+func (m *mockRepo) FindSlackUserLinkByUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID string, userID uuid.UUID) (*slackrepository.SlackUserLinkRecord, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	if m.slackUserLinks == nil {
+		return nil, nil
+	}
+	prefix := strings.TrimSpace(slackTeamID) + ":"
+	for key, linkedUserID := range m.slackUserLinks {
+		if strings.HasPrefix(key, prefix) && linkedUserID == userID {
+			return &slackrepository.SlackUserLinkRecord{
+				SlackUserID: strings.TrimPrefix(key, prefix),
+				UserID:      linkedUserID,
+			}, nil
+		}
+	}
+	return nil, nil
+}
+
 func (m *mockRepo) InsertRequestLog(ctx context.Context, entry slackrepository.SlackRequestLogInsert) error {
 	m.lastRequestLog = entry
 	return m.err
@@ -996,6 +1015,81 @@ func TestCreateInstallSessionStoresOpaqueBoundStateWithCoreScopes(t *testing.T) 
 	require.Equal(t, userID, *record.UserID)
 	require.True(t, record.ExpiresAt.Equal(service.clock.Now().Add(slackOAuthNonceTTL)))
 	require.JSONEq(t, `{"workspace_slug":"acme"}`, string(record.Payload))
+}
+
+func TestCreateAccountLinkSessionBindsDashboardUserAndConnectedSlackTeam(t *testing.T) {
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	repo := &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
+		ID:          uuid.New(),
+		WorkspaceID: workspaceID,
+		SlackTeamID: "T123",
+	}}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{
+		ClientID:     "client-id",
+		ClientSecret: "client-secret",
+		RedirectURL:  "https://api.example.com/integrations/slack/setup",
+		WebsiteURL:   "https://fortyone.app",
+		SecretKey:    "encryption-secret",
+	})
+
+	session, err := service.CreateAccountLinkSession(
+		context.Background(), workspaceID, userID, "acme", "https://acme.fortyone.app/teams/team-1/requests/request-1",
+	)
+	require.NoError(t, err)
+	installURL, err := url.Parse(session.InstallURL)
+	require.NoError(t, err)
+	require.False(t, session.Linked)
+	require.True(t, session.CanLink)
+	require.Equal(t, "T123", installURL.Query().Get("team"))
+	require.Equal(t, slackBotOAuthScopeValue(), installURL.Query().Get("scope"))
+
+	nonce, err := base64.RawURLEncoding.DecodeString(installURL.Query().Get("state"))
+	require.NoError(t, err)
+	digest := sha256.Sum256(nonce)
+	record := service.nonces.(*mockNonceStore).records[nonceStoreKey(slackProviderMessaging, slackNoncePurposeAccount, digest[:])]
+	require.Equal(t, workspaceID, record.WorkspaceID)
+	require.Equal(t, "T123", valueOrEmpty(record.ExternalWorkspaceID))
+	require.Equal(t, userID, *record.UserID)
+	require.JSONEq(t, `{"workspace_slug":"acme","return_url":"https://acme.fortyone.app/teams/team-1/requests/request-1"}`, string(record.Payload))
+}
+
+func TestHandleSetupLinksDashboardOAuthUserAndReturnsToRequest(t *testing.T) {
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	repo := &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
+		ID:          uuid.New(),
+		WorkspaceID: workspaceID,
+		SlackTeamID: "T123",
+	}}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{
+		ClientID:     "client-id",
+		ClientSecret: "client-secret",
+		RedirectURL:  "https://api.example.com/integrations/slack/setup",
+		WebsiteURL:   "https://fortyone.app",
+		SecretKey:    "encryption-secret",
+	})
+	session, err := service.CreateAccountLinkSession(
+		context.Background(), workspaceID, userID, "acme", "https://acme.fortyone.app/teams/team-1/requests/request-1",
+	)
+	require.NoError(t, err)
+	state, err := url.Parse(session.InstallURL)
+	require.NoError(t, err)
+
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		require.Equal(t, "/oauth.v2.access", request.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true,"access_token":"xoxb-token","team":{"id":"T123","name":"Acme","domain":"acme"},"authed_user":{"id":"U123"}}`))
+	}))
+	defer provider.Close()
+	service.client = provider.Client()
+	service.webClient = newSlackWebClient(service.client)
+	service.webClient.baseURL = provider.URL
+
+	redirectURL, err := service.HandleSetup(context.Background(), "oauth-code", state.Query().Get("state"), "")
+	require.NoError(t, err)
+	require.Equal(t, "https://acme.fortyone.app/teams/team-1/requests/request-1?slack_link_status=success", redirectURL)
+	require.Equal(t, userID, repo.slackUserLinks["T123:U123"])
 }
 
 func TestHandleSetupConsumesStateAndStoresEncryptedInstallationMetadata(t *testing.T) {

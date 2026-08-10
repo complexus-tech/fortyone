@@ -45,6 +45,63 @@ func TestPrepareIntegrationRequestCommentFreezesSelectedTeamActorAndDMRecipient(
 	require.Equal(t, slackDeliveryAuthorizationScopeActorMembership, payload.Authorization.Scope)
 }
 
+func TestPrepareIntegrationRequestCommentCarriesLinkedSlackAuthor(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	requestID := uuid.New()
+	actorID := uuid.New()
+	generation := uuid.New()
+	repo := &mockRepo{slackUserLinks: map[string]uuid.UUID{"T1:UAUTHOR": actorID}}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+	request := integrationrequests.CoreIntegrationRequest{
+		ID: requestID, WorkspaceID: workspaceID, TeamID: teamID,
+		Provider: integrationrequests.ProviderSlack,
+	}
+	thread := integrationrequests.CoreProviderThread{
+		ID: uuid.New(), WorkspaceID: workspaceID, IntegrationRequestID: requestID,
+		TeamID: teamID, Provider: integrationrequests.ProviderSlack,
+		ExternalWorkspaceID: "T1", InstallationGeneration: &generation,
+		ExternalChannelID: "C1", ExternalThreadID: "1710000000.001",
+	}
+
+	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, integrationrequests.CoreCreateCommentInput{AuthorID: actorID})
+
+	require.NoError(t, err)
+	payload, err := DecodeSlackProviderPayload(prepared.ProviderPayload)
+	require.NoError(t, err)
+	require.Equal(t, "UAUTHOR", payload.AuthorSlackUserID)
+}
+
+func TestFormatSlackIntegrationRequestCommentUsesLinkedIdentityOrSafeAuthorFallback(t *testing.T) {
+	tests := []struct {
+		name          string
+		authorName    string
+		authorSlackID string
+		body          string
+		want          string
+	}{
+		{
+			name:          "linked Slack identity",
+			authorName:    "Joseph Mukorivo",
+			authorSlackID: "U123ABC",
+			body:          "Please take a look",
+			want:          "<@U123ABC> via FortyOne: Please take a look",
+		},
+		{
+			name:       "unlinked FortyOne user",
+			authorName: "A <team> member",
+			body:       "Please take a look",
+			want:       "A &lt;team&gt; member via FortyOne: Please take a look",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, test.want, formatSlackIntegrationRequestComment(test.authorName, test.authorSlackID, test.body))
+		})
+	}
+}
+
 func TestDeliverIntegrationRequestCommentSendsToBoundPublicThreadWithoutChannelAudienceMapping(t *testing.T) {
 	workspaceID := uuid.New()
 	teamID := uuid.New()
@@ -66,7 +123,7 @@ func TestDeliverIntegrationRequestCommentSendsToBoundPublicThreadWithoutChannelA
 		ID: uuid.New(), WorkspaceID: workspaceID, ThreadID: thread.ID,
 		Direction:    integrationrequests.CommentDirectionOutbound,
 		AuthorUserID: &actorID, OutboundIdempotencyKey: &idempotencyKey,
-		Body: "Reply from FortyOne",
+		AuthorName: "Joseph Mukorivo", Body: "Reply from FortyOne",
 	}
 	repo := &mockRepo{
 		slackWorkspace: slackrepository.SlackWorkspaceRecord{
@@ -75,6 +132,7 @@ func TestDeliverIntegrationRequestCommentSendsToBoundPublicThreadWithoutChannelA
 		},
 		team:              slackrepository.TeamRecord{ID: teamID},
 		teamMembers:       []slackrepository.TeamMemberRecord{{UserID: actorID}},
+		slackUserLinks:    map[string]uuid.UUID{"T1:UAUTHOR": actorID},
 		authorizedTeamIDs: []uuid.UUID{},
 	}
 	providerCalls := 0
@@ -85,7 +143,7 @@ func TestDeliverIntegrationRequestCommentSendsToBoundPublicThreadWithoutChannelA
 		require.NoError(t, json.NewDecoder(request.Body).Decode(&body))
 		require.Equal(t, "C1", body["channel"])
 		require.Equal(t, "1710000000.001", body["thread_ts"])
-		require.Equal(t, comment.Body, body["text"])
+		require.Equal(t, "<@UAUTHOR> via FortyOne: "+comment.Body, body["text"])
 		_, _ = w.Write([]byte(`{"ok":true,"ts":"1710000000.002"}`))
 	}))
 	defer provider.Close()
@@ -103,6 +161,7 @@ func TestDeliverIntegrationRequestCommentSendsToBoundPublicThreadWithoutChannelA
 
 	require.NoError(t, err)
 	require.Len(t, store.outboundInputs, 1)
+	require.Equal(t, "<@UAUTHOR> via FortyOne: "+comment.Body, *store.deliveryContent)
 	require.Equal(t, 1, providerCalls)
 	require.Empty(t, store.cancelledDeliveries)
 	require.Len(t, store.completedDeliveries, 1)

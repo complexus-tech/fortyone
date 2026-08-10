@@ -244,10 +244,81 @@ func (s *Service) CreateInstallSession(ctx context.Context, workspaceID, userID 
 	return CoreCreateInstallSession{InstallURL: authURL}, nil
 }
 
+func (s *Service) CreateAccountLinkSession(
+	ctx context.Context,
+	workspaceID, userID uuid.UUID,
+	workspaceSlug, returnURL string,
+) (CoreCreateAccountLinkSession, error) {
+	if workspaceID == uuid.Nil || userID == uuid.Nil || strings.TrimSpace(workspaceSlug) == "" {
+		return CoreCreateAccountLinkSession{}, errors.New("workspace, user, and workspace slug are required")
+	}
+	installation, err := s.repo.GetSlackWorkspace(ctx, workspaceID)
+	if err != nil {
+		return CoreCreateAccountLinkSession{}, err
+	}
+	link, err := s.repo.FindSlackUserLinkByUser(ctx, workspaceID, installation.SlackTeamID, userID)
+	if err != nil {
+		return CoreCreateAccountLinkSession{}, err
+	}
+	if link != nil {
+		return CoreCreateAccountLinkSession{Linked: true}, nil
+	}
+	if !s.canUseOAuth() {
+		return CoreCreateAccountLinkSession{}, nil
+	}
+
+	returnURL = s.safeSlackAccountLinkReturnURL(workspaceSlug, returnURL)
+	payload, err := json.Marshal(oauthAccountLinkNoncePayload{
+		WorkspaceSlug: strings.TrimSpace(workspaceSlug),
+		ReturnURL:     returnURL,
+	})
+	if err != nil {
+		return CoreCreateAccountLinkSession{}, err
+	}
+	state, digest, err := s.newOpaqueNonce()
+	if err != nil {
+		return CoreCreateAccountLinkSession{}, err
+	}
+	boundUserID := userID
+	boundTeamID := strings.TrimSpace(installation.SlackTeamID)
+	if boundTeamID == "" {
+		return CoreCreateAccountLinkSession{}, errors.New("Slack installation is missing its team ID")
+	}
+	if err := s.nonces.CreateNonce(ctx, messagingrepository.NonceInput{
+		Provider:            slackProviderMessaging,
+		Purpose:             slackNoncePurposeAccount,
+		NonceHash:           digest,
+		WorkspaceID:         workspaceID,
+		UserID:              &boundUserID,
+		ExternalWorkspaceID: boundTeamID,
+		Payload:             payload,
+		ExpiresAt:           s.clock.Now().UTC().Add(slackAccountLinkNonceTTL),
+	}); err != nil {
+		return CoreCreateAccountLinkSession{}, fmt.Errorf("create Slack account-link state: %w", err)
+	}
+
+	authURL := fmt.Sprintf(
+		"https://slack.com/oauth/v2/authorize?client_id=%s&scope=%s&team=%s&state=%s&redirect_uri=%s",
+		url.QueryEscape(s.cfg.ClientID),
+		url.QueryEscape(slackBotOAuthScopeValue()),
+		url.QueryEscape(boundTeamID),
+		url.QueryEscape(state),
+		url.QueryEscape(s.cfg.RedirectURL),
+	)
+	return CoreCreateAccountLinkSession{CanLink: true, InstallURL: authURL}, nil
+}
+
 func (s *Service) HandleSetup(ctx context.Context, code, state, slackError string) (string, error) {
 	if !s.canUseOAuth() {
 		return "", ErrSlackNotConfigured
 	}
+	if nonce, err := s.consumeNonce(ctx, slackNoncePurposeAccount, state, nil, nil); err == nil {
+		return s.handleAccountLinkSetup(ctx, nonce, code, slackError)
+	}
+	return s.handleInstallSetup(ctx, code, state, slackError)
+}
+
+func (s *Service) handleInstallSetup(ctx context.Context, code, state, slackError string) (string, error) {
 	nonce, err := s.consumeNonce(ctx, slackNoncePurposeOAuth, state, nil, nil)
 	if err != nil {
 		return "", fmt.Errorf("invalid or expired Slack install state: %w", err)
@@ -312,6 +383,55 @@ func (s *Service) HandleSetup(ctx context.Context, code, state, slackError strin
 	}
 
 	return s.buildWorkspaceIntegrationURL(noncePayload.WorkspaceSlug), nil
+}
+
+func (s *Service) handleAccountLinkSetup(
+	ctx context.Context,
+	nonce messagingrepository.NonceRecord,
+	code, slackError string,
+) (string, error) {
+	var noncePayload oauthAccountLinkNoncePayload
+	if err := json.Unmarshal(nonce.Payload, &noncePayload); err != nil || strings.TrimSpace(noncePayload.WorkspaceSlug) == "" {
+		return "", errors.New("invalid Slack account-link state payload")
+	}
+	if strings.TrimSpace(slackError) != "" {
+		return s.slackAccountLinkRedirect(noncePayload.ReturnURL, "error"), nil
+	}
+	if strings.TrimSpace(code) == "" {
+		return "", errors.New("missing Slack account-link code")
+	}
+	if nonce.WorkspaceID == uuid.Nil || nonce.UserID == nil || *nonce.UserID == uuid.Nil {
+		return "", errors.New("invalid Slack account-link state binding")
+	}
+
+	oauthResp, err := s.exchangeOAuthCode(ctx, code)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(valueOrEmpty(nonce.ExternalWorkspaceID)) == "" || strings.TrimSpace(oauthResp.Team.ID) != strings.TrimSpace(valueOrEmpty(nonce.ExternalWorkspaceID)) {
+		return "", errors.New("Slack account-link team does not match the connected workspace")
+	}
+	slackWorkspace, err := s.repo.GetSlackWorkspaceByTeamID(ctx, oauthResp.Team.ID)
+	if err != nil {
+		return "", err
+	}
+	if slackWorkspace.WorkspaceID != nonce.WorkspaceID {
+		return "", errors.New("Slack account-link workspace does not match the connected workspace")
+	}
+	slackUserID := strings.TrimSpace(oauthResp.AuthedUser.ID)
+	if !validSlackUserID(slackUserID) {
+		return "", errors.New("Slack account-link returned an invalid user ID")
+	}
+	if err := s.repo.UpsertSlackUserLinks(ctx, nonce.WorkspaceID, slackWorkspace.ID, oauthResp.Team.ID, []slackrepository.SlackUserLinkUpsert{
+		{
+			SlackUserID: slackUserID,
+			UserID:      *nonce.UserID,
+			LinkedVia:   "dashboard_oauth",
+		},
+	}); err != nil {
+		return "", err
+	}
+	return s.slackAccountLinkRedirect(noncePayload.ReturnURL, "success"), nil
 }
 
 func (s *Service) cleanupRejectedOAuthInstallation(ctx context.Context, workspaceID uuid.UUID, slackTeamID, encryptedCredential string, credentialVersion int) error {
@@ -3448,6 +3568,30 @@ func (s *Service) buildAccountIntegrationURL(workspaceSlug string) string {
 	return link
 }
 
+func (s *Service) safeSlackAccountLinkReturnURL(workspaceSlug, returnURL string) string {
+	fallback := s.buildAccountIntegrationURL(workspaceSlug)
+	candidate, err := url.Parse(strings.TrimSpace(returnURL))
+	if err != nil || candidate.Scheme == "" || candidate.Host == "" || candidate.User != nil {
+		return fallback
+	}
+	expected, err := url.Parse(buildWorkspaceURL(s.cfg.WebsiteURL, workspaceSlug))
+	if err != nil || candidate.Scheme != expected.Scheme || candidate.Host != expected.Host {
+		return fallback
+	}
+	return candidate.String()
+}
+
+func (s *Service) slackAccountLinkRedirect(returnURL, status string) string {
+	parsed, err := url.Parse(strings.TrimSpace(returnURL))
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return returnURL
+	}
+	query := parsed.Query()
+	query.Set("slack_link_status", strings.TrimSpace(status))
+	parsed.RawQuery = query.Encode()
+	return parsed.String()
+}
+
 func (s *Service) canUseOAuth() bool {
 	return strings.TrimSpace(s.cfg.ClientID) != "" &&
 		strings.TrimSpace(s.cfg.ClientSecret) != "" &&
@@ -3983,6 +4127,11 @@ type oauthAccessResponse struct {
 
 type oauthInstallNoncePayload struct {
 	WorkspaceSlug string `json:"workspace_slug"`
+}
+
+type oauthAccountLinkNoncePayload struct {
+	WorkspaceSlug string `json:"workspace_slug"`
+	ReturnURL     string `json:"return_url"`
 }
 
 type slackWorkspaceUser struct {
