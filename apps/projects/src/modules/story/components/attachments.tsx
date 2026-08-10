@@ -98,6 +98,8 @@ export const Attachments = ({
     return <AttachmentsSkeleton />;
   }
 
+  const hasAttachments = attachments.length > 0;
+
   const handleDelete = (attachmentId: string) => {
     deleteMutation.mutate(attachmentId);
   };
@@ -106,14 +108,17 @@ export const Attachments = ({
     <Box className={className} suppressHydrationWarning>
       <Flex
         align="center"
-        className="border-border border-b-[0.5px] pb-2"
+        className={cn(
+          "border-border",
+          hasAttachments && "border-b-[0.5px] pb-2",
+        )}
         justify="between"
       >
         <Text as="h4" className="flex items-center gap-1" fontWeight="semibold">
           <AttachmentIcon className="h-5 w-auto" />
           Attachments
         </Text>
-        {attachments.length > 0 && (
+        {hasAttachments ? (
           <Tooltip title="Add attachment">
             <Button
               asIcon
@@ -126,10 +131,10 @@ export const Attachments = ({
               <span className="sr-only">Add attachment</span>
             </Button>
           </Tooltip>
-        )}
+        ) : null}
       </Flex>
-      {attachments.length === 0 && (
-        <Box className="mt-2">
+      {!hasAttachments && (
+        <Box>
           <DropZone>
             <DropZone.Root
               className={cn("dark:bg-surface/80", {
@@ -147,7 +152,7 @@ export const Attachments = ({
           </DropZone>
         </Box>
       )}
-      {attachments.length > 0 ? <input {...getInputProps()} /> : null}
+      {hasAttachments ? <input {...getInputProps()} /> : null}
       {imagesAndVideos.length > 0 && (
         <Box className="mt-3 grid grid-cols-3 gap-3 md:grid-cols-4 lg:grid-cols-6">
           {imagesAndVideos.map((file) => (
