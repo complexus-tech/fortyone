@@ -19,7 +19,7 @@ var emailStyles = map[string]string{
 	"textNoMargin":          `margin: 0; color: #303030; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
 	"textSmallTop":          `margin: 12px 0 0; color: #303030; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
 	"buttonContainer":       `margin: 30px 0;`,
-	"button":                `display: inline-block; padding: 13px 22px; border-radius: 8px; background-color: #111111; color: #ffffff; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 400; line-height: 1.35; text-align: center; text-decoration: none;`,
+	"button":                `display: inline-block; padding: 10px 18px; border-radius: 8px; background-color: #111111; color: #ffffff; font-family: ` + emailFontStack + `; font-size: 15px; font-weight: 400; line-height: 1.35; text-align: center; text-decoration: none;`,
 	"panel":                 `margin: 28px 0; padding: 22px 24px; border-radius: 8px; background-color: #f7f7f7;`,
 	"quietPanel":            `margin: 28px 0; padding: 22px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; background-color: transparent; border-radius: 0;`,
 	"notificationPanel":     `margin: 28px 0; padding: 0; background-color: transparent; color: #303030; font-family: ` + emailFontStack + `; font-size: 15px; line-height: 1.62;`,
