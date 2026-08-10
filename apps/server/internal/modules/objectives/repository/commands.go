@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
@@ -137,18 +138,7 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	ctx, span := web.AddSpan(ctx, "business.repository.objectives.Update")
 	defer span.End()
 
-	query := "UPDATE objectives SET "
-	var setClauses []string
-	params := map[string]any{"id": id}
-
-	for field, value := range updates {
-		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
-		params[field] = value
-	}
-
-	setClauses = append(setClauses, "updated_at = NOW()")
-	query += strings.Join(setClauses, ", ")
-	query += " WHERE objective_id = :id"
+	query, params := buildObjectiveUpdateStatement(id, workspaceId, updates)
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
 	if err != nil {
@@ -160,7 +150,8 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	defer stmt.Close()
 
 	r.log.Info(ctx, fmt.Sprintf("Updating objective #%s", id), "id", id)
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 			// Get the name from updates if it exists
 			nameValue, hasName := updates["name"]
@@ -179,12 +170,43 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 		return err
 	}
 
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("getting updated objective row count: %w", err)
+	}
+	if rowsAffected == 0 {
+		return ErrNotFound
+	}
+
 	r.log.Info(ctx, fmt.Sprintf("Objective #%s updated successfully", id), "id", id)
 	span.AddEvent("objective updated", trace.WithAttributes(
 		attribute.String("objective.id", id.String()),
 	))
 
 	return nil
+}
+
+func buildObjectiveUpdateStatement(id, workspaceID uuid.UUID, updates map[string]any) (string, map[string]any) {
+	fields := make([]string, 0, len(updates))
+	for field := range updates {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+
+	setClauses := make([]string, 0, len(fields)+1)
+	params := map[string]any{
+		"id":           id,
+		"workspace_id": workspaceID,
+	}
+	for _, field := range fields {
+		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+		params[field] = updates[field]
+	}
+	setClauses = append(setClauses, "updated_at = NOW()")
+
+	query := "UPDATE objectives SET " + strings.Join(setClauses, ", ")
+	query += " WHERE objective_id = :id AND workspace_id = :workspace_id"
+	return query, params
 }
 
 // Delete deletes an objective
