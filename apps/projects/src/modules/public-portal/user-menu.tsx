@@ -10,6 +10,7 @@ import {
   SettingsIcon,
   SunIcon,
   SystemIcon,
+  UserIcon,
 } from "icons";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
 import { logOut } from "@/components/shared/sidebar/actions";
@@ -57,8 +58,10 @@ const handleLogout = async () => {
 };
 
 export const PublicPortalUserMenu = ({
+  profileHref,
   viewer,
 }: {
+  profileHref?: string | null;
   viewer: PublicPortalViewer;
 }) => {
   const { theme, setTheme } = useTheme();
@@ -93,6 +96,17 @@ export const PublicPortalUserMenu = ({
         </Menu.Group>
         <Menu.Separator className="mb-2" />
         <Menu.Group>
+          {profileHref ? (
+            <Menu.Item>
+              <Link
+                className="flex w-full items-center gap-2"
+                href={profileHref}
+              >
+                <UserIcon className="h-[1.15rem]" />
+                Profile
+              </Link>
+            </Menu.Item>
+          ) : null}
           {viewer.appHref ? (
             <Menu.Item>
               <Link

@@ -4,9 +4,10 @@ import { CheckIcon, CopyIcon, ShareIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
+import { getLoginUrl } from "@/utils/callback-url";
 import type { PublicPortal, PublicPortalViewer } from "./types";
 import { NewFeedbackButton } from "./feedback-controls";
-import { getPortalLoginUrl } from "./utils";
+import { getNewFeedbackCallbackUrl } from "./utils";
 
 const copyLink = async () => {
   try {
@@ -71,11 +72,13 @@ export const PublicPortalActions = ({ portal }: { portal: PublicPortal }) => (
 );
 
 export const PublicPortalSidebar = ({
+  initialFeedbackComposerOpen = false,
   onBoardSelect,
   portal,
   selectedBoardId,
   viewer,
 }: {
+  initialFeedbackComposerOpen?: boolean;
   onBoardSelect: (boardId?: string) => void;
   portal: PublicPortal;
   selectedBoardId?: string;
@@ -84,12 +87,16 @@ export const PublicPortalSidebar = ({
   return (
     <aside className="space-y-8 md:sticky md:top-8 md:self-start">
       {viewer ? (
-        <NewFeedbackButton portal={portal} viewer={viewer} />
+        <NewFeedbackButton
+          initialOpen={initialFeedbackComposerOpen}
+          portal={portal}
+          viewer={viewer}
+        />
       ) : (
         <Button
           className="h-12 w-full justify-center text-[1rem]"
           color="invert"
-          href={getPortalLoginUrl(portal, "feedback")}
+          href={getLoginUrl(getNewFeedbackCallbackUrl(portal))}
           size="lg"
         >
           Login to submit feedback

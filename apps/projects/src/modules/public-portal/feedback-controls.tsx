@@ -32,6 +32,7 @@ import {
   useCreatePublicFeedback,
   usePublicFeedbackVote,
 } from "./feedback-mutations";
+import { NEW_FEEDBACK_QUERY_PARAM } from "./query-params";
 import { getRequestPathBySlug } from "./utils";
 import { requestStatusMeta } from "./status";
 import { getPublicAvatarColor } from "./avatar-color";
@@ -101,14 +102,16 @@ const SimilarFeedbackRow = ({
 };
 
 export const NewFeedbackButton = ({
+  initialOpen = false,
   portal,
   viewer,
 }: {
+  initialOpen?: boolean;
   portal: PublicPortal;
   viewer: PublicPortalViewer;
 }) => {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [title, setTitle] = useState("");
   const titleRef = useRef("");
   const [similarityInput, setSimilarityInput] = useState({
@@ -158,9 +161,22 @@ export const NewFeedbackButton = ({
       : [];
   const blockingMatch = similarFeedbackItems.find((item) => item.isDuplicate);
 
-  const openExistingFeedback = (slug: string, isDuplicate = false) => {
+  const clearInitialOpenIntent = () => {
+    if (!initialOpen) return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete(NEW_FEEDBACK_QUERY_PARAM);
+    window.history.replaceState(window.history.state, "", url);
+  };
+
+  const close = () => {
+    clearInitialOpenIntent();
     cancelSimilarityCheck();
     setOpen(false);
+  };
+
+  const openExistingFeedback = (slug: string, isDuplicate = false) => {
+    close();
     router.push(getRequestPathBySlug(portal, slug));
     if (isDuplicate) {
       toast.info("This feedback was already reported", {
@@ -181,8 +197,7 @@ export const NewFeedbackButton = ({
       title,
     };
 
-    cancelSimilarityCheck();
-    setOpen(false);
+    close();
     setTitle("");
     titleRef.current = "";
     setSimilarityInput({ description: "", title: "" });
@@ -207,7 +222,10 @@ export const NewFeedbackButton = ({
     <Dialog
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
-        if (!nextOpen) cancelSimilarityCheck();
+        if (!nextOpen) {
+          clearInitialOpenIntent();
+          cancelSimilarityCheck();
+        }
       }}
       open={open}
     >
@@ -305,12 +323,7 @@ export const NewFeedbackButton = ({
           />
         </Dialog.Body>
         <Dialog.Footer className="justify-end gap-2">
-          <Button
-            color="tertiary"
-            onClick={() => {
-              setOpen(false);
-            }}
-          >
+          <Button color="tertiary" onClick={close}>
             Cancel
           </Button>
           <Button

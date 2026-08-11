@@ -1,5 +1,6 @@
 import { getLoginUrl } from "@/utils/callback-url";
 import type { PublicPortal, PublicRequest } from "./types";
+import { NEW_FEEDBACK_QUERY_PARAM } from "./query-params";
 
 const isWorkspaceSubdomainDeployment =
   process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
@@ -38,6 +39,14 @@ export const getAuthorPathByPortalSlug = (
 export const getAuthorPath = (portal: PublicPortal, authorId: string) =>
   getAuthorPathByPortalSlug(portal.slug, authorId);
 
+export const getViewerProfilePathByPortalSlug = (portalSlug: string) =>
+  isWorkspaceSubdomainDeployment
+    ? "/people/me"
+    : `/portal/${portalSlug}/people/me`;
+
+export const getViewerProfilePath = (portal: PublicPortal) =>
+  getViewerProfilePathByPortalSlug(portal.slug);
+
 export const getPortalPath = (
   portal: PublicPortal,
   path: "" | "account" | "feedback" | "roadmap" | "updates",
@@ -64,6 +73,21 @@ export const getPortalCallbackUrl = (
   if (!isWorkspaceSubdomainDeployment) return portalPath;
 
   return `https://${portal.workspace.slug}.fortyone.app${portalPath}`;
+};
+
+export const getViewerProfileCallbackUrl = (portal: PublicPortal) => {
+  const profilePath = getViewerProfilePath(portal);
+
+  if (!isWorkspaceSubdomainDeployment) return profilePath;
+
+  return `https://${portal.workspace.slug}.fortyone.app${profilePath}`;
+};
+
+export const getNewFeedbackCallbackUrl = (portal: PublicPortal) => {
+  const feedbackUrl = getPortalCallbackUrl(portal, "feedback");
+  const separator = feedbackUrl.includes("?") ? "&" : "?";
+
+  return `${feedbackUrl}${separator}${NEW_FEEDBACK_QUERY_PARAM}=true`;
 };
 
 export const getPortalLoginUrl = (

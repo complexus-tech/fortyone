@@ -8,6 +8,8 @@ import type {
 type SearchParamsRecord = Record<string, string | string[] | undefined>;
 type SearchParamsSource = URLSearchParams | SearchParamsRecord;
 
+export const NEW_FEEDBACK_QUERY_PARAM = "newFeedback";
+
 const isSearchParams = (value: SearchParamsSource): value is URLSearchParams =>
   value instanceof URLSearchParams;
 
@@ -49,6 +51,9 @@ export const parsePublicPortalFilters = (
     status: isPublicFeedbackListStatus(status) ? status : "active",
   };
 };
+
+export const shouldOpenFeedbackComposer = (params: SearchParamsSource) =>
+  getParam(params, NEW_FEEDBACK_QUERY_PARAM) === "true";
 
 export const toPublicPortalSearchParams = (filters: PublicPortalFilters) => {
   const params = new URLSearchParams({ sort: filters.sort });

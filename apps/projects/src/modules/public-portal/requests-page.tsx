@@ -22,10 +22,12 @@ const DEFAULT_FILTERS: PublicPortalFilters = {
 };
 
 export const PublicPortalRequestsPage = ({
+  initialFeedbackComposerOpen = false,
   initialFilters = DEFAULT_FILTERS,
   portal,
   viewer,
 }: {
+  initialFeedbackComposerOpen?: boolean;
   initialFilters?: PublicPortalFilters;
   portal: PublicPortal;
   viewer?: PublicPortalViewer | null;
@@ -70,6 +72,7 @@ export const PublicPortalRequestsPage = ({
           />
         </Box>
         <PublicPortalSidebar
+          initialFeedbackComposerOpen={initialFeedbackComposerOpen}
           onBoardSelect={(boardId) => {
             updateFilters({ boardId });
           }}

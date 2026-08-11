@@ -2,6 +2,7 @@
 
 import {
   parsePublicPortalFilters,
+  shouldOpenFeedbackComposer,
   toPublicPortalSearchParams,
 } from "./query-params";
 
@@ -57,5 +58,13 @@ describe("public portal query params", () => {
     });
 
     expect(params.get("status")).toBeNull();
+  });
+
+  it("recognizes the one-time feedback composer intent", () => {
+    expect(
+      shouldOpenFeedbackComposer(new URLSearchParams({ newFeedback: "true" })),
+    ).toBe(true);
+    expect(shouldOpenFeedbackComposer({ newFeedback: ["true"] })).toBe(true);
+    expect(shouldOpenFeedbackComposer({ newFeedback: "false" })).toBe(false);
   });
 });

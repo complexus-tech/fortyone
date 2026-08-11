@@ -163,6 +163,7 @@ jest.mock("icons", () => {
     ThumbsDownIcon: Icon,
     ThumbsUpIcon: Icon,
     UpdatesIcon: Icon,
+    UserIcon: Icon,
   };
 });
 
@@ -315,7 +316,7 @@ jest.mock("ui", () => {
   }: {
     children: ReactTypes.ReactNode;
     open?: boolean;
-  }) => <div>{open ? children : children}</div>;
+  }) => <div data-dialog-open={open ? "true" : "false"}>{children}</div>;
   function DialogContent({
     children,
     hideClose,
@@ -776,11 +777,15 @@ describe("Public portal UI", () => {
   it("sends logged-out visitors to login before submitting feedback", () => {
     render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
 
+    expect(screen.getByRole("link", { name: "Login/signup" })).toHaveAttribute(
+      "href",
+      "/?callbackUrl=%2Fportal%2Fcity-roads%2Fpeople%2Fme",
+    );
     expect(
       screen.getByRole("link", { name: "Login to submit feedback" }),
     ).toHaveAttribute(
       "href",
-      "/?callbackUrl=%2Fportal%2Fcity-roads%2Ffeedback",
+      "/?callbackUrl=%2Fportal%2Fcity-roads%2Ffeedback%3FnewFeedback%3Dtrue",
     );
     expect(
       screen.queryByRole("button", { name: "New Feedback" }),
@@ -791,6 +796,36 @@ describe("Public portal UI", () => {
       "href",
       "/signup?source=portal&callbackUrl=%2Fonboarding%2Fcreate%3FcallbackUrl%3D%252Fsettings%252Fworkspace%252Ffeedback",
     );
+  });
+
+  it("opens the feedback composer after a contextual login", async () => {
+    window.history.replaceState(
+      window.history.state,
+      "",
+      "/portal/city-roads/feedback?newFeedback=true",
+    );
+
+    const { container } = render(
+      <PublicPortalRequestsPage
+        initialFeedbackComposerOpen
+        portal={publicPortalFixture}
+        viewer={portalViewer}
+      />,
+    );
+
+    expect(
+      container.querySelector('[data-dialog-open="true"]'),
+    ).toBeInTheDocument();
+    expect(window.location.search).toBe("?newFeedback=true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(
+      container.querySelector('[data-dialog-open="false"]'),
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(window.location.search).toBe("");
+    });
   });
 
   it("filters public feedback by the selected board", async () => {
@@ -1140,6 +1175,10 @@ describe("Public portal UI", () => {
     expect(screen.getByRole("link", { name: "Open FortyOne" })).toHaveAttribute(
       "href",
       "/city-roads/my-work",
+    );
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute(
+      "href",
+      "/portal/city-roads/people/00000000-0000-4000-8000-000000000001",
     );
     expect(
       screen.getByRole("link", { name: /account settings/i }),
