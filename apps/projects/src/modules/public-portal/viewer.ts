@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getRedirectUrl } from "@/utils";
 import { getFeedbackSetupHref } from "./feedback-setup";
-import { getPortalAccountPathBySlug } from "./utils";
+import { getPortalPathBySlug } from "./utils";
 import type { PublicPortalViewer } from "./types";
 
 export const getPublicPortalViewer = async (
@@ -28,7 +28,7 @@ export const getPublicPortalViewer = async (
     appHref: activeWorkspace
       ? getRedirectUrl(workspaces, [], session.user.lastUsedWorkspaceId)
       : undefined,
-    accountHref: getPortalAccountPathBySlug(portalSlug),
+    accountHref: getPortalPathBySlug(portalSlug, "account"),
     feedbackSetupHref: getFeedbackSetupHref(
       workspaces,
       session.user.lastUsedWorkspaceId,

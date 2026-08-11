@@ -42,6 +42,34 @@ type CorePortal struct {
 	UpdatedAt   time.Time
 }
 
+type CoreContributorActivity struct {
+	ID            uuid.UUID
+	Type          string
+	FeedbackID    uuid.UUID
+	FeedbackTitle string
+	FeedbackSlug  string
+	Body          string
+	PortalSlug    string
+	WorkspaceName string
+	WorkspaceSlug string
+	CreatedAt     time.Time
+}
+
+type CoreContributorActivityPage struct {
+	Activities    []CoreContributorActivity
+	Page          int
+	PageSize      int
+	HasMore       bool
+	FeedbackCount int
+	CommentCount  int
+}
+
+type CoreListContributorActivityInput struct {
+	UserID   uuid.UUID
+	Page     int
+	PageSize int
+}
+
 type CoreBoard struct {
 	ID          uuid.UUID
 	WorkspaceID uuid.UUID
@@ -294,6 +322,7 @@ type CoreItemDetails struct {
 
 type Repository interface {
 	GetPortalBySlug(ctx context.Context, slug string) (CorePortal, error)
+	ListContributorActivity(ctx context.Context, input CoreListContributorActivityInput) (CoreContributorActivityPage, error)
 	GetPortalByWorkspaceSlugAndSlug(ctx context.Context, workspaceSlug, slug string) (CorePortal, error)
 	GetPortal(ctx context.Context, workspaceID, portalID uuid.UUID) (CorePortal, error)
 	ListPortals(ctx context.Context, workspaceID uuid.UUID) ([]CorePortal, error)

@@ -49,6 +49,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/portals/{portalSlug}/feedback/similar", h.ListPublicSimilarItems)
 	app.Get("/portals/{portalSlug}/feedback/contributors/{authorId}", h.GetPublicContributor)
 	app.Get("/portals/{portalSlug}/feedback/contributors/{authorId}/comments", h.ListPublicContributorComments)
+	app.Get("/feedback/contributor/activity", h.ListContributorActivity, auth)
 	app.Post("/portals/{portalSlug}/feedback/items", h.CreatePublicItem, auth, createItemRateLimit)
 	app.Post("/portals/{portalSlug}/feedback/items/{itemId}/comments", h.CreatePublicComment, auth, createCommentRateLimit)
 	app.Post("/portals/{portalSlug}/feedback/items/{itemId}/vote", h.TogglePublicVote, auth, voteRateLimit)

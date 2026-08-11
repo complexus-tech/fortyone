@@ -1,20 +1,15 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
-import {
-  getPortalAccountPathBySlug,
-  getViewerProfileHrefByPortalSlug,
-} from "./utils";
+import { getCrossPortalRequestHref, getGlobalProfileHref } from "./utils";
 
-describe("public portal account paths", () => {
-  it("preserves portal context when opening account settings", () => {
-    expect(getPortalAccountPathBySlug("city-roads")).toBe(
-      "/portal/city-roads/account?portal=city-roads",
-    );
+describe("public portal profile paths", () => {
+  it("uses the global profile outside workspace subdomain deployments", () => {
+    expect(getGlobalProfileHref()).toBe("/profile");
   });
 
-  it("builds the feedback contributor profile destination", () => {
-    expect(getViewerProfileHrefByPortalSlug("city-roads")).toBe(
-      "/portal/city-roads/people/me",
-    );
+  it("links global activity back to its originating portal", () => {
+    expect(
+      getCrossPortalRequestHref("city-roads", "city-roads", "safer-crossing"),
+    ).toBe("/portal/city-roads/feedback/safer-crossing");
   });
 });

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AccountPage } from "@/modules/public-portal/account-page";
+import { GlobalProfilePage } from "@/modules/public-portal/global-profile-page";
 import { getFeedbackSetupHref } from "@/modules/public-portal/feedback-setup";
-import { getGlobalProfileHref } from "@/modules/public-portal/utils";
+import { getFeedbackProfileActivity } from "@/modules/public-portal/profile-activity";
 import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
@@ -10,40 +10,37 @@ import { getRedirectUrl } from "@/utils";
 import { getLoginUrl } from "@/utils/callback-url";
 
 export const metadata: Metadata = {
-  title: "Account settings - FortyOne",
+  title: "Profile - FortyOne",
   robots: {
     follow: false,
     index: false,
   },
 };
 
-export default async function AccountRoute() {
+export default async function ProfileRoute() {
   const session = await auth();
+  if (!session) redirect(getLoginUrl("/profile"));
 
-  if (!session) {
-    redirect(getLoginUrl("/account"));
-  }
-
-  const [profile, workspaces] = await Promise.all([
+  const [profile, workspaces, initialActivity] = await Promise.all([
     getProfile(),
     getWorkspaces(),
+    getFeedbackProfileActivity(),
   ]);
   const activeWorkspace =
     workspaces.find(
       (workspace) => workspace.id === profile.lastUsedWorkspaceId,
     ) ?? workspaces.at(0);
-  const appHref = activeWorkspace
-    ? getRedirectUrl(workspaces, [], profile.lastUsedWorkspaceId)
-    : undefined;
 
   return (
-    <AccountPage
+    <GlobalProfilePage
+      initialActivity={initialActivity}
       profile={profile}
-      profileHref={getGlobalProfileHref()}
       viewer={{
         id: profile.id,
         accountHref: "/account",
-        appHref,
+        appHref: activeWorkspace
+          ? getRedirectUrl(workspaces, [], profile.lastUsedWorkspaceId)
+          : undefined,
         avatarUrl: profile.avatarUrl,
         email: profile.email,
         feedbackSetupHref: getFeedbackSetupHref(

@@ -4,7 +4,7 @@ import { NEW_FEEDBACK_QUERY_PARAM } from "./query-params";
 
 const isWorkspaceSubdomainDeployment =
   process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
-const FORTYONE_DOMAIN = "fortyone.app";
+const DEFAULT_AUTH_HOST = "cloud.fortyone.app";
 const NIL_AUTHOR_ID = "00000000-0000-0000-0000-000000000000";
 
 export const getBoard = (portal: PublicPortal, boardId: string) =>
@@ -26,6 +26,15 @@ export const getRequestPathBySlug = (
 export const getRequestPath = (portal: PublicPortal, request: PublicRequest) =>
   getRequestPathBySlug(portal, request.slug);
 
+export const getCrossPortalRequestHref = (
+  workspaceSlug: string,
+  portalSlug: string,
+  requestSlug: string,
+) =>
+  isWorkspaceSubdomainDeployment
+    ? `https://${workspaceSlug}.fortyone.app/feedback/${requestSlug}`
+    : `/portal/${portalSlug}/feedback/${requestSlug}`;
+
 export const getAuthorPathByPortalSlug = (
   portalSlug: string,
   authorId: string,
@@ -40,20 +49,11 @@ export const getAuthorPathByPortalSlug = (
 export const getAuthorPath = (portal: PublicPortal, authorId: string) =>
   getAuthorPathByPortalSlug(portal.slug, authorId);
 
-export const getViewerProfilePathByPortalSlug = (portalSlug: string) =>
-  isWorkspaceSubdomainDeployment
-    ? "/people/me"
-    : `/portal/${portalSlug}/people/me`;
+export const getGlobalProfileHref = () => {
+  if (!isWorkspaceSubdomainDeployment) return "/profile";
 
-export const getViewerProfilePath = (portal: PublicPortal) =>
-  getViewerProfilePathByPortalSlug(portal.slug);
-
-export const getViewerProfileHrefByPortalSlug = (portalSlug: string) => {
-  const profilePath = getViewerProfilePathByPortalSlug(portalSlug);
-
-  if (!isWorkspaceSubdomainDeployment) return profilePath;
-
-  return `https://${portalSlug}.${FORTYONE_DOMAIN}${profilePath}`;
+  const authHost = process.env.NEXT_PUBLIC_AUTH_HOST ?? DEFAULT_AUTH_HOST;
+  return `https://${authHost}/profile`;
 };
 
 export const getPortalPath = (
@@ -73,13 +73,6 @@ export const getPortalPathBySlug = (
   return `/portal/${portalSlug}${routePath ? `/${routePath}` : ""}`;
 };
 
-export const getPortalAccountPathBySlug = (portalSlug: string) => {
-  const accountPath = getPortalPathBySlug(portalSlug, "account");
-  const params = new URLSearchParams({ portal: portalSlug });
-
-  return `${accountPath}?${params.toString()}`;
-};
-
 export const getPortalCallbackUrl = (
   portal: PublicPortal,
   path: "account" | "feedback" | "roadmap" | "updates",
@@ -89,14 +82,6 @@ export const getPortalCallbackUrl = (
   if (!isWorkspaceSubdomainDeployment) return portalPath;
 
   return `https://${portal.workspace.slug}.fortyone.app${portalPath}`;
-};
-
-export const getViewerProfileCallbackUrl = (portal: PublicPortal) => {
-  const profilePath = getViewerProfilePath(portal);
-
-  if (!isWorkspaceSubdomainDeployment) return profilePath;
-
-  return `https://${portal.workspace.slug}.fortyone.app${profilePath}`;
 };
 
 export const getNewFeedbackCallbackUrl = (portal: PublicPortal) => {

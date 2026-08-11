@@ -87,6 +87,28 @@ type AppContributor struct {
 	Stats     AppContributorStats `json:"stats"`
 }
 
+type AppContributorActivity struct {
+	ID            uuid.UUID `json:"id"`
+	Type          string    `json:"type"`
+	FeedbackID    uuid.UUID `json:"feedbackId"`
+	FeedbackTitle string    `json:"feedbackTitle"`
+	FeedbackSlug  string    `json:"feedbackSlug"`
+	Body          string    `json:"body"`
+	PortalSlug    string    `json:"portalSlug"`
+	WorkspaceName string    `json:"workspaceName"`
+	WorkspaceSlug string    `json:"workspaceSlug"`
+	CreatedAt     time.Time `json:"createdAt"`
+}
+
+type AppContributorActivityPage struct {
+	Activities    []AppContributorActivity `json:"activities"`
+	Page          int                      `json:"page"`
+	PageSize      int                      `json:"pageSize"`
+	HasMore       bool                     `json:"hasMore"`
+	FeedbackCount int                      `json:"feedbackCount"`
+	CommentCount  int                      `json:"commentCount"`
+}
+
 type AppContributorFeedback struct {
 	ID    uuid.UUID `json:"id"`
 	Title string    `json:"title"`
@@ -355,6 +377,32 @@ func toAppContributor(core feedback.CoreContributor) AppContributor {
 			CommentCount:  core.Stats.CommentCount,
 			VoteScore:     core.Stats.VoteScore,
 		},
+	}
+}
+
+func toAppContributorActivityPage(core feedback.CoreContributorActivityPage) AppContributorActivityPage {
+	activities := make([]AppContributorActivity, 0, len(core.Activities))
+	for _, activity := range core.Activities {
+		activities = append(activities, AppContributorActivity{
+			ID:            activity.ID,
+			Type:          activity.Type,
+			FeedbackID:    activity.FeedbackID,
+			FeedbackTitle: activity.FeedbackTitle,
+			FeedbackSlug:  activity.FeedbackSlug,
+			Body:          activity.Body,
+			PortalSlug:    activity.PortalSlug,
+			WorkspaceName: activity.WorkspaceName,
+			WorkspaceSlug: activity.WorkspaceSlug,
+			CreatedAt:     activity.CreatedAt,
+		})
+	}
+	return AppContributorActivityPage{
+		Activities:    activities,
+		Page:          core.Page,
+		PageSize:      core.PageSize,
+		HasMore:       core.HasMore,
+		FeedbackCount: core.FeedbackCount,
+		CommentCount:  core.CommentCount,
 	}
 }
 

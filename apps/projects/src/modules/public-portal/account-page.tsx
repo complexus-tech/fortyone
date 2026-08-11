@@ -61,6 +61,31 @@ export const PublicPortalAccountPage = ({
   </PublicPortalShell>
 );
 
+export const AccountHeader = ({
+  profileHref,
+  viewer,
+}: {
+  profileHref?: string;
+  viewer: PublicPortalViewer;
+}) => (
+  <Box className="border-border/60 bg-background sticky top-0 z-20 border-b">
+    <Flex
+      align="center"
+      className="mx-auto h-16 w-full max-w-5xl px-4 md:px-6"
+      justify="between"
+    >
+      <Link
+        aria-label="FortyOne home"
+        className="transition-opacity hover:opacity-80"
+        href={viewer.appHref ?? viewer.accountHref}
+      >
+        <Logo className="h-8" />
+      </Link>
+      <PublicPortalUserMenu profileHref={profileHref} viewer={viewer} />
+    </Flex>
+  </Box>
+);
+
 export const AccountPage = ({
   profile,
   profileHref,
@@ -71,22 +96,7 @@ export const AccountPage = ({
   viewer: PublicPortalViewer;
 }) => (
   <Box className="bg-background min-h-dvh">
-    <Box className="border-border/60 bg-background sticky top-0 z-20 border-b">
-      <Flex
-        align="center"
-        className="mx-auto h-16 w-full max-w-5xl px-4 md:px-6"
-        justify="between"
-      >
-        <Link
-          aria-label="FortyOne home"
-          className="transition-opacity hover:opacity-80"
-          href={viewer.appHref ?? viewer.accountHref}
-        >
-          <Logo className="h-8" />
-        </Link>
-        <PublicPortalUserMenu profileHref={profileHref} viewer={viewer} />
-      </Flex>
-    </Box>
+    <AccountHeader profileHref={profileHref} viewer={viewer} />
     <AccountContent profile={profile} showWorkspaceSetup={!viewer.appHref} />
   </Box>
 );

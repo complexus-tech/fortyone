@@ -131,6 +131,21 @@ type contributorCommentRow struct {
 	UpdatedAt     time.Time `db:"updated_at"`
 }
 
+type contributorActivityRow struct {
+	ID            uuid.UUID `db:"id"`
+	Type          string    `db:"activity_type"`
+	FeedbackID    uuid.UUID `db:"feedback_id"`
+	FeedbackTitle string    `db:"feedback_title"`
+	FeedbackSlug  string    `db:"feedback_slug"`
+	Body          string    `db:"body"`
+	PortalSlug    string    `db:"portal_slug"`
+	WorkspaceName string    `db:"workspace_name"`
+	WorkspaceSlug string    `db:"workspace_slug"`
+	CreatedAt     time.Time `db:"created_at"`
+	FeedbackCount int       `db:"feedback_count"`
+	CommentCount  int       `db:"comment_count"`
+}
+
 type storyLinkRow struct {
 	ID              uuid.UUID  `db:"id"`
 	WorkspaceID     uuid.UUID  `db:"workspace_id"`
@@ -198,6 +213,90 @@ func (r *Repo) GetPortalBySlug(ctx context.Context, slug string) (feedback.CoreP
 		return feedback.CorePortal{}, err
 	}
 	return toCorePortal(row), nil
+}
+
+func (r *Repo) ListContributorActivity(ctx context.Context, input feedback.CoreListContributorActivityInput) (feedback.CoreContributorActivityPage, error) {
+	var rows []contributorActivityRow
+	limit := input.PageSize + 1
+	offset := (input.Page - 1) * input.PageSize
+	err := r.db.SelectContext(ctx, &rows, `
+		WITH activities AS (
+			SELECT fi.id,
+				'feedback' AS activity_type,
+				fi.id AS feedback_id,
+				fi.title AS feedback_title,
+				fi.slug AS feedback_slug,
+				LEFT(fi.description, 500) AS body,
+				w.slug AS portal_slug,
+				w.name AS workspace_name,
+				w.slug AS workspace_slug,
+				fi.created_at
+			FROM feedback_items fi
+			INNER JOIN feedback_portals fp ON fp.id = fi.portal_id
+			INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
+			WHERE fi.author_id = $1
+				AND fi.deleted_at IS NULL
+				AND fp.is_public = true
+				AND w.deleted_at IS NULL
+			UNION ALL
+			SELECT fc.id,
+				'comment' AS activity_type,
+				fi.id AS feedback_id,
+				fi.title AS feedback_title,
+				fi.slug AS feedback_slug,
+				LEFT(fc.body, 500) AS body,
+				w.slug AS portal_slug,
+				w.name AS workspace_name,
+				w.slug AS workspace_slug,
+				fc.created_at
+			FROM feedback_comments fc
+			INNER JOIN feedback_items fi ON fi.id = fc.item_id
+			INNER JOIN feedback_portals fp ON fp.id = fi.portal_id
+			INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
+			WHERE fc.author_id = $1
+				AND fi.deleted_at IS NULL
+				AND fp.is_public = true
+				AND w.deleted_at IS NULL
+		)
+		SELECT activities.*,
+			CAST(COUNT(*) FILTER (WHERE activity_type = 'feedback') OVER () AS integer) AS feedback_count,
+			CAST(COUNT(*) FILTER (WHERE activity_type = 'comment') OVER () AS integer) AS comment_count
+		FROM activities
+		ORDER BY created_at DESC, id DESC
+		LIMIT $2 OFFSET $3
+	`, input.UserID, limit, offset)
+	if err != nil {
+		return feedback.CoreContributorActivityPage{}, err
+	}
+
+	page := feedback.CoreContributorActivityPage{
+		Activities: make([]feedback.CoreContributorActivity, 0, min(len(rows), input.PageSize)),
+		Page:       input.Page,
+		PageSize:   input.PageSize,
+		HasMore:    len(rows) > input.PageSize,
+	}
+	if len(rows) > 0 {
+		page.FeedbackCount = rows[0].FeedbackCount
+		page.CommentCount = rows[0].CommentCount
+	}
+	if page.HasMore {
+		rows = rows[:input.PageSize]
+	}
+	for _, row := range rows {
+		page.Activities = append(page.Activities, feedback.CoreContributorActivity{
+			ID:            row.ID,
+			Type:          row.Type,
+			FeedbackID:    row.FeedbackID,
+			FeedbackTitle: row.FeedbackTitle,
+			FeedbackSlug:  row.FeedbackSlug,
+			Body:          row.Body,
+			PortalSlug:    row.PortalSlug,
+			WorkspaceName: row.WorkspaceName,
+			WorkspaceSlug: row.WorkspaceSlug,
+			CreatedAt:     row.CreatedAt,
+		})
+	}
+	return page, nil
 }
 
 func (r *Repo) GetPortalByWorkspaceSlugAndSlug(ctx context.Context, workspaceSlug, slug string) (feedback.CorePortal, error) {

@@ -12,11 +12,7 @@ import type {
 import { PublicPortalUserMenu } from "./user-menu";
 import { PublicPortalNotifications } from "./notifications-popover";
 import { getFeedbackSignupPath } from "./feedback-setup";
-import {
-  getAuthorPath,
-  getPortalPath,
-  getViewerProfileCallbackUrl,
-} from "./utils";
+import { getGlobalProfileHref, getPortalPath } from "./utils";
 
 const navItems = [
   { icon: RequestsIcon, label: "Feedback", tab: "feedback" },
@@ -95,7 +91,7 @@ export const PublicPortalShell = ({
             <>
               <PublicPortalNotifications portal={portal} />
               <PublicPortalUserMenu
-                profileHref={getAuthorPath(portal, viewer.id)}
+                profileHref={getGlobalProfileHref()}
                 viewer={viewer}
               />
             </>
@@ -103,9 +99,7 @@ export const PublicPortalShell = ({
             <Button
               className="h-10 px-4"
               color="invert"
-              href={getLoginUrl(
-                loginCallbackUrl ?? getViewerProfileCallbackUrl(portal),
-              )}
+              href={getLoginUrl(loginCallbackUrl ?? getGlobalProfileHref())}
               size="md"
             >
               Login/signup

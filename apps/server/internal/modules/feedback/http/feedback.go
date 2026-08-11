@@ -201,6 +201,19 @@ func (h *Handlers) GetPublicContributor(ctx context.Context, w http.ResponseWrit
 	return h.respondPublicContributor(ctx, w, contributor)
 }
 
+func (h *Handlers) ListContributorActivity(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	page, pageSize := publicContributorPagination(r)
+	activity, err := h.feedback.ListContributorActivity(ctx, userID, page, pageSize)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, toAppContributorActivityPage(activity), http.StatusOK)
+}
+
 func (h *Handlers) GetWorkspacePublicContributor(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	authorID, err := publicContributorID(r)
 	if err != nil {

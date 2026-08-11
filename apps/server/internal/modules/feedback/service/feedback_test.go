@@ -36,6 +36,8 @@ type repoStub struct {
 	contributorComments        []CoreContributorComment
 	contributorCommentsHasMore bool
 	contributorCommentInputs   []CoreListContributorCommentsInput
+	contributorActivityPage    CoreContributorActivityPage
+	contributorActivityInputs  []CoreListContributorActivityInput
 }
 
 func feedbackReadKey(itemID, userID uuid.UUID) string {
@@ -49,6 +51,14 @@ func (r *repoStub) GetPortalBySlug(ctx context.Context, slug string) (CorePortal
 		}
 	}
 	return CorePortal{}, sql.ErrNoRows
+}
+
+func (r *repoStub) ListContributorActivity(ctx context.Context, input CoreListContributorActivityInput) (CoreContributorActivityPage, error) {
+	r.contributorActivityInputs = append(r.contributorActivityInputs, input)
+	page := r.contributorActivityPage
+	page.Page = input.Page
+	page.PageSize = input.PageSize
+	return page, nil
 }
 
 func (r *repoStub) GetPortalByWorkspaceSlugAndSlug(ctx context.Context, workspaceSlug, slug string) (CorePortal, error) {
@@ -558,6 +568,42 @@ func TestGetPublicContributorReturnsPortalScopedStats(t *testing.T) {
 	require.Equal(t, 8, contributor.Stats.CommentCount)
 	require.Equal(t, -2, contributor.Stats.VoteScore)
 	require.Equal(t, joinedAt, contributor.JoinedAt)
+}
+
+func TestListContributorActivityNormalizesPagination(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	repo := &repoStub{
+		contributorActivityPage: CoreContributorActivityPage{
+			Activities: []CoreContributorActivity{{
+				ID:            activityID,
+				Type:          "feedback",
+				FeedbackTitle: "Safer crossing",
+			}},
+			FeedbackCount: 1,
+		},
+	}
+	page, err := New(repo, nil).
+		ListContributorActivity(context.Background(), uuid.New(), 0, 500)
+
+	require.NoError(t, err)
+	require.Len(t, page.Activities, 1)
+	require.Equal(t, activityID, page.Activities[0].ID)
+	require.Equal(t, 1, page.Page)
+	require.Equal(t, 50, page.PageSize)
+	require.Len(t, repo.contributorActivityInputs, 1)
+	require.Equal(t, 1, repo.contributorActivityInputs[0].Page)
+	require.Equal(t, 50, repo.contributorActivityInputs[0].PageSize)
+}
+
+func TestListContributorActivityRequiresUser(t *testing.T) {
+	t.Parallel()
+
+	_, err := New(&repoStub{}, nil).
+		ListContributorActivity(context.Background(), uuid.Nil, 1, 20)
+
+	require.ErrorIs(t, err, ErrInvalidInput)
 }
 
 func TestListPublicContributorCommentsNormalizesPagination(t *testing.T) {

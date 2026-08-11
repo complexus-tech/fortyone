@@ -49,7 +49,7 @@ const createDeferred = <T,>() => {
 };
 
 const portalViewer = {
-  accountHref: "/portal/city-roads/account?portal=city-roads",
+  accountHref: "/portal/city-roads/account",
   appHref: "/city-roads/my-work",
   avatarUrl: null,
   email: "ada@example.com",
@@ -779,7 +779,7 @@ describe("Public portal UI", () => {
 
     expect(screen.getByRole("link", { name: "Login/signup" })).toHaveAttribute(
       "href",
-      "/?callbackUrl=%2Fportal%2Fcity-roads%2Fpeople%2Fme",
+      "/?callbackUrl=%2Fprofile",
     );
     expect(
       screen.getByRole("link", { name: "Login to submit feedback" }),
@@ -1178,11 +1178,11 @@ describe("Public portal UI", () => {
     );
     expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute(
       "href",
-      "/portal/city-roads/people/00000000-0000-4000-8000-000000000001",
+      "/profile",
     );
     expect(
       screen.getByRole("link", { name: /account settings/i }),
-    ).toHaveAttribute("href", "/portal/city-roads/account?portal=city-roads");
+    ).toHaveAttribute("href", "/portal/city-roads/account");
   });
 
   it("shows feedback notifications and marks an unread item as read", async () => {
@@ -1461,7 +1461,7 @@ describe("Public portal UI", () => {
       <PublicPortalRequestsPage
         portal={publicPortalFixture}
         viewer={{
-          accountHref: "/portal/city-roads/account?portal=city-roads",
+          accountHref: "/portal/city-roads/account",
           avatarUrl: null,
           email: "external@example.com",
           feedbackSetupHref: "/onboarding/create",
@@ -1473,7 +1473,7 @@ describe("Public portal UI", () => {
 
     expect(
       screen.getByRole("link", { name: /account settings/i }),
-    ).toHaveAttribute("href", "/portal/city-roads/account?portal=city-roads");
+    ).toHaveAttribute("href", "/portal/city-roads/account");
     expect(
       screen.queryByRole("link", { name: "Open FortyOne" }),
     ).not.toBeInTheDocument();

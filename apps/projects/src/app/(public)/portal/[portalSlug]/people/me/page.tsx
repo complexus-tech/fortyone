@@ -1,10 +1,5 @@
 import { redirect } from "next/navigation";
-import { getPublicPortalOrNotFound } from "@/modules/public-portal/query";
-import {
-  getAuthorPath,
-  getPortalPath,
-  getViewerProfileCallbackUrl,
-} from "@/modules/public-portal/utils";
+import { getGlobalProfileHref } from "@/modules/public-portal/utils";
 import { getPublicPortalViewer } from "@/modules/public-portal/viewer";
 import { getLoginUrl } from "@/utils/callback-url";
 
@@ -14,16 +9,12 @@ export default async function PublicPortalViewerProfileRoute({
   params: Promise<{ portalSlug: string }>;
 }) {
   const { portalSlug } = await params;
-  const [portal, viewer] = await Promise.all([
-    getPublicPortalOrNotFound(portalSlug),
-    getPublicPortalViewer(portalSlug),
-  ]);
+  const viewer = await getPublicPortalViewer(portalSlug);
+  const profileHref = getGlobalProfileHref();
 
   if (!viewer) {
-    redirect(getLoginUrl(getViewerProfileCallbackUrl(portal)));
+    redirect(getLoginUrl(profileHref));
   }
 
-  redirect(
-    getAuthorPath(portal, viewer.id) ?? getPortalPath(portal, "feedback"),
-  );
+  redirect(profileHref);
 }

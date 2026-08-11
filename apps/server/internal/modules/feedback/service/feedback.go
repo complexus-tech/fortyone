@@ -32,8 +32,8 @@ const (
 	maxPublicFeedbackTitleCharacters       = 200
 	maxPublicFeedbackDescriptionCharacters = 20_000
 	maxPublicFeedbackCommentCharacters     = 10_000
-	defaultContributorCommentsPageSize     = 20
-	maxContributorCommentsPageSize         = 50
+	defaultContributorPageSize             = 20
+	maxContributorPageSize                 = 50
 	publicRoadmapSlug                      = "roadmap"
 	defaultSimilarItemsLimit               = 3
 	maxSimilarItemsLimit                   = 5
@@ -198,6 +198,26 @@ func (s *Service) GetPublicContributor(ctx context.Context, portalSlug string, a
 	return s.repo.GetContributor(ctx, portal.ID, authorID)
 }
 
+func (s *Service) ListContributorActivity(ctx context.Context, userID uuid.UUID, page, pageSize int) (CoreContributorActivityPage, error) {
+	if userID == uuid.Nil {
+		return CoreContributorActivityPage{}, invalidInput("user id is required")
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = defaultContributorPageSize
+	}
+	if pageSize > maxContributorPageSize {
+		pageSize = maxContributorPageSize
+	}
+	return s.repo.ListContributorActivity(ctx, CoreListContributorActivityInput{
+		UserID:   userID,
+		Page:     page,
+		PageSize: pageSize,
+	})
+}
+
 func (s *Service) GetWorkspacePublicContributor(ctx context.Context, workspaceSlug, portalSlug string, authorID uuid.UUID) (CoreContributor, error) {
 	if authorID == uuid.Nil {
 		return CoreContributor{}, invalidInput("contributor id is required")
@@ -243,10 +263,10 @@ func (s *Service) listContributorComments(ctx context.Context, portalID, authorI
 		page = 1
 	}
 	if pageSize < 1 {
-		pageSize = defaultContributorCommentsPageSize
+		pageSize = defaultContributorPageSize
 	}
-	if pageSize > maxContributorCommentsPageSize {
-		pageSize = maxContributorCommentsPageSize
+	if pageSize > maxContributorPageSize {
+		pageSize = maxContributorPageSize
 	}
 	return s.repo.ListContributorComments(ctx, CoreListContributorCommentsInput{
 		PortalID: portalID,
