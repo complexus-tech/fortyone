@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useEditor } from "@tiptap/react";
 import { toast } from "sonner";
 import { Button, Flex, TextEditor } from "ui";
@@ -5,10 +6,12 @@ import { cn } from "lib";
 import { useCommentStoryMutation } from "@/modules/story/hooks/comment-mutation";
 import { useUpdateCommentMutation } from "@/lib/hooks/update-comment-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
-import type { Member } from "@/types";
 import { extractMentionsFromHTML } from "@/lib/utils/mentions";
 import { type MentionItem } from "./mentions/list";
-import { getStoryCommentEditorExtensions } from "./story-comment-editor";
+import {
+  getStoryCommentEditorExtensions,
+  setStoryCommentMentionUsers,
+} from "./story-comment-editor";
 
 export const CommentInput = ({
   storyId,
@@ -27,15 +30,9 @@ export const CommentInput = ({
   teamId: string;
   onCancel?: () => void;
 }) => {
-  const { data: members = [] } = useTeamMembers(teamId);
+  const { data: members } = useTeamMembers(teamId);
   const { mutate } = useCommentStoryMutation();
   const { mutate: updateComment } = useUpdateCommentMutation();
-  const mentionUsers: MentionItem[] = members.map((member: Member) => ({
-    id: member.id,
-    label: member.fullName || member.username,
-    username: member.username,
-    avatar: member.avatarUrl,
-  }));
 
   const getPlaceHolder = () => {
     if (commentId) {
@@ -60,13 +57,26 @@ export const CommentInput = ({
   const editor = useEditor({
     extensions: getStoryCommentEditorExtensions({
       enableMentions: true,
-      mentionUsers,
       placeholder: getPlaceHolder(),
     }),
     content: initialComment ?? "",
     editable: true,
     immediatelyRender: false,
   });
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    const mentionUsers: MentionItem[] = (members ?? []).map((member) => ({
+      id: member.id,
+      label: member.fullName || member.username,
+      username: member.username,
+      avatar: member.avatarUrl,
+    }));
+    setStoryCommentMentionUsers(editor, mentionUsers);
+  }, [editor, members]);
 
   const handleComment = () => {
     const comment = editor?.getHTML() ?? "";

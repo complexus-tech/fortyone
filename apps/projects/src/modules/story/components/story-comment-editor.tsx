@@ -1,3 +1,4 @@
+import type { Editor } from "@tiptap/core";
 import { mergeAttributes, ReactRenderer } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
@@ -25,6 +26,25 @@ type RichTextNode = {
 const EMPTY_MARKDOWN = "";
 const MARKDOWN_BLOCK_SEPARATOR = "\n\n";
 const MENTION_TRIGGER = "@";
+type MentionStorage = {
+  users?: MentionItem[];
+};
+
+const getMentionStorage = (editor: Editor) =>
+  (editor.storage as unknown as { mention?: MentionStorage }).mention;
+
+const getStoryCommentMentionUsers = (editor: Editor) =>
+  getMentionStorage(editor)?.users ?? [];
+
+export const setStoryCommentMentionUsers = (
+  editor: Editor,
+  users: MentionItem[],
+) => {
+  const storage = getMentionStorage(editor);
+  if (storage) {
+    storage.users = users;
+  }
+};
 
 const renderMentionSuggestion = () => {
   let component: ReactRenderer<MentionListRef>;
@@ -85,11 +105,9 @@ const renderMentionSuggestion = () => {
 
 export const getStoryCommentEditorExtensions = ({
   enableMentions = false,
-  mentionUsers = [],
   placeholder,
 }: {
   enableMentions?: boolean;
-  mentionUsers?: MentionItem[];
   placeholder: string;
 }) => {
   const baseExtensions = [
@@ -126,7 +144,9 @@ export const getStoryCommentEditorExtensions = ({
             ];
           },
           suggestion: {
-            items: ({ query }: { query: string }) => {
+            items: ({ editor, query }: { editor: Editor; query: string }) => {
+              const mentionUsers = getStoryCommentMentionUsers(editor);
+
               if (!query || query.trim() === "") {
                 return mentionUsers.slice(0, 6);
               }

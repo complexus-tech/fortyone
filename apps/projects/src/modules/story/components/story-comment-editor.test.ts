@@ -1,9 +1,11 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import { generateHTML } from "@tiptap/core";
+import { Editor, generateHTML } from "@tiptap/core";
+import type { MentionItem } from "./mentions/list";
 import {
   getStoryCommentEditorExtensions,
   serializeStoryCommentToGitHubMarkdown,
+  setStoryCommentMentionUsers,
 } from "./story-comment-editor";
 
 const MENTION = {
@@ -26,6 +28,10 @@ const COMMENT_DOCUMENT = {
     },
   ],
   type: "doc",
+};
+type MentionItems = (input: { editor: Editor; query: string }) => MentionItem[];
+type MentionExtensionOptions = {
+  suggestion: { items: MentionItems };
 };
 
 jest.mock("ui", () => ({
@@ -62,5 +68,39 @@ describe("story comment editor mentions", () => {
     expect(serializeStoryCommentToGitHubMarkdown(COMMENT_DOCUMENT)).toBe(
       `@${MENTION.label}`,
     );
+  });
+
+  it("uses team members that load after the editor is initialized", () => {
+    const editor = new Editor({
+      extensions: getStoryCommentEditorExtensions({
+        enableMentions: true,
+        placeholder: "Leave a comment...",
+      }),
+    });
+    const mentionExtension = editor.extensionManager.extensions.find(
+      (extension) => extension.name === "mention",
+    );
+    const mentionOptions = mentionExtension?.options as
+      | MentionExtensionOptions
+      | undefined;
+    if (!mentionOptions) {
+      throw new Error("Mention extension is not configured");
+    }
+    const getItems = mentionOptions.suggestion.items;
+
+    expect(getItems({ editor, query: "" })).toEqual([]);
+
+    const mentionUsers: MentionItem[] = [
+      {
+        id: MENTION.id,
+        label: MENTION.label,
+        username: "thulani",
+      },
+    ];
+    setStoryCommentMentionUsers(editor, mentionUsers);
+
+    expect(getItems({ editor, query: "thul" })).toEqual(mentionUsers);
+
+    editor.destroy();
   });
 });
