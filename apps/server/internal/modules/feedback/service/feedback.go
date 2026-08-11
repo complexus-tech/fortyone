@@ -198,9 +198,13 @@ func (s *Service) GetPublicContributor(ctx context.Context, portalSlug string, a
 	return s.repo.GetContributor(ctx, portal.ID, authorID)
 }
 
-func (s *Service) ListContributorActivity(ctx context.Context, userID uuid.UUID, page, pageSize int) (CoreContributorActivityPage, error) {
+func (s *Service) ListContributorActivity(ctx context.Context, userID uuid.UUID, activityType string, page, pageSize int) (CoreContributorActivityPage, error) {
 	if userID == uuid.Nil {
 		return CoreContributorActivityPage{}, invalidInput("user id is required")
+	}
+	activityType = strings.TrimSpace(activityType)
+	if activityType != "" && activityType != "feedback" && activityType != "comment" {
+		return CoreContributorActivityPage{}, invalidInput("activity type must be feedback or comment")
 	}
 	if page < 1 {
 		page = 1
@@ -212,9 +216,10 @@ func (s *Service) ListContributorActivity(ctx context.Context, userID uuid.UUID,
 		pageSize = maxContributorPageSize
 	}
 	return s.repo.ListContributorActivity(ctx, CoreListContributorActivityInput{
-		UserID:   userID,
-		Page:     page,
-		PageSize: pageSize,
+		UserID:       userID,
+		ActivityType: activityType,
+		Page:         page,
+		PageSize:     pageSize,
 	})
 }
 

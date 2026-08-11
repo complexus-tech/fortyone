@@ -138,12 +138,21 @@ type contributorActivityRow struct {
 	FeedbackTitle string    `db:"feedback_title"`
 	FeedbackSlug  string    `db:"feedback_slug"`
 	Body          string    `db:"body"`
+	BoardName     string    `db:"board_name"`
+	Status        string    `db:"status"`
+	VoteCount     int       `db:"vote_count"`
+	CommentCount  int       `db:"comment_count"`
 	PortalSlug    string    `db:"portal_slug"`
 	WorkspaceName string    `db:"workspace_name"`
 	WorkspaceSlug string    `db:"workspace_slug"`
 	CreatedAt     time.Time `db:"created_at"`
-	FeedbackCount int       `db:"feedback_count"`
-	CommentCount  int       `db:"comment_count"`
+}
+
+type contributorActivityStatsRow struct {
+	FeedbackCount int `db:"feedback_count"`
+	CommentCount  int `db:"comment_count"`
+	VoteScore     int `db:"vote_score"`
+	PortalCount   int `db:"portal_count"`
 }
 
 type storyLinkRow struct {
@@ -217,9 +226,10 @@ func (r *Repo) GetPortalBySlug(ctx context.Context, slug string) (feedback.CoreP
 
 func (r *Repo) ListContributorActivity(ctx context.Context, input feedback.CoreListContributorActivityInput) (feedback.CoreContributorActivityPage, error) {
 	var rows []contributorActivityRow
+	var stats contributorActivityStatsRow
 	limit := input.PageSize + 1
 	offset := (input.Page - 1) * input.PageSize
-	err := r.db.SelectContext(ctx, &rows, `
+	query := fmt.Sprintf(`
 		WITH activities AS (
 			SELECT fi.id,
 				'feedback' AS activity_type,
@@ -227,13 +237,26 @@ func (r *Repo) ListContributorActivity(ctx context.Context, input feedback.CoreL
 				fi.title AS feedback_title,
 				fi.slug AS feedback_slug,
 				LEFT(fi.description, 500) AS body,
+				fb.name AS board_name,
+				%s AS status,
+				CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = fi.id), 0) AS integer) AS vote_count,
+				CAST((SELECT COUNT(*) FROM feedback_comments item_comment WHERE item_comment.item_id = fi.id) AS integer) AS comment_count,
 				w.slug AS portal_slug,
 				w.name AS workspace_name,
 				w.slug AS workspace_slug,
 				fi.created_at
 			FROM feedback_items fi
 			INNER JOIN feedback_portals fp ON fp.id = fi.portal_id
+			INNER JOIN feedback_boards fb ON fb.id = fi.board_id
 			INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
+			LEFT JOIN LATERAL (
+				SELECT fsl.id, fsl.story_id
+				FROM feedback_story_links fsl
+				WHERE fsl.item_id = fi.id AND fsl.is_primary = true
+				LIMIT 1
+			) primary_link ON true
+			LEFT JOIN stories projected_story ON projected_story.id = primary_link.story_id
+			LEFT JOIN statuses projected_state ON projected_state.status_id = projected_story.status_id
 			WHERE fi.author_id = $1
 				AND fi.deleted_at IS NULL
 				AND fp.is_public = true
@@ -245,6 +268,10 @@ func (r *Repo) ListContributorActivity(ctx context.Context, input feedback.CoreL
 				fi.title AS feedback_title,
 				fi.slug AS feedback_slug,
 				LEFT(fc.body, 500) AS body,
+				'' AS board_name,
+				'' AS status,
+				CAST(0 AS integer) AS vote_count,
+				CAST(0 AS integer) AS comment_count,
 				w.slug AS portal_slug,
 				w.name AS workspace_name,
 				w.slug AS workspace_slug,
@@ -258,26 +285,59 @@ func (r *Repo) ListContributorActivity(ctx context.Context, input feedback.CoreL
 				AND fp.is_public = true
 				AND w.deleted_at IS NULL
 		)
-		SELECT activities.*,
-			CAST(COUNT(*) FILTER (WHERE activity_type = 'feedback') OVER () AS integer) AS feedback_count,
-			CAST(COUNT(*) FILTER (WHERE activity_type = 'comment') OVER () AS integer) AS comment_count
+		SELECT activities.*
 		FROM activities
+		WHERE ($4 = '' OR activity_type = $4)
 		ORDER BY created_at DESC, id DESC
 		LIMIT $2 OFFSET $3
-	`, input.UserID, limit, offset)
+	`, projectedFeedbackStatus)
+	err := r.db.SelectContext(ctx, &rows, query, input.UserID, limit, offset, input.ActivityType)
 	if err != nil {
+		return feedback.CoreContributorActivityPage{}, err
+	}
+	if err := r.db.GetContext(ctx, &stats, `
+		WITH contributions AS (
+			SELECT 'feedback' AS activity_type,
+				fi.portal_id,
+				CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = fi.id), 0) AS integer) AS vote_score
+			FROM feedback_items fi
+			INNER JOIN feedback_portals fp ON fp.id = fi.portal_id
+			INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
+			WHERE fi.author_id = $1
+				AND fi.deleted_at IS NULL
+				AND fp.is_public = true
+				AND w.deleted_at IS NULL
+			UNION ALL
+			SELECT 'comment' AS activity_type,
+				fi.portal_id,
+				CAST(0 AS integer) AS vote_score
+			FROM feedback_comments fc
+			INNER JOIN feedback_items fi ON fi.id = fc.item_id
+			INNER JOIN feedback_portals fp ON fp.id = fi.portal_id
+			INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
+			WHERE fc.author_id = $1
+				AND fi.deleted_at IS NULL
+				AND fp.is_public = true
+				AND w.deleted_at IS NULL
+		)
+		SELECT CAST(COUNT(*) FILTER (WHERE activity_type = 'feedback') AS integer) AS feedback_count,
+			CAST(COUNT(*) FILTER (WHERE activity_type = 'comment') AS integer) AS comment_count,
+			CAST(COALESCE(SUM(vote_score), 0) AS integer) AS vote_score,
+			CAST(COUNT(DISTINCT portal_id) AS integer) AS portal_count
+		FROM contributions
+	`, input.UserID); err != nil {
 		return feedback.CoreContributorActivityPage{}, err
 	}
 
 	page := feedback.CoreContributorActivityPage{
-		Activities: make([]feedback.CoreContributorActivity, 0, min(len(rows), input.PageSize)),
-		Page:       input.Page,
-		PageSize:   input.PageSize,
-		HasMore:    len(rows) > input.PageSize,
-	}
-	if len(rows) > 0 {
-		page.FeedbackCount = rows[0].FeedbackCount
-		page.CommentCount = rows[0].CommentCount
+		Activities:    make([]feedback.CoreContributorActivity, 0, min(len(rows), input.PageSize)),
+		Page:          input.Page,
+		PageSize:      input.PageSize,
+		HasMore:       len(rows) > input.PageSize,
+		FeedbackCount: stats.FeedbackCount,
+		CommentCount:  stats.CommentCount,
+		VoteScore:     stats.VoteScore,
+		PortalCount:   stats.PortalCount,
 	}
 	if page.HasMore {
 		rows = rows[:input.PageSize]
@@ -290,6 +350,10 @@ func (r *Repo) ListContributorActivity(ctx context.Context, input feedback.CoreL
 			FeedbackTitle: row.FeedbackTitle,
 			FeedbackSlug:  row.FeedbackSlug,
 			Body:          row.Body,
+			BoardName:     row.BoardName,
+			Status:        row.Status,
+			VoteCount:     row.VoteCount,
+			CommentCount:  row.CommentCount,
 			PortalSlug:    row.PortalSlug,
 			WorkspaceName: row.WorkspaceName,
 			WorkspaceSlug: row.WorkspaceSlug,

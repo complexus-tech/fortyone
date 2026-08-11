@@ -207,7 +207,7 @@ func (h *Handlers) ListContributorActivity(ctx context.Context, w http.ResponseW
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 	page, pageSize := publicContributorPagination(r)
-	activity, err := h.feedback.ListContributorActivity(ctx, userID, page, pageSize)
+	activity, err := h.feedback.ListContributorActivity(ctx, userID, r.URL.Query().Get("type"), page, pageSize)
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}

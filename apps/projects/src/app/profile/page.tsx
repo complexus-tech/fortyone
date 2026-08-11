@@ -24,7 +24,7 @@ export default async function ProfileRoute() {
   const [profile, workspaces, initialActivity] = await Promise.all([
     getProfile(),
     getWorkspaces(),
-    getFeedbackProfileActivity(),
+    getFeedbackProfileActivity("feedback"),
   ]);
   const activeWorkspace =
     workspaces.find(

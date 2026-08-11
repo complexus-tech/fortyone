@@ -49,6 +49,10 @@ type CoreContributorActivity struct {
 	FeedbackTitle string
 	FeedbackSlug  string
 	Body          string
+	BoardName     string
+	Status        string
+	VoteCount     int
+	CommentCount  int
 	PortalSlug    string
 	WorkspaceName string
 	WorkspaceSlug string
@@ -62,12 +66,15 @@ type CoreContributorActivityPage struct {
 	HasMore       bool
 	FeedbackCount int
 	CommentCount  int
+	VoteScore     int
+	PortalCount   int
 }
 
 type CoreListContributorActivityInput struct {
-	UserID   uuid.UUID
-	Page     int
-	PageSize int
+	UserID       uuid.UUID
+	ActivityType string
+	Page         int
+	PageSize     int
 }
 
 type CoreBoard struct {

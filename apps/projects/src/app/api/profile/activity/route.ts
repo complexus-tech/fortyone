@@ -1,6 +1,9 @@
 import { ApiError } from "api-client";
 import { NextResponse, type NextRequest } from "next/server";
-import { getFeedbackProfileActivity } from "@/modules/public-portal/profile-activity";
+import {
+  getFeedbackProfileActivity,
+  type FeedbackProfileActivityType,
+} from "@/modules/public-portal/profile-activity";
 
 const parsePositiveInteger = (value: string | null, fallback: number) => {
   const parsed = Number(value);
@@ -8,6 +11,9 @@ const parsePositiveInteger = (value: string | null, fallback: number) => {
 };
 
 export const GET = async (request: NextRequest) => {
+  const requestedType = request.nextUrl.searchParams.get("type");
+  const type: FeedbackProfileActivityType =
+    requestedType === "comment" ? "comment" : "feedback";
   const page = parsePositiveInteger(
     request.nextUrl.searchParams.get("page"),
     1,
@@ -18,7 +24,7 @@ export const GET = async (request: NextRequest) => {
   );
 
   try {
-    const activity = await getFeedbackProfileActivity(page, pageSize);
+    const activity = await getFeedbackProfileActivity(type, page, pageSize);
     return NextResponse.json({ data: activity });
   } catch (error) {
     if (error instanceof ApiError) {

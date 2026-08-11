@@ -585,7 +585,7 @@ func TestListContributorActivityNormalizesPagination(t *testing.T) {
 		},
 	}
 	page, err := New(repo, nil).
-		ListContributorActivity(context.Background(), uuid.New(), 0, 500)
+		ListContributorActivity(context.Background(), uuid.New(), " feedback ", 0, 500)
 
 	require.NoError(t, err)
 	require.Len(t, page.Activities, 1)
@@ -595,13 +595,23 @@ func TestListContributorActivityNormalizesPagination(t *testing.T) {
 	require.Len(t, repo.contributorActivityInputs, 1)
 	require.Equal(t, 1, repo.contributorActivityInputs[0].Page)
 	require.Equal(t, 50, repo.contributorActivityInputs[0].PageSize)
+	require.Equal(t, "feedback", repo.contributorActivityInputs[0].ActivityType)
 }
 
 func TestListContributorActivityRequiresUser(t *testing.T) {
 	t.Parallel()
 
 	_, err := New(&repoStub{}, nil).
-		ListContributorActivity(context.Background(), uuid.Nil, 1, 20)
+		ListContributorActivity(context.Background(), uuid.Nil, "", 1, 20)
+
+	require.ErrorIs(t, err, ErrInvalidInput)
+}
+
+func TestListContributorActivityRejectsUnknownType(t *testing.T) {
+	t.Parallel()
+
+	_, err := New(&repoStub{}, nil).
+		ListContributorActivity(context.Background(), uuid.New(), "vote", 1, 20)
 
 	require.ErrorIs(t, err, ErrInvalidInput)
 }

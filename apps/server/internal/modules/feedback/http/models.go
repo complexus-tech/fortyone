@@ -94,6 +94,10 @@ type AppContributorActivity struct {
 	FeedbackTitle string    `json:"feedbackTitle"`
 	FeedbackSlug  string    `json:"feedbackSlug"`
 	Body          string    `json:"body"`
+	BoardName     string    `json:"boardName"`
+	Status        string    `json:"status"`
+	VoteCount     int       `json:"voteCount"`
+	CommentCount  int       `json:"commentCount"`
 	PortalSlug    string    `json:"portalSlug"`
 	WorkspaceName string    `json:"workspaceName"`
 	WorkspaceSlug string    `json:"workspaceSlug"`
@@ -107,6 +111,8 @@ type AppContributorActivityPage struct {
 	HasMore       bool                     `json:"hasMore"`
 	FeedbackCount int                      `json:"feedbackCount"`
 	CommentCount  int                      `json:"commentCount"`
+	VoteScore     int                      `json:"voteScore"`
+	PortalCount   int                      `json:"portalCount"`
 }
 
 type AppContributorFeedback struct {
@@ -390,6 +396,10 @@ func toAppContributorActivityPage(core feedback.CoreContributorActivityPage) App
 			FeedbackTitle: activity.FeedbackTitle,
 			FeedbackSlug:  activity.FeedbackSlug,
 			Body:          activity.Body,
+			BoardName:     activity.BoardName,
+			Status:        activity.Status,
+			VoteCount:     activity.VoteCount,
+			CommentCount:  activity.CommentCount,
 			PortalSlug:    activity.PortalSlug,
 			WorkspaceName: activity.WorkspaceName,
 			WorkspaceSlug: activity.WorkspaceSlug,
@@ -403,6 +413,8 @@ func toAppContributorActivityPage(core feedback.CoreContributorActivityPage) App
 		HasMore:       core.HasMore,
 		FeedbackCount: core.FeedbackCount,
 		CommentCount:  core.CommentCount,
+		VoteScore:     core.VoteScore,
+		PortalCount:   core.PortalCount,
 	}
 }
 
