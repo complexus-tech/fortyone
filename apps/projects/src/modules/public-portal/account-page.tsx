@@ -71,7 +71,7 @@ export const AccountHeader = ({
   <Box className="border-border/60 bg-background sticky top-0 z-20 border-b">
     <Flex
       align="center"
-      className="mx-auto h-16 w-full max-w-5xl px-4 md:px-6"
+      className="mx-auto h-16 w-full max-w-[78rem] px-4 md:px-6"
       justify="between"
     >
       <Link
@@ -79,7 +79,7 @@ export const AccountHeader = ({
         className="transition-opacity hover:opacity-80"
         href={viewer.appHref ?? viewer.accountHref}
       >
-        <Logo className="h-8" />
+        <Logo className="h-7" />
       </Link>
       <PublicPortalUserMenu profileHref={profileHref} viewer={viewer} />
     </Flex>
