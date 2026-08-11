@@ -4,7 +4,11 @@ import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { requireToolConfirmation } from "../tool-helpers";
-import { normalizeStoryInput } from "./normalize-story-input";
+import {
+  normalizeRequiredStoryId,
+  normalizeStoryInput,
+} from "./normalize-story-input";
+import { createStoryStatusResolver } from "./resolve-story-status";
 
 export const bulkCreateStories = tool({
   description:
@@ -31,7 +35,13 @@ export const bulkCreateStories = tool({
             .optional()
             .describe("Story description HTML"),
           teamId: z.string().describe("Team ID where story belongs (required)"),
-          statusId: z.string().describe("Initial status ID (required)"),
+          statusId: z
+            .string()
+            .nullable()
+            .optional()
+            .describe(
+              "Initial status ID. Omit it to use the team's default status.",
+            ),
           assigneeId: z
             .string()
             .nullable()
@@ -117,8 +127,21 @@ export const bulkCreateStories = tool({
         };
       }
 
-      const normalizedStoriesData = storiesData.map((storyData) =>
-        normalizeStoryInput(storyData),
+      const resolvedTeamIds = storiesData.map((storyData) =>
+        normalizeRequiredStoryId(storyData.teamId, "teamId"),
+      );
+      const resolveStatusId = createStoryStatusResolver(ctx);
+      const resolvedStatusIds = await Promise.all(
+        storiesData.map((storyData, index) =>
+          resolveStatusId(resolvedTeamIds[index], storyData.statusId),
+        ),
+      );
+      const normalizedStoriesData = storiesData.map((storyData, index) =>
+        normalizeStoryInput({
+          ...storyData,
+          teamId: resolvedTeamIds[index],
+          statusId: resolvedStatusIds[index],
+        }),
       );
 
       const results = await Promise.all(

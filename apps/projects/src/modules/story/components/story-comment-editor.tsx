@@ -24,6 +24,7 @@ type RichTextNode = {
 
 const EMPTY_MARKDOWN = "";
 const MARKDOWN_BLOCK_SEPARATOR = "\n\n";
+const MENTION_TRIGGER = "@";
 
 const renderMentionSuggestion = () => {
   let component: ReactRenderer<MentionListRef>;
@@ -108,7 +109,11 @@ export const getStoryCommentEditorExtensions = ({
           HTMLAttributes: {
             class: "mention bg-surface-muted hover:bg-state-hover transition",
           },
-          renderHTML({ node, options }) {
+          renderHTML({ node, options, suggestion }) {
+            const label =
+              node.attrs.label ?? node.attrs.id ?? EMPTY_MARKDOWN;
+            const trigger = suggestion?.char ?? MENTION_TRIGGER;
+
             return [
               "a",
               mergeAttributes(
@@ -117,7 +122,7 @@ export const getStoryCommentEditorExtensions = ({
                 },
                 options.HTMLAttributes,
               ),
-              `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`,
+              `${trigger}${label}`,
             ];
           },
           suggestion: {

@@ -75,54 +75,22 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 
 	var createdKRs []keyresults.CoreKeyResult
 	if len(keyResults) > 0 {
-		// Bulk insert key results
-		const krQuery = `
-			INSERT INTO key_results (
-				objective_id, name, measurement_type,
-				start_value, current_value, target_value, created_by, lead, start_date, end_date
-			) VALUES (
-				:objective_id, :name, :measurement_type,
-				:start_value, :current_value, :target_value, :created_by, :lead, :start_date, :end_date
-			) RETURNING *;
-		`
-
-		collaboratorsQuery := `
-        INSERT INTO key_result_contributors (
-            key_result_id, user_id, created_at, updated_at
-        ) VALUES (
-            :key_result_id, :user_id, NOW(), NOW()
-        )
-    `
-
-		krstmt, err := tx.PrepareNamedContext(ctx, krQuery)
+		writer, err := newSQLObjectiveKeyResultWriter(ctx, tx)
 		if err != nil {
 			return objectives.CoreObjective{}, nil, err
 		}
-		defer krstmt.Close()
+		defer writer.Close()
 
-		for _, kr := range keyResults {
-			kr.ObjectiveID = createdObj.ID
-			var dbKR dbKeyResult
-			if err := krstmt.GetContext(ctx, &dbKR, toDBKeyResult(kr, kr.CreatedBy)); err != nil {
-				return objectives.CoreObjective{}, nil, err
-			}
-
-			createdKRs = append(createdKRs, toCoreKeyResult(dbKR))
-
-			collaboratorsStmt, err := tx.PrepareNamedContext(ctx, collaboratorsQuery)
-			if err != nil {
-				return objectives.CoreObjective{}, nil, err
-			}
-			defer collaboratorsStmt.Close()
-
-			for _, contributor := range kr.Contributors {
-				if err := collaboratorsStmt.GetContext(ctx, nil, map[string]any{
-					"key_result_id": dbKR.ID,
-					"user_id":       contributor,
-				}); err != nil {
-					return objectives.CoreObjective{}, nil, err
-				}
-			}
+		createdKRs, err = createObjectiveKeyResults(
+			ctx,
+			writer,
+			createdObj.ID,
+			workspaceID,
+			objective.Team,
+			keyResults,
+		)
+		if err != nil {
+			return objectives.CoreObjective{}, nil, err
 		}
 	}
 

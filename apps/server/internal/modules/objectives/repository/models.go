@@ -37,7 +37,9 @@ type dbObjective struct {
 
 type dbKeyResult struct {
 	ID              uuid.UUID  `db:"id"`
+	SequenceID      int        `db:"sequence_id"`
 	ObjectiveID     uuid.UUID  `db:"objective_id"`
+	TeamID          uuid.UUID  `db:"team_id"`
 	Name            string     `db:"name"`
 	MeasurementType string     `db:"measurement_type"`
 	StartValue      float64    `db:"start_value"`
@@ -123,6 +125,7 @@ func toDBKeyResult(kr keyresults.CoreNewKeyResult, createdBy uuid.UUID) dbKeyRes
 func toCoreKeyResult(dbkr dbKeyResult) keyresults.CoreKeyResult {
 	return keyresults.CoreKeyResult{
 		ID:              dbkr.ID,
+		SequenceID:      dbkr.SequenceID,
 		ObjectiveID:     dbkr.ObjectiveID,
 		Name:            dbkr.Name,
 		MeasurementType: dbkr.MeasurementType,

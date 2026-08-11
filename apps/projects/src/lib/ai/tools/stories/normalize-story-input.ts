@@ -41,7 +41,7 @@ const isPlaceholderValue = (value: string) => {
   return trimmed.startsWith("[") && trimmed.endsWith("]");
 };
 
-const normalizeRequiredId = (value: string, fieldName: string) => {
+export const normalizeRequiredStoryId = (value: string, fieldName: string) => {
   const normalized = normalizeOptionalString(value);
   if (!normalized || isPlaceholderValue(normalized)) {
     throw new Error(
@@ -60,7 +60,7 @@ const normalizeOptionalId = (value?: string | null) => {
 };
 
 const normalizeEstimateValue = (value?: number | null) => {
-  if (value == null || value === 0) {
+  if (value === null || value === undefined || value === 0) {
     return undefined;
   }
 
@@ -84,8 +84,8 @@ const setIfDefined = <Key extends keyof NormalizedStoryInput>(
 export const normalizeStoryInput = <T extends StoryInput>(story: T) => {
   const payload: NormalizedStoryInput = {
     title: story.title,
-    teamId: normalizeRequiredId(story.teamId, "teamId"),
-    statusId: normalizeRequiredId(story.statusId, "statusId"),
+    teamId: normalizeRequiredStoryId(story.teamId, "teamId"),
+    statusId: normalizeRequiredStoryId(story.statusId, "statusId"),
     priority: story.priority,
   };
 

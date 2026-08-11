@@ -4,7 +4,11 @@ import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { requireToolConfirmation } from "../tool-helpers";
-import { normalizeStoryInput } from "./normalize-story-input";
+import {
+  normalizeRequiredStoryId,
+  normalizeStoryInput,
+} from "./normalize-story-input";
+import { createStoryStatusResolver } from "./resolve-story-status";
 
 export const createStory = tool({
   description:
@@ -17,11 +21,7 @@ export const createStory = tool({
       .describe(
         "Must be true after the user explicitly confirms creating the story.",
       ),
-    description: z
-      .string()
-      .nullable()
-      .optional()
-      .describe("Story description"),
+    description: z.string().nullable().optional().describe("Story description"),
     descriptionHTML: z
       .string()
       .nullable()
@@ -34,8 +34,10 @@ export const createStory = tool({
       .describe("Team ID where story belongs (required) (UUID)"),
     statusId: z
       .string()
+      .nullable()
+      .optional()
       .describe(
-        "Initial status ID (required) (UUID) always use statuses tool to get the statuses",
+        "Initial status ID (UUID). Resolve it with the statuses tool when the user specifies a status; otherwise omit it to use the team's default status.",
       ),
     assigneeId: z
       .string()
@@ -135,12 +137,16 @@ export const createStory = tool({
         };
       }
 
+      const resolvedTeamId = normalizeRequiredStoryId(teamId, "teamId");
+      const resolveStatusId = createStoryStatusResolver(ctx);
+      const resolvedStatusId = await resolveStatusId(resolvedTeamId, statusId);
+
       const storyData = normalizeStoryInput({
         title,
         description,
         descriptionHTML,
-        teamId,
-        statusId,
+        teamId: resolvedTeamId,
+        statusId: resolvedStatusId,
         assigneeId,
         priority,
         estimateValue,
