@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AccountPage } from "@/modules/public-portal/account-page";
 import { getFeedbackSetupHref } from "@/modules/public-portal/feedback-setup";
+import {
+  getPortalAccountPathBySlug,
+  getViewerProfileHrefByPortalSlug,
+} from "@/modules/public-portal/utils";
 import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
@@ -16,11 +20,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function AccountRoute() {
+const PORTAL_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export default async function AccountRoute({
+  searchParams,
+}: {
+  searchParams: Promise<{ portal?: string | string[] }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const portalParam = resolvedSearchParams.portal;
+  const portalSlug = Array.isArray(portalParam) ? portalParam[0] : portalParam;
+  const validPortalSlug =
+    portalSlug && PORTAL_SLUG_PATTERN.test(portalSlug) ? portalSlug : undefined;
+  const profileHref = validPortalSlug
+    ? getViewerProfileHrefByPortalSlug(validPortalSlug)
+    : undefined;
+  const accountCallbackUrl = validPortalSlug
+    ? getPortalAccountPathBySlug(validPortalSlug)
+    : "/account";
   const session = await auth();
 
   if (!session) {
-    redirect(getLoginUrl("/account"));
+    redirect(getLoginUrl(accountCallbackUrl));
   }
 
   const [profile, workspaces] = await Promise.all([
@@ -38,9 +59,10 @@ export default async function AccountRoute() {
   return (
     <AccountPage
       profile={profile}
+      profileHref={profileHref}
       viewer={{
         id: profile.id,
-        accountHref: "/account",
+        accountHref: accountCallbackUrl,
         appHref,
         avatarUrl: profile.avatarUrl,
         email: profile.email,

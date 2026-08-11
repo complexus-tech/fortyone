@@ -4,6 +4,7 @@ import { NEW_FEEDBACK_QUERY_PARAM } from "./query-params";
 
 const isWorkspaceSubdomainDeployment =
   process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
+const FORTYONE_DOMAIN = "fortyone.app";
 const NIL_AUTHOR_ID = "00000000-0000-0000-0000-000000000000";
 
 export const getBoard = (portal: PublicPortal, boardId: string) =>
@@ -47,6 +48,14 @@ export const getViewerProfilePathByPortalSlug = (portalSlug: string) =>
 export const getViewerProfilePath = (portal: PublicPortal) =>
   getViewerProfilePathByPortalSlug(portal.slug);
 
+export const getViewerProfileHrefByPortalSlug = (portalSlug: string) => {
+  const profilePath = getViewerProfilePathByPortalSlug(portalSlug);
+
+  if (!isWorkspaceSubdomainDeployment) return profilePath;
+
+  return `https://${portalSlug}.${FORTYONE_DOMAIN}${profilePath}`;
+};
+
 export const getPortalPath = (
   portal: PublicPortal,
   path: "" | "account" | "feedback" | "roadmap" | "updates",
@@ -62,6 +71,13 @@ export const getPortalPathBySlug = (
     return `/${routePath || "feedback"}`;
   }
   return `/portal/${portalSlug}${routePath ? `/${routePath}` : ""}`;
+};
+
+export const getPortalAccountPathBySlug = (portalSlug: string) => {
+  const accountPath = getPortalPathBySlug(portalSlug, "account");
+  const params = new URLSearchParams({ portal: portalSlug });
+
+  return `${accountPath}?${params.toString()}`;
 };
 
 export const getPortalCallbackUrl = (

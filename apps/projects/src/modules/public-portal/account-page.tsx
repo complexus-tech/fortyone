@@ -63,9 +63,11 @@ export const PublicPortalAccountPage = ({
 
 export const AccountPage = ({
   profile,
+  profileHref,
   viewer,
 }: {
   profile: User;
+  profileHref?: string;
   viewer: PublicPortalViewer;
 }) => (
   <Box className="bg-background min-h-dvh">
@@ -78,11 +80,11 @@ export const AccountPage = ({
         <Link
           aria-label="FortyOne home"
           className="transition-opacity hover:opacity-80"
-          href={viewer.appHref ?? "/account"}
+          href={viewer.appHref ?? viewer.accountHref}
         >
           <Logo className="h-8" />
         </Link>
-        <PublicPortalUserMenu viewer={viewer} />
+        <PublicPortalUserMenu profileHref={profileHref} viewer={viewer} />
       </Flex>
     </Box>
     <AccountContent profile={profile} showWorkspaceSetup={!viewer.appHref} />

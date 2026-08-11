@@ -49,7 +49,7 @@ const createDeferred = <T,>() => {
 };
 
 const portalViewer = {
-  accountHref: "/portal/city-roads/account",
+  accountHref: "/portal/city-roads/account?portal=city-roads",
   appHref: "/city-roads/my-work",
   avatarUrl: null,
   email: "ada@example.com",
@@ -1182,7 +1182,7 @@ describe("Public portal UI", () => {
     );
     expect(
       screen.getByRole("link", { name: /account settings/i }),
-    ).toHaveAttribute("href", "/portal/city-roads/account");
+    ).toHaveAttribute("href", "/portal/city-roads/account?portal=city-roads");
   });
 
   it("shows feedback notifications and marks an unread item as read", async () => {
@@ -1461,7 +1461,7 @@ describe("Public portal UI", () => {
       <PublicPortalRequestsPage
         portal={publicPortalFixture}
         viewer={{
-          accountHref: "/portal/city-roads/account",
+          accountHref: "/portal/city-roads/account?portal=city-roads",
           avatarUrl: null,
           email: "external@example.com",
           feedbackSetupHref: "/onboarding/create",
@@ -1473,7 +1473,7 @@ describe("Public portal UI", () => {
 
     expect(
       screen.getByRole("link", { name: /account settings/i }),
-    ).toHaveAttribute("href", "/portal/city-roads/account");
+    ).toHaveAttribute("href", "/portal/city-roads/account?portal=city-roads");
     expect(
       screen.queryByRole("link", { name: "Open FortyOne" }),
     ).not.toBeInTheDocument();
