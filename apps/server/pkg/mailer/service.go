@@ -21,15 +21,21 @@ type Service interface {
 }
 
 type Config struct {
-	Host        string
-	Port        int
-	Username    string
-	Password    string
-	FromAddress string
-	FromName    string
-	Environment string
-	BaseDir     string
+	Host            string
+	Port            int
+	Username        string
+	Password        string
+	FromAddress     string
+	FromName        string
+	MayaFromAddress string
+	MayaFromName    string
+	Environment     string
+	BaseDir         string
 }
+
+type SenderProfile string
+
+const SenderProfileMaya SenderProfile = "maya"
 
 type Email struct {
 	To          []string
@@ -37,6 +43,7 @@ type Email struct {
 	Body        string
 	IsHTML      bool
 	Attachments []Attachment
+	Sender      SenderProfile
 	ReplyTo     string
 	MessageID   string
 }
@@ -52,6 +59,7 @@ type TemplatedEmail struct {
 	Template  string
 	Data      any
 	Subject   string
+	Sender    SenderProfile
 	ReplyTo   string
 	MessageID string
 }
@@ -136,12 +144,9 @@ func NewService(cfg Config, log *logger.Logger) (Service, error) {
 
 func (s *service) Send(ctx context.Context, email Email) error {
 	msg := gomail.NewMessage()
-	fromName := s.config.FromName
-	if fromName == "" {
-		fromName = s.config.FromAddress
-	}
+	fromAddress, fromName := s.senderForProfile(email.Sender)
 
-	msg.SetHeader("From", fmt.Sprintf("%s <%s>", fromName, s.config.FromAddress))
+	msg.SetHeader("From", fmt.Sprintf("%s <%s>", fromName, fromAddress))
 	msg.SetHeader("To", email.To...)
 	msg.SetHeader("Subject", email.Subject)
 	if email.MessageID != "" {
@@ -177,6 +182,25 @@ func (s *service) Send(ctx context.Context, email Email) error {
 
 	s.log.Info(ctx, "email sent successfully", "to", email.To)
 	return nil
+}
+
+func (s *service) senderForProfile(profile SenderProfile) (string, string) {
+	fromAddress := s.config.FromAddress
+	fromName := s.config.FromName
+	if profile == SenderProfileMaya {
+		if configuredAddress := strings.TrimSpace(s.config.MayaFromAddress); configuredAddress != "" {
+			fromAddress = configuredAddress
+		}
+		if configuredName := strings.TrimSpace(s.config.MayaFromName); configuredName != "" {
+			fromName = configuredName
+		} else {
+			fromName = "Maya"
+		}
+	}
+	if fromName == "" {
+		fromName = fromAddress
+	}
+	return fromAddress, fromName
 }
 
 func (s *service) SendTemplated(ctx context.Context, templateEmail TemplatedEmail) error {
@@ -225,6 +249,7 @@ func (s *service) SendTemplated(ctx context.Context, templateEmail TemplatedEmai
 		Subject:   subject,
 		Body:      buf.String(),
 		IsHTML:    true,
+		Sender:    templateEmail.Sender,
 		ReplyTo:   templateEmail.ReplyTo,
 		MessageID: templateEmail.MessageID,
 	}

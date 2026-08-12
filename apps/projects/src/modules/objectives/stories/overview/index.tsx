@@ -200,7 +200,7 @@ export const Overview = () => {
               <Properties />
               <RelatedDocuments entityId={objectiveId} entityType="objective" />
               <Divider className="my-8" />
-              <Activity />
+              <Activity viewport="desktop" />
             </Container>
           </BoardDividedPanel.MainPanel>
           <BoardDividedPanel.SideBar
@@ -271,7 +271,7 @@ export const Overview = () => {
           <Properties />
           <RelatedDocuments entityId={objectiveId} entityType="objective" />
           <Divider className="my-6 md:my-8" />
-          <Activity />
+          <Activity viewport="mobile" />
         </Container>
       </Box>
 

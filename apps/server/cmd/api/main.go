@@ -90,6 +90,8 @@ type Config struct {
 		Password    string `env:"APP_EMAIL_PASSWORD"`
 		FromAddress string `env:"APP_EMAIL_FROM_ADDRESS"`
 		FromName    string `default:"Complexus" env:"APP_EMAIL_FROM_NAME"`
+		MayaAddress string `env:"APP_EMAIL_MAYA_FROM_ADDRESS"`
+		MayaName    string `default:"Maya" env:"APP_EMAIL_MAYA_FROM_NAME"`
 		Environment string `default:"development" env:"APP_EMAIL_ENVIRONMENT"`
 		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
 	}
@@ -283,14 +285,16 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Initialize mailer service
 	mailerService, err := mailer.NewService(mailer.Config{
-		Host:        cfg.Email.Host,
-		Port:        cfg.Email.Port,
-		Username:    cfg.Email.Username,
-		Password:    cfg.Email.Password,
-		FromAddress: cfg.Email.FromAddress,
-		FromName:    cfg.Email.FromName,
-		Environment: cfg.Email.Environment,
-		BaseDir:     cfg.Email.BaseDir,
+		Host:            cfg.Email.Host,
+		Port:            cfg.Email.Port,
+		Username:        cfg.Email.Username,
+		Password:        cfg.Email.Password,
+		FromAddress:     cfg.Email.FromAddress,
+		FromName:        cfg.Email.FromName,
+		MayaFromAddress: cfg.Email.MayaAddress,
+		MayaFromName:    cfg.Email.MayaName,
+		Environment:     cfg.Email.Environment,
+		BaseDir:         cfg.Email.BaseDir,
 	}, log)
 	if err != nil {
 		return fmt.Errorf("error initializing mailer service: %w", err)

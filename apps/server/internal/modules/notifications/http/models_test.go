@@ -38,3 +38,46 @@ func TestToAppPortalNotificationsResponseIncludesSelfContainedFeedbackMetadata(t
 	require.Equal(t, feedbackID, result.Feedback.ID)
 	require.Equal(t, "/feedback/export-roadmap-to-pdf", result.Feedback.Path)
 }
+
+func TestToAppNotificationRedactsEmailDeliveryContext(t *testing.T) {
+	source := notifications.CoreNotification{
+		ID:         uuid.New(),
+		EntityType: "strategy",
+		Message: notifications.NotificationMessage{
+			Template: "Your weekly strategy check-in",
+			Strategy: &notifications.StrategyNotificationSnapshot{
+				Version: 1,
+				Kind:    notifications.StrategyNotificationKindWeeklyCheckIn,
+			},
+		},
+	}
+	appNotification := toAppNotification(source)
+
+	require.Nil(t, appNotification.Message.Strategy)
+	require.Equal(t, "Strategy guidance is ready to review.", appNotification.Message.Template)
+	require.Empty(t, appNotification.Message.Variables)
+	require.Equal(t, "Your weekly strategy check-in", source.Message.Template)
+	require.NotNil(t, source.Message.Strategy)
+}
+
+func TestToAppPortalNotificationRedactsDeliveryContext(t *testing.T) {
+	source := notifications.CoreNotification{
+		ID:         uuid.New(),
+		EntityType: "feedback",
+		EntityID:   uuid.New(),
+		Message: notifications.NotificationMessage{
+			Template: "Maya commented on your feedback",
+			Strategy: &notifications.StrategyNotificationSnapshot{Version: 1},
+		},
+	}
+
+	response := toAppPortalNotificationsResponse([]notifications.CorePortalNotification{{
+		Notification: source,
+		FeedbackSlug: "improve-onboarding",
+	}}, 1, 20, false)
+
+	require.Len(t, response.Notifications, 1)
+	require.Nil(t, response.Notifications[0].Message.Strategy)
+	require.Equal(t, source.Message.Template, response.Notifications[0].Message.Template)
+	require.NotNil(t, source.Message.Strategy)
+}

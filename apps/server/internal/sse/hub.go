@@ -192,12 +192,17 @@ func (h *Hub) listenToUserNotifications(client *Client) {
 				h.log.Warn(client.ctx, "Dropping notification for a different workspace", "userID", client.UserID, "clientWorkspaceID", client.WorkspaceID, "notificationWorkspaceID", notificationPayload.WorkspaceID, "notificationID", notificationPayload.ID)
 				continue
 			}
+			publicPayload, err := json.Marshal(notificationPayload.Public())
+			if err != nil {
+				h.log.Error(client.ctx, "Failed to sanitize notification from Pub/Sub, skipping", "userID", client.UserID, "channel", channelName, "notificationID", notificationPayload.ID, "error", err)
+				continue
+			}
 
 			h.log.Debug(client.ctx, "Received message from Pub/Sub", "userID", client.UserID, "channel", channelName, "notificationID", notificationPayload.ID)
 
 			// Send message to client's personal channel.
 			select {
-			case client.Send <- []byte(msg.Payload):
+			case client.Send <- publicPayload:
 				h.log.Debug(client.ctx, "Message sent to client's send channel", "userID", client.UserID, "notificationID", notificationPayload.ID)
 			case <-time.After(clientSendTimeout):
 				h.log.Warn(client.ctx, "Timeout sending message to client channel, client might be slow or send channel full", "userID", client.UserID, "channel", channelName, "notificationID", notificationPayload.ID)

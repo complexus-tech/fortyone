@@ -7,6 +7,7 @@ import (
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	"github.com/complexus-tech/projects-api/internal/taskhandlers"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
+	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -15,9 +16,9 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, systemUserID uuid.UUID) *asynq.ServeMux {
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, slackEvents, systemUserID)
-	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, systemUserID, notificationsService)
+func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, systemUserID uuid.UUID) *asynq.ServeMux {
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopy, slackEvents, systemUserID)
+	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, emailCopy, systemUserID, notificationsService)
 
 	mux := asynq.NewServeMux()
 

@@ -52,7 +52,7 @@ export const ChatContent = ({ isPopup = false }: { isPopup?: boolean }) => {
       >
         <Box
           className={cn("flex shrink-0 items-center", {
-            "h-[4.75rem] border-b-[0.5px] border-black/[0.06] px-5 py-3 dark:border-white/[0.06]":
+            "h-19 border-b-[0.5px] border-black/6 px-5 py-3 dark:border-white/6":
               isPopup,
             "h-[3.6rem] px-4": !isPopup,
           })}

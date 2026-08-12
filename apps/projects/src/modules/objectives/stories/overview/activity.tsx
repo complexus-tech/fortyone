@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { ObjectiveHealthIcon } from "@/components/ui";
 import { HealthMenu } from "@/components/ui/health-menu";
 import { KeyResults } from "@/modules/objectives/stories/overview/key-results";
+import type { KeyResultsViewport } from "@/modules/objectives/stories/overview/key-results";
 import { useFeatures, useTerminology } from "@/hooks";
 import {
   useCanUpdateObjective,
@@ -16,7 +17,7 @@ import type { ObjectiveHealth } from "../../types";
 import { Summary } from "./summary";
 import { Updates } from "./updates";
 
-export const Activity = () => {
+export const Activity = ({ viewport }: { viewport: KeyResultsViewport }) => {
   const canUpdate = useCanUpdateObjective();
   const features = useFeatures();
   const { getTermDisplay } = useTerminology();
@@ -96,7 +97,9 @@ export const Activity = () => {
         </Flex>
         <Tabs.Panel value="summary">
           <Summary />
-          {features.keyResultEnabled ? <KeyResults /> : null}
+          {features.keyResultEnabled ? (
+            <KeyResults viewport={viewport} />
+          ) : null}
         </Tabs.Panel>
         <Tabs.Panel value="updates">
           <Updates objectiveId={objectiveId} />

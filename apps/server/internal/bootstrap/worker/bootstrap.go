@@ -16,6 +16,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/cache"
+	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/storage"
@@ -120,14 +121,16 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	}
 
 	mailerService, err := mailer.NewService(mailer.Config{
-		Host:        cfg.Email.Host,
-		Port:        cfg.Email.Port,
-		Username:    cfg.Email.Username,
-		Password:    cfg.Email.Password,
-		FromAddress: cfg.Email.FromAddress,
-		FromName:    cfg.Email.FromName,
-		Environment: cfg.Email.Environment,
-		BaseDir:     cfg.Email.BaseDir,
+		Host:            cfg.Email.Host,
+		Port:            cfg.Email.Port,
+		Username:        cfg.Email.Username,
+		Password:        cfg.Email.Password,
+		FromAddress:     cfg.Email.FromAddress,
+		FromName:        cfg.Email.FromName,
+		MayaFromAddress: cfg.Email.MayaAddress,
+		MayaFromName:    cfg.Email.MayaName,
+		Environment:     cfg.Email.Environment,
+		BaseDir:         cfg.Email.BaseDir,
 	}, log)
 	if err != nil {
 		_ = db.Close()
@@ -187,6 +190,17 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	)
 
 	mayaService := buildMayaService(log, db, cfg, systemUserID)
+	emailCopyClient, err := emailcopy.New(emailcopy.Config{
+		APIKey: cfg.AIAPIKey,
+	})
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("initialize email copy generator: %w", err)
+	}
+	var emailCopyGenerator emailcopy.Generator
+	if emailCopyClient.Enabled() {
+		emailCopyGenerator = emailCopyClient
+	}
 	slackEvents, err := buildSlackEventProcessor(log, db, redisClient, cfg, tasksService)
 	if err != nil {
 		_ = db.Close()
@@ -200,7 +214,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if upgradedCredentials > 0 {
 		log.Info(ctx, "Encrypted legacy Slack credentials", "count", upgradedCredentials)
 	}
-	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, notificationsService, slackEvents, systemUserID)
+	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopyGenerator, notificationsService, slackEvents, systemUserID)
 	resourcesTransferred = true
 
 	return App{

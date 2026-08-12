@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -18,7 +20,7 @@ import (
 )
 
 // ProcessObjectiveOverdue processes overdue objectives and sends emails directly
-func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service) error {
+func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessObjectiveOverdue")
 	defer span.End()
 
@@ -45,25 +47,38 @@ func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logge
 			break // No more leads
 		}
 
-		// Process each lead in this batch
-		for _, lead := range leads {
-			// Get objectives for this specific lead
-			objectives, err := getOverdueObjectivesForLead(ctx, db, lead.LeadUserID, lead.WorkspaceID)
-			if err != nil {
-				log.Error(ctx, "Failed to get objectives for lead", "lead_id", lead.LeadUserID, "workspace_id", lead.WorkspaceID, "error", err)
-				continue
-			}
-
-			if len(objectives) > 0 {
-				// Send email directly for this lead
-				err := sendObjectiveOverdueEmailForLead(ctx, log, mailerService, objectives)
-				if err != nil {
-					log.Error(ctx, "Failed to send email", "lead_id", lead.LeadUserID, "error", err)
-					continue
+		results, batchErr := processGuidanceEmailBatch(ctx, leads, func(batchCtx context.Context, lead OverdueLead) guidanceEmailBatchResult {
+			return processGuidanceEmailRecipient(batchCtx, func(attemptCtx context.Context) guidanceEmailBatchResult {
+				objectives, objectivesErr := getOverdueObjectivesForLead(attemptCtx, db, lead.LeadUserID, lead.WorkspaceID)
+				if objectivesErr != nil {
+					log.Error(attemptCtx, "Failed to get objectives for lead", "lead_id", lead.LeadUserID, "workspace_id", lead.WorkspaceID, "error", objectivesErr)
+					return guidanceEmailBatchResult{Err: objectivesErr}
 				}
+				if len(objectives) == 0 {
+					return guidanceEmailBatchResult{Processed: true}
+				}
+				if sendErr := sendObjectiveOverdueEmailForLead(attemptCtx, log, mailerService, copyGenerator, objectives); sendErr != nil {
+					log.Error(attemptCtx, "Failed to send email", "lead_id", lead.LeadUserID, "error", sendErr)
+					return guidanceEmailBatchResult{Err: sendErr}
+				}
+				return guidanceEmailBatchResult{Processed: true, Sent: true}
+			})
+		})
+		if batchErr != nil {
+			span.RecordError(batchErr)
+			return fmt.Errorf("objective guidance batch cancelled: %w", batchErr)
+		}
+		for _, result := range results {
+			if result.Processed {
+				totalProcessed++
+			}
+			if result.Sent {
 				totalEmailsCreated++
 			}
-			totalProcessed++
+		}
+		if failureCount := guidanceEmailBatchFailureCount(results); failureCount > 0 {
+			log.Error(ctx, "Objective recipients failed after in-job processing; continuing without retrying successful deliveries", "failed_recipients", failureCount, "batch", batchCount)
+			span.AddEvent("objective recipient deliveries failed", trace.WithAttributes(attribute.Int("failed_recipients", failureCount)))
 		}
 
 		log.Info(ctx, fmt.Sprintf("Lead batch %d completed: %d leads processed", batchCount, len(leads)))
@@ -110,6 +125,7 @@ type OverdueKeyResult struct {
 	Name            string    `json:"name"`
 	EndDate         string    `json:"end_date"` // Store as string to handle JSON parsing
 	MeasurementType string    `json:"measurement_type"`
+	StartValue      float64   `json:"start_value"`
 	CurrentValue    float64   `json:"current_value"`
 	TargetValue     float64   `json:"target_value"`
 	IsCompleted     bool      `json:"is_completed"`
@@ -133,47 +149,7 @@ func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize i
 	ctx, span := web.AddSpan(ctx, "jobs.getLeadsWithOverdueObjectives")
 	defer span.End()
 
-	query := `
-		SELECT DISTINCT 
-			o.lead_user_id as lead_user_id,
-			u.email as lead_email,
-			COALESCE(NULLIF(u.full_name, ''), u.username) as lead_name,
-			w.workspace_id as workspace_id,
-			w.name as workspace_name,
-			w.slug as workspace_slug,
-			CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) AS email_enabled
-		FROM objectives o
-		JOIN users u ON o.lead_user_id = u.user_id
-		JOIN workspaces w ON o.workspace_id = w.workspace_id
-		JOIN objective_statuses os ON o.status_id = os.status_id
-		JOIN workspace_settings ws ON o.workspace_id = ws.workspace_id
-		LEFT JOIN notification_preferences np ON o.lead_user_id = np.user_id AND o.workspace_id = np.workspace_id
-		WHERE (
-			-- Objectives that are overdue or due soon
-			o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
-			OR
-			-- Objectives that have overdue key results (only if key results are enabled)
-			(ws.key_result_enabled = true AND o.objective_id IN (
-				SELECT DISTINCT kr.objective_id 
-				FROM key_results kr
-				WHERE kr.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
-					-- Only include objectives with incomplete key results
-					AND NOT (
-						(kr.measurement_type = 'percentage' AND kr.current_value >= kr.target_value) OR
-						(kr.measurement_type = 'number' AND kr.current_value >= kr.target_value) OR
-						(kr.measurement_type = 'boolean' AND kr.current_value = kr.target_value)
-					)
-			))
-		)
-		AND o.lead_user_id IS NOT NULL
-		AND u.is_active = true
-		AND u.is_system = false
-		AND NULLIF(TRIM(u.email), '') IS NOT NULL
-		AND os.category NOT IN ('completed', 'cancelled', 'paused')
-		AND ws.objective_enabled = true
-		AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
-		ORDER BY o.lead_user_id
-		LIMIT :batch_size OFFSET :offset`
+	query := overdueObjectiveRecipientsQuery()
 
 	params := map[string]any{
 		"batch_size": batchSize,
@@ -200,6 +176,66 @@ func getLeadsWithOverdueObjectives(ctx context.Context, db *sqlx.DB, batchSize i
 	))
 
 	return leads, nil
+}
+
+func overdueObjectiveRecipientsQuery() string {
+	return `
+		SELECT DISTINCT 
+			o.lead_user_id as lead_user_id,
+			u.email as lead_email,
+			COALESCE(NULLIF(u.full_name, ''), u.username) as lead_name,
+			w.workspace_id as workspace_id,
+			w.name as workspace_name,
+			w.slug as workspace_slug,
+			CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) AS email_enabled
+		FROM objectives o
+		JOIN users u ON o.lead_user_id = u.user_id
+		JOIN workspaces w ON o.workspace_id = w.workspace_id
+		JOIN workspace_members wm
+			ON wm.workspace_id = o.workspace_id
+			AND wm.user_id = o.lead_user_id
+			AND wm.role IN ('admin', 'member', 'guest')
+		JOIN objective_statuses os ON o.status_id = os.status_id
+		JOIN workspace_settings ws ON o.workspace_id = ws.workspace_id
+		LEFT JOIN notification_preferences np ON o.lead_user_id = np.user_id AND o.workspace_id = np.workspace_id
+		WHERE (
+			-- Objectives that are overdue or due soon
+			o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
+			OR
+			-- Objectives that have overdue key results (only if key results are enabled)
+			(ws.key_result_enabled = true AND o.objective_id IN (
+				SELECT DISTINCT kr.objective_id 
+				FROM key_results kr
+				WHERE kr.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
+					-- Only include objectives with incomplete key results
+					AND NOT (
+						(kr.measurement_type IN ('percentage', 'number') AND (
+							(kr.target_value >= kr.start_value AND kr.current_value >= kr.target_value) OR
+							(kr.target_value < kr.start_value AND kr.current_value <= kr.target_value)
+						)) OR
+						(kr.measurement_type = 'boolean' AND kr.current_value = kr.target_value)
+					)
+			))
+		)
+		AND o.lead_user_id IS NOT NULL
+		AND u.is_active = true
+		AND u.is_system = false
+		AND NULLIF(TRIM(u.email), '') IS NOT NULL
+		AND w.deleted_at IS NULL
+		AND (
+			wm.role = 'admin'
+			OR EXISTS (
+				SELECT 1
+				FROM team_members tm
+				WHERE tm.team_id = o.team_id
+					AND tm.user_id = o.lead_user_id
+			)
+		)
+		AND os.category NOT IN ('completed', 'cancelled', 'paused')
+		AND ws.objective_enabled = true
+		AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
+		ORDER BY o.lead_user_id, w.workspace_id
+		LIMIT :batch_size OFFSET :offset`
 }
 
 func overdueObjectivesForLeadQuery() string {
@@ -231,11 +267,16 @@ func overdueObjectivesForLeadQuery() string {
 									'name', kr.name,
 									'end_date', kr.end_date,
 									'measurement_type', kr.measurement_type,
+									'start_value', kr.start_value,
 									'current_value', kr.current_value,
 									'target_value', kr.target_value,
 									'is_completed', CASE 
-										WHEN kr.measurement_type = 'percentage' AND kr.current_value >= kr.target_value THEN true
-										WHEN kr.measurement_type = 'number' AND kr.current_value >= kr.target_value THEN true
+										WHEN kr.measurement_type IN ('percentage', 'number')
+											AND kr.target_value >= kr.start_value
+											AND kr.current_value >= kr.target_value THEN true
+										WHEN kr.measurement_type IN ('percentage', 'number')
+											AND kr.target_value < kr.start_value
+											AND kr.current_value <= kr.target_value THEN true
 										WHEN kr.measurement_type = 'boolean' AND kr.current_value = kr.target_value THEN true
 										ELSE false
 									END,
@@ -257,8 +298,10 @@ func overdueObjectivesForLeadQuery() string {
 								AND kr.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
 								-- Only include key results that are NOT completed
 								AND NOT (
-									(kr.measurement_type = 'percentage' AND kr.current_value >= kr.target_value) OR
-									(kr.measurement_type = 'number' AND kr.current_value >= kr.target_value) OR
+									(kr.measurement_type IN ('percentage', 'number') AND (
+										(kr.target_value >= kr.start_value AND kr.current_value >= kr.target_value) OR
+										(kr.target_value < kr.start_value AND kr.current_value <= kr.target_value)
+									)) OR
 									(kr.measurement_type = 'boolean' AND kr.current_value = kr.target_value)
 								)
 						), '[]'
@@ -268,10 +311,24 @@ func overdueObjectivesForLeadQuery() string {
 			FROM objectives o
 			JOIN users u ON o.lead_user_id = u.user_id
 			JOIN workspaces w ON o.workspace_id = w.workspace_id
+			JOIN workspace_members wm
+				ON wm.workspace_id = o.workspace_id
+				AND wm.user_id = o.lead_user_id
+				AND wm.role IN ('admin', 'member', 'guest')
 			JOIN objective_statuses os ON o.status_id = os.status_id
 			JOIN workspace_settings ws ON o.workspace_id = ws.workspace_id
 			WHERE o.lead_user_id = :lead_id
 				AND o.workspace_id = :workspace_id
+				AND w.deleted_at IS NULL
+				AND (
+					wm.role = 'admin'
+					OR EXISTS (
+						SELECT 1
+						FROM team_members tm
+						WHERE tm.team_id = o.team_id
+							AND tm.user_id = o.lead_user_id
+					)
+				)
 				AND (
 					-- Objectives that are overdue or due soon
 					o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
@@ -283,8 +340,10 @@ func overdueObjectivesForLeadQuery() string {
 						WHERE kr.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
 							-- Only include objectives with incomplete key results
 							AND NOT (
-								(kr.measurement_type = 'percentage' AND kr.current_value >= kr.target_value) OR
-								(kr.measurement_type = 'number' AND kr.current_value >= kr.target_value) OR
+								(kr.measurement_type IN ('percentage', 'number') AND (
+									(kr.target_value >= kr.start_value AND kr.current_value >= kr.target_value) OR
+									(kr.target_value < kr.start_value AND kr.current_value <= kr.target_value)
+								)) OR
 								(kr.measurement_type = 'boolean' AND kr.current_value = kr.target_value)
 							)
 					))
@@ -341,7 +400,7 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID, works
 }
 
 // sendObjectiveOverdueEmailForLead sends an email to a lead about their overdue objectives
-func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, mailerService mailer.Service, objectives []OverdueObjective) error {
+func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, objectives []OverdueObjective) error {
 	ctx, span := web.AddSpan(ctx, "jobs.sendObjectiveOverdueEmailForLead")
 	defer span.End()
 
@@ -383,27 +442,49 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, m
 	firstObjective := objectives[0]
 	workspaceURL := fmt.Sprintf("https://%s.fortyone.app", firstObjective.WorkspaceSlug)
 
-	// Format email content
-	emailContent := formatObjectiveOverdueEmailContent(firstObjective, dueSoonObjectives, dueTodayObjectives, overdueObjectives, workspaceURL)
-
-	// Send email via Brevo service
 	totalCount := len(dueSoonObjectives) + len(dueTodayObjectives) + len(overdueObjectives)
 	itemText := "objective"
 	if totalCount > 1 {
 		itemText = "objectives"
 	}
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
+	heading := title
+	emailContent := formatObjectiveOverdueEmailContent(firstObjective, dueSoonObjectives, dueTodayObjectives, overdueObjectives, workspaceURL)
+	ctaURL := fmt.Sprintf("%s/roadmap", workspaceURL)
+	ctaLabel := "View objectives"
+
+	if copyGenerator != nil {
+		orderedObjectives := make([]OverdueObjective, 0, len(objectives))
+		orderedObjectives = append(orderedObjectives, overdueObjectives...)
+		orderedObjectives = append(orderedObjectives, dueTodayObjectives...)
+		orderedObjectives = append(orderedObjectives, dueSoonObjectives...)
+		request, destinations := objectiveOverdueEmailCopyRequest(orderedObjectives, workspaceURL, ctaURL)
+		generated, err := copyGenerator.Generate(ctx, request)
+		if err != nil {
+			log.Warn(ctx, "Falling back to deterministic objective guidance copy", "lead_id", firstObjective.LeadUserID, "workspace_id", firstObjective.WorkspaceID, "error", err)
+		} else if generatedContent, renderErr := renderGeneratedEmailContent(generated, destinations); renderErr != nil {
+			log.Warn(ctx, "Falling back to deterministic objective guidance copy after render validation", "lead_id", firstObjective.LeadUserID, "workspace_id", firstObjective.WorkspaceID, "error", renderErr)
+		} else if generatedCTALabel, generatedCTAURL, ok := generatedPrimaryCTA(generated, destinations); !ok {
+			log.Warn(ctx, "Falling back to deterministic objective guidance copy because no trusted CTA was generated", "lead_id", firstObjective.LeadUserID, "workspace_id", firstObjective.WorkspaceID)
+		} else {
+			title = generated.Subject.Text
+			heading = generated.H1.Text
+			emailContent = generatedContent
+			ctaLabel = generatedCTALabel
+			ctaURL = generatedCTAURL
+		}
+	}
 
 	data := map[string]any{
 		"UserName":                 firstObjective.LeadName,
 		"UserEmail":                firstObjective.LeadEmail,
 		"WorkspaceName":            firstObjective.WorkspaceName,
 		"WorkspaceURL":             workspaceURL,
-		"NotificationTitle":        title,
+		"NotificationTitle":        heading,
 		"NotificationMessage":      emailContent,
 		"NotificationType":         "reminders",
-		"NotificationCTAURL":       fmt.Sprintf("%s/roadmap", workspaceURL),
-		"NotificationCTALabel":     "View objectives",
+		"NotificationCTAURL":       ctaURL,
+		"NotificationCTALabel":     ctaLabel,
 		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
 	}
 
@@ -412,6 +493,13 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, m
 		Template: "notifications/notification",
 		Subject:  title,
 		Data:     data,
+		Sender:   mailer.SenderProfileMaya,
+		MessageID: guidanceEmailMessageID(
+			"objective-guidance",
+			firstObjective.WorkspaceID,
+			firstObjective.LeadUserID,
+			time.Now(),
+		),
 	}); err != nil {
 		span.RecordError(err)
 		return fmt.Errorf("failed to send objective overdue email: %w", err)
@@ -433,6 +521,183 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, m
 	return nil
 }
 
+type objectiveEmailCopyFact struct {
+	fact        emailcopy.Fact
+	destination emailCopyDestination
+}
+
+func objectiveOverdueEmailCopyRequest(objectives []OverdueObjective, workspaceURL, ctaURL string) (emailcopy.Request, map[string]emailCopyDestination) {
+	firstObjective := objectives[0]
+	availableFacts := make([]objectiveEmailCopyFact, 0, len(objectives)*2)
+	for _, objective := range objectives {
+		objectiveReference := "objective:" + objective.ID.String()
+		availableFacts = append(availableFacts, objectiveEmailCopyFact{
+			fact: emailcopy.Fact{
+				ReferenceID:     objectiveReference,
+				Text:            objectiveEmailCopyFactText(objective),
+				EntityTokens:    []string{objective.Name},
+				ProtectedTokens: objectiveDeadlineProtectedTokens(objective),
+				Required:        true,
+			},
+			destination: emailCopyDestination{
+				Label: objective.Name,
+				URL:   objectiveEmailURL(workspaceURL, objective.TeamID, objective.ID),
+			},
+		})
+	}
+
+	// Preserve at least one row per objective before using the remaining email
+	// budget for key-result detail.
+	for _, objective := range objectives {
+		for _, keyResult := range parseKeyResults(objective.KeyResults) {
+			if keyResult.ID == uuid.Nil {
+				continue
+			}
+			keyResultReference := "key_result:" + keyResult.ID.String()
+			availableFacts = append(availableFacts, objectiveEmailCopyFact{
+				fact: emailcopy.Fact{
+					ReferenceID:     keyResultReference,
+					Text:            keyResultEmailCopyFactText(keyResult),
+					EntityTokens:    []string{keyResult.Name},
+					ProtectedTokens: keyResultDeadlineProtectedTokens(keyResult),
+					Required:        true,
+				},
+				destination: emailCopyDestination{
+					Label: keyResult.Name,
+					URL:   keyResultEmailURL(workspaceURL, objective.TeamID, objective.ID, keyResult.ID),
+				},
+			})
+		}
+	}
+
+	itemLimit := maxGuidanceEmailRows - 1
+	if len(availableFacts) < itemLimit {
+		itemLimit = len(availableFacts)
+	}
+	hiddenCount := len(availableFacts) - itemLimit
+	summaryText := fmt.Sprintf("There are %d objectives that need attention, represented by %d objective and key-result signals.", len(objectives), len(availableFacts))
+	summaryTokens := nonEmptyFactTokens(
+		fmt.Sprintf("%d objectives that need attention", len(objectives)),
+		fmt.Sprintf("%d objective and key-result signals", len(availableFacts)),
+	)
+	if hiddenCount > 0 {
+		summaryText = fmt.Sprintf("There are %d objectives that need attention, represented by %d objective and key-result signals. This email includes %d signals; %d more %s available in objectives.", len(objectives), len(availableFacts), itemLimit, hiddenCount, pluralize(hiddenCount, "is", "are"))
+		summaryTokens = append(summaryTokens,
+			fmt.Sprintf("includes %d signals", itemLimit),
+			fmt.Sprintf("%d more %s available in objectives", hiddenCount, pluralize(hiddenCount, "is", "are")),
+		)
+	}
+
+	facts := []emailcopy.Fact{
+		{
+			ReferenceID:  "workspace_context",
+			Text:         fmt.Sprintf("The workspace is named %s.", firstObjective.WorkspaceName),
+			EntityTokens: []string{firstObjective.WorkspaceName},
+		},
+		{ReferenceID: "objective_summary", Text: summaryText, ProtectedTokens: summaryTokens, Required: true},
+	}
+	destinations := make(map[string]emailCopyDestination, itemLimit+1)
+	for _, availableFact := range availableFacts[:itemLimit] {
+		facts = append(facts, availableFact.fact)
+		destinations[availableFact.fact.ReferenceID] = availableFact.destination
+	}
+
+	const actionReference = "review_objectives"
+	destinations[actionReference] = emailCopyDestination{Label: "Objectives", URL: ctaURL}
+	return emailcopy.Request{
+		SafetyIdentifier: firstObjective.LeadUserID.String(),
+		Purpose:          "Help an objective lead protect outcomes by reviewing objectives and key results with approaching or missed due dates.",
+		ProductVoice:     mayaGuidanceProductVoice,
+		Facts:            facts,
+		Actions: []emailcopy.Action{
+			{ReferenceID: actionReference, Description: "Open objectives to review progress, dates, and next actions."},
+		},
+	}, destinations
+}
+
+func objectiveEmailCopyFactText(objective OverdueObjective) string {
+	objectiveContext := fmt.Sprintf("The objective %s", objective.Name)
+	switch objective.DeadlineStatus {
+	case "overdue":
+		return fmt.Sprintf("%s is %d %s overdue; its due date is %s.", objectiveContext, objective.DaysDifference, pluralize(objective.DaysDifference, "day", "days"), objective.EndDate.Format("January 2, 2006"))
+	case "due_today":
+		return fmt.Sprintf("%s is due today, %s.", objectiveContext, objective.EndDate.Format("January 2, 2006"))
+	case "due_tomorrow":
+		return fmt.Sprintf("%s is due tomorrow, %s.", objectiveContext, objective.EndDate.Format("January 2, 2006"))
+	case "future":
+		return fmt.Sprintf("%s is on schedule, but at least one of its key results needs attention.", objectiveContext)
+	default:
+		return fmt.Sprintf("%s is due on %s.", objectiveContext, objective.EndDate.Format("January 2, 2006"))
+	}
+}
+
+func objectiveDeadlineProtectedTokens(objective OverdueObjective) []string {
+	return deadlineSemanticFactTokens(
+		objective.DeadlineStatus,
+		objective.DaysDifference,
+		objective.EndDate.Format("January 2, 2006"),
+	)
+}
+
+func keyResultEmailCopyFactText(keyResult OverdueKeyResult) string {
+	keyResultContext := fmt.Sprintf("The key result %s", keyResult.Name)
+	if progress := keyResultProgressText(keyResult); progress != "" {
+		keyResultContext += " " + progress
+	} else {
+		keyResultContext += " is incomplete"
+	}
+	endDate := keyResult.EndDate
+	if parsedEndDate, err := time.Parse("2006-01-02", keyResult.EndDate); err == nil {
+		endDate = parsedEndDate.Format("January 2, 2006")
+	}
+
+	switch keyResult.DeadlineStatus {
+	case "overdue":
+		return fmt.Sprintf("%s and is %d %s overdue; its due date is %s.", keyResultContext, keyResult.DaysDifference, pluralize(keyResult.DaysDifference, "day", "days"), endDate)
+	case "due_today":
+		return fmt.Sprintf("%s and is due today, %s.", keyResultContext, endDate)
+	case "due_tomorrow":
+		return fmt.Sprintf("%s and is due tomorrow, %s.", keyResultContext, endDate)
+	default:
+		return fmt.Sprintf("%s and is due on %s.", keyResultContext, endDate)
+	}
+}
+
+func keyResultDeadlineProtectedTokens(keyResult OverdueKeyResult) []string {
+	endDate := keyResult.EndDate
+	if parsedEndDate, err := time.Parse("2006-01-02", keyResult.EndDate); err == nil {
+		endDate = parsedEndDate.Format("January 2, 2006")
+	}
+	tokens := deadlineSemanticFactTokens(keyResult.DeadlineStatus, keyResult.DaysDifference, endDate)
+	if progress := keyResultProgressText(keyResult); progress != "" {
+		tokens = append(tokens, progress)
+	} else {
+		tokens = append(tokens, "is incomplete")
+	}
+	return nonEmptyFactTokens(tokens...)
+}
+
+func keyResultProgressText(keyResult OverdueKeyResult) string {
+	currentValue := strconv.FormatFloat(keyResult.CurrentValue, 'f', -1, 64)
+	targetValue := strconv.FormatFloat(keyResult.TargetValue, 'f', -1, 64)
+	switch keyResult.MeasurementType {
+	case "percentage":
+		return fmt.Sprintf("is at %s%% against a %s%% target", currentValue, targetValue)
+	case "number":
+		return fmt.Sprintf("is at %s against a target of %s", currentValue, targetValue)
+	default:
+		return ""
+	}
+}
+
+func objectiveEmailURL(workspaceURL string, teamID, objectiveID uuid.UUID) string {
+	return fmt.Sprintf("%s/teams/%s/objectives/%s", strings.TrimRight(workspaceURL, "/"), teamID.String(), objectiveID.String())
+}
+
+func keyResultEmailURL(workspaceURL string, teamID, objectiveID, keyResultID uuid.UUID) string {
+	return fmt.Sprintf("%s?tab=overview&keyResultId=%s", objectiveEmailURL(workspaceURL, teamID, objectiveID), keyResultID.String())
+}
+
 // formatObjectiveOverdueEmailContent formats the email content
 func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoonObjectives, dueTodayObjectives, overdueObjectives []OverdueObjective, workspaceURL string) string {
 	totalItems := len(dueSoonObjectives) + len(dueTodayObjectives) + len(overdueObjectives)
@@ -441,9 +706,7 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 		itemText = "objectives"
 	}
 
-	rows := []string{
-		fmt.Sprintf("You have %s that need attention.", formatEmailStrong(fmt.Sprintf("%d %s", totalItems, itemText))),
-	}
+	detailRows := make([]string, 0, totalItems)
 
 	if len(dueSoonObjectives) > 0 {
 		for _, objective := range dueSoonObjectives {
@@ -451,15 +714,15 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 			objectiveLink := formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, objective.TeamID.String(), objective.ID.String()), objective.Name)
 			if objective.DeadlineStatus == "future" {
 				// Objective is on schedule but has key results
-				rows = append(rows, fmt.Sprintf("Objective %s is on schedule, but key results need attention.", objectiveLink))
+				detailRows = append(detailRows, fmt.Sprintf("Objective %s is on schedule, but key results need attention.", objectiveLink))
 			} else {
 				// Objective is actually due soon
-				rows = append(rows, fmt.Sprintf("Objective %s is due %s.", objectiveLink, html.EscapeString(objective.EndDate.Format("January 2, 2006"))))
+				detailRows = append(detailRows, fmt.Sprintf("Objective %s is due %s.", objectiveLink, html.EscapeString(objective.EndDate.Format("January 2, 2006"))))
 			}
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
-				rows = append(rows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
+				detailRows = append(detailRows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
 			}
 		}
 	}
@@ -467,11 +730,11 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 	if len(dueTodayObjectives) > 0 {
 		for _, objective := range dueTodayObjectives {
 			objectiveLink := formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, objective.TeamID.String(), objective.ID.String()), objective.Name)
-			rows = append(rows, fmt.Sprintf("Objective %s is due today.", objectiveLink))
+			detailRows = append(detailRows, fmt.Sprintf("Objective %s is due today.", objectiveLink))
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
-				rows = append(rows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
+				detailRows = append(detailRows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
 			}
 		}
 	}
@@ -483,14 +746,27 @@ func formatObjectiveOverdueEmailContent(firstObjective OverdueObjective, dueSoon
 				daysText = "days"
 			}
 			objectiveLink := formatEmailLink(fmt.Sprintf("%s/teams/%s/objectives/%s", workspaceURL, objective.TeamID.String(), objective.ID.String()), objective.Name)
-			rows = append(rows, fmt.Sprintf("Objective %s is %s overdue.", objectiveLink, formatEmailStrong(fmt.Sprintf("%d %s", objective.DaysDifference, daysText))))
+			detailRows = append(detailRows, fmt.Sprintf("Objective %s is %s overdue.", objectiveLink, formatEmailStrong(fmt.Sprintf("%d %s", objective.DaysDifference, daysText))))
 
 			// Add key results if any
 			if keyResults := parseKeyResults(objective.KeyResults); len(keyResults) > 0 {
-				rows = append(rows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
+				detailRows = append(detailRows, formatKeyResultEmailRows(keyResults, workspaceURL, objective.TeamID, objective.ID)...)
 			}
 		}
 	}
+
+	visibleRows, hiddenCount := capGuidanceEmailDetailRows(detailRows)
+	summary := fmt.Sprintf("You have %s that need attention.", formatEmailStrong(fmt.Sprintf("%d %s", totalItems, itemText)))
+	if hiddenCount > 0 {
+		summary += fmt.Sprintf(
+			" They represent %d objective and key-result signals. This email includes %d signals; %d more %s available in objectives.",
+			len(detailRows),
+			len(visibleRows),
+			hiddenCount,
+			pluralize(hiddenCount, "is", "are"),
+		)
+	}
+	rows := append([]string{summary}, visibleRows...)
 
 	return formatCompactNotificationRows("Here's what needs attention.", rows)
 }

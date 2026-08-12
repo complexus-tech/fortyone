@@ -1,10 +1,13 @@
 package jobs
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/complexus-tech/projects-api/pkg/emailcopy"
+	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -148,6 +151,125 @@ func TestFormatFeedbackDigestEmailContentUsesLinkedSafeCompactRows(t *testing.T)
 	require.NotContains(t, rendered, "<li")
 }
 
+func TestFeedbackDigestCopyRequestIncludesThemeContextAndTrustedDestinations(t *testing.T) {
+	teamID := uuid.New()
+	items := make([]feedbackDigestItem, 0, 6)
+	for index := range 6 {
+		items = append(items, feedbackDigestItem{
+			ID:                 uuid.New(),
+			TeamID:             teamID,
+			Title:              "Export request " + string(rune('A'+index)),
+			Description:        "<p>Customers need a faster export for finance reviews.</p>",
+			AuthorName:         "Customer",
+			TeamName:           "Core product",
+			Status:             "pending",
+			TotalCount:         6,
+			PendingReviewCount: 4,
+		})
+	}
+	recipient := feedbackDigestRecipient{
+		WorkspaceName: "Acme",
+	}
+
+	request, destinations := feedbackDigestCopyRequest(recipient, items, "https://acme.fortyone.app")
+
+	require.True(t, request.IncludeFeedbackThemeSummary)
+	require.Len(t, request.Facts, 7)
+	require.True(t, request.Facts[0].Required)
+	require.Equal(t, []string{"Acme"}, request.Facts[0].EntityTokens)
+	require.Equal(t, []string{"6 new feedback items in this digest", "4 are pending or under review"}, request.Facts[0].ProtectedTokens)
+	require.Contains(t, request.Facts[1].Text, "Customers need a faster export")
+	require.NotContains(t, request.Facts[1].Text, "<p>")
+	require.Equal(
+		t,
+		[]string{"submitted by Customer", "to Core product", "currently has status pending"},
+		request.Facts[1].ProtectedTokens,
+	)
+	for index := 1; index <= feedbackDigestItemLimit; index++ {
+		require.True(t, request.Facts[index].Required)
+		require.Contains(t, destinations, request.Facts[index].ReferenceID)
+	}
+	require.False(t, request.Facts[6].Required)
+	require.NotContains(t, destinations, request.Facts[6].ReferenceID)
+	require.Equal(t, "https://acme.fortyone.app/teams/"+teamID.String()+"/feedback/"+items[0].ID.String(), destinations["feedback_primary"].URL)
+}
+
+func TestSendFeedbackDigestUsesGeneratedThemeCopyAndMayaSender(t *testing.T) {
+	teamID := uuid.New()
+	items := []feedbackDigestItem{
+		{
+			ID:                 uuid.New(),
+			TeamID:             teamID,
+			Title:              "Faster exports",
+			Description:        "Finance teams need exports before weekly reviews.",
+			AuthorName:         "Amara",
+			TeamName:           "Core product",
+			Status:             "pending",
+			TotalCount:         3,
+			PendingReviewCount: 2,
+		},
+		{
+			ID:                 uuid.New(),
+			TeamID:             teamID,
+			Title:              "Scheduled reports",
+			Description:        "Send a report to finance every Monday.",
+			AuthorName:         "Theo",
+			TeamName:           "Core product",
+			Status:             "reviewing",
+			TotalCount:         3,
+			PendingReviewCount: 2,
+		},
+		{
+			ID:                 uuid.New(),
+			TeamID:             teamID,
+			Title:              "Shareable dashboards",
+			Description:        "Let leaders review metrics without a login.",
+			AuthorName:         "Lina",
+			TeamName:           "Core product",
+			Status:             "planned",
+			TotalCount:         3,
+			PendingReviewCount: 2,
+		},
+	}
+	generator := &recordingEmailCopyGenerator{output: emailcopy.Output{
+		Subject: emailcopy.GroundedText{Text: "Customers are asking for easier reporting", ReferenceIDs: []string{"feedback_" + items[0].ID.String(), "feedback_" + items[1].ID.String()}},
+		H1:      emailcopy.GroundedText{Text: "Make reporting easier to share", ReferenceIDs: []string{"feedback_" + items[0].ID.String(), "feedback_" + items[1].ID.String()}},
+		Intro:   emailcopy.GroundedText{Text: "Three new notes give the team a focused place to start.", ReferenceIDs: []string{"feedback_summary"}},
+		Rows: []emailcopy.Row{
+			{ReferenceID: "feedback_summary", Text: "3 new feedback items arrived, and 2 are pending or under review."},
+			{ReferenceID: "feedback_" + items[0].ID.String(), Text: "Faster exports points to a recurring reporting workflow."},
+			{ReferenceID: "feedback_" + items[1].ID.String(), Text: "Scheduled reports would reduce manual weekly preparation."},
+			{ReferenceID: "feedback_" + items[2].ID.String(), Text: "Shareable dashboards extends the same need to leadership."},
+		},
+		CTAs: []emailcopy.CTA{{ReferenceID: "feedback_primary", Label: "Review the signal"}},
+		FeedbackThemeSummary: &emailcopy.GroundedText{
+			Text:         "The clearest theme is making recurring reporting easier to prepare and share.",
+			ReferenceIDs: []string{"feedback_" + items[0].ID.String(), "feedback_" + items[1].ID.String(), "feedback_" + items[2].ID.String()},
+		},
+	}}
+	mailerService := &recordingMailer{}
+	recipient := feedbackDigestRecipient{
+		UserEmail:     "joseph@example.com",
+		UserName:      "Joseph",
+		WorkspaceName: "Product",
+		WorkspaceSlug: "product",
+	}
+
+	err := sendFeedbackDigestEmail(context.Background(), newTestJobLogger(), mailerService, generator, uuid.New(), recipient, items)
+
+	require.NoError(t, err)
+	require.Len(t, generator.requests, 1)
+	require.True(t, generator.requests[0].IncludeFeedbackThemeSummary)
+	require.Len(t, mailerService.templatedEmails, 1)
+	email := mailerService.templatedEmails[0]
+	require.Equal(t, mailer.SenderProfileMaya, email.Sender)
+	require.Equal(t, "Customers are asking for easier reporting", email.Subject)
+	data := requireEmailData(t, email)
+	require.Contains(t, data["NotificationMessage"], "clearest theme")
+	require.Contains(t, data["NotificationMessage"], ">Faster exports</a>")
+	require.Equal(t, "Review the signal", data["NotificationCTALabel"])
+}
+
 func TestFeedbackDigestQueriesKeepWorkspaceAndTeamAccessBoundaries(t *testing.T) {
 	recipientsQuery := feedbackDigestRecipientsQuery()
 	require.Contains(t, recipientsQuery, "tm.user_id = fbs.user_id")
@@ -168,6 +290,7 @@ func TestFeedbackDigestQueriesKeepWorkspaceAndTeamAccessBoundaries(t *testing.T)
 	require.Contains(t, itemsQuery, "fi.created_at > bw.window_start")
 	require.Contains(t, itemsQuery, "fi.created_at <= $5")
 	require.Contains(t, itemsQuery, "fi.submission_source IN ('portal', 'widget', 'integration')")
+	require.Contains(t, itemsQuery, "fi.description")
 	require.False(t, strings.Contains(itemsQuery, "submission_source = 'internal'"))
 }
 

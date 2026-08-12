@@ -20,6 +20,7 @@ import { useReadNotificationMutation } from "./hooks/read-mutation";
 import { useMarkUnreadMutation } from "./hooks/mark-unread-mutation";
 import { useDeleteMutation } from "./hooks/delete-mutation";
 import { renderTemplate } from "./utils/render-template";
+import { getNotificationDetailsPath } from "./utils/notification-destination";
 
 export const NotificationCard = ({
   id,
@@ -65,7 +66,11 @@ export const NotificationCard = ({
           <Link
             className="block"
             href={withWorkspace(
-              `/notifications/${id}?entityId=${entityId}&entityType=${entityType}`,
+              getNotificationDetailsPath({
+                entityId,
+                entityType,
+                notificationId: id,
+              }),
             )}
             prefetch={index <= 10 ? true : null}
           >

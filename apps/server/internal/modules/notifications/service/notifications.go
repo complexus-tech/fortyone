@@ -121,7 +121,7 @@ func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotifi
 	// API. Publishing them on the generic user channel would expose them to any
 	// workspace SSE connection for the same user.
 	if notification.EntityType != "feedback" {
-		if err := s.publishRealtime(ctx, notification); err != nil {
+		if err := s.publishRealtime(ctx, notification.Public()); err != nil {
 			span.RecordError(err)
 			s.log.Error(ctx, "notifications.Service.Create: failed to publish notification to Redis", "error", err, "notificationID", notification.ID)
 			return notification, err
@@ -170,6 +170,10 @@ func (s *Service) List(ctx context.Context, userID, workspaceID uuid.UUID, searc
 	span.AddEvent("notifications retrieved", trace.WithAttributes(
 		attribute.Int("notifications.count", len(notifications)),
 	))
+
+	for index := range notifications {
+		notifications[index] = notifications[index].Public()
+	}
 
 	return notifications, nil
 }

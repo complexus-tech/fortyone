@@ -4,31 +4,59 @@ import { NotificationDetails } from "@/modules/notifications/details";
 import { getStory } from "@/modules/story/queries/get-story";
 import { auth } from "@/auth";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
+import { getKeyResults } from "@/modules/objectives/queries/get-key-results";
 import { readNotification } from "@/modules/notifications/actions/read";
+import {
+  getObjectiveDetailsPath,
+  getSingleSearchParam,
+  isNotificationEntityType,
+} from "@/modules/notifications/utils/notification-destination";
+import { resolveNotificationTarget } from "@/modules/notifications/utils/resolve-notification-target";
 import { withWorkspacePath } from "@/utils";
+
+type NotificationSearchParams = {
+  entityId?: string | string[];
+  entityType?: string | string[];
+  objectiveId?: string | string[];
+};
 
 export async function generateMetadata({
   params,
   searchParams,
 }: {
   params: Promise<{ notificationId: string; workspaceSlug: string }>;
-  searchParams: Promise<{
-    entityId: string;
-    entityType?: "story" | "objective" | "key_result" | "strategy";
-  }>;
+  searchParams: Promise<NotificationSearchParams>;
 }): Promise<Metadata> {
-  const [{ workspaceSlug }, { entityType, entityId }, session] =
-    await Promise.all([params, searchParams, auth()]);
+  const [{ workspaceSlug }, rawSearchParams, session] = await Promise.all([
+    params,
+    searchParams,
+    auth(),
+  ]);
+  const entityId = getSingleSearchParam(rawSearchParams.entityId);
+  const entityTypeValue = getSingleSearchParam(rawSearchParams.entityType);
+  const entityType = isNotificationEntityType(entityTypeValue)
+    ? entityTypeValue
+    : undefined;
   const ctx = { session: session!, workspaceSlug };
 
   let title = "Notification Details";
-  if (entityType === "story") {
-    const storyData = await getStory(entityId, ctx);
+  if (entityType === "story" && entityId) {
+    const storyResolution = await resolveNotificationTarget(() =>
+      getStory(entityId, ctx),
+    );
 
-    title = storyData?.title || "Story";
-  } else if (entityType === "objective") {
-    const objectiveData = await getObjective(entityId, ctx);
-    title = objectiveData?.name || "Objective";
+    title =
+      storyResolution.status === "found"
+        ? storyResolution.value.title
+        : "Story";
+  } else if (entityType === "objective" && entityId) {
+    const objectiveResolution = await resolveNotificationTarget(() =>
+      getObjective(entityId, ctx),
+    );
+    title =
+      objectiveResolution.status === "found"
+        ? objectiveResolution.value.name
+        : "Objective";
   } else if (entityType === "key_result") {
     title = "Key result update";
   } else if (entityType === "strategy") {
@@ -44,36 +72,71 @@ export default async function Page({
   searchParams,
 }: {
   params: Promise<{ notificationId: string; workspaceSlug: string }>;
-  searchParams: Promise<{
-    entityId?: string;
-    entityType?: "story" | "objective" | "key_result" | "strategy";
-  }>;
+  searchParams: Promise<NotificationSearchParams>;
 }) {
   const { notificationId, workspaceSlug } = await params;
-  const { entityId, entityType } = await searchParams;
+  const rawSearchParams = await searchParams;
+  const entityId = getSingleSearchParam(rawSearchParams.entityId);
+  const entityTypeValue = getSingleSearchParam(rawSearchParams.entityType);
+  const objectiveId = getSingleSearchParam(rawSearchParams.objectiveId);
+  const notificationsPath = withWorkspacePath("/notifications", workspaceSlug);
 
-  if (!entityId || !entityType) {
-    return redirect(withWorkspacePath("/notifications", workspaceSlug));
+  if (!entityId || !isNotificationEntityType(entityTypeValue)) {
+    await readNotification(notificationId, workspaceSlug);
+    return redirect(notificationsPath);
   }
 
+  const entityType = entityTypeValue;
   if (entityType === "strategy") {
     await readNotification(notificationId, workspaceSlug);
     return redirect(withWorkspacePath("/strategy", workspaceSlug));
   }
 
   if (entityType === "objective" || entityType === "key_result") {
+    const parentObjectiveId =
+      entityType === "key_result" ? objectiveId : entityId;
+    if (!parentObjectiveId) {
+      await readNotification(notificationId, workspaceSlug);
+      return redirect(notificationsPath);
+    }
+
     const session = await auth();
-    const objective = await getObjective(entityId, {
+    const ctx = {
       session: session!,
       workspaceSlug,
-    });
-    await readNotification(notificationId, workspaceSlug);
-    if (!objective) {
-      return redirect(withWorkspacePath("/notifications", workspaceSlug));
+    };
+    const objectivePromise = resolveNotificationTarget(() =>
+      getObjective(parentObjectiveId, ctx),
+    );
+    const keyResultPromise =
+      entityType === "key_result"
+        ? resolveNotificationTarget(async () => {
+            const keyResults = await getKeyResults(parentObjectiveId, ctx);
+            return keyResults.find((keyResult) => keyResult.id === entityId);
+          })
+        : undefined;
+    const [objectiveResolution, keyResultResolution] = await Promise.all([
+      objectivePromise,
+      keyResultPromise,
+    ]);
+
+    if (
+      objectiveResolution.status === "terminal" ||
+      keyResultResolution?.status === "terminal" ||
+      objectiveResolution.value.id !== parentObjectiveId
+    ) {
+      await readNotification(notificationId, workspaceSlug);
+      return redirect(notificationsPath);
     }
+
+    await readNotification(notificationId, workspaceSlug);
     return redirect(
       withWorkspacePath(
-        `/teams/${objective.teamId}/objectives/${objective.id}`,
+        getObjectiveDetailsPath({
+          keyResultId: entityType === "key_result" ? entityId : undefined,
+          objectiveId: objectiveResolution.value.id,
+          teamId: objectiveResolution.value.teamId,
+        }),
         workspaceSlug,
       ),
     );

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/jobs"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
@@ -17,16 +18,18 @@ type CleanupHandlers struct {
 	log              *logger.Logger
 	db               *sqlx.DB
 	mailerService    mailer.Service
+	copyGenerator    emailcopy.Generator
 	systemUserID     uuid.UUID
 	strategyNotifier jobs.StrategyNotificationCreator
 }
 
 // NewCleanupHandlers creates a new CleanupHandlers instance
-func NewCleanupHandlers(log *logger.Logger, db *sqlx.DB, mailerService mailer.Service, systemUserID uuid.UUID, strategyNotifier jobs.StrategyNotificationCreator) *CleanupHandlers {
+func NewCleanupHandlers(log *logger.Logger, db *sqlx.DB, mailerService mailer.Service, copyGenerator emailcopy.Generator, systemUserID uuid.UUID, strategyNotifier jobs.StrategyNotificationCreator) *CleanupHandlers {
 	return &CleanupHandlers{
 		log:              log,
 		db:               db,
 		mailerService:    mailerService,
+		copyGenerator:    copyGenerator,
 		systemUserID:     systemUserID,
 		strategyNotifier: strategyNotifier,
 	}
@@ -205,7 +208,7 @@ func (c *CleanupHandlers) HandleMayaWorkFocusInference(ctx context.Context, t *a
 func (c *CleanupHandlers) HandleOverdueStoriesEmail(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing OverdueStoriesEmail task", "task_id", t.ResultWriter().TaskID())
 
-	if err := jobs.ProcessOverdueStoriesEmail(ctx, c.db, c.log, c.mailerService); err != nil {
+	if err := jobs.ProcessOverdueStoriesEmail(ctx, c.db, c.log, c.mailerService, c.copyGenerator); err != nil {
 		c.log.Error(ctx, "Failed to process overdue stories email", "error", err, "task_id", t.ResultWriter().TaskID())
 		return fmt.Errorf("overdue stories email failed: %w", err)
 	}
@@ -218,7 +221,7 @@ func (c *CleanupHandlers) HandleOverdueStoriesEmail(ctx context.Context, t *asyn
 func (c *CleanupHandlers) HandleObjectiveOverdueEmail(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing ObjectiveOverdueEmail task", "task_id", t.ResultWriter().TaskID())
 
-	if err := jobs.ProcessObjectiveOverdue(ctx, c.db, c.log, c.mailerService); err != nil {
+	if err := jobs.ProcessObjectiveOverdue(ctx, c.db, c.log, c.mailerService, c.copyGenerator); err != nil {
 		c.log.Error(ctx, "Failed to process objective overdue email", "error", err, "task_id", t.ResultWriter().TaskID())
 		return fmt.Errorf("objective overdue email failed: %w", err)
 	}
@@ -231,7 +234,7 @@ func (c *CleanupHandlers) HandleObjectiveOverdueEmail(ctx context.Context, t *as
 func (c *CleanupHandlers) HandleWeeklyDigestEmail(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing WeeklyDigestEmail task", "task_id", t.ResultWriter().TaskID())
 
-	if err := jobs.ProcessWeeklyDigestEmail(ctx, c.db, c.log, c.mailerService); err != nil {
+	if err := jobs.ProcessWeeklyDigestEmail(ctx, c.db, c.log, c.mailerService, c.copyGenerator); err != nil {
 		c.log.Error(ctx, "Failed to process weekly digest email", "error", err, "task_id", t.ResultWriter().TaskID())
 		return fmt.Errorf("weekly digest email failed: %w", err)
 	}
@@ -244,7 +247,7 @@ func (c *CleanupHandlers) HandleWeeklyDigestEmail(ctx context.Context, t *asynq.
 func (c *CleanupHandlers) HandleFeedbackDigestEmail(ctx context.Context, t *asynq.Task) error {
 	c.log.Info(ctx, "HANDLER: Processing FeedbackDigestEmail task", "task_id", t.ResultWriter().TaskID())
 
-	if err := jobs.ProcessFeedbackDigestEmail(ctx, c.db, c.log, c.mailerService); err != nil {
+	if err := jobs.ProcessFeedbackDigestEmail(ctx, c.db, c.log, c.mailerService, c.copyGenerator); err != nil {
 		c.log.Error(ctx, "Failed to process feedback digest email", "error", err, "task_id", t.ResultWriter().TaskID())
 		return fmt.Errorf("feedback digest email failed: %w", err)
 	}

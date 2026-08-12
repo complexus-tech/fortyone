@@ -43,7 +43,7 @@ export const ChatRail = () => {
     <div
       aria-label="Chat with Maya"
       aria-modal="false"
-      className="border-border/70 dark:border-border dark:bg-surface-elevated/90 animate-in fade-in zoom-in-95 slide-in-from-bottom-2 fixed right-[22px] bottom-6 z-50 h-[min(760px,calc(100dvh-64px))] w-[min(460px,calc(100vw-36px))] origin-bottom-right overflow-hidden rounded-2xl border-[0.5px] bg-white/80 shadow-none backdrop-blur-2xl duration-200"
+      className="border-border/80 dark:border-border dark:bg-surface-elevated/90 animate-in fade-in zoom-in-95 slide-in-from-bottom-2 fixed right-5.5 bottom-6 z-50 h-[min(760px,calc(100dvh-64px))] w-[min(460px,calc(100vw-36px))] origin-bottom-right overflow-hidden rounded-2xl border-[0.5px] bg-white/80 shadow-xl backdrop-blur-2xl duration-200 dark:shadow-none"
       ref={popupRef}
       role="dialog"
     >

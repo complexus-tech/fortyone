@@ -18,21 +18,7 @@ func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, search s
 	ctx, span := web.AddSpan(ctx, "business.repository.notifications.List")
 	defer span.End()
 
-	query := `
-		SELECT notification_id, recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, message, created_at, read_at
-		FROM notifications
-		WHERE recipient_id = :user_id 
-		AND workspace_id = :workspace_id
-		AND CAST(entity_type AS text) <> 'feedback'
-		AND (
-			:search = ''
-			OR title ILIKE '%' || :search || '%'
-			OR CAST(message AS text) ILIKE '%' || :search || '%'
-		)
-		ORDER BY created_at DESC
-		LIMIT :limit OFFSET :offset;
-	`
+	query := listWorkspaceNotificationsQuery()
 
 	params := map[string]any{
 		"user_id":      userID,
@@ -74,17 +60,33 @@ func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, search s
 	return coreNotifications, nil
 }
 
+func listWorkspaceNotificationsQuery() string {
+	return `
+		SELECT notification_id, recipient_id, workspace_id, type, entity_type,
+			entity_id, actor_id, title, message, created_at, read_at
+		FROM notifications notification
+		WHERE notification.recipient_id = :user_id
+		AND notification.workspace_id = :workspace_id
+		AND CAST(notification.entity_type AS text) <> 'feedback'
+		AND ` + workspaceNotificationAccessPredicate("notification") + `
+		AND (
+			:search = ''
+			OR title ILIKE '%' || :search || '%'
+			OR (
+				CAST(notification.entity_type AS text) <> 'strategy'
+				AND CAST(message AS text) ILIKE '%' || :search || '%'
+			)
+		)
+		ORDER BY created_at DESC
+		LIMIT :limit OFFSET :offset;
+	`
+}
+
 func (r *repo) GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID) (int, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.notifications.GetUnreadCount")
 	defer span.End()
 
-	query := `
-		SELECT COUNT(*) FROM notifications
-		WHERE recipient_id = :user_id
-		AND workspace_id = :workspace_id
-		AND CAST(entity_type AS text) <> 'feedback'
-		AND read_at IS NULL;
-	`
+	query := unreadWorkspaceNotificationsQuery()
 
 	params := map[string]any{
 		"user_id":      userID,
@@ -98,6 +100,7 @@ func (r *repo) GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID
 		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return 0, err
 	}
+	defer stmt.Close()
 
 	var count int
 	if err := stmt.GetContext(ctx, &count, params); err != nil {
@@ -112,6 +115,114 @@ func (r *repo) GetUnreadCount(ctx context.Context, userID, workspaceID uuid.UUID
 	))
 
 	return count, nil
+}
+
+func unreadWorkspaceNotificationsQuery() string {
+	return `
+		SELECT COUNT(*) FROM notifications notification
+		WHERE notification.recipient_id = :user_id
+		AND notification.workspace_id = :workspace_id
+		AND CAST(notification.entity_type AS text) <> 'feedback'
+		AND notification.read_at IS NULL
+		AND ` + workspaceNotificationAccessPredicate("notification") + `;
+	`
+}
+
+func workspaceNotificationAccessPredicate(alias string) string {
+	return fmt.Sprintf(`EXISTS (
+		SELECT 1
+		FROM workspace_members notification_member
+		WHERE notification_member.workspace_id = %[1]s.workspace_id
+			AND notification_member.user_id = %[1]s.recipient_id
+			AND notification_member.role IN ('admin', 'member', 'guest')
+			AND (
+			(
+				CAST(%[1]s.entity_type AS TEXT) = 'story'
+				AND EXISTS (
+					SELECT 1
+					FROM stories notification_story
+					WHERE notification_story.id = %[1]s.entity_id
+						AND notification_story.workspace_id = %[1]s.workspace_id
+						AND notification_story.deleted_at IS NULL
+						AND (
+							notification_member.role = 'admin'
+							OR EXISTS (
+								SELECT 1
+								FROM team_members story_member
+								WHERE story_member.team_id = notification_story.team_id
+									AND story_member.user_id = %[1]s.recipient_id
+							)
+						)
+				)
+			)
+			OR (
+				CAST(%[1]s.entity_type AS TEXT) = 'comment'
+				AND EXISTS (
+					SELECT 1
+					FROM story_comments notification_comment
+					INNER JOIN stories notification_comment_story
+						ON notification_comment_story.id = notification_comment.story_id
+					WHERE notification_comment.comment_id = %[1]s.entity_id
+						AND notification_comment_story.workspace_id = %[1]s.workspace_id
+						AND notification_comment_story.deleted_at IS NULL
+						AND (
+							notification_member.role = 'admin'
+							OR EXISTS (
+								SELECT 1
+								FROM team_members comment_member
+								WHERE comment_member.team_id = notification_comment_story.team_id
+									AND comment_member.user_id = %[1]s.recipient_id
+							)
+						)
+				)
+			)
+			OR (
+				CAST(%[1]s.entity_type AS TEXT) = 'objective'
+				AND EXISTS (
+					SELECT 1
+					FROM objectives notification_objective
+					WHERE notification_objective.objective_id = %[1]s.entity_id
+						AND notification_objective.workspace_id = %[1]s.workspace_id
+						AND (
+							notification_member.role = 'admin'
+							OR EXISTS (
+								SELECT 1
+								FROM team_members objective_member
+								WHERE objective_member.team_id = notification_objective.team_id
+									AND objective_member.user_id = %[1]s.recipient_id
+							)
+						)
+				)
+			)
+			OR (
+				CAST(%[1]s.entity_type AS TEXT) = 'key_result'
+				AND EXISTS (
+					SELECT 1
+					FROM key_results notification_key_result
+					INNER JOIN objectives notification_key_result_objective
+						ON notification_key_result_objective.objective_id = notification_key_result.objective_id
+					WHERE notification_key_result.id = %[1]s.entity_id
+						AND notification_key_result_objective.workspace_id = %[1]s.workspace_id
+						AND (
+							notification_member.role = 'admin'
+							OR EXISTS (
+								SELECT 1
+								FROM team_members key_result_member
+								WHERE key_result_member.team_id = notification_key_result_objective.team_id
+									AND key_result_member.user_id = %[1]s.recipient_id
+							)
+						)
+				)
+			)
+			OR (
+				CAST(%[1]s.entity_type AS TEXT) = 'strategy'
+				AND (
+					notification_member.role = 'admin'
+					OR %[1]s.message -> 'strategy' ->> 'kind' = 'weekly_check_in'
+				)
+			)
+			)
+	)`, alias)
 }
 
 func (r *repo) GetPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (notifications.CoreNotificationPreferences, error) {

@@ -16,6 +16,7 @@ import (
 
 type notificationRepoStub struct {
 	notification           CoreNotification
+	notifications          []CoreNotification
 	insertedResults        []bool
 	createCalls            int
 	portalListCalls        int
@@ -33,7 +34,7 @@ func (r *notificationRepoStub) Create(context.Context, CoreNewNotification) (Cor
 }
 
 func (r *notificationRepoStub) List(context.Context, uuid.UUID, uuid.UUID, string, int, int) ([]CoreNotification, error) {
-	return nil, nil
+	return r.notifications, nil
 }
 
 func (r *notificationRepoStub) GetUnreadCount(context.Context, uuid.UUID, uuid.UUID) (int, error) {
@@ -220,6 +221,59 @@ func TestCreatePublishesOnlyWorkspaceNotificationsToGenericRealtimeChannel(t *te
 			require.Len(t, taskService.digestPayloads, 1)
 		})
 	}
+}
+
+func TestCreateRedactsStrategyDeliveryContextFromRealtime(t *testing.T) {
+	repo := &notificationRepoStub{notification: CoreNotification{
+		ID:          uuid.New(),
+		RecipientID: uuid.New(),
+		WorkspaceID: uuid.New(),
+		EntityType:  "strategy",
+		Message: NotificationMessage{
+			Template: "Your weekly strategy check-in",
+			Strategy: &StrategyNotificationSnapshot{
+				Version: 1,
+				Kind:    StrategyNotificationKindWeeklyCheckIn,
+			},
+		},
+	}}
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, &notificationTasksStub{})
+	var published CoreNotification
+	service.publishRealtime = func(_ context.Context, notification CoreNotification) error {
+		published = notification
+		return nil
+	}
+
+	created, err := service.Create(context.Background(), CoreNewNotification{})
+
+	require.NoError(t, err)
+	require.NotNil(t, created.Message.Strategy, "internal create result keeps email delivery context")
+	require.Nil(t, published.Message.Strategy, "realtime payload must not expose delivery context")
+	require.Equal(t, "Strategy guidance is ready to review.", published.Message.Template)
+	require.Empty(t, published.Message.Variables)
+}
+
+func TestListRedactsStrategyDeliveryContext(t *testing.T) {
+	repo := &notificationRepoStub{notifications: []CoreNotification{{
+		ID:         uuid.New(),
+		EntityType: "strategy",
+		Message: NotificationMessage{
+			Template: "Your weekly strategy check-in",
+			Strategy: &StrategyNotificationSnapshot{
+				Version: 1,
+				Kind:    StrategyNotificationKindWeeklyCheckIn,
+			},
+		},
+	}}}
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
+
+	listed, err := service.List(context.Background(), uuid.New(), uuid.New(), "", 20, 0)
+
+	require.NoError(t, err)
+	require.Len(t, listed, 1)
+	require.Nil(t, listed[0].Message.Strategy)
+	require.Equal(t, "Strategy guidance is ready to review.", listed[0].Message.Template)
+	require.Empty(t, listed[0].Message.Variables)
 }
 
 func TestListPortalFeedbackPassesUnreadFilter(t *testing.T) {

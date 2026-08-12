@@ -87,6 +87,7 @@ type AppUpdatePreference struct {
 }
 
 func toAppNotification(n notifications.CoreNotification) AppNotification {
+	n = n.Public()
 	return AppNotification{
 		ID:          n.ID,
 		RecipientID: n.RecipientID,
@@ -125,7 +126,7 @@ func toAppNotificationsResponse(ns []notifications.CoreNotification, page, pageS
 func toAppPortalNotificationsResponse(ns []notifications.CorePortalNotification, page, pageSize int, hasMore bool) AppPortalNotificationsResponse {
 	result := make([]AppPortalNotification, 0, len(ns))
 	for _, portalNotification := range ns {
-		notification := portalNotification.Notification
+		notification := portalNotification.Notification.Public()
 		result = append(result, AppPortalNotification{
 			ID:      notification.ID,
 			Type:    notification.Type,
