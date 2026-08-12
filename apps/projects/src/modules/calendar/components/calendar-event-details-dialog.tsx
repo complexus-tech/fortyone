@@ -1,6 +1,7 @@
 "use client";
 
 import { format, isSameDay } from "date-fns";
+import { useState } from "react";
 import {
   CalendarIcon,
   ClockIcon,
@@ -8,7 +9,7 @@ import {
   UserMultiple02Icon,
   Video02Icon,
 } from "icons";
-import { Badge, Box, Dialog, Flex, Skeleton, Text } from "ui";
+import { Badge, Box, Button, Dialog, Flex, Skeleton, Text } from "ui";
 import { useCalendarEvent } from "@/lib/hooks/calendar";
 import type {
   CalendarEventAttendee,
@@ -92,6 +93,73 @@ const DetailsLoading = () => (
   </Box>
 );
 
+const ATTENDEES_PAGE_SIZE = 20;
+
+const CalendarEventAttendees = ({
+  attendees,
+  attendeesOmitted,
+}: {
+  attendees: CalendarEventAttendee[];
+  attendeesOmitted: boolean;
+}) => {
+  const [visibleAttendeeCount, setVisibleAttendeeCount] =
+    useState(ATTENDEES_PAGE_SIZE);
+  const visibleAttendees = attendees.slice(0, visibleAttendeeCount);
+  const hasMoreAttendees = visibleAttendeeCount < attendees.length;
+
+  return (
+    <Box>
+      <Flex align="center" className="mb-2" gap={2}>
+        <UserMultiple02Icon className="text-text-muted h-5 w-auto" />
+        <Text fontSize="md" fontWeight="medium">
+          Attendees · {attendees.length}
+          {attendeesOmitted ? "+" : ""}
+        </Text>
+      </Flex>
+      <Box className="divide-border bg-surface-muted/60 divide-y overflow-hidden rounded-lg dark:divide-white/[0.08] dark:bg-white/[0.04]">
+        {visibleAttendees.map((attendee) => (
+          <Flex
+            align="center"
+            className="px-3 py-2.5"
+            gap={3}
+            justify="between"
+            key={`${attendee.email ?? attendee.displayName ?? "attendee"}-${attendee.responseStatus ?? "unknown"}`}
+          >
+            <Box className="min-w-0">
+              <Text className="truncate" fontSize="md">
+                {getPersonLabel(attendee)}
+              </Text>
+              {attendee.optional ? (
+                <Text color="muted" fontSize="md">
+                  Optional
+                </Text>
+              ) : null}
+            </Box>
+            {getResponseLabel(attendee) ? (
+              <Text className="shrink-0" color="muted" fontSize="md">
+                {getResponseLabel(attendee)}
+              </Text>
+            ) : null}
+          </Flex>
+        ))}
+      </Box>
+      {hasMoreAttendees ? (
+        <Button
+          className="mt-3 w-full"
+          color="tertiary"
+          onClick={() => {
+            setVisibleAttendeeCount((current) => current + ATTENDEES_PAGE_SIZE);
+          }}
+          size="sm"
+          variant="naked"
+        >
+          Load more attendees
+        </Button>
+      ) : null}
+    </Box>
+  );
+};
+
 export const CalendarEventDetailsDialog = ({
   event,
   onOpenChange,
@@ -102,6 +170,7 @@ export const CalendarEventDetailsDialog = ({
   const eventQuery = useCalendarEvent(
     event && !event.isPrivate ? event.id : null,
   );
+
   const details = event?.isPrivate ? undefined : eventQuery.data;
   const visibleEvent = details ?? event;
   const isPrivate = Boolean(visibleEvent?.isPrivate);
@@ -230,46 +299,11 @@ export const CalendarEventDetailsDialog = ({
                   ) : null}
 
                   {attendees.length > 0 ? (
-                    <Box>
-                      <Flex align="center" className="mb-2" gap={2}>
-                        <UserMultiple02Icon className="text-text-muted h-5 w-auto" />
-                        <Text fontSize="md" fontWeight="medium">
-                          Attendees · {attendees.length}
-                          {details?.attendeesOmitted ? "+" : ""}
-                        </Text>
-                      </Flex>
-                      <Box className="divide-border bg-surface-muted/60 divide-y overflow-hidden rounded-lg dark:divide-white/[0.08] dark:bg-white/[0.04]">
-                        {attendees.map((attendee, index) => (
-                          <Flex
-                            align="center"
-                            className="px-3 py-2.5"
-                            gap={3}
-                            justify="between"
-                            key={`${attendee.email ?? attendee.displayName ?? "attendee"}-${index}`}
-                          >
-                            <Box className="min-w-0">
-                              <Text className="truncate" fontSize="md">
-                                {getPersonLabel(attendee)}
-                              </Text>
-                              {attendee.optional ? (
-                                <Text color="muted" fontSize="md">
-                                  Optional
-                                </Text>
-                              ) : null}
-                            </Box>
-                            {getResponseLabel(attendee) ? (
-                              <Text
-                                className="shrink-0"
-                                color="muted"
-                                fontSize="md"
-                              >
-                                {getResponseLabel(attendee)}
-                              </Text>
-                            ) : null}
-                          </Flex>
-                        ))}
-                      </Box>
-                    </Box>
+                    <CalendarEventAttendees
+                      attendees={attendees}
+                      attendeesOmitted={Boolean(details?.attendeesOmitted)}
+                      key={event.id}
+                    />
                   ) : null}
 
                   {details?.description ? (

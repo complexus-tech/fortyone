@@ -1,6 +1,6 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ElementType, ReactNode } from "react";
 import type { CalendarEventSummary } from "@/lib/queries/calendar/types";
 import {
@@ -38,6 +38,17 @@ jest.mock("ui", () => {
   return {
     Badge: Container,
     Box: Container,
+    Button: ({
+      children,
+      onClick,
+    }: {
+      children: ReactNode;
+      onClick: () => void;
+    }) => (
+      <button onClick={onClick} type="button">
+        {children}
+      </button>
+    ),
     Dialog,
     Flex: Container,
     Skeleton: Container,
@@ -218,5 +229,36 @@ describe("CalendarEventDetailsDialog", () => {
     );
 
     expect(screen.getByText("Attendees · 1+")).toBeInTheDocument();
+  });
+
+  it("reveals attendees in batches of twenty", () => {
+    const attendees = Array.from({ length: 21 }, (_, index) => ({
+      displayName: `Attendee ${index + 1}`,
+      optional: false,
+      organizer: false,
+      self: false,
+    }));
+    useCalendarEvent.mockReturnValue({
+      data: { ...event, attendees, attendeesOmitted: false },
+      isError: false,
+      isPending: false,
+    });
+
+    render(
+      <CalendarEventDetailsDialog event={event} onOpenChange={jest.fn()} />,
+    );
+
+    expect(screen.getByText("Attendee 1")).toBeInTheDocument();
+    expect(screen.getByText("Attendee 20")).toBeInTheDocument();
+    expect(screen.queryByText("Attendee 21")).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Load more attendees" }),
+    );
+
+    expect(screen.getByText("Attendee 21")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Load more attendees" }),
+    ).not.toBeInTheDocument();
   });
 });
