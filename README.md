@@ -95,6 +95,78 @@ Use the installer to run FortyOne with Docker Compose (no repo clone required).
    ./setup.sh
    ```
 
+### Production proxy on Ubuntu with Nginx
+
+Anonymous feedback needs a trustworthy client address for rate limiting. When
+the Projects web app runs on an Ubuntu server behind Nginx, create a dedicated
+header that Nginx overwrites on every request.
+
+Generate one ingress secret and configure the same value in the Projects web
+app and Go API environments:
+
+```bash
+openssl rand -hex 32
+```
+
+Projects web app:
+
+```env
+FEEDBACK_INGRESS_SECRET=<shared-secret>
+FEEDBACK_TRUSTED_CLIENT_IP_HEADER=x-fortyone-client-ip
+```
+
+Go API:
+
+```env
+FEEDBACK_INGRESS_SECRET=<same-shared-secret>
+```
+
+Do not prefix the secret with `NEXT_PUBLIC_`. It must remain server-side.
+
+For an internet-facing Nginx server that proxies directly to the Projects app,
+add the following headers to its `location /` block. Adjust port `3000` if the
+Projects app listens on another internal port.
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+    # Always replace a client-supplied value with Nginx's connection address.
+    proxy_set_header X-FortyOne-Client-IP $remote_addr;
+}
+```
+
+Validate and reload Nginx after changing the site configuration:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+The Projects and API processes must not be directly reachable from the public
+internet. Bind them to loopback, or publish Docker ports on loopback only:
+
+```yaml
+ports:
+  - "127.0.0.1:3000:3000"
+```
+
+Allow public inbound traffic only on HTTP (`80`) and HTTPS (`443`). Restrict SSH
+(`22`) to trusted administrator addresses, and do not expose application ports
+such as `3000` or `8000` directly.
+
+This configuration assumes Nginx receives the visitor's connection directly.
+If Cloudflare, a DigitalOcean Load Balancer, or another proxy sits in front of
+Nginx, configure Nginx's
+[`real_ip` module](https://nginx.org/en/docs/http/ngx_http_realip_module.html)
+with only that proxy's trusted address ranges before using `$remote_addr`. Never
+trust a forwarding header from arbitrary public clients.
+
 ## 📖 Documentation
 
 - **[📚 User Guide](https://docs.fortyone.app)** - Complete documentation
