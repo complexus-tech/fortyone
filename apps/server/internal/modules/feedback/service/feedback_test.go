@@ -25,9 +25,12 @@ type repoStub struct {
 	linkStoryWinner            *CoreStoryLink
 	statusID                   uuid.UUID
 	createdItems               []CoreItemInput
+	createdAnonymousItems      []CoreItemInput
 	createdPortals             []CorePortalInput
 	createdBoards              []CoreBoardInput
 	listItemInputs             []CoreListItemsInput
+	listCommentItemIDs         [][]uuid.UUID
+	listStoryLinkItemIDs       [][]uuid.UUID
 	reviewers                  []CoreBoardReviewer
 	reviewerInputs             []CoreBoardReviewerInput
 	reads                      map[string]time.Time
@@ -42,6 +45,80 @@ type repoStub struct {
 
 func feedbackReadKey(itemID, userID uuid.UUID) string {
 	return itemID.String() + ":" + userID.String()
+}
+
+func TestGetPortalSnapshotHydratesOnlyRequestedItems(t *testing.T) {
+	portalID := uuid.New()
+	workspaceID := uuid.New()
+	itemID := uuid.New()
+	unrelatedItemID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{
+			ID:          portalID,
+			WorkspaceID: workspaceID,
+			Slug:        "city-roads",
+			IsPublic:    true,
+		}},
+		items: []CoreItem{{
+			ID:          itemID,
+			PortalID:    portalID,
+			WorkspaceID: workspaceID,
+			Status:      StatusPlanned,
+		}},
+		comments: []CoreComment{
+			{ID: uuid.New(), ItemID: itemID},
+			{ID: uuid.New(), ItemID: unrelatedItemID},
+		},
+		storyLinks: []CoreStoryLink{
+			{ID: uuid.New(), ItemID: itemID},
+			{ID: uuid.New(), ItemID: unrelatedItemID},
+		},
+	}
+	service := New(repo, nil)
+
+	snapshot, err := service.GetPortalSnapshot(context.Background(), "city-roads", CorePortalSnapshotInput{
+		Page:     2,
+		PageSize: 7,
+		Sort:     "newest",
+		Status:   StatusPlanned,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, snapshot.Items, 1)
+	require.Equal(t, itemID, snapshot.Items[0].ID)
+	require.Len(t, snapshot.Comments, 1)
+	require.Equal(t, itemID, snapshot.Comments[0].ItemID)
+	require.Len(t, snapshot.Links, 1)
+	require.Equal(t, itemID, snapshot.Links[0].ItemID)
+	require.Len(t, repo.listItemInputs, 1)
+	require.Equal(t, portalID, repo.listItemInputs[0].PortalID)
+	require.Equal(t, StatusPlanned, repo.listItemInputs[0].Status)
+	require.Equal(t, 2, repo.listItemInputs[0].Page)
+	require.Equal(t, 7, repo.listItemInputs[0].PageSize)
+	require.Equal(t, [][]uuid.UUID{{itemID}}, repo.listCommentItemIDs)
+	require.Equal(t, [][]uuid.UUID{{itemID}}, repo.listStoryLinkItemIDs)
+}
+
+func TestGetPortalSnapshotSummarySkipsItemHydration(t *testing.T) {
+	portalID := uuid.New()
+	itemID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, Slug: "city-roads", IsPublic: true}},
+		items:   []CoreItem{{ID: itemID, PortalID: portalID}},
+	}
+	service := New(repo, nil)
+
+	snapshot, err := service.GetPortalSnapshot(context.Background(), "city-roads", CorePortalSnapshotInput{
+		PageSize:    20,
+		SummaryOnly: true,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, snapshot.Items, 1)
+	require.Empty(t, snapshot.Comments)
+	require.Empty(t, snapshot.Links)
+	require.Empty(t, repo.listCommentItemIDs)
+	require.Empty(t, repo.listStoryLinkItemIDs)
 }
 
 func (r *repoStub) GetPortalBySlug(ctx context.Context, slug string) (CorePortal, error) {
@@ -86,7 +163,13 @@ func (r *repoStub) ListPortals(ctx context.Context, workspaceID uuid.UUID) ([]Co
 
 func (r *repoStub) CreatePortal(ctx context.Context, input CorePortalInput) (CorePortal, error) {
 	r.createdPortals = append(r.createdPortals, input)
-	portal := CorePortal{ID: uuid.New(), WorkspaceID: input.WorkspaceID, Name: "City Roads Program", Slug: "city-roads", IsPublic: input.IsPublic}
+	portal := CorePortal{ID: uuid.New(), WorkspaceID: input.WorkspaceID, Name: "City Roads Program", Slug: "city-roads"}
+	if input.IsPublic != nil {
+		portal.IsPublic = *input.IsPublic
+	}
+	if input.ParticipationMode != nil {
+		portal.ParticipationMode = *input.ParticipationMode
+	}
 	r.portals = append(r.portals, portal)
 	return portal, nil
 }
@@ -94,7 +177,12 @@ func (r *repoStub) CreatePortal(ctx context.Context, input CorePortalInput) (Cor
 func (r *repoStub) UpdatePortal(ctx context.Context, workspaceID, portalID uuid.UUID, input CorePortalInput) (CorePortal, error) {
 	for index, portal := range r.portals {
 		if portal.WorkspaceID == workspaceID && portal.ID == portalID {
-			portal.IsPublic = input.IsPublic
+			if input.IsPublic != nil {
+				portal.IsPublic = *input.IsPublic
+			}
+			if input.ParticipationMode != nil {
+				portal.ParticipationMode = *input.ParticipationMode
+			}
 			r.portals[index] = portal
 			return portal, nil
 		}
@@ -254,8 +342,19 @@ func (r *repoStub) ListContributorComments(ctx context.Context, input CoreListCo
 	}, nil
 }
 
-func (r *repoStub) ListComments(ctx context.Context, portalID uuid.UUID) ([]CoreComment, error) {
-	return []CoreComment{}, nil
+func (r *repoStub) ListComments(ctx context.Context, portalID uuid.UUID, itemIDs []uuid.UUID) ([]CoreComment, error) {
+	r.listCommentItemIDs = append(r.listCommentItemIDs, append([]uuid.UUID(nil), itemIDs...))
+	visible := make(map[uuid.UUID]struct{}, len(itemIDs))
+	for _, itemID := range itemIDs {
+		visible[itemID] = struct{}{}
+	}
+	result := make([]CoreComment, 0)
+	for _, comment := range r.comments {
+		if _, ok := visible[comment.ItemID]; ok {
+			result = append(result, comment)
+		}
+	}
+	return result, nil
 }
 
 func (r *repoStub) ListItemComments(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreComment, error) {
@@ -277,8 +376,19 @@ func (r *repoStub) GetComment(ctx context.Context, workspaceID, itemID, commentI
 	return CoreComment{}, sql.ErrNoRows
 }
 
-func (r *repoStub) ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]CoreStoryLink, error) {
-	return r.storyLinks, nil
+func (r *repoStub) ListStoryLinks(ctx context.Context, portalID uuid.UUID, itemIDs []uuid.UUID) ([]CoreStoryLink, error) {
+	r.listStoryLinkItemIDs = append(r.listStoryLinkItemIDs, append([]uuid.UUID(nil), itemIDs...))
+	visible := make(map[uuid.UUID]struct{}, len(itemIDs))
+	for _, itemID := range itemIDs {
+		visible[itemID] = struct{}{}
+	}
+	result := make([]CoreStoryLink, 0)
+	for _, link := range r.storyLinks {
+		if _, ok := visible[link.ItemID]; ok {
+			result = append(result, link)
+		}
+	}
+	return result, nil
 }
 
 func (r *repoStub) ListItemStoryLinks(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreStoryLink, error) {
@@ -411,6 +521,16 @@ func (r *repoStub) CreateItem(ctx context.Context, input CoreItemInput) (CoreIte
 	}
 	r.items = append(r.items, item)
 	return item, nil
+}
+
+func (r *repoStub) GetOrCreateAccountContributor(ctx context.Context, portalID, userID uuid.UUID) (CoreContributor, error) {
+	return CoreContributor{ID: uuid.New(), PortalID: portalID, UserID: userID, Kind: ContributorKindAccount}, nil
+}
+
+func (r *repoStub) CreateAnonymousItem(ctx context.Context, input CoreItemInput) (CoreItem, error) {
+	r.createdAnonymousItems = append(r.createdAnonymousItems, input)
+	input.ContributorID = uuid.New()
+	return r.CreateItem(ctx, input)
 }
 
 func (r *repoStub) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, bool, error) {
@@ -727,7 +847,7 @@ func TestUpdatePortalAvailability(t *testing.T) {
 	service := New(repo, nil)
 
 	portal, err := service.UpdatePortal(context.Background(), workspaceID, portalID, CorePortalInput{
-		IsPublic: false,
+		IsPublic: pointer(false),
 	})
 
 	require.NoError(t, err)
@@ -735,6 +855,26 @@ func TestUpdatePortalAvailability(t *testing.T) {
 	require.Equal(t, "city-roads", portal.Slug)
 	require.False(t, portal.IsPublic)
 	require.Empty(t, repo.createdPortals)
+}
+
+func TestUpdatePortalParticipationModePreservesAvailability(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	repo := &repoStub{portals: []CorePortal{{
+		ID:                portalID,
+		WorkspaceID:       workspaceID,
+		IsPublic:          true,
+		ParticipationMode: ParticipationModeAccountRequired,
+	}}}
+	service := New(repo, nil)
+
+	portal, err := service.UpdatePortal(context.Background(), workspaceID, portalID, CorePortalInput{
+		ParticipationMode: pointer(ParticipationModeAnonymousAllowed),
+	})
+
+	require.NoError(t, err)
+	require.True(t, portal.IsPublic)
+	require.Equal(t, ParticipationModeAnonymousAllowed, portal.ParticipationMode)
 }
 
 func TestCreatePublicCommentPublishesAuthorNotificationEvent(t *testing.T) {
@@ -1067,19 +1207,104 @@ func TestPublicFeedbackWritesDeriveWorkspaceFromPortal(t *testing.T) {
 	}
 	service := New(repo, nil)
 
-	item, err := service.CreatePublicItem(context.Background(), CorePublicItemInput{
-		PortalSlug: "city-roads",
-		BoardID:    boardID,
-		AuthorID:   authorID,
-		Title:      "Repair the crossing signal",
+	result, err := service.CreatePublicItem(context.Background(), CorePublicItemInput{
+		PortalSlug:          "city-roads",
+		BoardID:             boardID,
+		AuthorID:            authorID,
+		Title:               "Repair the crossing signal",
+		Source:              SubmissionSourcePortal,
+		ParticipationIntent: ParticipationIntentAccount,
 	})
 
 	require.NoError(t, err)
+	item := result.Item
 	require.Equal(t, workspaceID, item.WorkspaceID)
 	require.Equal(t, portalID, item.PortalID)
 	require.Equal(t, authorID, item.AuthorID)
 	require.Equal(t, workspaceID, repo.createdItems[0].WorkspaceID)
 	require.Equal(t, SubmissionSourcePortal, repo.createdItems[0].Source)
+}
+
+func TestAnonymousPublicFeedbackCreatesUnidentifiedContributorItem(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	boardID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{
+			ID:                portalID,
+			WorkspaceID:       workspaceID,
+			Slug:              "city-roads",
+			IsPublic:          true,
+			ParticipationMode: ParticipationModeAnonymousAllowed,
+		}},
+		boards: []CoreBoard{{ID: boardID, WorkspaceID: workspaceID, PortalID: portalID}},
+	}
+	service := New(repo, nil)
+
+	result, err := service.CreatePublicItem(context.Background(), CorePublicItemInput{
+		PortalSlug:          "city-roads",
+		BoardID:             boardID,
+		AuthorID:            uuid.New(),
+		Title:               "Repair the crossing signal",
+		Source:              SubmissionSourceWidget,
+		ParticipationIntent: ParticipationIntentAnonymous,
+	})
+
+	require.NoError(t, err)
+	require.True(t, result.Anonymous)
+	require.Equal(t, uuid.Nil, result.Item.AuthorID)
+	require.Len(t, repo.createdAnonymousItems, 1)
+	require.Len(t, repo.createdItems, 1)
+	require.Equal(t, uuid.Nil, repo.createdItems[0].AuthorID)
+	stored := repo.createdAnonymousItems[0]
+	require.Regexp(t, `^repair-the-crossing-signal-[a-f0-9]{8}$`, stored.Slug)
+	require.Equal(t, SubmissionSourceWidget, stored.Source)
+}
+
+func TestAnonymousPublicFeedbackHonorsAccountRequiredMode(t *testing.T) {
+	workspaceID := uuid.New()
+	portalID := uuid.New()
+	boardID := uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{
+			ID:                portalID,
+			WorkspaceID:       workspaceID,
+			Slug:              "city-roads",
+			IsPublic:          true,
+			ParticipationMode: ParticipationModeAccountRequired,
+		}},
+		boards: []CoreBoard{{ID: boardID, WorkspaceID: workspaceID, PortalID: portalID}},
+	}
+	service := New(repo, nil)
+
+	_, err := service.CreatePublicItem(context.Background(), CorePublicItemInput{
+		PortalSlug:          "city-roads",
+		BoardID:             boardID,
+		Title:               "Repair the crossing signal",
+		Source:              SubmissionSourcePortal,
+		ParticipationIntent: ParticipationIntentAnonymous,
+	})
+
+	require.ErrorIs(t, err, ErrParticipationNotAllowed)
+	require.Empty(t, repo.createdAnonymousItems)
+	require.Empty(t, repo.createdItems)
+}
+
+func TestAccountPublicFeedbackRequiresAnAuthenticatedAuthor(t *testing.T) {
+	repo := &repoStub{}
+	service := New(repo, nil)
+
+	_, err := service.CreatePublicItem(context.Background(), CorePublicItemInput{
+		PortalSlug:          "city-roads",
+		BoardID:             uuid.New(),
+		Title:               "Repair the crossing signal",
+		Source:              SubmissionSourcePortal,
+		ParticipationIntent: ParticipationIntentAccount,
+	})
+
+	require.ErrorIs(t, err, ErrAuthenticationRequired)
+	require.Empty(t, repo.createdAnonymousItems)
+	require.Empty(t, repo.createdItems)
 }
 
 func TestPublicFeedbackRejectsHighConfidenceDuplicate(t *testing.T) {
@@ -1098,10 +1323,12 @@ func TestPublicFeedbackRejectsHighConfidenceDuplicate(t *testing.T) {
 	service := New(repo, nil)
 
 	_, err := service.CreatePublicItem(context.Background(), CorePublicItemInput{
-		PortalSlug: "city-roads",
-		BoardID:    boardID,
-		AuthorID:   uuid.New(),
-		Title:      "Repair crossing signal",
+		PortalSlug:          "city-roads",
+		BoardID:             boardID,
+		AuthorID:            uuid.New(),
+		Title:               "Repair crossing signal",
+		Source:              SubmissionSourcePortal,
+		ParticipationIntent: ParticipationIntentAccount,
 	})
 
 	require.ErrorIs(t, err, ErrDuplicateItem)
@@ -1177,10 +1404,12 @@ func TestPublicFeedbackRejectsBoardFromAnotherPortal(t *testing.T) {
 	service := New(repo, nil)
 
 	_, err := service.CreatePublicItem(context.Background(), CorePublicItemInput{
-		PortalSlug: "city-roads",
-		BoardID:    repo.boards[0].ID,
-		AuthorID:   uuid.New(),
-		Title:      "Cross-portal feedback",
+		PortalSlug:          "city-roads",
+		BoardID:             repo.boards[0].ID,
+		AuthorID:            uuid.New(),
+		Title:               "Cross-portal feedback",
+		Source:              SubmissionSourcePortal,
+		ParticipationIntent: ParticipationIntentAccount,
 	})
 
 	require.ErrorIs(t, err, sql.ErrNoRows)

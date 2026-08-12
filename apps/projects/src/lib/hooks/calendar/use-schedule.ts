@@ -11,7 +11,6 @@ export const useCalendarSchedule = (
   },
   options?: {
     enabled?: boolean;
-    refetchInterval?: number | false;
   },
 ) => {
   const { data: session } = useSession();
@@ -26,7 +25,6 @@ export const useCalendarSchedule = (
     queryFn: () =>
       getCalendarSchedule({ session: session!, workspaceSlug }, params),
     enabled: options?.enabled,
-    refetchInterval: options?.refetchInterval,
     staleTime: 1000 * 60,
   });
 };

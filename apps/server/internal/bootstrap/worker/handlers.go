@@ -17,8 +17,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, emailReplies taskhandlers.EmailReplyProcessor, emailRecovery taskhandlers.EmailReplyRecoverer, systemUserID uuid.UUID) *asynq.ServeMux {
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopy, emailThreads, slackEvents, emailReplies, emailRecovery, systemUserID)
+func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, emailReplies taskhandlers.EmailReplyProcessor, emailRecovery taskhandlers.EmailReplyRecoverer, calendar taskhandlers.CalendarSyncProcessor, systemUserID uuid.UUID) *asynq.ServeMux {
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopy, emailThreads, slackEvents, emailReplies, emailRecovery, calendar, systemUserID)
 	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, emailCopy, emailThreads, systemUserID, notificationsService)
 
 	mux := asynq.NewServeMux()
@@ -38,6 +38,8 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeSlackInboxRecovery, workerTaskService.HandleSlackInboxRecovery)
 	mux.HandleFunc(tasks.TypeBrevoEmailReply, workerTaskService.HandleBrevoEmailReply)
 	mux.HandleFunc(tasks.TypeBrevoEmailReplyRecovery, workerTaskService.HandleBrevoEmailReplyRecovery)
+	mux.HandleFunc(tasks.TypeCalendarSync, workerTaskService.HandleCalendarSync)
+	mux.HandleFunc(tasks.TypeCalendarWatchRenewal, workerTaskService.HandleCalendarWatchRenewal)
 
 	// Cleanup handlers
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)

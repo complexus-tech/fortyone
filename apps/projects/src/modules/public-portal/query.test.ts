@@ -5,6 +5,7 @@ import { getApiUrl } from "@/lib/api-url";
 import {
   getPublicContributor,
   getPublicContributorComments,
+  getPublicFeedbackPortal,
   getPublicPortal,
   getSimilarPublicFeedback,
 } from "./query";
@@ -90,6 +91,20 @@ describe("public portal query caching", () => {
     expect(global.fetch).toHaveBeenNthCalledWith(
       2,
       "https://api.fortyone.test/workspaces/art-circles/portals/feedback/feedback",
+      { next: { revalidate: 300 } },
+    );
+  });
+
+  it("loads widget roadmap lanes without repeating workspace metadata", async () => {
+    await getPublicFeedbackPortal(
+      "feedback",
+      { pageSize: 20, status: "planned", view: "summary" },
+      { revalidateSeconds: 300 },
+    );
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://api.fortyone.test/workspaces/art-circles/portals/feedback/feedback?pageSize=20&status=planned&view=summary",
       { next: { revalidate: 300 } },
     );
   });

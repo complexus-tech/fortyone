@@ -111,9 +111,7 @@ func newEventRepositoryStub() *eventRepositoryStub {
 			Name: "Acme",
 		},
 		agentSettings: slackrepository.AgentSettingsRecord{
-			AssistantEnabled:       true,
-			WorkflowActionsEnabled: true,
-			Guidance:               "Keep answers concise.",
+			Guidance: "Keep answers concise.",
 		},
 		authorizedTeamIDs: []uuid.UUID{testAllowedTeamID},
 	}
@@ -1828,9 +1826,6 @@ func TestEventProcessorKeepsAgentAvailableWhenLegacySettingChangesDuringModelCal
 	repo.linkedUserID = uuidPointer(testLinkedUserID)
 	store := newEventStoreStub()
 	assistant := &assistantStub{response: messaging.Response{Text: "Private team answer"}}
-	assistant.onRespond = func() {
-		repo.agentSettings.AssistantEnabled = false
-	}
 	sender := &messageSenderStub{externalMessageID: "10.2"}
 	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender)
 

@@ -10,12 +10,26 @@ import {
   PlusIcon,
   TeamIcon,
 } from "icons";
-import { Box, Button, Dialog, Flex, Input, Menu, Switch, Text } from "ui";
+import {
+  Box,
+  Button,
+  Dialog,
+  Flex,
+  Input,
+  Menu,
+  Select,
+  Switch,
+  Text,
+} from "ui";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
 import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
-import type { FeedbackBoard, FeedbackPortal } from "./types";
+import type {
+  FeedbackBoard,
+  FeedbackParticipationMode,
+  FeedbackPortal,
+} from "./types";
 import {
   useCreateFeedbackBoardMutation,
   useDeleteFeedbackBoardMutation,
@@ -23,6 +37,7 @@ import {
   useUpdateFeedbackPortalMutation,
 } from "./hooks";
 import { FeedbackReviewersDialog } from "./reviewers-dialog";
+import { WidgetInstallSettings } from "./widget-install-settings";
 
 const colorOptions = [
   { label: "Green", value: "green" },
@@ -30,6 +45,25 @@ const colorOptions = [
   { label: "Yellow", value: "yellow" },
   { label: "Pink", value: "pink" },
   { label: "Red", value: "red" },
+];
+
+const participationOptions: {
+  description: string;
+  label: string;
+  value: FeedbackParticipationMode;
+}[] = [
+  {
+    description:
+      "People must log in or create a FortyOne account before submitting feedback.",
+    label: "Account required",
+    value: "account_required",
+  },
+  {
+    description:
+      "Anyone can submit without a name, email address, or account. They receive a public tracking link after submission.",
+    label: "Anonymous allowed",
+    value: "anonymous_allowed",
+  },
 ];
 
 const isWorkspaceSubdomainDeployment =
@@ -56,9 +90,21 @@ const PublicUrl = ({ portal }: { portal: FeedbackPortal }) => {
   );
 };
 
-const PortalConfiguration = ({ portal }: { portal: FeedbackPortal }) => {
+const PortalConfiguration = ({
+  anonymousFeedbackAvailable,
+  portal,
+}: {
+  anonymousFeedbackAvailable: boolean;
+  portal: FeedbackPortal;
+}) => {
   const [isPublic, setIsPublic] = useState(portal.isPublic);
+  const [participationMode, setParticipationMode] = useState(
+    portal.participationMode,
+  );
   const mutation = useUpdateFeedbackPortalMutation();
+  const selectedParticipation =
+    participationOptions.find((option) => option.value === participationMode) ??
+    participationOptions[0];
 
   const updateAvailability = async (checked: boolean) => {
     const previousValue = isPublic;
@@ -76,6 +122,30 @@ const PortalConfiguration = ({ portal }: { portal: FeedbackPortal }) => {
       }
     } catch {
       setIsPublic(previousValue);
+    }
+  };
+
+  const updateParticipationMode = async (
+    nextMode: FeedbackParticipationMode,
+  ) => {
+    if (nextMode === "anonymous_allowed" && !anonymousFeedbackAvailable) {
+      return;
+    }
+    const previousMode = participationMode;
+    setParticipationMode(nextMode);
+
+    try {
+      const response = await mutation.mutateAsync({
+        portalId: portal.id,
+        input: {
+          participationMode: nextMode,
+        },
+      });
+      if (response.error?.message) {
+        setParticipationMode(previousMode);
+      }
+    } catch {
+      setParticipationMode(previousMode);
     }
   };
 
@@ -104,6 +174,52 @@ const PortalConfiguration = ({ portal }: { portal: FeedbackPortal }) => {
             }}
           />
         </Flex>
+        <Flex
+          className="border-border/70 flex-col items-stretch gap-4 border-t pt-5 sm:flex-row sm:items-center"
+          justify="between"
+        >
+          <Box className="min-w-0 flex-1">
+            <Text className="font-medium">Who can submit feedback</Text>
+            <Text className="mt-1 max-w-xl" color="muted">
+              {selectedParticipation.description}
+            </Text>
+          </Box>
+          <Select
+            disabled={mutation.isPending}
+            onValueChange={(value) => {
+              void updateParticipationMode(value as FeedbackParticipationMode);
+            }}
+            value={participationMode}
+          >
+            <Select.Trigger
+              aria-label="Who can submit feedback"
+              className="h-9 w-full shrink-0 sm:w-48"
+            >
+              <Select.Input />
+            </Select.Trigger>
+            <Select.Content align="end">
+              {participationOptions.map((option) => (
+                <Select.Option
+                  disabled={
+                    option.value === "anonymous_allowed" &&
+                    !anonymousFeedbackAvailable
+                  }
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </Select.Option>
+              ))}
+            </Select.Content>
+          </Select>
+        </Flex>
+        {!anonymousFeedbackAvailable ? (
+          <Text className="text-sm" color="muted">
+            Anonymous feedback is unavailable on this deployment. Configure a
+            trusted reverse proxy and FEEDBACK_TRUSTED_CLIENT_IP_HEADER before
+            enabling it.
+          </Text>
+        ) : null}
       </Box>
     </Box>
   );
@@ -237,7 +353,11 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
   );
 };
 
-export const FeedbackSettings = () => {
+export const FeedbackSettings = ({
+  anonymousFeedbackAvailable = true,
+}: {
+  anonymousFeedbackAvailable?: boolean;
+}) => {
   const { data: portals = [], isLoading } = useFeedbackPortals();
   const { data: teams = [] } = useTeams();
   const [reviewersDialog, setReviewersDialog] = useState<{
@@ -276,10 +396,14 @@ export const FeedbackSettings = () => {
       </Text>
 
       {primaryPortal ? (
-        <PortalConfiguration
-          key={`${primaryPortal.id}:${primaryPortal.isPublic}`}
-          portal={primaryPortal}
-        />
+        <>
+          <PortalConfiguration
+            anonymousFeedbackAvailable={anonymousFeedbackAvailable}
+            key={`${primaryPortal.id}:${primaryPortal.isPublic}:${primaryPortal.participationMode}`}
+            portal={primaryPortal}
+          />
+          <WidgetInstallSettings portalSlug={primaryPortal.slug} />
+        </>
       ) : null}
 
       <Box className="border-border bg-surface rounded-2xl border">

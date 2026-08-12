@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -153,67 +154,158 @@ func listGoogleFreeBusyWindows(ctx context.Context, client *calendarapi.Service,
 }
 
 func listGoogleCalendarSnapshot(ctx context.Context, client *calendarapi.Service, input BusyWindowInput) (CalendarSyncSnapshot, error) {
-	ranges := googleFreeBusyRanges(input.TimeMin, input.TimeMax)
 	events := []CoreCalendarEvent{}
 	windows := []CoreBusyWindow{}
 	eventIndexes := make(map[string]int)
 	windowIndexes := make(map[string]int)
-	for _, timeRange := range ranges {
-		call := client.Events.List("primary").
-			Context(ctx).
-			ShowDeleted(false).
-			SingleEvents(true).
-			OrderBy("startTime").
-			TimeMin(timeRange.start.Format(time.RFC3339)).
-			TimeMax(timeRange.end.Format(time.RFC3339))
-		for {
-			response, err := call.Do()
+	call := client.Events.List("primary").
+		Context(ctx).
+		ShowDeleted(false).
+		SingleEvents(true).
+		OrderBy("startTime").
+		TimeMin(input.TimeMin.Format(time.RFC3339)).
+		TimeMax(input.TimeMax.Format(time.RFC3339))
+	nextSyncToken := ""
+	for {
+		response, err := call.Do()
+		if err != nil {
+			return CalendarSyncSnapshot{}, err
+		}
+		eventTimezone := strings.TrimSpace(response.TimeZone)
+		if eventTimezone == "" {
+			eventTimezone = input.Timezone
+		}
+		for _, googleEvent := range response.Items {
+			event, ok, err := googleEventToCalendarEvent("primary", googleEvent, eventTimezone)
 			if err != nil {
 				return CalendarSyncSnapshot{}, err
 			}
-			eventTimezone := strings.TrimSpace(response.TimeZone)
-			if eventTimezone == "" {
-				eventTimezone = input.Timezone
+			if !ok {
+				continue
 			}
-			for _, googleEvent := range response.Items {
-				event, ok, err := googleEventToCalendarEvent("primary", googleEvent, eventTimezone)
-				if err != nil {
-					return CalendarSyncSnapshot{}, err
-				}
-				if !ok {
-					continue
-				}
-				event.ConnectionID = input.ConnectionID
-				event.WorkspaceID = input.WorkspaceID
-				event.UserID = input.UserID
-				event.Provider = ProviderGoogle
-				key := event.CalendarID + ":" + event.ProviderEventID
-				if index, exists := eventIndexes[key]; exists {
-					events[index] = event
-				} else {
-					eventIndexes[key] = len(events)
-					events = append(events, event)
-				}
+			event.ConnectionID = input.ConnectionID
+			event.WorkspaceID = input.WorkspaceID
+			event.UserID = input.UserID
+			event.Provider = ProviderGoogle
+			key := event.CalendarID + ":" + event.ProviderEventID
+			if index, exists := eventIndexes[key]; exists {
+				events[index] = event
+			} else {
+				eventIndexes[key] = len(events)
+				events = append(events, event)
+			}
 
-				window, blocksTime := calendarEventToBusyWindow(event)
-				if !blocksTime {
-					continue
-				}
-				windowKey := window.ProviderEventID
-				if index, exists := windowIndexes[windowKey]; exists {
-					windows[index] = window
-				} else {
-					windowIndexes[windowKey] = len(windows)
-					windows = append(windows, window)
-				}
+			window, blocksTime := calendarEventToBusyWindow(event)
+			if !blocksTime {
+				continue
 			}
-			if strings.TrimSpace(response.NextPageToken) == "" {
-				break
+			windowKey := window.ProviderEventID
+			if index, exists := windowIndexes[windowKey]; exists {
+				windows[index] = window
+			} else {
+				windowIndexes[windowKey] = len(windows)
+				windows = append(windows, window)
 			}
-			call.PageToken(response.NextPageToken)
 		}
+		if strings.TrimSpace(response.NextPageToken) == "" {
+			nextSyncToken = strings.TrimSpace(response.NextSyncToken)
+			break
+		}
+		call.PageToken(response.NextPageToken)
 	}
-	return CalendarSyncSnapshot{Events: events, BusyWindows: windows}, nil
+	return CalendarSyncSnapshot{Events: events, BusyWindows: windows, NextSyncToken: nextSyncToken}, nil
+}
+
+func (p *GoogleProvider) SyncCalendarChanges(ctx context.Context, token ProviderToken, syncToken string) (CalendarSyncDelta, error) {
+	client, err := p.calendarClient(ctx, token)
+	if err != nil {
+		return CalendarSyncDelta{}, err
+	}
+	call := client.Events.List("primary").Context(ctx).ShowDeleted(true).SingleEvents(true).SyncToken(strings.TrimSpace(syncToken))
+	delta := CalendarSyncDelta{Events: []CoreCalendarEvent{}, BusyWindows: []CoreBusyWindow{}, DeletedEventIDs: []string{}}
+	for {
+		response, err := call.Do()
+		if err != nil {
+			var apiErr *googleapi.Error
+			if errors.As(err, &apiErr) && apiErr.Code == http.StatusGone {
+				return CalendarSyncDelta{}, ErrCalendarFullSyncRequired
+			}
+			return CalendarSyncDelta{}, err
+		}
+		for _, googleEvent := range response.Items {
+			if googleEvent == nil || strings.TrimSpace(googleEvent.Id) == "" {
+				continue
+			}
+			if googleEvent.Status == "cancelled" {
+				delta.DeletedEventIDs = append(delta.DeletedEventIDs, "primary:"+googleEvent.Id)
+				continue
+			}
+			event, ok, err := googleEventToCalendarEvent("primary", googleEvent, response.TimeZone)
+			if err != nil {
+				return CalendarSyncDelta{}, err
+			}
+			if !ok {
+				continue
+			}
+			delta.Events = append(delta.Events, event)
+			if window, blocksTime := calendarEventToBusyWindow(event); blocksTime {
+				delta.BusyWindows = append(delta.BusyWindows, window)
+			}
+		}
+		if strings.TrimSpace(response.NextPageToken) == "" {
+			delta.NextSyncToken = strings.TrimSpace(response.NextSyncToken)
+			break
+		}
+		call.PageToken(response.NextPageToken)
+	}
+	return delta, nil
+}
+
+func (p *GoogleProvider) WatchCalendar(ctx context.Context, token ProviderToken, input CalendarWatchInput) (CalendarWatchChannel, error) {
+	client, err := p.calendarClient(ctx, token)
+	if err != nil {
+		return CalendarWatchChannel{}, err
+	}
+	ttlSeconds := int64(input.TTL / time.Second)
+	channel := &calendarapi.Channel{
+		Id:      strings.TrimSpace(input.ChannelID),
+		Type:    "web_hook",
+		Address: strings.TrimSpace(input.Address),
+		Token:   strings.TrimSpace(input.Token),
+	}
+	if ttlSeconds > 0 {
+		channel.Params = map[string]string{"ttl": strconv.FormatInt(ttlSeconds, 10)}
+	}
+	created, err := client.Events.Watch("primary", channel).Context(ctx).Do()
+	if err != nil {
+		return CalendarWatchChannel{}, err
+	}
+	return CalendarWatchChannel{
+		ChannelID:  strings.TrimSpace(created.Id),
+		ResourceID: strings.TrimSpace(created.ResourceId),
+		ExpiresAt:  time.UnixMilli(created.Expiration).UTC(),
+	}, nil
+}
+
+func (p *GoogleProvider) StopCalendarWatch(ctx context.Context, token ProviderToken, channel CalendarWatchChannel) error {
+	client, err := p.calendarClient(ctx, token)
+	if err != nil {
+		return err
+	}
+	return client.Channels.Stop(&calendarapi.Channel{Id: channel.ChannelID, ResourceId: channel.ResourceID}).Context(ctx).Do()
+}
+
+func (p *GoogleProvider) calendarClient(ctx context.Context, token ProviderToken) (*calendarapi.Service, error) {
+	if p.google == nil {
+		return nil, ErrCalendarNotConfigured
+	}
+	httpClient, err := p.google.CalendarHTTPClient(ctx, &oauth2.Token{
+		AccessToken: token.AccessToken, RefreshToken: token.RefreshToken, TokenType: token.TokenType, Expiry: token.Expiry,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return calendarapi.NewService(ctx, option.WithHTTPClient(httpClient))
 }
 
 func googleEventToCalendarEvent(calendarID string, event *calendarapi.Event, fallbackTimezone string) (CoreCalendarEvent, bool, error) {

@@ -6,7 +6,7 @@ import { useCallback, useEffect } from "react";
 import { getApiUrl } from "@/lib/api-url";
 import type { AppNotification } from "@/modules/notifications/types";
 import { storyKeys } from "@/modules/stories/constants";
-import { notificationKeys } from "@/constants/keys";
+import { calendarKeys, notificationKeys } from "@/constants/keys";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useWorkspacePath } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
@@ -28,6 +28,14 @@ type WorkspaceUpdate = {
   actorId: string;
   actorName: string;
   timestamp: number;
+};
+
+type CalendarUpdate = {
+  type: "calendar.updated";
+  workspaceId: string;
+  userId: string;
+  connectionId: string;
+  syncedAt: string;
 };
 
 export const ServerSentEvents = () => {
@@ -92,6 +100,16 @@ export const ServerSentEvents = () => {
     [queryClient, workspaceSlug],
   );
 
+  const handleCalendarUpdate = useCallback(
+    (calendarUpdate: CalendarUpdate) => {
+      if (calendarUpdate.workspaceId !== workspace?.id) return;
+      void queryClient.invalidateQueries({
+        queryKey: calendarKeys.all(workspaceSlug),
+      });
+    },
+    [queryClient, workspace?.id, workspaceSlug],
+  );
+
   useEffect(() => {
     if (!workspace?.slug) return;
 
@@ -104,7 +122,9 @@ export const ServerSentEvents = () => {
       try {
         const data = JSON.parse(`${event.data}`);
 
-        if (data.type === "story.workspace_update") {
+        if (data.type === "calendar.updated") {
+          handleCalendarUpdate(data as CalendarUpdate);
+        } else if (data.type === "story.workspace_update") {
           const workspaceUpdate = data as WorkspaceUpdate;
           handleWorkspaceUpdate(workspaceUpdate);
         } else {
@@ -123,7 +143,13 @@ export const ServerSentEvents = () => {
     return () => {
       eventSource.close();
     };
-  }, [posthog, workspace?.slug, handleNotification, handleWorkspaceUpdate]);
+  }, [
+    posthog,
+    workspace?.slug,
+    handleNotification,
+    handleWorkspaceUpdate,
+    handleCalendarUpdate,
+  ]);
 
   return null;
 };

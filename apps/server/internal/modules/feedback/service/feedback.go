@@ -17,14 +17,16 @@ import (
 )
 
 var (
-	ErrInvalidInput    = errors.New("invalid feedback input")
-	ErrNotFound        = sql.ErrNoRows
-	ErrBoardExists     = errors.New("a feedback board already exists for this team")
-	ErrAlreadyPlanned  = errors.New("feedback is already linked to a primary story")
-	ErrTeamMismatch    = errors.New("feedback and story must belong to the same team")
-	ErrStoryManaged    = errors.New("feedback status is managed by its linked story")
-	ErrDuplicateItem   = errors.New("similar feedback has already been reported")
-	ErrVersionConflict = errors.New("feedback changed since it was reviewed")
+	ErrInvalidInput            = errors.New("invalid feedback input")
+	ErrNotFound                = sql.ErrNoRows
+	ErrBoardExists             = errors.New("a feedback board already exists for this team")
+	ErrAlreadyPlanned          = errors.New("feedback is already linked to a primary story")
+	ErrTeamMismatch            = errors.New("feedback and story must belong to the same team")
+	ErrStoryManaged            = errors.New("feedback status is managed by its linked story")
+	ErrDuplicateItem           = errors.New("similar feedback has already been reported")
+	ErrVersionConflict         = errors.New("feedback changed since it was reviewed")
+	ErrParticipationNotAllowed = errors.New("anonymous feedback is not allowed for this portal")
+	ErrAuthenticationRequired  = errors.New("feedback account authentication is required")
 )
 
 var nonSlugCharacters = regexp.MustCompile(`[^a-z0-9]+`)
@@ -66,52 +68,49 @@ func New(repo Repository, stories StoryService, options ...Option) *Service {
 	return service
 }
 
-func (s *Service) GetPortalSnapshot(ctx context.Context, slug string) (CorePortalSnapshot, error) {
+func (s *Service) GetPortalSnapshot(ctx context.Context, slug string, input CorePortalSnapshotInput) (CorePortalSnapshot, error) {
 	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(slug))
 	if err != nil {
 		return CorePortalSnapshot{}, err
 	}
-	boards, err := s.repo.ListBoards(ctx, portal.ID)
-	if err != nil {
-		return CorePortalSnapshot{}, err
-	}
-	itemsPage, err := s.ListItems(ctx, CoreListItemsInput{PortalID: portal.ID, Page: 1, PageSize: 50})
-	if err != nil {
-		return CorePortalSnapshot{}, err
-	}
-	comments, err := s.repo.ListComments(ctx, portal.ID)
-	if err != nil {
-		return CorePortalSnapshot{}, err
-	}
-	links, err := s.repo.ListStoryLinks(ctx, portal.ID)
-	if err != nil {
-		return CorePortalSnapshot{}, err
-	}
-	return CorePortalSnapshot{Portal: portal, Boards: boards, Items: itemsPage.Items, ItemsHasMore: itemsPage.HasMore, Comments: comments, Links: links}, nil
+	return s.getPortalSnapshot(ctx, portal, input)
 }
 
-func (s *Service) GetWorkspacePortalSnapshot(ctx context.Context, workspaceSlug, portalSlug string) (CorePortalSnapshot, error) {
+func (s *Service) GetWorkspacePortalSnapshot(ctx context.Context, workspaceSlug, portalSlug string, input CorePortalSnapshotInput) (CorePortalSnapshot, error) {
 	portal, err := s.repo.GetPortalByWorkspaceSlugAndSlug(ctx, strings.TrimSpace(workspaceSlug), strings.TrimSpace(portalSlug))
 	if err != nil {
 		return CorePortalSnapshot{}, err
 	}
-	return s.getPortalSnapshot(ctx, portal)
+	return s.getPortalSnapshot(ctx, portal, input)
 }
 
-func (s *Service) getPortalSnapshot(ctx context.Context, portal CorePortal) (CorePortalSnapshot, error) {
+func (s *Service) getPortalSnapshot(ctx context.Context, portal CorePortal, input CorePortalSnapshotInput) (CorePortalSnapshot, error) {
 	boards, err := s.repo.ListBoards(ctx, portal.ID)
 	if err != nil {
 		return CorePortalSnapshot{}, err
 	}
-	itemsPage, err := s.ListItems(ctx, CoreListItemsInput{PortalID: portal.ID, Page: 1, PageSize: 50})
+	itemsPage, err := s.ListItems(ctx, CoreListItemsInput{
+		PortalID: portal.ID,
+		AuthorID: input.AuthorID,
+		Status:   input.Status,
+		BoardID:  input.BoardID,
+		Search:   input.Search,
+		Sort:     input.Sort,
+		Page:     input.Page,
+		PageSize: input.PageSize,
+	})
 	if err != nil {
 		return CorePortalSnapshot{}, err
 	}
-	comments, err := s.repo.ListComments(ctx, portal.ID)
+	if input.SummaryOnly {
+		return CorePortalSnapshot{Portal: portal, Boards: boards, Items: itemsPage.Items, ItemsHasMore: itemsPage.HasMore}, nil
+	}
+	visibleItemIDs := coreItemIDs(itemsPage.Items)
+	comments, err := s.repo.ListComments(ctx, portal.ID, visibleItemIDs)
 	if err != nil {
 		return CorePortalSnapshot{}, err
 	}
-	links, err := s.repo.ListStoryLinks(ctx, portal.ID)
+	links, err := s.repo.ListStoryLinks(ctx, portal.ID, visibleItemIDs)
 	if err != nil {
 		return CorePortalSnapshot{}, err
 	}
@@ -130,8 +129,9 @@ func (s *Service) ListPortals(ctx context.Context, input CoreWorkspacePortalInpu
 		return portals, nil
 	}
 	portal, err := s.CreatePortal(ctx, CorePortalInput{
-		WorkspaceID: input.WorkspaceID,
-		IsPublic:    true,
+		WorkspaceID:       input.WorkspaceID,
+		IsPublic:          pointer(true),
+		ParticipationMode: pointer(ParticipationModeAccountRequired),
 	})
 	if err != nil {
 		return nil, err
@@ -143,12 +143,31 @@ func (s *Service) CreatePortal(ctx context.Context, input CorePortalInput) (Core
 	if input.WorkspaceID == uuid.Nil {
 		return CorePortal{}, invalidInput("workspace id is required")
 	}
+	if input.IsPublic == nil {
+		input.IsPublic = pointer(true)
+	}
+	if input.ParticipationMode == nil {
+		input.ParticipationMode = pointer(ParticipationModeAccountRequired)
+	}
+	if !isValidParticipationMode(*input.ParticipationMode) {
+		return CorePortal{}, invalidInput("unsupported feedback participation mode")
+	}
 	return s.repo.CreatePortal(ctx, input)
 }
 
 func (s *Service) UpdatePortal(ctx context.Context, workspaceID, portalID uuid.UUID, input CorePortalInput) (CorePortal, error) {
 	if workspaceID == uuid.Nil || portalID == uuid.Nil {
 		return CorePortal{}, invalidInput("workspace id and portal id are required")
+	}
+	if input.IsPublic == nil && input.ParticipationMode == nil {
+		return CorePortal{}, invalidInput("at least one feedback portal setting is required")
+	}
+	if input.ParticipationMode != nil {
+		mode := strings.ToLower(strings.TrimSpace(*input.ParticipationMode))
+		if !isValidParticipationMode(mode) {
+			return CorePortal{}, invalidInput("unsupported feedback participation mode")
+		}
+		input.ParticipationMode = &mode
 	}
 	return s.repo.UpdatePortal(ctx, workspaceID, portalID, input)
 }
@@ -425,8 +444,15 @@ func (s *Service) SetBoardReviewer(ctx context.Context, input CoreBoardReviewerI
 }
 
 func (s *Service) CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error) {
-	if input.WorkspaceID == uuid.Nil || input.PortalID == uuid.Nil || input.BoardID == uuid.Nil || input.AuthorID == uuid.Nil {
-		return CoreItem{}, invalidInput("workspace, portal, board, and author are required")
+	if input.WorkspaceID == uuid.Nil || input.PortalID == uuid.Nil || input.BoardID == uuid.Nil || (input.ContributorID == uuid.Nil && input.AuthorID == uuid.Nil) {
+		return CoreItem{}, invalidInput("workspace, portal, board, and contributor are required")
+	}
+	if input.ContributorID == uuid.Nil {
+		contributor, err := s.repo.GetOrCreateAccountContributor(ctx, input.PortalID, input.AuthorID)
+		if err != nil {
+			return CoreItem{}, err
+		}
+		input.ContributorID = contributor.ID
 	}
 	input.Source = strings.ToLower(strings.TrimSpace(input.Source))
 	if input.Source == "" {
@@ -450,47 +476,79 @@ func (s *Service) CreateItem(ctx context.Context, input CoreItemInput) (CoreItem
 	return s.repo.CreateItem(ctx, input)
 }
 
-func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInput) (CoreItem, error) {
+func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInput) (CorePublicItemResult, error) {
 	input.Title = strings.TrimSpace(input.Title)
 	input.Description = strings.TrimSpace(input.Description)
+	input.ParticipationIntent = strings.ToLower(strings.TrimSpace(input.ParticipationIntent))
 	if input.Title == "" {
-		return CoreItem{}, invalidInput("feedback title is required")
+		return CorePublicItemResult{}, invalidInput("feedback title is required")
 	}
 	if utf8.RuneCountInString(input.Title) > maxPublicFeedbackTitleCharacters {
-		return CoreItem{}, invalidInputf("feedback title must be %d characters or fewer", maxPublicFeedbackTitleCharacters)
+		return CorePublicItemResult{}, invalidInputf("feedback title must be %d characters or fewer", maxPublicFeedbackTitleCharacters)
 	}
 	if utf8.RuneCountInString(input.Description) > maxPublicFeedbackDescriptionCharacters {
-		return CoreItem{}, invalidInputf("feedback description must be %d characters or fewer", maxPublicFeedbackDescriptionCharacters)
+		return CorePublicItemResult{}, invalidInputf("feedback description must be %d characters or fewer", maxPublicFeedbackDescriptionCharacters)
+	}
+	switch input.ParticipationIntent {
+	case ParticipationIntentAccount:
+		if input.AuthorID == uuid.Nil {
+			return CorePublicItemResult{}, ErrAuthenticationRequired
+		}
+	case ParticipationIntentAnonymous:
+	default:
+		return CorePublicItemResult{}, invalidInput("feedback participation intent must be account or anonymous")
 	}
 
 	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(input.PortalSlug))
 	if err != nil {
-		return CoreItem{}, err
+		return CorePublicItemResult{}, err
 	}
 	board, err := s.repo.GetBoard(ctx, portal.ID, input.BoardID)
 	if err != nil {
-		return CoreItem{}, err
+		return CorePublicItemResult{}, err
 	}
 	if board.WorkspaceID != portal.WorkspaceID {
-		return CoreItem{}, ErrNotFound
+		return CorePublicItemResult{}, ErrNotFound
 	}
 	similarItems, err := s.repo.ListSimilarItems(ctx, portal.ID, input.Title, input.Description, 1)
 	if err != nil {
-		return CoreItem{}, err
+		return CorePublicItemResult{}, err
 	}
 	if len(similarItems) > 0 && similarItems[0].Confidence >= duplicateItemConfidence {
-		return CoreItem{}, fmt.Errorf("%w: %s", ErrDuplicateItem, similarItems[0].Title)
+		return CorePublicItemResult{}, fmt.Errorf("%w: %s", ErrDuplicateItem, similarItems[0].Title)
 	}
 
-	return s.CreateItem(ctx, CoreItemInput{
+	input.Source = strings.ToLower(strings.TrimSpace(input.Source))
+	if input.Source != SubmissionSourcePortal && input.Source != SubmissionSourceWidget {
+		return CorePublicItemResult{}, invalidInput("public feedback source must be portal or widget")
+	}
+	itemInput := CoreItemInput{
 		WorkspaceID: portal.WorkspaceID,
 		PortalID:    portal.ID,
 		BoardID:     board.ID,
-		AuthorID:    input.AuthorID,
 		Title:       input.Title,
 		Description: input.Description,
-		Source:      SubmissionSourcePortal,
-	})
+		Slug:        normalizeSlug(input.Title) + "-" + uuid.NewString()[:8],
+		Source:      input.Source,
+	}
+	if input.ParticipationIntent == ParticipationIntentAccount {
+		contributor, err := s.repo.GetOrCreateAccountContributor(ctx, portal.ID, input.AuthorID)
+		if err != nil {
+			return CorePublicItemResult{}, err
+		}
+		itemInput.AuthorID = input.AuthorID
+		itemInput.ContributorID = contributor.ID
+		item, err := s.CreateItem(ctx, itemInput)
+		return CorePublicItemResult{Item: item}, err
+	}
+	if portal.ParticipationMode != ParticipationModeAnonymousAllowed {
+		return CorePublicItemResult{}, ErrParticipationNotAllowed
+	}
+	item, err := s.repo.CreateAnonymousItem(ctx, itemInput)
+	if err != nil {
+		return CorePublicItemResult{}, err
+	}
+	return CorePublicItemResult{Item: item, Anonymous: true}, nil
 }
 
 func (s *Service) ListPublicSimilarItems(ctx context.Context, portalSlug, title, description string, limit int) ([]CoreSimilarItem, error) {
@@ -961,4 +1019,20 @@ func isValidReviewerEmailFrequency(frequency string) bool {
 	default:
 		return false
 	}
+}
+
+func isValidParticipationMode(mode string) bool {
+	return mode == ParticipationModeAccountRequired || mode == ParticipationModeAnonymousAllowed
+}
+
+func pointer[T any](value T) *T {
+	return &value
+}
+
+func coreItemIDs(items []CoreItem) []uuid.UUID {
+	ids := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		ids = append(ids, item.ID)
+	}
+	return ids
 }

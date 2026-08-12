@@ -86,7 +86,7 @@ export const PublicPortalSidebar = ({
 }) => {
   return (
     <aside className="space-y-8 md:sticky md:top-8 md:self-start">
-      {viewer ? (
+      {viewer || portal.participationMode === "anonymous_allowed" ? (
         <NewFeedbackButton
           initialOpen={initialFeedbackComposerOpen}
           portal={portal}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
@@ -68,6 +69,10 @@ func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnecti
 			scopes = EXCLUDED.scopes,
 			sync_status = 'connected',
 			sync_error = NULL,
+			sync_token = NULL,
+			notification_channel_id = NULL,
+			notification_resource_id = NULL,
+			notification_expires_at = NULL,
 			last_synced_at = CASE
 				WHEN calendar_connections.provider_account_id <> ''
 					AND calendar_connections.provider_account_id = EXCLUDED.provider_account_id
@@ -76,7 +81,9 @@ func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnecti
 			END,
 			updated_at = NOW()
 		RETURNING connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
-		          token_payload, scopes, sync_status, sync_error, last_synced_at, revoked_at, created_at, updated_at
+		          token_payload, scopes, sync_status, sync_error, last_synced_at, sync_token,
+		          notification_channel_id, notification_resource_id, notification_expires_at,
+		          revoked_at, created_at, updated_at
 	`
 	params := map[string]any{
 		"workspace_id":          input.WorkspaceID,
@@ -137,7 +144,8 @@ func (r *Repo) BeginConnectionSync(ctx context.Context, connection calendar.Core
 			AND revoked_at IS NULL
 		RETURNING connection_id, workspace_id, user_id, credential_generation, provider_account_id,
 		          provider, connected_email, timezone, token_payload, scopes, sync_status,
-		          sync_error, last_synced_at, revoked_at, created_at, updated_at
+		          sync_error, last_synced_at, sync_token, notification_channel_id,
+		          notification_resource_id, notification_expires_at, revoked_at, created_at, updated_at
 	`
 	var row dbConnection
 	if err := tx.GetContext(
@@ -177,6 +185,10 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			token_payload = '',
 			scopes = '{}',
 			sync_error = NULL,
+			sync_token = NULL,
+			notification_channel_id = NULL,
+			notification_resource_id = NULL,
+			notification_expires_at = NULL,
 			updated_at = NOW()
 		WHERE workspace_id = $1
 			AND user_id = $2
@@ -389,6 +401,15 @@ func (r *Repo) ReplaceCalendarSnapshot(ctx context.Context, connection calendar.
 				return fmt.Errorf("insert calendar busy window: %w", err)
 			}
 		}
+	}
+
+	if _, err := tx.ExecContext(
+		ctx,
+		`UPDATE calendar_connections SET sync_token = NULLIF($2, ''), updated_at = NOW() WHERE connection_id = $1`,
+		connection.ID,
+		strings.TrimSpace(snapshot.NextSyncToken),
+	); err != nil {
+		return fmt.Errorf("store calendar sync token: %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {

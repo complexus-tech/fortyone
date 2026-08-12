@@ -3,7 +3,7 @@ import { CommentIcon } from "icons";
 import { Avatar, Box, Flex, Text } from "ui";
 import { cn } from "lib";
 import { requestStatusMeta } from "./status";
-import type { PublicPortal, PublicRequest } from "./types";
+import type { PublicPortal, PublicPortalViewer, PublicRequest } from "./types";
 import { getBoard, getRequestPath } from "./utils";
 import { getPublicAvatarColor } from "./avatar-color";
 import { FeedbackVoteButton } from "./feedback-controls";
@@ -30,9 +30,11 @@ export const RequestStatusPill = ({
 export const PublicRequestCard = ({
   portal,
   request,
+  viewer,
 }: {
   portal: PublicPortal;
   request: PublicRequest;
+  viewer?: PublicPortalViewer | null;
 }) => {
   const board = getBoard(portal, request.boardId);
 
@@ -89,7 +91,12 @@ export const PublicRequestCard = ({
               </Flex>
             </Box>
           </Link>
-          <FeedbackVoteButton compact portal={portal} request={request} />
+          <FeedbackVoteButton
+            compact
+            portal={portal}
+            request={request}
+            viewer={viewer}
+          />
         </Flex>
       </Box>
     </Box>

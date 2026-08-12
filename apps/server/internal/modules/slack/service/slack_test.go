@@ -143,10 +143,6 @@ func (m *mockRepo) HasSlackUserOnboardingReceipt(_ context.Context, _ uuid.UUID,
 
 func (m *mockRepo) GetAgentSettings(_ context.Context, _ uuid.UUID) (slackrepository.AgentSettingsRecord, error) {
 	settings := m.agentSettings
-	if !settings.AssistantEnabled && !settings.WorkflowActionsEnabled && strings.TrimSpace(settings.Guidance) == "" {
-		settings.AssistantEnabled = true
-		settings.WorkflowActionsEnabled = true
-	}
 	return settings, nil
 }
 
@@ -3271,9 +3267,7 @@ func TestHandleMutationActionIgnoresLegacyDisabledSettings(t *testing.T) {
 			FullName: "Joseph Mukorivo",
 		}},
 		agentSettings: slackrepository.AgentSettingsRecord{
-			AssistantEnabled:       true,
-			WorkflowActionsEnabled: false,
-			Guidance:               "configured",
+			Guidance: "configured",
 		},
 	}
 	confirmer := &mutationConfirmerStub{result: messaging.StoryMutationResult{

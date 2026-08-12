@@ -61,6 +61,7 @@ type Request struct {
 	// content. It cannot widen authorization or bypass mutation confirmation.
 	Guidance       string
 	AllowMutations bool
+	WebsiteURL     string
 	Conversation   []ConversationTurn
 	Prompt         string
 }
@@ -168,6 +169,9 @@ type ToolScope struct {
 	UserID         uuid.UUID
 	AllowedTeamIDs []uuid.UUID
 	AllowMutations bool
+	WebsiteURL     string
+	WorkspaceSlug  string
+	Timezone       string
 }
 
 // StoryMutationOperation identifies the write that an explicit confirmation
@@ -175,8 +179,10 @@ type ToolScope struct {
 type StoryMutationOperation string
 
 const (
-	StoryMutationCreate StoryMutationOperation = "create_story"
-	StoryMutationUpdate StoryMutationOperation = "update_story"
+	StoryMutationCreate   StoryMutationOperation = "create_story"
+	StoryMutationUpdate   StoryMutationOperation = "update_story"
+	StoryMutationComment  StoryMutationOperation = "add_story_comment"
+	StoryMutationRelation StoryMutationOperation = "add_story_relationship"
 )
 
 // StoryMutationConfirmation is a provider-neutral, non-mutating proposal.
@@ -209,14 +215,16 @@ type StoryMutationPreview struct {
 // proposal. Status is "applied" or "already_applied"; the latter makes
 // provider retries safe to treat as success.
 type StoryMutationResult struct {
-	Status     string                 `json:"status"`
-	Operation  StoryMutationOperation `json:"operation"`
-	StoryID    uuid.UUID              `json:"story_id"`
-	Reference  string                 `json:"reference"`
-	TeamID     uuid.UUID              `json:"team_id"`
-	Title      string                 `json:"title"`
-	Priority   string                 `json:"priority"`
-	AssigneeID *uuid.UUID             `json:"assignee_id,omitempty"`
+	Status        string                 `json:"status"`
+	Operation     StoryMutationOperation `json:"operation"`
+	StoryID       uuid.UUID              `json:"story_id"`
+	Reference     string                 `json:"reference"`
+	TeamID        uuid.UUID              `json:"team_id"`
+	Title         string                 `json:"title"`
+	Priority      string                 `json:"priority"`
+	AssigneeID    *uuid.UUID             `json:"assignee_id,omitempty"`
+	CommentID     *uuid.UUID             `json:"comment_id,omitempty"`
+	AssociationID *uuid.UUID             `json:"association_id,omitempty"`
 }
 
 // StoryMutationCancellationResult describes a successful cancellation. Status

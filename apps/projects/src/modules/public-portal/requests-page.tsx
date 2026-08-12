@@ -69,6 +69,7 @@ export const PublicPortalRequestsPage = ({
             initialFilters={initialFilters}
             onFiltersChange={updateFilters}
             portal={portal}
+            viewer={viewer}
           />
         </Box>
         <PublicPortalSidebar

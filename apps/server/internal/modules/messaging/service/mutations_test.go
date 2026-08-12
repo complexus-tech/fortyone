@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
@@ -29,7 +30,7 @@ func TestFortyOneToolExecutorMutationCatalogIsStrictAndOptIn(t *testing.T) {
 	mutationStories := newMutationStoriesStub()
 	executor := newMutationToolExecutorForTest(t, &teamsServiceStub{}, mutationStories, testStoryMutationSecret)
 	definitions := executor.Definitions()
-	require.Len(t, definitions, 6)
+	require.Len(t, definitions, 8)
 	require.NoError(t, validateToolDefinitions(definitions))
 	require.Equal(t, toolCreateStory, definitions[4].Name)
 	require.Equal(t, toolUpdateStory, definitions[5].Name)
@@ -608,6 +609,29 @@ func (s *mutationStoriesStub) QueryByRef(_ context.Context, workspaceID uuid.UUI
 		}
 	}
 	return stories.CoreSingleStory{}, errors.New("story not found")
+}
+
+func (s *mutationStoriesStub) CreateCommentExternal(_ context.Context, _ uuid.UUID, _ uuid.UUID, comment stories.CoreNewComment) (comments.CoreComment, error) {
+	return comments.CoreComment{ID: uuid.New(), StoryID: comment.StoryID, UserID: comment.UserID, Comment: comment.Comment}, nil
+}
+
+func (s *mutationStoriesStub) UpdateLabels(_ context.Context, storyID, workspaceID uuid.UUID, labels []uuid.UUID) error {
+	story, ok := s.persisted[storyID]
+	if !ok || story.Workspace != workspaceID {
+		return errors.New("story not found")
+	}
+	story.Labels = append([]uuid.UUID(nil), labels...)
+	s.persisted[storyID] = story
+	return nil
+}
+
+func (s *mutationStoriesStub) AddAssociation(_ context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (stories.CoreStoryAssociation, error) {
+	from, fromOK := s.persisted[fromID]
+	to, toOK := s.persisted[toID]
+	if !fromOK || !toOK || from.Workspace != workspaceID || to.Workspace != workspaceID {
+		return stories.CoreStoryAssociation{}, errors.New("story not found")
+	}
+	return stories.CoreStoryAssociation{ID: uuid.New(), FromStoryID: fromID, ToStoryID: toID, Type: associationType}, nil
 }
 
 func (s *mutationStoriesStub) CreateExternalUserAction(ctx context.Context, actorID uuid.UUID, story stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {

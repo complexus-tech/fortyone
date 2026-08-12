@@ -57,7 +57,11 @@ type Config struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
 	Auth struct {
-		SecretKey string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+		SecretKey                 string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+		GoogleClientIDs           string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
+		GoogleClientSecret        string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
+		GoogleCalendarRedirectURL string `env:"APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL"`
+		GoogleCalendarWebhookURL  string `env:"APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL"`
 	}
 	Website struct {
 		URL string `default:"http://localhost:3000" env:"APP_WEBSITE_URL"`
@@ -84,6 +88,7 @@ type Config struct {
 	}
 	AIAPIKey           string `env:"OPENAI_API_KEY"`
 	AIModel            string `default:"gpt-5.6-luna" env:"OPENAI_MODEL"`
+	GoogleClientID     string `env:"GOOGLE_CLIENT_ID"`
 	MessagingAssistant struct {
 		UserCallsPerMinute      int64 `default:"12" env:"OPENAI_ASSISTANT_USER_CALLS_PER_MINUTE"`
 		WorkspaceCallsPerMinute int64 `default:"120" env:"OPENAI_ASSISTANT_WORKSPACE_CALLS_PER_MINUTE"`

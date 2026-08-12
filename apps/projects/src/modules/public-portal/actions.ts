@@ -6,6 +6,10 @@ import { auth } from "@/auth";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import { toPublicRequest, type ApiFeedbackItem } from "./data";
+import {
+  createFeedbackIngressHeaders,
+  normalizeFeedbackPortalSlug,
+} from "./feedback-ingress";
 
 type CreateFeedbackInput = {
   portalSlug: string;
@@ -43,6 +47,31 @@ export type CreatedFeedbackComment = {
   createdAt: string;
 };
 
+export type CreateFeedbackResult =
+  | {
+      kind: "authenticated";
+      request: ReturnType<typeof toPublicRequest>;
+    }
+  | {
+      kind: "anonymous";
+      request: ReturnType<typeof toPublicRequest>;
+    };
+
+const toCreateFeedbackResult = (
+  item: ApiFeedbackItem,
+): CreateFeedbackResult => {
+  const request = toPublicRequest(item);
+
+  if (item.anonymous) {
+    return {
+      kind: "anonymous",
+      request,
+    };
+  }
+
+  return { kind: "authenticated", request };
+};
+
 const refreshPortal = (portalSlug: string) => {
   revalidatePath("/feedback");
   revalidatePath("/feedback/roadmap");
@@ -59,33 +88,58 @@ const refreshFeedbackItem = (portalSlug: string, itemSlug?: string) => {
   revalidatePath(`/portal/${portalSlug}/requests/${itemSlug}`);
 };
 
-export const createFeedbackAction = async (input: CreateFeedbackInput) => {
+const submitFeedback = async (
+  input: CreateFeedbackInput,
+  participationIntent: "account" | "anonymous",
+) => {
   try {
+    const portalSlug = normalizeFeedbackPortalSlug(input.portalSlug);
     const session = await auth();
-    if (!session) {
+    if (participationIntent === "account" && !session) {
       return {
         data: null,
-        error: { message: "Please log in to submit feedback" },
+        error: {
+          message: "Your session expired. Please log in and try again.",
+        },
       };
     }
-
+    const isAnonymous = participationIntent === "anonymous";
+    const ingressHeaders =
+      isAnonymous || !session
+        ? await createFeedbackIngressHeaders(portalSlug)
+        : undefined;
     const response = await post<ApiResponse<ApiFeedbackItem>>(
-      `portals/${input.portalSlug}/feedback/items`,
+      `portals/${encodeURIComponent(portalSlug)}/feedback/items`,
       {
         boardId: input.boardId,
         description: input.description,
+        participationIntent,
         title: input.title,
+        website: "",
       },
+      ingressHeaders
+        ? {
+            credentials: isAnonymous ? "omit" : "include",
+            headers: ingressHeaders,
+          }
+        : undefined,
     );
-    refreshPortal(input.portalSlug);
+    refreshPortal(portalSlug);
     return {
       ...response,
-      data: response.data ? toPublicRequest(response.data) : response.data,
+      data: response.data ? toCreateFeedbackResult(response.data) : null,
     };
   } catch (error) {
     return getApiError(error);
   }
 };
+
+export const createFeedbackAction = async (input: CreateFeedbackInput) =>
+  submitFeedback(input, "account");
+
+export const createAnonymousFeedbackAction = async (
+  input: CreateFeedbackInput,
+) => submitFeedback(input, "anonymous");
 
 export const toggleFeedbackVoteAction = async (input: VoteInput) => {
   try {

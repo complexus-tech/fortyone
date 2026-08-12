@@ -19,6 +19,30 @@ type fakeProvider struct {
 	exchanged bool
 }
 
+type fakeCalendarTasks struct {
+	connectionIDs []uuid.UUID
+}
+
+type fakeCalendarUpdates struct {
+	workspaceID  uuid.UUID
+	userID       uuid.UUID
+	connectionID uuid.UUID
+	syncedAt     time.Time
+}
+
+func (p *fakeCalendarUpdates) PublishCalendarUpdated(_ context.Context, workspaceID, userID, connectionID uuid.UUID, syncedAt time.Time) error {
+	p.workspaceID = workspaceID
+	p.userID = userID
+	p.connectionID = connectionID
+	p.syncedAt = syncedAt
+	return nil
+}
+
+func (q *fakeCalendarTasks) EnqueueCalendarSync(_ context.Context, connectionID uuid.UUID) error {
+	q.connectionIDs = append(q.connectionIDs, connectionID)
+	return nil
+}
+
 func (p *fakeProvider) AuthCodeURL(state string) (string, error) {
 	return p.authURL + "?state=" + state, nil
 }
@@ -33,6 +57,18 @@ func (p *fakeProvider) SyncCalendar(ctx context.Context, token ProviderToken, in
 		return CalendarSyncSnapshot{}, p.syncErr
 	}
 	return CalendarSyncSnapshot{Events: p.events, BusyWindows: p.windows}, nil
+}
+
+func (p *fakeProvider) SyncCalendarChanges(context.Context, ProviderToken, string) (CalendarSyncDelta, error) {
+	return CalendarSyncDelta{}, p.syncErr
+}
+
+func (p *fakeProvider) WatchCalendar(context.Context, ProviderToken, CalendarWatchInput) (CalendarWatchChannel, error) {
+	return CalendarWatchChannel{}, nil
+}
+
+func (p *fakeProvider) StopCalendarWatch(context.Context, ProviderToken, CalendarWatchChannel) error {
+	return nil
 }
 
 type fakeRepo struct {
@@ -69,6 +105,14 @@ func (r *fakeRepo) GetActiveConnection(ctx context.Context, workspaceID, userID 
 		return CoreConnection{}, ErrCalendarNotFound
 	}
 	return r.connection, nil
+}
+
+func (r *fakeRepo) GetConnection(context.Context, uuid.UUID) (CoreConnection, error) {
+	return r.connection, nil
+}
+
+func (r *fakeRepo) ListConnectionsNeedingWatch(context.Context, time.Time) ([]CoreConnection, error) {
+	return nil, nil
 }
 
 func (r *fakeRepo) WorkspaceMemberExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, error) {
@@ -134,6 +178,57 @@ func (r *fakeRepo) ReplaceCalendarSnapshot(ctx context.Context, connection CoreC
 		}
 	}
 	return nil
+}
+
+func (r *fakeRepo) ApplyCalendarChanges(context.Context, CoreConnection, CalendarSyncDelta) error {
+	return nil
+}
+
+func (r *fakeRepo) SetNotificationChannel(context.Context, CoreConnection, CalendarWatchChannel) error {
+	return nil
+}
+
+func (r *fakeRepo) ClearNotificationChannel(context.Context, uuid.UUID) error {
+	return nil
+}
+
+func TestProcessGoogleNotificationEnqueuesAuthenticatedChannelChange(t *testing.T) {
+	t.Parallel()
+
+	connectionID := uuid.New()
+	channelID := uuid.NewString()
+	resourceID := "google-resource"
+	tasks := &fakeCalendarTasks{}
+	repo := &fakeRepo{connection: CoreConnection{
+		ID:                     connectionID,
+		NotificationChannelID:  channelID,
+		NotificationResourceID: resourceID,
+	}}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Tasks: tasks})
+
+	err := service.ProcessGoogleNotification(
+		context.Background(),
+		channelID,
+		resourceID,
+		"exists",
+		service.notificationToken(connectionID, channelID),
+	)
+	if err != nil {
+		t.Fatalf("ProcessGoogleNotification returned error: %v", err)
+	}
+	if len(tasks.connectionIDs) != 1 || tasks.connectionIDs[0] != connectionID {
+		t.Fatalf("expected connection %s to be enqueued, got %v", connectionID, tasks.connectionIDs)
+	}
+}
+
+func TestProcessGoogleNotificationRejectsInvalidToken(t *testing.T) {
+	t.Parallel()
+
+	service := New(nil, &fakeRepo{}, Config{SecretKey: "test-secret", Tasks: &fakeCalendarTasks{}})
+	err := service.ProcessGoogleNotification(context.Background(), uuid.NewString(), "resource", "exists", "invalid")
+	if !errors.Is(err, ErrInvalidCalendarNotification) {
+		t.Fatalf("expected invalid notification error, got %v", err)
+	}
 }
 
 func TestCompleteConnectRejectsRemovedWorkspaceMember(t *testing.T) {
@@ -562,8 +657,10 @@ func TestSyncConnectionStoresOnlyBusyWindows(t *testing.T) {
 			TokenPayload:         payload,
 		},
 	}
+	updates := &fakeCalendarUpdates{}
 	service = New(nil, repo, Config{
 		SecretKey: "test-secret",
+		Updates:   updates,
 		Providers: map[Provider]CalendarProvider{
 			ProviderGoogle: &fakeProvider{
 				windows: []CoreBusyWindow{
@@ -598,6 +695,9 @@ func TestSyncConnectionStoresOnlyBusyWindows(t *testing.T) {
 	}
 	if repo.markedGeneration != repo.connection.CredentialGeneration {
 		t.Fatalf("sync status used the wrong credential generation: got %s want %s", repo.markedGeneration, repo.connection.CredentialGeneration)
+	}
+	if updates.workspaceID != workspaceID || updates.userID != userID || updates.connectionID != connectionID || updates.syncedAt.IsZero() {
+		t.Fatalf("calendar update was not published with the synced connection scope: %#v", updates)
 	}
 }
 

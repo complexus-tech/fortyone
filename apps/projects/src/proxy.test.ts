@@ -25,6 +25,8 @@ describe("workspace public portal routes", () => {
     expect(isPublicPath("/feedback/improve-mobile-navigation")).toBe(true);
     expect(isPublicPath("/roadmap")).toBe(false);
     expect(isPublicPath("/feedback-private")).toBe(false);
+    expect(isPublicPath("/embed/feedback/art-circles")).toBe(true);
+    expect(isPublicPath("/embed/private")).toBe(false);
   });
 
   it("maps legacy request paths onto canonical feedback paths", () => {

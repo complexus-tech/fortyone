@@ -59,9 +59,7 @@ func TestUpsertAgentSettingsRejectsOversizedGuidanceBeforeDatabaseAccess(t *test
 
 	repo := &Repo{}
 	_, err := repo.UpsertAgentSettings(context.Background(), uuid.New(), AgentSettingsInput{
-		AssistantEnabled:       true,
-		WorkflowActionsEnabled: true,
-		Guidance:               strings.Repeat("a", MaxSlackAgentGuidanceRunes+1),
+		Guidance: strings.Repeat("a", MaxSlackAgentGuidanceRunes+1),
 	})
 
 	require.ErrorContains(t, err, "4000 characters or fewer")

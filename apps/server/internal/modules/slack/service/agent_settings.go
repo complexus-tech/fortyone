@@ -18,9 +18,7 @@ type agentSettingsReader interface {
 }
 
 type CoreSlackAgentSettings struct {
-	AssistantEnabled       bool
-	WorkflowActionsEnabled bool
-	Guidance               string
+	Guidance string
 }
 
 func (s *Service) GetAgentSettings(ctx context.Context, workspaceID uuid.UUID) (CoreSlackAgentSettings, error) {
@@ -45,9 +43,7 @@ func (s *Service) UpdateAgentSettings(
 		return CoreSlackAgentSettings{}, errors.New("Slack agent settings repository is not configured")
 	}
 	record, err := repository.UpsertAgentSettings(ctx, workspaceID, slackrepository.AgentSettingsInput{
-		AssistantEnabled:       true,
-		WorkflowActionsEnabled: true,
-		Guidance:               input.Guidance,
+		Guidance: input.Guidance,
 	})
 	if err != nil {
 		return CoreSlackAgentSettings{}, err
@@ -57,8 +53,6 @@ func (s *Service) UpdateAgentSettings(
 
 func toCoreSlackAgentSettings(record slackrepository.AgentSettingsRecord) CoreSlackAgentSettings {
 	return CoreSlackAgentSettings{
-		AssistantEnabled:       true,
-		WorkflowActionsEnabled: true,
-		Guidance:               record.Guidance,
+		Guidance: record.Guidance,
 	}
 }

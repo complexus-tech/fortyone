@@ -51,22 +51,26 @@ const (
 )
 
 type CoreConnection struct {
-	ID                   uuid.UUID  `json:"id"`
-	WorkspaceID          uuid.UUID  `json:"workspaceId"`
-	UserID               uuid.UUID  `json:"userId"`
-	CredentialGeneration uuid.UUID  `json:"-"`
-	ProviderAccountID    string     `json:"-"`
-	Provider             Provider   `json:"provider"`
-	ConnectedEmail       string     `json:"connectedEmail"`
-	Timezone             string     `json:"timezone"`
-	TokenPayload         string     `json:"-"`
-	Scopes               []string   `json:"scopes"`
-	SyncStatus           SyncStatus `json:"syncStatus"`
-	SyncError            *string    `json:"syncError,omitempty"`
-	LastSyncedAt         *time.Time `json:"lastSyncedAt,omitempty"`
-	RevokedAt            *time.Time `json:"revokedAt,omitempty"`
-	CreatedAt            time.Time  `json:"createdAt"`
-	UpdatedAt            time.Time  `json:"updatedAt"`
+	ID                     uuid.UUID  `json:"id"`
+	WorkspaceID            uuid.UUID  `json:"workspaceId"`
+	UserID                 uuid.UUID  `json:"userId"`
+	CredentialGeneration   uuid.UUID  `json:"-"`
+	ProviderAccountID      string     `json:"-"`
+	Provider               Provider   `json:"provider"`
+	ConnectedEmail         string     `json:"connectedEmail"`
+	Timezone               string     `json:"timezone"`
+	TokenPayload           string     `json:"-"`
+	Scopes                 []string   `json:"scopes"`
+	SyncStatus             SyncStatus `json:"syncStatus"`
+	SyncError              *string    `json:"syncError,omitempty"`
+	LastSyncedAt           *time.Time `json:"lastSyncedAt,omitempty"`
+	SyncToken              string     `json:"-"`
+	NotificationChannelID  string     `json:"-"`
+	NotificationResourceID string     `json:"-"`
+	NotificationExpiresAt  *time.Time `json:"-"`
+	RevokedAt              *time.Time `json:"revokedAt,omitempty"`
+	CreatedAt              time.Time  `json:"createdAt"`
+	UpdatedAt              time.Time  `json:"updatedAt"`
 }
 
 func (connection CoreConnection) CanReadEventDetails() bool {
@@ -221,6 +225,27 @@ type CalendarSyncSnapshot struct {
 	Events              []CoreCalendarEvent
 	BusyWindows         []CoreBusyWindow
 	CanReadEventDetails bool
+	NextSyncToken       string
+}
+
+type CalendarSyncDelta struct {
+	Events          []CoreCalendarEvent
+	BusyWindows     []CoreBusyWindow
+	DeletedEventIDs []string
+	NextSyncToken   string
+}
+
+type CalendarWatchInput struct {
+	ChannelID string
+	Address   string
+	Token     string
+	TTL       time.Duration
+}
+
+type CalendarWatchChannel struct {
+	ChannelID  string
+	ResourceID string
+	ExpiresAt  time.Time
 }
 
 type ProviderToken struct {

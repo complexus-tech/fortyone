@@ -13,7 +13,9 @@ import (
 func (r *Repo) ListConnections(ctx context.Context, workspaceID uuid.UUID, userID *uuid.UUID) ([]calendar.CoreConnection, error) {
 	query := `
 		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
-		       token_payload, scopes, sync_status, sync_error, last_synced_at, revoked_at, created_at, updated_at
+		       token_payload, scopes, sync_status, sync_error, last_synced_at, sync_token,
+		       notification_channel_id, notification_resource_id, notification_expires_at,
+		       revoked_at, created_at, updated_at
 		FROM calendar_connections
 		WHERE workspace_id = :workspace_id
 			AND revoked_at IS NULL
@@ -40,7 +42,9 @@ func (r *Repo) ListConnections(ctx context.Context, workspaceID uuid.UUID, userI
 func (r *Repo) GetOwnedConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) (calendar.CoreConnection, error) {
 	const query = `
 		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
-		       token_payload, scopes, sync_status, sync_error, last_synced_at, revoked_at, created_at, updated_at
+		       token_payload, scopes, sync_status, sync_error, last_synced_at, sync_token,
+		       notification_channel_id, notification_resource_id, notification_expires_at,
+		       revoked_at, created_at, updated_at
 		FROM calendar_connections
 		WHERE workspace_id = $1
 			AND user_id = $2
@@ -79,7 +83,9 @@ func (r *Repo) WorkspaceMemberExists(ctx context.Context, workspaceID, userID uu
 func (r *Repo) GetActiveConnection(ctx context.Context, workspaceID, userID uuid.UUID, provider calendar.Provider) (calendar.CoreConnection, error) {
 	const query = `
 		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
-		       token_payload, scopes, sync_status, sync_error, last_synced_at, revoked_at, created_at, updated_at
+		       token_payload, scopes, sync_status, sync_error, last_synced_at, sync_token,
+		       notification_channel_id, notification_resource_id, notification_expires_at,
+		       revoked_at, created_at, updated_at
 		FROM calendar_connections
 		WHERE workspace_id = $1
 			AND user_id = $2

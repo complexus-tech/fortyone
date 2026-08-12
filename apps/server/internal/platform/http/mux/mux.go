@@ -30,40 +30,42 @@ type RouteAdder interface {
 
 // Config defines the configuration for the mux.
 type Config struct {
-	DB                 *sqlx.DB
-	Redis              *redis.Client
-	Publisher          *publisher.Publisher
-	Shutdown           chan os.Signal
-	Log                *logger.Logger
-	Tracer             trace.Tracer
-	SecretKey          string
-	CookieDomain       string
-	EmailService       mailer.Service
-	BrevoService       *brevo.Service
-	GoogleService      *google.Service
-	Validate           *validator.Validate
-	Cache              *cache.Service
-	TasksService       *tasks.Service
-	StripeClient       *client.API
-	StorageConfig      storage.Config
-	StorageService     storage.StorageService
-	WebhookSecret      string
-	WebsiteURL         string
-	GitHubAppID        int64
-	GitHubAppSlug      string
-	GitHubClientID     string
-	GitHubClientSecret string
-	GitHubUserID       uuid.UUID
-	GitHubKeyBase64    string
-	GitHubRedirect     string
-	GitHubWebhook      string
-	SlackSigningSecret string
-	SlackClientID      string
-	SlackClientSecret  string
-	SlackRedirectURL   string
-	AIAPIKey           string
-	SSEHub             *sse.Hub
-	CorsOrigin         string
+	DB                       *sqlx.DB
+	Redis                    *redis.Client
+	Publisher                *publisher.Publisher
+	Shutdown                 chan os.Signal
+	Log                      *logger.Logger
+	Tracer                   trace.Tracer
+	SecretKey                string
+	FeedbackIngressSecret    string
+	CookieDomain             string
+	EmailService             mailer.Service
+	BrevoService             *brevo.Service
+	GoogleService            *google.Service
+	GoogleCalendarWebhookURL string
+	Validate                 *validator.Validate
+	Cache                    *cache.Service
+	TasksService             *tasks.Service
+	StripeClient             *client.API
+	StorageConfig            storage.Config
+	StorageService           storage.StorageService
+	WebhookSecret            string
+	WebsiteURL               string
+	GitHubAppID              int64
+	GitHubAppSlug            string
+	GitHubClientID           string
+	GitHubClientSecret       string
+	GitHubUserID             uuid.UUID
+	GitHubKeyBase64          string
+	GitHubRedirect           string
+	GitHubWebhook            string
+	SlackSigningSecret       string
+	SlackClientID            string
+	SlackClientSecret        string
+	SlackRedirectURL         string
+	AIAPIKey                 string
+	SSEHub                   *sse.Hub
+	CorsOrigin               string
 }
 
 // New returns a new HTTP handler that defines all the API routes.

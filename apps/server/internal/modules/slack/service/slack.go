@@ -1187,16 +1187,6 @@ func (s *Service) handleMutationAction(ctx context.Context, payload interactionP
 		return InteractionResponse{StatusCode: http.StatusOK}, nil
 	}
 
-	settings, err := s.GetAgentSettings(ctx, installation.WorkspaceID)
-	if err != nil {
-		return InteractionResponse{}, err
-	}
-	if !settings.AssistantEnabled || !settings.WorkflowActionsEnabled {
-		if err := s.updateSlackInteractiveMessage(ctx, botToken, channelID, messageTS, "This story change is no longer available because Slack workflow actions are disabled."); err != nil {
-			return InteractionResponse{}, err
-		}
-		return InteractionResponse{StatusCode: http.StatusOK}, nil
-	}
 	var allowedTeamIDs []uuid.UUID
 	if !strings.HasPrefix(strings.ToUpper(channelID), "D") {
 		allowedTeamIDs, err = s.authorizedChannelTeamIDs(ctx, installation.WorkspaceID, installation.ID, channelID, *linkedUserID)
@@ -1214,7 +1204,7 @@ func (s *Service) handleMutationAction(ctx context.Context, payload interactionP
 		WorkspaceID:    installation.WorkspaceID,
 		UserID:         *linkedUserID,
 		AllowedTeamIDs: allowedTeamIDs,
-		AllowMutations: settings.WorkflowActionsEnabled,
+		AllowMutations: true,
 	}, actionValue.Token)
 	if err != nil {
 		if errors.Is(err, messaging.ErrMutationNotAllowed) ||

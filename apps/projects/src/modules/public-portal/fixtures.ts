@@ -4,6 +4,7 @@ export const publicPortalFixture: PublicPortal = {
   id: "city-roads",
   name: "City Roads Program",
   slug: "city-roads",
+  participationMode: "account_required",
   workspace: {
     name: "City Roads Program",
     slug: "city-roads",

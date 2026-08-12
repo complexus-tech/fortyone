@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -64,6 +65,17 @@ type storyMutationClaims struct {
 	Title             *string                `json:"n,omitempty"`
 	Priority          *string                `json:"p,omitempty"`
 	AssigneeAction    string                 `json:"a"`
+	StatusID          *uuid.UUID             `json:"st,omitempty"`
+	SprintID          *uuid.UUID             `json:"sp,omitempty"`
+	ObjectiveID       *uuid.UUID             `json:"oj,omitempty"`
+	KeyResultID       *uuid.UUID             `json:"k,omitempty"`
+	StartDate         *time.Time             `json:"sd,omitempty"`
+	EndDate           *time.Time             `json:"ed,omitempty"`
+	Comment           *string                `json:"c,omitempty"`
+	MentionIDs        []uuid.UUID            `json:"m,omitempty"`
+	LabelIDs          []uuid.UUID            `json:"l,omitempty"`
+	RelationStoryID   *uuid.UUID             `json:"r,omitempty"`
+	RelationType      string                 `json:"rt,omitempty"`
 	ExpiresAt         time.Time              `json:"x"`
 }
 
@@ -158,11 +170,18 @@ func (m *storyMutationExecutor) proposeUpdate(
 	raw json.RawMessage,
 ) (json.RawMessage, error) {
 	var args struct {
-		StoryID        *string `json:"story_id"`
-		StoryReference *string `json:"story_reference"`
-		Title          *string `json:"title"`
-		Priority       *string `json:"priority"`
-		Assignee       string  `json:"assignee"`
+		StoryID        *string   `json:"story_id"`
+		StoryReference *string   `json:"story_reference"`
+		Title          *string   `json:"title"`
+		Priority       *string   `json:"priority"`
+		Assignee       string    `json:"assignee"`
+		StatusID       *string   `json:"status_id"`
+		SprintID       *string   `json:"sprint_id"`
+		ObjectiveID    *string   `json:"objective_id"`
+		KeyResultID    *string   `json:"key_result_id"`
+		StartDate      *string   `json:"start_date"`
+		EndDate        *string   `json:"end_date"`
+		LabelIDs       *[]string `json:"label_ids"`
 	}
 	if err := decodeToolArguments(raw, &args, "story_id", "story_reference", "title", "priority", "assignee"); err != nil {
 		return nil, err
@@ -203,8 +222,42 @@ func (m *storyMutationExecutor) proposeUpdate(
 		}
 		priority = &value
 	}
+	statusID, err := parseOptionalUUID(args.StatusID, "status_id")
+	if err != nil {
+		return nil, err
+	}
+	sprintID, err := parseOptionalUUID(args.SprintID, "sprint_id")
+	if err != nil {
+		return nil, err
+	}
+	objectiveID, err := parseOptionalUUID(args.ObjectiveID, "objective_id")
+	if err != nil {
+		return nil, err
+	}
+	keyResultID, err := parseOptionalUUID(args.KeyResultID, "key_result_id")
+	if err != nil {
+		return nil, err
+	}
+	var labelIDs []uuid.UUID
+	if args.LabelIDs != nil {
+		labelIDs, err = parseUUIDList(*args.LabelIDs, "label_ids")
+		if err != nil {
+			return nil, err
+		}
+	}
+	startDate, err := parseOptionalDate(args.StartDate, "start_date", scope.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	endDate, err := parseOptionalDate(args.EndDate, "end_date", scope.Timezone)
+	if err != nil {
+		return nil, err
+	}
 
-	changedFields := proposedChangedFields(story, scope.UserID, title, priority, args.Assignee)
+	changedFields := proposedChangedFields(story, scope.UserID, title, priority, args.Assignee, statusID, sprintID, objectiveID, keyResultID, startDate, endDate)
+	if args.LabelIDs != nil && !sameUUIDSet(story.Labels, labelIDs) {
+		changedFields = append(changedFields, "labels")
+	}
 	if len(changedFields) == 0 {
 		return nil, fmt.Errorf("%w: update_story must contain at least one effective change", ErrInvalidToolArguments)
 	}
@@ -227,6 +280,13 @@ func (m *storyMutationExecutor) proposeUpdate(
 		Title:             title,
 		Priority:          priority,
 		AssigneeAction:    args.Assignee,
+		StatusID:          statusID,
+		SprintID:          sprintID,
+		ObjectiveID:       objectiveID,
+		KeyResultID:       keyResultID,
+		StartDate:         startDate,
+		EndDate:           endDate,
+		LabelIDs:          labelIDs,
 		ExpiresAt:         now.Add(storyMutationConfirmationTTL),
 	}
 	previewTitle := story.Title
@@ -246,6 +306,87 @@ func (m *storyMutationExecutor) proposeUpdate(
 		AssigneeAction: args.Assignee,
 		ChangedFields:  changedFields,
 	}, fmt.Sprintf("Update %s?", reference))
+}
+
+func (m *storyMutationExecutor) proposeRelationship(ctx context.Context, executor *FortyOneToolExecutor, scope ToolScope, raw json.RawMessage) (json.RawMessage, error) {
+	var args struct {
+		FromStoryID        *string `json:"from_story_id"`
+		FromStoryReference *string `json:"from_story_reference"`
+		ToStoryID          *string `json:"to_story_id"`
+		ToStoryReference   *string `json:"to_story_reference"`
+		AssociationType    string  `json:"association_type"`
+	}
+	if err := decodeToolArguments(raw, &args, "from_story_id", "from_story_reference", "to_story_id", "to_story_reference", "association_type"); err != nil {
+		return nil, err
+	}
+	if (args.FromStoryID == nil) == (args.FromStoryReference == nil) || (args.ToStoryID == nil) == (args.ToStoryReference == nil) {
+		return nil, fmt.Errorf("%w: provide exactly one identifier for both stories", ErrInvalidToolArguments)
+	}
+	if args.AssociationType != "blocking" && args.AssociationType != "related" && args.AssociationType != "duplicate" {
+		return nil, fmt.Errorf("%w: association_type must be blocking, related, or duplicate", ErrInvalidToolArguments)
+	}
+	_, joinedByID, err := executor.joinedTeams(ctx, scope)
+	if err != nil {
+		return nil, err
+	}
+	from, err := m.resolveUpdateStory(ctx, scope, joinedByID, args.FromStoryID, args.FromStoryReference)
+	if err != nil {
+		return nil, err
+	}
+	to, err := m.resolveUpdateStory(ctx, scope, joinedByID, args.ToStoryID, args.ToStoryReference)
+	if err != nil {
+		return nil, err
+	}
+	if from.ID == to.ID {
+		return nil, fmt.Errorf("%w: stories must be different", ErrInvalidToolArguments)
+	}
+	confirmationID, err := uuid.NewRandomFromReader(m.random)
+	if err != nil {
+		return nil, fmt.Errorf("generate relationship confirmation ID: %w", err)
+	}
+	now := m.now().UTC()
+	claims := storyMutationClaims{Version: storyMutationTokenVersion, ConfirmationID: confirmationID, Operation: StoryMutationRelation, WorkspaceID: scope.WorkspaceID, UserID: scope.UserID, TeamID: from.Team, StoryID: &from.ID, RelationStoryID: &to.ID, RelationType: args.AssociationType, ExpiresAt: now.Add(storyMutationConfirmationTTL)}
+	team := joinedByID[from.Team]
+	return m.marshalProposal(ctx, claims, StoryMutationPreview{StoryID: &from.ID, Reference: storyReference(team.Code, from.SequenceID), TeamID: team.ID, TeamName: team.Name, TeamCode: strings.ToUpper(team.Code), Title: from.Title, ChangedFields: []string{"relationship:" + args.AssociationType}}, fmt.Sprintf("Add a %s relationship from %s to %s?", args.AssociationType, storyReference(team.Code, from.SequenceID), storyReference(joinedByID[to.Team].Code, to.SequenceID)))
+}
+
+func (m *storyMutationExecutor) proposeComment(ctx context.Context, executor *FortyOneToolExecutor, scope ToolScope, raw json.RawMessage) (json.RawMessage, error) {
+	var args struct {
+		StoryID        *string  `json:"story_id"`
+		StoryReference *string  `json:"story_reference"`
+		Body           string   `json:"body"`
+		MentionIDs     []string `json:"mention_ids"`
+	}
+	if err := decodeToolArguments(raw, &args, "story_id", "story_reference", "body", "mention_ids"); err != nil {
+		return nil, err
+	}
+	if (args.StoryID == nil) == (args.StoryReference == nil) {
+		return nil, fmt.Errorf("%w: provide exactly one of story_id or story_reference", ErrInvalidToolArguments)
+	}
+	_, joinedByID, err := executor.joinedTeams(ctx, scope)
+	if err != nil {
+		return nil, err
+	}
+	story, err := m.resolveUpdateStory(ctx, scope, joinedByID, args.StoryID, args.StoryReference)
+	if err != nil {
+		return nil, err
+	}
+	body := strings.TrimSpace(args.Body)
+	if body == "" || len([]rune(body)) > maxStoryDescriptionRunes {
+		return nil, fmt.Errorf("%w: body must contain 1-%d characters", ErrInvalidToolArguments, maxStoryDescriptionRunes)
+	}
+	mentions, err := parseUUIDList(args.MentionIDs, "mention_ids")
+	if err != nil {
+		return nil, err
+	}
+	confirmationID, err := uuid.NewRandomFromReader(m.random)
+	if err != nil {
+		return nil, fmt.Errorf("generate comment confirmation ID: %w", err)
+	}
+	now := m.now().UTC()
+	claims := storyMutationClaims{Version: storyMutationTokenVersion, ConfirmationID: confirmationID, Operation: StoryMutationComment, WorkspaceID: scope.WorkspaceID, UserID: scope.UserID, TeamID: story.Team, StoryID: &story.ID, Comment: &body, MentionIDs: mentions, ExpiresAt: now.Add(storyMutationConfirmationTTL)}
+	team := joinedByID[story.Team]
+	return m.marshalProposal(ctx, claims, StoryMutationPreview{StoryID: &story.ID, Reference: storyReference(team.Code, story.SequenceID), TeamID: team.ID, TeamName: team.Name, TeamCode: strings.ToUpper(team.Code), Title: story.Title, ChangedFields: []string{"comment"}}, fmt.Sprintf("Add a comment to %s?", storyReference(team.Code, story.SequenceID)))
 }
 
 func (m *storyMutationExecutor) resolveUpdateStory(
@@ -363,6 +504,10 @@ func (e *FortyOneToolExecutor) ConfirmStoryMutation(ctx context.Context, scope T
 				return e.mutations.confirmCreate(applyCtx, scope, team, claims)
 			case StoryMutationUpdate:
 				return e.mutations.confirmUpdate(applyCtx, scope, team, claims)
+			case StoryMutationComment:
+				return e.mutations.confirmComment(applyCtx, scope, team, claims)
+			case StoryMutationRelation:
+				return e.mutations.confirmRelationship(applyCtx, scope, team, claims)
 			default:
 				return StoryMutationResult{}, fmt.Errorf("%w: unsupported operation", ErrInvalidConfirmation)
 			}
@@ -466,31 +611,55 @@ func (m *storyMutationExecutor) confirmUpdate(
 		return StoryMutationResult{}, fmt.Errorf("%w: story team does not match proposal", ErrInvalidConfirmation)
 	}
 
-	updates := desiredStoryUpdates(story, scope.UserID, claims.Title, claims.Priority, claims.AssigneeAction)
-	if len(updates) == 0 {
+	updates := desiredStoryUpdates(story, scope.UserID, claims.Title, claims.Priority, claims.AssigneeAction, claims.StatusID, claims.SprintID, claims.ObjectiveID, claims.KeyResultID, claims.StartDate, claims.EndDate)
+	labelsChanged := claims.LabelIDs != nil && !sameUUIDSet(story.Labels, claims.LabelIDs)
+	if len(updates) == 0 && !labelsChanged {
 		return storyMutationResult(storyMutationStatusAlreadyApplied, StoryMutationUpdate, story, team.Code), nil
 	}
 	if !story.UpdatedAt.Equal(claims.ExpectedUpdatedAt.UTC()) {
 		return StoryMutationResult{}, fmt.Errorf("%w: %s", ErrStaleMutation, storyReference(team.Code, story.SequenceID))
 	}
-	if err := m.stories.UpdateExternalUserActionIfUnchanged(
-		ctx,
-		scope.UserID,
-		story.ID,
-		scope.WorkspaceID,
-		claims.ExpectedUpdatedAt.UTC(),
-		updates,
-	); err != nil {
-		if errors.Is(err, stories.ErrStoryChanged) {
-			return StoryMutationResult{}, fmt.Errorf("%w: %s", ErrStaleMutation, storyReference(team.Code, story.SequenceID))
+	if len(updates) > 0 {
+		if err := m.stories.UpdateExternalUserActionIfUnchanged(ctx, scope.UserID, story.ID, scope.WorkspaceID, claims.ExpectedUpdatedAt.UTC(), updates); err != nil {
+			if errors.Is(err, stories.ErrStoryChanged) {
+				return StoryMutationResult{}, fmt.Errorf("%w: %s", ErrStaleMutation, storyReference(team.Code, story.SequenceID))
+			}
+			return StoryMutationResult{}, fmt.Errorf("update confirmed story: %w", err)
 		}
-		return StoryMutationResult{}, fmt.Errorf("update confirmed story: %w", err)
+	}
+	if labelsChanged {
+		if err := m.stories.UpdateLabels(ctx, story.ID, scope.WorkspaceID, claims.LabelIDs); err != nil {
+			return StoryMutationResult{}, fmt.Errorf("update confirmed story labels: %w", err)
+		}
 	}
 	updated, err := m.stories.Get(ctx, story.ID, scope.WorkspaceID)
 	if err != nil {
 		return StoryMutationResult{}, fmt.Errorf("reload confirmed story: %w", err)
 	}
 	return storyMutationResult(storyMutationStatusApplied, StoryMutationUpdate, updated, team.Code), nil
+}
+
+func (m *storyMutationExecutor) confirmComment(ctx context.Context, scope ToolScope, team teams.CoreTeam, claims storyMutationClaims) (StoryMutationResult, error) {
+	if claims.StoryID == nil || claims.Comment == nil || strings.TrimSpace(*claims.Comment) == "" {
+		return StoryMutationResult{}, fmt.Errorf("%w: malformed comment proposal", ErrInvalidConfirmation)
+	}
+	comment, err := m.stories.CreateCommentExternal(ctx, scope.UserID, scope.WorkspaceID, stories.CoreNewComment{StoryID: *claims.StoryID, UserID: scope.UserID, Comment: *claims.Comment, Mentions: claims.MentionIDs})
+	if err != nil {
+		return StoryMutationResult{}, fmt.Errorf("create confirmed story comment: %w", err)
+	}
+	commentID := comment.ID
+	return StoryMutationResult{Status: storyMutationStatusApplied, Operation: StoryMutationComment, StoryID: *claims.StoryID, CommentID: &commentID, TeamID: team.ID}, nil
+}
+
+func (m *storyMutationExecutor) confirmRelationship(ctx context.Context, scope ToolScope, team teams.CoreTeam, claims storyMutationClaims) (StoryMutationResult, error) {
+	if claims.StoryID == nil || claims.RelationStoryID == nil || claims.RelationType == "" {
+		return StoryMutationResult{}, fmt.Errorf("%w: malformed relationship proposal", ErrInvalidConfirmation)
+	}
+	association, err := m.stories.AddAssociation(ctx, *claims.StoryID, *claims.RelationStoryID, claims.RelationType, scope.WorkspaceID)
+	if err != nil {
+		return StoryMutationResult{}, fmt.Errorf("create confirmed story relationship: %w", err)
+	}
+	return StoryMutationResult{Status: storyMutationStatusApplied, Operation: StoryMutationRelation, StoryID: *claims.StoryID, AssociationID: &association.ID, TeamID: team.ID}, nil
 }
 
 func (m *storyMutationExecutor) signClaims(claims storyMutationClaims) (string, error) {
@@ -594,13 +763,40 @@ func validateStoryMutationClaims(claims storyMutationClaims) error {
 		if claims.AssigneeAction != assigneeActionUnchanged && claims.AssigneeAction != assigneeActionMe && claims.AssigneeAction != assigneeActionUnassigned {
 			return fmt.Errorf("%w: invalid update assignee claim", ErrInvalidConfirmation)
 		}
-		if claims.Title == nil && claims.Priority == nil && claims.AssigneeAction == assigneeActionUnchanged {
+		if claims.Title == nil && claims.Priority == nil && claims.AssigneeAction == assigneeActionUnchanged && claims.StatusID == nil && claims.SprintID == nil && claims.ObjectiveID == nil && claims.KeyResultID == nil && claims.StartDate == nil && claims.EndDate == nil && claims.LabelIDs == nil {
 			return fmt.Errorf("%w: empty update claims", ErrInvalidConfirmation)
+		}
+	case StoryMutationComment:
+		if claims.StoryID == nil || claims.Comment == nil || strings.TrimSpace(*claims.Comment) == "" {
+			return fmt.Errorf("%w: malformed comment claims", ErrInvalidConfirmation)
+		}
+	case StoryMutationRelation:
+		if claims.StoryID == nil || claims.RelationStoryID == nil || claims.RelationType == "" || *claims.StoryID == *claims.RelationStoryID {
+			return fmt.Errorf("%w: malformed relationship claims", ErrInvalidConfirmation)
+		}
+		if claims.RelationType != "blocking" && claims.RelationType != "related" && claims.RelationType != "duplicate" {
+			return fmt.Errorf("%w: invalid relationship type", ErrInvalidConfirmation)
 		}
 	default:
 		return fmt.Errorf("%w: unsupported operation", ErrInvalidConfirmation)
 	}
 	return nil
+}
+
+func sameUUIDSet(left, right []uuid.UUID) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	seen := make(map[uuid.UUID]struct{}, len(left))
+	for _, value := range left {
+		seen[value] = struct{}{}
+	}
+	for _, value := range right {
+		if _, ok := seen[value]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func mutationConfirmationFromToolResult(raw json.RawMessage) (*StoryMutationConfirmation, bool, error) {
@@ -686,10 +882,10 @@ func normalizedStoryPriority(raw *string, fallback string) (string, error) {
 	return priority, nil
 }
 
-func proposedChangedFields(story stories.CoreSingleStory, userID uuid.UUID, title, priority *string, assigneeAction string) []string {
-	updates := desiredStoryUpdates(story, userID, title, priority, assigneeAction)
-	fields := make([]string, 0, 3)
-	for _, field := range []string{"title", "priority", "assignee_id"} {
+func proposedChangedFields(story stories.CoreSingleStory, userID uuid.UUID, title, priority *string, assigneeAction string, statusID, sprintID, objectiveID, keyResultID *uuid.UUID, startDate, endDate *time.Time) []string {
+	updates := desiredStoryUpdates(story, userID, title, priority, assigneeAction, statusID, sprintID, objectiveID, keyResultID, startDate, endDate)
+	fields := make([]string, 0, len(updates))
+	for _, field := range []string{"title", "priority", "assignee_id", "status_id", "sprint_id", "objective_id", "key_result_id", "start_date", "end_date"} {
 		if _, changed := updates[field]; changed {
 			fields = append(fields, field)
 		}
@@ -697,7 +893,7 @@ func proposedChangedFields(story stories.CoreSingleStory, userID uuid.UUID, titl
 	return fields
 }
 
-func desiredStoryUpdates(story stories.CoreSingleStory, userID uuid.UUID, title, priority *string, assigneeAction string) map[string]any {
+func desiredStoryUpdates(story stories.CoreSingleStory, userID uuid.UUID, title, priority *string, assigneeAction string, statusID, sprintID, objectiveID, keyResultID *uuid.UUID, startDate, endDate *time.Time) map[string]any {
 	updates := make(map[string]any, 3)
 	if title != nil && story.Title != *title {
 		updates["title"] = *title
@@ -715,7 +911,84 @@ func desiredStoryUpdates(story stories.CoreSingleStory, userID uuid.UUID, title,
 			updates["assignee_id"] = nil
 		}
 	}
+	for field, value := range map[string]any{"status_id": statusID, "sprint_id": sprintID, "objective_id": objectiveID, "key_result_id": keyResultID, "start_date": startDate, "end_date": endDate} {
+		if value != nil && !storyFieldMatches(story, field, value) {
+			updates[field] = value
+		}
+	}
 	return updates
+}
+
+func storyFieldMatches(story stories.CoreSingleStory, field string, value any) bool {
+	var current any
+	switch field {
+	case "status_id":
+		current = story.Status
+	case "sprint_id":
+		current = story.Sprint
+	case "objective_id":
+		current = story.Objective
+	case "key_result_id":
+		current = story.KeyResult
+	case "start_date":
+		current = story.StartDate
+	case "end_date":
+		current = story.EndDate
+	default:
+		return false
+	}
+	return reflect.DeepEqual(current, value)
+}
+
+func parseOptionalUUID(raw *string, field string) (*uuid.UUID, error) {
+	if raw == nil || strings.TrimSpace(*raw) == "" {
+		return nil, nil
+	}
+	value, err := uuid.Parse(strings.TrimSpace(*raw))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s must be a UUID", ErrInvalidToolArguments, field)
+	}
+	return &value, nil
+}
+
+func parseOptionalDate(raw *string, field, timezone string) (*time.Time, error) {
+	if raw == nil || strings.TrimSpace(*raw) == "" {
+		return nil, nil
+	}
+	rawValue := strings.TrimSpace(*raw)
+	value, err := time.Parse(time.RFC3339, rawValue)
+	if err != nil {
+		location, locationErr := time.LoadLocation(strings.TrimSpace(timezone))
+		if locationErr != nil {
+			location = time.UTC
+		}
+		value, err = time.ParseInLocation("2006-01-02", rawValue, location)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s must be YYYY-MM-DD or RFC3339", ErrInvalidToolArguments, field)
+	}
+	value = value.UTC()
+	return &value, nil
+}
+
+func parseUUIDList(raw []string, field string) ([]uuid.UUID, error) {
+	if raw == nil {
+		return nil, nil
+	}
+	values := make([]uuid.UUID, 0, len(raw))
+	seen := make(map[uuid.UUID]struct{}, len(raw))
+	for _, item := range raw {
+		value, err := uuid.Parse(strings.TrimSpace(item))
+		if err != nil || value == uuid.Nil {
+			return nil, fmt.Errorf("%w: %s contains an invalid UUID", ErrInvalidToolArguments, field)
+		}
+		if _, exists := seen[value]; exists {
+			continue
+		}
+		seen[value] = struct{}{}
+		values = append(values, value)
+	}
+	return values, nil
 }
 
 func storyMutationResult(status string, operation StoryMutationOperation, story stories.CoreSingleStory, teamCode string) StoryMutationResult {
@@ -729,6 +1002,14 @@ func storyMutationResult(status string, operation StoryMutationOperation, story 
 		Priority:   story.Priority,
 		AssigneeID: story.Assignee,
 	}
+}
+
+func nullableUUID(description string) map[string]any {
+	return map[string]any{"type": []string{"string", "null"}, "description": description}
+}
+
+func nullableDate(description string) map[string]any {
+	return map[string]any{"type": []string{"string", "null"}, "description": description}
 }
 
 func storyMutationToolDefinitions() []ToolDefinition {
@@ -787,7 +1068,35 @@ func storyMutationToolDefinitions() []ToolDefinition {
 					"description": "Whether to leave the assignee unchanged, assign the current user, or unassign the story.",
 					"enum":        []string{assigneeActionUnchanged, assigneeActionMe, assigneeActionUnassigned},
 				},
-			}, []string{"story_id", "story_reference", "title", "priority", "assignee"}),
+				"status_id":     nullableUUID("A visible status UUID, or null to leave unchanged."),
+				"sprint_id":     nullableUUID("A visible sprint UUID, or null to leave unchanged."),
+				"objective_id":  nullableUUID("A visible objective UUID, or null to leave unchanged."),
+				"key_result_id": nullableUUID("A visible key result UUID, or null to leave unchanged."),
+				"start_date":    nullableDate("A start date in YYYY-MM-DD or RFC3339, or null to leave unchanged."),
+				"end_date":      nullableDate("An end date in YYYY-MM-DD or RFC3339, or null to leave unchanged."),
+				"label_ids":     map[string]any{"type": []string{"array", "null"}, "description": "The complete replacement list of visible label UUIDs, or null to leave labels unchanged.", "items": map[string]any{"type": "string"}},
+			}, []string{"story_id", "story_reference", "title", "priority", "assignee", "status_id", "sprint_id", "objective_id", "key_result_id", "start_date", "end_date", "label_ids"}),
+		},
+		{
+			Type: "function", Name: toolAddComment,
+			Description: "Prepare a comment proposal for an accessible story. The comment and optional mentions are written only after explicit user confirmation.", Strict: true,
+			Parameters: strictObjectSchema(map[string]any{
+				"story_id":        map[string]any{"type": []string{"string", "null"}},
+				"story_reference": map[string]any{"type": []string{"string", "null"}},
+				"body":            map[string]any{"type": "string", "minLength": 1, "maxLength": maxStoryDescriptionRunes},
+				"mention_ids":     map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "maxItems": 20},
+			}, []string{"story_id", "story_reference", "body", "mention_ids"}),
+		},
+		{
+			Type: "function", Name: toolAddRelationship,
+			Description: "Prepare a proposal to relate two accessible stories. The relationship is written only after explicit user confirmation.", Strict: true,
+			Parameters: strictObjectSchema(map[string]any{
+				"from_story_id":        map[string]any{"type": []string{"string", "null"}},
+				"from_story_reference": map[string]any{"type": []string{"string", "null"}},
+				"to_story_id":          map[string]any{"type": []string{"string", "null"}},
+				"to_story_reference":   map[string]any{"type": []string{"string", "null"}},
+				"association_type":     map[string]any{"type": "string", "enum": []string{"blocking", "related", "duplicate"}},
+			}, []string{"from_story_id", "from_story_reference", "to_story_id", "to_story_reference", "association_type"}),
 		},
 	}
 }

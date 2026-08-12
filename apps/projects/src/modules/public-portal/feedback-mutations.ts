@@ -14,6 +14,7 @@ import type { PublicPortalFilterKey } from "./query-keys";
 import { publicPortalKeys } from "./query-keys";
 import type { PublicFeedbackPages } from "./client-query";
 import {
+  createAnonymousFeedbackAction,
   createFeedbackAction,
   createFeedbackCommentAction,
   toggleFeedbackVoteAction,
@@ -247,17 +248,25 @@ export const useCreatePublicFeedback = ({
   viewer,
 }: {
   portal: PublicPortal;
-  viewer: PublicPortalViewer;
+  viewer?: PublicPortalViewer | null;
 }) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: Parameters<typeof createFeedbackAction>[0]) =>
-      getActionData(
+    mutationFn: async (input: Parameters<typeof createFeedbackAction>[0]) => {
+      if (!viewer) throw new Error("Please log in to submit feedback");
+      const result = getActionData(
         await createFeedbackAction(input),
         "Unable to submit feedback",
-      ),
+      );
+      if (result.kind !== "authenticated") {
+        throw new Error("Your session expired. Please log in and try again.");
+      }
+      return result;
+    },
     onMutate: async (input) => {
+      if (!viewer) return { optimisticRequest: null };
+
       await queryClient.cancelQueries({
         queryKey: publicPortalKeys.feedback(portal.slug),
       });
@@ -267,7 +276,7 @@ export const useCreatePublicFeedback = ({
       return { optimisticRequest };
     },
     onError: (error, _input, context) => {
-      if (context) {
+      if (context?.optimisticRequest) {
         removeOptimisticRequest(
           queryClient,
           portal.slug,
@@ -276,13 +285,47 @@ export const useCreatePublicFeedback = ({
       }
       toast.error("Feedback", { description: error.message });
     },
-    onSuccess: (request, _input, context) => {
+    onSuccess: (result, _input, context) => {
+      if (!context.optimisticRequest) return;
+
       replaceOptimisticRequest(
         queryClient,
         portal.slug,
         context.optimisticRequest.id,
-        request,
+        result.request,
       );
+      void queryClient.invalidateQueries({
+        queryKey: publicPortalKeys.feedback(portal.slug),
+      });
+    },
+    retry: false,
+  });
+};
+
+export const useCreateAnonymousPublicFeedback = ({
+  portal,
+}: {
+  portal: PublicPortal;
+}) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      input: Parameters<typeof createAnonymousFeedbackAction>[0],
+    ) => {
+      const result = getActionData(
+        await createAnonymousFeedbackAction(input),
+        "Unable to submit feedback",
+      );
+      if (result.kind !== "anonymous") {
+        throw new Error("Anonymous submission could not be confirmed");
+      }
+      return result;
+    },
+    onError: (error) => {
+      toast.error("Feedback", { description: error.message });
+    },
+    onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: publicPortalKeys.feedback(portal.slug),
       });

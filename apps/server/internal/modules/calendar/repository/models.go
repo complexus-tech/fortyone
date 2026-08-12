@@ -11,22 +11,26 @@ import (
 )
 
 type dbConnection struct {
-	ID                   uuid.UUID      `db:"connection_id"`
-	WorkspaceID          uuid.UUID      `db:"workspace_id"`
-	UserID               uuid.UUID      `db:"user_id"`
-	CredentialGeneration uuid.UUID      `db:"credential_generation"`
-	ProviderAccountID    string         `db:"provider_account_id"`
-	Provider             string         `db:"provider"`
-	ConnectedEmail       string         `db:"connected_email"`
-	Timezone             string         `db:"timezone"`
-	TokenPayload         string         `db:"token_payload"`
-	Scopes               pq.StringArray `db:"scopes"`
-	SyncStatus           string         `db:"sync_status"`
-	SyncError            *string        `db:"sync_error"`
-	LastSyncedAt         *time.Time     `db:"last_synced_at"`
-	RevokedAt            *time.Time     `db:"revoked_at"`
-	CreatedAt            time.Time      `db:"created_at"`
-	UpdatedAt            time.Time      `db:"updated_at"`
+	ID                     uuid.UUID      `db:"connection_id"`
+	WorkspaceID            uuid.UUID      `db:"workspace_id"`
+	UserID                 uuid.UUID      `db:"user_id"`
+	CredentialGeneration   uuid.UUID      `db:"credential_generation"`
+	ProviderAccountID      string         `db:"provider_account_id"`
+	Provider               string         `db:"provider"`
+	ConnectedEmail         string         `db:"connected_email"`
+	Timezone               string         `db:"timezone"`
+	TokenPayload           string         `db:"token_payload"`
+	Scopes                 pq.StringArray `db:"scopes"`
+	SyncStatus             string         `db:"sync_status"`
+	SyncError              *string        `db:"sync_error"`
+	LastSyncedAt           *time.Time     `db:"last_synced_at"`
+	SyncToken              *string        `db:"sync_token"`
+	NotificationChannelID  *string        `db:"notification_channel_id"`
+	NotificationResourceID *string        `db:"notification_resource_id"`
+	NotificationExpiresAt  *time.Time     `db:"notification_expires_at"`
+	RevokedAt              *time.Time     `db:"revoked_at"`
+	CreatedAt              time.Time      `db:"created_at"`
+	UpdatedAt              time.Time      `db:"updated_at"`
 }
 
 type dbBusyWindow struct {
@@ -119,23 +123,34 @@ type dbScheduleBlock struct {
 
 func toCoreConnection(row dbConnection) calendar.CoreConnection {
 	return calendar.CoreConnection{
-		ID:                   row.ID,
-		WorkspaceID:          row.WorkspaceID,
-		UserID:               row.UserID,
-		CredentialGeneration: row.CredentialGeneration,
-		ProviderAccountID:    row.ProviderAccountID,
-		Provider:             calendar.Provider(row.Provider),
-		ConnectedEmail:       row.ConnectedEmail,
-		Timezone:             row.Timezone,
-		TokenPayload:         row.TokenPayload,
-		Scopes:               []string(row.Scopes),
-		SyncStatus:           calendar.SyncStatus(row.SyncStatus),
-		SyncError:            row.SyncError,
-		LastSyncedAt:         row.LastSyncedAt,
-		RevokedAt:            row.RevokedAt,
-		CreatedAt:            row.CreatedAt,
-		UpdatedAt:            row.UpdatedAt,
+		ID:                     row.ID,
+		WorkspaceID:            row.WorkspaceID,
+		UserID:                 row.UserID,
+		CredentialGeneration:   row.CredentialGeneration,
+		ProviderAccountID:      row.ProviderAccountID,
+		Provider:               calendar.Provider(row.Provider),
+		ConnectedEmail:         row.ConnectedEmail,
+		Timezone:               row.Timezone,
+		TokenPayload:           row.TokenPayload,
+		Scopes:                 []string(row.Scopes),
+		SyncStatus:             calendar.SyncStatus(row.SyncStatus),
+		SyncError:              row.SyncError,
+		LastSyncedAt:           row.LastSyncedAt,
+		SyncToken:              valueOrEmpty(row.SyncToken),
+		NotificationChannelID:  valueOrEmpty(row.NotificationChannelID),
+		NotificationResourceID: valueOrEmpty(row.NotificationResourceID),
+		NotificationExpiresAt:  row.NotificationExpiresAt,
+		RevokedAt:              row.RevokedAt,
+		CreatedAt:              row.CreatedAt,
+		UpdatedAt:              row.UpdatedAt,
 	}
+}
+
+func valueOrEmpty(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func toCoreConnections(rows []dbConnection) []calendar.CoreConnection {

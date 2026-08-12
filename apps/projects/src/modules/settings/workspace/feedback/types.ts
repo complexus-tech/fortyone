@@ -13,12 +13,17 @@ export type FeedbackBoard = {
   updatedAt: string;
 };
 
+export type FeedbackParticipationMode =
+  | "account_required"
+  | "anonymous_allowed";
+
 export type FeedbackPortal = {
   id: string;
   workspaceId: string;
   name: string;
   slug: string;
   isPublic: boolean;
+  participationMode: FeedbackParticipationMode;
   createdAt: string;
   updatedAt: string;
   boards?: FeedbackBoard[];
@@ -29,7 +34,8 @@ export type FeedbackBoardWithTeam = FeedbackBoard & {
 };
 
 export type UpdateFeedbackPortalInput = {
-  isPublic: boolean;
+  isPublic?: boolean;
+  participationMode?: FeedbackParticipationMode;
 };
 
 export type CreateFeedbackBoardInput = {

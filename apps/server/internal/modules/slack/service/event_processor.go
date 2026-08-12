@@ -455,13 +455,6 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 	if err != nil {
 		return err
 	}
-	if !agentSettings.AssistantEnabled {
-		if err := p.deliver(ctx, receipt.ID, workspace.ID, installation.InstallGeneration, linkedUserID, event, botToken, "assistant-disabled", "Maya is disabled for this FortyOne workspace. Ask a workspace administrator to enable the Slack agent."); err != nil {
-			return err
-		}
-		status = "completed"
-		return nil
-	}
 	allowedTeamIDs, err := p.authorizedAssistantTeamIDs(ctx, workspace.ID, installation, *linkedUserID, event)
 	if err != nil {
 		return err
@@ -682,7 +675,8 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 			AllowedTeamIDs: allowedTeamIDs,
 			RuntimeContext: runtimeContext,
 			Guidance:       agentSettings.Guidance,
-			AllowMutations: agentSettings.WorkflowActionsEnabled,
+			AllowMutations: true,
+			WebsiteURL:     p.website,
 			Conversation:   turns,
 			Prompt:         prompt,
 		})
@@ -1371,19 +1365,6 @@ func (p *EventProcessor) slackChannelDeliveryAuthorizationCurrent(
 }
 
 func assistantSettingsAllowDelivery(settings CoreSlackAgentSettings, payload SlackProviderPayload) bool {
-	if !settings.AssistantEnabled {
-		return false
-	}
-	if settings.WorkflowActionsEnabled {
-		return true
-	}
-	for _, block := range payload.Blocks {
-		for _, element := range block.Elements {
-			if element.ActionID == slackConfirmMutationActionID || element.ActionID == slackCancelMutationActionID {
-				return false
-			}
-		}
-	}
 	return true
 }
 
@@ -1688,7 +1669,7 @@ func (p *EventProcessor) agentSettings(ctx context.Context, workspaceID uuid.UUI
 		// Test and alternate adapters written before workspace-level agent
 		// settings retain the secure product defaults. The production Slack
 		// repository implements this interface and persists administrator choices.
-		return CoreSlackAgentSettings{AssistantEnabled: true, WorkflowActionsEnabled: true}, nil
+		return CoreSlackAgentSettings{}, nil
 	}
 	record, err := repository.GetAgentSettings(ctx, workspaceID)
 	if err != nil {

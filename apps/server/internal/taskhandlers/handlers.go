@@ -50,11 +50,12 @@ type handlers struct {
 	slackRecovery    SlackInboxRecoverer
 	emailReplies     EmailReplyProcessor
 	emailRecovery    EmailReplyRecoverer
+	calendar         CalendarSyncProcessor
 	systemUserID     uuid.UUID
 }
 
 // NewWorkerHandlers initializes the central task Handlers service.
-func NewWorkerHandlers(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, slackEvents SlackEventProcessor, emailReplies EmailReplyProcessor, emailRecovery EmailReplyRecoverer, systemUserID uuid.UUID) *handlers {
+func NewWorkerHandlers(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, slackEvents SlackEventProcessor, emailReplies EmailReplyProcessor, emailRecovery EmailReplyRecoverer, calendar CalendarSyncProcessor, systemUserID uuid.UUID) *handlers {
 	slackCredentials, _ := slackEvents.(SlackCredentialBackfiller)
 	slackRecovery, _ := slackEvents.(SlackInboxRecoverer)
 	return &handlers{
@@ -72,6 +73,7 @@ func NewWorkerHandlers(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Serv
 		slackRecovery:    slackRecovery,
 		emailReplies:     emailReplies,
 		emailRecovery:    emailRecovery,
+		calendar:         calendar,
 		systemUserID:     systemUserID,
 	}
 }

@@ -34,10 +34,8 @@ func (r *channelAudienceRepoStub) UpsertAgentSettings(
 	input slackrepository.AgentSettingsInput,
 ) (slackrepository.AgentSettingsRecord, error) {
 	r.agent = slackrepository.AgentSettingsRecord{
-		WorkspaceID:            workspaceID,
-		AssistantEnabled:       input.AssistantEnabled,
-		WorkflowActionsEnabled: input.WorkflowActionsEnabled,
-		Guidance:               input.Guidance,
+		WorkspaceID: workspaceID,
+		Guidance:    input.Guidance,
 	}
 	return r.agent, nil
 }
@@ -218,11 +216,7 @@ func TestUpdateAgentSettingsRoundTripsProviderNeutralConfiguration(t *testing.T)
 	repo := &channelAudienceRepoStub{mockRepo: &mockRepo{}}
 	service := New(nil, repo, nil, nil, Config{})
 	input := CoreSlackAgentSettings{Guidance: "Use customer-facing language."}
-	want := CoreSlackAgentSettings{
-		AssistantEnabled:       true,
-		WorkflowActionsEnabled: true,
-		Guidance:               input.Guidance,
-	}
+	want := CoreSlackAgentSettings{Guidance: input.Guidance}
 
 	updated, err := service.UpdateAgentSettings(context.Background(), workspaceID, input)
 
@@ -233,17 +227,15 @@ func TestUpdateAgentSettingsRoundTripsProviderNeutralConfiguration(t *testing.T)
 	require.Equal(t, want, loaded)
 }
 
-func TestGetAgentSettingsKeepsAssistantAndActionsAlwaysEnabled(t *testing.T) {
+func TestGetAgentSettingsReturnsGuidance(t *testing.T) {
 	t.Parallel()
 
 	workspaceID := uuid.New()
 	repo := &channelAudienceRepoStub{
 		mockRepo: &mockRepo{},
 		agent: slackrepository.AgentSettingsRecord{
-			WorkspaceID:            workspaceID,
-			AssistantEnabled:       false,
-			WorkflowActionsEnabled: false,
-			Guidance:               "Keep responses concise.",
+			WorkspaceID: workspaceID,
+			Guidance:    "Keep responses concise.",
 		},
 	}
 	service := New(nil, repo, nil, nil, Config{})
@@ -251,7 +243,5 @@ func TestGetAgentSettingsKeepsAssistantAndActionsAlwaysEnabled(t *testing.T) {
 	settings, err := service.GetAgentSettings(context.Background(), workspaceID)
 
 	require.NoError(t, err)
-	require.True(t, settings.AssistantEnabled)
-	require.True(t, settings.WorkflowActionsEnabled)
 	require.Equal(t, "Keep responses concise.", settings.Guidance)
 }

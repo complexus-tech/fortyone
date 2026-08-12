@@ -53,6 +53,10 @@ type Config struct {
 		GoogleClientSecret        string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
 		GoogleRedirectURL         string `env:"APP_AUTH_GOOGLE_REDIRECT_URL"`
 		GoogleCalendarRedirectURL string `env:"APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL"`
+		GoogleCalendarWebhookURL  string `env:"APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL"`
+	}
+	Feedback struct {
+		IngressSecret string `env:"FEEDBACK_INGRESS_SECRET"`
 	}
 	Web struct {
 		APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
@@ -194,6 +198,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 	if err := emailreply.ValidateRuntimeSecret(cfg.Auth.SecretKey, cfg.Email.Environment); err != nil {
 		return fmt.Errorf("validate email reply security: %w", err)
+	}
+	cfg.Feedback.IngressSecret = strings.TrimSpace(cfg.Feedback.IngressSecret)
+	if len(cfg.Feedback.IngressSecret) < 32 {
+		return fmt.Errorf("FEEDBACK_INGRESS_SECRET must contain at least 32 characters")
 	}
 
 	// Connect to postgres database
@@ -388,40 +396,42 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Update mux configuration
 	muxConfig := mux.Config{
-		DB:                 db,
-		Redis:              rdb,
-		Publisher:          publisher,
-		Shutdown:           shutdown,
-		Log:                log,
-		Tracer:             tracer,
-		SecretKey:          cfg.Auth.SecretKey,
-		CookieDomain:       cfg.Auth.CookieDomain,
-		EmailService:       mailerService,
-		BrevoService:       brevoService,
-		GoogleService:      googleService,
-		Validate:           validate,
-		StorageConfig:      storageConfig,
-		StorageService:     storageService,
-		Cache:              cacheService,
-		TasksService:       tasksService,
-		StripeClient:       stripeClient,
-		WebhookSecret:      cfg.Stripe.WebhookSecret,
-		WebsiteURL:         cfg.Website.URL,
-		GitHubAppID:        cfg.GitHub.AppID,
-		GitHubAppSlug:      cfg.GitHub.AppSlug,
-		GitHubClientID:     cfg.GitHub.ClientID,
-		GitHubClientSecret: cfg.GitHub.ClientSecret,
-		GitHubUserID:       githubUserID,
-		GitHubKeyBase64:    cfg.GitHub.PrivateKeyBase64,
-		GitHubRedirect:     cfg.GitHub.RedirectURL,
-		GitHubWebhook:      cfg.GitHub.WebhookSecret,
-		SlackSigningSecret: cfg.Slack.SigningSecret,
-		SlackClientID:      cfg.Slack.ClientID,
-		SlackClientSecret:  cfg.Slack.ClientSecret,
-		SlackRedirectURL:   cfg.Slack.RedirectURL,
-		AIAPIKey:           strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
-		SSEHub:             sseHub,
-		CorsOrigin:         "*",
+		DB:                       db,
+		Redis:                    rdb,
+		Publisher:                publisher,
+		Shutdown:                 shutdown,
+		Log:                      log,
+		Tracer:                   tracer,
+		SecretKey:                cfg.Auth.SecretKey,
+		FeedbackIngressSecret:    cfg.Feedback.IngressSecret,
+		CookieDomain:             cfg.Auth.CookieDomain,
+		EmailService:             mailerService,
+		BrevoService:             brevoService,
+		GoogleService:            googleService,
+		GoogleCalendarWebhookURL: cfg.Auth.GoogleCalendarWebhookURL,
+		Validate:                 validate,
+		StorageConfig:            storageConfig,
+		StorageService:           storageService,
+		Cache:                    cacheService,
+		TasksService:             tasksService,
+		StripeClient:             stripeClient,
+		WebhookSecret:            cfg.Stripe.WebhookSecret,
+		WebsiteURL:               cfg.Website.URL,
+		GitHubAppID:              cfg.GitHub.AppID,
+		GitHubAppSlug:            cfg.GitHub.AppSlug,
+		GitHubClientID:           cfg.GitHub.ClientID,
+		GitHubClientSecret:       cfg.GitHub.ClientSecret,
+		GitHubUserID:             githubUserID,
+		GitHubKeyBase64:          cfg.GitHub.PrivateKeyBase64,
+		GitHubRedirect:           cfg.GitHub.RedirectURL,
+		GitHubWebhook:            cfg.GitHub.WebhookSecret,
+		SlackSigningSecret:       cfg.Slack.SigningSecret,
+		SlackClientID:            cfg.Slack.ClientID,
+		SlackClientSecret:        cfg.Slack.ClientSecret,
+		SlackRedirectURL:         cfg.Slack.RedirectURL,
+		AIAPIKey:                 strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
+		SSEHub:                   sseHub,
+		CorsOrigin:               "*",
 	}
 
 	runtime, err := bootstrapapi.BuildRuntime(muxConfig, cfg.Website.URL, mailerService)

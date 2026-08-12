@@ -296,11 +296,11 @@ func buildSlackFirstInteractionGuide(botUserID string) string {
 
 I'm Maya, your FortyOne work assistant. Here's how to get started:
 
-• *Ask about your work* — when Maya is enabled, DM me here or %s in a channel. Try “What am I working on?”, “Find onboarding work”, or “What's the status of WEB-546?”
+	• *Ask about your work* — DM me here or %s in a channel. Try “What am I working on?”, “Find onboarding work”, or “What's the status of WEB-546?”
 • *Create a story or request* — use %s, or choose *Create a story* from any Slack message.
-• *Make changes with Maya* — when workflow actions are enabled, ask me to create or update a story. I'll show the proposed change and wait for you to confirm before anything is updated.
+	• *Make changes with Maya* — ask me to create or update a story. I'll show the proposed change and wait for you to confirm before anything is updated.
 • *Share work* — paste a FortyOne story or request link for a permission-aware preview.
 • *Keep context together* — continue in the thread after I reply. Replies in a Request thread created by FortyOne also sync back to the Request.
 
-I only use FortyOne work you're allowed to access, including team limits configured for the Slack channel. If your Slack account isn't linked yet, I'll ask you to connect it first. Maya availability and workflow actions depend on your plan and workspace settings.`, mention, "`/fortyone [title]`")
+I only use FortyOne work you're allowed to access, including team limits configured for the Slack channel. If your Slack account isn't linked yet, I'll ask you to connect it first.`, mention, "`/fortyone [title]`")
 }

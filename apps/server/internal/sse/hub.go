@@ -9,6 +9,7 @@ import (
 
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
@@ -56,6 +57,10 @@ func notificationMatchesWorkspace(notification notifications.CoreNotification, w
 	return workspaceID != uuid.Nil && notification.WorkspaceID == workspaceID
 }
 
+func userUpdateMatchesClient(update publisher.UserUpdate, client *Client) bool {
+	return client != nil && update.UserID == client.UserID && update.WorkspaceID == client.WorkspaceID
+}
+
 // NewHub creates a new Hub instance.
 func NewHub(ctx context.Context, log *logger.Logger, redisClient *redis.Client) *Hub {
 	return &Hub{
@@ -99,6 +104,7 @@ func (h *Hub) handleRegistration(client *Client) {
 
 	// Start listening to both user notifications and workspace updates
 	go h.listenToUserNotifications(client)
+	go h.listenToUserUpdates(client)
 	go h.listenToWorkspaceUpdates(client)
 }
 
@@ -210,6 +216,49 @@ func (h *Hub) listenToUserNotifications(client *Client) {
 			// Consider strategies if this becomes an issue (e.g., increasing buffer, or more aggressive client disconnect).
 			case <-client.ctx.Done(): // Check again in case client disconnected while trying to send.
 				h.log.Info(client.ctx, "Client disconnected while attempting to send message from Pub/Sub", "userID", client.UserID, "channel", channelName)
+				return
+			}
+		}
+	}
+}
+
+// listenToUserUpdates forwards non-notification, user-scoped application
+// updates such as a completed calendar sync to every active tab for that user.
+func (h *Hub) listenToUserUpdates(client *Client) {
+	channelName := publisher.UserUpdatesChannel(client.UserID)
+	pubsub := h.redisClient.Subscribe(client.ctx, channelName)
+	defer pubsub.Close()
+
+	if _, err := pubsub.Receive(client.ctx); err != nil {
+		if client.ctx.Err() == nil {
+			h.log.Error(client.ctx, "Failed to subscribe to user updates", "userID", client.UserID, "channel", channelName, "error", err)
+		}
+		return
+	}
+
+	redisChannel := pubsub.Channel()
+	for {
+		select {
+		case <-client.ctx.Done():
+			return
+		case msg, ok := <-redisChannel:
+			if !ok {
+				return
+			}
+			var update publisher.UserUpdate
+			if err := json.Unmarshal([]byte(msg.Payload), &update); err != nil {
+				h.log.Error(client.ctx, "Failed to unmarshal user update", "userID", client.UserID, "channel", channelName, "error", err)
+				continue
+			}
+			if !userUpdateMatchesClient(update, client) {
+				h.log.Warn(client.ctx, "Dropping user update outside the active SSE scope", "userID", client.UserID, "workspaceID", client.WorkspaceID, "updateUserID", update.UserID, "updateWorkspaceID", update.WorkspaceID)
+				continue
+			}
+			select {
+			case client.Send <- []byte(msg.Payload):
+			case <-time.After(clientSendTimeout):
+				h.log.Warn(client.ctx, "Timeout sending user update", "userID", client.UserID, "workspaceID", client.WorkspaceID, "channel", channelName)
+			case <-client.ctx.Done():
 				return
 			}
 		}

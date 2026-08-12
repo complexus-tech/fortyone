@@ -1,6 +1,7 @@
 import type {
   PublicContributor,
   PublicContributorCommentsPage,
+  FeedbackParticipationMode,
   PublicFeedbackStoryLink,
   PublicPortal,
   PublicPortalWorkspace,
@@ -13,6 +14,7 @@ type ApiPortal = {
   id: string;
   name: string;
   slug: string;
+  participationMode?: FeedbackParticipationMode;
   itemsHasMore?: boolean;
   boards?: ApiBoard[];
   items?: ApiFeedbackItem[];
@@ -29,7 +31,7 @@ type ApiBoard = {
 export type ApiFeedbackItem = {
   id: string;
   boardId: string;
-  authorId: string;
+  authorId: string | null;
   authorName: string;
   authorAvatar?: string | null;
   title: string;
@@ -42,6 +44,7 @@ export type ApiFeedbackItem = {
   createdAt: string;
   comments?: ApiFeedbackComment[];
   storyLinks?: ApiFeedbackStoryLink[];
+  anonymous?: boolean;
 };
 
 type ApiFeedbackComment = {
@@ -185,6 +188,7 @@ export const toPublicPortal = (
     id: apiPortal.id,
     name: apiPortal.name,
     slug: apiPortal.slug,
+    participationMode: apiPortal.participationMode ?? "account_required",
     workspace: workspace ?? {
       avatarUrl: null,
       color: "var(--primary)",

@@ -83,6 +83,7 @@ export const PublicPortalRequestDetailPage = ({
                 portal={portal}
                 request={activeRequest}
                 showDownvote
+                viewer={viewer}
               />
             </Box>
           </Flex>

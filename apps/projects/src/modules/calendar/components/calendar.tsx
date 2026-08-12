@@ -31,13 +31,11 @@ import {
   Input,
   Menu,
   Popover,
-  Skeleton,
   Text,
 } from "ui";
 import { useLocalStorage, useTerminology, useWorkspacePath } from "@/hooks";
 import {
   useCalendarIntegration,
-  useCalendarAutoSync,
   useCreateCalendarConnectSession,
   useCalendarSchedule,
   useCreateCalendarScheduleBlock,
@@ -74,6 +72,7 @@ import {
   normalizeCalendarView,
 } from "./calendar-view";
 import type { CalendarView } from "./calendar-view";
+import { CalendarGridSkeleton } from "./calendar-skeleton";
 
 const defaultVisibleStartHour = 8;
 const defaultVisibleEndHour = 21;
@@ -686,65 +685,6 @@ const CalendarDialog = ({
         </Dialog.Footer>
       </Dialog.Content>
     </Dialog>
-  );
-};
-
-const CalendarSkeleton = ({ view }: { view: CalendarView }) => {
-  if (view === "month") {
-    return (
-      <Box className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 overflow-hidden">
-        {Array.from({ length: 42 }).map((_, index) => (
-          <Box className="border-border/60 border-r border-b p-4" key={index}>
-            <Skeleton className="mb-4 h-9 w-9 rounded-full" />
-            <Skeleton className="mb-2 h-6 w-4/5" />
-            <Skeleton className="h-6 w-2/3" />
-          </Box>
-        ))}
-      </Box>
-    );
-  }
-
-  const dayCount = view === "day" ? 1 : 7;
-  const dayColumn = dayCount === 1 ? "minmax(0, 1fr)" : "minmax(9.5rem, 1fr)";
-  const gridTemplateColumns = `${timeRailWidth}rem repeat(${dayCount}, ${dayColumn})`;
-
-  return (
-    <Box className="min-h-0 flex-1 overflow-hidden">
-      <Box
-        className="border-border/70 grid h-18 border-b"
-        style={{ gridTemplateColumns }}
-      >
-        <Box />
-        {Array.from({ length: dayCount }).map((_, index) => (
-          <Box
-            className="border-border/60 flex items-center justify-center border-l px-3 py-4"
-            key={index}
-          >
-            <Skeleton className="h-12 w-12 rounded-full" />
-          </Box>
-        ))}
-      </Box>
-      <Box className="grid" style={{ gridTemplateColumns }}>
-        <Box className="border-border/60 border-r" />
-        {Array.from({ length: dayCount }).map((_, dayIndex) => (
-          <Box
-            className="border-border/60 relative border-l"
-            key={dayIndex}
-            style={{
-              height: `${(defaultVisibleEndHour - defaultVisibleStartHour) * hourHeight}px`,
-            }}
-          >
-            {Array.from({ length: 4 }).map((__, index) => (
-              <Skeleton
-                className="absolute right-3 left-3 h-14"
-                key={index}
-                style={{ top: `${(index * 2 + 1) * hourHeight}px` }}
-              />
-            ))}
-          </Box>
-        ))}
-      </Box>
-    </Box>
   );
 };
 
@@ -1512,13 +1452,6 @@ export const PersonalCalendar = ({
   const canReadEventDetails = Boolean(connection?.canReadEventDetails);
   const createConnectSession = useCreateCalendarConnectSession();
   const syncCalendar = useSyncCalendarConnection();
-  const markCalendarSyncAttempt = useCalendarAutoSync({
-    connectionId: connection?.id,
-    isSyncPending: syncCalendar.isPending,
-    lastSyncedAt: connection?.lastSyncedAt,
-    sync: syncCalendar.mutate,
-    syncStatus: connection?.syncStatus,
-  });
   const { data: assignedStories } = useMyStoriesGrouped("none", {
     assignedToMe: true,
     categories: ["backlog", "unstarted", "started", "paused"],
@@ -1602,7 +1535,6 @@ export const PersonalCalendar = ({
     setDialogMode(dialogMode ?? "work");
   };
   const syncConnection = (connectionID: string) => {
-    markCalendarSyncAttempt(connectionID);
     syncCalendar.mutate({ connectionId: connectionID });
   };
   const isDaySelectable = (day: Date) => {
@@ -1689,7 +1621,7 @@ export const PersonalCalendar = ({
           </Box>
         ) : null}
         {!hasCalendarLoadError && isCalendarInitialLoading ? (
-          <CalendarSkeleton view={calendarView} />
+          <CalendarGridSkeleton view={calendarView} />
         ) : null}
         {!hasCalendarLoadError &&
         !isCalendarInitialLoading &&

@@ -13,6 +13,15 @@ type scheduleRegistrar interface {
 
 func registerSchedules(scheduler scheduleRegistrar) error {
 	_, err := scheduler.Register(
+		"17 * * * *", // Hourly; only renews missing channels or channels expiring within 24 hours.
+		asynq.NewTask(tasks.TypeCalendarWatchRenewal, nil),
+		asynq.Queue("integrations"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register calendar watch renewal task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"@daily",
 		asynq.NewTask(tasks.TypeDeleteStories, nil),
 		asynq.Queue("cleanup"),

@@ -13,6 +13,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { publicPortalFixture } from "./fixtures";
 import {
+  createAnonymousFeedbackAction,
   createFeedbackAction,
   createFeedbackCommentAction,
   toggleFeedbackVoteAction,
@@ -189,6 +190,7 @@ jest.mock("@/utils", () => ({
 }));
 
 jest.mock("./actions", () => ({
+  createAnonymousFeedbackAction: jest.fn(),
   createFeedbackAction: jest.fn(),
   createFeedbackCommentAction: jest.fn(),
   toggleFeedbackVoteAction: jest.fn(),
@@ -213,6 +215,9 @@ jest.mock("./notification-actions", () => ({
 }));
 
 const createFeedbackActionMock = jest.mocked(createFeedbackAction);
+const createAnonymousFeedbackActionMock = jest.mocked(
+  createAnonymousFeedbackAction,
+);
 const createFeedbackCommentActionMock = jest.mocked(
   createFeedbackCommentAction,
 );
@@ -597,12 +602,15 @@ describe("Public portal UI", () => {
     window.history.replaceState({}, "", "/portal/city-roads/feedback");
     createFeedbackActionMock.mockImplementation(async (input) => ({
       data: {
-        ...publicPortalFixture.requests[0],
-        id: "feedback-new",
-        slug: "new-feedback",
-        boardId: input.boardId,
-        description: input.description,
-        title: input.title,
+        kind: "authenticated",
+        request: {
+          ...publicPortalFixture.requests[0],
+          id: "feedback-new",
+          slug: "new-feedback",
+          boardId: input.boardId,
+          description: input.description,
+          title: input.title,
+        },
       },
     }));
     createFeedbackCommentActionMock.mockResolvedValue({
@@ -796,6 +804,68 @@ describe("Public portal UI", () => {
       "href",
       "/signup?source=portal&callbackUrl=%2Fonboarding%2Fcreate%3FcallbackUrl%3D%252Fsettings%252Fworkspace%252Ffeedback",
     );
+  });
+
+  it("lets logged-out visitors submit when anonymous feedback is allowed", async () => {
+    const anonymousPortal = {
+      ...publicPortalFixture,
+      boards: [publicPortalFixture.boards[0]],
+      participationMode: "anonymous_allowed" as const,
+    };
+    createAnonymousFeedbackActionMock.mockResolvedValueOnce({
+      data: {
+        kind: "anonymous",
+        request: {
+          ...publicPortalFixture.requests[0],
+          authorId: null,
+          authorName: "Anonymous",
+          id: "anonymous-feedback",
+          slug: "anonymous-feedback",
+          title: "Anonymous safety feedback",
+        },
+      },
+    });
+    render(<PublicPortalRequestsPage portal={anonymousPortal} />);
+
+    expect(
+      screen.queryByRole("link", { name: "Login to submit feedback" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Feedback" }));
+    expect(screen.getByText("Posting anonymously")).toBeInTheDocument();
+    expect(
+      screen.getByText(/No name or email address will be attached/i),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Feedback title"), {
+      target: { value: "Anonymous safety feedback" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit feedback" }));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Feedback submitted anonymously",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Save your tracking link")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Copy tracking link" }),
+    ).toBeInTheDocument();
+    expect(createAnonymousFeedbackActionMock).toHaveBeenCalledWith({
+      boardId: "road-repairs",
+      description: "",
+      portalSlug: "city-roads",
+      title: "Anonymous safety feedback",
+    });
+    expect(window.localStorage.length).toBe(0);
+    fireEvent.click(screen.getByRole("button", { name: "Copy tracking link" }));
+    await waitFor(() => {
+      expect(clipboardWriteTextMock).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "/portal/city-roads/feedback/anonymous-feedback",
+        ),
+      );
+    });
+    expect(toast.success).toHaveBeenCalledWith("Tracking link copied");
   });
 
   it("opens the feedback composer after a contextual login", async () => {
@@ -1092,7 +1162,12 @@ describe("Public portal UI", () => {
   });
 
   it("toggles an upvote without navigating away from the feedback list", async () => {
-    render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
+    render(
+      <PublicPortalRequestsPage
+        portal={publicPortalFixture}
+        viewer={portalViewer}
+      />,
+    );
 
     fireEvent.click(screen.getAllByRole("button", { name: "Upvote" })[0]);
 
@@ -1109,7 +1184,12 @@ describe("Public portal UI", () => {
     const voteRequest =
       createDeferred<Awaited<ReturnType<typeof toggleFeedbackVoteAction>>>();
     toggleFeedbackVoteActionMock.mockReturnValueOnce(voteRequest.promise);
-    render(<PublicPortalRequestsPage portal={publicPortalFixture} />);
+    render(
+      <PublicPortalRequestsPage
+        portal={publicPortalFixture}
+        viewer={portalViewer}
+      />,
+    );
 
     fireEvent.click(screen.getAllByRole("button", { name: "Upvote" })[0]);
 
@@ -1157,6 +1237,30 @@ describe("Public portal UI", () => {
     expect(toggleFeedbackVoteActionMock).toHaveBeenCalledWith(
       expect.objectContaining({ itemId: "req-1", vote: -1 }),
     );
+  });
+
+  it("keeps votes behind login for logged-out visitors", () => {
+    render(
+      <PublicPortalRequestDetailPage
+        portal={{
+          ...publicPortalFixture,
+          participationMode: "anonymous_allowed",
+        }}
+        request={publicPortalFixture.requests[0]}
+      />,
+    );
+
+    const callbackUrl =
+      "/?callbackUrl=%2Fportal%2Fcity-roads%2Ffeedback%2Fadd-pedestrian-crossing-near-east-avenue-school";
+    expect(screen.getByRole("link", { name: "Upvote" })).toHaveAttribute(
+      "href",
+      callbackUrl,
+    );
+    expect(screen.getByRole("link", { name: "Downvote" })).toHaveAttribute(
+      "href",
+      callbackUrl,
+    );
+    expect(toggleFeedbackVoteActionMock).not.toHaveBeenCalled();
   });
 
   it("renders signed-in portal navigation controls", () => {
@@ -1590,9 +1694,13 @@ describe("Public portal UI", () => {
 
   it("renders an author profile and keeps the author filter on subsequent pages", async () => {
     const authorRequest = publicPortalFixture.requests[2];
+    if (!authorRequest.authorId) {
+      throw new Error("The author profile fixture must identify its author");
+    }
+    const authorId = authorRequest.authorId;
     const contributor = {
       avatarUrl: authorRequest.authorAvatar,
-      id: authorRequest.authorId,
+      id: authorId,
       joinedAt: "2025-04-15T10:00:00.000Z",
       name: authorRequest.authorName,
       stats: {
@@ -1609,7 +1717,7 @@ describe("Public portal UI", () => {
 
     render(
       <PublicPortalAuthorProfilePage
-        authorId={authorRequest.authorId}
+        authorId={authorId}
         contributor={contributor}
         initialComments={{
           comments: [
@@ -1666,7 +1774,7 @@ describe("Public portal UI", () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`authorId=${authorRequest.authorId}`),
+        expect.stringContaining(`authorId=${authorId}`),
       );
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining("page=2"),
@@ -1819,6 +1927,26 @@ describe("Public portal UI", () => {
       "href",
       "/portal/city-roads/people/00000000-0000-4000-8000-000000000001",
     );
+  });
+
+  it("renders anonymous feedback without an author profile link", () => {
+    const anonymousRequest = {
+      ...publicPortalFixture.requests[0],
+      authorId: null,
+      authorName: "Anonymous",
+    };
+    const { container } = render(
+      <PublicPortalRequestDetailPage
+        portal={{
+          ...publicPortalFixture,
+          participationMode: "anonymous_allowed",
+        }}
+        request={anonymousRequest}
+      />,
+    );
+
+    expect(screen.getByText("Anonymous")).toBeInTheDocument();
+    expect(container.querySelector('a[href*="/people/"]')).toBeNull();
   });
 
   it("returns logged-out commenters to the same feedback item", () => {

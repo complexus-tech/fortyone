@@ -37,6 +37,13 @@ func decodePublicRequest(w http.ResponseWriter, r *http.Request, input any, body
 	return 0, nil
 }
 
+func validatePublicItemBotTrap(input AppCreatePublicItem) error {
+	if strings.TrimSpace(input.Website) != "" {
+		return errors.New("invalid feedback submission")
+	}
+	return nil
+}
+
 type profileImageResolver interface {
 	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
 }
@@ -143,11 +150,12 @@ func (h *Handlers) resolveSimilarItemAvatars(ctx context.Context, items []feedba
 
 func (h *Handlers) GetPortal(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	slug := web.Params(r, "portalSlug")
-	portal, err := h.feedback.GetPortalSnapshot(ctx, slug)
+	input, err := publicItemsInput(r)
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
-	if err := h.applyItemsQuery(ctx, r, &portal); err != nil {
+	portal, err := h.feedback.GetPortalSnapshot(ctx, slug, input)
+	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
 	h.resolvePortalAvatars(ctx, &portal)
@@ -157,11 +165,12 @@ func (h *Handlers) GetPortal(ctx context.Context, w http.ResponseWriter, r *http
 func (h *Handlers) GetWorkspacePortal(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspaceSlug := web.Params(r, "workspaceSlug")
 	portalSlug := web.Params(r, "portalSlug")
-	portal, err := h.feedback.GetWorkspacePortalSnapshot(ctx, workspaceSlug, portalSlug)
+	input, err := publicItemsInput(r)
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
-	if err := h.applyItemsQuery(ctx, r, &portal); err != nil {
+	portal, err := h.feedback.GetWorkspacePortalSnapshot(ctx, workspaceSlug, portalSlug, input)
+	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
 	h.resolvePortalAvatars(ctx, &portal)
@@ -309,39 +318,40 @@ func publicContributorPagination(r *http.Request) (int, int) {
 	return page, pageSize
 }
 
-func (h *Handlers) applyItemsQuery(ctx context.Context, r *http.Request, portal *feedback.CorePortalSnapshot) error {
+func publicItemsInput(r *http.Request) (feedback.CorePortalSnapshotInput, error) {
 	query := r.URL.Query()
+	view := query.Get("view")
+	if view != "" && view != "summary" {
+		return feedback.CorePortalSnapshotInput{}, fmt.Errorf("%w: view must be summary when provided", feedback.ErrInvalidInput)
+	}
 	page, _ := strconv.Atoi(query.Get("page"))
 	pageSize, _ := strconv.Atoi(query.Get("pageSize"))
-	input := feedback.CoreListItemsInput{
-		PortalID: portal.Portal.ID,
-		Status:   query.Get("status"),
-		Search:   query.Get("search"),
-		Sort:     query.Get("sort"),
-		Page:     page,
-		PageSize: pageSize,
+	input := feedback.CorePortalSnapshotInput{
+		Status:      query.Get("status"),
+		Search:      query.Get("search"),
+		Sort:        query.Get("sort"),
+		Page:        page,
+		PageSize:    pageSize,
+		SummaryOnly: view == "summary",
 	}
 	if boardID := query.Get("boardId"); boardID != "" {
 		parsed, err := uuid.Parse(boardID)
 		if err != nil {
-			return err
+			return feedback.CorePortalSnapshotInput{}, fmt.Errorf("%w: boardId must be a non-nil UUID", feedback.ErrInvalidInput)
+		}
+		if parsed == uuid.Nil {
+			return feedback.CorePortalSnapshotInput{}, fmt.Errorf("%w: boardId must be a non-nil UUID", feedback.ErrInvalidInput)
 		}
 		input.BoardID = &parsed
 	}
 	if authorID := query.Get("authorId"); authorID != "" {
 		parsed, err := uuid.Parse(authorID)
 		if err != nil || parsed == uuid.Nil {
-			return fmt.Errorf("%w: authorId must be a non-nil UUID", feedback.ErrInvalidInput)
+			return feedback.CorePortalSnapshotInput{}, fmt.Errorf("%w: authorId must be a non-nil UUID", feedback.ErrInvalidInput)
 		}
 		input.AuthorID = parsed
 	}
-	items, err := h.feedback.ListItems(ctx, input)
-	if err != nil {
-		return err
-	}
-	portal.Items = items.Items
-	portal.ItemsHasMore = items.HasMore
-	return nil
+	return input, nil
 }
 
 func (h *Handlers) ListPortals(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -597,7 +607,8 @@ func (h *Handlers) UpdatePortal(ctx context.Context, w http.ResponseWriter, r *h
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	portal, err := h.feedback.UpdatePortal(ctx, workspace.ID, portalID, feedback.CorePortalInput{
-		IsPublic: input.IsPublic,
+		IsPublic:          input.IsPublic,
+		ParticipationMode: input.ParticipationMode,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
@@ -730,26 +741,42 @@ func (h *Handlers) CreateItem(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (h *Handlers) CreatePublicItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	userID, err := mid.GetUserID(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
+	return h.createPublicItem(ctx, w, r, feedback.SubmissionSourcePortal)
+}
+
+func (h *Handlers) CreateWidgetItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	return h.createPublicItem(ctx, w, r, feedback.SubmissionSourceWidget)
+}
+
+func (h *Handlers) createPublicItem(ctx context.Context, w http.ResponseWriter, r *http.Request, source string) error {
+	userID, _ := mid.GetUserID(ctx)
 	var input AppCreatePublicItem
 	if status, err := decodePublicRequest(w, r, &input, publicFeedbackItemBodyLimit); err != nil {
 		return web.RespondError(ctx, w, err, status)
 	}
-	item, err := h.feedback.CreatePublicItem(ctx, feedback.CorePublicItemInput{
-		PortalSlug:  web.Params(r, "portalSlug"),
-		BoardID:     input.BoardID,
-		AuthorID:    userID,
-		Title:       input.Title,
-		Description: input.Description,
+	if err := validatePublicItemBotTrap(input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	result, err := h.feedback.CreatePublicItem(ctx, feedback.CorePublicItemInput{
+		PortalSlug:          web.Params(r, "portalSlug"),
+		BoardID:             input.BoardID,
+		AuthorID:            userID,
+		Title:               input.Title,
+		Description:         input.Description,
+		Source:              source,
+		ParticipationIntent: input.ParticipationIntent,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
+	item := result.Item
 	item.AuthorAvatar = h.resolveAuthorAvatar(ctx, item.AuthorAvatar, make(map[string]*string))
-	return web.Respond(ctx, w, toAppItem(item, nil, nil), http.StatusCreated)
+	response := toAppItem(item, nil, nil)
+	if result.Anonymous {
+		w.Header().Set("Cache-Control", "no-store")
+		response.Anonymous = true
+	}
+	return web.Respond(ctx, w, response, http.StatusCreated)
 }
 
 func (h *Handlers) UpdateItemStatus(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -962,6 +989,10 @@ func httpStatus(err error) int {
 		return http.StatusConflict
 	case errors.Is(err, feedback.ErrDuplicateItem):
 		return http.StatusConflict
+	case errors.Is(err, feedback.ErrParticipationNotAllowed):
+		return http.StatusForbidden
+	case errors.Is(err, feedback.ErrAuthenticationRequired):
+		return http.StatusUnauthorized
 	case errors.Is(err, feedback.ErrTeamMismatch):
 		return http.StatusBadRequest
 	case errors.Is(err, feedback.ErrInvalidInput):

@@ -145,13 +145,14 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	}, app)
 
 	feedbackhttp.Routes(feedbackhttp.Config{
-		DB:          cfg.DB,
-		Log:         cfg.Log,
-		SecretKey:   cfg.SecretKey,
-		Cache:       cfg.Cache,
-		Service:     svcs.feedback,
-		Teams:       svcs.teams,
-		Attachments: svcs.attachments,
+		DB:            cfg.DB,
+		Log:           cfg.Log,
+		SecretKey:     cfg.SecretKey,
+		IngressSecret: cfg.FeedbackIngressSecret,
+		Cache:         cfg.Cache,
+		Service:       svcs.feedback,
+		Teams:         svcs.teams,
+		Attachments:   svcs.attachments,
 	}, app)
 
 	storieshttp.Routes(storieshttp.Config{

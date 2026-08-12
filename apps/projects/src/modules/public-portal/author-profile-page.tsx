@@ -474,6 +474,7 @@ export const PublicPortalAuthorProfilePage = ({
                     key={request.id}
                     portal={portal}
                     request={request}
+                    viewer={viewer}
                   />
                 ))
               ) : (

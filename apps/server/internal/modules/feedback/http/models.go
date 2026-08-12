@@ -8,16 +8,17 @@ import (
 )
 
 type AppPortal struct {
-	ID           uuid.UUID  `json:"id"`
-	WorkspaceID  uuid.UUID  `json:"workspaceId"`
-	Name         string     `json:"name"`
-	Slug         string     `json:"slug"`
-	IsPublic     bool       `json:"isPublic"`
-	CreatedAt    time.Time  `json:"createdAt"`
-	UpdatedAt    time.Time  `json:"updatedAt"`
-	Boards       []AppBoard `json:"boards"`
-	Items        []AppItem  `json:"items,omitempty"`
-	ItemsHasMore bool       `json:"itemsHasMore"`
+	ID                uuid.UUID  `json:"id"`
+	WorkspaceID       uuid.UUID  `json:"workspaceId"`
+	Name              string     `json:"name"`
+	Slug              string     `json:"slug"`
+	IsPublic          bool       `json:"isPublic"`
+	ParticipationMode string     `json:"participationMode"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         time.Time  `json:"updatedAt"`
+	Boards            []AppBoard `json:"boards"`
+	Items             []AppItem  `json:"items,omitempty"`
+	ItemsHasMore      bool       `json:"itemsHasMore"`
 }
 
 type AppBoard struct {
@@ -38,7 +39,7 @@ type AppItem struct {
 	WorkspaceID    uuid.UUID      `json:"workspaceId"`
 	PortalID       uuid.UUID      `json:"portalId"`
 	BoardID        uuid.UUID      `json:"boardId"`
-	AuthorID       uuid.UUID      `json:"authorId"`
+	AuthorID       *uuid.UUID     `json:"authorId"`
 	AuthorName     string         `json:"authorName"`
 	AuthorAvatar   *string        `json:"authorAvatar"`
 	Title          string         `json:"title"`
@@ -58,13 +59,14 @@ type AppItem struct {
 	UpdatedAt      time.Time      `json:"updatedAt"`
 	Comments       []AppComment   `json:"comments"`
 	StoryLinks     []AppStoryLink `json:"storyLinks"`
+	Anonymous      bool           `json:"anonymous,omitempty"`
 }
 
 type AppComment struct {
 	ID           uuid.UUID  `json:"id"`
 	WorkspaceID  uuid.UUID  `json:"workspaceId"`
 	ItemID       uuid.UUID  `json:"itemId"`
-	AuthorID     uuid.UUID  `json:"authorId"`
+	AuthorID     *uuid.UUID `json:"authorId"`
 	ParentID     *uuid.UUID `json:"parentId"`
 	AuthorName   string     `json:"authorName"`
 	AuthorAvatar *string    `json:"authorAvatar"`
@@ -175,7 +177,8 @@ type AppVoteInput struct {
 }
 
 type AppUpdatePortal struct {
-	IsPublic bool `json:"isPublic"`
+	IsPublic          *bool   `json:"isPublic"`
+	ParticipationMode *string `json:"participationMode"`
 }
 
 type AppCreateBoard struct {
@@ -208,9 +211,11 @@ type AppCreateItem struct {
 }
 
 type AppCreatePublicItem struct {
-	BoardID     uuid.UUID `json:"boardId"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
+	BoardID             uuid.UUID `json:"boardId"`
+	Title               string    `json:"title"`
+	Description         string    `json:"description"`
+	ParticipationIntent string    `json:"participationIntent"`
+	Website             string    `json:"website"`
 }
 
 type AppSimilarItem struct {
@@ -269,13 +274,14 @@ type AppContributorCommentsResponse struct {
 
 func toAppPortal(core feedback.CorePortal) AppPortal {
 	return AppPortal{
-		ID:          core.ID,
-		WorkspaceID: core.WorkspaceID,
-		Name:        core.Name,
-		Slug:        core.Slug,
-		IsPublic:    core.IsPublic,
-		CreatedAt:   core.CreatedAt,
-		UpdatedAt:   core.UpdatedAt,
+		ID:                core.ID,
+		WorkspaceID:       core.WorkspaceID,
+		Name:              core.Name,
+		Slug:              core.Slug,
+		IsPublic:          core.IsPublic,
+		ParticipationMode: core.ParticipationMode,
+		CreatedAt:         core.CreatedAt,
+		UpdatedAt:         core.UpdatedAt,
 	}
 }
 
@@ -311,7 +317,7 @@ func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLi
 		WorkspaceID:    core.WorkspaceID,
 		PortalID:       core.PortalID,
 		BoardID:        core.BoardID,
-		AuthorID:       core.AuthorID,
+		AuthorID:       uuidPointer(core.AuthorID),
 		AuthorName:     core.AuthorName,
 		AuthorAvatar:   core.AuthorAvatar,
 		Title:          core.Title,
@@ -357,12 +363,19 @@ func toAppSimilarItem(core feedback.CoreSimilarItem) AppSimilarItem {
 	}
 }
 
+func uuidPointer(value uuid.UUID) *uuid.UUID {
+	if value == uuid.Nil {
+		return nil
+	}
+	return &value
+}
+
 func toAppComment(core feedback.CoreComment) AppComment {
 	return AppComment{
 		ID:           core.ID,
 		WorkspaceID:  core.WorkspaceID,
 		ItemID:       core.ItemID,
-		AuthorID:     core.AuthorID,
+		AuthorID:     uuidPointer(core.AuthorID),
 		ParentID:     core.ParentID,
 		AuthorName:   core.AuthorName,
 		AuthorAvatar: core.AuthorAvatar,

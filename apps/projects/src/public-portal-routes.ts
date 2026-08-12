@@ -1,4 +1,5 @@
 const PUBLIC_PREFIXES = new Set([
+  "/embed/feedback",
   "/portal",
   "/feedback",
   "/people",

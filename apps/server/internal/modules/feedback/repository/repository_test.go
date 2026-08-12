@@ -3,6 +3,8 @@ package feedbackrepository
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +15,19 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 )
+
+func TestAnonymousParticipationMigrationPreservesFeedbackIdentityLifecycle(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "migrations", "000119_feedback_anonymous_participation.up.sql"))
+	require.NoError(t, err)
+	migration := string(data)
+	require.Contains(t, migration, "participation_mode IN ('account_required', 'anonymous_allowed')")
+	require.Contains(t, migration, "one unlinkable anonymous contributor each")
+	require.Contains(t, migration, "ON DELETE SET NULL")
+	require.Contains(t, migration, "ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED")
+	require.NotContains(t, migration, "feedback_contributor_sessions")
+}
 
 func TestIsPrimaryStoryConflictRecognizesPGXConstraintError(t *testing.T) {
 	err := fmt.Errorf("insert primary feedback story: %w", &pgconn.PgError{

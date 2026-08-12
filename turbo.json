@@ -1,6 +1,12 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "globalEnv": ["NODE_ENV", "NEXT_PUBLIC_*"],
+  "globalEnv": [
+    "FEEDBACK_INGRESS_SECRET",
+    "FEEDBACK_TRUSTED_CLIENT_IP_HEADER",
+    "NEXT_PUBLIC_*",
+    "NODE_ENV",
+    "VERCEL"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

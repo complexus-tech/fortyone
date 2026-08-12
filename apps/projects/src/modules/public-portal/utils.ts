@@ -37,7 +37,7 @@ export const getCrossPortalRequestHref = (
 
 export const getAuthorPathByPortalSlug = (
   portalSlug: string,
-  authorId: string,
+  authorId: string | null,
 ) => {
   if (!authorId || authorId === NIL_AUTHOR_ID) return null;
 
@@ -46,7 +46,7 @@ export const getAuthorPathByPortalSlug = (
     : `/portal/${portalSlug}/people/${authorId}`;
 };
 
-export const getAuthorPath = (portal: PublicPortal, authorId: string) =>
+export const getAuthorPath = (portal: PublicPortal, authorId: string | null) =>
   getAuthorPathByPortalSlug(portal.slug, authorId);
 
 export const getGlobalProfileHref = () => {

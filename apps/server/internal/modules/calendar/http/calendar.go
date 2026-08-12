@@ -233,6 +233,21 @@ func (h *Handlers) HandleGoogleCallback(ctx context.Context, w http.ResponseWrit
 	return nil
 }
 
+func (h *Handlers) HandleGoogleNotification(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	err := h.service.ProcessGoogleNotification(
+		ctx,
+		r.Header.Get("X-Goog-Channel-ID"),
+		r.Header.Get("X-Goog-Resource-ID"),
+		r.Header.Get("X-Goog-Resource-State"),
+		r.Header.Get("X-Goog-Channel-Token"),
+	)
+	if err != nil {
+		return web.RespondError(ctx, w, err, h.statusCode(err))
+	}
+	w.WriteHeader(http.StatusNoContent)
+	return nil
+}
+
 func (h *Handlers) statusCode(err error) int {
 	switch {
 	case errors.Is(err, calendar.ErrCalendarNotConfigured):
@@ -257,6 +272,8 @@ func (h *Handlers) statusCode(err error) int {
 		return http.StatusConflict
 	case errors.Is(err, calendar.ErrCalendarScheduleBlockNotFound):
 		return http.StatusNotFound
+	case errors.Is(err, calendar.ErrInvalidCalendarNotification):
+		return http.StatusUnauthorized
 	default:
 		return http.StatusInternalServerError
 	}

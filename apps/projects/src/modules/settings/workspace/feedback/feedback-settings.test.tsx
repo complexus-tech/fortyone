@@ -29,6 +29,8 @@ jest.mock("icons", () => {
 
   return {
     ArrowDownIcon: Icon,
+    CheckIcon: Icon,
+    CopyIcon: Icon,
     DeleteIcon: Icon,
     LinkIcon: Icon,
     MoreHorizontalIcon: Icon,
@@ -170,6 +172,16 @@ jest.mock("ui", () => {
       React.createElement("option", { value: "off" }, "Off"),
       React.createElement("option", { value: "daily" }, "Daily"),
       React.createElement("option", { value: "weekly" }, "Weekly"),
+      React.createElement(
+        "option",
+        { value: "account_required" },
+        "Account required",
+      ),
+      React.createElement(
+        "option",
+        { value: "anonymous_allowed" },
+        "Anonymous allowed",
+      ),
     );
   };
   Object.assign(Select, {
@@ -244,6 +256,7 @@ const portal = {
   name: "City Roads",
   slug: "city-roads",
   isPublic: true,
+  participationMode: "account_required" as const,
   createdAt: "2026-07-19T00:00:00.000Z",
   updatedAt: "2026-07-19T00:00:00.000Z",
   boards: [
@@ -342,6 +355,66 @@ describe("FeedbackSettings", () => {
         input: { isPublic: false },
         portalId: portal.id,
       });
+    });
+  });
+
+  it("auto-saves who can submit without changing portal availability", async () => {
+    render(<FeedbackSettings />);
+
+    const participationMode = screen.getByRole("combobox", {
+      name: "Who can submit feedback",
+    });
+    expect(participationMode).toHaveValue("account_required");
+    expect(
+      screen.getByText(/must log in or create a FortyOne account/i),
+    ).toBeInTheDocument();
+
+    fireEvent.change(participationMode, {
+      target: { value: "anonymous_allowed" },
+    });
+
+    await waitFor(() => {
+      expect(updatePortal).toHaveBeenCalledWith({
+        input: { participationMode: "anonymous_allowed" },
+        portalId: portal.id,
+      });
+    });
+    expect(updatePortal).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({ isPublic: expect.anything() }),
+      }),
+    );
+    expect(
+      screen.getByText(/without a name, email address, or account/i),
+    ).toBeInTheDocument();
+  });
+
+  it("does not offer anonymous collection when ingress identity is unavailable", () => {
+    render(<FeedbackSettings anonymousFeedbackAvailable={false} />);
+
+    expect(
+      screen.getByText(/anonymous feedback is unavailable on this deployment/i),
+    ).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Who can submit feedback" }),
+      { target: { value: "anonymous_allowed" } },
+    );
+    expect(updatePortal).not.toHaveBeenCalled();
+  });
+
+  it("rolls the participation mode back when the update fails", async () => {
+    updatePortal.mockRejectedValueOnce(new Error("Network unavailable"));
+    render(<FeedbackSettings />);
+
+    const participationMode = screen.getByRole("combobox", {
+      name: "Who can submit feedback",
+    });
+    fireEvent.change(participationMode, {
+      target: { value: "anonymous_allowed" },
+    });
+
+    await waitFor(() => {
+      expect(participationMode).toHaveValue("account_required");
     });
   });
 

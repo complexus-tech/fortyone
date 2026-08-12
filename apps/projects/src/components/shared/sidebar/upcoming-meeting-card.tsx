@@ -6,15 +6,12 @@ import { addDays, format, startOfDay } from "date-fns";
 import { CloseIcon, ExternalLinkIcon, Video02Icon } from "icons";
 import { Box, Flex, Text } from "ui";
 import {
-  useCalendarAutoSync,
   useCalendarIntegration,
   useCalendarSchedule,
-  useSyncCalendarConnection,
 } from "@/lib/hooks/calendar";
 import { getUpcomingMeeting } from "./upcoming-meeting";
 
 const CLOCK_REFRESH_INTERVAL_MS = 30 * 1000;
-const SCHEDULE_REFRESH_INTERVAL_MS = 60 * 1000;
 
 const getMeetingTitle = (title?: string) => title?.trim() || "Upcoming meeting";
 
@@ -28,7 +25,6 @@ export const UpcomingMeetingCard = ({
     null,
   );
   const integrationQuery = useCalendarIntegration();
-  const syncCalendar = useSyncCalendarConnection();
   const connection = integrationQuery.data?.connections[0];
   const rangeStart = startOfDay(now);
   const scheduleQuery = useCalendarSchedule(
@@ -36,19 +32,8 @@ export const UpcomingMeetingCard = ({
       startAt: rangeStart.toISOString(),
       endAt: addDays(rangeStart, 2).toISOString(),
     },
-    {
-      enabled: Boolean(connection?.canReadEventDetails),
-      refetchInterval: SCHEDULE_REFRESH_INTERVAL_MS,
-    },
+    { enabled: Boolean(connection?.canReadEventDetails) },
   );
-
-  useCalendarAutoSync({
-    connectionId: connection?.id,
-    isSyncPending: syncCalendar.isPending,
-    lastSyncedAt: connection?.lastSyncedAt,
-    sync: syncCalendar.mutate,
-    syncStatus: connection?.syncStatus,
-  });
 
   useEffect(() => {
     const refreshClock = () => {

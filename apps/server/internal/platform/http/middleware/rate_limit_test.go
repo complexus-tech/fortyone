@@ -2,9 +2,12 @@ package mid
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,15 +16,176 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestPublicFeedbackRateLimitUsesSignedAnonymousIdentity(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0).UTC()
+	store := &rateLimitStoreStub{count: 1}
+	config := PublicFeedbackRateLimitConfig{
+		Scope: "feedback-item", AuthenticatedLimit: 10, AnonymousLimit: 3, AnonymousGlobalLimit: 12,
+		Window: time.Hour, IngressSecret: "test-secret", Now: func() time.Time { return now },
+	}
+	nextCalled := false
+	handler := PublicFeedbackRateLimit(nil, store, config)(func(context.Context, http.ResponseWriter, *http.Request) error {
+		nextCalled = true
+		return nil
+	})
+	request := httptest.NewRequest(http.MethodPost, "/portals/city-roads/feedback/items", nil)
+	request.SetPathValue("portalSlug", "city-roads")
+	setFeedbackIngressProof(request, "test-secret", "city-roads", strings.Repeat("ab", 32), now)
+
+	require.NoError(t, handler(request.Context(), httptest.NewRecorder(), request))
+	require.True(t, nextCalled)
+	require.Equal(t, "rate-limit:feedback-item:portal:city-roads:anonymous:"+strings.Repeat("ab", 32), store.key)
+	require.Equal(t, []string{
+		"rate-limit:feedback-item:anonymous:" + strings.Repeat("ab", 32),
+		"rate-limit:feedback-item:portal:city-roads:anonymous:" + strings.Repeat("ab", 32),
+	}, store.keys)
+}
+
+func TestPublicFeedbackRateLimitUsesPortalAndUser(t *testing.T) {
+	store := &rateLimitStoreStub{count: 1}
+	config := PublicFeedbackRateLimitConfig{Scope: "feedback-item", AuthenticatedLimit: 10, AnonymousLimit: 3, AnonymousGlobalLimit: 12, Window: time.Hour, IngressSecret: "test-secret"}
+	handler := PublicFeedbackRateLimit(nil, store, config)(func(context.Context, http.ResponseWriter, *http.Request) error { return nil })
+	request := httptest.NewRequest(http.MethodPost, "/portals/city-roads/feedback/items", nil)
+	request.SetPathValue("portalSlug", "city-roads")
+	userID := uuid.New()
+	ctx := platformauth.SetUserID(request.Context(), userID)
+
+	require.NoError(t, handler(ctx, httptest.NewRecorder(), request))
+	require.Equal(t, "rate-limit:feedback-item:portal:city-roads:user:"+userID.String(), store.key)
+}
+
+func TestPublicFeedbackRateLimitRejectsMissingOrExpiredIngressProof(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0).UTC()
+	config := PublicFeedbackRateLimitConfig{
+		Scope: "feedback-item", AuthenticatedLimit: 10, AnonymousLimit: 3, AnonymousGlobalLimit: 12,
+		Window: time.Hour, IngressSecret: "test-secret", Now: func() time.Time { return now },
+	}
+	handler := PublicFeedbackRateLimit(nil, &rateLimitStoreStub{}, config)(func(context.Context, http.ResponseWriter, *http.Request) error {
+		t.Fatal("next handler should not be called")
+		return nil
+	})
+
+	for _, signedAt := range []time.Time{time.Time{}, now.Add(-3 * time.Minute)} {
+		request := httptest.NewRequest(http.MethodPost, "/portals/city-roads/feedback/items", nil)
+		request.SetPathValue("portalSlug", "city-roads")
+		if !signedAt.IsZero() {
+			setFeedbackIngressProof(request, "test-secret", "city-roads", strings.Repeat("ab", 32), signedAt)
+		}
+		recorder := httptest.NewRecorder()
+
+		require.NoError(t, handler(request.Context(), recorder, request))
+		require.Equal(t, http.StatusForbidden, recorder.Code)
+	}
+}
+
+func TestFeedbackIngressProofMatchesNextGoldenVector(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0).UTC()
+	request := httptest.NewRequest(http.MethodPost, "/portals/city-roads/feedback/items", nil)
+	request.Header.Set(feedbackIngressVersionHeader, "v1")
+	request.Header.Set(feedbackIngressIdentityHeader, "4de3dc762d2ec7ee7c2bdc0c9dccb06a6575d6baf14fd7780977fd7fb4e3c8d2")
+	request.Header.Set(feedbackIngressTimestampHeader, "1800000000")
+	request.Header.Set(feedbackIngressSignatureHeader, "e46dd5329fcf300bda60d49584a0637ae2107c78da79d57718901911d0acdb4b")
+
+	fingerprint, err := validateFeedbackIngressProof(
+		request,
+		"city-roads",
+		"test-feedback-ingress-secret-32-bytes",
+		now,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, "4de3dc762d2ec7ee7c2bdc0c9dccb06a6575d6baf14fd7780977fd7fb4e3c8d2", fingerprint)
+}
+
+func TestFeedbackIngressProofRejectsTamperingAndFutureTimestamps(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0).UTC()
+	tests := map[string]func(*http.Request){
+		"future timestamp": func(request *http.Request) {
+			setFeedbackIngressProof(request, "test-secret", "city-roads", strings.Repeat("ab", 32), now.Add(3*time.Minute))
+		},
+		"malformed signature": func(request *http.Request) {
+			setFeedbackIngressProof(request, "test-secret", "city-roads", strings.Repeat("ab", 32), now)
+			request.Header.Set(feedbackIngressSignatureHeader, "not-hex")
+		},
+		"wrong portal": func(request *http.Request) {
+			setFeedbackIngressProof(request, "test-secret", "other-portal", strings.Repeat("ab", 32), now)
+		},
+		"wrong secret": func(request *http.Request) {
+			setFeedbackIngressProof(request, "wrong-secret", "city-roads", strings.Repeat("ab", 32), now)
+		},
+	}
+
+	for name, mutate := range tests {
+		t.Run(name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/portals/city-roads/feedback/items", nil)
+			mutate(request)
+
+			_, err := validateFeedbackIngressProof(request, "city-roads", "test-secret", now)
+
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestPublicFeedbackRateLimitCapsAnonymousTrafficAcrossPortals(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0).UTC()
+	store := &rateLimitStoreStub{count: 13}
+	config := PublicFeedbackRateLimitConfig{
+		Scope: "feedback-item", AuthenticatedLimit: 10, AnonymousLimit: 3, AnonymousGlobalLimit: 12,
+		Window: time.Hour, IngressSecret: "test-secret", Now: func() time.Time { return now },
+	}
+	handler := PublicFeedbackRateLimit(nil, store, config)(func(context.Context, http.ResponseWriter, *http.Request) error {
+		t.Fatal("next handler should not be called")
+		return nil
+	})
+	request := httptest.NewRequest(http.MethodPost, "/portals/city-roads/feedback/items", nil)
+	request.SetPathValue("portalSlug", "city-roads")
+	setFeedbackIngressProof(request, "test-secret", "city-roads", strings.Repeat("ab", 32), now)
+	recorder := httptest.NewRecorder()
+
+	require.NoError(t, handler(request.Context(), recorder, request))
+	require.Equal(t, http.StatusTooManyRequests, recorder.Code)
+	require.Equal(t, []string{"rate-limit:feedback-item:anonymous:" + strings.Repeat("ab", 32)}, store.keys)
+}
+
+func TestPublicFeedbackRateLimitRejectsInvalidPortalSlugBeforeAllocatingKey(t *testing.T) {
+	config := PublicFeedbackRateLimitConfig{
+		Scope: "feedback-item", AuthenticatedLimit: 10, AnonymousLimit: 3, AnonymousGlobalLimit: 12,
+		Window: time.Hour, IngressSecret: "test-secret",
+	}
+	store := &rateLimitStoreStub{}
+	handler := PublicFeedbackRateLimit(nil, store, config)(func(context.Context, http.ResponseWriter, *http.Request) error {
+		t.Fatal("next handler should not be called")
+		return nil
+	})
+	request := httptest.NewRequest(http.MethodPost, "/portals/invalid/feedback/items", nil)
+	request.SetPathValue("portalSlug", "../../users")
+	recorder := httptest.NewRecorder()
+
+	require.NoError(t, handler(request.Context(), recorder, request))
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+	require.Empty(t, store.keys)
+}
+
+func setFeedbackIngressProof(request *http.Request, secret, portalSlug, fingerprint string, signedAt time.Time) {
+	timestamp := strconv.FormatInt(signedAt.Unix(), 10)
+	request.Header.Set(feedbackIngressVersionHeader, feedbackIngressVersion)
+	request.Header.Set(feedbackIngressIdentityHeader, fingerprint)
+	request.Header.Set(feedbackIngressTimestampHeader, timestamp)
+	request.Header.Set(feedbackIngressSignatureHeader, hex.EncodeToString(feedbackIngressSignature(secret, portalSlug, fingerprint, timestamp)))
+}
+
 type rateLimitStoreStub struct {
 	count int64
 	err   error
 	key   string
+	keys  []string
 	ttl   time.Duration
 }
 
 func (s *rateLimitStoreStub) IncrementWithTTL(_ context.Context, key string, ttl time.Duration) (int64, error) {
 	s.key = key
+	s.keys = append(s.keys, key)
 	s.ttl = ttl
 	return s.count, s.err
 }

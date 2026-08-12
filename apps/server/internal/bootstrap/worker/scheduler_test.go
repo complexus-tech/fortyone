@@ -33,3 +33,14 @@ func TestRegisterSchedulesRunsBrevoEmailReplyRecoveryEveryMinute(t *testing.T) {
 		taskType: tasks.TypeBrevoEmailReplyRecovery,
 	})
 }
+
+func TestRegisterSchedulesChecksCalendarWatchRenewalsHourly(t *testing.T) {
+	t.Parallel()
+
+	scheduler := &scheduleCapture{}
+	require.NoError(t, registerSchedules(scheduler))
+	require.Contains(t, scheduler.entries, scheduledTask{
+		spec:     "17 * * * *",
+		taskType: tasks.TypeCalendarWatchRenewal,
+	})
+}

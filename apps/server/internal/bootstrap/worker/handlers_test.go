@@ -10,7 +10,7 @@ import (
 )
 
 func TestBuildTaskMuxRegistersAttachmentImageOptimization(t *testing.T) {
-	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil)
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil)
 
 	handler, pattern := mux.Handler(asynq.NewTask(tasks.TypeAttachmentImageOptimization, nil))
 
@@ -19,7 +19,7 @@ func TestBuildTaskMuxRegistersAttachmentImageOptimization(t *testing.T) {
 }
 
 func TestBuildTaskMuxRegistersBrevoEmailReplyTasks(t *testing.T) {
-	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil)
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil)
 
 	for _, taskType := range []string{tasks.TypeBrevoEmailReply, tasks.TypeBrevoEmailReplyRecovery} {
 		handler, pattern := mux.Handler(asynq.NewTask(taskType, nil))

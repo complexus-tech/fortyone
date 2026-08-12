@@ -8,7 +8,12 @@ import { cn } from "lib";
 import { toast } from "sonner";
 import { requestFilters, requestStatusMeta } from "./status";
 import { PublicRequestCard } from "./request-card";
-import type { PublicPortal, PublicPortalFilters, PublicRequest } from "./types";
+import type {
+  PublicPortal,
+  PublicPortalFilters,
+  PublicPortalViewer,
+  PublicRequest,
+} from "./types";
 import { usePublicFeedbackList } from "./client-query";
 
 const mergeRequests = (current: PublicRequest[], incoming: PublicRequest[]) => {
@@ -74,11 +79,13 @@ export const PublicFeedbackList = ({
   initialFilters,
   onFiltersChange,
   portal,
+  viewer,
 }: {
   filters: PublicPortalFilters;
   initialFilters: PublicPortalFilters;
   onFiltersChange: (updates: Partial<PublicPortalFilters>) => void;
   portal: PublicPortal;
+  viewer?: PublicPortalViewer | null;
 }) => {
   const {
     data,
@@ -119,7 +126,12 @@ export const PublicFeedbackList = ({
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   let feedbackContent: ReactNode = requests.map((request) => (
-    <PublicRequestCard key={request.id} portal={portal} request={request} />
+    <PublicRequestCard
+      key={request.id}
+      portal={portal}
+      request={request}
+      viewer={viewer}
+    />
   ));
   if (isPending) {
     feedbackContent = <FeedbackListSkeleton />;

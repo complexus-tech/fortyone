@@ -3,7 +3,6 @@ package workerbootstrap
 import (
 	"strings"
 
-	calendarrepository "github.com/complexus-tech/projects-api/internal/modules/calendar/repository"
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	mayarepository "github.com/complexus-tech/projects-api/internal/modules/maya/repository"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
@@ -21,15 +20,10 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func buildMayaService(log *logger.Logger, db *sqlx.DB, cfg Config, mayaActorID uuid.UUID) *maya.Service {
+func buildMayaService(log *logger.Logger, db *sqlx.DB, cfg Config, calendarService *calendar.Service, mayaActorID uuid.UUID) *maya.Service {
 	mentionsRepo := mentionsrepository.New(log, db)
 	storiesService := stories.New(log, storiesrepository.New(log, db), mentionsRepo, nil, nil)
 	reportsService := reports.New(log, reportsrepository.New(log, db))
-	calendarService := calendar.New(log, calendarrepository.New(log, db), calendar.Config{
-		SecretKey:  cfg.Auth.SecretKey,
-		WebsiteURL: cfg.Website.URL,
-		Providers:  map[calendar.Provider]calendar.CalendarProvider{},
-	})
 	usersService := users.New(log, usersrepository.New(log, db), nil)
 
 	planner := maya.NewPlanner()

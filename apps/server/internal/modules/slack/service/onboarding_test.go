@@ -237,9 +237,9 @@ func TestBuildSlackFirstInteractionGuideDescribesSupportedMayaWorkflows(t *testi
 	} {
 		require.Contains(t, guide, expected)
 	}
-	require.Contains(t, guide, "when Maya is enabled")
-	require.Contains(t, guide, "when workflow actions are enabled")
-	require.Contains(t, guide, "depend on your plan and workspace settings")
+	require.NotContains(t, guide, "when Maya is enabled")
+	require.NotContains(t, guide, "when workflow actions are enabled")
+	require.NotContains(t, guide, "depend on your plan and workspace settings")
 	require.NotContains(t, guide, "calendar")
 	require.NotContains(t, guide, "GitHub")
 }

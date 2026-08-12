@@ -100,6 +100,45 @@ load_env() {
   set +a
 }
 
+set_env_value() {
+  name="$1"
+  value="$2"
+  temporary_file="${ENV_FILE}.tmp.$$"
+  awk -v name="$name" -v value="$value" '
+    BEGIN { prefix = name "=" }
+    index($0, prefix) == 1 {
+      if (!written) print prefix value
+      written = 1
+      next
+    }
+    { print }
+    END { if (!written) print prefix value }
+  ' "$ENV_FILE" > "$temporary_file"
+  mv "$temporary_file" "$ENV_FILE"
+}
+
+ensure_feedback_env() {
+  load_env
+
+  if [ -z "${FEEDBACK_INGRESS_SECRET:-}" ]; then
+    FEEDBACK_INGRESS_SECRET=$(openssl rand -hex 32 2>/dev/null || true)
+    if [ -z "$FEEDBACK_INGRESS_SECRET" ]; then
+      echo "ERROR: Could not generate FEEDBACK_INGRESS_SECRET. Install openssl and retry."
+      exit 1
+    fi
+    set_env_value "FEEDBACK_INGRESS_SECRET" "$FEEDBACK_INGRESS_SECRET"
+    export FEEDBACK_INGRESS_SECRET
+    echo "Generated FEEDBACK_INGRESS_SECRET in $ENV_FILE"
+  elif [ "${#FEEDBACK_INGRESS_SECRET}" -lt 32 ]; then
+    echo "ERROR: FEEDBACK_INGRESS_SECRET in $ENV_FILE must contain at least 32 characters."
+    exit 1
+  fi
+
+  if ! grep -q '^FEEDBACK_TRUSTED_CLIENT_IP_HEADER=' "$ENV_FILE"; then
+    set_env_value "FEEDBACK_TRUSTED_CLIENT_IP_HEADER" ""
+  fi
+}
+
 profiles_args() {
   args=""
   if [ -n "${COMPOSE_PROFILES:-}" ]; then
@@ -326,10 +365,19 @@ install_env() {
     fi
   fi
 
+  FEEDBACK_INGRESS_SECRET=$(openssl rand -hex 32 2>/dev/null || true)
+  if [ -z "$FEEDBACK_INGRESS_SECRET" ]; then
+    echo "ERROR: Could not generate FEEDBACK_INGRESS_SECRET. Install openssl and retry."
+    exit 1
+  fi
+  FEEDBACK_TRUSTED_CLIENT_IP_HEADER=""
+
   prompt "GOOGLE_CLIENT_ID" "Google client ID (legacy fallback)" ""
   prompt "APP_AUTH_GOOGLE_CLIENT_IDS" "Google client IDs (comma-separated)" "$GOOGLE_CLIENT_ID"
   prompt "APP_AUTH_GOOGLE_CLIENT_SECRET" "Google OAuth client secret (for backend OAuth flow)" ""
   prompt "APP_AUTH_GOOGLE_REDIRECT_URL" "Google OAuth redirect URL (e.g. http://localhost:8000/auth/google/callback)" ""
+  prompt "APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL" "Google Calendar OAuth redirect URL" "http://localhost:8000/integrations/calendar/google/callback"
+  prompt "APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL" "Public HTTPS Google Calendar webhook URL (optional locally)" ""
 
   cat > "$ENV_FILE" <<EOF
 NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
@@ -345,6 +393,10 @@ APP_AUTH_COOKIE_DOMAIN=$APP_AUTH_COOKIE_DOMAIN
 APP_AUTH_GOOGLE_CLIENT_IDS=$APP_AUTH_GOOGLE_CLIENT_IDS
 APP_AUTH_GOOGLE_CLIENT_SECRET=$APP_AUTH_GOOGLE_CLIENT_SECRET
 APP_AUTH_GOOGLE_REDIRECT_URL=$APP_AUTH_GOOGLE_REDIRECT_URL
+APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL=$APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL
+APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL=$APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL
+FEEDBACK_INGRESS_SECRET=$FEEDBACK_INGRESS_SECRET
+FEEDBACK_TRUSTED_CLIENT_IP_HEADER=$FEEDBACK_TRUSTED_CLIENT_IP_HEADER
 APP_TRACING_ENDPOINT=$APP_TRACING_ENDPOINT
 GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
 
@@ -452,11 +504,13 @@ fi
 case "$action" in
   install)
     install_env
+    ensure_feedback_env
     load_env
     compose up -d
     run_migrations
     ;;
   start)
+    ensure_feedback_env
     load_env
     compose up -d
     ;;
@@ -465,6 +519,7 @@ case "$action" in
     compose down
     ;;
   upgrade)
+    ensure_feedback_env
     load_env
     compose pull
     compose up -d

@@ -71,6 +71,45 @@ func Auth(log *logger.Logger, secretKey string) web.Middleware {
 	return m
 }
 
+// OptionalAuth attaches a normal FortyOne user when valid credentials are
+// present while allowing a genuinely unauthenticated request to continue.
+// Invalid supplied bearer credentials still fail closed.
+func OptionalAuth(log *logger.Logger, secretKey string) web.Middleware {
+	return func(next web.Handler) web.Handler {
+		return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+			cookie, cookieErr := r.Cookie(authCookieName)
+			cookieSupplied := cookieErr == nil && strings.TrimSpace(cookie.Value) != ""
+			if userID, ok, err := resolveUserIDFromSessionCookie(ctx, r); err != nil {
+				return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+			} else if ok {
+				return next(auth.SetUserID(ctx, userID), w, r)
+			} else if cookieSupplied {
+				return web.RespondError(ctx, w, errors.New("session is invalid or expired"), http.StatusUnauthorized)
+			}
+
+			tokenString := resolveTokenFromRequest(r)
+			if tokenString == "" {
+				return next(ctx, w, r)
+			}
+			claims := &jwt.RegisteredClaims{}
+			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
+				return []byte(secretKey), nil
+			})
+			if err != nil || !token.Valid {
+				if err == nil {
+					err = errors.New("token is invalid")
+				}
+				return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+			}
+			userID, err := uuid.Parse(claims.Subject)
+			if err != nil {
+				return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+			}
+			return next(auth.SetUserID(ctx, userID), w, r)
+		}
+	}
+}
+
 func resolveUserIDFromSessionCookie(
 	ctx context.Context,
 	r *http.Request,

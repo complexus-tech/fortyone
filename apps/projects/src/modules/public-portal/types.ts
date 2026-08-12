@@ -1,5 +1,9 @@
 export type PublicPortalTab = "feedback" | "roadmap" | "updates";
 
+export type FeedbackParticipationMode =
+  | "account_required"
+  | "anonymous_allowed";
+
 export type PublicRequestStatus =
   | "pending"
   | "reviewing"
@@ -79,7 +83,7 @@ export type PublicFeedbackStoryLink = {
 
 export type PublicRequest = {
   id: string;
-  authorId: string;
+  authorId: string | null;
   slug: string;
   title: string;
   description: string;
@@ -180,6 +184,7 @@ export type PublicPortal = {
   id: string;
   name: string;
   slug: string;
+  participationMode: FeedbackParticipationMode;
   workspace: PublicPortalWorkspace;
   boards: PublicRequestBoard[];
   requests: PublicRequest[];

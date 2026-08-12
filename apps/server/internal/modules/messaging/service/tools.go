@@ -7,10 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
+	"path"
 	"strconv"
 	"strings"
 	"time"
 
+	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
 	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
@@ -31,6 +34,8 @@ const (
 	toolGetStory        = "get_story"
 	toolCreateStory     = "create_story"
 	toolUpdateStory     = "update_story"
+	toolAddComment      = "add_story_comment"
+	toolAddRelationship = "add_story_relationship"
 
 	defaultToolLimit         = 20
 	maxToolLimit             = 50
@@ -64,6 +69,9 @@ type StoryMutationService interface {
 	QueryByRef(ctx context.Context, workspaceID uuid.UUID, storyRef string) (stories.CoreSingleStory, error)
 	CreateExternalUserAction(ctx context.Context, actorID uuid.UUID, story stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
 	UpdateExternalUserActionIfUnchanged(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any) error
+	CreateCommentExternal(ctx context.Context, actorID, workspaceID uuid.UUID, comment stories.CoreNewComment) (comments.CoreComment, error)
+	UpdateLabels(ctx context.Context, id, workspaceID uuid.UUID, labels []uuid.UUID) error
+	AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (stories.CoreStoryAssociation, error)
 	FindFirstStatusByCategory(ctx context.Context, teamID, workspaceID uuid.UUID, category string) (*uuid.UUID, error)
 }
 
@@ -274,6 +282,16 @@ func (e *FortyOneToolExecutor) Execute(ctx context.Context, scope ToolScope, cal
 			return nil, ErrMutationNotAllowed
 		}
 		return e.mutations.proposeUpdate(ctx, e, scope, call.Arguments)
+	case toolAddComment:
+		if e.mutations == nil || !scope.AllowMutations {
+			return nil, ErrMutationNotAllowed
+		}
+		return e.mutations.proposeComment(ctx, e, scope, call.Arguments)
+	case toolAddRelationship:
+		if e.mutations == nil || !scope.AllowMutations {
+			return nil, ErrMutationNotAllowed
+		}
+		return e.mutations.proposeRelationship(ctx, e, scope, call.Arguments)
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
 	}
@@ -381,6 +399,7 @@ func (e *FortyOneToolExecutor) listMyTasks(ctx context.Context, scope ToolScope,
 		filtered = append(filtered, taskResult{
 			ID:               story.ID,
 			Reference:        storyReference(team.Code, story.SequenceID),
+			URL:              storyURL(scope, storyReference(team.Code, story.SequenceID)),
 			Title:            story.Title,
 			TeamID:           story.Team,
 			TeamName:         team.Name,
@@ -467,6 +486,7 @@ func (e *FortyOneToolExecutor) searchWork(ctx context.Context, scope ToolScope, 
 		storiesResult = append(storiesResult, searchStoryResult{
 			ID:        story.ID,
 			Reference: storyReference(team.Code, story.SequenceID),
+			URL:       storyURL(scope, storyReference(team.Code, story.SequenceID)),
 			Title:     story.Title,
 			TeamID:    story.Team,
 			StatusID:  story.Status,
@@ -763,6 +783,7 @@ func (e *FortyOneToolExecutor) getStory(ctx context.Context, scope ToolScope, ra
 	return marshalToolResult(storyDetailsResult{
 		ID:                   story.ID,
 		Reference:            storyReference,
+		URL:                  storyURL(scope, storyReference),
 		Title:                story.Title,
 		Description:          description,
 		DescriptionTruncated: descriptionTruncated,
@@ -1173,6 +1194,7 @@ type listTeamsResult struct {
 type taskResult struct {
 	ID               uuid.UUID  `json:"id"`
 	Reference        string     `json:"reference"`
+	URL              string     `json:"url,omitempty"`
 	Title            string     `json:"title"`
 	TeamID           uuid.UUID  `json:"team_id"`
 	TeamName         string     `json:"team_name"`
@@ -1197,11 +1219,27 @@ type listTasksResult struct {
 type searchStoryResult struct {
 	ID        uuid.UUID  `json:"id"`
 	Reference string     `json:"reference"`
+	URL       string     `json:"url,omitempty"`
 	Title     string     `json:"title"`
 	TeamID    uuid.UUID  `json:"team_id"`
 	StatusID  *uuid.UUID `json:"status_id"`
 	Priority  string     `json:"priority"`
 	UpdatedAt time.Time  `json:"updated_at"`
+}
+
+func storyURL(scope ToolScope, reference string) string {
+	base, err := url.Parse(strings.TrimRight(strings.TrimSpace(scope.WebsiteURL), "/"))
+	if err != nil || base.Hostname() == "" || strings.TrimSpace(scope.WorkspaceSlug) == "" || strings.TrimSpace(reference) == "" {
+		return ""
+	}
+	base.Path = path.Join("/", scope.WorkspaceSlug, "work", reference)
+	if !strings.EqualFold(base.Hostname(), "localhost") && !strings.EqualFold(base.Hostname(), "127.0.0.1") {
+		base.Path = path.Join("/", "work", reference)
+		if !strings.HasPrefix(base.Hostname(), scope.WorkspaceSlug+".") {
+			base.Host = scope.WorkspaceSlug + "." + base.Host
+		}
+	}
+	return base.String()
 }
 
 type searchObjectiveResult struct {
@@ -1277,6 +1315,7 @@ type listTeamMembersResult struct {
 type storyDetailsResult struct {
 	ID                   uuid.UUID  `json:"id"`
 	Reference            string     `json:"reference"`
+	URL                  string     `json:"url,omitempty"`
 	Title                string     `json:"title"`
 	Description          *string    `json:"description"`
 	DescriptionTruncated bool       `json:"description_truncated"`

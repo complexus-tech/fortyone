@@ -10,9 +10,7 @@ import (
 )
 
 type AppSlackAgentSettings struct {
-	AssistantEnabled       bool   `json:"assistantEnabled"`
-	WorkflowActionsEnabled bool   `json:"workflowActionsEnabled"`
-	Guidance               string `json:"guidance"`
+	Guidance string `json:"guidance"`
 }
 
 func (h *Handlers) GetAgentSettings(ctx context.Context, w http.ResponseWriter, _ *http.Request) error {
@@ -37,9 +35,7 @@ func (h *Handlers) UpdateAgentSettings(ctx context.Context, w http.ResponseWrite
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	settings, err := h.service.UpdateAgentSettings(ctx, workspace.ID, slack.CoreSlackAgentSettings{
-		AssistantEnabled:       input.AssistantEnabled,
-		WorkflowActionsEnabled: input.WorkflowActionsEnabled,
-		Guidance:               input.Guidance,
+		Guidance: input.Guidance,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -49,8 +45,6 @@ func (h *Handlers) UpdateAgentSettings(ctx context.Context, w http.ResponseWrite
 
 func toAppSlackAgentSettings(settings slack.CoreSlackAgentSettings) AppSlackAgentSettings {
 	return AppSlackAgentSettings{
-		AssistantEnabled:       settings.AssistantEnabled,
-		WorkflowActionsEnabled: settings.WorkflowActionsEnabled,
-		Guidance:               settings.Guidance,
+		Guidance: settings.Guidance,
 	}
 }

@@ -28,33 +28,54 @@ func TestHTTPStatusClassifiesFeedbackErrors(t *testing.T) {
 	if status := httpStatus(feedback.ErrNotFound); status != http.StatusNotFound {
 		t.Fatalf("not found status = %d, want %d", status, http.StatusNotFound)
 	}
+	if status := httpStatus(feedback.ErrParticipationNotAllowed); status != http.StatusForbidden {
+		t.Fatalf("participation status = %d, want %d", status, http.StatusForbidden)
+	}
+	if status := httpStatus(feedback.ErrAuthenticationRequired); status != http.StatusUnauthorized {
+		t.Fatalf("authentication status = %d, want %d", status, http.StatusUnauthorized)
+	}
 	if status := httpStatus(errors.New("database unavailable")); status != http.StatusInternalServerError {
 		t.Fatalf("unexpected error status = %d, want %d", status, http.StatusInternalServerError)
 	}
 }
 
-func TestApplyItemsQueryRejectsInvalidAuthorID(t *testing.T) {
+func TestPublicItemsInputRejectsInvalidAuthorID(t *testing.T) {
 	t.Parallel()
 
 	for _, authorID := range []string{"not-a-uuid", uuid.Nil.String()} {
 		t.Run(authorID, func(t *testing.T) {
 			t.Parallel()
 
-			handler := New(nil, nil, nil, nil)
 			request, err := http.NewRequest(http.MethodGet, "/?authorId="+authorID, nil)
 			if err != nil {
 				t.Fatalf("create request: %v", err)
 			}
-			portal := feedback.CorePortalSnapshot{Portal: feedback.CorePortal{ID: uuid.New()}}
-
-			err = handler.applyItemsQuery(context.Background(), request, &portal)
+			_, err = publicItemsInput(request)
 			if !errors.Is(err, feedback.ErrInvalidInput) {
-				t.Fatalf("apply items query error = %v, want invalid input", err)
+				t.Fatalf("public items input error = %v, want invalid input", err)
 			}
 			if status := httpStatus(err); status != http.StatusBadRequest {
 				t.Fatalf("invalid author status = %d, want %d", status, http.StatusBadRequest)
 			}
 		})
+	}
+}
+
+func TestPublicItemsInputRejectsInvalidBoardAndView(t *testing.T) {
+	t.Parallel()
+
+	for _, rawQuery := range []string{
+		"boardId=not-a-uuid",
+		"boardId=" + uuid.Nil.String(),
+		"view=full",
+	} {
+		request := httptest.NewRequest(http.MethodGet, "/?"+rawQuery, nil)
+
+		_, err := publicItemsInput(request)
+
+		if !errors.Is(err, feedback.ErrInvalidInput) {
+			t.Fatalf("publicItemsInput(%q) error = %v, want invalid input", rawQuery, err)
+		}
 	}
 }
 
@@ -81,6 +102,17 @@ func TestPublicContributorPaginationDefersNormalizationToService(t *testing.T) {
 
 	if page != 3 || pageSize != 25 {
 		t.Fatalf("pagination = (%d, %d), want (3, 25)", page, pageSize)
+	}
+}
+
+func TestPublicFeedbackBotTrapRejectsFilledWebsite(t *testing.T) {
+	t.Parallel()
+
+	if err := validatePublicItemBotTrap(AppCreatePublicItem{}); err != nil {
+		t.Fatalf("empty bot trap rejected: %v", err)
+	}
+	if err := validatePublicItemBotTrap(AppCreatePublicItem{Website: "https://spam.example"}); err == nil {
+		t.Fatal("filled bot trap accepted")
 	}
 }
 
@@ -145,6 +177,18 @@ func TestAppItemIncludesThirtyDayRestoreWindow(t *testing.T) {
 	wantRestoreUntil := deletedAt.Add(30 * 24 * time.Hour)
 	if item.RestoreUntil == nil || !item.RestoreUntil.Equal(wantRestoreUntil) {
 		t.Fatalf("restore until = %v, want %v", item.RestoreUntil, wantRestoreUntil)
+	}
+}
+
+func TestAppItemUsesNullAuthorForAnonymousFeedback(t *testing.T) {
+	t.Parallel()
+
+	payload, err := json.Marshal(toAppItem(feedback.CoreItem{ID: uuid.New(), AuthorName: "Anonymous"}, nil, nil))
+	if err != nil {
+		t.Fatalf("marshal anonymous item: %v", err)
+	}
+	if !strings.Contains(string(payload), `"authorId":null`) {
+		t.Fatalf("anonymous item authorId should be null: %s", payload)
 	}
 }
 

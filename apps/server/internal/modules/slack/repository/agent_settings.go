@@ -13,18 +13,14 @@ import (
 const MaxSlackAgentGuidanceRunes = 4000
 
 type AgentSettingsRecord struct {
-	WorkspaceID            uuid.UUID `db:"workspace_id"`
-	AssistantEnabled       bool      `db:"assistant_enabled"`
-	WorkflowActionsEnabled bool      `db:"workflow_actions_enabled"`
-	Guidance               string    `db:"guidance"`
-	CreatedAt              time.Time `db:"created_at"`
-	UpdatedAt              time.Time `db:"updated_at"`
+	WorkspaceID uuid.UUID `db:"workspace_id"`
+	Guidance    string    `db:"guidance"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
 }
 
 type AgentSettingsInput struct {
-	AssistantEnabled       bool
-	WorkflowActionsEnabled bool
-	Guidance               string
+	Guidance string
 }
 
 func (r *Repo) GetAgentSettings(ctx context.Context, workspaceID uuid.UUID) (AgentSettingsRecord, error) {
@@ -34,8 +30,6 @@ func (r *Repo) GetAgentSettings(ctx context.Context, workspaceID uuid.UUID) (Age
 	var record AgentSettingsRecord
 	if err := r.db.GetContext(ctx, &record, `
 		SELECT workspace.workspace_id,
-		       COALESCE(settings.assistant_enabled, true) AS assistant_enabled,
-		       COALESCE(settings.workflow_actions_enabled, true) AS workflow_actions_enabled,
 		       COALESCE(settings.guidance, '') AS guidance,
 		       COALESCE(settings.created_at, workspace.created_at) AS created_at,
 		       COALESCE(settings.updated_at, workspace.updated_at) AS updated_at
@@ -63,23 +57,15 @@ func (r *Repo) UpsertAgentSettings(
 	}
 	var record AgentSettingsRecord
 	if err := r.db.GetContext(ctx, &record, `
-		INSERT INTO slack_agent_settings (
-			workspace_id,
-			assistant_enabled,
-			workflow_actions_enabled,
-			guidance
-		)
-		SELECT workspace_id, $2, $3, $4
+			INSERT INTO slack_agent_settings (workspace_id, guidance)
+			SELECT workspace_id, $2
 		FROM workspaces
 		WHERE workspace_id = $1
 		ON CONFLICT (workspace_id) DO UPDATE SET
-			assistant_enabled = EXCLUDED.assistant_enabled,
-			workflow_actions_enabled = EXCLUDED.workflow_actions_enabled,
 			guidance = EXCLUDED.guidance,
 			updated_at = NOW()
-		RETURNING workspace_id, assistant_enabled, workflow_actions_enabled,
-		          guidance, created_at, updated_at
-	`, workspaceID, input.AssistantEnabled, input.WorkflowActionsEnabled, guidance); err != nil {
+		RETURNING workspace_id, guidance, created_at, updated_at
+		`, workspaceID, guidance); err != nil {
 		return AgentSettingsRecord{}, fmt.Errorf("upsert Slack agent settings: %w", err)
 	}
 	return record, nil

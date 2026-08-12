@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
+	calendarrepository "github.com/complexus-tech/projects-api/internal/modules/calendar/repository"
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
@@ -20,8 +23,10 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/emailthread"
+	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/hibiken/asynq"
@@ -206,7 +211,25 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		nil,
 	)
 
-	mayaService := buildMayaService(log, db, cfg, systemUserID)
+	googleService, err := google.NewService(google.Config{
+		ClientIDs:           parseWorkerClientIDs(cfg.Auth.GoogleClientIDs, cfg.GoogleClientID),
+		ClientSecret:        cfg.Auth.GoogleClientSecret,
+		CalendarRedirectURL: cfg.Auth.GoogleCalendarRedirectURL,
+	})
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("initialize worker Google service: %w", err)
+	}
+	calendarService := calendar.New(log, calendarrepository.New(log, db), calendar.Config{
+		SecretKey:  cfg.Auth.SecretKey,
+		WebsiteURL: cfg.Website.URL,
+		WebhookURL: cfg.Auth.GoogleCalendarWebhookURL,
+		Providers: map[calendar.Provider]calendar.CalendarProvider{
+			calendar.ProviderGoogle: calendar.NewGoogleProvider(googleService),
+		},
+		Updates: publisher.New(redisClient, log),
+	})
+	mayaService := buildMayaService(log, db, cfg, calendarService, systemUserID)
 	emailCopyClient, err := emailcopy.New(emailcopy.Config{
 		APIKey: cfg.AIAPIKey,
 	})
@@ -246,7 +269,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if upgradedCredentials > 0 {
 		log.Info(ctx, "Encrypted legacy Slack credentials", "count", upgradedCredentials)
 	}
-	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopyGenerator, emailThreads, notificationsService, slackEvents, emailReplyProcessor, emailReplyIngress, systemUserID)
+	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopyGenerator, emailThreads, notificationsService, slackEvents, emailReplyProcessor, emailReplyIngress, calendarService, systemUserID)
 	resourcesTransferred = true
 
 	return App{
@@ -259,6 +282,22 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		redis:     redisClient,
 		tasks:     tasksService,
 	}, nil
+}
+
+func parseWorkerClientIDs(value, fallback string) []string {
+	parts := strings.Split(value, ",")
+	clientIDs := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if clientID := strings.TrimSpace(part); clientID != "" {
+			clientIDs = append(clientIDs, clientID)
+		}
+	}
+	if len(clientIDs) == 0 {
+		if clientID := strings.TrimSpace(fallback); clientID != "" {
+			clientIDs = append(clientIDs, clientID)
+		}
+	}
+	return clientIDs
 }
 
 func (a App) Run(ctx context.Context) error {

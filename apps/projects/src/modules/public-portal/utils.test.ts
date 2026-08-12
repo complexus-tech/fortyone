@@ -1,6 +1,10 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
-import { getCrossPortalRequestHref, getGlobalProfileHref } from "./utils";
+import {
+  getAuthorPathByPortalSlug,
+  getCrossPortalRequestHref,
+  getGlobalProfileHref,
+} from "./utils";
 
 describe("public portal profile paths", () => {
   it("uses the global profile outside workspace subdomain deployments", () => {
@@ -11,5 +15,15 @@ describe("public portal profile paths", () => {
     expect(
       getCrossPortalRequestHref("city-roads", "city-roads", "safer-crossing"),
     ).toBe("/portal/city-roads/feedback/safer-crossing");
+  });
+
+  it("does not create profile links for anonymous contributors", () => {
+    expect(getAuthorPathByPortalSlug("city-roads", null)).toBeNull();
+    expect(
+      getAuthorPathByPortalSlug(
+        "city-roads",
+        "00000000-0000-0000-0000-000000000000",
+      ),
+    ).toBeNull();
   });
 });

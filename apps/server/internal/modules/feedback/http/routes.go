@@ -14,22 +14,27 @@ import (
 )
 
 type Config struct {
-	DB          *sqlx.DB
-	Log         *logger.Logger
-	SecretKey   string
-	Cache       *cache.Service
-	Service     *feedback.Service
-	Teams       *teams.Service
-	Attachments *attachments.Service
+	DB            *sqlx.DB
+	Log           *logger.Logger
+	SecretKey     string
+	IngressSecret string
+	Cache         *cache.Service
+	Service       *feedback.Service
+	Teams         *teams.Service
+	Attachments   *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	h := New(cfg.Service, cfg.Teams, cfg.Attachments, cfg.Log)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-	createItemRateLimit := mid.AuthenticatedUserRateLimit(cfg.Log, cfg.Cache, mid.AuthenticatedUserRateLimitConfig{
-		Scope:  "public-feedback-item",
-		Limit:  10,
-		Window: time.Hour,
+	optionalAuth := mid.OptionalAuth(cfg.Log, cfg.SecretKey)
+	createItemRateLimit := mid.PublicFeedbackRateLimit(cfg.Log, cfg.Cache, mid.PublicFeedbackRateLimitConfig{
+		Scope:                "public-feedback-item",
+		AuthenticatedLimit:   10,
+		AnonymousLimit:       3,
+		AnonymousGlobalLimit: 12,
+		Window:               time.Hour,
+		IngressSecret:        cfg.IngressSecret,
 	})
 	createCommentRateLimit := mid.AuthenticatedUserRateLimit(cfg.Log, cfg.Cache, mid.AuthenticatedUserRateLimitConfig{
 		Scope:  "public-feedback-comment",
@@ -50,7 +55,8 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/portals/{portalSlug}/feedback/contributors/{authorId}", h.GetPublicContributor)
 	app.Get("/portals/{portalSlug}/feedback/contributors/{authorId}/comments", h.ListPublicContributorComments)
 	app.Get("/feedback/contributor/activity", h.ListContributorActivity, auth)
-	app.Post("/portals/{portalSlug}/feedback/items", h.CreatePublicItem, auth, createItemRateLimit)
+	app.Post("/portals/{portalSlug}/feedback/items", h.CreatePublicItem, optionalAuth, createItemRateLimit)
+	app.Post("/portals/{portalSlug}/widget/feedback/items", h.CreateWidgetItem, optionalAuth, createItemRateLimit)
 	app.Post("/portals/{portalSlug}/feedback/items/{itemId}/comments", h.CreatePublicComment, auth, createCommentRateLimit)
 	app.Post("/portals/{portalSlug}/feedback/items/{itemId}/vote", h.TogglePublicVote, auth, voteRateLimit)
 	app.Get("/workspaces/{workspaceSlug}/portals/{portalSlug}/feedback", h.GetWorkspacePortal)

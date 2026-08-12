@@ -30,6 +30,7 @@ export type PublicPortalQuery = {
   status?: PublicFeedbackListStatus;
   boardId?: string;
   sort?: "top" | "newest" | "oldest";
+  view?: "summary";
 };
 
 export type PublicPortalCachePolicy = {
@@ -80,6 +81,7 @@ const buildQuery = (query: PublicPortalQuery) => {
   if (query.status) params.set("status", query.status);
   if (query.boardId) params.set("boardId", query.boardId);
   if (query.sort) params.set("sort", query.sort);
+  if (query.view) params.set("view", query.view);
 
   const value = params.toString();
   return value ? `?${value}` : "";
@@ -91,6 +93,25 @@ const getPublicFetchOptions = ({
   revalidateSeconds === undefined
     ? ({ cache: "no-store" } as const)
     : ({ next: { revalidate: revalidateSeconds } } as const);
+
+const fetchPublicFeedbackPortal = async (
+  apiUrl: string,
+  feedbackPath: string,
+  cachePolicy: PublicPortalCachePolicy,
+) => {
+  const response = await fetch(
+    `${apiUrl}${feedbackPath}`,
+    getPublicFetchOptions(cachePolicy),
+  );
+  if (!response.ok) {
+    throw new PublicPortalRequestError(
+      "Failed to load public feedback portal",
+      response.status,
+    );
+  }
+  const payload = (await response.json()) as ApiResponse<ApiPortal>;
+  return payload.data;
+};
 
 export const getPublicPortal = async (
   portalSlug: string,
@@ -112,25 +133,34 @@ export const getPublicPortal = async (
     : `/portals/${portalSlug}/feedback${buildQuery(query)}`;
   const fetchOptions = getPublicFetchOptions(cachePolicy);
 
-  const [workspaceResponse, feedbackResponse] = await Promise.all([
+  const [workspaceResponse, apiPortal] = await Promise.all([
     fetch(`${apiUrl}${workspacePath}`, fetchOptions),
-    fetch(`${apiUrl}${feedbackPath}`, fetchOptions),
+    fetchPublicFeedbackPortal(apiUrl, feedbackPath, cachePolicy),
   ]);
-
-  if (!feedbackResponse.ok) {
-    throw new PublicPortalRequestError(
-      "Failed to load public feedback portal",
-      feedbackResponse.status,
-    );
-  }
 
   const workspacePayload = workspaceResponse.ok
     ? ((await workspaceResponse.json()) as ApiResponse<PublicPortalWorkspace>)
     : null;
-  const feedbackPayload =
-    (await feedbackResponse.json()) as ApiResponse<ApiPortal>;
 
-  return toPublicPortal(feedbackPayload.data, workspacePayload?.data);
+  return toPublicPortal(apiPortal, workspacePayload?.data);
+};
+
+export const getPublicFeedbackPortal = async (
+  portalSlug: string,
+  query: PublicPortalQuery = {},
+  cachePolicy: PublicPortalCachePolicy = {},
+) => {
+  const apiUrl = getApiUrl();
+  if (!apiUrl) {
+    throw new Error("NEXT_PUBLIC_API_URL is required to load public feedback");
+  }
+  const feedbackPath = `${await getPublicFeedbackPath(portalSlug)}${buildQuery(query)}`;
+  const apiPortal = await fetchPublicFeedbackPortal(
+    apiUrl,
+    feedbackPath,
+    cachePolicy,
+  );
+  return toPublicPortal(apiPortal);
 };
 
 export const getSimilarPublicFeedback = async (
@@ -238,6 +268,22 @@ export const getPublicPortalOrNotFound = async (
 ) => {
   try {
     return await getPublicPortal(portalSlug, query, cachePolicy);
+  } catch (error) {
+    if (isPublicPortalNotFoundError(error)) {
+      notFound();
+    }
+
+    throw error;
+  }
+};
+
+export const getPublicFeedbackPortalOrNotFound = async (
+  portalSlug: string,
+  query: PublicPortalQuery = {},
+  cachePolicy: PublicPortalCachePolicy = {},
+) => {
+  try {
+    return await getPublicFeedbackPortal(portalSlug, query, cachePolicy);
   } catch (error) {
     if (isPublicPortalNotFoundError(error)) {
       notFound();

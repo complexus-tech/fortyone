@@ -33,4 +33,5 @@ func Routes(cfg Config, app *web.App) {
 	app.Delete("/workspaces/{workspaceSlug}/calendar/schedule-blocks/{blockId}", h.DeleteScheduleBlock, auth, workspace)
 
 	app.Get("/integrations/calendar/google/callback", h.HandleGoogleCallback, auth)
+	app.Post("/webhooks/google/calendar", h.HandleGoogleNotification)
 }
