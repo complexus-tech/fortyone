@@ -13,3 +13,10 @@ func TestSlackRedirectURLDefault(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, "https://api.fortyone.app/integrations/slack/setup", redirectURL.Tag.Get("default"))
 }
+
+func TestMayaSenderAddressDefault(t *testing.T) {
+	configType := reflect.TypeOf(Config{}.Email)
+	mayaAddress, found := configType.FieldByName("MayaAddress")
+	require.True(t, found)
+	require.Equal(t, "maya@fortyone.app", mayaAddress.Tag.Get("default"))
+}

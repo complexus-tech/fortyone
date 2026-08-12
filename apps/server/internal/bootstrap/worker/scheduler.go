@@ -7,7 +7,11 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func registerSchedules(scheduler *asynq.Scheduler) error {
+type scheduleRegistrar interface {
+	Register(spec string, task *asynq.Task, opts ...asynq.Option) (entryID string, err error)
+}
+
+func registerSchedules(scheduler scheduleRegistrar) error {
 	_, err := scheduler.Register(
 		"@daily",
 		asynq.NewTask(tasks.TypeDeleteStories, nil),
@@ -231,6 +235,15 @@ func registerSchedules(scheduler *asynq.Scheduler) error {
 	)
 	if err != nil {
 		return fmt.Errorf("failed to register Slack inbox recovery task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"*/1 * * * *", // Every minute
+		asynq.NewTask(tasks.TypeBrevoEmailReplyRecovery, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register Brevo email reply inbox recovery task: %w", err)
 	}
 
 	return nil

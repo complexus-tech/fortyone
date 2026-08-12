@@ -17,6 +17,7 @@ import (
 
 	bootstrapapi "github.com/complexus-tech/projects-api/internal/bootstrap/api"
 	"github.com/complexus-tech/projects-api/internal/migrations"
+	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	"github.com/complexus-tech/projects-api/internal/sse"
@@ -90,7 +91,7 @@ type Config struct {
 		Password    string `env:"APP_EMAIL_PASSWORD"`
 		FromAddress string `env:"APP_EMAIL_FROM_ADDRESS"`
 		FromName    string `default:"Complexus" env:"APP_EMAIL_FROM_NAME"`
-		MayaAddress string `env:"APP_EMAIL_MAYA_FROM_ADDRESS"`
+		MayaAddress string `default:"maya@fortyone.app" env:"APP_EMAIL_MAYA_FROM_ADDRESS"`
 		MayaName    string `default:"Maya" env:"APP_EMAIL_MAYA_FROM_NAME"`
 		Environment string `default:"development" env:"APP_EMAIL_ENVIRONMENT"`
 		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
@@ -190,6 +191,9 @@ func run(ctx context.Context, log *logger.Logger) error {
 	err := config.Parse("app", &cfg)
 	if err != nil {
 		return fmt.Errorf("error parsing config: %s", err)
+	}
+	if err := emailreply.ValidateRuntimeSecret(cfg.Auth.SecretKey, cfg.Email.Environment); err != nil {
+		return fmt.Errorf("validate email reply security: %w", err)
 	}
 
 	// Connect to postgres database

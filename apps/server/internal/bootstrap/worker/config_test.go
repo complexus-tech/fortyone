@@ -51,3 +51,10 @@ func TestMessagingAssistantModelDefault(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, "gpt-5.6-luna", model.Tag.Get("default"))
 }
+
+func TestMayaSenderAddressDefault(t *testing.T) {
+	configType := reflect.TypeOf(Config{}.Email)
+	mayaAddress, found := configType.FieldByName("MayaAddress")
+	require.True(t, found)
+	require.Equal(t, "maya@fortyone.app", mayaAddress.Tag.Get("default"))
+}

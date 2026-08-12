@@ -11,6 +11,7 @@ import (
 	_ "time/tzdata"
 
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
+	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -70,7 +71,7 @@ type feedbackDigestItem struct {
 // ProcessFeedbackDigestEmail sends due feedback digests at 09:00 in each
 // recipient's timezone. A single delivery combines all due boards in a
 // workspace, while each board keeps its own delivery cursor.
-func ProcessFeedbackDigestEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator) error {
+func ProcessFeedbackDigestEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessFeedbackDigestEmail")
 	defer span.End()
 
@@ -91,7 +92,7 @@ func ProcessFeedbackDigestEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 		}
 
 		results, batchErr := processGuidanceEmailBatch(ctx, recipients, func(batchCtx context.Context, recipient feedbackDigestRecipient) guidanceEmailBatchResult {
-			if processErr := processFeedbackDigestRecipient(batchCtx, db, log, mailerService, copyGenerator, recipient, now); processErr != nil {
+			if processErr := processFeedbackDigestRecipient(batchCtx, db, log, mailerService, copyGenerator, threader, recipient, now); processErr != nil {
 				log.Error(batchCtx, "Failed to process feedback digest recipient",
 					"recipient_id", recipient.UserID,
 					"workspace_id", recipient.WorkspaceID,
@@ -131,6 +132,7 @@ func processFeedbackDigestRecipient(
 	log *logger.Logger,
 	mailerService mailer.Service,
 	copyGenerator emailcopy.Generator,
+	threader emailthread.GuidancePreparer,
 	recipient feedbackDigestRecipient,
 	now time.Time,
 ) error {
@@ -182,7 +184,7 @@ func processFeedbackDigestRecipient(
 	}
 
 	itemCount := items[0].TotalCount
-	if err := sendFeedbackDigestEmail(ctx, log, mailerService, copyGenerator, deliveryID, recipient, items); err != nil {
+	if err := sendFeedbackDigestEmail(ctx, log, mailerService, copyGenerator, threader, deliveryID, recipient, items); err != nil {
 		return failFeedbackDigestDelivery(ctx, db, deliveryID, err)
 	}
 
@@ -625,6 +627,7 @@ func sendFeedbackDigestEmail(
 	log *logger.Logger,
 	mailerService mailer.Service,
 	copyGenerator emailcopy.Generator,
+	threader emailthread.GuidancePreparer,
 	deliveryID uuid.UUID,
 	recipient feedbackDigestRecipient,
 	items []feedbackDigestItem,
@@ -637,6 +640,7 @@ func sendFeedbackDigestEmail(
 	subject := feedbackDigestSubject(items[0].TotalCount, recipient.WorkspaceName)
 	title := subject
 	message := formatFeedbackDigestEmailContent(items, workspaceURL)
+	message = appendGuidanceReplyPrompt(message, "What do these signals change for your product plan? Tell me what you want to review or update next.")
 	ctaURL := fmt.Sprintf("%s/teams/%s/feedback/%s", workspaceURL, items[0].TeamID, items[0].ID)
 	ctaLabel := "Review latest feedback"
 
@@ -670,14 +674,48 @@ func sendFeedbackDigestEmail(
 		"NotificationCTALabel":     ctaLabel,
 		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/workspace/feedback", workspaceURL),
 	}
+	messageID := feedbackDigestMessageID(deliveryID)
+	targets := make([]emailthread.TargetContext, 0, len(items))
+	for _, item := range items {
+		targets = append(targets, emailthread.TargetContext{
+			Kind:        "feedback",
+			ID:          item.ID,
+			TeamID:      item.TeamID,
+			DisplayName: item.Title,
+		})
+	}
+	threadContext, err := emailthread.EncodeThreadContext(emailthread.ThreadContext{
+		Source:        "feedback_digest",
+		WorkspaceSlug: recipient.WorkspaceSlug,
+		Targets:       targets,
+	})
+	if err != nil {
+		return err
+	}
+	plainText := guidancePlainText(title, message, ctaLabel, ctaURL)
+	replyTo, err := prepareGuidanceThread(ctx, threader, emailthread.GuidanceInput{
+		WorkspaceID:       recipient.WorkspaceID,
+		UserID:            recipient.UserID,
+		RecipientEmail:    recipient.UserEmail,
+		ExternalThreadID:  messageID,
+		InternetMessageID: messageID,
+		Subject:           subject,
+		Content:           plainText,
+		Context:           threadContext,
+	})
+	if err != nil {
+		return fmt.Errorf("prepare feedback digest reply thread: %w", err)
+	}
 
 	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
-		To:        []string{recipient.UserEmail},
-		Template:  "notifications/notification",
-		Subject:   subject,
-		Data:      data,
-		Sender:    mailer.SenderProfileMaya,
-		MessageID: feedbackDigestMessageID(deliveryID),
+		To:            []string{recipient.UserEmail},
+		Template:      "notifications/notification",
+		Subject:       subject,
+		Data:          data,
+		PlainTextBody: plainText,
+		Sender:        mailer.SenderProfileMaya,
+		ReplyTo:       replyTo,
+		MessageID:     messageID,
 	}); err != nil {
 		return fmt.Errorf("send feedback digest email: %w", err)
 	}
@@ -749,6 +787,7 @@ func feedbackDigestCopyRequest(
 		Facts:                       facts,
 		Actions:                     []emailcopy.Action{{ReferenceID: "feedback_primary", Description: "Open the latest feedback item represented in this digest."}},
 		IncludeFeedbackThemeSummary: len(items) >= 3,
+		IncludeReplyPrompt:          true,
 	}, destinations
 }
 

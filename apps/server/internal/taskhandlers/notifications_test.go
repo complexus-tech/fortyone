@@ -30,6 +30,42 @@ func TestBuildNotificationDigestSubject(t *testing.T) {
 	require.Equal(t, "3 updates to review in Product", buildNotificationDigestSubject("Product", 3))
 }
 
+func TestNotificationGuidanceThreadContextIncludesStrategyTargets(t *testing.T) {
+	objectiveID := uuid.New()
+	keyResultID := uuid.New()
+	teamID := uuid.New()
+	message, err := json.Marshal(NotificationMessage{Strategy: &strategyNotificationSnapshot{
+		Version: 1,
+		Kind:    "weekly_check_in",
+		WeeklyCheckIn: &strategyWeeklyCheckInSnapshot{
+			Objectives: []strategyObjectiveSnapshot{{ID: objectiveID, TeamID: teamID, Name: "Reach the right customers"}},
+			KeyResults: []strategyKeyResultSnapshot{{ID: keyResultID, ObjectiveID: objectiveID, TeamID: teamID, Name: "Increase qualified activation"}},
+		},
+	}})
+	require.NoError(t, err)
+
+	encoded, err := notificationGuidanceThreadContext(NotificationEmailDigestData{
+		WorkspaceSlug: "product",
+		Items:         []NotificationEmailDigestItem{{Message: message}},
+	})
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), objectiveID.String())
+	require.Contains(t, string(encoded), keyResultID.String())
+	require.Contains(t, string(encoded), `"source":"strategy_notification"`)
+	require.Contains(t, string(encoded), `"parentId":"`+objectiveID.String()+`"`)
+}
+
+func TestNotificationDigestMessageIDIsStableAcrossItemOrder(t *testing.T) {
+	firstID := uuid.New()
+	secondID := uuid.New()
+	base := NotificationEmailDigestData{WorkspaceID: uuid.New(), RecipientID: uuid.New()}
+	base.Items = []NotificationEmailDigestItem{{NotificationID: firstID}, {NotificationID: secondID}}
+	first := notificationDigestMessageID(base)
+
+	base.Items = []NotificationEmailDigestItem{{NotificationID: secondID}, {NotificationID: firstID}}
+	require.Equal(t, first, notificationDigestMessageID(base))
+}
+
 func TestNotificationEmailQueriesRequireCurrentEntityAccess(t *testing.T) {
 	for _, query := range []string{notificationEmailDataQuery(), notificationEmailDigestDataQuery()} {
 		require.Contains(t, query, "LEFT JOIN workspace_members wm")
@@ -368,7 +404,7 @@ func TestBuildNotificationDigestCopyInputExpandsWeeklyStrategyLinks(t *testing.T
 	require.NoError(t, err)
 	require.True(t, input.HasStrategySnapshot)
 	require.True(t, input.Request.IncludeSenderProse)
-	require.False(t, input.Request.IncludeReplyPrompt)
+	require.True(t, input.Request.IncludeReplyPrompt)
 	require.Len(t, input.Request.Facts, 4)
 	require.Len(t, input.Request.Actions, 1)
 	require.Equal(t, workspaceURL+"/strategy", input.Actions[digestActionStrategy])

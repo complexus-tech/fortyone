@@ -439,6 +439,23 @@ func (r *repoStub) UpdateItemStatus(ctx context.Context, workspaceID, itemID uui
 	return item, statusChanged, nil
 }
 
+func (r *repoStub) UpdateItemStatusIfUnchanged(
+	ctx context.Context,
+	workspaceID, itemID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	input CoreUpdateItemStatusInput,
+) (CoreItem, bool, bool, error) {
+	item, err := r.GetItem(ctx, workspaceID, itemID)
+	if err != nil {
+		return CoreItem{}, false, false, err
+	}
+	if !item.UpdatedAt.Equal(expectedUpdatedAt) {
+		return CoreItem{}, false, false, nil
+	}
+	updated, changed, err := r.UpdateItemStatus(ctx, workspaceID, itemID, input)
+	return updated, changed, err == nil, err
+}
+
 func (r *repoStub) TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) error {
 	for index, item := range r.items {
 		if item.WorkspaceID != workspaceID || item.ID != itemID || item.DeletedAt != nil {

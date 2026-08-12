@@ -19,6 +19,7 @@ import (
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	documentsrepository "github.com/complexus-tech/projects-api/internal/modules/documents/repository"
 	documents "github.com/complexus-tech/projects-api/internal/modules/documents/service"
+	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
 	epicsrepository "github.com/complexus-tech/projects-api/internal/modules/epics/repository"
 	epics "github.com/complexus-tech/projects-api/internal/modules/epics/service"
 	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
@@ -85,6 +86,7 @@ type services struct {
 	chatSessions        *chatsessions.Service
 	comments            *comments.Service
 	documents           *documents.Service
+	emailReply          *emailreply.Service
 	epics               *epics.Service
 	feedback            *feedback.Service
 	github              *github.Service
@@ -136,6 +138,10 @@ func buildServices(cfg mux.Config) services {
 	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher, cfg.TasksService)
 	integrationRequestsRepo := integrationrequestsrepository.New(cfg.Log, cfg.DB)
 	messagingRepo := messagingrepository.New(cfg.DB)
+	emailReplyService, err := emailreply.New(cfg.SecretKey, messagingRepo, cfg.TasksService)
+	if err != nil {
+		panic("failed to initialize Brevo email reply ingress: " + err.Error())
+	}
 	commentsService := comments.New(cfg.Log, commentsrepository.New(cfg.Log, cfg.DB), mentionsRepo)
 	linksService := links.New(cfg.Log, linksrepository.New(cfg.Log, cfg.DB))
 	workspacesService := workspaces.New(
@@ -281,6 +287,7 @@ func buildServices(cfg mux.Config) services {
 		chatSessions:        chatsessions.New(cfg.Log, chatsessionsrepository.New(cfg.Log, cfg.DB)),
 		comments:            commentsService,
 		documents:           documents.New(cfg.Log, documentsrepository.New(cfg.Log, cfg.DB)),
+		emailReply:          emailReplyService,
 		epics:               epics.New(cfg.Log, epicsrepository.New(cfg.Log, cfg.DB)),
 		feedback:            feedbackService,
 		github:              githubService,
@@ -340,6 +347,9 @@ func (s services) validate() error {
 	}
 	if s.documents == nil {
 		return fmt.Errorf("missing service: documents")
+	}
+	if s.emailReply == nil {
+		return fmt.Errorf("missing service: emailReply")
 	}
 	if s.epics == nil {
 		return fmt.Errorf("missing service: epics")

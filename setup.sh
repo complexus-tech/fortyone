@@ -236,9 +236,11 @@ install_env() {
   if [ "$USE_MAILPIT" = "true" ]; then
     APP_EMAIL_HOST="mailpit"
     APP_EMAIL_PORT="1025"
+    APP_EMAIL_USERNAME=""
+    APP_EMAIL_PASSWORD=""
     APP_EMAIL_FROM_ADDRESS="notifications@fortyone.local"
     APP_EMAIL_FROM_NAME="FortyOne"
-    APP_EMAIL_MAYA_FROM_ADDRESS=""
+    APP_EMAIL_MAYA_FROM_ADDRESS="maya@fortyone.app"
     APP_EMAIL_MAYA_FROM_NAME="Maya"
     APP_EMAIL_ENVIRONMENT="development"
     MAILPIT_WEB_PORT="8025"
@@ -246,9 +248,11 @@ install_env() {
   else
     prompt "APP_EMAIL_HOST" "SMTP host" ""
     prompt "APP_EMAIL_PORT" "SMTP port" "587"
+    prompt "APP_EMAIL_USERNAME" "SMTP username" ""
+    prompt "APP_EMAIL_PASSWORD" "SMTP password" ""
     prompt "APP_EMAIL_FROM_ADDRESS" "From address" ""
     prompt "APP_EMAIL_FROM_NAME" "From name" "FortyOne"
-    prompt "APP_EMAIL_MAYA_FROM_ADDRESS" "Maya from address (optional)" ""
+    prompt "APP_EMAIL_MAYA_FROM_ADDRESS" "Maya from address (optional override)" "maya@fortyone.app"
     prompt "APP_EMAIL_MAYA_FROM_NAME" "Maya from name" "Maya"
     prompt "APP_EMAIL_ENVIRONMENT" "Email environment" "production"
     MAILPIT_WEB_PORT="8025"
@@ -363,6 +367,8 @@ REDIS_HOST_PORT=$REDIS_HOST_PORT
 
 APP_EMAIL_HOST=$APP_EMAIL_HOST
 APP_EMAIL_PORT=$APP_EMAIL_PORT
+APP_EMAIL_USERNAME=$APP_EMAIL_USERNAME
+APP_EMAIL_PASSWORD=$APP_EMAIL_PASSWORD
 APP_EMAIL_FROM_ADDRESS=$APP_EMAIL_FROM_ADDRESS
 APP_EMAIL_FROM_NAME=$APP_EMAIL_FROM_NAME
 APP_EMAIL_MAYA_FROM_ADDRESS=$APP_EMAIL_MAYA_FROM_ADDRESS

@@ -22,7 +22,7 @@ func TestProcessGuidanceEmailRecipientRetriesOnce(t *testing.T) {
 	result := processGuidanceEmailRecipient(context.Background(), func(context.Context) guidanceEmailBatchResult {
 		attempts++
 		if attempts == 1 {
-			return guidanceEmailBatchResult{Err: context.DeadlineExceeded}
+			return guidanceEmailBatchResult{Err: context.DeadlineExceeded, Retryable: true}
 		}
 		return guidanceEmailBatchResult{Processed: true, Sent: true}
 	})
@@ -36,10 +36,21 @@ func TestProcessGuidanceEmailRecipientStopsAfterBoundedAttempts(t *testing.T) {
 	attempts := 0
 	result := processGuidanceEmailRecipient(context.Background(), func(context.Context) guidanceEmailBatchResult {
 		attempts++
-		return guidanceEmailBatchResult{Err: context.DeadlineExceeded}
+		return guidanceEmailBatchResult{Err: context.DeadlineExceeded, Retryable: true}
 	})
 
 	require.Equal(t, guidanceEmailRecipientAttempts, attempts)
+	require.ErrorIs(t, result.Err, context.DeadlineExceeded)
+}
+
+func TestProcessGuidanceEmailRecipientDoesNotRegenerateAfterDeliveryStarts(t *testing.T) {
+	attempts := 0
+	result := processGuidanceEmailRecipient(context.Background(), func(context.Context) guidanceEmailBatchResult {
+		attempts++
+		return guidanceEmailBatchResult{Err: context.DeadlineExceeded}
+	})
+
+	require.Equal(t, 1, attempts)
 	require.ErrorIs(t, result.Err, context.DeadlineExceeded)
 }
 
@@ -116,4 +127,27 @@ func TestRenderGeneratedEmailContentRejectsMissingCanonicalLabel(t *testing.T) {
 	})
 
 	require.ErrorContains(t, err, "does not contain its destination label")
+}
+
+func TestRenderGeneratedEmailContentIncludesNaturalReplyPrompt(t *testing.T) {
+	output := emailcopy.Output{
+		Intro: emailcopy.GroundedText{Text: "One objective needs your attention."},
+		ReplyPrompt: &emailcopy.GroundedText{
+			Text: "Has anything changed since the last update? Tell me what you want reflected in FortyOne.",
+		},
+	}
+
+	rendered, err := renderGeneratedEmailContent(output, nil)
+	require.NoError(t, err)
+	require.Contains(t, rendered, "Has anything changed since the last update?")
+	require.NotContains(t, rendered, "natural language")
+	require.NotContains(t, rendered, "Markdown")
+}
+
+func TestAppendGuidanceReplyPromptEscapesCopy(t *testing.T) {
+	rendered := appendGuidanceReplyPrompt("<p>Existing</p>", `What changed in "Launch <beta>"?`)
+
+	require.Contains(t, rendered, "<p>Existing</p>")
+	require.Contains(t, rendered, "Launch &lt;beta&gt;")
+	require.NotContains(t, rendered, "Launch <beta>")
 }

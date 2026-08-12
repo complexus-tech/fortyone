@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
+	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -20,7 +21,7 @@ import (
 )
 
 // ProcessObjectiveOverdue processes overdue objectives and sends emails directly
-func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator) error {
+func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessObjectiveOverdue")
 	defer span.End()
 
@@ -52,12 +53,12 @@ func ProcessObjectiveOverdue(ctx context.Context, db *sqlx.DB, log *logger.Logge
 				objectives, objectivesErr := getOverdueObjectivesForLead(attemptCtx, db, lead.LeadUserID, lead.WorkspaceID)
 				if objectivesErr != nil {
 					log.Error(attemptCtx, "Failed to get objectives for lead", "lead_id", lead.LeadUserID, "workspace_id", lead.WorkspaceID, "error", objectivesErr)
-					return guidanceEmailBatchResult{Err: objectivesErr}
+					return guidanceEmailBatchResult{Err: objectivesErr, Retryable: true}
 				}
 				if len(objectives) == 0 {
 					return guidanceEmailBatchResult{Processed: true}
 				}
-				if sendErr := sendObjectiveOverdueEmailForLead(attemptCtx, log, mailerService, copyGenerator, objectives); sendErr != nil {
+				if sendErr := sendObjectiveOverdueEmailForLead(attemptCtx, log, mailerService, copyGenerator, threader, objectives); sendErr != nil {
 					log.Error(attemptCtx, "Failed to send email", "lead_id", lead.LeadUserID, "error", sendErr)
 					return guidanceEmailBatchResult{Err: sendErr}
 				}
@@ -400,7 +401,7 @@ func getOverdueObjectivesForLead(ctx context.Context, db *sqlx.DB, leadID, works
 }
 
 // sendObjectiveOverdueEmailForLead sends an email to a lead about their overdue objectives
-func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, objectives []OverdueObjective) error {
+func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer, objectives []OverdueObjective) error {
 	ctx, span := web.AddSpan(ctx, "jobs.sendObjectiveOverdueEmailForLead")
 	defer span.End()
 
@@ -450,6 +451,7 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, m
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
 	heading := title
 	emailContent := formatObjectiveOverdueEmailContent(firstObjective, dueSoonObjectives, dueTodayObjectives, overdueObjectives, workspaceURL)
+	emailContent = appendGuidanceReplyPrompt(emailContent, "Has the position changed? Tell me the latest health, value, or blocker and I’ll help you keep the objective current.")
 	ctaURL := fmt.Sprintf("%s/roadmap", workspaceURL)
 	ctaLabel := "View objectives"
 
@@ -487,19 +489,60 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, m
 		"NotificationCTALabel":     ctaLabel,
 		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
 	}
+	messageID := guidanceEmailMessageID("objective-guidance", firstObjective.WorkspaceID, firstObjective.LeadUserID, time.Now())
+	targets := make([]emailthread.TargetContext, 0, len(objectives)*2)
+	for _, objective := range objectives {
+		targets = append(targets, emailthread.TargetContext{
+			Kind:        "objective",
+			ID:          objective.ID,
+			TeamID:      objective.TeamID,
+			DisplayName: objective.Name,
+		})
+		for _, keyResult := range parseKeyResults(objective.KeyResults) {
+			if keyResult.ID == uuid.Nil {
+				continue
+			}
+			targets = append(targets, emailthread.TargetContext{
+				Kind:        "key_result",
+				ID:          keyResult.ID,
+				TeamID:      objective.TeamID,
+				ParentID:    objective.ID,
+				DisplayName: keyResult.Name,
+			})
+		}
+	}
+	threadContext, err := emailthread.EncodeThreadContext(emailthread.ThreadContext{
+		Source:        "objective_guidance",
+		WorkspaceSlug: firstObjective.WorkspaceSlug,
+		Targets:       targets,
+	})
+	if err != nil {
+		return err
+	}
+	plainText := guidancePlainText(heading, emailContent, ctaLabel, ctaURL)
+	replyTo, err := prepareGuidanceThread(ctx, threader, emailthread.GuidanceInput{
+		WorkspaceID:       firstObjective.WorkspaceID,
+		UserID:            firstObjective.LeadUserID,
+		RecipientEmail:    firstObjective.LeadEmail,
+		ExternalThreadID:  messageID,
+		InternetMessageID: messageID,
+		Subject:           title,
+		Content:           plainText,
+		Context:           threadContext,
+	})
+	if err != nil {
+		return fmt.Errorf("prepare objective guidance reply thread: %w", err)
+	}
 
 	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
-		To:       []string{firstObjective.LeadEmail},
-		Template: "notifications/notification",
-		Subject:  title,
-		Data:     data,
-		Sender:   mailer.SenderProfileMaya,
-		MessageID: guidanceEmailMessageID(
-			"objective-guidance",
-			firstObjective.WorkspaceID,
-			firstObjective.LeadUserID,
-			time.Now(),
-		),
+		To:            []string{firstObjective.LeadEmail},
+		Template:      "notifications/notification",
+		Subject:       title,
+		Data:          data,
+		PlainTextBody: plainText,
+		Sender:        mailer.SenderProfileMaya,
+		ReplyTo:       replyTo,
+		MessageID:     messageID,
 	}); err != nil {
 		span.RecordError(err)
 		return fmt.Errorf("failed to send objective overdue email: %w", err)
@@ -612,6 +655,7 @@ func objectiveOverdueEmailCopyRequest(objectives []OverdueObjective, workspaceUR
 		Actions: []emailcopy.Action{
 			{ReferenceID: actionReference, Description: "Open objectives to review progress, dates, and next actions."},
 		},
+		IncludeReplyPrompt: true,
 	}, destinations
 }
 

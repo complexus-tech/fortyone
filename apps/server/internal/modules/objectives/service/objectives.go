@@ -19,8 +19,9 @@ import (
 
 // Service errors
 var (
-	ErrNotFound   = errors.New("objective not found")
-	ErrNameExists = errors.New("an objective with this name already exists")
+	ErrNotFound        = errors.New("objective not found")
+	ErrNameExists      = errors.New("an objective with this name already exists")
+	ErrVersionConflict = errors.New("objective changed since it was reviewed")
 )
 
 // Repository provides access to the objectives storage.
@@ -28,6 +29,7 @@ type Repository interface {
 	List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]CoreObjective, error)
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreObjective, error)
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
+	UpdateIfUnchanged(ctx context.Context, id, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any) (bool, error)
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	Create(ctx context.Context, objective CoreNewObjective, workspaceID uuid.UUID, keyResults []keyresults.CoreNewKeyResult) (CoreObjective, []keyresults.CoreKeyResult, error)
 	GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspaceID uuid.UUID) (CoreObjectiveAnalytics, error)
@@ -144,6 +146,66 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 		return err
 	}
 
+	s.recordUpdateSideEffects(ctx, id, workspaceId, userId, comment, updates)
+
+	span.AddEvent("objective updated", trace.WithAttributes(
+		attribute.String("objective.id", id.String()),
+	))
+
+	return nil
+}
+
+// UpdateExternalUserActionIfUnchanged applies a user-requested external update
+// only while the objective still has the version shown in the confirmation
+// preview. Callers must separately reauthorize the actor immediately before
+// invoking this method.
+func (s *Service) UpdateExternalUserActionIfUnchanged(
+	ctx context.Context,
+	id, workspaceID, userID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	comment string,
+	updates map[string]any,
+) error {
+	if expectedUpdatedAt.IsZero() {
+		return errors.New("expected objective update time is required")
+	}
+	updated, err := s.repo.UpdateIfUnchanged(ctx, id, workspaceID, expectedUpdatedAt.UTC(), updates)
+	if err != nil {
+		return err
+	}
+	if !updated {
+		current, getErr := s.repo.Get(ctx, id, workspaceID)
+		if getErr == nil && objectiveExternalUpdatesAlreadyApplied(current, updates) {
+			return nil
+		}
+		return ErrVersionConflict
+	}
+	s.recordUpdateSideEffects(ctx, id, workspaceID, userID, comment, updates)
+	return nil
+}
+
+// objectiveExternalUpdatesAlreadyApplied makes an external retry idempotent
+// after the domain write succeeded but its delivery/proposal receipt did not.
+// Unknown fields deliberately return false so this never weakens CAS for a
+// future action added without an explicit comparison here.
+func objectiveExternalUpdatesAlreadyApplied(objective CoreObjective, updates map[string]any) bool {
+	if len(updates) == 0 {
+		return true
+	}
+	for field, value := range updates {
+		switch field {
+		case "health":
+			if objective.Health == nil || string(*objective.Health) != fmt.Sprint(value) {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func (s *Service) recordUpdateSideEffects(ctx context.Context, id, workspaceID, userID uuid.UUID, comment string, updates map[string]any) {
 	activities := []okractivities.CoreNewActivity{}
 	for field, value := range updates {
 		if field == "description" || field == "short_summary" {
@@ -152,13 +214,13 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 		activity := okractivities.CoreNewActivity{
 			ObjectiveID:  id,
 			KeyResultID:  nil,
-			UserID:       userId,
+			UserID:       userID,
 			Type:         okractivities.ActivityTypeUpdate,
 			UpdateType:   okractivities.UpdateTypeObjective,
 			Field:        field,
 			CurrentValue: s.formatValue(value),
 			Comment:      comment,
-			WorkspaceID:  workspaceId,
+			WorkspaceID:  workspaceID,
 		}
 		activities = append(activities, activity)
 	}
@@ -169,7 +231,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 	}
 
 	if s.publisher != nil && hasNotifiableObjectiveUpdate(updates) {
-		objective, getErr := s.repo.Get(ctx, id, workspaceId)
+		objective, getErr := s.repo.Get(ctx, id, workspaceID)
 		if getErr != nil {
 			s.log.Error(ctx, "failed to load objective for update event", "error", getErr, "objectiveID", id)
 		} else {
@@ -177,12 +239,12 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 				Type: events.ObjectiveUpdated,
 				Payload: events.ObjectiveUpdatedPayload{
 					ObjectiveID: id,
-					WorkspaceID: workspaceId,
+					WorkspaceID: workspaceID,
 					Updates:     updates,
 					LeadID:      objective.LeadUser,
 				},
 				Timestamp: time.Now().UTC(),
-				ActorID:   userId,
+				ActorID:   userID,
 			}
 			if publishErr := s.publisher.Publish(ctx, event); publishErr != nil {
 				s.log.Error(ctx, "failed to publish objective update event", "error", publishErr, "objectiveID", id)
@@ -190,11 +252,6 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 		}
 	}
 
-	span.AddEvent("objective updated", trace.WithAttributes(
-		attribute.String("objective.id", id.String()),
-	))
-
-	return nil
 }
 
 func hasNotifiableObjectiveUpdate(updates map[string]any) bool {

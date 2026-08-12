@@ -7,8 +7,10 @@ import (
 
 	attachmentsrepository "github.com/complexus-tech/projects-api/internal/modules/attachments/repository"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
+	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
+	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
@@ -17,6 +19,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
+	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/storage"
@@ -44,6 +47,9 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	cfg, err := loadConfig()
 	if err != nil {
 		return App{}, fmt.Errorf("error parsing worker configuration: %w", err)
+	}
+	if err := emailreply.ValidateRuntimeSecret(cfg.Auth.SecretKey, cfg.Email.Environment); err != nil {
+		return App{}, fmt.Errorf("validate email reply security: %w", err)
 	}
 
 	db, err := openDB(cfg)
@@ -81,6 +87,17 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		redisClient,
 		tasksService,
 	)
+	messagingRepo := messagingrepository.New(db)
+	emailThreads, err := emailthread.New(messagingRepo)
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("initialize Maya email threading: %w", err)
+	}
+	emailReplyIngress, err := emailreply.New(cfg.Auth.SecretKey, messagingRepo, tasksService)
+	if err != nil {
+		_ = db.Close()
+		return App{}, fmt.Errorf("initialize Brevo email reply recovery: %w", err)
+	}
 
 	cacheService := cache.New(redisClient, log)
 	actorResolver := actors.NewResolver(log, db, cacheService)
@@ -201,6 +218,21 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if emailCopyClient.Enabled() {
 		emailCopyGenerator = emailCopyClient
 	}
+	emailReplyProcessor, err := buildEmailReplyProcessor(
+		log,
+		db,
+		redisClient,
+		cfg,
+		tasksService,
+		mailerService,
+		messagingRepo,
+		emailReplyIngress,
+		emailThreads,
+	)
+	if err != nil {
+		_ = db.Close()
+		return App{}, err
+	}
 	slackEvents, err := buildSlackEventProcessor(log, db, redisClient, cfg, tasksService)
 	if err != nil {
 		_ = db.Close()
@@ -214,7 +246,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if upgradedCredentials > 0 {
 		log.Info(ctx, "Encrypted legacy Slack credentials", "count", upgradedCredentials)
 	}
-	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopyGenerator, notificationsService, slackEvents, systemUserID)
+	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopyGenerator, emailThreads, notificationsService, slackEvents, emailReplyProcessor, emailReplyIngress, systemUserID)
 	resourcesTransferred = true
 
 	return App{

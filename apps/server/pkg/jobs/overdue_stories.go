@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
+	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -18,7 +19,7 @@ import (
 )
 
 // ProcessOverdueStoriesEmail processes overdue stories and sends emails directly
-func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator) error {
+func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessOverdueStoriesEmail")
 	defer span.End()
 
@@ -50,12 +51,12 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 				stories, storiesErr := getOverdueStoriesForAssignee(attemptCtx, db, assignee.AssigneeID, assignee.WorkspaceID)
 				if storiesErr != nil {
 					log.Error(attemptCtx, "Failed to get stories for assignee", "assignee_id", assignee.AssigneeID, "workspace_id", assignee.WorkspaceID, "error", storiesErr)
-					return guidanceEmailBatchResult{Err: storiesErr}
+					return guidanceEmailBatchResult{Err: storiesErr, Retryable: true}
 				}
 				if len(stories) == 0 {
 					return guidanceEmailBatchResult{Processed: true}
 				}
-				if sendErr := sendOverdueStoriesEmailForAssignee(attemptCtx, log, mailerService, copyGenerator, stories); sendErr != nil {
+				if sendErr := sendOverdueStoriesEmailForAssignee(attemptCtx, log, mailerService, copyGenerator, threader, stories); sendErr != nil {
 					log.Error(attemptCtx, "Failed to send email", "assignee_id", assignee.AssigneeID, "error", sendErr)
 					return guidanceEmailBatchResult{Err: sendErr}
 				}
@@ -297,7 +298,7 @@ func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID, 
 }
 
 // sendOverdueStoriesEmailForAssignee sends email directly for a specific assignee
-func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, stories []OverdueStory) error {
+func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer, stories []OverdueStory) error {
 	ctx, span := web.AddSpan(ctx, "jobs.sendOverdueStoriesEmailForAssignee")
 	defer span.End()
 
@@ -336,6 +337,7 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
 	heading := title
 	emailContent := formatOverdueStoriesEmailContent(firstStory, dueSoonStories, dueTodayStories, overdueStories, workspaceURL)
+	emailContent = appendGuidanceReplyPrompt(emailContent, "Has the plan changed? Tell me the date, status, or owner you want reflected in FortyOne.")
 	ctaURL := fmt.Sprintf("%s/my-work?tab=assigned", workspaceURL)
 	ctaLabel := "View my work"
 
@@ -369,19 +371,48 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 		"NotificationCTALabel":     ctaLabel,
 		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
 	}
+	messageID := guidanceEmailMessageID("task-guidance", firstStory.WorkspaceID, firstStory.AssigneeID, time.Now())
+	targets := make([]emailthread.TargetContext, 0, len(stories))
+	for _, story := range stories {
+		targets = append(targets, emailthread.TargetContext{
+			Kind:        "story",
+			ID:          story.ID,
+			TeamID:      story.TeamID,
+			DisplayName: story.Title,
+		})
+	}
+	threadContext, err := emailthread.EncodeThreadContext(emailthread.ThreadContext{
+		Source:        "task_guidance",
+		WorkspaceSlug: firstStory.WorkspaceSlug,
+		Targets:       targets,
+	})
+	if err != nil {
+		return err
+	}
+	plainText := guidancePlainText(heading, emailContent, ctaLabel, ctaURL)
+	replyTo, err := prepareGuidanceThread(ctx, threader, emailthread.GuidanceInput{
+		WorkspaceID:       firstStory.WorkspaceID,
+		UserID:            firstStory.AssigneeID,
+		RecipientEmail:    firstStory.AssigneeEmail,
+		ExternalThreadID:  messageID,
+		InternetMessageID: messageID,
+		Subject:           title,
+		Content:           plainText,
+		Context:           threadContext,
+	})
+	if err != nil {
+		return fmt.Errorf("prepare task guidance reply thread: %w", err)
+	}
 
 	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
-		To:       []string{firstStory.AssigneeEmail},
-		Template: "notifications/notification",
-		Subject:  title,
-		Data:     data,
-		Sender:   mailer.SenderProfileMaya,
-		MessageID: guidanceEmailMessageID(
-			"task-guidance",
-			firstStory.WorkspaceID,
-			firstStory.AssigneeID,
-			time.Now(),
-		),
+		To:            []string{firstStory.AssigneeEmail},
+		Template:      "notifications/notification",
+		Subject:       title,
+		Data:          data,
+		PlainTextBody: plainText,
+		Sender:        mailer.SenderProfileMaya,
+		ReplyTo:       replyTo,
+		MessageID:     messageID,
 	}); err != nil {
 		span.RecordError(err)
 		return fmt.Errorf("failed to send overdue stories email: %w", err)
@@ -463,6 +494,7 @@ func overdueStoriesEmailCopyRequest(stories []OverdueStory, workspaceURL, ctaURL
 		Actions: []emailcopy.Action{
 			{ReferenceID: actionReference, Description: "Open assigned work to review and update these tasks."},
 		},
+		IncludeReplyPrompt: true,
 	}, destinations
 }
 

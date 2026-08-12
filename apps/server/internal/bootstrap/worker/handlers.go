@@ -8,6 +8,7 @@ import (
 	"github.com/complexus-tech/projects-api/internal/taskhandlers"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
+	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -16,9 +17,9 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, systemUserID uuid.UUID) *asynq.ServeMux {
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopy, slackEvents, systemUserID)
-	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, emailCopy, systemUserID, notificationsService)
+func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, emailReplies taskhandlers.EmailReplyProcessor, emailRecovery taskhandlers.EmailReplyRecoverer, systemUserID uuid.UUID) *asynq.ServeMux {
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopy, emailThreads, slackEvents, emailReplies, emailRecovery, systemUserID)
+	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, emailCopy, emailThreads, systemUserID, notificationsService)
 
 	mux := asynq.NewServeMux()
 
@@ -35,6 +36,8 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeSlackEvent, workerTaskService.HandleSlackEvent)
 	mux.HandleFunc(tasks.TypeSlackCredentialBackfill, workerTaskService.HandleSlackCredentialBackfill)
 	mux.HandleFunc(tasks.TypeSlackInboxRecovery, workerTaskService.HandleSlackInboxRecovery)
+	mux.HandleFunc(tasks.TypeBrevoEmailReply, workerTaskService.HandleBrevoEmailReply)
+	mux.HandleFunc(tasks.TypeBrevoEmailReplyRecovery, workerTaskService.HandleBrevoEmailReplyRecovery)
 
 	// Cleanup handlers
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)

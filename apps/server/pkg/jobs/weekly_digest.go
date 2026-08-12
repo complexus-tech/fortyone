@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
+	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -48,7 +49,7 @@ func (s WeeklyDigestStats) hasSignal() bool {
 }
 
 // ProcessWeeklyDigestEmail sends a weekly workspace digest to users with meaningful activity.
-func ProcessWeeklyDigestEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator) error {
+func ProcessWeeklyDigestEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessWeeklyDigestEmail")
 	defer span.End()
 
@@ -76,12 +77,12 @@ func ProcessWeeklyDigestEmail(ctx context.Context, db *sqlx.DB, log *logger.Logg
 				stats, statsErr := getWeeklyDigestStats(attemptCtx, db, recipient.UserID, recipient.WorkspaceID)
 				if statsErr != nil {
 					log.Error(attemptCtx, "Failed to get weekly digest stats", "user_id", recipient.UserID, "workspace_id", recipient.WorkspaceID, "error", statsErr)
-					return guidanceEmailBatchResult{Err: statsErr}
+					return guidanceEmailBatchResult{Err: statsErr, Retryable: true}
 				}
 				if !stats.hasSignal() {
 					return guidanceEmailBatchResult{Processed: true}
 				}
-				if sendErr := sendWeeklyDigestEmail(attemptCtx, log, mailerService, copyGenerator, recipient, stats); sendErr != nil {
+				if sendErr := sendWeeklyDigestEmail(attemptCtx, log, mailerService, copyGenerator, threader, recipient, stats); sendErr != nil {
 					log.Error(attemptCtx, "Failed to send weekly digest email", "user_id", recipient.UserID, "workspace_id", recipient.WorkspaceID, "error", sendErr)
 					return guidanceEmailBatchResult{Err: sendErr}
 				}
@@ -398,7 +399,7 @@ func weeklyDigestStatsQuery() string {
 	`
 }
 
-func sendWeeklyDigestEmail(ctx context.Context, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, recipient WeeklyDigestRecipient, stats WeeklyDigestStats) error {
+func sendWeeklyDigestEmail(ctx context.Context, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer, recipient WeeklyDigestRecipient, stats WeeklyDigestStats) error {
 	if strings.TrimSpace(recipient.UserEmail) == "" {
 		log.Info(ctx, "Skipping weekly digest because user email is empty", "user_id", recipient.UserID, "workspace_id", recipient.WorkspaceID)
 		return nil
@@ -408,6 +409,7 @@ func sendWeeklyDigestEmail(ctx context.Context, log *logger.Logger, mailerServic
 	title := fmt.Sprintf("Weekly digest: %s", recipient.WorkspaceName)
 	heading := title
 	emailContent := formatWeeklyDigestEmailContent(stats)
+	emailContent = appendGuidanceReplyPrompt(emailContent, "What has changed since your last update, or where would you like help deciding the next step?")
 	ctaURL := fmt.Sprintf("%s/my-work?tab=assigned", workspaceURL)
 	ctaLabel := "Plan my week"
 
@@ -441,19 +443,38 @@ func sendWeeklyDigestEmail(ctx context.Context, log *logger.Logger, mailerServic
 		"NotificationCTALabel":     ctaLabel,
 		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
 	}
+	messageID := guidanceEmailMessageID("weekly-digest", recipient.WorkspaceID, recipient.UserID, time.Now())
+	threadContext, err := emailthread.EncodeThreadContext(emailthread.ThreadContext{
+		Source:        "weekly_digest",
+		WorkspaceSlug: recipient.WorkspaceSlug,
+	})
+	if err != nil {
+		return err
+	}
+	plainText := guidancePlainText(heading, emailContent, ctaLabel, ctaURL)
+	replyTo, err := prepareGuidanceThread(ctx, threader, emailthread.GuidanceInput{
+		WorkspaceID:       recipient.WorkspaceID,
+		UserID:            recipient.UserID,
+		RecipientEmail:    recipient.UserEmail,
+		ExternalThreadID:  messageID,
+		InternetMessageID: messageID,
+		Subject:           title,
+		Content:           plainText,
+		Context:           threadContext,
+	})
+	if err != nil {
+		return fmt.Errorf("prepare weekly digest reply thread: %w", err)
+	}
 
 	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
-		To:       []string{recipient.UserEmail},
-		Template: "notifications/notification",
-		Subject:  title,
-		Data:     data,
-		Sender:   mailer.SenderProfileMaya,
-		MessageID: guidanceEmailMessageID(
-			"weekly-digest",
-			recipient.WorkspaceID,
-			recipient.UserID,
-			time.Now(),
-		),
+		To:            []string{recipient.UserEmail},
+		Template:      "notifications/notification",
+		Subject:       title,
+		Data:          data,
+		PlainTextBody: plainText,
+		Sender:        mailer.SenderProfileMaya,
+		ReplyTo:       replyTo,
+		MessageID:     messageID,
 	}); err != nil {
 		return fmt.Errorf("failed to send weekly digest email: %w", err)
 	}
@@ -525,6 +546,7 @@ func weeklyDigestEmailCopyRequest(recipient WeeklyDigestRecipient, stats WeeklyD
 		Actions: []emailcopy.Action{
 			{ReferenceID: actionReference, Description: "Open the recipient's assigned work to plan the week."},
 		},
+		IncludeReplyPrompt: true,
 	}
 	destinations := map[string]emailCopyDestination{
 		actionReference: {Label: "Assigned work", URL: ctaURL},

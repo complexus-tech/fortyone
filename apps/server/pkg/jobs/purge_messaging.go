@@ -12,9 +12,9 @@ import (
 )
 
 // PurgeMessagingData removes expired nonces and provider message data after
-// its operational retention window. Conversation text is retained for 30 days
-// so assistants can maintain short-term thread continuity without keeping chat
-// content indefinitely.
+// its operational retention window. Durable Maya email threads and messages
+// are preserved so later replies retain the complete conversation; only their
+// expired or revoked reply-address aliases are removed here.
 func PurgeMessagingData(ctx context.Context, db *sqlx.DB, log *logger.Logger) error {
 	ctx, span := web.AddSpan(ctx, "jobs.PurgeMessagingData")
 	defer span.End()
@@ -66,6 +66,14 @@ func PurgeMessagingData(ctx context.Context, db *sqlx.DB, log *logger.Logger) er
 			query: `
 				DELETE FROM messaging_messages
 				WHERE created_at < NOW() - INTERVAL '30 days'
+			`,
+		},
+		{
+			name: "expired_email_reply_tokens",
+			query: `
+				DELETE FROM messaging_email_reply_tokens
+				WHERE expires_at < NOW() - INTERVAL '1 day'
+				   OR (revoked_at IS NOT NULL AND revoked_at < NOW() - INTERVAL '1 day')
 			`,
 		},
 		{

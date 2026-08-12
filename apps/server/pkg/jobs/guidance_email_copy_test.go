@@ -9,7 +9,9 @@ import (
 	"testing"
 	"time"
 
+	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
+	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/google/uuid"
@@ -29,6 +31,19 @@ func (g *recordingEmailCopyGenerator) Generate(_ context.Context, request emailc
 
 type recordingMailer struct {
 	templatedEmails []mailer.TemplatedEmail
+}
+
+type recordingGuidancePreparer struct {
+	inputs []emailthread.GuidanceInput
+	err    error
+}
+
+func (preparer *recordingGuidancePreparer) PrepareGuidance(_ context.Context, input emailthread.GuidanceInput) (emailthread.PreparedGuidance, error) {
+	preparer.inputs = append(preparer.inputs, input)
+	return emailthread.PreparedGuidance{
+		Thread:  messaging.EmailThreadRecord{ID: uuid.New()},
+		ReplyTo: "maya+opaque-token@reply.fortyone.app",
+	}, preparer.err
 }
 
 func (m *recordingMailer) Send(_ context.Context, _ mailer.Email) error {
@@ -62,7 +77,7 @@ func TestSendWeeklyDigestEmailUsesCompleteGeneratedCopyAndMayaSender(t *testing.
 	}}
 	mailerService := &recordingMailer{}
 
-	err := sendWeeklyDigestEmail(context.Background(), newTestJobLogger(), mailerService, generator, recipient, stats)
+	err := sendWeeklyDigestEmail(context.Background(), newTestJobLogger(), mailerService, generator, nil, recipient, stats)
 	require.NoError(t, err)
 	require.Len(t, generator.requests, 1)
 	require.Len(t, mailerService.templatedEmails, 1)
@@ -95,7 +110,7 @@ func TestSendWeeklyDigestEmailFallsBackWhenGenerationFails(t *testing.T) {
 	generator := &recordingEmailCopyGenerator{err: errors.New("generation timed out")}
 	mailerService := &recordingMailer{}
 
-	err := sendWeeklyDigestEmail(context.Background(), newTestJobLogger(), mailerService, generator, recipient, WeeklyDigestStats{OverdueStories: 2})
+	err := sendWeeklyDigestEmail(context.Background(), newTestJobLogger(), mailerService, generator, nil, recipient, WeeklyDigestStats{OverdueStories: 2})
 	require.NoError(t, err)
 	require.Len(t, mailerService.templatedEmails, 1)
 
@@ -105,6 +120,36 @@ func TestSendWeeklyDigestEmailFallsBackWhenGenerationFails(t *testing.T) {
 	data := requireEmailData(t, email)
 	require.Equal(t, "Plan my week", data["NotificationCTALabel"])
 	require.Contains(t, data["NotificationMessage"], "2 overdue assigned tasks")
+}
+
+func TestSendWeeklyDigestEmailCreatesReplyThreadAndMultipartMessage(t *testing.T) {
+	recipient := WeeklyDigestRecipient{
+		UserID:        uuid.New(),
+		UserEmail:     "joseph@example.com",
+		UserName:      "Joseph",
+		WorkspaceID:   uuid.New(),
+		WorkspaceName: "Product",
+		WorkspaceSlug: "product",
+	}
+	mailerService := &recordingMailer{}
+	threader := &recordingGuidancePreparer{}
+
+	err := sendWeeklyDigestEmail(context.Background(), newTestJobLogger(), mailerService, nil, threader, recipient, WeeklyDigestStats{OverdueStories: 1})
+	require.NoError(t, err)
+	require.Len(t, threader.inputs, 1)
+	require.Len(t, mailerService.templatedEmails, 1)
+
+	input := threader.inputs[0]
+	require.Equal(t, recipient.WorkspaceID, input.WorkspaceID)
+	require.Equal(t, recipient.UserID, input.UserID)
+	require.Contains(t, string(input.Context), `"source":"weekly_digest"`)
+	require.NotEmpty(t, input.Content)
+
+	email := mailerService.templatedEmails[0]
+	require.Equal(t, "maya+opaque-token@reply.fortyone.app", email.ReplyTo)
+	require.NotEmpty(t, email.PlainTextBody)
+	require.Contains(t, email.PlainTextBody, "What has changed since your last update")
+	require.Equal(t, input.InternetMessageID, email.MessageID)
 }
 
 func TestSendOverdueStoriesEmailLinksGeneratedRowsToCanonicalTasks(t *testing.T) {
@@ -138,7 +183,7 @@ func TestSendOverdueStoriesEmailLinksGeneratedRowsToCanonicalTasks(t *testing.T)
 	}}
 	mailerService := &recordingMailer{}
 
-	err := sendOverdueStoriesEmailForAssignee(context.Background(), newTestJobLogger(), mailerService, generator, []OverdueStory{story})
+	err := sendOverdueStoriesEmailForAssignee(context.Background(), newTestJobLogger(), mailerService, generator, nil, []OverdueStory{story})
 	require.NoError(t, err)
 	require.Len(t, generator.requests, 1)
 
@@ -213,7 +258,7 @@ func TestSendObjectiveOverdueEmailLinksObjectivesAndKeyResults(t *testing.T) {
 	}}
 	mailerService := &recordingMailer{}
 
-	err := sendObjectiveOverdueEmailForLead(context.Background(), newTestJobLogger(), mailerService, generator, []OverdueObjective{objective})
+	err := sendObjectiveOverdueEmailForLead(context.Background(), newTestJobLogger(), mailerService, generator, nil, []OverdueObjective{objective})
 	require.NoError(t, err)
 	require.Len(t, generator.requests, 1)
 

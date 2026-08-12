@@ -17,13 +17,14 @@ import (
 )
 
 var (
-	ErrInvalidInput   = errors.New("invalid feedback input")
-	ErrNotFound       = sql.ErrNoRows
-	ErrBoardExists    = errors.New("a feedback board already exists for this team")
-	ErrAlreadyPlanned = errors.New("feedback is already linked to a primary story")
-	ErrTeamMismatch   = errors.New("feedback and story must belong to the same team")
-	ErrStoryManaged   = errors.New("feedback status is managed by its linked story")
-	ErrDuplicateItem  = errors.New("similar feedback has already been reported")
+	ErrInvalidInput    = errors.New("invalid feedback input")
+	ErrNotFound        = sql.ErrNoRows
+	ErrBoardExists     = errors.New("a feedback board already exists for this team")
+	ErrAlreadyPlanned  = errors.New("feedback is already linked to a primary story")
+	ErrTeamMismatch    = errors.New("feedback and story must belong to the same team")
+	ErrStoryManaged    = errors.New("feedback status is managed by its linked story")
+	ErrDuplicateItem   = errors.New("similar feedback has already been reported")
+	ErrVersionConflict = errors.New("feedback changed since it was reviewed")
 )
 
 var nonSlugCharacters = regexp.MustCompile(`[^a-z0-9]+`)
@@ -536,6 +537,61 @@ func (s *Service) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid
 	item, statusChanged, err := s.repo.UpdateItemStatus(ctx, workspaceID, itemID, input)
 	if err != nil {
 		return CoreItem{}, err
+	}
+	if statusChanged && shouldNotify(item.AuthorID, input.ActorID) {
+		s.publish(ctx, events.Event{
+			Type: events.FeedbackStatusUpdated,
+			Payload: events.FeedbackStatusUpdatedPayload{
+				EventID:       uuid.New(),
+				FeedbackID:    item.ID,
+				FeedbackTitle: item.Title,
+				FeedbackSlug:  item.Slug,
+				WorkspaceID:   item.WorkspaceID,
+				RecipientID:   item.AuthorID,
+				Status:        item.Status,
+			},
+			Timestamp: time.Now(),
+			ActorID:   input.ActorID,
+		})
+	}
+	return item, nil
+}
+
+// UpdateItemStatusIfUnchanged applies an external user request only while the
+// feedback item still has the version included in the confirmation preview.
+// The repository owns the row lock/CAS so a concurrent portal update cannot be
+// silently overwritten between the read and write.
+func (s *Service) UpdateItemStatusIfUnchanged(
+	ctx context.Context,
+	workspaceID, itemID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	input CoreUpdateItemStatusInput,
+) (CoreItem, error) {
+	if workspaceID == uuid.Nil || itemID == uuid.Nil {
+		return CoreItem{}, invalidInput("workspace id and feedback id are required")
+	}
+	if expectedUpdatedAt.IsZero() {
+		return CoreItem{}, invalidInput("expected feedback update time is required")
+	}
+	if !isValidStatus(input.Status) {
+		return CoreItem{}, invalidInput("unsupported feedback status")
+	}
+	item, statusChanged, updated, err := s.repo.UpdateItemStatusIfUnchanged(
+		ctx,
+		workspaceID,
+		itemID,
+		expectedUpdatedAt.UTC(),
+		input,
+	)
+	if err != nil {
+		return CoreItem{}, err
+	}
+	if !updated {
+		current, getErr := s.repo.GetItem(ctx, workspaceID, itemID)
+		if getErr == nil && current.Status == input.Status {
+			return current, nil
+		}
+		return CoreItem{}, ErrVersionConflict
 	}
 	if statusChanged && shouldNotify(item.AuthorID, input.ActorID) {
 		s.publish(ctx, events.Event{

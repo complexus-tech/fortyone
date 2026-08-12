@@ -18,6 +18,7 @@ const (
 	TypeMessagingCleanup        = "cleanup:messaging_data"
 	TypeSlackCredentialBackfill = "cleanup:slack_credentials"
 	TypeSlackInboxRecovery      = "cleanup:slack_inbox"
+	TypeBrevoEmailReplyRecovery = "cleanup:brevo_email_reply_inbox"
 )
 
 // EnqueueDeleteStories enqueues a task to cleanup deleted stories.

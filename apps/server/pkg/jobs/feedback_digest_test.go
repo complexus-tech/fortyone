@@ -255,7 +255,7 @@ func TestSendFeedbackDigestUsesGeneratedThemeCopyAndMayaSender(t *testing.T) {
 		WorkspaceSlug: "product",
 	}
 
-	err := sendFeedbackDigestEmail(context.Background(), newTestJobLogger(), mailerService, generator, uuid.New(), recipient, items)
+	err := sendFeedbackDigestEmail(context.Background(), newTestJobLogger(), mailerService, generator, nil, uuid.New(), recipient, items)
 
 	require.NoError(t, err)
 	require.Len(t, generator.requests, 1)

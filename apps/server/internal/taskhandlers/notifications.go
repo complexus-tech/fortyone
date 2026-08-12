@@ -2,7 +2,9 @@ package taskhandlers
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
+	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
@@ -920,7 +923,7 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 			Facts:              facts,
 			Actions:            actions,
 			IncludeSenderProse: hasStrategySnapshot,
-			IncludeReplyPrompt: false,
+			IncludeReplyPrompt: hasStrategySnapshot,
 		},
 		Actions:             actionURLs,
 		FactActions:         factActions,
@@ -1522,6 +1525,111 @@ func feedbackOnlyDigest(items []NotificationEmailDigestItem) bool {
 	return true
 }
 
+func renderNotificationDigestPlainText(copy notificationDigestCopy) string {
+	sections := nonEmptyStrings(copy.Heading, copy.Intro)
+	for _, row := range copy.Rows {
+		rowText := strings.TrimSpace(row.Text)
+		if rowText == "" {
+			continue
+		}
+		if row.URL != "" {
+			rowText += "\n" + row.URL
+		}
+		sections = append(sections, rowText)
+	}
+	if copy.CTA.Label != "" && copy.CTA.URL != "" {
+		sections = append(sections, copy.CTA.Label+": "+copy.CTA.URL)
+	}
+	return strings.Join(sections, "\n\n")
+}
+
+func notificationDigestMessageID(data NotificationEmailDigestData) string {
+	ids := make([]string, 0, len(data.Items))
+	for _, item := range data.Items {
+		ids = append(ids, item.NotificationID.String())
+	}
+	sort.Strings(ids)
+	digest := sha256.Sum256([]byte(data.WorkspaceID.String() + ":" + data.RecipientID.String() + ":" + strings.Join(ids, ",")))
+	return "<notification-digest-" + hex.EncodeToString(digest[:16]) + "@fortyone.app>"
+}
+
+func notificationGuidanceThreadContext(data NotificationEmailDigestData) (json.RawMessage, error) {
+	targets := make([]emailthread.TargetContext, 0)
+	seen := make(map[string]struct{})
+	addTarget := func(target emailthread.TargetContext) {
+		key := target.Kind + ":" + target.ID.String()
+		if target.ID == uuid.Nil {
+			return
+		}
+		if _, exists := seen[key]; exists {
+			return
+		}
+		seen[key] = struct{}{}
+		targets = append(targets, target)
+	}
+
+	for _, item := range data.Items {
+		var message NotificationMessage
+		if err := json.Unmarshal(item.Message, &message); err != nil || message.Strategy == nil {
+			continue
+		}
+		if weekly := message.Strategy.WeeklyCheckIn; weekly != nil {
+			for _, objective := range weekly.Objectives {
+				addTarget(emailthread.TargetContext{
+					Kind:        "objective",
+					ID:          objective.ID,
+					TeamID:      objective.TeamID,
+					DisplayName: objective.Name,
+				})
+			}
+			for _, keyResult := range weekly.KeyResults {
+				addTarget(emailthread.TargetContext{
+					Kind:        "key_result",
+					ID:          keyResult.ID,
+					TeamID:      keyResult.TeamID,
+					ParentID:    keyResult.ObjectiveID,
+					DisplayName: keyResult.Name,
+				})
+			}
+		}
+	}
+	return emailthread.EncodeThreadContext(emailthread.ThreadContext{
+		Source:        "strategy_notification",
+		WorkspaceSlug: data.WorkspaceSlug,
+		Targets:       targets,
+	})
+}
+
+func (h *handlers) prepareNotificationGuidanceThread(
+	ctx context.Context,
+	data NotificationEmailDigestData,
+	copy notificationDigestCopy,
+	messageID string,
+	plainText string,
+) (string, error) {
+	if !copy.HasStrategySnapshot || copy.Sender != mailer.SenderProfileMaya || h.emailThreads == nil {
+		return "", nil
+	}
+	threadContext, err := notificationGuidanceThreadContext(data)
+	if err != nil {
+		return "", err
+	}
+	prepared, err := h.emailThreads.PrepareGuidance(ctx, emailthread.GuidanceInput{
+		WorkspaceID:       data.WorkspaceID,
+		UserID:            data.RecipientID,
+		RecipientEmail:    data.UserEmail,
+		ExternalThreadID:  messageID,
+		InternetMessageID: messageID,
+		Subject:           copy.Subject,
+		Content:           plainText,
+		Context:           threadContext,
+	})
+	if err != nil {
+		return "", err
+	}
+	return prepared.ReplyTo, nil
+}
+
 func (h *handlers) markNotificationsEmailSent(ctx context.Context, notificationIDs []uuid.UUID) error {
 	if len(notificationIDs) == 0 {
 		return nil
@@ -1643,13 +1751,22 @@ func (h *handlers) HandleNotificationEmail(ctx context.Context, t *asynq.Task) e
 		"NotificationCTALabel":     notificationCopy.CTA.Label,
 		"NotificationsSettingsURL": notificationsSettingsURL,
 	}
+	messageID := fmt.Sprintf("<notification-%s@fortyone.app>", data.NotificationID)
+	plainText := renderNotificationDigestPlainText(notificationCopy)
+	replyTo, err := h.prepareNotificationGuidanceThread(ctx, digestData, notificationCopy, messageID, plainText)
+	if err != nil {
+		return fmt.Errorf("prepare notification guidance reply thread: %w", err)
+	}
 
 	if err := h.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
-		To:       []string{data.UserEmail},
-		Template: "notifications/notification",
-		Subject:  notificationCopy.Subject,
-		Data:     mailData,
-		Sender:   notificationCopy.Sender,
+		To:            []string{data.UserEmail},
+		Template:      "notifications/notification",
+		Subject:       notificationCopy.Subject,
+		Data:          mailData,
+		PlainTextBody: plainText,
+		Sender:        notificationCopy.Sender,
+		ReplyTo:       replyTo,
+		MessageID:     messageID,
 	}); err != nil {
 		h.log.Error(ctx, "Failed to send notification email", "error", err, "task_id", t.ResultWriter().TaskID())
 		return err
@@ -1732,13 +1849,22 @@ func (h *handlers) HandleNotificationEmailDigest(ctx context.Context, t *asynq.T
 		"NotificationCTALabel":     digestCopy.CTA.Label,
 		"NotificationsSettingsURL": notificationsSettingsURL,
 	}
+	messageID := notificationDigestMessageID(*data)
+	plainText := renderNotificationDigestPlainText(digestCopy)
+	replyTo, err := h.prepareNotificationGuidanceThread(ctx, *data, digestCopy, messageID, plainText)
+	if err != nil {
+		return fmt.Errorf("prepare notification digest reply thread: %w", err)
+	}
 
 	if err := h.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
-		To:       []string{data.UserEmail},
-		Template: "notifications/notification",
-		Subject:  digestCopy.Subject,
-		Data:     mailData,
-		Sender:   digestCopy.Sender,
+		To:            []string{data.UserEmail},
+		Template:      "notifications/notification",
+		Subject:       digestCopy.Subject,
+		Data:          mailData,
+		PlainTextBody: plainText,
+		Sender:        digestCopy.Sender,
+		ReplyTo:       replyTo,
+		MessageID:     messageID,
 	}); err != nil {
 		h.log.Error(ctx, "Failed to send notification email digest", "error", err, "task_id", t.ResultWriter().TaskID())
 		return err

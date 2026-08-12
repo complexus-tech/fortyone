@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
@@ -152,6 +153,32 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	))
 
 	return nil
+}
+
+func (r *repo) UpdateIfUnchanged(
+	ctx context.Context,
+	id, workspaceID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	updates map[string]any,
+) (bool, error) {
+	query, params := buildObjectiveUpdateStatement(id, workspaceID, updates)
+	query += " AND updated_at = :expected_updated_at"
+	params["expected_updated_at"] = expectedUpdatedAt.UTC()
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return false, fmt.Errorf("prepare objective compare-and-swap update: %w", err)
+	}
+	defer stmt.Close()
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		return false, fmt.Errorf("update objective if unchanged: %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("read objective compare-and-swap result: %w", err)
+	}
+	return rowsAffected == 1, nil
 }
 
 func buildObjectiveUpdateStatement(id, workspaceID uuid.UUID, updates map[string]any) (string, map[string]any) {

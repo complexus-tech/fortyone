@@ -360,6 +360,7 @@ type Repository interface {
 	ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, description string, limit int) ([]CoreSimilarItem, error)
 	CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error)
 	UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, bool, error)
+	UpdateItemStatusIfUnchanged(ctx context.Context, workspaceID, itemID uuid.UUID, expectedUpdatedAt time.Time, input CoreUpdateItemStatusInput) (CoreItem, bool, bool, error)
 	TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) error
 	RestoreItem(ctx context.Context, workspaceID, itemID uuid.UUID) error
 	CreateComment(ctx context.Context, input CoreCommentInput) (CoreComment, error)

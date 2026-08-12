@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
+	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/google/uuid"
+	htmlparser "golang.org/x/net/html"
 )
 
 const guidanceEmailBatchConcurrency = 6
@@ -71,6 +73,7 @@ type emailCopyDestination struct {
 type guidanceEmailBatchResult struct {
 	Processed bool
 	Sent      bool
+	Retryable bool
 	Err       error
 }
 
@@ -84,9 +87,11 @@ func guidanceEmailBatchFailureCount(results []guidanceEmailBatchResult) int {
 	return failures
 }
 
-// processGuidanceEmailRecipient retries once inside the recipient's bounded
-// worker slot. This recovers transient provider/SMTP failures without asking
-// Asynq to restart an already partially delivered batch.
+// processGuidanceEmailRecipient retries only failures that happened before a
+// guidance message could be durably frozen. Once thread preparation or SMTP
+// begins, regenerating Luna copy under the same Message-ID could diverge from
+// immutable conversation history, so callers deliberately leave those errors
+// non-retryable and surface them for operational follow-up.
 func processGuidanceEmailRecipient(
 	ctx context.Context,
 	process func(context.Context) guidanceEmailBatchResult,
@@ -94,7 +99,7 @@ func processGuidanceEmailRecipient(
 	var result guidanceEmailBatchResult
 	for attempt := 1; attempt <= guidanceEmailRecipientAttempts; attempt++ {
 		result = process(ctx)
-		if result.Err == nil || ctx.Err() != nil {
+		if result.Err == nil || !result.Retryable || ctx.Err() != nil {
 			return result
 		}
 		if attempt < guidanceEmailRecipientAttempts {
@@ -156,6 +161,50 @@ func guidanceEmailMessageID(kind string, workspaceID, userID uuid.UUID, delivery
 	return fmt.Sprintf("<%s-%s-%s-%s@fortyone.app>", kind, workspaceID, userID, deliveryDate.UTC().Format("2006-01-02"))
 }
 
+func prepareGuidanceThread(
+	ctx context.Context,
+	threader emailthread.GuidancePreparer,
+	input emailthread.GuidanceInput,
+) (string, error) {
+	if threader == nil {
+		return "", nil
+	}
+	prepared, err := threader.PrepareGuidance(ctx, input)
+	if err != nil {
+		return "", err
+	}
+	return prepared.ReplyTo, nil
+}
+
+func guidancePlainText(heading, htmlContent, ctaLabel, ctaURL string) string {
+	plain := emailHTMLPlainText(htmlContent)
+	sections := nonEmptyFactTokens(strings.TrimSpace(heading), plain)
+	if label := strings.TrimSpace(ctaLabel); label != "" {
+		if url := strings.TrimSpace(ctaURL); url != "" {
+			sections = append(sections, label+": "+url)
+		} else {
+			sections = append(sections, label)
+		}
+	}
+	return strings.Join(sections, "\n\n")
+}
+
+func emailHTMLPlainText(value string) string {
+	tokenizer := htmlparser.NewTokenizer(strings.NewReader(value))
+	var text strings.Builder
+	for {
+		switch tokenizer.Next() {
+		case htmlparser.ErrorToken:
+			return strings.Join(strings.Fields(text.String()), " ")
+		case htmlparser.TextToken:
+			if text.Len() > 0 {
+				text.WriteByte(' ')
+			}
+			text.Write(tokenizer.Text())
+		}
+	}
+}
+
 func formatCompactNotificationRows(intro string, rows []string) string {
 	textStyle := mailer.EmailStyleString("notificationText")
 	listStyle := mailer.EmailStyleString("notificationList")
@@ -212,6 +261,9 @@ func renderGeneratedEmailContent(output emailcopy.Output, destinations map[strin
 	if output.FeedbackThemeSummary != nil {
 		paragraphs = append(paragraphs, output.FeedbackThemeSummary.Text)
 	}
+	if output.ReplyPrompt != nil {
+		paragraphs = append(paragraphs, output.ReplyPrompt.Text)
+	}
 
 	var content strings.Builder
 	content.WriteString(fmt.Sprintf(`<div style="%s">`, textStyle))
@@ -242,6 +294,19 @@ func renderGeneratedEmailContent(output emailcopy.Output, destinations map[strin
 	}
 	content.WriteString("</div></div>")
 	return content.String(), nil
+}
+
+func appendGuidanceReplyPrompt(content, prompt string) string {
+	prompt = strings.TrimSpace(prompt)
+	if prompt == "" {
+		return content
+	}
+	return content + fmt.Sprintf(
+		`<div style="%s"><p style="%s">%s</p></div>`,
+		mailer.EmailStyleString("notificationText"),
+		mailer.EmailStyleString("notificationText"),
+		html.EscapeString(prompt),
+	)
 }
 
 func generatedPrimaryCTA(output emailcopy.Output, destinations map[string]emailCopyDestination) (string, string, bool) {

@@ -19,7 +19,8 @@ import (
 
 // Set of error variables for key result operations
 var (
-	ErrNotFound = errors.New("key result not found")
+	ErrNotFound        = errors.New("key result not found")
+	ErrVersionConflict = errors.New("key result changed since it was reviewed")
 )
 
 // Repository defines the storage contract for key results.
@@ -27,6 +28,7 @@ type Repository interface {
 	Create(ctx context.Context, kr *CoreKeyResult, workspaceID uuid.UUID) (uuid.UUID, int, error)
 	CreateBatch(ctx context.Context, keyResults []CoreKeyResult, workspaceID uuid.UUID) ([]CoreKeyResult, error)
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
+	UpdateIfUnchanged(ctx context.Context, id, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any) (bool, error)
 	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreKeyResult, error)
 	List(ctx context.Context, objectiveId uuid.UUID, workspaceId uuid.UUID) ([]CoreKeyResult, error)
@@ -323,6 +325,84 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 		attribute.Bool("contributors_changed", contributorsChanged),
 	))
 
+	return nil
+}
+
+// UpdateExternalUserActionIfUnchanged applies a user-requested scalar update
+// only while the key result still matches the version shown in email. Email
+// actions intentionally cannot change contributor membership.
+func (s *Service) UpdateExternalUserActionIfUnchanged(
+	ctx context.Context,
+	id, workspaceID, userID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	updates map[string]any,
+	comment string,
+) error {
+	if expectedUpdatedAt.IsZero() {
+		return errors.New("expected key result update time is required")
+	}
+	if _, exists := updates["contributors"]; exists {
+		return errors.New("email key result actions cannot change contributors")
+	}
+	previous, err := s.repo.Get(ctx, id, workspaceID)
+	if err != nil {
+		return err
+	}
+	changed := make(map[string]any, len(updates))
+	for field, value := range updates {
+		if s.hasFieldChanged(field, value, previous) {
+			changed[field] = value
+		}
+	}
+	if len(changed) == 0 {
+		return nil
+	}
+	updated, err := s.repo.UpdateIfUnchanged(ctx, id, workspaceID, expectedUpdatedAt.UTC(), changed)
+	if err != nil {
+		return err
+	}
+	if !updated {
+		return ErrVersionConflict
+	}
+
+	activities := make([]okractivities.CoreNewActivity, 0, len(changed))
+	fieldIndex := 0
+	for field, value := range changed {
+		fieldIndex++
+		activityComment := ""
+		if fieldIndex == len(changed) {
+			activityComment = comment
+		}
+		activities = append(activities, okractivities.CoreNewActivity{
+			ObjectiveID:  previous.ObjectiveID,
+			KeyResultID:  &id,
+			UserID:       userID,
+			Type:         okractivities.ActivityTypeUpdate,
+			UpdateType:   okractivities.UpdateTypeKeyResult,
+			Field:        field,
+			CurrentValue: s.formatValue(value),
+			Comment:      activityComment,
+			WorkspaceID:  workspaceID,
+		})
+	}
+	if err := s.okrActivities.CreateBatch(ctx, activities); err != nil {
+		s.log.Error(ctx, "failed to record external key result update activity", "error", err, "keyResultID", id)
+	}
+	if s.publisher != nil && hasNotifiableKeyResultUpdate(changed) {
+		if err := s.publisher.Publish(ctx, events.Event{
+			Type: events.KeyResultUpdated,
+			Payload: events.KeyResultUpdatedPayload{
+				KeyResultID: id,
+				ObjectiveID: previous.ObjectiveID,
+				WorkspaceID: workspaceID,
+				Updates:     changed,
+			},
+			Timestamp: time.Now().UTC(),
+			ActorID:   userID,
+		}); err != nil {
+			s.log.Error(ctx, "failed to publish external key result update event", "error", err, "keyResultID", id)
+		}
+	}
 	return nil
 }
 

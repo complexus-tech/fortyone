@@ -1280,6 +1280,60 @@ func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UU
 	return toCoreItem(row), row.StatusChanged, nil
 }
 
+func (r *Repo) UpdateItemStatusIfUnchanged(
+	ctx context.Context,
+	workspaceID, itemID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	input feedback.CoreUpdateItemStatusInput,
+) (feedback.CoreItem, bool, bool, error) {
+	var row itemRow
+	err := r.db.GetContext(ctx, &row, `
+		WITH previous AS (
+			SELECT id, status
+			FROM feedback_items
+			WHERE workspace_id = $1 AND id = $2
+				AND deleted_at IS NULL
+				AND updated_at = $6
+				AND ($5 OR NOT EXISTS (
+					SELECT 1 FROM feedback_story_links fsl
+					WHERE fsl.item_id = feedback_items.id AND fsl.is_primary = true
+				))
+			FOR UPDATE
+		), updated AS (
+			UPDATE feedback_items fi
+			SET status = $3, roadmap_summary = COALESCE($4, fi.roadmap_summary), updated_at = NOW()
+			FROM previous
+			WHERE fi.id = previous.id
+			RETURNING fi.*, previous.status AS previous_status
+		)
+		SELECT updated.id, updated.workspace_id, updated.portal_id, updated.board_id, updated.author_id,
+			COALESCE(u.full_name, u.email, 'Deleted user') AS author_name,
+			COALESCE(u.email, '') AS author_email,
+			u.avatar_url AS author_avatar,
+			updated.title, updated.description, updated.slug, updated.status,
+			CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = updated.id), 0) AS integer) AS vote_count,
+			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = updated.id AND fv.direction = 1) AS integer) AS upvote_count,
+			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = updated.id AND fv.direction = -1) AS integer) AS downvote_count,
+			CAST((SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = updated.id) AS int) AS comment_count,
+			updated.roadmap_summary,
+			fb.team_id AS board_team_id, fb.name AS board_name, fb.slug AS board_slug,
+			fb.color AS board_color, fb.order_index AS board_order_index,
+			fb.created_at AS board_created_at, fb.updated_at AS board_updated_at,
+			updated.deleted_at, updated.created_at, updated.updated_at,
+			(updated.previous_status IS DISTINCT FROM updated.status) AS status_changed
+		FROM updated
+		LEFT JOIN users u ON u.user_id = updated.author_id
+		INNER JOIN feedback_boards fb ON fb.id = updated.board_id
+	`, workspaceID, itemID, input.Status, input.RoadmapSummary, input.AllowLinked, expectedUpdatedAt.UTC())
+	if errors.Is(err, sql.ErrNoRows) {
+		return feedback.CoreItem{}, false, false, nil
+	}
+	if err != nil {
+		return feedback.CoreItem{}, false, false, err
+	}
+	return toCoreItem(row), row.StatusChanged, true, nil
+}
+
 func (r *Repo) TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) error {
 	result, err := r.db.ExecContext(ctx, `
 		UPDATE feedback_items

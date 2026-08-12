@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -279,6 +281,50 @@ func (r *repo) Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, 
 	))
 
 	return nil
+}
+
+func (r *repo) UpdateIfUnchanged(
+	ctx context.Context,
+	id, workspaceID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	updates map[string]any,
+) (bool, error) {
+	if len(updates) == 0 {
+		return false, errors.New("key result compare-and-swap update requires at least one field")
+	}
+	fields := make([]string, 0, len(updates))
+	for field := range updates {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+	setClauses := make([]string, 0, len(fields)+1)
+	params := map[string]any{
+		"id":                  id,
+		"workspace_id":        workspaceID,
+		"expected_updated_at": expectedUpdatedAt.UTC(),
+	}
+	for _, field := range fields {
+		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+		params[field] = updates[field]
+	}
+	setClauses = append(setClauses, "updated_at = NOW()")
+	query := "UPDATE key_results SET " + strings.Join(setClauses, ", ")
+	query += " WHERE id = :id AND workspace_id = :workspace_id AND updated_at = :expected_updated_at"
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return false, fmt.Errorf("prepare key result compare-and-swap update: %w", err)
+	}
+	defer stmt.Close()
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
+		return false, fmt.Errorf("update key result if unchanged: %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("read key result compare-and-swap result: %w", err)
+	}
+	return rowsAffected == 1, nil
 }
 
 // Delete deletes a key result
