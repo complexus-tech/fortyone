@@ -47,7 +47,7 @@ const SidebarFooterActions = ({
           <Menu.Item
             onSelect={() => {
               window.open(
-                "mailto:support@complexus.app",
+                "mailto:hello@complexus.tech",
                 "_blank",
                 "noopener,noreferrer",
               );
@@ -141,7 +141,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <Box className="bg-sidebar border-border/80 dark:bg-sidebar/40 relative flex h-dvh w-(--sidebar-width) shrink-0 flex-col overflow-hidden border-r-[0.5px]">
+    <Box className="bg-sidebar border-border dark:bg-sidebar/40 relative flex h-dvh w-(--sidebar-width) shrink-0 flex-col overflow-hidden border-r-[0.5px]">
       <Box className="relative z-1 shrink-0 px-4" data-sidebar-header>
         <Header />
       </Box>
