@@ -1,10 +1,13 @@
 import type {
   PublicContributor,
   PublicContributorCommentsPage,
+  FeedbackGuestIdentityPolicy,
   FeedbackParticipationMode,
   PublicFeedbackStoryLink,
   PublicPortal,
+  PublicPortalUpdate,
   PublicPortalWorkspace,
+  PublicParticipantKind,
   PublicRequestBoard,
   PublicRequestComment,
   PublicRequestStatus,
@@ -15,6 +18,8 @@ type ApiPortal = {
   name: string;
   slug: string;
   participationMode?: FeedbackParticipationMode;
+  guestIdentityPolicy?: FeedbackGuestIdentityPolicy;
+  hasPublishedUpdates?: boolean;
   itemsHasMore?: boolean;
   boards?: ApiBoard[];
   items?: ApiFeedbackItem[];
@@ -32,6 +37,7 @@ export type ApiFeedbackItem = {
   id: string;
   boardId: string;
   authorId: string | null;
+  authorMasked?: boolean;
   authorName: string;
   authorAvatar?: string | null;
   title: string;
@@ -45,15 +51,36 @@ export type ApiFeedbackItem = {
   comments?: ApiFeedbackComment[];
   storyLinks?: ApiFeedbackStoryLink[];
   anonymous?: boolean;
+  participantKind?: PublicParticipantKind;
+  following?: boolean;
+  viewerVote?: -1 | 0 | 1;
 };
 
 type ApiFeedbackComment = {
   id: string;
   parentId?: string | null;
+  authorMasked?: boolean;
   authorName: string;
   authorAvatar?: string | null;
   body: string;
   createdAt: string;
+  participantKind?: PublicParticipantKind;
+};
+
+export type ApiFeedbackUpdate = {
+  id: string;
+  slug: string;
+  title: string;
+  summary?: string | null;
+  body: string;
+  coverImageUrl?: string | null;
+  publishedAt: string;
+  linkedItems?: {
+    id: string;
+    slug: string;
+    title: string;
+    status: PublicRequestStatus;
+  }[];
 };
 
 export type ApiContributor = {
@@ -144,10 +171,12 @@ export const toPublicRequest = (
     (comment) => ({
       id: comment.id,
       parentId: comment.parentId,
+      authorMasked: comment.authorMasked,
       authorName: comment.authorName,
       authorAvatar: comment.authorAvatar,
       body: comment.body,
       createdAtLabel: dateLabel(comment.createdAt),
+      participantKind: comment.participantKind,
     }),
   );
 
@@ -157,6 +186,7 @@ export const toPublicRequest = (
     slug: item.slug,
     title: item.title,
     description: item.description,
+    authorMasked: item.authorMasked,
     authorName: item.authorName,
     authorAvatar: item.authorAvatar,
     boardId: item.boardId,
@@ -167,8 +197,25 @@ export const toPublicRequest = (
     roadmapSummary: item.roadmapSummary ?? undefined,
     comments,
     storyLinks: item.storyLinks ?? [],
+    participantKind: item.participantKind,
+    following: item.following,
+    viewerVote: item.viewerVote,
   };
 };
+
+export const toPublicPortalUpdate = (
+  update: ApiFeedbackUpdate,
+): PublicPortalUpdate => ({
+  id: update.id,
+  slug: update.slug,
+  title: update.title,
+  summary: update.summary,
+  body: update.body,
+  coverImageUrl: update.coverImageUrl,
+  publishedAt: update.publishedAt,
+  publishedAtLabel: dateLabel(update.publishedAt),
+  linkedItems: update.linkedItems ?? [],
+});
 
 export const toPublicPortal = (
   apiPortal: ApiPortal,
@@ -189,6 +236,8 @@ export const toPublicPortal = (
     name: apiPortal.name,
     slug: apiPortal.slug,
     participationMode: apiPortal.participationMode ?? "account_required",
+    guestIdentityPolicy: apiPortal.guestIdentityPolicy ?? "show_identity",
+    hasPublishedUpdates: apiPortal.hasPublishedUpdates ?? false,
     workspace: workspace ?? {
       avatarUrl: null,
       color: "var(--primary)",

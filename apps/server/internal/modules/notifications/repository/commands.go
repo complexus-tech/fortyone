@@ -521,7 +521,7 @@ func (r *repo) MarkPortalFeedbackAsRead(ctx context.Context, notificationID, use
 			AND fi.workspace_id = n.workspace_id
 			AND fi.deleted_at IS NULL
 			AND CAST(n.entity_type AS text) = 'feedback'
-			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update')
+			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update', 'feedback_update_published', 'feedback_item_merged')
 	`, notificationID, userID, portalSlug)
 	if err != nil {
 		span.RecordError(err)
@@ -555,7 +555,7 @@ func (r *repo) MarkAllPortalFeedbackAsRead(ctx context.Context, userID uuid.UUID
 			AND fi.workspace_id = n.workspace_id
 			AND fi.deleted_at IS NULL
 			AND CAST(n.entity_type AS text) = 'feedback'
-			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update')
+			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update', 'feedback_update_published', 'feedback_item_merged')
 			AND n.read_at IS NULL
 	`, userID, portalSlug)
 	if err != nil {

@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type {
   PublicPortal,
-  PublicPortalViewer,
+  PublicPortalParticipant,
   PublicRequest,
   PublicRequestComment,
 } from "./types";
@@ -17,8 +17,10 @@ import {
   createAnonymousFeedbackAction,
   createFeedbackAction,
   createFeedbackCommentAction,
+  createVerifiedGuestFeedbackAction,
   toggleFeedbackVoteAction,
 } from "./actions";
+import { isContactableParticipant } from "./participant";
 
 const updateRequestInLists = (
   queryClient: QueryClient,
@@ -102,23 +104,24 @@ const makeOptimisticRequest = ({
   boardId,
   description,
   title,
-  viewer,
+  participant,
 }: {
   boardId: string;
   description: string;
   title: string;
-  viewer: PublicPortalViewer;
+  participant: Exclude<PublicPortalParticipant, { kind: "anonymous" }>;
 }): PublicRequest => {
   const id = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   return {
     id,
-    authorId: viewer.id,
+    authorId: participant.kind === "account" ? participant.id : null,
     slug: id,
     title,
     description,
-    authorName: viewer.name,
-    authorAvatar: viewer.avatarUrl,
+    authorMasked: participant.kind === "account" ? false : participant.masked,
+    authorName: participant.name,
+    authorAvatar: participant.avatarUrl,
     boardId,
     status: "pending",
     voteCount: 0,
@@ -126,6 +129,7 @@ const makeOptimisticRequest = ({
     createdAtLabel: "Just now",
     comments: [],
     storyLinks: [],
+    participantKind: participant.kind,
   };
 };
 
@@ -245,32 +249,52 @@ const getActionData = <T>(
 
 export const useCreatePublicFeedback = ({
   portal,
-  viewer,
+  participant,
 }: {
   portal: PublicPortal;
-  viewer?: PublicPortalViewer | null;
+  participant: PublicPortalParticipant;
 }) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: Parameters<typeof createFeedbackAction>[0]) => {
-      if (!viewer) throw new Error("Please log in to submit feedback");
+    mutationFn: async (
+      input: Parameters<typeof createFeedbackAction>[0] & {
+        participant?: Exclude<PublicPortalParticipant, { kind: "anonymous" }>;
+      },
+    ) => {
+      const activeParticipant = input.participant ?? participant;
+      if (!isContactableParticipant(activeParticipant)) {
+        throw new Error("Verify your email or log in to submit feedback");
+      }
+      const { participant: _participantOverride, ...actionInput } = input;
+      const action =
+        activeParticipant.kind === "account"
+          ? createFeedbackAction
+          : createVerifiedGuestFeedbackAction;
       const result = getActionData(
-        await createFeedbackAction(input),
+        await action(actionInput),
         "Unable to submit feedback",
       );
-      if (result.kind !== "authenticated") {
-        throw new Error("Your session expired. Please log in and try again.");
+      if (result.kind !== activeParticipant.kind) {
+        throw new Error(
+          "Your participation session changed. Please review and submit again.",
+        );
       }
       return result;
     },
     onMutate: async (input) => {
-      if (!viewer) return { optimisticRequest: null };
+      const activeParticipant = input.participant ?? participant;
+      if (!isContactableParticipant(activeParticipant)) {
+        return { optimisticRequest: null };
+      }
 
       await queryClient.cancelQueries({
         queryKey: publicPortalKeys.feedback(portal.slug),
       });
-      const optimisticRequest = makeOptimisticRequest({ ...input, viewer });
+      const optimisticRequest = makeOptimisticRequest({
+        ...input,
+        participant: activeParticipant,
+      });
       insertOptimisticRequest(queryClient, portal.slug, optimisticRequest);
 
       return { optimisticRequest };
@@ -335,14 +359,16 @@ export const useCreateAnonymousPublicFeedback = ({
 };
 
 export const usePublicFeedbackVote = ({
+  participant,
   portalSlug,
   request,
 }: {
+  participant: PublicPortalParticipant;
   portalSlug: string;
   request: PublicRequest;
 }) => {
   const queryClient = useQueryClient();
-  const [vote, setVote] = useState<-1 | 0 | 1>(0);
+  const [vote, setVote] = useState<-1 | 0 | 1>(request.viewerVote ?? 0);
   const [voteCount, setVoteCount] = useState(request.voteCount);
 
   useEffect(() => {
@@ -350,17 +376,29 @@ export const usePublicFeedbackVote = ({
   }, [request.voteCount]);
 
   const mutation = useMutation({
-    mutationFn: async (direction: -1 | 1) =>
-      getActionData(
+    mutationFn: async ({
+      direction,
+      participant: participantOverride,
+    }: {
+      direction: -1 | 1;
+      participant?: Exclude<PublicPortalParticipant, { kind: "anonymous" }>;
+    }) => {
+      const activeParticipant = participantOverride ?? participant;
+      if (!isContactableParticipant(activeParticipant)) {
+        throw new Error("Verify your email or log in to vote");
+      }
+      return getActionData(
         await toggleFeedbackVoteAction({
           itemId: request.id,
           itemSlug: request.slug,
+          participantKind: activeParticipant.kind,
           portalSlug,
           vote: direction,
         }),
         "Unable to save vote",
-      ),
-    onMutate: async (direction) => {
+      );
+    },
+    onMutate: async ({ direction }) => {
       await queryClient.cancelQueries({
         queryKey: publicPortalKeys.portal(portalSlug),
       });
@@ -426,20 +464,22 @@ const toPublicComment = (
 ): PublicRequestComment => ({
   id: comment.id,
   parentId: comment.parentId,
+  authorMasked: comment.authorMasked,
   authorName: comment.authorName,
   authorAvatar: comment.authorAvatar,
   body: comment.body,
   createdAtLabel: "Just now",
+  participantKind: comment.participantKind,
 });
 
 export const useCreatePublicFeedbackComment = ({
+  participant,
   portalSlug,
   request,
-  viewer,
 }: {
+  participant: Exclude<PublicPortalParticipant, { kind: "anonymous" }>;
   portalSlug: string;
   request: PublicRequest;
-  viewer: PublicPortalViewer;
 }) => {
   const queryClient = useQueryClient();
 
@@ -456,6 +496,7 @@ export const useCreatePublicFeedbackComment = ({
           body,
           itemId: request.id,
           itemSlug: request.slug,
+          participantKind: participant.kind,
           ...(parentId ? { parentId } : {}),
           portalSlug,
         }),
@@ -468,10 +509,13 @@ export const useCreatePublicFeedbackComment = ({
       const optimisticComment: PublicRequestComment = {
         id: `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         parentId,
-        authorName: viewer.name,
-        authorAvatar: viewer.avatarUrl,
+        authorMasked:
+          participant.kind === "account" ? false : participant.masked,
+        authorName: participant.name,
+        authorAvatar: participant.avatarUrl,
         body,
         createdAtLabel: "Just now",
+        participantKind: participant.kind,
       };
 
       updateRequestCaches(queryClient, portalSlug, request.id, (cached) => ({

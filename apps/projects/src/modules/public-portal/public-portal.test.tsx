@@ -34,10 +34,11 @@ import {
 const clipboardWriteTextMock = jest.fn(async (_text: string) => undefined);
 const shareMock = jest.fn(async (_data?: ShareData) => undefined);
 const mockRouterPush = jest.fn();
+const mockRouterRefresh = jest.fn();
 let triggerIntersection: (() => void) | undefined;
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockRouterPush }),
+  useRouter: () => ({ push: mockRouterPush, refresh: mockRouterRefresh }),
 }));
 
 const createDeferred = <T,>() => {
@@ -53,9 +54,11 @@ const portalViewer = {
   accountHref: "/portal/city-roads/account",
   appHref: "/city-roads/my-work",
   avatarUrl: null,
+  canReceiveUpdates: true as const,
   email: "ada@example.com",
   feedbackSetupHref: "/city-roads/settings/workspace/feedback",
   id: "00000000-0000-4000-8000-000000000001",
+  kind: "account" as const,
   name: "Ada Ndlovu",
 };
 
@@ -190,10 +193,22 @@ jest.mock("@/utils", () => ({
 }));
 
 jest.mock("./actions", () => ({
+  confirmFeedbackVerificationAction: jest.fn(),
   createAnonymousFeedbackAction: jest.fn(),
   createFeedbackAction: jest.fn(),
   createFeedbackCommentAction: jest.fn(),
+  createVerifiedGuestFeedbackAction: jest.fn(),
+  getCurrentFeedbackGuestAction: jest.fn(async () => ({ data: null })),
+  getFeedbackFollowStateAction: jest.fn(async () => ({
+    data: { following: false, itemId: "req-1" },
+  })),
+  markFeedbackUpdatesSeenAction: jest.fn(async () => ({ data: null })),
+  requestFeedbackVerificationAction: jest.fn(),
+  revokeFeedbackSessionAction: jest.fn(async () => ({ data: null })),
   toggleFeedbackVoteAction: jest.fn(),
+  updateFeedbackFollowAction: jest.fn(async () => ({
+    data: { following: true, itemId: "req-1" },
+  })),
 }));
 
 jest.mock("./notification-actions", () => ({
@@ -365,6 +380,23 @@ jest.mock("ui", () => {
     void leftIcon;
     return <input {...getDomProps(props)} />;
   };
+  const Checkbox = ({
+    checked,
+    onCheckedChange,
+    ...props
+  }: ReactTypes.InputHTMLAttributes<HTMLInputElement> & {
+    onCheckedChange?: (checked: boolean) => void;
+  }) => (
+    <input
+      checked={Boolean(checked)}
+      onChange={(event) => {
+        onCheckedChange?.(event.target.checked);
+      }}
+      type="checkbox"
+      {...props}
+    />
+  );
+  const Switch = Checkbox;
   const TextArea = (
     props: ReactTypes.TextareaHTMLAttributes<HTMLTextAreaElement>,
   ) => <textarea {...props} />;
@@ -560,6 +592,7 @@ jest.mock("ui", () => {
     Badge,
     Box,
     Button,
+    Checkbox,
     Dialog,
     Flex,
     Input,
@@ -570,6 +603,7 @@ jest.mock("ui", () => {
     TextEditor,
     TimeAgo,
     Tabs,
+    Switch,
   };
 });
 
@@ -602,7 +636,8 @@ describe("Public portal UI", () => {
     window.history.replaceState({}, "", "/portal/city-roads/feedback");
     createFeedbackActionMock.mockImplementation(async (input) => ({
       data: {
-        kind: "authenticated",
+        kind: "account",
+        following: true,
         request: {
           ...publicPortalFixture.requests[0],
           id: "feedback-new",
@@ -725,8 +760,8 @@ describe("Public portal UI", () => {
   it("renders the public feedback page with feedback terminology", () => {
     render(
       <PublicPortalRequestsPage
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
     const feedbackDescription = screen.getByText(
@@ -815,6 +850,7 @@ describe("Public portal UI", () => {
     createAnonymousFeedbackActionMock.mockResolvedValueOnce({
       data: {
         kind: "anonymous",
+        following: false,
         request: {
           ...publicPortalFixture.requests[0],
           authorId: null,
@@ -831,15 +867,21 @@ describe("Public portal UI", () => {
       screen.queryByRole("link", { name: "Login to submit feedback" }),
     ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "New Feedback" }));
-    expect(screen.getByText("Posting anonymously")).toBeInTheDocument();
+    expect(screen.getByText("Choose how you participate")).toBeInTheDocument();
     expect(
-      screen.getByText(/No name or email address will be attached/i),
+      screen.getByText(/Continue with a private verified email/i),
     ).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Feedback title"), {
       target: { value: "Anonymous safety feedback" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Submit feedback" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(
+      screen.getByRole("heading", { name: "How would you like to submit?" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: /Submit anonymously/i }),
+    );
 
     expect(
       await screen.findByRole("heading", {
@@ -878,8 +920,8 @@ describe("Public portal UI", () => {
     const { container } = render(
       <PublicPortalRequestsPage
         initialFeedbackComposerOpen
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
 
@@ -1010,7 +1052,9 @@ describe("Public portal UI", () => {
       ...publicPortalFixture,
       boards: [publicPortalFixture.boards[0]],
     };
-    render(<PublicPortalRequestsPage portal={portal} viewer={portalViewer} />);
+    render(
+      <PublicPortalRequestsPage participant={portalViewer} portal={portal} />,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "New Feedback" }));
     fireEvent.change(screen.getByLabelText("Feedback title"), {
@@ -1036,7 +1080,9 @@ describe("Public portal UI", () => {
       ...publicPortalFixture,
       boards: [publicPortalFixture.boards[0]],
     };
-    render(<PublicPortalRequestsPage portal={portal} viewer={portalViewer} />);
+    render(
+      <PublicPortalRequestsPage participant={portalViewer} portal={portal} />,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "New Feedback" }));
     fireEvent.change(screen.getByLabelText("Feedback title"), {
@@ -1093,7 +1139,9 @@ describe("Public portal UI", () => {
       ...publicPortalFixture,
       boards: [publicPortalFixture.boards[0]],
     };
-    render(<PublicPortalRequestsPage portal={portal} viewer={portalViewer} />);
+    render(
+      <PublicPortalRequestsPage participant={portalViewer} portal={portal} />,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "New Feedback" }));
     fireEvent.change(screen.getByLabelText("Feedback title"), {
@@ -1132,7 +1180,9 @@ describe("Public portal UI", () => {
       ...publicPortalFixture,
       boards: [publicPortalFixture.boards[0]],
     };
-    render(<PublicPortalRequestsPage portal={portal} viewer={portalViewer} />);
+    render(
+      <PublicPortalRequestsPage participant={portalViewer} portal={portal} />,
+    );
 
     fireEvent.change(screen.getByLabelText("Feedback title"), {
       target: { value: "Add protected bike parking" },
@@ -1164,8 +1214,8 @@ describe("Public portal UI", () => {
   it("toggles an upvote without navigating away from the feedback list", async () => {
     render(
       <PublicPortalRequestsPage
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
 
@@ -1186,8 +1236,8 @@ describe("Public portal UI", () => {
     toggleFeedbackVoteActionMock.mockReturnValueOnce(voteRequest.promise);
     render(
       <PublicPortalRequestsPage
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
 
@@ -1219,9 +1269,9 @@ describe("Public portal UI", () => {
   it("supports downvoting from the feedback detail page", async () => {
     render(
       <PublicPortalRequestDetailPage
+        participant={portalViewer}
         portal={publicPortalFixture}
         request={publicPortalFixture.requests[0]}
-        viewer={portalViewer}
       />,
     );
 
@@ -1239,7 +1289,7 @@ describe("Public portal UI", () => {
     );
   });
 
-  it("keeps votes behind login for logged-out visitors", () => {
+  it("offers email verification for guest votes", () => {
     render(
       <PublicPortalRequestDetailPage
         portal={{
@@ -1250,24 +1300,22 @@ describe("Public portal UI", () => {
       />,
     );
 
-    const callbackUrl =
-      "/?callbackUrl=%2Fportal%2Fcity-roads%2Ffeedback%2Fadd-pedestrian-crossing-near-east-avenue-school";
-    expect(screen.getByRole("link", { name: "Upvote" })).toHaveAttribute(
-      "href",
-      callbackUrl,
-    );
-    expect(screen.getByRole("link", { name: "Downvote" })).toHaveAttribute(
-      "href",
-      callbackUrl,
-    );
+    expect(screen.getByRole("button", { name: "Upvote" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Downvote" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Upvote" }));
+    expect(
+      screen.getAllByRole("heading", { name: "Continue with email" }).length,
+    ).toBeGreaterThan(0);
     expect(toggleFeedbackVoteActionMock).not.toHaveBeenCalled();
   });
 
   it("renders signed-in portal navigation controls", () => {
     render(
       <PublicPortalRequestsPage
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
 
@@ -1302,8 +1350,8 @@ describe("Public portal UI", () => {
 
     render(
       <PublicPortalRequestsPage
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
 
@@ -1388,8 +1436,8 @@ describe("Public portal UI", () => {
 
     render(
       <PublicPortalRequestsPage
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
 
@@ -1422,8 +1470,8 @@ describe("Public portal UI", () => {
   it("filters portal notifications to unread items", async () => {
     render(
       <PublicPortalRequestsPage
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
 
@@ -1471,8 +1519,8 @@ describe("Public portal UI", () => {
 
     render(
       <PublicPortalRequestsPage
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
 
@@ -1522,8 +1570,8 @@ describe("Public portal UI", () => {
 
     render(
       <PublicPortalRequestsPage
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
 
@@ -1542,8 +1590,8 @@ describe("Public portal UI", () => {
   it("reuses fresh notification data when the popover is reopened", async () => {
     render(
       <PublicPortalRequestsPage
+        participant={portalViewer}
         portal={publicPortalFixture}
-        viewer={portalViewer}
       />,
     );
 
@@ -1563,15 +1611,17 @@ describe("Public portal UI", () => {
   it("keeps portal controls but hides workspace actions for external users", () => {
     render(
       <PublicPortalRequestsPage
-        portal={publicPortalFixture}
-        viewer={{
+        participant={{
           accountHref: "/portal/city-roads/account",
           avatarUrl: null,
+          canReceiveUpdates: true,
           email: "external@example.com",
           feedbackSetupHref: "/onboarding/create",
           id: "00000000-0000-4000-8000-000000000099",
+          kind: "account",
           name: "External Contributor",
         }}
+        portal={publicPortalFixture}
       />,
     );
 
@@ -1739,8 +1789,8 @@ describe("Public portal UI", () => {
             pageSize: 20,
           },
         }}
+        participant={portalViewer}
         portal={authorPortal}
-        viewer={portalViewer}
       />,
     );
 
@@ -1909,9 +1959,9 @@ describe("Public portal UI", () => {
   it("renders a public request detail page with comments and metadata", () => {
     render(
       <PublicPortalRequestDetailPage
+        participant={portalViewer}
         portal={publicPortalFixture}
         request={publicPortalFixture.requests[0]}
-        viewer={portalViewer}
       />,
     );
 
@@ -1970,9 +2020,9 @@ describe("Public portal UI", () => {
   it("adds a new public feedback comment to the discussion", async () => {
     render(
       <PublicPortalRequestDetailPage
+        participant={portalViewer}
         portal={publicPortalFixture}
         request={publicPortalFixture.requests[0]}
-        viewer={portalViewer}
       />,
     );
 
@@ -2002,9 +2052,9 @@ describe("Public portal UI", () => {
     });
     render(
       <PublicPortalRequestDetailPage
+        participant={portalViewer}
         portal={publicPortalFixture}
         request={publicPortalFixture.requests[0]}
-        viewer={portalViewer}
       />,
     );
 
@@ -2033,9 +2083,9 @@ describe("Public portal UI", () => {
     createFeedbackCommentActionMock.mockReturnValueOnce(commentRequest.promise);
     render(
       <PublicPortalRequestDetailPage
+        participant={portalViewer}
         portal={publicPortalFixture}
         request={publicPortalFixture.requests[0]}
-        viewer={portalViewer}
       />,
     );
 
@@ -2077,9 +2127,9 @@ describe("Public portal UI", () => {
     createFeedbackCommentActionMock.mockReturnValueOnce(commentRequest.promise);
     render(
       <PublicPortalRequestDetailPage
+        participant={portalViewer}
         portal={publicPortalFixture}
         request={publicPortalFixture.requests[0]}
-        viewer={portalViewer}
       />,
     );
 

@@ -34,7 +34,7 @@ import { useDebouncedCallback } from "@/hooks/debounce";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import type {
   PublicPortal,
-  PublicPortalViewer,
+  PublicPortalParticipant,
   PublicRequest,
   SimilarPublicFeedback,
 } from "./types";
@@ -49,6 +49,19 @@ import { getRequestLoginUrl, getRequestPathBySlug } from "./utils";
 import { requestStatusMeta } from "./status";
 import { getPublicAvatarColor } from "./avatar-color";
 import { getAnonymousFeedbackTrackingUrl } from "./anonymous-tracking";
+import {
+  FeedbackGuestVerification,
+  FeedbackGuestVerificationDialog,
+} from "./guest-verification";
+import {
+  canVerifyAsGuest,
+  isContactableParticipant,
+  isGuestParticipant,
+} from "./participant";
+import {
+  getCurrentFeedbackGuestAction,
+  updateFeedbackFollowAction,
+} from "./actions";
 
 const MAX_FEEDBACK_TITLE_LENGTH = 200;
 
@@ -64,25 +77,28 @@ const copyTrackingLink = async (trackingUrl: string) => {
 const getSubmitLabel = ({
   hasDuplicate,
   isSubmitting,
+  requiresIdentity,
 }: {
   hasDuplicate: boolean;
   isSubmitting: boolean;
+  requiresIdentity: boolean;
 }) => {
   if (hasDuplicate) return "View existing feedback";
   if (isSubmitting) return "Submitting...";
+  if (requiresIdentity) return "Continue";
   return "Submit feedback";
 };
 
 const SimilarFeedbackRow = ({
   item,
   onOpen,
+  participant,
   portal,
-  viewer,
 }: {
   item: SimilarPublicFeedback;
   onOpen: () => void;
+  participant: PublicPortalParticipant;
   portal: PublicPortal;
-  viewer?: PublicPortalViewer | null;
 }) => {
   const itemStatus = item.status ?? "pending";
   const authorName = item.authorName || "Unknown contributor";
@@ -121,9 +137,9 @@ const SimilarFeedbackRow = ({
       <div className="flex shrink-0 items-center gap-3">
         <FeedbackVoteButton
           compact
+          participant={participant}
           portal={portal}
           request={request}
-          viewer={viewer}
         />
         <span
           className={cn(
@@ -147,15 +163,21 @@ const SimilarFeedbackRow = ({
 
 export const NewFeedbackButton = ({
   initialOpen = false,
+  participant,
   portal,
-  viewer,
 }: {
   initialOpen?: boolean;
+  participant: PublicPortalParticipant;
   portal: PublicPortal;
-  viewer?: PublicPortalViewer | null;
 }) => {
   const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
+  const [composerStep, setComposerStep] = useState<
+    "draft" | "participation" | "verification"
+  >("draft");
+  const [lockedParticipant, setLockedParticipant] =
+    useState<PublicPortalParticipant>(participant);
+  const [isCheckingGuestSession, setIsCheckingGuestSession] = useState(false);
   const [title, setTitle] = useState("");
   const [anonymousSubmission, setAnonymousSubmission] = useState<{
     trackingUrl: string;
@@ -168,10 +190,15 @@ export const NewFeedbackButton = ({
   const [boardId, setBoardId] = useState(
     portal.boards.length === 1 ? portal.boards[0]?.id ?? "" : "",
   );
-  const createFeedback = useCreatePublicFeedback({ portal, viewer });
+  const createFeedback = useCreatePublicFeedback({
+    participant: lockedParticipant,
+    portal,
+  });
   const createAnonymousFeedback = useCreateAnonymousPublicFeedback({ portal });
   const isSubmitting =
-    createFeedback.isPending || createAnonymousFeedback.isPending;
+    createFeedback.isPending ||
+    createAnonymousFeedback.isPending ||
+    isCheckingGuestSession;
   const selectedBoard = portal.boards.find((board) => board.id === boardId);
   const { callback: checkForSimilarFeedback, cancel: cancelSimilarityCheck } =
     useDebouncedCallback(setSimilarityInput, 300);
@@ -223,6 +250,8 @@ export const NewFeedbackButton = ({
     clearInitialOpenIntent();
     cancelSimilarityCheck();
     setAnonymousSubmission(null);
+    setComposerStep("draft");
+    setLockedParticipant(participant);
     setOpen(false);
   };
 
@@ -243,49 +272,91 @@ export const NewFeedbackButton = ({
     }
   };
 
+  const getDraftInput = () => ({
+    boardId,
+    description: descriptionEditor?.getText() ?? "",
+    portalSlug: portal.slug,
+    title,
+  });
+
+  const submitAnonymously = () => {
+    const input = getDraftInput();
+    createAnonymousFeedback.mutate(input, {
+      onSuccess: (result) => {
+        const trackingUrl = getAnonymousFeedbackTrackingUrl(
+          portal,
+          result.request,
+        );
+        resetDraft();
+        setAnonymousSubmission({ trackingUrl });
+        toast.success("Feedback submitted anonymously");
+      },
+    });
+  };
+
+  const submitAsContactableParticipant = (
+    activeParticipant: Exclude<PublicPortalParticipant, { kind: "anonymous" }>,
+  ) => {
+    const input = getDraftInput();
+    createFeedback.mutate(
+      { ...input, participant: activeParticipant },
+      {
+        onError: async () => {
+          setTitle(input.title);
+          titleRef.current = input.title;
+          descriptionEditor?.commands.setContent(input.description);
+          setComposerStep("draft");
+          setOpen(true);
+          const refreshed = await similarFeedback.refetch();
+          const duplicate = refreshed.data?.find((item) => item.isDuplicate);
+          if (duplicate) openExistingFeedback(duplicate.slug, true);
+        },
+        onSuccess: () => {
+          close();
+          resetDraft();
+          router.refresh();
+          toast.success("Feedback submitted", {
+            description:
+              activeParticipant.kind === "account"
+                ? undefined
+                : "You are following this feedback and can receive meaningful updates.",
+          });
+        },
+      },
+    );
+  };
+
+  const continueWithEmail = async () => {
+    if (isContactableParticipant(lockedParticipant)) {
+      submitAsContactableParticipant(lockedParticipant);
+      return;
+    }
+
+    setIsCheckingGuestSession(true);
+    const response = await getCurrentFeedbackGuestAction(portal.slug);
+    setIsCheckingGuestSession(false);
+    if (response.data?.participant) {
+      setLockedParticipant(response.data.participant);
+      submitAsContactableParticipant(response.data.participant);
+      return;
+    }
+    setComposerStep("verification");
+  };
+
   const submit = () => {
     if (blockingMatch) {
       openExistingFeedback(blockingMatch.slug, true);
       return;
     }
-    const input = {
-      boardId,
-      description: descriptionEditor?.getText() ?? "",
-      portalSlug: portal.slug,
-      title,
-    };
-
-    if (!viewer) {
-      createAnonymousFeedback.mutate(input, {
-        onSuccess: (result) => {
-          const trackingUrl = getAnonymousFeedbackTrackingUrl(
-            portal,
-            result.request,
-          );
-          resetDraft();
-          setAnonymousSubmission({ trackingUrl });
-          toast.success("Feedback submitted anonymously");
-        },
-      });
+    if (portal.participationMode === "anonymous_allowed") {
+      setComposerStep("participation");
       return;
     }
-
-    close();
-    resetDraft();
-    createFeedback.mutate(input, {
-      onError: async () => {
-        setTitle(input.title);
-        titleRef.current = input.title;
-        descriptionEditor?.commands.setContent(input.description);
-        setOpen(true);
-        const refreshed = await similarFeedback.refetch();
-        const duplicate = refreshed.data?.find((item) => item.isDuplicate);
-        if (duplicate) openExistingFeedback(duplicate.slug, true);
-      },
-      onSuccess: () => {
-        toast.success("Feedback submitted");
-      },
-    });
+    if (!isContactableParticipant(lockedParticipant)) {
+      void continueWithEmail();
+      return;
+    }
+    submitAsContactableParticipant(lockedParticipant);
   };
 
   return (
@@ -298,6 +369,8 @@ export const NewFeedbackButton = ({
           clearInitialOpenIntent();
           cancelSimilarityCheck();
           setAnonymousSubmission(null);
+          setComposerStep("draft");
+          setLockedParticipant(participant);
         }
       }}
       open={open}
@@ -308,6 +381,8 @@ export const NewFeedbackButton = ({
         leftIcon={<PlusIcon className="h-4 text-current" />}
         onClick={() => {
           setAnonymousSubmission(null);
+          setComposerStep("draft");
+          setLockedParticipant(participant);
           setOpen(true);
           checkForSimilarFeedback({
             description: descriptionEditor?.getText() ?? "",
@@ -358,7 +433,80 @@ export const NewFeedbackButton = ({
               </Button>
             </Flex>
           </Box>
-        ) : (
+        ) : null}
+        {!anonymousSubmission && composerStep === "participation" ? (
+          <Box className="px-6 py-6">
+            <Text as="h2" className="text-xl" fontWeight="semibold">
+              How would you like to submit?
+            </Text>
+            <Text className="mt-2 max-w-xl leading-6" color="muted">
+              Your draft is saved. Choose whether you want a private email
+              connection for replies and status updates.
+            </Text>
+            <Box className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                className="border-border hover:bg-state-hover focus-visible:ring-ring rounded-xl border p-4 text-left transition focus-visible:ring-2 focus-visible:outline-none"
+                onClick={() => {
+                  void continueWithEmail();
+                }}
+                type="button"
+              >
+                <Text fontWeight="semibold">
+                  {isContactableParticipant(lockedParticipant)
+                    ? `Continue as ${lockedParticipant.name}`
+                    : "Continue with email"}
+                </Text>
+                <Text className="mt-1 text-sm leading-5" color="muted">
+                  {isContactableParticipant(lockedParticipant)
+                    ? "Attach this identity, follow the feedback, and receive meaningful updates."
+                    : "Verify privately, follow this feedback, and receive meaningful updates without creating an account."}
+                </Text>
+              </button>
+              <button
+                className="border-border hover:bg-state-hover focus-visible:ring-ring rounded-xl border p-4 text-left transition focus-visible:ring-2 focus-visible:outline-none"
+                disabled={isSubmitting}
+                onClick={submitAnonymously}
+                type="button"
+              >
+                <Text fontWeight="semibold">Submit anonymously</Text>
+                <Text className="mt-1 text-sm leading-5" color="muted">
+                  Attach no name or email. You will not receive personal
+                  notifications and must keep the public tracking link.
+                </Text>
+              </button>
+            </Box>
+            <Flex className="mt-6" justify="start">
+              <Button
+                color="tertiary"
+                disabled={isSubmitting}
+                onClick={() => {
+                  setComposerStep("draft");
+                }}
+                variant="naked"
+              >
+                Back to draft
+              </Button>
+            </Flex>
+          </Box>
+        ) : null}
+        {!anonymousSubmission && composerStep === "verification" ? (
+          <FeedbackGuestVerification
+            onBack={() => {
+              setComposerStep(
+                portal.participationMode === "anonymous_allowed"
+                  ? "participation"
+                  : "draft",
+              );
+            }}
+            onVerified={(verifiedParticipant) => {
+              setLockedParticipant(verifiedParticipant);
+              submitAsContactableParticipant(verifiedParticipant);
+            }}
+            portal={portal}
+            purpose="submit this feedback"
+          />
+        ) : null}
+        {!anonymousSubmission && composerStep === "draft" ? (
           <>
             <Dialog.Header className="flex items-center justify-between px-6 pt-5 pb-1">
               <Dialog.Title className="flex items-center gap-1 text-lg">
@@ -439,16 +587,31 @@ export const NewFeedbackButton = ({
                 className="min-h-24"
                 editor={descriptionEditor}
               />
-              {!viewer ? (
+              {!isContactableParticipant(lockedParticipant) ? (
                 <Box
                   className="border-border/70 bg-surface-muted/40 mt-4 rounded-xl border px-4 py-3"
                   role="note"
                 >
-                  <Text fontWeight="medium">Posting anonymously</Text>
+                  <Text fontWeight="medium">Choose how you participate</Text>
                   <Text className="mt-1 text-sm leading-5" color="muted">
-                    No name or email address will be attached. You won&apos;t
-                    receive email updates, so keep the tracking link we provide
-                    after submission.
+                    {portal.participationMode === "anonymous_allowed"
+                      ? "Continue with a private verified email to receive updates, or submit with no identity and no personal notifications."
+                      : "A private email verification is required. It lets you receive replies and updates without creating an account."}
+                  </Text>
+                </Box>
+              ) : null}
+              {isGuestParticipant(lockedParticipant) ? (
+                <Box
+                  className="border-border/70 bg-surface-muted/40 mt-4 rounded-xl border px-4 py-3"
+                  role="note"
+                >
+                  <Text fontWeight="medium">
+                    Continuing as {lockedParticipant.displayName}
+                  </Text>
+                  <Text className="mt-1 text-sm leading-5" color="muted">
+                    {lockedParticipant.masked
+                      ? "Your verified identity stays private and your public name is masked."
+                      : "Your email stays private. You will follow this feedback and can receive meaningful updates."}
                   </Text>
                 </Box>
               ) : null}
@@ -465,6 +628,9 @@ export const NewFeedbackButton = ({
                 {getSubmitLabel({
                   hasDuplicate: Boolean(blockingMatch),
                   isSubmitting,
+                  requiresIdentity:
+                    portal.participationMode === "anonymous_allowed" ||
+                    !isContactableParticipant(lockedParticipant),
                 })}
               </Button>
             </Dialog.Footer>
@@ -476,13 +642,13 @@ export const NewFeedbackButton = ({
                   onOpen={() => {
                     openExistingFeedback(item.slug, item.isDuplicate);
                   }}
+                  participant={lockedParticipant}
                   portal={portal}
-                  viewer={viewer}
                 />
               ))}
             </SimilarItemsPanel>
           </>
-        )}
+        ) : null}
       </Dialog.Content>
     </Dialog>
   );
@@ -490,74 +656,167 @@ export const NewFeedbackButton = ({
 
 export const FeedbackVoteButton = ({
   compact = false,
+  participant,
   portal,
   request,
   showDownvote = false,
-  viewer,
 }: {
   compact?: boolean;
+  participant: PublicPortalParticipant;
   portal: PublicPortal;
   request: PublicRequest;
   showDownvote?: boolean;
-  viewer?: PublicPortalViewer | null;
 }) => {
+  const router = useRouter();
+  const [participantOverride, setParticipantOverride] =
+    useState<PublicPortalParticipant | null>(null);
+  const activeParticipant = participantOverride ?? participant;
+  const [verificationOpen, setVerificationOpen] = useState(false);
+  const pendingDirectionRef = useRef<-1 | 1>(1);
   const { mutation, vote, voteCount } = usePublicFeedbackVote({
+    participant: activeParticipant,
     portalSlug: portal.slug,
     request,
   });
+  const requiresAccount = portal.participationMode === "account_required";
+
+  const offerUpdateNotifications = (
+    contactableParticipant: Exclude<
+      PublicPortalParticipant,
+      { kind: "anonymous" }
+    >,
+  ) => {
+    if (request.following) return;
+
+    toast.info("Want progress updates?", {
+      description: "Following is optional and separate from your vote.",
+      action: {
+        label: "Notify me",
+        onClick: () => {
+          void updateFeedbackFollowAction({
+            following: true,
+            itemId: request.id,
+            itemSlug: request.slug,
+            participantKind: contactableParticipant.kind,
+            portalSlug: portal.slug,
+          }).then((response) => {
+            if (response.error?.message) {
+              toast.error("Unable to enable updates", {
+                description: response.error.message,
+              });
+              return;
+            }
+            toast.success("Updates enabled");
+          });
+        },
+      },
+    });
+  };
+
+  const voteOrVerify = (direction: -1 | 1) => {
+    if (isContactableParticipant(activeParticipant)) {
+      mutation.mutate(
+        { direction },
+        {
+          onSuccess: () => {
+            offerUpdateNotifications(activeParticipant);
+          },
+        },
+      );
+      return;
+    }
+    pendingDirectionRef.current = direction;
+    setVerificationOpen(true);
+  };
 
   return (
-    <Box className="flex shrink-0 items-center gap-0.5">
-      {showDownvote ? (
+    <>
+      <Box className="flex shrink-0 items-center gap-0.5">
+        {showDownvote ? (
+          <Button
+            aria-label={vote === -1 ? "Remove downvote" : "Downvote"}
+            asIcon
+            className={cn("text-text-muted hover:text-foreground h-9", {
+              "text-foreground": vote === -1,
+            })}
+            color="tertiary"
+            disabled={mutation.isPending}
+            href={
+              requiresAccount && !isContactableParticipant(activeParticipant)
+                ? getRequestLoginUrl(portal, request)
+                : undefined
+            }
+            onClick={
+              requiresAccount && !isContactableParticipant(activeParticipant)
+                ? undefined
+                : () => {
+                    voteOrVerify(-1);
+                  }
+            }
+            size="sm"
+            title={vote === -1 ? "Remove downvote" : "Downvote"}
+            variant="naked"
+          >
+            <ThumbsDownIcon className="h-4" strokeWidth={2} />
+          </Button>
+        ) : null}
         <Button
-          aria-label={vote === -1 ? "Remove downvote" : "Downvote"}
-          asIcon
-          className={cn("text-text-muted hover:text-foreground h-9", {
-            "text-foreground": vote === -1,
-          })}
+          aria-label={vote === 1 ? "Remove upvote" : "Upvote"}
+          className={cn(
+            "text-text-muted hover:text-foreground",
+            compact ? "h-7 gap-1 px-1.5" : "h-9 gap-1.5 px-2.5",
+            { "text-foreground": vote === 1 },
+          )}
           color="tertiary"
           disabled={mutation.isPending}
-          href={viewer ? undefined : getRequestLoginUrl(portal, request)}
-          onClick={
-            viewer
-              ? () => {
-                  mutation.mutate(-1);
-                }
+          href={
+            requiresAccount && !isContactableParticipant(activeParticipant)
+              ? getRequestLoginUrl(portal, request)
               : undefined
           }
+          leftIcon={
+            <ThumbsUpIcon
+              className={compact ? "h-3.5" : "h-4"}
+              strokeWidth={2}
+            />
+          }
+          onClick={
+            requiresAccount && !isContactableParticipant(activeParticipant)
+              ? undefined
+              : () => {
+                  voteOrVerify(1);
+                }
+          }
           size="sm"
-          title={vote === -1 ? "Remove downvote" : "Downvote"}
+          title={vote === 1 ? "Remove upvote" : "Upvote"}
           variant="naked"
         >
-          <ThumbsDownIcon className="h-4" strokeWidth={2} />
+          {voteCount}
         </Button>
+      </Box>
+      {canVerifyAsGuest(portal.participationMode) ? (
+        <FeedbackGuestVerificationDialog
+          onOpenChange={setVerificationOpen}
+          onVerified={(verifiedParticipant) => {
+            setParticipantOverride(verifiedParticipant);
+            mutation.mutate(
+              {
+                direction: pendingDirectionRef.current,
+                participant: verifiedParticipant,
+              },
+              {
+                onSuccess: () => {
+                  offerUpdateNotifications(verifiedParticipant);
+                },
+              },
+            );
+            router.refresh();
+          }}
+          open={verificationOpen}
+          portal={portal}
+          purpose="vote"
+        />
       ) : null}
-      <Button
-        aria-label={vote === 1 ? "Remove upvote" : "Upvote"}
-        className={cn(
-          "text-text-muted hover:text-foreground",
-          compact ? "h-7 gap-1 px-1.5" : "h-9 gap-1.5 px-2.5",
-          { "text-foreground": vote === 1 },
-        )}
-        color="tertiary"
-        disabled={mutation.isPending}
-        href={viewer ? undefined : getRequestLoginUrl(portal, request)}
-        leftIcon={
-          <ThumbsUpIcon className={compact ? "h-3.5" : "h-4"} strokeWidth={2} />
-        }
-        onClick={
-          viewer
-            ? () => {
-                mutation.mutate(1);
-              }
-            : undefined
-        }
-        size="sm"
-        title={vote === 1 ? "Remove upvote" : "Upvote"}
-        variant="naked"
-      >
-        {voteCount}
-      </Button>
-    </Box>
+    </>
   );
 };

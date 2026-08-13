@@ -4,7 +4,7 @@ import {
   shouldOpenFeedbackComposer,
 } from "@/modules/public-portal/query-params";
 import { getPublicPortalOrNotFound } from "@/modules/public-portal/query";
-import { getPublicPortalViewer } from "@/modules/public-portal/viewer";
+import { getPublicPortalParticipant } from "@/modules/public-portal/viewer";
 
 type PageProps = {
   params: Promise<{ portalSlug: string }>;
@@ -22,17 +22,17 @@ export default async function PublicPortalFeedbackRoute({
   const filters = parsePublicPortalFilters(resolvedSearchParams);
   const initialFeedbackComposerOpen =
     shouldOpenFeedbackComposer(resolvedSearchParams);
-  const [portal, viewer] = await Promise.all([
+  const [portal, participant] = await Promise.all([
     getPublicPortalOrNotFound(portalSlug, filters),
-    getPublicPortalViewer(portalSlug),
+    getPublicPortalParticipant(portalSlug),
   ]);
 
   return (
     <PublicPortalRequestsPage
       initialFeedbackComposerOpen={initialFeedbackComposerOpen}
       initialFilters={filters}
+      participant={participant}
       portal={portal}
-      viewer={viewer}
     />
   );
 }

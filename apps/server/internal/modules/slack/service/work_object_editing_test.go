@@ -357,6 +357,33 @@ func workObjectSelectState(field, value string) map[string]interactionViewStateV
 	return map[string]interactionViewStateValue{field + ".input": state}
 }
 
+func TestAuthorizedSlackWorkObjectUpdatesAcceptsSlackPriorityPayloadVariants(t *testing.T) {
+	t.Parallel()
+
+	fixture := newWorkObjectEditFixture(t)
+	variants := []interactionViewStateValues{
+		{
+			"priority": {
+				"priority.input": {SelectedOption: struct {
+					Value string `json:"value"`
+				}{Value: "Urgent"}},
+			},
+		},
+		{
+			"priority": {
+				"provider-generated-action": {Type: "static_select", SelectedOption: struct {
+					Value string `json:"value"`
+				}{Value: "Urgent"}},
+			},
+		},
+	}
+	for _, state := range variants {
+		updates, err := fixture.service.authorizedSlackWorkObjectUpdates(context.Background(), fixture.stories.story, state)
+		require.NoError(t, err)
+		require.Equal(t, "Urgent", updates["priority"])
+	}
+}
+
 func workObjectDateState(field, value string) map[string]interactionViewStateValue {
 	return map[string]interactionViewStateValue{
 		field + ".input": {Type: "datepicker", SelectedDate: value},

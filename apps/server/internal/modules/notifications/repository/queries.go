@@ -294,7 +294,7 @@ func (r *repo) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalS
 			AND fp.is_public = true
 			AND fi.deleted_at IS NULL
 			AND CAST(n.entity_type AS text) = 'feedback'
-			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update')
+			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update', 'feedback_update_published', 'feedback_item_merged')
 			AND ($3 = false OR n.read_at IS NULL)
 		ORDER BY n.created_at DESC
 		LIMIT $4 OFFSET $5
@@ -328,7 +328,7 @@ func (r *repo) GetPortalFeedbackUnreadCount(ctx context.Context, userID uuid.UUI
 			AND fp.is_public = true
 			AND fi.deleted_at IS NULL
 			AND CAST(n.entity_type AS text) = 'feedback'
-			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update')
+			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update', 'feedback_update_published', 'feedback_item_merged')
 			AND n.read_at IS NULL
 	`, userID, portalSlug); err != nil {
 		span.RecordError(err)

@@ -2,7 +2,19 @@ export type PublicPortalTab = "feedback" | "roadmap" | "updates";
 
 export type FeedbackParticipationMode =
   | "account_required"
+  | "verified_guest"
   | "anonymous_allowed";
+
+export type FeedbackGuestIdentityPolicy =
+  | "show_identity"
+  | "allow_public_masking"
+  | "always_mask_guests";
+
+export type PublicParticipantKind =
+  | "account"
+  | "verified_guest"
+  | "external"
+  | "anonymous";
 
 export type PublicRequestStatus =
   | "pending"
@@ -34,6 +46,8 @@ export type PublicRequestBoard = {
 export type PublicRequestComment = {
   id: string;
   parentId?: string | null;
+  participantKind?: PublicParticipantKind;
+  authorMasked?: boolean;
   authorName: string;
   authorAvatar?: string | null;
   body: string;
@@ -87,6 +101,7 @@ export type PublicRequest = {
   slug: string;
   title: string;
   description: string;
+  authorMasked?: boolean;
   authorName: string;
   authorAvatar?: string | null;
   boardId: string;
@@ -97,6 +112,9 @@ export type PublicRequest = {
   roadmapSummary?: string;
   comments: PublicRequestComment[];
   storyLinks: PublicFeedbackStoryLink[];
+  participantKind?: PublicParticipantKind;
+  following?: boolean;
+  viewerVote?: -1 | 0 | 1;
 };
 
 export type SimilarPublicFeedback = {
@@ -115,11 +133,19 @@ export type SimilarPublicFeedback = {
 
 export type PublicPortalUpdate = {
   id: string;
+  slug: string;
   title: string;
+  summary?: string | null;
   body: string;
-  status: "published" | "draft";
+  coverImageUrl?: string | null;
+  publishedAt: string;
   publishedAtLabel: string;
-  relatedRequestIds: string[];
+  linkedItems: {
+    id: string;
+    slug: string;
+    title: string;
+    status: PublicRequestStatus;
+  }[];
 };
 
 export type PublicPortalWorkspace = {
@@ -130,6 +156,7 @@ export type PublicPortalWorkspace = {
 };
 
 export type PublicPortalViewer = {
+  kind: "account";
   id: string;
   name: string;
   email: string;
@@ -137,7 +164,36 @@ export type PublicPortalViewer = {
   appHref?: string;
   accountHref: string;
   feedbackSetupHref: string;
+  canReceiveUpdates: true;
 };
+
+export type PublicPortalGuestParticipant = {
+  kind: "verified_guest" | "external";
+  id: string;
+  name: string;
+  displayName: string;
+  email?: string;
+  avatarUrl: string | null;
+  masked: boolean;
+  canReceiveUpdates: true;
+  sessionExpiresAt: string;
+  unreadUpdateCount: number;
+};
+
+export type PublicPortalAnonymousParticipant = {
+  kind: "anonymous";
+  canReceiveUpdates: false;
+};
+
+export type PublicPortalParticipant =
+  | PublicPortalViewer
+  | PublicPortalGuestParticipant
+  | PublicPortalAnonymousParticipant;
+
+export type LegacyPublicPortalViewer = Omit<
+  PublicPortalViewer,
+  "kind" | "canReceiveUpdates"
+>;
 
 export type PublicPortalNotification = {
   id: string;
@@ -185,6 +241,8 @@ export type PublicPortal = {
   name: string;
   slug: string;
   participationMode: FeedbackParticipationMode;
+  guestIdentityPolicy: FeedbackGuestIdentityPolicy;
+  hasPublishedUpdates: boolean;
   workspace: PublicPortalWorkspace;
   boards: PublicRequestBoard[];
   requests: PublicRequest[];

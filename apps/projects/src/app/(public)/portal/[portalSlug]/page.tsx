@@ -1,7 +1,7 @@
 import { PublicPortalRequestsPage } from "@/modules/public-portal";
 import { parsePublicPortalFilters } from "@/modules/public-portal/query-params";
 import { getPublicPortalOrNotFound } from "@/modules/public-portal/query";
-import { getPublicPortalViewer } from "@/modules/public-portal/viewer";
+import { getPublicPortalParticipant } from "@/modules/public-portal/viewer";
 
 export default async function PortalPage({
   params,
@@ -15,16 +15,16 @@ export default async function PortalPage({
     searchParams,
   ]);
   const filters = parsePublicPortalFilters(resolvedSearchParams);
-  const [portal, viewer] = await Promise.all([
+  const [portal, participant] = await Promise.all([
     getPublicPortalOrNotFound(portalSlug, filters),
-    getPublicPortalViewer(portalSlug),
+    getPublicPortalParticipant(portalSlug),
   ]);
 
   return (
     <PublicPortalRequestsPage
       initialFilters={filters}
+      participant={participant}
       portal={portal}
-      viewer={viewer}
     />
   );
 }

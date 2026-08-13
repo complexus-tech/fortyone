@@ -56,14 +56,20 @@ import {
 import { useCreateTeamFeedbackComment } from "./hooks/use-create-comment";
 import { usePlanTeamFeedback } from "./hooks/use-plan-feedback";
 import { useSetTeamFeedbackReadState } from "./hooks/use-read-state";
-import { useTeamFeedbackItem } from "./hooks/use-feedback";
+import {
+  useTeamFeedbackItem,
+  useTeamFeedbackPrivateAuthor,
+} from "./hooks/use-feedback";
 import { useTrashTeamFeedback } from "./hooks/use-trash";
 import { useUpdateTeamFeedbackStatus } from "./hooks/use-update-status";
+import { CloseTeamFeedbackDialog } from "./close-dialog";
 import { LinkFeedbackStoryDialog } from "./link-story-dialog";
+import { MergeTeamFeedbackDialog } from "./merge-dialog";
 import { FeedbackStatus } from "./status";
 import type {
   TeamFeedbackComment,
   TeamFeedbackItem,
+  TeamFeedbackPrivateAuthor,
   TeamFeedbackStatus,
 } from "./types";
 
@@ -100,6 +106,7 @@ const FeedbackBanner = ({
   isTrashing,
   onClose,
   onLink,
+  onMerge,
   onOpenStory,
   portalHref,
   onPlan,
@@ -112,6 +119,7 @@ const FeedbackBanner = ({
   isTrashing: boolean;
   onClose: () => void;
   onLink: () => void;
+  onMerge: () => void;
   onOpenStory: () => void;
   portalHref?: string;
   onPlan: () => void;
@@ -229,6 +237,12 @@ const FeedbackBanner = ({
                   <LinkIcon className="h-5 w-auto" />
                   Link existing {storyTerm}
                 </Menu.Item>
+                {canManageTrash ? (
+                  <Menu.Item disabled={isLinked} onSelect={onMerge}>
+                    <LinkIcon className="h-5 w-auto" />
+                    Merge feedback
+                  </Menu.Item>
+                ) : null}
                 <Menu.Item
                   disabled={isLinked || feedback.status === "closed"}
                   onSelect={onClose}
@@ -488,17 +502,22 @@ const FeedbackProperties = ({
   authorProfileHref,
   feedback,
   linkedStoryHref,
+  privateAuthor,
   variant = "sidebar",
 }: {
   authorProfileHref?: string;
   feedback: TeamFeedbackItem;
   linkedStoryHref?: string;
+  privateAuthor?: TeamFeedbackPrivateAuthor;
   variant?: "inline" | "sidebar";
 }) => {
   const { getTermDisplay } = useTerminology();
   const storyTerm = getTermDisplay("storyTerm");
   const linkedStory = feedback.storyLinks.find((link) => link.isPrimary);
   const isInline = variant === "inline";
+  const authorName = privateAuthor?.displayName || feedback.authorName;
+  const authorAvatar = privateAuthor?.avatarUrl ?? feedback.authorAvatar;
+  const showPrivateIdentity = Boolean(privateAuthor?.publicMasked);
 
   return (
     <Container
@@ -524,25 +543,50 @@ const FeedbackProperties = ({
           value={
             <MetadataValue>
               <Avatar
-                name={feedback.authorName}
+                name={authorName}
                 size="xs"
-                src={feedback.authorAvatar ?? undefined}
+                src={authorAvatar ?? undefined}
               />
-              {authorProfileHref ? (
+              {authorProfileHref && !showPrivateIdentity ? (
                 <Link
                   className="text-foreground hover:text-primary min-w-0 transition-colors"
                   href={authorProfileHref}
                 >
                   <Text as="span" className="line-clamp-1">
-                    {feedback.authorName}
+                    {authorName}
                   </Text>
                 </Link>
               ) : (
-                <Text className="line-clamp-1">{feedback.authorName}</Text>
+                <Box className="min-w-0">
+                  <Text className="line-clamp-1">{authorName}</Text>
+                  {showPrivateIdentity ? (
+                    <Text className="text-xs" color="muted">
+                      Hidden publicly
+                    </Text>
+                  ) : null}
+                </Box>
               )}
             </MetadataValue>
           }
         />
+        {privateAuthor?.email &&
+        (privateAuthor.kind === "verified_guest" ||
+          privateAuthor.kind === "external") ? (
+          <Option
+            className="my-5 md:my-6"
+            isCompact={isInline}
+            isNotifications={isInline}
+            label="Contact"
+            value={
+              <a
+                className="text-foreground hover:text-primary min-w-0 truncate transition-colors"
+                href={`mailto:${privateAuthor.email}`}
+              >
+                {privateAuthor.email}
+              </a>
+            }
+          />
+        ) : null}
         <Option
           className="my-5 md:my-6"
           isCompact={isInline}
@@ -703,6 +747,10 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
     isPending,
     refetch,
   } = useTeamFeedbackItem(feedbackId);
+  const { data: privateAuthor } = useTeamFeedbackPrivateAuthor(
+    feedbackId,
+    userRole === "admin",
+  );
   const { data: feedbackPortals = [] } = useFeedbackPortals();
   const planFeedback = usePlanTeamFeedback();
   const { mutate: setReadState } = useSetTeamFeedbackReadState();
@@ -711,6 +759,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
   const lastAutoReadFeedbackId = useRef<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
   const [isTrashing, setIsTrashing] = useState(false);
 
   useEffect(() => {
@@ -834,6 +883,9 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                 onLink={() => {
                   openDialogAfterMenuClose(setIsLinking);
                 }}
+                onMerge={() => {
+                  openDialogAfterMenuClose(setIsMerging);
+                }}
                 onOpenStory={() => {
                   if (linkedStory) openStory(linkedStory.storyId);
                 }}
@@ -867,6 +919,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
                   authorProfileHref={authorProfileHref}
                   feedback={feedback}
                   linkedStoryHref={linkedStoryHref}
+                  privateAuthor={privateAuthor}
                   variant="inline"
                 />
               </Box>
@@ -900,6 +953,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
             authorProfileHref={authorProfileHref}
             feedback={feedback}
             linkedStoryHref={linkedStoryHref}
+            privateAuthor={privateAuthor}
           />
         </Box>
       </Box>
@@ -909,6 +963,21 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
         onLinked={openStory}
         onOpenChange={setIsLinking}
         teamId={feedbackTeamId}
+      />
+      <MergeTeamFeedbackDialog
+        onClose={() => {
+          setIsMerging(false);
+        }}
+        onMerged={(target) => {
+          setIsMerging(false);
+          router.push(
+            withWorkspace(
+              `/teams/${target.board.teamId}/feedback/${target.id}`,
+            ),
+          );
+        }}
+        open={isMerging}
+        source={feedback}
       />
       <ConfirmDialog
         confirmText="Move to trash"
@@ -932,36 +1001,33 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
         }}
         title="Move this feedback to trash?"
       />
-      <ConfirmDialog
-        confirmText="Close feedback"
-        description="Closing removes this item from the team's active feedback queue. It will remain available in the feedback portal."
-        isLoading={updateStatus.isPending}
-        isOpen={isClosing}
-        loadingText="Closing..."
-        onCancel={() => {
-          setIsClosing(false);
-        }}
-        onClose={() => {
-          setIsClosing(false);
-        }}
-        onConfirm={() => {
-          updateStatus.mutate(
-            {
-              feedbackId: feedback.id,
-              payload: { status: "closed", roadmapSummary: null },
-            },
-            {
-              onSuccess: (response) => {
-                if (!response.error?.message) {
-                  setIsClosing(false);
-                  router.push(listHref);
-                }
+      {isClosing ? (
+        <CloseTeamFeedbackDialog
+          isLoading={updateStatus.isPending}
+          onCancel={() => {
+            setIsClosing(false);
+          }}
+          onConfirm={(publicExplanation) => {
+            updateStatus.mutate(
+              {
+                feedbackId: feedback.id,
+                payload: {
+                  status: "closed",
+                  roadmapSummary: publicExplanation,
+                },
               },
-            },
-          );
-        }}
-        title="Close this feedback?"
-      />
+              {
+                onSuccess: (response) => {
+                  if (!response.error?.message) {
+                    setIsClosing(false);
+                    router.push(listHref);
+                  }
+                },
+              },
+            );
+          }}
+        />
+      ) : null}
     </Box>
   );
 };

@@ -17,8 +17,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, emailReplies taskhandlers.EmailReplyProcessor, emailRecovery taskhandlers.EmailReplyRecoverer, calendar taskhandlers.CalendarSyncProcessor, systemUserID uuid.UUID) *asynq.ServeMux {
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopy, emailThreads, slackEvents, emailReplies, emailRecovery, calendar, systemUserID)
+func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, emailReplies taskhandlers.EmailReplyProcessor, emailRecovery taskhandlers.EmailReplyRecoverer, calendar taskhandlers.CalendarSyncProcessor, systemUserID uuid.UUID, feedbackTasks *tasks.Service, feedbackOutbox taskhandlers.FeedbackOutboxProcessor, feedbackAuthSecret string) *asynq.ServeMux {
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopy, emailThreads, slackEvents, emailReplies, emailRecovery, calendar, systemUserID, feedbackTasks, feedbackOutbox, feedbackAuthSecret)
 	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, emailCopy, emailThreads, systemUserID, notificationsService)
 
 	mux := asynq.NewServeMux()
@@ -30,6 +30,9 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeSubscriberUpdate, workerTaskService.HandleSubscriberUpdate)
 	mux.HandleFunc(tasks.TypeNotificationEmail, workerTaskService.HandleNotificationEmail)
 	mux.HandleFunc(tasks.TypeNotificationEmailDigest, workerTaskService.HandleNotificationEmailDigest)
+	mux.HandleFunc(tasks.TypeFeedbackContributorDelivery, workerTaskService.HandleFeedbackContributorDelivery)
+	mux.HandleFunc(tasks.TypeFeedbackContributorDeliveryRecovery, workerTaskService.HandleFeedbackContributorDeliveryRecovery)
+	mux.HandleFunc(tasks.TypeFeedbackOutboxDispatch, workerTaskService.HandleFeedbackOutboxDispatch)
 	mux.HandleFunc(tasks.TypeGitHubStorySync, workerTaskService.HandleGitHubStorySync)
 	mux.HandleFunc(tasks.TypeMayaBatchAssignment, workerTaskService.HandleMayaBatchAssignment)
 	mux.HandleFunc(tasks.TypeAttachmentImageOptimization, workerTaskService.HandleAttachmentImageOptimization)

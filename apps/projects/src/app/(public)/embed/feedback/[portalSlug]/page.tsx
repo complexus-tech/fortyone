@@ -10,6 +10,7 @@ import {
 import {
   getPublicFeedbackPortalOrNotFound,
   getPublicPortalOrNotFound,
+  getPublicPortalUpdates,
 } from "@/modules/public-portal/query";
 import { getPublicPortalViewer } from "@/modules/public-portal/viewer";
 
@@ -25,7 +26,7 @@ const first = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
 const parseTab = (value?: string): FeedbackWidgetTab =>
-  value === "roadmap" ? value : "feedback";
+  value === "roadmap" || value === "updates" ? value : "feedback";
 
 const parseMode = (value?: string): FeedbackWidgetMode =>
   value === "custom" || value === "inline" ? value : "bubble";
@@ -45,34 +46,45 @@ export default async function FeedbackWidgetPage({
   const parentOrigin = getTrustedWidgetOrigin(first(query.parentOrigin));
   if (!instanceId || instanceId.length > 160 || !parentOrigin) notFound();
 
-  const [portal, planned, inProgress, completed, viewer] = await Promise.all([
-    getPublicPortalOrNotFound(
-      portalSlug,
-      {
-        pageSize: 20,
-        sort: "top",
-        status: "active",
-        view: "summary",
-      },
-      { revalidateSeconds: 30 },
-    ),
-    getPublicFeedbackPortalOrNotFound(
-      portalSlug,
-      { pageSize: 20, sort: "newest", status: "planned", view: "summary" },
-      { revalidateSeconds: 5 * 60 },
-    ),
-    getPublicFeedbackPortalOrNotFound(
-      portalSlug,
-      { pageSize: 20, sort: "newest", status: "in_progress", view: "summary" },
-      { revalidateSeconds: 5 * 60 },
-    ),
-    getPublicFeedbackPortalOrNotFound(
-      portalSlug,
-      { pageSize: 20, sort: "newest", status: "completed", view: "summary" },
-      { revalidateSeconds: 5 * 60 },
-    ),
-    getPublicPortalViewer(portalSlug),
-  ]);
+  const [portal, planned, inProgress, completed, viewer, updatesPage] =
+    await Promise.all([
+      getPublicPortalOrNotFound(
+        portalSlug,
+        {
+          pageSize: 20,
+          sort: "top",
+          status: "active",
+          view: "summary",
+        },
+        { revalidateSeconds: 30 },
+      ),
+      getPublicFeedbackPortalOrNotFound(
+        portalSlug,
+        { pageSize: 20, sort: "newest", status: "planned", view: "summary" },
+        { revalidateSeconds: 5 * 60 },
+      ),
+      getPublicFeedbackPortalOrNotFound(
+        portalSlug,
+        {
+          pageSize: 20,
+          sort: "newest",
+          status: "in_progress",
+          view: "summary",
+        },
+        { revalidateSeconds: 5 * 60 },
+      ),
+      getPublicFeedbackPortalOrNotFound(
+        portalSlug,
+        { pageSize: 20, sort: "newest", status: "completed", view: "summary" },
+        { revalidateSeconds: 5 * 60 },
+      ),
+      getPublicPortalViewer(portalSlug),
+      getPublicPortalUpdates(portalSlug, 1, 20).catch(() => ({
+        hasMore: false,
+        unreadCount: 0,
+        updates: [],
+      })),
+    ]);
 
   return (
     <FeedbackWidgetFrame
@@ -80,7 +92,7 @@ export default async function FeedbackWidgetPage({
       instanceId={instanceId}
       mode={parseMode(first(query.mode))}
       parentOrigin={parentOrigin}
-      portal={portal}
+      portal={{ ...portal, updates: updatesPage.updates }}
       roadmap={{
         completed: completed.requests,
         in_progress: inProgress.requests,

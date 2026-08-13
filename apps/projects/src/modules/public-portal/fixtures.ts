@@ -5,6 +5,8 @@ export const publicPortalFixture: PublicPortal = {
   name: "City Roads Program",
   slug: "city-roads",
   participationMode: "account_required",
+  guestIdentityPolicy: "show_identity",
+  hasPublishedUpdates: true,
   workspace: {
     name: "City Roads Program",
     slug: "city-roads",
@@ -107,19 +109,38 @@ export const publicPortalFixture: PublicPortal = {
   updates: [
     {
       id: "update-1",
+      slug: "school-zone-signal-timing-completed",
       title: "School-zone signal timing completed",
+      summary:
+        "The longer pedestrian phase is now active around the school zone.",
       body: "The signal timing work near the school zone is now complete and the longer pedestrian phase is active during morning and afternoon periods.",
-      status: "published",
+      publishedAt: "2026-07-13T08:00:00.000Z",
       publishedAtLabel: "Last week",
-      relatedRequestIds: ["req-4"],
+      linkedItems: [
+        {
+          id: "req-4",
+          slug: "repair-school-zone-signal-timing",
+          status: "completed",
+          title: "Repair school-zone signal timing",
+        },
+      ],
     },
     {
       id: "update-2",
+      slug: "market-road-resurfacing-planning",
       title: "Market Road resurfacing moved into planning",
+      summary: "The request has moved into the public roadmap.",
       body: "The resurfacing request has been accepted into the public roadmap and is being prepared for the next resurfacing cycle.",
-      status: "published",
+      publishedAt: "2026-07-19T08:00:00.000Z",
       publishedAtLabel: "Yesterday",
-      relatedRequestIds: ["req-3"],
+      linkedItems: [
+        {
+          id: "req-3",
+          slug: "resurface-market-road-before-rainy-season",
+          status: "planned",
+          title: "Resurface Market Road before rainy season",
+        },
+      ],
     },
   ],
 };

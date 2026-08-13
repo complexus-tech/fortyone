@@ -26,14 +26,16 @@ func New(log *logger.Logger, db *sqlx.DB) *Repo {
 }
 
 type portalRow struct {
-	ID                uuid.UUID `db:"id"`
-	WorkspaceID       uuid.UUID `db:"workspace_id"`
-	Name              string    `db:"name"`
-	Slug              string    `db:"slug"`
-	IsPublic          bool      `db:"is_public"`
-	ParticipationMode string    `db:"participation_mode"`
-	CreatedAt         time.Time `db:"created_at"`
-	UpdatedAt         time.Time `db:"updated_at"`
+	ID                  uuid.UUID `db:"id"`
+	WorkspaceID         uuid.UUID `db:"workspace_id"`
+	Name                string    `db:"name"`
+	Slug                string    `db:"slug"`
+	IsPublic            bool      `db:"is_public"`
+	ParticipationMode   string    `db:"participation_mode"`
+	GuestIdentityPolicy string    `db:"guest_identity_policy"`
+	HasPublishedUpdates bool      `db:"has_published_updates"`
+	CreatedAt           time.Time `db:"created_at"`
+	UpdatedAt           time.Time `db:"updated_at"`
 }
 
 type boardRow struct {
@@ -59,6 +61,12 @@ type itemRow struct {
 	AuthorName        string     `db:"author_name"`
 	AuthorEmail       string     `db:"author_email"`
 	AuthorAvatar      *string    `db:"author_avatar"`
+	ParticipantKind   string     `db:"participant_kind"`
+	AuthorMasked      bool       `db:"author_masked"`
+	MergedIntoItemID  *uuid.UUID `db:"merged_into_item_id"`
+	MergedAt          *time.Time `db:"merged_at"`
+	MergedByUserID    *uuid.UUID `db:"merged_by_user_id"`
+	Following         bool       `db:"following"`
 	Title             string     `db:"title"`
 	Description       string     `db:"description"`
 	Slug              string     `db:"slug"`
@@ -102,16 +110,19 @@ type similarItemRow struct {
 }
 
 type commentRow struct {
-	ID           uuid.UUID  `db:"id"`
-	WorkspaceID  uuid.UUID  `db:"workspace_id"`
-	ItemID       uuid.UUID  `db:"item_id"`
-	AuthorID     *uuid.UUID `db:"author_id"`
-	ParentID     *uuid.UUID `db:"parent_id"`
-	AuthorName   string     `db:"author_name"`
-	AuthorAvatar *string    `db:"author_avatar"`
-	Body         string     `db:"body"`
-	CreatedAt    time.Time  `db:"created_at"`
-	UpdatedAt    time.Time  `db:"updated_at"`
+	ID              uuid.UUID  `db:"id"`
+	WorkspaceID     uuid.UUID  `db:"workspace_id"`
+	ItemID          uuid.UUID  `db:"item_id"`
+	AuthorID        *uuid.UUID `db:"author_id"`
+	ContributorID   uuid.UUID  `db:"contributor_id"`
+	ParentID        *uuid.UUID `db:"parent_id"`
+	AuthorName      string     `db:"author_name"`
+	AuthorAvatar    *string    `db:"author_avatar"`
+	ParticipantKind string     `db:"participant_kind"`
+	AuthorMasked    bool       `db:"author_masked"`
+	Body            string     `db:"body"`
+	CreatedAt       time.Time  `db:"created_at"`
+	UpdatedAt       time.Time  `db:"updated_at"`
 }
 
 type contributorRow struct {
@@ -215,7 +226,9 @@ END`
 func (r *Repo) GetPortalBySlug(ctx context.Context, slug string) (feedback.CorePortal, error) {
 	var row portalRow
 	err := r.db.GetContext(ctx, &row, `
-			SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.participation_mode, fp.created_at, fp.updated_at
+			SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.participation_mode, fp.guest_identity_policy,
+				EXISTS (SELECT 1 FROM feedback_updates fu WHERE fu.portal_id = fp.id AND fu.status = 'published' AND fu.published_at IS NOT NULL) AS has_published_updates,
+				fp.created_at, fp.updated_at
 		FROM feedback_portals fp
 		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
 		WHERE w.slug = $1 AND fp.is_public = true
@@ -369,7 +382,9 @@ func (r *Repo) ListContributorActivity(ctx context.Context, input feedback.CoreL
 func (r *Repo) GetPortalByWorkspaceSlugAndSlug(ctx context.Context, workspaceSlug, slug string) (feedback.CorePortal, error) {
 	var row portalRow
 	err := r.db.GetContext(ctx, &row, `
-			SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.participation_mode, fp.created_at, fp.updated_at
+			SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.participation_mode, fp.guest_identity_policy,
+				EXISTS (SELECT 1 FROM feedback_updates fu WHERE fu.portal_id = fp.id AND fu.status = 'published' AND fu.published_at IS NOT NULL) AS has_published_updates,
+				fp.created_at, fp.updated_at
 		FROM feedback_portals fp
 		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
 		WHERE w.slug = $1 AND w.slug = $2 AND fp.is_public = true
@@ -383,7 +398,9 @@ func (r *Repo) GetPortalByWorkspaceSlugAndSlug(ctx context.Context, workspaceSlu
 func (r *Repo) GetPortal(ctx context.Context, workspaceID, portalID uuid.UUID) (feedback.CorePortal, error) {
 	var row portalRow
 	err := r.db.GetContext(ctx, &row, `
-			SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.participation_mode, fp.created_at, fp.updated_at
+			SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.participation_mode, fp.guest_identity_policy,
+				EXISTS (SELECT 1 FROM feedback_updates fu WHERE fu.portal_id = fp.id AND fu.status = 'published' AND fu.published_at IS NOT NULL) AS has_published_updates,
+				fp.created_at, fp.updated_at
 		FROM feedback_portals fp
 		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
 		WHERE fp.workspace_id = $1 AND fp.id = $2
@@ -397,7 +414,9 @@ func (r *Repo) GetPortal(ctx context.Context, workspaceID, portalID uuid.UUID) (
 func (r *Repo) ListPortals(ctx context.Context, workspaceID uuid.UUID) ([]feedback.CorePortal, error) {
 	var rows []portalRow
 	if err := r.db.SelectContext(ctx, &rows, `
-			SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.participation_mode, fp.created_at, fp.updated_at
+			SELECT fp.id, fp.workspace_id, w.name, w.slug, fp.is_public, fp.participation_mode, fp.guest_identity_policy,
+				EXISTS (SELECT 1 FROM feedback_updates fu WHERE fu.portal_id = fp.id AND fu.status = 'published' AND fu.published_at IS NOT NULL) AS has_published_updates,
+				fp.created_at, fp.updated_at
 		FROM feedback_portals fp
 		INNER JOIN workspaces w ON w.workspace_id = fp.workspace_id
 		WHERE fp.workspace_id = $1
@@ -416,14 +435,15 @@ func (r *Repo) CreatePortal(ctx context.Context, input feedback.CorePortalInput)
 	var row portalRow
 	err := r.db.GetContext(ctx, &row, `
 		WITH inserted AS (
-				INSERT INTO feedback_portals (workspace_id, is_public, participation_mode)
-				VALUES ($1, $2, $3)
-				RETURNING id, workspace_id, is_public, participation_mode, created_at, updated_at
+				INSERT INTO feedback_portals (workspace_id, is_public, participation_mode, guest_identity_policy)
+				VALUES ($1, $2, $3, $4)
+				RETURNING id, workspace_id, is_public, participation_mode, guest_identity_policy, created_at, updated_at
 			)
-			SELECT inserted.id, inserted.workspace_id, w.name, w.slug, inserted.is_public, inserted.participation_mode, inserted.created_at, inserted.updated_at
+			SELECT inserted.id, inserted.workspace_id, w.name, w.slug, inserted.is_public, inserted.participation_mode, inserted.guest_identity_policy,
+				false AS has_published_updates, inserted.created_at, inserted.updated_at
 		FROM inserted
 		INNER JOIN workspaces w ON w.workspace_id = inserted.workspace_id
-		`, input.WorkspaceID, *input.IsPublic, *input.ParticipationMode)
+		`, input.WorkspaceID, *input.IsPublic, *input.ParticipationMode, *input.GuestIdentityPolicy)
 	if err != nil {
 		return feedback.CorePortal{}, err
 	}
@@ -437,14 +457,17 @@ func (r *Repo) UpdatePortal(ctx context.Context, workspaceID, portalID uuid.UUID
 			UPDATE feedback_portals
 				SET is_public = COALESCE($3, is_public),
 					participation_mode = COALESCE($4, participation_mode),
+					guest_identity_policy = COALESCE($5, guest_identity_policy),
 					updated_at = NOW()
 				WHERE workspace_id = $1 AND id = $2
-				RETURNING id, workspace_id, is_public, participation_mode, created_at, updated_at
+				RETURNING id, workspace_id, is_public, participation_mode, guest_identity_policy, created_at, updated_at
 			)
-			SELECT updated.id, updated.workspace_id, w.name, w.slug, updated.is_public, updated.participation_mode, updated.created_at, updated.updated_at
+			SELECT updated.id, updated.workspace_id, w.name, w.slug, updated.is_public, updated.participation_mode, updated.guest_identity_policy,
+				EXISTS (SELECT 1 FROM feedback_updates fu WHERE fu.portal_id = updated.id AND fu.status = 'published' AND fu.published_at IS NOT NULL) AS has_published_updates,
+				updated.created_at, updated.updated_at
 		FROM updated
 		INNER JOIN workspaces w ON w.workspace_id = updated.workspace_id
-		`, workspaceID, portalID, input.IsPublic, input.ParticipationMode)
+		`, workspaceID, portalID, input.IsPublic, input.ParticipationMode, input.GuestIdentityPolicy)
 	if err != nil {
 		return feedback.CorePortal{}, err
 	}
@@ -749,15 +772,19 @@ func buildListItemsQuery(input feedback.CoreListItemsInput) (string, map[string]
 		where = append(where, "fi.portal_id = :portal_id")
 		params["portal_id"] = input.PortalID
 	}
+	if input.ItemID != uuid.Nil {
+		where = append(where, "fi.id = :item_id")
+		params["item_id"] = input.ItemID
+	}
 	if input.TeamID != nil {
 		where = append(where, "fi.workspace_id = :workspace_id", "fb.team_id = :team_id")
 		params["workspace_id"] = input.WorkspaceID
 		params["team_id"] = *input.TeamID
 	}
 	if input.DeletedOnly {
-		where = append(where, "fi.deleted_at IS NOT NULL", "fi.deleted_at >= NOW() - INTERVAL '30 days'")
+		where = append(where, "fi.deleted_at IS NOT NULL", "fi.deleted_at >= NOW() - INTERVAL '30 days'", "fi.merged_into_item_id IS NULL")
 	} else {
-		where = append(where, "fi.deleted_at IS NULL")
+		where = append(where, "fi.deleted_at IS NULL", "fi.merged_into_item_id IS NULL")
 	}
 	selectQuery := itemSelectQuery()
 	if input.ViewerID != uuid.Nil {
@@ -932,12 +959,29 @@ func (r *Repo) ListComments(ctx context.Context, portalID uuid.UUID, itemIDs []u
 	}
 	var rows []commentRow
 	if err := r.db.SelectContext(ctx, &rows, `
-		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id, fc.parent_id,
-			COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous') AS author_name,
-			u.avatar_url AS author_avatar,
+		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id, fc.contributor_id, fc.parent_id,
+			CASE
+				WHEN contributor.kind = 'anonymous'
+					OR (contributor.kind IN ('verified_guest', 'external')
+						AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN 'Anonymous'
+				WHEN contributor.kind IN ('verified_guest', 'external') THEN COALESCE(NULLIF(trim(contributor.display_name), ''), 'Guest')
+				ELSE COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous')
+			END AS author_name,
+			CASE
+				WHEN contributor.kind = 'anonymous'
+					OR (contributor.kind IN ('verified_guest', 'external')
+						AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN NULL
+				WHEN contributor.kind = 'account' THEN u.avatar_url
+				ELSE contributor.avatar_url
+			END AS author_avatar,
+			contributor.kind AS participant_kind,
+			(contributor.kind = 'anonymous' OR (contributor.kind IN ('verified_guest', 'external')
+				AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests'))) AS author_masked,
 			fc.body, fc.created_at, fc.updated_at
 		FROM feedback_comments fc
 		INNER JOIN feedback_items fi ON fi.id = fc.item_id
+		INNER JOIN feedback_contributors contributor ON contributor.id = fc.contributor_id
+		INNER JOIN feedback_portals portal ON portal.id = fi.portal_id
 		LEFT JOIN users u ON u.user_id = fc.author_id
 		WHERE fi.portal_id = $1 AND fi.id = ANY($2) AND fi.deleted_at IS NULL
 		ORDER BY fc.created_at DESC, fc.id DESC
@@ -954,11 +998,29 @@ func (r *Repo) ListComments(ctx context.Context, portalID uuid.UUID, itemIDs []u
 func (r *Repo) ListItemComments(ctx context.Context, workspaceID, itemID uuid.UUID) ([]feedback.CoreComment, error) {
 	var rows []commentRow
 	if err := r.db.SelectContext(ctx, &rows, `
-		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id, fc.parent_id,
-			COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous') AS author_name,
-			u.avatar_url AS author_avatar,
+		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id, fc.contributor_id, fc.parent_id,
+			CASE
+				WHEN contributor.kind = 'anonymous'
+					OR (contributor.kind IN ('verified_guest', 'external')
+						AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN 'Anonymous'
+				WHEN contributor.kind IN ('verified_guest', 'external') THEN COALESCE(NULLIF(trim(contributor.display_name), ''), 'Guest')
+				ELSE COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous')
+			END AS author_name,
+			CASE
+				WHEN contributor.kind = 'anonymous'
+					OR (contributor.kind IN ('verified_guest', 'external')
+						AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN NULL
+				WHEN contributor.kind = 'account' THEN u.avatar_url
+				ELSE contributor.avatar_url
+			END AS author_avatar,
+			contributor.kind AS participant_kind,
+			(contributor.kind = 'anonymous' OR (contributor.kind IN ('verified_guest', 'external')
+				AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests'))) AS author_masked,
 			fc.body, fc.created_at, fc.updated_at
 		FROM feedback_comments fc
+		INNER JOIN feedback_items fi ON fi.id = fc.item_id
+		INNER JOIN feedback_contributors contributor ON contributor.id = fc.contributor_id
+		INNER JOIN feedback_portals portal ON portal.id = fi.portal_id
 		LEFT JOIN users u ON u.user_id = fc.author_id
 		WHERE fc.workspace_id = $1 AND fc.item_id = $2
 		ORDER BY fc.created_at DESC, fc.id DESC
@@ -975,11 +1037,29 @@ func (r *Repo) ListItemComments(ctx context.Context, workspaceID, itemID uuid.UU
 func (r *Repo) GetComment(ctx context.Context, workspaceID, itemID, commentID uuid.UUID) (feedback.CoreComment, error) {
 	var row commentRow
 	if err := r.db.GetContext(ctx, &row, `
-		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id, fc.parent_id,
-			COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous') AS author_name,
-			u.avatar_url AS author_avatar,
+		SELECT fc.id, fc.workspace_id, fc.item_id, fc.author_id, fc.contributor_id, fc.parent_id,
+			CASE
+				WHEN contributor.kind = 'anonymous'
+					OR (contributor.kind IN ('verified_guest', 'external')
+						AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN 'Anonymous'
+				WHEN contributor.kind IN ('verified_guest', 'external') THEN COALESCE(NULLIF(trim(contributor.display_name), ''), 'Guest')
+				ELSE COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous')
+			END AS author_name,
+			CASE
+				WHEN contributor.kind = 'anonymous'
+					OR (contributor.kind IN ('verified_guest', 'external')
+						AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN NULL
+				WHEN contributor.kind = 'account' THEN u.avatar_url
+				ELSE contributor.avatar_url
+			END AS author_avatar,
+			contributor.kind AS participant_kind,
+			(contributor.kind = 'anonymous' OR (contributor.kind IN ('verified_guest', 'external')
+				AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests'))) AS author_masked,
 			fc.body, fc.created_at, fc.updated_at
 		FROM feedback_comments fc
+		INNER JOIN feedback_items fi ON fi.id = fc.item_id
+		INNER JOIN feedback_contributors contributor ON contributor.id = fc.contributor_id
+		INNER JOIN feedback_portals portal ON portal.id = fi.portal_id
 		LEFT JOIN users u ON u.user_id = fc.author_id
 		WHERE fc.workspace_id = $1 AND fc.item_id = $2 AND fc.id = $3
 	`, workspaceID, itemID, commentID); err != nil {
@@ -1061,6 +1141,50 @@ func (r *Repo) GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (feed
 	return toCoreItem(row), nil
 }
 
+func (r *Repo) GetPrivateAuthor(ctx context.Context, workspaceID, itemID uuid.UUID) (feedback.CorePrivateAuthor, error) {
+	var row struct {
+		ContributorID uuid.UUID  `db:"contributor_id"`
+		UserID        *uuid.UUID `db:"user_id"`
+		Kind          string     `db:"kind"`
+		DisplayName   string     `db:"display_name"`
+		Email         *string    `db:"email"`
+		AvatarURL     *string    `db:"avatar_url"`
+		PublicMasked  bool       `db:"public_masked"`
+	}
+	err := r.db.GetContext(ctx, &row, `
+		SELECT contributor.id AS contributor_id,
+			contributor.user_id,
+			contributor.kind,
+			CASE
+				WHEN contributor.kind = 'anonymous' THEN 'Anonymous'
+				WHEN contributor.kind = 'account' THEN COALESCE(NULLIF(trim(account.full_name), ''), NULLIF(trim(account.username), ''), 'Account user')
+				ELSE COALESCE(NULLIF(trim(contributor.display_name), ''), 'Guest')
+			END AS display_name,
+			CASE WHEN contributor.kind = 'account' THEN account.email ELSE contributor.email END AS email,
+			CASE WHEN contributor.kind = 'account' THEN account.avatar_url ELSE contributor.avatar_url END AS avatar_url,
+			(contributor.kind IN ('verified_guest', 'external')
+				AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) AS public_masked
+		FROM feedback_items item
+		INNER JOIN feedback_contributors contributor
+			ON contributor.id = item.contributor_id AND contributor.portal_id = item.portal_id
+		INNER JOIN feedback_portals portal ON portal.id = item.portal_id
+		LEFT JOIN users account ON account.user_id = contributor.user_id
+		WHERE item.workspace_id = $1 AND item.id = $2 AND item.deleted_at IS NULL
+	`, workspaceID, itemID)
+	if err != nil {
+		return feedback.CorePrivateAuthor{}, err
+	}
+	return feedback.CorePrivateAuthor{
+		ContributorID: row.ContributorID,
+		UserID:        row.UserID,
+		Kind:          row.Kind,
+		DisplayName:   row.DisplayName,
+		Email:         row.Email,
+		AvatarURL:     row.AvatarURL,
+		PublicMasked:  row.PublicMasked,
+	}, nil
+}
+
 func (r *Repo) GetItemReadAt(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (*time.Time, error) {
 	var readAt time.Time
 	if err := r.db.GetContext(ctx, &readAt, `
@@ -1090,6 +1214,7 @@ func (r *Repo) ListTeamSummaries(ctx context.Context, workspaceID, userID uuid.U
 		LEFT JOIN feedback_items fi ON fi.board_id = fb.id
 			AND fi.workspace_id = fb.workspace_id
 			AND fi.deleted_at IS NULL
+			AND fi.merged_into_item_id IS NULL
 		LEFT JOIN feedback_item_reads fir ON fir.item_id = fi.id AND fir.user_id = $2
 		WHERE fb.workspace_id = $1
 		GROUP BY fb.team_id
@@ -1139,12 +1264,41 @@ func (r *Repo) MarkItemUnread(ctx context.Context, workspaceID, itemID, userID u
 func (r *Repo) GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (feedback.CoreItem, error) {
 	var row itemRow
 	err := r.db.GetContext(ctx, &row, itemSelectQuery()+`
-		WHERE fi.portal_id = $1 AND fi.id = $2 AND fi.deleted_at IS NULL
+			WHERE fi.portal_id = $1 AND fi.id = $2 AND fi.deleted_at IS NULL AND fi.merged_into_item_id IS NULL
 	`, portalID, itemID)
 	if err != nil {
 		return feedback.CoreItem{}, err
 	}
 	return toCoreItem(row), nil
+}
+
+func (r *Repo) ResolveCanonicalItem(ctx context.Context, portalID uuid.UUID, itemReference string) (feedback.CoreCanonicalItem, error) {
+	var row struct {
+		ItemID   uuid.UUID `db:"item_id"`
+		ItemSlug string    `db:"item_slug"`
+		Merged   bool      `db:"merged"`
+	}
+	err := r.db.GetContext(ctx, &row, `
+		SELECT canonical.id AS item_id, canonical.slug AS item_slug,
+			(source.merged_into_item_id IS NOT NULL) AS merged
+		FROM feedback_items source
+		INNER JOIN feedback_items canonical
+			ON canonical.id = COALESCE(source.merged_into_item_id, source.id)
+			AND canonical.portal_id = source.portal_id
+		WHERE source.portal_id = $1
+			AND (
+				source.id = CASE
+					WHEN $2 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' THEN CAST($2 AS uuid)
+					ELSE NULL
+				END
+				OR source.slug = $2
+			)
+			AND source.deleted_at IS NULL AND canonical.deleted_at IS NULL
+	`, portalID, strings.TrimSpace(itemReference))
+	if err != nil {
+		return feedback.CoreCanonicalItem{}, err
+	}
+	return feedback.CoreCanonicalItem{ItemID: row.ItemID, ItemSlug: row.ItemSlug, Merged: row.Merged}, nil
 }
 
 func (r *Repo) ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, description string, limit int) ([]feedback.CoreSimilarItem, error) {
@@ -1158,9 +1312,21 @@ func (r *Repo) ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, 
 			SELECT fi.id,
 				fi.slug,
 				fi.title,
-				fi.author_id,
-				COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous') AS author_name,
-				u.avatar_url AS author_avatar,
+				CASE WHEN contributor.kind = 'account' THEN fi.author_id ELSE NULL END AS author_id,
+				CASE
+					WHEN contributor.kind = 'anonymous'
+						OR (contributor.kind IN ('verified_guest', 'external')
+							AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN 'Anonymous'
+					WHEN contributor.kind IN ('verified_guest', 'external') THEN COALESCE(NULLIF(trim(contributor.display_name), ''), 'Guest')
+					ELSE COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous')
+				END AS author_name,
+				CASE
+					WHEN contributor.kind = 'anonymous'
+						OR (contributor.kind IN ('verified_guest', 'external')
+							AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN NULL
+					WHEN contributor.kind = 'account' THEN u.avatar_url
+					ELSE contributor.avatar_url
+				END AS author_avatar,
 				` + projectedFeedbackStatus + ` AS status,
 				CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = fi.id), 0) AS integer) AS vote_count,
 				CAST((SELECT COUNT(*) FROM feedback_comments fc WHERE fc.item_id = fi.id) AS integer) AS comment_count,
@@ -1177,6 +1343,8 @@ func (r *Repo) ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, 
 					END
 				) AS confidence
 			FROM feedback_items fi
+			INNER JOIN feedback_contributors contributor ON contributor.id = fi.contributor_id
+			INNER JOIN feedback_portals portal ON portal.id = fi.portal_id
 			LEFT JOIN users u ON u.user_id = fi.author_id
 			LEFT JOIN LATERAL (
 				SELECT fsl.id, fsl.story_id
@@ -1195,6 +1363,7 @@ func (r *Repo) ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, 
 			) normalized
 			WHERE fi.portal_id = $1
 				AND fi.deleted_at IS NULL
+				AND fi.merged_into_item_id IS NULL
 				AND input.normalized_title <> ''
 				AND normalized.normalized_title <> ''
 		)
@@ -1338,6 +1507,7 @@ func (r *Repo) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UU
 			FROM feedback_items
 			WHERE workspace_id = $1 AND id = $2
 				AND deleted_at IS NULL
+				AND merged_into_item_id IS NULL
 				AND ($5 OR NOT EXISTS (
 					SELECT 1
 					FROM feedback_story_links fsl
@@ -1405,6 +1575,7 @@ func (r *Repo) UpdateItemStatusIfUnchanged(
 			FROM feedback_items
 			WHERE workspace_id = $1 AND id = $2
 				AND deleted_at IS NULL
+				AND merged_into_item_id IS NULL
 				AND updated_at = $6
 				AND ($5 OR NOT EXISTS (
 					SELECT 1 FROM feedback_story_links fsl
@@ -1451,6 +1622,14 @@ func (r *Repo) TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) err
 		UPDATE feedback_items
 		SET deleted_at = NOW(), updated_at = NOW()
 		WHERE workspace_id = $1 AND id = $2 AND deleted_at IS NULL
+			AND merged_into_item_id IS NULL
+			AND NOT EXISTS (
+				SELECT 1
+				FROM feedback_items merged_source
+				WHERE merged_source.workspace_id = feedback_items.workspace_id
+					AND merged_source.portal_id = feedback_items.portal_id
+					AND merged_source.merged_into_item_id = feedback_items.id
+			)
 			AND NOT EXISTS (
 				SELECT 1
 				FROM feedback_story_links fsl
@@ -1468,17 +1647,39 @@ func (r *Repo) TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) err
 		return nil
 	}
 
-	var storyManaged bool
-	if err := r.db.GetContext(ctx, &storyManaged, `
-		SELECT EXISTS (
-			SELECT 1
-			FROM feedback_story_links
-			WHERE workspace_id = $1 AND item_id = $2 AND is_primary = true
-		)
+	var state struct {
+		MergeProtected bool `db:"merge_protected"`
+		StoryManaged   bool `db:"story_managed"`
+	}
+	if err := r.db.GetContext(ctx, &state, `
+		SELECT
+			EXISTS (
+				SELECT 1
+				FROM feedback_items item
+				WHERE item.workspace_id = $1 AND item.id = $2
+					AND (
+						item.merged_into_item_id IS NOT NULL
+						OR EXISTS (
+							SELECT 1
+							FROM feedback_items merged_source
+							WHERE merged_source.workspace_id = item.workspace_id
+								AND merged_source.portal_id = item.portal_id
+								AND merged_source.merged_into_item_id = item.id
+						)
+					)
+			) AS merge_protected,
+			EXISTS (
+				SELECT 1
+				FROM feedback_story_links
+				WHERE workspace_id = $1 AND item_id = $2 AND is_primary = true
+			) AS story_managed
 	`, workspaceID, itemID); err != nil {
 		return err
 	}
-	if storyManaged {
+	if state.MergeProtected {
+		return feedback.ErrMergeConflict
+	}
+	if state.StoryManaged {
 		return feedback.ErrStoryManaged
 	}
 	return feedback.ErrNotFound
@@ -1490,6 +1691,7 @@ func (r *Repo) RestoreItem(ctx context.Context, workspaceID, itemID uuid.UUID) e
 		SET deleted_at = NULL, updated_at = NOW()
 		WHERE workspace_id = $1 AND id = $2
 			AND deleted_at IS NOT NULL
+			AND merged_into_item_id IS NULL
 			AND deleted_at >= NOW() - INTERVAL '30 days'
 	`, workspaceID, itemID)
 	if err != nil {
@@ -1508,14 +1710,24 @@ func (r *Repo) RestoreItem(ctx context.Context, workspaceID, itemID uuid.UUID) e
 func (r *Repo) CreateComment(ctx context.Context, input feedback.CoreCommentInput) (feedback.CoreComment, error) {
 	var row commentRow
 	err := r.db.GetContext(ctx, &row, `
-		WITH inserted AS (
-			INSERT INTO feedback_comments (workspace_id, item_id, author_id, parent_id, body)
-			VALUES ($1, $2, $3, $4, $5)
+		WITH item_portal AS (
+			SELECT portal_id FROM feedback_items
+			WHERE workspace_id = $1 AND id = $2 AND deleted_at IS NULL AND merged_into_item_id IS NULL
+		), contributor AS (
+			INSERT INTO feedback_contributors (portal_id, user_id, kind)
+			SELECT portal_id, $3, 'account' FROM item_portal
+			ON CONFLICT (portal_id, user_id) WHERE user_id IS NOT NULL
+			DO UPDATE SET updated_at = NOW()
+			RETURNING id
+		), inserted AS (
+			INSERT INTO feedback_comments (workspace_id, item_id, author_id, contributor_id, parent_id, body)
+			SELECT $1, $2, $3, contributor.id, $4, $5 FROM contributor
 			RETURNING *
 		)
-		SELECT inserted.id, inserted.workspace_id, inserted.item_id, inserted.author_id, inserted.parent_id,
+		SELECT inserted.id, inserted.workspace_id, inserted.item_id, inserted.author_id, inserted.contributor_id, inserted.parent_id,
 			COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous') AS author_name,
 			u.avatar_url AS author_avatar,
+			'account' AS participant_kind, false AS author_masked,
 			inserted.body, inserted.created_at, inserted.updated_at
 		FROM inserted
 		LEFT JOIN users u ON u.user_id = inserted.author_id
@@ -1533,31 +1745,57 @@ func (r *Repo) ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.
 	}
 	defer tx.Rollback()
 
+	var contributorID uuid.UUID
+	if err := tx.GetContext(ctx, &contributorID, `
+		INSERT INTO feedback_contributors (portal_id, user_id, kind)
+		SELECT portal_id, $3, 'account'
+		FROM feedback_items
+		WHERE workspace_id = $1 AND id = $2 AND deleted_at IS NULL AND merged_into_item_id IS NULL
+		ON CONFLICT (portal_id, user_id) WHERE user_id IS NOT NULL
+		DO UPDATE SET updated_at = NOW()
+		RETURNING id
+	`, workspaceID, itemID, userID); err != nil {
+		return feedback.CoreVoteResult{}, err
+	}
 	var currentVote int
 	if err := tx.GetContext(ctx, &currentVote, `
 		SELECT COALESCE((
 			SELECT direction FROM feedback_votes
-			WHERE workspace_id = $1 AND item_id = $2 AND user_id = $3
+			WHERE workspace_id = $1 AND item_id = $2 AND contributor_id = $3
 		), 0)
-	`, workspaceID, itemID, userID); err != nil {
+	`, workspaceID, itemID, contributorID); err != nil {
 		return feedback.CoreVoteResult{}, err
 	}
 	resultingVote := vote
 	if currentVote == vote {
-		if _, err := tx.ExecContext(ctx, `
-			DELETE FROM feedback_votes
-			WHERE workspace_id = $1 AND item_id = $2 AND user_id = $3
-		`, workspaceID, itemID, userID); err != nil {
+		result, err := tx.ExecContext(ctx, `
+			DELETE FROM feedback_votes vote_record
+			USING feedback_items item
+			WHERE item.id = vote_record.item_id AND vote_record.workspace_id = $1
+				AND vote_record.item_id = $2 AND vote_record.contributor_id = $3
+				AND item.deleted_at IS NULL AND item.merged_into_item_id IS NULL
+		`, workspaceID, itemID, contributorID)
+		if err != nil {
+			return feedback.CoreVoteResult{}, err
+		}
+		if err := requireAffected(result); err != nil {
 			return feedback.CoreVoteResult{}, err
 		}
 		resultingVote = 0
 	} else {
-		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO feedback_votes (workspace_id, item_id, user_id, direction)
-			VALUES ($1, $2, $3, $4)
-			ON CONFLICT (item_id, user_id)
+		result, err := tx.ExecContext(ctx, `
+			INSERT INTO feedback_votes (workspace_id, item_id, user_id, contributor_id, direction)
+			SELECT item.workspace_id, item.id, $3, $4, $5
+			FROM feedback_items item
+			WHERE item.workspace_id = $1 AND item.id = $2
+				AND item.deleted_at IS NULL AND item.merged_into_item_id IS NULL
+			ON CONFLICT (item_id, contributor_id)
 			DO UPDATE SET direction = EXCLUDED.direction
-		`, workspaceID, itemID, userID, vote); err != nil {
+		`, workspaceID, itemID, userID, contributorID, vote)
+		if err != nil {
+			return feedback.CoreVoteResult{}, err
+		}
+		if err := requireAffected(result); err != nil {
 			return feedback.CoreVoteResult{}, err
 		}
 	}
@@ -1575,7 +1813,10 @@ func (r *Repo) LinkStory(ctx context.Context, input feedback.CoreStoryLinkInput)
 	var row storyLinkRow
 	err := r.db.GetContext(ctx, &row, `
 		INSERT INTO feedback_story_links (workspace_id, item_id, story_id, relationship, is_primary, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		SELECT item.workspace_id, item.id, $3, $4, $5, $6
+		FROM feedback_items item
+		WHERE item.workspace_id = $1 AND item.id = $2
+			AND item.deleted_at IS NULL AND item.merged_into_item_id IS NULL
 		ON CONFLICT (item_id, story_id) DO UPDATE
 		SET relationship = EXCLUDED.relationship, is_primary = EXCLUDED.is_primary
 		RETURNING id, workspace_id, item_id, story_id, relationship, is_primary, created_by_user_id, created_at
@@ -1641,9 +1882,26 @@ func itemSelectQueryForViewer(viewerReference string) string {
 	}
 	return `
 			SELECT fi.id, fi.workspace_id, fi.portal_id, fi.board_id, fi.contributor_id, fi.author_id,
-				COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous') AS author_name,
-			COALESCE(u.email, '') AS author_email,
-			u.avatar_url AS author_avatar,
+				CASE
+					WHEN contributor.kind = 'anonymous'
+						OR (contributor.kind IN ('verified_guest', 'external')
+							AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN 'Anonymous'
+					WHEN contributor.kind IN ('verified_guest', 'external') THEN COALESCE(NULLIF(trim(contributor.display_name), ''), 'Guest')
+					ELSE COALESCE(NULLIF(trim(u.full_name), ''), NULLIF(trim(u.username), ''), 'Anonymous')
+				END AS author_name,
+			CASE WHEN contributor.kind = 'account' THEN COALESCE(u.email, '') ELSE COALESCE(contributor.email, '') END AS author_email,
+			CASE
+				WHEN contributor.kind = 'anonymous'
+					OR (contributor.kind IN ('verified_guest', 'external')
+						AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests')) THEN NULL
+				WHEN contributor.kind = 'account' THEN u.avatar_url
+				ELSE contributor.avatar_url
+			END AS author_avatar,
+				contributor.kind AS participant_kind,
+				(contributor.kind = 'anonymous' OR (contributor.kind IN ('verified_guest', 'external')
+					AND (contributor.public_masked OR portal.guest_identity_policy = 'always_mask_guests'))) AS author_masked,
+				fi.merged_into_item_id, fi.merged_at, fi.merged_by_user_id,
+				false AS following,
 			fi.title, fi.description, fi.slug, ` + projectedFeedbackStatus + ` AS status,
 			CAST(COALESCE((SELECT SUM(fv.direction) FROM feedback_votes fv WHERE fv.item_id = fi.id), 0) AS integer) AS vote_count,
 			CAST((SELECT COUNT(*) FROM feedback_votes fv WHERE fv.item_id = fi.id AND fv.direction = 1) AS integer) AS upvote_count,
@@ -1661,6 +1919,8 @@ func itemSelectQueryForViewer(viewerReference string) string {
 			` + readAtSelect + `,
 			fi.deleted_at, fi.created_at, fi.updated_at
 		FROM feedback_items fi
+		INNER JOIN feedback_contributors contributor ON contributor.id = fi.contributor_id AND contributor.portal_id = fi.portal_id
+		INNER JOIN feedback_portals portal ON portal.id = fi.portal_id
 		LEFT JOIN users u ON u.user_id = fi.author_id
 		INNER JOIN feedback_boards fb ON fb.id = fi.board_id
 		LEFT JOIN LATERAL (
@@ -1677,14 +1937,16 @@ func itemSelectQueryForViewer(viewerReference string) string {
 
 func toCorePortal(row portalRow) feedback.CorePortal {
 	return feedback.CorePortal{
-		ID:                row.ID,
-		WorkspaceID:       row.WorkspaceID,
-		Name:              row.Name,
-		Slug:              row.Slug,
-		IsPublic:          row.IsPublic,
-		ParticipationMode: row.ParticipationMode,
-		CreatedAt:         row.CreatedAt,
-		UpdatedAt:         row.UpdatedAt,
+		ID:                  row.ID,
+		WorkspaceID:         row.WorkspaceID,
+		Name:                row.Name,
+		Slug:                row.Slug,
+		IsPublic:            row.IsPublic,
+		ParticipationMode:   row.ParticipationMode,
+		GuestIdentityPolicy: row.GuestIdentityPolicy,
+		HasPublishedUpdates: row.HasPublishedUpdates,
+		CreatedAt:           row.CreatedAt,
+		UpdatedAt:           row.UpdatedAt,
 	}
 }
 
@@ -1720,26 +1982,32 @@ func toCoreItem(row itemRow) feedback.CoreItem {
 		authorID = *row.AuthorID
 	}
 	item := feedback.CoreItem{
-		ID:             row.ID,
-		WorkspaceID:    row.WorkspaceID,
-		PortalID:       row.PortalID,
-		BoardID:        row.BoardID,
-		ContributorID:  row.ContributorID,
-		AuthorID:       authorID,
-		AuthorName:     row.AuthorName,
-		AuthorEmail:    row.AuthorEmail,
-		AuthorAvatar:   row.AuthorAvatar,
-		Title:          row.Title,
-		Description:    row.Description,
-		Slug:           row.Slug,
-		Status:         row.Status,
-		VoteCount:      row.VoteCount,
-		UpvoteCount:    row.UpvoteCount,
-		DownvoteCount:  row.DownvoteCount,
-		CommentCount:   row.CommentCount,
-		RoadmapSummary: row.RoadmapSummary,
-		ReadAt:         row.ReadAt,
-		DeletedAt:      row.DeletedAt,
+		ID:               row.ID,
+		WorkspaceID:      row.WorkspaceID,
+		PortalID:         row.PortalID,
+		BoardID:          row.BoardID,
+		ContributorID:    row.ContributorID,
+		AuthorID:         authorID,
+		AuthorName:       row.AuthorName,
+		AuthorEmail:      row.AuthorEmail,
+		AuthorAvatar:     row.AuthorAvatar,
+		ParticipantKind:  row.ParticipantKind,
+		AuthorMasked:     row.AuthorMasked,
+		MergedIntoItemID: row.MergedIntoItemID,
+		MergedAt:         row.MergedAt,
+		MergedByUserID:   row.MergedByUserID,
+		Following:        row.Following,
+		Title:            row.Title,
+		Description:      row.Description,
+		Slug:             row.Slug,
+		Status:           row.Status,
+		VoteCount:        row.VoteCount,
+		UpvoteCount:      row.UpvoteCount,
+		DownvoteCount:    row.DownvoteCount,
+		CommentCount:     row.CommentCount,
+		RoadmapSummary:   row.RoadmapSummary,
+		ReadAt:           row.ReadAt,
+		DeletedAt:        row.DeletedAt,
 		Board: feedback.CoreBoard{
 			ID:          row.BoardID,
 			WorkspaceID: row.WorkspaceID,
@@ -1781,16 +2049,19 @@ func toCoreComment(row commentRow) feedback.CoreComment {
 		authorID = *row.AuthorID
 	}
 	return feedback.CoreComment{
-		ID:           row.ID,
-		WorkspaceID:  row.WorkspaceID,
-		ItemID:       row.ItemID,
-		AuthorID:     authorID,
-		ParentID:     row.ParentID,
-		AuthorName:   row.AuthorName,
-		AuthorAvatar: row.AuthorAvatar,
-		Body:         row.Body,
-		CreatedAt:    row.CreatedAt,
-		UpdatedAt:    row.UpdatedAt,
+		ID:              row.ID,
+		WorkspaceID:     row.WorkspaceID,
+		ItemID:          row.ItemID,
+		AuthorID:        authorID,
+		ContributorID:   row.ContributorID,
+		ParentID:        row.ParentID,
+		AuthorName:      row.AuthorName,
+		AuthorAvatar:    row.AuthorAvatar,
+		ParticipantKind: row.ParticipantKind,
+		AuthorMasked:    row.AuthorMasked,
+		Body:            row.Body,
+		CreatedAt:       row.CreatedAt,
+		UpdatedAt:       row.UpdatedAt,
 	}
 }
 

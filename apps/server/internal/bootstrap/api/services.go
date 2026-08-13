@@ -276,6 +276,8 @@ func buildServices(cfg mux.Config) services {
 		feedbackrepository.New(cfg.Log, cfg.DB),
 		storiesService,
 		feedback.WithEventPublisher(cfg.Log, cfg.Publisher),
+		feedback.WithContributorFeatures(cfg.SecretKey, cfg.WebsiteURL, cfg.TasksService),
+		feedback.WithGuestNotificationActor(mayaActorID),
 	)
 
 	return services{

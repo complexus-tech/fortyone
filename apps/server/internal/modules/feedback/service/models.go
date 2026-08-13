@@ -41,14 +41,16 @@ const (
 )
 
 type CorePortal struct {
-	ID                uuid.UUID
-	WorkspaceID       uuid.UUID
-	Name              string
-	Slug              string
-	IsPublic          bool
-	ParticipationMode string
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	ID                  uuid.UUID
+	WorkspaceID         uuid.UUID
+	Name                string
+	Slug                string
+	IsPublic            bool
+	ParticipationMode   string
+	GuestIdentityPolicy string
+	HasPublishedUpdates bool
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 type CoreContributorActivity struct {
@@ -100,30 +102,67 @@ type CoreBoard struct {
 }
 
 type CoreItem struct {
-	ID             uuid.UUID
-	WorkspaceID    uuid.UUID
-	PortalID       uuid.UUID
-	BoardID        uuid.UUID
-	ContributorID  uuid.UUID
-	AuthorID       uuid.UUID
-	AuthorName     string
-	AuthorEmail    string
-	AuthorAvatar   *string
-	Title          string
-	Description    string
-	Slug           string
-	Status         string
-	VoteCount      int
-	UpvoteCount    int
-	DownvoteCount  int
-	CommentCount   int
-	RoadmapSummary *string
-	Board          CoreBoard
-	StoryLinks     []CoreStoryLink
-	ReadAt         *time.Time
-	DeletedAt      *time.Time
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID               uuid.UUID
+	WorkspaceID      uuid.UUID
+	PortalID         uuid.UUID
+	BoardID          uuid.UUID
+	ContributorID    uuid.UUID
+	AuthorID         uuid.UUID
+	AuthorName       string
+	AuthorEmail      string
+	AuthorAvatar     *string
+	ParticipantKind  string
+	AuthorMasked     bool
+	MergedIntoItemID *uuid.UUID
+	MergedAt         *time.Time
+	MergedByUserID   *uuid.UUID
+	Following        bool
+	Title            string
+	Description      string
+	Slug             string
+	Status           string
+	VoteCount        int
+	UpvoteCount      int
+	DownvoteCount    int
+	CommentCount     int
+	RoadmapSummary   *string
+	Board            CoreBoard
+	StoryLinks       []CoreStoryLink
+	ReadAt           *time.Time
+	DeletedAt        *time.Time
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+// CorePrivateAuthor is kept separate from CoreItem so contact data cannot
+// accidentally flow through a public item serializer. Only the
+// administrator-only private-author endpoint returns this model.
+type CorePrivateAuthor struct {
+	ContributorID uuid.UUID
+	UserID        *uuid.UUID
+	Kind          string
+	DisplayName   string
+	Email         *string
+	AvatarURL     *string
+	PublicMasked  bool
+}
+
+type CoreMergeItemResult struct {
+	SourceItemID         uuid.UUID
+	TargetItemID         uuid.UUID
+	PortalID             uuid.UUID
+	MergedAt             time.Time
+	MergedByUserID       uuid.UUID
+	MovedFollowerCount   int
+	MovedUpdateLinkCount int
+	MovedStoryLinkCount  int
+	Target               CoreItem
+}
+
+type CoreCanonicalItem struct {
+	ItemID   uuid.UUID
+	ItemSlug string
+	Merged   bool
 }
 
 type CoreSimilarItem struct {
@@ -141,16 +180,19 @@ type CoreSimilarItem struct {
 }
 
 type CoreComment struct {
-	ID           uuid.UUID
-	WorkspaceID  uuid.UUID
-	ItemID       uuid.UUID
-	AuthorID     uuid.UUID
-	ParentID     *uuid.UUID
-	AuthorName   string
-	AuthorAvatar *string
-	Body         string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID              uuid.UUID
+	WorkspaceID     uuid.UUID
+	ItemID          uuid.UUID
+	AuthorID        uuid.UUID
+	ContributorID   uuid.UUID
+	ParentID        *uuid.UUID
+	AuthorName      string
+	AuthorAvatar    *string
+	ParticipantKind string
+	AuthorMasked    bool
+	Body            string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 type CoreContributorStats struct {
@@ -230,9 +272,10 @@ type CorePortalSnapshot struct {
 }
 
 type CorePortalInput struct {
-	WorkspaceID       uuid.UUID
-	IsPublic          *bool
-	ParticipationMode *string
+	WorkspaceID         uuid.UUID
+	IsPublic            *bool
+	ParticipationMode   *string
+	GuestIdentityPolicy *string
 }
 
 type CoreWorkspacePortalInput struct {
@@ -279,26 +322,31 @@ type CorePublicItemInput struct {
 	Description         string
 	Source              string
 	ParticipationIntent string
+	Participant         *CoreParticipant
 }
 
 type CorePublicItemResult struct {
-	Item      CoreItem
-	Anonymous bool
+	Item            CoreItem
+	Anonymous       bool
+	ParticipantKind string
+	Following       bool
 }
 
 type CorePublicCommentInput struct {
-	PortalSlug string
-	ItemID     uuid.UUID
-	AuthorID   uuid.UUID
-	ParentID   *uuid.UUID
-	Body       string
+	PortalSlug  string
+	ItemID      uuid.UUID
+	AuthorID    uuid.UUID
+	Participant *CoreParticipant
+	ParentID    *uuid.UUID
+	Body        string
 }
 
 type CorePublicVoteInput struct {
-	PortalSlug string
-	ItemID     uuid.UUID
-	UserID     uuid.UUID
-	Vote       int
+	PortalSlug  string
+	ItemID      uuid.UUID
+	UserID      uuid.UUID
+	Participant *CoreParticipant
+	Vote        int
 }
 
 type CoreUpdateItemStatusInput struct {
@@ -374,11 +422,13 @@ type Repository interface {
 	ListItemStoryLinks(ctx context.Context, workspaceID, itemID uuid.UUID) ([]CoreStoryLink, error)
 	ListStoryFeedbackLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]CoreStoryFeedbackLink, error)
 	GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItem, error)
+	GetPrivateAuthor(ctx context.Context, workspaceID, itemID uuid.UUID) (CorePrivateAuthor, error)
 	GetItemReadAt(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (*time.Time, error)
 	ListTeamSummaries(ctx context.Context, workspaceID, userID uuid.UUID) ([]CoreTeamSummary, error)
 	MarkItemRead(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (time.Time, error)
 	MarkItemUnread(ctx context.Context, workspaceID, itemID, userID uuid.UUID) error
 	GetItemByPortal(ctx context.Context, portalID, itemID uuid.UUID) (CoreItem, error)
+	ResolveCanonicalItem(ctx context.Context, portalID uuid.UUID, itemReference string) (CoreCanonicalItem, error)
 	ListSimilarItems(ctx context.Context, portalID uuid.UUID, title, description string, limit int) ([]CoreSimilarItem, error)
 	CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error)
 	GetOrCreateAccountContributor(ctx context.Context, portalID, userID uuid.UUID) (CoreContributor, error)
@@ -400,6 +450,7 @@ type CoreListItemsInput struct {
 	TeamID      *uuid.UUID
 	ViewerID    uuid.UUID
 	AuthorID    uuid.UUID
+	ItemID      uuid.UUID
 	Status      string
 	BoardID     *uuid.UUID
 	Search      string
@@ -411,6 +462,7 @@ type CoreListItemsInput struct {
 
 type CorePortalSnapshotInput struct {
 	AuthorID    uuid.UUID
+	ItemID      uuid.UUID
 	Status      string
 	BoardID     *uuid.UUID
 	Search      string

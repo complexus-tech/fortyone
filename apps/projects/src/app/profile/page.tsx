@@ -36,7 +36,9 @@ export default async function ProfileRoute() {
       initialActivity={initialActivity}
       profile={profile}
       viewer={{
+        canReceiveUpdates: true,
         id: profile.id,
+        kind: "account",
         accountHref: "/account",
         appHref: activeWorkspace
           ? getRedirectUrl(workspaces, [], profile.lastUsedWorkspaceId)

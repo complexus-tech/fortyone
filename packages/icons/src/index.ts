@@ -8,6 +8,7 @@ export * from "./stories";
 export * from "./notifications";
 export * from "./notifications-off";
 export * from "./requests";
+export * from "./feedback";
 export * from "./objective";
 export * from "./goal";
 export * from "./docs";

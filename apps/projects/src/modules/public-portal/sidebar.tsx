@@ -5,9 +5,10 @@ import { Box, Button, Flex, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { getLoginUrl } from "@/utils/callback-url";
-import type { PublicPortal, PublicPortalViewer } from "./types";
+import type { PublicPortal, PublicPortalParticipant } from "./types";
 import { NewFeedbackButton } from "./feedback-controls";
 import { getNewFeedbackCallbackUrl } from "./utils";
+import { isContactableParticipant } from "./participant";
 
 const copyLink = async () => {
   try {
@@ -74,23 +75,24 @@ export const PublicPortalActions = ({ portal }: { portal: PublicPortal }) => (
 export const PublicPortalSidebar = ({
   initialFeedbackComposerOpen = false,
   onBoardSelect,
+  participant,
   portal,
   selectedBoardId,
-  viewer,
 }: {
   initialFeedbackComposerOpen?: boolean;
   onBoardSelect: (boardId?: string) => void;
+  participant: PublicPortalParticipant;
   portal: PublicPortal;
   selectedBoardId?: string;
-  viewer?: PublicPortalViewer | null;
 }) => {
   return (
     <aside className="space-y-8 md:sticky md:top-8 md:self-start">
-      {viewer || portal.participationMode === "anonymous_allowed" ? (
+      {isContactableParticipant(participant) ||
+      portal.participationMode !== "account_required" ? (
         <NewFeedbackButton
           initialOpen={initialFeedbackComposerOpen}
+          participant={participant}
           portal={portal}
-          viewer={viewer}
         />
       ) : (
         <Button

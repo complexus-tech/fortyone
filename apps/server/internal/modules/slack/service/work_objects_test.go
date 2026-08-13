@@ -160,7 +160,9 @@ func TestBuildSlackStoryUnfurlRequestRequiresAccessAndBuildsTaskMetadata(t *test
 	require.Equal(t, "U123ABC", entity.EntityPayload.Fields["assignee"].User.UserID)
 	require.Equal(t, "2026-08-19", entity.EntityPayload.Fields["due_date"].Value)
 	require.Equal(t, slackDateFieldType, entity.EntityPayload.Fields["due_date"].Type)
-	require.Equal(t, "Open in FortyOne", entity.EntityPayload.Actions.PrimaryActions[0].Text)
+	require.Equal(t, slackEditStoryStatusActionID, entity.EntityPayload.Actions.PrimaryActions[0].ActionID)
+	require.Equal(t, slackEditStoryPriorityActionID, entity.EntityPayload.Actions.PrimaryActions[1].ActionID)
+	require.Equal(t, slackOpenStoryActionID, entity.EntityPayload.Actions.OverflowActions[0].ActionID)
 
 	input.AccessGranted = false
 	input.Title = "A private story title"
@@ -269,6 +271,7 @@ func TestBuildSlackStoryCreationReceiptUsesExactTopLineAndDurableWorkObject(t *t
 	require.NotContains(t, receipt.Text, "✅")
 	require.NotContains(t, receipt.Text, "FortyOne")
 	require.NotNil(t, receipt.ProviderPayload.Metadata)
+	require.Len(t, receipt.ProviderPayload.Metadata.Entities[0].EntityPayload.Actions.PrimaryActions, 1)
 	require.Empty(t, receipt.ProviderPayload.Metadata.Entities[0].AppUnfurlURL)
 
 	encoded, err := EncodeSlackProviderPayload(receipt.ProviderPayload)

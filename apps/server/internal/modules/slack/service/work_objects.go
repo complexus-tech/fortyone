@@ -17,19 +17,21 @@ import (
 )
 
 const (
-	slackTaskEntityType           = "slack#/entities/task"
-	slackUserFieldType            = "slack#/types/user"
-	slackDateFieldType            = "slack#/types/date"
-	slackStoryExternalRefType     = "story"
-	slackRequestExternalRefType   = "request"
-	slackOpenStoryActionID        = "fortyone_open_story"
-	slackOpenRequestActionID      = "fortyone_open_request"
-	slackConfirmMutationActionID  = "fortyone_confirm_story_mutation"
-	slackCancelMutationActionID   = "fortyone_cancel_story_mutation"
-	slackWorkObjectTitleLimit     = 3000
-	slackWorkObjectTextFieldLimit = 3000
-	slackWorkObjectSelectLimit    = 100
-	slackButtonValueLimit         = 2000
+	slackTaskEntityType            = "slack#/entities/task"
+	slackUserFieldType             = "slack#/types/user"
+	slackDateFieldType             = "slack#/types/date"
+	slackStoryExternalRefType      = "story"
+	slackRequestExternalRefType    = "request"
+	slackOpenStoryActionID         = "fortyone_open_story"
+	slackOpenRequestActionID       = "fortyone_open_request"
+	slackEditStoryStatusActionID   = "fortyone_edit_story_status"
+	slackEditStoryPriorityActionID = "fortyone_edit_story_priority"
+	slackConfirmMutationActionID   = "fortyone_confirm_story_mutation"
+	slackCancelMutationActionID    = "fortyone_cancel_story_mutation"
+	slackWorkObjectTitleLimit      = 3000
+	slackWorkObjectTextFieldLimit  = 3000
+	slackWorkObjectSelectLimit     = 100
+	slackButtonValueLimit          = 2000
 )
 
 var (
@@ -729,6 +731,32 @@ func buildSlackStoryWorkObject(input SlackStoryWorkObjectInput, includeAppUnfurl
 	if lastModified.IsZero() {
 		lastModified = input.CreatedAt
 	}
+	openAction := SlackWorkObjectAction{
+		Text:               "Open in FortyOne",
+		ActionID:           slackOpenStoryActionID,
+		Value:              link.StoryReference,
+		URL:                link.CanonicalURL,
+		AccessibilityLabel: "Open " + link.StoryReference + " in FortyOne",
+	}
+	primaryActions := []SlackWorkObjectAction{openAction}
+	overflowActions := []SlackWorkObjectAction(nil)
+	if includeAppUnfurlURL {
+		primaryActions = []SlackWorkObjectAction{
+			{
+				Text:               "Edit status",
+				ActionID:           slackEditStoryStatusActionID,
+				Value:              link.StoryReference,
+				AccessibilityLabel: "Edit the status of " + link.StoryReference,
+			},
+			{
+				Text:               "Edit priority",
+				ActionID:           slackEditStoryPriorityActionID,
+				Value:              link.StoryReference,
+				AccessibilityLabel: "Edit the priority of " + link.StoryReference,
+			},
+		}
+		overflowActions = []SlackWorkObjectAction{openAction}
+	}
 	entity := SlackWorkObjectEntity{
 		URL: link.CanonicalURL,
 		ExternalRef: SlackWorkObjectExternalRef{
@@ -747,13 +775,8 @@ func buildSlackStoryWorkObject(input SlackStoryWorkObjectInput, includeAppUnfurl
 			},
 			Fields: fields,
 			Actions: &SlackWorkObjectActions{
-				PrimaryActions: []SlackWorkObjectAction{{
-					Text:               "Open in FortyOne",
-					ActionID:           slackOpenStoryActionID,
-					Value:              link.StoryReference,
-					URL:                link.CanonicalURL,
-					AccessibilityLabel: "Open " + link.StoryReference + " in FortyOne",
-				}},
+				PrimaryActions:  primaryActions,
+				OverflowActions: overflowActions,
 			},
 		},
 	}

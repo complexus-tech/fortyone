@@ -1,5 +1,6 @@
 import type {
   PublicFeedbackListStatus,
+  PublicParticipantKind,
   PublicPortalFilters,
   PublicRequestStatus,
 } from "./types";
@@ -37,6 +38,16 @@ export const publicPortalKeys = {
     [...publicPortalKeys.feedback(portalSlug), "detail"] as const,
   feedbackDetail: (portalSlug: string, requestId: string) =>
     [...publicPortalKeys.feedbackDetails(portalSlug), requestId] as const,
+  feedbackFollow: (
+    portalSlug: string,
+    requestId: string,
+    participantKind: PublicParticipantKind,
+  ) =>
+    [
+      ...publicPortalKeys.feedbackDetail(portalSlug, requestId),
+      "follow",
+      participantKind,
+    ] as const,
   authorFeedback: (portalSlug: string, authorId: string) =>
     [...publicPortalKeys.feedback(portalSlug), "author", authorId] as const,
   authorProfile: (portalSlug: string, authorId: string) =>

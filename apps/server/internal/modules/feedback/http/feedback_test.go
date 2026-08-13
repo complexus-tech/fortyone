@@ -67,6 +67,8 @@ func TestPublicItemsInputRejectsInvalidBoardAndView(t *testing.T) {
 	for _, rawQuery := range []string{
 		"boardId=not-a-uuid",
 		"boardId=" + uuid.Nil.String(),
+		"itemId=not-a-uuid",
+		"itemId=" + uuid.Nil.String(),
 		"view=full",
 	} {
 		request := httptest.NewRequest(http.MethodGet, "/?"+rawQuery, nil)
@@ -76,6 +78,21 @@ func TestPublicItemsInputRejectsInvalidBoardAndView(t *testing.T) {
 		if !errors.Is(err, feedback.ErrInvalidInput) {
 			t.Fatalf("publicItemsInput(%q) error = %v, want invalid input", rawQuery, err)
 		}
+	}
+}
+
+func TestPublicItemsInputParsesExactItemID(t *testing.T) {
+	t.Parallel()
+	itemID := uuid.New()
+	request := httptest.NewRequest(http.MethodGet, "/?itemId="+itemID.String()+"&view=summary", nil)
+
+	input, err := publicItemsInput(request)
+
+	if err != nil {
+		t.Fatalf("publicItemsInput error = %v", err)
+	}
+	if input.ItemID != itemID {
+		t.Fatalf("item id = %s, want %s", input.ItemID, itemID)
 	}
 }
 

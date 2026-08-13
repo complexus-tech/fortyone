@@ -344,6 +344,13 @@ func publicItemsInput(r *http.Request) (feedback.CorePortalSnapshotInput, error)
 		}
 		input.BoardID = &parsed
 	}
+	if itemID := query.Get("itemId"); itemID != "" {
+		parsed, err := uuid.Parse(itemID)
+		if err != nil || parsed == uuid.Nil {
+			return feedback.CorePortalSnapshotInput{}, fmt.Errorf("%w: itemId must be a non-nil UUID", feedback.ErrInvalidInput)
+		}
+		input.ItemID = parsed
+	}
 	if authorID := query.Get("authorId"); authorID != "" {
 		parsed, err := uuid.Parse(authorID)
 		if err != nil || parsed == uuid.Nil {
@@ -497,6 +504,40 @@ func (h *Handlers) GetItem(ctx context.Context, w http.ResponseWriter, r *http.R
 	return web.Respond(ctx, w, toAppItem(details.Item, comments, links), http.StatusOK)
 }
 
+func (h *Handlers) GetPrivateAuthor(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	itemID, err := uuid.Parse(web.Params(r, "itemId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	author, err := h.feedback.GetPrivateAuthor(ctx, workspace.ID, itemID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, AppPrivateAuthor{
+		ContributorID: author.ContributorID,
+		UserID:        author.UserID,
+		Kind:          author.Kind,
+		DisplayName:   author.DisplayName,
+		Email:         author.Email,
+		AvatarURL:     author.AvatarURL,
+		PublicMasked:  author.PublicMasked,
+	}, http.StatusOK)
+}
+
+func (h *Handlers) ResolveCanonicalItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	canonical, err := h.feedback.ResolveCanonicalItem(ctx, web.Params(r, "portalSlug"), web.Params(r, "itemReference"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, AppCanonicalItem{
+		ItemID: canonical.ItemID, ItemSlug: canonical.ItemSlug, Merged: canonical.Merged,
+	}, http.StatusOK)
+}
+
 func (h *Handlers) ListTeamSummaries(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -607,8 +648,9 @@ func (h *Handlers) UpdatePortal(ctx context.Context, w http.ResponseWriter, r *h
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	portal, err := h.feedback.UpdatePortal(ctx, workspace.ID, portalID, feedback.CorePortalInput{
-		IsPublic:          input.IsPublic,
-		ParticipationMode: input.ParticipationMode,
+		IsPublic:            input.IsPublic,
+		ParticipationMode:   input.ParticipationMode,
+		GuestIdentityPolicy: input.GuestIdentityPolicy,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
@@ -757,6 +799,14 @@ func (h *Handlers) createPublicItem(ctx context.Context, w http.ResponseWriter, 
 	if err := validatePublicItemBotTrap(input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
+	var participant *feedback.CoreParticipant
+	if input.ParticipationIntent == feedback.ParticipationIntentVerifiedGuest || input.ParticipationIntent == feedback.ParticipationIntentExternal {
+		resolved, err := h.resolvePublicParticipant(ctx, r, input.ParticipationIntent)
+		if err != nil {
+			return web.RespondError(ctx, w, err, httpStatus(err))
+		}
+		participant = &resolved.Participant
+	}
 	result, err := h.feedback.CreatePublicItem(ctx, feedback.CorePublicItemInput{
 		PortalSlug:          web.Params(r, "portalSlug"),
 		BoardID:             input.BoardID,
@@ -765,6 +815,7 @@ func (h *Handlers) createPublicItem(ctx context.Context, w http.ResponseWriter, 
 		Description:         input.Description,
 		Source:              source,
 		ParticipationIntent: input.ParticipationIntent,
+		Participant:         participant,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
@@ -772,6 +823,8 @@ func (h *Handlers) createPublicItem(ctx context.Context, w http.ResponseWriter, 
 	item := result.Item
 	item.AuthorAvatar = h.resolveAuthorAvatar(ctx, item.AuthorAvatar, make(map[string]*string))
 	response := toAppItem(item, nil, nil)
+	response.ParticipantKind = result.ParticipantKind
+	response.Following = result.Following
 	if result.Anonymous {
 		w.Header().Set("Cache-Control", "no-store")
 		response.Anonymous = true
@@ -811,6 +864,100 @@ func (h *Handlers) UpdateItemStatus(ctx context.Context, w http.ResponseWriter, 
 	return web.Respond(ctx, w, toAppItem(item, nil, nil), http.StatusOK)
 }
 
+func (h *Handlers) MergeItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	sourceItemID, err := uuid.Parse(web.Params(r, "sourceItemId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	var input AppMergeItemInput
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	result, err := h.feedback.MergeItems(ctx, feedback.CoreMergeItemInput{
+		WorkspaceID: workspace.ID, SourceItemID: sourceItemID, TargetItemID: input.TargetItemID, ActorID: actorID,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, AppMergeItemResult{
+		SourceItemID: result.SourceItemID, TargetItemID: result.TargetItemID, PortalID: result.PortalID,
+		MergedAt: result.MergedAt, MergedByUserID: result.MergedByUserID,
+		MovedFollowerCount: result.MovedFollowerCount, MovedUpdateLinkCount: result.MovedUpdateLinkCount,
+		MovedStoryLinkCount: result.MovedStoryLinkCount, Target: toAppItem(result.Target, nil, nil),
+	}, http.StatusOK)
+}
+
+func (h *Handlers) ListMergeCandidates(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	sourceItemID, err := uuid.Parse(web.Params(r, "sourceItemId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	limit, err := parseCandidateLimit(r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	page, err := h.feedback.ListMergeCandidates(ctx, workspace.ID, sourceItemID, r.URL.Query().Get("search"), limit)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, toAppMergeCandidatesPage(page), http.StatusOK)
+}
+
+func (h *Handlers) ListPortalItemCandidates(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	portalID, err := uuid.Parse(web.Params(r, "portalId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	limit, err := parseCandidateLimit(r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	page, err := h.feedback.ListPortalItemCandidates(ctx, workspace.ID, portalID, r.URL.Query().Get("search"), limit)
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	return web.Respond(ctx, w, toAppMergeCandidatesPage(page), http.StatusOK)
+}
+
+func parseCandidateLimit(r *http.Request) (int, error) {
+	limit := 30
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 {
+			return 0, feedback.ErrInvalidInput
+		}
+		limit = parsed
+	}
+	return limit, nil
+}
+
+func toAppMergeCandidatesPage(page feedback.CoreMergeCandidatesPage) AppMergeCandidatesPage {
+	candidates := make([]AppMergeCandidate, 0, len(page.Candidates))
+	for _, candidate := range page.Candidates {
+		candidates = append(candidates, AppMergeCandidate{
+			ID: candidate.ID, Slug: candidate.Slug, Title: candidate.Title, Status: candidate.Status,
+			VoteCount: candidate.VoteCount, CommentCount: candidate.CommentCount,
+		})
+	}
+	return AppMergeCandidatesPage{Candidates: candidates, HasMore: page.HasMore}
+}
+
 func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -846,10 +993,6 @@ func (h *Handlers) CreateComment(ctx context.Context, w http.ResponseWriter, r *
 }
 
 func (h *Handlers) CreatePublicComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	userID, err := mid.GetUserID(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
 	itemID, err := uuid.Parse(web.Params(r, "itemId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -858,12 +1001,21 @@ func (h *Handlers) CreatePublicComment(ctx context.Context, w http.ResponseWrite
 	if status, err := decodePublicRequest(w, r, &input, publicFeedbackCommentBodyLimit); err != nil {
 		return web.RespondError(ctx, w, err, status)
 	}
+	resolved, err := h.resolvePublicParticipant(ctx, r, strings.ToLower(strings.TrimSpace(input.ParticipationIntent)))
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	var participant *feedback.CoreParticipant
+	if resolved.Participant.Kind != feedback.ContributorKindAccount {
+		participant = &resolved.Participant
+	}
 	comment, err := h.feedback.CreatePublicComment(ctx, feedback.CorePublicCommentInput{
-		PortalSlug: web.Params(r, "portalSlug"),
-		ItemID:     itemID,
-		AuthorID:   userID,
-		ParentID:   input.ParentID,
-		Body:       input.Body,
+		PortalSlug:  web.Params(r, "portalSlug"),
+		ItemID:      itemID,
+		AuthorID:    resolved.AccountID,
+		Participant: participant,
+		ParentID:    input.ParentID,
+		Body:        input.Body,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
@@ -903,10 +1055,6 @@ func (h *Handlers) ToggleVote(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (h *Handlers) TogglePublicVote(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	userID, err := mid.GetUserID(ctx)
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
-	}
 	itemID, err := uuid.Parse(web.Params(r, "itemId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -915,16 +1063,25 @@ func (h *Handlers) TogglePublicVote(ctx context.Context, w http.ResponseWriter, 
 	if status, err := decodePublicRequest(w, r, &input, publicFeedbackVoteBodyLimit); err != nil {
 		return web.RespondError(ctx, w, err, status)
 	}
+	resolved, err := h.resolvePublicParticipant(ctx, r, strings.ToLower(strings.TrimSpace(input.ParticipationIntent)))
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	var participant *feedback.CoreParticipant
+	if resolved.Participant.Kind != feedback.ContributorKindAccount {
+		participant = &resolved.Participant
+	}
 	result, err := h.feedback.TogglePublicVote(ctx, feedback.CorePublicVoteInput{
-		PortalSlug: web.Params(r, "portalSlug"),
-		ItemID:     itemID,
-		UserID:     userID,
-		Vote:       input.Vote,
+		PortalSlug:  web.Params(r, "portalSlug"),
+		ItemID:      itemID,
+		UserID:      resolved.AccountID,
+		Participant: participant,
+		Vote:        input.Vote,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
-	return web.Respond(ctx, w, AppVoteResult{Vote: result.Vote, Voted: result.Vote == 1, VoteCount: result.VoteCount}, http.StatusOK)
+	return web.Respond(ctx, w, AppVoteResult{Vote: result.Vote, Voted: result.Vote == 1, VoteCount: result.VoteCount, ParticipantKind: resolved.Participant.Kind}, http.StatusOK)
 }
 
 func (h *Handlers) CreateStoryFromItem(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -991,8 +1148,20 @@ func httpStatus(err error) int {
 		return http.StatusConflict
 	case errors.Is(err, feedback.ErrParticipationNotAllowed):
 		return http.StatusForbidden
-	case errors.Is(err, feedback.ErrAuthenticationRequired):
+	case errors.Is(err, feedback.ErrContributorBlocked), errors.Is(err, feedback.ErrWidgetOriginNotAllowed):
+		return http.StatusForbidden
+	case errors.Is(err, feedback.ErrAuthenticationRequired), errors.Is(err, feedback.ErrContributorSessionInvalid), errors.Is(err, feedback.ErrWidgetAssertionInvalid):
 		return http.StatusUnauthorized
+	case errors.Is(err, feedback.ErrVerificationExpired), errors.Is(err, feedback.ErrVerificationConsumed):
+		return http.StatusGone
+	case errors.Is(err, feedback.ErrVerificationAttempts):
+		return http.StatusTooManyRequests
+	case errors.Is(err, feedback.ErrWidgetAssertionReplayed):
+		return http.StatusConflict
+	case errors.Is(err, feedback.ErrMergeConflict):
+		return http.StatusConflict
+	case errors.Is(err, feedback.ErrFeatureUnavailable):
+		return http.StatusServiceUnavailable
 	case errors.Is(err, feedback.ErrTeamMismatch):
 		return http.StatusBadRequest
 	case errors.Is(err, feedback.ErrInvalidInput):

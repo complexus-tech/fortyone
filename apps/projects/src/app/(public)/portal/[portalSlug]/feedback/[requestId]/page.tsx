@@ -1,7 +1,10 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PublicPortalRequestDetailPage } from "@/modules/public-portal";
-import { getPublicPortalOrNotFound } from "@/modules/public-portal/query";
-import { getPublicPortalViewer } from "@/modules/public-portal/viewer";
+import {
+  getPublicFeedbackCanonicalItemOrNotFound,
+  getPublicPortalOrNotFound,
+} from "@/modules/public-portal/query";
+import { getPublicPortalParticipant } from "@/modules/public-portal/viewer";
 
 type PageProps = {
   params: Promise<{ portalSlug: string; requestId: string }>;
@@ -11,21 +14,33 @@ export default async function PublicPortalFeedbackDetailRoute({
   params,
 }: PageProps) {
   const { portalSlug, requestId } = await params;
-  const [portal, viewer] = await Promise.all([
-    getPublicPortalOrNotFound(portalSlug, { pageSize: 1, search: requestId }),
-    getPublicPortalViewer(portalSlug),
+  const canonical = await getPublicFeedbackCanonicalItemOrNotFound(
+    portalSlug,
+    requestId,
+  );
+  if (canonical.merged) {
+    redirect(
+      `/portal/${encodeURIComponent(portalSlug)}/feedback/${encodeURIComponent(canonical.itemSlug)}`,
+    );
+  }
+  const [portal, participant] = await Promise.all([
+    getPublicPortalOrNotFound(portalSlug, {
+      itemId: canonical.itemId,
+      pageSize: 1,
+    }),
+    getPublicPortalParticipant(portalSlug),
   ]);
   const request = portal.requests.find(
-    (item) => item.slug === requestId || item.id === requestId,
+    (item) => item.id === canonical.itemId || item.slug === canonical.itemSlug,
   );
 
   if (!request) notFound();
 
   return (
     <PublicPortalRequestDetailPage
+      participant={participant}
       portal={portal}
       request={request}
-      viewer={viewer}
     />
   );
 }

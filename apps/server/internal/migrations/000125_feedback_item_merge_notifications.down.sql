@@ -1,0 +1,2 @@
+-- PostgreSQL enum values cannot be removed without rebuilding the enum and
+-- every dependent column. Retaining this unused value is backward compatible.

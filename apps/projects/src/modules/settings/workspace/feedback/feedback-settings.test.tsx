@@ -32,9 +32,11 @@ jest.mock("icons", () => {
     CheckIcon: Icon,
     CopyIcon: Icon,
     DeleteIcon: Icon,
+    ExternalLinkIcon: Icon,
     LinkIcon: Icon,
     MoreHorizontalIcon: Icon,
     PlusIcon: Icon,
+    SearchIcon: Icon,
     TeamIcon: Icon,
   };
 });
@@ -179,8 +181,28 @@ jest.mock("ui", () => {
       ),
       React.createElement(
         "option",
+        { value: "verified_guest" },
+        "Verified email",
+      ),
+      React.createElement(
+        "option",
         { value: "anonymous_allowed" },
         "Anonymous allowed",
+      ),
+      React.createElement(
+        "option",
+        { value: "show_identity" },
+        "Show display name",
+      ),
+      React.createElement(
+        "option",
+        { value: "allow_public_masking" },
+        "Let guests choose",
+      ),
+      React.createElement(
+        "option",
+        { value: "always_mask_guests" },
+        "Always hide names",
       ),
     );
   };
@@ -227,11 +249,54 @@ jest.mock("ui", () => {
 
 jest.mock("./hooks", () => ({
   useCreateFeedbackBoardMutation: jest.fn(),
+  useCreateFeedbackUpdateMutation: () => ({
+    isPending: false,
+    mutateAsync: jest.fn(),
+  }),
+  useCreateFeedbackWidgetSecretMutation: () => ({
+    isPending: false,
+    mutate: jest.fn(),
+  }),
+  useDeleteFeedbackUpdateMutation: () => ({
+    isPending: false,
+    mutate: jest.fn(),
+  }),
   useDeleteFeedbackBoardMutation: jest.fn(),
   useFeedbackBoardReviewers: jest.fn(),
   useFeedbackPortals: jest.fn(),
+  useFeedbackUpdateCandidates: () => ({ data: [], isLoading: false }),
+  useFeedbackUpdates: () => ({ data: [], isLoading: false }),
+  useFeedbackWidgetSettings: () => ({
+    data: {
+      allowedOrigins: ["https://app.example.com"],
+      enabled: true,
+      hasSigningSecret: false,
+      previousVersionExpiresAt: null,
+      signingSecretVersion: 0,
+      widgetKeyId: "widget-key-1",
+    },
+    error: null,
+    isLoading: false,
+    refetch: jest.fn(),
+  }),
+  usePublishFeedbackUpdateMutation: () => ({
+    isPending: false,
+    mutate: jest.fn(),
+  }),
+  useRotateFeedbackWidgetSecretMutation: () => ({
+    isPending: false,
+    mutate: jest.fn(),
+  }),
+  useUpdateFeedbackUpdateMutation: () => ({
+    isPending: false,
+    mutateAsync: jest.fn(),
+  }),
   useUpdateFeedbackBoardReviewerMutation: jest.fn(),
   useUpdateFeedbackPortalMutation: jest.fn(),
+  useUpdateFeedbackWidgetSettingsMutation: () => ({
+    isPending: false,
+    mutateAsync: jest.fn(),
+  }),
 }));
 
 const mockUseTeams = jest.mocked(useTeams);
@@ -256,6 +321,7 @@ const portal = {
   name: "City Roads",
   slug: "city-roads",
   isPublic: true,
+  guestIdentityPolicy: "show_identity" as const,
   participationMode: "account_required" as const,
   createdAt: "2026-07-19T00:00:00.000Z",
   updatedAt: "2026-07-19T00:00:00.000Z",
@@ -385,8 +451,70 @@ describe("FeedbackSettings", () => {
       }),
     );
     expect(
-      screen.getByText(/without a name, email address, or account/i),
+      screen.getByText(/choose verified email for updates/i),
     ).toBeInTheDocument();
+  });
+
+  it("offers verified email participation without requiring an account", async () => {
+    render(<FeedbackSettings />);
+
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Who can submit feedback" }),
+      { target: { value: "verified_guest" } },
+    );
+
+    await waitFor(() => {
+      expect(updatePortal).toHaveBeenCalledWith({
+        input: { participationMode: "verified_guest" },
+        portalId: portal.id,
+      });
+    });
+    expect(
+      screen.getByText(
+        /verify their email without creating a FortyOne account/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("lets administrators choose how verified guest names appear publicly", async () => {
+    render(<FeedbackSettings />);
+
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Who can submit feedback" }),
+      { target: { value: "verified_guest" } },
+    );
+    const guestIdentity = await screen.findByRole("combobox", {
+      name: "Guest public identity",
+    });
+    fireEvent.change(guestIdentity, {
+      target: { value: "allow_public_masking" },
+    });
+
+    await waitFor(() => {
+      expect(updatePortal).toHaveBeenCalledWith({
+        input: { guestIdentityPolicy: "allow_public_masking" },
+        portalId: portal.id,
+      });
+    });
+    expect(
+      screen.getByText(/decide whether their display name is public/i),
+    ).toBeInTheDocument();
+  });
+
+  it("puts the widget key ID but never a signing secret in the snippet", () => {
+    const { container } = render(<FeedbackSettings />);
+
+    const snippet = [...container.querySelectorAll("code")].find((element) =>
+      element.textContent.includes('data-key-id="widget-key-1"'),
+    );
+    if (!snippet) {
+      throw new Error(
+        "Expected the widget installation snippet to be rendered",
+      );
+    }
+    expect(snippet.textContent).not.toContain(
+      "FORTYONE_FEEDBACK_WIDGET_SECRET",
+    );
   });
 
   it("does not offer anonymous collection when ingress identity is unavailable", () => {
@@ -561,7 +689,7 @@ describe("FeedbackSettings", () => {
     expect(screen.getByText("Admin")).toBeInTheDocument();
     expect(screen.getByText("1 subscribed")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /save/i }),
+      screen.queryByRole("button", { name: "Save" }),
     ).not.toBeInTheDocument();
 
     fireEvent.change(

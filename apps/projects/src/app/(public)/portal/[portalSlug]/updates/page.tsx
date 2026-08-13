@@ -1,6 +1,10 @@
+import { notFound } from "next/navigation";
 import { PublicPortalUpdatesPage } from "@/modules/public-portal";
-import { getPublicPortalOrNotFound } from "@/modules/public-portal/query";
-import { getPublicPortalViewer } from "@/modules/public-portal/viewer";
+import {
+  getPublicPortalOrNotFound,
+  getPublicPortalUpdates,
+} from "@/modules/public-portal/query";
+import { getPublicPortalParticipant } from "@/modules/public-portal/viewer";
 
 export default async function PortalUpdatesPage({
   params,
@@ -8,10 +12,21 @@ export default async function PortalUpdatesPage({
   params: Promise<{ portalSlug: string }>;
 }) {
   const { portalSlug } = await params;
-  const [portal, viewer] = await Promise.all([
+  const [portal, participant, updatesPage] = await Promise.all([
     getPublicPortalOrNotFound(portalSlug),
-    getPublicPortalViewer(portalSlug),
+    getPublicPortalParticipant(portalSlug),
+    getPublicPortalUpdates(portalSlug),
   ]);
 
-  return <PublicPortalUpdatesPage portal={portal} viewer={viewer} />;
+  if (!portal.hasPublishedUpdates && updatesPage.updates.length === 0) {
+    notFound();
+  }
+
+  return (
+    <PublicPortalUpdatesPage
+      participant={participant}
+      portal={portal}
+      updates={updatesPage.updates}
+    />
+  );
 }

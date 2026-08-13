@@ -18,21 +18,33 @@ func PurgeExpiredTokens(ctx context.Context, db *sqlx.DB, log *logger.Logger) er
 
 	log.Info(ctx, "Purging verification tokens older than 7 days")
 
-	deleteQuery := `
-		DELETE FROM verification_tokens
-		WHERE created_at < NOW() - INTERVAL '7 days'
-	`
-
-	result, err := db.ExecContext(ctx, deleteQuery)
-	if err != nil {
-		span.RecordError(err)
-		return fmt.Errorf("failed to delete expired tokens: %w", err)
+	queries := []string{
+		`DELETE FROM verification_tokens WHERE created_at < NOW() - INTERVAL '7 days'`,
+		`DELETE FROM feedback_contributor_verifications WHERE expires_at < NOW() - INTERVAL '7 days'`,
+		`DELETE FROM feedback_contributor_sessions
+		 WHERE expires_at < NOW() - INTERVAL '7 days'
+		    OR (revoked_at IS NOT NULL AND revoked_at < NOW() - INTERVAL '7 days')`,
+		`DELETE FROM feedback_contributor_unsubscribe_tokens
+		 WHERE expires_at < NOW() - INTERVAL '7 days'
+		    OR (consumed_at IS NOT NULL AND consumed_at < NOW() - INTERVAL '7 days')`,
+		`DELETE FROM feedback_widget_assertion_nonces WHERE expires_at < NOW()`,
+		`DELETE FROM feedback_widget_signing_secret_rotations
+		 WHERE grace_expires_at < NOW() - INTERVAL '7 days'`,
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		span.RecordError(err)
-		return fmt.Errorf("failed to get rows affected: %w", err)
+	var rowsAffected int64
+	for _, query := range queries {
+		result, err := db.ExecContext(ctx, query)
+		if err != nil {
+			span.RecordError(err)
+			return fmt.Errorf("failed to delete expired tokens: %w", err)
+		}
+		deleted, err := result.RowsAffected()
+		if err != nil {
+			span.RecordError(err)
+			return fmt.Errorf("failed to get rows affected: %w", err)
+		}
+		rowsAffected += deleted
 	}
 
 	span.AddEvent("tokens_deleted", trace.WithAttributes(

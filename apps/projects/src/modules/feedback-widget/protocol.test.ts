@@ -15,6 +15,9 @@ describe("feedback widget protocol", () => {
     expect(getTrustedWidgetOrigin("http://localhost:3000")).toBe(
       "http://localhost:3000",
     );
+    expect(getTrustedWidgetOrigin("http://[::1]:3000")).toBe(
+      "http://[::1]:3000",
+    );
     expect(getTrustedWidgetOrigin("http://product.example.com")).toBeNull();
     expect(
       getTrustedWidgetOrigin("https://product.example.com/path"),
@@ -45,6 +48,32 @@ describe("feedback widget protocol", () => {
         "widget-1",
       ),
     ).toBe(false);
+  });
+
+  it("recognizes the signed identity host event only for its instance", () => {
+    expect(
+      isFeedbackWidgetMessage(
+        {
+          channel: FEEDBACK_WIDGET_CHANNEL,
+          event: "host-identify",
+          instanceId: "widget-1",
+          payload: { assertion: "payload.signature" },
+          version: 1,
+        },
+        "widget-1",
+      ),
+    ).toBe(true);
+    expect(
+      isFeedbackWidgetMessage(
+        {
+          channel: FEEDBACK_WIDGET_CHANNEL,
+          event: "host-identity-clear",
+          instanceId: "widget-1",
+          version: 1,
+        },
+        "widget-1",
+      ),
+    ).toBe(true);
   });
 
   it("posts only to the validated parent origin", () => {

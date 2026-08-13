@@ -10,7 +10,7 @@ import (
 )
 
 func TestBuildTaskMuxRegistersAttachmentImageOptimization(t *testing.T) {
-	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil)
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, "")
 
 	handler, pattern := mux.Handler(asynq.NewTask(tasks.TypeAttachmentImageOptimization, nil))
 
@@ -19,9 +19,18 @@ func TestBuildTaskMuxRegistersAttachmentImageOptimization(t *testing.T) {
 }
 
 func TestBuildTaskMuxRegistersBrevoEmailReplyTasks(t *testing.T) {
-	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil)
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, "")
 
 	for _, taskType := range []string{tasks.TypeBrevoEmailReply, tasks.TypeBrevoEmailReplyRecovery} {
+		handler, pattern := mux.Handler(asynq.NewTask(taskType, nil))
+		require.NotNil(t, handler)
+		require.Equal(t, taskType, pattern)
+	}
+}
+
+func TestBuildTaskMuxRegistersFeedbackDeliveryAndRecovery(t *testing.T) {
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, "")
+	for _, taskType := range []string{tasks.TypeFeedbackContributorDelivery, tasks.TypeFeedbackContributorDeliveryRecovery, tasks.TypeFeedbackOutboxDispatch} {
 		handler, pattern := mux.Handler(asynq.NewTask(taskType, nil))
 		require.NotNil(t, handler)
 		require.Equal(t, taskType, pattern)

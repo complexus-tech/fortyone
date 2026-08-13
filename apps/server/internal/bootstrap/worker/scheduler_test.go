@@ -34,6 +34,24 @@ func TestRegisterSchedulesRunsBrevoEmailReplyRecoveryEveryMinute(t *testing.T) {
 	})
 }
 
+func TestRegisterSchedulesRecoversFeedbackDeliveryOutboxEveryMinute(t *testing.T) {
+	t.Parallel()
+	scheduler := &scheduleCapture{}
+	require.NoError(t, registerSchedules(scheduler))
+	require.Contains(t, scheduler.entries, scheduledTask{
+		spec: "*/1 * * * *", taskType: tasks.TypeFeedbackContributorDeliveryRecovery,
+	})
+}
+
+func TestRegisterSchedulesDispatchesFeedbackOutboxEveryMinute(t *testing.T) {
+	t.Parallel()
+	scheduler := &scheduleCapture{}
+	require.NoError(t, registerSchedules(scheduler))
+	require.Contains(t, scheduler.entries, scheduledTask{
+		spec: "*/1 * * * *", taskType: tasks.TypeFeedbackOutboxDispatch,
+	})
+}
+
 func TestRegisterSchedulesChecksCalendarWatchRenewalsHourly(t *testing.T) {
 	t.Parallel()
 

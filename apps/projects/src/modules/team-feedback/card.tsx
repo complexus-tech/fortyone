@@ -27,6 +27,7 @@ import {
   useTrashTeamFeedback,
 } from "./hooks/use-trash";
 import { useUpdateTeamFeedbackStatus } from "./hooks/use-update-status";
+import { CloseTeamFeedbackDialog } from "./close-dialog";
 import { FeedbackStatus } from "./status";
 import type { TeamFeedbackItem } from "./types";
 
@@ -281,35 +282,32 @@ export const TeamFeedbackCard = ({
         }}
         title="Move this feedback to trash?"
       />
-      <ConfirmDialog
-        confirmText="Close feedback"
-        description="Closing removes this item from the team's active feedback queue. It will remain available in the feedback portal."
-        isLoading={updateStatus.isPending}
-        isOpen={isClosing}
-        loadingText="Closing..."
-        onCancel={() => {
-          setIsClosing(false);
-        }}
-        onClose={() => {
-          setIsClosing(false);
-        }}
-        onConfirm={() => {
-          updateStatus.mutate(
-            {
-              feedbackId: feedback.id,
-              payload: { status: "closed", roadmapSummary: null },
-            },
-            {
-              onSuccess: (response) => {
-                if (!response.error?.message) {
-                  setIsClosing(false);
-                }
+      {isClosing ? (
+        <CloseTeamFeedbackDialog
+          isLoading={updateStatus.isPending}
+          onCancel={() => {
+            setIsClosing(false);
+          }}
+          onConfirm={(publicExplanation) => {
+            updateStatus.mutate(
+              {
+                feedbackId: feedback.id,
+                payload: {
+                  status: "closed",
+                  roadmapSummary: publicExplanation,
+                },
               },
-            },
-          );
-        }}
-        title="Close this feedback?"
-      />
+              {
+                onSuccess: (response) => {
+                  if (!response.error?.message) {
+                    setIsClosing(false);
+                  }
+                },
+              },
+            );
+          }}
+        />
+      ) : null}
     </ContextMenu>
   );
 };

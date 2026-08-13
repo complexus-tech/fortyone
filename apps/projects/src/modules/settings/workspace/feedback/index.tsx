@@ -27,6 +27,7 @@ import { SectionHeader } from "@/modules/settings/components";
 import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 import type {
   FeedbackBoard,
+  FeedbackGuestIdentityPolicy,
   FeedbackParticipationMode,
   FeedbackPortal,
 } from "./types";
@@ -38,6 +39,7 @@ import {
 } from "./hooks";
 import { FeedbackReviewersDialog } from "./reviewers-dialog";
 import { WidgetInstallSettings } from "./widget-install-settings";
+import { FeedbackUpdatesSettings } from "./updates-settings";
 
 const colorOptions = [
   { label: "Green", value: "green" },
@@ -60,9 +62,40 @@ const participationOptions: {
   },
   {
     description:
-      "Anyone can submit without a name, email address, or account. They receive a public tracking link after submission.",
+      "People can verify their email without creating a FortyOne account, then receive replies and progress updates.",
+    label: "Verified email",
+    value: "verified_guest",
+  },
+  {
+    description:
+      "People can choose verified email for updates or submit without a name, email address, or personal notifications.",
     label: "Anonymous allowed",
     value: "anonymous_allowed",
+  },
+];
+
+const guestIdentityOptions: {
+  description: string;
+  label: string;
+  value: FeedbackGuestIdentityPolicy;
+}[] = [
+  {
+    description:
+      "Show a verified guest’s display name publicly. Their email address remains private.",
+    label: "Show display name",
+    value: "show_identity",
+  },
+  {
+    description:
+      "Let each verified guest decide whether their display name is public or shown as Anonymous.",
+    label: "Let guests choose",
+    value: "allow_public_masking",
+  },
+  {
+    description:
+      "Show every verified guest as Anonymous publicly while administrators retain their verified identity.",
+    label: "Always hide names",
+    value: "always_mask_guests",
   },
 ];
 
@@ -101,10 +134,17 @@ const PortalConfiguration = ({
   const [participationMode, setParticipationMode] = useState(
     portal.participationMode,
   );
+  const [guestIdentityPolicy, setGuestIdentityPolicy] = useState(
+    portal.guestIdentityPolicy,
+  );
   const mutation = useUpdateFeedbackPortalMutation();
   const selectedParticipation =
     participationOptions.find((option) => option.value === participationMode) ??
     participationOptions[0];
+  const selectedGuestIdentity =
+    guestIdentityOptions.find(
+      (option) => option.value === guestIdentityPolicy,
+    ) ?? guestIdentityOptions[0];
 
   const updateAvailability = async (checked: boolean) => {
     const previousValue = isPublic;
@@ -146,6 +186,25 @@ const PortalConfiguration = ({
       }
     } catch {
       setParticipationMode(previousMode);
+    }
+  };
+
+  const updateGuestIdentityPolicy = async (
+    nextPolicy: FeedbackGuestIdentityPolicy,
+  ) => {
+    const previousPolicy = guestIdentityPolicy;
+    setGuestIdentityPolicy(nextPolicy);
+
+    try {
+      const response = await mutation.mutateAsync({
+        portalId: portal.id,
+        input: { guestIdentityPolicy: nextPolicy },
+      });
+      if (response.error?.message) {
+        setGuestIdentityPolicy(previousPolicy);
+      }
+    } catch {
+      setGuestIdentityPolicy(previousPolicy);
     }
   };
 
@@ -213,6 +272,42 @@ const PortalConfiguration = ({
             </Select.Content>
           </Select>
         </Flex>
+        {participationMode !== "account_required" ? (
+          <Flex
+            className="border-border/70 flex-col items-stretch gap-4 border-t pt-5 sm:flex-row sm:items-center"
+            justify="between"
+          >
+            <Box className="min-w-0 flex-1">
+              <Text className="font-medium">Guest public identity</Text>
+              <Text className="mt-1 max-w-xl" color="muted">
+                {selectedGuestIdentity.description}
+              </Text>
+            </Box>
+            <Select
+              disabled={mutation.isPending}
+              onValueChange={(value) => {
+                void updateGuestIdentityPolicy(
+                  value as FeedbackGuestIdentityPolicy,
+                );
+              }}
+              value={guestIdentityPolicy}
+            >
+              <Select.Trigger
+                aria-label="Guest public identity"
+                className="h-9 w-full shrink-0 sm:w-52"
+              >
+                <Select.Input />
+              </Select.Trigger>
+              <Select.Content align="end">
+                {guestIdentityOptions.map((option) => (
+                  <Select.Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Select.Option>
+                ))}
+              </Select.Content>
+            </Select>
+          </Flex>
+        ) : null}
         {!anonymousFeedbackAvailable ? (
           <Text className="text-sm" color="muted">
             Anonymous feedback is unavailable on this deployment. Configure a
@@ -399,10 +494,14 @@ export const FeedbackSettings = ({
         <>
           <PortalConfiguration
             anonymousFeedbackAvailable={anonymousFeedbackAvailable}
-            key={`${primaryPortal.id}:${primaryPortal.isPublic}:${primaryPortal.participationMode}`}
+            key={`${primaryPortal.id}:${primaryPortal.isPublic}:${primaryPortal.participationMode}:${primaryPortal.guestIdentityPolicy}`}
             portal={primaryPortal}
           />
-          <WidgetInstallSettings portalSlug={primaryPortal.slug} />
+          <WidgetInstallSettings
+            portalId={primaryPortal.id}
+            portalSlug={primaryPortal.slug}
+          />
+          <FeedbackUpdatesSettings portal={primaryPortal} />
         </>
       ) : null}
 

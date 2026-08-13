@@ -297,7 +297,18 @@ func slackWorkObjectStateValue(
 		return interactionViewStateValue{}, false, fmt.Errorf("%w: %s has invalid actions", errSlackWorkObjectEditMalformed, field)
 	}
 	value, ok := block[field+".input"]
-	if !ok || strings.TrimSpace(value.Type) != expectedType {
+	if !ok {
+		// Slack Work Object submissions have historically used the documented
+		// <field>.input action ID, but some payloads only preserve the single
+		// action under a provider-generated key. Because this block is required
+		// to contain exactly one action, accepting that sole action cannot widen
+		// the field being updated.
+		for _, candidate := range block {
+			value = candidate
+			ok = true
+		}
+	}
+	if !ok || (strings.TrimSpace(value.Type) != "" && strings.TrimSpace(value.Type) != expectedType) {
 		return interactionViewStateValue{}, false, fmt.Errorf("%w: %s has an invalid input", errSlackWorkObjectEditMalformed, field)
 	}
 	return value, true, nil

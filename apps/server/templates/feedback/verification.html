@@ -1,0 +1,20 @@
+{{ define "content" }}
+<h1 class="heading" style="{{ emailStyle "heading" }}">Verify your email</h1>
+<div class="email-body" style="{{ emailStyle "bodyBlock" }}">
+  <p class="text" style="{{ emailStyle "text" }}">
+    Verify your email to participate in {{ .PortalName }} and receive replies and status updates.
+    This link expires in {{ .ExpiresIn }}.
+  </p>
+  <div class="button-container" style="{{ emailStyle "buttonContainer" }}">
+    <a href="{{ .VerificationURL }}" class="button" style="{{ emailStyle "button" }}">Verify email</a>
+  </div>
+  <div class="code-panel" style="{{ emailStyle "codePanel" }}">
+    <p class="panel-label" style="{{ emailStyle "panelLabel" }}">Your verification code</p>
+    <p class="verification-code" style="{{ emailStyle "verificationCode" }}">{{ .Code }}</p>
+    <p class="text" style="{{ emailStyle "textSmallTop" }}">
+      Enter this code in the feedback portal if you prefer not to use the link.
+    </p>
+  </div>
+  <p class="security-note" style="{{ emailStyle "securityNote" }}">If you did not request this email, you can ignore it.</p>
+</div>
+{{ end }}

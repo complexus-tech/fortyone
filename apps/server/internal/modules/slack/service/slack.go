@@ -899,6 +899,11 @@ func (s *Service) HandleInteractivity(ctx context.Context, rawBody []byte) (Inte
 			s.dispatchFirstInteractionGuideByTeam(ctx, payload.Team.ID, payload.User.ID)
 			return InteractionResponse{StatusCode: http.StatusOK}, nil
 		}
+		if isSlackStoryCompactEditSubmission(payload) {
+			s.dispatchInteraction(ctx, payload.Type, payload, s.handleSlackStoryCompactEditSubmission)
+			s.dispatchFirstInteractionGuideByTeam(ctx, payload.Team.ID, payload.User.ID)
+			return InteractionResponse{StatusCode: http.StatusOK}, nil
+		}
 		response, err := s.handleViewSubmission(ctx, payload)
 		if err == nil {
 			return response, nil
@@ -1272,6 +1277,9 @@ func (s *Service) updateSlackInteractiveMessage(ctx context.Context, botToken, c
 }
 
 func (s *Service) handleBlockActions(ctx context.Context, payload interactionPayload) (InteractionResponse, error) {
+	if isSlackStoryCompactEditAction(payload) {
+		return s.handleSlackStoryCompactEditAction(ctx, payload)
+	}
 	if payload.View.CallbackID != "fortyone_create_task" {
 		return InteractionResponse{StatusCode: http.StatusOK}, nil
 	}
@@ -4192,6 +4200,14 @@ type interactionPayload struct {
 		ThreadTS string `json:"thread_ts"`
 		User     string `json:"user"`
 	} `json:"message"`
+	Container struct {
+		MessageTS    string `json:"message_ts"`
+		ChannelID    string `json:"channel_id"`
+		AppUnfurlURL string `json:"app_unfurl_url"`
+	} `json:"container"`
+	AppUnfurl struct {
+		AppUnfurlURL string `json:"app_unfurl_url"`
+	} `json:"app_unfurl"`
 	View struct {
 		ID              string                     `json:"id"`
 		Hash            string                     `json:"hash"`

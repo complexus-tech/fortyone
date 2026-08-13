@@ -36,6 +36,10 @@ type GitHubCommentSyncer interface {
 	SyncCommentToGitHub(ctx context.Context, workspaceID, storyID, teamID, localCommentID uuid.UUID, authorName, content string) error
 }
 
+type FeedbackStatusBridge interface {
+	NotifyLinkedStoryStatusTransition(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time) error
+}
+
 type Consumer struct {
 	redis             *redis.Client
 	db                *sqlx.DB
@@ -48,10 +52,11 @@ type Consumer struct {
 	users             *users.Service
 	statuses          *states.Service
 	githubSyncer      GitHubCommentSyncer
+	feedbackStatuses  FeedbackStatusBridge
 	websiteURL        string
 }
 
-func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, mailerService mailer.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service, githubSyncer GitHubCommentSyncer) *Consumer {
+func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, mailerService mailer.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service, githubSyncer GitHubCommentSyncer, feedbackStatuses FeedbackStatusBridge) *Consumer {
 	notificationRules := notifications.NewRules(log, stories, users, statuses)
 
 	return &Consumer{
@@ -66,6 +71,7 @@ func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string
 		users:             users,
 		statuses:          statuses,
 		githubSyncer:      githubSyncer,
+		feedbackStatuses:  feedbackStatuses,
 		websiteURL:        websiteURL,
 	}
 }
@@ -236,6 +242,12 @@ func (c *Consumer) handleEvent(ctx context.Context, event events.Event) error {
 		return c.handleFeedbackCommentCreated(ctx, event)
 	case events.FeedbackStatusUpdated:
 		return c.handleFeedbackStatusUpdated(ctx, event)
+	case events.FeedbackContributorVerification:
+		return c.handleFeedbackContributorVerification(ctx, event)
+	case events.FeedbackUpdatePublished:
+		return c.handleFeedbackUpdatePublished(ctx, event)
+	case events.FeedbackItemMerged:
+		return c.handleFeedbackItemMerged(ctx, event)
 	case events.UserMentioned:
 		return c.handleUserMentioned(ctx, event)
 	case events.ObjectiveUpdated:
@@ -314,6 +326,42 @@ func (c *Consumer) handleFeedbackStatusUpdated(ctx context.Context, event events
 	return nil
 }
 
+func (c *Consumer) handleFeedbackUpdatePublished(ctx context.Context, event events.Event) error {
+	var payload events.FeedbackUpdatePublishedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("marshal feedback update payload: %w", err)
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("unmarshal feedback update payload: %w", err)
+	}
+	for index, notification := range c.notificationRules.ProcessFeedbackUpdatePublished(ctx, payload, event.ActorID) {
+		notification = withEventDedupeKey(event, notification, index)
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			return fmt.Errorf("create feedback update notification: %w", err)
+		}
+	}
+	return nil
+}
+
+func (c *Consumer) handleFeedbackItemMerged(ctx context.Context, event events.Event) error {
+	var payload events.FeedbackItemMergedPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("marshal feedback merge payload: %w", err)
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("unmarshal feedback merge payload: %w", err)
+	}
+	for index, notification := range c.notificationRules.ProcessFeedbackItemMerged(ctx, payload, event.ActorID) {
+		notification = withEventDedupeKey(event, notification, index)
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			return fmt.Errorf("create feedback merge notification: %w", err)
+		}
+	}
+	return nil
+}
+
 // handleStoryUpdated processes story update events using the new notification rules
 func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) error {
 	var payload events.StoryUpdatedPayload
@@ -343,6 +391,11 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 			// Continue with other notifications even if one fails
 		}
 	}
+	if shouldBridgeFeedbackStatus(payload) && c.feedbackStatuses != nil {
+		if err := c.feedbackStatuses.NotifyLinkedStoryStatusTransition(ctx, payload.WorkspaceID, payload.StoryID, event.ActorID, event.Timestamp); err != nil {
+			return fmt.Errorf("bridge linked story feedback status: %w", err)
+		}
+	}
 
 	// Workspace broadcasting
 	if c.hasSignificantChanges(payload.Updates) {
@@ -350,6 +403,11 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 	}
 
 	return nil
+}
+
+func shouldBridgeFeedbackStatus(payload events.StoryUpdatedPayload) bool {
+	_, statusChanged := payload.Updates["status_id"]
+	return statusChanged && payload.PreviousStatusID != nil
 }
 
 // handleStoryCreated processes story creation events
@@ -666,6 +724,38 @@ func (c *Consumer) handleEmailVerification(ctx context.Context, event events.Eve
 	}
 
 	c.log.Info(ctx, "successfully sent verification email", "email", payload.Email)
+	return nil
+}
+
+func (c *Consumer) handleFeedbackContributorVerification(ctx context.Context, event events.Event) error {
+	var payload events.FeedbackContributorVerificationPayload
+	payloadBytes, err := json.Marshal(event.Payload)
+	if err != nil {
+		return fmt.Errorf("marshal feedback contributor verification payload: %w", err)
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("unmarshal feedback contributor verification payload: %w", err)
+	}
+	if strings.TrimSpace(payload.Email) == "" || strings.TrimSpace(payload.VerificationURL) == "" || strings.TrimSpace(payload.Code) == "" {
+		return errors.New("feedback contributor verification payload is incomplete")
+	}
+	portalName := strings.TrimSpace(payload.PortalName)
+	if portalName == "" {
+		portalName = "this feedback portal"
+	}
+	if err := c.mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
+		To:       []string{payload.Email},
+		Template: "feedback/verification",
+		Subject:  "Verify your email for " + portalName,
+		Data: map[string]any{
+			"PortalName":      portalName,
+			"VerificationURL": payload.VerificationURL,
+			"Code":            payload.Code,
+			"ExpiresIn":       "10 minutes",
+		},
+	}); err != nil {
+		return fmt.Errorf("send feedback contributor verification email: %w", err)
+	}
 	return nil
 }
 

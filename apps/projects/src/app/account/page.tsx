@@ -41,7 +41,9 @@ export default async function AccountRoute() {
       profile={profile}
       profileHref={getGlobalProfileHref()}
       viewer={{
+        canReceiveUpdates: true,
         id: profile.id,
+        kind: "account",
         accountHref: "/account",
         appHref,
         avatarUrl: profile.avatarUrl,

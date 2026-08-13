@@ -1,6 +1,7 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import {
+  buildFeedbackWidgetIdentityServerExample,
   buildFeedbackWidgetSnippet,
   buildInlineFeedbackWidgetMarkup,
 } from "./install";
@@ -34,13 +35,23 @@ describe("feedback widget install snippet", () => {
     expect(snippet).toContain('data-target="#fortyone-feedback"');
   });
 
-  it("falls back from updates until public changelog data is wired", () => {
+  it("can open directly on published updates", () => {
     const snippet = buildFeedbackWidgetSnippet({
       defaultTab: "updates",
       portalSlug: "city-roads",
     });
 
-    expect(snippet).toContain('data-default-tab="feedback"');
+    expect(snippet).toContain('data-default-tab="updates"');
+  });
+
+  it("includes the non-secret widget key identifier", () => {
+    const snippet = buildFeedbackWidgetSnippet({
+      portalSlug: "city-roads",
+      widgetKeyId: "widget-key-123",
+    });
+
+    expect(snippet).toContain('data-key-id="widget-key-123"');
+    expect(snippet).not.toContain("signing-secret");
   });
 
   it("escapes custom trigger selectors in HTML attributes", () => {
@@ -53,5 +64,19 @@ describe("feedback widget install snippet", () => {
     expect(snippet).toContain(
       'data-trigger="[data-feedback=&quot;open&quot;]"',
     );
+  });
+
+  it("builds a server-only signed identity example without a real secret", () => {
+    const example = buildFeedbackWidgetIdentityServerExample({
+      origin: "https://app.example.com",
+      signingSecretVersion: 2,
+      widgetKeyId: "widget-key-123",
+    });
+
+    expect(example).toContain('keyId: "widget-key-123"');
+    expect(example).toContain("version: 2");
+    expect(example).toContain("FORTYONE_FEEDBACK_WIDGET_SECRET");
+    expect(example).toContain('origin: "https://app.example.com"');
+    expect(example).not.toContain("data-key-id");
   });
 });

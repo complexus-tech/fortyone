@@ -30,6 +30,8 @@ const (
 	NotificationTypeMention         NotificationType = "mention"
 	NotificationTypeFeedbackComment NotificationType = "feedback_comment"
 	NotificationTypeFeedbackStatus  NotificationType = "feedback_status_update"
+	NotificationTypeFeedbackUpdate  NotificationType = "feedback_update_published"
+	NotificationTypeFeedbackMerge   NotificationType = "feedback_item_merged"
 	NotificationTypeStrategyUpdate  NotificationType = "strategy_update"
 )
 

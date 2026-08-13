@@ -8,11 +8,18 @@ export type FeedbackWidgetMode = "bubble" | "custom" | "inline";
 export type FeedbackWidgetFrameEvent =
   | "close"
   | "escape"
+  | "identity-cleared"
+  | "identity-error"
+  | "identity-ready"
   | "open-external"
   | "ready"
   | "resize";
 
-export type FeedbackWidgetHostEvent = "host-close" | "host-open";
+export type FeedbackWidgetHostEvent =
+  | "host-close"
+  | "host-identify"
+  | "host-identity-clear"
+  | "host-open";
 
 export type FeedbackWidgetMessage = {
   channel: typeof FEEDBACK_WIDGET_CHANNEL;
@@ -28,7 +35,9 @@ export const getTrustedWidgetOrigin = (value?: string | null) => {
   try {
     const url = new URL(value);
     const isLoopback =
-      url.hostname === "localhost" || url.hostname === "127.0.0.1";
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname === "[::1]";
     if (
       url.protocol !== "https:" &&
       !(url.protocol === "http:" && isLoopback)

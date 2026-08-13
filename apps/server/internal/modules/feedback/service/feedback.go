@@ -2,9 +2,11 @@ package feedback
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 	"time"
@@ -17,16 +19,26 @@ import (
 )
 
 var (
-	ErrInvalidInput            = errors.New("invalid feedback input")
-	ErrNotFound                = sql.ErrNoRows
-	ErrBoardExists             = errors.New("a feedback board already exists for this team")
-	ErrAlreadyPlanned          = errors.New("feedback is already linked to a primary story")
-	ErrTeamMismatch            = errors.New("feedback and story must belong to the same team")
-	ErrStoryManaged            = errors.New("feedback status is managed by its linked story")
-	ErrDuplicateItem           = errors.New("similar feedback has already been reported")
-	ErrVersionConflict         = errors.New("feedback changed since it was reviewed")
-	ErrParticipationNotAllowed = errors.New("anonymous feedback is not allowed for this portal")
-	ErrAuthenticationRequired  = errors.New("feedback account authentication is required")
+	ErrInvalidInput              = errors.New("invalid feedback input")
+	ErrNotFound                  = sql.ErrNoRows
+	ErrBoardExists               = errors.New("a feedback board already exists for this team")
+	ErrAlreadyPlanned            = errors.New("feedback is already linked to a primary story")
+	ErrTeamMismatch              = errors.New("feedback and story must belong to the same team")
+	ErrStoryManaged              = errors.New("feedback status is managed by its linked story")
+	ErrDuplicateItem             = errors.New("similar feedback has already been reported")
+	ErrVersionConflict           = errors.New("feedback changed since it was reviewed")
+	ErrParticipationNotAllowed   = errors.New("anonymous feedback is not allowed for this portal")
+	ErrAuthenticationRequired    = errors.New("feedback account authentication is required")
+	ErrContributorSessionInvalid = errors.New("feedback contributor session is invalid")
+	ErrContributorBlocked        = errors.New("feedback contributor is blocked")
+	ErrVerificationExpired       = errors.New("feedback verification has expired")
+	ErrVerificationConsumed      = errors.New("feedback verification has already been used")
+	ErrVerificationAttempts      = errors.New("feedback verification attempt limit reached")
+	ErrWidgetOriginNotAllowed    = errors.New("feedback widget origin is not allowed")
+	ErrWidgetAssertionInvalid    = errors.New("feedback widget identity assertion is invalid")
+	ErrWidgetAssertionReplayed   = errors.New("feedback widget identity assertion was already used")
+	ErrFeatureUnavailable        = errors.New("feedback contributor feature is unavailable")
+	ErrMergeConflict             = errors.New("feedback cannot be merged into the requested target")
 )
 
 var nonSlugCharacters = regexp.MustCompile(`[^a-z0-9]+`)
@@ -45,10 +57,17 @@ const (
 )
 
 type Service struct {
-	repo      Repository
-	stories   StoryService
-	publisher EventPublisher
-	log       *logger.Logger
+	repo                     Repository
+	nextRepo                 NextPhaseRepository
+	stories                  StoryService
+	publisher                EventPublisher
+	log                      *logger.Logger
+	security                 *contributorSecurity
+	websiteURL               string
+	tasks                    ContributorTasks
+	guestNotificationActorID uuid.UUID
+	now                      func() time.Time
+	random                   io.Reader
 }
 
 type Option func(*Service)
@@ -60,8 +79,20 @@ func WithEventPublisher(log *logger.Logger, publisher EventPublisher) Option {
 	}
 }
 
+// WithGuestNotificationActor supplies the existing system actor used as the
+// database actor for account notifications initiated by a contributor who has
+// no global user row. The payload still carries the contributor's public name.
+func WithGuestNotificationActor(actorID uuid.UUID) Option {
+	return func(service *Service) {
+		service.guestNotificationActorID = actorID
+	}
+}
+
 func New(repo Repository, stories StoryService, options ...Option) *Service {
-	service := &Service{repo: repo, stories: stories}
+	service := &Service{repo: repo, stories: stories, now: time.Now, random: rand.Reader}
+	if nextRepo, ok := repo.(NextPhaseRepository); ok {
+		service.nextRepo = nextRepo
+	}
 	for _, option := range options {
 		option(service)
 	}
@@ -92,6 +123,7 @@ func (s *Service) getPortalSnapshot(ctx context.Context, portal CorePortal, inpu
 	itemsPage, err := s.ListItems(ctx, CoreListItemsInput{
 		PortalID: portal.ID,
 		AuthorID: input.AuthorID,
+		ItemID:   input.ItemID,
 		Status:   input.Status,
 		BoardID:  input.BoardID,
 		Search:   input.Search,
@@ -149,8 +181,14 @@ func (s *Service) CreatePortal(ctx context.Context, input CorePortalInput) (Core
 	if input.ParticipationMode == nil {
 		input.ParticipationMode = pointer(ParticipationModeAccountRequired)
 	}
+	if input.GuestIdentityPolicy == nil {
+		input.GuestIdentityPolicy = pointer(GuestIdentityPolicyShowIdentity)
+	}
 	if !isValidParticipationMode(*input.ParticipationMode) {
 		return CorePortal{}, invalidInput("unsupported feedback participation mode")
+	}
+	if !isValidGuestIdentityPolicy(*input.GuestIdentityPolicy) {
+		return CorePortal{}, invalidInput("unsupported feedback guest identity policy")
 	}
 	return s.repo.CreatePortal(ctx, input)
 }
@@ -159,8 +197,15 @@ func (s *Service) UpdatePortal(ctx context.Context, workspaceID, portalID uuid.U
 	if workspaceID == uuid.Nil || portalID == uuid.Nil {
 		return CorePortal{}, invalidInput("workspace id and portal id are required")
 	}
-	if input.IsPublic == nil && input.ParticipationMode == nil {
+	if input.IsPublic == nil && input.ParticipationMode == nil && input.GuestIdentityPolicy == nil {
 		return CorePortal{}, invalidInput("at least one feedback portal setting is required")
+	}
+	if input.GuestIdentityPolicy != nil {
+		policy := strings.ToLower(strings.TrimSpace(*input.GuestIdentityPolicy))
+		if !isValidGuestIdentityPolicy(policy) {
+			return CorePortal{}, invalidInput("unsupported feedback guest identity policy")
+		}
+		input.GuestIdentityPolicy = &policy
 	}
 	if input.ParticipationMode != nil {
 		mode := strings.ToLower(strings.TrimSpace(*input.ParticipationMode))
@@ -346,6 +391,25 @@ func (s *Service) GetItemDetails(ctx context.Context, workspaceID, itemID, viewe
 	return CoreItemDetails{Item: item, Comments: comments, StoryLinks: links}, nil
 }
 
+func (s *Service) GetPrivateAuthor(ctx context.Context, workspaceID, itemID uuid.UUID) (CorePrivateAuthor, error) {
+	if workspaceID == uuid.Nil || itemID == uuid.Nil {
+		return CorePrivateAuthor{}, invalidInput("workspace and feedback ids are required")
+	}
+	return s.repo.GetPrivateAuthor(ctx, workspaceID, itemID)
+}
+
+func (s *Service) ResolveCanonicalItem(ctx context.Context, portalSlug, itemReference string) (CoreCanonicalItem, error) {
+	itemReference = strings.TrimSpace(itemReference)
+	if itemReference == "" || len(itemReference) > 255 {
+		return CoreCanonicalItem{}, invalidInput("feedback id or slug is required")
+	}
+	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(portalSlug))
+	if err != nil {
+		return CoreCanonicalItem{}, err
+	}
+	return s.repo.ResolveCanonicalItem(ctx, portal.ID, itemReference)
+}
+
 func (s *Service) ListTeamSummaries(ctx context.Context, workspaceID, userID uuid.UUID) ([]CoreTeamSummary, error) {
 	if workspaceID == uuid.Nil || userID == uuid.Nil {
 		return nil, invalidInput("workspace and user ids are required")
@@ -389,12 +453,23 @@ func (s *Service) TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID) 
 	if workspaceID == uuid.Nil || itemID == uuid.Nil {
 		return invalidInput("workspace id and feedback id are required")
 	}
+	item, err := s.repo.GetItem(ctx, workspaceID, itemID)
+	if err != nil {
+		return err
+	}
+	if item.MergedIntoItemID != nil {
+		return ErrMergeConflict
+	}
 	return s.repo.TrashItem(ctx, workspaceID, itemID)
 }
 
 func (s *Service) RestoreItem(ctx context.Context, workspaceID, itemID uuid.UUID) error {
 	if workspaceID == uuid.Nil || itemID == uuid.Nil {
 		return invalidInput("workspace id and feedback id are required")
+	}
+	item, err := s.repo.GetItem(ctx, workspaceID, itemID)
+	if err == nil && item.MergedIntoItemID != nil {
+		return ErrMergeConflict
 	}
 	return s.repo.RestoreItem(ctx, workspaceID, itemID)
 }
@@ -494,9 +569,13 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 		if input.AuthorID == uuid.Nil {
 			return CorePublicItemResult{}, ErrAuthenticationRequired
 		}
+	case ParticipationIntentVerifiedGuest, ParticipationIntentExternal:
+		if input.Participant == nil || input.Participant.ID == uuid.Nil || input.Participant.Kind != input.ParticipationIntent {
+			return CorePublicItemResult{}, ErrAuthenticationRequired
+		}
 	case ParticipationIntentAnonymous:
 	default:
-		return CorePublicItemResult{}, invalidInput("feedback participation intent must be account or anonymous")
+		return CorePublicItemResult{}, invalidInput("unsupported feedback participation intent")
 	}
 
 	portal, err := s.repo.GetPortalBySlug(ctx, strings.TrimSpace(input.PortalSlug))
@@ -538,8 +617,29 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 		}
 		itemInput.AuthorID = input.AuthorID
 		itemInput.ContributorID = contributor.ID
+		if s.nextRepo != nil {
+			participant, participantErr := s.nextRepo.GetParticipantByUser(ctx, portal.ID, input.AuthorID)
+			if participantErr != nil {
+				return CorePublicItemResult{}, participantErr
+			}
+			item, err := s.nextRepo.CreateContributorItemAndFollow(ctx, CoreContributorItemInput{Item: itemInput, Participant: participant})
+			return CorePublicItemResult{Item: item, ParticipantKind: ContributorKindAccount, Following: err == nil}, err
+		}
 		item, err := s.CreateItem(ctx, itemInput)
-		return CorePublicItemResult{Item: item}, err
+		return CorePublicItemResult{Item: item, ParticipantKind: ContributorKindAccount}, err
+	}
+	if input.ParticipationIntent == ParticipationIntentVerifiedGuest || input.ParticipationIntent == ParticipationIntentExternal {
+		if portal.ParticipationMode != ParticipationModeVerifiedGuest && portal.ParticipationMode != ParticipationModeAnonymousAllowed {
+			return CorePublicItemResult{}, ErrParticipationNotAllowed
+		}
+		participant := *input.Participant
+		if participant.PortalID != portal.ID || participant.BlockedAt != nil {
+			return CorePublicItemResult{}, ErrContributorBlocked
+		}
+		itemInput.ContributorID = participant.ID
+		itemInput.AuthorID = participant.UserID
+		item, err := s.nextRepo.CreateContributorItemAndFollow(ctx, CoreContributorItemInput{Item: itemInput, Participant: participant})
+		return CorePublicItemResult{Item: item, ParticipantKind: participant.Kind, Following: err == nil}, err
 	}
 	if portal.ParticipationMode != ParticipationModeAnonymousAllowed {
 		return CorePublicItemResult{}, ErrParticipationNotAllowed
@@ -548,7 +648,7 @@ func (s *Service) CreatePublicItem(ctx context.Context, input CorePublicItemInpu
 	if err != nil {
 		return CorePublicItemResult{}, err
 	}
-	return CorePublicItemResult{Item: item, Anonymous: true}, nil
+	return CorePublicItemResult{Item: item, Anonymous: true, ParticipantKind: ContributorKindAnonymous}, nil
 }
 
 func (s *Service) ListPublicSimilarItems(ctx context.Context, portalSlug, title, description string, limit int) ([]CoreSimilarItem, error) {
@@ -592,25 +692,20 @@ func (s *Service) UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid
 		trimmed := strings.TrimSpace(*input.RoadmapSummary)
 		input.RoadmapSummary = &trimmed
 	}
+	current, err := s.repo.GetItem(ctx, workspaceID, itemID)
+	if err != nil {
+		return CoreItem{}, err
+	}
+	if current.MergedIntoItemID != nil {
+		return CoreItem{}, ErrMergeConflict
+	}
 	item, statusChanged, err := s.repo.UpdateItemStatus(ctx, workspaceID, itemID, input)
 	if err != nil {
 		return CoreItem{}, err
 	}
-	if statusChanged && shouldNotify(item.AuthorID, input.ActorID) {
-		s.publish(ctx, events.Event{
-			Type: events.FeedbackStatusUpdated,
-			Payload: events.FeedbackStatusUpdatedPayload{
-				EventID:       uuid.New(),
-				FeedbackID:    item.ID,
-				FeedbackTitle: item.Title,
-				FeedbackSlug:  item.Slug,
-				WorkspaceID:   item.WorkspaceID,
-				RecipientID:   item.AuthorID,
-				Status:        item.Status,
-			},
-			Timestamp: time.Now(),
-			ActorID:   input.ActorID,
-		})
+	if statusChanged && shouldNotifyFeedbackStatusTransition(item.Status, input.RoadmapSummary) {
+		s.publishAccountStatusNotifications(ctx, item, input.ActorID, uuid.New(), s.now().UTC())
+		s.enqueueStatusDeliveries(ctx, item, input.ActorID, "")
 	}
 	return item, nil
 }
@@ -634,6 +729,17 @@ func (s *Service) UpdateItemStatusIfUnchanged(
 	if !isValidStatus(input.Status) {
 		return CoreItem{}, invalidInput("unsupported feedback status")
 	}
+	if input.RoadmapSummary != nil {
+		trimmed := strings.TrimSpace(*input.RoadmapSummary)
+		input.RoadmapSummary = &trimmed
+	}
+	current, err := s.repo.GetItem(ctx, workspaceID, itemID)
+	if err != nil {
+		return CoreItem{}, err
+	}
+	if current.MergedIntoItemID != nil {
+		return CoreItem{}, ErrMergeConflict
+	}
 	item, statusChanged, updated, err := s.repo.UpdateItemStatusIfUnchanged(
 		ctx,
 		workspaceID,
@@ -651,21 +757,9 @@ func (s *Service) UpdateItemStatusIfUnchanged(
 		}
 		return CoreItem{}, ErrVersionConflict
 	}
-	if statusChanged && shouldNotify(item.AuthorID, input.ActorID) {
-		s.publish(ctx, events.Event{
-			Type: events.FeedbackStatusUpdated,
-			Payload: events.FeedbackStatusUpdatedPayload{
-				EventID:       uuid.New(),
-				FeedbackID:    item.ID,
-				FeedbackTitle: item.Title,
-				FeedbackSlug:  item.Slug,
-				WorkspaceID:   item.WorkspaceID,
-				RecipientID:   item.AuthorID,
-				Status:        item.Status,
-			},
-			Timestamp: time.Now(),
-			ActorID:   input.ActorID,
-		})
+	if statusChanged && shouldNotifyFeedbackStatusTransition(item.Status, input.RoadmapSummary) {
+		s.publishAccountStatusNotifications(ctx, item, input.ActorID, uuid.New(), s.now().UTC())
+		s.enqueueStatusDeliveries(ctx, item, input.ActorID, "")
 	}
 	return item, nil
 }
@@ -681,6 +775,9 @@ func (s *Service) CreateComment(ctx context.Context, input CoreCommentInput) (Co
 	item, err := s.repo.GetItem(ctx, input.WorkspaceID, input.ItemID)
 	if err != nil {
 		return CoreComment{}, err
+	}
+	if item.MergedIntoItemID != nil {
+		return CoreComment{}, ErrMergeConflict
 	}
 	return s.createComment(ctx, input, item)
 }
@@ -704,6 +801,46 @@ func (s *Service) CreatePublicComment(ctx context.Context, input CorePublicComme
 	}
 	if item.WorkspaceID != portal.WorkspaceID {
 		return CoreComment{}, ErrNotFound
+	}
+	if item.MergedIntoItemID != nil {
+		return CoreComment{}, ErrMergeConflict
+	}
+	if input.Participant != nil {
+		participant := *input.Participant
+		if participant.PortalID != portal.ID || participant.ID == uuid.Nil || participant.BlockedAt != nil || participant.Kind == ContributorKindAnonymous {
+			return CoreComment{}, ErrAuthenticationRequired
+		}
+		if portal.ParticipationMode == ParticipationModeAccountRequired {
+			return CoreComment{}, ErrParticipationNotAllowed
+		}
+		var parent *CoreComment
+		if input.ParentID != nil {
+			parentComment, err := s.repo.GetComment(ctx, portal.WorkspaceID, item.ID, *input.ParentID)
+			if err != nil {
+				return CoreComment{}, err
+			}
+			if parentComment.ParentID != nil {
+				return CoreComment{}, invalidInput("replies can only be one level deep")
+			}
+			parent = &parentComment
+		}
+		comment, err := s.nextRepo.CreateContributorComment(ctx, CoreContributorCommentInput{
+			WorkspaceID: portal.WorkspaceID,
+			PortalID:    portal.ID,
+			ItemID:      item.ID,
+			Participant: participant,
+			ParentID:    input.ParentID,
+			Body:        input.Body,
+		})
+		if err != nil {
+			return CoreComment{}, err
+		}
+		s.publishGuestCommentAccountNotifications(ctx, item, parent, comment, participant)
+		s.enqueueDeliveries(ctx, portal.ID, &item.ID, nil, participant.ID, "feedback.comment.created", "comment:"+comment.ID.String(), "New reply on "+item.Title, comment.Body, s.publicItemURL(portal.Slug, item.Slug))
+		return comment, nil
+	}
+	if input.AuthorID == uuid.Nil {
+		return CoreComment{}, ErrAuthenticationRequired
 	}
 
 	return s.createComment(ctx, CoreCommentInput{
@@ -743,6 +880,7 @@ func (s *Service) createComment(ctx context.Context, input CoreCommentInput, ite
 	if parent != nil && shouldNotify(parent.AuthorID, input.AuthorID) {
 		recipients[parent.AuthorID] = struct{}{}
 	}
+	s.addAccountItemFollowers(ctx, item, input.AuthorID, recipients)
 	for recipientID := range recipients {
 		s.publish(ctx, events.Event{
 			Type: events.FeedbackCommentCreated,
@@ -760,7 +898,84 @@ func (s *Service) createComment(ctx context.Context, input CoreCommentInput, ite
 			ActorID:   input.AuthorID,
 		})
 	}
+	if s.nextRepo != nil {
+		participant, participantErr := s.nextRepo.GetParticipantByUser(ctx, item.PortalID, input.AuthorID)
+		if participantErr == nil {
+			portal, portalErr := s.repo.GetPortal(ctx, item.WorkspaceID, item.PortalID)
+			if portalErr == nil {
+				s.enqueueDeliveries(ctx, item.PortalID, &item.ID, nil, participant.ID, "feedback.comment.created", "comment:"+comment.ID.String(), "New reply on "+item.Title, comment.Body, s.publicItemURL(portal.Slug, item.Slug))
+			}
+		}
+	}
 	return comment, nil
+}
+
+func (s *Service) publishGuestCommentAccountNotifications(ctx context.Context, item CoreItem, parent *CoreComment, comment CoreComment, participant CoreParticipant) {
+	recipients := make(map[uuid.UUID]bool)
+	if item.AuthorID != uuid.Nil {
+		recipients[item.AuthorID] = false
+	}
+	if parent != nil && parent.AuthorID != uuid.Nil {
+		recipients[parent.AuthorID] = true
+	}
+	followers := make(map[uuid.UUID]struct{})
+	s.addAccountItemFollowers(ctx, item, uuid.Nil, followers)
+	for recipientID := range followers {
+		if _, exists := recipients[recipientID]; !exists {
+			recipients[recipientID] = false
+		}
+	}
+	actorName := strings.TrimSpace(participant.DisplayName)
+	if participant.PublicMasked || actorName == "" {
+		actorName = "Anonymous"
+	}
+	for recipientID, isReply := range recipients {
+		s.publish(ctx, events.Event{
+			Type: events.FeedbackCommentCreated,
+			Payload: events.FeedbackCommentCreatedPayload{
+				CommentID: comment.ID, FeedbackID: item.ID, FeedbackTitle: item.Title, FeedbackSlug: item.Slug,
+				WorkspaceID: item.WorkspaceID, RecipientID: recipientID, ActorContributorID: participant.ID,
+				ActorName: actorName, Content: comment.Body, IsReply: isReply,
+			},
+			Timestamp: s.now().UTC(),
+			ActorID:   s.guestNotificationActorID,
+		})
+	}
+}
+
+func (s *Service) addAccountItemFollowers(ctx context.Context, item CoreItem, actorID uuid.UUID, recipients map[uuid.UUID]struct{}) {
+	if s.nextRepo == nil {
+		return
+	}
+	followers, err := s.nextRepo.ListAccountItemFollowers(ctx, item.PortalID, item.ID)
+	if err != nil {
+		s.logNextPhaseError(ctx, "list account feedback item followers", err)
+		return
+	}
+	for _, recipientID := range followers {
+		if shouldNotify(recipientID, actorID) || (actorID == uuid.Nil && recipientID != uuid.Nil) {
+			recipients[recipientID] = struct{}{}
+		}
+	}
+}
+
+func (s *Service) publishAccountStatusNotifications(ctx context.Context, item CoreItem, actorID, eventID uuid.UUID, occurredAt time.Time) {
+	recipients := make(map[uuid.UUID]struct{})
+	if shouldNotify(item.AuthorID, actorID) {
+		recipients[item.AuthorID] = struct{}{}
+	}
+	s.addAccountItemFollowers(ctx, item, actorID, recipients)
+	for recipientID := range recipients {
+		s.publish(ctx, events.Event{
+			Type: events.FeedbackStatusUpdated,
+			Payload: events.FeedbackStatusUpdatedPayload{
+				EventID: eventID, FeedbackID: item.ID, FeedbackTitle: item.Title, FeedbackSlug: item.Slug,
+				WorkspaceID: item.WorkspaceID, RecipientID: recipientID, Status: item.Status,
+			},
+			Timestamp: occurredAt,
+			ActorID:   actorID,
+		})
+	}
 }
 
 func (s *Service) publish(ctx context.Context, event events.Event) {
@@ -783,8 +998,12 @@ func (s *Service) ToggleVote(ctx context.Context, workspaceID, itemID, userID uu
 	if vote != -1 && vote != 1 {
 		return CoreVoteResult{}, invalidInput("feedback vote must be either -1 or 1")
 	}
-	if _, err := s.repo.GetItem(ctx, workspaceID, itemID); err != nil {
+	item, err := s.repo.GetItem(ctx, workspaceID, itemID)
+	if err != nil {
 		return CoreVoteResult{}, err
+	}
+	if item.MergedIntoItemID != nil {
+		return CoreVoteResult{}, ErrMergeConflict
 	}
 	return s.repo.ToggleVote(ctx, workspaceID, itemID, userID, vote)
 }
@@ -801,6 +1020,30 @@ func (s *Service) TogglePublicVote(ctx context.Context, input CorePublicVoteInpu
 	if item.WorkspaceID != portal.WorkspaceID {
 		return CoreVoteResult{}, ErrNotFound
 	}
+	if item.MergedIntoItemID != nil {
+		return CoreVoteResult{}, ErrMergeConflict
+	}
+	if input.Participant != nil {
+		participant := *input.Participant
+		if participant.PortalID != portal.ID || participant.ID == uuid.Nil || participant.BlockedAt != nil || participant.Kind == ContributorKindAnonymous {
+			return CoreVoteResult{}, ErrAuthenticationRequired
+		}
+		if portal.ParticipationMode == ParticipationModeAccountRequired {
+			return CoreVoteResult{}, ErrParticipationNotAllowed
+		}
+		if input.Vote != -1 && input.Vote != 1 {
+			return CoreVoteResult{}, invalidInput("feedback vote must be either -1 or 1")
+		}
+		return s.nextRepo.ToggleContributorVote(ctx, CoreContributorVoteInput{
+			WorkspaceID: portal.WorkspaceID,
+			ItemID:      item.ID,
+			Participant: participant,
+			Vote:        input.Vote,
+		})
+	}
+	if input.UserID == uuid.Nil {
+		return CoreVoteResult{}, ErrAuthenticationRequired
+	}
 
 	return s.ToggleVote(ctx, portal.WorkspaceID, item.ID, input.UserID, input.Vote)
 }
@@ -811,6 +1054,13 @@ func (s *Service) LinkStory(ctx context.Context, input CoreStoryLinkInput) (Core
 	}
 	if input.Relationship == "" {
 		input.Relationship = RelationshipLinked
+	}
+	item, err := s.repo.GetItem(ctx, input.WorkspaceID, input.ItemID)
+	if err != nil {
+		return CoreStoryLink{}, err
+	}
+	if item.MergedIntoItemID != nil {
+		return CoreStoryLink{}, ErrMergeConflict
 	}
 	return s.repo.LinkStory(ctx, input)
 }
@@ -825,6 +1075,9 @@ func (s *Service) CreateStoryFromItem(ctx context.Context, workspaceID, itemID, 
 	item, err := s.repo.GetItem(ctx, workspaceID, itemID)
 	if err != nil {
 		return CoreCreateStoryResult{}, err
+	}
+	if item.MergedIntoItemID != nil {
+		return CoreCreateStoryResult{}, ErrMergeConflict
 	}
 	if item.Board.TeamID == uuid.Nil || item.Board.TeamID != input.TeamID {
 		return CoreCreateStoryResult{}, ErrTeamMismatch
@@ -1022,7 +1275,16 @@ func isValidReviewerEmailFrequency(frequency string) bool {
 }
 
 func isValidParticipationMode(mode string) bool {
-	return mode == ParticipationModeAccountRequired || mode == ParticipationModeAnonymousAllowed
+	return mode == ParticipationModeAccountRequired || mode == ParticipationModeVerifiedGuest || mode == ParticipationModeAnonymousAllowed
+}
+
+func isValidGuestIdentityPolicy(policy string) bool {
+	switch policy {
+	case GuestIdentityPolicyShowIdentity, GuestIdentityPolicyAllowPublicMasking, GuestIdentityPolicyAlwaysMaskGuests:
+		return true
+	default:
+		return false
+	}
 }
 
 func pointer[T any](value T) *T {

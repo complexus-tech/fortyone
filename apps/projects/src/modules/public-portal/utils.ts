@@ -111,3 +111,15 @@ export const getRequestLoginUrl = (
   portal: PublicPortal,
   request: PublicRequest,
 ) => getLoginUrl(getRequestCallbackUrl(portal, request));
+
+export const getUpdatePathBySlug = (portalSlug: string, updateSlug: string) => {
+  const updatePath = `/updates/${encodeURIComponent(updateSlug)}`;
+  return isWorkspaceSubdomainDeployment
+    ? updatePath
+    : `/portal/${portalSlug}${updatePath}`;
+};
+
+export const getFeedbackPreferencesPath = (portalSlug: string) =>
+  isWorkspaceSubdomainDeployment
+    ? "/feedback/preferences"
+    : `/portal/${portalSlug}/feedback/preferences`;

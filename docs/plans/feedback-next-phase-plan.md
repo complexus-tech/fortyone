@@ -2,7 +2,7 @@
 
 ## Document Status
 
-- Status: Draft implementation plan
+- Status: Implemented; automated verification complete; live release checks pending
 - Scope: Next phase after anonymous feedback and the Feedback/Roadmap widget
 - Primary surfaces:
   - `apps/server/internal/modules/feedback`

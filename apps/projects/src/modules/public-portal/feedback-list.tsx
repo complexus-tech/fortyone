@@ -11,7 +11,7 @@ import { PublicRequestCard } from "./request-card";
 import type {
   PublicPortal,
   PublicPortalFilters,
-  PublicPortalViewer,
+  PublicPortalParticipant,
   PublicRequest,
 } from "./types";
 import { usePublicFeedbackList } from "./client-query";
@@ -78,14 +78,14 @@ export const PublicFeedbackList = ({
   filters,
   initialFilters,
   onFiltersChange,
+  participant,
   portal,
-  viewer,
 }: {
   filters: PublicPortalFilters;
   initialFilters: PublicPortalFilters;
   onFiltersChange: (updates: Partial<PublicPortalFilters>) => void;
+  participant: PublicPortalParticipant;
   portal: PublicPortal;
-  viewer?: PublicPortalViewer | null;
 }) => {
   const {
     data,
@@ -128,9 +128,9 @@ export const PublicFeedbackList = ({
   let feedbackContent: ReactNode = requests.map((request) => (
     <PublicRequestCard
       key={request.id}
+      participant={participant}
       portal={portal}
       request={request}
-      viewer={viewer}
     />
   ));
   if (isPending) {

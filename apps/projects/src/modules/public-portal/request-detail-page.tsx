@@ -4,22 +4,28 @@ import Link from "next/link";
 import { Avatar, Box, Flex, Text } from "ui";
 import { PublicPortalShell } from "./portal-shell";
 import { RequestStatusPill } from "./request-card";
-import type { PublicPortal, PublicPortalViewer, PublicRequest } from "./types";
+import type {
+  PublicPortal,
+  PublicPortalParticipant,
+  PublicRequest,
+} from "./types";
 import { getAuthorPath, getBoard, getRequestCallbackUrl } from "./utils";
 import { FeedbackVoteButton } from "./feedback-controls";
 import { getPublicAvatarColor } from "./avatar-color";
 import { FeedbackDiscussion } from "./feedback-comments";
 import { PublicPortalActions } from "./sidebar";
 import { usePublicFeedbackDetail } from "./client-query";
+import { FeedbackFollowControl } from "./feedback-follow";
+import { anonymousPublicPortalParticipant } from "./participant";
 
 export const PublicPortalRequestDetailPage = ({
+  participant = anonymousPublicPortalParticipant,
   portal,
   request,
-  viewer,
 }: {
+  participant?: PublicPortalParticipant;
   portal: PublicPortal;
   request: PublicRequest;
-  viewer?: PublicPortalViewer | null;
 }) => {
   const { data: activeRequest } = usePublicFeedbackDetail({ portal, request });
   const board = getBoard(portal, activeRequest.boardId);
@@ -47,8 +53,8 @@ export const PublicPortalRequestDetailPage = ({
     <PublicPortalShell
       activeTab="feedback"
       loginCallbackUrl={getRequestCallbackUrl(portal, activeRequest)}
+      participant={participant}
       portal={portal}
-      viewer={viewer}
     >
       <Box className="mx-auto grid w-full max-w-[78rem] gap-7 px-4 py-8 md:grid-cols-[minmax(0,1fr)_19rem] md:px-6">
         <main>
@@ -80,24 +86,29 @@ export const PublicPortalRequestDetailPage = ({
             </Flex>
             <Box className="ml-auto">
               <FeedbackVoteButton
+                participant={participant}
                 portal={portal}
                 request={activeRequest}
                 showDownvote
-                viewer={viewer}
               />
             </Box>
           </Flex>
 
           <Box className="border-border/70 mt-8 border-t-[0.5px] pt-8">
             <FeedbackDiscussion
+              participant={participant}
               portal={portal}
               request={activeRequest}
-              viewer={viewer}
             />
           </Box>
         </main>
 
         <aside className="space-y-8">
+          <FeedbackFollowControl
+            participant={participant}
+            portal={portal}
+            request={activeRequest}
+          />
           <Box className="border-border bg-surface rounded-xl border-[0.5px] p-5">
             <Flex className="py-2" justify="between">
               <Text color="muted">Status</Text>

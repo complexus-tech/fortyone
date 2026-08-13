@@ -16,13 +16,21 @@ import (
 	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
-func buildMayaService(log *logger.Logger, db *sqlx.DB, cfg Config, calendarService *calendar.Service, mayaActorID uuid.UUID) *maya.Service {
+func buildMayaService(
+	log *logger.Logger,
+	db *sqlx.DB,
+	cfg Config,
+	calendarService *calendar.Service,
+	mayaActorID uuid.UUID,
+	eventPublisher *publisher.Publisher,
+) *maya.Service {
 	mentionsRepo := mentionsrepository.New(log, db)
-	storiesService := stories.New(log, storiesrepository.New(log, db), mentionsRepo, nil, nil)
+	storiesService := stories.New(log, storiesrepository.New(log, db), mentionsRepo, eventPublisher, nil)
 	reportsService := reports.New(log, reportsrepository.New(log, db))
 	usersService := users.New(log, usersrepository.New(log, db), nil)
 

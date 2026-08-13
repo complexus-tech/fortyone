@@ -121,6 +121,28 @@ func TestGetPortalSnapshotSummarySkipsItemHydration(t *testing.T) {
 	require.Empty(t, repo.listStoryLinkItemIDs)
 }
 
+func TestGetPortalSnapshotFiltersByExactItemID(t *testing.T) {
+	t.Parallel()
+	portalID, requestedID, otherID := uuid.New(), uuid.New(), uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, Slug: "city-roads", IsPublic: true}},
+		items: []CoreItem{
+			{ID: otherID, PortalID: portalID, Title: "Dark mode for reports"},
+			{ID: requestedID, PortalID: portalID, Title: "Dark mode"},
+		},
+	}
+	service := New(repo, nil)
+
+	snapshot, err := service.GetPortalSnapshot(context.Background(), "city-roads", CorePortalSnapshotInput{
+		ItemID: requestedID, PageSize: 20, SummaryOnly: true,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, snapshot.Items, 1)
+	require.Equal(t, requestedID, snapshot.Items[0].ID)
+	require.Equal(t, requestedID, repo.listItemInputs[0].ItemID)
+}
+
 func (r *repoStub) GetPortalBySlug(ctx context.Context, slug string) (CorePortal, error) {
 	for _, portal := range r.portals {
 		if portal.Slug == slug {
@@ -128,6 +150,39 @@ func (r *repoStub) GetPortalBySlug(ctx context.Context, slug string) (CorePortal
 		}
 	}
 	return CorePortal{}, sql.ErrNoRows
+}
+
+func (r *repoStub) GetPrivateAuthor(_ context.Context, workspaceID, itemID uuid.UUID) (CorePrivateAuthor, error) {
+	for _, item := range r.items {
+		if item.WorkspaceID == workspaceID && item.ID == itemID {
+			email := item.AuthorEmail
+			return CorePrivateAuthor{
+				ContributorID: item.ContributorID,
+				Kind:          item.ParticipantKind,
+				DisplayName:   item.AuthorName,
+				Email:         &email,
+				AvatarURL:     item.AuthorAvatar,
+				PublicMasked:  item.AuthorMasked,
+			}, nil
+		}
+	}
+	return CorePrivateAuthor{}, sql.ErrNoRows
+}
+
+func (r *repoStub) ResolveCanonicalItem(_ context.Context, portalID uuid.UUID, itemReference string) (CoreCanonicalItem, error) {
+	for _, item := range r.items {
+		if item.PortalID == portalID && (item.ID.String() == itemReference || item.Slug == itemReference) {
+			if item.MergedIntoItemID != nil {
+				for _, target := range r.items {
+					if target.ID == *item.MergedIntoItemID {
+						return CoreCanonicalItem{ItemID: target.ID, ItemSlug: target.Slug, Merged: true}, nil
+					}
+				}
+			}
+			return CoreCanonicalItem{ItemID: item.ID, ItemSlug: item.Slug}, nil
+		}
+	}
+	return CoreCanonicalItem{}, sql.ErrNoRows
 }
 
 func (r *repoStub) ListContributorActivity(ctx context.Context, input CoreListContributorActivityInput) (CoreContributorActivityPage, error) {
@@ -296,6 +351,9 @@ func (r *repoStub) ListItems(ctx context.Context, input CoreListItemsInput) (Cor
 			continue
 		}
 		if input.TeamID != nil && item.Board.TeamID != *input.TeamID {
+			continue
+		}
+		if input.ItemID != uuid.Nil && item.ID != input.ItemID {
 			continue
 		}
 		if input.DeletedOnly != (item.DeletedAt != nil) {
@@ -580,6 +638,15 @@ func (r *repoStub) TrashItem(ctx context.Context, workspaceID, itemID uuid.UUID)
 	for index, item := range r.items {
 		if item.WorkspaceID != workspaceID || item.ID != itemID || item.DeletedAt != nil {
 			continue
+		}
+		if item.MergedIntoItemID != nil {
+			return ErrMergeConflict
+		}
+		for _, possibleSource := range r.items {
+			if possibleSource.WorkspaceID == workspaceID && possibleSource.PortalID == item.PortalID &&
+				possibleSource.MergedIntoItemID != nil && *possibleSource.MergedIntoItemID == item.ID {
+				return ErrMergeConflict
+			}
 		}
 		if len(item.StoryLinks) > 0 && item.StoryLinks[0].IsPrimary {
 			return ErrStoryManaged
@@ -1043,6 +1110,91 @@ func TestUpdateItemStatusPublishesAuthorNotificationEvent(t *testing.T) {
 	require.Equal(t, StatusPlanned, payload.Status)
 }
 
+func TestDirectAndCASStatusNotificationPolicy(t *testing.T) {
+	t.Parallel()
+
+	text := func(value string) *string { return &value }
+	tests := []struct {
+		name                string
+		initialStatus       string
+		targetStatus        string
+		existingExplanation *string
+		inputExplanation    *string
+		wantNotification    bool
+	}{
+		{name: "pending is internal triage", initialStatus: StatusPlanned, targetStatus: StatusPending},
+		{name: "reviewing is internal triage", initialStatus: StatusPending, targetStatus: StatusReviewing},
+		{name: "planned is public", initialStatus: StatusPending, targetStatus: StatusPlanned, wantNotification: true},
+		{name: "in progress is public", initialStatus: StatusPlanned, targetStatus: StatusInProgress, wantNotification: true},
+		{name: "completed is public", initialStatus: StatusInProgress, targetStatus: StatusCompleted, wantNotification: true},
+		{
+			name:          "closed without an explicit explanation is silent despite stale summary",
+			initialStatus: StatusCompleted, targetStatus: StatusClosed,
+			existingExplanation: text("An older public update"),
+		},
+		{
+			name:          "closed with whitespace explanation is silent",
+			initialStatus: StatusCompleted, targetStatus: StatusClosed,
+			inputExplanation: text("   "),
+		},
+		{
+			name:          "closed with transition explanation is public",
+			initialStatus: StatusCompleted, targetStatus: StatusClosed,
+			inputExplanation: text("We are not pursuing this because the platform changed."), wantNotification: true,
+		},
+	}
+	writers := []struct {
+		name string
+		call func(*Service, uuid.UUID, uuid.UUID, time.Time, CoreUpdateItemStatusInput) (CoreItem, error)
+	}{
+		{
+			name: "direct",
+			call: func(service *Service, workspaceID, itemID uuid.UUID, _ time.Time, input CoreUpdateItemStatusInput) (CoreItem, error) {
+				return service.UpdateItemStatus(context.Background(), workspaceID, itemID, input)
+			},
+		},
+		{
+			name: "compare and swap",
+			call: func(service *Service, workspaceID, itemID uuid.UUID, updatedAt time.Time, input CoreUpdateItemStatusInput) (CoreItem, error) {
+				return service.UpdateItemStatusIfUnchanged(context.Background(), workspaceID, itemID, updatedAt, input)
+			},
+		},
+	}
+
+	for _, writer := range writers {
+		writer := writer
+		t.Run(writer.name, func(t *testing.T) {
+			for _, test := range tests {
+				test := test
+				t.Run(test.name, func(t *testing.T) {
+					workspaceID, itemID, authorID, actorID := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+					updatedAt := time.Date(2026, time.August, 13, 14, 0, 0, 0, time.UTC)
+					repo := &repoStub{items: []CoreItem{{
+						ID: itemID, WorkspaceID: workspaceID, AuthorID: authorID,
+						Title: "Dark mode", Slug: "dark-mode", Status: test.initialStatus,
+						RoadmapSummary: test.existingExplanation, UpdatedAt: updatedAt,
+					}}}
+					publisher := &eventPublisherStub{}
+					service := New(repo, nil, WithEventPublisher(nil, publisher))
+
+					item, err := writer.call(service, workspaceID, itemID, updatedAt, CoreUpdateItemStatusInput{
+						Status: test.targetStatus, RoadmapSummary: test.inputExplanation, ActorID: actorID,
+					})
+
+					require.NoError(t, err)
+					require.Equal(t, test.targetStatus, item.Status, "notification policy must not block status mutation")
+					if test.wantNotification {
+						require.Len(t, publisher.events, 1)
+						require.Equal(t, test.targetStatus, publisher.events[0].Payload.(events.FeedbackStatusUpdatedPayload).Status)
+					} else {
+						require.Empty(t, publisher.events)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestUpdateItemStatusRejectsFeedbackManagedByPrimaryStory(t *testing.T) {
 	workspaceID := uuid.New()
 	itemID := uuid.New()
@@ -1489,6 +1641,34 @@ func TestPublicCommentAndVoteRejectItemFromAnotherWorkspace(t *testing.T) {
 	require.ErrorIs(t, voteErr, sql.ErrNoRows)
 }
 
+func TestMergedSourceRejectsPublicAndAccountParticipation(t *testing.T) {
+	workspaceID, portalID, itemID, targetID := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+	repo := &repoStub{
+		portals: []CorePortal{{ID: portalID, WorkspaceID: workspaceID, Slug: "city-roads", IsPublic: true}},
+		items: []CoreItem{{
+			ID: itemID, WorkspaceID: workspaceID, PortalID: portalID, MergedIntoItemID: &targetID,
+		}},
+	}
+	service := New(repo, nil)
+
+	_, publicCommentErr := service.CreatePublicComment(context.Background(), CorePublicCommentInput{
+		PortalSlug: "city-roads", ItemID: itemID, AuthorID: uuid.New(), Body: "Stale comment",
+	})
+	_, publicVoteErr := service.TogglePublicVote(context.Background(), CorePublicVoteInput{
+		PortalSlug: "city-roads", ItemID: itemID, UserID: uuid.New(), Vote: 1,
+	})
+	_, accountCommentErr := service.CreateComment(context.Background(), CoreCommentInput{
+		WorkspaceID: workspaceID, ItemID: itemID, AuthorID: uuid.New(), Body: "Stale comment",
+	})
+	_, accountVoteErr := service.ToggleVote(context.Background(), workspaceID, itemID, uuid.New(), 1)
+
+	require.ErrorIs(t, publicCommentErr, ErrMergeConflict)
+	require.ErrorIs(t, publicVoteErr, ErrMergeConflict)
+	require.ErrorIs(t, accountCommentErr, ErrMergeConflict)
+	require.ErrorIs(t, accountVoteErr, ErrMergeConflict)
+	require.Empty(t, repo.comments)
+}
+
 func TestToggleVoteSupportsUpvotesAndDownvotes(t *testing.T) {
 	workspaceID := uuid.New()
 	itemID := uuid.New()
@@ -1826,6 +2006,49 @@ func TestTrashItemRejectsFeedbackManagedByPrimaryStory(t *testing.T) {
 
 	require.ErrorIs(t, service.TrashItem(context.Background(), workspaceID, itemID), ErrStoryManaged)
 	require.Nil(t, repo.items[0].DeletedAt)
+}
+
+func TestTrashItemRejectsCanonicalTargetWithMergedSources(t *testing.T) {
+	t.Parallel()
+
+	workspaceID, portalID, sourceID, targetID := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+	repo := &repoStub{items: []CoreItem{
+		{ID: sourceID, WorkspaceID: workspaceID, PortalID: portalID, MergedIntoItemID: &targetID},
+		{ID: targetID, WorkspaceID: workspaceID, PortalID: portalID},
+	}}
+	service := New(repo, nil)
+
+	require.ErrorIs(t, service.TrashItem(context.Background(), workspaceID, targetID), ErrMergeConflict)
+	require.Nil(t, repo.items[1].DeletedAt)
+}
+
+func TestMergedSourceRejectsInternalMutationsButRemainsReadable(t *testing.T) {
+	workspaceID, itemID, targetID := uuid.New(), uuid.New(), uuid.New()
+	updatedAt := time.Date(2026, time.August, 13, 12, 0, 0, 0, time.UTC)
+	repo := &repoStub{items: []CoreItem{{
+		ID: itemID, WorkspaceID: workspaceID, MergedIntoItemID: &targetID,
+		Status: StatusPending, UpdatedAt: updatedAt,
+	}}}
+	service := New(repo, &storyServiceStub{})
+
+	item, readErr := service.GetItem(context.Background(), workspaceID, itemID)
+	_, statusErr := service.UpdateItemStatus(context.Background(), workspaceID, itemID, CoreUpdateItemStatusInput{Status: StatusCompleted, ActorID: uuid.New()})
+	_, statusCASErr := service.UpdateItemStatusIfUnchanged(context.Background(), workspaceID, itemID, updatedAt, CoreUpdateItemStatusInput{Status: StatusCompleted, ActorID: uuid.New()})
+	trashErr := service.TrashItem(context.Background(), workspaceID, itemID)
+	restoreErr := service.RestoreItem(context.Background(), workspaceID, itemID)
+	_, linkErr := service.LinkStory(context.Background(), CoreStoryLinkInput{
+		WorkspaceID: workspaceID, ItemID: itemID, StoryID: uuid.New(), CreatedByUserID: uuid.New(),
+	})
+	_, createStoryErr := service.CreateStoryFromItem(context.Background(), workspaceID, itemID, uuid.New(), CoreCreateStoryInput{TeamID: uuid.New()})
+
+	require.NoError(t, readErr)
+	require.Equal(t, targetID, *item.MergedIntoItemID)
+	for _, err := range []error{statusErr, statusCASErr, trashErr, restoreErr, linkErr, createStoryErr} {
+		require.ErrorIs(t, err, ErrMergeConflict)
+	}
+	require.Equal(t, StatusPending, repo.items[0].Status)
+	require.Nil(t, repo.items[0].DeletedAt)
+	require.Empty(t, repo.storyLinks)
 }
 
 func TestFeedbackReadStateIsPerUserAndDrivesTeamSummary(t *testing.T) {

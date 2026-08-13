@@ -6,6 +6,11 @@ import {
   isPublicPath,
 } from "./public-portal-routes";
 import { isSlackMinimalLinkPreview } from "./story-link-preview";
+import {
+  getFeedbackWidgetFrameAncestors,
+  isAllowedFeedbackWidgetParent,
+  type PublicFeedbackWidgetConfig,
+} from "./modules/feedback-widget/embed-security";
 
 const AUTH_HOST = process.env.NEXT_PUBLIC_AUTH_HOST ?? "cloud.fortyone.app";
 const DOMAIN_SUFFIX = ".fortyone.app";
@@ -50,6 +55,61 @@ const buildHostRedirect = (requestUrl: string, callbackUrl: string) => {
   return NextResponse.redirect(url);
 };
 
+const FEEDBACK_WIDGET_EMBED_PREFIX = "/embed/feedback/";
+const FEEDBACK_PORTAL_SLUG_PATTERN =
+  /^(?=.{3,255}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])$/;
+
+const protectFeedbackWidgetEmbed = async (req: NextRequest) => {
+  const encodedSlug = req.nextUrl.pathname.slice(
+    FEEDBACK_WIDGET_EMBED_PREFIX.length,
+  );
+  let portalSlug = "";
+  try {
+    portalSlug = decodeURIComponent(encodedSlug);
+  } catch {
+    // The invalid slug is handled by the same fail-closed response below.
+  }
+  const parentOrigin = req.nextUrl.searchParams.get("parentOrigin");
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+  const deny = (status = 404) =>
+    new NextResponse(status === 404 ? "Not found" : "Widget unavailable", {
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Security-Policy": "frame-ancestors 'none'",
+      },
+      status,
+    });
+
+  if (!apiUrl || !FEEDBACK_PORTAL_SLUG_PATTERN.test(portalSlug)) return deny();
+
+  try {
+    const response = await fetch(
+      `${apiUrl}/portals/${encodeURIComponent(portalSlug)}/feedback/widget/config`,
+      { cache: "no-store" },
+    );
+    if (!response.ok) return deny(response.status >= 500 ? 503 : 404);
+    const payload = (await response.json()) as {
+      data?: PublicFeedbackWidgetConfig;
+    };
+    if (
+      !payload.data ||
+      !isAllowedFeedbackWidgetParent(payload.data, parentOrigin)
+    ) {
+      return deny();
+    }
+
+    const next = NextResponse.next();
+    next.headers.set("Cache-Control", "no-store");
+    next.headers.set(
+      "Content-Security-Policy",
+      getFeedbackWidgetFrameAncestors(payload.data.allowedOrigins),
+    );
+    return next;
+  } catch {
+    return deny(503);
+  }
+};
+
 export default async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const searchParams = req.nextUrl.search;
@@ -61,6 +121,10 @@ export default async function proxy(req: NextRequest) {
     previewUrl.pathname = "/api/story-link-preview";
     previewUrl.search = "";
     return NextResponse.rewrite(previewUrl);
+  }
+
+  if (pathname.startsWith(FEEDBACK_WIDGET_EMBED_PREFIX)) {
+    return protectFeedbackWidgetEmbed(req);
   }
 
   const user = await getSessionFromRequest(req);

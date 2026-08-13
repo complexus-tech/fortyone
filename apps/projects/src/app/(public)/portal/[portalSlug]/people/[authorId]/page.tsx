@@ -5,7 +5,7 @@ import {
   getPublicContributorOrNotFound,
   getPublicPortalOrNotFound,
 } from "@/modules/public-portal/query";
-import { getPublicPortalViewer } from "@/modules/public-portal/viewer";
+import { getPublicPortalParticipant } from "@/modules/public-portal/viewer";
 
 const PAGE_SIZE = 20;
 const UUID_PATTERN =
@@ -26,19 +26,21 @@ export default async function PublicPortalAuthorRoute({
   if (!UUID_PATTERN.test(authorId)) notFound();
 
   const initialTab = query.tab === "comments" ? "comments" : "feedback";
-  const [portal, viewer, contributor, initialComments] = await Promise.all([
-    getPublicPortalOrNotFound(portalSlug, {
-      authorId,
-      page: 1,
-      pageSize: PAGE_SIZE,
-      sort: "newest",
-    }),
-    getPublicPortalViewer(portalSlug),
-    getPublicContributorOrNotFound(portalSlug, authorId),
-    initialTab === "comments"
-      ? getPublicContributorComments(portalSlug, authorId, 1, PAGE_SIZE)
-      : Promise.resolve(null),
-  ]);
+  const [portal, participant, contributor, initialComments] = await Promise.all(
+    [
+      getPublicPortalOrNotFound(portalSlug, {
+        authorId,
+        page: 1,
+        pageSize: PAGE_SIZE,
+        sort: "newest",
+      }),
+      getPublicPortalParticipant(portalSlug),
+      getPublicContributorOrNotFound(portalSlug, authorId),
+      initialTab === "comments"
+        ? getPublicContributorComments(portalSlug, authorId, 1, PAGE_SIZE)
+        : Promise.resolve(null),
+    ],
+  );
 
   return (
     <PublicPortalAuthorProfilePage
@@ -46,8 +48,8 @@ export default async function PublicPortalAuthorRoute({
       contributor={contributor}
       initialComments={initialComments}
       initialTab={initialTab}
+      participant={participant}
       portal={portal}
-      viewer={viewer}
     />
   );
 }

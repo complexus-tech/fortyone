@@ -11,6 +11,8 @@ import (
 	calendarrepository "github.com/complexus-tech/projects-api/internal/modules/calendar/repository"
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
+	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
+	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
@@ -220,6 +222,14 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		_ = db.Close()
 		return App{}, fmt.Errorf("initialize worker Google service: %w", err)
 	}
+	eventPublisher := publisher.New(redisClient, log)
+	feedbackOutbox := feedback.New(
+		feedbackrepository.New(log, db),
+		nil,
+		feedback.WithEventPublisher(log, eventPublisher),
+		feedback.WithContributorFeatures(cfg.Auth.SecretKey, cfg.Website.URL, tasksService),
+		feedback.WithGuestNotificationActor(systemUserID),
+	)
 	calendarService := calendar.New(log, calendarrepository.New(log, db), calendar.Config{
 		SecretKey:  cfg.Auth.SecretKey,
 		WebsiteURL: cfg.Website.URL,
@@ -227,9 +237,9 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		Providers: map[calendar.Provider]calendar.CalendarProvider{
 			calendar.ProviderGoogle: calendar.NewGoogleProvider(googleService),
 		},
-		Updates: publisher.New(redisClient, log),
+		Updates: eventPublisher,
 	})
-	mayaService := buildMayaService(log, db, cfg, calendarService, systemUserID)
+	mayaService := buildMayaService(log, db, cfg, calendarService, systemUserID, eventPublisher)
 	emailCopyClient, err := emailcopy.New(emailcopy.Config{
 		APIKey: cfg.AIAPIKey,
 	})
@@ -269,7 +279,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if upgradedCredentials > 0 {
 		log.Info(ctx, "Encrypted legacy Slack credentials", "count", upgradedCredentials)
 	}
-	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopyGenerator, emailThreads, notificationsService, slackEvents, emailReplyProcessor, emailReplyIngress, calendarService, systemUserID)
+	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopyGenerator, emailThreads, notificationsService, slackEvents, emailReplyProcessor, emailReplyIngress, calendarService, systemUserID, tasksService, feedbackOutbox, cfg.Auth.SecretKey)
 	resourcesTransferred = true
 
 	return App{

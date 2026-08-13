@@ -1,39 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Editor } from "@tiptap/core";
 import { useEditor } from "@tiptap/react";
-import { Avatar, Box, Button, Flex, Text, TextEditor } from "ui";
+import { Avatar, Box, Button, Checkbox, Flex, Text, TextEditor } from "ui";
 import { CommentIcon, ReplyIcon } from "icons";
 import { toast } from "sonner";
 import { getStoryCommentEditorExtensions } from "@/modules/story/components/story-comment-editor";
 import type {
   PublicPortal,
-  PublicPortalViewer,
+  PublicPortalParticipant,
   PublicRequest,
   PublicRequestComment,
 } from "./types";
 import { getPublicAvatarColor } from "./avatar-color";
 import { getRequestLoginUrl } from "./utils";
 import { useCreatePublicFeedbackComment } from "./feedback-mutations";
+import { FeedbackGuestVerificationDialog } from "./guest-verification";
+import { canVerifyAsGuest, isContactableParticipant } from "./participant";
+import { updateFeedbackFollowAction } from "./actions";
 
 const COMMENTS_PAGE_SIZE = 10;
 
 const FeedbackCommentComposer = ({
   onCancel,
+  onParticipantChange,
   onSubmitted,
   parentId,
+  participant,
   portal,
   request,
-  viewer,
 }: {
   onCancel?: () => void;
+  onParticipantChange: (participant: PublicPortalParticipant) => void;
   onSubmitted: () => void;
   parentId?: string;
+  participant: PublicPortalParticipant;
   portal: PublicPortal;
   request: PublicRequest;
-  viewer?: PublicPortalViewer | null;
 }) => {
+  const [verificationOpen, setVerificationOpen] = useState(false);
   const editor = useEditor({
     content: "",
     editable: true,
@@ -43,77 +50,110 @@ const FeedbackCommentComposer = ({
     immediatelyRender: false,
   });
 
-  if (!viewer) {
+  if (!isContactableParticipant(participant)) {
+    const guestParticipationEnabled = canVerifyAsGuest(
+      portal.participationMode,
+    );
     return (
-      <Flex
-        align="center"
-        className="border-border/60 bg-surface-muted/40 rounded-xl border-[0.5px] px-4 py-3"
-        justify="between"
-      >
-        <Text color="muted">Log in to join the conversation.</Text>
-        <Flex gap={1}>
-          {onCancel ? (
+      <>
+        <Flex
+          align="center"
+          className="border-border/60 bg-surface-muted/40 rounded-xl border-[0.5px] px-4 py-3"
+          justify="between"
+        >
+          <Text color="muted">
+            {guestParticipationEnabled
+              ? "Verify your email to join the conversation."
+              : "Log in to join the conversation."}
+          </Text>
+          <Flex gap={1}>
+            {onCancel ? (
+              <Button
+                color="tertiary"
+                onClick={onCancel}
+                size="sm"
+                variant="naked"
+              >
+                Cancel
+              </Button>
+            ) : null}
             <Button
-              color="tertiary"
-              onClick={onCancel}
+              color="invert"
+              href={
+                guestParticipationEnabled
+                  ? undefined
+                  : getRequestLoginUrl(portal, request)
+              }
+              onClick={
+                guestParticipationEnabled
+                  ? () => {
+                      setVerificationOpen(true);
+                    }
+                  : undefined
+              }
               size="sm"
-              variant="naked"
             >
-              Cancel
+              {guestParticipationEnabled
+                ? "Continue with email"
+                : "Login/signup"}
             </Button>
-          ) : null}
-          <Button
-            color="invert"
-            href={getRequestLoginUrl(portal, request)}
-            size="sm"
-          >
-            Login/signup
-          </Button>
+          </Flex>
         </Flex>
-      </Flex>
+        {guestParticipationEnabled ? (
+          <FeedbackGuestVerificationDialog
+            onOpenChange={setVerificationOpen}
+            onVerified={onParticipantChange}
+            open={verificationOpen}
+            portal={portal}
+            purpose="comment"
+          />
+        ) : null}
+      </>
     );
   }
 
   return (
-    <AuthenticatedFeedbackCommentComposer
+    <ContactableFeedbackCommentComposer
       editor={editor}
       onCancel={onCancel}
       onSubmitted={onSubmitted}
       parentId={parentId}
+      participant={participant}
       portal={portal}
       request={request}
-      viewer={viewer}
     />
   );
 };
 
-const AuthenticatedFeedbackCommentComposer = ({
+const ContactableFeedbackCommentComposer = ({
   editor,
   onCancel,
   onSubmitted,
   parentId,
+  participant,
   portal,
   request,
-  viewer,
 }: {
   editor: Editor | null;
   onCancel?: () => void;
   onSubmitted: () => void;
   parentId?: string;
+  participant: Exclude<PublicPortalParticipant, { kind: "anonymous" }>;
   portal: PublicPortal;
   request: PublicRequest;
-  viewer: PublicPortalViewer;
 }) => {
+  const [notifyOnUpdates, setNotifyOnUpdates] = useState(false);
+  const notifyOnUpdatesId = useId();
   const createComment = useCreatePublicFeedbackComment({
+    participant,
     portalSlug: portal.slug,
     request,
-    viewer,
   });
 
   return (
     <Flex align="start" className={parentId ? "gap-2" : "mb-6 gap-2"}>
       <Box className="bg-background flex aspect-square shrink-0 items-center rounded-full p-[0.3rem]">
-        <Avatar name={viewer.name} size="xs" src={viewer.avatarUrl} />
+        <Avatar name={participant.name} size="xs" src={participant.avatarUrl} />
       </Box>
       <Flex
         className={
@@ -130,45 +170,81 @@ const AuthenticatedFeedbackCommentComposer = ({
           className="prose-base prose-a:text-foreground leading-6 antialiased"
           editor={editor}
         />
-        <Flex gap={1} justify="end">
-          {onCancel ? (
+        <Flex align="center" className="flex-wrap gap-2" justify="between">
+          <label
+            className="text-text-muted flex cursor-pointer items-center gap-2 text-sm"
+            htmlFor={notifyOnUpdatesId}
+          >
+            <Checkbox
+              checked={notifyOnUpdates}
+              disabled={createComment.isPending}
+              id={notifyOnUpdatesId}
+              onCheckedChange={(checked) => {
+                setNotifyOnUpdates(checked === true);
+              }}
+            />
+            Notify me about updates
+          </label>
+          <Flex gap={1}>
+            {onCancel ? (
+              <Button
+                color="tertiary"
+                onClick={onCancel}
+                size="sm"
+                variant="naked"
+              >
+                Cancel
+              </Button>
+            ) : null}
             <Button
               color="tertiary"
-              onClick={onCancel}
-              size="sm"
-              variant="naked"
-            >
-              Cancel
-            </Button>
-          ) : null}
-          <Button
-            color="tertiary"
-            onClick={() => {
-              if (!editor || editor.isEmpty) {
-                toast.error("Comment is required", {
-                  description: "Please enter a comment before submitting",
-                });
-                return;
-              }
-              const body = editor.getText();
-              editor.commands.clearContent();
-              createComment.mutate(
-                { body, parentId },
-                {
-                  onError: () => {
-                    if (editor.isEmpty) {
-                      editor.commands.setContent(body);
-                    }
+              onClick={() => {
+                if (!editor || editor.isEmpty) {
+                  toast.error("Comment is required", {
+                    description: "Please enter a comment before submitting",
+                  });
+                  return;
+                }
+                const body = editor.getText();
+                editor.commands.clearContent();
+                createComment.mutate(
+                  { body, parentId },
+                  {
+                    onError: () => {
+                      if (editor.isEmpty) {
+                        editor.commands.setContent(body);
+                      }
+                    },
+                    onSuccess: () => {
+                      if (notifyOnUpdates) {
+                        void updateFeedbackFollowAction({
+                          following: true,
+                          itemId: request.id,
+                          itemSlug: request.slug,
+                          participantKind: participant.kind,
+                          portalSlug: portal.slug,
+                        }).then((response) => {
+                          if (response.error?.message) {
+                            toast.error(
+                              "Comment posted, but updates were not enabled",
+                              {
+                                description: response.error.message,
+                              },
+                            );
+                          }
+                        });
+                      }
+                      onSubmitted();
+                    },
                   },
-                  onSuccess: onSubmitted,
-                },
-              );
-            }}
-            size="sm"
-            variant="outline"
-          >
-            {parentId ? "Reply" : "Comment"}
-          </Button>
+                );
+              }}
+              size="sm"
+              variant="outline"
+            >
+              {parentId ? "Reply" : "Comment"}
+            </Button>
+          </Flex>
         </Flex>
       </Flex>
     </Flex>
@@ -198,17 +274,19 @@ const getCommentThreads = (comments: PublicRequestComment[]) => {
 const FeedbackComment = ({
   comment,
   isReply = false,
+  onParticipantChange,
+  participant,
   portal,
   replies = [],
   request,
-  viewer,
 }: {
   comment: PublicRequestComment;
   isReply?: boolean;
+  onParticipantChange: (participant: PublicPortalParticipant) => void;
+  participant: PublicPortalParticipant;
   portal: PublicPortal;
   replies?: PublicRequestComment[];
   request: PublicRequest;
-  viewer?: PublicPortalViewer | null;
 }) => {
   const [isReplying, setIsReplying] = useState(false);
 
@@ -247,9 +325,10 @@ const FeedbackComment = ({
               comment={reply}
               isReply
               key={reply.id}
+              onParticipantChange={onParticipantChange}
+              participant={participant}
               portal={portal}
               request={request}
-              viewer={viewer}
             />
           ))}
         </Box>
@@ -274,13 +353,14 @@ const FeedbackComment = ({
             onCancel={() => {
               setIsReplying(false);
             }}
+            onParticipantChange={onParticipantChange}
             onSubmitted={() => {
               setIsReplying(false);
             }}
             parentId={comment.id}
+            participant={participant}
             portal={portal}
             request={request}
-            viewer={viewer}
           />
         </Box>
       ) : null}
@@ -289,18 +369,26 @@ const FeedbackComment = ({
 };
 
 export const FeedbackDiscussion = ({
+  participant,
   portal,
   request,
-  viewer,
 }: {
+  participant: PublicPortalParticipant;
   portal: PublicPortal;
   request: PublicRequest;
-  viewer?: PublicPortalViewer | null;
 }) => {
+  const router = useRouter();
+  const [participantOverride, setParticipantOverride] =
+    useState<PublicPortalParticipant | null>(null);
+  const activeParticipant = participantOverride ?? participant;
   const [visibleCount, setVisibleCount] = useState(COMMENTS_PAGE_SIZE);
   const commentThreads = getCommentThreads(request.comments);
   const visibleThreads = commentThreads.slice(0, visibleCount);
   const hasMore = visibleCount < commentThreads.length;
+  const updateParticipant = (nextParticipant: PublicPortalParticipant) => {
+    setParticipantOverride(nextParticipant);
+    router.refresh();
+  };
 
   return (
     <Box>
@@ -313,22 +401,24 @@ export const FeedbackDiscussion = ({
         Comments
       </Text>
       <FeedbackCommentComposer
+        onParticipantChange={updateParticipant}
         onSubmitted={() => {
           setVisibleCount((current) => current + 1);
         }}
+        participant={activeParticipant}
         portal={portal}
         request={request}
-        viewer={viewer}
       />
       {visibleThreads.length > 0 ? (
         visibleThreads.map(({ comment, replies }) => (
           <FeedbackComment
             comment={comment}
             key={comment.id}
+            onParticipantChange={updateParticipant}
+            participant={activeParticipant}
             portal={portal}
             replies={replies}
             request={request}
-            viewer={viewer}
           />
         ))
       ) : (

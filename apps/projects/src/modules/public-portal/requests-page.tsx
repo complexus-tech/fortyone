@@ -12,8 +12,9 @@ import {
 import type {
   PublicPortal,
   PublicPortalFilters,
-  PublicPortalViewer,
+  PublicPortalParticipant,
 } from "./types";
+import { anonymousPublicPortalParticipant } from "./participant";
 
 const DEFAULT_FILTERS: PublicPortalFilters = {
   search: "",
@@ -24,13 +25,13 @@ const DEFAULT_FILTERS: PublicPortalFilters = {
 export const PublicPortalRequestsPage = ({
   initialFeedbackComposerOpen = false,
   initialFilters = DEFAULT_FILTERS,
+  participant = anonymousPublicPortalParticipant,
   portal,
-  viewer,
 }: {
   initialFeedbackComposerOpen?: boolean;
   initialFilters?: PublicPortalFilters;
+  participant?: PublicPortalParticipant;
   portal: PublicPortal;
-  viewer?: PublicPortalViewer | null;
 }) => {
   const [filters, setFilters] = useState(initialFilters);
 
@@ -61,15 +62,19 @@ export const PublicPortalRequestsPage = ({
   }, []);
 
   return (
-    <PublicPortalShell activeTab="feedback" portal={portal} viewer={viewer}>
+    <PublicPortalShell
+      activeTab="feedback"
+      participant={participant}
+      portal={portal}
+    >
       <Box className="mx-auto grid w-full max-w-[78rem] gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_19rem] md:px-6">
         <Box className="min-h-0">
           <PublicFeedbackList
             filters={filters}
             initialFilters={initialFilters}
             onFiltersChange={updateFilters}
+            participant={participant}
             portal={portal}
-            viewer={viewer}
           />
         </Box>
         <PublicPortalSidebar
@@ -77,9 +82,9 @@ export const PublicPortalRequestsPage = ({
           onBoardSelect={(boardId) => {
             updateFilters({ boardId });
           }}
+          participant={participant}
           portal={portal}
           selectedBoardId={filters.boardId}
-          viewer={viewer}
         />
       </Box>
     </PublicPortalShell>

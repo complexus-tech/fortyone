@@ -24,8 +24,13 @@ type PublicFeedbackRateLimitConfig struct {
 	AnonymousGlobalLimit int64
 	Window               time.Duration
 	IngressSecret        string
+	ContributorResolver  FeedbackContributorIdentityResolver
 	Now                  func() time.Time
 }
+
+// FeedbackContributorIdentityResolver validates a portal-scoped contributor
+// session and returns its stable, non-secret rate-limit identity.
+type FeedbackContributorIdentityResolver func(context.Context, string, string) (string, error)
 
 type RateLimitStore interface {
 	IncrementWithTTL(ctx context.Context, key string, ttl time.Duration) (int64, error)
@@ -67,6 +72,13 @@ func PublicFeedbackRateLimit(log *logger.Logger, store RateLimitStore, config Pu
 			if userID, err := GetUserID(ctx); err == nil {
 				identity = "user:" + userID.String()
 				limit = config.AuthenticatedLimit
+			} else if hasFeedbackSessionAuthorization(r.Header.Get("Authorization")) && config.ContributorResolver != nil {
+				contributorID, err := config.ContributorResolver(ctx, portalSlug, r.Header.Get("Authorization"))
+				if err != nil || strings.TrimSpace(contributorID) == "" {
+					return web.RespondError(ctx, w, errors.New("invalid feedback contributor session"), http.StatusUnauthorized)
+				}
+				identity = "contributor:" + strings.TrimSpace(contributorID)
+				limit = config.AuthenticatedLimit
 			} else {
 				fingerprint, err := validateFeedbackIngressProof(r, portalSlug, config.IngressSecret, now().UTC())
 				if err != nil {
@@ -87,6 +99,11 @@ func PublicFeedbackRateLimit(log *logger.Logger, store RateLimitStore, config Pu
 			return next(ctx, w, r)
 		}
 	}
+}
+
+func hasFeedbackSessionAuthorization(value string) bool {
+	parts := strings.Fields(strings.TrimSpace(value))
+	return len(parts) == 2 && strings.EqualFold(parts[0], "FeedbackSession") && parts[1] != ""
 }
 
 func incrementPublicFeedbackRateLimit(

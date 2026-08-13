@@ -15,9 +15,10 @@ import type {
   PublicContributorComment,
   PublicContributorCommentsPage,
   PublicPortal,
-  PublicPortalViewer,
+  PublicPortalParticipant,
 } from "./types";
 import { getRequestPathBySlug } from "./utils";
+import { anonymousPublicPortalParticipant } from "./participant";
 
 type ApiResponse<T> = {
   data: T;
@@ -250,15 +251,15 @@ export const PublicPortalAuthorProfilePage = ({
   contributor,
   initialComments,
   initialTab = "feedback",
+  participant = anonymousPublicPortalParticipant,
   portal,
-  viewer,
 }: {
   authorId: string;
   contributor: PublicContributor;
   initialComments?: PublicContributorCommentsPage | null;
   initialTab?: PublicContributorTab;
+  participant?: PublicPortalParticipant;
   portal: PublicPortal;
-  viewer?: PublicPortalViewer | null;
 }) => {
   const feedbackSentinelRef = useRef<HTMLDivElement | null>(null);
   const commentsSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -409,7 +410,11 @@ export const PublicPortalAuthorProfilePage = ({
   }
 
   return (
-    <PublicPortalShell activeTab="feedback" portal={portal} viewer={viewer}>
+    <PublicPortalShell
+      activeTab="feedback"
+      participant={participant}
+      portal={portal}
+    >
       <Box className="mx-auto grid w-full max-w-[78rem] gap-10 px-4 pt-8 md:grid-cols-[minmax(0,1fr)_19rem] md:px-6 md:pt-10">
         <Flex className="min-h-0" direction="column">
           <Box className="shrink-0">
@@ -472,9 +477,9 @@ export const PublicPortalAuthorProfilePage = ({
                 requests.map((request) => (
                   <PublicRequestCard
                     key={request.id}
+                    participant={participant}
                     portal={portal}
                     request={request}
-                    viewer={viewer}
                   />
                 ))
               ) : (

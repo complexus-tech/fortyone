@@ -13,6 +13,24 @@ type scheduleRegistrar interface {
 
 func registerSchedules(scheduler scheduleRegistrar) error {
 	_, err := scheduler.Register(
+		"*/1 * * * *",
+		asynq.NewTask(tasks.TypeFeedbackOutboxDispatch, nil),
+		asynq.Queue("notifications"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register feedback outbox dispatch task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"*/1 * * * *",
+		asynq.NewTask(tasks.TypeFeedbackContributorDeliveryRecovery, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register feedback delivery recovery task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"17 * * * *", // Hourly; only renews missing channels or channels expiring within 24 hours.
 		asynq.NewTask(tasks.TypeCalendarWatchRenewal, nil),
 		asynq.Queue("integrations"),

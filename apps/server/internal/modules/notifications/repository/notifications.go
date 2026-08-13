@@ -56,6 +56,14 @@ func getDefaultPreferences() map[string]map[string]bool {
 			"email":  true,
 			"in_app": true,
 		},
+		"feedback_update_published": {
+			"email":  true,
+			"in_app": true,
+		},
+		"feedback_item_merged": {
+			"email":  true,
+			"in_app": true,
+		},
 		"reminders": {
 			"email":  true,
 			"in_app": true,

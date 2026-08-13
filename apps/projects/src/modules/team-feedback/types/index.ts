@@ -25,7 +25,7 @@ export type TeamFeedbackComment = {
   id: string;
   workspaceId: string;
   itemId: string;
-  authorId: string;
+  authorId: string | null;
   parentId?: string | null;
   authorName: string;
   authorAvatar?: string | null;
@@ -65,12 +65,22 @@ export type TeamFeedbackSummary = {
   unreadCount: number;
 };
 
+export type TeamFeedbackPrivateAuthor = {
+  contributorId: string;
+  userId: string | null;
+  kind: "account" | "verified_guest" | "external" | "anonymous";
+  displayName: string;
+  email: string | null;
+  avatarUrl: string | null;
+  publicMasked: boolean;
+};
+
 export type TeamFeedbackItem = {
   id: string;
   workspaceId: string;
   portalId: string;
   boardId: string;
-  authorId: string;
+  authorId: string | null;
   authorName: string;
   authorAvatar?: string | null;
   title: string;
@@ -87,9 +97,33 @@ export type TeamFeedbackItem = {
   restoreUntil?: string | null;
   createdAt: string;
   updatedAt: string;
+  mergedIntoItemId?: string | null;
+  mergedAt?: string | null;
+  mergedByUserId?: string | null;
   board: TeamFeedbackBoard;
   comments: TeamFeedbackComment[];
   storyLinks: TeamFeedbackStoryLink[];
+};
+
+export type TeamFeedbackMergeResult = {
+  sourceItemId: string;
+  targetItemId: string;
+  portalId: string;
+  mergedAt: string;
+  mergedByUserId: string;
+  movedFollowerCount: number;
+  movedUpdateLinkCount: number;
+  movedStoryLinkCount: number;
+  target: TeamFeedbackItem;
+};
+
+export type TeamFeedbackMergeCandidate = {
+  id: string;
+  slug: string;
+  title: string;
+  status: TeamFeedbackStatus;
+  voteCount: number;
+  commentCount: number;
 };
 
 export type TeamFeedbackPage = {

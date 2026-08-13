@@ -102,9 +102,13 @@ type Service struct {
 	repo           Repository
 	mentionsRepo   MentionsRepository
 	log            *logger.Logger
-	publisher      *publisher.Publisher
+	publisher      eventPublisher
 	tasksService   *tasks.Service
 	mayaAssignment *mayaAssignmentPolicy
+}
+
+type eventPublisher interface {
+	Publish(ctx context.Context, event events.Event) error
 }
 
 type createOptions struct {
@@ -113,7 +117,10 @@ type createOptions struct {
 }
 
 type updateOptions struct {
-	publishEvents            bool
+	publishEvents bool
+	// publishStatusEvents lets provider-originated status transitions reach
+	// downstream consumers without enabling outbound provider synchronization.
+	publishStatusEvents      bool
 	enqueueGitHubSync        bool
 	recordDescriptionUpdates bool
 	activityReason           string
@@ -128,14 +135,17 @@ type commentOptions struct {
 }
 
 // New constructs a new stories service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, mentionsRepo MentionsRepository, publisher *publisher.Publisher, tasksService *tasks.Service) *Service {
-	return &Service{
+func New(log *logger.Logger, repo Repository, mentionsRepo MentionsRepository, eventPublisher *publisher.Publisher, tasksService *tasks.Service) *Service {
+	service := &Service{
 		repo:         repo,
 		mentionsRepo: mentionsRepo,
 		log:          log,
-		publisher:    publisher,
 		tasksService: tasksService,
 	}
+	if eventPublisher != nil {
+		service.publisher = eventPublisher
+	}
+	return service
 }
 
 // Create creates a new story.
@@ -584,10 +594,13 @@ func (s *Service) UpdateExternal(ctx context.Context, actorID, storyID, workspac
 	return s.UpdateExternalWithReason(ctx, actorID, storyID, workspaceID, updates, "")
 }
 
+// UpdateExternalWithReason applies a provider-originated update. Actual status
+// transitions publish a domain event, but never enqueue a GitHub write-back.
 func (s *Service) UpdateExternalWithReason(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error {
 	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
 		recordDescriptionUpdates: true,
 		activityReason:           reason,
+		publishStatusEvents:      true,
 	})
 }
 
@@ -607,6 +620,7 @@ func (s *Service) UpdateExternalIfUnchanged(
 	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
 		recordDescriptionUpdates: true,
 		expectedUpdatedAt:        &expectedUpdatedAt,
+		publishStatusEvents:      true,
 	})
 }
 
@@ -815,7 +829,8 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		attribute.String("story.id", storyID.String()),
 	))
 
-	if options.publishEvents {
+	_, statusChanged := updates["status_id"]
+	if (options.publishEvents || (options.publishStatusEvents && statusChanged)) && s.publisher != nil {
 		audienceIDs, audienceErr := s.repo.GetNotificationAudience(ctx, storyID, workspaceID)
 		audienceResolved := audienceErr == nil
 		if audienceErr != nil {
@@ -828,6 +843,9 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 			AssigneeID:       story.Assignee, // Current assignee before update
 			AudienceIDs:      audienceIDs,
 			AudienceResolved: audienceResolved,
+		}
+		if statusChanged {
+			payload.PreviousStatusID = story.Status
 		}
 
 		event := events.Event{

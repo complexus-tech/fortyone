@@ -202,7 +202,10 @@ func (r *Rules) ProcessFeedbackCommentCreated(ctx context.Context, payload event
 		return nil
 	}
 
-	actorName := r.getUserName(ctx, actorID)
+	actorName := strings.TrimSpace(payload.ActorName)
+	if actorName == "" {
+		actorName = r.getUserName(ctx, actorID)
+	}
 	if actorName == "" {
 		actorName = "Someone"
 	}
@@ -257,6 +260,67 @@ func (r *Rules) ProcessFeedbackStatusUpdated(ctx context.Context, payload events
 			Variables: map[string]Variable{
 				"actor":  {Value: actorName, Type: "actor"},
 				"status": {Value: status, Type: "value"},
+			},
+		},
+	}}
+}
+
+func (r *Rules) ProcessFeedbackUpdatePublished(ctx context.Context, payload events.FeedbackUpdatePublishedPayload, actorID uuid.UUID) []CoreNewNotification {
+	if payload.LinkedItemID == uuid.Nil || !shouldNotify(payload.RecipientID, actorID) {
+		return nil
+	}
+	actorName := r.getUserName(ctx, actorID)
+	if actorName == "" {
+		actorName = "Someone"
+	}
+	publicationID := payload.PublicationEventID
+	if publicationID == uuid.Nil {
+		// Backward compatibility for events emitted before publication outbox
+		// identities were introduced.
+		publicationID = payload.UpdateID
+	}
+	return []CoreNewNotification{{
+		DedupeKey:   fmt.Sprintf("feedback-update:%s:%s", publicationID, payload.RecipientID),
+		RecipientID: payload.RecipientID,
+		WorkspaceID: payload.WorkspaceID,
+		Type:        "feedback_update_published",
+		EntityType:  "feedback",
+		EntityID:    payload.LinkedItemID,
+		ActorID:     actorID,
+		Title:       payload.UpdateTitle,
+		Message: NotificationMessage{
+			Template: "{actor} published a feedback update: {update}",
+			Variables: map[string]Variable{
+				"actor":  {Value: actorName, Type: "actor"},
+				"update": {Value: payload.UpdateTitle, Type: "value"},
+			},
+		},
+	}}
+}
+
+func (r *Rules) ProcessFeedbackItemMerged(ctx context.Context, payload events.FeedbackItemMergedPayload, actorID uuid.UUID) []CoreNewNotification {
+	if payload.MergeEventID == uuid.Nil || payload.TargetItemID == uuid.Nil ||
+		strings.TrimSpace(payload.TargetItemTitle) == "" || !shouldNotify(payload.RecipientID, actorID) {
+		return nil
+	}
+	actorName := r.getUserName(ctx, actorID)
+	if actorName == "" {
+		actorName = "Someone"
+	}
+	return []CoreNewNotification{{
+		DedupeKey:   fmt.Sprintf("feedback-merge:%s:%s", payload.MergeEventID, payload.RecipientID),
+		RecipientID: payload.RecipientID,
+		WorkspaceID: payload.WorkspaceID,
+		Type:        "feedback_item_merged",
+		EntityType:  "feedback",
+		EntityID:    payload.TargetItemID,
+		ActorID:     actorID,
+		Title:       payload.TargetItemTitle,
+		Message: NotificationMessage{
+			Template: "{actor} merged feedback into {feedback}",
+			Variables: map[string]Variable{
+				"actor":    {Value: actorName, Type: "actor"},
+				"feedback": {Value: payload.TargetItemTitle, Type: "value"},
 			},
 		},
 	}}

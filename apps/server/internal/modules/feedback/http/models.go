@@ -8,17 +8,19 @@ import (
 )
 
 type AppPortal struct {
-	ID                uuid.UUID  `json:"id"`
-	WorkspaceID       uuid.UUID  `json:"workspaceId"`
-	Name              string     `json:"name"`
-	Slug              string     `json:"slug"`
-	IsPublic          bool       `json:"isPublic"`
-	ParticipationMode string     `json:"participationMode"`
-	CreatedAt         time.Time  `json:"createdAt"`
-	UpdatedAt         time.Time  `json:"updatedAt"`
-	Boards            []AppBoard `json:"boards"`
-	Items             []AppItem  `json:"items,omitempty"`
-	ItemsHasMore      bool       `json:"itemsHasMore"`
+	ID                  uuid.UUID  `json:"id"`
+	WorkspaceID         uuid.UUID  `json:"workspaceId"`
+	Name                string     `json:"name"`
+	Slug                string     `json:"slug"`
+	IsPublic            bool       `json:"isPublic"`
+	ParticipationMode   string     `json:"participationMode"`
+	GuestIdentityPolicy string     `json:"guestIdentityPolicy"`
+	HasPublishedUpdates bool       `json:"hasPublishedUpdates"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
+	Boards              []AppBoard `json:"boards"`
+	Items               []AppItem  `json:"items,omitempty"`
+	ItemsHasMore        bool       `json:"itemsHasMore"`
 }
 
 type AppBoard struct {
@@ -35,44 +37,68 @@ type AppBoard struct {
 }
 
 type AppItem struct {
-	ID             uuid.UUID      `json:"id"`
-	WorkspaceID    uuid.UUID      `json:"workspaceId"`
-	PortalID       uuid.UUID      `json:"portalId"`
-	BoardID        uuid.UUID      `json:"boardId"`
-	AuthorID       *uuid.UUID     `json:"authorId"`
-	AuthorName     string         `json:"authorName"`
-	AuthorAvatar   *string        `json:"authorAvatar"`
-	Title          string         `json:"title"`
-	Description    string         `json:"description"`
-	Slug           string         `json:"slug"`
-	Status         string         `json:"status"`
-	VoteCount      int            `json:"voteCount"`
-	UpvoteCount    int            `json:"upvoteCount"`
-	DownvoteCount  int            `json:"downvoteCount"`
-	CommentCount   int            `json:"commentCount"`
-	RoadmapSummary *string        `json:"roadmapSummary,omitempty"`
-	ReadAt         *time.Time     `json:"readAt"`
-	DeletedAt      *time.Time     `json:"deletedAt,omitempty"`
-	RestoreUntil   *time.Time     `json:"restoreUntil,omitempty"`
-	Board          *AppBoard      `json:"board,omitempty"`
-	CreatedAt      time.Time      `json:"createdAt"`
-	UpdatedAt      time.Time      `json:"updatedAt"`
-	Comments       []AppComment   `json:"comments"`
-	StoryLinks     []AppStoryLink `json:"storyLinks"`
-	Anonymous      bool           `json:"anonymous,omitempty"`
+	ID               uuid.UUID      `json:"id"`
+	WorkspaceID      uuid.UUID      `json:"workspaceId"`
+	PortalID         uuid.UUID      `json:"portalId"`
+	BoardID          uuid.UUID      `json:"boardId"`
+	AuthorID         *uuid.UUID     `json:"authorId"`
+	AuthorName       string         `json:"authorName"`
+	AuthorAvatar     *string        `json:"authorAvatar"`
+	Title            string         `json:"title"`
+	Description      string         `json:"description"`
+	Slug             string         `json:"slug"`
+	Status           string         `json:"status"`
+	VoteCount        int            `json:"voteCount"`
+	UpvoteCount      int            `json:"upvoteCount"`
+	DownvoteCount    int            `json:"downvoteCount"`
+	CommentCount     int            `json:"commentCount"`
+	RoadmapSummary   *string        `json:"roadmapSummary,omitempty"`
+	ReadAt           *time.Time     `json:"readAt"`
+	DeletedAt        *time.Time     `json:"deletedAt,omitempty"`
+	RestoreUntil     *time.Time     `json:"restoreUntil,omitempty"`
+	Board            *AppBoard      `json:"board,omitempty"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	UpdatedAt        time.Time      `json:"updatedAt"`
+	Comments         []AppComment   `json:"comments"`
+	StoryLinks       []AppStoryLink `json:"storyLinks"`
+	Anonymous        bool           `json:"anonymous,omitempty"`
+	ParticipantKind  string         `json:"participantKind,omitempty"`
+	AuthorMasked     bool           `json:"authorMasked,omitempty"`
+	MergedIntoItemID *uuid.UUID     `json:"mergedIntoItemId,omitempty"`
+	MergedAt         *time.Time     `json:"mergedAt,omitempty"`
+	MergedByUserID   *uuid.UUID     `json:"mergedByUserId,omitempty"`
+	Following        bool           `json:"following,omitempty"`
+}
+
+type AppPrivateAuthor struct {
+	ContributorID uuid.UUID  `json:"contributorId"`
+	UserID        *uuid.UUID `json:"userId"`
+	Kind          string     `json:"kind"`
+	DisplayName   string     `json:"displayName"`
+	Email         *string    `json:"email"`
+	AvatarURL     *string    `json:"avatarUrl"`
+	PublicMasked  bool       `json:"publicMasked"`
+}
+
+type AppCanonicalItem struct {
+	ItemID   uuid.UUID `json:"itemId"`
+	ItemSlug string    `json:"itemSlug"`
+	Merged   bool      `json:"merged"`
 }
 
 type AppComment struct {
-	ID           uuid.UUID  `json:"id"`
-	WorkspaceID  uuid.UUID  `json:"workspaceId"`
-	ItemID       uuid.UUID  `json:"itemId"`
-	AuthorID     *uuid.UUID `json:"authorId"`
-	ParentID     *uuid.UUID `json:"parentId"`
-	AuthorName   string     `json:"authorName"`
-	AuthorAvatar *string    `json:"authorAvatar"`
-	Body         string     `json:"body"`
-	CreatedAt    time.Time  `json:"createdAt"`
-	UpdatedAt    time.Time  `json:"updatedAt"`
+	ID              uuid.UUID  `json:"id"`
+	WorkspaceID     uuid.UUID  `json:"workspaceId"`
+	ItemID          uuid.UUID  `json:"itemId"`
+	AuthorID        *uuid.UUID `json:"authorId"`
+	ParentID        *uuid.UUID `json:"parentId"`
+	AuthorName      string     `json:"authorName"`
+	AuthorAvatar    *string    `json:"authorAvatar"`
+	ParticipantKind string     `json:"participantKind,omitempty"`
+	AuthorMasked    bool       `json:"authorMasked,omitempty"`
+	Body            string     `json:"body"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	UpdatedAt       time.Time  `json:"updatedAt"`
 }
 
 type AppContributorStats struct {
@@ -167,18 +193,21 @@ type AppFeedbackReadState struct {
 }
 
 type AppVoteResult struct {
-	Vote      int  `json:"vote"`
-	Voted     bool `json:"voted"`
-	VoteCount int  `json:"voteCount"`
+	Vote            int    `json:"vote"`
+	Voted           bool   `json:"voted"`
+	VoteCount       int    `json:"voteCount"`
+	ParticipantKind string `json:"participantKind,omitempty"`
 }
 
 type AppVoteInput struct {
-	Vote int `json:"vote"`
+	Vote                int    `json:"vote"`
+	ParticipationIntent string `json:"participationIntent"`
 }
 
 type AppUpdatePortal struct {
-	IsPublic          *bool   `json:"isPublic"`
-	ParticipationMode *string `json:"participationMode"`
+	IsPublic            *bool   `json:"isPublic"`
+	ParticipationMode   *string `json:"participationMode"`
+	GuestIdentityPolicy *string `json:"guestIdentityPolicy"`
 }
 
 type AppCreateBoard struct {
@@ -237,9 +266,40 @@ type AppUpdateItemStatus struct {
 	RoadmapSummary *string `json:"roadmapSummary"`
 }
 
+type AppMergeItemInput struct {
+	TargetItemID uuid.UUID `json:"targetItemId"`
+}
+
+type AppMergeCandidate struct {
+	ID           uuid.UUID `json:"id"`
+	Slug         string    `json:"slug"`
+	Title        string    `json:"title"`
+	Status       string    `json:"status"`
+	VoteCount    int       `json:"voteCount"`
+	CommentCount int       `json:"commentCount"`
+}
+
+type AppMergeCandidatesPage struct {
+	Candidates []AppMergeCandidate `json:"candidates"`
+	HasMore    bool                `json:"hasMore"`
+}
+
+type AppMergeItemResult struct {
+	SourceItemID         uuid.UUID `json:"sourceItemId"`
+	TargetItemID         uuid.UUID `json:"targetItemId"`
+	PortalID             uuid.UUID `json:"portalId"`
+	MergedAt             time.Time `json:"mergedAt"`
+	MergedByUserID       uuid.UUID `json:"mergedByUserId"`
+	MovedFollowerCount   int       `json:"movedFollowerCount"`
+	MovedUpdateLinkCount int       `json:"movedUpdateLinkCount"`
+	MovedStoryLinkCount  int       `json:"movedStoryLinkCount"`
+	Target               AppItem   `json:"target"`
+}
+
 type AppCreateComment struct {
-	Body     string     `json:"body"`
-	ParentID *uuid.UUID `json:"parentId"`
+	Body                string     `json:"body"`
+	ParentID            *uuid.UUID `json:"parentId"`
+	ParticipationIntent string     `json:"participationIntent"`
 }
 
 type AppCreateStoryFromItem struct {
@@ -274,14 +334,16 @@ type AppContributorCommentsResponse struct {
 
 func toAppPortal(core feedback.CorePortal) AppPortal {
 	return AppPortal{
-		ID:                core.ID,
-		WorkspaceID:       core.WorkspaceID,
-		Name:              core.Name,
-		Slug:              core.Slug,
-		IsPublic:          core.IsPublic,
-		ParticipationMode: core.ParticipationMode,
-		CreatedAt:         core.CreatedAt,
-		UpdatedAt:         core.UpdatedAt,
+		ID:                  core.ID,
+		WorkspaceID:         core.WorkspaceID,
+		Name:                core.Name,
+		Slug:                core.Slug,
+		IsPublic:            core.IsPublic,
+		ParticipationMode:   core.ParticipationMode,
+		GuestIdentityPolicy: core.GuestIdentityPolicy,
+		HasPublishedUpdates: core.HasPublishedUpdates,
+		CreatedAt:           core.CreatedAt,
+		UpdatedAt:           core.UpdatedAt,
 	}
 }
 
@@ -312,29 +374,41 @@ func toAppBoardReviewer(core feedback.CoreBoardReviewer) AppBoardReviewer {
 }
 
 func toAppItem(core feedback.CoreItem, comments []AppComment, links []AppStoryLink) AppItem {
+	authorID := uuidPointer(core.AuthorID)
+	authorAvatar := core.AuthorAvatar
+	if core.AuthorMasked {
+		authorID = nil
+		authorAvatar = nil
+	}
 	item := AppItem{
-		ID:             core.ID,
-		WorkspaceID:    core.WorkspaceID,
-		PortalID:       core.PortalID,
-		BoardID:        core.BoardID,
-		AuthorID:       uuidPointer(core.AuthorID),
-		AuthorName:     core.AuthorName,
-		AuthorAvatar:   core.AuthorAvatar,
-		Title:          core.Title,
-		Description:    core.Description,
-		Slug:           core.Slug,
-		Status:         core.Status,
-		VoteCount:      core.VoteCount,
-		UpvoteCount:    core.UpvoteCount,
-		DownvoteCount:  core.DownvoteCount,
-		CommentCount:   core.CommentCount,
-		RoadmapSummary: core.RoadmapSummary,
-		ReadAt:         core.ReadAt,
-		DeletedAt:      core.DeletedAt,
-		CreatedAt:      core.CreatedAt,
-		UpdatedAt:      core.UpdatedAt,
-		Comments:       comments,
-		StoryLinks:     links,
+		ID:               core.ID,
+		WorkspaceID:      core.WorkspaceID,
+		PortalID:         core.PortalID,
+		BoardID:          core.BoardID,
+		AuthorID:         authorID,
+		AuthorName:       core.AuthorName,
+		AuthorAvatar:     authorAvatar,
+		ParticipantKind:  core.ParticipantKind,
+		AuthorMasked:     core.AuthorMasked,
+		MergedIntoItemID: core.MergedIntoItemID,
+		MergedAt:         core.MergedAt,
+		MergedByUserID:   core.MergedByUserID,
+		Following:        core.Following,
+		Title:            core.Title,
+		Description:      core.Description,
+		Slug:             core.Slug,
+		Status:           core.Status,
+		VoteCount:        core.VoteCount,
+		UpvoteCount:      core.UpvoteCount,
+		DownvoteCount:    core.DownvoteCount,
+		CommentCount:     core.CommentCount,
+		RoadmapSummary:   core.RoadmapSummary,
+		ReadAt:           core.ReadAt,
+		DeletedAt:        core.DeletedAt,
+		CreatedAt:        core.CreatedAt,
+		UpdatedAt:        core.UpdatedAt,
+		Comments:         comments,
+		StoryLinks:       links,
 	}
 	if core.DeletedAt != nil {
 		restoreUntil := core.DeletedAt.Add(30 * 24 * time.Hour)
@@ -371,17 +445,25 @@ func uuidPointer(value uuid.UUID) *uuid.UUID {
 }
 
 func toAppComment(core feedback.CoreComment) AppComment {
+	authorID := uuidPointer(core.AuthorID)
+	authorAvatar := core.AuthorAvatar
+	if core.AuthorMasked {
+		authorID = nil
+		authorAvatar = nil
+	}
 	return AppComment{
-		ID:           core.ID,
-		WorkspaceID:  core.WorkspaceID,
-		ItemID:       core.ItemID,
-		AuthorID:     uuidPointer(core.AuthorID),
-		ParentID:     core.ParentID,
-		AuthorName:   core.AuthorName,
-		AuthorAvatar: core.AuthorAvatar,
-		Body:         core.Body,
-		CreatedAt:    core.CreatedAt,
-		UpdatedAt:    core.UpdatedAt,
+		ID:              core.ID,
+		WorkspaceID:     core.WorkspaceID,
+		ItemID:          core.ItemID,
+		AuthorID:        authorID,
+		ParentID:        core.ParentID,
+		AuthorName:      core.AuthorName,
+		AuthorAvatar:    authorAvatar,
+		ParticipantKind: core.ParticipantKind,
+		AuthorMasked:    core.AuthorMasked,
+		Body:            core.Body,
+		CreatedAt:       core.CreatedAt,
+		UpdatedAt:       core.UpdatedAt,
 	}
 }
 

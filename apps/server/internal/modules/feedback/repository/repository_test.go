@@ -16,6 +16,82 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func repositoryMethodSource(t *testing.T, filename, method string) string {
+	t.Helper()
+	data, err := os.ReadFile(filename)
+	require.NoError(t, err)
+	source := string(data)
+	startMarker := "func (r *Repo) " + method + "("
+	start := strings.Index(source, startMarker)
+	require.NotEqual(t, -1, start, "method %s not found in %s", method, filename)
+	rest := source[start+len(startMarker):]
+	next := strings.Index(rest, "\nfunc (r *Repo) ")
+	if next < 0 {
+		return source[start:]
+	}
+	return source[start : start+len(startMarker)+next]
+}
+
+func TestFeedbackMutationQueriesRejectMergedSources(t *testing.T) {
+	t.Parallel()
+	for _, method := range []string{
+		"UpdateItemStatus",
+		"UpdateItemStatusIfUnchanged",
+		"TrashItem",
+		"RestoreItem",
+		"CreateComment",
+		"ToggleVote",
+		"LinkStory",
+	} {
+		body := repositoryMethodSource(t, "repository.go", method)
+		require.Contains(t, body, "merged_into_item_id IS NULL", "%s must reject a merged source", method)
+	}
+	for _, method := range []string{
+		"CreateContributorComment",
+		"ToggleContributorVote",
+		"GetItemFollow",
+		"SetItemFollow",
+	} {
+		body := repositoryMethodSource(t, "next_phase.go", method)
+		require.Contains(t, body, "merged_into_item_id IS NULL", "%s must reject a merged source", method)
+	}
+	trashBody := repositoryMethodSource(t, "repository.go", "TrashItem")
+	require.Contains(t, trashBody, "merged_source.merged_into_item_id = feedback_items.id")
+	require.Contains(t, trashBody, "return feedback.ErrMergeConflict")
+}
+
+func TestPublicAuthorMaskingNeverMasksAccountsOrLeaksMaskedGuestAvatars(t *testing.T) {
+	t.Parallel()
+
+	publicQueries := []string{
+		repositoryMethodSource(t, "repository.go", "ListComments"),
+		repositoryMethodSource(t, "repository.go", "ListItemComments"),
+		repositoryMethodSource(t, "repository.go", "GetComment"),
+		repositoryMethodSource(t, "repository.go", "ListSimilarItems"),
+		itemSelectQuery(),
+		repositoryMethodSource(t, "next_phase.go", "CreateContributorComment"),
+	}
+	for _, query := range publicQueries {
+		require.Contains(t, query, "contributor.kind IN ('verified_guest', 'external')")
+		require.Contains(t, query, "portal.guest_identity_policy = 'always_mask_guests'")
+		require.Contains(t, query, "THEN NULL")
+		require.NotContains(t, query, "contributor.kind = 'anonymous' OR contributor.public_masked")
+	}
+
+	privateAuthorQuery := repositoryMethodSource(t, "repository.go", "GetPrivateAuthor")
+	require.Contains(t, privateAuthorQuery, "contributor.kind IN ('verified_guest', 'external')")
+	require.NotContains(t, privateAuthorQuery, "contributor.kind <> 'anonymous'")
+}
+
+func TestMergeAudienceRechecksTargetFollowAndCurrentEligibility(t *testing.T) {
+	t.Parallel()
+	body := repositoryMethodSource(t, "next_phase.go", "ListMergeRecipients")
+	require.Contains(t, body, "target_follower.item_id = $2")
+	require.Contains(t, body, "target_follower.unsubscribed_at IS NULL")
+	require.Contains(t, body, "contributor.blocked_at IS NULL")
+	require.Contains(t, body, "preference.email_unsubscribed_at IS NULL")
+}
+
 func TestAnonymousParticipationMigrationPreservesFeedbackIdentityLifecycle(t *testing.T) {
 	t.Parallel()
 
@@ -93,10 +169,12 @@ func TestBuildListContributorCommentsQueryScopesAndPaginates(t *testing.T) {
 
 func TestBuildListItemsQueryUsesFullTextSearchAndFilters(t *testing.T) {
 	portalID := uuid.New()
+	itemID := uuid.New()
 	boardID := uuid.New()
 	authorID := uuid.New()
 	query, params := buildListItemsQuery(feedback.CoreListItemsInput{
 		PortalID: portalID,
+		ItemID:   itemID,
 		BoardID:  &boardID,
 		AuthorID: authorID,
 		Status:   feedback.StatusReviewing,
@@ -110,9 +188,11 @@ func TestBuildListItemsQueryUsesFullTextSearchAndFilters(t *testing.T) {
 	require.Contains(t, query, projectedFeedbackStatus+" = :status")
 	require.Contains(t, query, "fi.board_id = :board_id")
 	require.Contains(t, query, "fi.author_id = :author_id")
+	require.Contains(t, query, "fi.id = :item_id")
 	require.Contains(t, query, "ORDER BY vote_count DESC, fi.created_at DESC")
 	require.Contains(t, query, "fi.deleted_at IS NULL")
 	require.Equal(t, portalID, params["portal_id"])
+	require.Equal(t, itemID, params["item_id"])
 	require.Equal(t, boardID, params["board_id"])
 	require.Equal(t, authorID, params["author_id"])
 	require.Equal(t, feedback.StatusReviewing, params["status"])

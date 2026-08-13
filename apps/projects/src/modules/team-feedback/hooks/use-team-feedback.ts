@@ -6,6 +6,7 @@ import {
   getTeamFeedback,
   getTeamFeedbackPage,
 } from "../queries/get-team-feedback";
+import { getTeamFeedbackMergeCandidates } from "../queries/get-feedback";
 import type { TeamFeedbackListStatus } from "../types";
 
 export const useTeamFeedback = (
@@ -26,6 +27,30 @@ export const useTeamFeedback = (
         search,
       ),
     enabled: Boolean(teamId && session),
+  });
+};
+
+export const useTeamFeedbackMergeCandidates = (
+  sourceItemId: string,
+  search: string,
+  enabled: boolean,
+) => {
+  const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
+  const normalizedSearch = search.trim();
+
+  return useQuery({
+    queryKey: feedbackKeys.mergeCandidates(
+      workspaceSlug,
+      sourceItemId,
+      normalizedSearch,
+    ),
+    queryFn: () =>
+      getTeamFeedbackMergeCandidates(sourceItemId, normalizedSearch, {
+        session: session!,
+        workspaceSlug,
+      }),
+    enabled: Boolean(enabled && session && sourceItemId),
   });
 };
 

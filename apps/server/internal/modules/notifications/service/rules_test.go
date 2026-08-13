@@ -471,6 +471,44 @@ func TestProcessFeedbackStatusUpdated(t *testing.T) {
 	assert.Empty(t, rules.ProcessFeedbackStatusUpdated(context.Background(), payload, recipientID))
 }
 
+func TestProcessFeedbackUpdatePublishedUsesRecipientDedupeKey(t *testing.T) {
+	actorID, recipientID := uuid.New(), uuid.New()
+	payload := events.FeedbackUpdatePublishedPayload{
+		PublicationEventID: uuid.New(), UpdateID: uuid.New(), LinkedItemID: uuid.New(), WorkspaceID: uuid.New(),
+		RecipientID: recipientID, UpdateTitle: "Dark mode shipped", UpdateSlug: "dark-mode-shipped",
+	}
+	rules := NewRules(nil, nil, nil, nil)
+
+	result := rules.ProcessFeedbackUpdatePublished(context.Background(), payload, actorID)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, "feedback_update_published", result[0].Type)
+	assert.Equal(t, "feedback", result[0].EntityType)
+	assert.Equal(t, payload.LinkedItemID, result[0].EntityID)
+	assert.Equal(t, "feedback-update:"+payload.PublicationEventID.String()+":"+recipientID.String(), result[0].DedupeKey)
+	assert.Empty(t, rules.ProcessFeedbackUpdatePublished(context.Background(), payload, recipientID))
+}
+
+func TestProcessFeedbackItemMergedUsesStableRecipientDedupeKey(t *testing.T) {
+	actorID, recipientID := uuid.New(), uuid.New()
+	payload := events.FeedbackItemMergedPayload{
+		MergeEventID: uuid.New(), SourceItemID: uuid.New(), TargetItemID: uuid.New(),
+		TargetItemTitle: "Canonical dark mode request", TargetItemSlug: "canonical-dark-mode-request",
+		WorkspaceID: uuid.New(), RecipientID: recipientID,
+	}
+	rules := NewRules(nil, nil, nil, nil)
+
+	result := rules.ProcessFeedbackItemMerged(context.Background(), payload, actorID)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, "feedback_item_merged", result[0].Type)
+	assert.Equal(t, "feedback", result[0].EntityType)
+	assert.Equal(t, payload.TargetItemID, result[0].EntityID)
+	assert.Equal(t, "feedback-merge:"+payload.MergeEventID.String()+":"+recipientID.String(), result[0].DedupeKey)
+	assert.Equal(t, "{actor} merged feedback into {feedback}", result[0].Message.Template)
+	assert.Empty(t, rules.ProcessFeedbackItemMerged(context.Background(), payload, recipientID))
+}
+
 func TestProcessCommentReplied(t *testing.T) {
 	actorID := uuid.New()
 	workspaceID := uuid.New()

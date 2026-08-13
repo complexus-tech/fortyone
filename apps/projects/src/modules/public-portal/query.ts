@@ -5,15 +5,19 @@ import {
   toPublicContributor,
   toPublicContributorCommentsPage,
   toPublicPortal,
+  toPublicPortalUpdate,
   type ApiContributor,
   type ApiContributorCommentsPage,
+  type ApiFeedbackUpdate,
   type ApiPortal,
 } from "./data";
+import { getFeedbackSessionAuthorization } from "./guest-session";
 import type {
   PublicContributor,
   PublicContributorCommentsPage,
   PublicFeedbackListStatus,
   PublicPortal,
+  PublicPortalUpdate,
   PublicPortalWorkspace,
   SimilarPublicFeedback,
 } from "./types";
@@ -22,8 +26,27 @@ type ApiResponse<T> = {
   data: T;
 };
 
+type ApiUpdatesPage = {
+  updates: ApiFeedbackUpdate[];
+  hasMore: boolean;
+  unreadCount?: number;
+};
+
+export type PublicPortalUpdatesPage = {
+  updates: PublicPortalUpdate[];
+  hasMore: boolean;
+  unreadCount: number;
+};
+
+export type PublicFeedbackCanonicalItem = {
+  itemId: string;
+  itemSlug: string;
+  merged: boolean;
+};
+
 export type PublicPortalQuery = {
   authorId?: string;
+  itemId?: string;
   page?: number;
   pageSize?: number;
   search?: string;
@@ -75,6 +98,7 @@ const getPublicFeedbackPath = async (portalSlug: string) => {
 const buildQuery = (query: PublicPortalQuery) => {
   const params = new URLSearchParams();
   if (query.authorId) params.set("authorId", query.authorId);
+  if (query.itemId) params.set("itemId", query.itemId);
   if (query.page) params.set("page", String(query.page));
   if (query.pageSize) params.set("pageSize", String(query.pageSize));
   if (query.search?.trim()) params.set("search", query.search.trim());
@@ -198,6 +222,31 @@ export const getSimilarPublicFeedback = async (
   return payload.data;
 };
 
+export const getPublicFeedbackCanonicalItem = async (
+  portalSlug: string,
+  itemReference: string,
+): Promise<PublicFeedbackCanonicalItem> => {
+  const apiUrl = getApiUrl();
+  if (!apiUrl) {
+    throw new Error("NEXT_PUBLIC_API_URL is required to resolve feedback");
+  }
+
+  const response = await fetch(
+    `${apiUrl}/portals/${encodeURIComponent(portalSlug)}/feedback/items/${encodeURIComponent(itemReference)}/canonical`,
+    { cache: "no-store" },
+  );
+  if (!response.ok) {
+    throw new PublicPortalRequestError(
+      "Failed to resolve public feedback",
+      response.status,
+    );
+  }
+
+  const payload =
+    (await response.json()) as ApiResponse<PublicFeedbackCanonicalItem>;
+  return payload.data;
+};
+
 export const getPublicContributor = async (
   portalSlug: string,
   authorId: string,
@@ -261,6 +310,66 @@ export const getPublicContributorComments = async (
   return toPublicContributorCommentsPage(payload.data);
 };
 
+export const getPublicPortalUpdates = async (
+  portalSlug: string,
+  page = 1,
+  pageSize = 20,
+): Promise<PublicPortalUpdatesPage> => {
+  const apiUrl = getApiUrl();
+  if (!apiUrl) {
+    throw new Error("NEXT_PUBLIC_API_URL is required to load public updates");
+  }
+
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  const authorization = await getFeedbackSessionAuthorization(portalSlug);
+  const response = await fetch(
+    `${apiUrl}/portals/${encodeURIComponent(portalSlug)}/feedback/updates?${params.toString()}`,
+    {
+      cache: "no-store",
+      ...(authorization ? { headers: { Authorization: authorization } } : {}),
+    },
+  );
+  if (!response.ok) {
+    throw new PublicPortalRequestError(
+      "Failed to load public feedback updates",
+      response.status,
+    );
+  }
+
+  const payload = (await response.json()) as ApiResponse<ApiUpdatesPage>;
+  return {
+    updates: payload.data.updates.map(toPublicPortalUpdate),
+    hasMore: payload.data.hasMore,
+    unreadCount: payload.data.unreadCount ?? 0,
+  };
+};
+
+export const getPublicPortalUpdate = async (
+  portalSlug: string,
+  updateSlug: string,
+): Promise<PublicPortalUpdate> => {
+  const apiUrl = getApiUrl();
+  if (!apiUrl) {
+    throw new Error("NEXT_PUBLIC_API_URL is required to load a public update");
+  }
+
+  const response = await fetch(
+    `${apiUrl}/portals/${encodeURIComponent(portalSlug)}/feedback/updates/${encodeURIComponent(updateSlug)}`,
+    { cache: "no-store" },
+  );
+  if (!response.ok) {
+    throw new PublicPortalRequestError(
+      "Failed to load public feedback update",
+      response.status,
+    );
+  }
+  const payload = (await response.json()) as ApiResponse<ApiFeedbackUpdate>;
+  return toPublicPortalUpdate(payload.data);
+};
+
 export const getPublicPortalOrNotFound = async (
   portalSlug: string,
   query: PublicPortalQuery = {},
@@ -293,12 +402,42 @@ export const getPublicFeedbackPortalOrNotFound = async (
   }
 };
 
+export const getPublicFeedbackCanonicalItemOrNotFound = async (
+  portalSlug: string,
+  itemReference: string,
+) => {
+  try {
+    return await getPublicFeedbackCanonicalItem(portalSlug, itemReference);
+  } catch (error) {
+    if (isPublicPortalNotFoundError(error)) {
+      notFound();
+    }
+
+    throw error;
+  }
+};
+
 export const getPublicContributorOrNotFound = async (
   portalSlug: string,
   authorId: string,
 ) => {
   try {
     return await getPublicContributor(portalSlug, authorId);
+  } catch (error) {
+    if (isPublicPortalNotFoundError(error)) {
+      notFound();
+    }
+
+    throw error;
+  }
+};
+
+export const getPublicPortalUpdateOrNotFound = async (
+  portalSlug: string,
+  updateSlug: string,
+) => {
+  try {
+    return await getPublicPortalUpdate(portalSlug, updateSlug);
   } catch (error) {
     if (isPublicPortalNotFoundError(error)) {
       notFound();

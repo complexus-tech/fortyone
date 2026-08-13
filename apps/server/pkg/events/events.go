@@ -16,6 +16,9 @@ const (
 	CommentReplied                         EventType = "comment.replied"
 	FeedbackCommentCreated                 EventType = "feedback.comment.created"
 	FeedbackStatusUpdated                  EventType = "feedback.status.updated"
+	FeedbackContributorVerification        EventType = "feedback.contributor.verification"
+	FeedbackUpdatePublished                EventType = "feedback.update.published"
+	FeedbackItemMerged                     EventType = "feedback.item.merged"
 	UserMentioned                          EventType = "user.mentioned"
 	ObjectiveUpdated                       EventType = "objective.updated"
 	KeyResultUpdated                       EventType = "keyresult.updated"
@@ -54,6 +57,7 @@ type StoryUpdatedPayload struct {
 	AudienceIDs             []uuid.UUID    `json:"audience_ids,omitempty"`
 	AudienceResolved        bool           `json:"audience_resolved"`
 	PreviousCollaboratorIDs []uuid.UUID    `json:"previous_collaborator_ids,omitempty"`
+	PreviousStatusID        *uuid.UUID     `json:"previous_status_id,omitempty"`
 }
 
 // ObjectiveUpdatedPayload contains data for objective update events
@@ -79,6 +83,15 @@ type EmailVerificationPayload struct {
 	Token       string `json:"token"`
 	TokenType   string `json:"token_type"`
 	CallbackURL string `json:"callback_url,omitempty"`
+}
+
+type FeedbackContributorVerificationPayload struct {
+	Email           string    `json:"email"`
+	DisplayName     string    `json:"display_name,omitempty"`
+	PortalName      string    `json:"portal_name"`
+	VerificationURL string    `json:"verification_url"`
+	Code            string    `json:"code"`
+	ExpiresAt       time.Time `json:"expires_at"`
 }
 
 // InvitationEmailPayload contains data for invitation email events
@@ -141,14 +154,16 @@ type CommentRepliedPayload struct {
 // FeedbackCommentCreatedPayload contains the public feedback data required to
 // notify the feedback author without requiring workspace membership.
 type FeedbackCommentCreatedPayload struct {
-	CommentID     uuid.UUID `json:"comment_id"`
-	FeedbackID    uuid.UUID `json:"feedback_id"`
-	FeedbackTitle string    `json:"feedback_title"`
-	FeedbackSlug  string    `json:"feedback_slug"`
-	WorkspaceID   uuid.UUID `json:"workspace_id"`
-	RecipientID   uuid.UUID `json:"recipient_id"`
-	Content       string    `json:"content"`
-	IsReply       bool      `json:"is_reply"`
+	CommentID          uuid.UUID `json:"comment_id"`
+	FeedbackID         uuid.UUID `json:"feedback_id"`
+	FeedbackTitle      string    `json:"feedback_title"`
+	FeedbackSlug       string    `json:"feedback_slug"`
+	WorkspaceID        uuid.UUID `json:"workspace_id"`
+	RecipientID        uuid.UUID `json:"recipient_id"`
+	ActorContributorID uuid.UUID `json:"actor_contributor_id,omitempty"`
+	ActorName          string    `json:"actor_name,omitempty"`
+	Content            string    `json:"content"`
+	IsReply            bool      `json:"is_reply"`
 }
 
 // FeedbackStatusUpdatedPayload contains the public feedback data required to
@@ -161,6 +176,27 @@ type FeedbackStatusUpdatedPayload struct {
 	WorkspaceID   uuid.UUID `json:"workspace_id"`
 	RecipientID   uuid.UUID `json:"recipient_id"`
 	Status        string    `json:"status"`
+}
+
+type FeedbackUpdatePublishedPayload struct {
+	PublicationEventID  uuid.UUID `json:"publication_event_id,omitempty"`
+	PublicationSequence int64     `json:"publication_sequence,omitempty"`
+	UpdateID            uuid.UUID `json:"update_id"`
+	LinkedItemID        uuid.UUID `json:"linked_item_id"`
+	WorkspaceID         uuid.UUID `json:"workspace_id"`
+	RecipientID         uuid.UUID `json:"recipient_id"`
+	UpdateTitle         string    `json:"update_title"`
+	UpdateSlug          string    `json:"update_slug"`
+}
+
+type FeedbackItemMergedPayload struct {
+	MergeEventID    uuid.UUID `json:"merge_event_id"`
+	SourceItemID    uuid.UUID `json:"source_item_id"`
+	TargetItemID    uuid.UUID `json:"target_item_id"`
+	TargetItemTitle string    `json:"target_item_title"`
+	TargetItemSlug  string    `json:"target_item_slug"`
+	WorkspaceID     uuid.UUID `json:"workspace_id"`
+	RecipientID     uuid.UUID `json:"recipient_id"`
 }
 
 // UserMentionedPayload contains data for user mention events

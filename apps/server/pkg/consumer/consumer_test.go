@@ -43,3 +43,16 @@ func TestWithEventDedupeKeyPreservesExplicitSourceKey(t *testing.T) {
 
 	require.Equal(t, notification.DedupeKey, result.DedupeKey)
 }
+
+func TestShouldBridgeFeedbackStatusOnlyForCommittedStatusTransitions(t *testing.T) {
+	previous := uuid.New()
+	require.True(t, shouldBridgeFeedbackStatus(events.StoryUpdatedPayload{
+		Updates: map[string]any{"status_id": uuid.New()}, PreviousStatusID: &previous,
+	}))
+	require.False(t, shouldBridgeFeedbackStatus(events.StoryUpdatedPayload{
+		Updates: map[string]any{"status_id": uuid.New()},
+	}), "legacy or failed transitions without a captured previous status must not produce a bridge event")
+	require.False(t, shouldBridgeFeedbackStatus(events.StoryUpdatedPayload{
+		Updates: map[string]any{"title": "Changed"}, PreviousStatusID: &previous,
+	}))
+}

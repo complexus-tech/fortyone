@@ -54,6 +54,51 @@ func TestPublicFeedbackRateLimitUsesPortalAndUser(t *testing.T) {
 	require.Equal(t, "rate-limit:feedback-item:portal:city-roads:user:"+userID.String(), store.key)
 }
 
+func TestPublicFeedbackRateLimitUsesValidatedContributorSessionWithoutIngressProof(t *testing.T) {
+	store := &rateLimitStoreStub{count: 1}
+	contributorID := uuid.NewString()
+	config := PublicFeedbackRateLimitConfig{
+		Scope: "feedback-comment", AuthenticatedLimit: 60, AnonymousLimit: 3, AnonymousGlobalLimit: 12,
+		Window: time.Hour, IngressSecret: "test-secret",
+		ContributorResolver: func(_ context.Context, portalSlug, authorization string) (string, error) {
+			require.Equal(t, "city-roads", portalSlug)
+			require.Equal(t, "FeedbackSession opaque", authorization)
+			return contributorID, nil
+		},
+	}
+	handler := PublicFeedbackRateLimit(nil, store, config)(func(context.Context, http.ResponseWriter, *http.Request) error { return nil })
+	request := httptest.NewRequest(http.MethodPost, "/portals/city-roads/feedback/items/item/comments", nil)
+	request.SetPathValue("portalSlug", "city-roads")
+	request.Header.Set("Authorization", "FeedbackSession opaque")
+
+	require.NoError(t, handler(request.Context(), httptest.NewRecorder(), request))
+	require.Equal(t, "rate-limit:feedback-comment:portal:city-roads:contributor:"+contributorID, store.key)
+	require.Len(t, store.keys, 1, "validated contributors must not consume the anonymous global limit")
+}
+
+func TestPublicFeedbackRateLimitRejectsInvalidContributorSessionWithoutAnonymousFallback(t *testing.T) {
+	store := &rateLimitStoreStub{}
+	config := PublicFeedbackRateLimitConfig{
+		Scope: "feedback-comment", AuthenticatedLimit: 60, AnonymousLimit: 3, AnonymousGlobalLimit: 12,
+		Window: time.Hour, IngressSecret: "test-secret",
+		ContributorResolver: func(context.Context, string, string) (string, error) {
+			return "", errors.New("invalid session")
+		},
+	}
+	handler := PublicFeedbackRateLimit(nil, store, config)(func(context.Context, http.ResponseWriter, *http.Request) error {
+		t.Fatal("next handler should not be called")
+		return nil
+	})
+	request := httptest.NewRequest(http.MethodPost, "/portals/city-roads/feedback/items/item/comments", nil)
+	request.SetPathValue("portalSlug", "city-roads")
+	request.Header.Set("Authorization", "FeedbackSession attacker-controlled")
+	recorder := httptest.NewRecorder()
+
+	require.NoError(t, handler(request.Context(), recorder, request))
+	require.Equal(t, http.StatusUnauthorized, recorder.Code)
+	require.Empty(t, store.keys)
+}
+
 func TestPublicFeedbackRateLimitRejectsMissingOrExpiredIngressProof(t *testing.T) {
 	now := time.Unix(1_800_000_000, 0).UTC()
 	config := PublicFeedbackRateLimitConfig{

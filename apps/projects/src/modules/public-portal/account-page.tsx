@@ -56,7 +56,7 @@ export const PublicPortalAccountPage = ({
   profile: User;
   viewer: PublicPortalViewer;
 }) => (
-  <PublicPortalShell portal={portal} viewer={viewer}>
+  <PublicPortalShell participant={viewer} portal={portal}>
     <AccountContent profile={profile} />
   </PublicPortalShell>
 );

@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
-import { CheckIcon, CopyIcon } from "icons";
-import { Box, Button, Flex, Input, Text } from "ui";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Box, Input, Text } from "ui";
+import { cn } from "lib";
 import { SectionHeader } from "@/modules/settings/components";
 import {
+  buildFeedbackWidgetIdentityServerExample,
   buildFeedbackWidgetSnippet,
   buildInlineFeedbackWidgetMarkup,
 } from "@/modules/feedback-widget/install";
@@ -13,6 +14,8 @@ import type {
   FeedbackWidgetTab,
   FeedbackWidgetTheme,
 } from "@/modules/feedback-widget/protocol";
+import { useFeedbackWidgetSettings } from "./hooks";
+import { WidgetSecuritySettings } from "./widget-security-settings";
 
 const selectClassName =
   "border-border bg-surface-elevated ring-ring h-10 w-full rounded-xl border px-3 text-sm outline-none focus-visible:ring-2";
@@ -21,10 +24,155 @@ const subscribeToBrowserOrigin = () => () => undefined;
 const getBrowserOrigin = () => window.location.origin;
 const getServerOrigin = () => "";
 
+type CodeTokenKind =
+  | "attribute"
+  | "comment"
+  | "keyword"
+  | "number"
+  | "plain"
+  | "punctuation"
+  | "string"
+  | "tag";
+
+type CodeToken = {
+  kind: CodeTokenKind;
+  value: string;
+};
+
+const CODE_TOKEN_PATTERN =
+  /(?:<!--[\s\S]*?-->|\/\*[\s\S]*?\*\/|\/\/[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b(?:async|await|const|else|export|false|from|function|if|import|let|new|null|return|true|undefined|var)\b|\b\d+(?:\.\d+)?\b|<\/?[A-Za-z][\w-]*|\b[A-Za-z_:][\w:.-]*(?=\s*=)|[{}()[\].,;:+*=/<>-])/g;
+
+const codeTokenClassNames: Record<CodeTokenKind, string> = {
+  attribute: "text-[#d2a8ff]",
+  comment: "text-[#8b949e]",
+  keyword: "text-[#ff7b72]",
+  number: "text-[#79c0ff]",
+  plain: "text-[#e6edf3]",
+  punctuation: "text-[#8b949e]",
+  string: "text-[#a5d6ff]",
+  tag: "text-[#7ee787]",
+};
+
+const getCodeTokenKind = (value: string): CodeTokenKind => {
+  if (
+    value.startsWith("//") ||
+    value.startsWith("/*") ||
+    value.startsWith("<!--")
+  ) {
+    return "comment";
+  }
+  if (['"', "'", "`"].includes(value[0])) return "string";
+  if (/^\d/.test(value)) return "number";
+  if (value.startsWith("<")) return "tag";
+  if (
+    /^[A-Za-z_:]/.test(value) &&
+    !/^\b(?:async|await|const|else|export|false|from|function|if|import|let|new|null|return|true|undefined|var)\b$/.test(
+      value,
+    )
+  ) {
+    return "attribute";
+  }
+  if (/^[A-Za-z]/.test(value)) return "keyword";
+  return "punctuation";
+};
+
+const tokenizeCode = (value: string): CodeToken[] => {
+  const tokens: CodeToken[] = [];
+  let lastIndex = 0;
+
+  for (const match of value.matchAll(CODE_TOKEN_PATTERN)) {
+    const { index } = match;
+    if (index > lastIndex) {
+      tokens.push({ kind: "plain", value: value.slice(lastIndex, index) });
+    }
+    tokens.push({ kind: getCodeTokenKind(match[0]), value: match[0] });
+    lastIndex = index + match[0].length;
+  }
+
+  if (lastIndex < value.length) {
+    tokens.push({ kind: "plain", value: value.slice(lastIndex) });
+  }
+
+  return tokens;
+};
+
+const copyText = async (value: string) => {
+  await navigator.clipboard.writeText(value);
+};
+
+const WidgetCodeBlock = ({
+  code,
+  language,
+  maxHeight = "max-h-72",
+}: {
+  code: string;
+  language: string;
+  maxHeight?: string;
+}) => {
+  const [copyLabel, setCopyLabel] = useState("Copy");
+  const resetTimer = useRef<number | null>(null);
+  const tokens = tokenizeCode(code);
+
+  useEffect(
+    () => () => {
+      if (resetTimer.current) window.clearTimeout(resetTimer.current);
+    },
+    [],
+  );
+
+  const handleCopy = async () => {
+    if (resetTimer.current) window.clearTimeout(resetTimer.current);
+    try {
+      await copyText(code);
+      setCopyLabel("Copied");
+    } catch {
+      setCopyLabel("Couldn’t copy");
+    }
+    resetTimer.current = window.setTimeout(() => {
+      setCopyLabel("Copy");
+      resetTimer.current = null;
+    }, 1600);
+  };
+
+  return (
+    <figure className="overflow-hidden rounded-lg bg-[#1b1b19] text-[#e6edf3] shadow-sm ring-1 ring-black/10 dark:ring-white/10">
+      <figcaption className="flex min-h-9 items-center justify-between bg-[#222220] px-3 font-mono text-[10px] tracking-[0.08em] text-[#8b949e] uppercase">
+        <span>{language}</span>
+        <button
+          aria-live="polite"
+          className="focus-visible:ring-ring rounded-sm py-2 text-inherit transition-colors hover:text-white focus-visible:ring-1 focus-visible:outline-none"
+          onClick={() => {
+            void handleCopy();
+          }}
+          type="button"
+        >
+          {copyLabel}
+        </button>
+      </figcaption>
+      <pre
+        className={cn(
+          "overflow-auto px-5 py-[18px] font-mono text-[12px] leading-[1.65] whitespace-pre",
+          maxHeight,
+        )}
+      >
+        <code>
+          {tokens.map((token, index) => (
+            <span className={codeTokenClassNames[token.kind]} key={index}>
+              {token.value}
+            </span>
+          ))}
+        </code>
+      </pre>
+    </figure>
+  );
+};
+
 export const WidgetInstallSettings = ({
+  portalId,
   portalSlug,
   scriptOrigin,
 }: {
+  portalId: string;
   portalSlug: string;
   scriptOrigin?: string;
 }) => {
@@ -35,55 +183,54 @@ export const WidgetInstallSettings = ({
     "bottom-right",
   );
   const [trigger, setTrigger] = useState("[data-fortyone-feedback]");
-  const [copied, setCopied] = useState(false);
+  const widgetSettings = useFeedbackWidgetSettings(portalId);
   const browserOrigin = useSyncExternalStore(
     subscribeToBrowserOrigin,
     getBrowserOrigin,
     getServerOrigin,
   );
   const resolvedScriptOrigin = scriptOrigin || browserOrigin || undefined;
-  const snippet = useMemo(() => {
-    const options = {
-      defaultTab,
-      portalSlug,
-      position,
-      scriptOrigin: resolvedScriptOrigin,
-      theme,
-      trigger,
-    };
-    return mode === "inline"
-      ? buildInlineFeedbackWidgetMarkup(options)
-      : buildFeedbackWidgetSnippet({ ...options, mode });
-  }, [
+  const options = {
     defaultTab,
-    mode,
     portalSlug,
     position,
-    resolvedScriptOrigin,
+    scriptOrigin: resolvedScriptOrigin,
     theme,
     trigger,
-  ]);
-
-  const copySnippet = async () => {
-    try {
-      await navigator.clipboard.writeText(snippet);
-      setCopied(true);
-      window.setTimeout(() => {
-        setCopied(false);
-      }, 1800);
-    } catch {
-      setCopied(false);
-    }
+    widgetKeyId: widgetSettings.data?.widgetKeyId,
   };
+  const snippet =
+    mode === "inline"
+      ? buildInlineFeedbackWidgetMarkup(options)
+      : buildFeedbackWidgetSnippet({ ...options, mode });
+  const widgetConfiguration = widgetSettings.data;
+  const identityServerExample =
+    widgetConfiguration?.hasSigningSecret &&
+    widgetConfiguration.allowedOrigins[0]
+      ? buildFeedbackWidgetIdentityServerExample({
+          origin: widgetConfiguration.allowedOrigins[0],
+          signingSecretVersion: widgetConfiguration.signingSecretVersion,
+          widgetKeyId: widgetConfiguration.widgetKeyId,
+        })
+      : "";
 
   return (
     <Box className="border-border bg-surface mb-6 overflow-hidden rounded-2xl border">
       <SectionHeader
-        description="Add Feedback and Roadmap to your product without sending customers to a separate page."
+        description="Add Feedback, Roadmap, and published Updates to your product without sending customers to a separate page."
         title="Feedback widget"
       />
       <Box className="space-y-6 p-6">
-        <Box className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <WidgetSecuritySettings portalId={portalId} />
+
+        <Box className="border-border/70 border-t pt-6">
+          <Text fontWeight="medium">Appearance and installation</Text>
+          <Text className="mt-1 text-sm" color="muted">
+            Configure how feedback opens in your product, then add the generated
+            script to your site.
+          </Text>
+        </Box>
+        <Box className="border-border/70 bg-background/60 grid gap-5 rounded-xl border p-5 sm:grid-cols-2 lg:grid-cols-4">
           <label className="space-y-2">
             <Text as="span" className="block" fontWeight="medium">
               Display
@@ -115,6 +262,7 @@ export const WidgetInstallSettings = ({
             >
               <option value="feedback">Feedback</option>
               <option value="roadmap">Roadmap</option>
+              <option value="updates">Updates</option>
             </select>
           </label>
           <label className="space-y-2">
@@ -175,39 +323,43 @@ export const WidgetInstallSettings = ({
           </Box>
         ) : null}
 
-        <Box className="border-border/70 bg-background overflow-hidden rounded-xl border">
-          <Flex
-            align="center"
-            className="border-border/70 border-b px-4 py-3"
-            justify="between"
-          >
-            <Text fontWeight="medium">Installation snippet</Text>
-            <Button
-              color="tertiary"
-              leftIcon={
-                copied ? (
-                  <CheckIcon className="h-4" />
-                ) : (
-                  <CopyIcon className="h-4" />
-                )
-              }
-              onClick={() => {
-                void copySnippet();
-              }}
-              size="sm"
-            >
-              {copied ? "Copied" : "Copy code"}
-            </Button>
-          </Flex>
-          <pre className="max-h-72 overflow-auto p-4 text-[12px] leading-6 font-normal whitespace-pre-wrap">
-            <code>{snippet}</code>
-          </pre>
+        <Box>
+          <Text fontWeight="medium">Add the widget to your product</Text>
+          <Text className="mt-1 mb-4 max-w-2xl text-sm" color="muted">
+            Paste this snippet before the closing body tag. The widget loads
+            asynchronously and stays out of the way until someone opens it.
+          </Text>
+          <WidgetCodeBlock code={snippet} language="HTML" />
         </Box>
-        <Text color="muted">
-          Paste this before the closing body tag. The script loads
-          asynchronously and does not download the widget interface until
-          someone opens it.
-        </Text>
+        {widgetSettings.data?.hasSigningSecret ? (
+          <Box className="border-border/70 bg-background/60 rounded-xl border p-5">
+            <Text fontWeight="medium">Identify signed-in customers</Text>
+            <Text className="mt-1 max-w-2xl text-sm leading-5" color="muted">
+              Generate a short-lived assertion on your backend with the widget
+              key ID and signing secret, return only that assertion to your
+              page, then pass it to the loader. Assertions stay in memory and
+              are never added to the iframe URL or browser storage.
+            </Text>
+            <Box className="mt-4">
+              <WidgetCodeBlock
+                code={identityServerExample}
+                language="JavaScript"
+              />
+            </Box>
+            <Text className="mt-3 text-sm" color="muted">
+              Then pass the assertion returned by your authenticated backend to
+              the loader:
+            </Text>
+            <Box className="mt-3">
+              <WidgetCodeBlock
+                code={`// signedAssertion comes from your authenticated backend
+window.FortyOneFeedback.identify(signedAssertion);`}
+                language="JavaScript"
+                maxHeight="max-h-40"
+              />
+            </Box>
+          </Box>
+        ) : null}
       </Box>
     </Box>
   );
