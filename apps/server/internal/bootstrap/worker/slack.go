@@ -19,6 +19,8 @@ import (
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
 	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
+	sprintsrepository "github.com/complexus-tech/projects-api/internal/modules/sprints/repository"
+	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
 	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
 	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
 	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
@@ -62,6 +64,7 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 		objectivesrepository.New(log, db),
 		okrActivitiesService,
 	)
+	sprintsService := sprints.New(log, sprintsrepository.New(log, db))
 	contextProvider, err := messagingcontext.New(
 		usersService,
 		workspacesrepository.New(log, db),
@@ -115,6 +118,8 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 	processorConfig.ThreadSync = requestRepository
 	processorConfig.StoryReader = storiesService
 	processorConfig.RequestReader = requestRepository
+	processorConfig.ObjectiveReader = objectivesService
+	processorConfig.SprintReader = sprintsService
 	processorConfig.MutationConfirmer = toolExecutor
 
 	return slack.NewEventProcessor(

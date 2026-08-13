@@ -109,6 +109,8 @@ type Service struct {
 	credentials              *credentialCodec
 	webClient                *slackWebClient
 	mutationConfirmer        messaging.StoryMutationConfirmer
+	objectiveReader          SlackObjectiveReader
+	sprintReader             SlackSprintReader
 	workObjectTriggerTimeout time.Duration
 }
 
@@ -135,6 +137,20 @@ func WithNonceStore(store NonceStore) Option {
 func WithMutationConfirmer(confirmer messaging.StoryMutationConfirmer) Option {
 	return func(service *Service) {
 		service.mutationConfirmer = confirmer
+	}
+}
+
+// WithObjectiveReader enables permission-aware objective Work Object details.
+func WithObjectiveReader(reader SlackObjectiveReader) Option {
+	return func(service *Service) {
+		service.objectiveReader = reader
+	}
+}
+
+// WithSprintReader enables permission-aware sprint Work Object details.
+func WithSprintReader(reader SlackSprintReader) Option {
+	return func(service *Service) {
+		service.sprintReader = reader
 	}
 }
 

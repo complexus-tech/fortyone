@@ -140,6 +140,28 @@ func validateSlackProviderWorkObjectIdentity(entity SlackWorkObjectEntity) error
 				return errors.New("Slack provider payload Work Object unfurl URL is invalid")
 			}
 		}
+	case slackObjectiveExternalRefType:
+		link, err := ParseFortyOneObjectiveURL(entity.URL)
+		if err != nil || link.CanonicalURL != entity.URL || !validSlackObjectiveExternalRef(link, entity.ExternalRef.ID) {
+			return errors.New("Slack provider payload Work Object identity is invalid")
+		}
+		if entity.AppUnfurlURL != "" {
+			postedLink, err := ParseFortyOneObjectiveURL(entity.AppUnfurlURL)
+			if err != nil || postedLink.CanonicalURL != entity.URL {
+				return errors.New("Slack provider payload Work Object unfurl URL is invalid")
+			}
+		}
+	case slackSprintExternalRefType:
+		link, err := ParseFortyOneSprintURL(entity.URL)
+		if err != nil || link.CanonicalURL != entity.URL || !validSlackSprintExternalRef(link, entity.ExternalRef.ID) {
+			return errors.New("Slack provider payload Work Object identity is invalid")
+		}
+		if entity.AppUnfurlURL != "" {
+			postedLink, err := ParseFortyOneSprintURL(entity.AppUnfurlURL)
+			if err != nil || postedLink.CanonicalURL != entity.URL {
+				return errors.New("Slack provider payload Work Object unfurl URL is invalid")
+			}
+		}
 	default:
 		return errors.New("Slack provider payload Work Object identity is invalid")
 	}

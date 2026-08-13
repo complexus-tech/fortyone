@@ -154,6 +154,8 @@ type EventProcessorConfig struct {
 	ThreadSync               SlackThreadSync
 	StoryReader              SlackStoryReader
 	RequestReader            SlackRequestReader
+	ObjectiveReader          SlackObjectiveReader
+	SprintReader             SlackSprintReader
 	MutationConfirmer        messaging.StoryMutationConfirmer
 }
 
@@ -180,6 +182,8 @@ type EventProcessor struct {
 	threadSync               SlackThreadSync
 	storyReader              SlackStoryReader
 	requestReader            SlackRequestReader
+	objectiveReader          SlackObjectiveReader
+	sprintReader             SlackSprintReader
 	mutationConfirmer        messaging.StoryMutationConfirmer
 	workObjects              *slackWorkObjectPublisher
 }
@@ -244,6 +248,8 @@ func NewEventProcessor(
 		threadSync:               cfg.ThreadSync,
 		storyReader:              cfg.StoryReader,
 		requestReader:            cfg.RequestReader,
+		objectiveReader:          cfg.ObjectiveReader,
+		sprintReader:             cfg.SprintReader,
 		mutationConfirmer:        cfg.MutationConfirmer,
 		workObjects:              newSlackWorkObjectPublisher(webClient),
 	}, nil

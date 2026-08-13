@@ -174,6 +174,7 @@ func buildServices(cfg mux.Config) services {
 	okrActivitiesService := okractivities.New(cfg.Log, okractivitiesrepository.New(cfg.Log, cfg.DB))
 	keyResultsService := keyresults.New(cfg.Log, keyresultsrepository.New(cfg.Log, cfg.DB), okrActivitiesService, keyresults.WithPublisher(cfg.Publisher))
 	objectivesService := objectives.New(cfg.Log, objectivesrepository.New(cfg.Log, cfg.DB), okrActivitiesService, objectives.WithPublisher(cfg.Publisher))
+	sprintsService := sprints.New(cfg.Log, sprintsrepository.New(cfg.Log, cfg.DB))
 	searchService := search.New(cfg.Log, searchrepository.New(cfg.Log, cfg.DB))
 	mutationConfirmer, err := messaging.NewFortyOneToolExecutor(
 		teamsService,
@@ -217,6 +218,8 @@ func buildServices(cfg mux.Config) services {
 		slack.WithEventRuntime(cfg.TasksService, messagingRepo),
 		slack.WithNonceStore(messagingRepo),
 		slack.WithMutationConfirmer(mutationConfirmer),
+		slack.WithObjectiveReader(objectivesService),
+		slack.WithSprintReader(sprintsService),
 	)
 	calendarService := calendar.New(
 		cfg.Log,
@@ -309,7 +312,7 @@ func buildServices(cfg mux.Config) services {
 		okrActivities:       okrActivitiesService,
 		reports:             reportsService,
 		search:              searchService,
-		sprints:             sprints.New(cfg.Log, sprintsrepository.New(cfg.Log, cfg.DB)),
+		sprints:             sprintsService,
 		states:              statesService,
 		stories:             storiesService,
 		subscriptions:       subscriptionsService,

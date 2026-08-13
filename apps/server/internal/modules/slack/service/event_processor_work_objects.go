@@ -3,10 +3,14 @@ package slack
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
+	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
 )
@@ -22,6 +26,18 @@ type SlackStoryReader interface {
 // bypass workspace or team membership.
 type SlackRequestReader interface {
 	GetForUser(ctx context.Context, workspaceID, requestID, userID uuid.UUID) (integrationrequests.CoreIntegrationRequest, error)
+}
+
+// SlackObjectiveReader lists objectives through the actor-aware path so Slack
+// previews cannot bypass objective visibility rules.
+type SlackObjectiveReader interface {
+	List(ctx context.Context, workspaceID, userID uuid.UUID, filters map[string]any) ([]objectives.CoreObjective, error)
+}
+
+// SlackSprintReader lists sprints through the actor-aware path so Slack
+// previews cannot bypass team membership checks.
+type SlackSprintReader interface {
+	List(ctx context.Context, workspaceID, userID uuid.UUID, filters map[string]any) ([]sprints.CoreSprint, error)
 }
 
 type slackWorkObjectRepository interface {
@@ -48,7 +64,7 @@ func (p *EventProcessor) processSlackWorkObjectEvent(
 	event normalizedSlackEvent,
 	botToken string,
 ) error {
-	if (p.storyReader == nil && p.requestReader == nil) || p.workObjects == nil {
+	if (p.storyReader == nil && p.requestReader == nil && p.objectiveReader == nil && p.sprintReader == nil) || p.workObjects == nil {
 		return errors.New("Slack Work Object runtime is not configured")
 	}
 	switch event.Kind {
@@ -82,6 +98,8 @@ func (p *EventProcessor) processSlackLinkShared(
 	}
 	storyLinks := make([]FortyOneStoryLink, 0, len(event.Links))
 	requestLinks := make([]FortyOneRequestLink, 0, len(event.Links))
+	objectiveLinks := make([]FortyOneObjectiveLink, 0, len(event.Links))
+	sprintLinks := make([]FortyOneSprintLink, 0, len(event.Links))
 	seen := make(map[string]struct{}, len(event.Links))
 	for _, shared := range event.Links {
 		storyLink, storyErr := ParseFortyOneStoryURL(shared.URL)
@@ -110,6 +128,32 @@ func (p *EventProcessor) processSlackLinkShared(
 			continue
 		}
 
+		objectiveLink, objectiveErr := ParseFortyOneObjectiveURL(shared.URL)
+		if objectiveErr == nil {
+			if p.objectiveReader == nil || !strings.EqualFold(objectiveLink.WorkspaceSlug, workspace.Slug) {
+				continue
+			}
+			if _, exists := seen[objectiveLink.CanonicalURL]; exists {
+				continue
+			}
+			seen[objectiveLink.CanonicalURL] = struct{}{}
+			objectiveLinks = append(objectiveLinks, objectiveLink)
+			continue
+		}
+
+		sprintLink, sprintErr := ParseFortyOneSprintURL(shared.URL)
+		if sprintErr == nil {
+			if p.sprintReader == nil || !strings.EqualFold(sprintLink.WorkspaceSlug, workspace.Slug) {
+				continue
+			}
+			if _, exists := seen[sprintLink.CanonicalURL]; exists {
+				continue
+			}
+			seen[sprintLink.CanonicalURL] = struct{}{}
+			sprintLinks = append(sprintLinks, sprintLink)
+			continue
+		}
+
 		if p.log != nil {
 			p.log.Warn(ctx, "Slack work item preview link ignored",
 				"event_id", event.EventID,
@@ -120,7 +164,7 @@ func (p *EventProcessor) processSlackLinkShared(
 			)
 		}
 	}
-	eligibleLinkCount := len(storyLinks) + len(requestLinks)
+	eligibleLinkCount := len(storyLinks) + len(requestLinks) + len(objectiveLinks) + len(sprintLinks)
 	if eligibleLinkCount == 0 {
 		if p.log != nil {
 			p.log.Warn(ctx, "Slack work item preview produced no eligible links",
@@ -237,6 +281,55 @@ func (p *EventProcessor) processSlackLinkShared(
 		if err != nil {
 			return err
 		}
+		metadata.Entities = append(metadata.Entities, unfurl.Metadata.Entities...)
+	}
+	for _, link := range objectiveLinks {
+		objective, found, err := p.slackObjectiveForUser(ctx, workspace.ID, *linkedUserID, link)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+		accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, objective.Team)
+		if err != nil {
+			return err
+		}
+		if !accessGranted {
+			continue
+		}
+		input, err := p.slackObjectiveWorkObjectInput(ctx, *linkedUserID, event.UserID, link.PostedURL, objective)
+		if err != nil {
+			return err
+		}
+		unfurl, err := BuildSlackObjectiveUnfurlRequest(event.ChannelID, event.MessageTS, input)
+		if err != nil {
+			return err
+		}
+		applySlackUnfurlEventDestination(&unfurl, event)
+		metadata.Entities = append(metadata.Entities, unfurl.Metadata.Entities...)
+	}
+	for _, link := range sprintLinks {
+		sprint, found, err := p.slackSprintForUser(ctx, workspace.ID, *linkedUserID, link)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+		accessGranted, err := p.slackStoryAccessGranted(ctx, workspace.ID, installation, *linkedUserID, accessChannelID, sprint.Team)
+		if err != nil {
+			return err
+		}
+		if !accessGranted {
+			continue
+		}
+		input := slackSprintWorkObjectInput(link.PostedURL, sprint)
+		unfurl, err := BuildSlackSprintUnfurlRequest(event.ChannelID, event.MessageTS, input)
+		if err != nil {
+			return err
+		}
+		applySlackUnfurlEventDestination(&unfurl, event)
 		metadata.Entities = append(metadata.Entities, unfurl.Metadata.Entities...)
 	}
 	if len(metadata.Entities) == 0 {
@@ -415,6 +508,59 @@ func (p *EventProcessor) slackRequestWorkObjectInput(
 	return buildSlackRequestWorkObjectInput(ctx, repository, actorID, actorSlackUserID, requestURL, request)
 }
 
+func (p *EventProcessor) slackObjectiveForUser(
+	ctx context.Context,
+	workspaceID, userID uuid.UUID,
+	link FortyOneObjectiveLink,
+) (objectives.CoreObjective, bool, error) {
+	if p.objectiveReader == nil {
+		return objectives.CoreObjective{}, false, nil
+	}
+	items, err := p.objectiveReader.List(ctx, workspaceID, userID, map[string]any{"objective_id": link.ObjectiveID})
+	if err != nil {
+		return objectives.CoreObjective{}, false, err
+	}
+	for _, item := range items {
+		if item.ID == link.ObjectiveID && item.Workspace == workspaceID && item.Team == link.TeamID {
+			return item, true, nil
+		}
+	}
+	return objectives.CoreObjective{}, false, nil
+}
+
+func (p *EventProcessor) slackSprintForUser(
+	ctx context.Context,
+	workspaceID, userID uuid.UUID,
+	link FortyOneSprintLink,
+) (sprints.CoreSprint, bool, error) {
+	if p.sprintReader == nil {
+		return sprints.CoreSprint{}, false, nil
+	}
+	items, err := p.sprintReader.List(ctx, workspaceID, userID, map[string]any{"sprint_id": link.SprintID})
+	if err != nil {
+		return sprints.CoreSprint{}, false, err
+	}
+	for _, item := range items {
+		if item.ID == link.SprintID && item.Workspace == workspaceID && item.Team == link.TeamID {
+			return item, true, nil
+		}
+	}
+	return sprints.CoreSprint{}, false, nil
+}
+
+func (p *EventProcessor) slackObjectiveWorkObjectInput(
+	ctx context.Context,
+	actorID uuid.UUID,
+	actorSlackUserID, objectiveURL string,
+	objective objectives.CoreObjective,
+) (SlackObjectiveWorkObjectInput, error) {
+	repository, ok := p.repo.(slackWorkObjectRepository)
+	if !ok {
+		return SlackObjectiveWorkObjectInput{}, errors.New("Slack Work Object repository is not configured")
+	}
+	return buildSlackObjectiveWorkObjectInput(ctx, repository, actorID, actorSlackUserID, objectiveURL, objective)
+}
+
 func buildSlackStoryWorkObjectInput(
 	ctx context.Context,
 	repository slackWorkObjectRepository,
@@ -560,6 +706,101 @@ func buildSlackRequestWorkObjectInput(
 		CreatedAt:           request.CreatedAt,
 		UpdatedAt:           request.UpdatedAt,
 	}, nil
+}
+
+func buildSlackObjectiveWorkObjectInput(
+	ctx context.Context,
+	repository slackWorkObjectRepository,
+	actorID uuid.UUID,
+	actorSlackUserID, objectiveURL string,
+	objective objectives.CoreObjective,
+) (SlackObjectiveWorkObjectInput, error) {
+	leadName, leadSlackUserID := "", ""
+	if objective.LeadUser != nil && *objective.LeadUser != uuid.Nil {
+		member, err := repository.FindTeamMemberByID(ctx, objective.Team, *objective.LeadUser)
+		if err != nil && !slackrepository.IsNotFound(err) {
+			return SlackObjectiveWorkObjectInput{}, err
+		}
+		if err == nil {
+			leadName = slackMemberDisplayName(member)
+		}
+		if *objective.LeadUser == actorID {
+			leadSlackUserID = strings.TrimSpace(actorSlackUserID)
+		}
+	}
+
+	description := ""
+	if objective.Description != nil {
+		description = *objective.Description
+	}
+	health := ""
+	if objective.Health != nil {
+		health = string(*objective.Health)
+	}
+	return SlackObjectiveWorkObjectInput{
+		AccessGranted:   true,
+		ObjectiveURL:    objectiveURL,
+		ExternalID:      objective.ID.String(),
+		Title:           objective.Name,
+		Description:     description,
+		Health:          health,
+		Progress:        slackWorkProgressLabel(objective.CompletedStories, objective.TotalStories),
+		LeadSlackUserID: leadSlackUserID,
+		LeadName:        leadName,
+		StartDate:       objective.StartDate,
+		EndDate:         objective.EndDate,
+		CreatedAt:       objective.CreatedAt,
+		UpdatedAt:       objective.UpdatedAt,
+	}, nil
+}
+
+func slackSprintWorkObjectInput(sprintURL string, sprint sprints.CoreSprint) SlackSprintWorkObjectInput {
+	return SlackSprintWorkObjectInput{
+		AccessGranted: true,
+		SprintURL:     sprintURL,
+		ExternalID:    sprint.ID.String(),
+		Title:         sprint.Name,
+		Goal:          stringValue(sprint.Goal),
+		Status:        slackSprintStatus(sprint, time.Now().UTC()),
+		Progress:      slackWorkProgressLabel(sprint.CompletedStories, sprint.TotalStories),
+		StartDate:     &sprint.StartDate,
+		EndDate:       &sprint.EndDate,
+		CreatedAt:     sprint.CreatedAt,
+		UpdatedAt:     sprint.UpdatedAt,
+	}
+}
+
+func slackWorkProgressLabel(completed, total int) string {
+	if total <= 0 {
+		return "No stories"
+	}
+	if completed < 0 {
+		completed = 0
+	}
+	if completed > total {
+		completed = total
+	}
+	return fmt.Sprintf("%d%% (%d/%d stories)", completed*100/total, completed, total)
+}
+
+func slackSprintStatus(sprint sprints.CoreSprint, now time.Time) string {
+	if sprint.TotalStories > 0 && sprint.CompletedStories >= sprint.TotalStories {
+		return "Completed"
+	}
+	if now.Before(sprint.StartDate) {
+		return "Upcoming"
+	}
+	if now.After(sprint.EndDate) {
+		return "Completed"
+	}
+	return "Active"
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func slackRequestStatusLabel(status string) string {

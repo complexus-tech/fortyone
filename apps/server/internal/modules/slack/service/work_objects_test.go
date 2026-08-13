@@ -121,6 +121,133 @@ func TestParseFortyOneRequestURLRejectsUntrustedOrNonCanonicalURLs(t *testing.T)
 	}
 }
 
+func TestParseFortyOneObjectiveAndSprintURLs(t *testing.T) {
+	t.Parallel()
+
+	teamID := uuid.MustParse("11111111-1111-4111-8111-111111111111")
+	objectiveID := uuid.MustParse("22222222-2222-4222-8222-222222222222")
+	sprintID := uuid.MustParse("33333333-3333-4333-8333-333333333333")
+
+	objective, err := ParseFortyOneObjectiveURL("https://acme.fortyone.app/teams/" + teamID.String() + "/objectives/" + objectiveID.String() + "?from=slack")
+	require.NoError(t, err)
+	require.Equal(t, teamID, objective.TeamID)
+	require.Equal(t, objectiveID, objective.ObjectiveID)
+	require.Equal(t, "https://acme.fortyone.app/teams/"+teamID.String()+"/objectives/"+objectiveID.String(), objective.CanonicalURL)
+	require.Equal(t, "https://acme.fortyone.app/teams/"+teamID.String()+"/objectives/"+objectiveID.String()+"?from=slack", objective.PostedURL)
+
+	sprint, err := ParseFortyOneSprintURL("https://acme.fortyone.app/teams/" + teamID.String() + "/sprints/" + sprintID.String() + "/stories/")
+	require.NoError(t, err)
+	require.Equal(t, teamID, sprint.TeamID)
+	require.Equal(t, sprintID, sprint.SprintID)
+	require.Equal(t, "https://acme.fortyone.app/teams/"+teamID.String()+"/sprints/"+sprintID.String()+"/stories", sprint.CanonicalURL)
+}
+
+func TestParseFortyOneObjectiveAndSprintURLsRejectInvalidRoutes(t *testing.T) {
+	t.Parallel()
+
+	invalidURLs := []struct {
+		name string
+		url  string
+		err  error
+	}{
+		{
+			name: "objective wrong route",
+			url:  "https://acme.fortyone.app/objectives/22222222-2222-4222-8222-222222222222",
+			err:  ErrInvalidFortyOneObjectiveURL,
+		},
+		{
+			name: "objective encoded path",
+			url:  "https://acme.fortyone.app/teams/11111111%2D1111-4111-8111-111111111111/objectives/22222222-2222-4222-8222-222222222222",
+			err:  ErrInvalidFortyOneObjectiveURL,
+		},
+		{
+			name: "sprint missing stories route",
+			url:  "https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/sprints/33333333-3333-4333-8333-333333333333",
+			err:  ErrInvalidFortyOneSprintURL,
+		},
+		{
+			name: "sprint wrong trailing route",
+			url:  "https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/sprints/33333333-3333-4333-8333-333333333333/analytics",
+			err:  ErrInvalidFortyOneSprintURL,
+		},
+	}
+	for _, testCase := range invalidURLs {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			if testCase.err == ErrInvalidFortyOneObjectiveURL {
+				_, err := ParseFortyOneObjectiveURL(testCase.url)
+				require.ErrorIs(t, err, testCase.err)
+				return
+			}
+			_, err := ParseFortyOneSprintURL(testCase.url)
+			require.ErrorIs(t, err, testCase.err)
+		})
+	}
+}
+
+func TestBuildSlackObjectiveAndSprintUnfurlsKeepDetailsForExpandedView(t *testing.T) {
+	t.Parallel()
+
+	teamID := "11111111-1111-4111-8111-111111111111"
+	objectiveID := "22222222-2222-4222-8222-222222222222"
+	sprintID := "33333333-3333-4333-8333-333333333333"
+	startDate := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(2026, time.August, 31, 0, 0, 0, 0, time.UTC)
+
+	objectiveRequest, err := BuildSlackObjectiveUnfurlRequest("C123", "1754700000.123", SlackObjectiveWorkObjectInput{
+		AccessGranted: true,
+		ObjectiveURL:  "https://acme.fortyone.app/teams/" + teamID + "/objectives/" + objectiveID,
+		Title:         "Improve onboarding",
+		Description:   "Detailed objective context",
+		Health:        "On Track",
+		Progress:      "60% (6/10 stories)",
+		StartDate:     &startDate,
+		EndDate:       &endDate,
+	})
+	require.NoError(t, err)
+	objectiveEntity := objectiveRequest.Metadata.Entities[0]
+	require.Equal(t, slackObjectiveExternalRefType, objectiveEntity.ExternalRef.Type)
+	require.Equal(t, "https://acme.fortyone.app/teams/"+teamID+"/objectives/"+objectiveID, objectiveEntity.URL)
+	require.NotContains(t, objectiveEntity.EntityPayload.Fields, "description")
+	require.Equal(t, "60% (6/10 stories)", objectiveEntity.EntityPayload.Fields["progress"].Value)
+	require.Equal(t, slackOpenObjectiveActionID, objectiveEntity.EntityPayload.Actions.PrimaryActions[0].ActionID)
+
+	objectiveDetails, err := BuildSlackObjectiveEntityDetailsRequest("trigger-objective", SlackObjectiveWorkObjectInput{
+		AccessGranted: true,
+		ObjectiveURL:  objectiveEntity.URL,
+		Title:         "Improve onboarding",
+		Description:   "Detailed objective context",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Detailed objective context", objectiveDetails.Metadata.EntityPayload.Fields["description"].Value)
+
+	sprintRequest, err := BuildSlackSprintUnfurlRequest("C123", "1754700000.123", SlackSprintWorkObjectInput{
+		AccessGranted: true,
+		SprintURL:     "https://acme.fortyone.app/teams/" + teamID + "/sprints/" + sprintID + "/stories",
+		Title:         "Sprint 12",
+		Goal:          "Ship onboarding improvements",
+		Status:        "Active",
+		Progress:      "40% (4/10 stories)",
+		StartDate:     &startDate,
+		EndDate:       &endDate,
+	})
+	require.NoError(t, err)
+	sprintEntity := sprintRequest.Metadata.Entities[0]
+	require.Equal(t, slackSprintExternalRefType, sprintEntity.ExternalRef.Type)
+	require.NotContains(t, sprintEntity.EntityPayload.Fields, "goal")
+	require.Equal(t, slackOpenSprintActionID, sprintEntity.EntityPayload.Actions.PrimaryActions[0].ActionID)
+
+	sprintDetails, err := BuildSlackSprintEntityDetailsRequest("trigger-sprint", SlackSprintWorkObjectInput{
+		AccessGranted: true,
+		SprintURL:     sprintEntity.URL,
+		Title:         "Sprint 12",
+		Goal:          "Ship onboarding improvements",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Ship onboarding improvements", sprintDetails.Metadata.EntityPayload.Fields["goal"].Value)
+}
+
 func TestBuildSlackStoryUnfurlRequestRequiresAccessAndBuildsTaskMetadata(t *testing.T) {
 	t.Parallel()
 

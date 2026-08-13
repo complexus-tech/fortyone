@@ -26,6 +26,24 @@ func TestSlackProviderPayloadAcceptsTypedStoryAndRequestWorkObjectIdentities(t *
 	require.NoError(t, err)
 	_, err = EncodeSlackProviderPayload(requestReceipt.ProviderPayload)
 	require.NoError(t, err)
+
+	objectiveUnfurl, err := BuildSlackObjectiveUnfurlRequest("C123", "1754700000.123", SlackObjectiveWorkObjectInput{
+		AccessGranted: true,
+		ObjectiveURL:  "https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/objectives/22222222-2222-4222-8222-222222222222",
+		Title:         "Improve onboarding",
+	})
+	require.NoError(t, err)
+	_, err = EncodeSlackProviderPayload(SlackProviderPayload{Metadata: objectiveUnfurl.Metadata})
+	require.NoError(t, err)
+
+	sprintUnfurl, err := BuildSlackSprintUnfurlRequest("C123", "1754700000.123", SlackSprintWorkObjectInput{
+		AccessGranted: true,
+		SprintURL:     "https://acme.fortyone.app/teams/11111111-1111-4111-8111-111111111111/sprints/33333333-3333-4333-8333-333333333333/stories",
+		Title:         "Sprint 12",
+	})
+	require.NoError(t, err)
+	_, err = EncodeSlackProviderPayload(SlackProviderPayload{Metadata: sprintUnfurl.Metadata})
+	require.NoError(t, err)
 }
 
 func TestSlackProviderPayloadRejectsCrossTypedWorkObjectIdentities(t *testing.T) {
