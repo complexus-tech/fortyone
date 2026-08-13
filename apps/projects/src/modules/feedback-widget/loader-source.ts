@@ -38,7 +38,7 @@ export const FEEDBACK_WIDGET_LOADER_SOURCE = String.raw`(function (window, docum
       throw new Error("FortyOne Feedback requires a valid portalSlug");
     }
     return {
-      defaultTab: oneOf(options.defaultTab, ["feedback", "roadmap", "updates"], "feedback"),
+      defaultTab: oneOf(options.defaultTab, ["home", "feedback", "roadmap", "updates"], "home"),
       keyId: options.keyId ? String(options.keyId) : "",
       label: String(options.label || "Share feedback"),
       mode: oneOf(options.mode, ["bubble", "custom", "inline"], "bubble"),
@@ -80,6 +80,9 @@ export const FEEDBACK_WIDGET_LOADER_SOURCE = String.raw`(function (window, docum
     var lastSentIdentityCommandRevision = 0;
     var destroyed = false;
     var restoreOverflow = null;
+    var themeMedia = options.theme === "auto" && typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-color-scheme: dark)")
+      : null;
     var target = options.mode === "inline" ? document.querySelector(options.target) : document.body;
     if (!target) {
       throw new Error("FortyOne Feedback could not find the inline target " + options.target);
@@ -91,18 +94,20 @@ export const FEEDBACK_WIDGET_LOADER_SOURCE = String.raw`(function (window, docum
     var style = document.createElement("style");
     style.textContent = [
       ":host{all:initial;color-scheme:light dark}",
-      ".root{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:relative;z-index:2147483000}",
+      ".root{--widget-background:#fff;--widget-border:rgba(127,127,127,.26);color-scheme:light;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:relative;z-index:2147483000}",
+      ".root[data-theme=dark]{--widget-background:oklch(0.1821 0.0139 94);--widget-border:#292824;color-scheme:dark}",
       ".launcher{position:fixed;bottom:20px;width:46px;height:46px;border:0;border-radius:999px;display:grid;place-items:center;background:#171717;color:#fff;box-shadow:0 12px 32px rgba(0,0,0,.22),inset 0 0 0 1px rgba(255,255,255,.14);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;z-index:2}",
       ".launcher:hover{transform:translateY(-2px);box-shadow:0 16px 38px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.18)}",
       ".launcher:focus-visible{outline:3px solid rgba(59,130,246,.55);outline-offset:3px}",
       ".launcher svg{width:18px;height:18px;transition:transform .2s ease}",
       ".root[data-open=true] .launcher svg{transform:scale(.9) rotate(3deg)}",
       ".right .launcher{right:20px}.left .launcher{left:20px}",
-      ".panel{position:fixed;bottom:78px;width:min(408px,calc(100vw - 32px));height:min(760px,calc(100dvh - 98px));overflow:hidden;border:1px solid rgba(127,127,127,.26);border-radius:24px;background:#fff;box-shadow:0 30px 80px rgba(0,0,0,.25),0 6px 22px rgba(0,0,0,.1);opacity:0;visibility:hidden;transform:translateY(12px) scale(.985);transform-origin:bottom;transition:opacity .18s ease,transform .22s cubic-bezier(.2,.8,.2,1),visibility 0s linear .22s}",
+      ".panel{position:fixed;bottom:78px;width:min(408px,calc(100vw - 32px));height:min(760px,calc(100dvh - 98px));overflow:hidden;border:1px solid var(--widget-border);border-radius:.825rem;background:var(--widget-background);box-shadow:0 30px 80px rgba(0,0,0,.25),0 6px 22px rgba(0,0,0,.1);opacity:0;visibility:hidden;transform:translateY(12px) scale(.985);transform-origin:bottom;transition:opacity .18s ease,transform .22s cubic-bezier(.2,.8,.2,1),visibility 0s linear .22s}",
       ".right .panel{right:20px}.left .panel{left:20px}",
       ".root[data-open=true] .panel{opacity:1;visibility:visible;transform:none;transition-delay:0s}",
-      ".panel iframe{display:block;width:100%;height:100%;border:0;background:#fff}",
-      ".inline .panel{position:relative;inset:auto;width:100%;height:640px;min-height:360px;border-radius:18px;opacity:1;visibility:visible;transform:none;box-shadow:0 8px 30px rgba(0,0,0,.1)}",
+      ".panel iframe{display:block;width:100%;height:100%;border:0;background:var(--widget-background);color-scheme:inherit}",
+      "@supports(corner-shape:squircle){.panel{border-radius:2.2rem;corner-shape:squircle}}",
+      ".inline .panel{position:relative;inset:auto;width:100%;height:640px;min-height:360px;opacity:1;visibility:visible;transform:none;box-shadow:0 8px 30px rgba(0,0,0,.1)}",
       "@media(max-width:640px){.popup .panel{inset:0;width:100vw;height:100dvh;max-height:none;border:0;border-radius:0;transform:translateY(12px)}.popup.root[data-open=true] .panel{transform:none}.launcher{bottom:14px}.right .launcher{right:14px}.left .launcher{left:14px}}",
       "@media(prefers-reduced-motion:reduce){.launcher,.panel,.launcher svg{transition:none}}"
     ].join("");
@@ -110,6 +115,15 @@ export const FEEDBACK_WIDGET_LOADER_SOURCE = String.raw`(function (window, docum
     var root = document.createElement("div");
     root.className = "root " + (options.mode === "inline" ? "inline" : "popup") + " " + (options.position === "bottom-left" ? "left" : "right");
     root.dataset.open = options.mode === "inline" ? "true" : "false";
+    function syncShellTheme() {
+      root.dataset.theme = options.theme === "dark" || (options.theme === "auto" && themeMedia && themeMedia.matches)
+        ? "dark"
+        : "light";
+    }
+    syncShellTheme();
+    if (themeMedia && typeof themeMedia.addEventListener === "function") {
+      themeMedia.addEventListener("change", syncShellTheme);
+    }
     var panel = document.createElement("div");
     panel.className = "panel";
     panel.id = "fortyone-feedback-panel-" + instanceId;
@@ -264,6 +278,9 @@ export const FEEDBACK_WIDGET_LOADER_SOURCE = String.raw`(function (window, docum
       document.removeEventListener("click", handleDocumentClick);
       document.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("message", handleMessage);
+      if (themeMedia && typeof themeMedia.removeEventListener === "function") {
+        themeMedia.removeEventListener("change", syncShellTheme);
+      }
       host.remove();
       if (active && active.instanceId === instanceId) active = null;
     }

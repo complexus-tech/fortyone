@@ -1,24 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft2Icon,
+  ArrowUpDownIcon,
   BellIcon,
   CheckIcon,
   CloseIcon,
   EditIcon,
-  FeedbackIcon,
+  FilterIcon,
+  HomeIcon,
   ImageIcon,
+  RequestsIcon,
   RoadmapIcon,
   SearchIcon,
+  ThumbsDownIcon,
   ThumbsUpIcon,
   UpdatesIcon,
 } from "icons";
 import { Avatar, Box, Button, Flex, Input, Switch, Text } from "ui";
 import { cn, getReadableTextColor } from "lib";
 import type {
+  PublicFeedbackListStatus,
   PublicPortal,
-  PublicPortalTab,
+  PublicPortalSort,
   PublicPortalUpdate,
   PublicPortalViewer,
   PublicRequest,
@@ -26,12 +31,16 @@ import type {
   PublicRequestStatus,
 } from "@/modules/public-portal/types";
 import { getPublicAvatarColor } from "@/modules/public-portal/avatar-color";
-import { requestStatusMeta } from "@/modules/public-portal/status";
+import {
+  requestFilters,
+  requestStatusMeta,
+} from "@/modules/public-portal/status";
 import {
   confirmWidgetFeedbackVerificationAction,
   createWidgetFeedbackAction,
   createWidgetFeedbackCommentAction,
   exchangeWidgetIdentityAction,
+  getWidgetFeedbackPageAction,
   markWidgetFeedbackUpdatesSeenAction,
   requestWidgetFeedbackVerificationAction,
   revokeWidgetIdentityAction,
@@ -46,6 +55,7 @@ import {
   isFeedbackWidgetMessage,
   postFeedbackWidgetMessage,
   type FeedbackWidgetMode,
+  type FeedbackWidgetTab,
   type FeedbackWidgetTheme,
 } from "./protocol";
 
@@ -54,23 +64,36 @@ type WidgetRoadmap = Record<
   PublicRequest[]
 >;
 
+type WidgetRoadmapStatus = keyof WidgetRoadmap;
+
+type WidgetRoadmapPagination = Record<
+  WidgetRoadmapStatus,
+  { hasMore: boolean; nextPage: number }
+>;
+
 type WidgetSubmissionIdentity =
   | { kind: "account" }
   | { kind: "external" | "verified_guest"; sessionToken: string };
 
 type PendingIdentityAction =
   | { identityEpoch: number; type: "comment" }
-  | { identityEpoch: number; requestId: string; type: "vote" }
+  | {
+      direction: -1 | 1;
+      identityEpoch: number;
+      requestId: string;
+      type: "vote";
+    }
   | { identityEpoch: number; type: "submit" };
 
 const tabs = [
-  { icon: FeedbackIcon, label: "Feedback", value: "feedback" },
+  { icon: HomeIcon, label: "Home", value: "home" },
+  { icon: RequestsIcon, label: "Feedback", value: "feedback" },
   { icon: RoadmapIcon, label: "Roadmap", value: "roadmap" },
   { icon: UpdatesIcon, label: "Updates", value: "updates" },
 ] satisfies {
-  icon: typeof FeedbackIcon;
+  icon: typeof RequestsIcon;
   label: string;
-  value: PublicPortalTab;
+  value: FeedbackWidgetTab;
 }[];
 
 const roadmapSections = [
@@ -87,14 +110,20 @@ const replaceRequest = (
     request.id === updatedRequest.id ? updatedRequest : request,
   );
 
-const statusAccent = (status: PublicRequestStatus) => {
-  if (status === "completed") return "bg-emerald-500";
-  if (status === "in_progress") return "bg-violet-500";
-  if (status === "planned") return "bg-blue-500";
-  if (status === "reviewing") return "bg-orange-500";
-  if (status === "closed") return "bg-zinc-400";
-  return "bg-amber-500";
+const mergeRequests = (current: PublicRequest[], incoming: PublicRequest[]) => {
+  const requests = new Map(current.map((request) => [request.id, request]));
+  incoming.forEach((request) => {
+    requests.set(request.id, request);
+  });
+  return Array.from(requests.values());
 };
+
+const statusAccent = (status: PublicRequestStatus) => {
+  if (status === "in_progress") return "bg-info";
+  return requestStatusMeta[status].dotClassName;
+};
+
+const INITIAL_ROADMAP_VISIBLE_COUNT = 3;
 
 const WidgetIconButton = ({
   children,
@@ -103,7 +132,7 @@ const WidgetIconButton = ({
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
   <button
     className={cn(
-      "text-text-muted hover:bg-state-hover hover:text-foreground focus-visible:ring-ring inline-flex size-9 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none",
+      "text-text-muted hover:bg-state-hover hover:text-foreground focus-visible:ring-ring inline-flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none",
       className,
     )}
     type="button"
@@ -111,6 +140,15 @@ const WidgetIconButton = ({
   >
     {children}
   </button>
+);
+
+const WidgetBackButton = ({
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+  <WidgetIconButton className="bg-state-hover" {...props}>
+    {children}
+  </WidgetIconButton>
 );
 
 const UnreadBadge = ({ count }: { count: number }) => {
@@ -129,8 +167,8 @@ const UnreadBadge = ({ count }: { count: number }) => {
 const StatusBadge = ({ status }: { status: PublicRequestStatus }) => {
   const meta = requestStatusMeta[status];
   return (
-    <span className="border-border/80 text-text-muted inline-flex h-7 items-center gap-2 rounded-full border px-2.5 text-[11px] font-medium">
-      <span className={cn("size-2 rounded-full", statusAccent(status))} />
+    <span className="border-border/80 text-text-muted inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-[12px] font-medium">
+      <span className={cn("size-2 rounded-sm", statusAccent(status))} />
       {meta.label}
     </span>
   );
@@ -153,7 +191,7 @@ const VoteButton = ({
       aria-label={voted ? "Remove upvote" : "Upvote feedback"}
       aria-pressed={voted}
       className={cn(
-        "border-border/80 bg-background text-text-muted hover:border-foreground/25 hover:text-foreground focus-visible:ring-ring inline-flex h-8 min-w-14 shrink-0 items-center justify-center gap-1.5 rounded-full border px-2.5 text-[12px] font-semibold tabular-nums transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60",
+        "border-border/80 bg-background text-text-muted hover:border-foreground/25 hover:text-foreground focus-visible:ring-ring inline-flex h-8 min-w-14 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-semibold tabular-nums transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60",
         { "border-foreground/20 text-foreground": voted },
       )}
       disabled={disabled || isPending}
@@ -169,19 +207,70 @@ const VoteButton = ({
   );
 };
 
+const DetailVoteControl = ({
+  disabled,
+  isPending,
+  onVote,
+  request,
+}: {
+  disabled?: boolean;
+  isPending?: boolean;
+  onVote: (direction: -1 | 1) => void;
+  request: PublicRequest;
+}) => (
+  <div className="border-border/80 bg-background flex h-9 shrink-0 items-center overflow-hidden rounded-lg border">
+    <button
+      aria-label={
+        request.viewerVote === -1 ? "Remove downvote" : "Downvote feedback"
+      }
+      aria-pressed={request.viewerVote === -1}
+      className={cn(
+        "text-text-muted hover:bg-state-hover hover:text-foreground focus-visible:ring-ring flex h-full w-9 items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60",
+        { "text-foreground": request.viewerVote === -1 },
+      )}
+      disabled={disabled || isPending}
+      onClick={() => {
+        onVote(-1);
+      }}
+      type="button"
+    >
+      <ThumbsDownIcon className="h-3.5 text-current" strokeWidth={2} />
+    </button>
+    <span aria-hidden="true" className="bg-border/80 h-4 w-px" />
+    <button
+      aria-label={
+        request.viewerVote === 1 ? "Remove upvote" : "Upvote feedback"
+      }
+      aria-pressed={request.viewerVote === 1}
+      className={cn(
+        "text-text-muted hover:bg-state-hover hover:text-foreground focus-visible:ring-ring flex h-full min-w-13 items-center justify-center gap-1.5 px-2.5 text-[12px] font-semibold tabular-nums transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60",
+        { "text-foreground": request.viewerVote === 1 },
+      )}
+      disabled={disabled || isPending}
+      onClick={() => {
+        onVote(1);
+      }}
+      type="button"
+    >
+      <ThumbsUpIcon className="h-3.5 text-current" strokeWidth={2} />
+      {request.voteCount}
+    </button>
+  </div>
+);
+
 const EmptyState = ({
   body,
   icon: Icon,
   title,
 }: {
   body: string;
-  icon: typeof FeedbackIcon;
+  icon: typeof RequestsIcon;
   title: string;
 }) => (
   <Flex align="center" className="px-10 py-20 text-center" direction="column">
     <Flex
       align="center"
-      className="bg-surface-muted text-text-muted mb-5 size-11 rounded-2xl"
+      className="bg-surface-muted text-text-muted mb-5 size-11 rounded-lg"
       justify="center"
     >
       <Icon className="h-5" />
@@ -194,6 +283,187 @@ const EmptyState = ({
     </Text>
   </Flex>
 );
+
+const feedbackSortOptions: { label: string; value: PublicPortalSort }[] = [
+  { label: "Top", value: "top" },
+  { label: "Newest", value: "newest" },
+  { label: "Oldest", value: "oldest" },
+];
+
+const feedbackStatusOptions: {
+  label: string;
+  value: PublicFeedbackListStatus;
+}[] = [
+  { label: "Active", value: "active" },
+  ...requestFilters.map((status) => ({
+    label: requestStatusMeta[status].label,
+    value: status,
+  })),
+];
+
+const WidgetFeedbackToolbar = ({
+  isLoading,
+  onSearchChange,
+  onSortChange,
+  onStatusChange,
+  search,
+  sort,
+  status,
+}: {
+  isLoading: boolean;
+  onSearchChange: (value: string) => void;
+  onSortChange: (value: PublicPortalSort) => void;
+  onStatusChange: (value: PublicFeedbackListStatus) => void;
+  search: string;
+  sort: PublicPortalSort;
+  status: PublicFeedbackListStatus;
+}) => {
+  const controlsRef = useRef<HTMLDivElement | null>(null);
+  const [openMenu, setOpenMenu] = useState<"sort" | "status" | null>(null);
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const closeOnPointerDown = (event: PointerEvent) => {
+      if (!controlsRef.current?.contains(event.target as Node)) {
+        setOpenMenu(null);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenMenu(null);
+    };
+    document.addEventListener("pointerdown", closeOnPointerDown);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnPointerDown);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [openMenu]);
+
+  const menuButtonClassName =
+    "text-text-muted hover:bg-state-hover hover:text-foreground focus-visible:ring-ring flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-[12px] transition-colors focus-visible:ring-2 focus-visible:outline-none";
+
+  return (
+    <Box className="bg-background sticky top-0 z-20 px-5 pt-4 pb-3">
+      <Flex align="center" className="gap-2">
+        <div className="border-border bg-surface focus-within:border-foreground/25 focus-within:ring-ring relative flex h-10 min-w-0 flex-1 items-center rounded-lg border px-3 focus-within:ring-2">
+          <SearchIcon className="text-text-muted h-4 shrink-0" />
+          <input
+            aria-label="Search feedback"
+            className="text-foreground placeholder:text-text-muted/65 h-full min-w-0 flex-1 border-0 bg-transparent px-2.5 text-[12px] outline-none"
+            onChange={(event) => {
+              onSearchChange(event.target.value);
+            }}
+            placeholder="Search feedback"
+            type="search"
+            value={search}
+          />
+        </div>
+        <div className="relative flex shrink-0 gap-2" ref={controlsRef}>
+          <WidgetIconButton
+            aria-expanded={openMenu === "sort"}
+            aria-haspopup="menu"
+            aria-label={`Order feedback by ${feedbackSortOptions.find((option) => option.value === sort)?.label ?? sort}`}
+            className={cn("border-border bg-surface border", {
+              "bg-surface-elevated text-foreground": openMenu === "sort",
+              "opacity-60": isLoading,
+            })}
+            onClick={() => {
+              setOpenMenu((current) => (current === "sort" ? null : "sort"));
+            }}
+          >
+            <ArrowUpDownIcon className="h-4 text-current" />
+          </WidgetIconButton>
+          <WidgetIconButton
+            aria-expanded={openMenu === "status"}
+            aria-haspopup="menu"
+            aria-label={`Filter feedback by ${feedbackStatusOptions.find((option) => option.value === status)?.label ?? status}`}
+            className={cn("border-border bg-surface border", {
+              "bg-surface-elevated text-foreground": openMenu === "status",
+              "opacity-60": isLoading,
+            })}
+            onClick={() => {
+              setOpenMenu((current) =>
+                current === "status" ? null : "status",
+              );
+            }}
+          >
+            <FilterIcon className="h-4 text-current" strokeWidth={2} />
+          </WidgetIconButton>
+
+          {openMenu ? (
+            <Box
+              aria-label={
+                openMenu === "sort" ? "Feedback ordering" : "Status filters"
+              }
+              className="border-border bg-surface-elevated absolute top-11 right-0 z-30 min-w-44 rounded-lg border p-1.5 shadow-xl"
+              role="menu"
+            >
+              <Text
+                className="px-3 pt-1 pb-1.5 text-[10px] tracking-[0.12em] uppercase"
+                color="muted"
+                fontWeight="semibold"
+              >
+                {openMenu === "sort" ? "Order by" : "Status"}
+              </Text>
+              {(openMenu === "sort"
+                ? feedbackSortOptions
+                : feedbackStatusOptions
+              ).map((option) => {
+                const selected =
+                  openMenu === "sort"
+                    ? option.value === sort
+                    : option.value === status;
+                const statusMeta =
+                  openMenu === "status" && option.value !== "active"
+                    ? requestStatusMeta[
+                        option.value as Exclude<
+                          PublicFeedbackListStatus,
+                          "active"
+                        >
+                      ]
+                    : null;
+                return (
+                  <button
+                    aria-checked={selected}
+                    className={cn(menuButtonClassName, {
+                      "bg-state-hover text-foreground": selected,
+                    })}
+                    key={option.value}
+                    onClick={() => {
+                      if (openMenu === "sort") {
+                        onSortChange(option.value as PublicPortalSort);
+                      } else {
+                        onStatusChange(
+                          option.value as PublicFeedbackListStatus,
+                        );
+                      }
+                      setOpenMenu(null);
+                    }}
+                    role="menuitemradio"
+                    type="button"
+                  >
+                    {statusMeta ? (
+                      <span
+                        className={cn(
+                          "size-2 rounded-sm",
+                          statusMeta.dotClassName,
+                        )}
+                      />
+                    ) : null}
+                    <span className="flex-1">{option.label}</span>
+                    {selected ? (
+                      <CheckIcon className="h-3.5 text-current" />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </Box>
+          ) : null}
+        </div>
+      </Flex>
+    </Box>
+  );
+};
 
 const FeedbackRow = ({
   isWriteLocked,
@@ -341,14 +611,14 @@ const FeedbackComposer = ({
     return (
       <Box className="bg-background absolute inset-0 z-30 flex min-h-0 flex-col">
         <Flex align="center" className="h-16 shrink-0 px-4" gap={2}>
-          <WidgetIconButton
+          <WidgetBackButton
             aria-label="Back to feedback draft"
             onClick={() => {
               setShowIdentityChoice(false);
             }}
           >
             <ArrowLeft2Icon className="h-5" />
-          </WidgetIconButton>
+          </WidgetBackButton>
           <Text className="text-[16px]" fontWeight="semibold">
             Choose how to submit
           </Text>
@@ -368,7 +638,7 @@ const FeedbackComposer = ({
               while you verify.
             </Text>
             <Button
-              className="mt-6 w-full justify-center rounded-full"
+              className="mt-6 w-full justify-center rounded-lg"
               color="invert"
               onClick={onRequireIdentity}
             >
@@ -376,7 +646,7 @@ const FeedbackComposer = ({
             </Button>
             {portal.participationMode === "anonymous_allowed" ? (
               <Button
-                className="mt-3 w-full justify-center rounded-full"
+                className="mt-3 w-full justify-center rounded-lg"
                 color="tertiary"
                 disabled={isSubmitting || isWriteLocked}
                 onClick={() => {
@@ -399,9 +669,9 @@ const FeedbackComposer = ({
   return (
     <Box className="bg-background absolute inset-0 z-30 flex min-h-0 flex-col">
       <Flex align="center" className="h-16 shrink-0 px-4" gap={2}>
-        <WidgetIconButton aria-label="Back to feedback" onClick={onBack}>
+        <WidgetBackButton aria-label="Back to feedback" onClick={onBack}>
           <ArrowLeft2Icon className="h-5" />
-        </WidgetIconButton>
+        </WidgetBackButton>
         <Text className="text-[16px]" fontWeight="semibold">
           Share feedback
         </Text>
@@ -418,7 +688,7 @@ const FeedbackComposer = ({
               Board
             </Text>
             <select
-              className="border-border bg-surface focus-visible:ring-ring h-10 w-full rounded-xl border px-3 text-[13px] outline-none focus-visible:ring-2"
+              className="border-border bg-surface focus-visible:ring-ring h-10 w-full rounded-lg border px-3 text-[13px] outline-none focus-visible:ring-2"
               onChange={(event) => {
                 setBoardId(event.target.value);
               }}
@@ -453,12 +723,6 @@ const FeedbackComposer = ({
           placeholder="Tell us a little more about the problem, idea, or improvement."
           value={description}
         />
-        {!identity ? (
-          <Text className="mt-5 text-[11px] leading-5" color="muted">
-            After writing, you can verify your email for updates or explicitly
-            choose anonymous submission when the portal allows it.
-          </Text>
-        ) : null}
         {error ? (
           <Text className="mt-4 text-[12px] text-red-600 dark:text-red-400">
             {error}
@@ -470,7 +734,7 @@ const FeedbackComposer = ({
           <ImageIcon className="h-5" />
         </WidgetIconButton>
         <button
-          className="bg-foreground text-background focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-full px-5 text-[13px] font-semibold transition-opacity focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+          className="bg-foreground text-background focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-lg px-5 text-[13px] font-semibold transition-opacity focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
           disabled={!boardId || !title.trim() || isSubmitting || isWriteLocked}
           onClick={() => {
             if (identity) {
@@ -521,7 +785,7 @@ const SubmissionSuccess = ({
         “{request.title}” is now in the feedback list.
       </Text>
       <Button
-        className="mt-7 rounded-full"
+        className="mt-7 rounded-lg"
         color="invert"
         onClick={onView}
         size="sm"
@@ -607,9 +871,9 @@ const IdentityGate = ({
   return (
     <Box className="bg-background absolute inset-0 z-40 flex min-h-0 flex-col">
       <Flex align="center" className="h-16 shrink-0 px-4" gap={2}>
-        <WidgetIconButton aria-label="Go back" onClick={onBack}>
+        <WidgetBackButton aria-label="Go back" onClick={onBack}>
           <ArrowLeft2Icon className="h-5" />
-        </WidgetIconButton>
+        </WidgetBackButton>
         <Text className="text-[16px]" fontWeight="semibold">
           {step === "details" ? "Join the conversation" : "Check your email"}
         </Text>
@@ -669,7 +933,7 @@ const IdentityGate = ({
               {portal.guestIdentityPolicy === "allow_public_masking" ? (
                 <Flex
                   align="center"
-                  className="border-border/70 rounded-xl border p-3"
+                  className="border-border/70 rounded-lg border p-3"
                   justify="between"
                 >
                   <Box className="pr-4">
@@ -733,7 +997,7 @@ const IdentityGate = ({
       </Box>
       <Box className="shrink-0 px-6 py-5">
         <button
-          className="bg-foreground text-background focus-visible:ring-ring inline-flex h-10 w-full items-center justify-center rounded-full px-5 text-[13px] font-semibold focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+          className="bg-foreground text-background focus-visible:ring-ring inline-flex h-10 w-full items-center justify-center rounded-lg px-5 text-[13px] font-semibold focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
           disabled={
             step === "details"
               ? !email.trim() || isSubmitting
@@ -798,7 +1062,7 @@ const RequestDetail = ({
   onBack: () => void;
   onCommentCreated: (comment: PublicRequestComment) => void;
   onRequireIdentity: () => void;
-  onVote: () => void;
+  onVote: (direction: -1 | 1) => void;
   portal: PublicPortal;
   request: PublicRequest;
 }) => {
@@ -850,9 +1114,9 @@ const RequestDetail = ({
   return (
     <Box className="bg-background absolute inset-0 z-20 flex min-h-0 flex-col">
       <Flex align="center" className="h-16 shrink-0 px-4" gap={2}>
-        <WidgetIconButton aria-label="Back to feedback" onClick={onBack}>
+        <WidgetBackButton aria-label="Back to feedback" onClick={onBack}>
           <ArrowLeft2Icon className="h-5" />
-        </WidgetIconButton>
+        </WidgetBackButton>
         <Text className="text-[16px]" fontWeight="semibold">
           Feedback
         </Text>
@@ -893,10 +1157,10 @@ const RequestDetail = ({
         ) : null}
         <Flex align="center" className="mt-6" justify="between">
           <StatusBadge status={request.status} />
-          <VoteButton
+          <DetailVoteControl
             disabled={isWriteLocked}
             isPending={isVoting}
-            onClick={onVote}
+            onVote={onVote}
             request={request}
           />
         </Flex>
@@ -912,7 +1176,7 @@ const RequestDetail = ({
               {request.commentCount}
             </Text>
           </Flex>
-          <Box className="border-border bg-surface rounded-2xl border p-3">
+          <Box className="border-border bg-surface rounded-xl border p-3">
             <textarea
               aria-label="Add a comment"
               className="text-foreground placeholder:text-text-muted/60 min-h-20 w-full resize-none border-0 bg-transparent p-0 text-[12px] leading-5 outline-none"
@@ -927,7 +1191,7 @@ const RequestDetail = ({
             />
             <Flex align="center" justify="end">
               <button
-                className="bg-foreground text-background inline-flex h-8 items-center rounded-full px-4 text-[11px] font-semibold disabled:cursor-not-allowed disabled:opacity-35"
+                className="bg-foreground text-background inline-flex h-9 items-center rounded-lg px-4 text-[12px] font-semibold disabled:cursor-not-allowed disabled:opacity-35"
                 disabled={
                   isWriteLocked ||
                   (Boolean(identity) && (!comment.trim() || isSubmitting))
@@ -970,9 +1234,9 @@ const UpdateDetail = ({
 }) => (
   <Box className="bg-background absolute inset-0 z-20 flex min-h-0 flex-col">
     <Flex align="center" className="h-16 shrink-0 px-4">
-      <WidgetIconButton aria-label="Back to updates" onClick={onBack}>
+      <WidgetBackButton aria-label="Back to updates" onClick={onBack}>
         <ArrowLeft2Icon className="h-5" />
-      </WidgetIconButton>
+      </WidgetBackButton>
     </Flex>
     <Box className="min-h-0 flex-1 overflow-y-auto px-6 pb-10">
       <Text
@@ -1003,7 +1267,7 @@ const UpdateDetail = ({
         </Text>
       </Box>
       {update.linkedItems.length > 0 ? (
-        <Box className="border-border bg-surface mt-7 rounded-2xl border p-4">
+        <Box className="border-border bg-surface mt-7 rounded-lg border p-4">
           <Text
             className="text-[11px] tracking-[0.08em] uppercase"
             color="muted"
@@ -1014,7 +1278,7 @@ const UpdateDetail = ({
           {update.linkedItems.map((item) => (
             <Flex align="center" className="mt-3 gap-3" key={item.id}>
               <span
-                className={cn("size-2 rounded-full", statusAccent(item.status))}
+                className={cn("size-2 rounded-sm", statusAccent(item.status))}
               />
               <Text className="min-w-0 flex-1 text-[12px]" fontWeight="medium">
                 {item.title}
@@ -1077,22 +1341,268 @@ const UpdatesList = ({
   );
 };
 
+const HomeSectionHeader = ({
+  actionLabel,
+  icon: Icon,
+  onAction,
+  title,
+}: {
+  actionLabel: string;
+  icon: typeof RequestsIcon;
+  onAction: () => void;
+  title: string;
+}) => (
+  <Flex align="center" className="px-5 pt-6 pb-2" justify="between">
+    <Flex align="center" className="min-w-0 gap-2">
+      <Icon className="text-text-muted h-4 shrink-0" />
+      <Text
+        className="truncate text-[11px] tracking-[0.09em] uppercase"
+        fontWeight="semibold"
+      >
+        {title}
+      </Text>
+    </Flex>
+    <button
+      className="text-text-muted hover:text-foreground focus-visible:ring-ring shrink-0 rounded-lg px-2 py-1 text-[12px] font-semibold tracking-[0.09em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none"
+      onClick={onAction}
+      type="button"
+    >
+      {actionLabel}
+    </button>
+  </Flex>
+);
+
+const HomeRoadmapRow = ({
+  isVoting,
+  isWriteLocked,
+  onOpen,
+  onVote,
+  request,
+}: {
+  isVoting: boolean;
+  isWriteLocked: boolean;
+  onOpen: () => void;
+  onVote: () => void;
+  request: PublicRequest;
+}) => {
+  const status = requestStatusMeta[request.status];
+  return (
+    <div className="hover:bg-state-hover/35 relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 pr-1 pl-6 transition-colors">
+      <span
+        className={cn(
+          "ring-background absolute top-5 -left-1 size-2.5 rounded-sm ring-4",
+          statusAccent(request.status),
+        )}
+      />
+      <button
+        className="focus-visible:ring-ring min-w-0 text-left focus-visible:ring-2 focus-visible:outline-none"
+        onClick={onOpen}
+        type="button"
+      >
+        <Box className="min-w-0">
+          <Text
+            className="line-clamp-1 text-[13px] leading-5"
+            fontWeight="semibold"
+          >
+            {request.title}
+          </Text>
+          {request.description ? (
+            <Text
+              className="mt-1 line-clamp-2 text-[12px] leading-5"
+              color="muted"
+            >
+              {request.description}
+            </Text>
+          ) : null}
+          <Flex align="center" className="mt-2 gap-1.5 text-[11px]">
+            <Text color="muted">{status.label}</Text>
+            <span className="text-text-muted">·</span>
+            <Text className="truncate" color="muted">
+              {request.authorName || "Anonymous"}
+            </Text>
+          </Flex>
+        </Box>
+      </button>
+      <VoteButton
+        disabled={isWriteLocked}
+        isPending={isVoting}
+        onClick={onVote}
+        request={request}
+      />
+    </div>
+  );
+};
+
+const WidgetHome = ({
+  feedback,
+  isWriteLocked,
+  latestUpdate,
+  onOpenFeedback,
+  onOpenRoadmap,
+  onOpenUpdate,
+  onOpenRequest,
+  onShareFeedback,
+  onVote,
+  portal,
+  roadmap,
+  votingRequestId,
+}: {
+  feedback: PublicRequest[];
+  isWriteLocked: boolean;
+  latestUpdate?: PublicPortalUpdate;
+  onOpenFeedback: () => void;
+  onOpenRoadmap: () => void;
+  onOpenUpdate: (update: PublicPortalUpdate) => void;
+  onOpenRequest: (request: PublicRequest) => void;
+  onShareFeedback: () => void;
+  onVote: (request: PublicRequest) => void;
+  portal: PublicPortal;
+  roadmap: WidgetRoadmap;
+  votingRequestId: string | null;
+}) => {
+  const popularFeedback = feedback.slice(0, 3);
+  const roadmapHighlights = [...roadmap.in_progress, ...roadmap.planned].slice(
+    0,
+    3,
+  );
+
+  return (
+    <Box className="pb-4">
+      <section aria-labelledby="widget-home-feedback">
+        <div id="widget-home-feedback">
+          <HomeSectionHeader
+            actionLabel="See all"
+            icon={RequestsIcon}
+            onAction={onOpenFeedback}
+            title="Popular feedback"
+          />
+        </div>
+        {popularFeedback.length > 0 ? (
+          popularFeedback.map((request) => (
+            <FeedbackRow
+              isVoting={votingRequestId === request.id}
+              isWriteLocked={isWriteLocked}
+              key={request.id}
+              onOpen={() => {
+                onOpenRequest(request);
+              }}
+              onVote={() => {
+                onVote(request);
+              }}
+              portal={portal}
+              request={request}
+            />
+          ))
+        ) : (
+          <Text className="block px-5 py-5 text-[12px]" color="muted">
+            Feedback shared by customers will appear here.
+          </Text>
+        )}
+      </section>
+
+      <Box className="border-border/60 border-y p-5">
+        <button
+          className="border-border bg-surface hover:bg-state-hover/40 focus-visible:ring-ring flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          onClick={onShareFeedback}
+          type="button"
+        >
+          <Box className="min-w-0 flex-1">
+            <Text className="text-[15px] leading-5" fontWeight="semibold">
+              Help shape what comes next
+            </Text>
+            <Text className="mt-1 text-[12px] leading-5" color="muted">
+              Share an idea, report a problem, or suggest an improvement.
+            </Text>
+          </Box>
+          <span className="bg-foreground text-background inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl px-3 text-[11px] font-semibold shadow-sm">
+            <EditIcon className="h-3.5 text-current" />
+            Share
+          </span>
+        </button>
+      </Box>
+
+      {latestUpdate ? (
+        <button
+          className="border-border/60 hover:bg-state-hover/35 focus-visible:ring-ring w-full border-b px-5 py-6 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          onClick={() => {
+            onOpenUpdate(latestUpdate);
+          }}
+          type="button"
+        >
+          <Text
+            className="text-[10px] tracking-[0.1em] uppercase"
+            color="muted"
+            fontWeight="semibold"
+          >
+            Latest update · {latestUpdate.publishedAtLabel}
+          </Text>
+          <Text className="mt-2 text-[18px] leading-6" fontWeight="semibold">
+            {latestUpdate.title}
+          </Text>
+          <Text
+            className="mt-2 line-clamp-3 text-[12px] leading-5"
+            color="muted"
+          >
+            {latestUpdate.summary || latestUpdate.body}
+          </Text>
+        </button>
+      ) : null}
+
+      <section
+        aria-labelledby="widget-home-roadmap"
+        className="border-border/60 mt-2 border-t"
+      >
+        <div id="widget-home-roadmap">
+          <HomeSectionHeader
+            actionLabel="See roadmap"
+            icon={RoadmapIcon}
+            onAction={onOpenRoadmap}
+            title="On the roadmap"
+          />
+        </div>
+        {roadmapHighlights.length > 0 ? (
+          <Box className="border-border/70 mr-5 ml-6 border-l border-dashed">
+            {roadmapHighlights.map((request) => (
+              <HomeRoadmapRow
+                isVoting={votingRequestId === request.id}
+                isWriteLocked={isWriteLocked}
+                key={request.id}
+                onOpen={() => {
+                  onOpenRequest(request);
+                }}
+                onVote={() => {
+                  onVote(request);
+                }}
+                request={request}
+              />
+            ))}
+          </Box>
+        ) : (
+          <Text className="block px-5 py-5 text-[12px]" color="muted">
+            Planned and in-progress ideas will appear here.
+          </Text>
+        )}
+      </section>
+    </Box>
+  );
+};
+
 const BottomNavigation = ({
   activeTab,
   onSelect,
   showUpdates,
   unreadUpdateCount,
 }: {
-  activeTab: PublicPortalTab;
-  onSelect: (tab: PublicPortalTab) => void;
+  activeTab: FeedbackWidgetTab;
+  onSelect: (tab: FeedbackWidgetTab) => void;
   showUpdates: boolean;
   unreadUpdateCount: number;
 }) => (
   <nav
     aria-label="Feedback sections"
     className={cn(
-      "border-border/70 bg-background/96 grid shrink-0 border-t px-3 py-2 backdrop-blur-xl",
-      showUpdates ? "grid-cols-3" : "grid-cols-2",
+      "border-border/70 bg-background/85 supports-[backdrop-filter]:bg-background/75 grid shrink-0 border-t px-2 py-2 backdrop-blur-xl",
+      showUpdates ? "grid-cols-4" : "grid-cols-3",
     )}
   >
     {tabs
@@ -1110,7 +1620,7 @@ const BottomNavigation = ({
                 : tab.label
             }
             className={cn(
-              "text-text-muted hover:text-foreground focus-visible:ring-ring flex h-11 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none",
+              "text-text-muted hover:text-foreground focus-visible:ring-ring flex h-12 flex-col items-center justify-center gap-1 rounded-lg text-[12px] font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none",
               { "text-foreground": active },
             )}
             key={tab.value}
@@ -1120,7 +1630,7 @@ const BottomNavigation = ({
             type="button"
           >
             <span className="relative">
-              <Icon className="h-[18px]" />
+              <Icon className="h-[18px] text-current" />
               <UnreadBadge count={unreadCount} />
             </span>
             {tab.label}
@@ -1137,15 +1647,17 @@ export const FeedbackWidgetFrame = ({
   parentOrigin,
   portal,
   roadmap,
+  roadmapPagination,
   theme,
   viewer,
 }: {
-  initialTab: PublicPortalTab;
+  initialTab: FeedbackWidgetTab;
   instanceId: string;
   mode: FeedbackWidgetMode;
   parentOrigin: string;
   portal: PublicPortal;
   roadmap: WidgetRoadmap;
+  roadmapPagination?: WidgetRoadmapPagination;
   theme: FeedbackWidgetTheme;
   viewer?: PublicPortalViewer | null;
 }) => {
@@ -1159,11 +1671,42 @@ export const FeedbackWidgetFrame = ({
   const updatesSeenTokenRef = useRef<string | null>(null);
   const [activeTab, setActiveTab] = useState(
     initialTab === "updates" && !portal.hasPublishedUpdates
-      ? "feedback"
+      ? "home"
       : initialTab,
   );
   const [requests, setRequests] = useState(portal.requests);
+  const [homeRequests, setHomeRequests] = useState(portal.requests);
   const [search, setSearch] = useState("");
+  const [feedbackSort, setFeedbackSort] = useState<PublicPortalSort>("top");
+  const [feedbackStatus, setFeedbackStatus] =
+    useState<PublicFeedbackListStatus>("active");
+  const [isFeedbackLoading, setIsFeedbackLoading] = useState(false);
+  const [feedbackError, setFeedbackError] = useState("");
+  const feedbackQueryRef = useRef(0);
+  const feedbackFiltersRef = useRef({
+    search: "",
+    sort: "top" as PublicPortalSort,
+    status: "active" as PublicFeedbackListStatus,
+  });
+  const [roadmapItems, setRoadmapItems] = useState(roadmap);
+  const [roadmapPageState, setRoadmapPageState] =
+    useState<WidgetRoadmapPagination>(
+      roadmapPagination ?? {
+        completed: { hasMore: false, nextPage: 2 },
+        in_progress: { hasMore: false, nextPage: 2 },
+        planned: { hasMore: false, nextPage: 2 },
+      },
+    );
+  const [visibleRoadmapCounts, setVisibleRoadmapCounts] = useState<
+    Record<WidgetRoadmapStatus, number>
+  >({
+    completed: INITIAL_ROADMAP_VISIBLE_COUNT,
+    in_progress: INITIAL_ROADMAP_VISIBLE_COUNT,
+    planned: INITIAL_ROADMAP_VISIBLE_COUNT,
+  });
+  const [loadingRoadmapStatus, setLoadingRoadmapStatus] =
+    useState<WidgetRoadmapStatus | null>(null);
+  const [roadmapError, setRoadmapError] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<PublicRequest | null>(
     null,
   );
@@ -1180,7 +1723,6 @@ export const FeedbackWidgetFrame = ({
   const [pendingIdentityAction, setPendingIdentityAction] =
     useState<PendingIdentityAction | null>(null);
   const [votingRequestId, setVotingRequestId] = useState<string | null>(null);
-  const [isDark, setIsDark] = useState(theme === "dark");
   const trustedParentOrigin = getTrustedWidgetOrigin(parentOrigin);
 
   const revokeContributorIdentity = useCallback(
@@ -1234,27 +1776,137 @@ export const FeedbackWidgetFrame = ({
     [],
   );
 
-  const filteredRequests = useMemo(() => {
-    const value = search.trim().toLowerCase();
-    if (!value) return requests;
-    return requests.filter((request) =>
-      `${request.title} ${request.description} ${request.authorName}`
-        .toLowerCase()
-        .includes(value),
-    );
-  }, [requests, search]);
-
   const syncRequest = useCallback((updatedRequest: PublicRequest) => {
     setRequests((current) => replaceRequest(current, updatedRequest));
+    setHomeRequests((current) => replaceRequest(current, updatedRequest));
+    setRoadmapItems((current) => ({
+      completed: replaceRequest(current.completed, updatedRequest),
+      in_progress: replaceRequest(current.in_progress, updatedRequest),
+      planned: replaceRequest(current.planned, updatedRequest),
+    }));
     setSelectedRequest((current) =>
       current?.id === updatedRequest.id ? updatedRequest : current,
     );
   }, []);
 
+  useEffect(() => {
+    const nextFilters = {
+      search,
+      sort: feedbackSort,
+      status: feedbackStatus,
+    };
+    const previousFilters = feedbackFiltersRef.current;
+    if (
+      previousFilters.search === nextFilters.search &&
+      previousFilters.sort === nextFilters.sort &&
+      previousFilters.status === nextFilters.status
+    ) {
+      return;
+    }
+    feedbackFiltersRef.current = nextFilters;
+    const queryId = feedbackQueryRef.current + 1;
+    feedbackQueryRef.current = queryId;
+    const timeout = window.setTimeout(
+      () => {
+        setIsFeedbackLoading(true);
+        setFeedbackError("");
+        void getWidgetFeedbackPageAction({
+          page: 1,
+          portalSlug: portal.slug,
+          search,
+          sort: feedbackSort,
+          status: feedbackStatus,
+        })
+          .then((response) => {
+            if (feedbackQueryRef.current !== queryId) return;
+            if (!response.data) {
+              setFeedbackError(
+                response.error?.message ?? "Unable to load feedback.",
+              );
+              return;
+            }
+            setRequests(response.data.requests);
+          })
+          .catch(() => {
+            if (feedbackQueryRef.current === queryId) {
+              setFeedbackError("Unable to load feedback.");
+            }
+          })
+          .finally(() => {
+            if (feedbackQueryRef.current === queryId) {
+              setIsFeedbackLoading(false);
+            }
+          });
+      },
+      search.trim() ? 250 : 0,
+    );
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [feedbackSort, feedbackStatus, portal.slug, search]);
+
+  const loadMoreRoadmap = useCallback(
+    async (status: WidgetRoadmapStatus) => {
+      const items = roadmapItems[status];
+      const visibleCount = visibleRoadmapCounts[status];
+      if (visibleCount < items.length) {
+        setVisibleRoadmapCounts((current) => ({
+          ...current,
+          [status]: Math.min(
+            items.length,
+            current[status] + INITIAL_ROADMAP_VISIBLE_COUNT,
+          ),
+        }));
+        return;
+      }
+
+      const pagination = roadmapPageState[status];
+      if (!pagination.hasMore || loadingRoadmapStatus) return;
+      setLoadingRoadmapStatus(status);
+      setRoadmapError("");
+      const response = await getWidgetFeedbackPageAction({
+        page: pagination.nextPage,
+        portalSlug: portal.slug,
+        search: "",
+        sort: "newest",
+        status,
+      }).catch(() => null);
+      setLoadingRoadmapStatus(null);
+      if (!response?.data) {
+        setRoadmapError("Unable to load more roadmap items.");
+        return;
+      }
+      setRoadmapItems((current) => ({
+        ...current,
+        [status]: mergeRequests(current[status], response.data.requests),
+      }));
+      setRoadmapPageState((current) => ({
+        ...current,
+        [status]: {
+          hasMore: response.data.hasMore,
+          nextPage: response.data.nextPage,
+        },
+      }));
+      setVisibleRoadmapCounts((current) => ({
+        ...current,
+        [status]: current[status] + INITIAL_ROADMAP_VISIBLE_COUNT,
+      }));
+    },
+    [
+      loadingRoadmapStatus,
+      portal.slug,
+      roadmapItems,
+      roadmapPageState,
+      visibleRoadmapCounts,
+    ],
+  );
+
   const vote = useCallback(
     async (
       request: PublicRequest,
       activeIdentity: WidgetSubmissionIdentity,
+      direction: -1 | 1,
     ) => {
       if (votingRequestId === request.id || !canUseIdentity(activeIdentity))
         return;
@@ -1268,7 +1920,7 @@ export const FeedbackWidgetFrame = ({
           activeIdentity.kind === "account"
             ? undefined
             : activeIdentity.sessionToken,
-        vote: 1,
+        vote: direction,
       }).catch(() => null);
       if (
         identityExchangeRef.current !== identityEpoch ||
@@ -1288,34 +1940,44 @@ export const FeedbackWidgetFrame = ({
   );
 
   const requestVote = useCallback(
-    (request: PublicRequest) => {
+    (request: PublicRequest, direction: -1 | 1 = 1) => {
       if (identityPendingRef.current) return;
       if (!identity) {
         setPendingIdentityAction({
+          direction,
           identityEpoch: identityExchangeRef.current,
           requestId: request.id,
           type: "vote",
         });
         return;
       }
-      void vote(request, identity);
+      void vote(request, identity, direction);
     },
     [identity, vote],
   );
 
   useEffect(() => {
+    const documentRoot = document.documentElement;
+    const initiallyDark = documentRoot.classList.contains("dark");
+    const applyTheme = (dark: boolean) => {
+      documentRoot.classList.toggle("dark", dark);
+    };
+
     if (theme !== "auto") {
-      setIsDark(theme === "dark");
-      return;
+      applyTheme(theme === "dark");
+      return () => {
+        documentRoot.classList.toggle("dark", initiallyDark);
+      };
     }
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const update = () => {
-      setIsDark(media.matches);
+      applyTheme(media.matches);
     };
     update();
     media.addEventListener("change", update);
     return () => {
       media.removeEventListener("change", update);
+      documentRoot.classList.toggle("dark", initiallyDark);
     };
   }, [theme]);
 
@@ -1535,25 +2197,11 @@ export const FeedbackWidgetFrame = ({
     }
   };
 
-  const openExternal = (path: string) => {
-    if (!trustedParentOrigin) return;
-    postFeedbackWidgetMessage(
-      "open-external",
-      instanceId,
-      trustedParentOrigin,
-      { href: new URL(path, window.location.origin).href },
-    );
-  };
-
   const openComposer = () => {
     if (identityPendingRef.current) return;
     const currentIdentity = activeIdentityRef.current;
-    if (currentIdentity || portal.participationMode !== "account_required") {
-      setComposerIdentity(currentIdentity);
-      setIsComposing(true);
-      return;
-    }
-    openExternal(`/portal/${portal.slug}/feedback?newFeedback=true`);
+    setComposerIdentity(currentIdentity);
+    setIsComposing(true);
   };
 
   const handleVerified = (session: WidgetParticipantSession) => {
@@ -1582,23 +2230,30 @@ export const FeedbackWidgetFrame = ({
       return;
     }
     if (pendingAction.type === "vote") {
-      const request = requests.find(
-        (item) => item.id === pendingAction.requestId,
-      );
-      if (request) void vote(request, verifiedIdentity);
+      const request =
+        requests.find((item) => item.id === pendingAction.requestId) ??
+        homeRequests.find((item) => item.id === pendingAction.requestId);
+      if (request) {
+        void vote(request, verifiedIdentity, pendingAction.direction);
+      }
     }
   };
+  let feedbackEmptyBody =
+    "New suggestions will appear here as soon as they are shared.";
+  if (feedbackStatus !== "active") {
+    feedbackEmptyBody = "There is no feedback with this status yet.";
+  }
+  if (search) {
+    feedbackEmptyBody = "Try a different phrase or share the idea yourself.";
+  }
   return (
     <div
-      className={cn(
-        "bg-background text-foreground relative flex h-dvh min-h-0 w-full flex-col overflow-hidden antialiased",
-        { dark: isDark },
-      )}
+      className="bg-background/90 supports-[backdrop-filter]:bg-background/80 text-foreground relative flex h-dvh min-h-0 w-full flex-col overflow-hidden antialiased backdrop-blur-xl"
       ref={rootRef}
     >
       <Flex
         align="center"
-        className="bg-background/96 relative z-10 h-16 shrink-0 gap-3 px-5 backdrop-blur-xl"
+        className="bg-background/85 supports-[backdrop-filter]:bg-background/75 relative z-10 h-16 shrink-0 gap-3 px-5 backdrop-blur-xl"
       >
         <Avatar
           className="!size-8 text-[12px] font-bold"
@@ -1618,12 +2273,12 @@ export const FeedbackWidgetFrame = ({
           {portal.workspace.name}
         </Text>
         <button
-          className="bg-foreground text-background focus-visible:ring-ring inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-4 text-[12px] font-semibold shadow-sm focus-visible:ring-2 focus-visible:outline-none"
+          className="bg-foreground text-background focus-visible:ring-ring inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-4 text-[12px] font-semibold shadow-sm focus-visible:ring-2 focus-visible:outline-none"
           disabled={isIdentityPending}
           onClick={openComposer}
           type="button"
         >
-          <EditIcon className="h-3.5" />
+          <EditIcon className="h-3.5 text-current" />
           Add feedback
         </button>
         {identity && portal.hasPublishedUpdates ? (
@@ -1668,64 +2323,107 @@ export const FeedbackWidgetFrame = ({
       ) : null}
 
       <Box className="relative min-h-0 flex-1 overflow-y-auto">
+        {activeTab === "home" ? (
+          <WidgetHome
+            feedback={homeRequests}
+            isWriteLocked={isIdentityPending}
+            latestUpdate={
+              portal.hasPublishedUpdates ? portal.updates[0] : undefined
+            }
+            onOpenFeedback={() => {
+              setActiveTab("feedback");
+            }}
+            onOpenRequest={setSelectedRequest}
+            onOpenRoadmap={() => {
+              setActiveTab("roadmap");
+            }}
+            onOpenUpdate={setSelectedUpdate}
+            onShareFeedback={openComposer}
+            onVote={requestVote}
+            portal={portal}
+            roadmap={roadmapItems}
+            votingRequestId={votingRequestId}
+          />
+        ) : null}
+
         {activeTab === "feedback" ? (
           <Box>
-            <Box className="bg-background sticky top-0 z-10 px-5 pt-4 pb-3">
-              <div className="border-border bg-surface relative flex h-11 items-center rounded-full border px-4">
-                <SearchIcon className="text-text-muted h-4 shrink-0" />
-                <input
-                  aria-label="Search feedback"
-                  className="text-foreground placeholder:text-text-muted/65 h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-[12px] outline-none"
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                  }}
-                  placeholder="Search feedback"
-                  type="search"
-                  value={search}
+            <WidgetFeedbackToolbar
+              isLoading={isFeedbackLoading}
+              onSearchChange={setSearch}
+              onSortChange={setFeedbackSort}
+              onStatusChange={setFeedbackStatus}
+              search={search}
+              sort={feedbackSort}
+              status={feedbackStatus}
+            />
+            {feedbackError ? (
+              <Text
+                aria-live="polite"
+                className="border-border/60 border-b px-5 py-2 text-[11px] text-red-600 dark:text-red-400"
+              >
+                {feedbackError}
+              </Text>
+            ) : null}
+            <Box
+              aria-busy={isFeedbackLoading}
+              className={cn("transition-opacity", {
+                "opacity-60": isFeedbackLoading,
+              })}
+            >
+              {requests.length > 0 ? (
+                requests.map((request) => (
+                  <FeedbackRow
+                    isVoting={votingRequestId === request.id}
+                    isWriteLocked={isIdentityPending}
+                    key={request.id}
+                    onOpen={() => {
+                      setSelectedRequest(request);
+                    }}
+                    onVote={() => {
+                      requestVote(request);
+                    }}
+                    portal={portal}
+                    request={request}
+                  />
+                ))
+              ) : (
+                <EmptyState
+                  body={feedbackEmptyBody}
+                  icon={RequestsIcon}
+                  title={search ? "No matching feedback" : "No feedback yet"}
                 />
-              </div>
+              )}
             </Box>
-            {filteredRequests.length > 0 ? (
-              filteredRequests.map((request) => (
-                <FeedbackRow
-                  isVoting={votingRequestId === request.id}
-                  isWriteLocked={isIdentityPending}
-                  key={request.id}
-                  onOpen={() => {
-                    setSelectedRequest(request);
-                  }}
-                  onVote={() => {
-                    requestVote(request);
-                  }}
-                  portal={portal}
-                  request={request}
-                />
-              ))
-            ) : (
-              <EmptyState
-                body={
-                  search
-                    ? "Try a different phrase or share the idea yourself."
-                    : "New suggestions will appear here as soon as they are shared."
-                }
-                icon={FeedbackIcon}
-                title={search ? "No matching feedback" : "No feedback yet"}
-              />
-            )}
           </Box>
         ) : null}
 
         {activeTab === "roadmap" ? (
           <Box className="space-y-9 px-5 py-6">
+            {roadmapError ? (
+              <Text
+                aria-live="polite"
+                className="text-[11px] text-red-600 dark:text-red-400"
+              >
+                {roadmapError}
+              </Text>
+            ) : null}
             {roadmapSections.map((section) => {
-              const items = roadmap[section.status];
+              const items = roadmapItems[section.status];
+              const visibleItems = items.slice(
+                0,
+                visibleRoadmapCounts[section.status],
+              );
+              const hasMore =
+                visibleItems.length < items.length ||
+                roadmapPageState[section.status].hasMore;
               return (
                 <Box key={section.status}>
                   <Flex align="center" className="mb-3" justify="between">
                     <Flex align="center" className="gap-2.5">
                       <span
                         className={cn(
-                          "size-3 rounded-full",
+                          "size-3 rounded-sm",
                           statusAccent(section.status),
                         )}
                       />
@@ -1738,15 +2436,15 @@ export const FeedbackWidgetFrame = ({
                     </Text>
                   </Flex>
                   {items.length > 0 ? (
-                    <Box className="border-border/70 ml-1.5 border-l">
-                      {items.map((request) => (
+                    <Box className="border-border/70 ml-1.5 border-l border-dashed">
+                      {visibleItems.map((request) => (
                         <div
                           className="hover:bg-state-hover/35 relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 pr-1 pl-6 transition-colors"
                           key={request.id}
                         >
                           <span
                             className={cn(
-                              "ring-background absolute top-5 -left-[5px] size-2.5 rounded-full ring-4",
+                              "ring-background absolute top-5 -left-[5px] size-2.5 rounded-sm ring-4",
                               statusAccent(section.status),
                             )}
                           />
@@ -1766,7 +2464,7 @@ export const FeedbackWidgetFrame = ({
                               </Text>
                               {request.description ? (
                                 <Text
-                                  className="mt-1 line-clamp-2 text-[11px] leading-5"
+                                  className="mt-1 line-clamp-2 text-[12px] leading-5"
                                   color="muted"
                                 >
                                   {request.description}
@@ -1787,6 +2485,20 @@ export const FeedbackWidgetFrame = ({
                           />
                         </div>
                       ))}
+                      {hasMore ? (
+                        <button
+                          className="text-text-muted hover:text-foreground focus-visible:ring-ring inline-flex h-9 items-center rounded-lg pr-2 pl-6 text-[12px] font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
+                          disabled={loadingRoadmapStatus !== null}
+                          onClick={() => {
+                            void loadMoreRoadmap(section.status);
+                          }}
+                          type="button"
+                        >
+                          {loadingRoadmapStatus === section.status
+                            ? "Loading…"
+                            : "Show more"}
+                        </button>
+                      ) : null}
                     </Box>
                   ) : (
                     <Text className="ml-5 py-3 text-[11px]" color="muted">
@@ -1815,7 +2527,7 @@ export const FeedbackWidgetFrame = ({
         unreadUpdateCount={unreadUpdateCount}
       />
       <button
-        className="border-border/70 text-text-muted hover:text-foreground bg-background focus-visible:ring-ring flex h-11 shrink-0 items-center justify-center border-t px-5 py-3 text-[10px] transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="border-border/70 text-text-muted hover:text-foreground bg-background/85 supports-[backdrop-filter]:bg-background/75 focus-visible:ring-ring flex h-12 shrink-0 items-center justify-center border-t px-5 py-3 text-[12px] backdrop-blur-xl transition-colors focus-visible:ring-2 focus-visible:outline-none"
         onClick={() => {
           if (!trustedParentOrigin) return;
           postFeedbackWidgetMessage(
@@ -1862,8 +2574,8 @@ export const FeedbackWidgetFrame = ({
               type: "comment",
             });
           }}
-          onVote={() => {
-            requestVote(selectedRequest);
+          onVote={(direction) => {
+            requestVote(selectedRequest, direction);
           }}
           portal={portal}
           request={selectedRequest}
@@ -1888,6 +2600,7 @@ export const FeedbackWidgetFrame = ({
           }}
           onCreated={(result) => {
             setRequests((current) => [result.request, ...current]);
+            setHomeRequests((current) => [result.request, ...current]);
             setIsComposing(false);
             setComposerIdentity(null);
             setSubmissionSuccess(result);

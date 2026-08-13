@@ -1,7 +1,7 @@
 export const FEEDBACK_WIDGET_CHANNEL = "fortyone:feedback-widget";
 export const FEEDBACK_WIDGET_VERSION = 1;
 
-export type FeedbackWidgetTab = "feedback" | "roadmap" | "updates";
+export type FeedbackWidgetTab = "home" | "feedback" | "roadmap" | "updates";
 export type FeedbackWidgetTheme = "auto" | "light" | "dark";
 export type FeedbackWidgetMode = "bubble" | "custom" | "inline";
 

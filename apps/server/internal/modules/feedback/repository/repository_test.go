@@ -92,6 +92,17 @@ func TestMergeAudienceRechecksTargetFollowAndCurrentEligibility(t *testing.T) {
 	require.Contains(t, body, "preference.email_unsubscribed_at IS NULL")
 }
 
+func TestWidgetSettingsUpsertPreservesOptionalIdentityAndCreatesMissingSettings(t *testing.T) {
+	t.Parallel()
+
+	require.Contains(t, upsertWidgetSettingsQuery, "LEFT JOIN feedback_widget_settings settings")
+	require.Contains(t, upsertWidgetSettingsQuery, "settings.signing_secret_encrypted")
+	require.Contains(t, upsertWidgetSettingsQuery, "COALESCE(signing_secret_version, 0)")
+	require.Contains(t, upsertWidgetSettingsQuery, "COALESCE(widget_key_id, gen_random_uuid())")
+	require.Contains(t, upsertWidgetSettingsQuery, "ON CONFLICT (portal_id) DO UPDATE")
+	require.Contains(t, upsertWidgetSettingsQuery, "SET enabled = EXCLUDED.enabled")
+}
+
 func TestAnonymousParticipationMigrationPreservesFeedbackIdentityLifecycle(t *testing.T) {
 	t.Parallel()
 

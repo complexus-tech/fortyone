@@ -12,7 +12,6 @@ export type FeedbackWidgetInstallOptions = {
   scriptOrigin?: string;
   theme?: FeedbackWidgetTheme;
   trigger?: string;
-  widgetKeyId?: string;
 };
 
 const DEFAULT_WIDGET_ORIGIN = "https://cloud.fortyone.app";
@@ -25,20 +24,18 @@ const escapeAttribute = (value: string) =>
     .replaceAll(">", "&gt;");
 
 export const buildFeedbackWidgetSnippet = ({
-  defaultTab = "feedback",
+  defaultTab = "home",
   mode = "bubble",
   portalSlug,
   position = "bottom-right",
   scriptOrigin = DEFAULT_WIDGET_ORIGIN,
   theme = "auto",
   trigger,
-  widgetKeyId,
 }: FeedbackWidgetInstallOptions) => {
   const origin = new URL(scriptOrigin).origin;
   const attributes = [
     ["src", `${origin}/api/feedback-widget/v1.js`],
     ["data-portal", portalSlug],
-    ...(widgetKeyId ? [["data-key-id", widgetKeyId]] : []),
     ["data-mode", mode],
     ["data-default-tab", defaultTab],
     ["data-theme", theme],

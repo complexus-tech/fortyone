@@ -1,11 +1,11 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Box, Input, Text } from "ui";
+import { Box, Flex, Input, Select, Text } from "ui";
 import { cn } from "lib";
 import { SectionHeader } from "@/modules/settings/components";
 import {
-  buildFeedbackWidgetIdentityServerExample,
   buildFeedbackWidgetSnippet,
   buildInlineFeedbackWidgetMarkup,
 } from "@/modules/feedback-widget/install";
@@ -14,11 +14,6 @@ import type {
   FeedbackWidgetTab,
   FeedbackWidgetTheme,
 } from "@/modules/feedback-widget/protocol";
-import { useFeedbackWidgetSettings } from "./hooks";
-import { WidgetSecuritySettings } from "./widget-security-settings";
-
-const selectClassName =
-  "border-border bg-surface-elevated ring-ring h-10 w-full rounded-xl border px-3 text-sm outline-none focus-visible:ring-2";
 
 const subscribeToBrowserOrigin = () => () => undefined;
 const getBrowserOrigin = () => window.location.origin;
@@ -43,14 +38,14 @@ const CODE_TOKEN_PATTERN =
   /(?:<!--[\s\S]*?-->|\/\*[\s\S]*?\*\/|\/\/[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b(?:async|await|const|else|export|false|from|function|if|import|let|new|null|return|true|undefined|var)\b|\b\d+(?:\.\d+)?\b|<\/?[A-Za-z][\w-]*|\b[A-Za-z_:][\w:.-]*(?=\s*=)|[{}()[\].,;:+*=/<>-])/g;
 
 const codeTokenClassNames: Record<CodeTokenKind, string> = {
-  attribute: "text-[#d2a8ff]",
-  comment: "text-[#8b949e]",
-  keyword: "text-[#ff7b72]",
-  number: "text-[#79c0ff]",
-  plain: "text-[#e6edf3]",
-  punctuation: "text-[#8b949e]",
-  string: "text-[#a5d6ff]",
-  tag: "text-[#7ee787]",
+  attribute: "text-text-secondary",
+  comment: "text-text-muted",
+  keyword: "text-foreground font-medium",
+  number: "text-primary",
+  plain: "text-foreground",
+  punctuation: "text-text-muted",
+  string: "text-primary",
+  tag: "text-foreground font-medium",
 };
 
 const getCodeTokenKind = (value: string): CodeTokenKind => {
@@ -96,10 +91,6 @@ const tokenizeCode = (value: string): CodeToken[] => {
   return tokens;
 };
 
-const copyText = async (value: string) => {
-  await navigator.clipboard.writeText(value);
-};
-
 const WidgetCodeBlock = ({
   code,
   language,
@@ -123,7 +114,7 @@ const WidgetCodeBlock = ({
   const handleCopy = async () => {
     if (resetTimer.current) window.clearTimeout(resetTimer.current);
     try {
-      await copyText(code);
+      await navigator.clipboard.writeText(code);
       setCopyLabel("Copied");
     } catch {
       setCopyLabel("Couldn’t copy");
@@ -135,12 +126,12 @@ const WidgetCodeBlock = ({
   };
 
   return (
-    <figure className="overflow-hidden rounded-lg bg-[#1b1b19] text-[#e6edf3] shadow-sm ring-1 ring-black/10 dark:ring-white/10">
-      <figcaption className="flex min-h-9 items-center justify-between bg-[#222220] px-3 font-mono text-[10px] tracking-[0.08em] text-[#8b949e] uppercase">
+    <figure className="bg-surface-muted/70 text-foreground overflow-hidden rounded-xl dark:bg-white/[0.04]">
+      <figcaption className="bg-surface-elevated/60 text-text-muted flex min-h-10 items-center justify-between px-4 font-mono text-sm">
         <span>{language}</span>
         <button
           aria-live="polite"
-          className="focus-visible:ring-ring rounded-sm py-2 text-inherit transition-colors hover:text-white focus-visible:ring-1 focus-visible:outline-none"
+          className="hover:text-foreground focus-visible:ring-ring rounded-md px-2 py-1.5 text-inherit transition-colors focus-visible:ring-1 focus-visible:outline-none"
           onClick={() => {
             void handleCopy();
           }}
@@ -151,7 +142,7 @@ const WidgetCodeBlock = ({
       </figcaption>
       <pre
         className={cn(
-          "overflow-auto px-5 py-[18px] font-mono text-[12px] leading-[1.65] whitespace-pre",
+          "overflow-auto px-5 py-5 font-mono text-base leading-7 whitespace-pre",
           maxHeight,
         )}
       >
@@ -167,23 +158,44 @@ const WidgetCodeBlock = ({
   );
 };
 
+const WidgetOptionRow = ({
+  children,
+  description,
+  label,
+}: {
+  children: ReactNode;
+  description: string;
+  label: string;
+}) => (
+  <Flex
+    align="center"
+    className="flex-col items-stretch gap-4 px-6 py-4 sm:flex-row sm:items-center"
+    justify="between"
+  >
+    <Box className="min-w-0 flex-1">
+      <Text>{label}</Text>
+      <Text className="max-w-xl" color="muted" fontSize="sm">
+        {description}
+      </Text>
+    </Box>
+    <Box className="shrink-0">{children}</Box>
+  </Flex>
+);
+
 export const WidgetInstallSettings = ({
-  portalId,
   portalSlug,
   scriptOrigin,
 }: {
-  portalId: string;
   portalSlug: string;
   scriptOrigin?: string;
 }) => {
   const [mode, setMode] = useState<FeedbackWidgetMode>("bubble");
-  const [defaultTab, setDefaultTab] = useState<FeedbackWidgetTab>("feedback");
+  const [defaultTab, setDefaultTab] = useState<FeedbackWidgetTab>("home");
   const [theme, setTheme] = useState<FeedbackWidgetTheme>("auto");
   const [position, setPosition] = useState<"bottom-left" | "bottom-right">(
     "bottom-right",
   );
   const [trigger, setTrigger] = useState("[data-fortyone-feedback]");
-  const widgetSettings = useFeedbackWidgetSettings(portalId);
   const browserOrigin = useSyncExternalStore(
     subscribeToBrowserOrigin,
     getBrowserOrigin,
@@ -197,170 +209,167 @@ export const WidgetInstallSettings = ({
     scriptOrigin: resolvedScriptOrigin,
     theme,
     trigger,
-    widgetKeyId: widgetSettings.data?.widgetKeyId,
   };
   const snippet =
     mode === "inline"
       ? buildInlineFeedbackWidgetMarkup(options)
       : buildFeedbackWidgetSnippet({ ...options, mode });
-  const widgetConfiguration = widgetSettings.data;
-  const identityServerExample =
-    widgetConfiguration?.hasSigningSecret &&
-    widgetConfiguration.allowedOrigins[0]
-      ? buildFeedbackWidgetIdentityServerExample({
-          origin: widgetConfiguration.allowedOrigins[0],
-          signingSecretVersion: widgetConfiguration.signingSecretVersion,
-          widgetKeyId: widgetConfiguration.widgetKeyId,
-        })
-      : "";
+
+  const selectTriggerClassName = "w-max text-[0.9rem] md:text-base";
 
   return (
-    <Box className="border-border bg-surface mb-6 overflow-hidden rounded-2xl border">
-      <SectionHeader
-        description="Add Feedback, Roadmap, and published Updates to your product without sending customers to a separate page."
-        title="Feedback widget"
-      />
-      <Box className="space-y-6 p-6">
-        <WidgetSecuritySettings portalId={portalId} />
-
-        <Box className="border-border/70 border-t pt-6">
-          <Text fontWeight="medium">Appearance and installation</Text>
-          <Text className="mt-1 text-sm" color="muted">
-            Configure how feedback opens in your product, then add the generated
-            script to your site.
-          </Text>
-        </Box>
-        <Box className="border-border/70 bg-background/60 grid gap-5 rounded-xl border p-5 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="space-y-2">
-            <Text as="span" className="block" fontWeight="medium">
-              Display
-            </Text>
-            <select
-              aria-label="Widget display"
-              className={selectClassName}
-              onChange={(event) => {
-                setMode(event.target.value as FeedbackWidgetMode);
+    <>
+      <Box className="border-border bg-surface overflow-hidden rounded-2xl border">
+        <SectionHeader
+          description="Choose how the widget opens and what customers see first."
+          title="Appearance"
+        />
+        <Box className="divide-border divide-y-[0.5px]">
+          <WidgetOptionRow
+            description="Use a floating launcher, your own button, or place the widget directly in a page."
+            label="Display"
+          >
+            <Select
+              onValueChange={(value) => {
+                setMode(value as FeedbackWidgetMode);
               }}
               value={mode}
             >
-              <option value="bubble">Floating bubble</option>
-              <option value="custom">Custom trigger</option>
-              <option value="inline">Inline</option>
-            </select>
-          </label>
-          <label className="space-y-2">
-            <Text as="span" className="block" fontWeight="medium">
-              Opens on
-            </Text>
-            <select
-              aria-label="Widget default tab"
-              className={selectClassName}
-              onChange={(event) => {
-                setDefaultTab(event.target.value as FeedbackWidgetTab);
+              <Select.Trigger
+                aria-label="Widget display"
+                className={selectTriggerClassName}
+              >
+                <Select.Input />
+              </Select.Trigger>
+              <Select.Content align="end">
+                <Select.Option className="text-base" value="bubble">
+                  Floating bubble
+                </Select.Option>
+                <Select.Option className="text-base" value="custom">
+                  Custom trigger
+                </Select.Option>
+                <Select.Option className="text-base" value="inline">
+                  Inline
+                </Select.Option>
+              </Select.Content>
+            </Select>
+          </WidgetOptionRow>
+          <WidgetOptionRow
+            description="Choose the section customers land on when the widget opens."
+            label="Opens on"
+          >
+            <Select
+              onValueChange={(value) => {
+                setDefaultTab(value as FeedbackWidgetTab);
               }}
               value={defaultTab}
             >
-              <option value="feedback">Feedback</option>
-              <option value="roadmap">Roadmap</option>
-              <option value="updates">Updates</option>
-            </select>
-          </label>
-          <label className="space-y-2">
-            <Text as="span" className="block" fontWeight="medium">
-              Theme
-            </Text>
-            <select
-              aria-label="Widget theme"
-              className={selectClassName}
-              onChange={(event) => {
-                setTheme(event.target.value as FeedbackWidgetTheme);
+              <Select.Trigger
+                aria-label="Widget default tab"
+                className={selectTriggerClassName}
+              >
+                <Select.Input />
+              </Select.Trigger>
+              <Select.Content align="end">
+                <Select.Option className="text-base" value="home">
+                  Home
+                </Select.Option>
+                <Select.Option className="text-base" value="feedback">
+                  Feedback
+                </Select.Option>
+                <Select.Option className="text-base" value="roadmap">
+                  Roadmap
+                </Select.Option>
+                <Select.Option className="text-base" value="updates">
+                  Updates
+                </Select.Option>
+              </Select.Content>
+            </Select>
+          </WidgetOptionRow>
+          <WidgetOptionRow
+            description="Follow the visitor’s device or force a light or dark appearance."
+            label="Theme"
+          >
+            <Select
+              onValueChange={(value) => {
+                setTheme(value as FeedbackWidgetTheme);
               }}
               value={theme}
             >
-              <option value="auto">Match device</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </label>
-          <label className="space-y-2">
-            <Text as="span" className="block" fontWeight="medium">
-              Position
-            </Text>
-            <select
-              aria-label="Widget position"
-              className={selectClassName}
-              disabled={mode === "inline"}
-              onChange={(event) => {
-                setPosition(event.target.value as typeof position);
-              }}
-              value={position}
+              <Select.Trigger
+                aria-label="Widget theme"
+                className={selectTriggerClassName}
+              >
+                <Select.Input />
+              </Select.Trigger>
+              <Select.Content align="end">
+                <Select.Option className="text-base" value="auto">
+                  Match device
+                </Select.Option>
+                <Select.Option className="text-base" value="light">
+                  Light
+                </Select.Option>
+                <Select.Option className="text-base" value="dark">
+                  Dark
+                </Select.Option>
+              </Select.Content>
+            </Select>
+          </WidgetOptionRow>
+          {mode !== "inline" ? (
+            <WidgetOptionRow
+              description="Place the floating launcher on the left or right side of the screen."
+              label="Position"
             >
-              <option value="bottom-right">Bottom right</option>
-              <option value="bottom-left">Bottom left</option>
-            </select>
-          </label>
+              <Select
+                onValueChange={(value) => {
+                  setPosition(value as typeof position);
+                }}
+                value={position}
+              >
+                <Select.Trigger
+                  aria-label="Widget position"
+                  className={selectTriggerClassName}
+                >
+                  <Select.Input />
+                </Select.Trigger>
+                <Select.Content align="end">
+                  <Select.Option className="text-base" value="bottom-right">
+                    Bottom right
+                  </Select.Option>
+                  <Select.Option className="text-base" value="bottom-left">
+                    Bottom left
+                  </Select.Option>
+                </Select.Content>
+              </Select>
+            </WidgetOptionRow>
+          ) : null}
+          {mode === "custom" ? (
+            <WidgetOptionRow
+              description="The loader opens when someone clicks an element matching this selector."
+              label="Trigger selector"
+            >
+              <Input
+                className="h-10 w-full sm:w-72"
+                id="feedback-widget-trigger"
+                onChange={(event) => {
+                  setTrigger(event.target.value);
+                }}
+                value={trigger}
+              />
+            </WidgetOptionRow>
+          ) : null}
         </Box>
+      </Box>
 
-        {mode === "custom" ? (
-          <Box className="max-w-lg space-y-2">
-            <label
-              className="text-foreground block font-medium"
-              htmlFor="feedback-widget-trigger"
-            >
-              Trigger selector
-            </label>
-            <Input
-              id="feedback-widget-trigger"
-              onChange={(event) => {
-                setTrigger(event.target.value);
-              }}
-              value={trigger}
-            />
-            <Text color="muted">
-              Clicking any matching element opens the widget. The loader waits
-              for triggers added after page load too.
-            </Text>
-          </Box>
-        ) : null}
-
-        <Box>
-          <Text fontWeight="medium">Add the widget to your product</Text>
-          <Text className="mt-1 mb-4 max-w-2xl text-sm" color="muted">
-            Paste this snippet before the closing body tag. The widget loads
-            asynchronously and stays out of the way until someone opens it.
-          </Text>
+      <Box className="border-border bg-surface mt-6 overflow-hidden rounded-2xl border">
+        <SectionHeader
+          description="Add this snippet to your product to install the feedback widget."
+          title="Installation"
+        />
+        <Box className="p-6">
           <WidgetCodeBlock code={snippet} language="HTML" />
         </Box>
-        {widgetSettings.data?.hasSigningSecret ? (
-          <Box className="border-border/70 bg-background/60 rounded-xl border p-5">
-            <Text fontWeight="medium">Identify signed-in customers</Text>
-            <Text className="mt-1 max-w-2xl text-sm leading-5" color="muted">
-              Generate a short-lived assertion on your backend with the widget
-              key ID and signing secret, return only that assertion to your
-              page, then pass it to the loader. Assertions stay in memory and
-              are never added to the iframe URL or browser storage.
-            </Text>
-            <Box className="mt-4">
-              <WidgetCodeBlock
-                code={identityServerExample}
-                language="JavaScript"
-              />
-            </Box>
-            <Text className="mt-3 text-sm" color="muted">
-              Then pass the assertion returned by your authenticated backend to
-              the loader:
-            </Text>
-            <Box className="mt-3">
-              <WidgetCodeBlock
-                code={`// signedAssertion comes from your authenticated backend
-window.FortyOneFeedback.identify(signedAssertion);`}
-                language="JavaScript"
-                maxHeight="max-h-40"
-              />
-            </Box>
-          </Box>
-        ) : null}
       </Box>
-    </Box>
+    </>
   );
 };

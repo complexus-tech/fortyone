@@ -30,14 +30,18 @@ jest.mock("icons", () => {
   return {
     ArrowDownIcon: Icon,
     CheckIcon: Icon,
+    CodeIcon: Icon,
     CopyIcon: Icon,
     DeleteIcon: Icon,
     ExternalLinkIcon: Icon,
+    KanbanIcon: Icon,
     LinkIcon: Icon,
     MoreHorizontalIcon: Icon,
     PlusIcon: Icon,
     SearchIcon: Icon,
+    SettingsIcon: Icon,
     TeamIcon: Icon,
+    UpdatesIcon: Icon,
   };
 });
 
@@ -52,7 +56,12 @@ jest.mock("ui", () => {
 
   const Box = ({ children, ...props }: ComponentPropsWithoutRef<"div">) =>
     React.createElement("div", props, children);
-  const Flex = Box;
+  const Flex = ({
+    children,
+    wrap: _wrap,
+    ...props
+  }: ComponentPropsWithoutRef<"div"> & { wrap?: boolean }) =>
+    React.createElement("div", props, children);
   const Text = ({
     as = "span",
     children,
@@ -72,6 +81,7 @@ jest.mock("ui", () => {
     leftIcon,
     loading: _loading,
     loadingText: _loadingText,
+    rightIcon,
     size: _size,
     variant: _variant,
     ...props
@@ -81,6 +91,7 @@ jest.mock("ui", () => {
     leftIcon?: ReactNode;
     loading?: boolean;
     loadingText?: string;
+    rightIcon?: ReactNode;
     size?: string;
     asIcon?: boolean;
     variant?: string;
@@ -90,6 +101,7 @@ jest.mock("ui", () => {
       href ? { ...props, href } : props,
       leftIcon,
       children,
+      rightIcon,
     );
   const Dialog = ({
     children,
@@ -213,6 +225,66 @@ jest.mock("ui", () => {
     Trigger: SelectTrigger,
   });
 
+  const TabsContext = React.createContext({
+    setValue: (_value: string) => undefined,
+    value: "general",
+  });
+  const Tabs = ({
+    children,
+    defaultValue,
+  }: {
+    children: ReactNode;
+    defaultValue: string;
+  }) => {
+    const [value, setValue] = React.useState(defaultValue);
+    return React.createElement(
+      TabsContext.Provider,
+      { value: { setValue, value } },
+      children,
+    );
+  };
+  const TabsTab = ({
+    children,
+    leftIcon,
+    value,
+  }: {
+    children: ReactNode;
+    leftIcon?: ReactNode;
+    value: string;
+  }) => {
+    const context = React.useContext(TabsContext);
+    return React.createElement(
+      "button",
+      {
+        "aria-selected": context.value === value,
+        onClick: () => {
+          context.setValue(value);
+        },
+        role: "tab",
+        type: "button",
+      },
+      leftIcon,
+      children,
+    );
+  };
+  const TabsPanel = ({
+    children,
+    value,
+  }: {
+    children: ReactNode;
+    value: string;
+  }) => {
+    const context = React.useContext(TabsContext);
+    return context.value === value
+      ? React.createElement("div", { role: "tabpanel" }, children)
+      : null;
+  };
+  Object.assign(Tabs, {
+    List: DialogPart,
+    Panel: TabsPanel,
+    Tab: TabsTab,
+  });
+
   return {
     Avatar: ({ name, ...props }: { name: string }) =>
       React.createElement("div", { ...props, "aria-label": name }),
@@ -243,6 +315,7 @@ jest.mock("ui", () => {
     Select,
     Skeleton: (props: ComponentPropsWithoutRef<"div">) =>
       React.createElement("div", props),
+    Tabs,
     Text,
   };
 });
@@ -253,10 +326,6 @@ jest.mock("./hooks", () => ({
     isPending: false,
     mutateAsync: jest.fn(),
   }),
-  useCreateFeedbackWidgetSecretMutation: () => ({
-    isPending: false,
-    mutate: jest.fn(),
-  }),
   useDeleteFeedbackUpdateMutation: () => ({
     isPending: false,
     mutate: jest.fn(),
@@ -266,24 +335,7 @@ jest.mock("./hooks", () => ({
   useFeedbackPortals: jest.fn(),
   useFeedbackUpdateCandidates: () => ({ data: [], isLoading: false }),
   useFeedbackUpdates: () => ({ data: [], isLoading: false }),
-  useFeedbackWidgetSettings: () => ({
-    data: {
-      allowedOrigins: ["https://app.example.com"],
-      enabled: true,
-      hasSigningSecret: false,
-      previousVersionExpiresAt: null,
-      signingSecretVersion: 0,
-      widgetKeyId: "widget-key-1",
-    },
-    error: null,
-    isLoading: false,
-    refetch: jest.fn(),
-  }),
   usePublishFeedbackUpdateMutation: () => ({
-    isPending: false,
-    mutate: jest.fn(),
-  }),
-  useRotateFeedbackWidgetSecretMutation: () => ({
     isPending: false,
     mutate: jest.fn(),
   }),
@@ -293,10 +345,6 @@ jest.mock("./hooks", () => ({
   }),
   useUpdateFeedbackBoardReviewerMutation: jest.fn(),
   useUpdateFeedbackPortalMutation: jest.fn(),
-  useUpdateFeedbackWidgetSettingsMutation: () => ({
-    isPending: false,
-    mutateAsync: jest.fn(),
-  }),
 }));
 
 const mockUseTeams = jest.mocked(useTeams);
@@ -400,7 +448,7 @@ describe("FeedbackSettings", () => {
     render(<FeedbackSettings />);
 
     expect(
-      screen.getByText(/customers can submit requests, vote on ideas/i),
+      screen.getByText(/collect requests, votes, and product feedback/i),
     ).toBeInTheDocument();
     expect(
       screen.queryByPlaceholderText("Describe what people should submit here"),
@@ -501,11 +549,37 @@ describe("FeedbackSettings", () => {
     ).toBeInTheDocument();
   });
 
-  it("puts the widget key ID but never a signing secret in the snippet", () => {
-    const { container } = render(<FeedbackSettings />);
+  it("organizes feedback settings into the established tab structure", () => {
+    render(<FeedbackSettings />);
+
+    const heading = screen.getByRole("heading", { name: "Feedback" });
+    const portalLink = screen.getByRole("link", {
+      name: "Open public portal",
+    });
+    expect(heading.parentElement).toContainElement(portalLink);
+    expect(portalLink).toHaveAttribute("target", "_blank");
+    expect(portalLink).toHaveAttribute("rel", "noreferrer");
+    expect(screen.getByText("General Information")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Boards" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Widget" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Updates" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
+    expect(screen.getByText("Road safety")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create Board" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps custom identity and origin setup out of the widget installation", () => {
+    render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Widget" }));
+
+    const container = screen.getByRole("tabpanel");
 
     const snippet = [...container.querySelectorAll("code")].find((element) =>
-      element.textContent.includes('data-key-id="widget-key-1"'),
+      element.textContent.includes('data-portal="city-roads"'),
     );
     if (!snippet) {
       throw new Error(
@@ -515,6 +589,13 @@ describe("FeedbackSettings", () => {
     expect(snippet.textContent).not.toContain(
       "FORTYONE_FEEDBACK_WIDGET_SECRET",
     );
+    expect(snippet.textContent).not.toContain("data-key-id");
+    expect(screen.queryByText("Enable embeds")).not.toBeInTheDocument();
+    expect(screen.queryByText("Allowed origins")).not.toBeInTheDocument();
+    expect(screen.queryByText(/signing secret/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Appearance")).toBeInTheDocument();
+    expect(screen.getByText("Installation")).toBeInTheDocument();
+    expect(container.querySelector("pre")).toHaveClass("text-base");
   });
 
   it("does not offer anonymous collection when ingress identity is unavailable", () => {
@@ -569,6 +650,7 @@ describe("FeedbackSettings", () => {
 
   it("shows the board color without a wrapper or slug", () => {
     const { container } = render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
 
     const boardSwatch = container.querySelector<HTMLElement>(
       '[style*="background-color: red"]',
@@ -581,6 +663,7 @@ describe("FeedbackSettings", () => {
 
   it("disables board creation when every team already has a board", () => {
     render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
 
     expect(screen.getByRole("button", { name: "Create Board" })).toBeDisabled();
   });
@@ -592,6 +675,7 @@ describe("FeedbackSettings", () => {
     } as never);
 
     render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
 
     expect(screen.getByText("No boards found")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create Board" })).toBeEnabled();
@@ -603,6 +687,7 @@ describe("FeedbackSettings", () => {
 
   it("requires confirmation before deleting a board", async () => {
     render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
 
     fireEvent.click(
       screen.getByRole("button", { name: "Options for Road safety" }),
@@ -631,6 +716,7 @@ describe("FeedbackSettings", () => {
       ],
     } as ReturnType<typeof useTeams>);
     render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Create Board" }));
 
@@ -648,6 +734,7 @@ describe("FeedbackSettings", () => {
 
   it("loads reviewers only when opened and auto-saves their frequency", async () => {
     render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
 
     expect(mockUseFeedbackBoardReviewers).not.toHaveBeenCalled();
     expect(screen.queryByText("1 subscribed")).not.toBeInTheDocument();

@@ -1796,25 +1796,38 @@ func (r *Repo) GetPublicWidgetSettings(ctx context.Context, portalID uuid.UUID) 
 	return toCoreWidgetSettings(row), err
 }
 
+const upsertWidgetSettingsQuery = `
+	WITH target AS (
+		SELECT portal.id, settings.widget_key_id, settings.signing_secret_encrypted,
+			settings.signing_secret_version
+		FROM feedback_portals portal
+		LEFT JOIN feedback_widget_settings settings ON settings.portal_id = portal.id
+		WHERE portal.workspace_id = $1 AND portal.id = $2
+	), updated AS (
+		INSERT INTO feedback_widget_settings (
+			portal_id, enabled, widget_key_id, allowed_origins,
+			signing_secret_encrypted, signing_secret_version
+		)
+		SELECT id, $3, COALESCE(widget_key_id, gen_random_uuid()), $4,
+			signing_secret_encrypted, COALESCE(signing_secret_version, 0)
+		FROM target
+		ON CONFLICT (portal_id) DO UPDATE
+		SET enabled = EXCLUDED.enabled,
+			allowed_origins = EXCLUDED.allowed_origins,
+			updated_at = NOW()
+		RETURNING *
+	)
+	SELECT updated.portal_id, updated.enabled, updated.widget_key_id, updated.allowed_origins,
+		updated.signing_secret_encrypted, updated.signing_secret_version,
+		(SELECT MAX(grace_expires_at) FROM feedback_widget_signing_secret_rotations rotation
+			WHERE rotation.portal_id = updated.portal_id AND rotation.retired_at IS NULL AND rotation.grace_expires_at > NOW()) AS previous_version_expires_at,
+		updated.created_at, updated.updated_at
+	FROM updated
+`
+
 func (r *Repo) UpsertWidgetSettings(ctx context.Context, input feedback.CoreWidgetSettingsInput) (feedback.CoreWidgetSettings, error) {
 	var row widgetSettingsRow
-	err := r.db.GetContext(ctx, &row, `
-		WITH target AS (
-			SELECT id FROM feedback_portals WHERE workspace_id = $1 AND id = $2
-		), updated AS (
-			INSERT INTO feedback_widget_settings (portal_id, enabled, allowed_origins)
-			SELECT id, $3, $4 FROM target
-			ON CONFLICT (portal_id)
-			DO UPDATE SET enabled = EXCLUDED.enabled, allowed_origins = EXCLUDED.allowed_origins, updated_at = NOW()
-			RETURNING *
-		)
-		SELECT updated.portal_id, updated.enabled, updated.widget_key_id, updated.allowed_origins,
-			updated.signing_secret_encrypted, updated.signing_secret_version,
-			(SELECT MAX(grace_expires_at) FROM feedback_widget_signing_secret_rotations rotation
-				WHERE rotation.portal_id = updated.portal_id AND rotation.retired_at IS NULL AND rotation.grace_expires_at > NOW()) AS previous_version_expires_at,
-			updated.created_at, updated.updated_at
-		FROM updated
-	`, input.WorkspaceID, input.PortalID, input.Enabled, pq.Array(input.AllowedOrigins))
+	err := r.db.GetContext(ctx, &row, upsertWidgetSettingsQuery, input.WorkspaceID, input.PortalID, input.Enabled, pq.Array(input.AllowedOrigins))
 	return toCoreWidgetSettings(row), err
 }
 

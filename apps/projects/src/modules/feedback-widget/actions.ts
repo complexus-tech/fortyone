@@ -14,10 +14,17 @@ import {
   normalizeFeedbackPortalSlug,
 } from "@/modules/public-portal/feedback-ingress";
 import type {
+  PublicFeedbackListStatus,
   PublicParticipantKind,
+  PublicPortalSort,
   PublicPortalGuestParticipant,
   PublicRequestComment,
 } from "@/modules/public-portal/types";
+import { getPublicFeedbackPortal } from "@/modules/public-portal/query";
+import {
+  isPublicFeedbackListStatus,
+  isPublicPortalSort,
+} from "@/modules/public-portal/query-params";
 import { getTrustedWidgetOrigin } from "./protocol";
 
 type WidgetContributorSession = {
@@ -40,6 +47,47 @@ type ApiWidgetSessionResult = {
   participant: ApiWidgetParticipant;
   session: WidgetContributorSession;
   unreadUpdateCount?: number;
+};
+
+const WIDGET_FEEDBACK_PAGE_SIZE = 20;
+
+export const getWidgetFeedbackPageAction = async (input: {
+  page?: number;
+  portalSlug: string;
+  search?: string;
+  sort: PublicPortalSort;
+  status: PublicFeedbackListStatus;
+}) => {
+  try {
+    const portalSlug = normalizeFeedbackPortalSlug(input.portalSlug);
+    const page = Math.max(1, Math.min(Math.trunc(input.page ?? 1), 1000));
+    const search = input.search?.trim().slice(0, 200) ?? "";
+    if (!isPublicPortalSort(input.sort)) {
+      throw new Error("The feedback order is invalid.");
+    }
+    if (!isPublicFeedbackListStatus(input.status)) {
+      throw new Error("The feedback status is invalid.");
+    }
+    const portal = await getPublicFeedbackPortal(portalSlug, {
+      page,
+      pageSize: WIDGET_FEEDBACK_PAGE_SIZE,
+      search,
+      sort: input.sort,
+      status: input.status,
+      view: "summary",
+    });
+
+    return {
+      data: {
+        hasMore: portal.requestsHasMore,
+        nextPage: page + 1,
+        requests: portal.requests,
+      },
+      error: null,
+    };
+  } catch (error) {
+    return getApiError(error);
+  }
 };
 
 export type WidgetParticipantSession = {

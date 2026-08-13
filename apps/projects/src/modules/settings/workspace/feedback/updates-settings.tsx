@@ -259,7 +259,7 @@ export const FeedbackUpdatesSettings = ({
   const updates = updatesQuery.data ?? [];
 
   return (
-    <Box className="border-border bg-surface mb-6 overflow-hidden rounded-2xl border">
+    <Box className="bg-surface overflow-hidden rounded-2xl">
       <SectionHeader
         action={
           <Button

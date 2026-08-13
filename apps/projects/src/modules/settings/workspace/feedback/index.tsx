@@ -4,11 +4,15 @@ import { useState } from "react";
 import { cn } from "lib";
 import {
   ArrowDownIcon,
+  CodeIcon,
   DeleteIcon,
-  LinkIcon,
+  ExternalLinkIcon,
+  KanbanIcon,
   MoreHorizontalIcon,
   PlusIcon,
+  SettingsIcon,
   TeamIcon,
+  UpdatesIcon,
 } from "icons";
 import {
   Box,
@@ -19,6 +23,7 @@ import {
   Menu,
   Select,
   Switch,
+  Tabs,
   Text,
 } from "ui";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -114,11 +119,13 @@ const PublicUrl = ({ portal }: { portal: FeedbackPortal }) => {
           ? "/feedback"
           : `/portal/${portal.slug}/feedback`
       }
-      leftIcon={<LinkIcon className="h-4" />}
+      rel="noreferrer"
+      rightIcon={<ExternalLinkIcon className="h-4" />}
       size="sm"
       target="_blank"
+      variant="naked"
     >
-      Public portal
+      Open public portal
     </Button>
   );
 };
@@ -211,15 +218,14 @@ const PortalConfiguration = ({
   return (
     <Box className="border-border bg-surface mb-6 rounded-2xl border">
       <SectionHeader
-        action={<PublicUrl portal={portal} />}
-        description="Choose whether people can access your public feedback portal."
-        title="Public portal"
+        description="Control access to your public feedback portal and choose who can participate."
+        title="General Information"
       />
-      <Box className="space-y-5 p-6">
-        <Flex align="center" justify="between">
+      <Box className="divide-border divide-y-[0.5px]">
+        <Flex align="center" className="gap-3 px-6 py-4" justify="between">
           <Box>
-            <Text className="font-medium">Enabled</Text>
-            <Text className="mt-1" color="muted">
+            <Text>Enabled</Text>
+            <Text color="muted" fontSize="sm">
               When enabled, people can view and submit feedback on the public
               portal.
             </Text>
@@ -233,13 +239,10 @@ const PortalConfiguration = ({
             }}
           />
         </Flex>
-        <Flex
-          className="border-border/70 flex-col items-stretch gap-4 border-t pt-5 sm:flex-row sm:items-center"
-          justify="between"
-        >
+        <Flex align="center" className="gap-4 px-6 py-4" justify="between">
           <Box className="min-w-0 flex-1">
-            <Text className="font-medium">Who can submit feedback</Text>
-            <Text className="mt-1 max-w-xl" color="muted">
+            <Text>Who can submit feedback</Text>
+            <Text className="max-w-xl" color="muted" fontSize="sm">
               {selectedParticipation.description}
             </Text>
           </Box>
@@ -252,13 +255,14 @@ const PortalConfiguration = ({
           >
             <Select.Trigger
               aria-label="Who can submit feedback"
-              className="h-9 w-full shrink-0 sm:w-48"
+              className="w-max shrink-0 text-[0.9rem] md:text-base"
             >
               <Select.Input />
             </Select.Trigger>
             <Select.Content align="end">
               {participationOptions.map((option) => (
                 <Select.Option
+                  className="text-base"
                   disabled={
                     option.value === "anonymous_allowed" &&
                     !anonymousFeedbackAvailable
@@ -273,13 +277,10 @@ const PortalConfiguration = ({
           </Select>
         </Flex>
         {participationMode !== "account_required" ? (
-          <Flex
-            className="border-border/70 flex-col items-stretch gap-4 border-t pt-5 sm:flex-row sm:items-center"
-            justify="between"
-          >
+          <Flex align="center" className="gap-4 px-6 py-4" justify="between">
             <Box className="min-w-0 flex-1">
-              <Text className="font-medium">Guest public identity</Text>
-              <Text className="mt-1 max-w-xl" color="muted">
+              <Text>Guest public identity</Text>
+              <Text className="max-w-xl" color="muted" fontSize="sm">
                 {selectedGuestIdentity.description}
               </Text>
             </Box>
@@ -294,13 +295,17 @@ const PortalConfiguration = ({
             >
               <Select.Trigger
                 aria-label="Guest public identity"
-                className="h-9 w-full shrink-0 sm:w-52"
+                className="w-max shrink-0 text-[0.9rem] md:text-base"
               >
                 <Select.Input />
               </Select.Trigger>
               <Select.Content align="end">
                 {guestIdentityOptions.map((option) => (
-                  <Select.Option key={option.value} value={option.value}>
+                  <Select.Option
+                    className="text-base"
+                    key={option.value}
+                    value={option.value}
+                  >
                     {option.label}
                   </Select.Option>
                 ))}
@@ -309,11 +314,13 @@ const PortalConfiguration = ({
           </Flex>
         ) : null}
         {!anonymousFeedbackAvailable ? (
-          <Text className="text-sm" color="muted">
-            Anonymous feedback is unavailable on this deployment. Configure a
-            trusted reverse proxy and FEEDBACK_TRUSTED_CLIENT_IP_HEADER before
-            enabling it.
-          </Text>
+          <Box className="px-6 py-4">
+            <Text color="muted" fontSize="sm">
+              Anonymous feedback is unavailable on this deployment. Configure a
+              trusted reverse proxy and FEEDBACK_TRUSTED_CLIENT_IP_HEADER before
+              enabling it.
+            </Text>
+          </Box>
         ) : null}
       </Box>
     </Box>
@@ -354,6 +361,7 @@ const CreateBoardDialog = ({ portal }: { portal?: FeedbackPortal }) => {
           setTeamId(availableTeams[0]?.id ?? "");
           setOpen(true);
         }}
+        size="sm"
       >
         Create Board
       </Button>
@@ -477,137 +485,183 @@ export const FeedbackSettings = ({
 
   return (
     <Box>
-      <Flex align="center" className="mb-5" justify="between">
+      <Flex align="center" className="mb-5" gap={3} justify="between">
         <Text as="h1" className="text-2xl font-medium">
           Feedback
         </Text>
-        <CreateBoardDialog portal={primaryPortal} />
+        {primaryPortal ? <PublicUrl portal={primaryPortal} /> : null}
       </Flex>
 
       <Text className="mb-6 max-w-2xl leading-relaxed" color="muted">
-        Feedback gives your organization a public portal where customers can
-        submit requests, vote on ideas, and follow progress. Boards route every
-        submission to the team responsible for it.
+        Collect requests, votes, and product feedback in one public portal.
+        Boards route each submission to the right team.
       </Text>
 
-      {primaryPortal ? (
-        <>
-          <PortalConfiguration
-            anonymousFeedbackAvailable={anonymousFeedbackAvailable}
-            key={`${primaryPortal.id}:${primaryPortal.isPublic}:${primaryPortal.participationMode}:${primaryPortal.guestIdentityPolicy}`}
-            portal={primaryPortal}
-          />
-          <WidgetInstallSettings
-            portalId={primaryPortal.id}
-            portalSlug={primaryPortal.slug}
-          />
-          <FeedbackUpdatesSettings portal={primaryPortal} />
-        </>
-      ) : null}
-
-      <Box className="border-border bg-surface rounded-2xl border">
-        <SectionHeader
-          description="Boards route public feedback to the team that owns the work."
-          title="Boards"
-        />
-        {boards.length === 0 && !isLoading ? (
-          <Flex
-            align="center"
-            className="px-6 py-10"
-            direction="column"
-            justify="center"
-          >
-            <TeamIcon className="h-12 w-auto" />
-            <Text className="mt-4 text-lg font-semibold">No boards found</Text>
-            <Text className="mb-3" color="muted">
-              Create a team-linked board to start collecting feedback.
-            </Text>
-          </Flex>
-        ) : (
-          <>
-            <Flex
-              align="center"
-              className="border-border hidden border-b-[0.5px] px-6 py-5 md:flex"
-              justify="between"
+      <Tabs defaultValue="general">
+        <Box className="overflow-x-auto">
+          <Tabs.List className="mx-0 md:mx-0">
+            <Tabs.Tab
+              leftIcon={<SettingsIcon className="h-[1.1rem]" />}
+              value="general"
             >
-              <Text>Board</Text>
-              <Flex align="center" gap={3} justify="between">
-                <Text className="w-40">Team</Text>
-                <Text className="w-40">Portal</Text>
-                <Text className="w-40 text-right">Actions</Text>
-              </Flex>
-            </Flex>
-            {boards.map((board) => (
-              <Flex
-                align="center"
-                className="border-border border-b px-6 py-4 last:border-b-0"
-                justify="between"
-                key={board.id}
-              >
-                <Flex align="center" gap={2}>
-                  <Box
-                    aria-hidden="true"
-                    className="size-3 shrink-0 rounded-sm"
-                    style={{ backgroundColor: board.color }}
-                  />
-                  <Text className="font-medium">{board.name}</Text>
+              General
+            </Tabs.Tab>
+            <Tabs.Tab
+              leftIcon={<KanbanIcon className="h-[1.1rem]" />}
+              value="boards"
+            >
+              Boards
+            </Tabs.Tab>
+            <Tabs.Tab
+              leftIcon={<CodeIcon className="h-[1.1rem]" />}
+              value="widget"
+            >
+              Widget
+            </Tabs.Tab>
+            <Tabs.Tab
+              leftIcon={<UpdatesIcon className="h-[1.1rem]" />}
+              value="updates"
+            >
+              Updates
+            </Tabs.Tab>
+          </Tabs.List>
+        </Box>
+
+        <Box className="mt-5">
+          <Tabs.Panel value="general">
+            {primaryPortal ? (
+              <PortalConfiguration
+                anonymousFeedbackAvailable={anonymousFeedbackAvailable}
+                key={`${primaryPortal.id}:${primaryPortal.isPublic}:${primaryPortal.participationMode}:${primaryPortal.guestIdentityPolicy}`}
+                portal={primaryPortal}
+              />
+            ) : null}
+          </Tabs.Panel>
+          <Tabs.Panel value="boards">
+            <Box className="border-border bg-surface rounded-2xl border">
+              <SectionHeader
+                action={<CreateBoardDialog portal={primaryPortal} />}
+                description="Boards route public feedback to the team that owns the work."
+                title="Boards"
+              />
+              {boards.length === 0 && !isLoading ? (
+                <Flex
+                  align="center"
+                  className="px-6 py-10"
+                  direction="column"
+                  justify="center"
+                >
+                  <KanbanIcon className="h-12 w-auto" />
+                  <Text className="mt-4 text-lg font-semibold">
+                    No boards found
+                  </Text>
+                  <Text className="mb-3" color="muted">
+                    Create a team-linked board to start collecting feedback.
+                  </Text>
                 </Flex>
-                <Flex align="center" gap={3} justify="between">
-                  <Text className="w-40">
-                    {board.team?.name ?? "Missing team"}
-                  </Text>
-                  <Text className="w-40" color="muted">
-                    {board.portalName}
-                  </Text>
-                  <Flex align="center" className="w-40" gap={1} justify="end">
-                    <Menu>
-                      <Menu.Button>
-                        <Button
-                          aria-label={`Options for ${board.name}`}
-                          asIcon
-                          color="tertiary"
-                          size="sm"
-                          variant="naked"
-                        >
-                          <MoreHorizontalIcon className="h-5 w-auto" />
-                        </Button>
-                      </Menu.Button>
-                      <Menu.Items align="end" className="w-56">
-                        <Menu.Group>
-                          <Menu.Item
-                            onSelect={() => {
-                              openDialogAfterMenuClose((open) => {
-                                if (!open) return;
-                                setReviewersDialog({
-                                  board,
-                                  teamName: board.team?.name ?? "team",
-                                });
-                              });
-                            }}
-                          >
-                            <TeamIcon />
-                            Manage Reviewers
-                          </Menu.Item>
-                          <Menu.Item
-                            onSelect={() => {
-                              openDialogAfterMenuClose((open) => {
-                                if (open) setBoardToDelete(board);
-                              });
-                            }}
-                          >
-                            <DeleteIcon />
-                            Delete Board
-                          </Menu.Item>
-                        </Menu.Group>
-                      </Menu.Items>
-                    </Menu>
+              ) : (
+                <>
+                  <Flex
+                    align="center"
+                    className="border-border hidden border-b-[0.5px] px-6 py-5 md:flex"
+                    justify="between"
+                  >
+                    <Text>Board</Text>
+                    <Flex align="center" gap={3} justify="between">
+                      <Text className="w-40">Team</Text>
+                      <Text className="w-40">Portal</Text>
+                      <Text className="w-40 text-right">Actions</Text>
+                    </Flex>
                   </Flex>
-                </Flex>
-              </Flex>
-            ))}
-          </>
-        )}
-      </Box>
+                  {boards.map((board) => (
+                    <Flex
+                      align="center"
+                      className="border-border border-b px-6 py-4 last:border-b-0"
+                      justify="between"
+                      key={board.id}
+                    >
+                      <Flex align="center" gap={2}>
+                        <Box
+                          aria-hidden="true"
+                          className="size-3 shrink-0 rounded-sm"
+                          style={{ backgroundColor: board.color }}
+                        />
+                        <Text className="font-medium">{board.name}</Text>
+                      </Flex>
+                      <Flex align="center" gap={3} justify="between">
+                        <Text className="w-40">
+                          {board.team?.name ?? "Missing team"}
+                        </Text>
+                        <Text className="w-40" color="muted">
+                          {board.portalName}
+                        </Text>
+                        <Flex
+                          align="center"
+                          className="w-40"
+                          gap={1}
+                          justify="end"
+                        >
+                          <Menu>
+                            <Menu.Button>
+                              <Button
+                                aria-label={`Options for ${board.name}`}
+                                asIcon
+                                color="tertiary"
+                                size="sm"
+                                variant="naked"
+                              >
+                                <MoreHorizontalIcon className="h-5 w-auto" />
+                              </Button>
+                            </Menu.Button>
+                            <Menu.Items align="end" className="w-56">
+                              <Menu.Group>
+                                <Menu.Item
+                                  onSelect={() => {
+                                    openDialogAfterMenuClose((open) => {
+                                      if (!open) return;
+                                      setReviewersDialog({
+                                        board,
+                                        teamName: board.team?.name ?? "team",
+                                      });
+                                    });
+                                  }}
+                                >
+                                  <TeamIcon />
+                                  Manage Reviewers
+                                </Menu.Item>
+                                <Menu.Item
+                                  onSelect={() => {
+                                    openDialogAfterMenuClose((open) => {
+                                      if (open) setBoardToDelete(board);
+                                    });
+                                  }}
+                                >
+                                  <DeleteIcon />
+                                  Delete Board
+                                </Menu.Item>
+                              </Menu.Group>
+                            </Menu.Items>
+                          </Menu>
+                        </Flex>
+                      </Flex>
+                    </Flex>
+                  ))}
+                </>
+              )}
+            </Box>
+          </Tabs.Panel>
+          <Tabs.Panel value="widget">
+            {primaryPortal ? (
+              <WidgetInstallSettings portalSlug={primaryPortal.slug} />
+            ) : null}
+          </Tabs.Panel>
+          <Tabs.Panel value="updates">
+            {primaryPortal ? (
+              <FeedbackUpdatesSettings portal={primaryPortal} />
+            ) : null}
+          </Tabs.Panel>
+        </Box>
+      </Tabs>
       {reviewersDialog ? (
         <FeedbackReviewersDialog
           board={reviewersDialog.board}

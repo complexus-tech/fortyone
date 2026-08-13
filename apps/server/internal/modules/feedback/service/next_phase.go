@@ -585,13 +585,6 @@ func (s *Service) UpdateWidgetSettings(ctx context.Context, input CoreWidgetSett
 		if len(origins) == 0 {
 			return CoreWidgetSettings{}, invalidInput("at least one allowed origin is required before enabling the widget")
 		}
-		current, err := s.nextRepo.GetWidgetSettings(ctx, input.WorkspaceID, input.PortalID)
-		if err != nil {
-			return CoreWidgetSettings{}, err
-		}
-		if strings.TrimSpace(current.SigningSecretEncrypted) == "" {
-			return CoreWidgetSettings{}, invalidInput("create a widget signing secret before enabling the widget")
-		}
 	}
 	return s.nextRepo.UpsertWidgetSettings(ctx, input)
 }

@@ -26,7 +26,9 @@ const first = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
 const parseTab = (value?: string): FeedbackWidgetTab =>
-  value === "roadmap" || value === "updates" ? value : "feedback";
+  value === "feedback" || value === "roadmap" || value === "updates"
+    ? value
+    : "home";
 
 const parseMode = (value?: string): FeedbackWidgetMode =>
   value === "custom" || value === "inline" ? value : "bubble";
@@ -97,6 +99,20 @@ export default async function FeedbackWidgetPage({
         completed: completed.requests,
         in_progress: inProgress.requests,
         planned: planned.requests,
+      }}
+      roadmapPagination={{
+        completed: {
+          hasMore: completed.requestsHasMore,
+          nextPage: 2,
+        },
+        in_progress: {
+          hasMore: inProgress.requestsHasMore,
+          nextPage: 2,
+        },
+        planned: {
+          hasMore: planned.requestsHasMore,
+          nextPage: 2,
+        },
       }}
       theme={parseTheme(first(query.theme))}
       viewer={viewer}

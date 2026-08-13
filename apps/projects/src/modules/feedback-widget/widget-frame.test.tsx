@@ -13,6 +13,7 @@ import {
   confirmWidgetFeedbackVerificationAction,
   createWidgetFeedbackAction,
   exchangeWidgetIdentityAction,
+  getWidgetFeedbackPageAction,
   markWidgetFeedbackUpdatesSeenAction,
   requestWidgetFeedbackVerificationAction,
   revokeWidgetIdentityAction,
@@ -26,6 +27,7 @@ jest.mock("./actions", () => ({
   createWidgetFeedbackAction: jest.fn(),
   createWidgetFeedbackCommentAction: jest.fn(),
   exchangeWidgetIdentityAction: jest.fn(),
+  getWidgetFeedbackPageAction: jest.fn(),
   markWidgetFeedbackUpdatesSeenAction: jest.fn(),
   requestWidgetFeedbackVerificationAction: jest.fn(),
   revokeWidgetIdentityAction: jest.fn(),
@@ -114,6 +116,7 @@ jest.mock("ui", () => {
 });
 
 const exchangeIdentityMock = jest.mocked(exchangeWidgetIdentityAction);
+const getFeedbackPageMock = jest.mocked(getWidgetFeedbackPageAction);
 const createFeedbackMock = jest.mocked(createWidgetFeedbackAction);
 const requestVerificationMock = jest.mocked(
   requestWidgetFeedbackVerificationAction,
@@ -271,6 +274,14 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
     revokeIdentityMock.mockResolvedValue({ data: null });
     toggleVoteMock.mockResolvedValue({
       data: { participantKind: "external", vote: 1, voteCount: 2 },
+    });
+    getFeedbackPageMock.mockResolvedValue({
+      data: {
+        hasMore: false,
+        nextPage: 2,
+        requests: [],
+      },
+      error: null,
     });
     parentPostMessage = jest.fn();
     parentWindow = { postMessage: parentPostMessage } as unknown as Window;
@@ -516,6 +527,18 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
     });
   });
 
+  it("keeps account-required feedback drafts inside the widget", () => {
+    renderWidget({ ...portal, participationMode: "account_required" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Add feedback" }));
+
+    expect(screen.getByLabelText("Feedback title")).toBeInTheDocument();
+    expect(parentPostMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ event: "open-external" }),
+      parentOrigin,
+    );
+  });
+
   it("preserves the draft through email-code verification", async () => {
     requestVerificationMock.mockResolvedValue({
       data: { accepted: true, expiresAt: "2026-08-12T01:00:00Z" },
@@ -582,5 +605,145 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
         }),
       );
     });
+  });
+
+  it("uses the public feedback status vocabulary and ordering controls", async () => {
+    const completedRequest = {
+      ...request,
+      id: "feedback-completed",
+      status: "completed" as const,
+      title: "Repair completed",
+    };
+    getFeedbackPageMock.mockResolvedValue({
+      data: {
+        hasMore: false,
+        nextPage: 2,
+        requests: [completedRequest],
+      },
+      error: null,
+    });
+    renderWidget({ ...portal, requests: [request] });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Filter feedback by Active" }),
+    );
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Completed" }));
+
+    await waitFor(() => {
+      expect(getFeedbackPageMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sort: "top",
+          status: "completed",
+        }),
+      );
+      expect(screen.getByText("Repair completed")).toBeInTheDocument();
+    });
+  });
+
+  it("summarizes feedback and roadmap on Home without an empty updates block", () => {
+    const plannedRequest = {
+      ...request,
+      id: "planned-home",
+      status: "planned" as const,
+      title: "Safer traffic signals",
+    };
+    render(
+      <FeedbackWidgetFrame
+        initialTab="home"
+        instanceId="widget-1"
+        mode="bubble"
+        parentOrigin={parentOrigin}
+        portal={{
+          ...portal,
+          hasPublishedUpdates: false,
+          requests: [request],
+          updates: [],
+        }}
+        roadmap={{
+          completed: [],
+          in_progress: [],
+          planned: [plannedRequest],
+        }}
+        theme="light"
+        viewer={null}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Home" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByText("Popular feedback")).toBeInTheDocument();
+    expect(screen.getByText("Repair the crossing")).toBeInTheDocument();
+    expect(screen.getByText("On the roadmap")).toBeInTheDocument();
+    expect(screen.getByText("Safer traffic signals")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Updates" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Latest update/)).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Help shape what comes next/ }),
+    );
+    expect(screen.getByLabelText("Feedback title")).toBeInTheDocument();
+  });
+
+  it("matches the main feedback detail vote and comment controls", async () => {
+    exchangeIdentityMock.mockResolvedValue(contributorSession("session-a"));
+    toggleVoteMock.mockResolvedValue({
+      data: { participantKind: "external", vote: -1, voteCount: 0 },
+    });
+    renderWidget({ ...portal, requests: [request] });
+    sendHostIdentity("identity-a");
+    await screen.findByRole("button", { name: "View feedback updates" });
+
+    fireEvent.click(screen.getByText(request.title));
+    const backButton = screen.getByRole("button", {
+      name: "Back to feedback",
+    });
+    const status = screen.getByText("Pending").closest("span");
+    const commentInput = screen.getByLabelText("Add a comment");
+    const commentAction = screen.getByRole("button", { name: "Comment" });
+
+    expect(backButton).toHaveClass("bg-state-hover");
+    expect(status).toHaveClass("h-9", "text-[12px]");
+    expect(commentInput.parentElement).toHaveClass("rounded-xl");
+    expect(commentAction).toHaveClass("h-9", "text-[12px]");
+
+    fireEvent.click(screen.getByRole("button", { name: "Downvote feedback" }));
+    await waitFor(() => {
+      expect(toggleVoteMock).toHaveBeenCalledWith(
+        expect.objectContaining({ vote: -1 }),
+      );
+    });
+  });
+
+  it("expands each roadmap lane independently", () => {
+    const plannedRequests = Array.from({ length: 4 }, (_, index) => ({
+      ...request,
+      id: `planned-${index + 1}`,
+      status: "planned" as const,
+      title: `Planned request ${index + 1}`,
+    }));
+    render(
+      <FeedbackWidgetFrame
+        initialTab="roadmap"
+        instanceId="widget-1"
+        mode="bubble"
+        parentOrigin={parentOrigin}
+        portal={portal}
+        roadmap={{
+          completed: [],
+          in_progress: [],
+          planned: plannedRequests,
+        }}
+        theme="light"
+        viewer={null}
+      />,
+    );
+
+    expect(screen.queryByText("Planned request 4")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show more" }));
+    expect(screen.getByText("Planned request 4")).toBeInTheDocument();
   });
 });

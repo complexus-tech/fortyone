@@ -403,7 +403,7 @@ func BuildSlackStoryUnfurlRequest(channelID, messageTS string, input SlackStoryW
 	if err := validateSlackUnfurlDestination(channelID, messageTS); err != nil {
 		return SlackChatUnfurlRequest{}, err
 	}
-	entity, _, err := buildSlackStoryWorkObject(input, true)
+	entity, _, err := buildSlackStoryWorkObject(input, true, true)
 	if err != nil {
 		return SlackChatUnfurlRequest{}, err
 	}
@@ -457,7 +457,7 @@ func BuildSlackStoryEntityDetailsRequest(triggerID string, input SlackStoryWorkO
 	if triggerID == "" {
 		return SlackEntityDetailsRequest{}, errors.New("Slack entity details trigger is required")
 	}
-	entity, _, err := buildSlackStoryWorkObject(input, false)
+	entity, _, err := buildSlackStoryWorkObject(input, false, false)
 	if err != nil {
 		return SlackEntityDetailsRequest{}, err
 	}
@@ -514,7 +514,7 @@ func BuildSlackStoryEntityDetailsErrorRequest(triggerID, message string) (SlackE
 // BuildSlackStoryCreationReceipt builds a Work Object notification while
 // preserving the intentionally minimal top line: "Joseph created WEB-123".
 func BuildSlackStoryCreationReceipt(creatorName string, input SlackStoryWorkObjectInput) (SlackStoryCreationReceipt, error) {
-	entity, link, err := buildSlackStoryWorkObject(input, false)
+	entity, link, err := buildSlackStoryWorkObject(input, false, true)
 	if err != nil {
 		return SlackStoryCreationReceipt{}, err
 	}
@@ -635,7 +635,7 @@ func decodeSlackMutationActionValue(raw string) (slackMutationActionValue, error
 	return value, nil
 }
 
-func buildSlackStoryWorkObject(input SlackStoryWorkObjectInput, includeAppUnfurlURL bool) (SlackWorkObjectEntity, FortyOneStoryLink, error) {
+func buildSlackStoryWorkObject(input SlackStoryWorkObjectInput, includeAppUnfurlURL, compact bool) (SlackWorkObjectEntity, FortyOneStoryLink, error) {
 	if !input.AccessGranted {
 		return SlackWorkObjectEntity{}, FortyOneStoryLink{}, ErrSlackStoryPreviewAccessDenied
 	}
@@ -650,7 +650,7 @@ func buildSlackStoryWorkObject(input SlackStoryWorkObjectInput, includeAppUnfurl
 
 	fields := make(map[string]SlackWorkObjectField, 8)
 	description := truncateSlackWorkObjectText(slackWorkObjectDescription(input.Description), slackWorkObjectTextFieldLimit)
-	if description != "" || input.Editable {
+	if !compact && (description != "" || input.Editable) {
 		descriptionField := SlackWorkObjectField{Value: description, Format: "markdown"}
 		if input.Editable {
 			descriptionField.Edit = &SlackWorkObjectEdit{
@@ -661,14 +661,16 @@ func buildSlackStoryWorkObject(input SlackStoryWorkObjectInput, includeAppUnfurl
 		}
 		fields["description"] = descriptionField
 	}
-	if createdBy := slackWorkObjectUser(input.CreatorSlackUserID, input.CreatorName); createdBy != nil {
-		fields["created_by"] = SlackWorkObjectField{Type: slackUserFieldType, User: createdBy}
-	}
-	if !input.CreatedAt.IsZero() {
-		fields["date_created"] = SlackWorkObjectField{Value: input.CreatedAt.UTC().Unix()}
-	}
-	if !input.UpdatedAt.IsZero() {
-		fields["date_updated"] = SlackWorkObjectField{Value: input.UpdatedAt.UTC().Unix()}
+	if !compact {
+		if createdBy := slackWorkObjectUser(input.CreatorSlackUserID, input.CreatorName); createdBy != nil {
+			fields["created_by"] = SlackWorkObjectField{Type: slackUserFieldType, User: createdBy}
+		}
+		if !input.CreatedAt.IsZero() {
+			fields["date_created"] = SlackWorkObjectField{Value: input.CreatedAt.UTC().Unix()}
+		}
+		if !input.UpdatedAt.IsZero() {
+			fields["date_updated"] = SlackWorkObjectField{Value: input.UpdatedAt.UTC().Unix()}
+		}
 	}
 	assignee := slackWorkObjectUser(input.AssigneeSlackUserID, input.AssigneeName)
 	if assignee != nil || (input.Editable && len(input.AssigneeOptions) > 0) {

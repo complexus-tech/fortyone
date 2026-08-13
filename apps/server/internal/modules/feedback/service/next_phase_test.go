@@ -23,6 +23,7 @@ type nextPhaseRepoStub struct {
 	itemInput            CoreContributorItemInput
 	commentInput         CoreContributorCommentInput
 	widgetSettings       CoreWidgetSettings
+	widgetSettingsInput  CoreWidgetSettingsInput
 	widgetSecret         string
 	nonceErr             error
 	nonceCalls           int
@@ -110,6 +111,16 @@ func (r *nextPhaseRepoStub) CreateContributorComment(_ context.Context, input Co
 func (r *nextPhaseRepoStub) GetPublicWidgetSettings(_ context.Context, portalID uuid.UUID) (CoreWidgetSettings, error) {
 	if r.widgetSettings.PortalID != portalID {
 		return CoreWidgetSettings{}, ErrNotFound
+	}
+	return r.widgetSettings, nil
+}
+
+func (r *nextPhaseRepoStub) UpsertWidgetSettings(_ context.Context, input CoreWidgetSettingsInput) (CoreWidgetSettings, error) {
+	r.widgetSettingsInput = input
+	r.widgetSettings = CoreWidgetSettings{
+		PortalID:       input.PortalID,
+		Enabled:        input.Enabled,
+		AllowedOrigins: append([]string(nil), input.AllowedOrigins...),
 	}
 	return r.widgetSettings, nil
 }
@@ -567,6 +578,28 @@ func TestWidgetAssertionIsPortalOriginExpiryAndReplayBound(t *testing.T) {
 		PortalSlug: "roads", Assertion: assertion, ParentOrigin: "https://customer.example",
 	})
 	require.ErrorIs(t, err, ErrWidgetAssertionReplayed)
+}
+
+func TestBasicWidgetCanBeEnabledWithoutCustomIdentity(t *testing.T) {
+	workspaceID, portalID := uuid.New(), uuid.New()
+	repo := &nextPhaseRepoStub{repoStub: &repoStub{}}
+	service := New(repo, nil)
+
+	settings, err := service.UpdateWidgetSettings(context.Background(), CoreWidgetSettingsInput{
+		WorkspaceID: workspaceID,
+		PortalID:    portalID,
+		Enabled:     true,
+		AllowedOrigins: []string{
+			"http://localhost:5500",
+			"https://app.example.com/",
+		},
+	})
+
+	require.NoError(t, err)
+	require.True(t, settings.Enabled)
+	require.Equal(t, []string{"http://localhost:5500", "https://app.example.com"}, settings.AllowedOrigins)
+	require.True(t, repo.widgetSettingsInput.Enabled)
+	require.Empty(t, repo.widgetSettings.SigningSecretEncrypted)
 }
 
 func TestWidgetSecretEnvelopeCannotMoveAcrossPortalOrVersion(t *testing.T) {

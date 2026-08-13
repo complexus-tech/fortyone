@@ -156,7 +156,10 @@ func TestBuildSlackStoryUnfurlRequestRequiresAccessAndBuildsTaskMetadata(t *test
 	require.Equal(t, updatedAt.Unix(), entity.EntityPayload.Attributes.MetadataLastModified)
 	require.Equal(t, "In progress", entity.EntityPayload.Fields["status"].Value)
 	require.Equal(t, "blue", entity.EntityPayload.Fields["status"].TagColor)
-	require.Equal(t, "Users cannot sign in after accepting an invite.", entity.EntityPayload.Fields["description"].Value)
+	require.NotContains(t, entity.EntityPayload.Fields, "description")
+	require.NotContains(t, entity.EntityPayload.Fields, "created_by")
+	require.NotContains(t, entity.EntityPayload.Fields, "date_created")
+	require.NotContains(t, entity.EntityPayload.Fields, "date_updated")
 	require.Equal(t, "U123ABC", entity.EntityPayload.Fields["assignee"].User.UserID)
 	require.Equal(t, "2026-08-19", entity.EntityPayload.Fields["due_date"].Value)
 	require.Equal(t, slackDateFieldType, entity.EntityPayload.Fields["due_date"].Type)
@@ -168,6 +171,28 @@ func TestBuildSlackStoryUnfurlRequestRequiresAccessAndBuildsTaskMetadata(t *test
 	input.Title = "A private story title"
 	_, err = BuildSlackStoryUnfurlRequest("C123", "1754700000.123", input)
 	require.ErrorIs(t, err, ErrSlackStoryPreviewAccessDenied)
+}
+
+func TestBuildSlackStoryEntityDetailsKeepsCompactPreviewFieldsForExpandedView(t *testing.T) {
+	t.Parallel()
+
+	createdAt := time.Date(2026, time.August, 9, 7, 0, 0, 0, time.UTC)
+	updatedAt := createdAt.Add(2 * time.Hour)
+	request, err := BuildSlackStoryEntityDetailsRequest("trigger-123", SlackStoryWorkObjectInput{
+		AccessGranted: true,
+		StoryURL:      "https://acme.fortyone.app/work/WEB-123",
+		Title:         "Fix workspace login",
+		Description:   "Users cannot sign in after accepting an invite.",
+		CreatorName:   "Joseph Mukorivo",
+		CreatedAt:     createdAt,
+		UpdatedAt:     updatedAt,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, request.Metadata)
+	require.Equal(t, "Users cannot sign in after accepting an invite.", request.Metadata.EntityPayload.Fields["description"].Value)
+	require.Equal(t, "Joseph Mukorivo", request.Metadata.EntityPayload.Fields["created_by"].User.Text)
+	require.Equal(t, createdAt.Unix(), request.Metadata.EntityPayload.Fields["date_created"].Value)
+	require.Equal(t, updatedAt.Unix(), request.Metadata.EntityPayload.Fields["date_updated"].Value)
 }
 
 func TestBuildSlackRequestUnfurlRequestRequiresAccessAndBuildsReadOnlyTaskMetadata(t *testing.T) {
@@ -265,13 +290,22 @@ func TestBuildSlackStoryCreationReceiptUsesExactTopLineAndDurableWorkObject(t *t
 		StoryURL:      "https://acme.fortyone.app/work/web-123",
 		Title:         "Fix workspace login",
 		Status:        "Backlog",
+		Description:   "A long story description that belongs in the expanded view.",
+		CreatorName:   "Joseph Mukorivo",
+		CreatedAt:     time.Date(2026, time.August, 9, 7, 0, 0, 0, time.UTC),
+		UpdatedAt:     time.Date(2026, time.August, 9, 9, 0, 0, 0, time.UTC),
 	})
 	require.NoError(t, err)
 	require.Equal(t, "Joseph created <https://acme.fortyone.app/work/WEB-123|WEB-123>", receipt.Text)
 	require.NotContains(t, receipt.Text, "✅")
 	require.NotContains(t, receipt.Text, "FortyOne")
 	require.NotNil(t, receipt.ProviderPayload.Metadata)
-	require.Len(t, receipt.ProviderPayload.Metadata.Entities[0].EntityPayload.Actions.PrimaryActions, 1)
+	entity := receipt.ProviderPayload.Metadata.Entities[0]
+	require.Len(t, entity.EntityPayload.Actions.PrimaryActions, 1)
+	require.NotContains(t, entity.EntityPayload.Fields, "description")
+	require.NotContains(t, entity.EntityPayload.Fields, "created_by")
+	require.NotContains(t, entity.EntityPayload.Fields, "date_created")
+	require.NotContains(t, entity.EntityPayload.Fields, "date_updated")
 	require.Empty(t, receipt.ProviderPayload.Metadata.Entities[0].AppUnfurlURL)
 
 	encoded, err := EncodeSlackProviderPayload(receipt.ProviderPayload)

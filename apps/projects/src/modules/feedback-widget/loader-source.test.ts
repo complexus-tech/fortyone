@@ -5,7 +5,10 @@ import { FEEDBACK_WIDGET_LOADER_SOURCE } from "./loader-source";
 type FeedbackWidgetApi = {
   destroy: () => void;
   identify: (assertion?: string | null) => void;
-  init: (options: { portalSlug: string }) => {
+  init: (options: {
+    portalSlug: string;
+    theme?: "auto" | "dark" | "light";
+  }) => {
     identify: (assertion?: string | null) => void;
     open: () => void;
   };
@@ -21,9 +24,12 @@ const originalMatchMedia = Object.getOwnPropertyDescriptor(
   "matchMedia",
 );
 
-const loadWidget = () => {
+const loadWidget = (
+  options: { prefersDark?: boolean; theme?: "auto" | "dark" | "light" } = {},
+) => {
   const script = document.createElement("script");
   script.dataset.portal = "city-roads";
+  if (options.theme) script.dataset.theme = options.theme;
   script.src = "https://feedback.example.com/widget.js";
   document.body.appendChild(script);
   Object.defineProperty(document, "currentScript", {
@@ -36,9 +42,16 @@ const loadWidget = () => {
     .FortyOneFeedback;
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
-    value: jest.fn(() => ({ matches: false })),
+    value: jest.fn(() => ({
+      addEventListener: jest.fn(),
+      matches: options.prefersDark ?? false,
+      removeEventListener: jest.fn(),
+    })),
   });
-  const instance = api.init({ portalSlug: "city-roads" });
+  const instance = api.init({
+    portalSlug: "city-roads",
+    ...(options.theme ? { theme: options.theme } : {}),
+  });
   instance.open();
   const hosts = document.querySelectorAll<HTMLElement>(
     "[data-fortyone-feedback-root]",
@@ -79,6 +92,7 @@ const loadWidget = () => {
       sendFrameEvent("identity-cleared", { requestId });
     },
     api,
+    host,
     postMessage,
     ready: () => {
       sendFrameEvent("ready");
@@ -123,8 +137,9 @@ describe("feedback widget loader", () => {
     );
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("(?=.{3,255}$)");
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
-      '["feedback", "roadmap", "updates"]',
+      '["home", "feedback", "roadmap", "updates"]',
     );
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain('], "home"),');
   });
 
   it("validates message origin, source, version, and instance", () => {
@@ -177,8 +192,27 @@ describe("feedback widget loader", () => {
     );
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("@media(max-width:640px)");
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("height:100dvh");
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("border-radius:.825rem");
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("--widget-border:#292824");
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
+      "background:var(--widget-background)",
+    );
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
+      "@supports(corner-shape:squircle){.panel{border-radius:2.2rem;corner-shape:squircle}}",
+    );
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
       'if (message.event === "escape") closeWidget()',
+    );
+  });
+
+  it("applies a dark shell before the iframe reports that it is ready", () => {
+    const { host } = loadWidget({ theme: "dark" });
+
+    expect(
+      host.shadowRoot?.querySelector<HTMLElement>(".root")?.dataset.theme,
+    ).toBe("dark");
+    expect(host.shadowRoot?.querySelector("style")?.textContent).toContain(
+      ".root[data-theme=dark]",
     );
   });
 

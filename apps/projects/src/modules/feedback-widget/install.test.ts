@@ -33,6 +33,7 @@ describe("feedback widget install snippet", () => {
     expect(snippet).toContain('<div id="fortyone-feedback"></div>');
     expect(snippet).toContain('data-mode="inline"');
     expect(snippet).toContain('data-target="#fortyone-feedback"');
+    expect(snippet).toContain('data-default-tab="home"');
   });
 
   it("can open directly on published updates", () => {
@@ -44,13 +45,12 @@ describe("feedback widget install snippet", () => {
     expect(snippet).toContain('data-default-tab="updates"');
   });
 
-  it("includes the non-secret widget key identifier", () => {
+  it("keeps custom identity configuration out of the basic embed", () => {
     const snippet = buildFeedbackWidgetSnippet({
       portalSlug: "city-roads",
-      widgetKeyId: "widget-key-123",
     });
 
-    expect(snippet).toContain('data-key-id="widget-key-123"');
+    expect(snippet).not.toContain("data-key-id");
     expect(snippet).not.toContain("signing-secret");
   });
 
