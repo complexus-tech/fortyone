@@ -557,6 +557,119 @@ func TestFortyOneToolExecutorMyTasksReturnsOnlyActiveAssignmentsWithHumanFields(
 	}
 }
 
+func TestFortyOneToolExecutorListCompletedTasksUsesLocalDateRangeAndStoryLinks(t *testing.T) {
+	t.Parallel()
+
+	scope := testToolScope()
+	scope.Timezone = "Africa/Harare"
+	scope.WebsiteURL = "https://fortyone.app"
+	scope.WorkspaceSlug = "acme"
+	team := teams.CoreTeam{
+		ID:        uuid.MustParse("55555555-0000-0000-0000-000000000001"),
+		Name:      "Web Platform",
+		Code:      "web",
+		Workspace: scope.WorkspaceID,
+	}
+	completedStatusID := uuid.MustParse("55555555-0000-0000-0000-000000000011")
+	activeStatusID := uuid.MustParse("55555555-0000-0000-0000-000000000012")
+	currentUserID := scope.UserID
+	completedAtLatest := time.Date(2026, time.August, 12, 21, 30, 0, 0, time.UTC)
+	completedAtEarlier := time.Date(2026, time.August, 12, 1, 0, 0, 0, time.UTC)
+	completedAtNextDay := time.Date(2026, time.August, 13, 21, 0, 0, 0, time.UTC)
+	completedStories := &completedStoriesServiceStub{items: []stories.CoreStoryList{
+		{ID: uuid.New(), SequenceID: 41, Title: "Completed latest", Team: team.ID, Workspace: scope.WorkspaceID, Status: &completedStatusID, Assignee: &currentUserID, CompletedAt: &completedAtLatest},
+		{ID: uuid.New(), SequenceID: 42, Title: "Completed earlier", Team: team.ID, Workspace: scope.WorkspaceID, Status: &completedStatusID, Assignee: &currentUserID, CompletedAt: &completedAtEarlier},
+		{ID: uuid.New(), SequenceID: 43, Title: "Completed outside requested day", Team: team.ID, Workspace: scope.WorkspaceID, Status: &completedStatusID, Assignee: &currentUserID, CompletedAt: &completedAtNextDay},
+		{ID: uuid.New(), SequenceID: 44, Title: "Active timestamp", Team: team.ID, Workspace: scope.WorkspaceID, Status: &activeStatusID, Assignee: &currentUserID, CompletedAt: &completedAtLatest},
+		{ID: uuid.New(), SequenceID: 45, Title: "Other team", Team: uuid.New(), Workspace: scope.WorkspaceID, Status: &completedStatusID, Assignee: &currentUserID, CompletedAt: &completedAtLatest},
+	}}
+	statesService := &statesServiceStub{items: []states.CoreState{
+		{ID: completedStatusID, Name: "Done", Category: "completed", Team: team.ID, Workspace: scope.WorkspaceID},
+		{ID: activeStatusID, Name: "In Progress", Category: "started", Team: team.ID, Workspace: scope.WorkspaceID},
+	}}
+	usersService := &usersServiceStub{current: users.CoreUser{
+		ID:       scope.UserID,
+		FullName: "Joseph Mukorivo",
+		Username: "joseph",
+		IsActive: true,
+	}}
+	executor := newToolExecutorForTest(
+		t,
+		&teamsServiceStub{joined: []teams.CoreTeam{team}},
+		completedStories,
+		&searchServiceStub{},
+		&objectivesServiceStub{},
+		WithOperationalTools(OperationalToolServices{States: statesService, Users: usersService}),
+	)
+
+	raw, err := executor.Execute(context.Background(), scope, ToolCall{
+		Name:      toolListCompleted,
+		Arguments: json.RawMessage(`{"start_date":"2026-08-12","end_date":"2026-08-12","limit":20}`),
+	})
+	if err != nil {
+		t.Fatalf("list completed tasks: %v", err)
+	}
+	var result listTasksResult
+	if err := json.Unmarshal(raw, &result); err != nil {
+		t.Fatalf("decode completed tasks: %v", err)
+	}
+	if result.Total != 2 || len(result.Tasks) != 2 {
+		t.Fatalf("unexpected completed task result: %#v", result)
+	}
+	if result.Tasks[0].Reference != "WEB-41" || result.Tasks[0].CompletedAt == nil || !result.Tasks[0].CompletedAt.Equal(completedAtLatest) {
+		t.Fatalf("completed tasks were not ordered by completion time: %#v", result.Tasks)
+	}
+	if result.Tasks[1].Reference != "WEB-42" || result.Tasks[1].StatusCategory != "completed" {
+		t.Fatalf("completed task enrichment is incorrect: %#v", result.Tasks[1])
+	}
+	if result.Tasks[0].URL != "https://acme.fortyone.app/work/WEB-41" {
+		t.Fatalf("completed task URL = %q", result.Tasks[0].URL)
+	}
+
+	call := completedStories.lastCall()
+	if call.actorID != scope.UserID || call.actorErr != nil || call.workspaceID != scope.WorkspaceID {
+		t.Fatalf("completed task query did not receive the authenticated scope: %#v", call)
+	}
+	completedAfter, ok := call.filters["completed_after"].(time.Time)
+	if !ok || !completedAfter.Equal(time.Date(2026, time.August, 11, 22, 0, 0, 0, time.UTC)) {
+		t.Fatalf("completed_after did not use the user's local timezone: %#v", call.filters)
+	}
+	completedBefore, ok := call.filters["completed_before"].(time.Time)
+	if !ok || !completedBefore.Equal(time.Date(2026, time.August, 12, 21, 59, 59, 999999999, time.UTC)) {
+		t.Fatalf("completed_before did not close the user's local day: %#v", call.filters)
+	}
+	if call.filters["assigned_to_me"] != true || call.filters["current_user_id"] != scope.UserID {
+		t.Fatalf("completed task query was not restricted to the current assignee: %#v", call.filters)
+	}
+}
+
+func TestCompletedTaskDateRangeDefaultsToTodayInUserTimezone(t *testing.T) {
+	t.Parallel()
+
+	start, end, err := completedTaskDateRange(nil, nil, "America/Los_Angeles", time.Date(2026, time.August, 13, 0, 30, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("completedTaskDateRange() error = %v", err)
+	}
+	if !start.Equal(time.Date(2026, time.August, 12, 7, 0, 0, 0, time.UTC)) || !end.Equal(time.Date(2026, time.August, 13, 6, 59, 59, 999999999, time.UTC)) {
+		t.Fatalf("default local-day range = %s to %s", start, end)
+	}
+}
+
+func TestCompletedTaskDateRangeRejectsInvalidRanges(t *testing.T) {
+	t.Parallel()
+
+	startDate := "2026-08-13"
+	endDate := "2026-08-12"
+	if _, _, err := completedTaskDateRange(&startDate, &endDate, "UTC", time.Time{}); err == nil {
+		t.Fatal("expected reversed completed task dates to fail")
+	}
+	tooEarly := "2024-01-01"
+	tooLate := "2026-08-13"
+	if _, _, err := completedTaskDateRange(&tooEarly, &tooLate, "UTC", time.Time{}); err == nil {
+		t.Fatal("expected an overlong completed task range to fail")
+	}
+}
+
 func TestFortyOneToolExecutorGetStoryResolvesAuthorizedHumanReferenceAndEnriches(t *testing.T) {
 	t.Parallel()
 
@@ -710,6 +823,37 @@ type storiesServiceCall struct {
 type storiesServiceStub struct {
 	items []stories.CoreStoryList
 	calls []storiesServiceCall
+}
+
+type completedStoriesServiceCall struct {
+	workspaceID uuid.UUID
+	actorID     uuid.UUID
+	actorErr    error
+	filters     map[string]any
+}
+
+type completedStoriesServiceStub struct {
+	storiesServiceStub
+	items []stories.CoreStoryList
+	calls []completedStoriesServiceCall
+}
+
+func (s *completedStoriesServiceStub) List(ctx context.Context, workspaceID uuid.UUID, filters map[string]any) ([]stories.CoreStoryList, error) {
+	actorID, actorErr := platformauth.GetUserID(ctx)
+	s.calls = append(s.calls, completedStoriesServiceCall{
+		workspaceID: workspaceID,
+		actorID:     actorID,
+		actorErr:    actorErr,
+		filters:     filters,
+	})
+	return append([]stories.CoreStoryList(nil), s.items...), nil
+}
+
+func (s *completedStoriesServiceStub) lastCall() completedStoriesServiceCall {
+	if len(s.calls) == 0 {
+		return completedStoriesServiceCall{}
+	}
+	return s.calls[len(s.calls)-1]
 }
 
 func (s *storiesServiceStub) MyStories(ctx context.Context, workspaceID uuid.UUID) ([]stories.CoreStoryList, error) {

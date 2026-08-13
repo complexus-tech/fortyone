@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/url"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -27,6 +28,7 @@ import (
 const (
 	toolListTeams       = "list_teams"
 	toolListMyTasks     = "list_my_tasks"
+	toolListCompleted   = "list_completed_tasks"
 	toolSearchWork      = "search_work"
 	toolListObjectives  = "list_objectives"
 	toolListStatuses    = "list_statuses"
@@ -42,6 +44,7 @@ const (
 	maxSearchRunes           = 200
 	maxStoryReferenceRunes   = 64
 	maxStoryDescriptionRunes = 8_000
+	maxCompletedTaskDays     = 366
 )
 
 // TeamsService is the subset of the teams domain used by assistant tools.
@@ -52,6 +55,14 @@ type TeamsService interface {
 // StoriesService is the subset of the stories domain used by assistant tools.
 type StoriesService interface {
 	MyStories(ctx context.Context, workspaceID uuid.UUID) ([]stories.CoreStoryList, error)
+}
+
+// CompletedStoryReaderService is the optional stories-domain surface used to
+// query completed work by the authenticated user's assignment and completion
+// date. Keeping this separate preserves compatibility with narrow test and
+// provider adapters that only support active-work listing.
+type CompletedStoryReaderService interface {
+	List(ctx context.Context, workspaceID uuid.UUID, filters map[string]any) ([]stories.CoreStoryList, error)
 }
 
 // StoryReaderService is implemented by story services that support resolving a
@@ -118,6 +129,7 @@ var (
 type FortyOneToolExecutor struct {
 	teams       TeamsService
 	stories     StoriesService
+	completed   CompletedStoryReaderService
 	storyReader StoryReaderService
 	search      SearchService
 	objectives  ObjectivesService
@@ -202,9 +214,11 @@ func NewFortyOneToolExecutor(
 	}
 
 	storyReader, _ := storiesService.(StoryReaderService)
+	completedReader, _ := storiesService.(CompletedStoryReaderService)
 	executor := &FortyOneToolExecutor{
 		teams:       teamsService,
 		stories:     storiesService,
+		completed:   completedReader,
 		storyReader: storyReader,
 		search:      searchService,
 		objectives:  objectivesService,
@@ -214,6 +228,9 @@ func NewFortyOneToolExecutor(
 		executor.states = config.operational.States
 		executor.users = config.operational.Users
 		executor.definitions = append(executor.definitions, operationalToolDefinitions(storyReader != nil)...)
+	}
+	if completedReader != nil {
+		executor.definitions = append(executor.definitions, completedTaskToolDefinitions()...)
 	}
 	if config.storyMutationSecret != "" {
 		if config.storyMutationStore == nil {
@@ -247,6 +264,11 @@ func (e *FortyOneToolExecutor) Execute(ctx context.Context, scope ToolScope, cal
 		return e.listTeams(ctx, scope, call.Arguments)
 	case toolListMyTasks:
 		return e.listMyTasks(ctx, scope, call.Arguments)
+	case toolListCompleted:
+		if e.completed == nil {
+			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
+		}
+		return e.listCompletedTasks(ctx, scope, call.Arguments)
 	case toolSearchWork:
 		return e.searchWork(ctx, scope, call.Arguments)
 	case toolListObjectives:
@@ -421,6 +443,176 @@ func (e *FortyOneToolExecutor) listMyTasks(ctx context.Context, scope ToolScope,
 		Truncated: total > len(filtered),
 		Tasks:     filtered,
 	})
+}
+
+func (e *FortyOneToolExecutor) listCompletedTasks(ctx context.Context, scope ToolScope, raw json.RawMessage) (json.RawMessage, error) {
+	var args struct {
+		StartDate *string `json:"start_date"`
+		EndDate   *string `json:"end_date"`
+		Limit     *int    `json:"limit"`
+	}
+	if err := decodeToolArguments(raw, &args, "start_date", "end_date", "limit"); err != nil {
+		return nil, err
+	}
+	limit, err := normalizedLimit(args.Limit)
+	if err != nil {
+		return nil, err
+	}
+	completedAfter, completedBefore, err := completedTaskDateRange(args.StartDate, args.EndDate, scope.Timezone, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	_, joinedByID, err := e.joinedTeams(ctx, scope)
+	if err != nil {
+		return nil, err
+	}
+	items, err := e.completed.List(ctx, scope.WorkspaceID, map[string]any{
+		"assigned_to_me":   true,
+		"categories":       []string{"completed"},
+		"completed_after":  completedAfter,
+		"completed_before": completedBefore,
+		"current_user_id":  scope.UserID,
+		"show_sub_stories": false,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list completed tasks: %w", err)
+	}
+
+	var statusesByID map[uuid.UUID]states.CoreState
+	if e.states != nil {
+		_, statusesByID, err = e.scopedStatuses(ctx, scope, joinedByID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var assigneeName string
+	var assigneeUsername string
+	if e.users != nil {
+		currentUser, getUserErr := e.users.GetUser(ctx, scope.UserID)
+		if getUserErr != nil {
+			return nil, fmt.Errorf("load current user for completed task enrichment: %w", getUserErr)
+		}
+		if currentUser.ID != scope.UserID || !currentUser.IsActive || currentUser.IsSystem {
+			return nil, errors.New("load current user for completed task enrichment: unexpected inactive or mismatched user")
+		}
+		assigneeName = memberDisplayName(currentUser)
+		assigneeUsername = strings.TrimSpace(currentUser.Username)
+	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		if items[i].CompletedAt == nil {
+			return false
+		}
+		if items[j].CompletedAt == nil {
+			return true
+		}
+		return items[i].CompletedAt.After(*items[j].CompletedAt)
+	})
+
+	tasks := make([]taskResult, 0, min(len(items), limit))
+	total := 0
+	for _, story := range items {
+		team, allowed := joinedByID[story.Team]
+		if !allowed || story.Workspace != scope.WorkspaceID || story.Assignee == nil || *story.Assignee != scope.UserID {
+			continue
+		}
+		if story.CompletedAt == nil || story.CompletedAt.Before(completedAfter) || story.CompletedAt.After(completedBefore) || story.DeletedAt != nil || story.ArchivedAt != nil {
+			continue
+		}
+
+		var statusName string
+		var statusCategory string
+		if story.Status != nil && statusesByID != nil {
+			if status, visible := statusesByID[*story.Status]; visible {
+				statusName = status.Name
+				statusCategory = status.Category
+				if !strings.EqualFold(strings.TrimSpace(statusCategory), "completed") {
+					continue
+				}
+			}
+		}
+		total++
+		if len(tasks) == limit {
+			continue
+		}
+		tasks = append(tasks, taskResult{
+			ID:               story.ID,
+			Reference:        storyReference(team.Code, story.SequenceID),
+			URL:              storyURL(scope, storyReference(team.Code, story.SequenceID)),
+			Title:            story.Title,
+			TeamID:           story.Team,
+			TeamName:         team.Name,
+			TeamCode:         strings.ToUpper(strings.TrimSpace(team.Code)),
+			StatusID:         story.Status,
+			StatusName:       statusName,
+			StatusCategory:   statusCategory,
+			AssigneeID:       story.Assignee,
+			AssigneeName:     assigneeName,
+			AssigneeUsername: assigneeUsername,
+			Priority:         story.Priority,
+			EndDate:          story.EndDate,
+			CompletedAt:      story.CompletedAt,
+			UpdatedAt:        story.UpdatedAt,
+		})
+	}
+
+	return marshalToolResult(listTasksResult{
+		Total:     total,
+		Truncated: total > len(tasks),
+		Tasks:     tasks,
+	})
+}
+
+func completedTaskDateRange(startDate, endDate *string, timezone string, now time.Time) (time.Time, time.Time, error) {
+	location := time.UTC
+	if strings.TrimSpace(timezone) != "" {
+		loaded, err := time.LoadLocation(strings.TrimSpace(timezone))
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid completed task timezone %q: %w", timezone, err)
+		}
+		location = loaded
+	}
+
+	today := now.In(location)
+	start := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, location)
+	end := start
+	if startDate != nil {
+		parsed, err := parseCompletedTaskDate(*startDate, location)
+		if err != nil {
+			return time.Time{}, time.Time{}, err
+		}
+		start = parsed
+		end = parsed
+	}
+	if endDate != nil {
+		parsed, err := parseCompletedTaskDate(*endDate, location)
+		if err != nil {
+			return time.Time{}, time.Time{}, err
+		}
+		end = parsed
+		if startDate == nil {
+			start = parsed
+		}
+	}
+	if end.Before(start) {
+		return time.Time{}, time.Time{}, fmt.Errorf("completed task end_date must be on or after start_date")
+	}
+	if end.AddDate(0, 0, -maxCompletedTaskDays).After(start) {
+		return time.Time{}, time.Time{}, fmt.Errorf("completed task date range cannot exceed %d days", maxCompletedTaskDays)
+	}
+
+	endExclusive := end.AddDate(0, 0, 1)
+	return start.UTC(), endExclusive.Add(-time.Nanosecond).UTC(), nil
+}
+
+func parseCompletedTaskDate(value string, location *time.Location) (time.Time, error) {
+	parsed, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(value), location)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("completed task dates must use YYYY-MM-DD: %w", err)
+	}
+	return parsed, nil
 }
 
 func (e *FortyOneToolExecutor) searchWork(ctx context.Context, scope ToolScope, raw json.RawMessage) (json.RawMessage, error) {
@@ -1102,6 +1294,36 @@ func fortyOneToolDefinitions() []ToolDefinition {
 	}
 }
 
+func completedTaskToolDefinitions() []ToolDefinition {
+	nullableDate := func(description string) map[string]any {
+		return map[string]any{
+			"type":        []string{"string", "null"},
+			"description": description,
+			"pattern":     "^\\d{4}-\\d{2}-\\d{2}$",
+		}
+	}
+	nullableLimit := map[string]any{
+		"type":        []string{"integer", "null"},
+		"description": "Maximum number of results, or null for the default.",
+		"minimum":     1,
+		"maximum":     maxToolLimit,
+	}
+
+	return []ToolDefinition{
+		{
+			Type:        "function",
+			Name:        toolListCompleted,
+			Description: "List tasks assigned to the current user that were completed within a local calendar date range. Omit both dates to use today.",
+			Strict:      true,
+			Parameters: strictObjectSchema(map[string]any{
+				"start_date": nullableDate("Local start date in YYYY-MM-DD format, or null for today."),
+				"end_date":   nullableDate("Local end date in YYYY-MM-DD format, or null for the start date."),
+				"limit":      nullableLimit,
+			}, []string{"start_date", "end_date", "limit"}),
+		},
+	}
+}
+
 func operationalToolDefinitions(includeStoryReader bool) []ToolDefinition {
 	nullableLimit := func() map[string]any {
 		return map[string]any{
@@ -1207,6 +1429,7 @@ type taskResult struct {
 	AssigneeUsername string     `json:"assignee_username"`
 	Priority         string     `json:"priority"`
 	EndDate          *time.Time `json:"end_date"`
+	CompletedAt      *time.Time `json:"completed_at,omitempty"`
 	UpdatedAt        time.Time  `json:"updated_at"`
 }
 
