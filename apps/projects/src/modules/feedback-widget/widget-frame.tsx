@@ -174,6 +174,21 @@ const StatusBadge = ({ status }: { status: PublicRequestStatus }) => {
   );
 };
 
+const CompactStatusPill = ({ status }: { status: PublicRequestStatus }) => {
+  const meta = requestStatusMeta[status];
+  return (
+    <span
+      className={cn(
+        "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium",
+        meta.badgeClassName,
+      )}
+    >
+      <span className={cn("size-2 rounded-sm", meta.dotClassName)} />
+      {meta.label}
+    </span>
+  );
+};
+
 const VoteButton = ({
   disabled,
   isPending,
@@ -470,19 +485,14 @@ const FeedbackRow = ({
   isVoting,
   onOpen,
   onVote,
-  portal,
   request,
 }: {
   isWriteLocked: boolean;
   isVoting: boolean;
   onOpen: () => void;
   onVote: () => void;
-  portal: PublicPortal;
   request: PublicRequest;
 }) => {
-  const board = portal.boards.find(
-    (candidate) => candidate.id === request.boardId,
-  );
   return (
     <div className="border-border/60 hover:bg-state-hover/35 grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-b px-5 py-4 transition-colors last:border-b-0">
       <button
@@ -518,14 +528,8 @@ const FeedbackRow = ({
             </Text>
             <span className="text-text-muted">·</span>
             <Text color="muted">{request.createdAtLabel}</Text>
-            {board ? (
-              <>
-                <span className="text-text-muted">·</span>
-                <Text className="truncate" color="muted">
-                  {board.name}
-                </Text>
-              </>
-            ) : null}
+            <span className="text-text-muted">·</span>
+            <CompactStatusPill status={request.status} />
           </Flex>
         </Box>
       </button>
@@ -1470,7 +1474,6 @@ const WidgetHome = ({
   onOpenRequest,
   onShareFeedback,
   onVote,
-  portal,
   roadmap,
   votingRequestId,
 }: {
@@ -1483,7 +1486,6 @@ const WidgetHome = ({
   onOpenRequest: (request: PublicRequest) => void;
   onShareFeedback: () => void;
   onVote: (request: PublicRequest) => void;
-  portal: PublicPortal;
   roadmap: WidgetRoadmap;
   votingRequestId: string | null;
 }) => {
@@ -1519,7 +1521,6 @@ const WidgetHome = ({
               onVote={() => {
                 onVote(request);
               }}
-              portal={portal}
               request={request}
             />
           ))
@@ -2376,7 +2377,6 @@ export const FeedbackWidgetFrame = ({
             onOpenUpdate={setSelectedUpdate}
             onShareFeedback={openComposer}
             onVote={requestVote}
-            portal={portal}
             roadmap={roadmapItems}
             votingRequestId={votingRequestId}
           />
@@ -2419,7 +2419,6 @@ export const FeedbackWidgetFrame = ({
                     onVote={() => {
                       requestVote(request);
                     }}
-                    portal={portal}
                     request={request}
                   />
                 ))

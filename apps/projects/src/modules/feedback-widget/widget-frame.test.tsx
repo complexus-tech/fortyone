@@ -687,6 +687,14 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
     );
     expect(screen.getByText("Popular feedback")).toBeInTheDocument();
     expect(screen.getByText("Repair the crossing")).toBeInTheDocument();
+    expect(screen.queryByText("Product")).not.toBeInTheDocument();
+    expect(screen.getByText("Pending")).toHaveClass(
+      "h-6",
+      "text-[11px]",
+      "border-warning/30",
+      "bg-warning/10",
+      "text-warning",
+    );
     expect(screen.getByText("On the roadmap")).toBeInTheDocument();
     expect(screen.getByText("In progress idea 1")).toBeInTheDocument();
     expect(screen.getByText("In progress idea 2")).toBeInTheDocument();
@@ -763,7 +771,10 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
     const backButton = screen.getByRole("button", {
       name: "Back to feedback",
     });
-    const status = screen.getByText("Pending").closest("span");
+    const status = screen
+      .getAllByText("Pending")
+      .map((element) => element.closest("span"))
+      .find((element) => element?.classList.contains("h-9"));
     const commentInput = screen.getByLabelText("Add a comment");
     const commentAction = screen.getByRole("button", { name: "Comment" });
 
