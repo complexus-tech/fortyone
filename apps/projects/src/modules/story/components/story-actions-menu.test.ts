@@ -78,6 +78,20 @@ describe("Story actions menu", () => {
     expect(contextMenu).not.toContain("NewTabIcon");
   });
 
+  it("keeps destructive story actions visually consistent", () => {
+    const contextMenu = readSource("src/components/ui/story/context-menu.tsx");
+    const actionsMenu = readSource(
+      "src/modules/story/components/story-actions-menu.tsx",
+    );
+
+    expect(contextMenu).toContain(
+      'labelColor={name === "Danger Zone" ? "danger" : undefined}',
+    );
+    expect(actionsMenu).not.toContain(
+      'confirmIcon={<DeleteIcon className="text-white dark:text-gray-200" />}',
+    );
+  });
+
   it("matches context-menu strategy search fields to the detail picker", () => {
     const source = readSource(
       "src/components/ui/story/objective-key-result-menu.tsx",

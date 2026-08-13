@@ -1,10 +1,12 @@
 import { CheckIcon, ChevronRightIcon } from "icons";
 import type { ReactNode } from "react";
 import { Box, ContextMenu, Flex, Text } from "ui";
+import type { TextProps } from "ui";
 
 export const ContextMenuItem = ({
   label,
   icon,
+  labelColor,
   subMenu,
   shortCut,
   disabled,
@@ -12,6 +14,7 @@ export const ContextMenuItem = ({
 }: {
   label: string;
   icon: ReactNode;
+  labelColor?: TextProps["color"];
   disabled?: boolean;
   subMenu?: {
     active?: boolean;
@@ -34,7 +37,7 @@ export const ContextMenuItem = ({
           >
             <Box className="grid grid-cols-[24px_auto] items-center">
               <span className="text-foreground flex">{icon}</span>
-              <Text>{label}</Text>
+              <Text color={labelColor}>{label}</Text>
             </Box>
             <Flex align="center" gap={3}>
               {shortCut ? (
@@ -92,7 +95,9 @@ export const ContextMenuItem = ({
         >
           <Box className="grid grid-cols-[24px_auto] items-center gap-[2px]">
             <span className="text-text-muted flex">{icon}</span>
-            <Text className="max-w-40 truncate">{label}</Text>
+            <Text className="max-w-40 truncate" color={labelColor}>
+              {label}
+            </Text>
           </Box>
           {shortCut ? (
             <Flex className="text-text-muted">{shortCut}</Flex>

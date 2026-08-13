@@ -152,7 +152,7 @@ const StoryPrioritySubMenu = ({
 };
 
 interface ConfirmationDialogProps {
-  confirmIcon: ReactNode;
+  confirmIcon?: ReactNode;
   confirmLabel: string;
   description: string;
   isPending?: boolean;
@@ -455,7 +455,6 @@ export const StoryActionsMenu = ({
         title={`Restore this ${storyTerm}?`}
       />
       <ConfirmationDialog
-        confirmIcon={<DeleteIcon className="text-white dark:text-gray-200" />}
         confirmLabel={isDeleted ? "Delete forever" : "Delete"}
         description={
           isDeleted

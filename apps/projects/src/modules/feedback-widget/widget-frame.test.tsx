@@ -641,12 +641,24 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
   });
 
   it("summarizes feedback and roadmap on Home without an empty updates block", () => {
-    const plannedRequest = {
-      ...request,
-      id: "planned-home",
-      status: "planned" as const,
-      title: "Safer traffic signals",
-    };
+    const roadmapRequests = (
+      status: "completed" | "in_progress" | "planned",
+      label: string,
+    ) =>
+      Array.from({ length: 3 }, (_, index) => ({
+        ...request,
+        description: `${label} description ${index + 1}`,
+        id: `${status}-home-${index + 1}`,
+        status,
+        title: `${label} ${index + 1}`,
+      }));
+    const completedRequests = roadmapRequests("completed", "Completed idea");
+    const inProgressRequests = roadmapRequests(
+      "in_progress",
+      "In progress idea",
+    );
+    const plannedRequests = roadmapRequests("planned", "Planned idea");
+    const plannedRequest = plannedRequests[0];
     render(
       <FeedbackWidgetFrame
         initialTab="home"
@@ -660,9 +672,9 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
           updates: [],
         }}
         roadmap={{
-          completed: [],
-          in_progress: [],
-          planned: [plannedRequest],
+          completed: completedRequests,
+          in_progress: inProgressRequests,
+          planned: plannedRequests,
         }}
         theme="light"
         viewer={null}
@@ -676,7 +688,57 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
     expect(screen.getByText("Popular feedback")).toBeInTheDocument();
     expect(screen.getByText("Repair the crossing")).toBeInTheDocument();
     expect(screen.getByText("On the roadmap")).toBeInTheDocument();
-    expect(screen.getByText("Safer traffic signals")).toBeInTheDocument();
+    expect(screen.getByText("In progress idea 1")).toBeInTheDocument();
+    expect(screen.getByText("In progress idea 2")).toBeInTheDocument();
+    expect(screen.queryByText("In progress idea 3")).not.toBeInTheDocument();
+    expect(screen.getByText("Planned idea 1")).toBeInTheDocument();
+    expect(screen.getByText("Planned idea 2")).toBeInTheDocument();
+    expect(screen.queryByText("Planned idea 3")).not.toBeInTheDocument();
+    expect(screen.getByText("Completed idea 1")).toBeInTheDocument();
+    expect(screen.getByText("Completed idea 2")).toBeInTheDocument();
+    expect(screen.queryByText("Completed idea 3")).not.toBeInTheDocument();
+    const popularFeedbackHeading = screen.getByText("Popular feedback");
+    const feedbackPrompt = screen.getByRole("button", {
+      name: /Help shape what comes next/,
+    });
+    const homeRoadmapButton = screen.getByRole("button", {
+      name: /Planned idea 1/,
+    });
+    const homeRoadmapDescription = Array.from(
+      homeRoadmapButton.querySelectorAll("span"),
+    ).find((element) => element.textContent === plannedRequest.description);
+    const homeRoadmapStatus = Array.from(
+      homeRoadmapButton.querySelectorAll("span"),
+    ).find((element) => element.textContent === "Planned");
+    const homeRoadmapAuthor = Array.from(
+      homeRoadmapButton.querySelectorAll("span"),
+    ).find((element) => element.textContent === request.authorName);
+    const homeRoadmapSeparator = Array.from(
+      homeRoadmapButton.querySelectorAll("span"),
+    ).find((element) => element.textContent === "•");
+
+    expect(popularFeedbackHeading.compareDocumentPosition(feedbackPrompt)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(screen.getByRole("button", { name: "See all" })).toHaveClass(
+      "text-[10px]",
+      "font-normal",
+      "uppercase",
+    );
+    expect(screen.getByRole("button", { name: "See roadmap" })).toHaveClass(
+      "text-[10px]",
+      "font-normal",
+      "uppercase",
+    );
+    expect(feedbackPrompt).toHaveClass("bg-state-hover/40");
+    expect(homeRoadmapDescription).toHaveClass("text-[12px]", "leading-5");
+    expect(homeRoadmapSeparator).toBeInTheDocument();
+    expect(homeRoadmapStatus?.parentElement).toHaveClass("text-[12px]");
+    expect(homeRoadmapStatus).toHaveClass("font-medium");
+    expect(homeRoadmapAuthor).toHaveClass("font-medium");
+    expect(homeRoadmapButton.closest(".border-dashed")).toHaveClass(
+      "border-dashed",
+    );
     expect(
       screen.queryByRole("button", { name: "Updates" }),
     ).not.toBeInTheDocument();
@@ -721,6 +783,7 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
   it("expands each roadmap lane independently", () => {
     const plannedRequests = Array.from({ length: 4 }, (_, index) => ({
       ...request,
+      description: `Planned description ${index + 1}`,
       id: `planned-${index + 1}`,
       status: "planned" as const,
       title: `Planned request ${index + 1}`,
@@ -743,7 +806,28 @@ describe("FeedbackWidgetFrame identity and guest participation", () => {
     );
 
     expect(screen.queryByText("Planned request 4")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Show more" }));
+    const showMoreButton = screen.getByRole("button", { name: "Show more" });
+    const roadmapTimeline = showMoreButton.closest(".border-dashed");
+    const plannedHeading = screen.getByText("Planned");
+    const plannedMarker = Array.from(
+      plannedHeading.parentElement?.querySelectorAll("span") ?? [],
+    ).find((element) => element.classList.contains("top-1/2"));
+    expect(roadmapTimeline).toHaveClass("border-dashed");
+    expect(plannedMarker).toHaveClass("top-1/2", "-translate-y-1/2");
+    expect(screen.getByText("In progress").closest(".border-dashed")).toBe(
+      roadmapTimeline,
+    );
+    expect(screen.getByText("Completed").closest(".border-dashed")).toBe(
+      roadmapTimeline,
+    );
+    expect(showMoreButton).toHaveClass("pl-6");
+    expect(showMoreButton).not.toHaveClass("ml-6");
+    expect(screen.getByText("Planned description 1")).toHaveClass(
+      "text-[12px]",
+      "leading-5",
+    );
+
+    fireEvent.click(showMoreButton);
     expect(screen.getByText("Planned request 4")).toBeInTheDocument();
   });
 });

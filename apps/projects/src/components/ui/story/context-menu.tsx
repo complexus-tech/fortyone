@@ -250,6 +250,7 @@ export const StoryContextMenu = ({
                     icon={icon}
                     key={label}
                     label={label}
+                    labelColor={name === "Danger Zone" ? "danger" : undefined}
                     onSelect={onSelect}
                   />
                 ))}

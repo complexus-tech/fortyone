@@ -33,6 +33,9 @@ Validated on 2026-08-13 against the supplied UserJot Home, feedback-list, and ro
 - Home implementation: `/Users/joseph/.codex/visualizations/2026/08/12/019ff7e9-4bb7-7ee2-8539-768008a9ad47/feedback-widget-home-final.png` (430×820, dark theme, local portal data).
 - Combined Home comparison: `/Users/joseph/.codex/visualizations/2026/08/12/019ff7e9-4bb7-7ee2-8539-768008a9ad47/feedback-widget-home-comparison.png`.
 - Feedback detail: `/Users/joseph/.codex/visualizations/2026/08/12/019ff7e9-4bb7-7ee2-8539-768008a9ad47/feedback-widget-detail-final.png` (430×820, dark theme).
+- Roadmap group-alignment source: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_y1q1rJ/Screenshot 2026-08-13 at 12.09.40 PM.png` (824×516, 2× reference crop).
+- Roadmap group-alignment implementation: `/Users/joseph/.codex/visualizations/2026/08/12/019ff7e9-4bb7-7ee2-8539-768008a9ad47/feedback-widget-roadmap-group-alignment.png` (430×820 CSS viewport, dark theme).
+- Focused normalized comparison: `/Users/joseph/.codex/visualizations/2026/08/12/019ff7e9-4bb7-7ee2-8539-768008a9ad47/feedback-widget-roadmap-group-alignment-comparison.png` (source downsampled to 412×258 beside a 412×258 implementation crop).
 - Feedback comparison: `/Users/joseph/Downloads/Screenshot 2026-08-12 at 11.33.48 PM.png` and `/Users/joseph/.codex/visualizations/2026/08/12/019ff7e9-4bb7-7ee2-8539-768008a9ad47/feedback-widget-dark-final-full.jpg`.
 - Roadmap comparison: `/Users/joseph/Downloads/Screenshot 2026-08-12 at 11.34.04 PM.png` and `/Users/joseph/.codex/visualizations/2026/08/12/019ff7e9-4bb7-7ee2-8539-768008a9ad47/feedback-widget-roadmap-final-full.jpg`.
 - Browser interaction checks: ordering/status menus remained inside the widget bounds; lane expansion reduced the visible Show more count from three to two and revealed the fourth item in only the selected lane.
@@ -43,5 +46,6 @@ Validated on 2026-08-13 against the supplied UserJot Home, feedback-list, and ro
 2. Added the Home summary using live portal feedback and roadmap data while conditionally excluding unpublished updates.
 3. Matched feedback-detail control sizing, added the downvote action, increased comment-input radius, and made the back-button surface persistent.
 4. Compared the 430×820 dark implementation with the supplied Home reference, then verified roadmap expansion, inline composing, and a clean browser console.
+5. Replaced the roadmap group marker's fixed vertical offset with row-relative centering, then compared the normalized Planned-group crop and verified the marker and label share one center line.
 
 Final result: passed.

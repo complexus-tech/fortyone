@@ -1363,12 +1363,37 @@ const HomeSectionHeader = ({
       </Text>
     </Flex>
     <button
-      className="text-text-muted hover:text-foreground focus-visible:ring-ring shrink-0 rounded-lg px-2 py-1 text-[12px] font-semibold tracking-[0.09em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none"
+      className="text-text-muted hover:text-foreground focus-visible:ring-ring shrink-0 rounded-lg px-2 py-1 text-[10px] font-normal tracking-[0.09em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none"
       onClick={onAction}
       type="button"
     >
       {actionLabel}
     </button>
+  </Flex>
+);
+
+const RoadmapGroupHeader = ({
+  count,
+  label,
+  status,
+}: {
+  count: number;
+  label: string;
+  status: PublicRequestStatus;
+}) => (
+  <Flex align="center" className="relative py-3 pr-1 pl-6" justify="between">
+    <span
+      className={cn(
+        "ring-background absolute top-1/2 -left-1.5 size-3 -translate-y-1/2 rounded-sm ring-4",
+        statusAccent(status),
+      )}
+    />
+    <Text className="text-[15px]" fontWeight="semibold">
+      {label}
+    </Text>
+    <Text className="text-[11px] tabular-nums" color="muted">
+      {String(count).padStart(2, "0")}
+    </Text>
   </Flex>
 );
 
@@ -1414,10 +1439,12 @@ const HomeRoadmapRow = ({
               {request.description}
             </Text>
           ) : null}
-          <Flex align="center" className="mt-2 gap-1.5 text-[11px]">
-            <Text color="muted">{status.label}</Text>
-            <span className="text-text-muted">·</span>
-            <Text className="truncate" color="muted">
+          <Flex align="center" className="mt-2 gap-2 text-[12px]">
+            <Text className="font-medium" color="muted">
+              {status.label}
+            </Text>
+            <span className="text-text-muted">&bull;</span>
+            <Text className="truncate font-medium" color="muted">
               {request.authorName || "Anonymous"}
             </Text>
           </Flex>
@@ -1461,10 +1488,13 @@ const WidgetHome = ({
   votingRequestId: string | null;
 }) => {
   const popularFeedback = feedback.slice(0, 3);
-  const roadmapHighlights = [...roadmap.in_progress, ...roadmap.planned].slice(
-    0,
-    3,
-  );
+  const homeRoadmapGroups = roadmapSections
+    .map((section) => ({
+      ...section,
+      items: roadmap[section.status].slice(0, 2),
+      total: roadmap[section.status].length,
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <Box className="pb-4">
@@ -1502,7 +1532,7 @@ const WidgetHome = ({
 
       <Box className="border-border/60 border-y p-5">
         <button
-          className="border-border bg-surface hover:bg-state-hover/40 focus-visible:ring-ring flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          className="border-border bg-state-hover/40 hover:bg-state-hover/55 focus-visible:ring-ring flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
           onClick={onShareFeedback}
           type="button"
         >
@@ -1548,10 +1578,7 @@ const WidgetHome = ({
         </button>
       ) : null}
 
-      <section
-        aria-labelledby="widget-home-roadmap"
-        className="border-border/60 mt-2 border-t"
-      >
+      <section aria-labelledby="widget-home-roadmap">
         <div id="widget-home-roadmap">
           <HomeSectionHeader
             actionLabel="See roadmap"
@@ -1560,21 +1587,30 @@ const WidgetHome = ({
             title="On the roadmap"
           />
         </div>
-        {roadmapHighlights.length > 0 ? (
+        {homeRoadmapGroups.length > 0 ? (
           <Box className="border-border/70 mr-5 ml-6 border-l border-dashed">
-            {roadmapHighlights.map((request) => (
-              <HomeRoadmapRow
-                isVoting={votingRequestId === request.id}
-                isWriteLocked={isWriteLocked}
-                key={request.id}
-                onOpen={() => {
-                  onOpenRequest(request);
-                }}
-                onVote={() => {
-                  onVote(request);
-                }}
-                request={request}
-              />
+            {homeRoadmapGroups.map((section) => (
+              <Box key={section.status}>
+                <RoadmapGroupHeader
+                  count={section.total}
+                  label={section.label}
+                  status={section.status}
+                />
+                {section.items.map((request) => (
+                  <HomeRoadmapRow
+                    isVoting={votingRequestId === request.id}
+                    isWriteLocked={isWriteLocked}
+                    key={request.id}
+                    onOpen={() => {
+                      onOpenRequest(request);
+                    }}
+                    onVote={() => {
+                      onVote(request);
+                    }}
+                    request={request}
+                  />
+                ))}
+              </Box>
             ))}
           </Box>
         ) : (
@@ -2399,7 +2435,7 @@ export const FeedbackWidgetFrame = ({
         ) : null}
 
         {activeTab === "roadmap" ? (
-          <Box className="space-y-9 px-5 py-6">
+          <Box className="px-5 py-6">
             {roadmapError ? (
               <Text
                 aria-live="polite"
@@ -2408,106 +2444,103 @@ export const FeedbackWidgetFrame = ({
                 {roadmapError}
               </Text>
             ) : null}
-            {roadmapSections.map((section) => {
-              const items = roadmapItems[section.status];
-              const visibleItems = items.slice(
-                0,
-                visibleRoadmapCounts[section.status],
-              );
-              const hasMore =
-                visibleItems.length < items.length ||
-                roadmapPageState[section.status].hasMore;
-              return (
-                <Box key={section.status}>
-                  <Flex align="center" className="mb-3" justify="between">
-                    <Flex align="center" className="gap-2.5">
-                      <span
-                        className={cn(
-                          "size-3 rounded-sm",
-                          statusAccent(section.status),
-                        )}
-                      />
-                      <Text className="text-[15px]" fontWeight="semibold">
-                        {section.label}
-                      </Text>
-                    </Flex>
-                    <Text className="text-[11px] tabular-nums" color="muted">
-                      {String(items.length).padStart(2, "0")}
-                    </Text>
-                  </Flex>
-                  {items.length > 0 ? (
-                    <Box className="border-border/70 ml-1.5 border-l border-dashed">
-                      {visibleItems.map((request) => (
-                        <div
-                          className="hover:bg-state-hover/35 relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 pr-1 pl-6 transition-colors"
-                          key={request.id}
-                        >
-                          <span
-                            className={cn(
-                              "ring-background absolute top-5 -left-[5px] size-2.5 rounded-sm ring-4",
-                              statusAccent(section.status),
-                            )}
-                          />
+            <Box className="border-border/70 ml-1.5 border-l border-dashed">
+              {roadmapSections.map((section) => {
+                const items = roadmapItems[section.status];
+                const visibleItems = items.slice(
+                  0,
+                  visibleRoadmapCounts[section.status],
+                );
+                const hasMore =
+                  visibleItems.length < items.length ||
+                  roadmapPageState[section.status].hasMore;
+                return (
+                  <Box key={section.status}>
+                    <RoadmapGroupHeader
+                      count={items.length}
+                      label={section.label}
+                      status={section.status}
+                    />
+                    {items.length > 0 ? (
+                      <Box>
+                        {visibleItems.map((request) => (
+                          <div
+                            className="hover:bg-state-hover/35 relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 pr-1 pl-6 transition-colors"
+                            key={request.id}
+                          >
+                            <span
+                              className={cn(
+                                "ring-background absolute top-5 -left-[5px] size-2.5 rounded-sm ring-4",
+                                statusAccent(section.status),
+                              )}
+                            />
+                            <button
+                              className="focus-visible:ring-ring min-w-0 text-left focus-visible:ring-2 focus-visible:outline-none"
+                              onClick={() => {
+                                setSelectedRequest(request);
+                              }}
+                              type="button"
+                            >
+                              <Box className="min-w-0">
+                                <Text
+                                  className="line-clamp-1 text-[13px]"
+                                  fontWeight="semibold"
+                                >
+                                  {request.title}
+                                </Text>
+                                {request.description ? (
+                                  <Text
+                                    className="mt-1 line-clamp-2 text-[12px] leading-5"
+                                    color="muted"
+                                  >
+                                    {request.description}
+                                  </Text>
+                                ) : null}
+                                <Text
+                                  className="mt-2 text-[12px] font-medium"
+                                  color="muted"
+                                >
+                                  {request.authorName}
+                                </Text>
+                              </Box>
+                            </button>
+                            <VoteButton
+                              disabled={isIdentityPending}
+                              isPending={votingRequestId === request.id}
+                              onClick={() => {
+                                requestVote(request);
+                              }}
+                              request={request}
+                            />
+                          </div>
+                        ))}
+                        {hasMore ? (
                           <button
-                            className="focus-visible:ring-ring min-w-0 text-left focus-visible:ring-2 focus-visible:outline-none"
+                            className="text-text-muted hover:text-foreground focus-visible:ring-ring inline-flex h-9 items-center rounded-lg pr-2 pl-6 text-[12px] font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
+                            disabled={loadingRoadmapStatus !== null}
                             onClick={() => {
-                              setSelectedRequest(request);
+                              void loadMoreRoadmap(section.status);
                             }}
                             type="button"
                           >
-                            <Box className="min-w-0">
-                              <Text
-                                className="line-clamp-1 text-[13px]"
-                                fontWeight="semibold"
-                              >
-                                {request.title}
-                              </Text>
-                              {request.description ? (
-                                <Text
-                                  className="mt-1 line-clamp-2 text-[12px] leading-5"
-                                  color="muted"
-                                >
-                                  {request.description}
-                                </Text>
-                              ) : null}
-                              <Text className="mt-2 text-[11px]" color="muted">
-                                {request.authorName}
-                              </Text>
-                            </Box>
+                            {loadingRoadmapStatus === section.status
+                              ? "Loading…"
+                              : "Show more"}
                           </button>
-                          <VoteButton
-                            disabled={isIdentityPending}
-                            isPending={votingRequestId === request.id}
-                            onClick={() => {
-                              requestVote(request);
-                            }}
-                            request={request}
-                          />
-                        </div>
-                      ))}
-                      {hasMore ? (
-                        <button
-                          className="text-text-muted hover:text-foreground focus-visible:ring-ring inline-flex h-9 items-center rounded-lg pr-2 pl-6 text-[12px] font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
-                          disabled={loadingRoadmapStatus !== null}
-                          onClick={() => {
-                            void loadMoreRoadmap(section.status);
-                          }}
-                          type="button"
-                        >
-                          {loadingRoadmapStatus === section.status
-                            ? "Loading…"
-                            : "Show more"}
-                        </button>
-                      ) : null}
-                    </Box>
-                  ) : (
-                    <Text className="ml-5 py-3 text-[11px]" color="muted">
-                      Nothing here yet
-                    </Text>
-                  )}
-                </Box>
-              );
-            })}
+                        ) : null}
+                      </Box>
+                    ) : (
+                      <Text
+                        className="py-3 pr-1 pl-6 text-[12px]"
+                        color="muted"
+                      >
+                        Nothing here yet
+                      </Text>
+                    )}
+                  </Box>
+                );
+              })}
+            </Box>
           </Box>
         ) : null}
 
