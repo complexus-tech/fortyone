@@ -5,13 +5,14 @@ import { useState } from "react";
 import { Box, Button, Collapsible, ContextMenu, Flex, Menu } from "ui";
 import {
   ArchiveIcon,
-  BacklogIcon,
+  // BacklogIcon,
   ChevronRightIcon,
   DeleteIcon,
   DragIcon,
   IntakeIcon,
   LogoutIcon,
   MoreHorizontalIcon,
+  ObjectiveIcon,
   RequestsIcon,
   SettingsIcon,
   SprintsIcon,
@@ -22,6 +23,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { useSession } from "@/lib/auth/client";
 import {
   useTerminology,
+  useFeatures,
   useUserRole,
   useSprintsEnabled,
   useWorkspacePath,
@@ -30,7 +32,7 @@ import { useRemoveMemberMutation } from "@/modules/teams/hooks/remove-member-mut
 import { ConfirmDialog, NavLink, TeamColor } from "@/components/ui";
 import type { Team as TeamType } from "@/modules/teams/types";
 import type { TeamFeedbackSummary } from "@/modules/team-feedback/types";
-import { useTeamStatuses } from "@/lib/hooks/statuses";
+// import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { useTeamIntegrationRequests } from "@/modules/integration-requests/hooks/use-team-requests";
 import { NavCount } from "./nav-count";
 
@@ -52,16 +54,17 @@ export const Team = ({
   sortingDisabled: boolean;
 }) => {
   const { getTermDisplay } = useTerminology();
+  const features = useFeatures();
   const sprintsEnabled = useSprintsEnabled(id);
   const { data: session } = useSession();
   const [isLeaving, setIsLeaving] = useState(false);
-  const { data: statuses } = useTeamStatuses(id);
+  // const { data: statuses } = useTeamStatuses(id);
   const { data: pendingRequestsPage } = useTeamIntegrationRequests(id);
   const pathname = usePathname();
   const { withWorkspace } = useWorkspacePath();
   const { mutate: removeMember, isPending } = useRemoveMemberMutation();
   const { userRole } = useUserRole();
-  const hasBacklog = statuses?.some((status) => status.category === "backlog");
+  // const hasBacklog = statuses?.some((status) => status.category === "backlog");
   const intakeCount = pendingRequestsPage?.pagination.totalCount ?? 0;
   const hasIntake = intakeCount > 0;
 
@@ -99,16 +102,22 @@ export const Team = ({
       count: feedbackSummary?.unreadCount ?? 0,
       disabled: !feedbackSummary?.enabled,
     },
-    {
-      name: "Backlog",
-      icon: <BacklogIcon className="h-[1.15rem]" />,
-      href: withWorkspace(`/teams/${id}/backlog`),
-      disabled: !hasBacklog,
-    },
+    // {
+    //   name: "Backlog",
+    //   icon: <BacklogIcon className="h-[1.15rem]" />,
+    //   href: withWorkspace(`/teams/${id}/backlog`),
+    //   disabled: !hasBacklog,
+    // },
     {
       name: getTermDisplay("storyTerm", { variant: "plural" }),
       icon: <StoryIcon strokeWidth={2} />,
       href: withWorkspace(`/teams/${id}/stories`),
+    },
+    {
+      name: getTermDisplay("objectiveTerm", { variant: "plural" }),
+      icon: <ObjectiveIcon />,
+      href: withWorkspace(`/teams/${id}/objectives`),
+      disabled: !features.objectiveEnabled,
     },
     {
       name: getTermDisplay("sprintTerm", { variant: "plural" }),
