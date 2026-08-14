@@ -1017,11 +1017,10 @@ const CalendarTimeGrid = ({
                 <Text
                   as="span"
                   className={cn(
-                    "grid place-items-center leading-none text-current tabular-nums",
+                    "grid place-items-center text-[19px] leading-none text-current tabular-nums",
                     isToday &&
-                      "bg-primary group-hover:bg-primary/90 size-7 rounded-full transition-colors",
+                      "bg-primary group-hover:bg-primary/90 size-7 rounded-full text-[17px] transition-colors",
                   )}
-                  fontSize="xl"
                   fontWeight="medium"
                 >
                   {format(day, "d")}
