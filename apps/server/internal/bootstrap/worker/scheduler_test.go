@@ -62,14 +62,3 @@ func TestRegisterSchedulesChecksCalendarWatchRenewalsHourly(t *testing.T) {
 		taskType: tasks.TypeCalendarWatchRenewal,
 	})
 }
-
-func TestRegisterSchedulesSyncsCalendarsEveryFiveMinutes(t *testing.T) {
-	t.Parallel()
-
-	scheduler := &scheduleCapture{}
-	require.NoError(t, registerSchedules(scheduler))
-	require.Contains(t, scheduler.entries, scheduledTask{
-		spec:     "*/5 * * * *",
-		taskType: tasks.TypeCalendarSyncAll,
-	})
-}

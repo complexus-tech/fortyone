@@ -12,7 +12,6 @@ import (
 
 type CalendarSyncProcessor interface {
 	SyncConnectionFromNotification(ctx context.Context, connectionID uuid.UUID) error
-	SyncAllConnections(ctx context.Context) error
 	RenewExpiringNotificationChannels(ctx context.Context) (int, error)
 }
 
@@ -36,11 +35,4 @@ func (h *handlers) HandleCalendarWatchRenewal(ctx context.Context, _ *asynq.Task
 	}
 	_, err := h.calendar.RenewExpiringNotificationChannels(ctx)
 	return err
-}
-
-func (h *handlers) HandleCalendarSyncAll(ctx context.Context, _ *asynq.Task) error {
-	if h.calendar == nil {
-		return fmt.Errorf("calendar sync processor is not configured")
-	}
-	return h.calendar.SyncAllConnections(ctx)
 }

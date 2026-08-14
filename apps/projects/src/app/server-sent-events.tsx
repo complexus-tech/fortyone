@@ -101,13 +101,12 @@ export const ServerSentEvents = () => {
   );
 
   const handleCalendarUpdate = useCallback(
-    (calendarUpdate: CalendarUpdate) => {
-      if (calendarUpdate.workspaceId !== workspace?.id) return;
+    (_calendarUpdate: CalendarUpdate) => {
       void queryClient.invalidateQueries({
         queryKey: calendarKeys.all(workspaceSlug),
       });
     },
-    [queryClient, workspace?.id, workspaceSlug],
+    [queryClient, workspaceSlug],
   );
 
   useEffect(() => {

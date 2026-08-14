@@ -101,20 +101,3 @@ func (r *Repo) GetActiveConnection(ctx context.Context, workspaceID, userID uuid
 	}
 	return toCoreConnection(row), nil
 }
-
-func (r *Repo) ListActiveConnections(ctx context.Context) ([]calendar.CoreConnection, error) {
-	const query = `
-		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
-		       token_payload, scopes, sync_status, sync_error, last_synced_at, sync_token,
-		       notification_channel_id, notification_resource_id, notification_expires_at,
-		       revoked_at, created_at, updated_at
-		FROM calendar_connections
-		WHERE revoked_at IS NULL
-		ORDER BY updated_at ASC, connection_id ASC
-	`
-	rows := []dbConnection{}
-	if err := r.db.SelectContext(ctx, &rows, query); err != nil {
-		return nil, fmt.Errorf("list active calendar connections: %w", err)
-	}
-	return toCoreConnections(rows), nil
-}

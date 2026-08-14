@@ -11,12 +11,18 @@ import (
 )
 
 type fakeProvider struct {
-	authURL   string
-	token     ProviderToken
-	events    []CoreCalendarEvent
-	windows   []CoreBusyWindow
-	syncErr   error
-	exchanged bool
+	authURL          string
+	token            ProviderToken
+	events           []CoreCalendarEvent
+	windows          []CoreBusyWindow
+	syncErr          error
+	exchanged        bool
+	syncChangesCalls int
+	syncChangesToken string
+	delta            CalendarSyncDelta
+	watchInput       CalendarWatchInput
+	watchCalls       int
+	watchErr         error
 }
 
 type fakeCalendarTasks struct {
@@ -59,12 +65,23 @@ func (p *fakeProvider) SyncCalendar(ctx context.Context, token ProviderToken, in
 	return CalendarSyncSnapshot{Events: p.events, BusyWindows: p.windows}, nil
 }
 
-func (p *fakeProvider) SyncCalendarChanges(context.Context, ProviderToken, string) (CalendarSyncDelta, error) {
-	return CalendarSyncDelta{}, p.syncErr
+func (p *fakeProvider) SyncCalendarChanges(_ context.Context, _ ProviderToken, syncToken string) (CalendarSyncDelta, error) {
+	p.syncChangesCalls++
+	p.syncChangesToken = syncToken
+	return p.delta, p.syncErr
 }
 
-func (p *fakeProvider) WatchCalendar(context.Context, ProviderToken, CalendarWatchInput) (CalendarWatchChannel, error) {
-	return CalendarWatchChannel{}, nil
+func (p *fakeProvider) WatchCalendar(_ context.Context, _ ProviderToken, input CalendarWatchInput) (CalendarWatchChannel, error) {
+	p.watchInput = input
+	p.watchCalls++
+	if p.watchErr != nil {
+		return CalendarWatchChannel{}, p.watchErr
+	}
+	return CalendarWatchChannel{
+		ChannelID:  input.ChannelID,
+		ResourceID: "google-resource",
+		ExpiresAt:  time.Now().Add(7 * 24 * time.Hour),
+	}, nil
 }
 
 func (p *fakeProvider) StopCalendarWatch(context.Context, ProviderToken, CalendarWatchChannel) error {
@@ -87,6 +104,7 @@ type fakeRepo struct {
 	markSyncedErr    error
 	markFailedErr    error
 	markedGeneration uuid.UUID
+	appliedDelta     CalendarSyncDelta
 }
 
 func (r *fakeRepo) ListConnections(ctx context.Context, workspaceID uuid.UUID, userID *uuid.UUID) ([]CoreConnection, error) {
@@ -105,13 +123,6 @@ func (r *fakeRepo) GetActiveConnection(ctx context.Context, workspaceID, userID 
 		return CoreConnection{}, ErrCalendarNotFound
 	}
 	return r.connection, nil
-}
-
-func (r *fakeRepo) ListActiveConnections(context.Context) ([]CoreConnection, error) {
-	if r.connection.ID == uuid.Nil {
-		return []CoreConnection{}, nil
-	}
-	return []CoreConnection{r.connection}, nil
 }
 
 func (r *fakeRepo) GetConnection(context.Context, uuid.UUID) (CoreConnection, error) {
@@ -187,7 +198,8 @@ func (r *fakeRepo) ReplaceCalendarSnapshot(ctx context.Context, connection CoreC
 	return nil
 }
 
-func (r *fakeRepo) ApplyCalendarChanges(context.Context, CoreConnection, CalendarSyncDelta) error {
+func (r *fakeRepo) ApplyCalendarChanges(_ context.Context, _ CoreConnection, delta CalendarSyncDelta) error {
+	r.appliedDelta = delta
 	return nil
 }
 
@@ -235,6 +247,44 @@ func TestProcessGoogleNotificationRejectsInvalidToken(t *testing.T) {
 	err := service.ProcessGoogleNotification(context.Background(), uuid.NewString(), "resource", "exists", "invalid")
 	if !errors.Is(err, ErrInvalidCalendarNotification) {
 		t.Fatalf("expected invalid notification error, got %v", err)
+	}
+}
+
+func TestSyncConnectionFromNotificationUsesIncrementalChanges(t *testing.T) {
+	t.Parallel()
+
+	connectionID := uuid.New()
+	provider := &fakeProvider{delta: CalendarSyncDelta{NextSyncToken: "next-sync-token"}}
+	repo := &fakeRepo{connection: CoreConnection{
+		ID:                   connectionID,
+		Provider:             ProviderGoogle,
+		TokenPayload:         "encrypted-token",
+		SyncToken:            "current-sync-token",
+		Scopes:               []string{GoogleCalendarEventsReadonlyScope},
+		CredentialGeneration: uuid.New(),
+	}}
+	service := New(nil, repo, Config{
+		SecretKey: "test-secret",
+		Providers: map[Provider]CalendarProvider{ProviderGoogle: provider},
+	})
+	repo.connection.TokenPayload, _ = service.encryptTokenPayload(ProviderToken{
+		AccessToken: "access-token",
+	})
+
+	if err := service.SyncConnectionFromNotification(context.Background(), connectionID); err != nil {
+		t.Fatalf("SyncConnectionFromNotification returned error: %v", err)
+	}
+	if provider.syncChangesCalls != 1 {
+		t.Fatalf("expected one incremental sync, got %d", provider.syncChangesCalls)
+	}
+	if provider.syncChangesToken != "current-sync-token" {
+		t.Fatalf("expected current sync token, got %q", provider.syncChangesToken)
+	}
+	if repo.replacements != 0 {
+		t.Fatalf("incremental sync must not perform a full snapshot, got %d replacements", repo.replacements)
+	}
+	if repo.appliedDelta.NextSyncToken != "next-sync-token" {
+		t.Fatalf("expected incremental sync token to be applied, got %q", repo.appliedDelta.NextSyncToken)
 	}
 }
 
@@ -299,6 +349,54 @@ func TestCompleteConnectRejectsOAuthStateFromAnotherUser(t *testing.T) {
 	}
 	if provider.exchanged {
 		t.Fatal("provider code must not be exchanged for a cross-user callback")
+	}
+}
+
+func TestCompleteConnectSynchronizesAndStartsNotificationChannel(t *testing.T) {
+	t.Parallel()
+
+	userID := uuid.New()
+	provider := &fakeProvider{token: ProviderToken{
+		AccessToken:       "access-token",
+		RefreshToken:      "refresh-token",
+		ProviderAccountID: "google-account",
+		ConnectedEmail:    "person@example.com",
+	}}
+	repo := &fakeRepo{}
+	service := New(nil, repo, Config{
+		SecretKey:  "test-secret",
+		WebhookURL: "https://api.example.com/webhooks/google/calendar",
+		Providers:  map[Provider]CalendarProvider{ProviderGoogle: provider},
+	})
+	state, err := service.signState(stateClaims{
+		WorkspaceID:   uuid.New(),
+		UserID:        userID,
+		WorkspaceSlug: "acme",
+		Provider:      ProviderGoogle,
+		ExpiresAt:     time.Now().Add(time.Minute).Unix(),
+	})
+	if err != nil {
+		t.Fatalf("signState returned error: %v", err)
+	}
+
+	_, _, err = service.CompleteConnect(context.Background(), userID, "code", state)
+	if err != nil {
+		t.Fatalf("CompleteConnect returned error: %v", err)
+	}
+	if repo.replacements != 1 {
+		t.Fatalf("expected one initial calendar sync, got %d", repo.replacements)
+	}
+	if provider.watchCalls != 1 {
+		t.Fatalf("expected one notification channel, got %d", provider.watchCalls)
+	}
+	if provider.watchInput.Address != "https://api.example.com/webhooks/google/calendar" {
+		t.Fatalf("unexpected webhook address %q", provider.watchInput.Address)
+	}
+	if provider.watchInput.TTL != googleWatchTTL {
+		t.Fatalf("expected a seven-day watch TTL, got %s", provider.watchInput.TTL)
+	}
+	if provider.watchInput.Token == "" {
+		t.Fatal("expected a signed notification token")
 	}
 }
 

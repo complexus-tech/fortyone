@@ -250,7 +250,7 @@ func (h *Handlers) HandleGoogleNotification(ctx context.Context, w http.Response
 
 func (h *Handlers) statusCode(err error) int {
 	switch {
-	case errors.Is(err, calendar.ErrCalendarNotConfigured):
+	case errors.Is(err, calendar.ErrCalendarNotConfigured), errors.Is(err, calendar.ErrCalendarWebhookNotConfigured):
 		return http.StatusServiceUnavailable
 	case errors.Is(err, calendar.ErrInvalidCalendarState):
 		return http.StatusBadRequest

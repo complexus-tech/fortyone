@@ -25,8 +25,6 @@ export const useCalendarSchedule = (
     queryFn: () =>
       getCalendarSchedule({ session: session!, workspaceSlug }, params),
     enabled: options?.enabled,
-    refetchInterval: 5 * 60_000,
-    refetchIntervalInBackground: true,
     staleTime: 1000 * 60,
   });
 };

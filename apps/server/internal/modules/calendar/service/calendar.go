@@ -35,6 +35,7 @@ var (
 	ErrCalendarScheduleBlockNotFound = errors.New("calendar schedule block not found")
 	ErrCalendarFullSyncRequired      = errors.New("calendar full sync is required")
 	ErrInvalidCalendarNotification   = errors.New("invalid calendar notification")
+	ErrCalendarWebhookNotConfigured  = errors.New("calendar webhook is not configured")
 )
 
 const (
@@ -57,7 +58,6 @@ type Repository interface {
 	ListConnections(ctx context.Context, workspaceID uuid.UUID, userID *uuid.UUID) ([]CoreConnection, error)
 	GetOwnedConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) (CoreConnection, error)
 	GetActiveConnection(ctx context.Context, workspaceID, userID uuid.UUID, provider Provider) (CoreConnection, error)
-	ListActiveConnections(ctx context.Context) ([]CoreConnection, error)
 	GetConnection(ctx context.Context, connectionID uuid.UUID) (CoreConnection, error)
 	ListConnectionsNeedingWatch(ctx context.Context, renewBefore time.Time) ([]CoreConnection, error)
 	WorkspaceMemberExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, error)
@@ -81,12 +81,13 @@ type Repository interface {
 }
 
 type Config struct {
-	SecretKey  string
-	WebsiteURL string
-	WebhookURL string
-	Providers  map[Provider]CalendarProvider
-	Tasks      CalendarTaskQueue
-	Updates    CalendarUpdatePublisher
+	SecretKey      string
+	WebsiteURL     string
+	WebhookURL     string
+	RequireWebhook bool
+	Providers      map[Provider]CalendarProvider
+	Tasks          CalendarTaskQueue
+	Updates        CalendarUpdatePublisher
 }
 
 type Service struct {
@@ -187,13 +188,15 @@ func (s *Service) CompleteConnect(
 	if err != nil {
 		return CoreConnection{}, "", err
 	}
-	if err := s.syncConnection(ctx, connection); err != nil && s.log != nil {
-		s.log.Error(ctx, "failed to sync calendar connection after connect", "err", err, "connection_id", connection.ID)
+	if err := s.syncConnection(ctx, connection); err != nil {
+		return CoreConnection{}, "", fmt.Errorf("sync calendar connection after connect: %w", err)
 	}
-	if current, getErr := s.repo.GetConnection(ctx, connection.ID); getErr == nil {
-		if watchErr := s.replaceNotificationChannel(ctx, current); watchErr != nil && s.log != nil {
-			s.log.Error(ctx, "failed to start calendar notification channel", "err", watchErr, "connection_id", connection.ID)
-		}
+	current, err := s.repo.GetConnection(ctx, connection.ID)
+	if err != nil {
+		return CoreConnection{}, "", fmt.Errorf("load calendar connection after initial sync: %w", err)
+	}
+	if err := s.replaceNotificationChannel(ctx, current); err != nil {
+		return CoreConnection{}, "", fmt.Errorf("start calendar notification channel: %w", err)
 	}
 	return connection, s.workspaceCalendarURL(claims.WorkspaceSlug, "connected=1"), nil
 }
@@ -343,16 +346,7 @@ func (s *Service) RenewExpiringNotificationChannels(ctx context.Context) (int, e
 	renewed := 0
 	var renewalErr error
 	for _, connection := range connections {
-		if err := s.syncConnection(ctx, connection); err != nil {
-			renewalErr = errors.Join(renewalErr, err)
-			continue
-		}
-		current, err := s.repo.GetConnection(ctx, connection.ID)
-		if err != nil {
-			renewalErr = errors.Join(renewalErr, err)
-			continue
-		}
-		if err := s.replaceNotificationChannel(ctx, current); err != nil {
+		if err := s.replaceNotificationChannel(ctx, connection); err != nil {
 			renewalErr = errors.Join(renewalErr, err)
 			continue
 		}
@@ -381,28 +375,6 @@ func (s *Service) SyncActiveGoogleConnection(ctx context.Context, workspaceID, u
 		return err
 	}
 	return s.syncConnection(ctx, connection)
-}
-
-// SyncAllConnections keeps calendar data current even when a provider webhook
-// is delayed or unavailable. Each connection decides whether it can use an
-// incremental sync token or needs a full snapshot.
-func (s *Service) SyncAllConnections(ctx context.Context) error {
-	if s.repo == nil {
-		return ErrCalendarNotConfigured
-	}
-	connections, err := s.repo.ListActiveConnections(ctx)
-	if err != nil {
-		return err
-	}
-
-	var syncErrors []error
-	for _, connection := range connections {
-		if err := s.SyncConnectionFromNotification(ctx, connection.ID); err != nil &&
-			!errors.Is(err, ErrCalendarSyncSuperseded) {
-			syncErrors = append(syncErrors, fmt.Errorf("sync calendar connection %s: %w", connection.ID, err))
-		}
-	}
-	return errors.Join(syncErrors...)
 }
 
 func (s *Service) ListSchedule(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (CoreSchedule, error) {
@@ -607,7 +579,14 @@ func (s *Service) completeConnectionSync(ctx context.Context, connection CoreCon
 func (s *Service) replaceNotificationChannel(ctx context.Context, connection CoreConnection) error {
 	address := strings.TrimSpace(s.cfg.WebhookURL)
 	if address == "" {
-		return nil
+		if !s.cfg.RequireWebhook {
+			return nil
+		}
+		return ErrCalendarWebhookNotConfigured
+	}
+	parsedAddress, err := url.Parse(address)
+	if err != nil || parsedAddress.Scheme != "https" || parsedAddress.Host == "" {
+		return fmt.Errorf("calendar webhook must be a public HTTPS URL")
 	}
 	provider, err := s.provider(connection.Provider)
 	if err != nil {
@@ -620,12 +599,17 @@ func (s *Service) replaceNotificationChannel(ctx context.Context, connection Cor
 	channelID := uuid.NewString()
 	channel, err := provider.WatchCalendar(ctx, token, CalendarWatchInput{
 		ChannelID: channelID,
-		Address:   address,
+		Address:   parsedAddress.String(),
 		Token:     s.notificationToken(connection.ID, channelID),
 		TTL:       googleWatchTTL,
 	})
 	if err != nil {
 		return err
+	}
+	if strings.TrimSpace(channel.ChannelID) == "" ||
+		strings.TrimSpace(channel.ResourceID) == "" ||
+		channel.ExpiresAt.IsZero() {
+		return errors.New("calendar provider returned an incomplete notification channel")
 	}
 	if err := s.repo.SetNotificationChannel(ctx, connection, channel); err != nil {
 		_ = provider.StopCalendarWatch(ctx, token, channel)

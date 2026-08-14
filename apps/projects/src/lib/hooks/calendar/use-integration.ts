@@ -11,7 +11,5 @@ export const useCalendarIntegration = () => {
   return useQuery({
     queryKey: calendarKeys.integration(workspaceSlug),
     queryFn: () => getCalendarIntegration({ session: session!, workspaceSlug }),
-    refetchInterval: 60_000,
-    refetchIntervalInBackground: true,
   });
 };
