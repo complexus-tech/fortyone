@@ -1019,7 +1019,7 @@ const CalendarTimeGrid = ({
                   className={cn(
                     "grid place-items-center leading-none text-current tabular-nums",
                     isToday
-                      ? "bg-primary group-hover:bg-primary/90 size-7 rounded-full text-base transition-colors"
+                      ? "bg-primary group-hover:bg-primary/90 size-8 rounded-full text-base transition-colors"
                       : "text-lg",
                   )}
                   fontWeight="medium"
