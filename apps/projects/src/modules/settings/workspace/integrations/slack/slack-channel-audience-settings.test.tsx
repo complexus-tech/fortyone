@@ -509,6 +509,26 @@ describe("SlackChannelAudienceSettings", () => {
     expect(mockUseUpdateSlackChannelAudience).toHaveBeenCalledWith("C123");
   });
 
+  it("uses the compact icon size in the team audience button", () => {
+    setAudiences([
+      makeChannelAudience({
+        isConfigured: true,
+        teamIds: [publicTeam.id],
+      }),
+    ]);
+
+    render(<SlackChannelAudienceSettings />);
+
+    const picker = screen.getByRole("button", {
+      name: "Choose work access for #product",
+    });
+    expect(picker.querySelector("svg")).toHaveClass(
+      "h-3.5",
+      "w-auto",
+      "shrink-0",
+    );
+  });
+
   it("autosaves Personal only while keeping the channel configured", () => {
     setAudiences([
       makeChannelAudience({

@@ -68,7 +68,12 @@ const TeamAudiencePicker = ({
           className="w-max max-w-64 min-w-0 justify-between"
           color="tertiary"
           disabled={disabled}
-          rightIcon={<ArrowDownIcon aria-hidden="true" className="shrink-0" />}
+          rightIcon={
+            <ArrowDownIcon
+              aria-hidden="true"
+              className="h-3.5 w-auto shrink-0"
+            />
+          }
           size="sm"
           title={summary}
           variant="outline"
