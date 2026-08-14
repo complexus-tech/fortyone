@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   Badge,
@@ -18,7 +17,10 @@ import {
 import { CheckIcon, GitIcon, PlusIcon } from "icons";
 import { TeamColor } from "@/components/ui/team-color";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { SectionHeader } from "@/modules/settings/components";
+import {
+  SectionHeader,
+  SettingsBackButton,
+} from "@/modules/settings/components";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import {
   useCreateGitHubInstallSession,
@@ -79,9 +81,15 @@ export const GitHubIntegrationSettings = () => {
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-medium">
-        GitHub
-      </Text>
+      <Flex align="center" className="mb-6" gap={2}>
+        <SettingsBackButton
+          href={withWorkspace("/settings/integrations")}
+          label="Back to integrations"
+        />
+        <Text as="h1" className="text-2xl font-medium">
+          GitHub
+        </Text>
+      </Flex>
 
       <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
@@ -346,12 +354,6 @@ export const GitHubIntegrationSettings = () => {
             />
           </Flex>
         </Box>
-      </Box>
-
-      <Box className="mt-6">
-        <Link href={withWorkspace("/settings/integrations")}>
-          <Text color="muted">Back to integrations</Text>
-        </Link>
       </Box>
 
       <Dialog onOpenChange={setIsModalOpen} open={isModalOpen}>

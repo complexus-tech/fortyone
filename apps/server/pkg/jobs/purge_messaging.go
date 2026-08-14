@@ -11,10 +11,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// PurgeMessagingData removes expired nonces and provider message data after
-// its operational retention window. Durable Maya email threads and messages
-// are preserved so later replies retain the complete conversation; only their
-// expired or revoked reply-address aliases are removed here.
+// PurgeMessagingData removes expired nonces, redacts expired mutation
+// proposals, and deletes provider message data after its operational retention
+// window. Durable Maya email threads and messages are preserved so later
+// replies retain the complete conversation; only their expired or revoked
+// reply-address aliases are removed here.
 func PurgeMessagingData(ctx context.Context, db *sqlx.DB, log *logger.Logger) error {
 	ctx, span := web.AddSpan(ctx, "jobs.PurgeMessagingData")
 	defer span.End()
@@ -37,6 +38,26 @@ func PurgeMessagingData(ctx context.Context, db *sqlx.DB, log *logger.Logger) er
 			query: `
 				DELETE FROM messaging_nonces
 				WHERE expires_at < NOW() - INTERVAL '1 day'
+			`,
+		},
+		{
+			name: "expired_story_mutation_confirmations",
+			query: `
+				UPDATE messaging_story_mutation_confirmations
+				SET status = 'expired',
+				    proposal = NULL,
+				    applied_at = NULL,
+				    expired_at = NOW(),
+				    updated_at = NOW()
+				WHERE expires_at <= NOW()
+				  AND (
+				      status = 'pending'
+				      OR (
+				          status = 'applied'
+				          AND operation = 'create_stories'
+				          AND proposal IS NOT NULL
+				      )
+				  )
 			`,
 		},
 		{

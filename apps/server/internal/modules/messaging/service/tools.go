@@ -36,6 +36,7 @@ const (
 	toolListTeamMembers = "list_team_members"
 	toolGetStory        = "get_story"
 	toolCreateStory     = "create_story"
+	toolCreateStories   = "create_stories"
 	toolUpdateStory     = "update_story"
 	toolAddComment      = "add_story_comment"
 	toolAddRelationship = "add_story_relationship"
@@ -316,6 +317,14 @@ func (e *FortyOneToolExecutor) Execute(ctx context.Context, scope ToolScope, cal
 			return nil, ErrMutationNotAllowed
 		}
 		return e.mutations.proposeCreate(ctx, e, scope, call.Arguments)
+	case toolCreateStories:
+		if e.mutations == nil {
+			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
+		}
+		if !scope.AllowMutations {
+			return nil, ErrMutationNotAllowed
+		}
+		return e.mutations.proposeCreateBatch(ctx, e, scope, call.Arguments)
 	case toolUpdateStory:
 		if e.mutations == nil {
 			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)

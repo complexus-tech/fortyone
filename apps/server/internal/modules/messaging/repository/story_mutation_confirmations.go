@@ -20,9 +20,20 @@ const (
 )
 
 type storyMutationConfirmationRow struct {
+	Status      messaging.StoryMutationConfirmationStatus `db:"status"`
+	Result      []byte                                    `db:"result"`
+	LastError   sql.NullString                            `db:"last_error"`
+	HasProposal bool                                      `db:"has_proposal"`
+	ExpiresAt   time.Time                                 `db:"expires_at"`
+}
+
+type storyMutationConfirmationRecordRow struct {
+	TeamID    uuid.UUID                                 `db:"team_id"`
+	Operation messaging.StoryMutationOperation          `db:"operation"`
 	Status    messaging.StoryMutationConfirmationStatus `db:"status"`
+	Proposal  []byte                                    `db:"proposal"`
 	Result    []byte                                    `db:"result"`
-	ExpiresAt time.Time                                 `db:"expires_at"`
+	LastError sql.NullString                            `db:"last_error"`
 }
 
 // RegisterStoryMutationConfirmation persists a proposal before its signed
@@ -40,20 +51,68 @@ func (r *Repository) RegisterStoryMutationConfirmation(
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO messaging_story_mutation_confirmations (
 			confirmation_id, workspace_id, user_id, team_id, operation,
-			token_hash, status, expires_at
-		) VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7)
+			token_hash, proposal, status, expires_at
+		) VALUES ($1, $2, $3, $4, $5, $6, CAST($7 AS jsonb), 'pending', $8)
 	`, input.ConfirmationID, input.WorkspaceID, input.UserID, input.TeamID,
-		input.Operation, input.TokenHash, input.ExpiresAt.UTC())
+		input.Operation, input.TokenHash, nullableJSON(input.Proposal), input.ExpiresAt.UTC())
 	if err != nil {
 		return fmt.Errorf("register messaging story mutation confirmation: %w", err)
 	}
 	return nil
 }
 
+// LoadStoryMutationConfirmation returns immutable server-side proposal data
+// only after the opaque token is bound to the same workspace and actor.
+func (r *Repository) LoadStoryMutationConfirmation(
+	ctx context.Context,
+	binding messaging.StoryMutationConfirmationBinding,
+) (messaging.StoryMutationConfirmationRecord, error) {
+	if r == nil || r.db == nil {
+		return messaging.StoryMutationConfirmationRecord{}, errors.New("messaging repository is not configured")
+	}
+	if err := validateStoryMutationConfirmationBinding(binding); err != nil {
+		return messaging.StoryMutationConfirmationRecord{}, err
+	}
+
+	var row storyMutationConfirmationRecordRow
+	err := r.db.GetContext(ctx, &row, `
+		SELECT team_id, operation, proposal, status,
+		       COALESCE(result, CAST('null' AS jsonb)) AS result,
+		       last_error
+		FROM messaging_story_mutation_confirmations
+		WHERE confirmation_id = $1
+		  AND workspace_id = $2
+		  AND user_id = $3
+		  AND token_hash = $4
+	`, binding.ConfirmationID, binding.WorkspaceID, binding.UserID, binding.TokenHash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return messaging.StoryMutationConfirmationRecord{}, messaging.ErrInvalidConfirmation
+	}
+	if err != nil {
+		return messaging.StoryMutationConfirmationRecord{}, fmt.Errorf("load story mutation confirmation: %w", err)
+	}
+	record := messaging.StoryMutationConfirmationRecord{
+		TeamID:    row.TeamID,
+		Operation: row.Operation,
+		Status:    row.Status,
+		Proposal:  append(json.RawMessage(nil), row.Proposal...),
+		LastError: strings.TrimSpace(row.LastError.String),
+	}
+	if len(row.Result) != 0 && string(row.Result) != "null" {
+		var result messaging.StoryMutationResult
+		if err := json.Unmarshal(row.Result, &result); err != nil {
+			return messaging.StoryMutationConfirmationRecord{}, fmt.Errorf("decode loaded story mutation result: %w", err)
+		}
+		record.Result = &result
+	}
+	return record, nil
+}
+
 // ApplyStoryMutationConfirmation atomically consumes pending consent before a
-// write, then serializes and persists the result. The initial state transition
-// commits before apply runs, so cancellation can never win after confirmation
-// has been accepted. A failed apply remains retryable only by Confirm.
+// write, then serializes and persists the result or partial batch progress.
+// The initial state transition commits before apply runs, so cancellation can
+// never win after confirmation has been accepted. A failed apply remains
+// retryable only by Confirm.
 func (r *Repository) ApplyStoryMutationConfirmation(
 	ctx context.Context,
 	binding messaging.StoryMutationConfirmationBinding,
@@ -76,7 +135,7 @@ func (r *Repository) ApplyStoryMutationConfirmation(
 	}
 	result, persisted, err := r.applyStoryMutationResult(ctx, binding, apply)
 	if err != nil {
-		return messaging.StoryMutationResult{}, false, err
+		return result, false, err
 	}
 	return result, duplicate || persisted, nil
 }
@@ -123,8 +182,10 @@ func (r *Repository) consumeStoryMutationConfirmation(
 	if err != nil {
 		return false, err
 	}
-	if row.Status == messaging.StoryMutationConfirmationPending && !now.Before(row.ExpiresAt.UTC()) {
-		if err := setStoryMutationConfirmationStatus(ctx, tx, binding.ConfirmationID, messaging.StoryMutationConfirmationExpired, now); err != nil {
+	if (row.Status == messaging.StoryMutationConfirmationPending ||
+		(row.Status == messaging.StoryMutationConfirmationApplied && row.HasProposal)) &&
+		!now.Before(row.ExpiresAt.UTC()) {
+		if err := setStoryMutationConfirmationStatus(ctx, tx, binding.ConfirmationID, row.Status, messaging.StoryMutationConfirmationExpired, now); err != nil {
 			return false, err
 		}
 		if err := tx.Commit(); err != nil {
@@ -135,7 +196,7 @@ func (r *Repository) consumeStoryMutationConfirmation(
 
 	switch row.Status {
 	case messaging.StoryMutationConfirmationPending:
-		if err := setStoryMutationConfirmationStatus(ctx, tx, binding.ConfirmationID, desired, now); err != nil {
+		if err := setStoryMutationConfirmationStatus(ctx, tx, binding.ConfirmationID, row.Status, desired, now); err != nil {
 			return false, err
 		}
 	case desired:
@@ -174,10 +235,15 @@ func (r *Repository) applyStoryMutationResult(
 	if row.Status != messaging.StoryMutationConfirmationApplied {
 		return messaging.StoryMutationResult{}, false, storyMutationTerminalError(row.Status)
 	}
+	var persistedResult *messaging.StoryMutationResult
 	if len(row.Result) != 0 && string(row.Result) != "null" {
 		if err := json.Unmarshal(row.Result, &result); err != nil {
 			return messaging.StoryMutationResult{}, false, fmt.Errorf("decode persisted story mutation result: %w", err)
 		}
+		persisted := result
+		persistedResult = &persisted
+	}
+	if persistedResult != nil && !row.LastError.Valid {
 		if err := tx.Commit(); err != nil {
 			return messaging.StoryMutationResult{}, false, fmt.Errorf("commit story mutation result read: %w", err)
 		}
@@ -186,11 +252,25 @@ func (r *Repository) applyStoryMutationResult(
 
 	result, applyErr := apply(ctx)
 	if applyErr != nil {
+		result = preferredStoryMutationProgress(persistedResult, result)
+		var resultPayload any
+		if result.Operation == messaging.StoryMutationCreateBatch {
+			encodedResult, encodeErr := json.Marshal(result)
+			if encodeErr != nil {
+				return messaging.StoryMutationResult{}, false, errors.Join(
+					applyErr,
+					fmt.Errorf("encode partial story mutation result: %w", encodeErr),
+				)
+			}
+			resultPayload = string(encodedResult)
+		}
 		_, persistErr := tx.ExecContext(ctx, `
 			UPDATE messaging_story_mutation_confirmations
-			SET last_error = $2, updated_at = NOW()
+			SET result = COALESCE(CAST($2 AS jsonb), result),
+			    last_error = $3,
+			    updated_at = NOW()
 			WHERE confirmation_id = $1 AND status = 'applied'
-		`, binding.ConfirmationID, truncateStoryMutationError(applyErr.Error()))
+		`, binding.ConfirmationID, resultPayload, truncateStoryMutationError(applyErr.Error()))
 		if persistErr == nil {
 			persistErr = tx.Commit()
 		}
@@ -200,7 +280,7 @@ func (r *Repository) applyStoryMutationResult(
 				fmt.Errorf("persist story mutation apply failure: %w", persistErr),
 			)
 		}
-		return messaging.StoryMutationResult{}, false, applyErr
+		return result, false, applyErr
 	}
 
 	payload, err := json.Marshal(result)
@@ -209,7 +289,10 @@ func (r *Repository) applyStoryMutationResult(
 	}
 	resultUpdate, err := tx.ExecContext(ctx, `
 		UPDATE messaging_story_mutation_confirmations
-		SET result = CAST($2 AS jsonb), last_error = NULL, updated_at = NOW()
+		SET result = CAST($2 AS jsonb),
+		    proposal = NULL,
+		    last_error = NULL,
+		    updated_at = NOW()
 		WHERE confirmation_id = $1 AND status = 'applied'
 	`, binding.ConfirmationID, payload)
 	if err != nil {
@@ -231,7 +314,8 @@ func selectStoryMutationConfirmationForUpdate(
 ) (storyMutationConfirmationRow, error) {
 	var row storyMutationConfirmationRow
 	err := tx.GetContext(ctx, &row, `
-		SELECT status, COALESCE(result, CAST('null' AS jsonb)) AS result, expires_at
+		SELECT status, COALESCE(result, CAST('null' AS jsonb)) AS result,
+		       last_error, proposal IS NOT NULL AS has_proposal, expires_at
 		FROM messaging_story_mutation_confirmations
 		WHERE confirmation_id = $1
 		  AND workspace_id = $2
@@ -252,6 +336,7 @@ func setStoryMutationConfirmationStatus(
 	ctx context.Context,
 	tx *sqlx.Tx,
 	confirmationID uuid.UUID,
+	currentStatus messaging.StoryMutationConfirmationStatus,
 	status messaging.StoryMutationConfirmationStatus,
 	now time.Time,
 ) error {
@@ -272,13 +357,24 @@ func setStoryMutationConfirmationStatus(
 		    applied_at = $3,
 		    cancelled_at = $4,
 		    expired_at = $5,
+		    proposal = CASE WHEN $2 IN ('cancelled', 'expired') THEN NULL ELSE proposal END,
 		    updated_at = NOW()
-		WHERE confirmation_id = $1 AND status = 'pending'
-	`, confirmationID, status, appliedAt, cancelledAt, expiredAt)
+		WHERE confirmation_id = $1 AND status = $6
+	`, confirmationID, status, appliedAt, cancelledAt, expiredAt, currentStatus)
 	if err != nil {
 		return fmt.Errorf("transition story mutation confirmation: %w", err)
 	}
 	return requireAffectedRow(result, "transition story mutation confirmation")
+}
+
+func preferredStoryMutationProgress(
+	persisted *messaging.StoryMutationResult,
+	current messaging.StoryMutationResult,
+) messaging.StoryMutationResult {
+	if persisted == nil || len(current.Items) >= len(persisted.Items) {
+		return current
+	}
+	return *persisted
 }
 
 func storyMutationTerminalError(status messaging.StoryMutationConfirmationStatus) error {
@@ -298,8 +394,21 @@ func validateStoryMutationConfirmationStateInput(input messaging.StoryMutationCo
 	if input.ConfirmationID == uuid.Nil || input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.TeamID == uuid.Nil {
 		return fmt.Errorf("%w: confirmation, workspace, user, and team are required", messaging.ErrInvalidConfirmation)
 	}
-	if input.Operation != messaging.StoryMutationCreate && input.Operation != messaging.StoryMutationUpdate {
+	switch input.Operation {
+	case messaging.StoryMutationCreate,
+		messaging.StoryMutationCreateBatch,
+		messaging.StoryMutationUpdate,
+		messaging.StoryMutationComment,
+		messaging.StoryMutationRelation:
+	default:
 		return fmt.Errorf("%w: unsupported operation %q", messaging.ErrInvalidConfirmation, input.Operation)
+	}
+	if input.Operation == messaging.StoryMutationCreateBatch {
+		if len(input.Proposal) == 0 || len(input.Proposal) > maximumStoryMutationProposalBytes || !json.Valid(input.Proposal) {
+			return fmt.Errorf("%w: batch proposal must contain valid bounded JSON", messaging.ErrInvalidConfirmation)
+		}
+	} else if len(input.Proposal) != 0 {
+		return fmt.Errorf("%w: server-side proposal is only supported for batch creation", messaging.ErrInvalidConfirmation)
 	}
 	if len(input.TokenHash) != sha256DigestSize {
 		return fmt.Errorf("%w: token hash must contain %d bytes", messaging.ErrInvalidConfirmation, sha256DigestSize)
@@ -321,6 +430,15 @@ func validateStoryMutationConfirmationBinding(binding messaging.StoryMutationCon
 }
 
 const sha256DigestSize = 32
+
+const maximumStoryMutationProposalBytes = 64 << 10
+
+func nullableJSON(value json.RawMessage) any {
+	if len(value) == 0 {
+		return nil
+	}
+	return string(value)
+}
 
 func truncateStoryMutationError(message string) string {
 	message = strings.TrimSpace(message)

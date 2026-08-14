@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { Box, Button, Flex, Text } from "ui";
 import { SlackIcon } from "icons";
 import type { SlackAccountLinkStatus } from "@/lib/hooks/slack/use-account-link-token";
 import { useWorkspacePath } from "@/hooks";
 import { useSlackAccountLinkToken } from "@/lib/hooks/slack";
+import { SettingsBackButton } from "@/modules/settings/components";
 
 const getAccountLinkCopy = ({
   errorMessage,
@@ -57,9 +57,15 @@ export const SlackAccountLinkSettings = () => {
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-medium">
-        Slack
-      </Text>
+      <Flex align="center" className="mb-6" gap={2}>
+        <SettingsBackButton
+          href={withWorkspace("/settings/integrations")}
+          label="Back to integrations"
+        />
+        <Text as="h1" className="text-2xl font-medium">
+          Slack
+        </Text>
+      </Flex>
 
       <Box className="border-border bg-surface rounded-2xl border p-6">
         <Flex align="center" gap={3}>
@@ -82,9 +88,6 @@ export const SlackAccountLinkSettings = () => {
           {status === "error" && retry ? (
             <Button onClick={retry}>Try again</Button>
           ) : null}
-          <Link href={withWorkspace("/settings/integrations")}>
-            <Text color="muted">Back to integrations</Text>
-          </Link>
         </Flex>
       </Box>
     </Box>

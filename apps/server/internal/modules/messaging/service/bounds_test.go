@@ -231,6 +231,27 @@ func TestNormalizeRequestBoundsWorkspaceGuidance(t *testing.T) {
 	require.ErrorIs(t, err, ErrInvalidRequest)
 }
 
+func TestNormalizeRequestAcceptsOnlyBoundedAbsoluteHTTPSSourceURL(t *testing.T) {
+	t.Parallel()
+
+	request := boundedTestRequest()
+	request.SourceURL = "  https://acme.slack.com/archives/C123/p1750000000000000  "
+	normalized, err := NormalizeRequest(request)
+	require.NoError(t, err)
+	require.Equal(t, "https://acme.slack.com/archives/C123/p1750000000000000", normalized.SourceURL)
+
+	for _, invalid := range []string{
+		"http://acme.slack.com/archives/C123/p1",
+		"/archives/C123/p1",
+		"https://user:secret@acme.slack.com/archives/C123/p1",
+		"https://acme.slack.com/" + strings.Repeat("x", MaximumSourceURLBytes),
+	} {
+		request.SourceURL = invalid
+		_, err = NormalizeRequest(request)
+		require.ErrorIs(t, err, ErrInvalidRequest, invalid)
+	}
+}
+
 func boundedTestRequest() Request {
 	return Request{
 		WorkspaceID: uuid.MustParse("11111111-1111-1111-1111-111111111111"),

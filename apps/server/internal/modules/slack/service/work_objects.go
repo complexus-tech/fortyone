@@ -770,12 +770,46 @@ func BuildSlackRequestCreationReceipt(creatorName string, input SlackRequestWork
 // BuildSlackMutationConfirmationProviderPayload returns a generic Block Kit
 // confirmation payload suitable for the same durable provider_payload column
 // used by rich story receipts. The opaque token is never rendered as text.
-func BuildSlackMutationConfirmationProviderPayload(prompt, confirmationToken, slackUserID string) (SlackProviderPayload, error) {
-	prompt = truncateSlackWorkObjectText(prompt, slackWorkObjectTextFieldLimit)
-	confirmationToken = strings.TrimSpace(confirmationToken)
-	if prompt == "" {
-		return SlackProviderPayload{}, errors.New("Slack mutation confirmation prompt is required")
+func BuildSlackMutationConfirmationProviderPayload(prompt, confirmationToken, slackUserID string, createAll bool) (SlackProviderPayload, error) {
+	confirmLabel := "Confirm"
+	confirmAccessibilityLabel := "Confirm story change"
+	if createAll {
+		confirmLabel = "Create all"
+		confirmAccessibilityLabel = "Create all proposed stories"
 	}
+	return buildSlackMutationActionProviderPayload(
+		prompt,
+		confirmationToken,
+		slackUserID,
+		confirmLabel,
+		confirmAccessibilityLabel,
+		true,
+	)
+}
+
+// BuildSlackMutationRetryProviderPayload returns a retry-only confirmation for
+// a partially applied batch. Cancellation is intentionally omitted because the
+// original confirmation has already been consumed.
+func BuildSlackMutationRetryProviderPayload(prompt, confirmationToken, slackUserID string) (SlackProviderPayload, error) {
+	return buildSlackMutationActionProviderPayload(
+		prompt,
+		confirmationToken,
+		slackUserID,
+		"Retry remaining",
+		"Retry creating the remaining proposed stories",
+		false,
+	)
+}
+
+func buildSlackMutationActionProviderPayload(
+	prompt, confirmationToken, slackUserID, confirmLabel, confirmAccessibilityLabel string,
+	includeCancel bool,
+) (SlackProviderPayload, error) {
+	promptBlocks, err := buildSlackMutationPromptBlocks(prompt)
+	if err != nil {
+		return SlackProviderPayload{}, err
+	}
+	confirmationToken = strings.TrimSpace(confirmationToken)
 	if confirmationToken == "" {
 		return SlackProviderPayload{}, errors.New("Slack mutation confirmation token is invalid")
 	}
@@ -783,33 +817,86 @@ func BuildSlackMutationConfirmationProviderPayload(prompt, confirmationToken, sl
 	if err != nil {
 		return SlackProviderPayload{}, err
 	}
-	return SlackProviderPayload{Blocks: []SlackBlock{
-		{
+	elements := []SlackBlockElement{{
+		Type:               "button",
+		ActionID:           slackConfirmMutationActionID,
+		Text:               &SlackTextObject{Type: "plain_text", Text: confirmLabel},
+		Value:              actionValue,
+		Style:              "primary",
+		AccessibilityLabel: confirmAccessibilityLabel,
+	}}
+	if includeCancel {
+		elements = append(elements, SlackBlockElement{
+			Type:               "button",
+			ActionID:           slackCancelMutationActionID,
+			Text:               &SlackTextObject{Type: "plain_text", Text: "Cancel"},
+			Value:              actionValue,
+			AccessibilityLabel: "Cancel story change",
+		})
+	}
+	blocks := append(promptBlocks, SlackBlock{
+		Type:     "actions",
+		BlockID:  "fortyone_story_mutation_confirmation",
+		Elements: elements,
+	})
+	return SlackProviderPayload{Blocks: blocks}, nil
+}
+
+func buildSlackMutationPromptBlocks(prompt string) ([]SlackBlock, error) {
+	prompt = strings.TrimSpace(prompt)
+	if prompt == "" {
+		return nil, errors.New("Slack mutation confirmation prompt is required")
+	}
+
+	const maximumPromptBlocks = 49 // Reserve one block for mutation actions.
+	blocks := make([]SlackBlock, 0, 2)
+	var section strings.Builder
+	sectionRunes := 0
+	flush := func() error {
+		text := strings.TrimSpace(section.String())
+		if text == "" {
+			return nil
+		}
+		if len(blocks) >= maximumPromptBlocks {
+			return errors.New("Slack mutation confirmation exceeds the 50-block message limit")
+		}
+		blocks = append(blocks, SlackBlock{
 			Type: "section",
-			Text: &SlackTextObject{Type: "mrkdwn", Text: prompt},
-		},
-		{
-			Type:    "actions",
-			BlockID: "fortyone_story_mutation_confirmation",
-			Elements: []SlackBlockElement{
-				{
-					Type:               "button",
-					ActionID:           slackConfirmMutationActionID,
-					Text:               &SlackTextObject{Type: "plain_text", Text: "Confirm"},
-					Value:              actionValue,
-					Style:              "primary",
-					AccessibilityLabel: "Confirm story change",
-				},
-				{
-					Type:               "button",
-					ActionID:           slackCancelMutationActionID,
-					Text:               &SlackTextObject{Type: "plain_text", Text: "Cancel"},
-					Value:              actionValue,
-					AccessibilityLabel: "Cancel story change",
-				},
-			},
-		},
-	}}, nil
+			Text: &SlackTextObject{Type: "mrkdwn", Text: text},
+		})
+		section.Reset()
+		sectionRunes = 0
+		return nil
+	}
+
+	for _, line := range strings.Split(prompt, "\n") {
+		lineRunes := utf8.RuneCountInString(line)
+		if lineRunes > slackWorkObjectTextFieldLimit {
+			return nil, errors.New("Slack mutation confirmation contains a line that exceeds the section text limit")
+		}
+		separatorRunes := 0
+		if section.Len() > 0 {
+			separatorRunes = 1
+		}
+		if sectionRunes+separatorRunes+lineRunes > slackWorkObjectTextFieldLimit {
+			if err := flush(); err != nil {
+				return nil, err
+			}
+		}
+		if section.Len() > 0 {
+			section.WriteByte('\n')
+			sectionRunes++
+		}
+		section.WriteString(line)
+		sectionRunes += lineRunes
+	}
+	if err := flush(); err != nil {
+		return nil, err
+	}
+	if len(blocks) == 0 {
+		return nil, errors.New("Slack mutation confirmation prompt is required")
+	}
+	return blocks, nil
 }
 
 type slackMutationActionValue struct {

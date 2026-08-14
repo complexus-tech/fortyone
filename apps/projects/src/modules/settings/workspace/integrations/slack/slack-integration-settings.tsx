@@ -1,11 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { Badge, Box, Button, Dialog, Flex, Menu, Text, TextArea } from "ui";
 import { MoreHorizontalIcon, SlackIcon, UnlinkIcon } from "icons";
 import { useWorkspacePath } from "@/hooks";
-import { SectionHeader } from "@/modules/settings/components";
+import {
+  SectionHeader,
+  SettingsBackButton,
+} from "@/modules/settings/components";
 import {
   useCreateSlackInstallSession,
   useDisconnectSlackWorkspace,
@@ -92,9 +94,15 @@ export const SlackIntegrationSettings = () => {
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-medium">
-        Slack
-      </Text>
+      <Flex align="center" className="mb-6" gap={2}>
+        <SettingsBackButton
+          href={withWorkspace("/settings/integrations")}
+          label="Back to integrations"
+        />
+        <Text as="h1" className="text-2xl font-medium">
+          Slack
+        </Text>
+      </Flex>
 
       <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
@@ -189,12 +197,6 @@ export const SlackIntegrationSettings = () => {
           <SlackAgentConfiguration />
         </>
       ) : null}
-
-      <Box className="mt-6">
-        <Link href={withWorkspace("/settings/integrations")}>
-          <Text color="muted">Back to integrations</Text>
-        </Link>
-      </Box>
 
       <Dialog onOpenChange={setIsDisconnectOpen} open={isDisconnectOpen}>
         <Dialog.Content>

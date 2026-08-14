@@ -28,12 +28,18 @@ const (
 	storyMutationConfirmationTTL  = 10 * time.Minute
 	maximumStoryMutationTokenSize = 2_000
 	maximumStoryTitleRunes        = 255
+	maximumBatchStoryCount        = 10
+	maximumBatchDescriptionRunes  = 2_000
+	batchStoryProposalVersion     = 1
+	batchStoryTokenBytes          = 32
 
 	storyMutationStatusApplied        = "applied"
 	storyMutationStatusAlreadyApplied = "already_applied"
+	storyMutationStatusPartial        = "partial"
 
 	assigneeActionUnchanged  = "unchanged"
 	assigneeActionMe         = "me"
+	assigneeActionNamed      = "named"
 	assigneeActionUnassigned = "unassigned"
 )
 
@@ -82,6 +88,19 @@ type storyMutationClaims struct {
 type storyMutationConfirmationToolResult struct {
 	Kind         string                    `json:"kind"`
 	Confirmation StoryMutationConfirmation `json:"confirmation"`
+}
+
+type batchStoryMutationProposal struct {
+	Version   int                      `json:"version"`
+	SourceURL string                   `json:"source_url,omitempty"`
+	Items     []batchStoryMutationItem `json:"items"`
+}
+
+type batchStoryMutationItem struct {
+	Title       string     `json:"title"`
+	Description string     `json:"description,omitempty"`
+	Priority    string     `json:"priority"`
+	AssigneeID  *uuid.UUID `json:"assignee_id,omitempty"`
 }
 
 func newStoryMutationExecutor(
@@ -161,6 +180,146 @@ func (m *storyMutationExecutor) proposeCreate(
 		Priority:       &priority,
 		AssigneeAction: args.Assignee,
 	}, fmt.Sprintf("Create %q in %s (%s)?", title, team.Name, strings.ToUpper(team.Code)))
+}
+
+func (m *storyMutationExecutor) proposeCreateBatch(
+	ctx context.Context,
+	executor *FortyOneToolExecutor,
+	scope ToolScope,
+	raw json.RawMessage,
+) (json.RawMessage, error) {
+	var args struct {
+		TeamID  string `json:"team_id"`
+		Stories []struct {
+			Title       string  `json:"title"`
+			Description *string `json:"description"`
+			Priority    *string `json:"priority"`
+			AssigneeID  *string `json:"assignee_id"`
+		} `json:"stories"`
+	}
+	if err := decodeToolArguments(raw, &args, "team_id", "stories"); err != nil {
+		return nil, err
+	}
+	if len(args.Stories) == 0 || len(args.Stories) > maximumBatchStoryCount {
+		return nil, fmt.Errorf("%w: stories must contain 1-%d items", ErrInvalidToolArguments, maximumBatchStoryCount)
+	}
+
+	_, joinedByID, err := executor.joinedTeams(ctx, scope)
+	if err != nil {
+		return nil, err
+	}
+	teamID, err := parseAccessibleTeamID(args.TeamID, joinedByID)
+	if err != nil {
+		return nil, err
+	}
+	team := joinedByID[teamID]
+
+	proposal := batchStoryMutationProposal{
+		Version:   batchStoryProposalVersion,
+		SourceURL: scope.SourceURL,
+		Items:     make([]batchStoryMutationItem, 0, len(args.Stories)),
+	}
+	previews := make([]StoryMutationPreview, 0, len(args.Stories))
+	for index, item := range args.Stories {
+		title, err := normalizedStoryTitle(item.Title)
+		if err != nil {
+			return nil, fmt.Errorf("%w: stories[%d].title: %v", ErrInvalidToolArguments, index, err)
+		}
+		description, err := normalizedBatchStoryDescription(item.Description)
+		if err != nil {
+			return nil, fmt.Errorf("%w: stories[%d].description: %v", ErrInvalidToolArguments, index, err)
+		}
+		priority, err := normalizedStoryPriority(item.Priority, "No Priority")
+		if err != nil {
+			return nil, fmt.Errorf("%w: stories[%d].priority: %v", ErrInvalidToolArguments, index, err)
+		}
+
+		var assigneeID *uuid.UUID
+		assigneeName := "Unassigned"
+		if item.AssigneeID != nil {
+			if executor.users == nil {
+				return nil, fmt.Errorf("%w: named assignees are unavailable", ErrInvalidToolArguments)
+			}
+			parsed, err := parseRequiredUUID(*item.AssigneeID, "assignee_id")
+			if err != nil {
+				return nil, fmt.Errorf("%w: stories[%d].assignee_id: %v", ErrInvalidToolArguments, index, err)
+			}
+			member, err := executor.activeTeamMemberByID(ctx, scope.WorkspaceID, teamID, parsed)
+			if err != nil {
+				return nil, err
+			}
+			if member == nil {
+				return nil, fmt.Errorf("%w: stories[%d].assignee_id must identify an active member of %s", ErrInvalidToolArguments, index, team.Name)
+			}
+			assigneeID = &parsed
+			assigneeName = memberDisplayName(*member)
+			if assigneeName == "" {
+				assigneeName = strings.TrimSpace(member.Username)
+			}
+		}
+
+		combinedDescription := batchStoryDescription(description, proposal.SourceURL)
+		proposal.Items = append(proposal.Items, batchStoryMutationItem{
+			Title:       title,
+			Description: description,
+			Priority:    priority,
+			AssigneeID:  assigneeID,
+		})
+		assigneeAction := assigneeActionUnassigned
+		if assigneeID != nil {
+			assigneeAction = assigneeActionNamed
+		}
+		previews = append(previews, StoryMutationPreview{
+			TeamID:         team.ID,
+			TeamName:       team.Name,
+			TeamCode:       strings.ToUpper(team.Code),
+			Title:          title,
+			Description:    combinedDescription,
+			SourceURL:      proposal.SourceURL,
+			Priority:       &priority,
+			AssigneeID:     assigneeID,
+			AssigneeName:   assigneeName,
+			AssigneeAction: assigneeAction,
+		})
+	}
+
+	confirmationID, err := uuid.NewRandomFromReader(m.random)
+	if err != nil {
+		return nil, fmt.Errorf("generate batch story confirmation ID: %w", err)
+	}
+	token, err := m.newBatchToken(confirmationID)
+	if err != nil {
+		return nil, err
+	}
+	persistedProposal, err := json.Marshal(proposal)
+	if err != nil {
+		return nil, fmt.Errorf("encode batch story proposal: %w", err)
+	}
+	now := m.now().UTC()
+	expiresAt := now.Add(storyMutationConfirmationTTL)
+	if err := m.store.RegisterStoryMutationConfirmation(ctx, StoryMutationConfirmationStateInput{
+		ConfirmationID: confirmationID,
+		WorkspaceID:    scope.WorkspaceID,
+		UserID:         scope.UserID,
+		TeamID:         team.ID,
+		Operation:      StoryMutationCreateBatch,
+		TokenHash:      storyMutationTokenHash(token),
+		Proposal:       persistedProposal,
+		ExpiresAt:      expiresAt,
+	}); err != nil {
+		return nil, fmt.Errorf("register batch story confirmation: %w", err)
+	}
+
+	return marshalToolResult(storyMutationConfirmationToolResult{
+		Kind: storyMutationConfirmationKind,
+		Confirmation: StoryMutationConfirmation{
+			Operation: StoryMutationCreateBatch,
+			Token:     token,
+			ExpiresAt: expiresAt,
+			Prompt:    batchStoryConfirmationPrompt(team, previews),
+			Stories:   previews,
+		},
+	})
 }
 
 func (m *storyMutationExecutor) proposeUpdate(
@@ -478,6 +637,11 @@ func (e *FortyOneToolExecutor) ConfirmStoryMutation(ctx context.Context, scope T
 		return StoryMutationResult{}, ErrMutationNotAllowed
 	}
 	ctx = platformauth.SetUserID(ctx, scope.UserID)
+	if confirmationID, opaque, err := batchConfirmationID(token); err != nil {
+		return StoryMutationResult{}, err
+	} else if opaque {
+		return e.confirmStoryBatch(ctx, scope, confirmationID, token)
+	}
 	claims, err := e.mutations.verifyClaims(token)
 	if err != nil {
 		return StoryMutationResult{}, err
@@ -522,6 +686,72 @@ func (e *FortyOneToolExecutor) ConfirmStoryMutation(ctx context.Context, scope T
 	return result, nil
 }
 
+func (e *FortyOneToolExecutor) confirmStoryBatch(
+	ctx context.Context,
+	scope ToolScope,
+	confirmationID uuid.UUID,
+	token string,
+) (StoryMutationResult, error) {
+	binding := StoryMutationConfirmationBinding{
+		ConfirmationID: confirmationID,
+		WorkspaceID:    scope.WorkspaceID,
+		UserID:         scope.UserID,
+		TokenHash:      storyMutationTokenHash(token),
+	}
+	record, err := e.mutations.store.LoadStoryMutationConfirmation(ctx, binding)
+	if err != nil {
+		return StoryMutationResult{}, err
+	}
+	if record.Operation != StoryMutationCreateBatch || record.TeamID == uuid.Nil {
+		return StoryMutationResult{}, fmt.Errorf("%w: opaque token is not a batch story proposal", ErrInvalidConfirmation)
+	}
+	switch record.Status {
+	case StoryMutationConfirmationCancelled:
+		return StoryMutationResult{}, ErrCancelledConfirmation
+	case StoryMutationConfirmationExpired:
+		return StoryMutationResult{}, ErrExpiredConfirmation
+	case StoryMutationConfirmationPending, StoryMutationConfirmationApplied:
+	default:
+		return StoryMutationResult{}, fmt.Errorf("%w: unsupported batch confirmation status %q", ErrInvalidConfirmation, record.Status)
+	}
+	if len(record.Proposal) == 0 {
+		if record.Status == StoryMutationConfirmationApplied && record.Result != nil && record.LastError == "" {
+			result := *record.Result
+			result.Status = storyMutationStatusAlreadyApplied
+			return result, nil
+		}
+		return StoryMutationResult{}, fmt.Errorf("%w: batch proposal is no longer available", ErrInvalidConfirmation)
+	}
+	proposal, err := decodeBatchStoryProposal(record.Proposal)
+	if err != nil {
+		return StoryMutationResult{}, err
+	}
+
+	result, duplicate, err := e.mutations.store.ApplyStoryMutationConfirmation(
+		ctx,
+		binding,
+		e.mutations.now().UTC(),
+		func(applyCtx context.Context) (StoryMutationResult, error) {
+			_, joinedByID, err := e.joinedTeams(applyCtx, scope)
+			if err != nil {
+				return StoryMutationResult{}, err
+			}
+			team, allowed := joinedByID[record.TeamID]
+			if !allowed {
+				return StoryMutationResult{}, fmt.Errorf("%w: %s", ErrTeamNotAccessible, record.TeamID)
+			}
+			return e.mutations.confirmCreateBatch(applyCtx, e, scope, team, confirmationID, proposal)
+		},
+	)
+	if err != nil {
+		return result, err
+	}
+	if duplicate {
+		result.Status = storyMutationStatusAlreadyApplied
+	}
+	return result, nil
+}
+
 // CancelStoryMutation atomically consumes a pending proposal without invoking
 // its write callback. Only the workspace/user identity bound into the signed
 // token can cancel it; a later Confirm therefore cannot mutate.
@@ -535,6 +765,20 @@ func (e *FortyOneToolExecutor) CancelStoryMutation(
 	}
 	if err := validateToolScope(&scope); err != nil {
 		return StoryMutationCancellationResult{}, err
+	}
+	if confirmationID, opaque, err := batchConfirmationID(token); err != nil {
+		return StoryMutationCancellationResult{}, err
+	} else if opaque {
+		return e.mutations.store.CancelStoryMutationConfirmation(
+			ctx,
+			StoryMutationConfirmationBinding{
+				ConfirmationID: confirmationID,
+				WorkspaceID:    scope.WorkspaceID,
+				UserID:         scope.UserID,
+				TokenHash:      storyMutationTokenHash(token),
+			},
+			e.mutations.now().UTC(),
+		)
 	}
 	claims, err := e.mutations.verifyClaims(token)
 	if err != nil {
@@ -592,6 +836,108 @@ func (m *storyMutationExecutor) confirmCreate(
 		status = storyMutationStatusApplied
 	}
 	return storyMutationResult(status, StoryMutationCreate, story, team.Code), nil
+}
+
+func (m *storyMutationExecutor) confirmCreateBatch(
+	ctx context.Context,
+	executor *FortyOneToolExecutor,
+	scope ToolScope,
+	team teams.CoreTeam,
+	confirmationID uuid.UUID,
+	proposal batchStoryMutationProposal,
+) (StoryMutationResult, error) {
+	result := StoryMutationResult{
+		Status:    storyMutationStatusPartial,
+		Operation: StoryMutationCreateBatch,
+		TeamID:    team.ID,
+		Items:     make([]StoryMutationItemResult, 0, len(proposal.Items)),
+	}
+	if confirmationID == uuid.Nil || team.ID == uuid.Nil {
+		return result, fmt.Errorf("%w: malformed batch create proposal", ErrInvalidConfirmation)
+	}
+
+	// Validate every mutable dependency before the first write. A removed team
+	// member or malformed later item must never leave a partially-created batch.
+	statusID, err := m.stories.FindFirstStatusByCategory(ctx, team.ID, scope.WorkspaceID, "unstarted")
+	if err != nil {
+		return result, fmt.Errorf("resolve default story status: %w", err)
+	}
+	if statusID == nil || *statusID == uuid.Nil {
+		return result, errors.New("team has no unstarted story status")
+	}
+	validated := make([]batchStoryMutationItem, len(proposal.Items))
+	for index, item := range proposal.Items {
+		title, err := normalizedStoryTitle(item.Title)
+		if err != nil || title != item.Title {
+			return result, fmt.Errorf("%w: invalid title in batch item %d", ErrInvalidConfirmation, index)
+		}
+		description, err := normalizedBatchStoryDescriptionValue(item.Description)
+		if err != nil || description != item.Description {
+			return result, fmt.Errorf("%w: invalid description in batch item %d", ErrInvalidConfirmation, index)
+		}
+		priority, err := normalizedStoryPriority(&item.Priority, "")
+		if err != nil || priority != item.Priority {
+			return result, fmt.Errorf("%w: invalid priority in batch item %d", ErrInvalidConfirmation, index)
+		}
+		if item.AssigneeID != nil {
+			if executor.users == nil {
+				return result, fmt.Errorf("%w: named assignees are unavailable", ErrInvalidConfirmation)
+			}
+			member, err := executor.activeTeamMemberByID(ctx, scope.WorkspaceID, team.ID, *item.AssigneeID)
+			if err != nil {
+				return result, err
+			}
+			if member == nil {
+				return result, fmt.Errorf("%w: batch item %d assignee is no longer an active team member", ErrInvalidConfirmation, index)
+			}
+		}
+		validated[index] = batchStoryMutationItem{
+			Title:       title,
+			Description: description,
+			Priority:    priority,
+			AssigneeID:  cloneUUIDPointer(item.AssigneeID),
+		}
+	}
+
+	result.Status = storyMutationStatusAlreadyApplied
+	for index, item := range validated {
+		description := batchStoryDescription(item.Description, proposal.SourceURL)
+		var descriptionPointer *string
+		if description != "" {
+			descriptionPointer = &description
+		}
+		creationKey := fmt.Sprintf("messaging:create-story:%s:%d", confirmationID, index)
+		story, err := m.stories.CreateExternalUserAction(ctx, scope.UserID, stories.CoreNewStory{
+			Title:       item.Title,
+			Description: descriptionPointer,
+			Status:      statusID,
+			Assignee:    cloneUUIDPointer(item.AssigneeID),
+			Reporter:    &scope.UserID,
+			Priority:    item.Priority,
+			Team:        team.ID,
+			CreationKey: &creationKey,
+		}, scope.WorkspaceID)
+		if err != nil {
+			result.Status = storyMutationStatusPartial
+			return result, fmt.Errorf("create confirmed batch story %d: %w", index, err)
+		}
+		itemStatus := storyMutationStatusAlreadyApplied
+		if story.CreatedNow {
+			itemStatus = storyMutationStatusApplied
+			result.Status = storyMutationStatusApplied
+		}
+		result.Items = append(result.Items, StoryMutationItemResult{
+			Index:      index,
+			Status:     itemStatus,
+			StoryID:    story.ID,
+			Reference:  storyReference(team.Code, story.SequenceID),
+			TeamID:     team.ID,
+			Title:      story.Title,
+			Priority:   story.Priority,
+			AssigneeID: cloneUUIDPointer(story.Assignee),
+		})
+	}
+	return result, nil
 }
 
 func (m *storyMutationExecutor) confirmUpdate(
@@ -679,6 +1025,34 @@ func (m *storyMutationExecutor) signClaims(claims storyMutationClaims) (string, 
 	return token, nil
 }
 
+func (m *storyMutationExecutor) newBatchToken(confirmationID uuid.UUID) (string, error) {
+	payload := make([]byte, batchStoryTokenBytes)
+	copy(payload, confirmationID[:])
+	if _, err := io.ReadFull(m.random, payload[len(confirmationID):]); err != nil {
+		return "", fmt.Errorf("generate opaque batch confirmation token: %w", err)
+	}
+	return base64.RawURLEncoding.EncodeToString(payload), nil
+}
+
+func batchConfirmationID(token string) (uuid.UUID, bool, error) {
+	token = strings.TrimSpace(token)
+	if strings.Contains(token, ".") {
+		return uuid.Nil, false, nil
+	}
+	if token == "" || len(token) > maximumStoryMutationTokenSize {
+		return uuid.Nil, true, fmt.Errorf("%w: token is missing or too large", ErrInvalidConfirmation)
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(token)
+	if err != nil || len(payload) != batchStoryTokenBytes || base64.RawURLEncoding.EncodeToString(payload) != token {
+		return uuid.Nil, true, fmt.Errorf("%w: opaque token format", ErrInvalidConfirmation)
+	}
+	confirmationID, err := uuid.FromBytes(payload[:16])
+	if err != nil || confirmationID == uuid.Nil {
+		return uuid.Nil, true, fmt.Errorf("%w: opaque token identifier", ErrInvalidConfirmation)
+	}
+	return confirmationID, true, nil
+}
+
 func (m *storyMutationExecutor) verifyClaims(token string) (storyMutationClaims, error) {
 	token = strings.TrimSpace(token)
 	if token == "" || len(token) > maximumStoryMutationTokenSize {
@@ -732,6 +1106,102 @@ func storyMutationConfirmationBinding(claims storyMutationClaims, token string) 
 func storyMutationTokenHash(token string) []byte {
 	digest := sha256.Sum256([]byte(strings.TrimSpace(token)))
 	return append([]byte(nil), digest[:]...)
+}
+
+func decodeBatchStoryProposal(raw json.RawMessage) (batchStoryMutationProposal, error) {
+	if len(raw) == 0 {
+		return batchStoryMutationProposal{}, fmt.Errorf("%w: batch proposal is missing", ErrInvalidConfirmation)
+	}
+	var proposal batchStoryMutationProposal
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&proposal); err != nil {
+		return batchStoryMutationProposal{}, fmt.Errorf("%w: decode batch proposal: %v", ErrInvalidConfirmation, err)
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return batchStoryMutationProposal{}, fmt.Errorf("%w: trailing batch proposal data", ErrInvalidConfirmation)
+	}
+	if proposal.Version != batchStoryProposalVersion || len(proposal.Items) == 0 || len(proposal.Items) > maximumBatchStoryCount {
+		return batchStoryMutationProposal{}, fmt.Errorf("%w: unsupported or empty batch proposal", ErrInvalidConfirmation)
+	}
+	sourceURL, err := normalizedSourceURL(proposal.SourceURL)
+	if err != nil || sourceURL != proposal.SourceURL {
+		return batchStoryMutationProposal{}, fmt.Errorf("%w: invalid batch source URL", ErrInvalidConfirmation)
+	}
+	for index, item := range proposal.Items {
+		title, titleErr := normalizedStoryTitle(item.Title)
+		description, descriptionErr := normalizedBatchStoryDescriptionValue(item.Description)
+		priority, priorityErr := normalizedStoryPriority(&item.Priority, "")
+		if titleErr != nil || title != item.Title || descriptionErr != nil || description != item.Description || priorityErr != nil || priority != item.Priority {
+			return batchStoryMutationProposal{}, fmt.Errorf("%w: invalid batch item %d", ErrInvalidConfirmation, index)
+		}
+		if item.AssigneeID != nil && *item.AssigneeID == uuid.Nil {
+			return batchStoryMutationProposal{}, fmt.Errorf("%w: invalid batch item %d assignee", ErrInvalidConfirmation, index)
+		}
+	}
+	return proposal, nil
+}
+
+func normalizedBatchStoryDescription(raw *string) (string, error) {
+	if raw == nil {
+		return "", nil
+	}
+	return normalizedBatchStoryDescriptionValue(*raw)
+}
+
+func normalizedBatchStoryDescriptionValue(raw string) (string, error) {
+	description := strings.TrimSpace(raw)
+	if len([]rune(description)) > maximumBatchDescriptionRunes {
+		return "", fmt.Errorf("description must not exceed %d characters", maximumBatchDescriptionRunes)
+	}
+	return description, nil
+}
+
+func batchStoryDescription(description, sourceURL string) string {
+	description = strings.TrimSpace(description)
+	sourceURL = strings.TrimSpace(sourceURL)
+	if sourceURL == "" {
+		return description
+	}
+	if description == "" {
+		return "Source: " + sourceURL
+	}
+	return description + "\n\nSource: " + sourceURL
+}
+
+func batchStoryConfirmationPrompt(team teams.CoreTeam, previews []StoryMutationPreview) string {
+	var prompt strings.Builder
+	fmt.Fprintf(&prompt, "Create %d stories in %s (%s)?", len(previews), confirmationPromptText(team.Name), confirmationPromptText(strings.ToUpper(team.Code)))
+	for index, preview := range previews {
+		assignee := preview.AssigneeName
+		if strings.TrimSpace(assignee) == "" {
+			assignee = "Unassigned"
+		}
+		priority := "No Priority"
+		if preview.Priority != nil {
+			priority = *preview.Priority
+		}
+		fmt.Fprintf(&prompt, "\n%d. %s — %s, %s", index+1, confirmationPromptText(preview.Title), confirmationPromptText(assignee), confirmationPromptText(priority))
+	}
+	if len(previews) > 0 && previews[0].SourceURL != "" {
+		prompt.WriteString("\n\nThe supporting descriptions and a link to this Slack thread will be attached to the stories.")
+	} else {
+		prompt.WriteString("\n\nThe supporting descriptions shown in the draft will be attached to the stories.")
+	}
+	return prompt.String()
+}
+
+func confirmationPromptText(value string) string {
+	value = strings.Join(strings.Fields(value), " ")
+	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(value)
+}
+
+func cloneUUIDPointer(value *uuid.UUID) *uuid.UUID {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
 }
 
 func validateStoryMutationClaims(claims storyMutationClaims) error {
@@ -811,7 +1281,23 @@ func mutationConfirmationFromToolResult(raw json.RawMessage) (*StoryMutationConf
 		return nil, true, fmt.Errorf("%w: decode mutation confirmation: %v", ErrMalformedResponse, err)
 	}
 	confirmation := result.Confirmation
-	if confirmation.Token == "" || confirmation.Prompt == "" || confirmation.ExpiresAt.IsZero() || confirmation.Story.TeamID == uuid.Nil {
+	if confirmation.Token == "" || confirmation.Prompt == "" || confirmation.ExpiresAt.IsZero() {
+		return nil, true, fmt.Errorf("%w: incomplete mutation confirmation", ErrMalformedResponse)
+	}
+	if confirmation.Operation == StoryMutationCreateBatch {
+		if len(confirmation.Stories) == 0 || len(confirmation.Stories) > maximumBatchStoryCount {
+			return nil, true, fmt.Errorf("%w: incomplete batch mutation confirmation", ErrMalformedResponse)
+		}
+		teamID := confirmation.Stories[0].TeamID
+		if teamID == uuid.Nil {
+			return nil, true, fmt.Errorf("%w: incomplete batch mutation confirmation", ErrMalformedResponse)
+		}
+		for _, story := range confirmation.Stories[1:] {
+			if story.TeamID != teamID {
+				return nil, true, fmt.Errorf("%w: batch mutation spans multiple teams", ErrMalformedResponse)
+			}
+		}
+	} else if confirmation.Story.TeamID == uuid.Nil {
 		return nil, true, fmt.Errorf("%w: incomplete mutation confirmation", ErrMalformedResponse)
 	}
 	return &confirmation, true, nil
@@ -826,6 +1312,10 @@ func validateToolScope(scope *ToolScope) error {
 		return err
 	}
 	scope.AllowedTeamIDs = allowedTeamIDs
+	scope.SourceURL, err = normalizedSourceURL(scope.SourceURL)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -1042,6 +1532,40 @@ func storyMutationToolDefinitions() []ToolDefinition {
 					"enum":        []string{assigneeActionMe, assigneeActionUnassigned},
 				},
 			}, []string{"team_id", "title", "priority", "assignee"}),
+		},
+		{
+			Type:        "function",
+			Name:        toolCreateStories,
+			Description: "Prepare one confirmation proposal for 1-10 distinct stories in one team when the user explicitly asks to turn a conversation into multiple action items. This tool never writes. Use only explicit assignee UUIDs returned by list_team_members; otherwise pass null. Source attribution is supplied by the server and is not a tool argument.",
+			Strict:      true,
+			Parameters: strictObjectSchema(map[string]any{
+				"team_id": map[string]any{
+					"type":        "string",
+					"description": "An exact team UUID returned by list_teams.",
+				},
+				"stories": map[string]any{
+					"type":     "array",
+					"minItems": 1,
+					"maxItems": maximumBatchStoryCount,
+					"items": strictObjectSchema(map[string]any{
+						"title": map[string]any{
+							"type":      "string",
+							"minLength": 1,
+							"maxLength": maximumStoryTitleRunes,
+						},
+						"description": map[string]any{
+							"type":        []string{"string", "null"},
+							"maxLength":   maximumBatchDescriptionRunes,
+							"description": "Concise supporting context derived from the visible conversation, or null.",
+						},
+						"priority": nullablePriority,
+						"assignee_id": map[string]any{
+							"type":        []string{"string", "null"},
+							"description": "An exact active member UUID returned by list_team_members only when assignment is explicit, otherwise null.",
+						},
+					}, []string{"title", "description", "priority", "assignee_id"}),
+				},
+			}, []string{"team_id", "stories"}),
 		},
 		{
 			Type:        "function",

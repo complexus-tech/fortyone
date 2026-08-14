@@ -65,10 +65,11 @@ const TeamAudiencePicker = ({
       <Popover.Trigger asChild>
         <Button
           aria-label={`Choose work access for #${channelName}`}
-          className="w-max max-w-64 min-w-0 justify-between text-[0.9rem] md:text-base"
+          className="w-max max-w-64 min-w-0 justify-between"
           color="tertiary"
           disabled={disabled}
           rightIcon={<ArrowDownIcon aria-hidden="true" className="shrink-0" />}
+          size="sm"
           title={summary}
           variant="outline"
         >
@@ -193,7 +194,10 @@ const AddChannelPicker = ({
           className="shrink-0"
           color="tertiary"
           disabled={audiences.length === 0 || updateAudience.isPending}
-          leftIcon={<PlusIcon aria-hidden="true" />}
+          leftIcon={
+            <PlusIcon aria-hidden="true" className="size-3.5 shrink-0" />
+          }
+          size="sm"
         >
           Add channel
         </Button>
@@ -260,7 +264,7 @@ const SlackChannelAudienceRow = ({
       <Flex align="center" className="min-w-64 flex-1" gap={2} wrap>
         <Text className="max-w-full truncate font-medium">#{channel.name}</Text>
         <Badge color="tertiary" variant="outline">
-          {channel.isPrivate ? "Private Slack channel" : "Public Slack channel"}
+          {channel.isPrivate ? "Private" : "Public"}
         </Badge>
         {channel.isArchived ? (
           <Badge color="tertiary" variant="outline">
@@ -269,7 +273,12 @@ const SlackChannelAudienceRow = ({
         ) : null}
       </Flex>
 
-      <Flex align="center" className="min-w-0" gap={2}>
+      <Flex
+        align="center"
+        aria-label={`Actions for #${channel.name}`}
+        className="min-w-0 gap-1"
+        role="group"
+      >
         <TeamAudiencePicker
           channelName={channel.name}
           disabled={updateAudience.isPending}
@@ -284,26 +293,29 @@ const SlackChannelAudienceRow = ({
           publicTeams={publicTeams}
           selectedTeamIds={selectedTeamIds}
         />
-        <span
-          aria-live="polite"
-          className="inline-flex size-5 shrink-0 items-center justify-center"
-        >
-          {updateAudience.isPending ? (
+        {updateAudience.isPending ? (
+          <span
+            aria-live="polite"
+            className="inline-flex size-5 shrink-0 items-center justify-center"
+          >
             <LoadingIcon
               aria-label={`Saving #${channel.name}`}
               className="size-4 animate-spin"
             />
-          ) : null}
-        </span>
+          </span>
+        ) : null}
         <Menu>
           <Menu.Button>
             <Button
               aria-label={`Channel options for #${channel.name}`}
-              className="px-2"
+              asIcon
               color="tertiary"
               disabled={updateAudience.isPending}
-              leftIcon={<MoreHorizontalIcon aria-hidden="true" />}
-            />
+              size="sm"
+              variant="naked"
+            >
+              <MoreHorizontalIcon aria-hidden="true" className="h-5 w-auto" />
+            </Button>
           </Menu.Button>
           <Menu.Items align="end">
             <Menu.Group>
@@ -391,6 +403,7 @@ export const SlackChannelAudienceSettings = () => {
                 teamsQuery.refetch(),
               ]);
             }}
+            size="sm"
             variant="outline"
           >
             Try again

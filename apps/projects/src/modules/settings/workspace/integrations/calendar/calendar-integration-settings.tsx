@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
@@ -15,7 +14,10 @@ import {
   UnlinkIcon,
 } from "icons";
 import { useWorkspacePath } from "@/hooks";
-import { SectionHeader } from "@/modules/settings/components";
+import {
+  SectionHeader,
+  SettingsBackButton,
+} from "@/modules/settings/components";
 import {
   useCalendarIntegration,
   useCreateCalendarConnectSession,
@@ -95,9 +97,15 @@ export const CalendarIntegrationSettings = () => {
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-medium">
-        Google Calendar
-      </Text>
+      <Flex align="center" className="mb-6" gap={2}>
+        <SettingsBackButton
+          href={withWorkspace("/settings/account")}
+          label="Back to account settings"
+        />
+        <Text as="h1" className="text-2xl font-medium">
+          Google Calendar
+        </Text>
+      </Flex>
 
       <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
@@ -301,12 +309,6 @@ export const CalendarIntegrationSettings = () => {
             </Text>
           </Box>
         ) : null}
-      </Box>
-
-      <Box className="mt-6">
-        <Link href={withWorkspace("/settings/account")}>
-          <Text color="muted">Back to account settings</Text>
-        </Link>
       </Box>
 
       <Dialog

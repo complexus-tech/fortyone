@@ -92,7 +92,7 @@ jest.mock("ui", () => {
   const Button = ({
     active: _active,
     align: _align,
-    asIcon: _asIcon,
+    asIcon,
     children,
     color: _color,
     fullWidth: _fullWidth,
@@ -101,8 +101,8 @@ jest.mock("ui", () => {
     loadingText,
     rightIcon,
     rounded: _rounded,
-    size: _size,
-    variant: _variant,
+    size,
+    variant,
     ...props
   }: ComponentPropsWithoutRef<"button"> & {
     active?: boolean;
@@ -120,7 +120,13 @@ jest.mock("ui", () => {
   }) =>
     React.createElement(
       "button",
-      { ...props, type: "button" },
+      {
+        ...props,
+        "data-as-icon": asIcon ? "true" : undefined,
+        "data-size": size,
+        "data-variant": variant,
+        type: "button",
+      },
       leftIcon,
       loading ? loadingText || "Loading..." : children,
       rightIcon,
@@ -556,10 +562,30 @@ describe("SlackChannelAudienceSettings", () => {
 
     render(<SlackChannelAudienceSettings />);
 
-    expect(screen.getByText("Public Slack channel")).toHaveAttribute(
+    expect(screen.getByText("Public")).toHaveAttribute("data-size", "md");
+    expect(screen.queryByText("Public Slack channel")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add channel" })).toHaveAttribute(
       "data-size",
-      "md",
+      "sm",
     );
+    expect(
+      screen.getByRole("button", {
+        name: "Choose work access for #product",
+      }),
+    ).toHaveAttribute("data-size", "sm");
+    expect(
+      screen.getByRole("button", {
+        name: "Channel options for #product",
+      }),
+    ).toHaveAttribute("data-as-icon", "true");
+    expect(
+      screen.getByRole("button", {
+        name: "Channel options for #product",
+      }),
+    ).toHaveAttribute("data-size", "sm");
+    expect(
+      screen.getByRole("group", { name: "Actions for #product" }),
+    ).toHaveClass("gap-1");
     fireEvent.click(
       screen.getByRole("button", {
         name: "Choose work access for #product",

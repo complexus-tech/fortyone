@@ -4,8 +4,41 @@ import (
 	"testing"
 	"time"
 
+	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/stretchr/testify/require"
 )
+
+func TestBuildSlackEventProcessorRequiresStoryMutationSideEffects(t *testing.T) {
+	tests := []struct {
+		name         string
+		dependencies slackEventProcessorDependencies
+		errorMessage string
+	}{
+		{
+			name: "event publisher",
+			dependencies: slackEventProcessorDependencies{
+				Tasks: new(tasks.Service),
+			},
+			errorMessage: "event publisher is required",
+		},
+		{
+			name: "tasks service",
+			dependencies: slackEventProcessorDependencies{
+				EventPublisher: new(publisher.Publisher),
+			},
+			errorMessage: "tasks service is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processor, err := buildSlackEventProcessor(nil, nil, nil, Config{}, tt.dependencies)
+			require.Nil(t, processor)
+			require.ErrorContains(t, err, tt.errorMessage)
+		})
+	}
+}
 
 func TestSlackEventProcessorConfigIncludesUninstallCredentials(t *testing.T) {
 	var cfg Config

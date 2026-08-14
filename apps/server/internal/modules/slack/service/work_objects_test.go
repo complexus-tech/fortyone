@@ -8,8 +8,10 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
@@ -519,7 +521,7 @@ func TestBuildSlackRequestEntityDetailsRequestOmitsAppUnfurlURL(t *testing.T) {
 func TestBuildSlackMutationConfirmationProviderPayloadUsesOpaqueButtonValues(t *testing.T) {
 	t.Parallel()
 
-	payload, err := BuildSlackMutationConfirmationProviderPayload("Create *WEB-123* in Backlog?", "opaque-confirmation-token", "U123")
+	payload, err := BuildSlackMutationConfirmationProviderPayload("Create *WEB-123* in Backlog?", "opaque-confirmation-token", "U123", false)
 	require.NoError(t, err)
 	require.Len(t, payload.Blocks, 2)
 	require.Equal(t, "section", payload.Blocks[0].Type)
@@ -537,6 +539,74 @@ func TestBuildSlackMutationConfirmationProviderPayloadUsesOpaqueButtonValues(t *
 	require.NotContains(t, string(encoded), "👍")
 	_, err = DecodeSlackProviderPayload(append(encoded, []byte(` {}`)...))
 	require.Error(t, err)
+}
+
+func TestBuildSlackMutationConfirmationProviderPayloadLabelsBatchActionCreateAll(t *testing.T) {
+	t.Parallel()
+
+	payload, err := BuildSlackMutationConfirmationProviderPayload(
+		"Create 2 stories?",
+		"opaque-batch-token",
+		"U123",
+		true,
+	)
+	require.NoError(t, err)
+	require.Len(t, payload.Blocks, 2)
+	require.Equal(t, "Create all", payload.Blocks[1].Elements[0].Text.Text)
+	require.Equal(t, "Create all proposed stories", payload.Blocks[1].Elements[0].AccessibilityLabel)
+	require.Equal(t, "Cancel", payload.Blocks[1].Elements[1].Text.Text)
+}
+
+func TestBuildSlackMutationConfirmationProviderPayloadPreservesLongBatchPrompt(t *testing.T) {
+	t.Parallel()
+
+	prompt := strings.Join([]string{
+		"Create 10 stories?",
+		strings.Repeat("a", 2_000),
+		strings.Repeat("b", 2_000),
+		strings.Repeat("c", 2_000),
+	}, "\n")
+	payload, err := BuildSlackMutationConfirmationProviderPayload(
+		prompt,
+		"opaque-batch-token",
+		"U123",
+		true,
+	)
+	require.NoError(t, err)
+	require.Len(t, payload.Blocks, 4)
+	require.Equal(t, "actions", payload.Blocks[len(payload.Blocks)-1].Type)
+
+	sections := make([]string, 0, len(payload.Blocks)-1)
+	for _, block := range payload.Blocks[:len(payload.Blocks)-1] {
+		require.Equal(t, "section", block.Type)
+		require.NotNil(t, block.Text)
+		require.LessOrEqual(t, utf8.RuneCountInString(block.Text.Text), slackWorkObjectTextFieldLimit)
+		sections = append(sections, block.Text.Text)
+	}
+	require.Equal(t, prompt, strings.Join(sections, "\n"))
+}
+
+func TestBuildSlackMutationRetryProviderPayloadHasOnlyRetryAction(t *testing.T) {
+	t.Parallel()
+
+	payload, err := BuildSlackMutationRetryProviderPayload(
+		"One story was created. Retry the remaining stories?",
+		"opaque-batch-token",
+		"U123",
+	)
+	require.NoError(t, err)
+	require.Len(t, payload.Blocks, 2)
+	require.Len(t, payload.Blocks[1].Elements, 1)
+	retry := payload.Blocks[1].Elements[0]
+	require.Equal(t, slackConfirmMutationActionID, retry.ActionID)
+	require.Equal(t, "Retry remaining", retry.Text.Text)
+	require.Equal(t, "Retry creating the remaining proposed stories", retry.AccessibilityLabel)
+	value, err := decodeSlackMutationActionValue(retry.Value)
+	require.NoError(t, err)
+	require.Equal(t, "U123", value.SlackUserID)
+	require.Equal(t, "opaque-batch-token", value.Token)
+	_, err = EncodeSlackProviderPayload(payload)
+	require.NoError(t, err)
 }
 
 func TestSlackWorkObjectPublisherUnfurlsTypedMetadata(t *testing.T) {

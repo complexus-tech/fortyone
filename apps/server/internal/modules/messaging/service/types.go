@@ -66,8 +66,12 @@ type Request struct {
 	Guidance       string
 	AllowMutations bool
 	WebsiteURL     string
-	Conversation   []ConversationTurn
-	Prompt         string
+	// SourceURL is a provider-adapter supplied, server-authoritative link to
+	// the exact conversation source used for this request. It must never be
+	// populated from model tool arguments or untrusted message content.
+	SourceURL    string
+	Conversation []ConversationTurn
+	Prompt       string
 }
 
 // RuntimeContext is provider-neutral, display-safe context for one assistant
@@ -178,8 +182,12 @@ type ToolScope struct {
 	SharedTeamIDs  []uuid.UUID
 	AllowMutations bool
 	WebsiteURL     string
-	WorkspaceSlug  string
-	Timezone       string
+	// SourceURL is copied from Request.SourceURL after provider-neutral HTTPS
+	// validation. Mutation tools may attach it as attribution, but cannot
+	// accept or replace it through model-authored arguments.
+	SourceURL     string
+	WorkspaceSlug string
+	Timezone      string
 }
 
 // StoryMutationOperation identifies the write that an explicit confirmation
@@ -187,10 +195,11 @@ type ToolScope struct {
 type StoryMutationOperation string
 
 const (
-	StoryMutationCreate   StoryMutationOperation = "create_story"
-	StoryMutationUpdate   StoryMutationOperation = "update_story"
-	StoryMutationComment  StoryMutationOperation = "add_story_comment"
-	StoryMutationRelation StoryMutationOperation = "add_story_relationship"
+	StoryMutationCreate      StoryMutationOperation = "create_story"
+	StoryMutationCreateBatch StoryMutationOperation = "create_stories"
+	StoryMutationUpdate      StoryMutationOperation = "update_story"
+	StoryMutationComment     StoryMutationOperation = "add_story_comment"
+	StoryMutationRelation    StoryMutationOperation = "add_story_relationship"
 )
 
 // StoryMutationConfirmation is a provider-neutral, non-mutating proposal.
@@ -202,10 +211,11 @@ type StoryMutationConfirmation struct {
 	ExpiresAt time.Time              `json:"expires_at"`
 	Prompt    string                 `json:"prompt"`
 	Story     StoryMutationPreview   `json:"story"`
+	Stories   []StoryMutationPreview `json:"stories,omitempty"`
 }
 
 // StoryMutationPreview contains only display-safe details for a proposed
-// story mutation. AssigneeAction is one of "unchanged", "me", or
+// story mutation. AssigneeAction is one of "unchanged", "me", "named", or
 // "unassigned".
 type StoryMutationPreview struct {
 	StoryID        *uuid.UUID `json:"story_id,omitempty"`
@@ -214,25 +224,44 @@ type StoryMutationPreview struct {
 	TeamName       string     `json:"team_name"`
 	TeamCode       string     `json:"team_code"`
 	Title          string     `json:"title"`
+	Description    string     `json:"description,omitempty"`
+	SourceURL      string     `json:"source_url,omitempty"`
 	Priority       *string    `json:"priority,omitempty"`
+	AssigneeID     *uuid.UUID `json:"assignee_id,omitempty"`
+	AssigneeName   string     `json:"assignee_name,omitempty"`
 	AssigneeAction string     `json:"assignee_action"`
 	ChangedFields  []string   `json:"changed_fields,omitempty"`
 }
 
 // StoryMutationResult is returned after a provider explicitly confirms a
-// proposal. Status is "applied" or "already_applied"; the latter makes
-// provider retries safe to treat as success.
+// proposal. Status is "applied" or "already_applied" on success. A batch may
+// return "partial" alongside an error so providers can show already-created
+// items and offer a safe retry.
 type StoryMutationResult struct {
-	Status        string                 `json:"status"`
-	Operation     StoryMutationOperation `json:"operation"`
-	StoryID       uuid.UUID              `json:"story_id"`
-	Reference     string                 `json:"reference"`
-	TeamID        uuid.UUID              `json:"team_id"`
-	Title         string                 `json:"title"`
-	Priority      string                 `json:"priority"`
-	AssigneeID    *uuid.UUID             `json:"assignee_id,omitempty"`
-	CommentID     *uuid.UUID             `json:"comment_id,omitempty"`
-	AssociationID *uuid.UUID             `json:"association_id,omitempty"`
+	Status        string                    `json:"status"`
+	Operation     StoryMutationOperation    `json:"operation"`
+	StoryID       uuid.UUID                 `json:"story_id"`
+	Reference     string                    `json:"reference"`
+	TeamID        uuid.UUID                 `json:"team_id"`
+	Title         string                    `json:"title"`
+	Priority      string                    `json:"priority"`
+	AssigneeID    *uuid.UUID                `json:"assignee_id,omitempty"`
+	CommentID     *uuid.UUID                `json:"comment_id,omitempty"`
+	AssociationID *uuid.UUID                `json:"association_id,omitempty"`
+	Items         []StoryMutationItemResult `json:"items,omitempty"`
+}
+
+// StoryMutationItemResult is one durable outcome within a confirmed batch.
+// Index preserves the order shown in the confirmation prompt.
+type StoryMutationItemResult struct {
+	Index      int        `json:"index"`
+	Status     string     `json:"status"`
+	StoryID    uuid.UUID  `json:"story_id"`
+	Reference  string     `json:"reference"`
+	TeamID     uuid.UUID  `json:"team_id"`
+	Title      string     `json:"title"`
+	Priority   string     `json:"priority"`
+	AssigneeID *uuid.UUID `json:"assignee_id,omitempty"`
 }
 
 // StoryMutationCancellationResult describes a successful cancellation. Status
@@ -243,7 +272,9 @@ type StoryMutationCancellationResult struct {
 }
 
 // StoryMutationConfirmationStatus is the durable, provider-neutral lifecycle
-// of a proposed mutation. Every value except pending is terminal.
+// of a proposed mutation. Applied batches remain retryable while they retain a
+// proposal and last error; cancelled, expired, and completed applied rows are
+// terminal.
 type StoryMutationConfirmationStatus string
 
 const (
@@ -262,7 +293,25 @@ type StoryMutationConfirmationStateInput struct {
 	TeamID         uuid.UUID
 	Operation      StoryMutationOperation
 	TokenHash      []byte
-	ExpiresAt      time.Time
+	// Proposal contains immutable server-side mutation data for opaque-token
+	// confirmations. Signed single-story confirmations leave it nil.
+	Proposal  json.RawMessage
+	ExpiresAt time.Time
+}
+
+// StoryMutationConfirmationRecord is the immutable server-side portion of a
+// confirmation. It is returned only after workspace, actor, and token binding
+// validation succeeds.
+type StoryMutationConfirmationRecord struct {
+	TeamID    uuid.UUID
+	Operation StoryMutationOperation
+	Status    StoryMutationConfirmationStatus
+	Proposal  json.RawMessage
+	// Result is populated for completed batches and for durable partial
+	// progress. LastError distinguishes retryable partial progress from a
+	// completed result after the sensitive proposal has been redacted.
+	Result    *StoryMutationResult
+	LastError string
 }
 
 // StoryMutationConfirmationBinding prevents a signed proposal from being
@@ -276,9 +325,14 @@ type StoryMutationConfirmationBinding struct {
 
 // StoryMutationConfirmationStore arbitrates confirmation outcomes in durable
 // storage. Apply must atomically consume pending consent before invoking apply,
-// serialize concurrent applies, and return a persisted result on retries.
+// serialize concurrent applies, persist batch progress on errors, and return a
+// completed persisted result on retries.
 type StoryMutationConfirmationStore interface {
 	RegisterStoryMutationConfirmation(ctx context.Context, input StoryMutationConfirmationStateInput) error
+	LoadStoryMutationConfirmation(
+		ctx context.Context,
+		binding StoryMutationConfirmationBinding,
+	) (StoryMutationConfirmationRecord, error)
 	ApplyStoryMutationConfirmation(
 		ctx context.Context,
 		binding StoryMutationConfirmationBinding,

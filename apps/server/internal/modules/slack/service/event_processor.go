@@ -653,10 +653,19 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		if historyErr != nil {
 			return historyErr
 		}
-		turns := make([]messaging.ConversationTurn, 0, len(history))
+		turns := make([]messaging.ConversationTurn, 0, len(history)+1)
+		excludedThreadMessageIDs := map[string]struct{}{
+			strings.TrimSpace(event.MessageTS): {},
+		}
 		for _, message := range history {
-			if message.ExternalMessageID != nil && *message.ExternalMessageID == event.MessageTS && message.Role == "user" {
-				continue
+			if message.ExternalMessageID != nil {
+				externalMessageID := strings.TrimSpace(*message.ExternalMessageID)
+				if externalMessageID != "" {
+					excludedThreadMessageIDs[externalMessageID] = struct{}{}
+				}
+				if externalMessageID == event.MessageTS && message.Role == "user" {
+					continue
+				}
 			}
 			role := messaging.RoleUser
 			if message.Role == "assistant" {
@@ -664,84 +673,128 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 			}
 			turns = append(turns, messaging.ConversationTurn{Role: role, Text: message.Content})
 		}
-		runtimeContext, contextErr := p.contextProvider.Load(
-			ctx,
-			workspace.ID,
-			*linkedUserID,
-			allowedTeamIDs,
-			assistantSurfaceForSlackEvent(event),
-			p.clock.Now(),
-		)
-		if contextErr != nil {
-			if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(contextErr)); failErr != nil {
-				return errors.Join(contextErr, failErr)
-			}
-			return contextErr
-		}
-		response, responseErr := p.assistant.Respond(ctx, messaging.Request{
-			WorkspaceID:    workspace.ID,
-			UserID:         *linkedUserID,
-			AllowedTeamIDs: allowedTeamIDs,
-			SharedTeamIDs:  sharedTeamIDs,
-			RuntimeContext: runtimeContext,
-			Guidance:       agentSettings.Guidance,
-			AllowMutations: true,
-			WebsiteURL:     p.website,
-			Conversation:   turns,
-			Prompt:         prompt,
-		})
-		if responseErr != nil {
-			p.logAssistantResponseError(
+		threadSourceURL := slackThreadSourceURL(installation, event)
+		threadReference := slackThreadReference{}
+		if slackEventCanHydrateThread(event) && slackPromptRequestsThreadContext(prompt) {
+			threadReference, err = p.loadSlackThreadReference(
 				ctx,
-				responseErr,
-				workspace.ID,
-				*linkedUserID,
-				receipt.ID,
-				receipt.AttemptCount,
+				botToken,
+				installation,
 				event,
+				excludedThreadMessageIDs,
 			)
-		}
-		_, usageErr := p.recordAssistantUsage(ctx, messagingrepository.DailyUsageRecordInput{
-			InboundEventID:      receipt.ID,
-			WorkspaceID:         workspace.ID,
-			Provider:            "slack",
-			ExternalWorkspaceID: event.TeamID,
-			ExternalEventID:     event.EventID,
-			AttemptCount:        receipt.AttemptCount,
-			Usage:               response.Usage,
-		})
-		if usageErr != nil {
-			if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(usageErr)); failErr != nil {
-				return errors.Join(responseErr, usageErr, failErr)
-			}
-			return errors.Join(responseErr, usageErr)
-		}
-		if responseErr != nil {
-			if errors.Is(responseErr, messaging.ErrAssistantNotConfigured) || messaging.IsPermanentOpenAIError(responseErr) {
-				reply = assistantConfigurationReply
+			if err != nil {
+				if slackThreadContextInvalidatesInstallation(err) {
+					deactivateErr := p.repo.DeactivateSlackWorkspaceByTeamID(
+						ctx,
+						event.TeamID,
+						installation.InstallGeneration,
+					)
+					if deactivateErr != nil && !slackrepository.IsNotFound(deactivateErr) {
+						err = errors.Join(err, fmt.Errorf("deactivate invalid Slack installation: %w", deactivateErr))
+					}
+				}
+				if failureReply, handled := slackThreadContextFailureReply(err); handled {
+					reply = failureReply
+				} else {
+					if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(err)); failErr != nil {
+						return errors.Join(err, failErr)
+					}
+					return err
+				}
 			} else {
-				if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(responseErr)); failErr != nil {
-					return errors.Join(responseErr, failErr)
-				}
-				return responseErr
+				// Keep imported participants out of persisted conversation state.
+				// This final ephemeral turn survives the assistant's newest-history
+				// bound while remaining clearly marked as untrusted reference data.
+				turns = append(turns, threadReference.Turn)
 			}
-		} else if response.Confirmation != nil {
-			reply = truncateSlackText(response.Confirmation.Prompt)
-			confirmationPayload, confirmationErr := BuildSlackMutationConfirmationProviderPayload(reply, response.Confirmation.Token, event.UserID)
-			payloadErr = confirmationErr
-			if payloadErr != nil {
-				if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(payloadErr)); failErr != nil {
-					return errors.Join(payloadErr, failErr)
-				}
-				return payloadErr
-			}
-			confirmationPayload.Authorization = providerPayload.Authorization
-			providerPayload = confirmationPayload
-		} else {
-			reply = truncateSlackText(response.Text)
 		}
 		if reply == "" {
-			reply = "I couldn't generate a useful response. Please try again."
+			runtimeContext, contextErr := p.contextProvider.Load(
+				ctx,
+				workspace.ID,
+				*linkedUserID,
+				allowedTeamIDs,
+				assistantSurfaceForSlackEvent(event),
+				p.clock.Now(),
+			)
+			if contextErr != nil {
+				if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(contextErr)); failErr != nil {
+					return errors.Join(contextErr, failErr)
+				}
+				return contextErr
+			}
+			response, responseErr := p.assistant.Respond(ctx, messaging.Request{
+				WorkspaceID:    workspace.ID,
+				UserID:         *linkedUserID,
+				AllowedTeamIDs: allowedTeamIDs,
+				SharedTeamIDs:  sharedTeamIDs,
+				RuntimeContext: runtimeContext,
+				Guidance:       agentSettings.Guidance,
+				AllowMutations: true,
+				WebsiteURL:     p.website,
+				SourceURL:      threadSourceURL,
+				Conversation:   turns,
+				Prompt:         prompt,
+			})
+			if responseErr != nil {
+				p.logAssistantResponseError(
+					ctx,
+					responseErr,
+					workspace.ID,
+					*linkedUserID,
+					receipt.ID,
+					receipt.AttemptCount,
+					event,
+				)
+			}
+			_, usageErr := p.recordAssistantUsage(ctx, messagingrepository.DailyUsageRecordInput{
+				InboundEventID:      receipt.ID,
+				WorkspaceID:         workspace.ID,
+				Provider:            "slack",
+				ExternalWorkspaceID: event.TeamID,
+				ExternalEventID:     event.EventID,
+				AttemptCount:        receipt.AttemptCount,
+				Usage:               response.Usage,
+			})
+			if usageErr != nil {
+				if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(usageErr)); failErr != nil {
+					return errors.Join(responseErr, usageErr, failErr)
+				}
+				return errors.Join(responseErr, usageErr)
+			}
+			if responseErr != nil {
+				if errors.Is(responseErr, messaging.ErrAssistantNotConfigured) || messaging.IsPermanentOpenAIError(responseErr) {
+					reply = assistantConfigurationReply
+				} else {
+					if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(responseErr)); failErr != nil {
+						return errors.Join(responseErr, failErr)
+					}
+					return responseErr
+				}
+			} else if response.Confirmation != nil {
+				reply = truncateSlackText(response.Confirmation.Prompt)
+				confirmationPayload, confirmationErr := BuildSlackMutationConfirmationProviderPayload(
+					reply,
+					response.Confirmation.Token,
+					event.UserID,
+					response.Confirmation.Operation == messaging.StoryMutationCreateBatch,
+				)
+				payloadErr = confirmationErr
+				if payloadErr != nil {
+					if failErr := failOutboundDeliveryDetached(ctx, p.store, delivery.ID, truncateError(payloadErr)); failErr != nil {
+						return errors.Join(payloadErr, failErr)
+					}
+					return payloadErr
+				}
+				confirmationPayload.Authorization = providerPayload.Authorization
+				providerPayload = confirmationPayload
+			} else {
+				reply = truncateSlackText(response.Text)
+			}
+			if reply == "" {
+				reply = "I couldn't generate a useful response. Please try again."
+			}
 		}
 	}
 	if !contentPersisted {

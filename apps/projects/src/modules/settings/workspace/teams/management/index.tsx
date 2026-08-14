@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Box, Text, Tabs } from "ui";
+import { Box, Flex, Text, Tabs } from "ui";
 import {
   FilterIcon,
   GitIcon,
@@ -11,9 +11,10 @@ import {
   WorkflowIcon,
 } from "icons";
 import { useQueryState, parseAsStringLiteral } from "nuqs";
-import { useTerminology } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useTeam } from "@/modules/teams/hooks/use-team";
 import { TeamColor } from "@/components/ui";
+import { SettingsBackButton } from "@/modules/settings/components";
 import { GeneralSettings } from "./components/general";
 import { MembersSettings } from "./components/members";
 import { WorkflowSettings } from "./components/workflows";
@@ -32,6 +33,7 @@ export const TeamManagement = () => {
   ] as const;
   const { teamId } = useParams<{ teamId: string }>();
   const { getTermDisplay } = useTerminology();
+  const { withWorkspace } = useWorkspacePath();
   const { data: team } = useTeam(teamId);
   const [tab, setTab] = useQueryState(
     "tab",
@@ -42,13 +44,16 @@ export const TeamManagement = () => {
 
   return (
     <Box>
-      <Text
-        as="h1"
-        className="mb-6 flex items-center gap-2 text-2xl font-medium"
-      >
-        <TeamColor color={team.color} />
-        {team.name}
-      </Text>
+      <Flex align="center" className="mb-6" gap={2}>
+        <SettingsBackButton
+          href={withWorkspace("/settings/workspace/teams")}
+          label="Back to teams"
+        />
+        <Text as="h1" className="flex items-center gap-2 text-2xl font-medium">
+          <TeamColor color={team.color} />
+          {team.name}
+        </Text>
+      </Flex>
 
       <Tabs
         defaultValue="general"

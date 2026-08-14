@@ -2,6 +2,7 @@ package workerbootstrap
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -32,6 +33,8 @@ import (
 	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	"github.com/complexus-tech/projects-api/internal/platform/billing"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
@@ -45,7 +48,26 @@ func (a workspaceAssistantAccess) CanUseAssistant(ctx context.Context, workspace
 	return billing.WorkspaceCanUseMaya(ctx, a.db, workspaceID)
 }
 
-func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redis.Client, cfg Config, eventQueue slack.EventQueue) (*slack.EventProcessor, error) {
+type slackEventProcessorDependencies struct {
+	EventPublisher *publisher.Publisher
+	Tasks          *tasks.Service
+}
+
+func (d slackEventProcessorDependencies) validate() error {
+	if d.EventPublisher == nil {
+		return errors.New("slack event processor: event publisher is required")
+	}
+	if d.Tasks == nil {
+		return errors.New("slack event processor: tasks service is required")
+	}
+	return nil
+}
+
+func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redis.Client, cfg Config, dependencies slackEventProcessorDependencies) (*slack.EventProcessor, error) {
+	if err := dependencies.validate(); err != nil {
+		return nil, err
+	}
+
 	messagingRepo := messagingrepository.New(db)
 	teamsService := teams.New(log, teamsrepository.New(log, db))
 	statesService := states.New(log, statesrepository.New(log, db))
@@ -54,8 +76,8 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 		log,
 		storiesrepository.New(log, db),
 		mentionsrepository.New(log, db),
-		nil,
-		nil,
+		dependencies.EventPublisher,
+		dependencies.Tasks,
 	)
 	searchService := search.New(log, searchrepository.New(log, db))
 	okrActivitiesService := okractivities.New(log, okractivitiesrepository.New(log, db))
@@ -110,7 +132,7 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 	if err != nil {
 		return nil, err
 	}
-	processorConfig := slackEventProcessorConfig(cfg, eventQueue)
+	processorConfig := slackEventProcessorConfig(cfg, dependencies.Tasks)
 	processorConfig.CallLimiter = callLimiter
 	processorConfig.UsageBudget = messagingrepository.NewDailyUsageRepository(db)
 	processorConfig.ContextProvider = contextProvider

@@ -266,7 +266,10 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		_ = db.Close()
 		return App{}, err
 	}
-	slackEvents, err := buildSlackEventProcessor(log, db, redisClient, cfg, tasksService)
+	slackEvents, err := buildSlackEventProcessor(log, db, redisClient, cfg, slackEventProcessorDependencies{
+		EventPublisher: eventPublisher,
+		Tasks:          tasksService,
+	})
 	if err != nil {
 		_ = db.Close()
 		return App{}, fmt.Errorf("initialize Slack event processor: %w", err)

@@ -2,6 +2,7 @@ package messaging
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/google/uuid"
@@ -24,6 +25,10 @@ const (
 	// MaximumGuidanceRunes bounds trusted workspace-admin instructions appended
 	// to the assistant's base instructions for a single request.
 	MaximumGuidanceRunes = 4_000
+
+	// MaximumSourceURLBytes bounds a provider-adapter supplied attribution URL.
+	// The value is never accepted from assistant tool arguments.
+	MaximumSourceURLBytes = 2_048
 )
 
 // NormalizeRequest validates the authoritative identity and current prompt,
@@ -62,12 +67,31 @@ func NormalizeRequest(request Request) (Request, error) {
 	request.AllowedTeamIDs = allowedTeamIDs
 	request.SharedTeamIDs = sharedTeamIDs
 	request.RuntimeContext = runtimeContext
+	request.SourceURL, err = normalizedSourceURL(request.SourceURL)
+	if err != nil {
+		return Request{}, err
+	}
 	request.Guidance = strings.TrimSpace(request.Guidance)
 	if guidanceRunes := len([]rune(request.Guidance)); guidanceRunes > MaximumGuidanceRunes {
 		return Request{}, fmt.Errorf("%w: workspace guidance is %d characters; maximum is %d", ErrInvalidRequest, guidanceRunes, MaximumGuidanceRunes)
 	}
 	request.Conversation = newestBoundedConversation(request.Conversation)
 	return request, nil
+}
+
+func normalizedSourceURL(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	if len(value) > MaximumSourceURLBytes {
+		return "", fmt.Errorf("%w: source URL exceeds %d bytes", ErrInvalidRequest, MaximumSourceURLBytes)
+	}
+	parsed, err := url.ParseRequestURI(value)
+	if err != nil || !strings.EqualFold(parsed.Scheme, "https") || parsed.Hostname() == "" || parsed.User != nil {
+		return "", fmt.Errorf("%w: source URL must be an absolute HTTPS URL without credentials", ErrInvalidRequest)
+	}
+	return parsed.String(), nil
 }
 
 func normalizedSharedTeamIDs(teamIDs, allowedTeamIDs []uuid.UUID) ([]uuid.UUID, error) {

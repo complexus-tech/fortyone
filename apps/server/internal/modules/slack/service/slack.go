@@ -1238,6 +1238,47 @@ func (s *Service) handleMutationAction(ctx context.Context, payload interactionP
 			}
 			return InteractionResponse{StatusCode: http.StatusOK}, nil
 		}
+		if result.Operation == messaging.StoryMutationCreateBatch {
+			creatorName := ""
+			if member, memberErr := s.repo.FindTeamMemberByID(ctx, result.TeamID, *linkedUserID); memberErr == nil {
+				creatorName = slackMemberDisplayName(member)
+			}
+			if creatorName == "" {
+				creatorName = strings.TrimSpace(payload.User.Name)
+			}
+			if creatorName == "" {
+				creatorName = strings.TrimSpace(payload.User.Username)
+			}
+			workspace, workspaceErr := s.repo.FindWorkspaceByID(ctx, installation.WorkspaceID)
+			if workspaceErr != nil {
+				return InteractionResponse{}, errors.Join(err, workspaceErr)
+			}
+			text := buildSlackStoryBatchPartialReceiptText(
+				creatorName,
+				s.cfg.WebsiteURL,
+				workspace.Slug,
+				result.Items,
+			)
+			retryPayload, payloadErr := BuildSlackMutationRetryProviderPayload(
+				text,
+				actionValue.Token,
+				payload.User.ID,
+			)
+			if payloadErr != nil {
+				return InteractionResponse{}, errors.Join(err, payloadErr)
+			}
+			if updateErr := s.updateSlackInteractiveMessageWithProviderPayload(
+				ctx,
+				botToken,
+				channelID,
+				messageTS,
+				text,
+				retryPayload,
+			); updateErr != nil {
+				return InteractionResponse{}, errors.Join(err, updateErr)
+			}
+			return InteractionResponse{StatusCode: http.StatusOK}, nil
+		}
 		return InteractionResponse{}, err
 	}
 	creatorName := ""
@@ -1255,12 +1296,77 @@ func (s *Service) handleMutationAction(ctx context.Context, payload interactionP
 	if err != nil {
 		return InteractionResponse{}, err
 	}
-	storyURL := buildTaskURL(s.cfg.WebsiteURL, workspace.Slug, reference)
-	text := buildSlackStoryMutationReceiptText(creatorName, reference, storyURL, result.Operation)
+	text := ""
+	if result.Operation == messaging.StoryMutationCreateBatch {
+		text = buildSlackStoryBatchMutationReceiptText(creatorName, s.cfg.WebsiteURL, workspace.Slug, result.Items)
+	} else {
+		storyURL := buildTaskURL(s.cfg.WebsiteURL, workspace.Slug, reference)
+		text = buildSlackStoryMutationReceiptText(creatorName, reference, storyURL, result.Operation)
+	}
 	if err := s.updateSlackInteractiveMessage(ctx, botToken, channelID, messageTS, text); err != nil {
 		return InteractionResponse{}, err
 	}
 	return InteractionResponse{StatusCode: http.StatusOK}, nil
+}
+
+func buildSlackStoryBatchMutationReceiptText(
+	creatorName, websiteURL, workspaceSlug string,
+	items []messaging.StoryMutationItemResult,
+) string {
+	creatorLabel := slackMrkdwnTextEscaper.Replace(strings.TrimSpace(creatorName))
+	if creatorLabel == "" {
+		creatorLabel = "A team member"
+	}
+	if len(items) == 0 {
+		return creatorLabel + " created the proposed stories"
+	}
+
+	var receipt strings.Builder
+	fmt.Fprintf(&receipt, "%s created %d stories:", creatorLabel, len(items))
+	appendSlackStoryBatchReceiptItems(&receipt, websiteURL, workspaceSlug, items)
+	return receipt.String()
+}
+
+func buildSlackStoryBatchPartialReceiptText(
+	creatorName, websiteURL, workspaceSlug string,
+	items []messaging.StoryMutationItemResult,
+) string {
+	creatorLabel := slackMrkdwnTextEscaper.Replace(strings.TrimSpace(creatorName))
+	if creatorLabel == "" {
+		creatorLabel = "A team member"
+	}
+	if len(items) == 0 {
+		return "FortyOne couldn't create the proposed stories because of an error. No stories were created. Select *Retry remaining* to try again."
+	}
+
+	var receipt strings.Builder
+	fmt.Fprintf(&receipt, "%s created %d of the proposed stories before FortyOne hit an error:", creatorLabel, len(items))
+	appendSlackStoryBatchReceiptItems(&receipt, websiteURL, workspaceSlug, items)
+	receipt.WriteString("\nSelect *Retry remaining* to try again. Already-created stories will not be duplicated.")
+	return receipt.String()
+}
+
+func appendSlackStoryBatchReceiptItems(
+	receipt *strings.Builder,
+	websiteURL, workspaceSlug string,
+	items []messaging.StoryMutationItemResult,
+) {
+	for _, item := range items {
+		reference := strings.ToUpper(strings.TrimSpace(item.Reference))
+		if reference == "" {
+			reference = "Story"
+		}
+		label := reference
+		if taskURL := buildTaskURL(websiteURL, workspaceSlug, reference); taskURL != "" {
+			label = fmt.Sprintf("<%s|%s>", taskURL, reference)
+		}
+		title := slackMrkdwnTextEscaper.Replace(strings.TrimSpace(item.Title))
+		if title == "" {
+			fmt.Fprintf(receipt, "\n• %s", label)
+		} else {
+			fmt.Fprintf(receipt, "\n• %s — %s", label, title)
+		}
+	}
 }
 
 func buildSlackStoryMutationReceiptText(creatorName, reference, storyURL string, operation messaging.StoryMutationOperation) string {
@@ -1283,11 +1389,30 @@ func buildSlackStoryMutationReceiptText(creatorName, reference, storyURL string,
 }
 
 func (s *Service) updateSlackInteractiveMessage(ctx context.Context, botToken, channelID, messageTS, text string) error {
+	return s.updateSlackInteractiveMessageWithProviderPayload(
+		ctx,
+		botToken,
+		channelID,
+		messageTS,
+		text,
+		SlackProviderPayload{},
+	)
+}
+
+func (s *Service) updateSlackInteractiveMessageWithProviderPayload(
+	ctx context.Context,
+	botToken, channelID, messageTS, text string,
+	providerPayload SlackProviderPayload,
+) error {
+	blocks := providerPayload.Blocks
+	if blocks == nil {
+		blocks = []SlackBlock{}
+	}
 	payload := map[string]any{
 		"channel": strings.TrimSpace(channelID),
 		"ts":      strings.TrimSpace(messageTS),
 		"text":    truncateSlackText(text),
-		"blocks":  []any{},
+		"blocks":  blocks,
 	}
 	return s.slackClient().callJSON(ctx, botToken, "chat.update", payload, nil)
 }

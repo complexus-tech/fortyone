@@ -14,6 +14,7 @@ import (
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -30,10 +31,11 @@ func TestFortyOneToolExecutorMutationCatalogIsStrictAndOptIn(t *testing.T) {
 	mutationStories := newMutationStoriesStub()
 	executor := newMutationToolExecutorForTest(t, &teamsServiceStub{}, mutationStories, testStoryMutationSecret)
 	definitions := executor.Definitions()
-	require.Len(t, definitions, 8)
+	require.Len(t, definitions, 9)
 	require.NoError(t, validateToolDefinitions(definitions))
 	require.Equal(t, toolCreateStory, definitions[4].Name)
-	require.Equal(t, toolUpdateStory, definitions[5].Name)
+	require.Equal(t, toolCreateStories, definitions[5].Name)
+	require.Equal(t, toolUpdateStory, definitions[6].Name)
 }
 
 func TestStoryMutationsRequireDurableConfirmationStore(t *testing.T) {
@@ -124,6 +126,253 @@ func TestStoryCreateRequiresExplicitConfirmationAndIsRetrySafe(t *testing.T) {
 	wrongUser.UserID = uuid.New()
 	_, err = executor.ConfirmStoryMutation(context.Background(), wrongUser, confirmation.Token)
 	require.ErrorIs(t, err, ErrInvalidConfirmation)
+}
+
+func TestStoryBatchUsesOpaquePersistedProposalAndCreatesItemizedRetrySafeResult(t *testing.T) {
+	t.Parallel()
+
+	scope := testToolScope()
+	scope.AllowMutations = true
+	scope.SourceURL = "https://acme.slack.com/archives/C123/p1750000000000000"
+	team := mutationTestTeam(scope.WorkspaceID)
+	scope.AllowedTeamIDs = []uuid.UUID{team.ID}
+	assigneeID := uuid.MustParse("baaaaaaa-0000-0000-0000-000000000010")
+	usersService := &usersServiceStub{items: []users.CoreUser{{
+		ID:       assigneeID,
+		FullName: "Ada Lovelace",
+		Username: "ada",
+		IsActive: true,
+	}}}
+	storyService := newMutationStoriesStub()
+	executor := newBatchMutationToolExecutorForTest(
+		t,
+		&teamsServiceStub{joined: []teams.CoreTeam{team}},
+		storyService,
+		usersService,
+		testStoryMutationSecret,
+	)
+
+	arguments, err := json.Marshal(map[string]any{
+		"team_id": team.ID.String(),
+		"stories": []map[string]any{
+			{
+				"title":       "Add Microsoft authentication",
+				"description": "Support Microsoft as an authentication provider.",
+				"priority":    "High",
+				"assignee_id": assigneeID.String(),
+			},
+			{
+				"title":       "Add TikTok integration",
+				"description": "Add TikTok to the supported integrations.",
+				"priority":    nil,
+				"assignee_id": nil,
+			},
+		},
+	})
+	require.NoError(t, err)
+	output, err := executor.Execute(context.Background(), scope, ToolCall{Name: toolCreateStories, Arguments: arguments})
+	require.NoError(t, err)
+	require.Empty(t, storyService.createCalls, "a batch proposal must not write")
+
+	confirmation, proposed, err := mutationConfirmationFromToolResult(output)
+	require.NoError(t, err)
+	require.True(t, proposed)
+	require.Equal(t, StoryMutationCreateBatch, confirmation.Operation)
+	require.Len(t, confirmation.Stories, 2)
+	require.NotContains(t, confirmation.Token, ".", "batch token should be short and opaque")
+	require.Len(t, confirmation.Token, 43)
+	require.NotContains(t, confirmation.Token, "Microsoft")
+	require.Contains(t, confirmation.Prompt, "Create 2 stories")
+	require.Contains(t, confirmation.Prompt, "link to this Slack thread")
+	require.Equal(t, "Ada Lovelace", confirmation.Stories[0].AssigneeName)
+	require.Equal(t, scope.SourceURL, confirmation.Stories[0].SourceURL)
+	require.Contains(t, confirmation.Stories[0].Description, scope.SourceURL)
+
+	confirmationID, opaque, err := batchConfirmationID(confirmation.Token)
+	require.NoError(t, err)
+	require.True(t, opaque)
+	entry := storyService.confirmations.entries[confirmationID]
+	require.NotNil(t, entry)
+	require.NotEmpty(t, entry.input.Proposal, "batch contents must be persisted server-side")
+	require.NotContains(t, confirmation.Token, string(entry.input.Proposal))
+
+	wrongActor := scope
+	wrongActor.UserID = uuid.New()
+	_, err = executor.ConfirmStoryMutation(context.Background(), wrongActor, confirmation.Token)
+	require.ErrorIs(t, err, ErrInvalidConfirmation)
+	require.Empty(t, storyService.createCalls)
+
+	denied := scope
+	denied.AllowedTeamIDs = []uuid.UUID{}
+	_, err = executor.ConfirmStoryMutation(context.Background(), denied, confirmation.Token)
+	require.ErrorIs(t, err, ErrTeamNotAccessible)
+	require.Empty(t, storyService.createCalls)
+
+	result, err := executor.ConfirmStoryMutation(context.Background(), scope, confirmation.Token)
+	require.NoError(t, err)
+	require.Equal(t, storyMutationStatusApplied, result.Status)
+	require.Equal(t, StoryMutationCreateBatch, result.Operation)
+	require.Equal(t, team.ID, result.TeamID)
+	require.Len(t, result.Items, 2)
+	require.Equal(t, "WEB-1", result.Items[0].Reference)
+	require.Equal(t, "WEB-2", result.Items[1].Reference)
+	require.Equal(t, assigneeID, *result.Items[0].AssigneeID)
+	require.Nil(t, result.Items[1].AssigneeID)
+	require.Len(t, storyService.createCalls, 2)
+	require.Contains(t, *storyService.createCalls[0].story.Description, scope.SourceURL)
+	require.Contains(t, *storyService.createCalls[1].story.Description, scope.SourceURL)
+	require.NotEqual(t, *storyService.createCalls[0].story.CreationKey, *storyService.createCalls[1].story.CreationKey)
+	require.Empty(t, entry.input.Proposal, "a completed batch must redact its Slack-derived proposal")
+	require.Empty(t, entry.lastError)
+
+	retry, err := executor.ConfirmStoryMutation(context.Background(), scope, confirmation.Token)
+	require.NoError(t, err)
+	require.Equal(t, storyMutationStatusAlreadyApplied, retry.Status)
+	require.Equal(t, result.Items, retry.Items)
+	require.Len(t, storyService.createCalls, 2, "a provider retry must not execute the batch again")
+}
+
+func TestStoryBatchPrevalidatesEveryNamedAssigneeBeforeFirstWrite(t *testing.T) {
+	t.Parallel()
+
+	scope := testToolScope()
+	scope.AllowMutations = true
+	team := mutationTestTeam(scope.WorkspaceID)
+	scope.AllowedTeamIDs = []uuid.UUID{team.ID}
+	firstID := uuid.MustParse("baaaaaaa-0000-0000-0000-000000000021")
+	secondID := uuid.MustParse("baaaaaaa-0000-0000-0000-000000000022")
+	activeMembers := []users.CoreUser{
+		{ID: firstID, FullName: "Ada", IsActive: true},
+		{ID: secondID, FullName: "Grace", IsActive: true},
+	}
+	usersService := &usersServiceStub{items: append([]users.CoreUser(nil), activeMembers...)}
+	storyService := newMutationStoriesStub()
+	executor := newBatchMutationToolExecutorForTest(t, &teamsServiceStub{joined: []teams.CoreTeam{team}}, storyService, usersService, testStoryMutationSecret)
+	arguments, err := json.Marshal(map[string]any{
+		"team_id": team.ID.String(),
+		"stories": []map[string]any{
+			{"title": "First", "description": nil, "priority": nil, "assignee_id": firstID.String()},
+			{"title": "Second", "description": nil, "priority": nil, "assignee_id": secondID.String()},
+		},
+	})
+	require.NoError(t, err)
+	output, err := executor.Execute(context.Background(), scope, ToolCall{Name: toolCreateStories, Arguments: arguments})
+	require.NoError(t, err)
+	confirmation, proposed, err := mutationConfirmationFromToolResult(output)
+	require.NoError(t, err)
+	require.True(t, proposed)
+
+	usersService.items = activeMembers[:1]
+	_, err = executor.ConfirmStoryMutation(context.Background(), scope, confirmation.Token)
+	require.ErrorIs(t, err, ErrInvalidConfirmation)
+	require.Empty(t, storyService.createCalls, "all assignees must be revalidated before the first write")
+
+	usersService.items = activeMembers
+	result, err := executor.ConfirmStoryMutation(context.Background(), scope, confirmation.Token)
+	require.NoError(t, err)
+	require.Len(t, result.Items, 2)
+	require.Len(t, storyService.createCalls, 2)
+}
+
+func TestStoryBatchRetriesSafelyAfterPartialProviderFailure(t *testing.T) {
+	t.Parallel()
+
+	scope := testToolScope()
+	scope.AllowMutations = true
+	team := mutationTestTeam(scope.WorkspaceID)
+	scope.AllowedTeamIDs = []uuid.UUID{team.ID}
+	storyService := newMutationStoriesStub()
+	storyService.failCreateAt = 2
+	executor := newBatchMutationToolExecutorForTest(t, &teamsServiceStub{joined: []teams.CoreTeam{team}}, storyService, &usersServiceStub{}, testStoryMutationSecret)
+	arguments, err := json.Marshal(map[string]any{
+		"team_id": team.ID.String(),
+		"stories": []map[string]any{
+			{"title": "One", "description": nil, "priority": nil, "assignee_id": nil},
+			{"title": "Two", "description": nil, "priority": nil, "assignee_id": nil},
+			{"title": "Three", "description": nil, "priority": nil, "assignee_id": nil},
+		},
+	})
+	require.NoError(t, err)
+	output, err := executor.Execute(context.Background(), scope, ToolCall{Name: toolCreateStories, Arguments: arguments})
+	require.NoError(t, err)
+	confirmation, _, err := mutationConfirmationFromToolResult(output)
+	require.NoError(t, err)
+
+	partial, err := executor.ConfirmStoryMutation(context.Background(), scope, confirmation.Token)
+	require.ErrorContains(t, err, "transient create failure")
+	require.Equal(t, storyMutationStatusPartial, partial.Status)
+	require.Equal(t, StoryMutationCreateBatch, partial.Operation)
+	require.Len(t, partial.Items, 1)
+	require.Equal(t, "WEB-1", partial.Items[0].Reference)
+	require.Len(t, storyService.persisted, 1)
+	confirmationID, opaque, decodeErr := batchConfirmationID(confirmation.Token)
+	require.NoError(t, decodeErr)
+	require.True(t, opaque)
+	entry := storyService.confirmations.entries[confirmationID]
+	require.NotNil(t, entry)
+	require.NotEmpty(t, entry.input.Proposal, "retryable partial batches must retain their proposal")
+	require.NotNil(t, entry.result)
+	require.Equal(t, partial.Items, entry.result.Items)
+	require.NotEmpty(t, entry.lastError)
+
+	result, err := executor.ConfirmStoryMutation(context.Background(), scope, confirmation.Token)
+	require.NoError(t, err)
+	require.Len(t, result.Items, 3)
+	require.Len(t, storyService.persisted, 3, "the already-created first item must be reused by creation key")
+	require.Equal(t, []string{"WEB-1", "WEB-2", "WEB-3"}, []string{
+		result.Items[0].Reference,
+		result.Items[1].Reference,
+		result.Items[2].Reference,
+	})
+	require.Empty(t, entry.input.Proposal, "successful retry must redact its proposal")
+	require.Empty(t, entry.lastError)
+}
+
+func TestStoryBatchRedactsProposalWhenCancelledOrExpired(t *testing.T) {
+	t.Parallel()
+
+	fixedNow := time.Date(2026, time.August, 14, 12, 0, 0, 0, time.UTC)
+	scope := testToolScope()
+	scope.AllowMutations = true
+	scope.SourceURL = "https://acme.slack.com/archives/C123/p1750000000000000"
+	team := mutationTestTeam(scope.WorkspaceID)
+	scope.AllowedTeamIDs = []uuid.UUID{team.ID}
+	storyService := newMutationStoriesStub()
+	executor := newBatchMutationToolExecutorForTest(t, &teamsServiceStub{joined: []teams.CoreTeam{team}}, storyService, &usersServiceStub{}, testStoryMutationSecret)
+	executor.mutations.now = func() time.Time { return fixedNow }
+	arguments, err := json.Marshal(map[string]any{
+		"team_id": team.ID.String(),
+		"stories": []map[string]any{{
+			"title": "Sensitive Slack context", "description": "Copied from the thread", "priority": nil, "assignee_id": nil,
+		}},
+	})
+	require.NoError(t, err)
+
+	propose := func() (*StoryMutationConfirmation, uuid.UUID) {
+		t.Helper()
+		output, executeErr := executor.Execute(context.Background(), scope, ToolCall{Name: toolCreateStories, Arguments: arguments})
+		require.NoError(t, executeErr)
+		confirmation, proposed, parseErr := mutationConfirmationFromToolResult(output)
+		require.NoError(t, parseErr)
+		require.True(t, proposed)
+		confirmationID, opaque, decodeErr := batchConfirmationID(confirmation.Token)
+		require.NoError(t, decodeErr)
+		require.True(t, opaque)
+		return confirmation, confirmationID
+	}
+
+	cancelled, cancelledID := propose()
+	_, err = executor.CancelStoryMutation(context.Background(), scope, cancelled.Token)
+	require.NoError(t, err)
+	require.Equal(t, StoryMutationConfirmationCancelled, storyService.confirmations.entries[cancelledID].status)
+	require.Empty(t, storyService.confirmations.entries[cancelledID].input.Proposal)
+
+	expired, expiredID := propose()
+	executor.mutations.now = func() time.Time { return fixedNow.Add(storyMutationConfirmationTTL) }
+	_, err = executor.ConfirmStoryMutation(context.Background(), scope, expired.Token)
+	require.ErrorIs(t, err, ErrExpiredConfirmation)
+	require.Equal(t, StoryMutationConfirmationExpired, storyService.confirmations.entries[expiredID].status)
+	require.Empty(t, storyService.confirmations.entries[expiredID].input.Proposal)
 }
 
 func TestStoryMutationCancellationIsOwnerBoundTerminalAndIdempotent(t *testing.T) {
@@ -418,6 +667,30 @@ func newMutationToolExecutorForTest(
 	return executor
 }
 
+func newBatchMutationToolExecutorForTest(
+	t *testing.T,
+	teamsService TeamsService,
+	storiesService *mutationStoriesStub,
+	usersService UsersService,
+	secret string,
+) *FortyOneToolExecutor {
+	t.Helper()
+	executor, err := NewFortyOneToolExecutor(
+		teamsService,
+		storiesService,
+		&searchServiceStub{},
+		&objectivesServiceStub{},
+		WithOperationalTools(OperationalToolServices{
+			States: &statesServiceStub{},
+			Users:  usersService,
+		}),
+		WithStoryMutations(secret),
+		WithStoryMutationConfirmationStore(storiesService.confirmations),
+	)
+	require.NoError(t, err)
+	return executor
+}
+
 func mutationTestTeam(workspaceID uuid.UUID) teams.CoreTeam {
 	return teams.CoreTeam{
 		ID:        uuid.MustParse("caaaaaaa-0000-0000-0000-000000000001"),
@@ -472,6 +745,8 @@ type mutationStoriesStub struct {
 	createCalls              []mutationCreateCall
 	updateCalls              []mutationUpdateCall
 	confirmations            *mutationConfirmationStoreStub
+	failCreateAt             int
+	failedCreate             bool
 }
 
 func newMutationStoriesStub() *mutationStoriesStub {
@@ -485,9 +760,10 @@ func newMutationStoriesStub() *mutationStoriesStub {
 }
 
 type mutationConfirmationStoreEntry struct {
-	input  StoryMutationConfirmationStateInput
-	status StoryMutationConfirmationStatus
-	result *StoryMutationResult
+	input     StoryMutationConfirmationStateInput
+	status    StoryMutationConfirmationStatus
+	result    *StoryMutationResult
+	lastError string
 }
 
 type mutationConfirmationStoreStub struct {
@@ -509,11 +785,32 @@ func (s *mutationConfirmationStoreStub) RegisterStoryMutationConfirmation(
 		return errors.New("duplicate confirmation")
 	}
 	input.TokenHash = append([]byte(nil), input.TokenHash...)
+	input.Proposal = append(json.RawMessage(nil), input.Proposal...)
 	s.entries[input.ConfirmationID] = &mutationConfirmationStoreEntry{
 		input:  input,
 		status: StoryMutationConfirmationPending,
 	}
 	return nil
+}
+
+func (s *mutationConfirmationStoreStub) LoadStoryMutationConfirmation(
+	_ context.Context,
+	binding StoryMutationConfirmationBinding,
+) (StoryMutationConfirmationRecord, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entry, err := s.boundEntry(binding)
+	if err != nil {
+		return StoryMutationConfirmationRecord{}, err
+	}
+	return StoryMutationConfirmationRecord{
+		TeamID:    entry.input.TeamID,
+		Operation: entry.input.Operation,
+		Status:    entry.status,
+		Proposal:  append(json.RawMessage(nil), entry.input.Proposal...),
+		Result:    entry.result,
+		LastError: entry.lastError,
+	}, nil
 }
 
 func (s *mutationConfirmationStoreStub) ApplyStoryMutationConfirmation(
@@ -528,8 +825,11 @@ func (s *mutationConfirmationStoreStub) ApplyStoryMutationConfirmation(
 	if err != nil {
 		return StoryMutationResult{}, false, err
 	}
-	if entry.status == StoryMutationConfirmationPending && !now.Before(entry.input.ExpiresAt) {
+	if (entry.status == StoryMutationConfirmationPending ||
+		(entry.status == StoryMutationConfirmationApplied && len(entry.input.Proposal) != 0)) &&
+		!now.Before(entry.input.ExpiresAt) {
 		entry.status = StoryMutationConfirmationExpired
+		entry.input.Proposal = nil
 	}
 	switch entry.status {
 	case StoryMutationConfirmationCancelled:
@@ -539,15 +839,26 @@ func (s *mutationConfirmationStoreStub) ApplyStoryMutationConfirmation(
 	case StoryMutationConfirmationPending:
 		entry.status = StoryMutationConfirmationApplied
 	case StoryMutationConfirmationApplied:
-		if entry.result != nil {
+		if entry.result != nil && entry.lastError == "" {
 			return *entry.result, true, nil
 		}
 	}
 	result, err := apply(ctx)
 	if err != nil {
-		return StoryMutationResult{}, false, err
+		if result.Operation == StoryMutationCreateBatch && (entry.result == nil || len(result.Items) >= len(entry.result.Items)) {
+			stored := result
+			entry.result = &stored
+		}
+		entry.lastError = err.Error()
+		if entry.result != nil {
+			return *entry.result, false, err
+		}
+		return result, false, err
 	}
-	entry.result = &result
+	stored := result
+	entry.result = &stored
+	entry.input.Proposal = nil
+	entry.lastError = ""
 	return result, false, nil
 }
 
@@ -564,10 +875,12 @@ func (s *mutationConfirmationStoreStub) CancelStoryMutationConfirmation(
 	}
 	if entry.status == StoryMutationConfirmationPending && !now.Before(entry.input.ExpiresAt) {
 		entry.status = StoryMutationConfirmationExpired
+		entry.input.Proposal = nil
 	}
 	switch entry.status {
 	case StoryMutationConfirmationPending:
 		entry.status = StoryMutationConfirmationCancelled
+		entry.input.Proposal = nil
 		return StoryMutationCancellationResult{Status: "cancelled"}, nil
 	case StoryMutationConfirmationCancelled:
 		return StoryMutationCancellationResult{Status: "already_cancelled"}, nil
@@ -642,6 +955,10 @@ func (s *mutationStoriesStub) CreateExternalUserAction(ctx context.Context, acto
 		story:          story,
 		workspaceID:    workspaceID,
 	})
+	if s.failCreateAt > 0 && len(s.createCalls) == s.failCreateAt && !s.failedCreate {
+		s.failedCreate = true
+		return stories.CoreSingleStory{}, errors.New("transient create failure")
+	}
 	if story.CreationKey != nil {
 		if existingID, ok := s.byCreationKey[*story.CreationKey]; ok {
 			existing := s.persisted[existingID]
@@ -649,10 +966,11 @@ func (s *mutationStoriesStub) CreateExternalUserAction(ctx context.Context, acto
 			return existing, nil
 		}
 	}
-	id := uuid.MustParse("eaaaaaaa-0000-0000-0000-000000000001")
+	id := uuid.New()
+	sequenceID := len(s.persisted) + 1
 	created := stories.CoreSingleStory{
 		ID:          id,
-		SequenceID:  1,
+		SequenceID:  sequenceID,
 		Title:       story.Title,
 		Status:      story.Status,
 		Assignee:    story.Assignee,
