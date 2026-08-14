@@ -11,5 +11,5 @@ export default async function CalendarIntegrationPage({
   params: Promise<{ workspaceSlug: string }>;
 }) {
   const { workspaceSlug } = await params;
-  redirect(withWorkspacePath("/settings/integrations/calendar", workspaceSlug));
+  redirect(withWorkspacePath("/settings/account/calendar", workspaceSlug));
 }

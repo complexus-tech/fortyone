@@ -11,6 +11,7 @@ import (
 
 const (
 	TypeCalendarSync         = "calendar:sync"
+	TypeCalendarSyncAll      = "calendar:sync:all"
 	TypeCalendarWatchRenewal = "calendar:watch:renewal"
 )
 

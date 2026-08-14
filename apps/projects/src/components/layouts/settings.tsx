@@ -44,6 +44,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
 
   const accountItems = [
     { title: "Profile", href: withWorkspace("/settings/account") },
+    { title: "Calendar", href: withWorkspace("/settings/account/calendar") },
     {
       title: "Preferences",
       href: withWorkspace("/settings/account/preferences"),

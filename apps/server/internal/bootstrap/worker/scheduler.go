@@ -40,6 +40,15 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 	}
 
 	_, err = scheduler.Register(
+		"*/5 * * * *", // Webhooks reduce latency; this is the durable sync fallback.
+		asynq.NewTask(tasks.TypeCalendarSyncAll, nil),
+		asynq.Queue("integrations"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register calendar sync task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"@daily",
 		asynq.NewTask(tasks.TypeDeleteStories, nil),
 		asynq.Queue("cleanup"),

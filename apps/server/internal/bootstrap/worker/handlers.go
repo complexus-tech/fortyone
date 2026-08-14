@@ -42,6 +42,7 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeBrevoEmailReply, workerTaskService.HandleBrevoEmailReply)
 	mux.HandleFunc(tasks.TypeBrevoEmailReplyRecovery, workerTaskService.HandleBrevoEmailReplyRecovery)
 	mux.HandleFunc(tasks.TypeCalendarSync, workerTaskService.HandleCalendarSync)
+	mux.HandleFunc(tasks.TypeCalendarSyncAll, workerTaskService.HandleCalendarSyncAll)
 	mux.HandleFunc(tasks.TypeCalendarWatchRenewal, workerTaskService.HandleCalendarWatchRenewal)
 
 	// Cleanup handlers

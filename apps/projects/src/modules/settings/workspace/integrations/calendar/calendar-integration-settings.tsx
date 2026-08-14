@@ -304,8 +304,8 @@ export const CalendarIntegrationSettings = () => {
       </Box>
 
       <Box className="mt-6">
-        <Link href={withWorkspace("/settings/integrations")}>
-          <Text color="muted">Back to integrations</Text>
+        <Link href={withWorkspace("/settings/account")}>
+          <Text color="muted">Back to account settings</Text>
         </Link>
       </Box>
 

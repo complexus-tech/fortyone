@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
-import { GoogleCalendarIcon, SearchIcon, SlackIcon } from "icons";
-import { useCalendarIntegration } from "@/lib/hooks/calendar";
+import { SearchIcon, SlackIcon } from "icons";
 import { useGitHubIntegration } from "@/lib/hooks/github";
 import { useSlackIntegration } from "@/lib/hooks/slack";
 import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
@@ -149,8 +148,6 @@ export const IntegrationsIndex = () => {
   const isAdmin = userRole === "admin";
   const { data: integration } = useGitHubIntegration({ enabled: isAdmin });
   const { data: slackIntegration } = useSlackIntegration();
-  const calendarIntegrationQuery = useCalendarIntegration();
-  const calendarIntegration = calendarIntegrationQuery.data;
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
@@ -158,30 +155,6 @@ export const IntegrationsIndex = () => {
 
   const isGitHubEnabled = (integration?.installations.length ?? 0) > 0;
   const isSlackEnabled = Boolean(slackIntegration?.slackWorkspace?.isActive);
-  const isGoogleCalendarEnabled = Boolean(
-    calendarIntegration?.connections.some(
-      (connection) => connection.provider === "google",
-    ),
-  );
-  let googleCalendarStatus: string | undefined;
-  if (calendarIntegrationQuery.isPending) {
-    googleCalendarStatus = "Checking connection";
-  } else if (calendarIntegrationQuery.isError) {
-    googleCalendarStatus = "Connection unavailable";
-  }
-
-  const googleCalendarIntegration: Integration = {
-    id: "google-calendar",
-    name: "Google Calendar",
-    description:
-      "Bring meetings into Calendar and keep scheduled work clear of your availability.",
-    icon: (
-      <GoogleCalendarIcon aria-hidden="true" className="h-8 w-8 shrink-0" />
-    ),
-    enabled: isGoogleCalendarEnabled,
-    href: withWorkspace("/settings/integrations/calendar"),
-    status: googleCalendarStatus,
-  };
   const workspaceIntegrations: Integration[] = [
     {
       id: "github",
@@ -228,10 +201,7 @@ export const IntegrationsIndex = () => {
   const visibleWorkspaceIntegrations = isAdmin
     ? workspaceIntegrations
     : workspaceIntegrations.filter(({ id }) => id === "slack");
-  const allIntegrations = [
-    googleCalendarIntegration,
-    ...visibleWorkspaceIntegrations,
-  ];
+  const allIntegrations = visibleWorkspaceIntegrations;
 
   const enabledIntegrations = allIntegrations.filter((i) => i.enabled);
   const query = search.trim().toLowerCase();

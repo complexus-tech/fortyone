@@ -34,12 +34,10 @@ func (r *Repo) ListCalendarEvents(ctx context.Context, workspaceID, userID uuid.
 		FROM calendar_events ce
 		INNER JOIN calendar_connections cc ON
 			cc.connection_id = ce.connection_id
-			AND cc.workspace_id = ce.workspace_id
 			AND cc.user_id = ce.user_id
 			AND cc.revoked_at IS NULL
 			AND $5 = ANY(cc.scopes)
-		WHERE ce.workspace_id = $1
-			AND ce.user_id = $2
+		WHERE ce.user_id = $2
 			AND ce.start_at < $4
 			AND ce.end_at > $3
 		ORDER BY ce.start_at ASC, ce.event_id ASC
@@ -82,12 +80,10 @@ func (r *Repo) GetCalendarEvent(ctx context.Context, workspaceID, userID, eventI
 		FROM calendar_events ce
 		INNER JOIN calendar_connections cc ON
 			cc.connection_id = ce.connection_id
-			AND cc.workspace_id = ce.workspace_id
 			AND cc.user_id = ce.user_id
 			AND cc.revoked_at IS NULL
 			AND $4 = ANY(cc.scopes)
-		WHERE ce.workspace_id = $1
-			AND ce.user_id = $2
+		WHERE ce.user_id = $2
 			AND ce.event_id = $3
 		LIMIT 1
 	`

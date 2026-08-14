@@ -1,10 +1,13 @@
-import type { Metadata } from "next";
-import { CalendarIntegrationSettings } from "@/modules/settings/workspace/integrations/calendar";
+import { redirect } from "next/navigation";
+import { withWorkspacePath } from "@/utils";
 
-export const metadata: Metadata = {
-  title: "Settings › Google Calendar",
-};
+export const metadata = { title: "Settings › Calendar" };
 
-export default function GoogleCalendarIntegrationPage() {
-  return <CalendarIntegrationSettings />;
+export default async function LegacyGoogleCalendarIntegrationPage({
+  params,
+}: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
+  const { workspaceSlug } = await params;
+  redirect(withWorkspacePath("/settings/account/calendar", workspaceSlug));
 }

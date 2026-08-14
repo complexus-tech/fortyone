@@ -37,11 +37,9 @@ const scheduleBlockSelect = `
 			FROM calendar_busy_windows conflict_window
 			INNER JOIN calendar_connections conflict_connection ON
 				conflict_connection.connection_id = conflict_window.connection_id
-				AND conflict_connection.workspace_id = conflict_window.workspace_id
 				AND conflict_connection.user_id = conflict_window.user_id
 				AND conflict_connection.revoked_at IS NULL
-			WHERE conflict_window.workspace_id = csb.workspace_id
-				AND conflict_window.user_id = csb.user_id
+			WHERE conflict_window.user_id = csb.user_id
 				AND conflict_window.start_at < csb.end_at
 				AND conflict_window.end_at > csb.start_at
 		) AS has_conflict,
@@ -72,11 +70,9 @@ func (r *Repo) ListBusyWindows(ctx context.Context, workspaceID, userID uuid.UUI
 		FROM calendar_busy_windows cbw
 		INNER JOIN calendar_connections cc ON
 			cc.connection_id = cbw.connection_id
-			AND cc.workspace_id = cbw.workspace_id
 			AND cc.user_id = cbw.user_id
 			AND cc.revoked_at IS NULL
-		WHERE cbw.workspace_id = $1
-			AND cbw.user_id = $2
+		WHERE cbw.user_id = $2
 			AND cbw.start_at < $4
 			AND cbw.end_at > $3
 		ORDER BY cbw.start_at ASC
@@ -261,11 +257,9 @@ func scheduleBlockConflicts(
 			FROM calendar_busy_windows cbw
 			INNER JOIN calendar_connections cc ON
 				cc.connection_id = cbw.connection_id
-				AND cc.workspace_id = cbw.workspace_id
 				AND cc.user_id = cbw.user_id
 				AND cc.revoked_at IS NULL
-			WHERE cbw.workspace_id = $1
-				AND cbw.user_id = $2
+			WHERE cbw.user_id = $2
 				AND cbw.start_at < $4
 				AND cbw.end_at > $3
 		)

@@ -57,6 +57,7 @@ type Repository interface {
 	ListConnections(ctx context.Context, workspaceID uuid.UUID, userID *uuid.UUID) ([]CoreConnection, error)
 	GetOwnedConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) (CoreConnection, error)
 	GetActiveConnection(ctx context.Context, workspaceID, userID uuid.UUID, provider Provider) (CoreConnection, error)
+	ListActiveConnections(ctx context.Context) ([]CoreConnection, error)
 	GetConnection(ctx context.Context, connectionID uuid.UUID) (CoreConnection, error)
 	ListConnectionsNeedingWatch(ctx context.Context, renewBefore time.Time) ([]CoreConnection, error)
 	WorkspaceMemberExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, error)
@@ -380,6 +381,28 @@ func (s *Service) SyncActiveGoogleConnection(ctx context.Context, workspaceID, u
 		return err
 	}
 	return s.syncConnection(ctx, connection)
+}
+
+// SyncAllConnections keeps calendar data current even when a provider webhook
+// is delayed or unavailable. Each connection decides whether it can use an
+// incremental sync token or needs a full snapshot.
+func (s *Service) SyncAllConnections(ctx context.Context) error {
+	if s.repo == nil {
+		return ErrCalendarNotConfigured
+	}
+	connections, err := s.repo.ListActiveConnections(ctx)
+	if err != nil {
+		return err
+	}
+
+	var syncErrors []error
+	for _, connection := range connections {
+		if err := s.SyncConnectionFromNotification(ctx, connection.ID); err != nil &&
+			!errors.Is(err, ErrCalendarSyncSuperseded) {
+			syncErrors = append(syncErrors, fmt.Errorf("sync calendar connection %s: %w", connection.ID, err))
+		}
+	}
+	return errors.Join(syncErrors...)
 }
 
 func (s *Service) ListSchedule(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (CoreSchedule, error) {
@@ -837,7 +860,7 @@ func (s *Service) workspaceCalendarURL(workspaceSlug, query string) string {
 	if base == "" {
 		base = "/"
 	}
-	path := fmt.Sprintf("%s/%s/settings/integrations/calendar", base, url.PathEscape(workspaceSlug))
+	path := fmt.Sprintf("%s/%s/settings/account/calendar", base, url.PathEscape(workspaceSlug))
 	if strings.TrimSpace(query) == "" {
 		return path
 	}

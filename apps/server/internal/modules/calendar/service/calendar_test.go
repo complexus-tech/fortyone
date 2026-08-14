@@ -107,6 +107,13 @@ func (r *fakeRepo) GetActiveConnection(ctx context.Context, workspaceID, userID 
 	return r.connection, nil
 }
 
+func (r *fakeRepo) ListActiveConnections(context.Context) ([]CoreConnection, error) {
+	if r.connection.ID == uuid.Nil {
+		return []CoreConnection{}, nil
+	}
+	return []CoreConnection{r.connection}, nil
+}
+
 func (r *fakeRepo) GetConnection(context.Context, uuid.UUID) (CoreConnection, error) {
 	return r.connection, nil
 }
@@ -451,7 +458,7 @@ func TestCalendarCallbackErrorURLUsesSignedStateAndSafeCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CalendarCallbackErrorURL returned error: %v", err)
 	}
-	if redirectURL != "https://app.fortyone.test/acme%20workspace/settings/integrations/calendar?calendar_error=connection_failed" {
+	if redirectURL != "https://app.fortyone.test/acme%20workspace/settings/account/calendar?calendar_error=connection_failed" {
 		t.Fatalf("unexpected callback error URL: %s", redirectURL)
 	}
 	if strings.Contains(redirectURL, "raw") || strings.Contains(redirectURL, "secret") {
@@ -514,7 +521,7 @@ func TestCompleteConnectEncryptsProviderToken(t *testing.T) {
 	if connection.ConnectedEmail != "joseph@example.com" {
 		t.Fatalf("unexpected connected email: %s", connection.ConnectedEmail)
 	}
-	if redirectURL != "https://app.fortyone.test/acme/settings/integrations/calendar?connected=1" {
+	if redirectURL != "https://app.fortyone.test/acme/settings/account/calendar?connected=1" {
 		t.Fatalf("unexpected redirect url: %s", redirectURL)
 	}
 	if strings.Contains(repo.upserted.TokenPayload, "refresh-token") || strings.Contains(repo.upserted.TokenPayload, "access-token") {

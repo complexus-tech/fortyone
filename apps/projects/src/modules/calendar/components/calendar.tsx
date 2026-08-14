@@ -1556,7 +1556,7 @@ export const PersonalCalendar = ({
       <CalendarNotices
         canReadEventDetails={canReadEventDetails}
         conflictCount={conflictingBlocks.length}
-        connectHref={withWorkspace("/settings/integrations/calendar")}
+        connectHref={withWorkspace("/settings/account/calendar")}
         connection={connection}
         hasIntegrationError={integrationQuery.isError}
         isIntegrationPending={integrationQuery.isPending}

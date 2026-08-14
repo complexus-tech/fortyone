@@ -28,9 +28,8 @@ func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnecti
 	const existingQuery = `
 		SELECT provider_account_id
 		FROM calendar_connections
-		WHERE workspace_id = $1
-			AND user_id = $2
-			AND provider = $3
+		WHERE user_id = $1
+			AND provider = $2
 			AND revoked_at IS NULL
 		FOR UPDATE
 	`
@@ -39,7 +38,6 @@ func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnecti
 		ctx,
 		&existingProviderAccountID,
 		existingQuery,
-		input.WorkspaceID,
 		input.UserID,
 		string(input.Provider),
 	); err != nil {
@@ -58,7 +56,7 @@ func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnecti
 			:workspace_id, :user_id, :credential_generation, :provider_account_id, :provider, :connected_email, :timezone,
 			:token_payload, :scopes, 'connected', NULL, NULL, NOW()
 		)
-		ON CONFLICT (workspace_id, user_id, provider)
+		ON CONFLICT (user_id, provider)
 		WHERE revoked_at IS NULL
 		DO UPDATE SET
 			credential_generation = EXCLUDED.credential_generation,
@@ -190,12 +188,11 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			notification_resource_id = NULL,
 			notification_expires_at = NULL,
 			updated_at = NOW()
-		WHERE workspace_id = $1
-			AND user_id = $2
-			AND connection_id = $3
+		WHERE user_id = $1
+			AND connection_id = $2
 			AND revoked_at IS NULL
 	`
-	result, err := tx.ExecContext(ctx, revokeQuery, workspaceID, userID, connectionID)
+	result, err := tx.ExecContext(ctx, revokeQuery, userID, connectionID)
 	if err != nil {
 		return fmt.Errorf("revoke calendar connection: %w", err)
 	}
