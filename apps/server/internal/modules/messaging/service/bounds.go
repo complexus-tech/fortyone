@@ -50,12 +50,17 @@ func NormalizeRequest(request Request) (Request, error) {
 	if err != nil {
 		return Request{}, err
 	}
+	sharedTeamIDs, err := normalizedSharedTeamIDs(request.SharedTeamIDs, allowedTeamIDs)
+	if err != nil {
+		return Request{}, err
+	}
 	runtimeContext, err := normalizeRuntimeContext(request.RuntimeContext)
 	if err != nil {
 		return Request{}, err
 	}
 
 	request.AllowedTeamIDs = allowedTeamIDs
+	request.SharedTeamIDs = sharedTeamIDs
 	request.RuntimeContext = runtimeContext
 	request.Guidance = strings.TrimSpace(request.Guidance)
 	if guidanceRunes := len([]rune(request.Guidance)); guidanceRunes > MaximumGuidanceRunes {
@@ -63,6 +68,39 @@ func NormalizeRequest(request Request) (Request, error) {
 	}
 	request.Conversation = newestBoundedConversation(request.Conversation)
 	return request, nil
+}
+
+func normalizedSharedTeamIDs(teamIDs, allowedTeamIDs []uuid.UUID) ([]uuid.UUID, error) {
+	if teamIDs == nil {
+		return nil, nil
+	}
+
+	result := make([]uuid.UUID, 0, len(teamIDs))
+	seen := make(map[uuid.UUID]struct{}, len(teamIDs))
+	for _, teamID := range teamIDs {
+		if teamID == uuid.Nil {
+			return nil, fmt.Errorf("%w: shared team IDs must not contain a nil UUID", ErrInvalidRequest)
+		}
+		if _, duplicate := seen[teamID]; duplicate {
+			continue
+		}
+		seen[teamID] = struct{}{}
+		result = append(result, teamID)
+	}
+	if len(result) == 0 {
+		return result, nil
+	}
+
+	allowed := make(map[uuid.UUID]struct{}, len(allowedTeamIDs))
+	for _, teamID := range allowedTeamIDs {
+		allowed[teamID] = struct{}{}
+	}
+	for _, teamID := range result {
+		if _, ok := allowed[teamID]; !ok {
+			return nil, fmt.Errorf("%w: shared team %s is outside the allowed team scope", ErrInvalidRequest, teamID)
+		}
+	}
+	return result, nil
 }
 
 func normalizedAllowedTeamIDs(teamIDs []uuid.UUID) ([]uuid.UUID, error) {

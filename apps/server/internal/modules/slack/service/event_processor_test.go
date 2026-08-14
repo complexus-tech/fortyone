@@ -48,6 +48,7 @@ type eventRepositoryStub struct {
 	linkedUserID      *uuid.UUID
 	agentSettings     slackrepository.AgentSettingsRecord
 	authorizedTeamIDs []uuid.UUID
+	sharedTeamIDs     []uuid.UUID
 
 	getInstallationCalls       int
 	requestedTeamIDs           []string
@@ -70,6 +71,18 @@ func (r *eventRepositoryStub) GetAgentSettings(_ context.Context, _ uuid.UUID) (
 
 func (r *eventRepositoryStub) ListAuthorizedChannelTeamIDs(_ context.Context, _, _ uuid.UUID, _ string, _ uuid.UUID) ([]uuid.UUID, error) {
 	return append([]uuid.UUID(nil), r.authorizedTeamIDs...), nil
+}
+
+func (r *eventRepositoryStub) GetAuthorizedAssistantChannelTeamScope(
+	_ context.Context,
+	_, _ uuid.UUID,
+	_ string,
+	_ uuid.UUID,
+) (slackrepository.AssistantChannelTeamScope, error) {
+	return slackrepository.AssistantChannelTeamScope{
+		AllowedTeamIDs: append([]uuid.UUID(nil), r.authorizedTeamIDs...),
+		SharedTeamIDs:  append([]uuid.UUID(nil), r.sharedTeamIDs...),
+	}, nil
 }
 
 func (r *eventRepositoryStub) ListTeamStatuses(_ context.Context, _ uuid.UUID) ([]slackrepository.StatusRecord, error) {
@@ -114,6 +127,7 @@ func newEventRepositoryStub() *eventRepositoryStub {
 			Guidance: "Keep answers concise.",
 		},
 		authorizedTeamIDs: []uuid.UUID{testAllowedTeamID},
+		sharedTeamIDs:     []uuid.UUID{testAllowedTeamID},
 	}
 }
 
@@ -1030,16 +1044,20 @@ func TestEventProcessorCancelsAssistantRecoveryAfterActorLosesAccess(t *testing.
 	}
 }
 
-func TestEventProcessorCancelsAssistantRecoveryAfterChannelAudienceNarrows(t *testing.T) {
+func TestEventProcessorCancelsAssistantRecoveryAfterSharedChannelAudienceNarrows(t *testing.T) {
 	repo := newEventRepositoryStub()
 	repo.linkedUserID = uuidPointer(testLinkedUserID)
-	repo.authorizedTeamIDs = nil
+	repo.sharedTeamIDs = nil
 	store := newEventStoreStub()
 	content := "Private team answer"
 	recipient := "U1"
 	expiresAt := time.Now().UTC().Add(time.Hour)
 	providerPayload, err := EncodeSlackProviderPayload(SlackProviderPayload{
-		Authorization: &SlackDeliveryAuthorization{AllowedTeamIDs: []uuid.UUID{testAllowedTeamID}},
+		Authorization: &SlackDeliveryAuthorization{
+			AllowedTeamIDs: []uuid.UUID{testAllowedTeamID},
+			SharedTeamIDs:  []uuid.UUID{testAllowedTeamID},
+			ActorUserID:    uuidPointer(testLinkedUserID),
+		},
 	})
 	if err != nil {
 		t.Fatalf("EncodeSlackProviderPayload() error = %v", err)
@@ -1779,11 +1797,11 @@ func TestEventProcessorPersistsAndRoutesLinkedAssistantResponse(t *testing.T) {
 				t.Fatalf("channel surface = %q", contextCall.surface.Kind)
 			}
 			if test.name == "direct message" {
-				if len(request.AllowedTeamIDs) != 1 || request.AllowedTeamIDs[0] != testAllowedTeamID || conversation.AudienceScope != messagingrepository.ConversationAudienceActor {
-					t.Fatalf("direct assistant scope = teams %v / audience %q", request.AllowedTeamIDs, conversation.AudienceScope)
+				if len(request.AllowedTeamIDs) != 1 || request.AllowedTeamIDs[0] != testAllowedTeamID || len(request.SharedTeamIDs) != 1 || request.SharedTeamIDs[0] != testAllowedTeamID || conversation.AudienceScope != messagingrepository.ConversationAudienceActor {
+					t.Fatalf("direct assistant scope = allowed %v / shared %v / audience %q", request.AllowedTeamIDs, request.SharedTeamIDs, conversation.AudienceScope)
 				}
-			} else if len(request.AllowedTeamIDs) != 1 || request.AllowedTeamIDs[0] != testAllowedTeamID || conversation.AudienceScope != messagingrepository.ConversationAudienceChannel {
-				t.Fatalf("channel assistant scope = teams %v / audience %q", request.AllowedTeamIDs, conversation.AudienceScope)
+			} else if len(request.AllowedTeamIDs) != 1 || request.AllowedTeamIDs[0] != testAllowedTeamID || len(request.SharedTeamIDs) != 1 || request.SharedTeamIDs[0] != testAllowedTeamID || conversation.AudienceScope != messagingrepository.ConversationAudienceChannel {
+				t.Fatalf("channel assistant scope = allowed %v / shared %v / audience %q", request.AllowedTeamIDs, request.SharedTeamIDs, conversation.AudienceScope)
 			}
 			if len(request.Conversation) != test.wantConversationTurn || request.Conversation[0].Role != messaging.RoleUser || request.Conversation[1].Role != messaging.RoleAssistant {
 				t.Fatalf("assistant conversation = %+v", request.Conversation)
@@ -1814,11 +1832,62 @@ func TestEventProcessorPersistsAndRoutesLinkedAssistantResponse(t *testing.T) {
 			if err != nil {
 				t.Fatalf("DecodeSlackProviderPayload() error = %v", err)
 			}
-			if payload.Authorization == nil || payload.Authorization.ActorUserID == nil || *payload.Authorization.ActorUserID != testLinkedUserID || len(payload.Authorization.AllowedTeamIDs) != 1 || payload.Authorization.AllowedTeamIDs[0] != testAllowedTeamID {
+			if payload.Authorization == nil || payload.Authorization.ActorUserID == nil || *payload.Authorization.ActorUserID != testLinkedUserID || len(payload.Authorization.AllowedTeamIDs) != 1 || payload.Authorization.AllowedTeamIDs[0] != testAllowedTeamID || len(payload.Authorization.SharedTeamIDs) != 1 || payload.Authorization.SharedTeamIDs[0] != testAllowedTeamID {
 				t.Fatalf("persisted assistant authorization = %+v", payload.Authorization)
 			}
 		})
 	}
+}
+
+func TestEventProcessorUnmappedChannelKeepsPersonalScopeWithoutSharedAccess(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	repo.sharedTeamIDs = []uuid.UUID{}
+	store := newEventStoreStub()
+	assistant := &assistantStub{response: messaging.Response{Text: "Your work is ready."}}
+	sender := &messageSenderStub{externalMessageID: "10.2"}
+	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender)
+
+	err := processor.Process(context.Background(), []byte(mentionEvent("Ev-unmapped-personal-scope", "<@B1> show my work")))
+
+	require.NoError(t, err)
+	require.Len(t, assistant.requests, 1)
+	require.Equal(t, []uuid.UUID{testAllowedTeamID}, assistant.requests[0].AllowedTeamIDs)
+	require.Empty(t, assistant.requests[0].SharedTeamIDs)
+	require.Len(t, store.conversations, 1)
+	require.Equal(
+		t,
+		assistantAudienceFingerprint([]uuid.UUID{testAllowedTeamID}, nil),
+		store.conversations[0].AudienceFingerprint,
+	)
+	require.Len(t, store.outboundInputs, 1)
+	payload, err := DecodeSlackProviderPayload(store.outboundInputs[0].ProviderPayload)
+	require.NoError(t, err)
+	require.NotNil(t, payload.Authorization)
+	require.Equal(t, []uuid.UUID{testAllowedTeamID}, payload.Authorization.AllowedTeamIDs)
+	require.Empty(t, payload.Authorization.SharedTeamIDs)
+	require.Len(t, sender.messages, 1)
+}
+
+func TestEventProcessorCancelsChannelResponseWhenSharedAudienceNarrowsDuringModelCall(t *testing.T) {
+	repo := newEventRepositoryStub()
+	repo.linkedUserID = uuidPointer(testLinkedUserID)
+	store := newEventStoreStub()
+	assistant := &assistantStub{response: messaging.Response{Text: "Team-wide answer"}}
+	assistant.onRespond = func() {
+		repo.sharedTeamIDs = []uuid.UUID{}
+	}
+	sender := &messageSenderStub{externalMessageID: "10.2"}
+	processor := newTestEventProcessor(t, repo, store, assistant, &accessCheckerStub{allowed: true}, sender)
+
+	err := processor.Process(context.Background(), []byte(mentionEvent("Ev-shared-scope-narrowed", "<@B1> what did everyone finish?")))
+
+	require.NoError(t, err)
+	assertSingleInboundStatus(t, store, "ignored")
+	require.Len(t, assistant.requests, 1)
+	require.Equal(t, []uuid.UUID{testAllowedTeamID}, assistant.requests[0].SharedTeamIDs)
+	require.Empty(t, sender.messages)
+	require.Len(t, store.cancelledDeliveries, 1)
 }
 
 func TestEventProcessorKeepsAgentAvailableWhenLegacySettingChangesDuringModelCall(t *testing.T) {
@@ -2708,7 +2777,7 @@ func TestEventProcessorComposesBoundRequestReplyWithSubscribedMayaThread(t *test
 	require.Equal(t, "C1", lookup.ExternalChannelID)
 	require.Equal(t, "10.1", lookup.ExternalThreadID)
 	require.Equal(t, messagingrepository.ConversationAudienceChannel, lookup.AudienceScope)
-	require.Equal(t, assistantAudienceFingerprint([]uuid.UUID{testAllowedTeamID}), lookup.AudienceFingerprint)
+	require.Equal(t, assistantAudienceFingerprint([]uuid.UUID{testAllowedTeamID}, []uuid.UUID{testAllowedTeamID}), lookup.AudienceFingerprint)
 	require.Len(t, assistant.requests, 1)
 	require.Equal(t, "Customer confirmed", assistant.requests[0].Prompt)
 	require.Len(t, sender.messages, 1)
@@ -2734,7 +2803,7 @@ func TestEventProcessorKeepsBoundRequestReplyCommentOnlyWithoutMayaSubscription(
 	assertSingleInboundStatus(t, store, "completed")
 	require.Equal(t, &testLinkedUserID, syncer.input.AuthorUserID)
 	require.Len(t, store.conversationLookups, 1)
-	require.Equal(t, assistantAudienceFingerprint([]uuid.UUID{testAllowedTeamID}), store.conversationLookups[0].AudienceFingerprint)
+	require.Equal(t, assistantAudienceFingerprint([]uuid.UUID{testAllowedTeamID}, []uuid.UUID{testAllowedTeamID}), store.conversationLookups[0].AudienceFingerprint)
 	require.Empty(t, assistant.requests)
 	require.Empty(t, store.conversations)
 	require.Empty(t, store.outboundInputs)

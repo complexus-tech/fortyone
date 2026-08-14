@@ -14,6 +14,7 @@ import {
   useSlackIntegration,
   useUpdateSlackAgentSettings,
 } from "@/lib/hooks/slack";
+import { SlackChannelAudienceSettings } from "./slack-channel-audience-settings";
 
 const SlackAgentConfiguration = () => {
   const { data: settings, isLoading } = useSlackAgentSettings();
@@ -182,7 +183,12 @@ export const SlackIntegrationSettings = () => {
         )}
       </Box>
 
-      {isConnected ? <SlackAgentConfiguration /> : null}
+      {isConnected ? (
+        <>
+          <SlackChannelAudienceSettings />
+          <SlackAgentConfiguration />
+        </>
+      ) : null}
 
       <Box className="mt-6">
         <Link href={withWorkspace("/settings/integrations")}>

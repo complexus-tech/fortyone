@@ -147,6 +147,76 @@ func TestNormalizeRequestRejectsNilAllowedTeamID(t *testing.T) {
 	require.ErrorIs(t, err, ErrInvalidRequest)
 }
 
+func TestNormalizeRequestPreservesCopiesAndRestrictsSharedTeamScope(t *testing.T) {
+	t.Parallel()
+
+	sharedTeamID := uuid.MustParse("44444444-4444-4444-4444-444444444444")
+	personalOnlyTeamID := uuid.MustParse("55555555-5555-5555-5555-555555555555")
+	request := boundedTestRequest()
+	request.AllowedTeamIDs = []uuid.UUID{sharedTeamID, personalOnlyTeamID}
+	request.SharedTeamIDs = []uuid.UUID{sharedTeamID, sharedTeamID}
+
+	normalized, err := NormalizeRequest(request)
+
+	require.NoError(t, err)
+	require.Equal(t, []uuid.UUID{sharedTeamID}, normalized.SharedTeamIDs)
+	request.SharedTeamIDs[0] = uuid.New()
+	require.Equal(t, sharedTeamID, normalized.SharedTeamIDs[0], "normalized shared scope must not alias provider input")
+
+	empty := boundedTestRequest()
+	empty.AllowedTeamIDs = []uuid.UUID{sharedTeamID}
+	empty.SharedTeamIDs = []uuid.UUID{}
+	normalizedEmpty, err := NormalizeRequest(empty)
+	require.NoError(t, err)
+	require.NotNil(t, normalizedEmpty.SharedTeamIDs, "an explicit empty shared scope must remain a denial")
+	require.Empty(t, normalizedEmpty.SharedTeamIDs)
+
+	withoutSharedScope := boundedTestRequest()
+	withoutSharedScope.AllowedTeamIDs = []uuid.UUID{sharedTeamID}
+	normalizedWithoutSharedScope, err := NormalizeRequest(withoutSharedScope)
+	require.NoError(t, err)
+	require.Nil(t, normalizedWithoutSharedScope.SharedTeamIDs)
+}
+
+func TestNormalizeRequestRejectsSharedTeamOutsideAllowedScope(t *testing.T) {
+	t.Parallel()
+
+	allowedTeamID := uuid.MustParse("66666666-6666-6666-6666-666666666666")
+	forgedSharedTeamID := uuid.MustParse("77777777-7777-7777-7777-777777777777")
+	tests := []struct {
+		name           string
+		allowedTeamIDs []uuid.UUID
+		sharedTeamIDs  []uuid.UUID
+	}{
+		{
+			name:           "outside explicit allowed scope",
+			allowedTeamIDs: []uuid.UUID{allowedTeamID},
+			sharedTeamIDs:  []uuid.UUID{forgedSharedTeamID},
+		},
+		{
+			name:          "shared scope without allowed scope",
+			sharedTeamIDs: []uuid.UUID{forgedSharedTeamID},
+		},
+		{
+			name:           "nil shared team ID",
+			allowedTeamIDs: []uuid.UUID{allowedTeamID},
+			sharedTeamIDs:  []uuid.UUID{uuid.Nil},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			request := boundedTestRequest()
+			request.AllowedTeamIDs = test.allowedTeamIDs
+			request.SharedTeamIDs = test.sharedTeamIDs
+
+			_, err := NormalizeRequest(request)
+
+			require.ErrorIs(t, err, ErrInvalidRequest)
+		})
+	}
+}
+
 func TestNormalizeRequestBoundsWorkspaceGuidance(t *testing.T) {
 	t.Parallel()
 

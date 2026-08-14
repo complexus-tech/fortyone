@@ -50,6 +50,42 @@ func TestListWorkspaceTeamsForUserQueryRetainsMembershipAuthorization(t *testing
 	}
 }
 
+func TestAuthorizedAssistantChannelTeamScopeQueryEnforcesSafeV1Boundary(t *testing.T) {
+	t.Parallel()
+
+	query := normalizeQuery(authorizedAssistantChannelTeamScopeQuery)
+	for _, clause := range []string{
+		"JOIN teams mapped_team ON mapped_team.team_id = access.team_id AND mapped_team.workspace_id = access.workspace_id AND mapped_team.is_private = false",
+		"SELECT EXISTS (SELECT 1 FROM configured_public_teams) AS is_configured",
+		"configuration.is_configured AS explicitly_mapped",
+		"JOIN team_members membership ON membership.team_id = team.team_id AND membership.user_id = $4",
+		"JOIN workspace_members workspace_membership ON workspace_membership.workspace_id = team.workspace_id AND workspace_membership.user_id = membership.user_id",
+		"JOIN users actor ON actor.user_id = membership.user_id AND actor.is_active = true",
+		"AND team.is_private = false",
+		"configuration.is_configured AND team.team_id IN (SELECT team_id FROM configured_public_teams)",
+		"NOT configuration.is_configured",
+	} {
+		if !strings.Contains(query, clause) {
+			t.Fatalf("Slack assistant audience query is missing authorization clause %q: %q", clause, query)
+		}
+	}
+}
+
+func TestAssistantChannelTeamScopeSharesOnlyExplicitMappings(t *testing.T) {
+	t.Parallel()
+
+	defaultPublicTeamID := uuid.New()
+	explicitPublicTeamID := uuid.New()
+	scope := assistantChannelTeamScope([]assistantChannelTeamScopeRow{
+		{TeamID: defaultPublicTeamID},
+		{TeamID: explicitPublicTeamID, ExplicitlyMapped: true},
+		{TeamID: uuid.Nil, ExplicitlyMapped: true},
+	})
+
+	require.Equal(t, []uuid.UUID{defaultPublicTeamID, explicitPublicTeamID}, scope.AllowedTeamIDs)
+	require.Equal(t, []uuid.UUID{explicitPublicTeamID}, scope.SharedTeamIDs)
+}
+
 func normalizeQuery(query string) string {
 	return strings.Join(strings.Fields(query), " ")
 }

@@ -74,6 +74,23 @@ func validateSlackProviderPayload(payload SlackProviderPayload) error {
 			}
 			seen[key] = struct{}{}
 		}
+		if len(payload.Authorization.SharedTeamIDs) > 1000 {
+			return errors.New("Slack delivery authorization exceeds 1000 shared team IDs")
+		}
+		shared := make(map[string]struct{}, len(payload.Authorization.SharedTeamIDs))
+		for _, teamID := range payload.Authorization.SharedTeamIDs {
+			if teamID == uuid.Nil {
+				return errors.New("Slack delivery authorization contains an invalid shared team ID")
+			}
+			key := teamID.String()
+			if _, exists := shared[key]; exists {
+				return errors.New("Slack delivery authorization contains duplicate shared team IDs")
+			}
+			if _, allowed := seen[key]; !allowed {
+				return errors.New("Slack delivery authorization contains a shared team outside its allowed teams")
+			}
+			shared[key] = struct{}{}
+		}
 	}
 	if len(payload.Blocks) > 50 {
 		return errors.New("Slack provider payload exceeds the 50-block message limit")

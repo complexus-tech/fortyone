@@ -32,6 +32,24 @@ func TestNewOpenAIAssistantUsesDefaultModel(t *testing.T) {
 	}
 }
 
+func TestDefaultInstructionsRouteCurrentPersonalWorkToTeamScope(t *testing.T) {
+	t.Parallel()
+
+	required := []string{
+		"list_team_work with assignee_scope me and mode in_progress",
+		"if multiple teams are plausible, ask which team",
+		"list_my_tasks is only the broader active-assignment list across joined teams",
+		"must not be described as work performed today",
+		"not the person who moved each task to Done",
+		"assignees_truncated is true",
+	}
+	for _, phrase := range required {
+		if !strings.Contains(defaultInstructions, phrase) {
+			t.Errorf("default instructions are missing %q", phrase)
+		}
+	}
+}
+
 func TestResponsesReasoningForModel(t *testing.T) {
 	t.Parallel()
 
@@ -347,7 +365,9 @@ func TestOpenAIAssistantRuntimeContextDoesNotWidenToolScope(t *testing.T) {
 	defer server.Close()
 
 	request := validTestRequest()
-	request.AllowedTeamIDs = []uuid.UUID{}
+	allowedTeamID := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	request.AllowedTeamIDs = []uuid.UUID{allowedTeamID}
+	request.SharedTeamIDs = []uuid.UUID{allowedTeamID}
 	request.RuntimeContext = &RuntimeContext{
 		TeamHints: []RuntimeTeamHint{{Name: "Engineering", Code: "ENG"}},
 	}
@@ -363,8 +383,11 @@ func TestOpenAIAssistantRuntimeContextDoesNotWidenToolScope(t *testing.T) {
 	if len(scopes) != 1 {
 		t.Fatalf("expected one tool scope, got %#v", scopes)
 	}
-	if scopes[0].AllowedTeamIDs == nil || len(scopes[0].AllowedTeamIDs) != 0 {
-		t.Fatalf("runtime team hints widened the explicit empty audience scope: %#v", scopes[0])
+	if len(scopes[0].AllowedTeamIDs) != 1 || scopes[0].AllowedTeamIDs[0] != allowedTeamID {
+		t.Fatalf("runtime team hints changed the allowed audience scope: %#v", scopes[0])
+	}
+	if len(scopes[0].SharedTeamIDs) != 1 || scopes[0].SharedTeamIDs[0] != allowedTeamID {
+		t.Fatalf("runtime team hints changed the shared-work scope: %#v", scopes[0])
 	}
 }
 
@@ -663,6 +686,7 @@ func (s *assistantToolStub) Scopes() []ToolScope {
 	result := append([]ToolScope(nil), s.scopes...)
 	for index := range result {
 		result[index].AllowedTeamIDs = cloneOptionalUUIDs(result[index].AllowedTeamIDs)
+		result[index].SharedTeamIDs = cloneOptionalUUIDs(result[index].SharedTeamIDs)
 	}
 	return result
 }

@@ -164,6 +164,8 @@ export const githubKeys = {
 export const slackKeys = {
   integration: (workspaceSlug: string) =>
     ["slack", workspaceSlug, "integration"] as const,
+  channelAudiences: (workspaceSlug: string) =>
+    ["slack", workspaceSlug, "channel-audiences"] as const,
   agentSettings: (workspaceSlug: string) =>
     ["slack", workspaceSlug, "agent-settings"] as const,
 };

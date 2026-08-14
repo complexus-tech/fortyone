@@ -16,6 +16,55 @@ type ChannelTeamAccessRecord struct {
 	TeamID         uuid.UUID `db:"team_id"`
 }
 
+// AssistantChannelTeamScope separates the teams available to actor-scoped
+// tools from the stricter subset available to cross-user tools in a Slack
+// channel. Both slices contain only public teams the actor has joined.
+type AssistantChannelTeamScope struct {
+	AllowedTeamIDs []uuid.UUID
+	SharedTeamIDs  []uuid.UUID
+}
+
+type assistantChannelTeamScopeRow struct {
+	TeamID           uuid.UUID `db:"team_id"`
+	ExplicitlyMapped bool      `db:"explicitly_mapped"`
+}
+
+const authorizedAssistantChannelTeamScopeQuery = `
+	WITH configured_public_teams AS (
+		SELECT access.team_id
+		FROM slack_channel_team_access access
+		JOIN teams mapped_team
+		  ON mapped_team.team_id = access.team_id
+		 AND mapped_team.workspace_id = access.workspace_id
+		 AND mapped_team.is_private = false
+		WHERE access.workspace_id = $1
+		  AND access.slack_workspace_id = $2
+		  AND access.slack_channel_id = $3
+	), configuration AS (
+		SELECT EXISTS (SELECT 1 FROM configured_public_teams) AS is_configured
+	)
+	SELECT team.team_id, configuration.is_configured AS explicitly_mapped
+	FROM teams team
+	JOIN team_members membership
+	  ON membership.team_id = team.team_id
+	 AND membership.user_id = $4
+	JOIN workspace_members workspace_membership
+	  ON workspace_membership.workspace_id = team.workspace_id
+	 AND workspace_membership.user_id = membership.user_id
+	JOIN users actor
+	  ON actor.user_id = membership.user_id
+	 AND actor.is_active = true
+	CROSS JOIN configuration
+	WHERE team.workspace_id = $1
+	  AND team.is_private = false
+	  AND (
+		(configuration.is_configured AND team.team_id IN (SELECT team_id FROM configured_public_teams))
+		OR
+		NOT configuration.is_configured
+	  )
+	ORDER BY team.name ASC
+`
+
 func (r *Repo) ListChannelTeamAccess(ctx context.Context, workspaceID uuid.UUID) ([]ChannelTeamAccessRecord, error) {
 	rows := make([]ChannelTeamAccessRecord, 0)
 	if err := r.db.SelectContext(ctx, &rows, `
@@ -117,6 +166,51 @@ func (r *Repo) ReplaceChannelTeamAccess(
 		return fmt.Errorf("commit Slack channel audience transaction: %w", err)
 	}
 	return nil
+}
+
+// GetAuthorizedAssistantChannelTeamScope resolves the safe v1 disclosure
+// boundary for an assistant turn in a Slack channel. Actor-scoped tools retain
+// access to the actor's joined public teams when no mapping exists. Cross-user
+// tools receive teams only when an administrator explicitly mapped the channel.
+// Private FortyOne teams are excluded from both scopes for channel delivery;
+// a legacy private-only mapping is therefore treated as no assistant mapping.
+func (r *Repo) GetAuthorizedAssistantChannelTeamScope(
+	ctx context.Context,
+	workspaceID, slackWorkspaceID uuid.UUID,
+	slackChannelID string,
+	userID uuid.UUID,
+) (AssistantChannelTeamScope, error) {
+	rows := make([]assistantChannelTeamScopeRow, 0)
+	if err := r.db.SelectContext(
+		ctx,
+		&rows,
+		authorizedAssistantChannelTeamScopeQuery,
+		workspaceID,
+		slackWorkspaceID,
+		slackChannelID,
+		userID,
+	); err != nil {
+		return AssistantChannelTeamScope{}, fmt.Errorf("get authorized Slack assistant channel team scope: %w", err)
+	}
+
+	return assistantChannelTeamScope(rows), nil
+}
+
+func assistantChannelTeamScope(rows []assistantChannelTeamScopeRow) AssistantChannelTeamScope {
+	scope := AssistantChannelTeamScope{
+		AllowedTeamIDs: make([]uuid.UUID, 0, len(rows)),
+		SharedTeamIDs:  make([]uuid.UUID, 0, len(rows)),
+	}
+	for _, row := range rows {
+		if row.TeamID == uuid.Nil {
+			continue
+		}
+		scope.AllowedTeamIDs = append(scope.AllowedTeamIDs, row.TeamID)
+		if row.ExplicitlyMapped {
+			scope.SharedTeamIDs = append(scope.SharedTeamIDs, row.TeamID)
+		}
+	}
+	return scope
 }
 
 // ListAuthorizedChannelTeamIDs resolves the authoritative team boundary for a

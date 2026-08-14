@@ -14,6 +14,7 @@ type channelAudienceRepoStub struct {
 	channels   []slackrepository.SlackChannelRecord
 	access     []slackrepository.ChannelTeamAccessRecord
 	authorized []uuid.UUID
+	assistant  slackrepository.AssistantChannelTeamScope
 	agent      slackrepository.AgentSettingsRecord
 	replaced   struct {
 		workspaceID      uuid.UUID
@@ -71,6 +72,19 @@ func (r *channelAudienceRepoStub) ListAuthorizedChannelTeamIDs(
 	uuid.UUID,
 ) ([]uuid.UUID, error) {
 	return append([]uuid.UUID(nil), r.authorized...), nil
+}
+
+func (r *channelAudienceRepoStub) GetAuthorizedAssistantChannelTeamScope(
+	context.Context,
+	uuid.UUID,
+	uuid.UUID,
+	string,
+	uuid.UUID,
+) (slackrepository.AssistantChannelTeamScope, error) {
+	return slackrepository.AssistantChannelTeamScope{
+		AllowedTeamIDs: append([]uuid.UUID(nil), r.assistant.AllowedTeamIDs...),
+		SharedTeamIDs:  append([]uuid.UUID(nil), r.assistant.SharedTeamIDs...),
+	}, nil
 }
 
 func TestListChannelAudiencesIncludesUnconfiguredChannels(t *testing.T) {
@@ -149,6 +163,34 @@ func TestAuthorizedChannelTeamIDsDelegatesAuthoritativeScope(t *testing.T) {
 		workspaceID,
 		installationID,
 		"C1",
+		actorID,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+}
+
+func TestAuthorizedAssistantChannelTeamScopeDelegatesSafeScope(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	installationID := uuid.New()
+	actorID := uuid.New()
+	want := slackrepository.AssistantChannelTeamScope{
+		AllowedTeamIDs: []uuid.UUID{uuid.New(), uuid.New()},
+		SharedTeamIDs:  []uuid.UUID{uuid.New()},
+	}
+	repo := &channelAudienceRepoStub{
+		mockRepo:  &mockRepo{},
+		assistant: want,
+	}
+	service := New(nil, repo, nil, nil, Config{})
+
+	got, err := service.authorizedAssistantChannelTeamScope(
+		context.Background(),
+		workspaceID,
+		installationID,
+		" C1 ",
 		actorID,
 	)
 

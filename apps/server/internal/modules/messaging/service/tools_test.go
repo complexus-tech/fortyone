@@ -468,7 +468,7 @@ func TestFortyOneToolExecutorListTeamMembersRejectsForgedTeamAndOmitsInactiveSen
 		t.Fatalf("inactive, system, or duplicate members were returned: %#v", result)
 	}
 	member := result.Members[0]
-	if member.DisplayName != "Ada Lovelace" || member.Username != "ada" || !member.Active || member.RoleTitle != "Staff Engineer" {
+	if member.ID != activeMember.ID || member.DisplayName != "Ada Lovelace" || member.Username != "ada" || !member.Active || member.RoleTitle != "Staff Engineer" {
 		t.Fatalf("unexpected member projection: %#v", member)
 	}
 	if strings.Contains(string(raw), "secret@example.com") || strings.Contains(string(raw), `"email"`) {
@@ -834,8 +834,10 @@ type completedStoriesServiceCall struct {
 
 type completedStoriesServiceStub struct {
 	storiesServiceStub
-	items []stories.CoreStoryList
-	calls []completedStoriesServiceCall
+	items        []stories.CoreStoryList
+	groups       []stories.CoreStoryGroup
+	calls        []completedStoriesServiceCall
+	groupedCalls []groupedStoriesServiceCall
 }
 
 func (s *completedStoriesServiceStub) List(ctx context.Context, workspaceID uuid.UUID, filters map[string]any) ([]stories.CoreStoryList, error) {

@@ -130,7 +130,7 @@ type AssistantUsageBudget interface {
 
 // AssistantContextProvider loads descriptive, server-authoritative context for
 // one assistant turn. Authorization remains in the separately supplied
-// workspace, actor, and allowed-team scope.
+// workspace, actor, allowed-team scope, and shared-team scope on the request.
 type AssistantContextProvider interface {
 	Load(
 		ctx context.Context,
@@ -461,10 +461,12 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 	if err != nil {
 		return err
 	}
-	allowedTeamIDs, err := p.authorizedAssistantTeamIDs(ctx, workspace.ID, installation, *linkedUserID, event)
+	teamScope, err := p.authorizedAssistantTeamScope(ctx, workspace.ID, installation, *linkedUserID, event)
 	if err != nil {
 		return err
 	}
+	allowedTeamIDs := teamScope.AllowedTeamIDs
+	sharedTeamIDs := teamScope.SharedTeamIDs
 	if event.Kind != slackEventKindDirect && len(allowedTeamIDs) == 0 {
 		if err := p.deliver(ctx, receipt.ID, workspace.ID, installation.InstallGeneration, linkedUserID, event, botToken, "channel-access", "I can't access any FortyOne teams for you from this Slack channel. Ask a workspace administrator to configure the channel audience."); err != nil {
 			return err
@@ -511,6 +513,7 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		actorID := *linkedUserID
 		providerPayload.Authorization = &SlackDeliveryAuthorization{
 			AllowedTeamIDs: append([]uuid.UUID(nil), allowedTeamIDs...),
+			SharedTeamIDs:  append([]uuid.UUID(nil), sharedTeamIDs...),
 			ActorUserID:    &actorID,
 		}
 	}
@@ -554,7 +557,7 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 		if delivery.Status == "delivered" && delivery.Content != nil && delivery.ExternalMessageID != nil {
 			content := strings.TrimSpace(*delivery.Content)
 			if !isAssistantBudgetNotice(content) {
-				conversationID, conversationErr := p.persistAssistantPrompt(ctx, workspace.ID, *linkedUserID, event, prompt, allowedTeamIDs)
+				conversationID, conversationErr := p.persistAssistantPrompt(ctx, workspace.ID, *linkedUserID, event, prompt, allowedTeamIDs, sharedTeamIDs)
 				if conversationErr != nil {
 					return conversationErr
 				}
@@ -633,7 +636,7 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 
 	conversationID := uuid.Nil
 	if persistConversation {
-		conversationID, err = p.persistAssistantPrompt(ctx, workspace.ID, *linkedUserID, event, prompt, allowedTeamIDs)
+		conversationID, err = p.persistAssistantPrompt(ctx, workspace.ID, *linkedUserID, event, prompt, allowedTeamIDs, sharedTeamIDs)
 		if err != nil {
 			return err
 		}
@@ -679,6 +682,7 @@ func (p *EventProcessor) Process(ctx context.Context, rawBody []byte) (err error
 			WorkspaceID:    workspace.ID,
 			UserID:         *linkedUserID,
 			AllowedTeamIDs: allowedTeamIDs,
+			SharedTeamIDs:  sharedTeamIDs,
 			RuntimeContext: runtimeContext,
 			Guidance:       agentSettings.Guidance,
 			AllowMutations: true,
@@ -1353,11 +1357,11 @@ func (p *EventProcessor) slackChannelDeliveryAuthorizationCurrent(
 	if channelID == "" {
 		return false, nil
 	}
-	repository, ok := p.repo.(eventChannelAudienceRepository)
+	repository, ok := p.repo.(eventAssistantChannelAudienceRepository)
 	if !ok {
-		return false, errors.New("Slack channel audience repository is not configured")
+		return false, errors.New("Slack assistant channel audience repository is not configured")
 	}
-	currentTeamIDs, err := repository.ListAuthorizedChannelTeamIDs(
+	currentScope, err := repository.GetAuthorizedAssistantChannelTeamScope(
 		ctx,
 		workspaceID,
 		installation.ID,
@@ -1367,7 +1371,13 @@ func (p *EventProcessor) slackChannelDeliveryAuthorizationCurrent(
 	if err != nil {
 		return false, err
 	}
-	return uuidSubset(authorization.AllowedTeamIDs, currentTeamIDs), nil
+	if !uuidSubset(authorization.AllowedTeamIDs, currentScope.AllowedTeamIDs) {
+		return false, nil
+	}
+	if len(authorization.SharedTeamIDs) > 0 && !uuidSubset(authorization.SharedTeamIDs, currentScope.SharedTeamIDs) {
+		return false, nil
+	}
+	return true, nil
 }
 
 func assistantSettingsAllowDelivery(settings CoreSlackAgentSettings, payload SlackProviderPayload) bool {
@@ -1541,11 +1551,11 @@ func (p *EventProcessor) persistAssistantPrompt(
 	workspaceID, userID uuid.UUID,
 	event normalizedSlackEvent,
 	prompt string,
-	allowedTeamIDs []uuid.UUID,
+	allowedTeamIDs, sharedTeamIDs []uuid.UUID,
 ) (uuid.UUID, error) {
 	input := assistantConversationInput(workspaceID, userID, event)
 	if input.AudienceScope == messagingrepository.ConversationAudienceChannel {
-		input.AudienceFingerprint = assistantAudienceFingerprint(allowedTeamIDs)
+		input.AudienceFingerprint = assistantAudienceFingerprint(allowedTeamIDs, sharedTeamIDs)
 	}
 	conversationID, err := p.store.UpsertConversation(ctx, input)
 	if err != nil {
@@ -1565,14 +1575,14 @@ func (p *EventProcessor) channelThreadIsSubscribed(
 ) (bool, error) {
 	input := assistantConversationInput(workspaceID, userID, event)
 	if input.AudienceScope == messagingrepository.ConversationAudienceChannel {
-		allowedTeamIDs, err := p.authorizedAssistantTeamIDs(ctx, workspaceID, installation, userID, event)
+		teamScope, err := p.authorizedAssistantTeamScope(ctx, workspaceID, installation, userID, event)
 		if err != nil {
 			return false, err
 		}
-		if len(allowedTeamIDs) == 0 {
+		if len(teamScope.AllowedTeamIDs) == 0 {
 			return false, nil
 		}
-		input.AudienceFingerprint = assistantAudienceFingerprint(allowedTeamIDs)
+		input.AudienceFingerprint = assistantAudienceFingerprint(teamScope.AllowedTeamIDs, teamScope.SharedTeamIDs)
 	}
 	record, err := findSlackConversation(ctx, p.store, input)
 	if err != nil {
@@ -1615,7 +1625,28 @@ func assistantConversationInput(workspaceID, userID uuid.UUID, event normalizedS
 	}
 }
 
-func assistantAudienceFingerprint(teamIDs []uuid.UUID) string {
+func assistantAudienceFingerprint(allowedTeamIDs, sharedTeamIDs []uuid.UUID) string {
+	hash := sha256.New()
+	_, _ = hash.Write([]byte("slack-channel-audience-v2\x00"))
+	for _, scope := range []struct {
+		label   string
+		teamIDs []uuid.UUID
+	}{
+		{label: "allowed", teamIDs: allowedTeamIDs},
+		{label: "shared", teamIDs: sharedTeamIDs},
+	} {
+		_, _ = hash.Write([]byte(scope.label))
+		_, _ = hash.Write([]byte{0})
+		values := uniqueSortedUUIDStrings(scope.teamIDs)
+		for _, value := range values {
+			_, _ = hash.Write([]byte(value))
+			_, _ = hash.Write([]byte{0})
+		}
+	}
+	return "v2:" + hex.EncodeToString(hash.Sum(nil))
+}
+
+func uniqueSortedUUIDStrings(teamIDs []uuid.UUID) []string {
 	values := make([]string, 0, len(teamIDs))
 	seen := make(map[uuid.UUID]struct{}, len(teamIDs))
 	for _, teamID := range teamIDs {
@@ -1629,14 +1660,7 @@ func assistantAudienceFingerprint(teamIDs []uuid.UUID) string {
 		values = append(values, teamID.String())
 	}
 	sort.Strings(values)
-
-	hash := sha256.New()
-	_, _ = hash.Write([]byte("slack-channel-audience-v1\x00"))
-	for _, value := range values {
-		_, _ = hash.Write([]byte(value))
-		_, _ = hash.Write([]byte{0})
-	}
-	return "v1:" + hex.EncodeToString(hash.Sum(nil))
+	return values
 }
 
 func findSlackConversation(
@@ -1656,13 +1680,13 @@ type eventAgentSettingsRepository interface {
 	GetAgentSettings(ctx context.Context, workspaceID uuid.UUID) (slackrepository.AgentSettingsRecord, error)
 }
 
-type eventChannelAudienceRepository interface {
-	ListAuthorizedChannelTeamIDs(
+type eventAssistantChannelAudienceRepository interface {
+	GetAuthorizedAssistantChannelTeamScope(
 		ctx context.Context,
 		workspaceID, slackWorkspaceID uuid.UUID,
 		slackChannelID string,
 		userID uuid.UUID,
-	) ([]uuid.UUID, error)
+	) (slackrepository.AssistantChannelTeamScope, error)
 }
 
 type eventTeamMembershipRepository interface {
@@ -1684,29 +1708,33 @@ func (p *EventProcessor) agentSettings(ctx context.Context, workspaceID uuid.UUI
 	return toCoreSlackAgentSettings(record), nil
 }
 
-func (p *EventProcessor) authorizedAssistantTeamIDs(
+func (p *EventProcessor) authorizedAssistantTeamScope(
 	ctx context.Context,
 	workspaceID uuid.UUID,
 	installation slackrepository.SlackWorkspaceRecord,
 	userID uuid.UUID,
 	event normalizedSlackEvent,
-) ([]uuid.UUID, error) {
+) (slackrepository.AssistantChannelTeamScope, error) {
 	if event.Kind == slackEventKindDirect {
 		repository, ok := p.repo.(eventTeamMembershipRepository)
 		if !ok {
-			return nil, errors.New("Slack team membership repository is not configured")
+			return slackrepository.AssistantChannelTeamScope{}, errors.New("Slack team membership repository is not configured")
 		}
 		teams, err := repository.ListWorkspaceTeamsForUser(ctx, workspaceID, userID)
 		if err != nil {
-			return nil, err
+			return slackrepository.AssistantChannelTeamScope{}, err
 		}
-		return slackTeamRecordIDs(teams), nil
+		teamIDs := slackTeamRecordIDs(teams)
+		return slackrepository.AssistantChannelTeamScope{
+			AllowedTeamIDs: teamIDs,
+			SharedTeamIDs:  append([]uuid.UUID(nil), teamIDs...),
+		}, nil
 	}
-	repository, ok := p.repo.(eventChannelAudienceRepository)
+	repository, ok := p.repo.(eventAssistantChannelAudienceRepository)
 	if !ok {
-		return nil, errors.New("Slack channel audience repository is not configured")
+		return slackrepository.AssistantChannelTeamScope{}, errors.New("Slack assistant channel audience repository is not configured")
 	}
-	return repository.ListAuthorizedChannelTeamIDs(
+	return repository.GetAuthorizedAssistantChannelTeamScope(
 		ctx,
 		workspaceID,
 		installation.ID,

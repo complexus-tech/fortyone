@@ -13,11 +13,16 @@ func TestAssistantAudienceFingerprintIsCanonicalAndSetScoped(t *testing.T) {
 	teamA := uuid.MustParse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
 	teamB := uuid.MustParse("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
 
-	canonical := assistantAudienceFingerprint([]uuid.UUID{teamA, teamB})
-	reordered := assistantAudienceFingerprint([]uuid.UUID{teamB, uuid.Nil, teamA, teamB})
-	different := assistantAudienceFingerprint([]uuid.UUID{teamA})
+	canonical := assistantAudienceFingerprint([]uuid.UUID{teamA, teamB}, []uuid.UUID{teamA})
+	reordered := assistantAudienceFingerprint(
+		[]uuid.UUID{teamB, uuid.Nil, teamA, teamB},
+		[]uuid.UUID{teamA, uuid.Nil, teamA},
+	)
+	differentAllowed := assistantAudienceFingerprint([]uuid.UUID{teamA}, []uuid.UUID{teamA})
+	differentShared := assistantAudienceFingerprint([]uuid.UUID{teamA, teamB}, []uuid.UUID{teamB})
 
 	require.Equal(t, canonical, reordered)
-	require.NotEqual(t, canonical, different)
-	require.Regexp(t, `^v1:[0-9a-f]{64}$`, canonical)
+	require.NotEqual(t, canonical, differentAllowed)
+	require.NotEqual(t, canonical, differentShared)
+	require.Regexp(t, `^v2:[0-9a-f]{64}$`, canonical)
 }

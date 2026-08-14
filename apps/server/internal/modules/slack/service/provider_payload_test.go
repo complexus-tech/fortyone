@@ -3,8 +3,34 @@ package slack
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSlackProviderPayloadValidatesSharedTeamAuthorization(t *testing.T) {
+	t.Parallel()
+
+	allowedTeamID := uuid.New()
+	sharedTeamID := uuid.New()
+	payload := SlackProviderPayload{Authorization: &SlackDeliveryAuthorization{
+		AllowedTeamIDs: []uuid.UUID{allowedTeamID, sharedTeamID},
+		SharedTeamIDs:  []uuid.UUID{sharedTeamID},
+	}}
+
+	encoded, err := EncodeSlackProviderPayload(payload)
+	require.NoError(t, err)
+	decoded, err := DecodeSlackProviderPayload(encoded)
+	require.NoError(t, err)
+	require.Equal(t, payload.Authorization, decoded.Authorization)
+
+	payload.Authorization.SharedTeamIDs = []uuid.UUID{uuid.New()}
+	_, err = EncodeSlackProviderPayload(payload)
+	require.ErrorContains(t, err, "shared team outside its allowed teams")
+
+	payload.Authorization.SharedTeamIDs = []uuid.UUID{sharedTeamID, sharedTeamID}
+	_, err = EncodeSlackProviderPayload(payload)
+	require.ErrorContains(t, err, "duplicate shared team IDs")
+}
 
 func TestSlackProviderPayloadAcceptsTypedStoryAndRequestWorkObjectIdentities(t *testing.T) {
 	t.Parallel()

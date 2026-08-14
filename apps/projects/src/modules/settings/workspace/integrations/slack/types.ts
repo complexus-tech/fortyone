@@ -33,6 +33,16 @@ export type SlackAgentSettings = {
   guidance: string;
 };
 
+export type SlackChannelAudience = {
+  channel: SlackChannel;
+  teamIds: string[];
+};
+
+export type UpdateSlackChannelAudienceInput = {
+  channelId: string;
+  teamIds: string[];
+};
+
 export type CreateSlackInstallSessionResponse = {
   installUrl: string;
 };

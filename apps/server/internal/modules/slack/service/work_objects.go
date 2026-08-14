@@ -309,6 +309,7 @@ type SlackProviderPayload struct {
 // forwarded to Slack. Recovery must prove this boundary is still authorized.
 type SlackDeliveryAuthorization struct {
 	AllowedTeamIDs []uuid.UUID `json:"allowed_team_ids"`
+	SharedTeamIDs  []uuid.UUID `json:"shared_team_ids,omitempty"`
 	ActorUserID    *uuid.UUID  `json:"actor_user_id,omitempty"`
 	Scope          string      `json:"scope,omitempty"`
 }

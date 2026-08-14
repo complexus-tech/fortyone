@@ -29,6 +29,7 @@ const (
 	toolListTeams       = "list_teams"
 	toolListMyTasks     = "list_my_tasks"
 	toolListCompleted   = "list_completed_tasks"
+	toolListTeamWork    = "list_team_work"
 	toolSearchWork      = "search_work"
 	toolListObjectives  = "list_objectives"
 	toolListStatuses    = "list_statuses"
@@ -63,6 +64,13 @@ type StoriesService interface {
 // provider adapters that only support active-work listing.
 type CompletedStoryReaderService interface {
 	List(ctx context.Context, workspaceID uuid.UUID, filters map[string]any) ([]stories.CoreStoryList, error)
+}
+
+// TeamWorkStoryReaderService is the bounded stories-domain surface used for
+// shared team summaries. The grouped query caps story rows per requested group
+// in SQL before the messaging layer applies its global model-output cap.
+type TeamWorkStoryReaderService interface {
+	ListGroupedStories(ctx context.Context, query stories.CoreStoryQuery) ([]stories.CoreStoryGroup, error)
 }
 
 // StoryReaderService is implemented by story services that support resolving a
@@ -118,9 +126,10 @@ type OperationalToolServices struct {
 }
 
 var (
-	_ StoryReaderService = (*stories.Service)(nil)
-	_ StatesService      = (*states.Service)(nil)
-	_ UsersService       = (*users.Service)(nil)
+	_ StoryReaderService         = (*stories.Service)(nil)
+	_ TeamWorkStoryReaderService = (*stories.Service)(nil)
+	_ StatesService              = (*states.Service)(nil)
+	_ UsersService               = (*users.Service)(nil)
 )
 
 // FortyOneToolExecutor exposes the deliberately small FortyOne tool catalog
@@ -130,6 +139,7 @@ type FortyOneToolExecutor struct {
 	teams       TeamsService
 	stories     StoriesService
 	completed   CompletedStoryReaderService
+	teamWork    TeamWorkStoryReaderService
 	storyReader StoryReaderService
 	search      SearchService
 	objectives  ObjectivesService
@@ -215,10 +225,12 @@ func NewFortyOneToolExecutor(
 
 	storyReader, _ := storiesService.(StoryReaderService)
 	completedReader, _ := storiesService.(CompletedStoryReaderService)
+	teamWorkReader, _ := storiesService.(TeamWorkStoryReaderService)
 	executor := &FortyOneToolExecutor{
 		teams:       teamsService,
 		stories:     storiesService,
 		completed:   completedReader,
+		teamWork:    teamWorkReader,
 		storyReader: storyReader,
 		search:      searchService,
 		objectives:  objectivesService,
@@ -231,6 +243,9 @@ func NewFortyOneToolExecutor(
 	}
 	if completedReader != nil {
 		executor.definitions = append(executor.definitions, completedTaskToolDefinitions()...)
+	}
+	if executor.teamWork != nil && executor.states != nil && executor.users != nil {
+		executor.definitions = append(executor.definitions, teamWorkToolDefinitions()...)
 	}
 	if config.storyMutationSecret != "" {
 		if config.storyMutationStore == nil {
@@ -269,6 +284,11 @@ func (e *FortyOneToolExecutor) Execute(ctx context.Context, scope ToolScope, cal
 			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
 		}
 		return e.listCompletedTasks(ctx, scope, call.Arguments)
+	case toolListTeamWork:
+		if e.teamWork == nil || e.states == nil || e.users == nil {
+			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
+		}
+		return e.listTeamWork(ctx, scope, call.Arguments)
 	case toolSearchWork:
 		return e.searchWork(ctx, scope, call.Arguments)
 	case toolListObjectives:
@@ -339,12 +359,13 @@ func (e *FortyOneToolExecutor) listTeams(ctx context.Context, scope ToolScope, r
 			break
 		}
 		result.Teams = append(result.Teams, teamResult{
-			ID:             team.ID,
-			Name:           team.Name,
-			Code:           team.Code,
-			IsPrivate:      team.IsPrivate,
-			MemberCount:    team.MemberCount,
-			SprintsEnabled: team.SprintsEnabled,
+			ID:                team.ID,
+			Name:              team.Name,
+			Code:              team.Code,
+			IsPrivate:         team.IsPrivate,
+			MemberCount:       team.MemberCount,
+			SprintsEnabled:    team.SprintsEnabled,
+			SharedWorkEnabled: teamWorkSharedTeamAllowed(scope.SharedTeamIDs, team.ID),
 		})
 	}
 	return marshalToolResult(result)
@@ -901,6 +922,7 @@ func (e *FortyOneToolExecutor) listTeamMembers(ctx context.Context, scope ToolSc
 			continue
 		}
 		result.Members = append(result.Members, teamMemberResult{
+			ID:          member.ID,
 			DisplayName: displayName,
 			Username:    username,
 			Active:      true,
@@ -1242,7 +1264,7 @@ func fortyOneToolDefinitions() []ToolDefinition {
 		{
 			Type:        "function",
 			Name:        toolListTeams,
-			Description: "List only the FortyOne teams the current user has joined.",
+			Description: "List only the FortyOne teams the current user has joined, including whether shared cross-assignee work is authorized in this conversation.",
 			Strict:      true,
 			Parameters:  strictObjectSchema(map[string]any{}, []string{}),
 		},
@@ -1399,12 +1421,13 @@ func strictObjectSchema(properties map[string]any, required []string) map[string
 }
 
 type teamResult struct {
-	ID             uuid.UUID `json:"id"`
-	Name           string    `json:"name"`
-	Code           string    `json:"code"`
-	IsPrivate      bool      `json:"is_private"`
-	MemberCount    int       `json:"member_count"`
-	SprintsEnabled bool      `json:"sprints_enabled"`
+	ID                uuid.UUID `json:"id"`
+	Name              string    `json:"name"`
+	Code              string    `json:"code"`
+	IsPrivate         bool      `json:"is_private"`
+	MemberCount       int       `json:"member_count"`
+	SprintsEnabled    bool      `json:"sprints_enabled"`
+	SharedWorkEnabled bool      `json:"shared_work_enabled"`
 }
 
 type listTeamsResult struct {
@@ -1521,10 +1544,11 @@ type listStatusesResult struct {
 }
 
 type teamMemberResult struct {
-	DisplayName string `json:"display_name"`
-	Username    string `json:"username"`
-	Active      bool   `json:"active"`
-	RoleTitle   string `json:"role_title"`
+	ID          uuid.UUID `json:"id"`
+	DisplayName string    `json:"display_name"`
+	Username    string    `json:"username"`
+	Active      bool      `json:"active"`
+	RoleTitle   string    `json:"role_title"`
 }
 
 type listTeamMembersResult struct {

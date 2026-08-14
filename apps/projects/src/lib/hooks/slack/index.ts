@@ -3,6 +3,10 @@ export {
   useSlackAgentSettings,
   useUpdateSlackAgentSettings,
 } from "./use-agent-settings";
+export {
+  useSlackChannelAudiences,
+  useUpdateSlackChannelAudience,
+} from "./use-channel-audiences";
 export { useSlackAccountLinkToken } from "./use-account-link-token";
 export { useCreateSlackInstallSession } from "./use-create-install-session";
 export { useCreateSlackAccountLinkSession } from "./use-create-account-link-session";

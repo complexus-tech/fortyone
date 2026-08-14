@@ -36,6 +36,15 @@ type authorizedChannelAudienceRepository interface {
 	) ([]uuid.UUID, error)
 }
 
+type authorizedAssistantChannelAudienceRepository interface {
+	GetAuthorizedAssistantChannelTeamScope(
+		ctx context.Context,
+		workspaceID, slackWorkspaceID uuid.UUID,
+		slackChannelID string,
+		userID uuid.UUID,
+	) (slackrepository.AssistantChannelTeamScope, error)
+}
+
 type CoreSlackChannelAudience struct {
 	Channel CoreSlackChannel
 	TeamIDs []uuid.UUID
@@ -118,6 +127,25 @@ func (s *Service) authorizedChannelTeamIDs(
 		return nil, errors.New("Slack channel audience repository is not configured")
 	}
 	return repository.ListAuthorizedChannelTeamIDs(
+		ctx,
+		workspaceID,
+		slackWorkspaceID,
+		strings.TrimSpace(slackChannelID),
+		userID,
+	)
+}
+
+func (s *Service) authorizedAssistantChannelTeamScope(
+	ctx context.Context,
+	workspaceID, slackWorkspaceID uuid.UUID,
+	slackChannelID string,
+	userID uuid.UUID,
+) (slackrepository.AssistantChannelTeamScope, error) {
+	repository, ok := s.repo.(authorizedAssistantChannelAudienceRepository)
+	if !ok {
+		return slackrepository.AssistantChannelTeamScope{}, errors.New("Slack assistant channel audience repository is not configured")
+	}
+	return repository.GetAuthorizedAssistantChannelTeamScope(
 		ctx,
 		workspaceID,
 		slackWorkspaceID,

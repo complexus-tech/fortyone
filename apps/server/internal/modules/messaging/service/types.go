@@ -52,10 +52,14 @@ type Request struct {
 	WorkspaceID    uuid.UUID
 	UserID         uuid.UUID
 	AllowedTeamIDs []uuid.UUID
+	// SharedTeamIDs is the explicit subset of AllowedTeamIDs whose work may be
+	// queried across assignees on the current conversation surface. A nil or
+	// empty slice denies shared-team queries.
+	SharedTeamIDs []uuid.UUID
 	// RuntimeContext contains server-authoritative, display-safe hints that help
 	// the assistant resolve conversational references. It is descriptive only;
-	// authorization remains exclusively in WorkspaceID, UserID, and
-	// AllowedTeamIDs.
+	// authorization remains exclusively in WorkspaceID, UserID,
+	// AllowedTeamIDs, and SharedTeamIDs.
 	RuntimeContext *RuntimeContext
 	// Guidance is authoritative workspace-admin configuration, not message
 	// content. It cannot widen authorization or bypass mutation confirmation.
@@ -108,7 +112,8 @@ type RuntimeTerm struct {
 }
 
 // RuntimeTeamHint is an ordered, display-safe team hint. The corresponding
-// authorization scope remains Request.AllowedTeamIDs.
+// authorization remains in Request.AllowedTeamIDs, with cross-assignee reads
+// further constrained by Request.SharedTeamIDs.
 type RuntimeTeamHint struct {
 	Name string
 	Code string
@@ -168,6 +173,9 @@ type ToolScope struct {
 	WorkspaceID    uuid.UUID
 	UserID         uuid.UUID
 	AllowedTeamIDs []uuid.UUID
+	// SharedTeamIDs is the explicit subset of AllowedTeamIDs available to tools
+	// that read work across assignees. Nil and empty both deny shared access.
+	SharedTeamIDs  []uuid.UUID
 	AllowMutations bool
 	WebsiteURL     string
 	WorkspaceSlug  string

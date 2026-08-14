@@ -1583,6 +1583,12 @@ func (r *repo) buildSimpleWhereClause(filters stories.CoreStoryFilters) string {
 	if filters.CompletedBefore != nil {
 		whereClauses = append(whereClauses, "s.completed_at <= :completed_before")
 	}
+	if filters.IsCompleted != nil && *filters.IsCompleted {
+		whereClauses = append(whereClauses, "s.completed_at IS NOT NULL")
+	}
+	if filters.IsNotCompleted != nil && *filters.IsNotCompleted {
+		whereClauses = append(whereClauses, "s.completed_at IS NULL")
+	}
 
 	return "WHERE " + strings.Join(whereClauses, " AND ")
 }
@@ -1870,19 +1876,28 @@ func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilter
 			FROM (VALUES ('Urgent'), ('High'), ('Medium'), ('Low'), ('No Priority')) AS priorities(priority)
 		`
 	case "assignee":
+		assigneeFilter := ""
+		unassignedGroup := `
+				UNION ALL
+				SELECT 'null' as group_key, 'Unassigned' as sort_order
+			`
+		if len(filters.AssigneeIDs) > 0 {
+			assigneeFilter = "AND u.user_id = ANY(:assignee_ids)"
+			unassignedGroup = ""
+		}
 		if len(filters.TeamIDs) > 0 {
 			// If specific teams are filtered, get all users from those teams
-			return `
+			return fmt.Sprintf(`
 				SELECT CAST(u.user_id AS text) as group_key, u.username as sort_order
 				FROM users u
 				INNER JOIN team_members tm ON tm.user_id = u.user_id
 				WHERE tm.team_id = ANY(:team_ids)
 				AND u.is_active = true
-				UNION ALL
-				SELECT 'null' as group_key, 'Unassigned' as sort_order
-			`
+				%s
+				%s
+			`, assigneeFilter, unassignedGroup)
 		} else {
-			return `
+			return fmt.Sprintf(`
 				SELECT CAST(u.user_id AS text) as group_key, u.username as sort_order
 				FROM users u
 				INNER JOIN team_members tm ON tm.user_id = u.user_id
@@ -1891,9 +1906,9 @@ func (r *repo) buildAllGroupsCTE(groupBy string, filters stories.CoreStoryFilter
 				WHERE t.workspace_id = :workspace_id
 				AND tm2.user_id = :current_user_id
 				AND u.is_active = true
-				UNION ALL
-				SELECT 'null' as group_key, 'Unassigned' as sort_order
-			`
+				%s
+				%s
+			`, assigneeFilter, unassignedGroup)
 		}
 	case "sprint":
 		if len(filters.TeamIDs) > 0 {
@@ -1992,6 +2007,20 @@ func (r *repo) buildOrderByClauseWithAlias(orderBy, orderDirection, tableAlias s
 			direction = "DESC"
 		}
 		return fmt.Sprintf("%s.end_date %s NULLS LAST, %s.created_at DESC", tableAlias, direction, tableAlias)
+	case "completed":
+		// Completed work is ordered by the transition timestamp, not by later edits.
+		// Keep incomplete rows last if an internal caller does not also filter them out.
+		direction := "ASC"
+		if orderDirection == "desc" {
+			direction = "DESC"
+		}
+		return fmt.Sprintf(
+			"%s.completed_at %s NULLS LAST, %s.created_at DESC, %s.id ASC",
+			tableAlias,
+			direction,
+			tableAlias,
+			tableAlias,
+		)
 	default:
 		column = fmt.Sprintf("%s.created_at", tableAlias)
 	}
@@ -2439,6 +2468,12 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 	if filters.CompletedBefore != nil {
 		whereClauses = append(whereClauses, "s.completed_at <= :completed_before")
 	}
+	if filters.IsCompleted != nil && *filters.IsCompleted {
+		whereClauses = append(whereClauses, "s.completed_at IS NOT NULL")
+	}
+	if filters.IsNotCompleted != nil && *filters.IsNotCompleted {
+		whereClauses = append(whereClauses, "s.completed_at IS NULL")
+	}
 
 	query += " WHERE " + strings.Join(whereClauses, " AND ")
 
@@ -2599,6 +2634,32 @@ func (r *repo) sortStoriesInGroup(group *stories.CoreStoryGroup, orderBy, orderD
 	}
 
 	isAsc := orderDirection == "asc"
+	if orderBy == "completed" {
+		sort.Slice(group.Stories, func(i, j int) bool {
+			left := group.Stories[i]
+			right := group.Stories[j]
+			if left.CompletedAt == nil || right.CompletedAt == nil {
+				if left.CompletedAt == nil && right.CompletedAt == nil {
+					if !left.CreatedAt.Equal(right.CreatedAt) {
+						return left.CreatedAt.After(right.CreatedAt)
+					}
+					return left.ID.String() < right.ID.String()
+				}
+				return left.CompletedAt != nil
+			}
+			if !left.CompletedAt.Equal(*right.CompletedAt) {
+				if isAsc {
+					return left.CompletedAt.Before(*right.CompletedAt)
+				}
+				return left.CompletedAt.After(*right.CompletedAt)
+			}
+			if !left.CreatedAt.Equal(right.CreatedAt) {
+				return left.CreatedAt.After(right.CreatedAt)
+			}
+			return left.ID.String() < right.ID.String()
+		})
+		return
+	}
 
 	sort.Slice(group.Stories, func(i, j int) bool {
 		var compareResult int
@@ -2997,6 +3058,12 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 
 	if filters.CompletedBefore != nil {
 		whereClauses = append(whereClauses, "s.completed_at <= :completed_before")
+	}
+	if filters.IsCompleted != nil && *filters.IsCompleted {
+		whereClauses = append(whereClauses, "s.completed_at IS NOT NULL")
+	}
+	if filters.IsNotCompleted != nil && *filters.IsNotCompleted {
+		whereClauses = append(whereClauses, "s.completed_at IS NULL")
 	}
 
 	query += " WHERE " + strings.Join(whereClauses, " AND ")
