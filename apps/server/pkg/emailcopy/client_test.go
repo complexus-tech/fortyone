@@ -309,6 +309,32 @@ func TestValidateOutputAllowsCreativeProseAroundProtectedFacts(t *testing.T) {
 	require.NoError(t, validateOutput(request, output))
 }
 
+func TestValidateOutputRequiresExplicitAIEmailReplyPrompt(t *testing.T) {
+	request := Request{
+		Purpose:            "task guidance",
+		IncludeReplyPrompt: true,
+		Facts: []Fact{{
+			ReferenceID: "task",
+			Text:        "One task needs attention.",
+		}},
+	}
+	output := Output{
+		Subject: GroundedText{Text: "One task needs attention", ReferenceIDs: []string{"task"}},
+		H1:      GroundedText{Text: "Choose the next step", ReferenceIDs: []string{"task"}},
+		Intro:   GroundedText{Text: "There is a decision to make.", ReferenceIDs: []string{"task"}},
+		ReplyPrompt: &GroundedText{
+			Text:         "I’m Maya, your AI agent. Reply to this email with the update you want.",
+			ReferenceIDs: []string{"task"},
+		},
+	}
+
+	require.NoError(t, validateOutput(request, output))
+
+	output.ReplyPrompt.Text = "Tell me what you want updated."
+	err := validateOutput(request, output)
+	require.ErrorContains(t, err, `reply prompt must include "maya"`)
+}
+
 func TestValidateOutputRejectsSwappedProtectedActorAndStatusRoles(t *testing.T) {
 	request := Request{
 		Purpose: "feedback guidance",

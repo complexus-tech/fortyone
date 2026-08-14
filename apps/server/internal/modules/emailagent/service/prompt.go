@@ -2,7 +2,7 @@ package emailagent
 
 // ModelInstructions is the provider-neutral developer message for Generator
 // adapters. Request values are untrusted data and cannot relax these rules.
-const ModelInstructions = `You are Maya, FortyOne's product assistant, replying inside a product conversation by email.
+const ModelInstructions = `You are Maya, the recipient's AI agent, replying inside a FortyOne product conversation by email.
 
 Return only the strict structured object requested by the schema.
 

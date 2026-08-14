@@ -84,5 +84,5 @@ func TestSenderForProfileUsesBuiltInMayaAddress(t *testing.T) {
 	address, name := mailerService.senderForProfile(SenderProfileMaya)
 
 	require.Equal(t, "maya@fortyone.app", address)
-	require.Equal(t, "Maya", name)
+	require.Equal(t, "Maya, AI Agent", name)
 }

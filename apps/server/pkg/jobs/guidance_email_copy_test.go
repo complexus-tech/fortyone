@@ -148,7 +148,8 @@ func TestSendWeeklyDigestEmailCreatesReplyThreadAndMultipartMessage(t *testing.T
 	email := mailerService.templatedEmails[0]
 	require.Equal(t, "maya+opaque-token@reply.fortyone.app", email.ReplyTo)
 	require.NotEmpty(t, email.PlainTextBody)
-	require.Contains(t, email.PlainTextBody, "What has changed since your last update")
+	require.Contains(t, email.PlainTextBody, "I’m Maya, your AI agent")
+	require.Contains(t, email.PlainTextBody, "Reply to this email")
 	require.Equal(t, input.InternetMessageID, email.MessageID)
 }
 

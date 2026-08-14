@@ -96,7 +96,7 @@ type Config struct {
 		FromAddress string `env:"APP_EMAIL_FROM_ADDRESS"`
 		FromName    string `default:"Complexus" env:"APP_EMAIL_FROM_NAME"`
 		MayaAddress string `default:"maya@fortyone.app" env:"APP_EMAIL_MAYA_FROM_ADDRESS"`
-		MayaName    string `default:"Maya" env:"APP_EMAIL_MAYA_FROM_NAME"`
+		MayaName    string `default:"Maya, AI Agent" env:"APP_EMAIL_MAYA_FROM_NAME"`
 		Environment string `default:"development" env:"APP_EMAIL_ENVIRONMENT"`
 		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
 	}

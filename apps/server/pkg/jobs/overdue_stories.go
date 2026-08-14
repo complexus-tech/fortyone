@@ -337,7 +337,7 @@ func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger,
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
 	heading := title
 	emailContent := formatOverdueStoriesEmailContent(firstStory, dueSoonStories, dueTodayStories, overdueStories, workspaceURL)
-	emailContent = appendGuidanceReplyPrompt(emailContent, "Has the plan changed? Tell me the date, status, or owner you want reflected in FortyOne.")
+	emailContent = appendGuidanceReplyPrompt(emailContent, "I’m Maya, your AI agent. Reply to this email with the new due date, status, or owner. I’ll show you the exact change before anything is updated.")
 	ctaURL := fmt.Sprintf("%s/my-work?tab=assigned", workspaceURL)
 	ctaLabel := "View my work"
 

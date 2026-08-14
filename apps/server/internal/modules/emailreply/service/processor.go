@@ -467,11 +467,12 @@ func (processor *Processor) resolveDecision(ctx context.Context, input decisionC
 		if decision.Copy == nil {
 			return resolvedReply{}, errors.New("email agent returned copy-less response")
 		}
+		copy := conversationReplyCopy(*decision.Copy, input.Inbound.Subject)
 		kind := messaging.EmailMessageKindAnswer
 		if decision.Source == emailagent.DecisionSourceFallback {
 			kind = messaging.EmailMessageKindError
 		}
-		return resolvedReply{Copy: *decision.Copy, Kind: kind, Key: "decision"}, nil
+		return resolvedReply{Copy: copy, Kind: kind, Key: "decision"}, nil
 	case emailagent.IntentPropose:
 		if decision.Copy == nil || decision.Proposal == nil {
 			return resolvedReply{}, errors.New("email agent returned an incomplete proposal")
@@ -501,7 +502,11 @@ func (processor *Processor) resolveDecision(ctx context.Context, input decisionC
 		if err != nil {
 			return resolvedReply{}, err
 		}
-		return resolvedReply{Copy: *decision.Copy, Kind: messaging.EmailMessageKindProposal, Key: "proposal"}, nil
+		return resolvedReply{
+			Copy: conversationReplyCopy(*decision.Copy, input.Inbound.Subject),
+			Kind: messaging.EmailMessageKindProposal,
+			Key:  "proposal",
+		}, nil
 	case emailagent.IntentCancel:
 		return processor.cancelProposal(ctx, input)
 	case emailagent.IntentConfirm:
@@ -509,6 +514,11 @@ func (processor *Processor) resolveDecision(ctx context.Context, input decisionC
 	default:
 		return resolvedReply{}, fmt.Errorf("unsupported email agent intent %q", decision.Intent)
 	}
+}
+
+func conversationReplyCopy(copy emailagent.EmailCopy, inboundSubject string) emailagent.EmailCopy {
+	copy.Subject = replyEmailSubject(inboundSubject)
+	return copy
 }
 
 func (processor *Processor) cancelProposal(ctx context.Context, input decisionContext) (resolvedReply, error) {
@@ -603,7 +613,7 @@ func (processor *Processor) completeAppliedProposal(
 	}); err != nil {
 		return resolvedReply{}, err
 	}
-	return deterministicReply(input.Inbound.Subject, "Done. I applied the confirmed change: "+proposal.Summary+".", "Reply if you'd like me to help with the next update."), nil
+	return deterministicReply(input.Inbound.Subject, "Done — I applied this change: "+proposal.Summary+".", "Nothing else was changed. Reply if you'd like me to help with the next update."), nil
 }
 
 func (processor *Processor) failProposalApply(ctx context.Context, proposal messaging.EmailActionProposalRecord, cause error) error {

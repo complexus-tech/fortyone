@@ -58,3 +58,10 @@ func TestMayaSenderAddressDefault(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, "maya@fortyone.app", mayaAddress.Tag.Get("default"))
 }
+
+func TestMayaSenderNameDefault(t *testing.T) {
+	configType := reflect.TypeOf(Config{}.Email)
+	mayaName, found := configType.FieldByName("MayaName")
+	require.True(t, found)
+	require.Equal(t, "Maya, AI Agent", mayaName.Tag.Get("default"))
+}

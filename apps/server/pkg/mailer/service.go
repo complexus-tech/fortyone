@@ -253,7 +253,7 @@ func (s *service) senderForProfile(profile SenderProfile) (string, string) {
 		if configuredName := strings.TrimSpace(s.config.MayaFromName); configuredName != "" {
 			fromName = configuredName
 		} else {
-			fromName = "Maya"
+			fromName = "Maya, AI Agent"
 		}
 	}
 	if fromName == "" {

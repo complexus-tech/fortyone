@@ -451,7 +451,7 @@ func sendObjectiveOverdueEmailForLead(ctx context.Context, log *logger.Logger, m
 	title := fmt.Sprintf("%d %s need attention", totalCount, itemText)
 	heading := title
 	emailContent := formatObjectiveOverdueEmailContent(firstObjective, dueSoonObjectives, dueTodayObjectives, overdueObjectives, workspaceURL)
-	emailContent = appendGuidanceReplyPrompt(emailContent, "Has the position changed? Tell me the latest health, value, or blocker and I’ll help you keep the objective current.")
+	emailContent = appendGuidanceReplyPrompt(emailContent, "I’m Maya, your AI agent. Reply to this email with the latest health, value, or blocker, and I’ll help you keep the objective current.")
 	ctaURL := fmt.Sprintf("%s/roadmap", workspaceURL)
 	ctaLabel := "View objectives"
 

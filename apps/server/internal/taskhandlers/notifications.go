@@ -895,7 +895,7 @@ func buildNotificationDigestCopyInput(data NotificationEmailDigestData, workspac
 	fallbackIntro := "Review the activity below and choose the next useful action."
 	if hasStrategySnapshot {
 		fallbackSubject = "Your strategy check-in"
-		fallbackIntro = "Here are the objectives, key results, and strategy updates that need your attention."
+		fallbackIntro = "Here are the objectives, key results, and strategy updates that need your attention. I’m Maya, your AI agent. Reply to this email with what changed or what you want updated."
 	}
 	fallback := notificationDigestCopy{
 		Subject:             fallbackSubject,

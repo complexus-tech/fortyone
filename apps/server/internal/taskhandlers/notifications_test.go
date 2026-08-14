@@ -685,7 +685,7 @@ func TestGeneratedNotificationDigestCopyUsesMayaOrFallsBackDeterministically(t *
 		Fallback: notificationDigestCopy{
 			Subject: "Your strategy check-in",
 			Heading: "Your strategy check-in",
-			Intro:   "Here are the objectives, key results, and strategy updates that need your attention.",
+			Intro:   "Here are the objectives, key results, and strategy updates that need your attention. I’m Maya, your AI agent. Reply to this email with what changed or what you want updated.",
 			Rows:    []notificationDigestCopyRow{{Text: "Grow enterprise revenue is At Risk.", URL: "https://product.fortyone.app/notifications/notification-1"}},
 			CTA:     notificationDigestCopyCTA{Label: "Review strategy", URL: "https://product.fortyone.app/strategy"},
 			Sender:  mailer.SenderProfileMaya,

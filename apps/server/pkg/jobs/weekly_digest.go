@@ -409,7 +409,7 @@ func sendWeeklyDigestEmail(ctx context.Context, log *logger.Logger, mailerServic
 	title := fmt.Sprintf("Weekly digest: %s", recipient.WorkspaceName)
 	heading := title
 	emailContent := formatWeeklyDigestEmailContent(stats)
-	emailContent = appendGuidanceReplyPrompt(emailContent, "What has changed since your last update, or where would you like help deciding the next step?")
+	emailContent = appendGuidanceReplyPrompt(emailContent, "I’m Maya, your AI agent. Reply to this email with what has changed since your last update or where you’d like help deciding the next step.")
 	ctaURL := fmt.Sprintf("%s/my-work?tab=assigned", workspaceURL)
 	ctaLabel := "Plan my week"
 

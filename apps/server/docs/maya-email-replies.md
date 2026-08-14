@@ -1,6 +1,6 @@
 # Maya email replies
 
-Maya guidance emails are sent from `Maya <maya@fortyone.app>` and use a
+Maya guidance emails are sent from `Maya, AI Agent <maya@fortyone.app>` and use a
 thread-specific reply address such as
 `maya+<opaque-token>@reply.fortyone.app`. The token is bound to one user,
 workspace, and durable conversation. Raw tokens are not stored in the reply
@@ -20,7 +20,7 @@ overrides:
 
 ```text
 APP_EMAIL_MAYA_FROM_ADDRESS=maya@fortyone.app
-APP_EMAIL_MAYA_FROM_NAME=Maya
+APP_EMAIL_MAYA_FROM_NAME="Maya, AI Agent"
 ```
 
 ### 2. Delegate the inbound reply subdomain

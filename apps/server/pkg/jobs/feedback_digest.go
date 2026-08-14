@@ -640,7 +640,7 @@ func sendFeedbackDigestEmail(
 	subject := feedbackDigestSubject(items[0].TotalCount, recipient.WorkspaceName)
 	title := subject
 	message := formatFeedbackDigestEmailContent(items, workspaceURL)
-	message = appendGuidanceReplyPrompt(message, "What do these signals change for your product plan? Tell me what you want to review or update next.")
+	message = appendGuidanceReplyPrompt(message, "I’m Maya, your AI agent. Reply to this email with what these signals change for your product plan or what you want to review next.")
 	ctaURL := fmt.Sprintf("%s/teams/%s/feedback/%s", workspaceURL, items[0].TeamID, items[0].ID)
 	ctaLabel := "Review latest feedback"
 

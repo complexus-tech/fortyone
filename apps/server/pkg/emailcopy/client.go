@@ -165,7 +165,7 @@ Grounding rules:
 - Return plain text only: no HTML, Markdown, URLs, emoji, signatures, or claims that the message was written by AI.
 - Sender prose, feedback theme summary, and reply prompt must be null unless explicitly requested.
 - If a feedback theme summary is requested, synthesize recurring needs cautiously from the supplied feedback descriptions and cite every fact used. Do not overstate frequency or customer intent.
-- If a reply prompt is requested, ask a short, specific question that fits the email's facts and helps the recipient move the work forward. Invite them to tell Maya what changed, what is blocked, or what they want updated. Sound like a thoughtful colleague continuing the conversation. Never say "reply in natural language", mention commands or technical processing, or promise that an action has already been performed.
+- If a reply prompt is requested, identify Maya naturally as the recipient's AI agent and explicitly ask them to reply to the email. Ask a short, specific question that fits the email's facts and helps the recipient move the work forward. Invite them to say what changed, what is blocked, or what they want updated. Sound like a thoughtful colleague continuing the conversation. Never say "reply in natural language", mention commands or technical processing, or promise that an action has already been performed.
 - Subjects and headings should be useful and specific, not clickbait.
 
 Return only the strict JSON object required by the schema.`

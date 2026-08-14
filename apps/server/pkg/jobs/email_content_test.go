@@ -133,13 +133,14 @@ func TestRenderGeneratedEmailContentIncludesNaturalReplyPrompt(t *testing.T) {
 	output := emailcopy.Output{
 		Intro: emailcopy.GroundedText{Text: "One objective needs your attention."},
 		ReplyPrompt: &emailcopy.GroundedText{
-			Text: "Has anything changed since the last update? Tell me what you want reflected in FortyOne.",
+			Text: "I’m Maya, your AI agent. Reply to this email with what you want reflected in FortyOne.",
 		},
 	}
 
 	rendered, err := renderGeneratedEmailContent(output, nil)
 	require.NoError(t, err)
-	require.Contains(t, rendered, "Has anything changed since the last update?")
+	require.Contains(t, rendered, "I’m Maya, your AI agent.")
+	require.Contains(t, rendered, "Reply to this email")
 	require.NotContains(t, rendered, "natural language")
 	require.NotContains(t, rendered, "Markdown")
 }

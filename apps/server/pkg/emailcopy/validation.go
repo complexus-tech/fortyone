@@ -94,6 +94,14 @@ func validateOutput(request Request, output Output) error {
 	if err := validateOptionalGroundedText("reply prompt", output.ReplyPrompt, request.IncludeReplyPrompt, 320, facts); err != nil {
 		return err
 	}
+	if request.IncludeReplyPrompt {
+		prompt := strings.ToLower(output.ReplyPrompt.Text)
+		for _, requiredPhrase := range []string{"maya", "ai agent", "reply", "email"} {
+			if !strings.Contains(prompt, requiredPhrase) {
+				return fmt.Errorf("reply prompt must include %q", requiredPhrase)
+			}
+		}
+	}
 
 	seenRows := make(map[string]struct{}, len(output.Rows))
 	for _, row := range output.Rows {

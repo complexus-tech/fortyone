@@ -155,6 +155,15 @@ func TestBoundedProviderMessageIDHashesOversizedValues(t *testing.T) {
 	require.True(t, strings.HasPrefix(first, "sha256:"))
 }
 
+func TestConversationReplyCopyPreservesInboundThreadSubject(t *testing.T) {
+	copy := emailagent.EmailCopy{Subject: "A newly generated subject"}
+
+	threaded := conversationReplyCopy(copy, "3 overdue tasks need a decision")
+
+	require.Equal(t, "Re: 3 overdue tasks need a decision", threaded.Subject)
+	require.Equal(t, "A newly generated subject", copy.Subject)
+}
+
 type processorStateStub struct{}
 
 func (processorStateStub) OpenStoredInboundEmail(string) (StoredInboundEmail, error) {
