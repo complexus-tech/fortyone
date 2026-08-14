@@ -415,7 +415,7 @@ export const SlackChannelAudienceSettings = () => {
         <Box className="px-6 py-8">
           <Text className="font-medium">No Slack channels synced</Text>
           <Text className="mt-1" color="muted">
-            Refresh the Slack connection to sync workspace channels.
+            Select Resync channels above to load workspace channels.
           </Text>
         </Box>
       ) : null}

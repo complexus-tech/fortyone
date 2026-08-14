@@ -14,6 +14,7 @@ import {
   useSlackAccountLinkToken,
   useSlackAgentSettings,
   useSlackIntegration,
+  useResyncSlackChannels,
   useUpdateSlackAgentSettings,
 } from "@/lib/hooks/slack";
 import { SlackChannelAudienceSettings } from "./slack-channel-audience-settings";
@@ -85,12 +86,16 @@ export const SlackIntegrationSettings = () => {
   const { withWorkspace } = useWorkspacePath();
 
   const createInstallSession = useCreateSlackInstallSession();
+  const resyncChannels = useResyncSlackChannels();
   const disconnectWorkspace = useDisconnectSlackWorkspace();
   useSlackAccountLinkToken();
   const [isDisconnectOpen, setIsDisconnectOpen] = useState(false);
 
   const isConnected = Boolean(integration?.slackWorkspace?.isActive);
   const slackWorkspace = integration?.slackWorkspace;
+  const isConnectionActionPending = isConnected
+    ? resyncChannels.isPending
+    : createInstallSession.isPending;
 
   return (
     <Box>
@@ -110,11 +115,17 @@ export const SlackIntegrationSettings = () => {
             <Flex gap={2}>
               <Button
                 color="invert"
+                disabled={isConnectionActionPending}
+                loading={isConnectionActionPending}
                 onClick={() => {
+                  if (isConnected) {
+                    resyncChannels.mutate();
+                    return;
+                  }
                   createInstallSession.mutate();
                 }}
               >
-                {isConnected ? "Reconnect Slack" : "Connect Slack"}
+                {isConnected ? "Resync channels" : "Connect Slack"}
               </Button>
             </Flex>
           }

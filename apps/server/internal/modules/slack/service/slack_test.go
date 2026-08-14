@@ -114,6 +114,9 @@ type mockRepo struct {
 	lastOAuthUserID         uuid.UUID
 	lastRequestLog          slackrepository.SlackRequestLogInsert
 	upsertChannels          int
+	lastChannelWorkspaceID  uuid.UUID
+	lastChannelInstallID    uuid.UUID
+	lastChannels            []slackrepository.SlackChannelPayload
 	err                     error
 	upsertSlackWorkspaceErr error
 	getSlackWorkspaceErr    error
@@ -598,6 +601,9 @@ func (m *mockRepo) FailSlackUninstall(_ context.Context, id uuid.UUID, _ string,
 
 func (m *mockRepo) UpsertChannels(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, channels []slackrepository.SlackChannelPayload) error {
 	m.upsertChannels++
+	m.lastChannelWorkspaceID = workspaceID
+	m.lastChannelInstallID = slackWorkspaceID
+	m.lastChannels = append([]slackrepository.SlackChannelPayload(nil), channels...)
 	return m.err
 }
 
@@ -1108,22 +1114,41 @@ func TestHandleSetupConsumesStateAndStoresEncryptedInstallationMetadata(t *testi
 	requests := 0
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		requests++
-		require.Equal(t, "/oauth.v2.access", req.URL.Path)
-		require.NoError(t, req.ParseForm())
-		require.Equal(t, "oauth-code", req.Form.Get("code"))
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{
-			"ok": true,
-			"access_token": "xoxb-secret",
-			"refresh_token": "xoxe-refresh",
-			"expires_in": 3600,
-			"bot_user_id": "UBOT",
-			"app_id": "A123",
-			"scope": "app_mentions:read,channels:history,channels:read,chat:write,chat:write.public,commands,groups:history,groups:read,im:history,links:read,links:write",
-			"team": {"id": "T123", "name": "Acme", "domain": "acme"},
-			"enterprise": {"id": "E123"},
-			"authed_user": {"id": "UADMIN"}
-		}`))
+		switch req.URL.Path {
+		case "/oauth.v2.access":
+			require.NoError(t, req.ParseForm())
+			require.Equal(t, "oauth-code", req.Form.Get("code"))
+			_, _ = w.Write([]byte(`{
+				"ok": true,
+				"access_token": "xoxb-secret",
+				"refresh_token": "xoxe-refresh",
+				"expires_in": 3600,
+				"bot_user_id": "UBOT",
+				"app_id": "A123",
+				"scope": "app_mentions:read,channels:history,channels:read,chat:write,chat:write.public,commands,groups:history,groups:read,im:history,links:read,links:write",
+				"team": {"id": "T123", "name": "Acme", "domain": "acme"},
+				"enterprise": {"id": "E123"},
+				"authed_user": {"id": "UADMIN"}
+			}`))
+		case "/conversations.list":
+			require.Equal(t, "Bearer xoxb-secret", req.Header.Get("Authorization"))
+			require.Equal(t, "200", req.URL.Query().Get("limit"))
+			require.Equal(t, "public_channel,private_channel", req.URL.Query().Get("types"))
+			_, _ = w.Write([]byte(`{
+				"ok": true,
+				"channels": [{
+					"id": "C123",
+					"name": "general",
+					"is_private": false,
+					"is_archived": false,
+					"is_member": true
+				}],
+				"response_metadata": {"next_cursor": ""}
+			}`))
+		default:
+			t.Fatalf("unexpected Slack API path %q", req.URL.Path)
+		}
 	}))
 	defer testServer.Close()
 	service.client = testServer.Client()
@@ -1147,12 +1172,19 @@ func TestHandleSetupConsumesStateAndStoresEncryptedInstallationMetadata(t *testi
 	require.Equal(t, "xoxe-refresh", credential.RefreshToken)
 	require.NotNil(t, credential.ExpiresAt)
 	require.True(t, credential.ExpiresAt.Equal(service.clock.Now().Add(time.Hour)))
-	require.Zero(t, repo.upsertChannels)
-	require.Equal(t, 1, requests)
+	require.Equal(t, 1, repo.upsertChannels)
+	require.Equal(t, workspaceID, repo.lastChannelWorkspaceID)
+	require.Equal(t, repo.slackWorkspace.ID, repo.lastChannelInstallID)
+	require.Equal(t, []slackrepository.SlackChannelPayload{{
+		SlackChannelID: "C123",
+		Name:           "general",
+		IsMember:       true,
+	}}, repo.lastChannels)
+	require.Equal(t, 2, requests)
 
 	_, err = service.HandleSetup(context.Background(), "oauth-code", state, "")
 	require.Error(t, err)
-	require.Equal(t, 1, requests)
+	require.Equal(t, 2, requests)
 }
 
 func TestHandleSetupRejectsExpiredStateBeforeOAuthExchange(t *testing.T) {

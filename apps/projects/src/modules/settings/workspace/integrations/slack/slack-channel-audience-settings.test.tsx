@@ -647,6 +647,11 @@ describe("SlackChannelAudienceSettings", () => {
 
     expect(screen.getByText("No Slack channels synced")).toBeInTheDocument();
     expect(
+      screen.getByText(
+        "Select Resync channels above to load workspace channels.",
+      ),
+    ).toBeInTheDocument();
+    expect(
       screen.queryByRole("button", { name: "Add channel" }),
     ).not.toBeInTheDocument();
   });

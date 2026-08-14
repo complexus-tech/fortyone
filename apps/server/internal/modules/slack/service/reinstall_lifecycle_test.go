@@ -38,15 +38,21 @@ func TestHandleSetupCompletesSameWorkspaceSameTeamOAuthRefresh(t *testing.T) {
 	require.NoError(t, err)
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		require.Equal(t, "/oauth.v2.access", req.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{
-			"ok": true,
-			"access_token": "xoxb-refreshed",
-			"bot_user_id": "UBOT",
-			"team": {"id": "T-PRIMARY", "name": "Primary", "domain": "primary"},
-			"authed_user": {"id": "UADMIN"}
-		}`))
+		switch req.URL.Path {
+		case "/oauth.v2.access":
+			_, _ = w.Write([]byte(`{
+				"ok": true,
+				"access_token": "xoxb-refreshed",
+				"bot_user_id": "UBOT",
+				"team": {"id": "T-PRIMARY", "name": "Primary", "domain": "primary"},
+				"authed_user": {"id": "UADMIN"}
+			}`))
+		case "/conversations.list":
+			_, _ = w.Write([]byte(`{"ok":true,"channels":[],"response_metadata":{"next_cursor":""}}`))
+		default:
+			t.Fatalf("unexpected Slack API path %q", req.URL.Path)
+		}
 	}))
 	defer testServer.Close()
 	service.client = testServer.Client()
@@ -67,5 +73,6 @@ func TestHandleSetupCompletesSameWorkspaceSameTeamOAuthRefresh(t *testing.T) {
 	require.Equal(t, "T-PRIMARY", repo.lastOAuthInstall.SlackTeamID)
 	require.Equal(t, "Primary", repo.lastOAuthInstall.SlackTeamName)
 	require.NotEqual(t, "xoxb-refreshed", repo.lastOAuthInstall.BotAccessToken)
+	require.Equal(t, 1, repo.upsertChannels)
 	require.Empty(t, repo.uninstallInputs)
 }

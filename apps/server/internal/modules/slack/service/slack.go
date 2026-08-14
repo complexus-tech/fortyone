@@ -370,7 +370,7 @@ func (s *Service) handleInstallSetup(ctx context.Context, code, state, slackErro
 	if err != nil {
 		return "", err
 	}
-	_, err = s.repo.UpsertSlackWorkspace(ctx, nonce.WorkspaceID, *nonce.UserID, slackrepository.OAuthInstallPayload{
+	slackWorkspace, err := s.repo.UpsertSlackWorkspace(ctx, nonce.WorkspaceID, *nonce.UserID, slackrepository.OAuthInstallPayload{
 		SlackTeamID:       strings.TrimSpace(oauthResp.Team.ID),
 		SlackTeamName:     strings.TrimSpace(oauthResp.Team.Name),
 		SlackTeamDomain:   strings.TrimSpace(oauthResp.Team.Domain),
@@ -396,6 +396,21 @@ func (s *Service) handleInstallSetup(ctx context.Context, code, state, slackErro
 			}
 		}
 		return "", err
+	}
+
+	if syncErr := s.syncChannelsWithToken(
+		ctx,
+		nonce.WorkspaceID,
+		slackWorkspace.ID,
+		credential.AccessToken,
+	); syncErr != nil && s.log != nil {
+		s.log.Warn(
+			ctx,
+			"Slack connect succeeded but initial channel sync failed",
+			"error", syncErr,
+			"workspace_id", nonce.WorkspaceID,
+			"slack_team_id", strings.TrimSpace(oauthResp.Team.ID),
+		)
 	}
 
 	return s.buildWorkspaceIntegrationURL(noncePayload.WorkspaceSlug), nil
@@ -513,11 +528,25 @@ func (s *Service) SyncChannels(ctx context.Context, workspaceID uuid.UUID) error
 	if err != nil {
 		return err
 	}
+	return s.syncChannelsWithToken(ctx, workspaceID, slackWorkspace.ID, botToken)
+}
+
+func (s *Service) syncChannelsWithToken(
+	ctx context.Context,
+	workspaceID, slackWorkspaceID uuid.UUID,
+	botToken string,
+) error {
+	if workspaceID == uuid.Nil || slackWorkspaceID == uuid.Nil {
+		return errors.New("workspace and Slack installation are required")
+	}
+	if strings.TrimSpace(botToken) == "" {
+		return errors.New("Slack bot token is required")
+	}
 	channels, err := s.fetchChannels(ctx, botToken)
 	if err != nil {
 		return err
 	}
-	return s.repo.UpsertChannels(ctx, workspaceID, slackWorkspace.ID, channels)
+	return s.repo.UpsertChannels(ctx, workspaceID, slackWorkspaceID, channels)
 }
 
 func (s *Service) DisconnectWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
@@ -3306,6 +3335,7 @@ func interactionFailureMessage(err error) string {
 func (s *Service) fetchChannels(ctx context.Context, botToken string) ([]slackrepository.SlackChannelPayload, error) {
 	cursor := ""
 	channels := make([]slackrepository.SlackChannelPayload, 0)
+	seenCursors := make(map[string]struct{})
 
 	for {
 		endpoint := "https://slack.com/api/conversations.list?limit=200&types=public_channel,private_channel"
@@ -3345,10 +3375,15 @@ func (s *Service) fetchChannels(ctx context.Context, botToken string) ([]slackre
 				IsMember:       channel.IsMember,
 			})
 		}
-		cursor = strings.TrimSpace(response.ResponseMetadata.NextCursor)
-		if cursor == "" {
+		nextCursor := strings.TrimSpace(response.ResponseMetadata.NextCursor)
+		if nextCursor == "" {
 			break
 		}
+		if _, seen := seenCursors[nextCursor]; seen {
+			return nil, errors.New("Slack channel pagination repeated a cursor")
+		}
+		seenCursors[nextCursor] = struct{}{}
+		cursor = nextCursor
 	}
 
 	return channels, nil

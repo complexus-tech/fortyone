@@ -12,7 +12,7 @@ export const SettingsBackButton = ({
 }: SettingsBackButtonProps) => (
   <Button
     asIcon
-    className="bg-state-hover shrink-0"
+    className="shrink-0"
     color="tertiary"
     href={href}
     size="sm"

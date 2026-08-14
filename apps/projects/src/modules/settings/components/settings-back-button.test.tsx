@@ -62,6 +62,7 @@ describe("SettingsBackButton", () => {
     expect(backButton).toHaveAttribute("data-size", "sm");
     expect(backButton).toHaveAttribute("data-variant", "naked");
     expect(backButton).not.toHaveAttribute("data-rounded");
-    expect(backButton).toHaveClass("bg-state-hover", "shrink-0");
+    expect(backButton).toHaveClass("shrink-0");
+    expect(backButton).not.toHaveClass("bg-state-hover");
   });
 });
