@@ -13,12 +13,17 @@ import (
 )
 
 type AppSlackChannelAudience struct {
-	Channel AppSlackChannel `json:"channel"`
-	TeamIDs []string        `json:"teamIds"`
+	Channel      AppSlackChannel `json:"channel"`
+	IsConfigured bool            `json:"isConfigured"`
+	TeamIDs      []string        `json:"teamIds"`
 }
 
 type AppUpdateSlackChannelAudience struct {
-	TeamIDs []string `json:"teamIds"`
+	// IsConfigured is optional for compatibility with clients deployed before
+	// explicit channel selection. An omitted value retains the previous PUT
+	// behavior and configures the channel.
+	IsConfigured *bool    `json:"isConfigured"`
+	TeamIDs      []string `json:"teamIds"`
 }
 
 func (h *Handlers) ListChannelAudiences(ctx context.Context, w http.ResponseWriter, _ *http.Request) error {
@@ -58,10 +63,24 @@ func (h *Handlers) UpdateChannelAudience(ctx context.Context, w http.ResponseWri
 		}
 		teamIDs = append(teamIDs, teamID)
 	}
-	if err := h.service.UpdateChannelAudience(ctx, workspace.ID, actorID, channelID, teamIDs); err != nil {
+	if err := h.service.UpdateChannelAudience(
+		ctx,
+		workspace.ID,
+		actorID,
+		channelID,
+		assistantConfiguredOrDefault(input.IsConfigured),
+		teamIDs,
+	); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func assistantConfiguredOrDefault(value *bool) bool {
+	if value == nil {
+		return true
+	}
+	return *value
 }
 
 func toAppChannelAudiences(input []slack.CoreSlackChannelAudience) []AppSlackChannelAudience {
@@ -72,8 +91,9 @@ func toAppChannelAudiences(input []slack.CoreSlackChannelAudience) []AppSlackCha
 			teamIDs = append(teamIDs, teamID.String())
 		}
 		output = append(output, AppSlackChannelAudience{
-			Channel: toAppChannel(audience.Channel),
-			TeamIDs: teamIDs,
+			Channel:      toAppChannel(audience.Channel),
+			IsConfigured: audience.IsConfigured,
+			TeamIDs:      teamIDs,
 		})
 	}
 	return output

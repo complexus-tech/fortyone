@@ -2,6 +2,7 @@ package slackrepository
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"testing"
 
@@ -55,6 +56,8 @@ func TestAuthorizedAssistantChannelTeamScopeQueryEnforcesSafeV1Boundary(t *testi
 
 	query := normalizeQuery(authorizedAssistantChannelTeamScopeQuery)
 	for _, clause := range []string{
+		"FROM slack_channel_team_access access",
+		"JOIN slack_channels configured_channel ON configured_channel.workspace_id = access.workspace_id AND configured_channel.slack_workspace_id = access.slack_workspace_id AND configured_channel.slack_channel_id = access.slack_channel_id AND configured_channel.is_active = true AND configured_channel.is_assistant_configured = true",
 		"JOIN teams mapped_team ON mapped_team.team_id = access.team_id AND mapped_team.workspace_id = access.workspace_id AND mapped_team.is_private = false",
 		"SELECT EXISTS (SELECT 1 FROM configured_public_teams) AS is_configured",
 		"configuration.is_configured AS explicitly_mapped",
@@ -69,6 +72,84 @@ func TestAuthorizedAssistantChannelTeamScopeQueryEnforcesSafeV1Boundary(t *testi
 			t.Fatalf("Slack assistant audience query is missing authorization clause %q: %q", clause, query)
 		}
 	}
+}
+
+func TestAssistantChannelAudienceQueriesUseUnifiedChannelAccess(t *testing.T) {
+	t.Parallel()
+
+	queries := map[string]string{
+		"authorize": authorizedAssistantChannelTeamScopeQuery,
+		"delete":    deleteAssistantPublicChannelTeamAccessQuery,
+		"insert":    insertAssistantChannelTeamAccessQuery,
+		"list":      listAssistantChannelTeamAccessQuery,
+	}
+	for name, rawQuery := range queries {
+		query := normalizeQuery(rawQuery)
+		require.Contains(t, query, "slack_channel_team_access", name)
+		require.NotContains(t, query, "slack_channel_assistant_team_access", name)
+	}
+
+	require.Contains(t, normalizeQuery(listAssistantChannelTeamAccessQuery), "AND team.is_private = false")
+	require.Contains(t, normalizeQuery(insertAssistantChannelTeamAccessQuery), "AND team.is_private = false")
+	require.Equal(t, normalizeQuery(`
+		DELETE FROM slack_channel_team_access access
+		USING teams team
+		WHERE access.workspace_id = $1
+		  AND access.slack_workspace_id = $2
+		  AND access.slack_channel_id = $3
+		  AND team.team_id = access.team_id
+		  AND team.workspace_id = access.workspace_id
+		  AND team.is_private = false
+	`), normalizeQuery(deleteAssistantPublicChannelTeamAccessQuery))
+}
+
+type assistantChannelTeamAccessTxStub struct {
+	execCalls int
+	getCalls  int
+}
+
+func (s *assistantChannelTeamAccessTxStub) ExecContext(
+	context.Context,
+	string,
+	...any,
+) (sql.Result, error) {
+	s.execCalls++
+	return assistantChannelTeamAccessResult(1), nil
+}
+
+func (s *assistantChannelTeamAccessTxStub) GetContext(
+	context.Context,
+	any,
+	string,
+	...any,
+) error {
+	s.getCalls++
+	return nil
+}
+
+type assistantChannelTeamAccessResult int64
+
+func (r assistantChannelTeamAccessResult) LastInsertId() (int64, error) { return 0, nil }
+func (r assistantChannelTeamAccessResult) RowsAffected() (int64, error) { return int64(r), nil }
+
+func TestUnconfigureAssistantChannelPreservesUnifiedTeamMappings(t *testing.T) {
+	t.Parallel()
+
+	tx := &assistantChannelTeamAccessTxStub{}
+	err := replaceAssistantPublicChannelTeamAccessTx(
+		context.Background(),
+		tx,
+		uuid.New(),
+		uuid.New(),
+		"C1",
+		false,
+		[]uuid.UUID{uuid.New()},
+		uuid.New(),
+	)
+
+	require.NoError(t, err)
+	require.Zero(t, tx.execCalls, "unconfiguring must return before deleting or inserting mappings")
+	require.Zero(t, tx.getCalls, "unconfiguring must not inspect or rewrite team mappings")
 }
 
 func TestAssistantChannelTeamScopeSharesOnlyExplicitMappings(t *testing.T) {

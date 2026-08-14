@@ -116,18 +116,19 @@ type LegacySlackCredentialRecord struct {
 }
 
 type SlackChannelRecord struct {
-	ID               uuid.UUID  `db:"id"`
-	WorkspaceID      uuid.UUID  `db:"workspace_id"`
-	SlackWorkspaceID uuid.UUID  `db:"slack_workspace_id"`
-	SlackChannelID   string     `db:"slack_channel_id"`
-	Name             string     `db:"name"`
-	IsPrivate        bool       `db:"is_private"`
-	IsArchived       bool       `db:"is_archived"`
-	IsMember         bool       `db:"is_member"`
-	IsActive         bool       `db:"is_active"`
-	LastSyncedAt     *time.Time `db:"last_synced_at"`
-	CreatedAt        time.Time  `db:"created_at"`
-	UpdatedAt        time.Time  `db:"updated_at"`
+	ID                    uuid.UUID  `db:"id"`
+	WorkspaceID           uuid.UUID  `db:"workspace_id"`
+	SlackWorkspaceID      uuid.UUID  `db:"slack_workspace_id"`
+	SlackChannelID        string     `db:"slack_channel_id"`
+	Name                  string     `db:"name"`
+	IsPrivate             bool       `db:"is_private"`
+	IsArchived            bool       `db:"is_archived"`
+	IsMember              bool       `db:"is_member"`
+	IsActive              bool       `db:"is_active"`
+	IsAssistantConfigured bool       `db:"is_assistant_configured"`
+	LastSyncedAt          *time.Time `db:"last_synced_at"`
+	CreatedAt             time.Time  `db:"created_at"`
+	UpdatedAt             time.Time  `db:"updated_at"`
 }
 
 type OAuthInstallPayload struct {
@@ -1025,7 +1026,8 @@ func (r *Repo) ListChannels(ctx context.Context, workspaceID uuid.UUID) ([]Slack
 	rows := make([]SlackChannelRecord, 0)
 	err := r.db.SelectContext(ctx, &rows, `
 		SELECT id, workspace_id, slack_workspace_id, slack_channel_id, name,
-		       is_private, is_archived, is_member, is_active, last_synced_at, created_at, updated_at
+		       is_private, is_archived, is_member, is_active, is_assistant_configured,
+		       last_synced_at, created_at, updated_at
 		FROM slack_channels
 		WHERE workspace_id = $1 AND is_active = true
 		ORDER BY name ASC

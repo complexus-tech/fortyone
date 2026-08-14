@@ -1,8 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Badge, Box, Button, Command, Flex, Popover, Skeleton, Text } from "ui";
-import { ArrowDownIcon, CheckIcon, LockIcon } from "icons";
+import { useState } from "react";
+import {
+  Badge,
+  Box,
+  Button,
+  Command,
+  Divider,
+  Flex,
+  Menu,
+  Popover,
+  Skeleton,
+  Text,
+} from "ui";
+import {
+  ArrowDownIcon,
+  CheckIcon,
+  LoadingIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  UnlinkIcon,
+} from "icons";
 import { TeamColor } from "@/components/ui/team-color";
 import {
   useSlackChannelAudiences,
@@ -13,19 +31,12 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import type { Team } from "@/modules/teams/types";
 import type { SlackChannelAudience } from "./types";
 
-const haveSameTeamIds = (left: string[], right: string[]) => {
-  if (left.length !== right.length) return false;
-  const rightIds = new Set(right);
-  return left.every((teamId) => rightIds.has(teamId));
-};
-
 const getAudienceSummary = (teams: Team[], selectedTeamIds: string[]) => {
   if (selectedTeamIds.length === 0) return "Personal only";
 
-  const selectedTeams = teams.filter((team) =>
-    selectedTeamIds.includes(team.id),
-  );
-  if (selectedTeams.length === 0) return "Select public teams";
+  const selectedIds = new Set(selectedTeamIds);
+  const selectedTeams = teams.filter((team) => selectedIds.has(team.id));
+  if (selectedTeams.length === 0) return "Personal only";
   if (selectedTeams.length === 1) return selectedTeams[0].name;
   return `${selectedTeams[0].name} +${selectedTeams.length - 1}`;
 };
@@ -53,35 +64,57 @@ const TeamAudiencePicker = ({
     <Popover onOpenChange={setIsOpen} open={isOpen}>
       <Popover.Trigger asChild>
         <Button
-          aria-label={`Choose public FortyOne teams for #${channelName}`}
-          className="w-64 min-w-0 justify-between"
+          aria-label={`Choose work access for #${channelName}`}
+          className="w-max max-w-64 min-w-0 justify-between text-[0.9rem] md:text-base"
           color="tertiary"
           disabled={disabled}
           rightIcon={<ArrowDownIcon aria-hidden="true" className="shrink-0" />}
           title={summary}
           variant="outline"
         >
-          <span className="truncate">{summary}</span>
+          <span className="max-w-48 truncate">{summary}</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content align="end" className="w-80 p-0">
+      <Popover.Content align="end" className="w-80">
         <Command>
-          <Command.Input
-            className="h-10 pr-3"
-            placeholder="Search FortyOne teams..."
-          />
-          <Command.Separator />
-          <Command.Empty>
+          <Command.Input autoFocus placeholder="Search teams..." />
+          <Divider className="my-2" />
+          <Command.Empty className="py-2">
             <Text color="muted">No teams found.</Text>
           </Command.Empty>
-          <Box className="max-h-72 overflow-y-auto pb-1">
+          <Command.List className="mt-0 max-h-72 w-full overflow-y-auto border-0 bg-transparent py-0 shadow-none backdrop-blur-none dark:bg-transparent">
             <Command.Group>
+              <Command.Item
+                active={selectedTeamIds.length === 0}
+                aria-checked={selectedTeamIds.length === 0}
+                className="min-h-10 justify-between py-2.5"
+                disabled={disabled}
+                onSelect={() => {
+                  if (selectedTeamIds.length > 0) {
+                    onChange([]);
+                  }
+                  setIsOpen(false);
+                }}
+                value="Personal only"
+              >
+                <Text>Personal only</Text>
+                {selectedTeamIds.length === 0 ? (
+                  <CheckIcon
+                    aria-hidden="true"
+                    className="h-5 w-auto shrink-0"
+                    strokeWidth={2.1}
+                  />
+                ) : null}
+              </Command.Item>
+
               {publicTeams.map((team) => {
                 const isSelected = selectedIds.has(team.id);
                 return (
                   <Command.Item
+                    active={isSelected}
                     aria-checked={isSelected}
-                    className="justify-between gap-4"
+                    className="min-h-10 justify-between gap-4 py-2.5"
+                    disabled={disabled}
                     key={team.id}
                     onSelect={() => {
                       onChange(
@@ -92,7 +125,6 @@ const TeamAudiencePicker = ({
                           : [...selectedTeamIds, team.id],
                       );
                     }}
-                    role="option"
                     value={`${team.name} ${team.code}`}
                   >
                     <Flex align="center" className="min-w-0" gap={2}>
@@ -116,7 +148,7 @@ const TeamAudiencePicker = ({
             {privateTeams.length > 0 ? (
               <>
                 <Command.Separator />
-                <Box className="px-3 pt-1 pb-1.5">
+                <Box className="px-3 pb-1">
                   <Text className="font-medium" color="muted">
                     Private teams
                   </Text>
@@ -124,33 +156,83 @@ const TeamAudiencePicker = ({
                 <Command.Group>
                   {privateTeams.map((team) => (
                     <Command.Item
-                      className="justify-between gap-4"
+                      className="min-h-11 gap-2 py-2.5"
                       disabled
                       key={team.id}
                       value={`${team.name} ${team.code} private`}
                     >
-                      <Flex align="center" className="min-w-0" gap={2}>
-                        <LockIcon
-                          aria-hidden="true"
-                          className="h-4 w-4 shrink-0"
-                        />
-                        <Text className="truncate">{team.name}</Text>
-                      </Flex>
-                      <Badge color="tertiary" size="sm" variant="outline">
-                        Private
-                      </Badge>
+                      <TeamColor
+                        className="size-2.5 shrink-0 rounded-sm"
+                        color={team.color}
+                      />
+                      <Text className="truncate">{team.name}</Text>
                     </Command.Item>
                   ))}
                 </Command.Group>
               </>
             ) : null}
-          </Box>
-          <Box className="border-border border-t px-3 py-2.5">
-            <Text className="leading-5" color="muted">
-              Private teams cannot be included in shared Slack reports. Existing
-              private mappings stay unchanged for other Slack features.
-            </Text>
-          </Box>
+          </Command.List>
+        </Command>
+      </Popover.Content>
+    </Popover>
+  );
+};
+
+const AddChannelPicker = ({
+  audiences,
+}: {
+  audiences: SlackChannelAudience[];
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const updateAudience = useUpdateSlackChannelAudience();
+
+  return (
+    <Popover onOpenChange={setIsOpen} open={isOpen}>
+      <Popover.Trigger asChild>
+        <Button
+          className="shrink-0"
+          color="tertiary"
+          disabled={audiences.length === 0 || updateAudience.isPending}
+          leftIcon={<PlusIcon aria-hidden="true" />}
+        >
+          Add channel
+        </Button>
+      </Popover.Trigger>
+      <Popover.Content align="end" className="w-80">
+        <Command>
+          <Command.Input autoFocus placeholder="Search Slack channels..." />
+          <Divider className="my-2" />
+          <Command.Empty className="py-2">
+            <Text color="muted">No channels found.</Text>
+          </Command.Empty>
+          <Command.List className="mt-0 max-h-80 w-full overflow-y-auto border-0 bg-transparent py-0 shadow-none backdrop-blur-none md:max-h-100 dark:bg-transparent">
+            <Command.Group>
+              {audiences.map((audience) => (
+                <Command.Item
+                  className="min-h-11 justify-between gap-4 py-2.5"
+                  key={audience.channel.id}
+                  onSelect={() => {
+                    setIsOpen(false);
+                    updateAudience.mutate({
+                      channelId: audience.channel.slackChannelId,
+                      isConfigured: true,
+                      teamIds: audience.teamIds,
+                    });
+                  }}
+                  value={`${audience.channel.name} ${
+                    audience.channel.isPrivate ? "private" : "public"
+                  }`}
+                >
+                  <Text className="min-w-0 truncate font-medium">
+                    #{audience.channel.name}
+                  </Text>
+                  <Text className="shrink-0" color="muted">
+                    {audience.channel.isPrivate ? "Private" : "Public"}
+                  </Text>
+                </Command.Item>
+              ))}
+            </Command.Group>
+          </Command.List>
         </Command>
       </Popover.Content>
     </Popover>
@@ -166,82 +248,81 @@ const SlackChannelAudienceRow = ({
   privateTeams: Team[];
   publicTeams: Team[];
 }) => {
-  const publicTeamIds = useMemo(
-    () => new Set(publicTeams.map((team) => team.id)),
-    [publicTeams],
-  );
-  const privateTeamIds = useMemo(
-    () => new Set(privateTeams.map((team) => team.id)),
-    [privateTeams],
-  );
-  const [selectedTeamIds, setSelectedTeamIds] = useState(() =>
-    audience.teamIds.filter((teamId) => publicTeamIds.has(teamId)),
-  );
-  const updateAudience = useUpdateSlackChannelAudience();
-  const preservedPrivateTeamIds = audience.teamIds.filter(
-    (teamId) => !publicTeamIds.has(teamId),
-  );
-  const configuredPublicTeamIds = audience.teamIds.filter((teamId) =>
+  const { channel } = audience;
+  const publicTeamIds = new Set(publicTeams.map((team) => team.id));
+  const selectedTeamIds = audience.teamIds.filter((teamId) =>
     publicTeamIds.has(teamId),
   );
-  const privateMappingCount = audience.teamIds.filter((teamId) =>
-    privateTeamIds.has(teamId),
-  ).length;
-  const hasChanges = !haveSameTeamIds(configuredPublicTeamIds, selectedTeamIds);
-  const { channel } = audience;
+  const updateAudience = useUpdateSlackChannelAudience(channel.slackChannelId);
 
   return (
-    <Flex align="center" className="gap-4 px-6 py-5" justify="between" wrap>
-      <Box className="min-w-64 flex-1">
-        <Flex align="center" gap={2} wrap>
-          <Text className="font-medium">#{channel.name}</Text>
-          <Badge color="tertiary" size="sm" variant="outline">
-            {channel.isPrivate
-              ? "Private Slack channel"
-              : "Public Slack channel"}
+    <Flex align="center" className="gap-4 px-6 py-4" justify="between" wrap>
+      <Flex align="center" className="min-w-64 flex-1" gap={2} wrap>
+        <Text className="max-w-full truncate font-medium">#{channel.name}</Text>
+        <Badge color="tertiary" variant="outline">
+          {channel.isPrivate ? "Private Slack channel" : "Public Slack channel"}
+        </Badge>
+        {channel.isArchived ? (
+          <Badge color="tertiary" variant="outline">
+            Archived
           </Badge>
-          {channel.isArchived ? (
-            <Badge color="tertiary" size="sm" variant="outline">
-              Archived
-            </Badge>
-          ) : null}
-        </Flex>
-        <Text className="mt-1" color="muted">
-          {selectedTeamIds.length === 0
-            ? "Shared reports are off. Personal questions use the asking person's joined public teams."
-            : `${selectedTeamIds.length} public ${selectedTeamIds.length === 1 ? "team" : "teams"} selected.`}
-        </Text>
-        {privateMappingCount > 0 ? (
-          <Text className="mt-1" color="muted" role="status">
-            {privateMappingCount === 1
-              ? "1 existing private team mapping is preserved for other Slack features, but Maya will not use it for shared reports."
-              : `${privateMappingCount} existing private team mappings are preserved for other Slack features, but Maya will not use them for shared reports.`}
-          </Text>
         ) : null}
-      </Box>
+      </Flex>
+
       <Flex align="center" className="min-w-0" gap={2}>
         <TeamAudiencePicker
           channelName={channel.name}
-          disabled={publicTeams.length === 0 || updateAudience.isPending}
-          onChange={setSelectedTeamIds}
+          disabled={updateAudience.isPending}
+          onChange={(teamIds) => {
+            updateAudience.mutate({
+              channelId: channel.slackChannelId,
+              isConfigured: true,
+              teamIds,
+            });
+          }}
           privateTeams={privateTeams}
           publicTeams={publicTeams}
           selectedTeamIds={selectedTeamIds}
         />
-        <Button
-          color="invert"
-          disabled={!hasChanges || updateAudience.isPending}
-          loading={updateAudience.isPending}
-          loadingText="Saving"
-          onClick={() => {
-            updateAudience.mutate({
-              channelId: channel.slackChannelId,
-              teamIds: [...preservedPrivateTeamIds, ...selectedTeamIds],
-            });
-          }}
+        <span
+          aria-live="polite"
+          className="inline-flex size-5 shrink-0 items-center justify-center"
         >
-          Save
-        </Button>
+          {updateAudience.isPending ? (
+            <LoadingIcon
+              aria-label={`Saving #${channel.name}`}
+              className="size-4 animate-spin"
+            />
+          ) : null}
+        </span>
+        <Menu>
+          <Menu.Button>
+            <Button
+              aria-label={`Channel options for #${channel.name}`}
+              className="px-2"
+              color="tertiary"
+              disabled={updateAudience.isPending}
+              leftIcon={<MoreHorizontalIcon aria-hidden="true" />}
+            />
+          </Menu.Button>
+          <Menu.Items align="end">
+            <Menu.Group>
+              <Menu.Item
+                className="text-danger"
+                onSelect={() => {
+                  updateAudience.mutate({
+                    channelId: channel.slackChannelId,
+                    isConfigured: false,
+                    teamIds: [],
+                  });
+                }}
+              >
+                <UnlinkIcon aria-hidden="true" className="text-danger" />
+                Remove channel
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
       </Flex>
     </Flex>
   );
@@ -250,13 +331,14 @@ const SlackChannelAudienceRow = ({
 export const SlackChannelAudienceSettings = () => {
   const audiencesQuery = useSlackChannelAudiences();
   const teamsQuery = useTeams();
-  const publicTeams = useMemo(
-    () => (teamsQuery.data ?? []).filter((team) => !team.isPrivate),
-    [teamsQuery.data],
+  const audiences = audiencesQuery.data ?? [];
+  const publicTeams = (teamsQuery.data ?? []).filter((team) => !team.isPrivate);
+  const privateTeams = (teamsQuery.data ?? []).filter((team) => team.isPrivate);
+  const configuredAudiences = audiences.filter(
+    (audience) => audience.isConfigured,
   );
-  const privateTeams = useMemo(
-    () => (teamsQuery.data ?? []).filter((team) => team.isPrivate),
-    [teamsQuery.data],
+  const availableAudiences = audiences.filter(
+    (audience) => !audience.isConfigured && !audience.channel.isArchived,
   );
   const isPending = audiencesQuery.isPending || teamsQuery.isPending;
   const isError = audiencesQuery.isError || teamsQuery.isError;
@@ -264,20 +346,14 @@ export const SlackChannelAudienceSettings = () => {
   return (
     <Box className="border-border bg-surface mt-6 rounded-2xl border">
       <SectionHeader
-        description="Choose which public FortyOne teams Maya can use for shared work reports in each synced Slack channel."
+        action={
+          !isPending && !isError && audiences.length > 0 ? (
+            <AddChannelPicker audiences={availableAudiences} />
+          ) : null
+        }
+        description="Choose the Slack channels where Maya can share team work."
         title="Channel access"
       />
-      <Box className="border-border bg-surface-muted/40 border-b px-6 py-3.5">
-        <Flex align="start" gap={2}>
-          <LockIcon aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
-          <Text className="leading-5" color="muted">
-            Personal questions can use the asking person&apos;s joined public
-            teams. Cross-person reports require at least one selected public
-            team. Private FortyOne teams stay excluded from channel reports;
-            Maya can use one in a DM only when the requester belongs to it.
-          </Text>
-        </Flex>
-      </Box>
 
       {isPending ? (
         <Box
@@ -285,7 +361,6 @@ export const SlackChannelAudienceSettings = () => {
           className="space-y-4 px-6 py-7"
           role="status"
         >
-          <Skeleton className="h-5 w-44" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
         </Box>
@@ -323,22 +398,33 @@ export const SlackChannelAudienceSettings = () => {
         </Flex>
       ) : null}
 
-      {!isPending && !isError && audiencesQuery.data.length === 0 ? (
+      {!isPending && !isError && audiences.length === 0 ? (
         <Box className="px-6 py-8">
           <Text className="font-medium">No Slack channels synced</Text>
           <Text className="mt-1" color="muted">
-            Synced channels will appear here after Slack finishes refreshing the
-            workspace connection.
+            Refresh the Slack connection to sync workspace channels.
           </Text>
         </Box>
       ) : null}
 
-      {!isPending && !isError && audiencesQuery.data.length ? (
+      {!isPending &&
+      !isError &&
+      audiences.length > 0 &&
+      configuredAudiences.length === 0 ? (
+        <Box className="px-6 py-8">
+          <Text className="font-medium">No channels configured</Text>
+          <Text className="mt-1" color="muted">
+            Add a channel to choose the work Maya can share there.
+          </Text>
+        </Box>
+      ) : null}
+
+      {!isPending && !isError && configuredAudiences.length > 0 ? (
         <Box className="divide-border divide-y">
-          {audiencesQuery.data.map((audience) => (
+          {configuredAudiences.map((audience) => (
             <SlackChannelAudienceRow
               audience={audience}
-              key={`${audience.channel.id}:${audience.teamIds.join(",")}`}
+              key={audience.channel.id}
               privateTeams={privateTeams}
               publicTeams={publicTeams}
             />

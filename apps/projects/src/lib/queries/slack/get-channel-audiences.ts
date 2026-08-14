@@ -8,5 +8,14 @@ export const getSlackChannelAudiences = async (ctx: WorkspaceCtx) => {
     "integrations/slack/channel-audiences",
     ctx,
   );
-  return response.data ?? [];
+  const audiences = response.data ?? [];
+  const hasExplicitConfigurationState = audiences.every(
+    (audience) =>
+      typeof (audience as { isConfigured?: unknown }).isConfigured ===
+      "boolean",
+  );
+  if (!hasExplicitConfigurationState) {
+    throw new Error("Slack channel configuration is not available");
+  }
+  return audiences;
 };

@@ -6,14 +6,17 @@ import type { UpdateSlackChannelAudienceInput } from "@/modules/settings/workspa
 
 export const updateSlackChannelAudienceAction = async (
   workspaceSlug: string,
-  { channelId, teamIds }: UpdateSlackChannelAudienceInput,
+  { channelId, isConfigured, teamIds }: UpdateSlackChannelAudienceInput,
 ) => {
   try {
     const session = await auth();
     const ctx = { session: session!, workspaceSlug };
-    return await put<{ teamIds: string[] }, ApiResponse<null>>(
+    return await put<
+      { isConfigured: boolean; teamIds: string[] },
+      ApiResponse<null>
+    >(
       `integrations/slack/channel-audiences/${encodeURIComponent(channelId)}`,
-      { teamIds },
+      { isConfigured, teamIds },
       ctx,
     );
   } catch (error) {

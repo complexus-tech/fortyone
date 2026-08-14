@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useIsMutating,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { slackKeys } from "@/constants/keys";
 import { useWorkspacePath } from "@/hooks";
@@ -22,35 +27,79 @@ export const useSlackChannelAudiences = ({ enabled = true } = {}) => {
   });
 };
 
-export const useUpdateSlackChannelAudience = () => {
+export const useUpdateSlackChannelAudience = (channelId?: string) => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
   const queryKey = slackKeys.channelAudiences(workspaceSlug);
-
-  return useMutation({
-    mutationFn: (input: UpdateSlackChannelAudienceInput) =>
-      updateSlackChannelAudienceAction(workspaceSlug, input),
-    onError: () => {
-      toast.error("Slack channel access", {
-        description: "FortyOne could not update this channel. Try again.",
-      });
+  const mutationKey = [...queryKey, "update"] as const;
+  const pendingChannelUpdates = useIsMutating({
+    mutationKey,
+    predicate: (candidate) => {
+      if (!channelId) return true;
+      const variables = candidate.state.variables as
+        | UpdateSlackChannelAudienceInput
+        | undefined;
+      return variables?.channelId === channelId;
     },
-    onSuccess: (response, input) => {
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (input: UpdateSlackChannelAudienceInput) => {
+      const response = await updateSlackChannelAudienceAction(
+        workspaceSlug,
+        input,
+      );
       if (response.error?.message) {
-        toast.error("Slack channel access", {
-          description: response.error.message,
-        });
-        return;
+        throw new Error(response.error.message);
       }
+      return response;
+    },
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousAudience = queryClient
+        .getQueryData<SlackChannelAudience[]>(queryKey)
+        ?.find(
+          (audience) => audience.channel.slackChannelId === input.channelId,
+        );
 
       queryClient.setQueryData<SlackChannelAudience[]>(queryKey, (current) =>
         current?.map((audience) =>
           audience.channel.slackChannelId === input.channelId
-            ? { ...audience, teamIds: input.teamIds }
+            ? {
+                ...audience,
+                isConfigured: input.isConfigured,
+                teamIds: input.teamIds,
+              }
             : audience,
         ),
       );
-      toast.success("Slack channel access updated");
+
+      return { previousAudience };
     },
+    onError: (error, input, context) => {
+      const previousAudience = context?.previousAudience;
+      if (previousAudience) {
+        queryClient.setQueryData<SlackChannelAudience[]>(queryKey, (current) =>
+          current?.map((audience) =>
+            audience.channel.slackChannelId === input.channelId
+              ? previousAudience
+              : audience,
+          ),
+        );
+      }
+      toast.error("Slack channel access", {
+        description: error.message,
+      });
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+    mutationKey,
+    scope: channelId
+      ? { id: `slack-channel-audience:${workspaceSlug}:${channelId}` }
+      : undefined,
   });
+
+  return {
+    ...mutation,
+    isPending: mutation.isPending || pendingChannelUpdates > 0,
+  };
 };

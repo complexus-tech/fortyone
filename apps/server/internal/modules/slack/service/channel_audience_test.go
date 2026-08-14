@@ -20,6 +20,7 @@ type channelAudienceRepoStub struct {
 		workspaceID      uuid.UUID
 		slackWorkspaceID uuid.UUID
 		slackChannelID   string
+		isConfigured     bool
 		teamIDs          []uuid.UUID
 		actorID          uuid.UUID
 	}
@@ -45,20 +46,22 @@ func (r *channelAudienceRepoStub) ListChannels(context.Context, uuid.UUID) ([]sl
 	return append([]slackrepository.SlackChannelRecord(nil), r.channels...), nil
 }
 
-func (r *channelAudienceRepoStub) ListChannelTeamAccess(context.Context, uuid.UUID) ([]slackrepository.ChannelTeamAccessRecord, error) {
+func (r *channelAudienceRepoStub) ListAssistantChannelTeamAccess(context.Context, uuid.UUID) ([]slackrepository.ChannelTeamAccessRecord, error) {
 	return append([]slackrepository.ChannelTeamAccessRecord(nil), r.access...), nil
 }
 
-func (r *channelAudienceRepoStub) ReplaceChannelTeamAccess(
+func (r *channelAudienceRepoStub) ReplaceAssistantChannelTeamAccess(
 	_ context.Context,
 	workspaceID, slackWorkspaceID uuid.UUID,
 	slackChannelID string,
+	isConfigured bool,
 	teamIDs []uuid.UUID,
 	actorID uuid.UUID,
 ) error {
 	r.replaced.workspaceID = workspaceID
 	r.replaced.slackWorkspaceID = slackWorkspaceID
 	r.replaced.slackChannelID = slackChannelID
+	r.replaced.isConfigured = isConfigured
 	r.replaced.teamIDs = append([]uuid.UUID(nil), teamIDs...)
 	r.replaced.actorID = actorID
 	return nil
@@ -87,12 +90,13 @@ func (r *channelAudienceRepoStub) GetAuthorizedAssistantChannelTeamScope(
 	}, nil
 }
 
-func TestListChannelAudiencesIncludesUnconfiguredChannels(t *testing.T) {
+func TestListChannelAudiencesIncludesConfiguredAndUnconfiguredChannels(t *testing.T) {
 	t.Parallel()
 
 	workspaceID := uuid.New()
 	installationID := uuid.New()
 	teamID := uuid.New()
+	staleTeamID := uuid.New()
 	repo := &channelAudienceRepoStub{
 		mockRepo: &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
 			ID:          installationID,
@@ -101,9 +105,15 @@ func TestListChannelAudiencesIncludesUnconfiguredChannels(t *testing.T) {
 		}},
 		channels: []slackrepository.SlackChannelRecord{
 			{SlackChannelID: "C1", Name: "general", IsActive: true},
-			{SlackChannelID: "C2", Name: "product", IsActive: true},
+			{
+				SlackChannelID:        "C2",
+				Name:                  "product",
+				IsActive:              true,
+				IsAssistantConfigured: true,
+			},
 		},
 		access: []slackrepository.ChannelTeamAccessRecord{
+			{SlackChannelID: "C1", TeamID: staleTeamID},
 			{SlackChannelID: "C2", TeamID: teamID},
 		},
 	}
@@ -114,8 +124,10 @@ func TestListChannelAudiencesIncludesUnconfiguredChannels(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, audiences, 2)
 	require.Equal(t, "C1", audiences[0].Channel.SlackChannelID)
-	require.Empty(t, audiences[0].TeamIDs)
+	require.False(t, audiences[0].IsConfigured)
+	require.Equal(t, []uuid.UUID{staleTeamID}, audiences[0].TeamIDs)
 	require.Equal(t, "C2", audiences[1].Channel.SlackChannelID)
+	require.True(t, audiences[1].IsConfigured)
 	require.Equal(t, []uuid.UUID{teamID}, audiences[1].TeamIDs)
 }
 
@@ -135,14 +147,67 @@ func TestUpdateChannelAudienceBindsActiveInstallationAndActor(t *testing.T) {
 	}}
 	service := New(nil, repo, nil, nil, Config{})
 
-	err := service.UpdateChannelAudience(context.Background(), workspaceID, actorID, " C1 ", teamIDs)
+	err := service.UpdateChannelAudience(context.Background(), workspaceID, actorID, " C1 ", true, teamIDs)
 
 	require.NoError(t, err)
 	require.Equal(t, workspaceID, repo.replaced.workspaceID)
 	require.Equal(t, installationID, repo.replaced.slackWorkspaceID)
 	require.Equal(t, "C1", repo.replaced.slackChannelID)
+	require.True(t, repo.replaced.isConfigured)
 	require.Equal(t, teamIDs, repo.replaced.teamIDs)
 	require.Equal(t, actorID, repo.replaced.actorID)
+}
+
+func TestUpdateChannelAudiencePersistsConfiguredPersonalOnlyChannel(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	installationID := uuid.New()
+	actorID := uuid.New()
+	repo := &channelAudienceRepoStub{mockRepo: &mockRepo{
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			ID:          installationID,
+			WorkspaceID: workspaceID,
+			SlackTeamID: "T1",
+		},
+	}}
+	service := New(nil, repo, nil, nil, Config{})
+
+	err := service.UpdateChannelAudience(context.Background(), workspaceID, actorID, "C1", true, nil)
+
+	require.NoError(t, err)
+	require.True(t, repo.replaced.isConfigured)
+	require.Empty(t, repo.replaced.teamIDs)
+}
+
+func TestUpdateChannelAudienceDelegatesUnconfigureWithoutDiscardingTeamState(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	installationID := uuid.New()
+	actorID := uuid.New()
+	repo := &channelAudienceRepoStub{mockRepo: &mockRepo{
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			ID:          installationID,
+			WorkspaceID: workspaceID,
+			SlackTeamID: "T1",
+		},
+	}}
+	service := New(nil, repo, nil, nil, Config{})
+
+	teamIDs := []uuid.UUID{uuid.New()}
+	err := service.UpdateChannelAudience(
+		context.Background(),
+		workspaceID,
+		actorID,
+		"C1",
+		false,
+		teamIDs,
+	)
+
+	require.NoError(t, err)
+	require.False(t, repo.replaced.isConfigured)
+	require.Equal(t, teamIDs, repo.replaced.teamIDs)
 }
 
 func TestAuthorizedChannelTeamIDsDelegatesAuthoritativeScope(t *testing.T) {

@@ -35,11 +35,13 @@ export type SlackAgentSettings = {
 
 export type SlackChannelAudience = {
   channel: SlackChannel;
+  isConfigured: boolean;
   teamIds: string[];
 };
 
 export type UpdateSlackChannelAudienceInput = {
   channelId: string;
+  isConfigured: boolean;
   teamIds: string[];
 };
 

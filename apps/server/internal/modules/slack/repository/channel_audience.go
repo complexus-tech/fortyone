@@ -9,8 +9,9 @@ import (
 	"github.com/google/uuid"
 )
 
-// ChannelTeamAccessRecord is an administrator-defined Slack channel audience.
-// An empty mapping means the channel is limited to the actor's public teams.
+// ChannelTeamAccessRecord is a public team mapping attached to a Slack
+// channel. Assistant disclosure uses it only while the channel's assistant
+// configuration marker is enabled.
 type ChannelTeamAccessRecord struct {
 	SlackChannelID string    `db:"slack_channel_id"`
 	TeamID         uuid.UUID `db:"team_id"`
@@ -33,6 +34,12 @@ const authorizedAssistantChannelTeamScopeQuery = `
 	WITH configured_public_teams AS (
 		SELECT access.team_id
 		FROM slack_channel_team_access access
+		JOIN slack_channels configured_channel
+		  ON configured_channel.workspace_id = access.workspace_id
+		 AND configured_channel.slack_workspace_id = access.slack_workspace_id
+		 AND configured_channel.slack_channel_id = access.slack_channel_id
+		 AND configured_channel.is_active = true
+		 AND configured_channel.is_assistant_configured = true
 		JOIN teams mapped_team
 		  ON mapped_team.team_id = access.team_id
 		 AND mapped_team.workspace_id = access.workspace_id
@@ -65,30 +72,70 @@ const authorizedAssistantChannelTeamScopeQuery = `
 	ORDER BY team.name ASC
 `
 
-func (r *Repo) ListChannelTeamAccess(ctx context.Context, workspaceID uuid.UUID) ([]ChannelTeamAccessRecord, error) {
+const listAssistantChannelTeamAccessQuery = `
+	SELECT access.slack_channel_id, access.team_id
+	FROM slack_channel_team_access access
+	JOIN slack_workspaces installation
+	  ON installation.id = access.slack_workspace_id
+	 AND installation.workspace_id = access.workspace_id
+	 AND installation.is_active = true
+	JOIN teams team
+	  ON team.team_id = access.team_id
+	 AND team.workspace_id = access.workspace_id
+	 AND team.is_private = false
+	WHERE access.workspace_id = $1
+	ORDER BY access.slack_channel_id ASC, team.name ASC
+`
+
+const deleteAssistantPublicChannelTeamAccessQuery = `
+	DELETE FROM slack_channel_team_access access
+	USING teams team
+	WHERE access.workspace_id = $1
+	  AND access.slack_workspace_id = $2
+	  AND access.slack_channel_id = $3
+	  AND team.team_id = access.team_id
+	  AND team.workspace_id = access.workspace_id
+	  AND team.is_private = false
+`
+
+const insertAssistantChannelTeamAccessQuery = `
+	INSERT INTO slack_channel_team_access (
+		workspace_id,
+		slack_workspace_id,
+		slack_channel_id,
+		team_id,
+		created_by_user_id
+	)
+	SELECT $1, $2, $3, team.team_id, $5
+	FROM teams team
+	WHERE team.workspace_id = $1
+	  AND team.team_id = $4
+	  AND team.is_private = false
+`
+
+type assistantChannelTeamAccessTx interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	GetContext(ctx context.Context, dest any, query string, args ...any) error
+}
+
+func (r *Repo) ListAssistantChannelTeamAccess(ctx context.Context, workspaceID uuid.UUID) ([]ChannelTeamAccessRecord, error) {
 	rows := make([]ChannelTeamAccessRecord, 0)
-	if err := r.db.SelectContext(ctx, &rows, `
-		SELECT access.slack_channel_id, access.team_id
-		FROM slack_channel_team_access access
-		JOIN slack_workspaces installation
-		  ON installation.id = access.slack_workspace_id
-		 AND installation.workspace_id = access.workspace_id
-		 AND installation.is_active = true
-		JOIN teams team
-		  ON team.team_id = access.team_id
-		 AND team.workspace_id = access.workspace_id
-		WHERE access.workspace_id = $1
-		ORDER BY access.slack_channel_id ASC, team.name ASC
-	`, workspaceID); err != nil {
-		return nil, fmt.Errorf("list Slack channel team access: %w", err)
+	if err := r.db.SelectContext(ctx, &rows, listAssistantChannelTeamAccessQuery, workspaceID); err != nil {
+		return nil, fmt.Errorf("list Slack assistant channel team access: %w", err)
 	}
 	return rows, nil
 }
 
-func (r *Repo) ReplaceChannelTeamAccess(
+// ReplaceAssistantChannelTeamAccess updates the public mappings in the unified
+// channel audience used by assistant and non-assistant Slack flows. Explicitly
+// unconfiguring the assistant changes only the marker and preserves every
+// mapping. A configured channel may intentionally have no public mappings,
+// which represents personal-only assistant access.
+func (r *Repo) ReplaceAssistantChannelTeamAccess(
 	ctx context.Context,
 	workspaceID, slackWorkspaceID uuid.UUID,
 	slackChannelID string,
+	isConfigured bool,
 	teamIDs []uuid.UUID,
 	actorID uuid.UUID,
 ) (err error) {
@@ -106,64 +153,108 @@ func (r *Repo) ReplaceChannelTeamAccess(
 		}
 	}()
 
-	var channelExists bool
-	if err = tx.GetContext(ctx, &channelExists, `
-		SELECT EXISTS (
-			SELECT 1
-			FROM slack_channels channel_record
-			JOIN slack_workspaces installation
-			  ON installation.id = channel_record.slack_workspace_id
-			 AND installation.workspace_id = channel_record.workspace_id
-			 AND installation.is_active = true
-			WHERE channel_record.workspace_id = $1
-			  AND channel_record.slack_workspace_id = $2
-			  AND channel_record.slack_channel_id = $3
-			  AND channel_record.is_active = true
-		)
-	`, workspaceID, slackWorkspaceID, slackChannelID); err != nil {
-		return fmt.Errorf("validate Slack channel audience target: %w", err)
+	result, err := tx.ExecContext(ctx, `
+		UPDATE slack_channels channel_record
+		SET is_assistant_configured = $4,
+		    updated_at = NOW()
+		FROM slack_workspaces installation
+		WHERE channel_record.workspace_id = $1
+		  AND channel_record.slack_workspace_id = $2
+		  AND channel_record.slack_channel_id = $3
+		  AND channel_record.is_active = true
+		  AND installation.id = channel_record.slack_workspace_id
+		  AND installation.workspace_id = channel_record.workspace_id
+		  AND installation.is_active = true
+	`, workspaceID, slackWorkspaceID, slackChannelID, isConfigured)
+	if err != nil {
+		return fmt.Errorf("update Slack assistant channel configuration: %w", err)
 	}
-	if !channelExists {
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("inspect Slack assistant channel configuration update: %w", err)
+	}
+	if rowsAffected != 1 {
 		return sql.ErrNoRows
 	}
 
-	if _, err = tx.ExecContext(ctx, `
-		DELETE FROM slack_channel_team_access
-		WHERE workspace_id = $1
-		  AND slack_workspace_id = $2
-		  AND slack_channel_id = $3
-	`, workspaceID, slackWorkspaceID, slackChannelID); err != nil {
-		return fmt.Errorf("clear Slack channel team access: %w", err)
-	}
-
-	for _, teamID := range teamIDs {
-		result, insertErr := tx.ExecContext(ctx, `
-			INSERT INTO slack_channel_team_access (
-				workspace_id,
-				slack_workspace_id,
-				slack_channel_id,
-				team_id,
-				created_by_user_id
-			)
-			SELECT $1, $2, $3, team.team_id, $5
-			FROM teams team
-			WHERE team.workspace_id = $1
-			  AND team.team_id = $4
-		`, workspaceID, slackWorkspaceID, slackChannelID, teamID, actorID)
-		if insertErr != nil {
-			return fmt.Errorf("insert Slack channel team access: %w", insertErr)
-		}
-		rowsAffected, rowsErr := result.RowsAffected()
-		if rowsErr != nil {
-			return fmt.Errorf("inspect Slack channel team access insert: %w", rowsErr)
-		}
-		if rowsAffected != 1 {
-			return fmt.Errorf("team %s is not in workspace %s", teamID, workspaceID)
-		}
+	if err = replaceAssistantPublicChannelTeamAccessTx(
+		ctx,
+		tx,
+		workspaceID,
+		slackWorkspaceID,
+		slackChannelID,
+		isConfigured,
+		teamIDs,
+		actorID,
+	); err != nil {
+		return err
 	}
 
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("commit Slack channel audience transaction: %w", err)
+	}
+	return nil
+}
+
+func replaceAssistantPublicChannelTeamAccessTx(
+	ctx context.Context,
+	tx assistantChannelTeamAccessTx,
+	workspaceID, slackWorkspaceID uuid.UUID,
+	slackChannelID string,
+	isConfigured bool,
+	teamIDs []uuid.UUID,
+	actorID uuid.UUID,
+) error {
+	if !isConfigured {
+		return nil
+	}
+
+	if _, err := tx.ExecContext(
+		ctx,
+		deleteAssistantPublicChannelTeamAccessQuery,
+		workspaceID,
+		slackWorkspaceID,
+		slackChannelID,
+	); err != nil {
+		return fmt.Errorf("clear public Slack assistant channel team access: %w", err)
+	}
+
+	for _, teamID := range teamIDs {
+		var isPrivate bool
+		if err := tx.GetContext(ctx, &isPrivate, `
+			SELECT team.is_private
+			FROM teams team
+			WHERE team.workspace_id = $1
+			  AND team.team_id = $2
+		`, workspaceID, teamID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("team %s is not in workspace %s", teamID, workspaceID)
+			}
+			return fmt.Errorf("validate Slack assistant channel team: %w", err)
+		}
+		if isPrivate {
+			continue
+		}
+
+		result, insertErr := tx.ExecContext(
+			ctx,
+			insertAssistantChannelTeamAccessQuery,
+			workspaceID,
+			slackWorkspaceID,
+			slackChannelID,
+			teamID,
+			actorID,
+		)
+		if insertErr != nil {
+			return fmt.Errorf("insert Slack assistant channel team access: %w", insertErr)
+		}
+		rowsAffected, rowsErr := result.RowsAffected()
+		if rowsErr != nil {
+			return fmt.Errorf("inspect Slack assistant channel team access insert: %w", rowsErr)
+		}
+		if rowsAffected != 1 {
+			return fmt.Errorf("team %s is not in workspace %s", teamID, workspaceID)
+		}
 	}
 	return nil
 }

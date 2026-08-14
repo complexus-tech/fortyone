@@ -11,11 +11,12 @@ import (
 )
 
 type channelAudienceRepository interface {
-	ListChannelTeamAccess(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.ChannelTeamAccessRecord, error)
-	ReplaceChannelTeamAccess(
+	ListAssistantChannelTeamAccess(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.ChannelTeamAccessRecord, error)
+	ReplaceAssistantChannelTeamAccess(
 		ctx context.Context,
 		workspaceID, slackWorkspaceID uuid.UUID,
 		slackChannelID string,
+		isConfigured bool,
 		teamIDs []uuid.UUID,
 		actorID uuid.UUID,
 	) error
@@ -46,8 +47,9 @@ type authorizedAssistantChannelAudienceRepository interface {
 }
 
 type CoreSlackChannelAudience struct {
-	Channel CoreSlackChannel
-	TeamIDs []uuid.UUID
+	Channel      CoreSlackChannel
+	IsConfigured bool
+	TeamIDs      []uuid.UUID
 }
 
 func (s *Service) ListChannelAudiences(ctx context.Context, workspaceID uuid.UUID) ([]CoreSlackChannelAudience, error) {
@@ -59,7 +61,7 @@ func (s *Service) ListChannelAudiences(ctx context.Context, workspaceID uuid.UUI
 	if err != nil {
 		return nil, err
 	}
-	access, err := repository.ListChannelTeamAccess(ctx, workspaceID)
+	access, err := repository.ListAssistantChannelTeamAccess(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +77,9 @@ func (s *Service) ListChannelAudiences(ctx context.Context, workspaceID uuid.UUI
 	result := make([]CoreSlackChannelAudience, 0, len(channels))
 	for _, channel := range channels {
 		result = append(result, CoreSlackChannelAudience{
-			Channel: toCoreChannel(channel),
-			TeamIDs: append([]uuid.UUID(nil), teamIDsByChannel[channel.SlackChannelID]...),
+			Channel:      toCoreChannel(channel),
+			IsConfigured: channel.IsAssistantConfigured,
+			TeamIDs:      append([]uuid.UUID(nil), teamIDsByChannel[channel.SlackChannelID]...),
 		})
 	}
 	return result, nil
@@ -86,6 +89,7 @@ func (s *Service) UpdateChannelAudience(
 	ctx context.Context,
 	workspaceID, actorID uuid.UUID,
 	slackChannelID string,
+	isConfigured bool,
 	teamIDs []uuid.UUID,
 ) error {
 	repository, ok := s.repo.(channelAudienceRepository)
@@ -103,11 +107,12 @@ func (s *Service) UpdateChannelAudience(
 	if err != nil {
 		return err
 	}
-	if err := repository.ReplaceChannelTeamAccess(
+	if err := repository.ReplaceAssistantChannelTeamAccess(
 		ctx,
 		workspaceID,
 		installation.ID,
 		slackChannelID,
+		isConfigured,
 		teamIDs,
 		actorID,
 	); err != nil {
