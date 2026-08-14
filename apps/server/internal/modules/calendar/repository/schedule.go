@@ -61,7 +61,7 @@ const scheduleBlockSelect = `
 	LEFT JOIN teams t ON t.team_id = s.team_id
 `
 
-func (r *Repo) ListBusyWindows(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]calendar.CoreBusyWindow, error) {
+func (r *Repo) ListBusyWindows(ctx context.Context, _ uuid.UUID, userID uuid.UUID, startAt, endAt time.Time) ([]calendar.CoreBusyWindow, error) {
 	const query = `
 		SELECT cbw.window_id, cbw.connection_id, cbw.workspace_id, cbw.user_id,
 		       cbw.provider, cbw.provider_event_id, cbw.calendar_id, cbw.title,
@@ -72,13 +72,13 @@ func (r *Repo) ListBusyWindows(ctx context.Context, workspaceID, userID uuid.UUI
 			cc.connection_id = cbw.connection_id
 			AND cc.user_id = cbw.user_id
 			AND cc.revoked_at IS NULL
-		WHERE cbw.user_id = $2
-			AND cbw.start_at < $4
-			AND cbw.end_at > $3
+		WHERE cbw.user_id = $1
+			AND cbw.start_at < $3
+			AND cbw.end_at > $2
 		ORDER BY cbw.start_at ASC
 	`
 	rows := []dbBusyWindow{}
-	if err := r.db.SelectContext(ctx, &rows, query, workspaceID, userID, startAt, endAt); err != nil {
+	if err := r.db.SelectContext(ctx, &rows, query, userID, startAt, endAt); err != nil {
 		return nil, fmt.Errorf("list calendar busy windows: %w", err)
 	}
 	return toCoreBusyWindows(rows), nil

@@ -1594,7 +1594,7 @@ export const PersonalCalendar = ({
             className="flex min-h-0 flex-1 items-center justify-center px-6 py-12 text-center"
             role="alert"
           >
-            <Box>
+            <Box className="flex flex-col items-center">
               <Text fontSize="md" fontWeight="semibold">
                 Couldn&apos;t load your calendar
               </Text>

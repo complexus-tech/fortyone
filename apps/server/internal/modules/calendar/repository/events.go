@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (r *Repo) ListCalendarEvents(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]calendar.CoreCalendarEventSummary, error) {
+func (r *Repo) ListCalendarEvents(ctx context.Context, _ uuid.UUID, userID uuid.UUID, startAt, endAt time.Time) ([]calendar.CoreCalendarEventSummary, error) {
 	const query = `
 		SELECT
 			ce.event_id,
@@ -36,20 +36,20 @@ func (r *Repo) ListCalendarEvents(ctx context.Context, workspaceID, userID uuid.
 			cc.connection_id = ce.connection_id
 			AND cc.user_id = ce.user_id
 			AND cc.revoked_at IS NULL
-			AND $5 = ANY(cc.scopes)
-		WHERE ce.user_id = $2
-			AND ce.start_at < $4
-			AND ce.end_at > $3
+			AND $4 = ANY(cc.scopes)
+		WHERE ce.user_id = $1
+			AND ce.start_at < $3
+			AND ce.end_at > $2
 		ORDER BY ce.start_at ASC, ce.event_id ASC
 	`
 	rows := []dbCalendarEventSummary{}
-	if err := r.db.SelectContext(ctx, &rows, query, workspaceID, userID, startAt, endAt, calendar.GoogleCalendarEventsReadonlyScope); err != nil {
+	if err := r.db.SelectContext(ctx, &rows, query, userID, startAt, endAt, calendar.GoogleCalendarEventsReadonlyScope); err != nil {
 		return nil, fmt.Errorf("list calendar events: %w", err)
 	}
 	return toCoreCalendarEventSummaries(rows), nil
 }
 
-func (r *Repo) GetCalendarEvent(ctx context.Context, workspaceID, userID, eventID uuid.UUID) (calendar.CoreCalendarEvent, error) {
+func (r *Repo) GetCalendarEvent(ctx context.Context, _ uuid.UUID, userID, eventID uuid.UUID) (calendar.CoreCalendarEvent, error) {
 	const query = `
 		SELECT
 			ce.event_id,
@@ -82,13 +82,13 @@ func (r *Repo) GetCalendarEvent(ctx context.Context, workspaceID, userID, eventI
 			cc.connection_id = ce.connection_id
 			AND cc.user_id = ce.user_id
 			AND cc.revoked_at IS NULL
-			AND $4 = ANY(cc.scopes)
-		WHERE ce.user_id = $2
-			AND ce.event_id = $3
+			AND $3 = ANY(cc.scopes)
+		WHERE ce.user_id = $1
+			AND ce.event_id = $2
 		LIMIT 1
 	`
 	var row dbCalendarEvent
-	if err := r.db.GetContext(ctx, &row, query, workspaceID, userID, eventID, calendar.GoogleCalendarEventsReadonlyScope); err != nil {
+	if err := r.db.GetContext(ctx, &row, query, userID, eventID, calendar.GoogleCalendarEventsReadonlyScope); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return calendar.CoreCalendarEvent{}, calendar.ErrCalendarEventNotFound
 		}
