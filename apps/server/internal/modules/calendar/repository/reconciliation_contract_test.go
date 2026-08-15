@@ -36,6 +36,36 @@ func TestScheduleBlockNeedsProviderUpsertChecksMappingAndHash(t *testing.T) {
 	}
 }
 
+func TestMayaScheduleReconciliationPersistsLockedInputWithoutProviderRewrite(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile("reconciliation.go")
+	if err != nil {
+		t.Fatalf("read reconciliation.go: %v", err)
+	}
+	source := string(data)
+	for _, contract := range []string{
+		"IsLocked           bool      `db:\"is_locked\"`",
+		"SELECT block_id, segment_index, title, start_at, end_at, is_locked,",
+		"blockChanged := providerChanged || block.IsLocked != input.Locked",
+		"is_locked = $9",
+		"is_locked <> $9",
+		"$10, 'maya'",
+		"IsLocked:           input.Locked",
+		"syncHash, providerChanged",
+	} {
+		if !strings.Contains(source, contract) {
+			t.Errorf("locked Maya reconciliation is missing contract %q", contract)
+		}
+	}
+	if calls := strings.Count(source, "eventID, input.Locked"); calls != 2 {
+		t.Fatalf("locked input must bind both update and insert statements exactly once; got %d bindings", calls)
+	}
+	if strings.Contains(source, "syncHash, blockChanged") {
+		t.Fatal("an internal lock-only change must not reactivate or rewrite the provider event")
+	}
+}
+
 func TestMayaScheduleEligibilityAllowsAssignmentAfterScheduleCommit(t *testing.T) {
 	query := strings.ToLower(mayaScheduleEligibilityQuery)
 	if strings.Contains(query, "story.assignee_id") {
@@ -72,6 +102,7 @@ func TestProviderUpsertRequiresCurrentCanonicalStoryState(t *testing.T) {
 	for _, fragment := range []string{
 		"ownership.user_id = block.user_id",
 		"story.assignee_id = block.user_id",
+		"story.auto_scheduling_enabled = true",
 		"ownership.updated_at >= story.updated_at",
 		"ownership.updated_at >= team_settings.updated_at",
 		"ownership.updated_at >= sprint.updated_at",

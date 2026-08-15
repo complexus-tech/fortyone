@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"testing"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -17,6 +18,46 @@ type activityRecordingRepo struct {
 	activities              []CoreActivity
 	previousAssociationType string
 	removed                 CoreStoryAssociation
+	story                   CoreSingleStory
+	mayaBlocksExist         bool
+}
+
+func (r *activityRecordingRepo) Get(_ context.Context, storyID, workspaceID uuid.UUID) (CoreSingleStory, error) {
+	r.story.ID = storyID
+	r.story.Workspace = workspaceID
+	return r.story, nil
+}
+
+func (r *activityRecordingRepo) Update(_ context.Context, _, _ uuid.UUID, updates map[string]any) error {
+	if value, ok := updates["auto_scheduling_enabled"].(bool); ok {
+		r.story.AutoSchedulingEnabled = value
+	}
+	if value, ok := updates["auto_scheduling_locked"].(bool); ok {
+		r.story.AutoSchedulingLocked = value
+	}
+	if value, ok := updates["auto_scheduling_status"].(string); ok {
+		r.story.AutoSchedulingStatus = value
+	}
+	if value, ok := updates["auto_scheduling_reason"].(*string); ok {
+		r.story.AutoSchedulingReason = value
+	}
+	return nil
+}
+
+func (r *activityRecordingRepo) MayaScheduleBlocksExist(_ context.Context, _, _ uuid.UUID) (bool, error) {
+	return r.mayaBlocksExist, nil
+}
+
+func (r *activityRecordingRepo) UpdateAutoSchedulingStateIfUnchanged(
+	_ context.Context,
+	_, _ uuid.UUID,
+	_ time.Time,
+	_ string,
+	_ *string,
+	_ time.Time,
+	_ *bool,
+) (bool, error) {
+	return true, nil
 }
 
 func (r *activityRecordingRepo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID, labels []uuid.UUID) error {
@@ -118,6 +159,54 @@ func TestUpdateLabelsRecordsActivity(t *testing.T) {
 	}
 	if activity.CurrentValue == "" {
 		t.Fatal("expected current value to describe label change")
+	}
+}
+
+func TestAutoSchedulingLockAndUnlockEachRecordOneUserActivity(t *testing.T) {
+	actorID := uuid.New()
+	storyID := uuid.New()
+	workspaceID := uuid.New()
+	ctx := auth.SetUserID(context.Background(), actorID)
+
+	tests := []struct {
+		name        string
+		story       CoreSingleStory
+		lockedValue bool
+	}{
+		{
+			name: "lock",
+			story: CoreSingleStory{
+				AutoSchedulingEnabled: true,
+				AutoSchedulingStatus:  AutoSchedulingStatusScheduled,
+			},
+			lockedValue: true,
+		},
+		{
+			name: "unlock",
+			story: CoreSingleStory{
+				AutoSchedulingEnabled: true,
+				AutoSchedulingLocked:  true,
+				AutoSchedulingStatus:  AutoSchedulingStatusLocked,
+			},
+			lockedValue: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repo := &activityRecordingRepo{story: test.story, mayaBlocksExist: true}
+			service := newActivityRecordingService(repo)
+
+			if err := service.Update(ctx, storyID, workspaceID, map[string]any{"auto_scheduling_locked": test.lockedValue}); err != nil {
+				t.Fatalf("Update returned error: %v", err)
+			}
+			if len(repo.activities) != 1 {
+				t.Fatalf("expected exactly one semantic lock activity, got %#v", repo.activities)
+			}
+			if repo.activities[0].Field != "auto_scheduling_locked" {
+				t.Fatalf("activity field = %q, want auto_scheduling_locked", repo.activities[0].Field)
+			}
+		})
 	}
 }
 

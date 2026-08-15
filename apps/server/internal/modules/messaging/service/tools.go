@@ -468,6 +468,11 @@ func (e *FortyOneToolExecutor) listMyTasks(ctx context.Context, scope ToolScope,
 			EstimateScheme:           story.EstimateScheme,
 			EstimatedDurationMinutes: story.EstimatedDurationMinutes,
 			MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+			AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+			AutoSchedulingLocked:     story.AutoSchedulingLocked,
+			AutoSchedulingStatus:     story.AutoSchedulingStatus,
+			AutoSchedulingReason:     story.AutoSchedulingReason,
+			AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 			EndDate:                  story.EndDate,
 			UpdatedAt:                story.UpdatedAt,
 		})
@@ -592,6 +597,11 @@ func (e *FortyOneToolExecutor) listCompletedTasks(ctx context.Context, scope Too
 			EstimateScheme:           story.EstimateScheme,
 			EstimatedDurationMinutes: story.EstimatedDurationMinutes,
 			MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+			AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+			AutoSchedulingLocked:     story.AutoSchedulingLocked,
+			AutoSchedulingStatus:     story.AutoSchedulingStatus,
+			AutoSchedulingReason:     story.AutoSchedulingReason,
+			AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 			EndDate:                  story.EndDate,
 			CompletedAt:              story.CompletedAt,
 			UpdatedAt:                story.UpdatedAt,
@@ -728,6 +738,11 @@ func (e *FortyOneToolExecutor) searchWork(ctx context.Context, scope ToolScope, 
 			EstimateScheme:           story.EstimateScheme,
 			EstimatedDurationMinutes: story.EstimatedDurationMinutes,
 			MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+			AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+			AutoSchedulingLocked:     story.AutoSchedulingLocked,
+			AutoSchedulingStatus:     story.AutoSchedulingStatus,
+			AutoSchedulingReason:     story.AutoSchedulingReason,
+			AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 			UpdatedAt:                story.UpdatedAt,
 		})
 	}
@@ -1040,6 +1055,11 @@ func (e *FortyOneToolExecutor) getStory(ctx context.Context, scope ToolScope, ra
 		EstimateScheme:           story.EstimateScheme,
 		EstimatedDurationMinutes: story.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+		AutoSchedulingLocked:     story.AutoSchedulingLocked,
+		AutoSchedulingStatus:     story.AutoSchedulingStatus,
+		AutoSchedulingReason:     story.AutoSchedulingReason,
+		AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 		SprintName:               sprintName,
 		StartDate:                story.StartDate,
 		EndDate:                  story.EndDate,
@@ -1483,6 +1503,11 @@ type taskResult struct {
 	EstimateScheme           string     `json:"estimate_scheme"`
 	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes"`
 	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes"`
+	AutoSchedulingEnabled    bool       `json:"auto_scheduling_enabled"`
+	AutoSchedulingLocked     bool       `json:"auto_scheduling_locked"`
+	AutoSchedulingStatus     string     `json:"auto_scheduling_status"`
+	AutoSchedulingReason     *string    `json:"auto_scheduling_reason,omitempty"`
+	AutoSchedulingUpdatedAt  *time.Time `json:"auto_scheduling_updated_at,omitempty"`
 	EndDate                  *time.Time `json:"end_date"`
 	CompletedAt              *time.Time `json:"completed_at,omitempty"`
 	UpdatedAt                time.Time  `json:"updated_at"`
@@ -1507,6 +1532,11 @@ type searchStoryResult struct {
 	EstimateScheme           string     `json:"estimate_scheme"`
 	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes"`
 	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes"`
+	AutoSchedulingEnabled    bool       `json:"auto_scheduling_enabled"`
+	AutoSchedulingLocked     bool       `json:"auto_scheduling_locked"`
+	AutoSchedulingStatus     string     `json:"auto_scheduling_status"`
+	AutoSchedulingReason     *string    `json:"auto_scheduling_reason,omitempty"`
+	AutoSchedulingUpdatedAt  *time.Time `json:"auto_scheduling_updated_at,omitempty"`
 	UpdatedAt                time.Time  `json:"updated_at"`
 }
 
@@ -1618,6 +1648,11 @@ type storyDetailsResult struct {
 	EstimateScheme           string     `json:"estimate_scheme"`
 	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes"`
 	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes"`
+	AutoSchedulingEnabled    bool       `json:"auto_scheduling_enabled"`
+	AutoSchedulingLocked     bool       `json:"auto_scheduling_locked"`
+	AutoSchedulingStatus     string     `json:"auto_scheduling_status"`
+	AutoSchedulingReason     *string    `json:"auto_scheduling_reason,omitempty"`
+	AutoSchedulingUpdatedAt  *time.Time `json:"auto_scheduling_updated_at,omitempty"`
 	SprintName               *string    `json:"sprint_name"`
 	StartDate                *time.Time `json:"start_date"`
 	EndDate                  *time.Time `json:"end_date"`

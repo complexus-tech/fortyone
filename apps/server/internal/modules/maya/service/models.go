@@ -132,6 +132,7 @@ type PlanResult struct {
 	Summary        string
 	SelectedUserID *uuid.UUID
 	Actions        []CoreAction
+	Timezone       string
 }
 
 type CandidateRecommendationInput struct {
@@ -211,6 +212,8 @@ type ScheduleRepository interface {
 	ClaimScheduleRecoveryStoryRefs(ctx context.Context, limit int, retryBefore, interruptedRunBefore time.Time) ([]ScheduleRecoveryRef, error)
 	CompleteInterruptedScheduleRun(ctx context.Context, runID uuid.UUID, message string) error
 	ListMayaScheduleOwners(ctx context.Context, workspaceID, storyID uuid.UUID) ([]uuid.UUID, error)
+	WorkspaceCanUseMaya(ctx context.Context, workspaceID uuid.UUID) (bool, error)
+	StoryIsActiveForAutoScheduling(ctx context.Context, workspaceID, storyID uuid.UUID) (bool, error)
 	StoryIsSchedulableForUser(ctx context.Context, workspaceID, storyID, userID uuid.UUID) (bool, error)
 	StoryScheduleOwnershipIsRetainable(ctx context.Context, workspaceID, storyID, userID uuid.UUID) (bool, error)
 	WithScheduleStoryLock(ctx context.Context, workspaceID, storyID uuid.UUID, reconcile func() error) error

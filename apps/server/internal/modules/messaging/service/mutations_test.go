@@ -36,9 +36,29 @@ func TestFortyOneToolExecutorMutationCatalogIsStrictAndOptIn(t *testing.T) {
 	require.Equal(t, toolCreateStory, definitions[4].Name)
 	require.Equal(t, toolCreateStories, definitions[5].Name)
 	require.Equal(t, toolUpdateStory, definitions[6].Name)
+	createProperties, ok := definitions[4].Parameters["properties"].(map[string]any)
+	require.True(t, ok)
+	require.Contains(t, createProperties, "auto_scheduling_enabled")
+	require.Contains(t, definitions[4].Parameters["required"], "auto_scheduling_enabled")
+	require.NotContains(t, createProperties, "auto_scheduling_locked")
+	require.NotContains(t, definitions[4].Parameters["required"], "auto_scheduling_locked")
+
+	batchProperties, ok := definitions[5].Parameters["properties"].(map[string]any)
+	require.True(t, ok)
+	storiesSchema, ok := batchProperties["stories"].(map[string]any)
+	require.True(t, ok)
+	batchItemSchema, ok := storiesSchema["items"].(map[string]any)
+	require.True(t, ok)
+	batchItemProperties, ok := batchItemSchema["properties"].(map[string]any)
+	require.True(t, ok)
+	require.Contains(t, batchItemProperties, "auto_scheduling_enabled")
+	require.Contains(t, batchItemSchema["required"], "auto_scheduling_enabled")
+	require.NotContains(t, batchItemProperties, "auto_scheduling_locked")
+	require.NotContains(t, batchItemSchema["required"], "auto_scheduling_locked")
+
 	updateProperties, ok := definitions[6].Parameters["properties"].(map[string]any)
 	require.True(t, ok)
-	for _, property := range []string{"estimated_duration_action", "estimated_duration_minutes", "minimum_focus_block_action", "minimum_focus_block_minutes"} {
+	for _, property := range []string{"estimated_duration_action", "estimated_duration_minutes", "minimum_focus_block_action", "minimum_focus_block_minutes", "auto_scheduling_enabled", "auto_scheduling_locked"} {
 		require.Contains(t, definitions[6].Parameters["required"], property)
 		require.Contains(t, updateProperties, property)
 	}
@@ -47,6 +67,52 @@ func TestFortyOneToolExecutorMutationCatalogIsStrictAndOptIn(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, []string{storyTimeActionUnchanged, storyTimeActionSet, storyTimeActionClear}, actionSchema["enum"])
 	}
+}
+
+func TestDesiredStoryAutoSchedulingUpdatesEnforcesLockInvariant(t *testing.T) {
+	t.Parallel()
+
+	enabled := true
+	locked := true
+	updates, err := desiredStoryAutoSchedulingUpdates(stories.CoreSingleStory{
+		AutoSchedulingStatus: stories.AutoSchedulingStatusOff,
+	}, storyAutoSchedulingMutation{
+		enabled: &enabled,
+		locked:  &locked,
+	})
+	require.Nil(t, updates)
+	require.ErrorIs(t, err, ErrInvalidToolArguments)
+	require.ErrorIs(t, err, stories.ErrAutoSchedulingLockEmpty)
+
+	disabled := false
+	updates, err = desiredStoryAutoSchedulingUpdates(stories.CoreSingleStory{
+		AutoSchedulingEnabled: true,
+		AutoSchedulingLocked:  true,
+		AutoSchedulingStatus:  stories.AutoSchedulingStatusLocked,
+	}, storyAutoSchedulingMutation{enabled: &disabled})
+	require.NoError(t, err)
+	require.Equal(t, map[string]any{
+		"auto_scheduling_enabled": false,
+		"auto_scheduling_locked":  false,
+	}, updates)
+}
+
+func TestCreateStoryClaimsRejectAutoSchedulingLockInput(t *testing.T) {
+	t.Parallel()
+
+	title := "Create without a schedule lock"
+	priority := "High"
+	locked := false
+	err := validateStoryMutationClaims(storyMutationClaims{
+		Operation:            StoryMutationCreate,
+		Title:                &title,
+		Priority:             &priority,
+		AssigneeAction:       assigneeActionUnassigned,
+		AutoSchedulingLocked: &locked,
+	})
+
+	require.ErrorIs(t, err, ErrInvalidConfirmation)
+	require.ErrorContains(t, err, "cannot set auto-scheduling lock state")
 }
 
 func TestStoryMutationsRequireDurableConfirmationStore(t *testing.T) {
@@ -97,7 +163,11 @@ func TestStoryCreateRequiresExplicitConfirmationAndIsRetrySafe(t *testing.T) {
 	require.Equal(t, "WEB", confirmation.Story.TeamCode)
 	require.Equal(t, &estimatedDurationMinutes, confirmation.Story.EstimatedDurationMinutes)
 	require.Equal(t, &minimumFocusBlockMinutes, confirmation.Story.MinimumFocusBlockMinutes)
+	require.Nil(t, confirmation.Story.AutoSchedulingLocked)
 	require.NotEmpty(t, confirmation.Token)
+	claims, err := executor.mutations.verifyClaims(confirmation.Token)
+	require.NoError(t, err)
+	require.Nil(t, claims.AutoSchedulingLocked)
 
 	deniedScope := scope
 	deniedScope.AllowedTeamIDs = []uuid.UUID{}
@@ -132,6 +202,7 @@ func TestStoryCreateRequiresExplicitConfirmationAndIsRetrySafe(t *testing.T) {
 	require.Equal(t, scope.UserID, created.contextActorID)
 	require.Equal(t, &estimatedDurationMinutes, created.story.EstimatedDurationMinutes)
 	require.Equal(t, &minimumFocusBlockMinutes, created.story.MinimumFocusBlockMinutes)
+	require.False(t, created.story.AutoSchedulingLocked)
 
 	retry, err := executor.ConfirmStoryMutation(context.Background(), scope, confirmation.Token)
 	require.NoError(t, err)
@@ -238,6 +309,8 @@ func TestStoryBatchUsesOpaquePersistedProposalAndCreatesItemizedRetrySafeResult(
 	require.Equal(t, scope.SourceURL, confirmation.Stories[0].SourceURL)
 	require.Equal(t, &estimatedDurationMinutes, confirmation.Stories[0].EstimatedDurationMinutes)
 	require.Equal(t, &minimumFocusBlockMinutes, confirmation.Stories[0].MinimumFocusBlockMinutes)
+	require.Nil(t, confirmation.Stories[0].AutoSchedulingLocked)
+	require.Nil(t, confirmation.Stories[1].AutoSchedulingLocked)
 	require.Contains(t, confirmation.Stories[0].Description, scope.SourceURL)
 
 	confirmationID, opaque, err := batchConfirmationID(confirmation.Token)
@@ -246,6 +319,7 @@ func TestStoryBatchUsesOpaquePersistedProposalAndCreatesItemizedRetrySafeResult(
 	entry := storyService.confirmations.entries[confirmationID]
 	require.NotNil(t, entry)
 	require.NotEmpty(t, entry.input.Proposal, "batch contents must be persisted server-side")
+	require.NotContains(t, string(entry.input.Proposal), "auto_scheduling_locked")
 	require.NotContains(t, confirmation.Token, string(entry.input.Proposal))
 
 	wrongActor := scope
@@ -275,6 +349,8 @@ func TestStoryBatchUsesOpaquePersistedProposalAndCreatesItemizedRetrySafeResult(
 	require.Len(t, storyService.createCalls, 2)
 	require.Contains(t, *storyService.createCalls[0].story.Description, scope.SourceURL)
 	require.Contains(t, *storyService.createCalls[1].story.Description, scope.SourceURL)
+	require.False(t, storyService.createCalls[0].story.AutoSchedulingLocked)
+	require.False(t, storyService.createCalls[1].story.AutoSchedulingLocked)
 	require.NotEqual(t, *storyService.createCalls[0].story.CreationKey, *storyService.createCalls[1].story.CreationKey)
 	require.Empty(t, entry.input.Proposal, "a completed batch must redact its Slack-derived proposal")
 	require.Empty(t, entry.lastError)

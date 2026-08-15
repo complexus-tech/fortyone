@@ -50,14 +50,66 @@ type StoryCreatedPayload struct {
 
 // StoryUpdatedPayload contains data for story update events
 type StoryUpdatedPayload struct {
-	StoryID                 uuid.UUID      `json:"story_id"`
-	WorkspaceID             uuid.UUID      `json:"workspace_id"`
-	Updates                 map[string]any `json:"updates"`
-	AssigneeID              *uuid.UUID     `json:"assignee_id,omitempty"`
-	AudienceIDs             []uuid.UUID    `json:"audience_ids,omitempty"`
-	AudienceResolved        bool           `json:"audience_resolved"`
-	PreviousCollaboratorIDs []uuid.UUID    `json:"previous_collaborator_ids,omitempty"`
-	PreviousStatusID        *uuid.UUID     `json:"previous_status_id,omitempty"`
+	StoryID                 uuid.UUID                `json:"story_id"`
+	WorkspaceID             uuid.UUID                `json:"workspace_id"`
+	Updates                 map[string]any           `json:"updates"`
+	Source                  StoryUpdateSource        `json:"source,omitempty"`
+	Reason                  string                   `json:"reason,omitempty"`
+	Schedule                *StoryScheduleTransition `json:"schedule,omitempty"`
+	AssigneeID              *uuid.UUID               `json:"assignee_id,omitempty"`
+	AudienceIDs             []uuid.UUID              `json:"audience_ids,omitempty"`
+	AudienceResolved        bool                     `json:"audience_resolved"`
+	PreviousCollaboratorIDs []uuid.UUID              `json:"previous_collaborator_ids,omitempty"`
+	PreviousStatusID        *uuid.UUID               `json:"previous_status_id,omitempty"`
+}
+
+type StoryUpdateSource string
+
+const (
+	StoryUpdateSourceMaya StoryUpdateSource = "maya"
+)
+
+type StoryScheduleState string
+
+const (
+	StoryScheduleStateOff        StoryScheduleState = "off"
+	StoryScheduleStateNeedsOwner StoryScheduleState = "needs_owner"
+	StoryScheduleStateNeedsTime  StoryScheduleState = "needs_time"
+	StoryScheduleStatePlanning   StoryScheduleState = "planning"
+	StoryScheduleStateScheduled  StoryScheduleState = "scheduled"
+	StoryScheduleStateAtRisk     StoryScheduleState = "at_risk"
+	StoryScheduleStateCannotFit  StoryScheduleState = "cannot_fit"
+	StoryScheduleStateLocked     StoryScheduleState = "locked"
+)
+
+type StoryScheduleTransitionKind string
+
+const (
+	StoryScheduleTransitionFirstSchedule StoryScheduleTransitionKind = "first_schedule"
+	StoryScheduleTransitionDayChanged    StoryScheduleTransitionKind = "day_changed"
+	StoryScheduleTransitionMoved         StoryScheduleTransitionKind = "moved"
+	StoryScheduleTransitionStateChanged  StoryScheduleTransitionKind = "state_changed"
+	StoryScheduleTransitionLocked        StoryScheduleTransitionKind = "locked"
+	StoryScheduleTransitionUnlocked      StoryScheduleTransitionKind = "unlocked"
+)
+
+// StoryScheduleTransition carries the scheduler decision facts needed by
+// notification and activity consumers. Local dates are produced by the
+// scheduler in the assignee's timezone so consumers never infer a day change
+// from UTC dates.
+type StoryScheduleTransition struct {
+	Kind              StoryScheduleTransitionKind `json:"kind"`
+	UserID            uuid.UUID                   `json:"user_id"`
+	PreviousState     StoryScheduleState          `json:"previous_state,omitempty"`
+	State             StoryScheduleState          `json:"state"`
+	PreviousStartAt   *time.Time                  `json:"previous_start_at,omitempty"`
+	StartAt           *time.Time                  `json:"start_at,omitempty"`
+	PreviousEndAt     *time.Time                  `json:"previous_end_at,omitempty"`
+	EndAt             *time.Time                  `json:"end_at,omitempty"`
+	Timezone          string                      `json:"timezone,omitempty"`
+	PreviousLocalDate string                      `json:"previous_local_date,omitempty"`
+	LocalDate         string                      `json:"local_date,omitempty"`
+	ShiftMinutes      int                         `json:"shift_minutes,omitempty"`
 }
 
 // ObjectiveUpdatedPayload contains data for objective update events

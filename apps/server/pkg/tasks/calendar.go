@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -48,18 +49,14 @@ func (s *Service) EnqueueCalendarScheduleReconcile(ctx context.Context, userID u
 	if userID == uuid.Nil {
 		return fmt.Errorf("calendar schedule reconciliation user ID is required")
 	}
-	return s.enqueueCalendarScheduleReconcile(ctx, CalendarScheduleReconcilePayload{UserID: &userID})
+	return s.enqueueCalendarScheduleReconcile(ctx, CalendarScheduleReconcilePayload{UserID: &userID}, 10*time.Second)
 }
 
 func (s *Service) EnqueueStoryScheduleReconcile(ctx context.Context, workspaceID, storyID uuid.UUID) error {
 	if workspaceID == uuid.Nil || storyID == uuid.Nil {
 		return fmt.Errorf("calendar schedule reconciliation workspace and story IDs are required")
 	}
-	return s.enqueueCalendarScheduleReconcile(ctx, CalendarScheduleReconcilePayload{WorkspaceID: &workspaceID, StoryID: &storyID})
-}
-
-func (s *Service) enqueueCalendarScheduleReconcile(ctx context.Context, payload CalendarScheduleReconcilePayload) error {
-	body, err := json.Marshal(payload)
+	body, err := json.Marshal(CalendarScheduleReconcilePayload{WorkspaceID: &workspaceID, StoryID: &storyID})
 	if err != nil {
 		return fmt.Errorf("marshal calendar schedule reconciliation payload: %w", err)
 	}
@@ -67,8 +64,27 @@ func (s *Service) enqueueCalendarScheduleReconcile(ctx context.Context, payload 
 		ctx,
 		asynq.NewTask(TypeCalendarScheduleReconcile, body),
 		asynq.Queue("integrations"),
-		asynq.ProcessIn(10*time.Second),
+		asynq.Unique(5*time.Second),
 	)
+	if errors.Is(err, asynq.ErrDuplicateTask) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("enqueue calendar schedule reconciliation: %w", err)
+	}
+	return nil
+}
+
+func (s *Service) enqueueCalendarScheduleReconcile(ctx context.Context, payload CalendarScheduleReconcilePayload, delay time.Duration) error {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal calendar schedule reconciliation payload: %w", err)
+	}
+	options := []asynq.Option{asynq.Queue("integrations")}
+	if delay > 0 {
+		options = append(options, asynq.ProcessIn(delay))
+	}
+	_, err = s.asynqClient.EnqueueContext(ctx, asynq.NewTask(TypeCalendarScheduleReconcile, body), options...)
 	if err != nil {
 		return fmt.Errorf("enqueue calendar schedule reconciliation: %w", err)
 	}

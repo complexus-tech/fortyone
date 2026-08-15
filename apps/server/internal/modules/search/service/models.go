@@ -28,6 +28,11 @@ type CoreSearchStory struct {
 	EndDate                  *time.Time
 	EstimatedDurationMinutes *int
 	MinimumFocusBlockMinutes *int
+	AutoSchedulingEnabled    bool
+	AutoSchedulingLocked     bool
+	AutoSchedulingStatus     string
+	AutoSchedulingReason     *string
+	AutoSchedulingUpdatedAt  *time.Time
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	Labels                   []uuid.UUID

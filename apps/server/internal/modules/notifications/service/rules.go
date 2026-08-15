@@ -15,12 +15,17 @@ import (
 
 type Rules struct {
 	log      *logger.Logger
-	stories  *stories.Service
+	stories  storyRulesService
 	users    *users.Service
 	statuses *states.Service
 }
 
-func NewRules(log *logger.Logger, stories *stories.Service, users *users.Service, statuses *states.Service) *Rules {
+type storyRulesService interface {
+	Get(ctx context.Context, storyID, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
+	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
+}
+
+func NewRules(log *logger.Logger, stories storyRulesService, users *users.Service, statuses *states.Service) *Rules {
 	return &Rules{
 		log:      log,
 		stories:  stories,
@@ -98,6 +103,7 @@ func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpda
 	if r.hasNonAssignmentUpdates(payload) {
 		notifications = append(notifications, r.handleStoryUpdates(ctx, payload, actorID, directRecipients)...)
 	}
+	notifications = append(notifications, r.handleScheduleTransition(ctx, payload, actorID, directRecipients)...)
 
 	return notifications, nil
 }

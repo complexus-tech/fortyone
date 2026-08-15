@@ -101,9 +101,14 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, userID 
 			s.workspace_id,
 			s.start_date,
 			s.end_date,
-			s.estimated_duration_minutes,
-			s.minimum_focus_block_minutes,
-			s.created_at,
+				s.estimated_duration_minutes,
+				s.minimum_focus_block_minutes,
+				s.auto_scheduling_enabled,
+				s.auto_scheduling_locked,
+				s.auto_scheduling_status,
+				s.auto_scheduling_reason,
+				s.auto_scheduling_updated_at,
+				s.created_at,
 			s.updated_at,
 			COALESCE(
 				(

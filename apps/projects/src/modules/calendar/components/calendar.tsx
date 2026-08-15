@@ -54,6 +54,11 @@ import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grou
 import type { Story } from "@/modules/stories/types";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import {
+  getMayaCalendarBlockLabel,
+  getMayaCalendarBlockReason,
+  isCalendarScheduleBlockEditable,
+} from "./calendar-block";
+import {
   buildCalendarEventLayouts,
   deriveCalendarVisibleHours,
   getDisplayBusyWindows,
@@ -274,11 +279,14 @@ const CalendarTimedBlock = ({
 
   const { block } = item;
   const isMayaManaged = block.source === "maya";
+  const isEditable = isCalendarScheduleBlockEditable(block);
+  const mayaLabel = getMayaCalendarBlockLabel(block);
+  const mayaReason = getMayaCalendarBlockReason(block);
   const label =
     block.blockType === "work"
       ? block.storyCode || block.teamCode || "Work"
       : "Focus";
-  let statusLabel = isMayaManaged ? `Maya · ${label}` : label;
+  let statusLabel = mayaLabel ? `${mayaLabel} · ${label}` : label;
   if (block.hasConflict) {
     statusLabel = "Conflict";
   }
@@ -305,7 +313,12 @@ const CalendarTimedBlock = ({
     blockActionLabel = "Resolve calendar block conflict";
   }
   if (isMayaManaged) {
-    blockActionLabel = "Maya-managed calendar block";
+    blockActionLabel = block.isLocked
+      ? "Locked Maya-managed calendar block"
+      : "Maya-managed calendar block";
+    if (mayaReason) {
+      blockActionLabel += `. ${mayaReason}`;
+    }
   }
 
   return (
@@ -316,13 +329,14 @@ const CalendarTimedBlock = ({
         blockColorClass,
       )}
       style={style}
+      title={mayaReason ?? undefined}
     >
       <button
         aria-label={blockActionLabel}
         className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-lg focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
-        disabled={isMayaManaged}
+        disabled={!isEditable}
         onClick={() => {
-          if (!isMayaManaged) {
+          if (isEditable) {
             onEdit(block);
           }
         }}
@@ -1267,6 +1281,10 @@ const CalendarMonthItem = ({
 
   const { block } = item;
   const isMayaManaged = block.source === "maya";
+  const isEditable = isCalendarScheduleBlockEditable(block);
+  const mayaLabel = getMayaCalendarBlockLabel(block);
+  const mayaReason = getMayaCalendarBlockReason(block);
+  const displayTitle = mayaLabel ? `${mayaLabel} · ${title}` : title;
   const href =
     block.blockType === "work" && block.storyId
       ? getStoryHref(withWorkspace, block.storyId, block.storyCode)
@@ -1283,7 +1301,12 @@ const CalendarMonthItem = ({
     blockActionLabel = `Resolve conflict for ${title}`;
   }
   if (isMayaManaged) {
-    blockActionLabel = `Maya-managed block for ${title}`;
+    blockActionLabel = block.isLocked
+      ? `Locked Maya-managed block for ${title}`
+      : `Maya-managed block for ${title}`;
+    if (mayaReason) {
+      blockActionLabel += `. ${mayaReason}`;
+    }
   }
 
   return (
@@ -1292,13 +1315,14 @@ const CalendarMonthItem = ({
         "relative flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-base",
         toneClass,
       )}
+      title={mayaReason ?? undefined}
     >
       <button
         aria-label={blockActionLabel}
         className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-md focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
-        disabled={isMayaManaged}
+        disabled={!isEditable}
         onClick={() => {
-          if (!isMayaManaged) {
+          if (isEditable) {
             onEdit(block);
           }
         }}
@@ -1316,11 +1340,11 @@ const CalendarMonthItem = ({
           className="text-foreground hover:text-primary pointer-events-auto relative z-10 truncate"
           href={href}
         >
-          {isMayaManaged ? `Maya · ${title}` : title}
+          {displayTitle}
         </Link>
       ) : (
         <span className="text-foreground pointer-events-none relative z-10 truncate">
-          {isMayaManaged ? `Maya · ${title}` : title}
+          {displayTitle}
         </span>
       )}
     </Box>

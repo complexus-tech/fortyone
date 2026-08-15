@@ -40,6 +40,11 @@ type dbStory struct {
 	EstimateScheme           string           `db:"estimate_scheme"`
 	EstimatedDurationMinutes *int             `db:"estimated_duration_minutes"`
 	MinimumFocusBlockMinutes *int             `db:"minimum_focus_block_minutes"`
+	AutoSchedulingEnabled    bool             `db:"auto_scheduling_enabled"`
+	AutoSchedulingLocked     bool             `db:"auto_scheduling_locked"`
+	AutoSchedulingStatus     string           `db:"auto_scheduling_status"`
+	AutoSchedulingReason     *string          `db:"auto_scheduling_reason"`
+	AutoSchedulingUpdatedAt  *time.Time       `db:"auto_scheduling_updated_at"`
 	IsDraft                  bool             `db:"is_draft"`
 	BlockedBy                *uuid.UUID       `db:"blocked_by_id"`
 	Blocking                 *uuid.UUID       `db:"blocking_id"`
@@ -154,6 +159,11 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 		EstimateLabel:            stories.EstimateLabelFromValue(i.EstimateScheme, i.EstimateValue),
 		EstimatedDurationMinutes: i.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: i.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    i.AutoSchedulingEnabled,
+		AutoSchedulingLocked:     i.AutoSchedulingLocked,
+		AutoSchedulingStatus:     i.AutoSchedulingStatus,
+		AutoSchedulingReason:     i.AutoSchedulingReason,
+		AutoSchedulingUpdatedAt:  i.AutoSchedulingUpdatedAt,
 		Parent:                   i.Parent,
 		Objective:                i.Objective,
 		Team:                     i.Team,
@@ -220,6 +230,11 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 			EstimateLabel:            stories.EstimateLabelFromValue(story.EstimateScheme, story.EstimateValue),
 			EstimatedDurationMinutes: story.EstimatedDurationMinutes,
 			MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+			AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+			AutoSchedulingLocked:     story.AutoSchedulingLocked,
+			AutoSchedulingStatus:     story.AutoSchedulingStatus,
+			AutoSchedulingReason:     story.AutoSchedulingReason,
+			AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 			Parent:                   story.Parent,
 			Objective:                story.Objective,
 			ObjectiveSummary:         toCoreObjectiveSummary(story),
@@ -258,6 +273,11 @@ func toDBStory(i stories.CoreSingleStory) dbStory {
 		EstimateValue:            i.EstimateValue,
 		EstimatedDurationMinutes: i.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: i.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    i.AutoSchedulingEnabled,
+		AutoSchedulingLocked:     i.AutoSchedulingLocked,
+		AutoSchedulingStatus:     i.AutoSchedulingStatus,
+		AutoSchedulingReason:     i.AutoSchedulingReason,
+		AutoSchedulingUpdatedAt:  i.AutoSchedulingUpdatedAt,
 		Parent:                   i.Parent,
 		Objective:                i.Objective,
 		Workspace:                i.Workspace,
@@ -338,6 +358,7 @@ func toCoreActivity(i dbActivity) stories.CoreActivity {
 // toDBActivity converts a CoreActivity to a dbActivity.
 func toDBActivity(i stories.CoreActivity) dbActivity {
 	return dbActivity{
+		ID:           i.ID,
 		StoryID:      i.StoryID,
 		UserID:       i.UserID,
 		Type:         i.Type,

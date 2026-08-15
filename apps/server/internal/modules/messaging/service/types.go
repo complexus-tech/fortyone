@@ -232,6 +232,8 @@ type StoryMutationPreview struct {
 	AssigneeAction           string     `json:"assignee_action"`
 	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes,omitempty"`
 	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes,omitempty"`
+	AutoSchedulingEnabled    *bool      `json:"auto_scheduling_enabled,omitempty"`
+	AutoSchedulingLocked     *bool      `json:"auto_scheduling_locked,omitempty"`
 	ChangedFields            []string   `json:"changed_fields,omitempty"`
 }
 
@@ -250,6 +252,11 @@ type StoryMutationResult struct {
 	AssigneeID               *uuid.UUID                `json:"assignee_id,omitempty"`
 	EstimatedDurationMinutes *int                      `json:"estimated_duration_minutes,omitempty"`
 	MinimumFocusBlockMinutes *int                      `json:"minimum_focus_block_minutes,omitempty"`
+	AutoSchedulingEnabled    bool                      `json:"auto_scheduling_enabled"`
+	AutoSchedulingLocked     bool                      `json:"auto_scheduling_locked"`
+	AutoSchedulingStatus     string                    `json:"auto_scheduling_status"`
+	AutoSchedulingReason     *string                   `json:"auto_scheduling_reason,omitempty"`
+	AutoSchedulingUpdatedAt  *time.Time                `json:"auto_scheduling_updated_at,omitempty"`
 	CommentID                *uuid.UUID                `json:"comment_id,omitempty"`
 	AssociationID            *uuid.UUID                `json:"association_id,omitempty"`
 	Items                    []StoryMutationItemResult `json:"items,omitempty"`
@@ -268,6 +275,11 @@ type StoryMutationItemResult struct {
 	AssigneeID               *uuid.UUID `json:"assignee_id,omitempty"`
 	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes,omitempty"`
 	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes,omitempty"`
+	AutoSchedulingEnabled    bool       `json:"auto_scheduling_enabled"`
+	AutoSchedulingLocked     bool       `json:"auto_scheduling_locked"`
+	AutoSchedulingStatus     string     `json:"auto_scheduling_status"`
+	AutoSchedulingReason     *string    `json:"auto_scheduling_reason,omitempty"`
+	AutoSchedulingUpdatedAt  *time.Time `json:"auto_scheduling_updated_at,omitempty"`
 }
 
 // StoryMutationCancellationResult describes a successful cancellation. Status

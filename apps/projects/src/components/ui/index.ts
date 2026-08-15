@@ -40,6 +40,7 @@ export * from "./story/modules-menu";
 export * from "./story/sprints-menu";
 export * from "./story/estimate-menu";
 export * from "./story/time-needed-menu";
+export * from "./story/auto-scheduling-menu";
 export * from "./story/context-menu";
 export * from "./story/labels-menu";
 export * from "./story/card";

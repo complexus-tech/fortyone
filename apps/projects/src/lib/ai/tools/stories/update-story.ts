@@ -62,6 +62,18 @@ export const updateStory = tool({
       .describe(
         "Updated minimum schedulable focus block in minutes. Set null to use the automatic default.",
       ),
+    autoSchedulingEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        "Enable or pause continuous Maya calendar scheduling for this story.",
+      ),
+    autoSchedulingLocked: z
+      .boolean()
+      .optional()
+      .describe(
+        "Lock or unlock the current Maya calendar blocks. Lock only after blocks have been scheduled.",
+      ),
     labelIds: z
       .array(z.string())
       .optional()
@@ -85,6 +97,8 @@ export const updateStory = tool({
       estimateValue,
       estimatedDurationMinutes,
       minimumFocusBlockMinutes,
+      autoSchedulingEnabled,
+      autoSchedulingLocked,
       labelIds,
       sprintId,
       objectiveId,
@@ -135,6 +149,8 @@ export const updateStory = tool({
         priority,
         estimateValue,
         ...timeNeededPatch,
+        autoSchedulingEnabled,
+        autoSchedulingLocked,
         labelIds,
         sprintId: normalizeOptionalString(sprintId),
         objectiveId: normalizeOptionalString(objectiveId),

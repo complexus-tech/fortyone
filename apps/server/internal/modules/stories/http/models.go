@@ -204,6 +204,11 @@ type AppSingleStory struct {
 	EstimateScheme           string                `json:"estimateScheme"`
 	EstimatedDurationMinutes *int                  `json:"estimatedDurationMinutes"`
 	MinimumFocusBlockMinutes *int                  `json:"minimumFocusBlockMinutes"`
+	AutoSchedulingEnabled    bool                  `json:"autoSchedulingEnabled"`
+	AutoSchedulingLocked     bool                  `json:"autoSchedulingLocked"`
+	AutoSchedulingStatus     string                `json:"autoSchedulingStatus"`
+	AutoSchedulingReason     *string               `json:"autoSchedulingReason"`
+	AutoSchedulingUpdatedAt  *time.Time            `json:"autoSchedulingUpdatedAt"`
 	TeamCode                 string                `json:"teamCode"`
 	Description              *string               `json:"description"`
 	DescriptionHTML          *string               `json:"descriptionHTML"`
@@ -260,6 +265,11 @@ type AppStoryList struct {
 	EstimateScheme           string               `json:"estimateScheme"`
 	EstimatedDurationMinutes *int                 `json:"estimatedDurationMinutes"`
 	MinimumFocusBlockMinutes *int                 `json:"minimumFocusBlockMinutes"`
+	AutoSchedulingEnabled    bool                 `json:"autoSchedulingEnabled"`
+	AutoSchedulingLocked     bool                 `json:"autoSchedulingLocked"`
+	AutoSchedulingStatus     string               `json:"autoSchedulingStatus"`
+	AutoSchedulingReason     *string              `json:"autoSchedulingReason"`
+	AutoSchedulingUpdatedAt  *time.Time           `json:"autoSchedulingUpdatedAt"`
 	Objective                *uuid.UUID           `json:"objectiveId"`
 	ObjectiveSummary         *AppObjectiveSummary `json:"objective"`
 	Status                   *uuid.UUID           `json:"statusId"`
@@ -306,6 +316,11 @@ func toAppStory(i stories.CoreSingleStory, usersByID map[uuid.UUID]AppUserSummar
 		EstimateScheme:           i.EstimateScheme,
 		EstimatedDurationMinutes: i.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: i.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    i.AutoSchedulingEnabled,
+		AutoSchedulingLocked:     i.AutoSchedulingLocked,
+		AutoSchedulingStatus:     i.AutoSchedulingStatus,
+		AutoSchedulingReason:     i.AutoSchedulingReason,
+		AutoSchedulingUpdatedAt:  i.AutoSchedulingUpdatedAt,
 		TeamCode:                 i.TeamCode,
 		Description:              i.Description,
 		DescriptionHTML:          i.DescriptionHTML,
@@ -379,6 +394,11 @@ func toAppStoryListItem(story stories.CoreStoryList, usersByID map[uuid.UUID]App
 		EstimateScheme:           story.EstimateScheme,
 		EstimatedDurationMinutes: story.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+		AutoSchedulingLocked:     story.AutoSchedulingLocked,
+		AutoSchedulingStatus:     story.AutoSchedulingStatus,
+		AutoSchedulingReason:     story.AutoSchedulingReason,
+		AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 		Objective:                story.Objective,
 		ObjectiveSummary:         toAppObjectiveSummary(story.ObjectiveSummary),
 		Team:                     story.Team,
@@ -474,6 +494,8 @@ type AppUpdateStory struct {
 	EstimateValue            *int16     `json:"estimateValue" db:"estimate_unit"`
 	EstimatedDurationMinutes *int       `json:"estimatedDurationMinutes" db:"estimated_duration_minutes"`
 	MinimumFocusBlockMinutes *int       `json:"minimumFocusBlockMinutes" db:"minimum_focus_block_minutes"`
+	AutoSchedulingEnabled    bool       `json:"autoSchedulingEnabled" db:"auto_scheduling_enabled"`
+	AutoSchedulingLocked     bool       `json:"autoSchedulingLocked" db:"auto_scheduling_locked"`
 	Description              string     `json:"description" db:"description"`
 	DescriptionHTML          string     `json:"descriptionHTML" db:"description_html"`
 	Parent                   *uuid.UUID `json:"parentId" db:"parent_id"`
@@ -492,6 +514,7 @@ type AppNewStory struct {
 	EstimateValue            *int16      `json:"estimateValue"`
 	EstimatedDurationMinutes *int        `json:"estimatedDurationMinutes"`
 	MinimumFocusBlockMinutes *int        `json:"minimumFocusBlockMinutes"`
+	AutoSchedulingEnabled    bool        `json:"autoSchedulingEnabled"`
 	Description              *string     `json:"description"`
 	DescriptionHTML          *string     `json:"descriptionHTML"`
 	Parent                   *uuid.UUID  `json:"parentId"`
@@ -707,6 +730,7 @@ func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
 		EstimateValue:            a.EstimateValue,
 		EstimatedDurationMinutes: a.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: a.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    a.AutoSchedulingEnabled,
 		Description:              a.Description,
 		DescriptionHTML:          a.DescriptionHTML,
 		Parent:                   a.Parent,

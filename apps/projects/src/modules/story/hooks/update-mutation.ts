@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { memberKeys } from "@/constants/keys";
+import { deriveAutoSchedulingStatus } from "@/lib/auto-scheduling";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
@@ -52,17 +53,18 @@ export const useUpdateStoryMutation = () => {
     onMutate: ({ storyId, payload }) => {
       const storyPayload = { ...payload };
       delete storyPayload.reconcileDescriptionMedia;
-      const optimisticPayload = buildOptimisticStoryPayload(
-        queryClient,
-        workspaceSlug,
-        storyPayload,
-      );
 
       queryClient.cancelQueries({
         queryKey: storyKeys.detail(workspaceSlug, storyId),
       });
       const previousStory = queryClient.getQueryData<DetailedStory>(
         storyKeys.detail(workspaceSlug, storyId),
+      );
+      const optimisticPayload = buildOptimisticStoryPayload(
+        queryClient,
+        workspaceSlug,
+        storyPayload,
+        previousStory,
       );
 
       const activeQueries = queryClient.getQueryCache().findAll({
@@ -150,17 +152,33 @@ export const buildOptimisticStoryPayload = (
   queryClient: ReturnType<typeof useQueryClient>,
   workspaceSlug: string,
   payload: Partial<DetailedStory>,
+  currentStory?: DetailedStory,
 ): Partial<DetailedStory> => {
-  if (!("assigneeId" in payload)) {
-    return payload;
+  const optimisticPayload = { ...payload };
+  const changesSchedulingInputs =
+    "autoSchedulingEnabled" in payload ||
+    "autoSchedulingLocked" in payload ||
+    "assigneeId" in payload ||
+    "estimatedDurationMinutes" in payload;
+
+  if (changesSchedulingInputs && currentStory) {
+    const mergedStory = { ...currentStory, ...payload };
+    optimisticPayload.autoSchedulingStatus = deriveAutoSchedulingStatus({
+      assigneeId: mergedStory.assigneeId,
+      autoSchedulingEnabled: mergedStory.autoSchedulingEnabled,
+      autoSchedulingLocked: mergedStory.autoSchedulingLocked,
+      estimatedDurationMinutes: mergedStory.estimatedDurationMinutes,
+    });
+    optimisticPayload.autoSchedulingReason = null;
   }
 
-  return {
-    ...payload,
-    assignee: payload.assigneeId
+  if ("assigneeId" in payload) {
+    optimisticPayload.assignee = payload.assigneeId
       ? resolveAssigneeSummary(queryClient, workspaceSlug, payload.assigneeId)
-      : null,
-  };
+      : null;
+  }
+
+  return optimisticPayload;
 };
 
 const resolveAssigneeSummary = (

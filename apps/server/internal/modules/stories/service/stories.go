@@ -81,6 +81,19 @@ type conditionalUpdateRepository interface {
 	UpdateIfUnchanged(ctx context.Context, id, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any) (bool, error)
 }
 
+type autoSchedulingRepository interface {
+	MayaScheduleBlocksExist(ctx context.Context, storyID, workspaceID uuid.UUID) (bool, error)
+	UpdateAutoSchedulingStateIfUnchanged(
+		ctx context.Context,
+		storyID, workspaceID uuid.UUID,
+		expectedUpdatedAt time.Time,
+		status string,
+		reason *string,
+		stateUpdatedAt time.Time,
+		locked *bool,
+	) (bool, error)
+}
+
 type defaultStatusRepository interface {
 	FindFirstStatusByCategory(ctx context.Context, teamID, workspaceID uuid.UUID, category string) (*uuid.UUID, error)
 }
@@ -128,6 +141,10 @@ type updateOptions struct {
 	referencedMediaIDs       []uuid.UUID
 	orphanedMediaIDs         *[]uuid.UUID
 	expectedUpdatedAt        *time.Time
+	eventSource              events.StoryUpdateSource
+	eventReason              string
+	eventSchedule            *events.StoryScheduleTransition
+	automationMutation       bool
 }
 
 type commentOptions struct {
@@ -233,6 +250,10 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 		span.RecordError(err)
 		return CoreSingleStory{}, err
 	}
+	if err := s.prepareAutoSchedulingCreate(&story); err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
 	if err := s.validateMayaAssignment(ctx, story, nil, actorID); err != nil {
 		span.RecordError(err)
 		return CoreSingleStory{}, err
@@ -297,6 +318,9 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 	}
 	if options.enqueueGitHubSync {
 		s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
+	}
+	if cs.AutoSchedulingEnabled {
+		s.enqueueStoryScheduleReconcile(ctx, cs.ID, workspaceId)
 	}
 	span.AddEvent("story created.", trace.WithAttributes(
 		attribute.String("story.title", cs.Title),
@@ -536,6 +560,7 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUI
 		span.RecordError(err)
 		return err
 	}
+	s.enqueueStoryScheduleReconcile(ctx, id, workspaceId)
 	return nil
 }
 
@@ -642,6 +667,33 @@ func (s *Service) UpdateExternalWithReasonIfUnchanged(
 	})
 }
 
+// UpdateAutomationIfUnchanged applies a Maya-owned story mutation with
+// compare-and-swap protection and publishes the full StoryUpdated contract.
+// It is intentionally separate from provider-originated updates: Maya's
+// assignment decisions must be observable to scheduling and notification
+// consumers, while provider ingestion keeps its narrower event behavior.
+func (s *Service) UpdateAutomationIfUnchanged(
+	ctx context.Context,
+	actorID, storyID, workspaceID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	updates map[string]any,
+	reason string,
+) error {
+	if expectedUpdatedAt.IsZero() {
+		return errors.New("expected story update time is required")
+	}
+	expectedUpdatedAt = expectedUpdatedAt.UTC()
+	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
+		publishEvents:            true,
+		recordDescriptionUpdates: true,
+		activityReason:           reason,
+		expectedUpdatedAt:        &expectedUpdatedAt,
+		eventSource:              events.StoryUpdateSourceMaya,
+		eventReason:              reason,
+		automationMutation:       true,
+	})
+}
+
 // UpdateExternalUserActionIfUnchanged applies a user-initiated external edit
 // with compare-and-swap protection and the same downstream event and GitHub
 // synchronization behavior as an in-app update.
@@ -681,6 +733,13 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		normalizedUpdates[field] = value
 	}
 	updates = normalizedUpdates
+	if !options.automationMutation {
+		for _, field := range []string{"auto_scheduling_status", "auto_scheduling_reason", "auto_scheduling_updated_at"} {
+			if _, exists := updates[field]; exists {
+				return fmt.Errorf("%s is managed by Maya", field)
+			}
+		}
+	}
 
 	story, err := s.repo.Get(ctx, storyID, workspaceID)
 	if err != nil {
@@ -730,6 +789,31 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		return err
 	}
 
+	if assigneeID, ok := mayaAssignmentUpdateAssignee(updates); ok {
+		updatedStory, err := storyWithAssignee(story, assigneeID)
+		if err != nil {
+			s.log.Error(ctx, "failed to prepare story for Maya assignment automation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
+			return err
+		}
+		if err := s.validateMayaAssignment(ctx, updatedStory, story.Assignee, actorID); err != nil {
+			span.RecordError(err)
+			return err
+		}
+	}
+
+	// Handle auto-completion logic if status is being updated
+	if newStatusID, hasStatusUpdate := updates["status_id"]; hasStatusUpdate {
+		if err := s.handleCompletionStatusChange(ctx, story, newStatusID, updates); err != nil {
+			s.log.Error(ctx, "failed to handle completion status change", "error", err)
+			// Don't fail the entire update - log and continue
+		}
+	}
+
+	reconcileAutoScheduling, err := s.prepareAutoSchedulingUpdate(ctx, story, updates)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
 	for field, value := range updates {
 		if s.valuesEqual(s.getOldValue(story, field), value) {
 			delete(updates, field)
@@ -754,26 +838,6 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 			*options.orphanedMediaIDs = append((*options.orphanedMediaIDs)[:0], orphanedMediaIDs...)
 		}
 		return nil
-	}
-
-	if assigneeID, ok := mayaAssignmentUpdateAssignee(updates); ok {
-		updatedStory, err := storyWithAssignee(story, assigneeID)
-		if err != nil {
-			s.log.Error(ctx, "failed to prepare story for Maya assignment automation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
-			return err
-		}
-		if err := s.validateMayaAssignment(ctx, updatedStory, story.Assignee, actorID); err != nil {
-			span.RecordError(err)
-			return err
-		}
-	}
-
-	// Handle auto-completion logic if status is being updated
-	if newStatusID, hasStatusUpdate := updates["status_id"]; hasStatusUpdate {
-		if err := s.handleCompletionStatusChange(ctx, story, newStatusID, updates); err != nil {
-			s.log.Error(ctx, "failed to handle completion status change", "error", err)
-			// Don't fail the entire update - log and continue
-		}
 	}
 
 	// Update the story, reconciling inline media only for an explicitly
@@ -823,6 +887,9 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		if strings.Contains(field, "description") && !options.recordDescriptionUpdates {
 			continue
 		}
+		if isAutoSchedulingStateField(field) {
+			continue
+		}
 
 		currentValue := s.formatValue(value)
 		if displayValue, ok := activityDisplayValues[field]; ok {
@@ -865,6 +932,9 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 			AssigneeID:       story.Assignee, // Current assignee before update
 			AudienceIDs:      audienceIDs,
 			AudienceResolved: audienceResolved,
+			Source:           options.eventSource,
+			Reason:           options.eventReason,
+			Schedule:         options.eventSchedule,
 		}
 		if statusChanged {
 			payload.PreviousStatusID = story.Status
@@ -885,8 +955,20 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 	if options.enqueueGitHubSync {
 		s.enqueueGitHubStorySync(ctx, storyID, workspaceID)
 	}
+	if reconcileAutoScheduling {
+		s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceID)
+	}
 
 	return nil
+}
+
+func isAutoSchedulingStateField(field string) bool {
+	switch field {
+	case "auto_scheduling_status", "auto_scheduling_reason", "auto_scheduling_updated_at":
+		return true
+	default:
+		return false
+	}
 }
 
 func normalizeActivityReason(reason string) *string {
@@ -913,6 +995,17 @@ func (s *Service) enqueueGitHubStorySync(ctx context.Context, storyID, workspace
 		WorkspaceID: workspaceID,
 	}); err != nil {
 		s.log.Error(ctx, "failed to enqueue github story sync task", "story_id", storyID, "workspace_id", workspaceID, "error", err)
+	}
+}
+
+func (s *Service) enqueueStoryScheduleReconcile(ctx context.Context, storyID, workspaceID uuid.UUID) {
+	if s.tasksService == nil {
+		return
+	}
+	enqueueCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	if err := s.tasksService.EnqueueStoryScheduleReconcile(enqueueCtx, workspaceID, storyID); err != nil {
+		s.log.Error(ctx, "failed to enqueue story schedule reconciliation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
 	}
 }
 
@@ -1018,6 +1111,9 @@ func (s *Service) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId u
 		span.RecordError(err)
 		return err
 	}
+	for _, storyID := range ids {
+		s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceId)
+	}
 	return nil
 }
 
@@ -1053,6 +1149,7 @@ func (s *Service) Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UU
 		span.RecordError(err)
 		return err
 	}
+	s.enqueueRestoredAutoScheduling(ctx, []uuid.UUID{id}, workspaceId)
 	return nil
 }
 
@@ -1066,6 +1163,7 @@ func (s *Service) BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId 
 		span.RecordError(err)
 		return err
 	}
+	s.enqueueRestoredAutoScheduling(ctx, ids, workspaceId)
 	return nil
 }
 
@@ -1086,6 +1184,9 @@ func (s *Service) BulkArchive(ctx context.Context, ids []uuid.UUID, workspaceId 
 		"story_ids", ids)
 	span.AddEvent("Stories bulk archived.", trace.WithAttributes(
 		attribute.Int("stories.count", len(ids))))
+	for _, storyID := range ids {
+		s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceId)
+	}
 
 	return nil
 }
@@ -1102,6 +1203,7 @@ func (s *Service) BulkUnarchive(ctx context.Context, ids []uuid.UUID, workspaceI
 		span.RecordError(err)
 		return err
 	}
+	s.enqueueRestoredAutoScheduling(ctx, ids, workspaceId)
 
 	s.log.Info(ctx, fmt.Sprintf("Successfully bulk unarchived stories: %v", ids),
 		"story_ids", ids)
@@ -1109,6 +1211,19 @@ func (s *Service) BulkUnarchive(ctx context.Context, ids []uuid.UUID, workspaceI
 		attribute.Int("stories.count", len(ids))))
 
 	return nil
+}
+
+func (s *Service) enqueueRestoredAutoScheduling(ctx context.Context, storyIDs []uuid.UUID, workspaceID uuid.UUID) {
+	for _, storyID := range storyIDs {
+		story, err := s.repo.Get(ctx, storyID, workspaceID)
+		if err != nil {
+			s.log.Error(ctx, "failed to load restored story for auto-scheduling", "story_id", storyID, "workspace_id", workspaceID, "error", err)
+			continue
+		}
+		if story.AutoSchedulingEnabled {
+			s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceID)
+		}
+	}
 }
 
 // GetActivitiesWithUser returns the activities for a story with user details and pagination.
@@ -1842,6 +1957,16 @@ func (s *Service) getOldValue(story CoreSingleStory, field string) any {
 		return story.EstimatedDurationMinutes
 	case "minimum_focus_block_minutes":
 		return story.MinimumFocusBlockMinutes
+	case "auto_scheduling_enabled":
+		return story.AutoSchedulingEnabled
+	case "auto_scheduling_locked":
+		return story.AutoSchedulingLocked
+	case "auto_scheduling_status":
+		return story.AutoSchedulingStatus
+	case "auto_scheduling_reason":
+		return story.AutoSchedulingReason
+	case "auto_scheduling_updated_at":
+		return story.AutoSchedulingUpdatedAt
 	default:
 		return nil
 	}

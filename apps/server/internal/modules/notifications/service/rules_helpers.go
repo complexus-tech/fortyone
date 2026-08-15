@@ -25,6 +25,9 @@ func (r *Rules) getUserName(ctx context.Context, userID uuid.UUID) string {
 // getStoryTitle gets a story's title with fallback
 func (r *Rules) getStoryTitle(ctx context.Context, storyID, workspaceID uuid.UUID) string {
 	var storyTitle string
+	if r.stories == nil {
+		return storyTitle
+	}
 	if story, err := r.stories.Get(ctx, storyID, workspaceID); err == nil {
 		storyTitle = story.Title
 	}

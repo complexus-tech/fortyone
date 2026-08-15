@@ -340,9 +340,11 @@ func TestGoogleProviderUpsertCreatesWithStablePrivateProvenance(t *testing.T) {
 	t.Parallel()
 
 	var methods []string
+	var sendUpdates []string
 	var inserted calendarapi.Event
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		methods = append(methods, request.Method)
+		sendUpdates = append(sendUpdates, request.URL.Query().Get("sendUpdates"))
 		w.Header().Set("Content-Type", "application/json")
 		if request.Method == http.MethodPut {
 			http.Error(w, `{"error":{"code":404,"message":"not found"}}`, http.StatusNotFound)
@@ -371,8 +373,17 @@ func TestGoogleProviderUpsertCreatesWithStablePrivateProvenance(t *testing.T) {
 	if strings.Join(methods, ",") != "PUT,POST" {
 		t.Fatalf("expected update-then-insert, got %v", methods)
 	}
+	if strings.Join(sendUpdates, ",") != "none,none" {
+		t.Fatalf("expected every schedule write to suppress Google attendee updates, got %v", sendUpdates)
+	}
 	if inserted.Id != eventID || inserted.Visibility != "private" || inserted.ExtendedProperties == nil {
 		t.Fatalf("unexpected inserted event: %#v", inserted)
+	}
+	if inserted.Description != fortyOneMayaDescription {
+		t.Fatalf("expected Maya provenance description, got %q", inserted.Description)
+	}
+	if len(inserted.Attendees) != 0 {
+		t.Fatalf("Maya schedule events must not invite attendees: %#v", inserted.Attendees)
 	}
 	if inserted.ExtendedProperties.Private[fortyOneGoogleSourceKey] != fortyOneGoogleSourceValue {
 		t.Fatalf("expected private FortyOne provenance: %#v", inserted.ExtendedProperties.Private)

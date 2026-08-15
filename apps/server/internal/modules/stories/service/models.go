@@ -47,6 +47,11 @@ type CoreStoryList struct {
 	EstimateScheme           string                `json:"estimate_scheme"`
 	EstimatedDurationMinutes *int                  `json:"estimated_duration_minutes"`
 	MinimumFocusBlockMinutes *int                  `json:"minimum_focus_block_minutes"`
+	AutoSchedulingEnabled    bool                  `json:"auto_scheduling_enabled"`
+	AutoSchedulingLocked     bool                  `json:"auto_scheduling_locked"`
+	AutoSchedulingStatus     string                `json:"auto_scheduling_status"`
+	AutoSchedulingReason     *string               `json:"auto_scheduling_reason"`
+	AutoSchedulingUpdatedAt  *time.Time            `json:"auto_scheduling_updated_at"`
 	Parent                   *uuid.UUID            `json:"parent_id"`
 	Objective                *uuid.UUID            `json:"objective_id"`
 	ObjectiveSummary         *CoreObjectiveSummary `json:"objective"`
@@ -83,6 +88,11 @@ type CoreSingleStory struct {
 	EstimateScheme           string
 	EstimatedDurationMinutes *int
 	MinimumFocusBlockMinutes *int
+	AutoSchedulingEnabled    bool
+	AutoSchedulingLocked     bool
+	AutoSchedulingStatus     string
+	AutoSchedulingReason     *string
+	AutoSchedulingUpdatedAt  *time.Time
 	TeamCode                 string
 	Description              *string
 	DescriptionHTML          *string
@@ -125,6 +135,8 @@ type CoreNewStory struct {
 	EstimateValue            *int16      `json:"estimateValue"`
 	EstimatedDurationMinutes *int        `json:"estimatedDurationMinutes"`
 	MinimumFocusBlockMinutes *int        `json:"minimumFocusBlockMinutes"`
+	AutoSchedulingEnabled    bool        `json:"autoSchedulingEnabled"`
+	AutoSchedulingLocked     bool        `json:"autoSchedulingLocked"`
 	Description              *string     `json:"description"`
 	DescriptionHTML          *string     `json:"descriptionHTML"`
 	Parent                   *uuid.UUID  `json:"parentId"`
@@ -150,6 +162,8 @@ type CoreUpdateStory struct {
 	EstimateValue            *int16
 	EstimatedDurationMinutes *int
 	MinimumFocusBlockMinutes *int
+	AutoSchedulingEnabled    *bool
+	AutoSchedulingLocked     *bool
 	Description              *string
 	DescriptionHTML          *string
 	Parent                   *uuid.UUID
@@ -169,13 +183,15 @@ func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 	if ns.Priority == "" {
 		ns.Priority = "No Priority"
 	}
-
 	return CoreSingleStory{
 		Workspace:                workspaceId,
 		Title:                    ns.Title,
 		EstimateValue:            ns.EstimateValue,
 		EstimatedDurationMinutes: ns.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: ns.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    ns.AutoSchedulingEnabled,
+		AutoSchedulingLocked:     ns.AutoSchedulingLocked,
+		AutoSchedulingStatus:     AutoSchedulingStatusOff,
 		Description:              ns.Description,
 		DescriptionHTML:          ns.DescriptionHTML,
 		Parent:                   ns.Parent,

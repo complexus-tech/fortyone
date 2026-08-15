@@ -7,6 +7,11 @@ import { moveStoryBetweenGroups, updateStoryInGroups } from "./optimistic";
 const story: DetailedStory = {
   archivedAt: null,
   assigneeId: null,
+  autoSchedulingEnabled: false,
+  autoSchedulingLocked: false,
+  autoSchedulingReason: null,
+  autoSchedulingStatus: "off",
+  autoSchedulingUpdatedAt: null,
   associations: [],
   collaboratorCount: 0,
   collaboratorIds: [],
@@ -141,6 +146,35 @@ describe("updateStoryInGroups", () => {
             id: story.id,
             estimatedDurationMinutes: 90,
             minimumFocusBlockMinutes: 30,
+          }),
+        ],
+        totalCount: 3,
+      }),
+    );
+  });
+
+  it("patches auto-scheduling state without removing the story from its active group", () => {
+    const groups = [
+      createGroup({
+        key: "development",
+        stories: [story],
+        totalCount: 3,
+      }),
+    ];
+
+    const result = updateStoryInGroups(groups, story.id, "status", {
+      autoSchedulingEnabled: true,
+      autoSchedulingStatus: "needs_owner",
+    });
+
+    expect(result[0]).toEqual(
+      expect.objectContaining({
+        loadedCount: 1,
+        stories: [
+          expect.objectContaining({
+            id: story.id,
+            autoSchedulingEnabled: true,
+            autoSchedulingStatus: "needs_owner",
           }),
         ],
         totalCount: 3,

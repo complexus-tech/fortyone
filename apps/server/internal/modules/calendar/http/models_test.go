@@ -172,3 +172,47 @@ func TestCalendarContractsRedactPrivateEventDetailsDefensively(t *testing.T) {
 		}
 	}
 }
+
+func TestScheduleBlockResponsePropagatesAutoSchedulingMetadata(t *testing.T) {
+	t.Parallel()
+
+	status := "cannot_fit"
+	reason := "Maya could not fit this story into the current planning window."
+	block := toAppScheduleBlock(calendar.CoreScheduleBlock{
+		AutoSchedulingStatus: &status,
+		AutoSchedulingReason: &reason,
+		Source:               calendar.ScheduleBlockSourceMaya,
+	})
+	if block.AutoSchedulingStatus == nil || *block.AutoSchedulingStatus != status {
+		t.Fatalf("auto-scheduling status = %v, want %q", block.AutoSchedulingStatus, status)
+	}
+	if block.AutoSchedulingReason == nil || *block.AutoSchedulingReason != reason {
+		t.Fatalf("auto-scheduling reason = %v, want %q", block.AutoSchedulingReason, reason)
+	}
+
+	payload, err := json.Marshal(block)
+	if err != nil {
+		t.Fatalf("marshal schedule block: %v", err)
+	}
+	serialized := string(payload)
+	for _, contract := range []string{
+		`"autoSchedulingStatus":"cannot_fit"`,
+		`"autoSchedulingReason":"Maya could not fit this story into the current planning window."`,
+	} {
+		if !strings.Contains(serialized, contract) {
+			t.Errorf("schedule block response is missing %s: %s", contract, serialized)
+		}
+	}
+
+	withoutMetadata, err := json.Marshal(toAppScheduleBlock(calendar.CoreScheduleBlock{
+		Source: calendar.ScheduleBlockSourceUser,
+	}))
+	if err != nil {
+		t.Fatalf("marshal user schedule block: %v", err)
+	}
+	for _, omitted := range []string{"autoSchedulingStatus", "autoSchedulingReason"} {
+		if strings.Contains(string(withoutMetadata), omitted) {
+			t.Errorf("schedule block response must omit absent %q metadata: %s", omitted, withoutMetadata)
+		}
+	}
+}

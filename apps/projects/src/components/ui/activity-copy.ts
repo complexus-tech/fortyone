@@ -228,6 +228,51 @@ const getFieldUpdateSegments = (
         { text: `set the ${storyTerm} minimum focus block to`, type: "text" },
         { type: "currentValue", value: currentValue },
       ];
+    case "auto_scheduling_status": {
+      const previousStatus = humanizeAutoSchedulingStatus(oldValueText);
+      if (
+        previousStatus &&
+        previousStatus.toLowerCase() === currentValue.trim().toLowerCase()
+      ) {
+        return [
+          { text: "updated auto-scheduling status to", type: "text" },
+          { type: "currentValue", value: currentValue },
+        ];
+      }
+      return withOptionalOldValue(
+        previousStatus,
+        "changed auto-scheduling",
+        currentValue,
+      );
+    }
+    case "auto_scheduling_time":
+      return [
+        {
+          text: oldValueText ? "rescheduled work to" : "scheduled work for",
+          type: "text",
+        },
+        { type: "currentValue", value: currentValue },
+      ];
+    case "auto_scheduling_locked":
+      return [
+        {
+          text:
+            currentValue === "true"
+              ? "locked the auto-scheduled calendar blocks"
+              : "unlocked the auto-scheduled calendar blocks",
+          type: "text",
+        },
+      ];
+    case "auto_scheduling_enabled":
+      return [
+        {
+          text:
+            currentValue.trim().toLowerCase() === "true"
+              ? "enabled auto-scheduling"
+              : "paused auto-scheduling",
+          type: "text",
+        },
+      ];
     case "sprint_id":
       return withOptionalOldValue(
         oldValueText,
@@ -269,6 +314,13 @@ const getFieldUpdateSegments = (
         { type: "currentValue", value: currentValue },
       ];
   }
+};
+
+const humanizeAutoSchedulingStatus = (status: string) => {
+  if (!status) return "";
+  return status
+    .replaceAll("_", " ")
+    .replace(/^./, (character) => character.toUpperCase());
 };
 
 const withOptionalOldValue = (

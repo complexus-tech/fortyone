@@ -81,6 +81,12 @@ export const createStory = tool({
       .describe(
         "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes; omit for the automatic default.",
       ),
+    autoSchedulingEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        "Whether Maya should continuously place this story on the assignee's calendar. Defaults to false for human-assigned stories; set true when the user requests auto-scheduling or assigns the story to Maya.",
+      ),
     labelIds: z
       .array(z.string())
       .optional()
@@ -125,6 +131,7 @@ export const createStory = tool({
       estimateValue,
       estimatedDurationMinutes,
       minimumFocusBlockMinutes,
+      autoSchedulingEnabled,
       labelIds,
       sprintId,
       objectiveId,
@@ -179,6 +186,7 @@ export const createStory = tool({
         estimateValue,
         estimatedDurationMinutes,
         minimumFocusBlockMinutes,
+        autoSchedulingEnabled,
         labelIds,
         sprintId,
         objectiveId,

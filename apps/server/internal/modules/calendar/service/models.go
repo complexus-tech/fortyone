@@ -121,30 +121,32 @@ type CoreCalendarView struct {
 }
 
 type CoreScheduleBlock struct {
-	ID                 uuid.UUID           `json:"id"`
-	WorkspaceID        uuid.UUID           `json:"workspaceId"`
-	UserID             uuid.UUID           `json:"userId"`
-	StoryID            *uuid.UUID          `json:"storyId,omitempty"`
-	StoryTitle         *string             `json:"storyTitle,omitempty"`
-	StoryCode          *string             `json:"storyCode,omitempty"`
-	TeamID             *uuid.UUID          `json:"teamId,omitempty"`
-	TeamName           *string             `json:"teamName,omitempty"`
-	TeamCode           *string             `json:"teamCode,omitempty"`
-	BlockType          ScheduleBlockType   `json:"blockType"`
-	Title              string              `json:"title"`
-	StartAt            time.Time           `json:"startAt"`
-	EndAt              time.Time           `json:"endAt"`
-	HasConflict        bool                `json:"hasConflict"`
-	IsLocked           bool                `json:"isLocked"`
-	Source             ScheduleBlockSource `json:"source"`
-	SegmentIndex       int                 `json:"segmentIndex"`
-	ExternalProvider   *Provider           `json:"-"`
-	ExternalCalendarID *string             `json:"-"`
-	ExternalEventID    *string             `json:"-"`
-	ExternalSyncHash   *string             `json:"-"`
-	ExternalSyncedAt   *time.Time          `json:"-"`
-	CreatedAt          time.Time           `json:"createdAt"`
-	UpdatedAt          time.Time           `json:"updatedAt"`
+	ID                   uuid.UUID           `json:"id"`
+	WorkspaceID          uuid.UUID           `json:"workspaceId"`
+	UserID               uuid.UUID           `json:"userId"`
+	StoryID              *uuid.UUID          `json:"storyId,omitempty"`
+	StoryTitle           *string             `json:"storyTitle,omitempty"`
+	StoryCode            *string             `json:"storyCode,omitempty"`
+	TeamID               *uuid.UUID          `json:"teamId,omitempty"`
+	TeamName             *string             `json:"teamName,omitempty"`
+	TeamCode             *string             `json:"teamCode,omitempty"`
+	BlockType            ScheduleBlockType   `json:"blockType"`
+	Title                string              `json:"title"`
+	StartAt              time.Time           `json:"startAt"`
+	EndAt                time.Time           `json:"endAt"`
+	HasConflict          bool                `json:"hasConflict"`
+	IsLocked             bool                `json:"isLocked"`
+	AutoSchedulingStatus *string             `json:"autoSchedulingStatus,omitempty"`
+	AutoSchedulingReason *string             `json:"autoSchedulingReason,omitempty"`
+	Source               ScheduleBlockSource `json:"source"`
+	SegmentIndex         int                 `json:"segmentIndex"`
+	ExternalProvider     *Provider           `json:"-"`
+	ExternalCalendarID   *string             `json:"-"`
+	ExternalEventID      *string             `json:"-"`
+	ExternalSyncHash     *string             `json:"-"`
+	ExternalSyncedAt     *time.Time          `json:"-"`
+	CreatedAt            time.Time           `json:"createdAt"`
+	UpdatedAt            time.Time           `json:"updatedAt"`
 }
 
 type CoreScheduleBlockInput struct {
@@ -175,6 +177,7 @@ type MayaScheduleReconcileInput struct {
 	ExpectedStoryUpdatedAt *time.Time
 	Segments               []MayaScheduleSegmentInput
 	KeepOwnership          bool
+	Locked                 bool
 }
 
 type ScheduleReconcileAction string

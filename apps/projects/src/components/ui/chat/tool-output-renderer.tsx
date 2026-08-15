@@ -5,6 +5,7 @@ import { Button, Flex } from "ui";
 import { AnalyticsReport } from "./analytics-report";
 import { EntityResults } from "./entity-results";
 import { StoryResults } from "./story-results";
+import { MayaWorkPlanResult } from "./maya-work-plan-result";
 import type { ToolMessagePart } from "./tool-output-policy";
 import {
   asToolOutputRecord,
@@ -40,6 +41,14 @@ export const ToolOutputRenderer = ({
     return (
       <GenerativeOutputFrame>
         <EntityResults output={part.output} toolType={part.type} />
+      </GenerativeOutputFrame>
+    );
+  }
+
+  if (part.type === "tool-mayaWorkPlanTool") {
+    return (
+      <GenerativeOutputFrame>
+        <MayaWorkPlanResult output={part.output} />
       </GenerativeOutputFrame>
     );
   }

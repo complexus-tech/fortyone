@@ -21,12 +21,18 @@ import {
   SprintsIcon,
   TagsIcon,
   Time02Icon,
+  TimeScheduleIcon,
   UsersAddIcon,
 } from "icons";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { formatEstimate } from "@/lib/estimate";
 import { formatTimeNeeded } from "@/lib/time-needed";
+import {
+  deriveAutoSchedulingStatus,
+  getAutoSchedulingLabel,
+  isMayaAssigneeSelection,
+} from "@/lib/auto-scheduling";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
@@ -42,6 +48,7 @@ import {
   CollaboratorsMenu,
   StoryLabel,
   ConfirmDialog,
+  AutoSchedulingMenu,
 } from "@/components/ui";
 import {
   KeyResultMenu,
@@ -57,7 +64,8 @@ import {
   useUserRole,
   useSprintsEnabled,
 } from "@/hooks";
-import { useMembers } from "@/lib/hooks/members";
+import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useKeyResults } from "@/modules/objectives/hooks";
@@ -135,6 +143,11 @@ export const Options = ({
     estimateScheme,
     estimatedDurationMinutes,
     minimumFocusBlockMinutes,
+    autoSchedulingEnabled,
+    autoSchedulingLocked,
+    autoSchedulingStatus,
+    autoSchedulingReason,
+    autoSchedulingUpdatedAt,
     labels: storyLabels,
     sprintId,
     deletedAt,
@@ -150,6 +163,9 @@ export const Options = ({
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
+  const { hasFeature } = useSubscriptionFeatures();
+  const canUseBackgroundMaya = hasFeature("backgroundMaya");
+  const { data: mayaAssignee } = useMayaAssignee(canUseBackgroundMaya);
   const { data: sprint } = useSprint(sprintId, teamId);
   const { data: objective } = useObjective(objectiveId, teamId);
   const { data: keyResults = [] } = useKeyResults(
@@ -232,12 +248,20 @@ export const Options = ({
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
+  const effectiveAutoSchedulingStatus = deriveAutoSchedulingStatus({
+    assigneeId,
+    autoSchedulingEnabled,
+    autoSchedulingLocked,
+    autoSchedulingStatus,
+    estimatedDurationMinutes,
+  });
 
   // References to button elements for keyboard shortcuts
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   const priorityButtonRef = useRef<HTMLButtonElement>(null);
   const assigneeButtonRef = useRef<HTMLButtonElement>(null);
   const estimateButtonRef = useRef<HTMLButtonElement>(null);
+  const timeNeededButtonRef = useRef<HTMLButtonElement>(null);
   const startDateButtonRef = useRef<HTMLButtonElement>(null);
   const dueDateButtonRef = useRef<HTMLButtonElement>(null);
   const labelsButtonRef = useRef<HTMLButtonElement>(null);
@@ -522,7 +546,12 @@ export const Options = ({
                 <AssigneesMenu.Items
                   assigneeId={assigneeId}
                   onAssigneeSelected={(assigneeId) => {
-                    handleUpdate({ assigneeId });
+                    handleUpdate({
+                      assigneeId,
+                      ...(isMayaAssigneeSelection(assigneeId, mayaAssignee?.id)
+                        ? { autoSchedulingEnabled: true }
+                        : {}),
+                    });
                   }}
                   teamId={teamId}
                 />
@@ -625,6 +654,7 @@ export const Options = ({
                         })}
                       />
                     }
+                    ref={timeNeededButtonRef}
                     size="sm"
                     type="button"
                     variant={isCompact ? "solid" : "naked"}
@@ -646,6 +676,61 @@ export const Options = ({
                   }}
                 />
               </TimeNeededMenu>
+            }
+          />
+          <Option
+            isCompact={isCompact}
+            isNotifications={isNotifications}
+            label="Auto-scheduling"
+            value={
+              <AutoSchedulingMenu>
+                <AutoSchedulingMenu.Trigger>
+                  <Button
+                    className={cn("font-medium", {
+                      "text-text-muted":
+                        effectiveAutoSchedulingStatus === "off",
+                    })}
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={
+                      <TimeScheduleIcon
+                        className={cn("h-[1.15rem] w-auto", {
+                          "text-text-muted":
+                            effectiveAutoSchedulingStatus === "off",
+                        })}
+                      />
+                    }
+                    size="sm"
+                    type="button"
+                    variant={isCompact ? "solid" : "naked"}
+                  >
+                    {getAutoSchedulingLabel(effectiveAutoSchedulingStatus)}
+                  </Button>
+                </AutoSchedulingMenu.Trigger>
+                <AutoSchedulingMenu.Items
+                  assigneeId={assigneeId}
+                  autoSchedulingEnabled={autoSchedulingEnabled}
+                  autoSchedulingLocked={autoSchedulingLocked}
+                  autoSchedulingReason={autoSchedulingReason}
+                  autoSchedulingStatus={autoSchedulingStatus}
+                  autoSchedulingUpdatedAt={autoSchedulingUpdatedAt}
+                  canManage={canUseBackgroundMaya}
+                  estimatedDurationMinutes={estimatedDurationMinutes}
+                  onChange={(patch) => {
+                    handleUpdate(patch);
+                  }}
+                  onRequestOwner={() => {
+                    requestAnimationFrame(() => {
+                      assigneeButtonRef.current?.click();
+                    });
+                  }}
+                  onRequestTime={() => {
+                    requestAnimationFrame(() => {
+                      timeNeededButtonRef.current?.click();
+                    });
+                  }}
+                />
+              </AutoSchedulingMenu>
             }
           />
           <Option

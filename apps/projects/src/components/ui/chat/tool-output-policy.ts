@@ -4,6 +4,7 @@ import {
   getEntityResultsModel,
 } from "./entity-results-data";
 import { isStoryResultsOutput } from "./story-results-data";
+import { isMayaWorkPlanOutput } from "./maya-work-plan-data";
 
 export type ToolMessagePart = MayaUIMessage["parts"][number] & {
   output?: unknown;
@@ -73,6 +74,10 @@ export const isRenderableToolPart = (part: ToolMessagePart) => {
 
   if (part.type === "tool-suggestions") {
     return getToolSuggestions(part.output).length > 0;
+  }
+
+  if (part.type === "tool-mayaWorkPlanTool") {
+    return isMayaWorkPlanOutput(part.output);
   }
 
   return (

@@ -42,14 +42,17 @@ type fakeCalendarUpdates struct {
 	userID       uuid.UUID
 	connectionID uuid.UUID
 	syncedAt     time.Time
+	calls        int
+	err          error
 }
 
 func (p *fakeCalendarUpdates) PublishCalendarUpdated(_ context.Context, workspaceID, userID, connectionID uuid.UUID, syncedAt time.Time) error {
+	p.calls++
 	p.workspaceID = workspaceID
 	p.userID = userID
 	p.connectionID = connectionID
 	p.syncedAt = syncedAt
-	return nil
+	return p.err
 }
 
 func (q *fakeCalendarTasks) EnqueueCalendarSync(_ context.Context, connectionID uuid.UUID) error {
@@ -128,6 +131,7 @@ type fakeRepo struct {
 	member                    *bool
 	storyAllowed              *bool
 	storyUserID               uuid.UUID
+	reconcileResult           CoreScheduleReconcileResult
 	replacements              int
 	replaceErr                error
 	markSyncedErr             error
@@ -955,7 +959,7 @@ func (r *fakeRepo) MayaScheduleOwnershipExists(_ context.Context, _, _, _ uuid.U
 }
 
 func (r *fakeRepo) ReconcileMayaScheduleBlocks(_ context.Context, _ MayaScheduleReconcileInput) (CoreScheduleReconcileResult, error) {
-	return CoreScheduleReconcileResult{}, nil
+	return r.reconcileResult, nil
 }
 
 func (r *fakeRepo) ListReadyScheduleEventOutboxUsers(_ context.Context, _ int) ([]uuid.UUID, error) {
@@ -1005,6 +1009,78 @@ func (r *fakeRepo) ReleaseScheduleEventOutbox(_ context.Context, outboxIDs []uui
 func (r *fakeRepo) DeleteCleanupPendingConnectionIfDrained(_ context.Context, _ uuid.UUID) error {
 	r.cleanupFinalizeCalls++
 	return nil
+}
+
+func TestReconcileMayaScheduleBlocksPublishesCalendarInvalidationAfterChange(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	storyID := uuid.New()
+	updates := &fakeCalendarUpdates{}
+	repo := &fakeRepo{reconcileResult: CoreScheduleReconcileResult{
+		Actions: []ScheduleReconcileAction{ScheduleReconcileActionUpdated},
+	}}
+	service := New(nil, repo, Config{Updates: updates})
+
+	result, err := service.ReconcileMayaScheduleBlocks(context.Background(), MayaScheduleReconcileInput{
+		WorkspaceID: workspaceID,
+		UserID:      userID,
+		StoryID:     storyID,
+	})
+	if err != nil {
+		t.Fatalf("ReconcileMayaScheduleBlocks returned error: %v", err)
+	}
+	if len(result.Actions) != 1 || result.Actions[0] != ScheduleReconcileActionUpdated {
+		t.Fatalf("unexpected reconciliation result: %#v", result)
+	}
+	if updates.calls != 1 || updates.workspaceID != workspaceID || updates.userID != userID || updates.connectionID != uuid.Nil || updates.syncedAt.IsZero() {
+		t.Fatalf("changed reconciliation did not publish a scoped calendar invalidation: %#v", updates)
+	}
+}
+
+func TestReconcileMayaScheduleBlocksSkipsInvalidationForUnchangedBlocks(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{reconcileResult: CoreScheduleReconcileResult{
+		Actions: []ScheduleReconcileAction{ScheduleReconcileActionUnchanged},
+	}}
+	updates := &fakeCalendarUpdates{}
+	service := New(nil, repo, Config{Updates: updates})
+
+	_, err := service.ReconcileMayaScheduleBlocks(context.Background(), MayaScheduleReconcileInput{
+		WorkspaceID: uuid.New(),
+		UserID:      uuid.New(),
+		StoryID:     uuid.New(),
+	})
+	if err != nil {
+		t.Fatalf("ReconcileMayaScheduleBlocks returned error: %v", err)
+	}
+	if updates.calls != 0 {
+		t.Fatalf("unchanged reconciliation should not publish calendar invalidation: %#v", updates)
+	}
+}
+
+func TestReconcileMayaScheduleBlocksDoesNotFailCommittedChangeWhenInvalidationFails(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeRepo{reconcileResult: CoreScheduleReconcileResult{
+		Actions: []ScheduleReconcileAction{ScheduleReconcileActionCreated},
+	}}
+	updates := &fakeCalendarUpdates{err: errors.New("redis unavailable")}
+	service := New(nil, repo, Config{Updates: updates})
+
+	_, err := service.ReconcileMayaScheduleBlocks(context.Background(), MayaScheduleReconcileInput{
+		WorkspaceID: uuid.New(),
+		UserID:      uuid.New(),
+		StoryID:     uuid.New(),
+	})
+	if err != nil {
+		t.Fatalf("a best-effort invalidation must not roll back a committed schedule: %v", err)
+	}
+	if updates.calls != 1 {
+		t.Fatalf("expected one invalidation attempt, got %d", updates.calls)
+	}
 }
 
 func TestCreateConnectURLSignsWorkspaceAndUserState(t *testing.T) {

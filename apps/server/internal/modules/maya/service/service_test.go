@@ -10,6 +10,7 @@ import (
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 )
 
@@ -23,14 +24,17 @@ func TestCreateWorkPlanPersistsAndAppliesActions(t *testing.T) {
 	userID := uuid.New()
 	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
 	endAt := time.Date(2026, 6, 15, 17, 0, 0, 0, time.UTC)
+	duration := 60
 
 	repo := &fakeMayaRepository{}
 	storiesSvc := &fakeMayaStories{
 		story: stories.CoreSingleStory{
-			ID:        storyID,
-			Workspace: workspaceID,
-			Team:      teamID,
-			Title:     "Schedule me",
+			ID:                       storyID,
+			Workspace:                workspaceID,
+			Team:                     teamID,
+			Title:                    "Schedule me",
+			EstimatedDurationMinutes: &duration,
+			AutoSchedulingEnabled:    true,
 		},
 	}
 	calendarSvc := &fakeMayaCalendar{}
@@ -55,7 +59,7 @@ func TestCreateWorkPlanPersistsAndAppliesActions(t *testing.T) {
 		Trigger:         RunTriggerManual,
 		WindowStart:     startAt,
 		WindowEnd:       endAt,
-		DurationMinutes: 60,
+		DurationMinutes: duration,
 		AutoApply:       true,
 	})
 
@@ -282,6 +286,8 @@ type fakeMayaRepository struct {
 	scheduleOwners               []uuid.UUID
 	schedulable                  bool
 	ownershipRetainable          bool
+	workspaceAccessDenied        bool
+	storyInactive                bool
 	scheduleLock                 sync.Mutex
 	scheduleLockCalls            int
 }
@@ -359,6 +365,14 @@ func (f *fakeMayaRepository) StoryIsSchedulableForUser(_ context.Context, _, _, 
 	return f.schedulable, nil
 }
 
+func (f *fakeMayaRepository) WorkspaceCanUseMaya(_ context.Context, _ uuid.UUID) (bool, error) {
+	return !f.workspaceAccessDenied, nil
+}
+
+func (f *fakeMayaRepository) StoryIsActiveForAutoScheduling(_ context.Context, _, _ uuid.UUID) (bool, error) {
+	return !f.storyInactive, nil
+}
+
 func (f *fakeMayaRepository) StoryScheduleOwnershipIsRetainable(_ context.Context, _, _, _ uuid.UUID) (bool, error) {
 	return f.ownershipRetainable, nil
 }
@@ -380,6 +394,8 @@ type fakeMayaStories struct {
 	updateReasons               []string
 	assignmentUpdateErr         error
 	assignmentExpectedUpdatedAt time.Time
+	automationStates            []string
+	scheduleTransitions         []*events.StoryScheduleTransition
 }
 
 func (f *fakeMayaStories) Get(_ context.Context, storyID, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
@@ -420,6 +436,46 @@ func (f *fakeMayaStories) UpdateExternalWithReasonIfUnchanged(ctx context.Contex
 	return f.UpdateExternalWithReason(ctx, actorID, storyID, workspaceID, updates, reason)
 }
 
+func (f *fakeMayaStories) UpdateAutomationIfUnchanged(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any, reason string) error {
+	if _, isAssignment := updates["assignee_id"]; isAssignment {
+		f.assignmentExpectedUpdatedAt = expectedUpdatedAt
+	}
+	if !f.story.UpdatedAt.IsZero() && !f.story.UpdatedAt.Equal(expectedUpdatedAt) {
+		return stories.ErrStoryChanged
+	}
+	if value, ok := updates["auto_scheduling_enabled"].(bool); ok {
+		f.story.AutoSchedulingEnabled = value
+	}
+	if value, ok := updates["auto_scheduling_locked"].(bool); ok {
+		f.story.AutoSchedulingLocked = value
+	}
+	if value, ok := updates["estimated_duration_minutes"].(int); ok {
+		f.story.EstimatedDurationMinutes = &value
+	}
+	if value, ok := updates["minimum_focus_block_minutes"].(int); ok {
+		f.story.MinimumFocusBlockMinutes = &value
+	}
+	if err := f.UpdateExternalWithReason(ctx, actorID, storyID, workspaceID, updates, reason); err != nil {
+		return err
+	}
+	f.story.UpdatedAt = time.Now().UTC()
+	return nil
+}
+
+func (f *fakeMayaStories) UpdateAutomationStateIfUnchanged(_ context.Context, _, _, _ uuid.UUID, expectedUpdatedAt time.Time, status string, reason *string, locked *bool, schedule *events.StoryScheduleTransition) error {
+	if !f.story.UpdatedAt.Equal(expectedUpdatedAt) {
+		return stories.ErrStoryChanged
+	}
+	if locked != nil {
+		f.story.AutoSchedulingLocked = *locked
+	}
+	f.story.AutoSchedulingStatus = status
+	f.story.AutoSchedulingReason = reason
+	f.automationStates = append(f.automationStates, status)
+	f.scheduleTransitions = append(f.scheduleTransitions, schedule)
+	return nil
+}
+
 type fakeMayaReports struct {
 	analysis reports.CoreWorkloadAnalysis
 }
@@ -443,6 +499,8 @@ type fakeMayaCalendar struct {
 	ownerRepo             *fakeMayaRepository
 	onReconcile           func(calendar.MayaScheduleReconcileInput)
 	currentStoryUpdatedAt *time.Time
+	providerGate          func(calendar.MayaScheduleReconcileInput) string
+	providerOperations    []string
 }
 
 func (f *fakeMayaCalendar) ListSchedulingAvailability(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (calendar.CoreSchedule, error) {
@@ -511,7 +569,7 @@ func (f *fakeMayaCalendar) ReconcileMayaScheduleBlocks(_ context.Context, input 
 		blocks[index] = calendar.CoreScheduleBlock{
 			ID: uuid.New(), WorkspaceID: input.WorkspaceID, UserID: input.UserID, StoryID: &storyID,
 			Title: segment.Title, StartAt: segment.StartAt, EndAt: segment.EndAt,
-			Source: calendar.ScheduleBlockSourceMaya, SegmentIndex: segment.SegmentIndex,
+			Source: calendar.ScheduleBlockSourceMaya, SegmentIndex: segment.SegmentIndex, IsLocked: input.Locked,
 		}
 	}
 	retainedBlocks := make([]calendar.CoreScheduleBlock, 0, len(f.mayaBlocks)+len(blocks))
@@ -536,6 +594,14 @@ func (f *fakeMayaCalendar) ReconcileMayaScheduleBlocks(_ context.Context, input 
 
 func (f *fakeMayaCalendar) DispatchScheduleEventOutbox(_ context.Context, userID uuid.UUID) error {
 	f.dispatchedUsers = append(f.dispatchedUsers, userID)
+	if f.providerGate != nil {
+		for index := len(f.reconciliations) - 1; index >= 0; index-- {
+			if f.reconciliations[index].UserID == userID {
+				f.providerOperations = append(f.providerOperations, f.providerGate(f.reconciliations[index]))
+				break
+			}
+		}
+	}
 	return f.dispatchErr
 }
 

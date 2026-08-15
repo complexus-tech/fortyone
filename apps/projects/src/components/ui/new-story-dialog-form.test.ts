@@ -10,6 +10,7 @@ describe("new story dialog form", () => {
   it("preserves selected labels, complexity, and time in the create payload", () => {
     const storyForm: NewStory = {
       assigneeId: "user-1",
+      autoSchedulingEnabled: true,
       endDate: "2026-06-20",
       estimateValue: 5,
       estimatedDurationMinutes: 120,
@@ -33,6 +34,7 @@ describe("new story dialog form", () => {
       }),
     ).toMatchObject({
       assigneeId: "user-1",
+      autoSchedulingEnabled: true,
       description: "Plain text description",
       descriptionHTML: "<p>Plain text description</p>",
       estimateValue: 5,
@@ -47,6 +49,40 @@ describe("new story dialog form", () => {
       teamId: "team-1",
       title: "Add reporting filters",
     });
+  });
+
+  it("preserves the safe human-assigned default when auto-scheduling is not selected", () => {
+    const payload = buildNewStoryDialogPayload({
+      currentTeamId: "team-1",
+      description: "",
+      descriptionHTML: "",
+      storyForm: {
+        assigneeId: "user-1",
+        estimatedDurationMinutes: 60,
+      },
+      title: "Keep the existing workflow",
+    });
+
+    expect(payload).toMatchObject({
+      autoSchedulingEnabled: false,
+    });
+    expect(payload).not.toHaveProperty("autoSchedulingLocked");
+  });
+
+  it("always enables auto-scheduling when Maya is the assignee", () => {
+    const payload = buildNewStoryDialogPayload({
+      currentTeamId: "team-1",
+      description: "",
+      descriptionHTML: "",
+      mayaAssigneeId: "maya-1",
+      storyForm: {
+        assigneeId: "maya-1",
+        autoSchedulingEnabled: false,
+      },
+      title: "Let Maya assign and schedule this work",
+    });
+
+    expect(payload.autoSchedulingEnabled).toBe(true);
   });
 
   it("rejects a focus block longer than the serialized duration", () => {

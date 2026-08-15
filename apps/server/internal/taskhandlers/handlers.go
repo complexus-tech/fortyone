@@ -45,52 +45,54 @@ type FeedbackOutboxProcessor interface {
 }
 
 type handlers struct {
-	log                *logger.Logger
-	db                 *sqlx.DB
-	brevoService       *brevo.Service
-	mailerService      mailer.Service
-	githubService      *github.Service
-	mayaService        *maya.Service
-	attachments        *attachments.Service
-	emailCopy          emailcopy.Generator
-	emailThreads       emailthread.GuidancePreparer
-	slackEvents        SlackEventProcessor
-	slackCredentials   SlackCredentialBackfiller
-	slackRecovery      SlackInboxRecoverer
-	emailReplies       EmailReplyProcessor
-	emailRecovery      EmailReplyRecoverer
-	calendar           CalendarSyncProcessor
-	systemUserID       uuid.UUID
-	feedbackTasks      FeedbackDeliveryEnqueuer
-	feedbackOutbox     FeedbackOutboxProcessor
-	feedbackDeliveries feedbackContributorDeliveryStore
-	feedbackAuthSecret string
+	log                 *logger.Logger
+	db                  *sqlx.DB
+	brevoService        *brevo.Service
+	mailerService       mailer.Service
+	githubService       *github.Service
+	mayaService         *maya.Service
+	attachments         *attachments.Service
+	emailCopy           emailcopy.Generator
+	emailThreads        emailthread.GuidancePreparer
+	slackEvents         SlackEventProcessor
+	slackCredentials    SlackCredentialBackfiller
+	slackRecovery       SlackInboxRecoverer
+	emailReplies        EmailReplyProcessor
+	emailRecovery       EmailReplyRecoverer
+	calendar            CalendarSyncProcessor
+	systemUserID        uuid.UUID
+	feedbackTasks       FeedbackDeliveryEnqueuer
+	feedbackOutbox      FeedbackOutboxProcessor
+	storyScheduleOutbox StoryScheduleTransitionOutboxProcessor
+	feedbackDeliveries  feedbackContributorDeliveryStore
+	feedbackAuthSecret  string
 }
 
 // NewWorkerHandlers initializes the central task Handlers service.
-func NewWorkerHandlers(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, slackEvents SlackEventProcessor, emailReplies EmailReplyProcessor, emailRecovery EmailReplyRecoverer, calendar CalendarSyncProcessor, systemUserID uuid.UUID, feedbackTasks FeedbackDeliveryEnqueuer, feedbackOutbox FeedbackOutboxProcessor, feedbackAuthSecret string) *handlers {
+func NewWorkerHandlers(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, slackEvents SlackEventProcessor, emailReplies EmailReplyProcessor, emailRecovery EmailReplyRecoverer, calendar CalendarSyncProcessor, systemUserID uuid.UUID, feedbackTasks FeedbackDeliveryEnqueuer, feedbackOutbox FeedbackOutboxProcessor, storyScheduleOutbox StoryScheduleTransitionOutboxProcessor, feedbackAuthSecret string) *handlers {
 	slackCredentials, _ := slackEvents.(SlackCredentialBackfiller)
 	slackRecovery, _ := slackEvents.(SlackInboxRecoverer)
 	return &handlers{
-		log:                log,
-		db:                 db,
-		brevoService:       brevoService,
-		mailerService:      mailerService,
-		githubService:      githubService,
-		mayaService:        mayaService,
-		attachments:        attachmentsService,
-		emailCopy:          emailCopy,
-		emailThreads:       emailThreads,
-		slackEvents:        slackEvents,
-		slackCredentials:   slackCredentials,
-		slackRecovery:      slackRecovery,
-		emailReplies:       emailReplies,
-		emailRecovery:      emailRecovery,
-		calendar:           calendar,
-		systemUserID:       systemUserID,
-		feedbackTasks:      feedbackTasks,
-		feedbackOutbox:     feedbackOutbox,
-		feedbackDeliveries: &databaseFeedbackContributorDeliveryStore{db: db},
-		feedbackAuthSecret: feedbackAuthSecret,
+		log:                 log,
+		db:                  db,
+		brevoService:        brevoService,
+		mailerService:       mailerService,
+		githubService:       githubService,
+		mayaService:         mayaService,
+		attachments:         attachmentsService,
+		emailCopy:           emailCopy,
+		emailThreads:        emailThreads,
+		slackEvents:         slackEvents,
+		slackCredentials:    slackCredentials,
+		slackRecovery:       slackRecovery,
+		emailReplies:        emailReplies,
+		emailRecovery:       emailRecovery,
+		calendar:            calendar,
+		systemUserID:        systemUserID,
+		feedbackTasks:       feedbackTasks,
+		feedbackOutbox:      feedbackOutbox,
+		storyScheduleOutbox: storyScheduleOutbox,
+		feedbackDeliveries:  &databaseFeedbackContributorDeliveryStore{db: db},
+		feedbackAuthSecret:  feedbackAuthSecret,
 	}
 }

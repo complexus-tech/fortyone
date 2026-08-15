@@ -22,6 +22,7 @@ type reconciliationBlock struct {
 	Title              string    `db:"title"`
 	StartAt            time.Time `db:"start_at"`
 	EndAt              time.Time `db:"end_at"`
+	IsLocked           bool      `db:"is_locked"`
 	ExternalProvider   *string   `db:"external_provider"`
 	ExternalCalendarID *string   `db:"external_calendar_id"`
 	ExternalEventID    *string   `db:"external_event_id"`
@@ -81,6 +82,7 @@ const scheduleEventUpsertIsCurrentQuery = `
 			AND block.start_at = $7
 			AND block.end_at = $8
 			AND story.assignee_id = block.user_id
+			AND story.auto_scheduling_enabled = TRUE
 			AND ownership.updated_at >= story.updated_at
 			AND (team_settings.updated_at IS NULL OR ownership.updated_at >= team_settings.updated_at)
 			AND (sprint.updated_at IS NULL OR ownership.updated_at >= sprint.updated_at)
@@ -108,6 +110,7 @@ const mayaScheduleEligibilityQuery = `
 		AND team_membership.user_id = $3
 	WHERE story.workspace_id = $1
 		AND story.id = $2
+		AND story.auto_scheduling_enabled = TRUE
 		AND story.deleted_at IS NULL
 		AND story.archived_at IS NULL
 		AND story.completed_at IS NULL
@@ -186,7 +189,7 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 	}
 
 	const currentQuery = `
-		SELECT block_id, segment_index, title, start_at, end_at,
+		SELECT block_id, segment_index, title, start_at, end_at, is_locked,
 		       external_provider, external_calendar_id, external_event_id, external_sync_hash
 		FROM calendar_schedule_blocks
 		WHERE workspace_id = $1
@@ -228,6 +231,13 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 		)
 	`
 	for _, segment := range segments {
+		if current, exists := currentByIndex[segment.SegmentIndex]; input.Locked && exists && current.StartAt.Equal(segment.StartAt) && current.EndAt.Equal(segment.EndAt) {
+			// A locked segment is an explicit instruction to keep this exact
+			// time. New busy data can make it conflicting, but must not make the
+			// ownership/title watermark impossible to refresh. New or moved
+			// locked segments still pass through the normal conflict check.
+			continue
+		}
 		var conflicts bool
 		if err := tx.GetContext(ctx, &conflicts, conflictQuery, input.UserID, segment.StartAt, segment.EndAt, pq.Array(excludedIDs)); err != nil {
 			return calendar.CoreScheduleReconcileResult{}, fmt.Errorf("validate Maya schedule segment: %w", err)
@@ -265,20 +275,21 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 			},
 		}
 		syncHash := calendar.ScheduleEventSyncHash(event)
-		changed := !exists || block.Title != segment.Title || !block.StartAt.Equal(segment.StartAt) || !block.EndAt.Equal(segment.EndAt) ||
+		providerChanged := !exists || block.Title != segment.Title || !block.StartAt.Equal(segment.StartAt) || !block.EndAt.Equal(segment.EndAt) ||
 			block.ExternalProvider == nil || *block.ExternalProvider != string(calendar.ProviderGoogle) ||
 			block.ExternalCalendarID == nil || *block.ExternalCalendarID != "primary" ||
 			block.ExternalEventID == nil || *block.ExternalEventID != eventID
+		blockChanged := providerChanged || block.IsLocked != input.Locked
 
 		if exists {
 			const updateQuery = `
 				UPDATE calendar_schedule_blocks
-				SET title = $5, start_at = $6, end_at = $7, is_locked = false,
+				SET title = $5, start_at = $6, end_at = $7, is_locked = $9,
 					external_provider = 'google', external_calendar_id = 'primary', external_event_id = $8,
-					updated_at = CASE WHEN title <> $5 OR start_at <> $6 OR end_at <> $7 OR is_locked THEN CURRENT_TIMESTAMP ELSE updated_at END
+					updated_at = CASE WHEN title <> $5 OR start_at <> $6 OR end_at <> $7 OR is_locked <> $9 THEN CURRENT_TIMESTAMP ELSE updated_at END
 				WHERE workspace_id = $1 AND user_id = $2 AND story_id = $3 AND segment_index = $4 AND source = 'maya'
 			`
-			if _, err := tx.ExecContext(ctx, updateQuery, input.WorkspaceID, input.UserID, input.StoryID, segment.SegmentIndex, segment.Title, segment.StartAt, segment.EndAt, eventID); err != nil {
+			if _, err := tx.ExecContext(ctx, updateQuery, input.WorkspaceID, input.UserID, input.StoryID, segment.SegmentIndex, segment.Title, segment.StartAt, segment.EndAt, eventID, input.Locked); err != nil {
 				return calendar.CoreScheduleReconcileResult{}, fmt.Errorf("update Maya schedule segment: %w", err)
 			}
 		} else {
@@ -286,20 +297,20 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 				INSERT INTO calendar_schedule_blocks (
 					block_id, workspace_id, user_id, story_id, block_type, title, start_at, end_at,
 					is_locked, source, segment_index, external_provider, external_calendar_id, external_event_id
-				) VALUES ($1, $2, $3, $4, 'work', $5, $6, $7, false, 'maya', $8, 'google', 'primary', $9)
+				) VALUES ($1, $2, $3, $4, 'work', $5, $6, $7, $10, 'maya', $8, 'google', 'primary', $9)
 			`
-			if _, err := tx.ExecContext(ctx, insertQuery, blockID, input.WorkspaceID, input.UserID, input.StoryID, segment.Title, segment.StartAt, segment.EndAt, segment.SegmentIndex, eventID); err != nil {
+			if _, err := tx.ExecContext(ctx, insertQuery, blockID, input.WorkspaceID, input.UserID, input.StoryID, segment.Title, segment.StartAt, segment.EndAt, segment.SegmentIndex, eventID, input.Locked); err != nil {
 				return calendar.CoreScheduleReconcileResult{}, fmt.Errorf("create Maya schedule segment: %w", err)
 			}
 		}
 		if scheduleBlockNeedsProviderUpsert(block, exists, event, syncHash) {
-			if err := enqueueScheduleEventOutbox(ctx, tx, input.WorkspaceID, input.UserID, &blockID, calendar.ScheduleEventOperationUpsert, event, syncHash, changed); err != nil {
+			if err := enqueueScheduleEventOutbox(ctx, tx, input.WorkspaceID, input.UserID, &blockID, calendar.ScheduleEventOperationUpsert, event, syncHash, providerChanged); err != nil {
 				return calendar.CoreScheduleReconcileResult{}, err
 			}
 		}
 		if !exists {
 			result.Actions = append(result.Actions, calendar.ScheduleReconcileActionCreated)
-		} else if changed {
+		} else if blockChanged {
 			result.Actions = append(result.Actions, calendar.ScheduleReconcileActionUpdated)
 		} else {
 			result.Actions = append(result.Actions, calendar.ScheduleReconcileActionUnchanged)
@@ -316,7 +327,7 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 			Title:              segment.Title,
 			StartAt:            segment.StartAt,
 			EndAt:              segment.EndAt,
-			IsLocked:           false,
+			IsLocked:           input.Locked,
 			Source:             calendar.ScheduleBlockSourceMaya,
 			SegmentIndex:       segment.SegmentIndex,
 			ExternalProvider:   &provider,

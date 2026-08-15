@@ -343,6 +343,10 @@ func (h *Handlers) statusCode(err error) int {
 		return http.StatusServiceUnavailable
 	case errors.Is(err, ErrMayaRealtimeToolNotConfigured):
 		return http.StatusServiceUnavailable
+	case errors.Is(err, maya.ErrMayaAccessDenied), errors.Is(err, ErrMayaAccessRequired):
+		return http.StatusPaymentRequired
+	case errors.Is(err, stories.ErrAutoSchedulingOwnerLocked), errors.Is(err, stories.ErrAutoSchedulingLockEmpty), errors.Is(err, stories.ErrStoryChanged):
+		return http.StatusConflict
 	case errors.Is(err, maya.ErrInvalidPlanInput):
 		return http.StatusBadRequest
 	default:

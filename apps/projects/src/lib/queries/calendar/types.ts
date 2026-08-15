@@ -1,3 +1,5 @@
+import type { AutoSchedulingStatus } from "@/modules/stories/types";
+
 export type CalendarBusyWindow = {
   id: string;
   provider: string;
@@ -60,6 +62,8 @@ export type CalendarScheduleBlock = {
   hasConflict: boolean;
   isLocked: boolean;
   source: "user" | "maya";
+  autoSchedulingStatus?: AutoSchedulingStatus;
+  autoSchedulingReason?: string | null;
   createdAt: string;
   updatedAt: string;
 };

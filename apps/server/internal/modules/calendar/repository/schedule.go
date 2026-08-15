@@ -45,6 +45,8 @@ const scheduleBlockSelect = `
 				AND conflict_window.end_at > csb.start_at
 		) AS has_conflict,
 		csb.is_locked,
+		CASE WHEN csb.source = 'maya' THEN s.auto_scheduling_status ELSE NULL END AS auto_scheduling_status,
+		CASE WHEN csb.source = 'maya' THEN s.auto_scheduling_reason ELSE NULL END AS auto_scheduling_reason,
 		csb.source,
 		csb.segment_index,
 		csb.external_provider,
@@ -134,6 +136,8 @@ func (r *Repo) ListSchedulingBlocksForUser(ctx context.Context, workspaceID, use
 		blocks[index].TeamID = nil
 		blocks[index].TeamName = nil
 		blocks[index].TeamCode = nil
+		blocks[index].AutoSchedulingStatus = nil
+		blocks[index].AutoSchedulingReason = nil
 		blocks[index].Title = "Busy"
 	}
 	return blocks, nil

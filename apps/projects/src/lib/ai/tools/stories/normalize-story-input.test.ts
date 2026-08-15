@@ -36,12 +36,14 @@ describe("normalizeStoryInput", () => {
       estimateValue: 5,
       estimatedDurationMinutes: 120,
       minimumFocusBlockMinutes: 30,
+      autoSchedulingEnabled: true,
     });
 
     expect(payload).toMatchObject({
       estimateValue: 5,
       estimatedDurationMinutes: 120,
       minimumFocusBlockMinutes: 30,
+      autoSchedulingEnabled: true,
     });
   });
 

@@ -17,8 +17,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, emailReplies taskhandlers.EmailReplyProcessor, emailRecovery taskhandlers.EmailReplyRecoverer, calendar taskhandlers.CalendarSyncProcessor, systemUserID uuid.UUID, feedbackTasks *tasks.Service, feedbackOutbox taskhandlers.FeedbackOutboxProcessor, feedbackAuthSecret string) *asynq.ServeMux {
-	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopy, emailThreads, slackEvents, emailReplies, emailRecovery, calendar, systemUserID, feedbackTasks, feedbackOutbox, feedbackAuthSecret)
+func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, mailerService mailer.Service, githubService *github.Service, mayaService *maya.Service, attachmentsService *attachments.Service, emailCopy emailcopy.Generator, emailThreads emailthread.GuidancePreparer, notificationsService *notifications.Service, slackEvents taskhandlers.SlackEventProcessor, emailReplies taskhandlers.EmailReplyProcessor, emailRecovery taskhandlers.EmailReplyRecoverer, calendar taskhandlers.CalendarSyncProcessor, systemUserID uuid.UUID, feedbackTasks *tasks.Service, feedbackOutbox taskhandlers.FeedbackOutboxProcessor, storyScheduleOutbox taskhandlers.StoryScheduleTransitionOutboxProcessor, feedbackAuthSecret string) *asynq.ServeMux {
+	workerTaskService := taskhandlers.NewWorkerHandlers(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopy, emailThreads, slackEvents, emailReplies, emailRecovery, calendar, systemUserID, feedbackTasks, feedbackOutbox, storyScheduleOutbox, feedbackAuthSecret)
 	cleanupHandlers := taskhandlers.NewCleanupHandlers(log, db, mailerService, emailCopy, emailThreads, systemUserID, notificationsService)
 
 	mux := asynq.NewServeMux()
@@ -46,6 +46,7 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeCalendarWatchRenewal, workerTaskService.HandleCalendarWatchRenewal)
 	mux.HandleFunc(tasks.TypeCalendarScheduleReconcile, workerTaskService.HandleCalendarScheduleReconcile)
 	mux.HandleFunc(tasks.TypeCalendarScheduleOutbox, workerTaskService.HandleCalendarScheduleOutboxDispatch)
+	mux.HandleFunc(tasks.TypeStoryScheduleTransitionOutbox, workerTaskService.HandleStoryScheduleTransitionOutboxDispatch)
 
 	// Cleanup handlers
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)

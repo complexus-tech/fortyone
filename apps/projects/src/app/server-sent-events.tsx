@@ -10,7 +10,10 @@ import { calendarKeys, notificationKeys } from "@/constants/keys";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useWorkspacePath } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
-import type { Story } from "@/modules/stories/types";
+import type {
+  AutoSchedulingStatus,
+  Story,
+} from "@/modules/stories/types";
 
 const apiURL = getApiUrl();
 
@@ -24,6 +27,11 @@ type WorkspaceUpdate = {
     assigneeId?: string;
     priority?: string;
     title?: string;
+    autoSchedulingEnabled?: boolean;
+    autoSchedulingLocked?: boolean;
+    autoSchedulingStatus?: AutoSchedulingStatus;
+    autoSchedulingReason?: string | null;
+    autoSchedulingUpdatedAt?: string | null;
   };
   actorId: string;
   actorName: string;

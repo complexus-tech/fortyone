@@ -14,13 +14,15 @@ import (
 	teamsettings "github.com/complexus-tech/projects-api/internal/modules/teamsettings/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	"github.com/complexus-tech/projects-api/internal/platform/workweek"
+	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
 
 var (
-	ErrNotConfigured = errors.New("maya agent is not configured")
-	ErrPlanNotFound  = errors.New("maya plan not found")
+	ErrNotConfigured    = errors.New("maya agent is not configured")
+	ErrPlanNotFound     = errors.New("maya plan not found")
+	ErrMayaAccessDenied = errors.New("workspace does not have access to Maya auto-scheduling")
 )
 
 const defaultCandidateLimit = 15
@@ -30,6 +32,8 @@ type StoriesService interface {
 	UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error
 	UpdateExternalWithReason(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error
 	UpdateExternalWithReasonIfUnchanged(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any, reason string) error
+	UpdateAutomationIfUnchanged(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any, reason string) error
+	UpdateAutomationStateIfUnchanged(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, expectedUpdatedAt time.Time, status string, reason *string, locked *bool, schedule *events.StoryScheduleTransition) error
 }
 
 type ReportsService interface {
@@ -129,6 +133,29 @@ func New(deps Dependencies) *Service {
 }
 
 func (s *Service) CreateWorkPlan(ctx context.Context, input CreateWorkPlanInput) (WorkPlan, error) {
+	if !input.AutoApply {
+		return s.createWorkPlan(ctx, input)
+	}
+	if err := s.validate(); err != nil {
+		return WorkPlan{}, err
+	}
+	if input.WorkspaceID == uuid.Nil || input.StoryID == uuid.Nil {
+		return WorkPlan{}, fmt.Errorf("%w: story and workspace are required", ErrInvalidPlanInput)
+	}
+	scheduleRepo, err := s.scheduleRepository()
+	if err != nil {
+		return WorkPlan{}, err
+	}
+	var plan WorkPlan
+	err = scheduleRepo.WithScheduleStoryLock(ctx, input.WorkspaceID, input.StoryID, func() error {
+		var planErr error
+		plan, planErr = s.createWorkPlan(ctx, input)
+		return planErr
+	})
+	return plan, err
+}
+
+func (s *Service) createWorkPlan(ctx context.Context, input CreateWorkPlanInput) (WorkPlan, error) {
 	ctx, span := web.AddSpan(ctx, "business.core.maya.CreateWorkPlan")
 	defer span.End()
 
@@ -144,6 +171,57 @@ func (s *Service) CreateWorkPlan(ctx context.Context, input CreateWorkPlanInput)
 	if err != nil {
 		span.RecordError(err)
 		return WorkPlan{}, fmt.Errorf("get story for maya plan: %w", err)
+	}
+	scheduleRepo, err := s.scheduleRepository()
+	if err != nil {
+		return WorkPlan{}, err
+	}
+	hasAccess, err := scheduleRepo.WorkspaceCanUseMaya(ctx, input.WorkspaceID)
+	if err != nil {
+		return WorkPlan{}, err
+	}
+	if !hasAccess {
+		return WorkPlan{}, ErrMayaAccessDenied
+	}
+	if input.AutoApply {
+		active, activeErr := scheduleRepo.StoryIsActiveForAutoScheduling(ctx, input.WorkspaceID, input.StoryID)
+		if activeErr != nil {
+			return WorkPlan{}, activeErr
+		}
+		if !active {
+			return WorkPlan{}, fmt.Errorf("%w: story is not active for auto-scheduling", ErrInvalidPlanInput)
+		}
+	}
+	if input.AutoApply && story.AutoSchedulingLocked {
+		return WorkPlan{}, stories.ErrAutoSchedulingOwnerLocked
+	}
+	prePlanUpdates := make(map[string]any)
+	if input.AutoApply && !story.AutoSchedulingEnabled {
+		prePlanUpdates["auto_scheduling_enabled"] = true
+		prePlanUpdates["auto_scheduling_locked"] = false
+	}
+	if input.AutoApply && input.DurationMinutes > 0 && (story.EstimatedDurationMinutes == nil || *story.EstimatedDurationMinutes != input.DurationMinutes) {
+		prePlanUpdates["estimated_duration_minutes"] = input.DurationMinutes
+		if story.MinimumFocusBlockMinutes != nil && *story.MinimumFocusBlockMinutes > input.DurationMinutes {
+			prePlanUpdates["minimum_focus_block_minutes"] = input.DurationMinutes
+		}
+	}
+	if len(prePlanUpdates) > 0 {
+		if err := s.stories.UpdateAutomationIfUnchanged(
+			ctx,
+			s.mayaActorID,
+			story.ID,
+			story.Workspace,
+			story.UpdatedAt,
+			prePlanUpdates,
+			"Maya saved the confirmed scheduling preferences for this work plan.",
+		); err != nil {
+			return WorkPlan{}, fmt.Errorf("enable Maya auto-scheduling: %w", err)
+		}
+		story, err = s.stories.Get(ctx, input.StoryID, input.WorkspaceID)
+		if err != nil {
+			return WorkPlan{}, fmt.Errorf("reload story after enabling Maya auto-scheduling: %w", err)
+		}
 	}
 	workingDays, err := s.getWorkingDays(ctx, story.Team, input.WorkspaceID)
 	if err != nil {
@@ -187,6 +265,35 @@ func (s *Service) CreateWorkPlan(ctx context.Context, input CreateWorkPlanInput)
 		}
 		return WorkPlan{Run: completed}, err
 	}
+	if result.SelectedUserID != nil {
+		for _, candidate := range candidates {
+			if candidate.Member.UserID == *result.SelectedUserID {
+				result.Timezone = candidate.Timezone
+				break
+			}
+		}
+	}
+	previousBlocks := []calendar.CoreScheduleBlock{}
+	if input.AutoApply && result.SelectedUserID != nil {
+		ownerIDs, ownerErr := scheduleRepo.ListMayaScheduleOwners(ctx, story.Workspace, story.ID)
+		if ownerErr != nil {
+			return WorkPlan{}, ownerErr
+		}
+		if !slices.Contains(ownerIDs, *result.SelectedUserID) {
+			ownerIDs = append(ownerIDs, *result.SelectedUserID)
+		}
+		scheduleCalendar, calendarErr := s.scheduleCalendarService()
+		if calendarErr != nil {
+			return WorkPlan{}, calendarErr
+		}
+		for _, ownerID := range ownerIDs {
+			blocks, listErr := scheduleCalendar.ListMayaScheduleBlocksForStory(ctx, story.Workspace, ownerID, story.ID)
+			if listErr != nil {
+				return WorkPlan{}, listErr
+			}
+			previousBlocks = append(previousBlocks, blocks...)
+		}
+	}
 
 	for i := range result.Actions {
 		result.Actions[i].RunID = run.ID
@@ -219,7 +326,53 @@ func (s *Service) CreateWorkPlan(ctx context.Context, input CreateWorkPlanInput)
 		span.RecordError(err)
 		return WorkPlan{}, fmt.Errorf("complete maya run: %w", err)
 	}
+	if input.AutoApply && runStatus == RunStatusSucceeded {
+		if err := s.finalizeAppliedWorkPlan(ctx, story, result, previousBlocks); err != nil {
+			return WorkPlan{Run: completed, Actions: actions}, fmt.Errorf("finalize Maya auto-scheduling state: %w", err)
+		}
+	}
 	return WorkPlan{Run: completed, Actions: actions}, nil
+}
+
+func (s *Service) finalizeAppliedWorkPlan(ctx context.Context, plannedStory stories.CoreSingleStory, result PlanResult, previousBlocks []calendar.CoreScheduleBlock) error {
+	story, err := s.stories.Get(ctx, plannedStory.ID, plannedStory.Workspace)
+	if err != nil {
+		return err
+	}
+	if !story.AutoSchedulingEnabled {
+		return nil
+	}
+	if result.SelectedUserID == nil || *result.SelectedUserID == uuid.Nil {
+		reason := "Maya could not select an eligible teammate yet."
+		return s.stories.UpdateAutomationStateIfUnchanged(
+			ctx, s.mayaActorID, story.ID, story.Workspace, story.UpdatedAt,
+			stories.AutoSchedulingStatusNeedsOwner, &reason, nil, nil,
+		)
+	}
+	ownerID := *result.SelectedUserID
+	if story.Assignee == nil || *story.Assignee != ownerID {
+		return errors.New("applied schedule owner does not match the current story assignee")
+	}
+	scheduleCalendar, err := s.scheduleCalendarService()
+	if err != nil {
+		return err
+	}
+	blocks, err := scheduleCalendar.ListMayaScheduleBlocksForStory(ctx, story.Workspace, ownerID, story.ID)
+	if err != nil {
+		return err
+	}
+	segments := mayaSegmentsFromBlocks(blocks)
+	status, reason := autoSchedulingOutcome(result, segments)
+	if story.AutoSchedulingLocked && len(segments) > 0 {
+		status = stories.AutoSchedulingStatusLocked
+		reason = "Maya retained the locked schedule without moving its time."
+	}
+	reason = refineScheduleOutcomeReason(previousBlocks, segments, status, reason)
+	transition := buildStoryScheduleTransition(story, ownerID, previousBlocks, segments, result.Timezone, status, reason)
+	return s.stories.UpdateAutomationStateIfUnchanged(
+		ctx, s.mayaActorID, story.ID, story.Workspace, story.UpdatedAt,
+		status, &reason, nil, transition,
+	)
 }
 
 func (s *Service) ProcessAssignmentBatch(ctx context.Context, input ProcessAssignmentBatchInput) (ProcessAssignmentBatchResult, error) {
@@ -245,7 +398,7 @@ func (s *Service) ProcessAssignmentBatch(ctx context.Context, input ProcessAssig
 		if err != nil {
 			continue
 		}
-		if story.Team != input.TeamID || story.Assignee == nil || *story.Assignee != s.mayaActorID {
+		if story.Team != input.TeamID || !story.AutoSchedulingEnabled || story.Assignee == nil || *story.Assignee != s.mayaActorID {
 			continue
 		}
 		storiesForBatch = append(storiesForBatch, story)
@@ -577,6 +730,20 @@ func (s *Service) applyActions(ctx context.Context, actions []CoreAction) []Core
 			}
 			continue
 		}
+		if action.Type == ActionTypeAssignStory && scheduleState != nil {
+			if err := s.refreshAppliedScheduleAfterAssignment(ctx, *scheduleState); err != nil {
+				// The assignment is already committed and must never be reported as
+				// rolled back. Leave provider delivery fenced by the stale ownership
+				// watermark; the assignment event/recovery sweep will retry the exact
+				// schedule against the current story version.
+				s.markActionApplied(ctx, &applied[i])
+				scheduleApplied = false
+				for _, index := range scheduleIndexes {
+					s.markActionFailed(ctx, &applied[index], "schedule ownership refresh failed after assignment: "+err.Error())
+				}
+				continue
+			}
+		}
 		s.markActionApplied(ctx, &applied[i])
 	}
 	if scheduleApplied {
@@ -599,6 +766,7 @@ type appliedScheduleState struct {
 	userID         uuid.UUID
 	storyID        uuid.UUID
 	previousOwners []scheduleOwnerState
+	segments       []calendar.MayaScheduleSegmentInput
 }
 
 type scheduleOwnerState struct {
@@ -676,7 +844,7 @@ func (s *Service) applyScheduleActionsAtomically(ctx context.Context, actions []
 	}
 	state := appliedScheduleState{
 		calendar: scheduleCalendar, workspaceID: first.WorkspaceID, userID: userID,
-		storyID: first.StoryID, previousOwners: previousOwners,
+		storyID: first.StoryID, previousOwners: previousOwners, segments: segments,
 	}
 	for _, previousOwner := range previousOwners {
 		if previousOwner.userID == userID {
@@ -689,6 +857,26 @@ func (s *Service) applyScheduleActionsAtomically(ctx context.Context, actions []
 		}
 	}
 	return state, nil
+}
+
+func (s *Service) refreshAppliedScheduleAfterAssignment(ctx context.Context, state appliedScheduleState) error {
+	story, err := s.stories.Get(ctx, state.storyID, state.workspaceID)
+	if err != nil {
+		return err
+	}
+	if !story.AutoSchedulingEnabled || story.Assignee == nil || *story.Assignee != state.userID {
+		return errors.New("story assignment no longer matches the committed Maya schedule")
+	}
+	_, err = state.calendar.ReconcileMayaScheduleBlocks(ctx, calendar.MayaScheduleReconcileInput{
+		WorkspaceID:            state.workspaceID,
+		UserID:                 state.userID,
+		StoryID:                state.storyID,
+		ExpectedStoryUpdatedAt: &story.UpdatedAt,
+		Segments:               state.segments,
+		KeepOwnership:          true,
+		Locked:                 story.AutoSchedulingLocked,
+	})
+	return err
 }
 
 func (s *Service) restoreScheduleState(ctx context.Context, state appliedScheduleState) error {
@@ -751,7 +939,7 @@ func (s *Service) applyAction(ctx context.Context, action CoreAction) error {
 		if action.Payload.AssignStory == nil {
 			return fmt.Errorf("missing assign story payload")
 		}
-		return s.stories.UpdateExternalWithReasonIfUnchanged(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, action.Payload.AssignStory.ExpectedUpdatedAt, map[string]any{
+		return s.stories.UpdateAutomationIfUnchanged(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, action.Payload.AssignStory.ExpectedUpdatedAt, map[string]any{
 			"assignee_id": action.Payload.AssignStory.AssigneeID,
 		}, action.Reason)
 	case ActionTypeScheduleWorkBlock:

@@ -1,16 +1,19 @@
 import type { DetailedStory, NewStory } from "@/modules/story/types";
+import { isMayaAssigneeSelection } from "@/lib/auto-scheduling";
 import { normalizeTimeNeeded } from "@/lib/time-needed";
 
 export const buildNewStoryDialogPayload = ({
   currentTeamId,
   description,
   descriptionHTML,
+  mayaAssigneeId,
   storyForm,
   title,
 }: {
   currentTeamId?: string;
   description: string;
   descriptionHTML: string;
+  mayaAssigneeId?: string | null;
   storyForm: NewStory;
   title: string;
 }): NewStory => {
@@ -33,6 +36,12 @@ export const buildNewStoryDialogPayload = ({
     keyResultId: storyForm.keyResultId,
     sprintId: storyForm.sprintId,
     estimateValue: storyForm.estimateValue ?? null,
+    autoSchedulingEnabled: isMayaAssigneeSelection(
+      storyForm.assigneeId,
+      mayaAssigneeId,
+    )
+      ? true
+      : storyForm.autoSchedulingEnabled ?? false,
     ...timeNeeded,
     labelIds: storyForm.labelIds ?? [],
   };

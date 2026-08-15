@@ -72,6 +72,15 @@ func TestRegisterSchedulesDispatchesCalendarScheduleOutboxEveryMinute(t *testing
 	})
 }
 
+func TestRegisterSchedulesDispatchesStoryScheduleTransitionOutboxEveryMinute(t *testing.T) {
+	t.Parallel()
+	scheduler := &scheduleCapture{}
+	require.NoError(t, registerSchedules(scheduler))
+	require.Contains(t, scheduler.entries, scheduledTask{
+		spec: "*/1 * * * *", taskType: tasks.TypeStoryScheduleTransitionOutbox,
+	})
+}
+
 func TestRegisterSchedulesRecoversMayaSchedulesEveryMinute(t *testing.T) {
 	t.Parallel()
 	scheduler := &scheduleCapture{}

@@ -31,6 +31,11 @@ type dbStory struct {
 	EndDate                  *time.Time       `db:"end_date"`
 	EstimatedDurationMinutes *int             `db:"estimated_duration_minutes"`
 	MinimumFocusBlockMinutes *int             `db:"minimum_focus_block_minutes"`
+	AutoSchedulingEnabled    bool             `db:"auto_scheduling_enabled"`
+	AutoSchedulingLocked     bool             `db:"auto_scheduling_locked"`
+	AutoSchedulingStatus     string           `db:"auto_scheduling_status"`
+	AutoSchedulingReason     *string          `db:"auto_scheduling_reason"`
+	AutoSchedulingUpdatedAt  *time.Time       `db:"auto_scheduling_updated_at"`
 	CreatedAt                time.Time        `db:"created_at"`
 	UpdatedAt                time.Time        `db:"updated_at"`
 	Labels                   *json.RawMessage `db:"labels"`
@@ -94,6 +99,11 @@ func toCoreSearchStory(story dbStory) search.CoreSearchStory {
 		EndDate:                  story.EndDate,
 		EstimatedDurationMinutes: story.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+		AutoSchedulingLocked:     story.AutoSchedulingLocked,
+		AutoSchedulingStatus:     story.AutoSchedulingStatus,
+		AutoSchedulingReason:     story.AutoSchedulingReason,
+		AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 		CreatedAt:                story.CreatedAt,
 		UpdatedAt:                story.UpdatedAt,
 		Labels:                   labels,

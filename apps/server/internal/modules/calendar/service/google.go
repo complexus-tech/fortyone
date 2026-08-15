@@ -26,6 +26,7 @@ const (
 	fortyOneGoogleEventIDPrefix = "f41sched"
 	fortyOneGoogleSourceKey     = "fortyone_source"
 	fortyOneGoogleSourceValue   = "maya_schedule"
+	fortyOneMayaDescription     = "Scheduled by Maya in FortyOne"
 )
 
 type GoogleOAuth interface {
@@ -378,6 +379,7 @@ func (p *GoogleProvider) UpsertScheduleEvent(ctx context.Context, token Provider
 	event := &calendarapi.Event{
 		Id:                 eventID,
 		Summary:            strings.TrimSpace(input.Title),
+		Description:        fortyOneMayaDescription,
 		Status:             "confirmed",
 		Transparency:       "opaque",
 		Visibility:         "private",

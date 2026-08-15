@@ -20,6 +20,14 @@ func TestScheduleRecoveryClaimIsBoundedFairAndConcurrencySafe(t *testing.T) {
 		"limit $1",
 		"for update of ownership skip locked",
 		"set recovery_attempted_at = current_timestamp",
+		"from calendar_schedule_blocks elapsed_block",
+		"from calendar_schedule_blocks future_block",
+		"future_block.end_at > current_timestamp",
+		"story.auto_scheduling_status = 'planning'",
+		"story.auto_scheduling_status = 'cannot_fit'",
+		"current_timestamp - interval '1 hour'",
+		"from calendar_schedule_blocks retry_block",
+		"story.auto_scheduling_status in ('scheduled', 'locked')",
 	} {
 		if !strings.Contains(query, fragment) {
 			t.Fatalf("recovery claim must contain %q: %s", fragment, query)

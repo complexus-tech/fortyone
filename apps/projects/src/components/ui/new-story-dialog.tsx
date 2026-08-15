@@ -4,6 +4,7 @@ import {
   useState,
   useReducer,
   useMemo,
+  useRef,
   type Dispatch,
   type SetStateAction,
 } from "react";
@@ -42,6 +43,7 @@ import {
   ArrowRight2Icon,
   EstimateIcon,
   Time02Icon,
+  TimeScheduleIcon,
   TagsIcon,
 } from "icons";
 import { toast } from "sonner";
@@ -66,6 +68,12 @@ import { useStatuses } from "@/lib/hooks/statuses";
 import { useLabels } from "@/lib/hooks/labels";
 import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
 import { formatTimeNeeded } from "@/lib/time-needed";
+import {
+  deriveAutoSchedulingStatus,
+  getAutoSchedulingLabel,
+  getNewStoryAutoSchedulingEnabled,
+  isMayaAssigneeSelection,
+} from "@/lib/auto-scheduling";
 import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
 import {
   clearRichTextContent,
@@ -98,6 +106,7 @@ import { ObjectiveKeyResultMenu } from "./story/objective-key-result-menu";
 import { SprintsMenu } from "./story/sprints-menu";
 import { EstimateMenu } from "./story/estimate-menu";
 import { TimeNeededMenu } from "./story/time-needed-menu";
+import { AutoSchedulingMenu } from "./story/auto-scheduling-menu";
 import { LabelsMenu } from "./story/labels-menu";
 import { FeatureGuard } from "./feature-guard";
 import {
@@ -113,6 +122,7 @@ type StoryFormAction =
       value: NewStory[keyof NewStory];
     }
   | { type: "RESET_FORM"; payload: NewStory }
+  | { type: "PATCH_FORM"; payload: Partial<NewStory> }
   | { type: "SYNC_TEAM_STATUS"; teamId: string; statusId: string };
 
 const storyFormReducer = (
@@ -124,6 +134,8 @@ const storyFormReducer = (
       return action.payload;
     case "SET_FIELD":
       return { ...state, [action.field]: action.value };
+    case "PATCH_FORM":
+      return { ...state, ...action.payload };
     case "SYNC_TEAM_STATUS":
       return {
         ...state,
@@ -207,7 +219,9 @@ export const NewStoryDialog = ({
   const autoAssignMaya =
     hasFeature("backgroundMaya") &&
     (automationPreferences?.autoAssignMaya ?? false);
-  const { data: mayaAssignee } = useMayaAssignee(autoAssignMaya);
+  const canUseBackgroundMaya = hasFeature("backgroundMaya");
+  const { data: mayaAssignee, isLoading: isMayaAssigneeLoading } =
+    useMayaAssignee(isOpen && canUseBackgroundMaya);
   const currentUserId = session.data?.user.id ?? null;
   const autoAssignedUserId =
     !autoAssignMaya && autoAssignSelf ? currentUserId : null;
@@ -229,6 +243,8 @@ export const NewStoryDialog = ({
       estimateValue: null,
       estimatedDurationMinutes: null,
       minimumFocusBlockMinutes: null,
+      autoSchedulingEnabled: false,
+      autoSchedulingLocked: false,
       labelIds: [],
     }),
     [
@@ -247,6 +263,9 @@ export const NewStoryDialog = ({
   const [createMore, setCreateMore] = useState(false);
   const [storyTitle, setStoryTitle] = useState("");
   const [storySearchQuery, setStorySearchQuery] = useState("");
+  const hasExplicitAutoSchedulingChoiceRef = useRef(false);
+  const assigneeButtonRef = useRef<HTMLButtonElement>(null);
+  const timeNeededButtonRef = useRef<HTMLButtonElement>(null);
   const mutation = useCreateStoryMutation();
   const {
     cancelStagedUploads,
@@ -270,10 +289,20 @@ export const NewStoryDialog = ({
     mayaAssignee?.id === storyForm.assigneeId
       ? mayaAssignee
       : members.find((m) => m.id === storyForm.assigneeId);
+  const isMayaAssigned = isMayaAssigneeSelection(
+    storyForm.assigneeId,
+    mayaAssignee?.id,
+  );
   const selectedLabelIds = storyForm.labelIds ?? [];
   const selectedLabels = allLabels.filter((label) =>
     selectedLabelIds.includes(label.id),
   );
+  const autoSchedulingStatus = deriveAutoSchedulingStatus({
+    assigneeId: storyForm.assigneeId,
+    autoSchedulingEnabled: storyForm.autoSchedulingEnabled,
+    autoSchedulingLocked: storyForm.autoSchedulingLocked,
+    estimatedDurationMinutes: storyForm.estimatedDurationMinutes,
+  });
   const teamCodeById = new Map(teams.map((team) => [team.id, team.code]));
   const statusById = new Map(statuses.map((status) => [status.id, status]));
   const memberById = new Map(members.map((member) => [member.id, member]));
@@ -321,6 +350,7 @@ export const NewStoryDialog = ({
 
   const handleCreateStory = async () => {
     if (!titleEditor || !editor) return;
+    if (isMayaAssigneeLoading) return;
     if (!titleEditor.getText()) {
       titleEditor.commands.focus();
       toast.warning("Validation Error", {
@@ -335,6 +365,7 @@ export const NewStoryDialog = ({
       currentTeamId,
       description: initialContent.contentText,
       descriptionHTML: initialContent.contentHtml,
+      mayaAssigneeId: mayaAssignee?.id,
       storyForm,
       title: titleEditor.getText(),
     });
@@ -374,6 +405,7 @@ export const NewStoryDialog = ({
       clearRichTextContent(editor);
       resetForNextStory();
       dispatch({ type: "RESET_FORM", payload: initialForm });
+      hasExplicitAutoSchedulingChoiceRef.current = false;
       if (tier === "free") {
         void queryClient.invalidateQueries({
           queryKey: storyKeys.total(workspaceSlug),
@@ -442,7 +474,17 @@ export const NewStoryDialog = ({
   // Initialize form when props change
   useEffect(() => {
     dispatch({ type: "INITIALIZE", payload: initialForm });
+    hasExplicitAutoSchedulingChoiceRef.current = false;
   }, [initialForm]);
+
+  useEffect(() => {
+    if (isMayaAssigned && !storyForm.autoSchedulingEnabled) {
+      dispatch({
+        type: "PATCH_FORM",
+        payload: { autoSchedulingEnabled: true },
+      });
+    }
+  }, [isMayaAssigned, storyForm.autoSchedulingEnabled]);
 
   useEffect(() => {
     if (
@@ -452,9 +494,11 @@ export const NewStoryDialog = ({
       !storyForm.assigneeId
     ) {
       dispatch({
-        type: "SET_FIELD",
-        field: "assigneeId",
-        value: mayaAssignee.id,
+        type: "PATCH_FORM",
+        payload: {
+          assigneeId: mayaAssignee.id,
+          autoSchedulingEnabled: true,
+        },
       });
     }
   }, [assigneeId, autoAssignMaya, mayaAssignee?.id, storyForm.assigneeId]);
@@ -809,6 +853,7 @@ export const NewStoryDialog = ({
                         src={member?.avatarUrl}
                       />
                     }
+                    ref={assigneeButtonRef}
                     size="sm"
                     variant="outline"
                   >
@@ -821,9 +866,21 @@ export const NewStoryDialog = ({
                   assigneeId={storyForm.assigneeId}
                   onAssigneeSelected={(assigneeId) => {
                     dispatch({
-                      type: "SET_FIELD",
-                      field: "assigneeId",
-                      value: assigneeId,
+                      type: "PATCH_FORM",
+                      payload: {
+                        assigneeId,
+                        autoSchedulingEnabled: getNewStoryAutoSchedulingEnabled(
+                          {
+                            currentEnabled: Boolean(
+                              storyForm.autoSchedulingEnabled,
+                            ),
+                            hasExplicitChoice:
+                              hasExplicitAutoSchedulingChoiceRef.current,
+                            mayaAssigneeId: mayaAssignee?.id,
+                            selectedAssigneeId: assigneeId,
+                          },
+                        ),
+                      },
                     });
                   }}
                   teamId={currentTeamId}
@@ -883,6 +940,7 @@ export const NewStoryDialog = ({
                         })}
                       />
                     }
+                    ref={timeNeededButtonRef}
                     size="sm"
                     type="button"
                     variant="outline"
@@ -915,6 +973,50 @@ export const NewStoryDialog = ({
                   }}
                 />
               </TimeNeededMenu>
+              <AutoSchedulingMenu>
+                <AutoSchedulingMenu.Trigger>
+                  <Button
+                    className={cn("dark:bg-surface-elevated/90 gap-1.5 px-2", {
+                      "text-text-muted": autoSchedulingStatus === "off",
+                    })}
+                    color="tertiary"
+                    leftIcon={<TimeScheduleIcon className="h-4.5 w-auto" />}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Auto-schedule:{" "}
+                    {getAutoSchedulingLabel(autoSchedulingStatus)}
+                  </Button>
+                </AutoSchedulingMenu.Trigger>
+                <AutoSchedulingMenu.Items
+                  assigneeId={storyForm.assigneeId}
+                  autoSchedulingEnabled={Boolean(
+                    storyForm.autoSchedulingEnabled,
+                  )}
+                  autoSchedulingLocked={Boolean(storyForm.autoSchedulingLocked)}
+                  autoSchedulingRequired={isMayaAssigned}
+                  autoSchedulingStatus={autoSchedulingStatus}
+                  canManage={canUseBackgroundMaya}
+                  estimatedDurationMinutes={storyForm.estimatedDurationMinutes}
+                  onChange={(patch) => {
+                    if ("autoSchedulingEnabled" in patch) {
+                      hasExplicitAutoSchedulingChoiceRef.current = true;
+                    }
+                    dispatch({ type: "PATCH_FORM", payload: patch });
+                  }}
+                  onRequestOwner={() => {
+                    requestAnimationFrame(() => {
+                      assigneeButtonRef.current?.click();
+                    });
+                  }}
+                  onRequestTime={() => {
+                    requestAnimationFrame(() => {
+                      timeNeededButtonRef.current?.click();
+                    });
+                  }}
+                />
+              </AutoSchedulingMenu>
               {selectedLabels.length > 0 ? (
                 <Flex align="center" className="gap-1" wrap>
                   {selectedLabels.map((label) => (
@@ -1083,8 +1185,12 @@ export const NewStoryDialog = ({
             </Text>
             <Button
               leftIcon={<PlusIcon className="text-current" />}
-              loading={loading}
-              loadingText={`Creating ${getTermDisplay("storyTerm")}...`}
+              loading={loading || isMayaAssigneeLoading}
+              loadingText={
+                isMayaAssigneeLoading
+                  ? "Preparing Maya..."
+                  : `Creating ${getTermDisplay("storyTerm")}...`
+              }
               onClick={handleCreateStory}
               size="md"
             >

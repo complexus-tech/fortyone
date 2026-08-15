@@ -35,6 +35,8 @@ func TestToCoreNewStoryMapsLabelIDs(t *testing.T) {
 	labelIDs := []uuid.UUID{uuid.New(), uuid.New()}
 	estimatedDurationMinutes := 180
 	minimumFocusBlockMinutes := 45
+	autoSchedulingReason := "Waiting for an owner"
+	autoSchedulingUpdatedAt := time.Date(2026, time.August, 15, 9, 30, 0, 0, time.UTC)
 
 	coreStory := toCoreNewStory(AppNewStory{
 		Title:                    "Add reporting filters",
@@ -43,6 +45,7 @@ func TestToCoreNewStoryMapsLabelIDs(t *testing.T) {
 		Priority:                 "High",
 		EstimatedDurationMinutes: &estimatedDurationMinutes,
 		MinimumFocusBlockMinutes: &minimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    true,
 	}, userID)
 
 	if len(coreStory.LabelIDs) != len(labelIDs) {
@@ -59,6 +62,23 @@ func TestToCoreNewStoryMapsLabelIDs(t *testing.T) {
 	}
 	if coreStory.MinimumFocusBlockMinutes != &minimumFocusBlockMinutes {
 		t.Fatalf("expected minimum focus block pointer to be preserved, got %v", coreStory.MinimumFocusBlockMinutes)
+	}
+	if !coreStory.AutoSchedulingEnabled || coreStory.AutoSchedulingLocked {
+		t.Fatalf("expected auto-scheduling preferences to be preserved, got enabled=%t locked=%t", coreStory.AutoSchedulingEnabled, coreStory.AutoSchedulingLocked)
+	}
+
+	appStory := toAppStory(stories.CoreSingleStory{
+		AutoSchedulingEnabled:   true,
+		AutoSchedulingLocked:    true,
+		AutoSchedulingStatus:    stories.AutoSchedulingStatusNeedsOwner,
+		AutoSchedulingReason:    &autoSchedulingReason,
+		AutoSchedulingUpdatedAt: &autoSchedulingUpdatedAt,
+	}, nil)
+	if !appStory.AutoSchedulingEnabled || !appStory.AutoSchedulingLocked || appStory.AutoSchedulingStatus != stories.AutoSchedulingStatusNeedsOwner {
+		t.Fatalf("expected auto-scheduling state in story response, got %#v", appStory)
+	}
+	if appStory.AutoSchedulingReason != &autoSchedulingReason || appStory.AutoSchedulingUpdatedAt != &autoSchedulingUpdatedAt {
+		t.Fatalf("expected auto-scheduling metadata pointers to be preserved, got %#v", appStory)
 	}
 }
 

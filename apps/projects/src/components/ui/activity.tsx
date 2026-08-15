@@ -10,6 +10,7 @@ import {
   SprintsIcon,
   TagsIcon,
   Time02Icon,
+  TimeScheduleIcon,
 } from "icons";
 import { useSession } from "@/lib/auth/client";
 import { formatActivityReasonDates } from "@/lib/activity-format";
@@ -307,6 +308,32 @@ export const Activity = ({
     minimum_focus_block_minutes: {
       label: "Minimum focus block",
       render: (value: string) => <DisplayTimeNeeded value={value} />,
+    },
+    auto_scheduling_status: {
+      label: "Auto-scheduling",
+      render: (value: string) => (
+        <span className="flex items-center gap-1">
+          <TimeScheduleIcon className="h-4" />
+          {value}
+        </span>
+      ),
+    },
+    auto_scheduling_time: {
+      label: "Scheduled time",
+      render: (value: string) => (
+        <span className="flex items-center gap-1">
+          <CalendarIcon className="h-4" />
+          {value}
+        </span>
+      ),
+    },
+    auto_scheduling_locked: {
+      label: "Schedule lock",
+      render: (value: string) => <span>{value}</span>,
+    },
+    auto_scheduling_enabled: {
+      label: "Auto-scheduling",
+      render: (value: string) => <span>{value}</span>,
     },
     assignee_id: {
       label: "Assignee",

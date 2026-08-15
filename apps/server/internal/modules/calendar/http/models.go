@@ -103,22 +103,24 @@ type AppBusyWindow struct {
 }
 
 type AppScheduleBlock struct {
-	ID          uuid.UUID  `json:"id"`
-	StoryID     *uuid.UUID `json:"storyId,omitempty"`
-	StoryTitle  *string    `json:"storyTitle,omitempty"`
-	StoryCode   *string    `json:"storyCode,omitempty"`
-	TeamID      *uuid.UUID `json:"teamId,omitempty"`
-	TeamName    *string    `json:"teamName,omitempty"`
-	TeamCode    *string    `json:"teamCode,omitempty"`
-	BlockType   string     `json:"blockType"`
-	Title       string     `json:"title"`
-	StartAt     time.Time  `json:"startAt"`
-	EndAt       time.Time  `json:"endAt"`
-	HasConflict bool       `json:"hasConflict"`
-	IsLocked    bool       `json:"isLocked"`
-	Source      string     `json:"source"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	ID                   uuid.UUID  `json:"id"`
+	StoryID              *uuid.UUID `json:"storyId,omitempty"`
+	StoryTitle           *string    `json:"storyTitle,omitempty"`
+	StoryCode            *string    `json:"storyCode,omitempty"`
+	TeamID               *uuid.UUID `json:"teamId,omitempty"`
+	TeamName             *string    `json:"teamName,omitempty"`
+	TeamCode             *string    `json:"teamCode,omitempty"`
+	BlockType            string     `json:"blockType"`
+	Title                string     `json:"title"`
+	StartAt              time.Time  `json:"startAt"`
+	EndAt                time.Time  `json:"endAt"`
+	HasConflict          bool       `json:"hasConflict"`
+	IsLocked             bool       `json:"isLocked"`
+	AutoSchedulingStatus *string    `json:"autoSchedulingStatus,omitempty"`
+	AutoSchedulingReason *string    `json:"autoSchedulingReason,omitempty"`
+	Source               string     `json:"source"`
+	CreatedAt            time.Time  `json:"createdAt"`
+	UpdatedAt            time.Time  `json:"updatedAt"`
 }
 
 type AppScheduleBlockRequest struct {
@@ -294,21 +296,23 @@ func toAppScheduleBlocks(blocks []calendar.CoreScheduleBlock) []AppScheduleBlock
 
 func toAppScheduleBlock(block calendar.CoreScheduleBlock) AppScheduleBlock {
 	return AppScheduleBlock{
-		ID:          block.ID,
-		StoryID:     block.StoryID,
-		StoryTitle:  block.StoryTitle,
-		StoryCode:   block.StoryCode,
-		TeamID:      block.TeamID,
-		TeamName:    block.TeamName,
-		TeamCode:    block.TeamCode,
-		BlockType:   string(block.BlockType),
-		Title:       block.Title,
-		StartAt:     block.StartAt,
-		EndAt:       block.EndAt,
-		HasConflict: block.HasConflict,
-		IsLocked:    block.IsLocked,
-		Source:      string(block.Source),
-		CreatedAt:   block.CreatedAt,
-		UpdatedAt:   block.UpdatedAt,
+		ID:                   block.ID,
+		StoryID:              block.StoryID,
+		StoryTitle:           block.StoryTitle,
+		StoryCode:            block.StoryCode,
+		TeamID:               block.TeamID,
+		TeamName:             block.TeamName,
+		TeamCode:             block.TeamCode,
+		BlockType:            string(block.BlockType),
+		Title:                block.Title,
+		StartAt:              block.StartAt,
+		EndAt:                block.EndAt,
+		HasConflict:          block.HasConflict,
+		IsLocked:             block.IsLocked,
+		AutoSchedulingStatus: block.AutoSchedulingStatus,
+		AutoSchedulingReason: block.AutoSchedulingReason,
+		Source:               string(block.Source),
+		CreatedAt:            block.CreatedAt,
+		UpdatedAt:            block.UpdatedAt,
 	}
 }

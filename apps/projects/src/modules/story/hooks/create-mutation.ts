@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
+import { deriveAutoSchedulingStatus } from "@/lib/auto-scheduling";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
@@ -13,6 +14,25 @@ import type {
 } from "@/modules/stories/types";
 import { createStoryAction } from "../actions/create-story";
 import type { NewStory, DetailedStory } from "../types";
+
+const getOptimisticAutoSchedulingFields = (story: NewStory) => {
+  const autoSchedulingEnabled = story.autoSchedulingEnabled ?? false;
+  const autoSchedulingLocked = story.autoSchedulingLocked ?? false;
+
+  return {
+    autoSchedulingEnabled,
+    autoSchedulingLocked,
+    autoSchedulingStatus: deriveAutoSchedulingStatus({
+      assigneeId: story.assigneeId,
+      autoSchedulingEnabled,
+      autoSchedulingLocked,
+      autoSchedulingStatus: story.autoSchedulingStatus,
+      estimatedDurationMinutes: story.estimatedDurationMinutes,
+    }),
+    autoSchedulingReason: story.autoSchedulingReason ?? null,
+    autoSchedulingUpdatedAt: story.autoSchedulingUpdatedAt ?? null,
+  };
+};
 
 // Helper function to update detail queries (sub-stories)
 const updateDetailQuery = (
@@ -32,6 +52,7 @@ const updateDetailQuery = (
             ...data.subStories,
             {
               ...story,
+              ...getOptimisticAutoSchedulingFields(story),
               id: "123",
               sequenceId: data.subStories.length + 1,
               updatedAt: new Date().toISOString(),
@@ -65,6 +86,7 @@ const updateInfiniteQuery = (
         estimateScheme: story.estimateScheme ?? DEFAULT_ESTIMATE_SCHEME,
         estimatedDurationMinutes: story.estimatedDurationMinutes ?? null,
         minimumFocusBlockMinutes: story.minimumFocusBlockMinutes ?? null,
+        ...getOptimisticAutoSchedulingFields(story),
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -134,6 +156,7 @@ const updateGroupedQuery = (
         estimateScheme: story.estimateScheme ?? DEFAULT_ESTIMATE_SCHEME,
         estimatedDurationMinutes: story.estimatedDurationMinutes ?? null,
         minimumFocusBlockMinutes: story.minimumFocusBlockMinutes ?? null,
+        ...getOptimisticAutoSchedulingFields(story),
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,

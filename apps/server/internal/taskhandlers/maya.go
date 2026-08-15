@@ -19,6 +19,7 @@ type mayaAssignmentCandidateStory struct {
 	ID          uuid.UUID `db:"id"`
 	WorkspaceID uuid.UUID `db:"workspace_id"`
 	TeamID      uuid.UUID `db:"team_id"`
+	AssigneeID  uuid.UUID `db:"assignee_id"`
 }
 
 type mayaAssignmentGroupKey struct {
@@ -46,7 +47,26 @@ func (h *handlers) HandleMayaBatchAssignment(ctx context.Context, t *asynq.Task)
 		}
 		cursor = stories[len(stories)-1].ID
 
-		groups := groupMayaAssignmentCandidates(stories)
+		mayaAssigned := make([]mayaAssignmentCandidateStory, 0, len(stories))
+		for _, story := range stories {
+			if story.AssigneeID == h.systemUserID {
+				mayaAssigned = append(mayaAssigned, story)
+				continue
+			}
+			workspaceID := story.WorkspaceID
+			storyID := story.ID
+			if err := h.mayaService.ReconcileSchedule(ctx, maya.ReconcileScheduleInput{
+				WorkspaceID: &workspaceID,
+				StoryID:     &storyID,
+			}); err != nil {
+				h.log.Error(ctx, "failed to recover enabled human-owned Maya schedule", "workspace_id", story.WorkspaceID, "story_id", story.ID, "error", err)
+				totalSkipped++
+				continue
+			}
+			totalProcessed++
+		}
+
+		groups := groupMayaAssignmentCandidates(mayaAssigned)
 		windowStart := time.Now().UTC()
 		for key, storyIDs := range groups {
 			result, err := h.mayaService.ProcessAssignmentBatch(ctx, maya.ProcessAssignmentBatchInput{
@@ -91,14 +111,25 @@ func (h *handlers) HandleMayaScheduleRecovery(ctx context.Context, t *asynq.Task
 
 func (h *handlers) listMayaAssignmentCandidates(ctx context.Context, cursor uuid.UUID, limit int) ([]mayaAssignmentCandidateStory, error) {
 	query := `
-		SELECT
-			s.id,
-			s.workspace_id,
-			s.team_id
-		FROM stories s
-		INNER JOIN workspaces w ON w.workspace_id = s.workspace_id
-		WHERE s.assignee_id = $1
-			AND s.id > $2
+			SELECT
+				s.id,
+				s.workspace_id,
+				s.team_id,
+				s.assignee_id
+			FROM stories s
+			INNER JOIN workspaces w ON w.workspace_id = s.workspace_id
+			WHERE s.auto_scheduling_enabled = TRUE
+				AND s.assignee_id IS NOT NULL
+				AND (
+					s.assignee_id = $1
+					OR NOT EXISTS (
+						SELECT 1
+						FROM calendar_maya_schedule_ownerships ownership
+						WHERE ownership.workspace_id = s.workspace_id
+							AND ownership.story_id = s.id
+					)
+				)
+				AND s.id > $2
 			AND s.deleted_at IS NULL
 			AND s.archived_at IS NULL
 			AND s.is_draft = FALSE

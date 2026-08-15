@@ -89,6 +89,12 @@ export const bulkUpdateStories = tool({
           .describe(
             "Updated minimum focus block in minutes. Set null to use the automatic default.",
           ),
+        autoSchedulingEnabled: z
+          .boolean()
+          .optional()
+          .describe(
+            "Enable or pause continuous Maya calendar scheduling for every selected story.",
+          ),
         labelIds: z
           .array(z.string())
           .optional()
@@ -146,6 +152,7 @@ export const bulkUpdateStories = tool({
         endDate: normalizeOptionalString(updateData.endDate),
         estimateValue: updateData.estimateValue,
         ...timeNeededPatch,
+        autoSchedulingEnabled: updateData.autoSchedulingEnabled,
         labelIds: updateData.labelIds,
       };
 

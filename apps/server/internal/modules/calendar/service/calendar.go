@@ -628,7 +628,35 @@ func (s *Service) ReconcileMayaScheduleBlocks(ctx context.Context, input MayaSch
 	if err != nil {
 		return CoreScheduleReconcileResult{}, err
 	}
-	return scheduleRepo.ReconcileMayaScheduleBlocks(ctx, input)
+	result, err := scheduleRepo.ReconcileMayaScheduleBlocks(ctx, input)
+	if err != nil {
+		return CoreScheduleReconcileResult{}, err
+	}
+	if s.cfg.Updates != nil && scheduleReconcileChangesCalendar(result.Actions) {
+		if publishErr := s.cfg.Updates.PublishCalendarUpdated(
+			ctx,
+			input.WorkspaceID,
+			input.UserID,
+			uuid.Nil,
+			s.now().UTC(),
+		); publishErr != nil {
+			// Reconciliation is already durably committed. Realtime invalidation is
+			// advisory and must not make the caller compensate a successful plan.
+			if s.log != nil {
+				s.log.Error(ctx, "failed to publish reconciled calendar update", "error", publishErr, "story_id", input.StoryID, "user_id", input.UserID)
+			}
+		}
+	}
+	return result, nil
+}
+
+func scheduleReconcileChangesCalendar(actions []ScheduleReconcileAction) bool {
+	for _, action := range actions {
+		if action != ScheduleReconcileActionUnchanged {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Service) ListMayaScheduleBlocksForStory(ctx context.Context, workspaceID, userID, storyID uuid.UUID) ([]CoreScheduleBlock, error) {

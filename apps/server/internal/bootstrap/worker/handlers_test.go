@@ -10,7 +10,7 @@ import (
 )
 
 func TestBuildTaskMuxRegistersAttachmentImageOptimization(t *testing.T) {
-	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, "")
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, nil, "")
 
 	handler, pattern := mux.Handler(asynq.NewTask(tasks.TypeAttachmentImageOptimization, nil))
 
@@ -19,7 +19,7 @@ func TestBuildTaskMuxRegistersAttachmentImageOptimization(t *testing.T) {
 }
 
 func TestBuildTaskMuxRegistersBrevoEmailReplyTasks(t *testing.T) {
-	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, "")
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, nil, "")
 
 	for _, taskType := range []string{tasks.TypeBrevoEmailReply, tasks.TypeBrevoEmailReplyRecovery} {
 		handler, pattern := mux.Handler(asynq.NewTask(taskType, nil))
@@ -29,7 +29,7 @@ func TestBuildTaskMuxRegistersBrevoEmailReplyTasks(t *testing.T) {
 }
 
 func TestBuildTaskMuxRegistersFeedbackDeliveryAndRecovery(t *testing.T) {
-	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, "")
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, nil, "")
 	for _, taskType := range []string{tasks.TypeFeedbackContributorDelivery, tasks.TypeFeedbackContributorDeliveryRecovery, tasks.TypeFeedbackOutboxDispatch} {
 		handler, pattern := mux.Handler(asynq.NewTask(taskType, nil))
 		require.NotNil(t, handler)
@@ -38,9 +38,17 @@ func TestBuildTaskMuxRegistersFeedbackDeliveryAndRecovery(t *testing.T) {
 }
 
 func TestBuildTaskMuxRegistersMayaScheduleRecovery(t *testing.T) {
-	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, "")
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, nil, "")
 
 	handler, pattern := mux.Handler(asynq.NewTask(tasks.TypeMayaScheduleRecovery, nil))
 	require.NotNil(t, handler)
 	require.Equal(t, tasks.TypeMayaScheduleRecovery, pattern)
+}
+
+func TestBuildTaskMuxRegistersStoryScheduleTransitionOutbox(t *testing.T) {
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, nil, "")
+
+	handler, pattern := mux.Handler(asynq.NewTask(tasks.TypeStoryScheduleTransitionOutbox, nil))
+	require.NotNil(t, handler)
+	require.Equal(t, tasks.TypeStoryScheduleTransitionOutbox, pattern)
 }

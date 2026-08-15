@@ -18,6 +18,8 @@ import (
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
+	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	"github.com/complexus-tech/projects-api/pkg/aws"
 	"github.com/complexus-tech/projects-api/pkg/azure"
@@ -223,6 +225,11 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		return App{}, fmt.Errorf("initialize worker Google service: %w", err)
 	}
 	eventPublisher := publisher.New(redisClient, log)
+	storyScheduleOutbox := stories.NewScheduleTransitionOutboxDispatcher(
+		log,
+		storiesrepository.New(log, db),
+		eventPublisher,
+	)
 	feedbackOutbox := feedback.New(
 		feedbackrepository.New(log, db),
 		nil,
@@ -283,7 +290,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if upgradedCredentials > 0 {
 		log.Info(ctx, "Encrypted legacy Slack credentials", "count", upgradedCredentials)
 	}
-	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopyGenerator, emailThreads, notificationsService, slackEvents, emailReplyProcessor, emailReplyIngress, calendarService, systemUserID, tasksService, feedbackOutbox, cfg.Auth.SecretKey)
+	taskMux := buildTaskMux(log, db, brevoService, mailerService, githubService, mayaService, attachmentsService, emailCopyGenerator, emailThreads, notificationsService, slackEvents, emailReplyProcessor, emailReplyIngress, calendarService, systemUserID, tasksService, feedbackOutbox, storyScheduleOutbox, cfg.Auth.SecretKey)
 	resourcesTransferred = true
 
 	return App{

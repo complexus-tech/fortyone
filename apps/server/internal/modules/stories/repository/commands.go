@@ -243,7 +243,10 @@ func (r *repo) findByExternalCreationKey(ctx context.Context, workspaceID uuid.U
 		       s.parent_id, s.objective_id, s.status_id, s.assignee_id,
 		       s.blocked_by_id, s.blocking_id, s.related_id, s.reporter_id,
 		       s.priority, s.estimate_unit, s.estimated_duration_minutes,
-		       s.minimum_focus_block_minutes, s.sprint_id, s.key_result_id,
+		       s.minimum_focus_block_minutes, s.auto_scheduling_enabled,
+		       s.auto_scheduling_locked, s.auto_scheduling_status,
+		       s.auto_scheduling_reason, s.auto_scheduling_updated_at,
+		       s.sprint_id, s.key_result_id,
 		       s.team_id, s.workspace_id, s.start_date, s.end_date,
 		       s.created_at, s.updated_at, s.external_creation_key,
 		       COALESCE(
@@ -328,15 +331,19 @@ func (r *repo) insertStory(ctx context.Context, tx *sqlx.Tx, story *stories.Core
 					parent_id, objective_id, status_id, assignee_id, 
 					blocked_by_id, blocking_id, related_id, reporter_id,
 					priority, estimate_unit, estimated_duration_minutes, minimum_focus_block_minutes,
+					auto_scheduling_enabled, auto_scheduling_locked, auto_scheduling_status,
+					auto_scheduling_reason, auto_scheduling_updated_at,
 					sprint_id, key_result_id, team_id, workspace_id, start_date,
 					end_date, external_creation_key, created_at, updated_at
 			) VALUES (
 					:sequence_id, :title, :description, :description_html,
 					:parent_id, :objective_id, :status_id, :assignee_id, :blocked_by_id,
 					:blocking_id, :related_id, :reporter_id, :priority, :estimate_unit,
-					:estimated_duration_minutes, :minimum_focus_block_minutes, :sprint_id,
+					:estimated_duration_minutes, :minimum_focus_block_minutes,
+					:auto_scheduling_enabled, :auto_scheduling_locked, :auto_scheduling_status,
+					:auto_scheduling_reason, :auto_scheduling_updated_at, :sprint_id,
 					:key_result_id, :team_id, :workspace_id, :start_date, :end_date, :external_creation_key, :created_at, :updated_at
-			) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.estimated_duration_minutes, stories.minimum_focus_block_minutes, stories.sprint_id, stories.key_result_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.external_creation_key, stories.created_at, stories.updated_at;
+			) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.estimated_duration_minutes, stories.minimum_focus_block_minutes, stories.auto_scheduling_enabled, stories.auto_scheduling_locked, stories.auto_scheduling_status, stories.auto_scheduling_reason, stories.auto_scheduling_updated_at, stories.sprint_id, stories.key_result_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.external_creation_key, stories.created_at, stories.updated_at;
 		`
 
 	var cs dbStory
@@ -946,12 +953,80 @@ func (r *repo) UpdateIfUnchanged(
 	return updated, nil
 }
 
+// MayaScheduleBlocksExist reports whether there is a committed, Maya-managed
+// schedule to lock. User-created calendar blocks never satisfy this contract.
+func (r *repo) MayaScheduleBlocksExist(ctx context.Context, storyID, workspaceID uuid.UUID) (bool, error) {
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM calendar_schedule_blocks
+			WHERE story_id = $1
+				AND workspace_id = $2
+				AND source = 'maya'
+		)
+	`
+	var exists bool
+	if err := r.db.GetContext(ctx, &exists, query, storyID, workspaceID); err != nil {
+		return false, fmt.Errorf("check Maya schedule blocks: %w", err)
+	}
+	return exists, nil
+}
+
+// UpdateAutoSchedulingStateIfUnchanged persists scheduler-owned state without
+// advancing stories.updated_at. That timestamp is the planner's input-version
+// watermark; changing it after a successful block reconciliation would make
+// the provider outbox reject the schedule that was just committed.
+func (r *repo) UpdateAutoSchedulingStateIfUnchanged(
+	ctx context.Context,
+	storyID, workspaceID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	status string,
+	reason *string,
+	stateUpdatedAt time.Time,
+	locked *bool,
+) (bool, error) {
+	const query = `
+		UPDATE stories
+		SET auto_scheduling_status = $4,
+			auto_scheduling_reason = $5,
+			auto_scheduling_updated_at = $6,
+			auto_scheduling_locked = COALESCE($7, auto_scheduling_locked)
+		WHERE id = $1
+			AND workspace_id = $2
+			AND updated_at = $3
+	`
+	result, err := r.db.ExecContext(
+		ctx,
+		query,
+		storyID,
+		workspaceID,
+		expectedUpdatedAt.UTC(),
+		status,
+		reason,
+		stateUpdatedAt.UTC(),
+		locked,
+	)
+	if err != nil {
+		return false, fmt.Errorf("update auto-scheduling state: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("read auto-scheduling state update result: %w", err)
+	}
+	return rows == 1, nil
+}
+
 func isConditionalStoryUpdateField(field string) bool {
 	switch field {
 	case "title",
 		"estimate_unit",
 		"estimated_duration_minutes",
 		"minimum_focus_block_minutes",
+		"auto_scheduling_enabled",
+		"auto_scheduling_locked",
+		"auto_scheduling_status",
+		"auto_scheduling_reason",
+		"auto_scheduling_updated_at",
 		"description",
 		"description_html",
 		"parent_id",
@@ -1027,6 +1102,7 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 
 	insertQuery := `
 		INSERT INTO story_activities (
+			activity_id,
 			story_id, 
 			activity_type, 
 			field_changed, 
@@ -1038,6 +1114,7 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 			workspace_id
 		)
 		VALUES (
+			:activity_id,
 			:story_id, 
 			:activity_type, 
 			:field_changed, 
@@ -1048,6 +1125,8 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 			:user_id,
 			:workspace_id
 		)
+		ON CONFLICT (activity_id) DO UPDATE
+		SET activity_id = EXCLUDED.activity_id
 		RETURNING story_activities.*;
 	`
 	updateQuery := `
@@ -1105,8 +1184,12 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 	var result []dbActivity
 	for _, activity := range activities {
 		var da dbActivity
+		compact := shouldCompactActivity(activity)
+		if activity.ID == uuid.Nil {
+			activity.ID = uuid.New()
+		}
 		dbActivity := toDBActivity(activity)
-		if shouldCompactActivity(activity) {
+		if compact {
 			err := updateStmt.GetContext(ctx, &da, dbActivity)
 			if err == nil {
 				result = append(result, da)
@@ -1143,7 +1226,7 @@ func (r *repo) recordActivities(ctx context.Context, activities []stories.CoreAc
 }
 
 func shouldCompactActivity(activity stories.CoreActivity) bool {
-	return activity.Type == "update" && activity.Field != ""
+	return activity.ID == uuid.Nil && activity.Type == "update" && activity.Field != ""
 }
 
 // GetActivitiesWithUser returns activities for a given story ID with user details and pagination.
@@ -1280,7 +1363,7 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 			:reporter_id,
 			NOW(),
 			NOW()
-		) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.estimated_duration_minutes, stories.minimum_focus_block_minutes, stories.sprint_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
+		) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.estimated_duration_minutes, stories.minimum_focus_block_minutes, stories.auto_scheduling_enabled, stories.auto_scheduling_locked, stories.auto_scheduling_status, stories.auto_scheduling_reason, stories.auto_scheduling_updated_at, stories.sprint_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
 	`
 
 	// Prepare parameters for the new story

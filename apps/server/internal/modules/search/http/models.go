@@ -28,6 +28,11 @@ type AppSearchStory struct {
 	EndDate                  *time.Time  `json:"endDate"`
 	EstimatedDurationMinutes *int        `json:"estimatedDurationMinutes"`
 	MinimumFocusBlockMinutes *int        `json:"minimumFocusBlockMinutes"`
+	AutoSchedulingEnabled    bool        `json:"autoSchedulingEnabled"`
+	AutoSchedulingLocked     bool        `json:"autoSchedulingLocked"`
+	AutoSchedulingStatus     string      `json:"autoSchedulingStatus"`
+	AutoSchedulingReason     *string     `json:"autoSchedulingReason"`
+	AutoSchedulingUpdatedAt  *time.Time  `json:"autoSchedulingUpdatedAt"`
 	CreatedAt                time.Time   `json:"createdAt"`
 	UpdatedAt                time.Time   `json:"updatedAt"`
 	Labels                   []uuid.UUID `json:"labels"`
@@ -121,6 +126,11 @@ func toAppSearchStory(story search.CoreSearchStory) AppSearchStory {
 		EndDate:                  story.EndDate,
 		EstimatedDurationMinutes: story.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+		AutoSchedulingLocked:     story.AutoSchedulingLocked,
+		AutoSchedulingStatus:     story.AutoSchedulingStatus,
+		AutoSchedulingReason:     story.AutoSchedulingReason,
+		AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 		CreatedAt:                story.CreatedAt,
 		UpdatedAt:                story.UpdatedAt,
 		Labels:                   story.Labels,

@@ -44,11 +44,15 @@ type StoryScheduleReconcileQueue interface {
 	EnqueueStoryScheduleReconcile(context.Context, uuid.UUID, uuid.UUID) error
 }
 
+type notificationCreator interface {
+	Create(context.Context, notifications.CoreNewNotification) (notifications.CoreNotification, error)
+}
+
 type Consumer struct {
 	redis             *redis.Client
 	db                *sqlx.DB
 	log               *logger.Logger
-	notifications     *notifications.Service
+	notifications     notificationCreator
 	notificationRules *notifications.Rules
 	mailerService     mailer.Service
 	stories           *stories.Service
@@ -381,6 +385,9 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 	}
 
 	c.log.Info(ctx, "consumer.handleStoryUpdated", "story_id", payload.StoryID, "workspace_id", payload.WorkspaceID, "updates", payload.Updates)
+	if err := c.notificationRules.RecordScheduleTransitionActivity(ctx, payload, event.ActorID, event.Timestamp); err != nil {
+		return fmt.Errorf("record story schedule transition activity: %w", err)
+	}
 
 	// Use notification rules to process the story update
 	notifications, err := c.notificationRules.ProcessStoryUpdate(ctx, payload, event.ActorID)
@@ -389,13 +396,8 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 		return err
 	}
 
-	// Create all notifications
-	for index, notification := range notifications {
-		notification = withEventDedupeKey(event, notification, index)
-		if _, err := c.notifications.Create(ctx, notification); err != nil {
-			c.log.Error(ctx, "failed to create notification", "error", err, "recipient_id", notification.RecipientID)
-			// Continue with other notifications even if one fails
-		}
+	if err := c.createStoryUpdateNotifications(ctx, event, notifications); err != nil {
+		return fmt.Errorf("create story update notifications: %w", err)
 	}
 	if shouldBridgeFeedbackStatus(payload) && c.feedbackStatuses != nil {
 		if err := c.feedbackStatuses.NotifyLinkedStoryStatusTransition(ctx, payload.WorkspaceID, payload.StoryID, event.ActorID, event.Timestamp); err != nil {
@@ -414,6 +416,22 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 	}
 
 	return nil
+}
+
+func (c *Consumer) createStoryUpdateNotifications(
+	ctx context.Context,
+	event events.Event,
+	batch []notifications.CoreNewNotification,
+) error {
+	var createErrors []error
+	for index, notification := range batch {
+		notification = withEventDedupeKey(event, notification, index)
+		if _, err := c.notifications.Create(ctx, notification); err != nil {
+			c.log.Error(ctx, "failed to create notification", "error", err, "recipient_id", notification.RecipientID)
+			createErrors = append(createErrors, fmt.Errorf("recipient %s: %w", notification.RecipientID, err))
+		}
+	}
+	return errors.Join(createErrors...)
 }
 
 func shouldReconcileStorySchedule(updates map[string]any) bool {
@@ -478,15 +496,20 @@ func (c *Consumer) handleStoryCreated(ctx context.Context, event events.Event) e
 // NEW: Check if updates contain workspace-worthy changes
 func (c *Consumer) hasSignificantChanges(updates map[string]any) bool {
 	significantFields := map[string]bool{
-		"status_id":        true,
-		"assignee_id":      true,
-		"collaborator_ids": true,
-		"priority":         true,
-		"start_date":       true,
-		"end_date":         true,
-		"sprint_id":        true,
-		"estimate_unit":    true,
-		"title":            true,
+		"status_id":                  true,
+		"assignee_id":                true,
+		"collaborator_ids":           true,
+		"priority":                   true,
+		"start_date":                 true,
+		"end_date":                   true,
+		"sprint_id":                  true,
+		"estimate_unit":              true,
+		"title":                      true,
+		"auto_scheduling_enabled":    true,
+		"auto_scheduling_locked":     true,
+		"auto_scheduling_status":     true,
+		"auto_scheduling_reason":     true,
+		"auto_scheduling_updated_at": true,
 	}
 
 	for field := range updates {
@@ -499,21 +522,7 @@ func (c *Consumer) hasSignificantChanges(updates map[string]any) bool {
 
 // Broadcast to workspace with frontend-friendly field names
 func (c *Consumer) broadcastToWorkspace(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) {
-	// Map database field names to frontend camelCase
-	dbToFrontendFields := map[string]string{
-		"status_id":   "statusId",
-		"assignee_id": "assigneeId",
-		"priority":    "priority",
-		"title":       "title",
-	}
-
-	// Filter and transform field names
-	frontendChanges := make(map[string]any)
-	for dbField, value := range payload.Updates {
-		if frontendField, isSignificant := dbToFrontendFields[dbField]; isSignificant {
-			frontendChanges[frontendField] = value
-		}
-	}
+	frontendChanges := frontendStoryChanges(payload.Updates)
 
 	// Skip if no significant changes
 	if len(frontendChanges) == 0 {
@@ -551,6 +560,28 @@ func (c *Consumer) broadcastToWorkspace(ctx context.Context, payload events.Stor
 	}
 
 	c.log.Debug(ctx, "workspace update broadcasted", "storyId", payload.StoryID, "changes", len(frontendChanges), "actorName", actorName)
+}
+
+func frontendStoryChanges(updates map[string]any) map[string]any {
+	dbToFrontendFields := map[string]string{
+		"status_id":                  "statusId",
+		"assignee_id":                "assigneeId",
+		"priority":                   "priority",
+		"title":                      "title",
+		"auto_scheduling_enabled":    "autoSchedulingEnabled",
+		"auto_scheduling_locked":     "autoSchedulingLocked",
+		"auto_scheduling_status":     "autoSchedulingStatus",
+		"auto_scheduling_reason":     "autoSchedulingReason",
+		"auto_scheduling_updated_at": "autoSchedulingUpdatedAt",
+	}
+
+	frontendChanges := make(map[string]any)
+	for dbField, value := range updates {
+		if frontendField, ok := dbToFrontendFields[dbField]; ok {
+			frontendChanges[frontendField] = value
+		}
+	}
+	return frontendChanges
 }
 
 func (c *Consumer) handleObjectiveUpdated(ctx context.Context, event events.Event) error {

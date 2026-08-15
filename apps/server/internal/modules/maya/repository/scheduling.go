@@ -6,16 +6,18 @@ import (
 	"time"
 
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
+	"github.com/complexus-tech/projects-api/internal/platform/billing"
 	"github.com/google/uuid"
 )
 
-const claimScheduleRecoveryStoryRefsQuery = `
+var claimScheduleRecoveryStoryRefsQuery = `
 	WITH candidates AS (
 		SELECT ownership.workspace_id, ownership.story_id, interrupted.run_id AS interrupted_run_id
 		FROM calendar_maya_schedule_ownerships ownership
 		INNER JOIN stories story ON
 			story.id = ownership.story_id
 			AND story.workspace_id = ownership.workspace_id
+		INNER JOIN workspaces workspace ON workspace.workspace_id = story.workspace_id
 		LEFT JOIN statuses status ON status.status_id = story.status_id
 		LEFT JOIN users owner_user ON owner_user.user_id = ownership.user_id
 		LEFT JOIN workspace_members workspace_member ON
@@ -48,6 +50,8 @@ const claimScheduleRecoveryStoryRefsQuery = `
 				OR story.deleted_at IS NOT NULL
 				OR story.archived_at IS NOT NULL
 				OR story.completed_at IS NOT NULL
+				OR story.auto_scheduling_enabled = FALSE
+				OR NOT ` + billing.WorkspaceMayaAccessSQL("workspace") + `
 				OR status.status_id IS NULL
 				OR status.deleted_at IS NOT NULL
 				OR status.category IN ('completed', 'cancelled')
@@ -55,6 +59,42 @@ const claimScheduleRecoveryStoryRefsQuery = `
 				OR owner_user.is_active = FALSE
 				OR workspace_member.user_id IS NULL
 				OR team_member.user_id IS NULL
+				OR (
+					story.auto_scheduling_enabled = TRUE
+					AND (
+						story.auto_scheduling_status = 'planning'
+						OR (
+							story.auto_scheduling_status = 'cannot_fit'
+							AND COALESCE(ownership.recovery_attempted_at, TIMESTAMP 'epoch') <= CURRENT_TIMESTAMP - INTERVAL '1 hour'
+							AND NOT EXISTS (
+								SELECT 1
+								FROM calendar_schedule_blocks retry_block
+								WHERE retry_block.workspace_id = ownership.workspace_id
+									AND retry_block.story_id = ownership.story_id
+									AND retry_block.source = 'maya'
+									AND retry_block.end_at > CURRENT_TIMESTAMP
+							)
+						)
+						OR (
+							story.auto_scheduling_status IN ('scheduled', 'locked')
+							AND EXISTS (
+								SELECT 1
+								FROM calendar_schedule_blocks elapsed_block
+								WHERE elapsed_block.workspace_id = ownership.workspace_id
+									AND elapsed_block.story_id = ownership.story_id
+									AND elapsed_block.source = 'maya'
+							)
+							AND NOT EXISTS (
+								SELECT 1
+								FROM calendar_schedule_blocks future_block
+								WHERE future_block.workspace_id = ownership.workspace_id
+									AND future_block.story_id = ownership.story_id
+									AND future_block.source = 'maya'
+									AND future_block.end_at > CURRENT_TIMESTAMP
+							)
+						)
+					)
+				)
 				OR EXISTS (
 					SELECT 1
 					FROM calendar_schedule_blocks block
@@ -99,6 +139,10 @@ const listScheduleStoryRefsForUserQuery = `
 		SELECT workspace_id, story_id
 		FROM calendar_schedule_blocks
 		WHERE user_id = $1 AND source = 'maya' AND story_id IS NOT NULL
+		UNION
+		SELECT workspace_id, id AS story_id
+		FROM stories
+		WHERE assignee_id = $1 AND auto_scheduling_enabled = TRUE
 	)
 	SELECT scheduled.workspace_id, scheduled.story_id
 	FROM scheduled_stories scheduled
@@ -282,6 +326,7 @@ func (r *Repo) StoryIsSchedulableForUser(ctx context.Context, workspaceID, story
 			WHERE story.workspace_id = $1
 				AND story.id = $2
 				AND story.assignee_id = $3
+				AND story.auto_scheduling_enabled = TRUE
 				AND story.deleted_at IS NULL
 				AND story.archived_at IS NULL
 				AND story.completed_at IS NULL
@@ -293,6 +338,31 @@ func (r *Repo) StoryIsSchedulableForUser(ctx context.Context, workspaceID, story
 		return false, fmt.Errorf("check story schedule eligibility: %w", err)
 	}
 	return schedulable, nil
+}
+
+func (r *Repo) WorkspaceCanUseMaya(ctx context.Context, workspaceID uuid.UUID) (bool, error) {
+	return billing.WorkspaceCanUseMaya(ctx, r.db, workspaceID)
+}
+
+func (r *Repo) StoryIsActiveForAutoScheduling(ctx context.Context, workspaceID, storyID uuid.UUID) (bool, error) {
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM stories story
+			INNER JOIN statuses status ON status.status_id = story.status_id AND status.deleted_at IS NULL
+			WHERE story.workspace_id = $1
+				AND story.id = $2
+				AND story.deleted_at IS NULL
+				AND story.archived_at IS NULL
+				AND story.completed_at IS NULL
+				AND status.category NOT IN ('completed', 'cancelled')
+		)
+	`
+	var active bool
+	if err := r.db.GetContext(ctx, &active, query, workspaceID, storyID); err != nil {
+		return false, fmt.Errorf("check story auto-scheduling lifecycle: %w", err)
+	}
+	return active, nil
 }
 
 // StoryScheduleOwnershipIsRetainable distinguishes temporary placement gaps

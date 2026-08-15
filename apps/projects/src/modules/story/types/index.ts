@@ -1,4 +1,8 @@
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type {
+  AutoSchedulingStatus,
+  Story,
+  StoryPriority,
+} from "@/modules/stories/types";
 import type { UserSummary } from "@/types";
 
 export type StoryAssociationType = "related" | "blocking" | "duplicate";
@@ -20,6 +24,11 @@ export type DetailedStory = {
   estimateScheme: "points" | "tshirt";
   estimatedDurationMinutes: number | null;
   minimumFocusBlockMinutes: number | null;
+  autoSchedulingEnabled: boolean;
+  autoSchedulingLocked: boolean;
+  autoSchedulingStatus: AutoSchedulingStatus;
+  autoSchedulingReason: string | null;
+  autoSchedulingUpdatedAt: string | null;
   description: string;
   descriptionHTML: string;
   parentId: string;

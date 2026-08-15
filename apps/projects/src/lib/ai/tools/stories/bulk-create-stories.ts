@@ -84,6 +84,12 @@ export const bulkCreateStories = tool({
             .describe(
               "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes.",
             ),
+          autoSchedulingEnabled: z
+            .boolean()
+            .optional()
+            .describe(
+              "Whether Maya should continuously schedule this story. Defaults to false for human assignees; set true when requested or when assigning to Maya.",
+            ),
           labelIds: z
             .array(z.string())
             .optional()

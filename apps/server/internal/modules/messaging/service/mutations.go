@@ -85,6 +85,8 @@ type storyMutationClaims struct {
 	EstimatedDurationMinutes *int                   `json:"du,omitempty"`
 	MinimumFocusBlockAction  string                 `json:"fa,omitempty"`
 	MinimumFocusBlockMinutes *int                   `json:"fb,omitempty"`
+	AutoSchedulingEnabled    *bool                  `json:"ae,omitempty"`
+	AutoSchedulingLocked     *bool                  `json:"al,omitempty"`
 	Comment                  *string                `json:"c,omitempty"`
 	MentionIDs               []uuid.UUID            `json:"m,omitempty"`
 	LabelIDs                 []uuid.UUID            `json:"l,omitempty"`
@@ -98,6 +100,11 @@ type storyTimeMutation struct {
 	estimatedDurationMinutes *int
 	minimumFocusBlockAction  string
 	minimumFocusBlockMinutes *int
+}
+
+type storyAutoSchedulingMutation struct {
+	enabled *bool
+	locked  *bool
 }
 
 type storyMutationConfirmationToolResult struct {
@@ -118,6 +125,7 @@ type batchStoryMutationItem struct {
 	AssigneeID               *uuid.UUID `json:"assignee_id,omitempty"`
 	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes,omitempty"`
 	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes,omitempty"`
+	AutoSchedulingEnabled    bool       `json:"auto_scheduling_enabled"`
 }
 
 func newStoryMutationExecutor(
@@ -148,6 +156,7 @@ func (m *storyMutationExecutor) proposeCreate(
 		Assignee                 string  `json:"assignee"`
 		EstimatedDurationMinutes *int    `json:"estimated_duration_minutes"`
 		MinimumFocusBlockMinutes *int    `json:"minimum_focus_block_minutes"`
+		AutoSchedulingEnabled    bool    `json:"auto_scheduling_enabled"`
 	}
 	if err := decodeToolArguments(raw, &args, "team_id", "title", "priority", "assignee"); err != nil {
 		return nil, err
@@ -175,6 +184,9 @@ func (m *storyMutationExecutor) proposeCreate(
 	if err := stories.ValidateStoryTimeContract(args.EstimatedDurationMinutes, args.MinimumFocusBlockMinutes); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidToolArguments, err)
 	}
+	if err := stories.ValidateStoryAutoSchedulingContract(args.AutoSchedulingEnabled, false, stories.AutoSchedulingStatusOff); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidToolArguments, err)
+	}
 
 	team := joinedByID[teamID]
 	confirmationID, err := uuid.NewRandomFromReader(m.random)
@@ -194,6 +206,7 @@ func (m *storyMutationExecutor) proposeCreate(
 		AssigneeAction:           args.Assignee,
 		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    boolPointer(args.AutoSchedulingEnabled),
 		ExpiresAt:                now.Add(storyMutationConfirmationTTL),
 	}
 	return m.marshalProposal(ctx, claims, StoryMutationPreview{
@@ -205,6 +218,7 @@ func (m *storyMutationExecutor) proposeCreate(
 		AssigneeAction:           args.Assignee,
 		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    boolPointer(args.AutoSchedulingEnabled),
 	}, fmt.Sprintf("Create %q in %s (%s)?", title, team.Name, strings.ToUpper(team.Code)))
 }
 
@@ -223,6 +237,7 @@ func (m *storyMutationExecutor) proposeCreateBatch(
 			AssigneeID               *string `json:"assignee_id"`
 			EstimatedDurationMinutes *int    `json:"estimated_duration_minutes"`
 			MinimumFocusBlockMinutes *int    `json:"minimum_focus_block_minutes"`
+			AutoSchedulingEnabled    bool    `json:"auto_scheduling_enabled"`
 		} `json:"stories"`
 	}
 	if err := decodeToolArguments(raw, &args, "team_id", "stories"); err != nil {
@@ -264,6 +279,9 @@ func (m *storyMutationExecutor) proposeCreateBatch(
 		if err := stories.ValidateStoryTimeContract(item.EstimatedDurationMinutes, item.MinimumFocusBlockMinutes); err != nil {
 			return nil, fmt.Errorf("%w: stories[%d]: %v", ErrInvalidToolArguments, index, err)
 		}
+		if err := stories.ValidateStoryAutoSchedulingContract(item.AutoSchedulingEnabled, false, stories.AutoSchedulingStatusOff); err != nil {
+			return nil, fmt.Errorf("%w: stories[%d]: %v", ErrInvalidToolArguments, index, err)
+		}
 
 		var assigneeID *uuid.UUID
 		assigneeName := "Unassigned"
@@ -297,6 +315,7 @@ func (m *storyMutationExecutor) proposeCreateBatch(
 			AssigneeID:               assigneeID,
 			EstimatedDurationMinutes: item.EstimatedDurationMinutes,
 			MinimumFocusBlockMinutes: item.MinimumFocusBlockMinutes,
+			AutoSchedulingEnabled:    item.AutoSchedulingEnabled,
 		})
 		assigneeAction := assigneeActionUnassigned
 		if assigneeID != nil {
@@ -315,6 +334,7 @@ func (m *storyMutationExecutor) proposeCreateBatch(
 			AssigneeAction:           assigneeAction,
 			EstimatedDurationMinutes: item.EstimatedDurationMinutes,
 			MinimumFocusBlockMinutes: item.MinimumFocusBlockMinutes,
+			AutoSchedulingEnabled:    boolPointer(item.AutoSchedulingEnabled),
 		})
 	}
 
@@ -380,6 +400,8 @@ func (m *storyMutationExecutor) proposeUpdate(
 		EstimatedDurationMinutes *int      `json:"estimated_duration_minutes"`
 		MinimumFocusBlockAction  string    `json:"minimum_focus_block_action"`
 		MinimumFocusBlockMinutes *int      `json:"minimum_focus_block_minutes"`
+		AutoSchedulingEnabled    *bool     `json:"auto_scheduling_enabled"`
+		AutoSchedulingLocked     *bool     `json:"auto_scheduling_locked"`
 	}
 	if err := decodeToolArguments(
 		raw,
@@ -481,6 +503,10 @@ func (m *storyMutationExecutor) proposeUpdate(
 			minimumFocusBlockAction:  args.MinimumFocusBlockAction,
 			minimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
 		},
+		storyAutoSchedulingMutation{
+			enabled: args.AutoSchedulingEnabled,
+			locked:  args.AutoSchedulingLocked,
+		},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidToolArguments, err)
@@ -521,6 +547,8 @@ func (m *storyMutationExecutor) proposeUpdate(
 		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
 		MinimumFocusBlockAction:  args.MinimumFocusBlockAction,
 		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    cloneBoolPointer(args.AutoSchedulingEnabled),
+		AutoSchedulingLocked:     cloneBoolPointer(args.AutoSchedulingLocked),
 		ExpiresAt:                now.Add(storyMutationConfirmationTTL),
 	}
 	previewTitle := story.Title
@@ -541,6 +569,8 @@ func (m *storyMutationExecutor) proposeUpdate(
 		ChangedFields:            changedFields,
 		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    cloneBoolPointer(args.AutoSchedulingEnabled),
+		AutoSchedulingLocked:     cloneBoolPointer(args.AutoSchedulingLocked),
 	}, fmt.Sprintf("Update %s?", reference))
 }
 
@@ -905,6 +935,7 @@ func (m *storyMutationExecutor) confirmCreate(
 		Team:                     team.ID,
 		EstimatedDurationMinutes: claims.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: claims.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    optionalBoolValue(claims.AutoSchedulingEnabled),
 		CreationKey:              &creationKey,
 	}, scope.WorkspaceID)
 	if err != nil {
@@ -961,6 +992,9 @@ func (m *storyMutationExecutor) confirmCreateBatch(
 		if err := stories.ValidateStoryTimeContract(item.EstimatedDurationMinutes, item.MinimumFocusBlockMinutes); err != nil {
 			return result, fmt.Errorf("%w: invalid time contract in batch item %d: %v", ErrInvalidConfirmation, index, err)
 		}
+		if err := stories.ValidateStoryAutoSchedulingContract(item.AutoSchedulingEnabled, false, stories.AutoSchedulingStatusOff); err != nil {
+			return result, fmt.Errorf("%w: invalid auto-scheduling contract in batch item %d: %v", ErrInvalidConfirmation, index, err)
+		}
 		if item.AssigneeID != nil {
 			if executor.users == nil {
 				return result, fmt.Errorf("%w: named assignees are unavailable", ErrInvalidConfirmation)
@@ -980,6 +1014,7 @@ func (m *storyMutationExecutor) confirmCreateBatch(
 			AssigneeID:               cloneUUIDPointer(item.AssigneeID),
 			EstimatedDurationMinutes: cloneIntPointer(item.EstimatedDurationMinutes),
 			MinimumFocusBlockMinutes: cloneIntPointer(item.MinimumFocusBlockMinutes),
+			AutoSchedulingEnabled:    item.AutoSchedulingEnabled,
 		}
 	}
 
@@ -1001,6 +1036,7 @@ func (m *storyMutationExecutor) confirmCreateBatch(
 			Team:                     team.ID,
 			EstimatedDurationMinutes: item.EstimatedDurationMinutes,
 			MinimumFocusBlockMinutes: item.MinimumFocusBlockMinutes,
+			AutoSchedulingEnabled:    item.AutoSchedulingEnabled,
 			CreationKey:              &creationKey,
 		}, scope.WorkspaceID)
 		if err != nil {
@@ -1023,6 +1059,11 @@ func (m *storyMutationExecutor) confirmCreateBatch(
 			AssigneeID:               cloneUUIDPointer(story.Assignee),
 			EstimatedDurationMinutes: cloneIntPointer(story.EstimatedDurationMinutes),
 			MinimumFocusBlockMinutes: cloneIntPointer(story.MinimumFocusBlockMinutes),
+			AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+			AutoSchedulingLocked:     story.AutoSchedulingLocked,
+			AutoSchedulingStatus:     story.AutoSchedulingStatus,
+			AutoSchedulingReason:     story.AutoSchedulingReason,
+			AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 		})
 	}
 	return result, nil
@@ -1062,6 +1103,10 @@ func (m *storyMutationExecutor) confirmUpdate(
 			estimatedDurationMinutes: claims.EstimatedDurationMinutes,
 			minimumFocusBlockAction:  claims.MinimumFocusBlockAction,
 			minimumFocusBlockMinutes: claims.MinimumFocusBlockMinutes,
+		},
+		storyAutoSchedulingMutation{
+			enabled: claims.AutoSchedulingEnabled,
+			locked:  claims.AutoSchedulingLocked,
 		},
 	)
 	if err != nil {
@@ -1322,6 +1367,22 @@ func cloneIntPointer(value *int) *int {
 	return &copy
 }
 
+func boolPointer(value bool) *bool {
+	return &value
+}
+
+func cloneBoolPointer(value *bool) *bool {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
+}
+
+func optionalBoolValue(value *bool) bool {
+	return value != nil && *value
+}
+
 func normalizeLegacyUpdateTimeActions(claims *storyMutationClaims) {
 	if claims == nil || claims.Operation != StoryMutationUpdate {
 		return
@@ -1389,11 +1450,17 @@ func validateStoryMutationClaims(claims storyMutationClaims) error {
 		if claims.Title == nil || claims.Priority == nil || claims.StoryID != nil || claims.ExpectedUpdatedAt != nil {
 			return fmt.Errorf("%w: malformed create claims", ErrInvalidConfirmation)
 		}
+		if claims.AutoSchedulingLocked != nil {
+			return fmt.Errorf("%w: create claims cannot set auto-scheduling lock state", ErrInvalidConfirmation)
+		}
 		if claims.AssigneeAction != assigneeActionMe && claims.AssigneeAction != assigneeActionUnassigned {
 			return fmt.Errorf("%w: invalid create assignee claim", ErrInvalidConfirmation)
 		}
 		if err := stories.ValidateStoryTimeContract(claims.EstimatedDurationMinutes, claims.MinimumFocusBlockMinutes); err != nil {
 			return fmt.Errorf("%w: invalid create time claim: %v", ErrInvalidConfirmation, err)
+		}
+		if err := stories.ValidateStoryAutoSchedulingContract(optionalBoolValue(claims.AutoSchedulingEnabled), false, stories.AutoSchedulingStatusOff); err != nil {
+			return fmt.Errorf("%w: invalid create auto-scheduling claim: %v", ErrInvalidConfirmation, err)
 		}
 	case StoryMutationUpdate:
 		if claims.StoryID == nil || *claims.StoryID == uuid.Nil || claims.ExpectedUpdatedAt == nil || claims.ExpectedUpdatedAt.IsZero() {
@@ -1410,7 +1477,7 @@ func validateStoryMutationClaims(claims storyMutationClaims) error {
 		}); err != nil {
 			return fmt.Errorf("%w: invalid update time claim: %v", ErrInvalidConfirmation, err)
 		}
-		if claims.Title == nil && claims.Priority == nil && claims.AssigneeAction == assigneeActionUnchanged && claims.StatusID == nil && claims.SprintID == nil && claims.ObjectiveID == nil && claims.KeyResultID == nil && claims.StartDate == nil && claims.EndDate == nil && claims.LabelIDs == nil && claims.EstimatedDurationAction == storyTimeActionUnchanged && claims.MinimumFocusBlockAction == storyTimeActionUnchanged {
+		if claims.Title == nil && claims.Priority == nil && claims.AssigneeAction == assigneeActionUnchanged && claims.StatusID == nil && claims.SprintID == nil && claims.ObjectiveID == nil && claims.KeyResultID == nil && claims.StartDate == nil && claims.EndDate == nil && claims.LabelIDs == nil && claims.EstimatedDurationAction == storyTimeActionUnchanged && claims.MinimumFocusBlockAction == storyTimeActionUnchanged && claims.AutoSchedulingEnabled == nil && claims.AutoSchedulingLocked == nil {
 			return fmt.Errorf("%w: empty update claims", ErrInvalidConfirmation)
 		}
 	case StoryMutationComment:
@@ -1557,6 +1624,7 @@ func proposedChangedFields(
 	statusID, sprintID, objectiveID, keyResultID *uuid.UUID,
 	startDate, endDate *time.Time,
 	timeMutation storyTimeMutation,
+	autoSchedulingMutation storyAutoSchedulingMutation,
 ) ([]string, error) {
 	updates, err := desiredStoryUpdates(
 		story,
@@ -1571,12 +1639,13 @@ func proposedChangedFields(
 		startDate,
 		endDate,
 		timeMutation,
+		autoSchedulingMutation,
 	)
 	if err != nil {
 		return nil, err
 	}
 	fields := make([]string, 0, len(updates))
-	for _, field := range []string{"title", "priority", "assignee_id", "status_id", "sprint_id", "objective_id", "key_result_id", "start_date", "end_date", "estimated_duration_minutes", "minimum_focus_block_minutes"} {
+	for _, field := range []string{"title", "priority", "assignee_id", "status_id", "sprint_id", "objective_id", "key_result_id", "start_date", "end_date", "estimated_duration_minutes", "minimum_focus_block_minutes", "auto_scheduling_enabled", "auto_scheduling_locked"} {
 		if _, changed := updates[field]; changed {
 			fields = append(fields, field)
 		}
@@ -1592,6 +1661,7 @@ func desiredStoryUpdates(
 	statusID, sprintID, objectiveID, keyResultID *uuid.UUID,
 	startDate, endDate *time.Time,
 	timeMutation storyTimeMutation,
+	autoSchedulingMutation storyAutoSchedulingMutation,
 ) (map[string]any, error) {
 	updates := make(map[string]any, 3)
 	if title != nil && story.Title != *title {
@@ -1621,6 +1691,47 @@ func desiredStoryUpdates(
 	}
 	for field, value := range timeUpdates {
 		updates[field] = value
+	}
+	autoSchedulingUpdates, err := desiredStoryAutoSchedulingUpdates(story, autoSchedulingMutation)
+	if err != nil {
+		return nil, err
+	}
+	for field, value := range autoSchedulingUpdates {
+		updates[field] = value
+	}
+	return updates, nil
+}
+
+func desiredStoryAutoSchedulingUpdates(story stories.CoreSingleStory, mutation storyAutoSchedulingMutation) (map[string]any, error) {
+	enabled := story.AutoSchedulingEnabled
+	if mutation.enabled != nil {
+		enabled = *mutation.enabled
+	}
+	locked := story.AutoSchedulingLocked
+	disabling := mutation.enabled != nil && !enabled
+	if disabling {
+		locked = false
+	} else if mutation.locked != nil {
+		locked = *mutation.locked
+	}
+	status := story.AutoSchedulingStatus
+	if status == "" {
+		status = stories.AutoSchedulingStatusOff
+	}
+	if mutation.locked != nil && *mutation.locked && !story.AutoSchedulingLocked &&
+		(!story.AutoSchedulingEnabled || (status != stories.AutoSchedulingStatusScheduled && status != stories.AutoSchedulingStatusAtRisk)) {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidToolArguments, stories.ErrAutoSchedulingLockEmpty)
+	}
+	if err := stories.ValidateStoryAutoSchedulingContract(enabled, locked, status); err != nil {
+		return nil, err
+	}
+
+	updates := make(map[string]any, 2)
+	if mutation.enabled != nil && enabled != story.AutoSchedulingEnabled {
+		updates["auto_scheduling_enabled"] = enabled
+	}
+	if (mutation.locked != nil || disabling) && locked != story.AutoSchedulingLocked {
+		updates["auto_scheduling_locked"] = locked
 	}
 	return updates, nil
 }
@@ -1788,6 +1899,11 @@ func storyMutationResult(status string, operation StoryMutationOperation, story 
 		AssigneeID:               story.Assignee,
 		EstimatedDurationMinutes: story.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+		AutoSchedulingLocked:     story.AutoSchedulingLocked,
+		AutoSchedulingStatus:     story.AutoSchedulingStatus,
+		AutoSchedulingReason:     story.AutoSchedulingReason,
+		AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
 	}
 }
 
@@ -1806,6 +1922,10 @@ func nullableMinutes(description string) map[string]any {
 		"minimum":     1,
 		"maximum":     stories.MaximumEstimatedDurationMinutes,
 	}
+}
+
+func nullableBoolean(description string) map[string]any {
+	return map[string]any{"type": []string{"boolean", "null"}, "description": description}
 }
 
 func storyTimeAction(description string) map[string]any {
@@ -1847,7 +1967,11 @@ func storyMutationToolDefinitions() []ToolDefinition {
 				},
 				"estimated_duration_minutes":  nullableMinutes("The total time needed in minutes when explicitly known, or null when unspecified."),
 				"minimum_focus_block_minutes": nullableMinutes("The smallest useful uninterrupted block in minutes, no greater than estimated_duration_minutes; use null when duration is unspecified."),
-			}, []string{"team_id", "title", "priority", "assignee", "estimated_duration_minutes", "minimum_focus_block_minutes"}),
+				"auto_scheduling_enabled": map[string]any{
+					"type":        "boolean",
+					"description": "Enable Maya auto-scheduling only when the user explicitly requests it; otherwise false.",
+				},
+			}, []string{"team_id", "title", "priority", "assignee", "estimated_duration_minutes", "minimum_focus_block_minutes", "auto_scheduling_enabled"}),
 		},
 		{
 			Type:        "function",
@@ -1881,7 +2005,11 @@ func storyMutationToolDefinitions() []ToolDefinition {
 						},
 						"estimated_duration_minutes":  nullableMinutes("The total time needed in minutes when explicitly known, or null when unspecified."),
 						"minimum_focus_block_minutes": nullableMinutes("The smallest useful uninterrupted block in minutes, no greater than estimated_duration_minutes; use null when duration is unspecified."),
-					}, []string{"title", "description", "priority", "assignee_id", "estimated_duration_minutes", "minimum_focus_block_minutes"}),
+						"auto_scheduling_enabled": map[string]any{
+							"type":        "boolean",
+							"description": "Enable Maya auto-scheduling only when explicitly requested for this story; otherwise false.",
+						},
+					}, []string{"title", "description", "priority", "assignee_id", "estimated_duration_minutes", "minimum_focus_block_minutes", "auto_scheduling_enabled"}),
 				},
 			}, []string{"team_id", "stories"}),
 		},
@@ -1921,7 +2049,9 @@ func storyMutationToolDefinitions() []ToolDefinition {
 				"estimated_duration_minutes":  nullableMinutes("The replacement total time needed when estimated_duration_action is set; otherwise null."),
 				"minimum_focus_block_action":  storyTimeAction("Use unchanged to preserve the current minimum focus block, set to replace it with minimum_focus_block_minutes, or clear to remove it."),
 				"minimum_focus_block_minutes": nullableMinutes("The replacement minimum uninterrupted block when minimum_focus_block_action is set; otherwise null. It cannot exceed the resulting time needed."),
-			}, []string{"story_id", "story_reference", "title", "priority", "assignee", "status_id", "sprint_id", "objective_id", "key_result_id", "start_date", "end_date", "label_ids", "estimated_duration_action", "estimated_duration_minutes", "minimum_focus_block_action", "minimum_focus_block_minutes"}),
+				"auto_scheduling_enabled":     nullableBoolean("Set true or false only when the user explicitly asks to change auto-scheduling; otherwise null."),
+				"auto_scheduling_locked":      nullableBoolean("Set true or false only when the user explicitly asks to lock or unlock Maya's schedule; otherwise null. Locking requires auto-scheduling to remain enabled."),
+			}, []string{"story_id", "story_reference", "title", "priority", "assignee", "status_id", "sprint_id", "objective_id", "key_result_id", "start_date", "end_date", "label_ids", "estimated_duration_action", "estimated_duration_minutes", "minimum_focus_block_action", "minimum_focus_block_minutes", "auto_scheduling_enabled", "auto_scheduling_locked"}),
 		},
 		{
 			Type: "function", Name: toolAddComment,

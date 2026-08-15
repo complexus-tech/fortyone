@@ -13,6 +13,7 @@ type StoryInput = {
   estimateValue?: number | null;
   estimatedDurationMinutes?: number | null;
   minimumFocusBlockMinutes?: number | null;
+  autoSchedulingEnabled?: boolean;
   sprintId?: string | null;
   objectiveId?: string | null;
   labelIds?: string[];
@@ -29,6 +30,7 @@ type NormalizedStoryInput = {
   estimateValue?: number;
   estimatedDurationMinutes?: number;
   minimumFocusBlockMinutes?: number;
+  autoSchedulingEnabled?: boolean;
   labelIds?: string[];
   description?: string;
   descriptionHTML?: string;
@@ -132,6 +134,7 @@ export const normalizeStoryInput = <T extends StoryInput>(story: T) => {
   }
   setIfDefined(payload, "estimatedDurationMinutes", estimatedDurationMinutes);
   setIfDefined(payload, "minimumFocusBlockMinutes", minimumFocusBlockMinutes);
+  setIfDefined(payload, "autoSchedulingEnabled", story.autoSchedulingEnabled);
   setIfDefined(payload, "labelIds", story.labelIds);
   setIfDefined(
     payload,
