@@ -18,20 +18,22 @@ type linkedStoryMedia struct {
 }
 
 var reconcilableStoryFields = map[string]struct{}{
-	"assignee_id":      {},
-	"completed_at":     {},
-	"description":      {},
-	"description_html": {},
-	"end_date":         {},
-	"estimate_unit":    {},
-	"key_result_id":    {},
-	"objective_id":     {},
-	"parent_id":        {},
-	"priority":         {},
-	"sprint_id":        {},
-	"start_date":       {},
-	"status_id":        {},
-	"title":            {},
+	"assignee_id":                 {},
+	"completed_at":                {},
+	"description":                 {},
+	"description_html":            {},
+	"end_date":                    {},
+	"estimate_unit":               {},
+	"estimated_duration_minutes":  {},
+	"minimum_focus_block_minutes": {},
+	"key_result_id":               {},
+	"objective_id":                {},
+	"parent_id":                   {},
+	"priority":                    {},
+	"sprint_id":                   {},
+	"start_date":                  {},
+	"status_id":                   {},
+	"title":                       {},
 }
 
 // UpdateWithMediaReconciliation updates a story and reconciles its dedicated

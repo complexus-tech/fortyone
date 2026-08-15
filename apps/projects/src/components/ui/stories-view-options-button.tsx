@@ -45,6 +45,7 @@ const defaultViewOptions: StoriesViewOptions = {
     "Status",
     "Assignee",
     "Estimate",
+    "Time needed",
     "Priority",
     "Deadline",
     "Created",
@@ -95,6 +96,7 @@ export const StoriesViewOptionsButton = ({
     "Status",
     "Assignee",
     "Estimate",
+    "Time needed",
     "Priority",
     ...(layout === "list" && isDesktop
       ? (["Created", "Updated"] as DisplayColumn[])
@@ -117,7 +119,13 @@ export const StoriesViewOptionsButton = ({
       // For mobile and not kanban, only keep compact metadata columns.
       if (isMobile && layout === "list") {
         filteredColumns = filteredColumns.filter((column) =>
-          ["Status", "Assignee", "Estimate", "Priority"].includes(column),
+          [
+            "Status",
+            "Assignee",
+            "Estimate",
+            "Time needed",
+            "Priority",
+          ].includes(column),
         );
       }
 
@@ -153,6 +161,8 @@ export const StoriesViewOptionsButton = ({
         return getTermDisplay("objectiveTerm", { capitalize: true });
       case "Key Result":
         return getTermDisplay("keyResultTerm", { capitalize: true });
+      case "Estimate":
+        return "Complexity";
       default:
         return column;
     }

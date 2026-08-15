@@ -10,3 +10,8 @@ type CalendarProvider interface {
 	WatchCalendar(ctx context.Context, token ProviderToken, input CalendarWatchInput) (CalendarWatchChannel, error)
 	StopCalendarWatch(ctx context.Context, token ProviderToken, channel CalendarWatchChannel) error
 }
+
+type CalendarEventWriter interface {
+	UpsertScheduleEvent(ctx context.Context, token ProviderToken, input ExternalScheduleEventInput) error
+	DeleteScheduleEvent(ctx context.Context, token ProviderToken, calendarID, eventID string) error
+}

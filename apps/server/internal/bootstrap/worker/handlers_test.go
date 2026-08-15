@@ -36,3 +36,11 @@ func TestBuildTaskMuxRegistersFeedbackDeliveryAndRecovery(t *testing.T) {
 		require.Equal(t, taskType, pattern)
 	}
 }
+
+func TestBuildTaskMuxRegistersMayaScheduleRecovery(t *testing.T) {
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, "")
+
+	handler, pattern := mux.Handler(asynq.NewTask(tasks.TypeMayaScheduleRecovery, nil))
+	require.NotNil(t, handler)
+	require.Equal(t, tasks.TypeMayaScheduleRecovery, pattern)
+}

@@ -43,6 +43,7 @@ export const SearchPage = () => {
     "Status",
     "Assignee",
     "Estimate",
+    "Time needed",
     "Priority",
     "ID",
     "Deadline",

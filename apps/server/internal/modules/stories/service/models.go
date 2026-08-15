@@ -39,121 +39,129 @@ type CoreSprintSummary struct {
 
 // CoreStoryList represents a list of stories.
 type CoreStoryList struct {
-	ID                uuid.UUID             `json:"id"`
-	SequenceID        int                   `json:"sequence_id"`
-	Title             string                `json:"title"`
-	EstimateLabel     *string               `json:"estimate_label"`
-	EstimateValue     *int16                `json:"estimate_value"`
-	EstimateScheme    string                `json:"estimate_scheme"`
-	Parent            *uuid.UUID            `json:"parent_id"`
-	Objective         *uuid.UUID            `json:"objective_id"`
-	ObjectiveSummary  *CoreObjectiveSummary `json:"objective"`
-	Epic              *uuid.UUID            `json:"epic_id"`
-	Status            *uuid.UUID            `json:"status_id"`
-	Assignee          *uuid.UUID            `json:"assignee_id"`
-	CollaboratorCount int                   `json:"collaborator_count"`
-	Reporter          *uuid.UUID            `json:"reporter_id"`
-	Priority          string                `json:"priority"`
-	Sprint            *uuid.UUID            `json:"sprint_id"`
-	SprintSummary     *CoreSprintSummary    `json:"sprint"`
-	KeyResult         *uuid.UUID            `json:"key_result_id"`
-	Team              uuid.UUID             `json:"team_id"`
-	TeamSummary       *CoreTeamSummary      `json:"team"`
-	Workspace         uuid.UUID             `json:"workspace_id"`
-	StartDate         *time.Time            `json:"start_date"`
-	EndDate           *time.Time            `json:"end_date"`
-	CreatedAt         time.Time             `json:"created_at"`
-	UpdatedAt         time.Time             `json:"updated_at"`
-	CompletedAt       *time.Time            `json:"completed_at"`
-	DeletedAt         *time.Time            `json:"deleted_at"`
-	ArchivedAt        *time.Time            `json:"archived_at"`
-	Labels            []uuid.UUID           `json:"labels"`
-	SubStories        []CoreStoryList       `json:"subStories"`
+	ID                       uuid.UUID             `json:"id"`
+	SequenceID               int                   `json:"sequence_id"`
+	Title                    string                `json:"title"`
+	EstimateLabel            *string               `json:"estimate_label"`
+	EstimateValue            *int16                `json:"estimate_value"`
+	EstimateScheme           string                `json:"estimate_scheme"`
+	EstimatedDurationMinutes *int                  `json:"estimated_duration_minutes"`
+	MinimumFocusBlockMinutes *int                  `json:"minimum_focus_block_minutes"`
+	Parent                   *uuid.UUID            `json:"parent_id"`
+	Objective                *uuid.UUID            `json:"objective_id"`
+	ObjectiveSummary         *CoreObjectiveSummary `json:"objective"`
+	Epic                     *uuid.UUID            `json:"epic_id"`
+	Status                   *uuid.UUID            `json:"status_id"`
+	Assignee                 *uuid.UUID            `json:"assignee_id"`
+	CollaboratorCount        int                   `json:"collaborator_count"`
+	Reporter                 *uuid.UUID            `json:"reporter_id"`
+	Priority                 string                `json:"priority"`
+	Sprint                   *uuid.UUID            `json:"sprint_id"`
+	SprintSummary            *CoreSprintSummary    `json:"sprint"`
+	KeyResult                *uuid.UUID            `json:"key_result_id"`
+	Team                     uuid.UUID             `json:"team_id"`
+	TeamSummary              *CoreTeamSummary      `json:"team"`
+	Workspace                uuid.UUID             `json:"workspace_id"`
+	StartDate                *time.Time            `json:"start_date"`
+	EndDate                  *time.Time            `json:"end_date"`
+	CreatedAt                time.Time             `json:"created_at"`
+	UpdatedAt                time.Time             `json:"updated_at"`
+	CompletedAt              *time.Time            `json:"completed_at"`
+	DeletedAt                *time.Time            `json:"deleted_at"`
+	ArchivedAt               *time.Time            `json:"archived_at"`
+	Labels                   []uuid.UUID           `json:"labels"`
+	SubStories               []CoreStoryList       `json:"subStories"`
 }
 
 // CoreSingleStory represents a single story.
 type CoreSingleStory struct {
-	ID              uuid.UUID
-	SequenceID      int
-	Title           string
-	EstimateLabel   *string
-	EstimateValue   *int16
-	EstimateScheme  string
-	TeamCode        string
-	Description     *string
-	DescriptionHTML *string
-	Parent          *uuid.UUID
-	Objective       *uuid.UUID
-	Status          *uuid.UUID
-	Assignee        *uuid.UUID
-	Collaborators   []uuid.UUID
-	WatcherIDs      []uuid.UUID
-	WatcherCount    int
-	IsWatching      bool
-	WatchingReason  *string
-	BlockedBy       *uuid.UUID
-	Blocking        *uuid.UUID
-	Related         *uuid.UUID
-	Reporter        *uuid.UUID
-	Priority        string
-	Sprint          *uuid.UUID
-	SprintSummary   *CoreSprintSummary
-	Epic            *uuid.UUID
-	KeyResult       *uuid.UUID
-	Team            uuid.UUID
-	Workspace       uuid.UUID
-	StartDate       *time.Time
-	EndDate         *time.Time
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	DeletedAt       *time.Time
-	ArchivedAt      *time.Time
-	CompletedAt     *time.Time
-	SubStories      []CoreStoryList
-	Labels          []uuid.UUID
-	Associations    []CoreStoryAssociation
-	CreationKey     *string
-	CreatedNow      bool
+	ID                       uuid.UUID
+	SequenceID               int
+	Title                    string
+	EstimateLabel            *string
+	EstimateValue            *int16
+	EstimateScheme           string
+	EstimatedDurationMinutes *int
+	MinimumFocusBlockMinutes *int
+	TeamCode                 string
+	Description              *string
+	DescriptionHTML          *string
+	Parent                   *uuid.UUID
+	Objective                *uuid.UUID
+	Status                   *uuid.UUID
+	Assignee                 *uuid.UUID
+	Collaborators            []uuid.UUID
+	WatcherIDs               []uuid.UUID
+	WatcherCount             int
+	IsWatching               bool
+	WatchingReason           *string
+	BlockedBy                *uuid.UUID
+	Blocking                 *uuid.UUID
+	Related                  *uuid.UUID
+	Reporter                 *uuid.UUID
+	Priority                 string
+	Sprint                   *uuid.UUID
+	SprintSummary            *CoreSprintSummary
+	Epic                     *uuid.UUID
+	KeyResult                *uuid.UUID
+	Team                     uuid.UUID
+	Workspace                uuid.UUID
+	StartDate                *time.Time
+	EndDate                  *time.Time
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	DeletedAt                *time.Time
+	ArchivedAt               *time.Time
+	CompletedAt              *time.Time
+	SubStories               []CoreStoryList
+	Labels                   []uuid.UUID
+	Associations             []CoreStoryAssociation
+	CreationKey              *string
+	CreatedNow               bool
 }
 
 type CoreNewStory struct {
-	Title           string      `json:"title"`
-	EstimateValue   *int16      `json:"estimateValue"`
-	Description     *string     `json:"description"`
-	DescriptionHTML *string     `json:"descriptionHTML"`
-	Parent          *uuid.UUID  `json:"parentId"`
-	Objective       *uuid.UUID  `json:"objectiveId"`
-	Status          *uuid.UUID  `json:"statusId"`
-	Assignee        *uuid.UUID  `json:"assigneeId"`
-	BlockedBy       *uuid.UUID  `json:"blockedById"`
-	Blocking        *uuid.UUID  `json:"blockingId"`
-	Related         *uuid.UUID  `json:"relatedId"`
-	Reporter        *uuid.UUID  `json:"reporterId"`
-	Priority        string      `json:"priority"`
-	Sprint          *uuid.UUID  `json:"sprintId"`
-	KeyResult       *uuid.UUID  `json:"keyResultId"`
-	LabelIDs        []uuid.UUID `json:"labelIds"`
-	StartDate       *time.Time  `json:"startDate"`
-	EndDate         *time.Time  `json:"endDate"`
-	Team            uuid.UUID   `json:"teamId"`
-	CreationKey     *string     `json:"-"`
+	Title                    string      `json:"title"`
+	EstimateValue            *int16      `json:"estimateValue"`
+	EstimatedDurationMinutes *int        `json:"estimatedDurationMinutes"`
+	MinimumFocusBlockMinutes *int        `json:"minimumFocusBlockMinutes"`
+	Description              *string     `json:"description"`
+	DescriptionHTML          *string     `json:"descriptionHTML"`
+	Parent                   *uuid.UUID  `json:"parentId"`
+	Objective                *uuid.UUID  `json:"objectiveId"`
+	Status                   *uuid.UUID  `json:"statusId"`
+	Assignee                 *uuid.UUID  `json:"assigneeId"`
+	BlockedBy                *uuid.UUID  `json:"blockedById"`
+	Blocking                 *uuid.UUID  `json:"blockingId"`
+	Related                  *uuid.UUID  `json:"relatedId"`
+	Reporter                 *uuid.UUID  `json:"reporterId"`
+	Priority                 string      `json:"priority"`
+	Sprint                   *uuid.UUID  `json:"sprintId"`
+	KeyResult                *uuid.UUID  `json:"keyResultId"`
+	LabelIDs                 []uuid.UUID `json:"labelIds"`
+	StartDate                *time.Time  `json:"startDate"`
+	EndDate                  *time.Time  `json:"endDate"`
+	Team                     uuid.UUID   `json:"teamId"`
+	CreationKey              *string     `json:"-"`
 }
 
 type CoreUpdateStory struct {
-	Title           *string
-	EstimateValue   *int16
-	Description     *string
-	DescriptionHTML *string
-	Parent          *uuid.UUID
-	Objective       *uuid.UUID
-	Status          *uuid.UUID
-	Assignee        *uuid.UUID
-	Priority        *string
-	Sprint          *uuid.UUID
-	KeyResult       *uuid.UUID
-	StartDate       *time.Time
-	EndDate         *time.Time
-	CompletedAt     *time.Time
+	Title                    *string
+	EstimateValue            *int16
+	EstimatedDurationMinutes *int
+	MinimumFocusBlockMinutes *int
+	Description              *string
+	DescriptionHTML          *string
+	Parent                   *uuid.UUID
+	Objective                *uuid.UUID
+	Status                   *uuid.UUID
+	Assignee                 *uuid.UUID
+	Priority                 *string
+	Sprint                   *uuid.UUID
+	KeyResult                *uuid.UUID
+	StartDate                *time.Time
+	EndDate                  *time.Time
+	CompletedAt              *time.Time
 }
 
 func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
@@ -163,29 +171,31 @@ func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 	}
 
 	return CoreSingleStory{
-		Workspace:       workspaceId,
-		Title:           ns.Title,
-		EstimateValue:   ns.EstimateValue,
-		Description:     ns.Description,
-		DescriptionHTML: ns.DescriptionHTML,
-		Parent:          ns.Parent,
-		Objective:       ns.Objective,
-		Status:          ns.Status,
-		Assignee:        ns.Assignee,
-		BlockedBy:       ns.BlockedBy,
-		Blocking:        ns.Blocking,
-		Related:         ns.Related,
-		Reporter:        ns.Reporter,
-		Priority:        ns.Priority,
-		Sprint:          ns.Sprint,
-		KeyResult:       ns.KeyResult,
-		Labels:          append([]uuid.UUID(nil), ns.LabelIDs...),
-		StartDate:       ns.StartDate,
-		EndDate:         ns.EndDate,
-		Team:            ns.Team,
-		CreationKey:     ns.CreationKey,
-		CreatedAt:       now,
-		UpdatedAt:       now,
+		Workspace:                workspaceId,
+		Title:                    ns.Title,
+		EstimateValue:            ns.EstimateValue,
+		EstimatedDurationMinutes: ns.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: ns.MinimumFocusBlockMinutes,
+		Description:              ns.Description,
+		DescriptionHTML:          ns.DescriptionHTML,
+		Parent:                   ns.Parent,
+		Objective:                ns.Objective,
+		Status:                   ns.Status,
+		Assignee:                 ns.Assignee,
+		BlockedBy:                ns.BlockedBy,
+		Blocking:                 ns.Blocking,
+		Related:                  ns.Related,
+		Reporter:                 ns.Reporter,
+		Priority:                 ns.Priority,
+		Sprint:                   ns.Sprint,
+		KeyResult:                ns.KeyResult,
+		Labels:                   append([]uuid.UUID(nil), ns.LabelIDs...),
+		StartDate:                ns.StartDate,
+		EndDate:                  ns.EndDate,
+		Team:                     ns.Team,
+		CreationKey:              ns.CreationKey,
+		CreatedAt:                now,
+		UpdatedAt:                now,
 	}
 }
 

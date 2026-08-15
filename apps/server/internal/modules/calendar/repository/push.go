@@ -19,9 +19,18 @@ const connectionColumns = `
 	last_synced_at, sync_token, notification_channel_id, notification_resource_id,
 	notification_expires_at, revoked_at, created_at, updated_at`
 
+type managedScheduleBlockState struct {
+	ID          uuid.UUID  `db:"block_id"`
+	WorkspaceID uuid.UUID  `db:"workspace_id"`
+	StoryID     *uuid.UUID `db:"story_id"`
+	Title       string     `db:"title"`
+	StartAt     time.Time  `db:"start_at"`
+	EndAt       time.Time  `db:"end_at"`
+}
+
 func (r *Repo) GetConnection(ctx context.Context, connectionID uuid.UUID) (calendar.CoreConnection, error) {
 	var row dbConnection
-	query := `SELECT ` + connectionColumns + ` FROM calendar_connections WHERE connection_id = $1 AND revoked_at IS NULL`
+	query := `SELECT ` + connectionColumns + ` FROM calendar_connections WHERE connection_id = $1 AND revoked_at IS NULL AND cleanup_pending_at IS NULL`
 	if err := r.db.GetContext(ctx, &row, query, connectionID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return calendar.CoreConnection{}, calendar.ErrCalendarNotFound
@@ -36,6 +45,7 @@ func (r *Repo) ListConnectionsNeedingWatch(ctx context.Context, renewBefore time
 	query := `SELECT ` + connectionColumns + `
 		FROM calendar_connections
 		WHERE revoked_at IS NULL
+		  AND cleanup_pending_at IS NULL
 		  AND provider = 'google'
 		  AND (notification_channel_id IS NULL OR notification_expires_at IS NULL OR notification_expires_at <= $1)
 		ORDER BY notification_expires_at NULLS FIRST, connection_id`
@@ -52,7 +62,7 @@ func (r *Repo) SetNotificationChannel(ctx context.Context, connection calendar.C
 			notification_resource_id = $5,
 			notification_expires_at = $6,
 			updated_at = NOW()
-		WHERE connection_id = $1 AND workspace_id = $2 AND credential_generation = $3 AND revoked_at IS NULL`,
+		WHERE connection_id = $1 AND workspace_id = $2 AND credential_generation = $3 AND revoked_at IS NULL AND cleanup_pending_at IS NULL`,
 		connection.ID, connection.WorkspaceID, connection.CredentialGeneration,
 		channel.ChannelID, channel.ResourceID, channel.ExpiresAt,
 	)
@@ -87,11 +97,14 @@ func (r *Repo) ApplyCalendarChanges(ctx context.Context, connection calendar.Cor
 		return fmt.Errorf("begin apply calendar changes: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+	if err := lockCalendarUser(ctx, tx, connection.WorkspaceID, connection.UserID); err != nil {
+		return err
+	}
 
 	var locked uuid.UUID
 	if err := tx.GetContext(ctx, &locked, `
 		SELECT connection_id FROM calendar_connections
-		WHERE connection_id = $1 AND workspace_id = $2 AND credential_generation = $3 AND revoked_at IS NULL
+			WHERE connection_id = $1 AND workspace_id = $2 AND credential_generation = $3 AND revoked_at IS NULL AND cleanup_pending_at IS NULL
 		FOR UPDATE`, connection.ID, connection.WorkspaceID, connection.CredentialGeneration); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return calendar.ErrCalendarSyncSuperseded
@@ -156,6 +169,46 @@ func (r *Repo) ApplyCalendarChanges(ctx context.Context, connection calendar.Cor
 		}
 	}
 
+	for _, change := range delta.ManagedScheduleEventChanges {
+		if strings.TrimSpace(change.EventID) == "" {
+			continue
+		}
+		if change.Deleted {
+			if _, err := tx.ExecContext(ctx, `
+				UPDATE calendar_schedule_blocks
+				SET external_sync_hash = NULL, external_synced_at = NULL, updated_at = NOW()
+				WHERE user_id = $1 AND external_provider = 'google' AND external_event_id = $2
+			`, connection.UserID, change.EventID); err != nil {
+				return fmt.Errorf("invalidate deleted managed calendar event: %w", err)
+			}
+			continue
+		}
+		var block managedScheduleBlockState
+		if err := tx.GetContext(ctx, &block, `
+			SELECT block_id, workspace_id, story_id, title, start_at, end_at
+			FROM calendar_schedule_blocks
+			WHERE user_id = $1
+				AND external_provider = 'google'
+				AND external_event_id = $2
+			FOR UPDATE
+		`, connection.UserID, change.EventID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				continue
+			}
+			return fmt.Errorf("lock changed managed calendar event: %w", err)
+		}
+		if managedScheduleEventMatchesBlock(change, block) {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE calendar_schedule_blocks
+			SET external_sync_hash = NULL, external_synced_at = NULL, updated_at = NOW()
+			WHERE block_id = $1
+		`, block.ID); err != nil {
+			return fmt.Errorf("invalidate changed managed calendar event: %w", err)
+		}
+	}
+
 	if _, err := tx.ExecContext(ctx, `UPDATE calendar_connections SET sync_token = NULLIF($2, ''), updated_at = NOW() WHERE connection_id = $1`, connection.ID, strings.TrimSpace(delta.NextSyncToken)); err != nil {
 		return fmt.Errorf("store incremental calendar sync token: %w", err)
 	}
@@ -163,4 +216,18 @@ func (r *Repo) ApplyCalendarChanges(ctx context.Context, connection calendar.Cor
 		return fmt.Errorf("commit incremental calendar changes: %w", err)
 	}
 	return nil
+}
+
+func managedScheduleEventMatchesBlock(change calendar.ManagedScheduleEventChange, block managedScheduleBlockState) bool {
+	if change.Deleted || change.Visibility != "private" || change.Transparency != "opaque" || change.Status != "confirmed" || change.HasAttendees || change.Recurring {
+		return false
+	}
+	if change.Source != "maya_schedule" || change.BlockID != block.ID.String() || change.WorkspaceID != block.WorkspaceID.String() {
+		return false
+	}
+	storyID := ""
+	if block.StoryID != nil {
+		storyID = block.StoryID.String()
+	}
+	return change.StoryID == storyID && change.Title == block.Title && change.StartAt.Equal(block.StartAt) && change.EndAt.Equal(block.EndAt)
 }

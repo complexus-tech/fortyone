@@ -20,11 +20,13 @@ import {
   OKRIcon,
   SprintsIcon,
   TagsIcon,
+  Time02Icon,
   UsersAddIcon,
 } from "icons";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { formatEstimate } from "@/lib/estimate";
+import { formatTimeNeeded } from "@/lib/time-needed";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
@@ -33,6 +35,7 @@ import {
   AssigneesMenu,
   SprintsMenu,
   EstimateMenu,
+  TimeNeededMenu,
   StoryStatusIcon,
   PriorityIcon,
   LabelsMenu,
@@ -130,6 +133,8 @@ export const Options = ({
     teamId,
     estimateValue,
     estimateScheme,
+    estimatedDurationMinutes,
+    minimumFocusBlockMinutes,
     labels: storyLabels,
     sprintId,
     deletedAt,
@@ -559,7 +564,7 @@ export const Options = ({
           <Option
             isCompact={isCompact}
             isNotifications={isNotifications}
-            label="Estimate"
+            label="Complexity"
             value={
               <EstimateMenu>
                 <EstimateMenu.Trigger>
@@ -585,7 +590,7 @@ export const Options = ({
                       formatEstimate(estimateScheme, estimateValue, "full")
                     ) : (
                       <Text as="span" color="muted">
-                        Add estimate
+                        Add complexity
                       </Text>
                     )}
                   </Button>
@@ -598,6 +603,49 @@ export const Options = ({
                   }}
                 />
               </EstimateMenu>
+            }
+          />
+          <Option
+            isCompact={isCompact}
+            isNotifications={isNotifications}
+            label="Time needed"
+            value={
+              <TimeNeededMenu>
+                <TimeNeededMenu.Trigger>
+                  <Button
+                    className={cn("font-medium", {
+                      "text-text-muted": !estimatedDurationMinutes,
+                    })}
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={
+                      <Time02Icon
+                        className={cn("h-[1.15rem] w-auto", {
+                          "text-text-muted": !estimatedDurationMinutes,
+                        })}
+                      />
+                    }
+                    size="sm"
+                    type="button"
+                    variant={isCompact ? "solid" : "naked"}
+                  >
+                    {estimatedDurationMinutes ? (
+                      formatTimeNeeded(estimatedDurationMinutes, "full")
+                    ) : (
+                      <Text as="span" color="muted">
+                        Add time needed
+                      </Text>
+                    )}
+                  </Button>
+                </TimeNeededMenu.Trigger>
+                <TimeNeededMenu.Items
+                  estimatedDurationMinutes={estimatedDurationMinutes}
+                  minimumFocusBlockMinutes={minimumFocusBlockMinutes}
+                  setTimeNeeded={(timeNeeded) => {
+                    handleUpdate(timeNeeded);
+                  }}
+                />
+              </TimeNeededMenu>
             }
           />
           <Option

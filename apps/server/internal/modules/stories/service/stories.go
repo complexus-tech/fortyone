@@ -229,6 +229,10 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 	}
 	story.EstimateValue = ns.EstimateValue
 	story.EstimateLabel = EstimateLabelFromValue(estimateScheme, ns.EstimateValue)
+	if err := ValidateStoryTimeContract(ns.EstimatedDurationMinutes, ns.MinimumFocusBlockMinutes); err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
 	if err := s.validateMayaAssignment(ctx, story, nil, actorID); err != nil {
 		span.RecordError(err)
 		return CoreSingleStory{}, err
@@ -613,12 +617,26 @@ func (s *Service) UpdateExternalIfUnchanged(
 	expectedUpdatedAt time.Time,
 	updates map[string]any,
 ) error {
+	return s.UpdateExternalWithReasonIfUnchanged(ctx, actorID, storyID, workspaceID, expectedUpdatedAt, updates, "")
+}
+
+// UpdateExternalWithReasonIfUnchanged preserves the inspected story version
+// across a reason-aware integration update. It prevents an automated actor
+// from overwriting a user edit that committed after planning.
+func (s *Service) UpdateExternalWithReasonIfUnchanged(
+	ctx context.Context,
+	actorID, storyID, workspaceID uuid.UUID,
+	expectedUpdatedAt time.Time,
+	updates map[string]any,
+	reason string,
+) error {
 	if expectedUpdatedAt.IsZero() {
 		return errors.New("expected story update time is required")
 	}
 	expectedUpdatedAt = expectedUpdatedAt.UTC()
 	return s.updateWithOptions(ctx, storyID, workspaceID, actorID, updates, updateOptions{
 		recordDescriptionUpdates: true,
+		activityReason:           reason,
 		expectedUpdatedAt:        &expectedUpdatedAt,
 		publishStatusEvents:      true,
 	})
@@ -704,6 +722,10 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 	}
 
 	if err := s.applyEstimateUpdate(ctx, workspaceID, story, updates); err != nil {
+		span.RecordError(err)
+		return err
+	}
+	if err := applyStoryTimeContractUpdate(story, updates); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -1377,6 +1399,13 @@ func (s *Service) formatValue(value any) string {
 			return fmt.Sprintf("%d", *v)
 		}
 		return "nil"
+	case *int:
+		if v != nil {
+			return strconv.Itoa(*v)
+		}
+		return "nil"
+	case int:
+		return strconv.Itoa(v)
 	case int16:
 		return fmt.Sprintf("%d", v)
 	case *float64:
@@ -1466,6 +1495,11 @@ func normalizeComparableValue(value any) string {
 		return v.UTC().Format(time.RFC3339Nano)
 	case int:
 		return strconv.Itoa(v)
+	case *int:
+		if v == nil {
+			return "nil"
+		}
+		return strconv.Itoa(*v)
 	case int16:
 		return strconv.FormatInt(int64(v), 10)
 	case *int16:
@@ -1804,6 +1838,10 @@ func (s *Service) getOldValue(story CoreSingleStory, field string) any {
 		return story.CompletedAt
 	case "estimate_unit":
 		return story.EstimateValue
+	case "estimated_duration_minutes":
+		return story.EstimatedDurationMinutes
+	case "minimum_focus_block_minutes":
+		return story.MinimumFocusBlockMinutes
 	default:
 		return nil
 	}

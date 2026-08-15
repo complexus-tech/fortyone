@@ -9,24 +9,29 @@ import (
 
 // AppSearchStory represents a story in search results for the API.
 type AppSearchStory struct {
-	ID         uuid.UUID   `json:"id"`
-	SequenceID int         `json:"sequenceId"`
-	Title      string      `json:"title"`
-	Parent     *uuid.UUID  `json:"parentId"`
-	Objective  *uuid.UUID  `json:"objectiveId"`
-	Status     *uuid.UUID  `json:"statusId"`
-	Assignee   *uuid.UUID  `json:"assigneeId"`
-	Reporter   *uuid.UUID  `json:"reporterId"`
-	Priority   string      `json:"priority"`
-	Sprint     *uuid.UUID  `json:"sprintId"`
-	Team       uuid.UUID   `json:"teamId"`
-	Workspace  uuid.UUID   `json:"workspaceId"`
-	StartDate  *time.Time  `json:"startDate"`
-	EndDate    *time.Time  `json:"endDate"`
-	CreatedAt  time.Time   `json:"createdAt"`
-	UpdatedAt  time.Time   `json:"updatedAt"`
-	Labels     []uuid.UUID `json:"labels"`
-	SubStories []uuid.UUID `json:"subStories"`
+	ID                       uuid.UUID   `json:"id"`
+	SequenceID               int         `json:"sequenceId"`
+	Title                    string      `json:"title"`
+	Parent                   *uuid.UUID  `json:"parentId"`
+	Objective                *uuid.UUID  `json:"objectiveId"`
+	Status                   *uuid.UUID  `json:"statusId"`
+	Assignee                 *uuid.UUID  `json:"assigneeId"`
+	Reporter                 *uuid.UUID  `json:"reporterId"`
+	Priority                 string      `json:"priority"`
+	EstimateLabel            *string     `json:"estimateLabel"`
+	EstimateValue            *int16      `json:"estimateValue"`
+	EstimateScheme           string      `json:"estimateScheme"`
+	Sprint                   *uuid.UUID  `json:"sprintId"`
+	Team                     uuid.UUID   `json:"teamId"`
+	Workspace                uuid.UUID   `json:"workspaceId"`
+	StartDate                *time.Time  `json:"startDate"`
+	EndDate                  *time.Time  `json:"endDate"`
+	EstimatedDurationMinutes *int        `json:"estimatedDurationMinutes"`
+	MinimumFocusBlockMinutes *int        `json:"minimumFocusBlockMinutes"`
+	CreatedAt                time.Time   `json:"createdAt"`
+	UpdatedAt                time.Time   `json:"updatedAt"`
+	Labels                   []uuid.UUID `json:"labels"`
+	SubStories               []uuid.UUID `json:"subStories"`
 }
 
 // AppSimilarStory represents a possible duplicate for a proposed story title.
@@ -97,24 +102,29 @@ func toAppSearchStories(stories []search.CoreSearchStory) []AppSearchStory {
 func toAppSearchStory(story search.CoreSearchStory) AppSearchStory {
 	var subStories []uuid.UUID = []uuid.UUID{}
 	return AppSearchStory{
-		ID:         story.ID,
-		SequenceID: story.SequenceID,
-		Title:      story.Title,
-		Parent:     story.Parent,
-		Objective:  story.Objective,
-		Status:     story.Status,
-		Assignee:   story.Assignee,
-		Reporter:   story.Reporter,
-		Priority:   story.Priority,
-		Sprint:     story.Sprint,
-		Team:       story.Team,
-		Workspace:  story.Workspace,
-		StartDate:  story.StartDate,
-		EndDate:    story.EndDate,
-		CreatedAt:  story.CreatedAt,
-		UpdatedAt:  story.UpdatedAt,
-		Labels:     story.Labels,
-		SubStories: subStories,
+		ID:                       story.ID,
+		SequenceID:               story.SequenceID,
+		Title:                    story.Title,
+		Parent:                   story.Parent,
+		Objective:                story.Objective,
+		Status:                   story.Status,
+		Assignee:                 story.Assignee,
+		Reporter:                 story.Reporter,
+		Priority:                 story.Priority,
+		EstimateLabel:            story.EstimateLabel,
+		EstimateValue:            story.EstimateValue,
+		EstimateScheme:           story.EstimateScheme,
+		Sprint:                   story.Sprint,
+		Team:                     story.Team,
+		Workspace:                story.Workspace,
+		StartDate:                story.StartDate,
+		EndDate:                  story.EndDate,
+		EstimatedDurationMinutes: story.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+		CreatedAt:                story.CreatedAt,
+		UpdatedAt:                story.UpdatedAt,
+		Labels:                   story.Labels,
+		SubStories:               subStories,
 	}
 }
 

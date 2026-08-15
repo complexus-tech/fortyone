@@ -13,6 +13,8 @@ import (
 
 const mayaAssignmentBatchPageSize = 25
 
+const mayaScheduleRecoveryBatchSize = 100
+
 type mayaAssignmentCandidateStory struct {
 	ID          uuid.UUID `db:"id"`
 	WorkspaceID uuid.UUID `db:"workspace_id"`
@@ -70,6 +72,20 @@ func (h *handlers) HandleMayaBatchAssignment(ctx context.Context, t *asynq.Task)
 	}
 
 	h.log.Info(ctx, "HANDLER: Successfully processed MayaBatchAssignment task", "task_id", t.ResultWriter().TaskID(), "processed", totalProcessed, "skipped", totalSkipped)
+	return nil
+}
+
+func (h *handlers) HandleMayaScheduleRecovery(ctx context.Context, t *asynq.Task) error {
+	if h.mayaService == nil {
+		return fmt.Errorf("Maya schedule recovery worker is not configured")
+	}
+	processed, err := h.mayaService.RecoverScheduleOwnerships(ctx, mayaScheduleRecoveryBatchSize)
+	if err != nil {
+		return fmt.Errorf("recover Maya-owned schedules: %w", err)
+	}
+	if h.log != nil {
+		h.log.Info(ctx, "Recovered Maya-owned schedules", "task_id", t.ResultWriter().TaskID(), "processed", processed)
+	}
 	return nil
 }
 

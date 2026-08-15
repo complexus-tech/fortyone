@@ -54,7 +54,7 @@ export type TeamStoryAutomationSettings = {
 };
 
 export type TeamEstimationSettings = {
-  scheme: "points" | "hours" | "tshirt" | "ideal_days";
+  scheme: "points" | "tshirt";
   createdAt: string;
   updatedAt: string;
 };

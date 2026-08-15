@@ -8,24 +8,29 @@ import (
 
 // CoreSearchStory represents a story in search results
 type CoreSearchStory struct {
-	ID         uuid.UUID
-	SequenceID int
-	Title      string
-	Parent     *uuid.UUID
-	Objective  *uuid.UUID
-	Status     *uuid.UUID
-	Assignee   *uuid.UUID
-	Reporter   *uuid.UUID
-	Priority   string
-	Sprint     *uuid.UUID
-	KeyResult  *uuid.UUID
-	Team       uuid.UUID
-	Workspace  uuid.UUID
-	StartDate  *time.Time
-	EndDate    *time.Time
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	Labels     []uuid.UUID
+	ID                       uuid.UUID
+	SequenceID               int
+	Title                    string
+	Parent                   *uuid.UUID
+	Objective                *uuid.UUID
+	Status                   *uuid.UUID
+	Assignee                 *uuid.UUID
+	Reporter                 *uuid.UUID
+	Priority                 string
+	EstimateLabel            *string
+	EstimateValue            *int16
+	EstimateScheme           string
+	Sprint                   *uuid.UUID
+	KeyResult                *uuid.UUID
+	Team                     uuid.UUID
+	Workspace                uuid.UUID
+	StartDate                *time.Time
+	EndDate                  *time.Time
+	EstimatedDurationMinutes *int
+	MinimumFocusBlockMinutes *int
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	Labels                   []uuid.UUID
 }
 
 // CoreSearchObjective represents an objective in search results

@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2311100c'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-family='Arial' font-size='12' font-weight='700' fill='white'%3E41%3C/text%3E%3C/svg%3E" />
+    <title>FortyOne onboarding email refresh</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #11100c;
+        --text: #3b3a38;
+        --muted: #6b6a66;
+        --border: #deddd8;
+        --surface: #fefefd;
+        --canvas: #eeede8;
+        --quiet: #f7f7f4;
+        --accent: #f35312;
+        --sidebar: 326px;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body { min-height: 100%; }
+
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      button, a { font: inherit; }
+
+      .app {
+        display: grid;
+        grid-template-columns: var(--sidebar) minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 28px 22px 24px;
+        border-right: 1px solid var(--border);
+        background: rgba(254, 254, 253, .96);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin-bottom: 28px;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 9px;
+        background: var(--ink);
+        color: var(--surface);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: -.02em;
+      }
+
+      .brand-copy strong {
+        display: block;
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 650;
+        letter-spacing: -.01em;
+      }
+
+      .brand-copy span {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .section-label {
+        margin: 0 10px 9px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+      }
+
+      .email-list {
+        display: grid;
+        gap: 4px;
+        margin: 0 0 28px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .email-button {
+        position: relative;
+        width: 100%;
+        padding: 11px 12px 11px 42px;
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--text);
+        cursor: pointer;
+        text-align: left;
+        transition: background-color 140ms ease, color 140ms ease;
+      }
+
+      .email-button:hover { background: var(--quiet); }
+
+      .email-button[aria-current="true"] {
+        background: #eeede8;
+        color: var(--ink);
+      }
+
+      .email-index {
+        position: absolute;
+        top: 11px;
+        left: 12px;
+        display: grid;
+        width: 22px;
+        height: 22px;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .email-button[aria-current="true"] .email-index {
+        border-color: var(--ink);
+        background: var(--ink);
+        color: white;
+      }
+
+      .email-name {
+        display: block;
+        overflow: hidden;
+        color: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.35;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .email-condition {
+        display: block;
+        margin-top: 3px;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.35;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sidebar-note {
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--quiet);
+      }
+
+      .sidebar-note strong {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--ink);
+        font-size: 12px;
+      }
+
+      .sidebar-note p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.55;
+      }
+
+      .sidebar-links {
+        display: flex;
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .sidebar-links a {
+        color: var(--ink);
+        font-size: 11px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .main { min-width: 0; }
+
+      .toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        min-height: 74px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 14px 24px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(254, 254, 253, .94);
+        backdrop-filter: blur(16px);
+      }
+
+      .message-meta {
+        min-width: 0;
+      }
+
+      .message-meta strong {
+        display: block;
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 650;
+        letter-spacing: -.01em;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .message-meta span {
+        display: block;
+        margin-top: 4px;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 11px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .view-toggle {
+        display: flex;
+        flex: 0 0 auto;
+        gap: 3px;
+        padding: 3px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--quiet);
+      }
+
+      .view-toggle button {
+        padding: 7px 11px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .view-toggle button[aria-pressed="true"] {
+        background: var(--surface);
+        box-shadow: 0 1px 2px rgba(17, 16, 12, .09);
+        color: var(--ink);
+      }
+
+      .canvas {
+        min-height: calc(100vh - 74px);
+        padding: 42px 28px 80px;
+      }
+
+      .device {
+        width: min(100%, 680px);
+        margin: 0 auto;
+        overflow: hidden;
+        border: 1px solid #d5d4ce;
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: 0 28px 80px rgba(36, 32, 20, .12), 0 2px 8px rgba(36, 32, 20, .06);
+        transition: width 220ms cubic-bezier(.2, .8, .2, 1);
+      }
+
+      .device[data-view="mobile"] { width: min(100%, 390px); }
+
+      .mail-chrome {
+        display: flex;
+        min-height: 57px;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        background: #fbfbf9;
+      }
+
+      .avatar {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--ink);
+        color: white;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .sender { min-width: 0; }
+
+      .sender strong {
+        display: block;
+        color: var(--ink);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .sender span {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.35;
+      }
+
+      .status-pill {
+        margin-left: auto;
+        padding: 5px 8px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+      }
+
+      iframe {
+        display: block;
+        width: 100%;
+        min-height: 980px;
+        border: 0;
+        background: var(--surface);
+      }
+
+      @media (max-width: 920px) {
+        .app { grid-template-columns: 1fr; }
+        .sidebar {
+          position: static;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+        }
+        .email-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .toolbar { top: 0; }
+      }
+
+      @media (max-width: 620px) {
+        .email-list { grid-template-columns: 1fr; }
+        .toolbar { align-items: flex-start; padding: 13px 16px; }
+        .message-meta span { display: none; }
+        .canvas { padding: 20px 10px 50px; }
+        .device { border-radius: 11px; }
+        .status-pill { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">41</div>
+          <div class="brand-copy">
+            <strong>Onboarding v3</strong>
+            <span>Calm contrarian copy system</span>
+          </div>
+        </div>
+
+        <p class="section-label">Email journey</p>
+        <ol class="email-list">
+          <li>
+            <button class="email-button" type="button" data-template="00" aria-current="false">
+              <span class="email-index">00</span>
+              <span class="email-name">One live thread</span>
+              <span class="email-condition">Conditional account rescue</span>
+            </button>
+          </li>
+          <li>
+            <button class="email-button" type="button" data-template="01" aria-current="true">
+              <span class="email-index">01</span>
+              <span class="email-name">Before the Task</span>
+              <span class="email-condition">Workspace created</span>
+            </button>
+          </li>
+          <li>
+            <button class="email-button" type="button" data-template="02" aria-current="false">
+              <span class="email-index">02</span>
+              <span class="email-name">The lost thread</span>
+              <span class="email-condition">Human reply</span>
+            </button>
+          </li>
+          <li>
+            <button class="email-button" type="button" data-template="03" aria-current="false">
+              <span class="email-index">03</span>
+              <span class="email-name">AI shows its work</span>
+              <span class="email-condition">Real Task exists</span>
+            </button>
+          </li>
+          <li>
+            <button class="email-button" type="button" data-template="04" aria-current="false">
+              <span class="email-index">04</span>
+              <span class="email-name">Strategy on Monday</span>
+              <span class="email-condition">No Objective yet</span>
+            </button>
+          </li>
+          <li>
+            <button class="email-button" type="button" data-template="05" aria-current="false">
+              <span class="email-index">05</span>
+              <span class="email-name">Give the invite a job</span>
+              <span class="email-condition">Solo admin with real work</span>
+            </button>
+          </li>
+          <li>
+            <button class="email-button" type="button" data-template="05b" aria-current="false">
+              <span class="email-index">5B</span>
+              <span class="email-name">The real week</span>
+              <span class="email-condition">Team already invited</span>
+            </button>
+          </li>
+        </ol>
+
+        <div class="sidebar-note">
+          <strong>Campaign spine</strong>
+          <p>Most project tools start with a Task. FortyOne starts with the reason it deserves one.</p>
+        </div>
+        <div class="sidebar-links">
+          <a href="README.md">Implementation notes ↗</a>
+          <a href="COPY.md">Copy deck ↗</a>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="toolbar">
+          <div class="message-meta">
+            <strong id="subject">Most project tools arrive too late</strong>
+            <span id="preheader">They capture the Task. FortyOne preserves the reason it exists.</span>
+          </div>
+          <div class="view-toggle" aria-label="Preview size">
+            <button type="button" data-view="desktop" aria-pressed="true">Desktop</button>
+            <button type="button" data-view="mobile" aria-pressed="false">Mobile</button>
+          </div>
+        </header>
+
+        <section class="canvas" aria-label="Email preview">
+          <div class="device" id="device" data-view="desktop">
+            <div class="mail-chrome">
+              <div class="avatar" id="avatar">41</div>
+              <div class="sender">
+                <strong id="sender-name">FortyOne</strong>
+                <span id="sender-email">notifications@fortyone.app</span>
+              </div>
+              <span class="status-pill">Copy-ready HTML</span>
+            </div>
+            <iframe id="email-frame" title="Email template preview" src="templates/01-first-real-task.html"></iframe>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      var templates = {
+        "00": {
+          file: "templates/00-finish-workspace-setup.html",
+          subject: "Start with one team, not a rollout",
+          preheader: "FortyOne needs one live decision—not a migration project.",
+          sender: "FortyOne",
+          email: "notifications@fortyone.app",
+          avatar: "41"
+        },
+        "01": {
+          file: "templates/01-first-real-task.html",
+          subject: "Most project tools arrive too late",
+          preheader: "They capture the Task. FortyOne preserves the reason it exists.",
+          sender: "FortyOne",
+          email: "notifications@fortyone.app",
+          avatar: "41"
+        },
+        "02": {
+          file: "templates/02-founder-question.html",
+          subject: "Where does your team lose the thread?",
+          preheader: "Most tools preserve the Task. FortyOne was built to preserve the reason.",
+          sender: "Joseph at FortyOne",
+          email: "joseph@fortyone.app",
+          avatar: "JM"
+        },
+        "03": {
+          file: "templates/03-maya-planning.html",
+          subject: "AI should show its work",
+          preheader: "Give Maya the uncertainty. Keep the final say.",
+          sender: "FortyOne",
+          email: "notifications@fortyone.app",
+          avatar: "41"
+        },
+        "04": {
+          file: "templates/04-connect-work-to-objective.html",
+          subject: "This Task should know why it exists",
+          preheader: "A priority without a reason is just a loud Task.",
+          sender: "FortyOne",
+          email: "notifications@fortyone.app",
+          avatar: "41"
+        },
+        "05": {
+          file: "templates/05-invite-one-teammate.html",
+          subject: "Do not invite your whole company",
+          preheader: "One useful handoff beats twenty empty seats.",
+          sender: "FortyOne",
+          email: "notifications@fortyone.app",
+          avatar: "41"
+        },
+        "05b": {
+          file: "templates/05b-connect-calendar.html",
+          subject: "A due date is not a free afternoon",
+          preheader: "Plan against the week people actually have.",
+          sender: "FortyOne",
+          email: "notifications@fortyone.app",
+          avatar: "41"
+        }
+      };
+
+      var frame = document.getElementById("email-frame");
+      var device = document.getElementById("device");
+      var subject = document.getElementById("subject");
+      var preheader = document.getElementById("preheader");
+      var senderName = document.getElementById("sender-name");
+      var senderEmail = document.getElementById("sender-email");
+      var avatar = document.getElementById("avatar");
+
+      function resizeFrame() {
+        try {
+          var documentHeight = frame.contentWindow.document.documentElement.scrollHeight;
+          frame.style.height = Math.max(documentHeight, 800) + "px";
+        } catch (error) {
+          frame.style.height = "1100px";
+        }
+      }
+
+      function hydratePreview() {
+        try {
+          var emailDocument = frame.contentWindow.document;
+          var imageSources = {
+            "https://www.fortyone.app/images/logo.png": "../assets/logo.png",
+            "https://www.fortyone.app/images/product/my-work-board-light.webp": "../assets/first-real-task.jpg",
+            "https://www.fortyone.app/images/product/maya-delivery-brief-light.webp": "../assets/maya-planning.jpg",
+            "https://www.fortyone.app/images/product/roadmap-timeline-light.webp": "../assets/first-objective.jpg",
+            "https://www.fortyone.app/images/product/calendar-week-light.webp": "../assets/calendar.jpg"
+          };
+          var walker = emailDocument.createTreeWalker(emailDocument.body, NodeFilter.SHOW_TEXT);
+          var node;
+          while ((node = walker.nextNode())) {
+            node.nodeValue = node.nodeValue.replace(/\{\{\s*contact\.NAME\|default:"there"\s*\}\}/g, "Joseph");
+          }
+          emailDocument.querySelectorAll("img").forEach(function (emailImage) {
+            var localSource = imageSources[emailImage.src];
+            if (!localSource) return;
+            emailImage.addEventListener("load", resizeFrame, { once: true });
+            emailImage.src = localSource;
+          });
+        } catch (error) {
+          return;
+        }
+      }
+
+      frame.addEventListener("load", function () {
+        hydratePreview();
+        resizeFrame();
+      });
+
+      document.querySelectorAll("[data-template]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          var template = templates[button.dataset.template];
+          document.querySelectorAll("[data-template]").forEach(function (item) {
+            item.setAttribute("aria-current", String(item === button));
+          });
+          subject.textContent = template.subject;
+          preheader.textContent = template.preheader;
+          senderName.textContent = template.sender;
+          senderEmail.textContent = template.email;
+          avatar.textContent = template.avatar;
+          frame.src = template.file;
+        });
+      });
+
+      document.querySelectorAll("[data-view]").forEach(function (button) {
+        if (!button.closest(".view-toggle")) return;
+        button.addEventListener("click", function () {
+          document.querySelectorAll(".view-toggle [data-view]").forEach(function (item) {
+            item.setAttribute("aria-pressed", String(item === button));
+          });
+          device.dataset.view = button.dataset.view;
+          window.setTimeout(resizeFrame, 240);
+        });
+      });
+    </script>
+  </body>
+</html>

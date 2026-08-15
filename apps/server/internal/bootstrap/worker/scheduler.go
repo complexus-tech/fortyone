@@ -40,6 +40,24 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 	}
 
 	_, err = scheduler.Register(
+		"*/1 * * * *",
+		asynq.NewTask(tasks.TypeCalendarScheduleOutbox, nil),
+		asynq.Queue("integrations"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register calendar schedule outbox task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"*/1 * * * *",
+		asynq.NewTask(tasks.TypeMayaScheduleRecovery, nil),
+		asynq.Queue("automation"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register Maya schedule recovery task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"@daily",
 		asynq.NewTask(tasks.TypeDeleteStories, nil),
 		asynq.Queue("cleanup"),

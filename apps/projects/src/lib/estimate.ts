@@ -1,4 +1,4 @@
-export type EstimateScheme = "points" | "hours" | "tshirt" | "ideal_days";
+export type EstimateScheme = "points" | "tshirt";
 
 export type EstimateDisplayMode = "compact" | "full";
 
@@ -6,7 +6,10 @@ export const ESTIMATE_VALUES = [1, 2, 3, 5, 8] as const;
 
 export type EstimateValue = (typeof ESTIMATE_VALUES)[number];
 
-export const DEFAULT_ESTIMATE_SCHEME = "hours" satisfies EstimateScheme;
+export const isEstimateValue = (value: number): value is EstimateValue =>
+  ESTIMATE_VALUES.some((candidate) => candidate === value);
+
+export const DEFAULT_ESTIMATE_SCHEME = "tshirt" satisfies EstimateScheme;
 
 const compactEstimateLabels: Record<EstimateScheme, Record<number, string>> = {
   points: {
@@ -16,13 +19,6 @@ const compactEstimateLabels: Record<EstimateScheme, Record<number, string>> = {
     5: "5",
     8: "8",
   },
-  hours: {
-    1: "0.5",
-    2: "1",
-    3: "2",
-    5: "4",
-    8: "8",
-  },
   tshirt: {
     1: "XS",
     2: "S",
@@ -30,28 +26,14 @@ const compactEstimateLabels: Record<EstimateScheme, Record<number, string>> = {
     5: "L",
     8: "XL",
   },
-  ideal_days: {
-    1: "0.5",
-    2: "1",
-    3: "2",
-    5: "3",
-    8: "5",
-  },
 };
 
 const unitLabels: Partial<Record<EstimateScheme, string>> = {
   points: "point",
-  hours: "hour",
-  ideal_days: "day",
 };
 
 const normalizeScheme = (scheme?: string | null): EstimateScheme => {
-  if (
-    scheme === "points" ||
-    scheme === "hours" ||
-    scheme === "tshirt" ||
-    scheme === "ideal_days"
-  ) {
+  if (scheme === "points" || scheme === "tshirt") {
     return scheme;
   }
 
@@ -64,7 +46,7 @@ export const formatEstimate = (
   mode: EstimateDisplayMode = "compact",
 ) => {
   if (!value) {
-    return mode === "full" ? "No estimate" : "Estimate";
+    return mode === "full" ? "No complexity" : "Complexity";
   }
 
   const normalizedScheme = normalizeScheme(scheme);

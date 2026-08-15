@@ -11,6 +11,11 @@ export type Story = {
   id: string;
   sequenceId: number;
   title: string;
+  estimateLabel: string | null;
+  estimateValue: number | null;
+  estimateScheme: "points" | "tshirt";
+  estimatedDurationMinutes: number | null;
+  minimumFocusBlockMinutes: number | null;
   description?: string;
   statusId: string;
   sprintId: string | null;

@@ -36,6 +36,7 @@ func (r *Repo) ListCalendarEvents(ctx context.Context, _ uuid.UUID, userID uuid.
 			cc.connection_id = ce.connection_id
 			AND cc.user_id = ce.user_id
 			AND cc.revoked_at IS NULL
+			AND cc.cleanup_pending_at IS NULL
 			AND $4 = ANY(cc.scopes)
 		WHERE ce.user_id = $1
 			AND ce.start_at < $3
@@ -82,6 +83,7 @@ func (r *Repo) GetCalendarEvent(ctx context.Context, _ uuid.UUID, userID, eventI
 			cc.connection_id = ce.connection_id
 			AND cc.user_id = ce.user_id
 			AND cc.revoked_at IS NULL
+			AND cc.cleanup_pending_at IS NULL
 			AND $3 = ANY(cc.scopes)
 		WHERE ce.user_id = $1
 			AND ce.event_id = $2

@@ -406,7 +406,11 @@ const EstimateChipValue = ({
       <Flex align="center" gap={1}>
         <EstimateIcon className="h-4 w-auto" />
         <span>
-          {getPluralLabel(estimateValues.length, "estimate", "estimates")}
+          {getPluralLabel(
+            estimateValues.length,
+            "complexity value",
+            "complexity values",
+          )}
         </span>
       </Flex>
     );
@@ -1248,10 +1252,10 @@ const EstimateEditor = ({
 
   return (
     <Command>
-      <Command.Input autoFocus placeholder="Change estimate..." />
+      <Command.Input autoFocus placeholder="Change complexity..." />
       <Divider className="my-2" />
       <Command.Empty className="py-2">
-        <Text color="muted">No estimate found.</Text>
+        <Text color="muted">No complexity found.</Text>
       </Command.Empty>
       <Command.Group>
         {options.map(({ label, value }, idx) => (
@@ -1747,7 +1751,7 @@ export const StoriesFilterBar = ({
     if (filters.estimateValues?.length) {
       items.push({
         field: "estimateValues",
-        label: "Estimate",
+        label: "Complexity",
         ...getOperatorConfig(filters, "estimateValues"),
         value: (
           <EstimateChipValue
@@ -1870,7 +1874,7 @@ export const StoriesFilterBar = ({
     {
       field: "estimateValues",
       icon: <EstimateIcon className="h-5 w-auto" />,
-      label: "Estimate",
+      label: "Complexity",
     },
     {
       field: "objectiveId",

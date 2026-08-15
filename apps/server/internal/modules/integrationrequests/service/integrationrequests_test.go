@@ -519,28 +519,32 @@ func TestAcceptMapsRequestStoryFieldsToCreatedStory(t *testing.T) {
 	keyResultID := uuid.New()
 	sprintID := uuid.New()
 	estimateValue := int16(5)
+	estimatedDurationMinutes := 240
+	minimumFocusBlockMinutes := 60
 	startDate := time.Date(2026, 6, 15, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2026, 6, 22, 0, 0, 0, 0, time.UTC)
 	repo := &requestRepoStub{
 		statusID: statusID,
 		requests: []CoreIntegrationRequest{
 			{
-				ID:               requestID,
-				WorkspaceID:      workspaceID,
-				TeamID:           teamID,
-				Provider:         ProviderGitHub,
-				SourceType:       SourceTypeIssue,
-				SourceExternalID: "123",
-				Title:            "Import customer escalation",
-				StatusID:         &statusID,
-				Priority:         "Urgent",
-				EstimateValue:    &estimateValue,
-				ObjectiveID:      &objectiveID,
-				KeyResultID:      &keyResultID,
-				SprintID:         &sprintID,
-				StartDate:        &startDate,
-				EndDate:          &endDate,
-				Status:           StatusPending,
+				ID:                       requestID,
+				WorkspaceID:              workspaceID,
+				TeamID:                   teamID,
+				Provider:                 ProviderGitHub,
+				SourceType:               SourceTypeIssue,
+				SourceExternalID:         "123",
+				Title:                    "Import customer escalation",
+				StatusID:                 &statusID,
+				Priority:                 "Urgent",
+				EstimateValue:            &estimateValue,
+				EstimatedDurationMinutes: &estimatedDurationMinutes,
+				MinimumFocusBlockMinutes: &minimumFocusBlockMinutes,
+				ObjectiveID:              &objectiveID,
+				KeyResultID:              &keyResultID,
+				SprintID:                 &sprintID,
+				StartDate:                &startDate,
+				EndDate:                  &endDate,
+				Status:                   StatusPending,
 			},
 		},
 	}
@@ -554,6 +558,8 @@ func TestAcceptMapsRequestStoryFieldsToCreatedStory(t *testing.T) {
 	require.Len(t, repo.createdStories, 1)
 	createdStory := repo.createdStories[0]
 	require.Equal(t, &estimateValue, createdStory.EstimateValue)
+	require.Equal(t, &estimatedDurationMinutes, createdStory.EstimatedDurationMinutes)
+	require.Equal(t, &minimumFocusBlockMinutes, createdStory.MinimumFocusBlockMinutes)
 	require.Equal(t, &objectiveID, createdStory.Objective)
 	require.Equal(t, &keyResultID, createdStory.KeyResult)
 	require.Equal(t, &sprintID, createdStory.Sprint)

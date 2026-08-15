@@ -14,8 +14,8 @@ import type { SearchResponse } from "@/modules/search/types";
 import type { ApiResponse, Member, MembersPage, UserSummary } from "@/types";
 import {
   computeTargetKey,
-  moveStoryBetweenGroups,
   parseGroupQueryKey,
+  updateStoryInGroups,
 } from "@/modules/stories/utils/optimistic";
 import type { DetailedStory, StoryUpdate } from "../types";
 import { updateStoryAction } from "../actions/update-story";
@@ -411,10 +411,14 @@ const updateGroupedQuery = (
   queryClient.setQueryData<GroupedStoriesResponse>(queryKey, (data) => {
     if (!data || !Array.isArray(data.groups)) return data;
 
-    const target = computeTargetKey(data.meta.groupBy, payload);
     return {
       ...data,
-      groups: moveStoryBetweenGroups(data.groups, storyId, target, payload),
+      groups: updateStoryInGroups(
+        data.groups,
+        storyId,
+        data.meta.groupBy,
+        payload,
+      ),
     };
   });
 };

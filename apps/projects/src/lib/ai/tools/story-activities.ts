@@ -39,7 +39,9 @@ export const storyActivitiesTool = tool({
         "estimate",
       ])
       .optional()
-      .describe("Filter activities by specific field changes"),
+      .describe(
+        "Filter activities by specific field changes. The estimate field represents relative complexity, not time.",
+      ),
     fields: z
       .array(z.string())
       .optional()

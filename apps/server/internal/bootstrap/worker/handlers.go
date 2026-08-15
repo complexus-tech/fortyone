@@ -35,6 +35,7 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeFeedbackOutboxDispatch, workerTaskService.HandleFeedbackOutboxDispatch)
 	mux.HandleFunc(tasks.TypeGitHubStorySync, workerTaskService.HandleGitHubStorySync)
 	mux.HandleFunc(tasks.TypeMayaBatchAssignment, workerTaskService.HandleMayaBatchAssignment)
+	mux.HandleFunc(tasks.TypeMayaScheduleRecovery, workerTaskService.HandleMayaScheduleRecovery)
 	mux.HandleFunc(tasks.TypeAttachmentImageOptimization, workerTaskService.HandleAttachmentImageOptimization)
 	mux.HandleFunc(tasks.TypeSlackEvent, workerTaskService.HandleSlackEvent)
 	mux.HandleFunc(tasks.TypeSlackCredentialBackfill, workerTaskService.HandleSlackCredentialBackfill)
@@ -43,6 +44,8 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeBrevoEmailReplyRecovery, workerTaskService.HandleBrevoEmailReplyRecovery)
 	mux.HandleFunc(tasks.TypeCalendarSync, workerTaskService.HandleCalendarSync)
 	mux.HandleFunc(tasks.TypeCalendarWatchRenewal, workerTaskService.HandleCalendarWatchRenewal)
+	mux.HandleFunc(tasks.TypeCalendarScheduleReconcile, workerTaskService.HandleCalendarScheduleReconcile)
+	mux.HandleFunc(tasks.TypeCalendarScheduleOutbox, workerTaskService.HandleCalendarScheduleOutboxDispatch)
 
 	// Cleanup handlers
 	mux.HandleFunc(tasks.TypeTokenCleanup, cleanupHandlers.HandleTokenCleanup)

@@ -177,10 +177,10 @@ func TestPlannerSpreadsLargerWorkAcrossAvailableWindows(t *testing.T) {
 	result, err := planner.Plan(PlanInput{
 		WorkspaceID: workspaceID,
 		Story: stories.CoreSingleStory{
-			ID:            storyID,
-			Workspace:     workspaceID,
-			Title:         "Implement WhatsApp campaigns end-to-end",
-			EstimateValue: int16Ptr(8),
+			ID:                       storyID,
+			Workspace:                workspaceID,
+			Title:                    "Implement WhatsApp campaigns end-to-end",
+			EstimatedDurationMinutes: intPtr(8 * 60),
 		},
 		WindowStart: startAt,
 		WindowEnd:   endAt,
@@ -200,8 +200,8 @@ func TestPlannerSpreadsLargerWorkAcrossAvailableWindows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Plan returned error: %v", err)
 	}
-	if len(result.Actions) != 2 {
-		t.Fatalf("expected assign and schedule actions, got %d", len(result.Actions))
+	if len(result.Actions) != 5 {
+		t.Fatalf("expected assign and four schedule actions, got %d", len(result.Actions))
 	}
 	scheduleBlock := result.Actions[1].Payload.ScheduleBlock
 	if scheduleBlock == nil {
@@ -212,6 +212,163 @@ func TestPlannerSpreadsLargerWorkAcrossAvailableWindows(t *testing.T) {
 	}
 	if !scheduleBlock.PlannedEndAt.Equal(expectedPlannedEnd) {
 		t.Fatalf("expected larger work to plan through %s, got %s", expectedPlannedEnd, scheduleBlock.PlannedEndAt)
+	}
+}
+
+func TestPlannerCreatesExactMinimumSizedSegmentsAroundBusyWindows(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
+	endAt := time.Date(2026, 6, 15, 17, 0, 0, 0, time.UTC)
+	duration := 300
+	minimumFocus := 60
+
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID: storyID, Workspace: workspaceID, Title: "Segmented work", Assignee: &userID,
+			EstimatedDurationMinutes: &duration, MinimumFocusBlockMinutes: &minimumFocus,
+		},
+		WindowStart: startAt, WindowEnd: endAt,
+		Candidates: []CandidateSchedule{{
+			Member: reports.CoreMemberWorkload{UserID: userID},
+			BusyWindows: []calendar.CoreBusyWindow{
+				{StartAt: startAt.Add(2 * time.Hour), EndAt: startAt.Add(3 * time.Hour)},
+			},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if len(result.Actions) != 3 {
+		t.Fatalf("expected three schedule segments, got %d", len(result.Actions))
+	}
+	total := time.Duration(0)
+	var previousEnd time.Time
+	for index, action := range result.Actions {
+		segment := action.Payload.ScheduleBlock
+		if segment == nil || segment.SegmentIndex != index {
+			t.Fatalf("unexpected segment %d: %#v", index, segment)
+		}
+		duration := segment.EndAt.Sub(segment.StartAt)
+		if duration < time.Hour {
+			t.Fatalf("segment %d is shorter than minimum focus: %s", index, duration)
+		}
+		if !previousEnd.IsZero() && segment.StartAt.Before(previousEnd) {
+			t.Fatalf("segment %d overlaps the previous segment", index)
+		}
+		if segment.StartAt.Before(startAt.Add(3*time.Hour)) && segment.EndAt.After(startAt.Add(2*time.Hour)) {
+			t.Fatalf("segment %d overlaps provider busy time: %#v", index, segment)
+		}
+		total += duration
+		previousEnd = segment.EndAt
+	}
+	if total != 300*time.Minute {
+		t.Fatalf("expected exactly 300 scheduled minutes, got %s", total)
+	}
+}
+
+func TestPlannerHonorsFifteenMinuteDurationWithoutDefaultClamp(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	duration := 15
+	startAt := time.Date(2026, 6, 15, 9, 2, 0, 0, time.UTC)
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story:       stories.CoreSingleStory{ID: storyID, Workspace: workspaceID, Title: "Quick follow-up", Assignee: &userID, EstimatedDurationMinutes: &duration},
+		WindowStart: startAt, WindowEnd: startAt.Add(time.Hour),
+		Candidates: []CandidateSchedule{{Member: reports.CoreMemberWorkload{UserID: userID}}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if len(result.Actions) != 1 || result.Actions[0].Payload.ScheduleBlock == nil {
+		t.Fatalf("expected one schedule segment: %#v", result.Actions)
+	}
+	segment := result.Actions[0].Payload.ScheduleBlock
+	if segment.EndAt.Sub(segment.StartAt) != 15*time.Minute || segment.StartAt.Minute() != 5 {
+		t.Fatalf("expected exact 15-minute block at five-minute resolution: %#v", segment)
+	}
+}
+
+func TestPlannerUsesCalendarTimezoneForWorkingHours(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	duration := 60
+	windowStart := time.Date(2026, 6, 15, 0, 0, 0, 0, time.UTC)
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story:       stories.CoreSingleStory{ID: storyID, Workspace: workspaceID, Title: "Timezone-aware work", Assignee: &userID, EstimatedDurationMinutes: &duration},
+		WindowStart: windowStart, WindowEnd: windowStart.Add(24 * time.Hour),
+		Candidates: []CandidateSchedule{{Member: reports.CoreMemberWorkload{UserID: userID}, Timezone: "Africa/Harare"}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	expectedStart := time.Date(2026, 6, 15, 7, 0, 0, 0, time.UTC)
+	if len(result.Actions) != 1 || !result.Actions[0].Payload.ScheduleBlock.StartAt.Equal(expectedStart) {
+		t.Fatalf("expected 09:00 Africa/Harare (%s), got %#v", expectedStart, result.Actions)
+	}
+}
+
+func TestPlannerReturnsMissingDurationRiskInsteadOfUsingComplexity(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story:       stories.CoreSingleStory{ID: storyID, Workspace: workspaceID, Title: "Complex but untimed", Assignee: &userID, EstimateValue: int16Ptr(8), EstimateScheme: "points"},
+		WindowStart: time.Now().UTC(), WindowEnd: time.Now().UTC().Add(24 * time.Hour),
+		Candidates: []CandidateSchedule{{Member: reports.CoreMemberWorkload{UserID: userID}}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if len(result.Actions) != 2 || result.Actions[0].Payload.ScheduleBlock == nil || result.Actions[0].Payload.ScheduleBlock.Operation != ScheduleBlockOperationRetain || result.Actions[1].Payload.Risk == nil || result.Actions[1].Payload.Risk.Code != "missing_duration" {
+		t.Fatalf("expected explicit missing-duration risk: %#v", result.Actions)
+	}
+}
+
+func TestPlannerAssignsAndEnrollsMissingDurationForNonCandidateMayaAssignee(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	mayaActorID := uuid.New()
+	humanCandidateID := uuid.New()
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID: storyID, Workspace: workspaceID, Title: "Batch story without time", Assignee: &mayaActorID,
+		},
+		WindowStart: time.Now().UTC(), WindowEnd: time.Now().UTC().Add(24 * time.Hour),
+		Candidates: []CandidateSchedule{{Member: reports.CoreMemberWorkload{UserID: humanCandidateID}}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if result.SelectedUserID == nil || *result.SelectedUserID != humanCandidateID || len(result.Actions) != 3 ||
+		result.Actions[0].Payload.AssignStory == nil || result.Actions[0].Payload.AssignStory.AssigneeID != humanCandidateID ||
+		result.Actions[1].Payload.ScheduleBlock == nil || result.Actions[1].Payload.ScheduleBlock.Operation != ScheduleBlockOperationRetain ||
+		result.Actions[2].Payload.Risk == nil || result.Actions[2].Payload.Risk.Code != "missing_duration" {
+		t.Fatalf("expected eligible human assignment, ownership, and risk for the Maya-assigned story: %#v", result)
+	}
+}
+
+func TestPlannerRejectsDurationAboveProductLimit(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	duration := stories.MaximumEstimatedDurationMinutes + 1
+	_, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story:       stories.CoreSingleStory{ID: storyID, Workspace: workspaceID, Title: "Unbounded work", Assignee: &userID, EstimatedDurationMinutes: &duration},
+		WindowStart: time.Now().UTC(), WindowEnd: time.Now().UTC().Add(90 * 24 * time.Hour),
+		Candidates: []CandidateSchedule{{Member: reports.CoreMemberWorkload{UserID: userID}}},
+	})
+	if !errors.Is(err, ErrInvalidPlanInput) {
+		t.Fatalf("expected defensive duration limit, got %v", err)
 	}
 }
 
@@ -387,14 +544,17 @@ func TestPlannerReturnsRiskActionWhenNoCandidateHasCapacity(t *testing.T) {
 	if result.SelectedUserID == nil || *result.SelectedUserID != userID {
 		t.Fatalf("expected selected user %s, got %v", userID, result.SelectedUserID)
 	}
-	if len(result.Actions) != 2 {
-		t.Fatalf("expected assignment and risk actions, got %d", len(result.Actions))
+	if len(result.Actions) != 3 {
+		t.Fatalf("expected assignment, ownership retention, and risk actions, got %d", len(result.Actions))
 	}
 	if result.Actions[0].Type != ActionTypeAssignStory {
 		t.Fatalf("expected first action %q, got %q", ActionTypeAssignStory, result.Actions[0].Type)
 	}
-	if result.Actions[1].Type != ActionTypeFlagScheduleRisk {
-		t.Fatalf("expected risk action %q, got %q", ActionTypeFlagScheduleRisk, result.Actions[1].Type)
+	if result.Actions[1].Type != ActionTypeScheduleWorkBlock || result.Actions[1].Payload.ScheduleBlock == nil || result.Actions[1].Payload.ScheduleBlock.Operation != ScheduleBlockOperationRetain {
+		t.Fatalf("expected ownership retention action, got %#v", result.Actions[1])
+	}
+	if result.Actions[2].Type != ActionTypeFlagScheduleRisk {
+		t.Fatalf("expected risk action %q, got %q", ActionTypeFlagScheduleRisk, result.Actions[2].Type)
 	}
 }
 
@@ -431,6 +591,10 @@ func TestPlannerSkipsScheduleActionWhenStoryAlreadyHasBlock(t *testing.T) {
 }
 
 func int16Ptr(value int16) *int16 {
+	return &value
+}
+
+func intPtr(value int) *int {
 	return &value
 }
 

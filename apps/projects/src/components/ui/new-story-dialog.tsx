@@ -41,6 +41,7 @@ import {
   CrownIcon,
   ArrowRight2Icon,
   EstimateIcon,
+  Time02Icon,
   TagsIcon,
 } from "icons";
 import { toast } from "sonner";
@@ -64,6 +65,7 @@ import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-descri
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useLabels } from "@/lib/hooks/labels";
 import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
+import { formatTimeNeeded } from "@/lib/time-needed";
 import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
 import {
   clearRichTextContent,
@@ -95,6 +97,7 @@ import { TeamColor } from "./team-color";
 import { ObjectiveKeyResultMenu } from "./story/objective-key-result-menu";
 import { SprintsMenu } from "./story/sprints-menu";
 import { EstimateMenu } from "./story/estimate-menu";
+import { TimeNeededMenu } from "./story/time-needed-menu";
 import { LabelsMenu } from "./story/labels-menu";
 import { FeatureGuard } from "./feature-guard";
 import {
@@ -224,6 +227,8 @@ export const NewStoryDialog = ({
       keyResultId: null,
       sprintId: sprintId || null,
       estimateValue: null,
+      estimatedDurationMinutes: null,
+      minimumFocusBlockMinutes: null,
       labelIds: [],
     }),
     [
@@ -848,7 +853,7 @@ export const NewStoryDialog = ({
                           storyForm.estimateValue,
                           "full",
                         )
-                      : "Estimate"}
+                      : "Complexity"}
                   </Button>
                 </EstimateMenu.Trigger>
                 <EstimateMenu.Items
@@ -863,6 +868,53 @@ export const NewStoryDialog = ({
                   }}
                 />
               </EstimateMenu>
+              <TimeNeededMenu>
+                <TimeNeededMenu.Trigger>
+                  <Button
+                    className={cn("dark:bg-surface-elevated/90 gap-1.5 px-2", {
+                      "text-text-muted": !storyForm.estimatedDurationMinutes,
+                    })}
+                    color="tertiary"
+                    leftIcon={
+                      <Time02Icon
+                        className={cn("h-4.5 w-auto", {
+                          "text-text-muted":
+                            !storyForm.estimatedDurationMinutes,
+                        })}
+                      />
+                    }
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {storyForm.estimatedDurationMinutes
+                      ? formatTimeNeeded(
+                          storyForm.estimatedDurationMinutes,
+                          "full",
+                        )
+                      : "Time needed"}
+                  </Button>
+                </TimeNeededMenu.Trigger>
+                <TimeNeededMenu.Items
+                  estimatedDurationMinutes={storyForm.estimatedDurationMinutes}
+                  minimumFocusBlockMinutes={storyForm.minimumFocusBlockMinutes}
+                  setTimeNeeded={({
+                    estimatedDurationMinutes,
+                    minimumFocusBlockMinutes,
+                  }) => {
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "estimatedDurationMinutes",
+                      value: estimatedDurationMinutes,
+                    });
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "minimumFocusBlockMinutes",
+                      value: minimumFocusBlockMinutes,
+                    });
+                  }}
+                />
+              </TimeNeededMenu>
               {selectedLabels.length > 0 ? (
                 <Flex align="center" className="gap-1" wrap>
                   {selectedLabels.map((label) => (

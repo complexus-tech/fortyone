@@ -123,18 +123,20 @@ func (h *Handlers) UpdateRequest(ctx context.Context, w http.ResponseWriter, r *
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	request, err := h.requests.UpdatePending(ctx, workspace.ID, requestID, userID, integrationrequests.CoreUpdateRequestInput{
-		Title:         input.Title,
-		Description:   toCoreOptionalValue(input.Description),
-		StatusID:      toCoreOptionalValue(input.StatusID),
-		Priority:      input.Priority,
-		AssigneeID:    toCoreOptionalValue(input.AssigneeID),
-		EstimateValue: toCoreOptionalValue(input.EstimateValue),
-		ObjectiveID:   toCoreOptionalValue(input.ObjectiveID),
-		KeyResultID:   toCoreOptionalValue(input.KeyResultID),
-		SprintID:      toCoreOptionalValue(input.SprintID),
-		StartDate:     toCoreOptionalDate(input.StartDate),
-		EndDate:       toCoreOptionalDate(input.EndDate),
-		LabelIDs:      input.LabelIDs,
+		Title:                    input.Title,
+		Description:              toCoreOptionalValue(input.Description),
+		StatusID:                 toCoreOptionalValue(input.StatusID),
+		Priority:                 input.Priority,
+		AssigneeID:               toCoreOptionalValue(input.AssigneeID),
+		EstimateValue:            toCoreOptionalValue(input.EstimateValue),
+		EstimatedDurationMinutes: toCoreOptionalValue(input.EstimatedDurationMinutes),
+		MinimumFocusBlockMinutes: toCoreOptionalValue(input.MinimumFocusBlockMinutes),
+		ObjectiveID:              toCoreOptionalValue(input.ObjectiveID),
+		KeyResultID:              toCoreOptionalValue(input.KeyResultID),
+		SprintID:                 toCoreOptionalValue(input.SprintID),
+		StartDate:                toCoreOptionalDate(input.StartDate),
+		EndDate:                  toCoreOptionalDate(input.EndDate),
+		LabelIDs:                 input.LabelIDs,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, requestErrorStatus(err))

@@ -41,6 +41,10 @@ const (
 	assigneeActionMe         = "me"
 	assigneeActionNamed      = "named"
 	assigneeActionUnassigned = "unassigned"
+
+	storyTimeActionUnchanged = "unchanged"
+	storyTimeActionSet       = "set"
+	storyTimeActionClear     = "clear"
 )
 
 var storyPriorities = map[string]struct{}{
@@ -60,29 +64,40 @@ type storyMutationExecutor struct {
 }
 
 type storyMutationClaims struct {
-	Version           int                    `json:"v"`
-	ConfirmationID    uuid.UUID              `json:"i"`
-	Operation         StoryMutationOperation `json:"o"`
-	WorkspaceID       uuid.UUID              `json:"w"`
-	UserID            uuid.UUID              `json:"u"`
-	TeamID            uuid.UUID              `json:"t"`
-	StoryID           *uuid.UUID             `json:"s,omitempty"`
-	ExpectedUpdatedAt *time.Time             `json:"e,omitempty"`
-	Title             *string                `json:"n,omitempty"`
-	Priority          *string                `json:"p,omitempty"`
-	AssigneeAction    string                 `json:"a"`
-	StatusID          *uuid.UUID             `json:"st,omitempty"`
-	SprintID          *uuid.UUID             `json:"sp,omitempty"`
-	ObjectiveID       *uuid.UUID             `json:"oj,omitempty"`
-	KeyResultID       *uuid.UUID             `json:"k,omitempty"`
-	StartDate         *time.Time             `json:"sd,omitempty"`
-	EndDate           *time.Time             `json:"ed,omitempty"`
-	Comment           *string                `json:"c,omitempty"`
-	MentionIDs        []uuid.UUID            `json:"m,omitempty"`
-	LabelIDs          []uuid.UUID            `json:"l,omitempty"`
-	RelationStoryID   *uuid.UUID             `json:"r,omitempty"`
-	RelationType      string                 `json:"rt,omitempty"`
-	ExpiresAt         time.Time              `json:"x"`
+	Version                  int                    `json:"v"`
+	ConfirmationID           uuid.UUID              `json:"i"`
+	Operation                StoryMutationOperation `json:"o"`
+	WorkspaceID              uuid.UUID              `json:"w"`
+	UserID                   uuid.UUID              `json:"u"`
+	TeamID                   uuid.UUID              `json:"t"`
+	StoryID                  *uuid.UUID             `json:"s,omitempty"`
+	ExpectedUpdatedAt        *time.Time             `json:"e,omitempty"`
+	Title                    *string                `json:"n,omitempty"`
+	Priority                 *string                `json:"p,omitempty"`
+	AssigneeAction           string                 `json:"a"`
+	StatusID                 *uuid.UUID             `json:"st,omitempty"`
+	SprintID                 *uuid.UUID             `json:"sp,omitempty"`
+	ObjectiveID              *uuid.UUID             `json:"oj,omitempty"`
+	KeyResultID              *uuid.UUID             `json:"k,omitempty"`
+	StartDate                *time.Time             `json:"sd,omitempty"`
+	EndDate                  *time.Time             `json:"ed,omitempty"`
+	EstimatedDurationAction  string                 `json:"da,omitempty"`
+	EstimatedDurationMinutes *int                   `json:"du,omitempty"`
+	MinimumFocusBlockAction  string                 `json:"fa,omitempty"`
+	MinimumFocusBlockMinutes *int                   `json:"fb,omitempty"`
+	Comment                  *string                `json:"c,omitempty"`
+	MentionIDs               []uuid.UUID            `json:"m,omitempty"`
+	LabelIDs                 []uuid.UUID            `json:"l,omitempty"`
+	RelationStoryID          *uuid.UUID             `json:"r,omitempty"`
+	RelationType             string                 `json:"rt,omitempty"`
+	ExpiresAt                time.Time              `json:"x"`
+}
+
+type storyTimeMutation struct {
+	estimatedDurationAction  string
+	estimatedDurationMinutes *int
+	minimumFocusBlockAction  string
+	minimumFocusBlockMinutes *int
 }
 
 type storyMutationConfirmationToolResult struct {
@@ -97,10 +112,12 @@ type batchStoryMutationProposal struct {
 }
 
 type batchStoryMutationItem struct {
-	Title       string     `json:"title"`
-	Description string     `json:"description,omitempty"`
-	Priority    string     `json:"priority"`
-	AssigneeID  *uuid.UUID `json:"assignee_id,omitempty"`
+	Title                    string     `json:"title"`
+	Description              string     `json:"description,omitempty"`
+	Priority                 string     `json:"priority"`
+	AssigneeID               *uuid.UUID `json:"assignee_id,omitempty"`
+	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes,omitempty"`
+	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes,omitempty"`
 }
 
 func newStoryMutationExecutor(
@@ -125,10 +142,12 @@ func (m *storyMutationExecutor) proposeCreate(
 	raw json.RawMessage,
 ) (json.RawMessage, error) {
 	var args struct {
-		TeamID   string  `json:"team_id"`
-		Title    string  `json:"title"`
-		Priority *string `json:"priority"`
-		Assignee string  `json:"assignee"`
+		TeamID                   string  `json:"team_id"`
+		Title                    string  `json:"title"`
+		Priority                 *string `json:"priority"`
+		Assignee                 string  `json:"assignee"`
+		EstimatedDurationMinutes *int    `json:"estimated_duration_minutes"`
+		MinimumFocusBlockMinutes *int    `json:"minimum_focus_block_minutes"`
 	}
 	if err := decodeToolArguments(raw, &args, "team_id", "title", "priority", "assignee"); err != nil {
 		return nil, err
@@ -153,6 +172,9 @@ func (m *storyMutationExecutor) proposeCreate(
 	if args.Assignee != assigneeActionMe && args.Assignee != assigneeActionUnassigned {
 		return nil, fmt.Errorf("%w: assignee must be me or unassigned", ErrInvalidToolArguments)
 	}
+	if err := stories.ValidateStoryTimeContract(args.EstimatedDurationMinutes, args.MinimumFocusBlockMinutes); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidToolArguments, err)
+	}
 
 	team := joinedByID[teamID]
 	confirmationID, err := uuid.NewRandomFromReader(m.random)
@@ -161,24 +183,28 @@ func (m *storyMutationExecutor) proposeCreate(
 	}
 	now := m.now().UTC()
 	claims := storyMutationClaims{
-		Version:        storyMutationTokenVersion,
-		ConfirmationID: confirmationID,
-		Operation:      StoryMutationCreate,
-		WorkspaceID:    scope.WorkspaceID,
-		UserID:         scope.UserID,
-		TeamID:         teamID,
-		Title:          &title,
-		Priority:       &priority,
-		AssigneeAction: args.Assignee,
-		ExpiresAt:      now.Add(storyMutationConfirmationTTL),
+		Version:                  storyMutationTokenVersion,
+		ConfirmationID:           confirmationID,
+		Operation:                StoryMutationCreate,
+		WorkspaceID:              scope.WorkspaceID,
+		UserID:                   scope.UserID,
+		TeamID:                   teamID,
+		Title:                    &title,
+		Priority:                 &priority,
+		AssigneeAction:           args.Assignee,
+		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
+		ExpiresAt:                now.Add(storyMutationConfirmationTTL),
 	}
 	return m.marshalProposal(ctx, claims, StoryMutationPreview{
-		TeamID:         team.ID,
-		TeamName:       team.Name,
-		TeamCode:       strings.ToUpper(team.Code),
-		Title:          title,
-		Priority:       &priority,
-		AssigneeAction: args.Assignee,
+		TeamID:                   team.ID,
+		TeamName:                 team.Name,
+		TeamCode:                 strings.ToUpper(team.Code),
+		Title:                    title,
+		Priority:                 &priority,
+		AssigneeAction:           args.Assignee,
+		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
 	}, fmt.Sprintf("Create %q in %s (%s)?", title, team.Name, strings.ToUpper(team.Code)))
 }
 
@@ -191,10 +217,12 @@ func (m *storyMutationExecutor) proposeCreateBatch(
 	var args struct {
 		TeamID  string `json:"team_id"`
 		Stories []struct {
-			Title       string  `json:"title"`
-			Description *string `json:"description"`
-			Priority    *string `json:"priority"`
-			AssigneeID  *string `json:"assignee_id"`
+			Title                    string  `json:"title"`
+			Description              *string `json:"description"`
+			Priority                 *string `json:"priority"`
+			AssigneeID               *string `json:"assignee_id"`
+			EstimatedDurationMinutes *int    `json:"estimated_duration_minutes"`
+			MinimumFocusBlockMinutes *int    `json:"minimum_focus_block_minutes"`
 		} `json:"stories"`
 	}
 	if err := decodeToolArguments(raw, &args, "team_id", "stories"); err != nil {
@@ -233,6 +261,9 @@ func (m *storyMutationExecutor) proposeCreateBatch(
 		if err != nil {
 			return nil, fmt.Errorf("%w: stories[%d].priority: %v", ErrInvalidToolArguments, index, err)
 		}
+		if err := stories.ValidateStoryTimeContract(item.EstimatedDurationMinutes, item.MinimumFocusBlockMinutes); err != nil {
+			return nil, fmt.Errorf("%w: stories[%d]: %v", ErrInvalidToolArguments, index, err)
+		}
 
 		var assigneeID *uuid.UUID
 		assigneeName := "Unassigned"
@@ -260,26 +291,30 @@ func (m *storyMutationExecutor) proposeCreateBatch(
 
 		combinedDescription := batchStoryDescription(description, proposal.SourceURL)
 		proposal.Items = append(proposal.Items, batchStoryMutationItem{
-			Title:       title,
-			Description: description,
-			Priority:    priority,
-			AssigneeID:  assigneeID,
+			Title:                    title,
+			Description:              description,
+			Priority:                 priority,
+			AssigneeID:               assigneeID,
+			EstimatedDurationMinutes: item.EstimatedDurationMinutes,
+			MinimumFocusBlockMinutes: item.MinimumFocusBlockMinutes,
 		})
 		assigneeAction := assigneeActionUnassigned
 		if assigneeID != nil {
 			assigneeAction = assigneeActionNamed
 		}
 		previews = append(previews, StoryMutationPreview{
-			TeamID:         team.ID,
-			TeamName:       team.Name,
-			TeamCode:       strings.ToUpper(team.Code),
-			Title:          title,
-			Description:    combinedDescription,
-			SourceURL:      proposal.SourceURL,
-			Priority:       &priority,
-			AssigneeID:     assigneeID,
-			AssigneeName:   assigneeName,
-			AssigneeAction: assigneeAction,
+			TeamID:                   team.ID,
+			TeamName:                 team.Name,
+			TeamCode:                 strings.ToUpper(team.Code),
+			Title:                    title,
+			Description:              combinedDescription,
+			SourceURL:                proposal.SourceURL,
+			Priority:                 &priority,
+			AssigneeID:               assigneeID,
+			AssigneeName:             assigneeName,
+			AssigneeAction:           assigneeAction,
+			EstimatedDurationMinutes: item.EstimatedDurationMinutes,
+			MinimumFocusBlockMinutes: item.MinimumFocusBlockMinutes,
 		})
 	}
 
@@ -329,20 +364,36 @@ func (m *storyMutationExecutor) proposeUpdate(
 	raw json.RawMessage,
 ) (json.RawMessage, error) {
 	var args struct {
-		StoryID        *string   `json:"story_id"`
-		StoryReference *string   `json:"story_reference"`
-		Title          *string   `json:"title"`
-		Priority       *string   `json:"priority"`
-		Assignee       string    `json:"assignee"`
-		StatusID       *string   `json:"status_id"`
-		SprintID       *string   `json:"sprint_id"`
-		ObjectiveID    *string   `json:"objective_id"`
-		KeyResultID    *string   `json:"key_result_id"`
-		StartDate      *string   `json:"start_date"`
-		EndDate        *string   `json:"end_date"`
-		LabelIDs       *[]string `json:"label_ids"`
+		StoryID                  *string   `json:"story_id"`
+		StoryReference           *string   `json:"story_reference"`
+		Title                    *string   `json:"title"`
+		Priority                 *string   `json:"priority"`
+		Assignee                 string    `json:"assignee"`
+		StatusID                 *string   `json:"status_id"`
+		SprintID                 *string   `json:"sprint_id"`
+		ObjectiveID              *string   `json:"objective_id"`
+		KeyResultID              *string   `json:"key_result_id"`
+		StartDate                *string   `json:"start_date"`
+		EndDate                  *string   `json:"end_date"`
+		LabelIDs                 *[]string `json:"label_ids"`
+		EstimatedDurationAction  string    `json:"estimated_duration_action"`
+		EstimatedDurationMinutes *int      `json:"estimated_duration_minutes"`
+		MinimumFocusBlockAction  string    `json:"minimum_focus_block_action"`
+		MinimumFocusBlockMinutes *int      `json:"minimum_focus_block_minutes"`
 	}
-	if err := decodeToolArguments(raw, &args, "story_id", "story_reference", "title", "priority", "assignee"); err != nil {
+	if err := decodeToolArguments(
+		raw,
+		&args,
+		"story_id",
+		"story_reference",
+		"title",
+		"priority",
+		"assignee",
+		"estimated_duration_action",
+		"estimated_duration_minutes",
+		"minimum_focus_block_action",
+		"minimum_focus_block_minutes",
+	); err != nil {
 		return nil, err
 	}
 	if (args.StoryID == nil) == (args.StoryReference == nil) {
@@ -412,8 +463,28 @@ func (m *storyMutationExecutor) proposeUpdate(
 	if err != nil {
 		return nil, err
 	}
-
-	changedFields := proposedChangedFields(story, scope.UserID, title, priority, args.Assignee, statusID, sprintID, objectiveID, keyResultID, startDate, endDate)
+	changedFields, err := proposedChangedFields(
+		story,
+		scope.UserID,
+		title,
+		priority,
+		args.Assignee,
+		statusID,
+		sprintID,
+		objectiveID,
+		keyResultID,
+		startDate,
+		endDate,
+		storyTimeMutation{
+			estimatedDurationAction:  args.EstimatedDurationAction,
+			estimatedDurationMinutes: args.EstimatedDurationMinutes,
+			minimumFocusBlockAction:  args.MinimumFocusBlockAction,
+			minimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidToolArguments, err)
+	}
 	if args.LabelIDs != nil && !sameUUIDSet(story.Labels, labelIDs) {
 		changedFields = append(changedFields, "labels")
 	}
@@ -428,25 +499,29 @@ func (m *storyMutationExecutor) proposeUpdate(
 	now := m.now().UTC()
 	expectedUpdatedAt := story.UpdatedAt.UTC()
 	claims := storyMutationClaims{
-		Version:           storyMutationTokenVersion,
-		ConfirmationID:    confirmationID,
-		Operation:         StoryMutationUpdate,
-		WorkspaceID:       scope.WorkspaceID,
-		UserID:            scope.UserID,
-		TeamID:            story.Team,
-		StoryID:           &story.ID,
-		ExpectedUpdatedAt: &expectedUpdatedAt,
-		Title:             title,
-		Priority:          priority,
-		AssigneeAction:    args.Assignee,
-		StatusID:          statusID,
-		SprintID:          sprintID,
-		ObjectiveID:       objectiveID,
-		KeyResultID:       keyResultID,
-		StartDate:         startDate,
-		EndDate:           endDate,
-		LabelIDs:          labelIDs,
-		ExpiresAt:         now.Add(storyMutationConfirmationTTL),
+		Version:                  storyMutationTokenVersion,
+		ConfirmationID:           confirmationID,
+		Operation:                StoryMutationUpdate,
+		WorkspaceID:              scope.WorkspaceID,
+		UserID:                   scope.UserID,
+		TeamID:                   story.Team,
+		StoryID:                  &story.ID,
+		ExpectedUpdatedAt:        &expectedUpdatedAt,
+		Title:                    title,
+		Priority:                 priority,
+		AssigneeAction:           args.Assignee,
+		StatusID:                 statusID,
+		SprintID:                 sprintID,
+		ObjectiveID:              objectiveID,
+		KeyResultID:              keyResultID,
+		StartDate:                startDate,
+		EndDate:                  endDate,
+		LabelIDs:                 labelIDs,
+		EstimatedDurationAction:  args.EstimatedDurationAction,
+		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
+		MinimumFocusBlockAction:  args.MinimumFocusBlockAction,
+		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
+		ExpiresAt:                now.Add(storyMutationConfirmationTTL),
 	}
 	previewTitle := story.Title
 	if title != nil {
@@ -455,15 +530,17 @@ func (m *storyMutationExecutor) proposeUpdate(
 	reference := storyReference(team.Code, story.SequenceID)
 	storyIDCopy := story.ID
 	return m.marshalProposal(ctx, claims, StoryMutationPreview{
-		StoryID:        &storyIDCopy,
-		Reference:      reference,
-		TeamID:         team.ID,
-		TeamName:       team.Name,
-		TeamCode:       strings.ToUpper(team.Code),
-		Title:          previewTitle,
-		Priority:       priority,
-		AssigneeAction: args.Assignee,
-		ChangedFields:  changedFields,
+		StoryID:                  &storyIDCopy,
+		Reference:                reference,
+		TeamID:                   team.ID,
+		TeamName:                 team.Name,
+		TeamCode:                 strings.ToUpper(team.Code),
+		Title:                    previewTitle,
+		Priority:                 priority,
+		AssigneeAction:           args.Assignee,
+		ChangedFields:            changedFields,
+		EstimatedDurationMinutes: args.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: args.MinimumFocusBlockMinutes,
 	}, fmt.Sprintf("Update %s?", reference))
 }
 
@@ -820,13 +897,15 @@ func (m *storyMutationExecutor) confirmCreate(
 	}
 	creationKey := "messaging:create-story:" + claims.ConfirmationID.String()
 	story, err := m.stories.CreateExternalUserAction(ctx, scope.UserID, stories.CoreNewStory{
-		Title:       *claims.Title,
-		Status:      statusID,
-		Assignee:    assigneeID,
-		Reporter:    &scope.UserID,
-		Priority:    *claims.Priority,
-		Team:        team.ID,
-		CreationKey: &creationKey,
+		Title:                    *claims.Title,
+		Status:                   statusID,
+		Assignee:                 assigneeID,
+		Reporter:                 &scope.UserID,
+		Priority:                 *claims.Priority,
+		Team:                     team.ID,
+		EstimatedDurationMinutes: claims.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: claims.MinimumFocusBlockMinutes,
+		CreationKey:              &creationKey,
 	}, scope.WorkspaceID)
 	if err != nil {
 		return StoryMutationResult{}, fmt.Errorf("create confirmed story: %w", err)
@@ -879,6 +958,9 @@ func (m *storyMutationExecutor) confirmCreateBatch(
 		if err != nil || priority != item.Priority {
 			return result, fmt.Errorf("%w: invalid priority in batch item %d", ErrInvalidConfirmation, index)
 		}
+		if err := stories.ValidateStoryTimeContract(item.EstimatedDurationMinutes, item.MinimumFocusBlockMinutes); err != nil {
+			return result, fmt.Errorf("%w: invalid time contract in batch item %d: %v", ErrInvalidConfirmation, index, err)
+		}
 		if item.AssigneeID != nil {
 			if executor.users == nil {
 				return result, fmt.Errorf("%w: named assignees are unavailable", ErrInvalidConfirmation)
@@ -892,10 +974,12 @@ func (m *storyMutationExecutor) confirmCreateBatch(
 			}
 		}
 		validated[index] = batchStoryMutationItem{
-			Title:       title,
-			Description: description,
-			Priority:    priority,
-			AssigneeID:  cloneUUIDPointer(item.AssigneeID),
+			Title:                    title,
+			Description:              description,
+			Priority:                 priority,
+			AssigneeID:               cloneUUIDPointer(item.AssigneeID),
+			EstimatedDurationMinutes: cloneIntPointer(item.EstimatedDurationMinutes),
+			MinimumFocusBlockMinutes: cloneIntPointer(item.MinimumFocusBlockMinutes),
 		}
 	}
 
@@ -908,14 +992,16 @@ func (m *storyMutationExecutor) confirmCreateBatch(
 		}
 		creationKey := fmt.Sprintf("messaging:create-story:%s:%d", confirmationID, index)
 		story, err := m.stories.CreateExternalUserAction(ctx, scope.UserID, stories.CoreNewStory{
-			Title:       item.Title,
-			Description: descriptionPointer,
-			Status:      statusID,
-			Assignee:    cloneUUIDPointer(item.AssigneeID),
-			Reporter:    &scope.UserID,
-			Priority:    item.Priority,
-			Team:        team.ID,
-			CreationKey: &creationKey,
+			Title:                    item.Title,
+			Description:              descriptionPointer,
+			Status:                   statusID,
+			Assignee:                 cloneUUIDPointer(item.AssigneeID),
+			Reporter:                 &scope.UserID,
+			Priority:                 item.Priority,
+			Team:                     team.ID,
+			EstimatedDurationMinutes: item.EstimatedDurationMinutes,
+			MinimumFocusBlockMinutes: item.MinimumFocusBlockMinutes,
+			CreationKey:              &creationKey,
 		}, scope.WorkspaceID)
 		if err != nil {
 			result.Status = storyMutationStatusPartial
@@ -927,14 +1013,16 @@ func (m *storyMutationExecutor) confirmCreateBatch(
 			result.Status = storyMutationStatusApplied
 		}
 		result.Items = append(result.Items, StoryMutationItemResult{
-			Index:      index,
-			Status:     itemStatus,
-			StoryID:    story.ID,
-			Reference:  storyReference(team.Code, story.SequenceID),
-			TeamID:     team.ID,
-			Title:      story.Title,
-			Priority:   story.Priority,
-			AssigneeID: cloneUUIDPointer(story.Assignee),
+			Index:                    index,
+			Status:                   itemStatus,
+			StoryID:                  story.ID,
+			Reference:                storyReference(team.Code, story.SequenceID),
+			TeamID:                   team.ID,
+			Title:                    story.Title,
+			Priority:                 story.Priority,
+			AssigneeID:               cloneUUIDPointer(story.Assignee),
+			EstimatedDurationMinutes: cloneIntPointer(story.EstimatedDurationMinutes),
+			MinimumFocusBlockMinutes: cloneIntPointer(story.MinimumFocusBlockMinutes),
 		})
 	}
 	return result, nil
@@ -957,7 +1045,28 @@ func (m *storyMutationExecutor) confirmUpdate(
 		return StoryMutationResult{}, fmt.Errorf("%w: story team does not match proposal", ErrInvalidConfirmation)
 	}
 
-	updates := desiredStoryUpdates(story, scope.UserID, claims.Title, claims.Priority, claims.AssigneeAction, claims.StatusID, claims.SprintID, claims.ObjectiveID, claims.KeyResultID, claims.StartDate, claims.EndDate)
+	updates, err := desiredStoryUpdates(
+		story,
+		scope.UserID,
+		claims.Title,
+		claims.Priority,
+		claims.AssigneeAction,
+		claims.StatusID,
+		claims.SprintID,
+		claims.ObjectiveID,
+		claims.KeyResultID,
+		claims.StartDate,
+		claims.EndDate,
+		storyTimeMutation{
+			estimatedDurationAction:  claims.EstimatedDurationAction,
+			estimatedDurationMinutes: claims.EstimatedDurationMinutes,
+			minimumFocusBlockAction:  claims.MinimumFocusBlockAction,
+			minimumFocusBlockMinutes: claims.MinimumFocusBlockMinutes,
+		},
+	)
+	if err != nil {
+		return StoryMutationResult{}, fmt.Errorf("%w: invalid confirmed story time update: %v", ErrInvalidConfirmation, err)
+	}
 	labelsChanged := claims.LabelIDs != nil && !sameUUIDSet(story.Labels, claims.LabelIDs)
 	if len(updates) == 0 && !labelsChanged {
 		return storyMutationResult(storyMutationStatusAlreadyApplied, StoryMutationUpdate, story, team.Code), nil
@@ -1088,6 +1197,7 @@ func (m *storyMutationExecutor) verifyClaims(token string) (storyMutationClaims,
 	if claims.Version != storyMutationTokenVersion || claims.ConfirmationID == uuid.Nil || claims.WorkspaceID == uuid.Nil || claims.UserID == uuid.Nil || claims.TeamID == uuid.Nil || claims.ExpiresAt.IsZero() {
 		return storyMutationClaims{}, fmt.Errorf("%w: incomplete token claims", ErrInvalidConfirmation)
 	}
+	normalizeLegacyUpdateTimeActions(&claims)
 	if err := validateStoryMutationClaims(claims); err != nil {
 		return storyMutationClaims{}, err
 	}
@@ -1204,6 +1314,62 @@ func cloneUUIDPointer(value *uuid.UUID) *uuid.UUID {
 	return &copy
 }
 
+func cloneIntPointer(value *int) *int {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
+}
+
+func normalizeLegacyUpdateTimeActions(claims *storyMutationClaims) {
+	if claims == nil || claims.Operation != StoryMutationUpdate {
+		return
+	}
+	if claims.EstimatedDurationAction == "" {
+		claims.EstimatedDurationAction = storyTimeActionUnchanged
+		if claims.EstimatedDurationMinutes != nil {
+			claims.EstimatedDurationAction = storyTimeActionSet
+		}
+	}
+	if claims.MinimumFocusBlockAction == "" {
+		claims.MinimumFocusBlockAction = storyTimeActionUnchanged
+		if claims.MinimumFocusBlockMinutes != nil {
+			claims.MinimumFocusBlockAction = storyTimeActionSet
+		}
+	}
+}
+
+func validateStoryTimeMutationClaims(mutation storyTimeMutation) error {
+	estimatedDurationMinutes, err := resolvedStoryTimeValue(
+		nil,
+		mutation.estimatedDurationAction,
+		mutation.estimatedDurationMinutes,
+		"estimated_duration",
+	)
+	if err != nil {
+		return err
+	}
+	minimumFocusBlockMinutes, err := resolvedStoryTimeValue(
+		nil,
+		mutation.minimumFocusBlockAction,
+		mutation.minimumFocusBlockMinutes,
+		"minimum_focus_block",
+	)
+	if err != nil {
+		return err
+	}
+
+	switch {
+	case mutation.estimatedDurationAction == storyTimeActionClear && mutation.minimumFocusBlockAction == storyTimeActionSet:
+		return stories.ErrFocusBlockRequiresDuration
+	case mutation.estimatedDurationAction == storyTimeActionSet && mutation.minimumFocusBlockAction == storyTimeActionSet:
+		return stories.ValidateStoryTimeContract(estimatedDurationMinutes, minimumFocusBlockMinutes)
+	default:
+		return nil
+	}
+}
+
 func validateStoryMutationClaims(claims storyMutationClaims) error {
 	if claims.Title != nil {
 		title, err := normalizedStoryTitle(*claims.Title)
@@ -1226,6 +1392,9 @@ func validateStoryMutationClaims(claims storyMutationClaims) error {
 		if claims.AssigneeAction != assigneeActionMe && claims.AssigneeAction != assigneeActionUnassigned {
 			return fmt.Errorf("%w: invalid create assignee claim", ErrInvalidConfirmation)
 		}
+		if err := stories.ValidateStoryTimeContract(claims.EstimatedDurationMinutes, claims.MinimumFocusBlockMinutes); err != nil {
+			return fmt.Errorf("%w: invalid create time claim: %v", ErrInvalidConfirmation, err)
+		}
 	case StoryMutationUpdate:
 		if claims.StoryID == nil || *claims.StoryID == uuid.Nil || claims.ExpectedUpdatedAt == nil || claims.ExpectedUpdatedAt.IsZero() {
 			return fmt.Errorf("%w: malformed update claims", ErrInvalidConfirmation)
@@ -1233,7 +1402,15 @@ func validateStoryMutationClaims(claims storyMutationClaims) error {
 		if claims.AssigneeAction != assigneeActionUnchanged && claims.AssigneeAction != assigneeActionMe && claims.AssigneeAction != assigneeActionUnassigned {
 			return fmt.Errorf("%w: invalid update assignee claim", ErrInvalidConfirmation)
 		}
-		if claims.Title == nil && claims.Priority == nil && claims.AssigneeAction == assigneeActionUnchanged && claims.StatusID == nil && claims.SprintID == nil && claims.ObjectiveID == nil && claims.KeyResultID == nil && claims.StartDate == nil && claims.EndDate == nil && claims.LabelIDs == nil {
+		if err := validateStoryTimeMutationClaims(storyTimeMutation{
+			estimatedDurationAction:  claims.EstimatedDurationAction,
+			estimatedDurationMinutes: claims.EstimatedDurationMinutes,
+			minimumFocusBlockAction:  claims.MinimumFocusBlockAction,
+			minimumFocusBlockMinutes: claims.MinimumFocusBlockMinutes,
+		}); err != nil {
+			return fmt.Errorf("%w: invalid update time claim: %v", ErrInvalidConfirmation, err)
+		}
+		if claims.Title == nil && claims.Priority == nil && claims.AssigneeAction == assigneeActionUnchanged && claims.StatusID == nil && claims.SprintID == nil && claims.ObjectiveID == nil && claims.KeyResultID == nil && claims.StartDate == nil && claims.EndDate == nil && claims.LabelIDs == nil && claims.EstimatedDurationAction == storyTimeActionUnchanged && claims.MinimumFocusBlockAction == storyTimeActionUnchanged {
 			return fmt.Errorf("%w: empty update claims", ErrInvalidConfirmation)
 		}
 	case StoryMutationComment:
@@ -1372,18 +1549,50 @@ func normalizedStoryPriority(raw *string, fallback string) (string, error) {
 	return priority, nil
 }
 
-func proposedChangedFields(story stories.CoreSingleStory, userID uuid.UUID, title, priority *string, assigneeAction string, statusID, sprintID, objectiveID, keyResultID *uuid.UUID, startDate, endDate *time.Time) []string {
-	updates := desiredStoryUpdates(story, userID, title, priority, assigneeAction, statusID, sprintID, objectiveID, keyResultID, startDate, endDate)
+func proposedChangedFields(
+	story stories.CoreSingleStory,
+	userID uuid.UUID,
+	title, priority *string,
+	assigneeAction string,
+	statusID, sprintID, objectiveID, keyResultID *uuid.UUID,
+	startDate, endDate *time.Time,
+	timeMutation storyTimeMutation,
+) ([]string, error) {
+	updates, err := desiredStoryUpdates(
+		story,
+		userID,
+		title,
+		priority,
+		assigneeAction,
+		statusID,
+		sprintID,
+		objectiveID,
+		keyResultID,
+		startDate,
+		endDate,
+		timeMutation,
+	)
+	if err != nil {
+		return nil, err
+	}
 	fields := make([]string, 0, len(updates))
-	for _, field := range []string{"title", "priority", "assignee_id", "status_id", "sprint_id", "objective_id", "key_result_id", "start_date", "end_date"} {
+	for _, field := range []string{"title", "priority", "assignee_id", "status_id", "sprint_id", "objective_id", "key_result_id", "start_date", "end_date", "estimated_duration_minutes", "minimum_focus_block_minutes"} {
 		if _, changed := updates[field]; changed {
 			fields = append(fields, field)
 		}
 	}
-	return fields
+	return fields, nil
 }
 
-func desiredStoryUpdates(story stories.CoreSingleStory, userID uuid.UUID, title, priority *string, assigneeAction string, statusID, sprintID, objectiveID, keyResultID *uuid.UUID, startDate, endDate *time.Time) map[string]any {
+func desiredStoryUpdates(
+	story stories.CoreSingleStory,
+	userID uuid.UUID,
+	title, priority *string,
+	assigneeAction string,
+	statusID, sprintID, objectiveID, keyResultID *uuid.UUID,
+	startDate, endDate *time.Time,
+	timeMutation storyTimeMutation,
+) (map[string]any, error) {
 	updates := make(map[string]any, 3)
 	if title != nil && story.Title != *title {
 		updates["title"] = *title
@@ -1406,7 +1615,93 @@ func desiredStoryUpdates(story stories.CoreSingleStory, userID uuid.UUID, title,
 			updates[field] = value
 		}
 	}
-	return updates
+	timeUpdates, err := desiredStoryTimeUpdates(story, timeMutation)
+	if err != nil {
+		return nil, err
+	}
+	for field, value := range timeUpdates {
+		updates[field] = value
+	}
+	return updates, nil
+}
+
+func desiredStoryTimeUpdates(story stories.CoreSingleStory, mutation storyTimeMutation) (map[string]any, error) {
+	estimatedDurationMinutes, err := resolvedStoryTimeValue(
+		story.EstimatedDurationMinutes,
+		mutation.estimatedDurationAction,
+		mutation.estimatedDurationMinutes,
+		"estimated_duration",
+	)
+	if err != nil {
+		return nil, err
+	}
+	minimumFocusBlockMinutes, err := resolvedStoryTimeValue(
+		story.MinimumFocusBlockMinutes,
+		mutation.minimumFocusBlockAction,
+		mutation.minimumFocusBlockMinutes,
+		"minimum_focus_block",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// A focus-block constraint cannot survive without a duration. Clearing the
+	// duration therefore clears the dependent constraint even when its own
+	// action is unchanged.
+	if mutation.estimatedDurationAction == storyTimeActionClear && mutation.minimumFocusBlockAction == storyTimeActionUnchanged {
+		minimumFocusBlockMinutes = nil
+	}
+	if err := stories.ValidateStoryTimeContract(estimatedDurationMinutes, minimumFocusBlockMinutes); err != nil {
+		return nil, err
+	}
+
+	updates := make(map[string]any, 2)
+	if !sameOptionalInt(story.EstimatedDurationMinutes, estimatedDurationMinutes) {
+		updates["estimated_duration_minutes"] = storyTimeUpdateValue(estimatedDurationMinutes)
+	}
+	if !sameOptionalInt(story.MinimumFocusBlockMinutes, minimumFocusBlockMinutes) {
+		updates["minimum_focus_block_minutes"] = storyTimeUpdateValue(minimumFocusBlockMinutes)
+	}
+	return updates, nil
+}
+
+func storyTimeUpdateValue(minutes *int) any {
+	if minutes == nil {
+		return nil
+	}
+	return *minutes
+}
+
+func resolvedStoryTimeValue(current *int, action string, minutes *int, field string) (*int, error) {
+	switch action {
+	case storyTimeActionUnchanged:
+		if minutes != nil {
+			return nil, fmt.Errorf("%s_minutes must be null when %s_action is unchanged", field, field)
+		}
+		return cloneIntPointer(current), nil
+	case storyTimeActionClear:
+		if minutes != nil {
+			return nil, fmt.Errorf("%s_minutes must be null when %s_action is clear", field, field)
+		}
+		return nil, nil
+	case storyTimeActionSet:
+		if minutes == nil {
+			return nil, fmt.Errorf("%s_minutes is required when %s_action is set", field, field)
+		}
+		if *minutes < 1 || *minutes > stories.MaximumEstimatedDurationMinutes {
+			return nil, fmt.Errorf("%s_minutes must be between 1 and %d", field, stories.MaximumEstimatedDurationMinutes)
+		}
+		return cloneIntPointer(minutes), nil
+	default:
+		return nil, fmt.Errorf("%s_action must be unchanged, set, or clear", field)
+	}
+}
+
+func sameOptionalInt(left, right *int) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
+	}
+	return *left == *right
 }
 
 func storyFieldMatches(story stories.CoreSingleStory, field string, value any) bool {
@@ -1483,14 +1778,16 @@ func parseUUIDList(raw []string, field string) ([]uuid.UUID, error) {
 
 func storyMutationResult(status string, operation StoryMutationOperation, story stories.CoreSingleStory, teamCode string) StoryMutationResult {
 	return StoryMutationResult{
-		Status:     status,
-		Operation:  operation,
-		StoryID:    story.ID,
-		Reference:  storyReference(strings.ToUpper(teamCode), story.SequenceID),
-		TeamID:     story.Team,
-		Title:      story.Title,
-		Priority:   story.Priority,
-		AssigneeID: story.Assignee,
+		Status:                   status,
+		Operation:                operation,
+		StoryID:                  story.ID,
+		Reference:                storyReference(strings.ToUpper(teamCode), story.SequenceID),
+		TeamID:                   story.Team,
+		Title:                    story.Title,
+		Priority:                 story.Priority,
+		AssigneeID:               story.Assignee,
+		EstimatedDurationMinutes: story.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
 	}
 }
 
@@ -1500,6 +1797,23 @@ func nullableUUID(description string) map[string]any {
 
 func nullableDate(description string) map[string]any {
 	return map[string]any{"type": []string{"string", "null"}, "description": description}
+}
+
+func nullableMinutes(description string) map[string]any {
+	return map[string]any{
+		"type":        []string{"integer", "null"},
+		"description": description,
+		"minimum":     1,
+		"maximum":     stories.MaximumEstimatedDurationMinutes,
+	}
+}
+
+func storyTimeAction(description string) map[string]any {
+	return map[string]any{
+		"type":        "string",
+		"description": description,
+		"enum":        []string{storyTimeActionUnchanged, storyTimeActionSet, storyTimeActionClear},
+	}
 }
 
 func storyMutationToolDefinitions() []ToolDefinition {
@@ -1531,7 +1845,9 @@ func storyMutationToolDefinitions() []ToolDefinition {
 					"description": "Use me only if the user explicitly asks to assign it to themselves; otherwise use unassigned.",
 					"enum":        []string{assigneeActionMe, assigneeActionUnassigned},
 				},
-			}, []string{"team_id", "title", "priority", "assignee"}),
+				"estimated_duration_minutes":  nullableMinutes("The total time needed in minutes when explicitly known, or null when unspecified."),
+				"minimum_focus_block_minutes": nullableMinutes("The smallest useful uninterrupted block in minutes, no greater than estimated_duration_minutes; use null when duration is unspecified."),
+			}, []string{"team_id", "title", "priority", "assignee", "estimated_duration_minutes", "minimum_focus_block_minutes"}),
 		},
 		{
 			Type:        "function",
@@ -1563,14 +1879,16 @@ func storyMutationToolDefinitions() []ToolDefinition {
 							"type":        []string{"string", "null"},
 							"description": "An exact active member UUID returned by list_team_members only when assignment is explicit, otherwise null.",
 						},
-					}, []string{"title", "description", "priority", "assignee_id"}),
+						"estimated_duration_minutes":  nullableMinutes("The total time needed in minutes when explicitly known, or null when unspecified."),
+						"minimum_focus_block_minutes": nullableMinutes("The smallest useful uninterrupted block in minutes, no greater than estimated_duration_minutes; use null when duration is unspecified."),
+					}, []string{"title", "description", "priority", "assignee_id", "estimated_duration_minutes", "minimum_focus_block_minutes"}),
 				},
 			}, []string{"team_id", "stories"}),
 		},
 		{
 			Type:        "function",
 			Name:        toolUpdateStory,
-			Description: "Prepare a story update proposal only when the target story and requested fields are unambiguous. This tool never writes; FortyOne will require explicit user confirmation.",
+			Description: "Prepare a story update proposal only when the target story and requested fields are unambiguous. Time fields use explicit unchanged, set, or clear actions so null is never ambiguous. This tool never writes; FortyOne will require explicit user confirmation.",
 			Strict:      true,
 			Parameters: strictObjectSchema(map[string]any{
 				"story_id": map[string]any{
@@ -1592,14 +1910,18 @@ func storyMutationToolDefinitions() []ToolDefinition {
 					"description": "Whether to leave the assignee unchanged, assign the current user, or unassign the story.",
 					"enum":        []string{assigneeActionUnchanged, assigneeActionMe, assigneeActionUnassigned},
 				},
-				"status_id":     nullableUUID("A visible status UUID, or null to leave unchanged."),
-				"sprint_id":     nullableUUID("A visible sprint UUID, or null to leave unchanged."),
-				"objective_id":  nullableUUID("A visible objective UUID, or null to leave unchanged."),
-				"key_result_id": nullableUUID("A visible key result UUID, or null to leave unchanged."),
-				"start_date":    nullableDate("A start date in YYYY-MM-DD or RFC3339, or null to leave unchanged."),
-				"end_date":      nullableDate("An end date in YYYY-MM-DD or RFC3339, or null to leave unchanged."),
-				"label_ids":     map[string]any{"type": []string{"array", "null"}, "description": "The complete replacement list of visible label UUIDs, or null to leave labels unchanged.", "items": map[string]any{"type": "string"}},
-			}, []string{"story_id", "story_reference", "title", "priority", "assignee", "status_id", "sprint_id", "objective_id", "key_result_id", "start_date", "end_date", "label_ids"}),
+				"status_id":                   nullableUUID("A visible status UUID, or null to leave unchanged."),
+				"sprint_id":                   nullableUUID("A visible sprint UUID, or null to leave unchanged."),
+				"objective_id":                nullableUUID("A visible objective UUID, or null to leave unchanged."),
+				"key_result_id":               nullableUUID("A visible key result UUID, or null to leave unchanged."),
+				"start_date":                  nullableDate("A start date in YYYY-MM-DD or RFC3339, or null to leave unchanged."),
+				"end_date":                    nullableDate("An end date in YYYY-MM-DD or RFC3339, or null to leave unchanged."),
+				"label_ids":                   map[string]any{"type": []string{"array", "null"}, "description": "The complete replacement list of visible label UUIDs, or null to leave labels unchanged.", "items": map[string]any{"type": "string"}},
+				"estimated_duration_action":   storyTimeAction("Use unchanged to preserve the current time needed, set to replace it with estimated_duration_minutes, or clear to remove it. Clearing time needed also clears its minimum focus block."),
+				"estimated_duration_minutes":  nullableMinutes("The replacement total time needed when estimated_duration_action is set; otherwise null."),
+				"minimum_focus_block_action":  storyTimeAction("Use unchanged to preserve the current minimum focus block, set to replace it with minimum_focus_block_minutes, or clear to remove it."),
+				"minimum_focus_block_minutes": nullableMinutes("The replacement minimum uninterrupted block when minimum_focus_block_action is set; otherwise null. It cannot exceed the resulting time needed."),
+			}, []string{"story_id", "story_reference", "title", "priority", "assignee", "status_id", "sprint_id", "objective_id", "key_result_id", "start_date", "end_date", "label_ids", "estimated_duration_action", "estimated_duration_minutes", "minimum_focus_block_action", "minimum_focus_block_minutes"}),
 		},
 		{
 			Type: "function", Name: toolAddComment,

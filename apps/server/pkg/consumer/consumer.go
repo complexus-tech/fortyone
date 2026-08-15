@@ -40,6 +40,10 @@ type FeedbackStatusBridge interface {
 	NotifyLinkedStoryStatusTransition(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time) error
 }
 
+type StoryScheduleReconcileQueue interface {
+	EnqueueStoryScheduleReconcile(context.Context, uuid.UUID, uuid.UUID) error
+}
+
 type Consumer struct {
 	redis             *redis.Client
 	db                *sqlx.DB
@@ -53,10 +57,11 @@ type Consumer struct {
 	statuses          *states.Service
 	githubSyncer      GitHubCommentSyncer
 	feedbackStatuses  FeedbackStatusBridge
+	scheduleReconcile StoryScheduleReconcileQueue
 	websiteURL        string
 }
 
-func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, mailerService mailer.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service, githubSyncer GitHubCommentSyncer, feedbackStatuses FeedbackStatusBridge) *Consumer {
+func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string, notificationsService *notifications.Service, mailerService mailer.Service, stories *stories.Service, objectives *objectives.Service, users *users.Service, statuses *states.Service, githubSyncer GitHubCommentSyncer, feedbackStatuses FeedbackStatusBridge, scheduleReconcile StoryScheduleReconcileQueue) *Consumer {
 	notificationRules := notifications.NewRules(log, stories, users, statuses)
 
 	return &Consumer{
@@ -72,6 +77,7 @@ func New(redis *redis.Client, db *sqlx.DB, log *logger.Logger, websiteURL string
 		statuses:          statuses,
 		githubSyncer:      githubSyncer,
 		feedbackStatuses:  feedbackStatuses,
+		scheduleReconcile: scheduleReconcile,
 		websiteURL:        websiteURL,
 	}
 }
@@ -396,6 +402,11 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 			return fmt.Errorf("bridge linked story feedback status: %w", err)
 		}
 	}
+	if shouldReconcileStorySchedule(payload.Updates) && c.scheduleReconcile != nil {
+		if err := c.scheduleReconcile.EnqueueStoryScheduleReconcile(ctx, payload.WorkspaceID, payload.StoryID); err != nil {
+			return fmt.Errorf("enqueue story schedule reconciliation: %w", err)
+		}
+	}
 
 	// Workspace broadcasting
 	if c.hasSignificantChanges(payload.Updates) {
@@ -403,6 +414,27 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 	}
 
 	return nil
+}
+
+func shouldReconcileStorySchedule(updates map[string]any) bool {
+	for _, field := range []string{
+		"title",
+		"estimated_duration_minutes",
+		"minimum_focus_block_minutes",
+		"assignee_id",
+		"start_date",
+		"end_date",
+		"priority",
+		"status_id",
+		"sprint_id",
+		"completed_at",
+		"archived_at",
+	} {
+		if _, changed := updates[field]; changed {
+			return true
+		}
+	}
+	return false
 }
 
 func shouldBridgeFeedbackStatus(payload events.StoryUpdatedPayload) bool {

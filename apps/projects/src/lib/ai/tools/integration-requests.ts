@@ -2,6 +2,11 @@ import { tool } from "ai";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { isEstimateValue } from "@/lib/estimate";
+import {
+  MAX_TIME_NEEDED_MINUTES,
+  normalizeTimeNeededPatch,
+} from "@/lib/time-needed";
 import { acceptIntegrationRequestAction } from "@/modules/integration-requests/actions/accept";
 import { acceptAllIntegrationRequestsAction } from "@/modules/integration-requests/actions/accept-all";
 import { declineIntegrationRequestAction } from "@/modules/integration-requests/actions/decline";
@@ -60,6 +65,8 @@ const toRequestSummary = (
   priority: request.priority,
   assigneeId: request.assigneeId,
   estimateValue: request.estimateValue,
+  estimatedDurationMinutes: request.estimatedDurationMinutes,
+  minimumFocusBlockMinutes: request.minimumFocusBlockMinutes,
   objectiveId: request.objectiveId,
   keyResultId: request.keyResultId,
   sprintId: request.sprintId,
@@ -236,8 +243,34 @@ export const updateIntegrationRequestTool = tool({
     estimateValue: z
       .number()
       .int()
+      .refine(isEstimateValue, {
+        message: "Complexity must be 1, 2, 3, 5, or 8.",
+      })
+      .nullable()
       .optional()
-      .describe("Canonical estimate value for the team's estimation scheme."),
+      .describe(
+        "Relative complexity value using the team's scale. This is not a time duration; set null to clear it.",
+      ),
+    estimatedDurationMinutes: z
+      .number()
+      .int()
+      .positive()
+      .max(MAX_TIME_NEEDED_MINUTES)
+      .nullable()
+      .optional()
+      .describe(
+        "Total time needed in minutes for calendar scheduling. Set null to clear both the duration and its minimum focus block.",
+      ),
+    minimumFocusBlockMinutes: z
+      .number()
+      .int()
+      .positive()
+      .max(MAX_TIME_NEEDED_MINUTES)
+      .nullable()
+      .optional()
+      .describe(
+        "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes; set null to use the automatic default.",
+      ),
     objectiveId: z.string().optional(),
     keyResultId: z.string().optional(),
     sprintId: z.string().optional(),
@@ -254,6 +287,8 @@ export const updateIntegrationRequestTool = tool({
       priority,
       assigneeId,
       estimateValue,
+      estimatedDurationMinutes,
+      minimumFocusBlockMinutes,
       objectiveId,
       keyResultId,
       sprintId,
@@ -270,6 +305,11 @@ export const updateIntegrationRequestTool = tool({
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
 
+      const timeNeededPatch = normalizeTimeNeededPatch(
+        estimatedDurationMinutes,
+        minimumFocusBlockMinutes,
+      );
+
       const result = await updateIntegrationRequestAction(
         requestId,
         {
@@ -279,6 +319,7 @@ export const updateIntegrationRequestTool = tool({
           priority,
           assigneeId: normalizeOptionalString(assigneeId),
           estimateValue,
+          ...timeNeededPatch,
           objectiveId: normalizeOptionalString(objectiveId),
           keyResultId: normalizeOptionalString(keyResultId),
           sprintId: normalizeOptionalString(sprintId),

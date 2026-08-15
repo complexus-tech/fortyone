@@ -34,7 +34,7 @@ var (
 	ErrInvalidNextAutoNumber  = errors.New("next auto sprint number must be between 1 and 10000")
 	ErrInvalidCloseMonths     = errors.New("auto-close inactive months must be between 1 and 24")
 	ErrInvalidArchiveMonths   = errors.New("auto-archive months must be between 1 and 24")
-	ErrInvalidEstimateScheme  = errors.New("estimate scheme must be one of: points, hours, tshirt, ideal_days")
+	ErrInvalidEstimateScheme  = errors.New("estimate scheme must be one of: points, tshirt")
 	ErrSprintScheduleConflict = errors.New("an upcoming sprint with custom dates conflicts with the automated schedule")
 )
 
@@ -306,7 +306,7 @@ func (s *Service) validateEstimationSettingsUpdate(updates CoreUpdateTeamEstimat
 	}
 
 	switch *updates.Scheme {
-	case "points", "hours", "tshirt", "ideal_days":
+	case "points", "tshirt":
 		return nil
 	default:
 		return ErrInvalidEstimateScheme

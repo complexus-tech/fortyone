@@ -215,7 +215,17 @@ const getFieldUpdateSegments = (
       );
     case "estimate_unit":
       return [
-        { text: `estimated the ${storyTerm} at`, type: "text" },
+        { text: `set the ${storyTerm} complexity to`, type: "text" },
+        { type: "currentValue", value: currentValue },
+      ];
+    case "estimated_duration_minutes":
+      return [
+        { text: `set the ${storyTerm} time needed to`, type: "text" },
+        { type: "currentValue", value: currentValue },
+      ];
+    case "minimum_focus_block_minutes":
+      return [
+        { text: `set the ${storyTerm} minimum focus block to`, type: "text" },
         { type: "currentValue", value: currentValue },
       ];
     case "sprint_id":

@@ -5,6 +5,7 @@ import {
   EstimateIcon,
   SprintsIcon,
   SubStoryIcon,
+  Time02Icon,
 } from "icons";
 import { cn } from "lib";
 import { format, addDays, formatISO } from "date-fns";
@@ -17,6 +18,7 @@ import {
 } from "react";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
 import { EstimateMenu } from "@/components/ui/story/estimate-menu";
+import { TimeNeededMenu } from "@/components/ui/story/time-needed-menu";
 import { Labels } from "@/components/ui/story/labels";
 import { sprintTooltip } from "@/components/ui/story/sprint-tooltip";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
@@ -33,6 +35,7 @@ import { hexToRgba } from "@/utils";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatEstimate } from "@/lib/estimate";
+import { formatTimeNeeded } from "@/lib/time-needed";
 import { RowWrapper } from "../row-wrapper";
 import { StoryStrategyProperties } from "./strategy-properties";
 
@@ -159,6 +162,8 @@ export const StoryProperties = ({
   priority,
   estimateValue,
   estimateScheme,
+  estimatedDurationMinutes,
+  minimumFocusBlockMinutes,
   objective,
   objectiveId,
   keyResultId,
@@ -335,6 +340,39 @@ export const StoryProperties = ({
             }}
           />
         </EstimateMenu>
+      ) : null}
+      {isColumnVisible("Time needed") && estimatedDurationMinutes ? (
+        <TimeNeededMenu>
+          <Tooltip
+            className="pointer-events-none py-3"
+            title={formatTimeNeeded(estimatedDurationMinutes, "full")}
+          >
+            <span>
+              <TimeNeededMenu.Trigger>
+                <Button
+                  aria-label={`Time needed: ${formatTimeNeeded(estimatedDurationMinutes, "full")}`}
+                  className="gap-1 px-2"
+                  color="tertiary"
+                  disabled={isGuest}
+                  rounded="md"
+                  size="xs"
+                  type="button"
+                  variant="outline"
+                >
+                  <Time02Icon className="h-4" />
+                  <span>{formatTimeNeeded(estimatedDurationMinutes)}</span>
+                </Button>
+              </TimeNeededMenu.Trigger>
+            </span>
+          </Tooltip>
+          <TimeNeededMenu.Items
+            estimatedDurationMinutes={estimatedDurationMinutes}
+            minimumFocusBlockMinutes={minimumFocusBlockMinutes}
+            setTimeNeeded={(timeNeeded) => {
+              handleUpdate(timeNeeded);
+            }}
+          />
+        </TimeNeededMenu>
       ) : null}
       <StoryStrategyProperties
         asKanban={asKanban}

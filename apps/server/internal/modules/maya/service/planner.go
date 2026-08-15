@@ -15,15 +15,18 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrInvalidPlanInput = errors.New("invalid maya plan input")
+var (
+	ErrInvalidPlanInput = errors.New("invalid maya plan input")
+	ErrMissingDuration  = errors.New("story duration is required for scheduling")
+)
 
 const (
-	defaultDurationMinutes = 60
-	minimumSlotMinutes     = 30
-	maxFocusBlockMinutes   = 120
-	workdayStartHour       = 9
-	workdayEndHour         = 17
-	recentActivityDays     = 30
+	defaultMinimumFocusBlockMinutes = 30
+	planningStartGranularityMinutes = 5
+	maxFocusBlockMinutes            = 120
+	workdayStartHour                = 9
+	workdayEndHour                  = 17
+	recentActivityDays              = 30
 )
 
 type Planner struct {
@@ -41,6 +44,63 @@ func NewPlannerWithAdvisor(advisor CandidateAdvisor) Planner {
 func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 	normalized, err := normalizePlanInput(input)
 	if err != nil {
+		if errors.Is(err, ErrMissingDuration) {
+			actions := make([]CoreAction, 0, 3)
+			var selectedUserID *uuid.UUID
+			ownerID := uuid.Nil
+			advisorReason := ""
+			if input.Story.Assignee != nil && *input.Story.Assignee != uuid.Nil && hasCandidate(input.Candidates, *input.Story.Assignee) {
+				ownerID = *input.Story.Assignee
+			} else if selected, reason, ok := p.selectAssignmentCandidate(input, input.Candidates); ok {
+				ownerID = selected.Member.UserID
+				advisorReason = reason
+			}
+			if ownerID != uuid.Nil {
+				selectedUserID = &ownerID
+				if input.Story.Assignee == nil || *input.Story.Assignee != ownerID {
+					reason := assignmentReasonForMember(candidateMember(input.Candidates, ownerID))
+					if strings.TrimSpace(input.AssignmentReason) != "" {
+						reason = input.AssignmentReason
+					}
+					if strings.TrimSpace(advisorReason) != "" {
+						reason = advisorReason
+					}
+					actions = append(actions, CoreAction{
+						WorkspaceID: input.WorkspaceID,
+						StoryID:     input.Story.ID,
+						Type:        ActionTypeAssignStory,
+						Status:      ActionStatusProposed,
+						Reason:      reason,
+						Payload: ActionPayload{AssignStory: &AssignStoryPayload{
+							AssigneeID:        ownerID,
+							ExpectedUpdatedAt: input.Story.UpdatedAt,
+						}},
+					})
+				}
+				actions = append(actions, scheduleOwnershipRetentionAction(
+					input.WorkspaceID,
+					input.Story,
+					ownerID,
+					"Maya will keep watching this assigned work and schedule it after a time-needed estimate is added.",
+				))
+			}
+			actions = append(actions, CoreAction{
+				WorkspaceID: input.WorkspaceID,
+				StoryID:     input.Story.ID,
+				Type:        ActionTypeFlagScheduleRisk,
+				Status:      ActionStatusProposed,
+				Reason:      "No estimated duration is set, so Maya did not reserve calendar time from a complexity estimate.",
+				Payload: ActionPayload{Risk: &RiskPayload{
+					Code:    "missing_duration",
+					Message: "Set the time needed for this work before asking Maya to schedule it.",
+				}},
+			})
+			return PlanResult{
+				Summary:        "Maya needs an estimated duration before this work can be scheduled.",
+				SelectedUserID: selectedUserID,
+				Actions:        actions,
+			}, nil
+		}
 		return PlanResult{}, err
 	}
 
@@ -49,18 +109,16 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 		if candidate.Member.UserID == uuid.Nil {
 			continue
 		}
-		plan, ok := planWorkWindow(candidate, normalized.WindowStart, normalized.WindowEnd, time.Duration(normalized.DurationMinutes)*time.Minute, normalized.WorkingDays)
+		candidateWindowStart, candidateWindowEnd := clampWindowToSprint(normalized, candidate.Timezone)
+		segments, ok := planWorkSegments(candidate, candidateWindowStart, candidateWindowEnd, normalized.DurationMinutes, normalized.MinimumFocusBlockMinutes, normalized.WorkingDays)
 		if !ok {
 			continue
 		}
-		focusBlockEnd := plan.start.Add(firstFocusBlockDuration(time.Duration(normalized.DurationMinutes) * time.Minute))
-		if focusBlockEnd.After(plan.end) {
-			focusBlockEnd = plan.end
-		}
 		candidates = append(candidates, candidateChoice{
 			candidate: candidate,
-			slot:      timeSlot{start: plan.start, end: focusBlockEnd},
-			plan:      plan,
+			slot:      segments[0],
+			plan:      timeSlot{start: segments[0].start, end: segments[len(segments)-1].end},
+			segments:  segments,
 		})
 	}
 	candidates = preferRecentlyActiveChoices(candidates)
@@ -80,7 +138,7 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 		}
 		if ok {
 			selectedUserID := selected.Member.UserID
-			actions := make([]CoreAction, 0, 2)
+			actions := make([]CoreAction, 0, 3)
 			if normalized.Story.Assignee == nil || *normalized.Story.Assignee != selectedUserID {
 				reason := assignmentReasonForMember(selected.Member)
 				if strings.TrimSpace(normalized.AssignmentReason) != "" {
@@ -96,10 +154,17 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 					Status:      ActionStatusProposed,
 					Reason:      reason,
 					Payload: ActionPayload{AssignStory: &AssignStoryPayload{
-						AssigneeID: selectedUserID,
+						AssigneeID:        selectedUserID,
+						ExpectedUpdatedAt: normalized.Story.UpdatedAt,
 					}},
 				})
 			}
+			actions = append(actions, scheduleOwnershipRetentionAction(
+				normalized.WorkspaceID,
+				normalized.Story,
+				selectedUserID,
+				"Maya will keep watching this work and retry placement when calendar availability changes.",
+			))
 			actions = append(actions, action)
 			return PlanResult{
 				Summary:        "Maya selected an owner, but no safe schedule slot was found for this work.",
@@ -130,7 +195,7 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 
 	selected, advisorReason := p.selectCandidate(normalized, candidates)
 	selectedUserID := selected.candidate.Member.UserID
-	actions := make([]CoreAction, 0, 2)
+	actions := make([]CoreAction, 0, 1+len(selected.segments))
 	if normalized.Story.Assignee == nil || *normalized.Story.Assignee != selectedUserID {
 		reason := assignmentReason(selected)
 		if strings.TrimSpace(normalized.AssignmentReason) != "" {
@@ -146,27 +211,32 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 			Status:      ActionStatusProposed,
 			Reason:      reason,
 			Payload: ActionPayload{AssignStory: &AssignStoryPayload{
-				AssigneeID: selectedUserID,
+				AssigneeID:        selectedUserID,
+				ExpectedUpdatedAt: normalized.Story.UpdatedAt,
 			}},
 		})
 	}
 
 	if !hasStoryScheduleBlock(selected.candidate.Blocks, normalized.Story.ID) {
-		actions = append(actions, CoreAction{
-			WorkspaceID: normalized.WorkspaceID,
-			StoryID:     normalized.Story.ID,
-			Type:        ActionTypeScheduleWorkBlock,
-			Status:      ActionStatusProposed,
-			Reason:      scheduleReason(selected),
-			Payload: ActionPayload{ScheduleBlock: &ScheduleBlockPayload{
-				UserID:         selectedUserID,
-				Title:          normalized.Story.Title,
-				StartAt:        selected.slot.start,
-				EndAt:          selected.slot.end,
-				PlannedStartAt: selected.plan.start,
-				PlannedEndAt:   selected.plan.end,
-			}},
-		})
+		for segmentIndex, segment := range selected.segments {
+			actions = append(actions, CoreAction{
+				WorkspaceID: normalized.WorkspaceID,
+				StoryID:     normalized.Story.ID,
+				Type:        ActionTypeScheduleWorkBlock,
+				Status:      ActionStatusProposed,
+				Reason:      scheduleReason(selected, segmentIndex, len(selected.segments)),
+				Payload: ActionPayload{ScheduleBlock: &ScheduleBlockPayload{
+					UserID:                 selectedUserID,
+					SegmentIndex:           segmentIndex,
+					Title:                  normalized.Story.Title,
+					StartAt:                segment.start,
+					EndAt:                  segment.end,
+					PlannedStartAt:         selected.plan.start,
+					PlannedEndAt:           selected.plan.end,
+					ExpectedStoryUpdatedAt: normalized.Story.UpdatedAt,
+				}},
+			})
+		}
 	}
 
 	return PlanResult{
@@ -174,6 +244,40 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 		SelectedUserID: &selectedUserID,
 		Actions:        actions,
 	}, nil
+}
+
+func hasCandidate(candidates []CandidateSchedule, userID uuid.UUID) bool {
+	for _, candidate := range candidates {
+		if candidate.Member.UserID == userID {
+			return true
+		}
+	}
+	return false
+}
+
+func candidateMember(candidates []CandidateSchedule, userID uuid.UUID) reports.CoreMemberWorkload {
+	for _, candidate := range candidates {
+		if candidate.Member.UserID == userID {
+			return candidate.Member
+		}
+	}
+	return reports.CoreMemberWorkload{UserID: userID}
+}
+
+func scheduleOwnershipRetentionAction(workspaceID uuid.UUID, story stories.CoreSingleStory, userID uuid.UUID, reason string) CoreAction {
+	return CoreAction{
+		WorkspaceID: workspaceID,
+		StoryID:     story.ID,
+		Type:        ActionTypeScheduleWorkBlock,
+		Status:      ActionStatusProposed,
+		Reason:      reason,
+		Payload: ActionPayload{ScheduleBlock: &ScheduleBlockPayload{
+			UserID:                 userID,
+			Operation:              ScheduleBlockOperationRetain,
+			Title:                  story.Title,
+			ExpectedStoryUpdatedAt: story.UpdatedAt,
+		}},
+	}
 }
 
 func (p Planner) selectCandidate(input PlanInput, candidates []candidateChoice) (candidateChoice, string) {
@@ -408,6 +512,7 @@ type candidateChoice struct {
 	candidate CandidateSchedule
 	slot      timeSlot
 	plan      timeSlot
+	segments  []timeSlot
 }
 
 type timeSlot struct {
@@ -428,71 +533,83 @@ func normalizePlanInput(input PlanInput) (PlanInput, error) {
 	if input.DurationMinutes <= 0 {
 		input.DurationMinutes = estimatedWorkDurationMinutes(input.Story)
 	}
-	if input.DurationMinutes < minimumSlotMinutes {
-		input.DurationMinutes = minimumSlotMinutes
+	if input.DurationMinutes <= 0 {
+		return PlanInput{}, ErrMissingDuration
+	}
+	if input.DurationMinutes > stories.MaximumEstimatedDurationMinutes {
+		return PlanInput{}, fmt.Errorf("%w: duration exceeds %d minutes", ErrInvalidPlanInput, stories.MaximumEstimatedDurationMinutes)
+	}
+	if input.MinimumFocusBlockMinutes <= 0 && input.Story.MinimumFocusBlockMinutes != nil {
+		input.MinimumFocusBlockMinutes = *input.Story.MinimumFocusBlockMinutes
+	}
+	if input.MinimumFocusBlockMinutes <= 0 {
+		input.MinimumFocusBlockMinutes = defaultMinimumFocusBlockMinutes
+	}
+	if input.MinimumFocusBlockMinutes > input.DurationMinutes {
+		input.MinimumFocusBlockMinutes = input.DurationMinutes
 	}
 	input.WindowStart = input.WindowStart.UTC()
 	input.WindowEnd = input.WindowEnd.UTC()
 	input.WorkingDays = workweek.Normalize(input.WorkingDays)
-	input = clampPlanInputToSprintWindow(input)
-	if !input.WindowEnd.After(input.WindowStart) {
-		return PlanInput{}, fmt.Errorf("%w: sprint planning window end must be after start", ErrInvalidPlanInput)
-	}
 	return input, nil
 }
 
 func estimatedWorkDurationMinutes(story stories.CoreSingleStory) int {
-	if duration := stories.EstimateDurationMinutes(story.EstimateScheme, story.EstimateValue); duration > 0 {
-		return duration
+	if story.EstimatedDurationMinutes != nil && *story.EstimatedDurationMinutes > 0 {
+		return *story.EstimatedDurationMinutes
 	}
-
-	text := strings.ToLower(story.Title)
-	if story.Description != nil {
-		text += " " + strings.ToLower(*story.Description)
-	}
-	if strings.Contains(text, "end-to-end") || strings.Contains(text, "campaign") || strings.Contains(text, "integration") || strings.Contains(text, "platform") {
-		return 16 * 60
-	}
-	return defaultDurationMinutes
+	return 0
 }
 
-func firstFocusBlockDuration(duration time.Duration) time.Duration {
-	maxDuration := time.Duration(maxFocusBlockMinutes) * time.Minute
-	if duration > maxDuration {
-		return maxDuration
-	}
-	return duration
-}
-
-func clampPlanInputToSprintWindow(input PlanInput) PlanInput {
+func clampWindowToSprint(input PlanInput, timezone string) (time.Time, time.Time) {
 	if input.Story.SprintSummary == nil {
-		return input
+		return input.WindowStart, input.WindowEnd
 	}
-
-	sprintStart := sprintWorkdayStart(input.Story.SprintSummary.StartDate.UTC())
-	sprintEnd := sprintWorkdayEnd(input.Story.SprintSummary.EndDate.UTC())
-	if input.WindowStart.Before(sprintStart) {
-		input.WindowStart = sprintStart
+	location := calendarLocation(timezone)
+	sprintStart := sprintWorkdayStart(input.Story.SprintSummary.StartDate, location)
+	sprintEnd := sprintWorkdayEnd(input.Story.SprintSummary.EndDate, location)
+	startAt := input.WindowStart
+	endAt := input.WindowEnd
+	if startAt.Before(sprintStart) {
+		startAt = sprintStart
 	}
-	if input.WindowEnd.After(sprintEnd) {
-		input.WindowEnd = sprintEnd
+	if endAt.After(sprintEnd) {
+		endAt = sprintEnd
 	}
-	return input
+	return startAt, endAt
 }
 
-func sprintWorkdayStart(value time.Time) time.Time {
-	return time.Date(value.Year(), value.Month(), value.Day(), workdayStartHour, 0, 0, 0, time.UTC)
+func sprintWorkdayStart(value time.Time, location *time.Location) time.Time {
+	return time.Date(value.Year(), value.Month(), value.Day(), workdayStartHour, 0, 0, 0, location)
 }
 
-func sprintWorkdayEnd(value time.Time) time.Time {
-	return time.Date(value.Year(), value.Month(), value.Day(), workdayEndHour, 0, 0, 0, time.UTC)
+func sprintWorkdayEnd(value time.Time, location *time.Location) time.Time {
+	return time.Date(value.Year(), value.Month(), value.Day(), workdayEndHour, 0, 0, 0, location)
 }
 
 func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, duration time.Duration, workingDays []int) (timeSlot, bool) {
+	if duration <= 0 {
+		return timeSlot{}, false
+	}
+	segments, ok := planWorkSegments(candidate, startAt, endAt, int(duration/time.Minute), defaultMinimumFocusBlockMinutes, workingDays)
+	if !ok {
+		return timeSlot{}, false
+	}
+	return timeSlot{start: segments[0].start, end: segments[len(segments)-1].end}, true
+}
+
+func planWorkSegments(candidate CandidateSchedule, startAt, endAt time.Time, durationMinutes, minimumFocusMinutes int, workingDays []int) ([]timeSlot, bool) {
 	occupied := occupiedSlots(candidate)
-	cursor := alignToNextHalfHour(startAt.UTC())
-	remaining := duration
-	var plannedStart time.Time
+	location := calendarLocation(candidate.Timezone)
+	cursor := alignToPlanningGranularity(startAt.In(location))
+	endAt = endAt.In(location)
+	remaining := time.Duration(durationMinutes) * time.Minute
+	minimumFocus := time.Duration(minimumFocusMinutes) * time.Minute
+	maximumFocus := time.Duration(maxFocusBlockMinutes) * time.Minute
+	if maximumFocus < minimumFocus {
+		maximumFocus = minimumFocus
+	}
+	segments := make([]timeSlot, 0, durationMinutes/minimumFocusMinutes+1)
 
 	for cursor.Before(endAt) {
 		if !workweek.IsWorkingDay(cursor, workingDays) {
@@ -500,8 +617,8 @@ func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, durat
 			continue
 		}
 
-		dayStart := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), workdayStartHour, 0, 0, 0, time.UTC)
-		dayEnd := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), workdayEndHour, 0, 0, 0, time.UTC)
+		dayStart := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), workdayStartHour, 0, 0, 0, location)
+		dayEnd := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), workdayEndHour, 0, 0, 0, location)
 		if cursor.Before(dayStart) {
 			cursor = dayStart
 		}
@@ -523,35 +640,63 @@ func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, durat
 			}
 		}
 		if !nextBoundary.After(cursor) {
-			cursor = cursor.Add(minimumSlotMinutes * time.Minute)
+			cursor = cursor.Add(planningStartGranularityMinutes * time.Minute)
 			continue
 		}
-
-		if plannedStart.IsZero() {
-			plannedStart = cursor
-		}
 		available := nextBoundary.Sub(cursor)
-		if available >= remaining {
-			return timeSlot{start: plannedStart, end: cursor.Add(remaining)}, true
+		if available < minimumFocus && remaining > available {
+			cursor = nextBoundary
+			continue
 		}
-		remaining -= available
-		cursor = nextBoundary
+		take := minDuration(remaining, available, maximumFocus)
+		remainingAfter := remaining - take
+		if remainingAfter > 0 && remainingAfter < minimumFocus {
+			adjustment := minimumFocus - remainingAfter
+			if take-adjustment >= minimumFocus {
+				take -= adjustment
+			} else if available >= remaining {
+				take = remaining
+			} else {
+				cursor = nextBoundary
+				continue
+			}
+		}
+		if take < minimumFocus && take != remaining {
+			cursor = nextBoundary
+			continue
+		}
+		segments = append(segments, timeSlot{start: cursor.UTC(), end: cursor.Add(take).UTC()})
+		remaining -= take
+		if remaining == 0 {
+			return segments, true
+		}
+		cursor = cursor.Add(take)
 	}
 
-	return timeSlot{}, false
+	return nil, false
+}
+
+func minDuration(values ...time.Duration) time.Duration {
+	result := values[0]
+	for _, value := range values[1:] {
+		if value < result {
+			result = value
+		}
+	}
+	return result
 }
 
 func advancePastOccupiedSlot(cursor time.Time, occupied []timeSlot) (time.Time, bool) {
 	for _, slot := range occupied {
 		if cursor.Before(slot.end) && !cursor.Before(slot.start) {
-			return alignToNextHalfHour(slot.end), true
+			return alignToPlanningGranularity(slot.end.In(cursor.Location())), true
 		}
 	}
 	return cursor, false
 }
 
 func nextWorkdayStart(value time.Time, workingDays []int) time.Time {
-	next := time.Date(value.Year(), value.Month(), value.Day()+1, workdayStartHour, 0, 0, 0, time.UTC)
+	next := time.Date(value.Year(), value.Month(), value.Day()+1, workdayStartHour, 0, 0, 0, value.Location())
 	for !workweek.IsWorkingDay(next, workingDays) {
 		next = next.AddDate(0, 0, 1)
 	}
@@ -566,12 +711,13 @@ func minTime(left, right time.Time) time.Time {
 }
 
 func occupiedSlots(candidate CandidateSchedule) []timeSlot {
+	location := calendarLocation(candidate.Timezone)
 	slots := make([]timeSlot, 0, len(candidate.BusyWindows)+len(candidate.Blocks))
 	for _, window := range candidate.BusyWindows {
-		slots = append(slots, timeSlot{start: window.StartAt.UTC(), end: window.EndAt.UTC()})
+		slots = append(slots, timeSlot{start: window.StartAt.In(location), end: window.EndAt.In(location)})
 	}
 	for _, block := range candidate.Blocks {
-		slots = append(slots, timeSlot{start: block.StartAt.UTC(), end: block.EndAt.UTC()})
+		slots = append(slots, timeSlot{start: block.StartAt.In(location), end: block.EndAt.In(location)})
 	}
 	sort.SliceStable(slots, func(i, j int) bool {
 		return slots[i].start.Before(slots[j].start)
@@ -579,14 +725,22 @@ func occupiedSlots(candidate CandidateSchedule) []timeSlot {
 	return slots
 }
 
-func alignToNextHalfHour(value time.Time) time.Time {
+func alignToPlanningGranularity(value time.Time) time.Time {
 	value = value.Truncate(time.Minute)
 	minute := value.Minute()
-	remainder := minute % minimumSlotMinutes
+	remainder := minute % planningStartGranularityMinutes
 	if remainder == 0 && value.Second() == 0 && value.Nanosecond() == 0 {
 		return value
 	}
-	return value.Add(time.Duration(minimumSlotMinutes-remainder) * time.Minute).Truncate(time.Minute)
+	return value.Add(time.Duration(planningStartGranularityMinutes-remainder) * time.Minute).Truncate(time.Minute)
+}
+
+func calendarLocation(timezone string) *time.Location {
+	location, err := time.LoadLocation(strings.TrimSpace(timezone))
+	if err != nil {
+		return time.UTC
+	}
+	return location
 }
 
 func hasStoryScheduleBlock(blocks []calendar.CoreScheduleBlock, storyID uuid.UUID) bool {
@@ -616,8 +770,9 @@ func assignmentReasonForMember(member reports.CoreMemberWorkload) string {
 	return fmt.Sprintf("Maya selected %s because they have the strongest available fit and currently have %d open items with %d estimate points.", name, member.OpenStories, member.EstimateTotal)
 }
 
-func scheduleReason(choice candidateChoice) string {
-	return fmt.Sprintf("Maya found an available calendar slot from %s to %s without overlapping existing busy time or scheduled work.", choice.slot.start.Format(time.RFC3339), choice.slot.end.Format(time.RFC3339))
+func scheduleReason(choice candidateChoice, segmentIndex, segmentCount int) string {
+	segment := choice.segments[segmentIndex]
+	return fmt.Sprintf("Maya scheduled focus segment %d of %d from %s to %s without overlapping existing busy time or locked work.", segmentIndex+1, segmentCount, segment.start.Format(time.RFC3339), segment.end.Format(time.RFC3339))
 }
 
 func planSummary(storyTitle string, choice candidateChoice) string {
@@ -628,5 +783,5 @@ func planSummary(storyTitle string, choice candidateChoice) string {
 	if name == "" {
 		name = "the selected teammate"
 	}
-	return fmt.Sprintf("Maya recommends assigning %q to %s and scheduling it from %s to %s.", storyTitle, name, choice.slot.start.Format(time.RFC3339), choice.slot.end.Format(time.RFC3339))
+	return fmt.Sprintf("Maya recommends assigning %q to %s and scheduling %d focus segment(s) from %s to %s.", storyTitle, name, len(choice.segments), choice.plan.start.Format(time.RFC3339), choice.plan.end.Format(time.RFC3339))
 }

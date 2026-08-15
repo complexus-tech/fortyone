@@ -12,46 +12,50 @@ import (
 )
 
 type AppIntegrationRequest struct {
-	ID               uuid.UUID      `json:"id"`
-	WorkspaceID      uuid.UUID      `json:"workspaceId"`
-	TeamID           uuid.UUID      `json:"teamId"`
-	Provider         string         `json:"provider"`
-	SourceType       string         `json:"sourceType"`
-	SourceExternalID string         `json:"sourceExternalId"`
-	SourceNumber     *int           `json:"sourceNumber,omitempty"`
-	SourceURL        *string        `json:"sourceUrl,omitempty"`
-	Title            string         `json:"title"`
-	Description      *string        `json:"description,omitempty"`
-	StatusID         *uuid.UUID     `json:"statusId,omitempty"`
-	Priority         string         `json:"priority"`
-	AssigneeID       *uuid.UUID     `json:"assigneeId,omitempty"`
-	EstimateValue    *int16         `json:"estimateValue,omitempty"`
-	ObjectiveID      *uuid.UUID     `json:"objectiveId,omitempty"`
-	KeyResultID      *uuid.UUID     `json:"keyResultId,omitempty"`
-	SprintID         *uuid.UUID     `json:"sprintId,omitempty"`
-	StartDate        *time.Time     `json:"startDate,omitempty"`
-	EndDate          *time.Time     `json:"endDate,omitempty"`
-	LabelIDs         []uuid.UUID    `json:"labelIds"`
-	Status           string         `json:"status"`
-	Metadata         map[string]any `json:"metadata"`
-	AcceptedStoryID  *uuid.UUID     `json:"acceptedStoryId,omitempty"`
-	CreatedAt        string         `json:"createdAt"`
-	UpdatedAt        string         `json:"updatedAt"`
+	ID                       uuid.UUID      `json:"id"`
+	WorkspaceID              uuid.UUID      `json:"workspaceId"`
+	TeamID                   uuid.UUID      `json:"teamId"`
+	Provider                 string         `json:"provider"`
+	SourceType               string         `json:"sourceType"`
+	SourceExternalID         string         `json:"sourceExternalId"`
+	SourceNumber             *int           `json:"sourceNumber,omitempty"`
+	SourceURL                *string        `json:"sourceUrl,omitempty"`
+	Title                    string         `json:"title"`
+	Description              *string        `json:"description,omitempty"`
+	StatusID                 *uuid.UUID     `json:"statusId,omitempty"`
+	Priority                 string         `json:"priority"`
+	AssigneeID               *uuid.UUID     `json:"assigneeId,omitempty"`
+	EstimateValue            *int16         `json:"estimateValue,omitempty"`
+	EstimatedDurationMinutes *int           `json:"estimatedDurationMinutes,omitempty"`
+	MinimumFocusBlockMinutes *int           `json:"minimumFocusBlockMinutes,omitempty"`
+	ObjectiveID              *uuid.UUID     `json:"objectiveId,omitempty"`
+	KeyResultID              *uuid.UUID     `json:"keyResultId,omitempty"`
+	SprintID                 *uuid.UUID     `json:"sprintId,omitempty"`
+	StartDate                *time.Time     `json:"startDate,omitempty"`
+	EndDate                  *time.Time     `json:"endDate,omitempty"`
+	LabelIDs                 []uuid.UUID    `json:"labelIds"`
+	Status                   string         `json:"status"`
+	Metadata                 map[string]any `json:"metadata"`
+	AcceptedStoryID          *uuid.UUID     `json:"acceptedStoryId,omitempty"`
+	CreatedAt                string         `json:"createdAt"`
+	UpdatedAt                string         `json:"updatedAt"`
 }
 
 type AppUpdateIntegrationRequest struct {
-	Title         *string                     `json:"title,omitempty"`
-	Description   appOptionalValue[string]    `json:"description"`
-	StatusID      appOptionalValue[uuid.UUID] `json:"statusId"`
-	Priority      *string                     `json:"priority,omitempty"`
-	AssigneeID    appOptionalValue[uuid.UUID] `json:"assigneeId"`
-	EstimateValue appOptionalValue[int16]     `json:"estimateValue"`
-	ObjectiveID   appOptionalValue[uuid.UUID] `json:"objectiveId"`
-	KeyResultID   appOptionalValue[uuid.UUID] `json:"keyResultId"`
-	SprintID      appOptionalValue[uuid.UUID] `json:"sprintId"`
-	StartDate     appOptionalValue[date.Date] `json:"startDate"`
-	EndDate       appOptionalValue[date.Date] `json:"endDate"`
-	LabelIDs      *[]uuid.UUID                `json:"labelIds,omitempty"`
+	Title                    *string                     `json:"title,omitempty"`
+	Description              appOptionalValue[string]    `json:"description"`
+	StatusID                 appOptionalValue[uuid.UUID] `json:"statusId"`
+	Priority                 *string                     `json:"priority,omitempty"`
+	AssigneeID               appOptionalValue[uuid.UUID] `json:"assigneeId"`
+	EstimateValue            appOptionalValue[int16]     `json:"estimateValue"`
+	EstimatedDurationMinutes appOptionalValue[int]       `json:"estimatedDurationMinutes"`
+	MinimumFocusBlockMinutes appOptionalValue[int]       `json:"minimumFocusBlockMinutes"`
+	ObjectiveID              appOptionalValue[uuid.UUID] `json:"objectiveId"`
+	KeyResultID              appOptionalValue[uuid.UUID] `json:"keyResultId"`
+	SprintID                 appOptionalValue[uuid.UUID] `json:"sprintId"`
+	StartDate                appOptionalValue[date.Date] `json:"startDate"`
+	EndDate                  appOptionalValue[date.Date] `json:"endDate"`
+	LabelIDs                 *[]uuid.UUID                `json:"labelIds,omitempty"`
 }
 
 type appOptionalValue[T any] struct {
@@ -146,31 +150,33 @@ type AppIntegrationRequestsResponse struct {
 
 func toAppRequest(core integrationrequests.CoreIntegrationRequest) AppIntegrationRequest {
 	return AppIntegrationRequest{
-		ID:               core.ID,
-		WorkspaceID:      core.WorkspaceID,
-		TeamID:           core.TeamID,
-		Provider:         core.Provider,
-		SourceType:       core.SourceType,
-		SourceExternalID: core.SourceExternalID,
-		SourceNumber:     core.SourceNumber,
-		SourceURL:        core.SourceURL,
-		Title:            core.Title,
-		Description:      core.Description,
-		StatusID:         core.StatusID,
-		Priority:         core.Priority,
-		AssigneeID:       core.AssigneeID,
-		EstimateValue:    core.EstimateValue,
-		ObjectiveID:      core.ObjectiveID,
-		KeyResultID:      core.KeyResultID,
-		SprintID:         core.SprintID,
-		StartDate:        core.StartDate,
-		EndDate:          core.EndDate,
-		LabelIDs:         core.LabelIDs,
-		Status:           core.Status,
-		Metadata:         core.Metadata,
-		AcceptedStoryID:  core.AcceptedStoryID,
-		CreatedAt:        core.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:        core.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:                       core.ID,
+		WorkspaceID:              core.WorkspaceID,
+		TeamID:                   core.TeamID,
+		Provider:                 core.Provider,
+		SourceType:               core.SourceType,
+		SourceExternalID:         core.SourceExternalID,
+		SourceNumber:             core.SourceNumber,
+		SourceURL:                core.SourceURL,
+		Title:                    core.Title,
+		Description:              core.Description,
+		StatusID:                 core.StatusID,
+		Priority:                 core.Priority,
+		AssigneeID:               core.AssigneeID,
+		EstimateValue:            core.EstimateValue,
+		EstimatedDurationMinutes: core.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: core.MinimumFocusBlockMinutes,
+		ObjectiveID:              core.ObjectiveID,
+		KeyResultID:              core.KeyResultID,
+		SprintID:                 core.SprintID,
+		StartDate:                core.StartDate,
+		EndDate:                  core.EndDate,
+		LabelIDs:                 core.LabelIDs,
+		Status:                   core.Status,
+		Metadata:                 core.Metadata,
+		AcceptedStoryID:          core.AcceptedStoryID,
+		CreatedAt:                core.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:                core.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }
 

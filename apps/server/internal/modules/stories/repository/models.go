@@ -13,54 +13,56 @@ import (
 
 // dbStory represents the database model for an dbStory.
 type dbStory struct {
-	ID                   uuid.UUID        `db:"id"`
-	SequenceID           int              `db:"sequence_id"`
-	Title                string           `db:"title"`
-	TeamCode             string           `db:"team_code"`
-	TeamName             *string          `db:"team_name"`
-	Description          *string          `db:"description"`
-	DescriptionHTML      *string          `db:"description_html"`
-	Parent               *uuid.UUID       `db:"parent_id"`
-	Objective            *uuid.UUID       `db:"objective_id"`
-	ObjectiveName        *string          `db:"objective_name"`
-	ObjectiveDescription *string          `db:"objective_description"`
-	Epic                 *uuid.UUID       `db:"epic_id"`
-	Workspace            uuid.UUID        `db:"workspace_id"`
-	Team                 uuid.UUID        `db:"team_id"`
-	Status               *uuid.UUID       `db:"status_id"`
-	Assignee             *uuid.UUID       `db:"assignee_id"`
-	Collaborators        *json.RawMessage `db:"collaborators"`
-	WatcherIDs           *json.RawMessage `db:"watcher_ids"`
-	CollaboratorCount    int              `db:"collaborator_count"`
-	WatcherCount         int              `db:"watcher_count"`
-	IsWatching           bool             `db:"is_watching"`
-	WatchingReason       *string          `db:"watching_reason"`
-	Estimate             *float32         `db:"estimate"`
-	EstimateValue        *int16           `db:"estimate_unit"`
-	EstimateScheme       string           `db:"estimate_scheme"`
-	IsDraft              bool             `db:"is_draft"`
-	BlockedBy            *uuid.UUID       `db:"blocked_by_id"`
-	Blocking             *uuid.UUID       `db:"blocking_id"`
-	Related              *uuid.UUID       `db:"related_id"`
-	Reporter             *uuid.UUID       `db:"reporter_id"`
-	Priority             string           `db:"priority"`
-	Sprint               *uuid.UUID       `db:"sprint_id"`
-	SprintName           *string          `db:"sprint_name"`
-	SprintGoal           *string          `db:"sprint_goal"`
-	SprintStartDate      *time.Time       `db:"sprint_start_date"`
-	SprintEndDate        *time.Time       `db:"sprint_end_date"`
-	KeyResult            *uuid.UUID       `db:"key_result_id"`
-	StartDate            *time.Time       `db:"start_date"`
-	EndDate              *time.Time       `db:"end_date"`
-	CreatedAt            time.Time        `db:"created_at"`
-	UpdatedAt            time.Time        `db:"updated_at"`
-	DeletedAt            *time.Time       `db:"deleted_at"`
-	ArchivedAt           *time.Time       `db:"archived_at"`
-	CompletedAt          *time.Time       `db:"completed_at"`
-	SubStories           *json.RawMessage `db:"sub_stories"`
-	Labels               *json.RawMessage `db:"labels"`
-	Associations         *json.RawMessage `db:"associations"`
-	CreationKey          *string          `db:"external_creation_key"`
+	ID                       uuid.UUID        `db:"id"`
+	SequenceID               int              `db:"sequence_id"`
+	Title                    string           `db:"title"`
+	TeamCode                 string           `db:"team_code"`
+	TeamName                 *string          `db:"team_name"`
+	Description              *string          `db:"description"`
+	DescriptionHTML          *string          `db:"description_html"`
+	Parent                   *uuid.UUID       `db:"parent_id"`
+	Objective                *uuid.UUID       `db:"objective_id"`
+	ObjectiveName            *string          `db:"objective_name"`
+	ObjectiveDescription     *string          `db:"objective_description"`
+	Epic                     *uuid.UUID       `db:"epic_id"`
+	Workspace                uuid.UUID        `db:"workspace_id"`
+	Team                     uuid.UUID        `db:"team_id"`
+	Status                   *uuid.UUID       `db:"status_id"`
+	Assignee                 *uuid.UUID       `db:"assignee_id"`
+	Collaborators            *json.RawMessage `db:"collaborators"`
+	WatcherIDs               *json.RawMessage `db:"watcher_ids"`
+	CollaboratorCount        int              `db:"collaborator_count"`
+	WatcherCount             int              `db:"watcher_count"`
+	IsWatching               bool             `db:"is_watching"`
+	WatchingReason           *string          `db:"watching_reason"`
+	Estimate                 *float32         `db:"estimate"`
+	EstimateValue            *int16           `db:"estimate_unit"`
+	EstimateScheme           string           `db:"estimate_scheme"`
+	EstimatedDurationMinutes *int             `db:"estimated_duration_minutes"`
+	MinimumFocusBlockMinutes *int             `db:"minimum_focus_block_minutes"`
+	IsDraft                  bool             `db:"is_draft"`
+	BlockedBy                *uuid.UUID       `db:"blocked_by_id"`
+	Blocking                 *uuid.UUID       `db:"blocking_id"`
+	Related                  *uuid.UUID       `db:"related_id"`
+	Reporter                 *uuid.UUID       `db:"reporter_id"`
+	Priority                 string           `db:"priority"`
+	Sprint                   *uuid.UUID       `db:"sprint_id"`
+	SprintName               *string          `db:"sprint_name"`
+	SprintGoal               *string          `db:"sprint_goal"`
+	SprintStartDate          *time.Time       `db:"sprint_start_date"`
+	SprintEndDate            *time.Time       `db:"sprint_end_date"`
+	KeyResult                *uuid.UUID       `db:"key_result_id"`
+	StartDate                *time.Time       `db:"start_date"`
+	EndDate                  *time.Time       `db:"end_date"`
+	CreatedAt                time.Time        `db:"created_at"`
+	UpdatedAt                time.Time        `db:"updated_at"`
+	DeletedAt                *time.Time       `db:"deleted_at"`
+	ArchivedAt               *time.Time       `db:"archived_at"`
+	CompletedAt              *time.Time       `db:"completed_at"`
+	SubStories               *json.RawMessage `db:"sub_stories"`
+	Labels                   *json.RawMessage `db:"labels"`
+	Associations             *json.RawMessage `db:"associations"`
+	CreationKey              *string          `db:"external_creation_key"`
 }
 
 func toCoreTeamSummary(story dbStory) *stories.CoreTeamSummary {
@@ -142,45 +144,47 @@ func toCoreStory(i dbStory) stories.CoreSingleStory {
 	}
 
 	return stories.CoreSingleStory{
-		ID:              i.ID,
-		SequenceID:      i.SequenceID,
-		Title:           i.Title,
-		TeamCode:        i.TeamCode,
-		Description:     i.Description,
-		EstimateValue:   i.EstimateValue,
-		EstimateScheme:  i.EstimateScheme,
-		EstimateLabel:   stories.EstimateLabelFromValue(i.EstimateScheme, i.EstimateValue),
-		Parent:          i.Parent,
-		Objective:       i.Objective,
-		Team:            i.Team,
-		Workspace:       i.Workspace,
-		Status:          i.Status,
-		Assignee:        i.Assignee,
-		Collaborators:   collaborators,
-		WatcherIDs:      watcherIDs,
-		WatcherCount:    i.WatcherCount,
-		IsWatching:      i.IsWatching,
-		WatchingReason:  i.WatchingReason,
-		BlockedBy:       i.BlockedBy,
-		Blocking:        i.Blocking,
-		Related:         i.Related,
-		Reporter:        i.Reporter,
-		DescriptionHTML: i.DescriptionHTML,
-		Priority:        i.Priority,
-		Sprint:          i.Sprint,
-		SprintSummary:   toCoreSprintSummary(i),
-		KeyResult:       i.KeyResult,
-		StartDate:       i.StartDate,
-		EndDate:         i.EndDate,
-		CreatedAt:       i.CreatedAt,
-		UpdatedAt:       i.UpdatedAt,
-		DeletedAt:       i.DeletedAt,
-		ArchivedAt:      i.ArchivedAt,
-		CompletedAt:     i.CompletedAt,
-		SubStories:      subStories,
-		Labels:          labels,
-		Associations:    associations,
-		CreationKey:     i.CreationKey,
+		ID:                       i.ID,
+		SequenceID:               i.SequenceID,
+		Title:                    i.Title,
+		TeamCode:                 i.TeamCode,
+		Description:              i.Description,
+		EstimateValue:            i.EstimateValue,
+		EstimateScheme:           i.EstimateScheme,
+		EstimateLabel:            stories.EstimateLabelFromValue(i.EstimateScheme, i.EstimateValue),
+		EstimatedDurationMinutes: i.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: i.MinimumFocusBlockMinutes,
+		Parent:                   i.Parent,
+		Objective:                i.Objective,
+		Team:                     i.Team,
+		Workspace:                i.Workspace,
+		Status:                   i.Status,
+		Assignee:                 i.Assignee,
+		Collaborators:            collaborators,
+		WatcherIDs:               watcherIDs,
+		WatcherCount:             i.WatcherCount,
+		IsWatching:               i.IsWatching,
+		WatchingReason:           i.WatchingReason,
+		BlockedBy:                i.BlockedBy,
+		Blocking:                 i.Blocking,
+		Related:                  i.Related,
+		Reporter:                 i.Reporter,
+		DescriptionHTML:          i.DescriptionHTML,
+		Priority:                 i.Priority,
+		Sprint:                   i.Sprint,
+		SprintSummary:            toCoreSprintSummary(i),
+		KeyResult:                i.KeyResult,
+		StartDate:                i.StartDate,
+		EndDate:                  i.EndDate,
+		CreatedAt:                i.CreatedAt,
+		UpdatedAt:                i.UpdatedAt,
+		DeletedAt:                i.DeletedAt,
+		ArchivedAt:               i.ArchivedAt,
+		CompletedAt:              i.CompletedAt,
+		SubStories:               subStories,
+		Labels:                   labels,
+		Associations:             associations,
+		CreationKey:              i.CreationKey,
 	}
 }
 
@@ -208,36 +212,38 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 		}
 
 		cl[i] = stories.CoreStoryList{
-			ID:                story.ID,
-			SequenceID:        story.SequenceID,
-			Title:             story.Title,
-			EstimateValue:     story.EstimateValue,
-			EstimateScheme:    story.EstimateScheme,
-			EstimateLabel:     stories.EstimateLabelFromValue(story.EstimateScheme, story.EstimateValue),
-			Parent:            story.Parent,
-			Objective:         story.Objective,
-			ObjectiveSummary:  toCoreObjectiveSummary(story),
-			Sprint:            story.Sprint,
-			SprintSummary:     toCoreSprintSummary(story),
-			Epic:              story.Epic,
-			Team:              story.Team,
-			TeamSummary:       toCoreTeamSummary(story),
-			Workspace:         story.Workspace,
-			Status:            story.Status,
-			Assignee:          story.Assignee,
-			CollaboratorCount: story.CollaboratorCount,
-			Reporter:          story.Reporter,
-			KeyResult:         story.KeyResult,
-			StartDate:         story.StartDate,
-			EndDate:           story.EndDate,
-			Priority:          story.Priority,
-			CreatedAt:         story.CreatedAt,
-			UpdatedAt:         story.UpdatedAt,
-			CompletedAt:       story.CompletedAt,
-			DeletedAt:         story.DeletedAt,
-			ArchivedAt:        story.ArchivedAt,
-			Labels:            labels,
-			SubStories:        subStories,
+			ID:                       story.ID,
+			SequenceID:               story.SequenceID,
+			Title:                    story.Title,
+			EstimateValue:            story.EstimateValue,
+			EstimateScheme:           story.EstimateScheme,
+			EstimateLabel:            stories.EstimateLabelFromValue(story.EstimateScheme, story.EstimateValue),
+			EstimatedDurationMinutes: story.EstimatedDurationMinutes,
+			MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+			Parent:                   story.Parent,
+			Objective:                story.Objective,
+			ObjectiveSummary:         toCoreObjectiveSummary(story),
+			Sprint:                   story.Sprint,
+			SprintSummary:            toCoreSprintSummary(story),
+			Epic:                     story.Epic,
+			Team:                     story.Team,
+			TeamSummary:              toCoreTeamSummary(story),
+			Workspace:                story.Workspace,
+			Status:                   story.Status,
+			Assignee:                 story.Assignee,
+			CollaboratorCount:        story.CollaboratorCount,
+			Reporter:                 story.Reporter,
+			KeyResult:                story.KeyResult,
+			StartDate:                story.StartDate,
+			EndDate:                  story.EndDate,
+			Priority:                 story.Priority,
+			CreatedAt:                story.CreatedAt,
+			UpdatedAt:                story.UpdatedAt,
+			CompletedAt:              story.CompletedAt,
+			DeletedAt:                story.DeletedAt,
+			ArchivedAt:               story.ArchivedAt,
+			Labels:                   labels,
+			SubStories:               subStories,
 		}
 	}
 	return cl
@@ -246,31 +252,33 @@ func toCoreStories(is []dbStory) []stories.CoreStoryList {
 // toDBStory converts a CoreSingleStory to a dbStory.
 func toDBStory(i stories.CoreSingleStory) dbStory {
 	return dbStory{
-		SequenceID:      i.SequenceID,
-		Title:           i.Title,
-		Description:     i.Description,
-		EstimateValue:   i.EstimateValue,
-		Parent:          i.Parent,
-		Objective:       i.Objective,
-		Workspace:       i.Workspace,
-		Team:            i.Team,
-		Status:          i.Status,
-		Assignee:        i.Assignee,
-		BlockedBy:       i.BlockedBy,
-		Blocking:        i.Blocking,
-		Related:         i.Related,
-		Reporter:        i.Reporter,
-		DescriptionHTML: i.DescriptionHTML,
-		Priority:        i.Priority,
-		Sprint:          i.Sprint,
-		KeyResult:       i.KeyResult,
-		StartDate:       i.StartDate,
-		EndDate:         i.EndDate,
-		CreatedAt:       i.CreatedAt,
-		UpdatedAt:       i.UpdatedAt,
-		DeletedAt:       i.DeletedAt,
-		CompletedAt:     i.CompletedAt,
-		CreationKey:     i.CreationKey,
+		SequenceID:               i.SequenceID,
+		Title:                    i.Title,
+		Description:              i.Description,
+		EstimateValue:            i.EstimateValue,
+		EstimatedDurationMinutes: i.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: i.MinimumFocusBlockMinutes,
+		Parent:                   i.Parent,
+		Objective:                i.Objective,
+		Workspace:                i.Workspace,
+		Team:                     i.Team,
+		Status:                   i.Status,
+		Assignee:                 i.Assignee,
+		BlockedBy:                i.BlockedBy,
+		Blocking:                 i.Blocking,
+		Related:                  i.Related,
+		Reporter:                 i.Reporter,
+		DescriptionHTML:          i.DescriptionHTML,
+		Priority:                 i.Priority,
+		Sprint:                   i.Sprint,
+		KeyResult:                i.KeyResult,
+		StartDate:                i.StartDate,
+		EndDate:                  i.EndDate,
+		CreatedAt:                i.CreatedAt,
+		UpdatedAt:                i.UpdatedAt,
+		DeletedAt:                i.DeletedAt,
+		CompletedAt:              i.CompletedAt,
+		CreationKey:              i.CreationKey,
 	}
 }
 

@@ -273,11 +273,15 @@ const CalendarTimedBlock = ({
   }
 
   const { block } = item;
+  const isMayaManaged = block.source === "maya";
   const label =
     block.blockType === "work"
       ? block.storyCode || block.teamCode || "Work"
       : "Focus";
-  const statusLabel = block.hasConflict ? "Conflict" : label;
+  let statusLabel = isMayaManaged ? `Maya · ${label}` : label;
+  if (block.hasConflict) {
+    statusLabel = "Conflict";
+  }
   const href =
     block.blockType === "work" && block.storyId
       ? getStoryHref(withWorkspace, block.storyId, block.storyCode)
@@ -285,12 +289,23 @@ const CalendarTimedBlock = ({
   let blockColorClass =
     "border-border-strong/60 bg-surface-muted/35 hover:bg-state-hover border-dashed";
   if (block.blockType === "work") {
-    blockColorClass =
-      "border-primary/60 bg-primary/[0.055] hover:bg-primary/[0.1]";
+    blockColorClass = "border-primary/60 bg-primary/[0.055]";
+    if (!isMayaManaged) {
+      blockColorClass += " hover:bg-primary/[0.1]";
+    }
   }
   if (block.hasConflict) {
-    blockColorClass =
-      "border-danger/60 bg-danger/[0.08] hover:bg-danger/[0.12]";
+    blockColorClass = "border-danger/60 bg-danger/[0.08]";
+    if (!isMayaManaged) {
+      blockColorClass += " hover:bg-danger/[0.12]";
+    }
+  }
+  let blockActionLabel = "Edit calendar block";
+  if (block.hasConflict) {
+    blockActionLabel = "Resolve calendar block conflict";
+  }
+  if (isMayaManaged) {
+    blockActionLabel = "Maya-managed calendar block";
   }
 
   return (
@@ -303,14 +318,13 @@ const CalendarTimedBlock = ({
       style={style}
     >
       <button
-        aria-label={
-          block.hasConflict
-            ? "Resolve calendar block conflict"
-            : "Edit calendar block"
-        }
+        aria-label={blockActionLabel}
         className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-lg focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+        disabled={isMayaManaged}
         onClick={() => {
-          onEdit(block);
+          if (!isMayaManaged) {
+            onEdit(block);
+          }
         }}
         type="button"
       />
@@ -852,7 +866,39 @@ const CalendarNotices = ({
       </Box>
     ) : null}
 
-    {connection && !canReadEventDetails ? (
+    {connection?.requiresReauthorization ? (
+      <Box className="border-border bg-surface-prominent/30 border-b px-5 py-3">
+        <Flex align="center" gap={3} justify="between">
+          <Flex align="center" className="min-w-0" gap={3}>
+            <Box className="flex h-10 w-10 shrink-0 items-center justify-center">
+              <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
+            </Box>
+            <Box className="min-w-0">
+              <Text fontSize="md" fontWeight="medium">
+                Reconnect to update Google Calendar work blocks
+              </Text>
+              <Text className="line-clamp-1" color="muted" fontSize="md">
+                Reconnect once to let FortyOne add and update scheduled work in
+                your primary calendar.
+              </Text>
+            </Box>
+          </Flex>
+          <Button
+            className="text-base"
+            color="tertiary"
+            loading={isReconnectPending}
+            onClick={onReconnect}
+            variant="outline"
+          >
+            Reconnect
+          </Button>
+        </Flex>
+      </Box>
+    ) : null}
+
+    {connection &&
+    !connection.requiresReauthorization &&
+    !canReadEventDetails ? (
       <Box className="border-border border-b px-5 py-3">
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" className="min-w-0" gap={3}>
@@ -1220,6 +1266,7 @@ const CalendarMonthItem = ({
   }
 
   const { block } = item;
+  const isMayaManaged = block.source === "maya";
   const href =
     block.blockType === "work" && block.storyId
       ? getStoryHref(withWorkspace, block.storyId, block.storyCode)
@@ -1231,6 +1278,13 @@ const CalendarMonthItem = ({
   if (block.hasConflict) {
     toneClass = "bg-danger/[0.08] text-danger";
   }
+  let blockActionLabel = `Edit ${title}`;
+  if (block.hasConflict) {
+    blockActionLabel = `Resolve conflict for ${title}`;
+  }
+  if (isMayaManaged) {
+    blockActionLabel = `Maya-managed block for ${title}`;
+  }
 
   return (
     <Box
@@ -1240,12 +1294,13 @@ const CalendarMonthItem = ({
       )}
     >
       <button
-        aria-label={
-          block.hasConflict ? `Resolve conflict for ${title}` : `Edit ${title}`
-        }
+        aria-label={blockActionLabel}
         className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-md focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+        disabled={isMayaManaged}
         onClick={() => {
-          onEdit(block);
+          if (!isMayaManaged) {
+            onEdit(block);
+          }
         }}
         type="button"
       />
@@ -1261,11 +1316,11 @@ const CalendarMonthItem = ({
           className="text-foreground hover:text-primary pointer-events-auto relative z-10 truncate"
           href={href}
         >
-          {title}
+          {isMayaManaged ? `Maya · ${title}` : title}
         </Link>
       ) : (
         <span className="text-foreground pointer-events-none relative z-10 truncate">
-          {title}
+          {isMayaManaged ? `Maya · ${title}` : title}
         </span>
       )}
     </Box>

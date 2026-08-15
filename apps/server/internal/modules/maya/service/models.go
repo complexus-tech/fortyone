@@ -81,17 +81,27 @@ type ActionPayload struct {
 }
 
 type AssignStoryPayload struct {
-	AssigneeID uuid.UUID `json:"assigneeId"`
+	AssigneeID        uuid.UUID `json:"assigneeId"`
+	ExpectedUpdatedAt time.Time `json:"expectedUpdatedAt"`
 }
 
 type ScheduleBlockPayload struct {
-	UserID         uuid.UUID `json:"userId"`
-	Title          string    `json:"title"`
-	StartAt        time.Time `json:"startAt"`
-	EndAt          time.Time `json:"endAt"`
-	PlannedStartAt time.Time `json:"plannedStartAt"`
-	PlannedEndAt   time.Time `json:"plannedEndAt"`
+	UserID                 uuid.UUID `json:"userId"`
+	SegmentIndex           int       `json:"segmentIndex"`
+	Operation              string    `json:"operation,omitempty"`
+	Title                  string    `json:"title"`
+	StartAt                time.Time `json:"startAt"`
+	EndAt                  time.Time `json:"endAt"`
+	PlannedStartAt         time.Time `json:"plannedStartAt"`
+	PlannedEndAt           time.Time `json:"plannedEndAt"`
+	ExpectedStoryUpdatedAt time.Time `json:"expectedStoryUpdatedAt"`
 }
+
+const (
+	ScheduleBlockOperationUpsert = "upsert"
+	ScheduleBlockOperationDelete = "delete"
+	ScheduleBlockOperationRetain = "retain"
+)
 
 type RiskPayload struct {
 	Code    string `json:"code"`
@@ -99,19 +109,21 @@ type RiskPayload struct {
 }
 
 type PlanInput struct {
-	Context          context.Context
-	WorkspaceID      uuid.UUID
-	Story            stories.CoreSingleStory
-	DurationMinutes  int
-	WindowStart      time.Time
-	WindowEnd        time.Time
-	WorkingDays      []int
-	Candidates       []CandidateSchedule
-	AssignmentReason string
+	Context                  context.Context
+	WorkspaceID              uuid.UUID
+	Story                    stories.CoreSingleStory
+	DurationMinutes          int
+	MinimumFocusBlockMinutes int
+	WindowStart              time.Time
+	WindowEnd                time.Time
+	WorkingDays              []int
+	Candidates               []CandidateSchedule
+	AssignmentReason         string
 }
 
 type CandidateSchedule struct {
 	Member      reports.CoreMemberWorkload
+	Timezone    string
 	BusyWindows []calendar.CoreBusyWindow
 	Blocks      []calendar.CoreScheduleBlock
 }
@@ -192,6 +204,26 @@ type Repository interface {
 	CreateActions(ctx context.Context, actions []CoreAction) ([]CoreAction, error)
 	MarkActionApplied(ctx context.Context, actionID uuid.UUID) error
 	MarkActionFailed(ctx context.Context, actionID uuid.UUID, message string) error
+}
+
+type ScheduleRepository interface {
+	ListScheduleStoryRefsForUser(ctx context.Context, userID uuid.UUID) ([]ScheduleStoryRef, error)
+	ClaimScheduleRecoveryStoryRefs(ctx context.Context, limit int, retryBefore, interruptedRunBefore time.Time) ([]ScheduleRecoveryRef, error)
+	CompleteInterruptedScheduleRun(ctx context.Context, runID uuid.UUID, message string) error
+	ListMayaScheduleOwners(ctx context.Context, workspaceID, storyID uuid.UUID) ([]uuid.UUID, error)
+	StoryIsSchedulableForUser(ctx context.Context, workspaceID, storyID, userID uuid.UUID) (bool, error)
+	StoryScheduleOwnershipIsRetainable(ctx context.Context, workspaceID, storyID, userID uuid.UUID) (bool, error)
+	WithScheduleStoryLock(ctx context.Context, workspaceID, storyID uuid.UUID, reconcile func() error) error
+}
+
+type ScheduleStoryRef struct {
+	WorkspaceID uuid.UUID `db:"workspace_id"`
+	StoryID     uuid.UUID `db:"story_id"`
+}
+
+type ScheduleRecoveryRef struct {
+	ScheduleStoryRef
+	InterruptedRunID *uuid.UUID `db:"interrupted_run_id"`
 }
 
 type CreateRunInput struct {

@@ -27,6 +27,37 @@ describe("normalizeStoryInput", () => {
     expect(payload).not.toHaveProperty("estimateValue");
   });
 
+  it("serializes scheduling time separately from relative complexity", () => {
+    const payload = normalizeStoryInput({
+      title: "Schedule focused work",
+      teamId: "team-1",
+      statusId: "status-1",
+      priority: "High",
+      estimateValue: 5,
+      estimatedDurationMinutes: 120,
+      minimumFocusBlockMinutes: 30,
+    });
+
+    expect(payload).toMatchObject({
+      estimateValue: 5,
+      estimatedDurationMinutes: 120,
+      minimumFocusBlockMinutes: 30,
+    });
+  });
+
+  it("rejects an invalid scheduling time contract", () => {
+    expect(() =>
+      normalizeStoryInput({
+        title: "Impossible split",
+        teamId: "team-1",
+        statusId: "status-1",
+        priority: "Medium",
+        estimatedDurationMinutes: 30,
+        minimumFocusBlockMinutes: 60,
+      }),
+    ).toThrow("cannot exceed estimatedDurationMinutes");
+  });
+
   it("rejects estimate values that the API cannot store", () => {
     expect(() =>
       normalizeStoryInput({

@@ -56,3 +56,13 @@ func TestShouldBridgeFeedbackStatusOnlyForCommittedStatusTransitions(t *testing.
 		Updates: map[string]any{"title": "Changed"}, PreviousStatusID: &previous,
 	}))
 }
+
+func TestShouldReconcileStoryScheduleUsesOnlySchedulingFields(t *testing.T) {
+	require.True(t, shouldReconcileStorySchedule(map[string]any{"estimated_duration_minutes": 90}))
+	require.True(t, shouldReconcileStorySchedule(map[string]any{"minimum_focus_block_minutes": 30}))
+	require.True(t, shouldReconcileStorySchedule(map[string]any{"assignee_id": uuid.New()}))
+	require.True(t, shouldReconcileStorySchedule(map[string]any{"status_id": uuid.New()}))
+	require.True(t, shouldReconcileStorySchedule(map[string]any{"end_date": time.Now()}))
+	require.True(t, shouldReconcileStorySchedule(map[string]any{"title": "Copy edit"}))
+	require.False(t, shouldReconcileStorySchedule(map[string]any{"description": "Copy edit"}))
+}

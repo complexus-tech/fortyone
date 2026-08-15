@@ -12,17 +12,20 @@ type AppIntegration struct {
 }
 
 type AppConnection struct {
-	ID                  uuid.UUID  `json:"id"`
-	Provider            string     `json:"provider"`
-	ConnectedEmail      string     `json:"connectedEmail"`
-	Timezone            string     `json:"timezone"`
-	Scopes              []string   `json:"scopes"`
-	CanReadEventDetails bool       `json:"canReadEventDetails"`
-	SyncStatus          string     `json:"syncStatus"`
-	SyncError           *string    `json:"syncError,omitempty"`
-	LastSyncedAt        *time.Time `json:"lastSyncedAt,omitempty"`
-	CreatedAt           time.Time  `json:"createdAt"`
-	UpdatedAt           time.Time  `json:"updatedAt"`
+	ID                      uuid.UUID  `json:"id"`
+	Provider                string     `json:"provider"`
+	ConnectedEmail          string     `json:"connectedEmail"`
+	Timezone                string     `json:"timezone"`
+	Scopes                  []string   `json:"scopes"`
+	CanReadEventDetails     bool       `json:"canReadEventDetails"`
+	CanWriteEvents          bool       `json:"canWriteEvents"`
+	RequiresReauthorization bool       `json:"requiresReauthorization"`
+	ReauthorizationReason   *string    `json:"reauthorizationReason,omitempty"`
+	SyncStatus              string     `json:"syncStatus"`
+	SyncError               *string    `json:"syncError,omitempty"`
+	LastSyncedAt            *time.Time `json:"lastSyncedAt,omitempty"`
+	CreatedAt               time.Time  `json:"createdAt"`
+	UpdatedAt               time.Time  `json:"updatedAt"`
 }
 
 type AppCreateConnectSession struct {
@@ -140,19 +143,26 @@ func toAppConnections(connections []calendar.CoreConnection) []AppConnection {
 }
 
 func toAppConnection(connection calendar.CoreConnection) AppConnection {
-	return AppConnection{
-		ID:                  connection.ID,
-		Provider:            string(connection.Provider),
-		ConnectedEmail:      connection.ConnectedEmail,
-		Timezone:            connection.Timezone,
-		Scopes:              connection.Scopes,
-		CanReadEventDetails: connection.CanReadEventDetails(),
-		SyncStatus:          string(connection.SyncStatus),
-		SyncError:           connection.SyncError,
-		LastSyncedAt:        connection.LastSyncedAt,
-		CreatedAt:           connection.CreatedAt,
-		UpdatedAt:           connection.UpdatedAt,
+	result := AppConnection{
+		ID:                      connection.ID,
+		Provider:                string(connection.Provider),
+		ConnectedEmail:          connection.ConnectedEmail,
+		Timezone:                connection.Timezone,
+		Scopes:                  connection.Scopes,
+		CanReadEventDetails:     connection.CanReadEventDetails(),
+		CanWriteEvents:          connection.CanWriteEvents(),
+		RequiresReauthorization: connection.RequiresReauthorization(),
+		SyncStatus:              string(connection.SyncStatus),
+		SyncError:               connection.SyncError,
+		LastSyncedAt:            connection.LastSyncedAt,
+		CreatedAt:               connection.CreatedAt,
+		UpdatedAt:               connection.UpdatedAt,
 	}
+	if result.RequiresReauthorization {
+		reason := calendar.GoogleCalendarWriteScopeReason
+		result.ReauthorizationReason = &reason
+	}
+	return result
 }
 
 func toAppSchedule(schedule calendar.CoreCalendarView) AppSchedule {

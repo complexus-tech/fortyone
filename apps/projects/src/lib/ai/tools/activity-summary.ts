@@ -6,7 +6,7 @@ import { filterActivityTimeline, paginateRecords } from "./tool-helpers";
 
 export const activitySummaryTool = tool({
   description:
-    "List recent workspace story activities. Use this for questions like what changed this week, who changed priority or estimate, and recent status changes.",
+    "List recent workspace story activities. Use this for questions like what changed this week, who changed priority or complexity, and recent status changes.",
   inputSchema: z.object({
     startDate: z
       .string()
@@ -21,7 +21,7 @@ export const activitySummaryTool = tool({
       .array(z.string())
       .optional()
       .describe(
-        "Filter by changed fields such as status, priority, estimate, assignee, sprint, objective, or labels.",
+        "Filter by changed fields such as status, priority, complexity, time needed, assignee, sprint, objective, or labels.",
       ),
     page: z.number().min(1).optional().describe("Page number. Default 1."),
     pageSize: z

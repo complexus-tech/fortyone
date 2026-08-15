@@ -2,6 +2,8 @@ package searchrepository
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
 	"time"
 
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
@@ -10,24 +12,28 @@ import (
 
 // dbStory represents the database model for a story in search results.
 type dbStory struct {
-	ID         uuid.UUID        `db:"id"`
-	SequenceID int              `db:"sequence_id"`
-	Title      string           `db:"title"`
-	Parent     *uuid.UUID       `db:"parent_id"`
-	Objective  *uuid.UUID       `db:"objective_id"`
-	Status     *uuid.UUID       `db:"status_id"`
-	Assignee   *uuid.UUID       `db:"assignee_id"`
-	Reporter   *uuid.UUID       `db:"reporter_id"`
-	Priority   string           `db:"priority"`
-	Sprint     *uuid.UUID       `db:"sprint_id"`
-	KeyResult  *uuid.UUID       `db:"key_result_id"`
-	Team       uuid.UUID        `db:"team_id"`
-	Workspace  uuid.UUID        `db:"workspace_id"`
-	StartDate  *time.Time       `db:"start_date"`
-	EndDate    *time.Time       `db:"end_date"`
-	CreatedAt  time.Time        `db:"created_at"`
-	UpdatedAt  time.Time        `db:"updated_at"`
-	Labels     *json.RawMessage `db:"labels"`
+	ID                       uuid.UUID        `db:"id"`
+	SequenceID               int              `db:"sequence_id"`
+	Title                    string           `db:"title"`
+	Parent                   *uuid.UUID       `db:"parent_id"`
+	Objective                *uuid.UUID       `db:"objective_id"`
+	Status                   *uuid.UUID       `db:"status_id"`
+	Assignee                 *uuid.UUID       `db:"assignee_id"`
+	Reporter                 *uuid.UUID       `db:"reporter_id"`
+	Priority                 string           `db:"priority"`
+	EstimateValue            *int16           `db:"estimate_unit"`
+	EstimateScheme           string           `db:"estimate_scheme"`
+	Sprint                   *uuid.UUID       `db:"sprint_id"`
+	KeyResult                *uuid.UUID       `db:"key_result_id"`
+	Team                     uuid.UUID        `db:"team_id"`
+	Workspace                uuid.UUID        `db:"workspace_id"`
+	StartDate                *time.Time       `db:"start_date"`
+	EndDate                  *time.Time       `db:"end_date"`
+	EstimatedDurationMinutes *int             `db:"estimated_duration_minutes"`
+	MinimumFocusBlockMinutes *int             `db:"minimum_focus_block_minutes"`
+	CreatedAt                time.Time        `db:"created_at"`
+	UpdatedAt                time.Time        `db:"updated_at"`
+	Labels                   *json.RawMessage `db:"labels"`
 }
 
 // dbObjective represents the database model for an objective in search results.
@@ -68,25 +74,47 @@ func toCoreSearchStory(story dbStory) search.CoreSearchStory {
 	}
 
 	return search.CoreSearchStory{
-		ID:         story.ID,
-		SequenceID: story.SequenceID,
-		Title:      story.Title,
-		Parent:     story.Parent,
-		Objective:  story.Objective,
-		Status:     story.Status,
-		Assignee:   story.Assignee,
-		Reporter:   story.Reporter,
-		Priority:   story.Priority,
-		Sprint:     story.Sprint,
-		KeyResult:  story.KeyResult,
-		Team:       story.Team,
-		Workspace:  story.Workspace,
-		StartDate:  story.StartDate,
-		EndDate:    story.EndDate,
-		CreatedAt:  story.CreatedAt,
-		UpdatedAt:  story.UpdatedAt,
-		Labels:     labels,
+		ID:                       story.ID,
+		SequenceID:               story.SequenceID,
+		Title:                    story.Title,
+		Parent:                   story.Parent,
+		Objective:                story.Objective,
+		Status:                   story.Status,
+		Assignee:                 story.Assignee,
+		Reporter:                 story.Reporter,
+		Priority:                 story.Priority,
+		EstimateLabel:            searchEstimateLabel(story.EstimateScheme, story.EstimateValue),
+		EstimateValue:            story.EstimateValue,
+		EstimateScheme:           story.EstimateScheme,
+		Sprint:                   story.Sprint,
+		KeyResult:                story.KeyResult,
+		Team:                     story.Team,
+		Workspace:                story.Workspace,
+		StartDate:                story.StartDate,
+		EndDate:                  story.EndDate,
+		EstimatedDurationMinutes: story.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+		CreatedAt:                story.CreatedAt,
+		UpdatedAt:                story.UpdatedAt,
+		Labels:                   labels,
 	}
+}
+
+func searchEstimateLabel(scheme string, value *int16) *string {
+	if value == nil {
+		return nil
+	}
+	label := ""
+	switch strings.TrimSpace(strings.ToLower(scheme)) {
+	case "points":
+		label = strconv.FormatInt(int64(*value), 10)
+	default:
+		label = map[int16]string{1: "XS", 2: "S", 3: "M", 5: "L", 8: "XL"}[*value]
+	}
+	if label == "" {
+		return nil
+	}
+	return &label
 }
 
 // toCoreSearchStories converts multiple dbStories to CoreSearchStories.

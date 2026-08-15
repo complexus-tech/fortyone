@@ -2,6 +2,7 @@ package maya
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -81,18 +82,14 @@ func TestCreateWorkPlanPersistsAndAppliesActions(t *testing.T) {
 	if calendarSvc.createdBlock.Source != calendar.ScheduleBlockSourceMaya {
 		t.Fatalf("expected Maya schedule block source, got %q", calendarSvc.createdBlock.Source)
 	}
-	expectedScheduledEndAt := startAt.Add(60 * time.Minute)
-	if storiesSvc.updatedStartDate == nil || !storiesSvc.updatedStartDate.Equal(startAt) {
-		t.Fatalf("expected story start date update to %s, got %v", startAt, storiesSvc.updatedStartDate)
-	}
-	if storiesSvc.updatedEndDate == nil || !storiesSvc.updatedEndDate.Equal(expectedScheduledEndAt) {
-		t.Fatalf("expected story end date update to %s, got %v", expectedScheduledEndAt, storiesSvc.updatedEndDate)
+	if storiesSvc.updatedStartDate != nil || storiesSvc.updatedEndDate != nil {
+		t.Fatalf("generated schedule must not mutate story constraint dates: start=%v end=%v", storiesSvc.updatedStartDate, storiesSvc.updatedEndDate)
 	}
 	if len(repo.appliedActionIDs) != 2 {
 		t.Fatalf("expected two applied action marks, got %d", len(repo.appliedActionIDs))
 	}
-	if len(storiesSvc.updateReasons) != 2 {
-		t.Fatalf("expected two reason-aware story updates, got %d", len(storiesSvc.updateReasons))
+	if len(storiesSvc.updateReasons) != 1 {
+		t.Fatalf("expected one reason-aware assignment update, got %d", len(storiesSvc.updateReasons))
 	}
 	for _, reason := range storiesSvc.updateReasons {
 		if reason == "" {
@@ -150,7 +147,61 @@ func TestCreateWorkPlanUsesBoundedDefaultCandidatePool(t *testing.T) {
 	}
 }
 
-func TestCreateWorkPlanOverwritesStoryDatesWithPlannedWorkWindow(t *testing.T) {
+func TestCreateWorkPlanUsesAccountWideAvailabilityTimezoneAndMinimumFocus(t *testing.T) {
+	workspaceID := uuid.New()
+	otherWorkspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	duration := 150
+	minimumFocus := 60
+	windowStart := time.Date(2026, 6, 15, 6, 0, 0, 0, time.UTC)
+	windowEnd := time.Date(2026, 6, 15, 14, 0, 0, 0, time.UTC)
+	calendarSvc := &fakeMayaCalendar{schedulingView: calendar.CoreSchedule{
+		Timezone: "Africa/Harare",
+		Blocks: []calendar.CoreScheduleBlock{{
+			WorkspaceID: otherWorkspaceID, UserID: userID, Title: "Busy",
+			StartAt: time.Date(2026, 6, 15, 7, 0, 0, 0, time.UTC),
+			EndAt:   time.Date(2026, 6, 15, 8, 0, 0, 0, time.UTC),
+			Source:  calendar.ScheduleBlockSourceUser, IsLocked: true,
+		}},
+	}}
+	service := New(Dependencies{
+		Repository: &fakeMayaRepository{},
+		Stories: &fakeMayaStories{story: stories.CoreSingleStory{
+			ID: storyID, Workspace: workspaceID, Team: uuid.New(), Title: "Account-wide plan",
+			EstimatedDurationMinutes: &duration, MinimumFocusBlockMinutes: &minimumFocus,
+		}},
+		Reports:  &fakeMayaReports{analysis: reports.CoreWorkloadAnalysis{Members: []reports.CoreMemberWorkload{{UserID: userID}}}},
+		Calendar: calendarSvc, Users: &fakeMayaUsers{members: []users.CoreUser{{ID: userID}}},
+		Planner: NewPlanner(), MayaActorID: uuid.New(),
+	})
+	plan, err := service.CreateWorkPlan(context.Background(), CreateWorkPlanInput{
+		WorkspaceID: workspaceID, StoryID: storyID, TriggeredBy: uuid.New(),
+		WindowStart: windowStart, WindowEnd: windowEnd,
+	})
+	if err != nil {
+		t.Fatalf("CreateWorkPlan returned error: %v", err)
+	}
+	if len(plan.Actions) != 3 {
+		t.Fatalf("expected assignment plus two focus segments: %#v", plan.Actions)
+	}
+	firstSegment := plan.Actions[1].Payload.ScheduleBlock
+	secondSegment := plan.Actions[2].Payload.ScheduleBlock
+	if firstSegment == nil || secondSegment == nil {
+		t.Fatalf("expected two schedule payloads: %#v", plan.Actions)
+	}
+	if expected := time.Date(2026, 6, 15, 8, 0, 0, 0, time.UTC); !firstSegment.StartAt.Equal(expected) {
+		t.Fatalf("expected other-workspace block to defer local 09:00 start until %s, got %s", expected, firstSegment.StartAt)
+	}
+	if firstSegment.EndAt.Sub(firstSegment.StartAt) < time.Hour || secondSegment.EndAt.Sub(secondSegment.StartAt) < time.Hour {
+		t.Fatalf("expected story minimum focus to reach planner: %#v %#v", firstSegment, secondSegment)
+	}
+	if firstSegment.EndAt.Sub(firstSegment.StartAt)+secondSegment.EndAt.Sub(secondSegment.StartAt) != 150*time.Minute {
+		t.Fatalf("expected exact task duration across segments: %#v %#v", firstSegment, secondSegment)
+	}
+}
+
+func TestCreateWorkPlanPreservesStoryConstraintDates(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New()
 	storyID := uuid.New()
@@ -162,8 +213,6 @@ func TestCreateWorkPlanOverwritesStoryDatesWithPlannedWorkWindow(t *testing.T) {
 	existingEndDate := time.Date(2026, 6, 24, 17, 0, 0, 0, time.UTC)
 	windowStart := time.Date(2026, 6, 16, 9, 0, 0, 0, time.UTC)
 	windowEnd := time.Date(2026, 6, 30, 17, 0, 0, 0, time.UTC)
-	expectedStartDate := windowStart
-	expectedEndDate := windowStart.Add(60 * time.Minute)
 
 	storiesSvc := &fakeMayaStories{
 		story: stories.CoreSingleStory{
@@ -202,11 +251,8 @@ func TestCreateWorkPlanOverwritesStoryDatesWithPlannedWorkWindow(t *testing.T) {
 		t.Fatalf("CreateWorkPlan returned error: %v", err)
 	}
 
-	if value, ok := storiesSvc.lastUpdates["start_date"].(time.Time); !ok || !value.Equal(expectedStartDate) {
-		t.Fatalf("expected start date to be overwritten with %s, got %#v", expectedStartDate, storiesSvc.lastUpdates["start_date"])
-	}
-	if value, ok := storiesSvc.lastUpdates["end_date"].(time.Time); !ok || !value.Equal(expectedEndDate) {
-		t.Fatalf("expected end date to be overwritten with %s, got %#v", expectedEndDate, storiesSvc.lastUpdates["end_date"])
+	if storiesSvc.updatedStartDate != nil || storiesSvc.updatedEndDate != nil {
+		t.Fatalf("generated calendar placement must not overwrite story constraints: start=%v end=%v", storiesSvc.updatedStartDate, storiesSvc.updatedEndDate)
 	}
 }
 
@@ -223,11 +269,25 @@ func TestShouldIncludeCandidateExcludesMayaActor(t *testing.T) {
 }
 
 type fakeMayaRepository struct {
-	actions          []CoreAction
-	appliedActionIDs []uuid.UUID
+	actions                      []CoreAction
+	createRunCalls               int
+	appliedActionIDs             []uuid.UUID
+	storyRefs                    []ScheduleStoryRef
+	recoveryRefs                 []ScheduleRecoveryRef
+	recoveryClaimLimit           int
+	recoveryRetryBefore          time.Time
+	recoveryInterruptedRunBefore time.Time
+	recoveryRequiresOwnership    bool
+	completedInterruptedRunIDs   []uuid.UUID
+	scheduleOwners               []uuid.UUID
+	schedulable                  bool
+	ownershipRetainable          bool
+	scheduleLock                 sync.Mutex
+	scheduleLockCalls            int
 }
 
 func (f *fakeMayaRepository) CreateRun(_ context.Context, input CreateRunInput) (CoreRun, error) {
+	f.createRunCalls++
 	return CoreRun{
 		ID:          uuid.New(),
 		WorkspaceID: input.WorkspaceID,
@@ -268,14 +328,58 @@ func (f *fakeMayaRepository) MarkActionFailed(_ context.Context, _ uuid.UUID, _ 
 	return nil
 }
 
+func (f *fakeMayaRepository) ListScheduleStoryRefsForUser(_ context.Context, _ uuid.UUID) ([]ScheduleStoryRef, error) {
+	return append([]ScheduleStoryRef(nil), f.storyRefs...), nil
+}
+
+func (f *fakeMayaRepository) ClaimScheduleRecoveryStoryRefs(_ context.Context, limit int, retryBefore, interruptedRunBefore time.Time) ([]ScheduleRecoveryRef, error) {
+	f.recoveryClaimLimit = limit
+	f.recoveryRetryBefore = retryBefore
+	f.recoveryInterruptedRunBefore = interruptedRunBefore
+	if f.recoveryRequiresOwnership && len(f.scheduleOwners) == 0 {
+		return nil, nil
+	}
+	refs := append([]ScheduleRecoveryRef(nil), f.recoveryRefs...)
+	if limit > 0 && len(refs) > limit {
+		refs = refs[:limit]
+	}
+	return refs, nil
+}
+
+func (f *fakeMayaRepository) CompleteInterruptedScheduleRun(_ context.Context, runID uuid.UUID, _ string) error {
+	f.completedInterruptedRunIDs = append(f.completedInterruptedRunIDs, runID)
+	return nil
+}
+
+func (f *fakeMayaRepository) ListMayaScheduleOwners(_ context.Context, _, _ uuid.UUID) ([]uuid.UUID, error) {
+	return append([]uuid.UUID(nil), f.scheduleOwners...), nil
+}
+
+func (f *fakeMayaRepository) StoryIsSchedulableForUser(_ context.Context, _, _, _ uuid.UUID) (bool, error) {
+	return f.schedulable, nil
+}
+
+func (f *fakeMayaRepository) StoryScheduleOwnershipIsRetainable(_ context.Context, _, _, _ uuid.UUID) (bool, error) {
+	return f.ownershipRetainable, nil
+}
+
+func (f *fakeMayaRepository) WithScheduleStoryLock(_ context.Context, _, _ uuid.UUID, reconcile func() error) error {
+	f.scheduleLock.Lock()
+	defer f.scheduleLock.Unlock()
+	f.scheduleLockCalls++
+	return reconcile()
+}
+
 type fakeMayaStories struct {
-	story            stories.CoreSingleStory
-	actorID          uuid.UUID
-	updatedAssignee  *uuid.UUID
-	updatedStartDate *time.Time
-	updatedEndDate   *time.Time
-	lastUpdates      map[string]any
-	updateReasons    []string
+	story                       stories.CoreSingleStory
+	actorID                     uuid.UUID
+	updatedAssignee             *uuid.UUID
+	updatedStartDate            *time.Time
+	updatedEndDate              *time.Time
+	lastUpdates                 map[string]any
+	updateReasons               []string
+	assignmentUpdateErr         error
+	assignmentExpectedUpdatedAt time.Time
 }
 
 func (f *fakeMayaStories) Get(_ context.Context, storyID, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
@@ -292,8 +396,12 @@ func (f *fakeMayaStories) UpdateExternalWithReason(_ context.Context, actorID, s
 	f.actorID = actorID
 	f.lastUpdates = updates
 	f.updateReasons = append(f.updateReasons, reason)
+	if _, isAssignmentUpdate := updates["assignee_id"]; isAssignmentUpdate && f.assignmentUpdateErr != nil {
+		return f.assignmentUpdateErr
+	}
 	if value, ok := updates["assignee_id"].(uuid.UUID); ok {
 		f.updatedAssignee = &value
+		f.story.Assignee = &value
 	}
 	if value, ok := updates["start_date"].(time.Time); ok {
 		f.updatedStartDate = &value
@@ -302,6 +410,14 @@ func (f *fakeMayaStories) UpdateExternalWithReason(_ context.Context, actorID, s
 		f.updatedEndDate = &value
 	}
 	return nil
+}
+
+func (f *fakeMayaStories) UpdateExternalWithReasonIfUnchanged(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any, reason string) error {
+	f.assignmentExpectedUpdatedAt = expectedUpdatedAt
+	if !f.story.UpdatedAt.IsZero() && !f.story.UpdatedAt.Equal(expectedUpdatedAt) {
+		return stories.ErrStoryChanged
+	}
+	return f.UpdateExternalWithReason(ctx, actorID, storyID, workspaceID, updates, reason)
 }
 
 type fakeMayaReports struct {
@@ -313,8 +429,114 @@ func (f *fakeMayaReports) GetWorkloadAnalysis(_ context.Context, _ uuid.UUID, _ 
 }
 
 type fakeMayaCalendar struct {
-	createdBlock      calendar.CoreScheduleBlockInput
-	listScheduleCalls int
+	createdBlock          calendar.CoreScheduleBlockInput
+	reconciled            calendar.MayaScheduleReconcileInput
+	reconciliations       []calendar.MayaScheduleReconcileInput
+	schedulingView        calendar.CoreSchedule
+	mayaBlocks            []calendar.CoreScheduleBlock
+	reconcileErr          error
+	dispatchErr           error
+	dispatchedUsers       []uuid.UUID
+	listScheduleCalls     int
+	hasOwnership          bool
+	ownerships            map[uuid.UUID]bool
+	ownerRepo             *fakeMayaRepository
+	onReconcile           func(calendar.MayaScheduleReconcileInput)
+	currentStoryUpdatedAt *time.Time
+}
+
+func (f *fakeMayaCalendar) ListSchedulingAvailability(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (calendar.CoreSchedule, error) {
+	f.listScheduleCalls++
+	view := f.schedulingView
+	view.StartAt = startAt
+	view.EndAt = endAt
+	return view, nil
+}
+
+func (f *fakeMayaCalendar) ListMayaScheduleBlocksForStory(_ context.Context, workspaceID, userID, storyID uuid.UUID) ([]calendar.CoreScheduleBlock, error) {
+	blocks := make([]calendar.CoreScheduleBlock, 0)
+	available := f.mayaBlocks
+	if available == nil {
+		available = f.schedulingView.Blocks
+	}
+	for _, block := range available {
+		if block.WorkspaceID == workspaceID && block.UserID == userID && block.StoryID != nil && *block.StoryID == storyID && block.Source == calendar.ScheduleBlockSourceMaya {
+			blocks = append(blocks, block)
+		}
+	}
+	return blocks, nil
+}
+
+func (f *fakeMayaCalendar) MayaScheduleOwnershipExists(_ context.Context, _, userID, _ uuid.UUID) (bool, error) {
+	if f.ownerships != nil {
+		return f.ownerships[userID], nil
+	}
+	return f.hasOwnership, nil
+}
+
+func (f *fakeMayaCalendar) ReconcileMayaScheduleBlocks(_ context.Context, input calendar.MayaScheduleReconcileInput) (calendar.CoreScheduleReconcileResult, error) {
+	if input.ExpectedStoryUpdatedAt != nil && f.currentStoryUpdatedAt != nil && !input.ExpectedStoryUpdatedAt.Equal(*f.currentStoryUpdatedAt) {
+		return calendar.CoreScheduleReconcileResult{}, calendar.ErrCalendarScheduleStalePlan
+	}
+	f.reconciled = input
+	f.reconciliations = append(f.reconciliations, input)
+	if f.onReconcile != nil {
+		f.onReconcile(input)
+	}
+	if f.reconcileErr != nil {
+		return calendar.CoreScheduleReconcileResult{}, f.reconcileErr
+	}
+	owned := input.KeepOwnership || len(input.Segments) > 0
+	f.hasOwnership = owned
+	if f.ownerships == nil {
+		f.ownerships = make(map[uuid.UUID]bool)
+	}
+	f.ownerships[input.UserID] = owned
+	if f.ownerRepo != nil {
+		if owned {
+			f.ownerRepo.scheduleOwners = []uuid.UUID{input.UserID}
+		} else {
+			owners := make([]uuid.UUID, 0, len(f.ownerRepo.scheduleOwners))
+			for _, ownerID := range f.ownerRepo.scheduleOwners {
+				if ownerID != input.UserID {
+					owners = append(owners, ownerID)
+				}
+			}
+			f.ownerRepo.scheduleOwners = owners
+		}
+	}
+	blocks := make([]calendar.CoreScheduleBlock, len(input.Segments))
+	for index, segment := range input.Segments {
+		storyID := input.StoryID
+		blocks[index] = calendar.CoreScheduleBlock{
+			ID: uuid.New(), WorkspaceID: input.WorkspaceID, UserID: input.UserID, StoryID: &storyID,
+			Title: segment.Title, StartAt: segment.StartAt, EndAt: segment.EndAt,
+			Source: calendar.ScheduleBlockSourceMaya, SegmentIndex: segment.SegmentIndex,
+		}
+	}
+	retainedBlocks := make([]calendar.CoreScheduleBlock, 0, len(f.mayaBlocks)+len(blocks))
+	for _, block := range f.mayaBlocks {
+		if block.WorkspaceID == input.WorkspaceID && block.UserID == input.UserID && block.StoryID != nil && *block.StoryID == input.StoryID {
+			continue
+		}
+		retainedBlocks = append(retainedBlocks, block)
+	}
+	f.mayaBlocks = append(retainedBlocks, blocks...)
+	if len(input.Segments) > 0 {
+		first := input.Segments[0]
+		storyID := input.StoryID
+		f.createdBlock = calendar.CoreScheduleBlockInput{
+			WorkspaceID: input.WorkspaceID, UserID: input.UserID, StoryID: &storyID,
+			Title: first.Title, StartAt: first.StartAt, EndAt: first.EndAt,
+			Source: calendar.ScheduleBlockSourceMaya, SegmentIndex: first.SegmentIndex,
+		}
+	}
+	return calendar.CoreScheduleReconcileResult{Blocks: blocks}, nil
+}
+
+func (f *fakeMayaCalendar) DispatchScheduleEventOutbox(_ context.Context, userID uuid.UUID) error {
+	f.dispatchedUsers = append(f.dispatchedUsers, userID)
+	return f.dispatchErr
 }
 
 func (f *fakeMayaCalendar) ListSchedule(_ context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (calendar.CoreSchedule, error) {

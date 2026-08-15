@@ -34,6 +34,7 @@ export const ProfileProvider = ({
       "Status",
       "Assignee",
       "Estimate",
+      "Time needed",
       "Priority",
       "Deadline",
       "Created",

@@ -29,6 +29,7 @@ type StoriesService interface {
 	Get(ctx context.Context, storyID, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
 	UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error
 	UpdateExternalWithReason(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error
+	UpdateExternalWithReasonIfUnchanged(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, expectedUpdatedAt time.Time, updates map[string]any, reason string) error
 }
 
 type ReportsService interface {
@@ -38,6 +39,14 @@ type ReportsService interface {
 type CalendarService interface {
 	ListSchedule(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (calendar.CoreSchedule, error)
 	CreateScheduleBlock(ctx context.Context, input calendar.CoreScheduleBlockInput) (calendar.CoreScheduleBlock, error)
+}
+
+type ScheduleCalendarService interface {
+	ListSchedulingAvailability(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (calendar.CoreSchedule, error)
+	ListMayaScheduleBlocksForStory(ctx context.Context, workspaceID, userID, storyID uuid.UUID) ([]calendar.CoreScheduleBlock, error)
+	MayaScheduleOwnershipExists(ctx context.Context, workspaceID, userID, storyID uuid.UUID) (bool, error)
+	ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.MayaScheduleReconcileInput) (calendar.CoreScheduleReconcileResult, error)
+	DispatchScheduleEventOutbox(ctx context.Context, userID uuid.UUID) error
 }
 
 type UsersService interface {
@@ -193,7 +202,19 @@ func (s *Service) CreateWorkPlan(ctx context.Context, input CreateWorkPlanInput)
 		actions = s.applyActions(ctx, actions)
 	}
 
-	completed, err := s.repo.CompleteRun(ctx, run.ID, RunStatusSucceeded, result.Summary, nil)
+	runStatus := RunStatusSucceeded
+	var runError *string
+	for _, action := range actions {
+		if action.Status == ActionStatusFailed {
+			runStatus = RunStatusFailed
+			if action.Error != nil {
+				message := *action.Error
+				runError = &message
+			}
+			break
+		}
+	}
+	completed, err := s.repo.CompleteRun(ctx, run.ID, runStatus, result.Summary, runError)
 	if err != nil {
 		span.RecordError(err)
 		return WorkPlan{}, fmt.Errorf("complete maya run: %w", err)
@@ -336,7 +357,7 @@ func batchCandidateDurationMinutes(storiesForBatch []stories.CoreSingleStory, re
 	if requestedDurationMinutes > 0 {
 		return requestedDurationMinutes
 	}
-	duration := defaultDurationMinutes
+	duration := 0
 	for _, story := range storiesForBatch {
 		if candidate := estimatedWorkDurationMinutes(story); candidate > duration {
 			duration = candidate
@@ -463,12 +484,17 @@ func (s *Service) buildCandidates(ctx context.Context, input CreateWorkPlanInput
 				member.TeamAIRoleDescription = user.InferredTeamAIRoleDescription
 			}
 		}
-		schedule, err := s.calendar.ListSchedule(ctx, input.WorkspaceID, userID, input.WindowStart, input.WindowEnd)
+		scheduleCalendar, ok := s.calendar.(ScheduleCalendarService)
+		if !ok {
+			return nil, nil, ErrNotConfigured
+		}
+		schedule, err := scheduleCalendar.ListSchedulingAvailability(ctx, input.WorkspaceID, userID, input.WindowStart, input.WindowEnd)
 		if err != nil {
 			return nil, nil, fmt.Errorf("list calendar schedule for candidate %s: %w", userID, err)
 		}
 		candidates = append(candidates, CandidateSchedule{
 			Member:      member,
+			Timezone:    schedule.Timezone,
 			BusyWindows: schedule.BusyWindows,
 			Blocks:      schedule.Blocks,
 		})
@@ -502,20 +528,221 @@ func shouldIncludeCandidate(userID uuid.UUID, candidateUserIDs []uuid.UUID, maya
 func (s *Service) applyActions(ctx context.Context, actions []CoreAction) []CoreAction {
 	applied := make([]CoreAction, len(actions))
 	copy(applied, actions)
+	scheduleIndexes := make([]int, 0, len(applied))
+	for index := range applied {
+		if applied[index].Type == ActionTypeScheduleWorkBlock {
+			scheduleIndexes = append(scheduleIndexes, index)
+		}
+	}
+	scheduleApplied := len(scheduleIndexes) == 0
+	var scheduleState *appliedScheduleState
+	if len(scheduleIndexes) > 0 {
+		scheduleActions := make([]CoreAction, 0, len(scheduleIndexes))
+		for _, index := range scheduleIndexes {
+			scheduleActions = append(scheduleActions, applied[index])
+		}
+		state, err := s.applyScheduleActionsAtomically(ctx, scheduleActions)
+		if err != nil {
+			for _, index := range scheduleIndexes {
+				s.markActionFailed(ctx, &applied[index], err.Error())
+			}
+		} else {
+			scheduleApplied = true
+			scheduleState = &state
+		}
+	}
+	dispatchSchedule := false
 	for i, action := range applied {
-		if err := s.applyAction(ctx, action); err != nil {
-			message := err.Error()
-			applied[i].Status = ActionStatusFailed
-			applied[i].Error = &message
-			_ = s.repo.MarkActionFailed(ctx, action.ID, message)
+		if action.Type == ActionTypeScheduleWorkBlock {
 			continue
 		}
-		now := time.Now().UTC()
-		applied[i].Status = ActionStatusApplied
-		applied[i].AppliedAt = &now
-		_ = s.repo.MarkActionApplied(ctx, action.ID)
+		if action.Type == ActionTypeAssignStory && !scheduleApplied {
+			s.markActionFailed(ctx, &applied[i], "assignment was not applied because the schedule could not be committed")
+			continue
+		}
+		if err := s.applyAction(ctx, action); err != nil {
+			s.markActionFailed(ctx, &applied[i], err.Error())
+			if action.Type == ActionTypeAssignStory && scheduleState != nil {
+				rollbackErr := s.restoreScheduleState(ctx, *scheduleState)
+				scheduleApplied = false
+				message := "schedule was restored because the dependent story assignment failed"
+				if rollbackErr != nil {
+					message = errors.Join(errors.New(message), rollbackErr).Error()
+				} else {
+					dispatchSchedule = true
+				}
+				for _, index := range scheduleIndexes {
+					s.markActionFailed(ctx, &applied[index], message)
+				}
+			}
+			continue
+		}
+		s.markActionApplied(ctx, &applied[i])
+	}
+	if scheduleApplied {
+		for _, index := range scheduleIndexes {
+			s.markActionApplied(ctx, &applied[index])
+		}
+		dispatchSchedule = scheduleState != nil
+	}
+	if dispatchSchedule && scheduleState != nil {
+		// The database outbox is the delivery contract. A transient provider
+		// failure must not change the result of the durable local mutation.
+		_ = scheduleState.calendar.DispatchScheduleEventOutbox(ctx, scheduleState.userID)
 	}
 	return applied
+}
+
+type appliedScheduleState struct {
+	calendar       ScheduleCalendarService
+	workspaceID    uuid.UUID
+	userID         uuid.UUID
+	storyID        uuid.UUID
+	previousOwners []scheduleOwnerState
+}
+
+type scheduleOwnerState struct {
+	userID        uuid.UUID
+	segments      []calendar.MayaScheduleSegmentInput
+	keepOwnership bool
+}
+
+func (s *Service) applyScheduleActionsAtomically(ctx context.Context, actions []CoreAction) (appliedScheduleState, error) {
+	if len(actions) == 0 {
+		return appliedScheduleState{}, nil
+	}
+	first := actions[0]
+	scheduleCalendar, err := s.scheduleCalendarService()
+	if err != nil {
+		return appliedScheduleState{}, err
+	}
+	if first.Payload.ScheduleBlock == nil {
+		return appliedScheduleState{}, fmt.Errorf("missing schedule block payload")
+	}
+	userID := first.Payload.ScheduleBlock.UserID
+	expectedStoryUpdatedAt := first.Payload.ScheduleBlock.ExpectedStoryUpdatedAt
+	scheduleRepo, err := s.scheduleRepository()
+	if err != nil {
+		return appliedScheduleState{}, err
+	}
+	ownerIDs, err := scheduleRepo.ListMayaScheduleOwners(ctx, first.WorkspaceID, first.StoryID)
+	if err != nil {
+		return appliedScheduleState{}, err
+	}
+	if !slices.Contains(ownerIDs, userID) {
+		ownerIDs = append(ownerIDs, userID)
+	}
+	previousOwners := make([]scheduleOwnerState, 0, len(ownerIDs))
+	for _, ownerID := range ownerIDs {
+		currentBlocks, err := scheduleCalendar.ListMayaScheduleBlocksForStory(ctx, first.WorkspaceID, ownerID, first.StoryID)
+		if err != nil {
+			return appliedScheduleState{}, err
+		}
+		previousOwnership, err := scheduleCalendar.MayaScheduleOwnershipExists(ctx, first.WorkspaceID, ownerID, first.StoryID)
+		if err != nil {
+			return appliedScheduleState{}, err
+		}
+		previousOwners = append(previousOwners, scheduleOwnerState{
+			userID: ownerID, segments: mayaSegmentsFromBlocks(currentBlocks), keepOwnership: previousOwnership,
+		})
+	}
+	segments := make([]calendar.MayaScheduleSegmentInput, 0, len(actions))
+	for _, action := range actions {
+		payload := action.Payload.ScheduleBlock
+		if payload == nil || action.WorkspaceID != first.WorkspaceID || action.StoryID != first.StoryID || payload.UserID != userID {
+			return appliedScheduleState{}, fmt.Errorf("schedule actions do not belong to one story and user")
+		}
+		if !payload.ExpectedStoryUpdatedAt.Equal(expectedStoryUpdatedAt) {
+			return appliedScheduleState{}, fmt.Errorf("schedule actions were planned from different story versions")
+		}
+		if payload.Operation == ScheduleBlockOperationRetain {
+			continue
+		}
+		if payload.Operation != "" && payload.Operation != ScheduleBlockOperationUpsert {
+			return appliedScheduleState{}, fmt.Errorf("unsupported initial schedule operation %q", payload.Operation)
+		}
+		segments = append(segments, calendar.MayaScheduleSegmentInput{
+			SegmentIndex: payload.SegmentIndex,
+			Title:        payload.Title,
+			StartAt:      payload.StartAt,
+			EndAt:        payload.EndAt,
+		})
+	}
+	if _, err := scheduleCalendar.ReconcileMayaScheduleBlocks(ctx, calendar.MayaScheduleReconcileInput{
+		WorkspaceID: first.WorkspaceID, UserID: userID, StoryID: first.StoryID,
+		ExpectedStoryUpdatedAt: &expectedStoryUpdatedAt, Segments: segments, KeepOwnership: true,
+	}); err != nil {
+		return appliedScheduleState{}, err
+	}
+	state := appliedScheduleState{
+		calendar: scheduleCalendar, workspaceID: first.WorkspaceID, userID: userID,
+		storyID: first.StoryID, previousOwners: previousOwners,
+	}
+	for _, previousOwner := range previousOwners {
+		if previousOwner.userID == userID {
+			continue
+		}
+		if _, err := scheduleCalendar.ReconcileMayaScheduleBlocks(ctx, calendar.MayaScheduleReconcileInput{
+			WorkspaceID: first.WorkspaceID, UserID: previousOwner.userID, StoryID: first.StoryID,
+		}); err != nil {
+			return appliedScheduleState{}, errors.Join(err, s.restoreScheduleState(ctx, state))
+		}
+	}
+	return state, nil
+}
+
+func (s *Service) restoreScheduleState(ctx context.Context, state appliedScheduleState) error {
+	previousByOwner := make(map[uuid.UUID]scheduleOwnerState, len(state.previousOwners))
+	for _, previous := range state.previousOwners {
+		previousByOwner[previous.userID] = previous
+	}
+	selected, existed := previousByOwner[state.userID]
+	if !existed {
+		selected = scheduleOwnerState{userID: state.userID}
+	}
+	var restoreErr error
+	if _, err := state.calendar.ReconcileMayaScheduleBlocks(ctx, calendar.MayaScheduleReconcileInput{
+		WorkspaceID: state.workspaceID, UserID: selected.userID, StoryID: state.storyID,
+		Segments: selected.segments, KeepOwnership: selected.keepOwnership,
+	}); err != nil {
+		restoreErr = errors.Join(restoreErr, err)
+	}
+	for _, previous := range state.previousOwners {
+		if previous.userID == state.userID {
+			continue
+		}
+		if _, err := state.calendar.ReconcileMayaScheduleBlocks(ctx, calendar.MayaScheduleReconcileInput{
+			WorkspaceID: state.workspaceID, UserID: previous.userID, StoryID: state.storyID,
+			Segments: previous.segments, KeepOwnership: previous.keepOwnership,
+		}); err != nil {
+			restoreErr = errors.Join(restoreErr, err)
+		}
+	}
+	return restoreErr
+}
+
+func mayaSegmentsFromBlocks(blocks []calendar.CoreScheduleBlock) []calendar.MayaScheduleSegmentInput {
+	segments := make([]calendar.MayaScheduleSegmentInput, 0, len(blocks))
+	for _, block := range blocks {
+		segments = append(segments, calendar.MayaScheduleSegmentInput{
+			SegmentIndex: block.SegmentIndex, Title: block.Title, StartAt: block.StartAt, EndAt: block.EndAt,
+		})
+	}
+	return segments
+}
+
+func (s *Service) markActionApplied(ctx context.Context, action *CoreAction) {
+	now := time.Now().UTC()
+	action.Status = ActionStatusApplied
+	action.AppliedAt = &now
+	action.Error = nil
+	_ = s.repo.MarkActionApplied(ctx, action.ID)
+}
+
+func (s *Service) markActionFailed(ctx context.Context, action *CoreAction, message string) {
+	action.Status = ActionStatusFailed
+	action.Error = &message
+	_ = s.repo.MarkActionFailed(ctx, action.ID, message)
 }
 
 func (s *Service) applyAction(ctx context.Context, action CoreAction) error {
@@ -524,52 +751,14 @@ func (s *Service) applyAction(ctx context.Context, action CoreAction) error {
 		if action.Payload.AssignStory == nil {
 			return fmt.Errorf("missing assign story payload")
 		}
-		return s.stories.UpdateExternalWithReason(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, map[string]any{
+		return s.stories.UpdateExternalWithReasonIfUnchanged(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, action.Payload.AssignStory.ExpectedUpdatedAt, map[string]any{
 			"assignee_id": action.Payload.AssignStory.AssigneeID,
 		}, action.Reason)
 	case ActionTypeScheduleWorkBlock:
-		if action.Payload.ScheduleBlock == nil {
-			return fmt.Errorf("missing schedule block payload")
-		}
-		scheduleBlock := action.Payload.ScheduleBlock
-		if _, err := s.calendar.CreateScheduleBlock(ctx, calendar.CoreScheduleBlockInput{
-			WorkspaceID: action.WorkspaceID,
-			UserID:      scheduleBlock.UserID,
-			StoryID:     &action.StoryID,
-			BlockType:   calendar.ScheduleBlockTypeWork,
-			Title:       scheduleBlock.Title,
-			StartAt:     scheduleBlock.StartAt,
-			EndAt:       scheduleBlock.EndAt,
-			IsLocked:    true,
-			Source:      calendar.ScheduleBlockSourceMaya,
-		}); err != nil {
-			return err
-		}
-		updates := storyDateUpdatesFromSchedule(scheduleBlock)
-		return s.stories.UpdateExternalWithReason(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, updates, action.Reason)
+		return fmt.Errorf("schedule work blocks must be applied as one atomic set")
 	case ActionTypeFlagScheduleRisk:
 		return nil
 	default:
 		return fmt.Errorf("unsupported maya action type: %s", action.Type)
 	}
-}
-
-func storyDateUpdatesFromSchedule(scheduleBlock *ScheduleBlockPayload) map[string]any {
-	updates := make(map[string]any, 2)
-	if scheduleBlock == nil {
-		return updates
-	}
-
-	startDate := scheduleBlock.PlannedStartAt.UTC()
-	endDate := scheduleBlock.PlannedEndAt.UTC()
-	if startDate.IsZero() {
-		startDate = scheduleBlock.StartAt.UTC()
-	}
-	if endDate.IsZero() {
-		endDate = scheduleBlock.EndAt.UTC()
-	}
-
-	updates["start_date"] = startDate
-	updates["end_date"] = endDate
-	return updates
 }

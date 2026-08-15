@@ -15,6 +15,15 @@ describe("story display column migrations", () => {
     ]);
   });
 
+  it("adds time needed next to visible complexity for saved views", () => {
+    expect(migrateDisplayColumns(["Status", "Estimate", "Labels"], 2)).toEqual([
+      "Status",
+      "Estimate",
+      "Time needed",
+      "Labels",
+    ]);
+  });
+
   it("preserves a current view that intentionally hides key results", () => {
     expect(
       migrateDisplayColumns(

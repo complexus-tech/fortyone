@@ -2,6 +2,21 @@ package teamsettings
 
 import "testing"
 
+func TestValidateEstimateSchemeOnlyAllowsComplexitySchemes(t *testing.T) {
+	service := &Service{}
+	for _, scheme := range []string{"points", "tshirt"} {
+		if err := service.validateEstimationSettingsUpdate(CoreUpdateTeamEstimationSettings{Scheme: &scheme}); err != nil {
+			t.Fatalf("expected %q to be valid, got %v", scheme, err)
+		}
+	}
+
+	for _, scheme := range []string{"hours", "ideal_days"} {
+		if err := service.validateEstimationSettingsUpdate(CoreUpdateTeamEstimationSettings{Scheme: &scheme}); err == nil {
+			t.Fatalf("expected legacy time-based scheme %q to be rejected", scheme)
+		}
+	}
+}
+
 func TestValidateSprintSettingsUpdateRejectsInvalidWorkingDays(t *testing.T) {
 	service := &Service{}
 

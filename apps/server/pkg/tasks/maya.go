@@ -9,6 +9,7 @@ import (
 const (
 	TypeMayaWorkFocusInference = "maya:work_focus:infer"
 	TypeMayaBatchAssignment    = "maya:assignment:batch"
+	TypeMayaScheduleRecovery   = "maya:schedule:recovery"
 )
 
 func (s *Service) EnqueueMayaWorkFocusInference(opts ...asynq.Option) (*asynq.TaskInfo, error) {

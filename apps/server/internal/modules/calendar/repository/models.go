@@ -101,24 +101,30 @@ type dbCalendarEventSummary struct {
 }
 
 type dbScheduleBlock struct {
-	ID          uuid.UUID  `db:"block_id"`
-	WorkspaceID uuid.UUID  `db:"workspace_id"`
-	UserID      uuid.UUID  `db:"user_id"`
-	StoryID     *uuid.UUID `db:"story_id"`
-	StoryTitle  *string    `db:"story_title"`
-	StoryCode   *string    `db:"story_code"`
-	TeamID      *uuid.UUID `db:"team_id"`
-	TeamName    *string    `db:"team_name"`
-	TeamCode    *string    `db:"team_code"`
-	BlockType   string     `db:"block_type"`
-	Title       string     `db:"title"`
-	StartAt     time.Time  `db:"start_at"`
-	EndAt       time.Time  `db:"end_at"`
-	HasConflict bool       `db:"has_conflict"`
-	IsLocked    bool       `db:"is_locked"`
-	Source      string     `db:"source"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
+	ID                 uuid.UUID  `db:"block_id"`
+	WorkspaceID        uuid.UUID  `db:"workspace_id"`
+	UserID             uuid.UUID  `db:"user_id"`
+	StoryID            *uuid.UUID `db:"story_id"`
+	StoryTitle         *string    `db:"story_title"`
+	StoryCode          *string    `db:"story_code"`
+	TeamID             *uuid.UUID `db:"team_id"`
+	TeamName           *string    `db:"team_name"`
+	TeamCode           *string    `db:"team_code"`
+	BlockType          string     `db:"block_type"`
+	Title              string     `db:"title"`
+	StartAt            time.Time  `db:"start_at"`
+	EndAt              time.Time  `db:"end_at"`
+	HasConflict        bool       `db:"has_conflict"`
+	IsLocked           bool       `db:"is_locked"`
+	Source             string     `db:"source"`
+	SegmentIndex       int        `db:"segment_index"`
+	ExternalProvider   *string    `db:"external_provider"`
+	ExternalCalendarID *string    `db:"external_calendar_id"`
+	ExternalEventID    *string    `db:"external_event_id"`
+	ExternalSyncHash   *string    `db:"external_sync_hash"`
+	ExternalSyncedAt   *time.Time `db:"external_synced_at"`
+	CreatedAt          time.Time  `db:"created_at"`
+	UpdatedAt          time.Time  `db:"updated_at"`
 }
 
 func toCoreConnection(row dbConnection) calendar.CoreConnection {
@@ -269,26 +275,36 @@ func calendarDateString(value *time.Time) *string {
 }
 
 func toCoreScheduleBlock(row dbScheduleBlock) calendar.CoreScheduleBlock {
-	return calendar.CoreScheduleBlock{
-		ID:          row.ID,
-		WorkspaceID: row.WorkspaceID,
-		UserID:      row.UserID,
-		StoryID:     row.StoryID,
-		StoryTitle:  row.StoryTitle,
-		StoryCode:   row.StoryCode,
-		TeamID:      row.TeamID,
-		TeamName:    row.TeamName,
-		TeamCode:    row.TeamCode,
-		BlockType:   calendar.ScheduleBlockType(row.BlockType),
-		Title:       row.Title,
-		StartAt:     row.StartAt,
-		EndAt:       row.EndAt,
-		HasConflict: row.HasConflict,
-		IsLocked:    row.IsLocked,
-		Source:      calendar.ScheduleBlockSource(row.Source),
-		CreatedAt:   row.CreatedAt,
-		UpdatedAt:   row.UpdatedAt,
+	block := calendar.CoreScheduleBlock{
+		ID:                 row.ID,
+		WorkspaceID:        row.WorkspaceID,
+		UserID:             row.UserID,
+		StoryID:            row.StoryID,
+		StoryTitle:         row.StoryTitle,
+		StoryCode:          row.StoryCode,
+		TeamID:             row.TeamID,
+		TeamName:           row.TeamName,
+		TeamCode:           row.TeamCode,
+		BlockType:          calendar.ScheduleBlockType(row.BlockType),
+		Title:              row.Title,
+		StartAt:            row.StartAt,
+		EndAt:              row.EndAt,
+		HasConflict:        row.HasConflict,
+		IsLocked:           row.IsLocked,
+		Source:             calendar.ScheduleBlockSource(row.Source),
+		SegmentIndex:       row.SegmentIndex,
+		ExternalCalendarID: row.ExternalCalendarID,
+		ExternalEventID:    row.ExternalEventID,
+		ExternalSyncHash:   row.ExternalSyncHash,
+		ExternalSyncedAt:   row.ExternalSyncedAt,
+		CreatedAt:          row.CreatedAt,
+		UpdatedAt:          row.UpdatedAt,
 	}
+	if row.ExternalProvider != nil {
+		provider := calendar.Provider(*row.ExternalProvider)
+		block.ExternalProvider = &provider
+	}
+	return block
 }
 
 func toCoreScheduleBlocks(rows []dbScheduleBlock) []calendar.CoreScheduleBlock {

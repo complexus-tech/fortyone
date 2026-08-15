@@ -55,7 +55,7 @@ export const listTeamStories = tool({
           .array(z.number().int())
           .optional()
           .describe(
-            "Filter by canonical estimate values for the team's estimation scheme",
+            "Filter by relative complexity values for the team's complexity scale",
           ),
         objectiveId: z.string().optional().describe("Filter by objective ID"),
         epicId: z.string().optional().describe("Filter by epic ID"),

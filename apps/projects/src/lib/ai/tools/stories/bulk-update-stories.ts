@@ -4,6 +4,11 @@ import { auth } from "@/auth";
 import { bulkUpdateAction } from "@/modules/stories/actions/bulk-update-stories";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
+import { isEstimateValue } from "@/lib/estimate";
+import {
+  MAX_TIME_NEEDED_MINUTES,
+  normalizeTimeNeededPatch,
+} from "@/lib/time-needed";
 import { requireToolConfirmation } from "../tool-helpers";
 
 export const bulkUpdateStories = tool({
@@ -56,10 +61,33 @@ export const bulkUpdateStories = tool({
         estimateValue: z
           .number()
           .int()
+          .refine(isEstimateValue, {
+            message: "Complexity must be 1, 2, 3, 5, or 8.",
+          })
           .nullable()
           .optional()
           .describe(
-            "Updated canonical estimate value for all stories. Set null to clear estimate.",
+            "Updated relative complexity value for all stories. This is not a time duration. Set null to clear complexity.",
+          ),
+        estimatedDurationMinutes: z
+          .number()
+          .int()
+          .positive()
+          .max(MAX_TIME_NEEDED_MINUTES)
+          .nullable()
+          .optional()
+          .describe(
+            "Updated total time needed in minutes for all selected stories. Set null to clear both the duration and minimum focus block.",
+          ),
+        minimumFocusBlockMinutes: z
+          .number()
+          .int()
+          .positive()
+          .max(MAX_TIME_NEEDED_MINUTES)
+          .nullable()
+          .optional()
+          .describe(
+            "Updated minimum focus block in minutes. Set null to use the automatic default.",
           ),
         labelIds: z
           .array(z.string())
@@ -104,6 +132,10 @@ export const bulkUpdateStories = tool({
         };
       }
 
+      const timeNeededPatch = normalizeTimeNeededPatch(
+        updateData.estimatedDurationMinutes,
+        updateData.minimumFocusBlockMinutes,
+      );
       const normalizedUpdateData = {
         statusId: normalizeOptionalString(updateData.statusId),
         assigneeId: normalizeOptionalString(updateData.assigneeId),
@@ -113,6 +145,7 @@ export const bulkUpdateStories = tool({
         startDate: normalizeOptionalString(updateData.startDate),
         endDate: normalizeOptionalString(updateData.endDate),
         estimateValue: updateData.estimateValue,
+        ...timeNeededPatch,
         labelIds: updateData.labelIds,
       };
 

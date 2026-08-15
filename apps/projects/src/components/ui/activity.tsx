@@ -9,10 +9,12 @@ import {
   InfoIcon,
   SprintsIcon,
   TagsIcon,
+  Time02Icon,
 } from "icons";
 import { useSession } from "@/lib/auth/client";
 import { formatActivityReasonDates } from "@/lib/activity-format";
 import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
+import { formatTimeNeeded } from "@/lib/time-needed";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useLabels } from "@/lib/hooks/labels";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
@@ -47,8 +49,18 @@ const DisplayEstimate = ({
     <span className="flex items-center gap-1">
       <EstimateIcon className="h-5" />
       {Number.isNaN(estimateValue)
-        ? "No estimate"
+        ? "No complexity"
         : formatEstimate(estimateScheme, estimateValue, "full")}
+    </span>
+  );
+};
+
+const DisplayTimeNeeded = ({ value }: { value: string }) => {
+  const minutes = Number.parseInt(value, 10);
+  return (
+    <span className="flex items-center gap-1">
+      <Time02Icon className="h-5" />
+      {formatTimeNeeded(Number.isNaN(minutes) ? null : minutes, "full")}
     </span>
   );
 };
@@ -283,10 +295,18 @@ export const Activity = ({
       ),
     },
     estimate_unit: {
-      label: "Estimate",
+      label: "Complexity",
       render: (value: string) => (
         <DisplayEstimate teamId={teamId} value={value} />
       ),
+    },
+    estimated_duration_minutes: {
+      label: "Time needed",
+      render: (value: string) => <DisplayTimeNeeded value={value} />,
+    },
+    minimum_focus_block_minutes: {
+      label: "Minimum focus block",
+      render: (value: string) => <DisplayTimeNeeded value={value} />,
     },
     assignee_id: {
       label: "Assignee",

@@ -272,6 +272,8 @@ func (h *Handlers) statusCode(err error) int {
 		return http.StatusConflict
 	case errors.Is(err, calendar.ErrCalendarScheduleBlockNotFound):
 		return http.StatusNotFound
+	case errors.Is(err, calendar.ErrManagedScheduleBlock):
+		return http.StatusConflict
 	case errors.Is(err, calendar.ErrInvalidCalendarNotification):
 		return http.StatusUnauthorized
 	default:

@@ -237,6 +237,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		Providers: map[calendar.Provider]calendar.CalendarProvider{
 			calendar.ProviderGoogle: calendar.NewGoogleProvider(googleService),
 		},
+		Tasks:   tasksService,
 		Updates: eventPublisher,
 	})
 	mayaService := buildMayaService(log, db, cfg, calendarService, systemUserID, eventPublisher)

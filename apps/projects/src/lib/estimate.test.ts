@@ -1,3 +1,5 @@
+/* global describe, expect, it -- Jest globals are provided by the projects test runner. */
+
 import {
   DEFAULT_ESTIMATE_SCHEME,
   ESTIMATE_VALUES,
@@ -6,30 +8,25 @@ import {
 } from "./estimate";
 
 describe("estimate formatting", () => {
-  it("formats compact labels for each estimate scheme", () => {
+  it("formats compact labels for each complexity scheme", () => {
     expect(formatEstimate("points", 1, "compact")).toBe("1");
-    expect(formatEstimate("hours", 1, "compact")).toBe("0.5");
     expect(formatEstimate("tshirt", 8, "compact")).toBe("XL");
-    expect(formatEstimate("ideal_days", 5, "compact")).toBe("3");
   });
 
   it("formats full labels for tooltips and menus", () => {
     expect(formatEstimate("points", 1, "full")).toBe("1 point");
     expect(formatEstimate("points", 8, "full")).toBe("8 points");
-    expect(formatEstimate("hours", 1, "full")).toBe("0.5 hours");
-    expect(formatEstimate("hours", 2, "full")).toBe("1 hour");
-    expect(formatEstimate("ideal_days", 2, "full")).toBe("1 day");
     expect(formatEstimate("tshirt", 3, "full")).toBe("M");
   });
 
   it("returns no-estimate labels for nullish values", () => {
-    expect(formatEstimate("points", null, "compact")).toBe("Estimate");
-    expect(formatEstimate("points", null, "full")).toBe("No estimate");
+    expect(formatEstimate("points", null, "compact")).toBe("Complexity");
+    expect(formatEstimate("points", null, "full")).toBe("No complexity");
   });
 
-  it("defaults unknown schemes to hours", () => {
-    expect(DEFAULT_ESTIMATE_SCHEME).toBe("hours");
-    expect(formatEstimate(undefined, 2, "full")).toBe("1 hour");
+  it("defaults unknown schemes to t-shirt sizes", () => {
+    expect(DEFAULT_ESTIMATE_SCHEME).toBe("tshirt");
+    expect(formatEstimate(undefined, 2, "full")).toBe("S");
   });
 
   it("returns scheme-specific selectable options", () => {

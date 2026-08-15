@@ -449,22 +449,27 @@ func (e *FortyOneToolExecutor) listMyTasks(ctx context.Context, scope ToolScope,
 			continue
 		}
 		filtered = append(filtered, taskResult{
-			ID:               story.ID,
-			Reference:        storyReference(team.Code, story.SequenceID),
-			URL:              storyURL(scope, storyReference(team.Code, story.SequenceID)),
-			Title:            story.Title,
-			TeamID:           story.Team,
-			TeamName:         team.Name,
-			TeamCode:         strings.ToUpper(strings.TrimSpace(team.Code)),
-			StatusID:         story.Status,
-			StatusName:       statusName,
-			StatusCategory:   statusCategory,
-			AssigneeID:       story.Assignee,
-			AssigneeName:     assigneeName,
-			AssigneeUsername: assigneeUsername,
-			Priority:         story.Priority,
-			EndDate:          story.EndDate,
-			UpdatedAt:        story.UpdatedAt,
+			ID:                       story.ID,
+			Reference:                storyReference(team.Code, story.SequenceID),
+			URL:                      storyURL(scope, storyReference(team.Code, story.SequenceID)),
+			Title:                    story.Title,
+			TeamID:                   story.Team,
+			TeamName:                 team.Name,
+			TeamCode:                 strings.ToUpper(strings.TrimSpace(team.Code)),
+			StatusID:                 story.Status,
+			StatusName:               statusName,
+			StatusCategory:           statusCategory,
+			AssigneeID:               story.Assignee,
+			AssigneeName:             assigneeName,
+			AssigneeUsername:         assigneeUsername,
+			Priority:                 story.Priority,
+			EstimateLabel:            story.EstimateLabel,
+			EstimateValue:            story.EstimateValue,
+			EstimateScheme:           story.EstimateScheme,
+			EstimatedDurationMinutes: story.EstimatedDurationMinutes,
+			MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+			EndDate:                  story.EndDate,
+			UpdatedAt:                story.UpdatedAt,
 		})
 	}
 
@@ -568,23 +573,28 @@ func (e *FortyOneToolExecutor) listCompletedTasks(ctx context.Context, scope Too
 			continue
 		}
 		tasks = append(tasks, taskResult{
-			ID:               story.ID,
-			Reference:        storyReference(team.Code, story.SequenceID),
-			URL:              storyURL(scope, storyReference(team.Code, story.SequenceID)),
-			Title:            story.Title,
-			TeamID:           story.Team,
-			TeamName:         team.Name,
-			TeamCode:         strings.ToUpper(strings.TrimSpace(team.Code)),
-			StatusID:         story.Status,
-			StatusName:       statusName,
-			StatusCategory:   statusCategory,
-			AssigneeID:       story.Assignee,
-			AssigneeName:     assigneeName,
-			AssigneeUsername: assigneeUsername,
-			Priority:         story.Priority,
-			EndDate:          story.EndDate,
-			CompletedAt:      story.CompletedAt,
-			UpdatedAt:        story.UpdatedAt,
+			ID:                       story.ID,
+			Reference:                storyReference(team.Code, story.SequenceID),
+			URL:                      storyURL(scope, storyReference(team.Code, story.SequenceID)),
+			Title:                    story.Title,
+			TeamID:                   story.Team,
+			TeamName:                 team.Name,
+			TeamCode:                 strings.ToUpper(strings.TrimSpace(team.Code)),
+			StatusID:                 story.Status,
+			StatusName:               statusName,
+			StatusCategory:           statusCategory,
+			AssigneeID:               story.Assignee,
+			AssigneeName:             assigneeName,
+			AssigneeUsername:         assigneeUsername,
+			Priority:                 story.Priority,
+			EstimateLabel:            story.EstimateLabel,
+			EstimateValue:            story.EstimateValue,
+			EstimateScheme:           story.EstimateScheme,
+			EstimatedDurationMinutes: story.EstimatedDurationMinutes,
+			MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+			EndDate:                  story.EndDate,
+			CompletedAt:              story.CompletedAt,
+			UpdatedAt:                story.UpdatedAt,
 		})
 	}
 
@@ -706,14 +716,19 @@ func (e *FortyOneToolExecutor) searchWork(ctx context.Context, scope ToolScope, 
 			continue
 		}
 		storiesResult = append(storiesResult, searchStoryResult{
-			ID:        story.ID,
-			Reference: storyReference(team.Code, story.SequenceID),
-			URL:       storyURL(scope, storyReference(team.Code, story.SequenceID)),
-			Title:     story.Title,
-			TeamID:    story.Team,
-			StatusID:  story.Status,
-			Priority:  story.Priority,
-			UpdatedAt: story.UpdatedAt,
+			ID:                       story.ID,
+			Reference:                storyReference(team.Code, story.SequenceID),
+			URL:                      storyURL(scope, storyReference(team.Code, story.SequenceID)),
+			Title:                    story.Title,
+			TeamID:                   story.Team,
+			StatusID:                 story.Status,
+			Priority:                 story.Priority,
+			EstimateLabel:            story.EstimateLabel,
+			EstimateValue:            story.EstimateValue,
+			EstimateScheme:           story.EstimateScheme,
+			EstimatedDurationMinutes: story.EstimatedDurationMinutes,
+			MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+			UpdatedAt:                story.UpdatedAt,
 		})
 	}
 
@@ -1004,29 +1019,32 @@ func (e *FortyOneToolExecutor) getStory(ctx context.Context, scope ToolScope, ra
 	}
 
 	return marshalToolResult(storyDetailsResult{
-		ID:                   story.ID,
-		Reference:            storyReference,
-		URL:                  storyURL(scope, storyReference),
-		Title:                story.Title,
-		Description:          description,
-		DescriptionTruncated: descriptionTruncated,
-		TeamID:               expectedTeam.ID,
-		TeamName:             expectedTeam.Name,
-		TeamCode:             strings.ToUpper(strings.TrimSpace(expectedTeam.Code)),
-		StatusID:             story.Status,
-		StatusName:           statusName,
-		StatusCategory:       statusCategory,
-		AssigneeID:           story.Assignee,
-		AssigneeName:         assigneeName,
-		AssigneeUsername:     assigneeUsername,
-		Priority:             story.Priority,
-		EstimateLabel:        story.EstimateLabel,
-		EstimateValue:        story.EstimateValue,
-		SprintName:           sprintName,
-		StartDate:            story.StartDate,
-		EndDate:              story.EndDate,
-		CompletedAt:          story.CompletedAt,
-		UpdatedAt:            story.UpdatedAt,
+		ID:                       story.ID,
+		Reference:                storyReference,
+		URL:                      storyURL(scope, storyReference),
+		Title:                    story.Title,
+		Description:              description,
+		DescriptionTruncated:     descriptionTruncated,
+		TeamID:                   expectedTeam.ID,
+		TeamName:                 expectedTeam.Name,
+		TeamCode:                 strings.ToUpper(strings.TrimSpace(expectedTeam.Code)),
+		StatusID:                 story.Status,
+		StatusName:               statusName,
+		StatusCategory:           statusCategory,
+		AssigneeID:               story.Assignee,
+		AssigneeName:             assigneeName,
+		AssigneeUsername:         assigneeUsername,
+		Priority:                 story.Priority,
+		EstimateLabel:            story.EstimateLabel,
+		EstimateValue:            story.EstimateValue,
+		EstimateScheme:           story.EstimateScheme,
+		EstimatedDurationMinutes: story.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+		SprintName:               sprintName,
+		StartDate:                story.StartDate,
+		EndDate:                  story.EndDate,
+		CompletedAt:              story.CompletedAt,
+		UpdatedAt:                story.UpdatedAt,
 	})
 }
 
@@ -1446,23 +1464,28 @@ type listTeamsResult struct {
 }
 
 type taskResult struct {
-	ID               uuid.UUID  `json:"id"`
-	Reference        string     `json:"reference"`
-	URL              string     `json:"url,omitempty"`
-	Title            string     `json:"title"`
-	TeamID           uuid.UUID  `json:"team_id"`
-	TeamName         string     `json:"team_name"`
-	TeamCode         string     `json:"team_code"`
-	StatusID         *uuid.UUID `json:"status_id"`
-	StatusName       string     `json:"status_name"`
-	StatusCategory   string     `json:"status_category"`
-	AssigneeID       *uuid.UUID `json:"assignee_id"`
-	AssigneeName     string     `json:"assignee_name"`
-	AssigneeUsername string     `json:"assignee_username"`
-	Priority         string     `json:"priority"`
-	EndDate          *time.Time `json:"end_date"`
-	CompletedAt      *time.Time `json:"completed_at,omitempty"`
-	UpdatedAt        time.Time  `json:"updated_at"`
+	ID                       uuid.UUID  `json:"id"`
+	Reference                string     `json:"reference"`
+	URL                      string     `json:"url,omitempty"`
+	Title                    string     `json:"title"`
+	TeamID                   uuid.UUID  `json:"team_id"`
+	TeamName                 string     `json:"team_name"`
+	TeamCode                 string     `json:"team_code"`
+	StatusID                 *uuid.UUID `json:"status_id"`
+	StatusName               string     `json:"status_name"`
+	StatusCategory           string     `json:"status_category"`
+	AssigneeID               *uuid.UUID `json:"assignee_id"`
+	AssigneeName             string     `json:"assignee_name"`
+	AssigneeUsername         string     `json:"assignee_username"`
+	Priority                 string     `json:"priority"`
+	EstimateLabel            *string    `json:"estimate_label"`
+	EstimateValue            *int16     `json:"estimate_value"`
+	EstimateScheme           string     `json:"estimate_scheme"`
+	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes"`
+	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes"`
+	EndDate                  *time.Time `json:"end_date"`
+	CompletedAt              *time.Time `json:"completed_at,omitempty"`
+	UpdatedAt                time.Time  `json:"updated_at"`
 }
 
 type listTasksResult struct {
@@ -1472,14 +1495,19 @@ type listTasksResult struct {
 }
 
 type searchStoryResult struct {
-	ID        uuid.UUID  `json:"id"`
-	Reference string     `json:"reference"`
-	URL       string     `json:"url,omitempty"`
-	Title     string     `json:"title"`
-	TeamID    uuid.UUID  `json:"team_id"`
-	StatusID  *uuid.UUID `json:"status_id"`
-	Priority  string     `json:"priority"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID                       uuid.UUID  `json:"id"`
+	Reference                string     `json:"reference"`
+	URL                      string     `json:"url,omitempty"`
+	Title                    string     `json:"title"`
+	TeamID                   uuid.UUID  `json:"team_id"`
+	StatusID                 *uuid.UUID `json:"status_id"`
+	Priority                 string     `json:"priority"`
+	EstimateLabel            *string    `json:"estimate_label"`
+	EstimateValue            *int16     `json:"estimate_value"`
+	EstimateScheme           string     `json:"estimate_scheme"`
+	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes"`
+	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes"`
+	UpdatedAt                time.Time  `json:"updated_at"`
 }
 
 func storyURL(scope ToolScope, reference string) string {
@@ -1569,27 +1597,30 @@ type listTeamMembersResult struct {
 }
 
 type storyDetailsResult struct {
-	ID                   uuid.UUID  `json:"id"`
-	Reference            string     `json:"reference"`
-	URL                  string     `json:"url,omitempty"`
-	Title                string     `json:"title"`
-	Description          *string    `json:"description"`
-	DescriptionTruncated bool       `json:"description_truncated"`
-	TeamID               uuid.UUID  `json:"team_id"`
-	TeamName             string     `json:"team_name"`
-	TeamCode             string     `json:"team_code"`
-	StatusID             *uuid.UUID `json:"status_id"`
-	StatusName           string     `json:"status_name"`
-	StatusCategory       string     `json:"status_category"`
-	AssigneeID           *uuid.UUID `json:"assignee_id"`
-	AssigneeName         string     `json:"assignee_name"`
-	AssigneeUsername     string     `json:"assignee_username"`
-	Priority             string     `json:"priority"`
-	EstimateLabel        *string    `json:"estimate_label"`
-	EstimateValue        *int16     `json:"estimate_value"`
-	SprintName           *string    `json:"sprint_name"`
-	StartDate            *time.Time `json:"start_date"`
-	EndDate              *time.Time `json:"end_date"`
-	CompletedAt          *time.Time `json:"completed_at"`
-	UpdatedAt            time.Time  `json:"updated_at"`
+	ID                       uuid.UUID  `json:"id"`
+	Reference                string     `json:"reference"`
+	URL                      string     `json:"url,omitempty"`
+	Title                    string     `json:"title"`
+	Description              *string    `json:"description"`
+	DescriptionTruncated     bool       `json:"description_truncated"`
+	TeamID                   uuid.UUID  `json:"team_id"`
+	TeamName                 string     `json:"team_name"`
+	TeamCode                 string     `json:"team_code"`
+	StatusID                 *uuid.UUID `json:"status_id"`
+	StatusName               string     `json:"status_name"`
+	StatusCategory           string     `json:"status_category"`
+	AssigneeID               *uuid.UUID `json:"assignee_id"`
+	AssigneeName             string     `json:"assignee_name"`
+	AssigneeUsername         string     `json:"assignee_username"`
+	Priority                 string     `json:"priority"`
+	EstimateLabel            *string    `json:"estimate_label"`
+	EstimateValue            *int16     `json:"estimate_value"`
+	EstimateScheme           string     `json:"estimate_scheme"`
+	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes"`
+	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes"`
+	SprintName               *string    `json:"sprint_name"`
+	StartDate                *time.Time `json:"start_date"`
+	EndDate                  *time.Time `json:"end_date"`
+	CompletedAt              *time.Time `json:"completed_at"`
+	UpdatedAt                time.Time  `json:"updated_at"`
 }

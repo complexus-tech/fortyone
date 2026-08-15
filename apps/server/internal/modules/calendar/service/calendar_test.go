@@ -2,12 +2,14 @@ package calendar
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"google.golang.org/api/googleapi"
 )
 
 type fakeProvider struct {
@@ -23,10 +25,16 @@ type fakeProvider struct {
 	watchInput       CalendarWatchInput
 	watchCalls       int
 	watchErr         error
+	upsertedEvents   []ExternalScheduleEventInput
+	deletedEventIDs  []string
+	writeErr         error
+	timezone         string
 }
 
 type fakeCalendarTasks struct {
-	connectionIDs []uuid.UUID
+	connectionIDs   []uuid.UUID
+	scheduleUserIDs []uuid.UUID
+	scheduleErr     error
 }
 
 type fakeCalendarUpdates struct {
@@ -49,6 +57,11 @@ func (q *fakeCalendarTasks) EnqueueCalendarSync(_ context.Context, connectionID 
 	return nil
 }
 
+func (q *fakeCalendarTasks) EnqueueCalendarScheduleReconcile(_ context.Context, userID uuid.UUID) error {
+	q.scheduleUserIDs = append(q.scheduleUserIDs, userID)
+	return q.scheduleErr
+}
+
 func (p *fakeProvider) AuthCodeURL(state string) (string, error) {
 	return p.authURL + "?state=" + state, nil
 }
@@ -62,7 +75,7 @@ func (p *fakeProvider) SyncCalendar(ctx context.Context, token ProviderToken, in
 	if p.syncErr != nil {
 		return CalendarSyncSnapshot{}, p.syncErr
 	}
-	return CalendarSyncSnapshot{Events: p.events, BusyWindows: p.windows}, nil
+	return CalendarSyncSnapshot{Events: p.events, BusyWindows: p.windows, Timezone: p.timezone}, nil
 }
 
 func (p *fakeProvider) SyncCalendarChanges(_ context.Context, _ ProviderToken, syncToken string) (CalendarSyncDelta, error) {
@@ -88,23 +101,52 @@ func (p *fakeProvider) StopCalendarWatch(context.Context, ProviderToken, Calenda
 	return nil
 }
 
+func (p *fakeProvider) UpsertScheduleEvent(_ context.Context, _ ProviderToken, input ExternalScheduleEventInput) error {
+	if p.writeErr != nil {
+		return p.writeErr
+	}
+	p.upsertedEvents = append(p.upsertedEvents, input)
+	return nil
+}
+
+func (p *fakeProvider) DeleteScheduleEvent(_ context.Context, _ ProviderToken, _, eventID string) error {
+	if p.writeErr != nil {
+		return p.writeErr
+	}
+	p.deletedEventIDs = append(p.deletedEventIDs, eventID)
+	return nil
+}
+
 type fakeRepo struct {
-	connection       CoreConnection
-	upserted         CoreConnectionUpsert
-	windows          []CoreBusyWindow
-	events           []CoreCalendarEventSummary
-	event            CoreCalendarEvent
-	blocks           []CoreScheduleBlock
-	revoked          uuid.UUID
-	member           *bool
-	storyAllowed     *bool
-	storyUserID      uuid.UUID
-	replacements     int
-	replaceErr       error
-	markSyncedErr    error
-	markFailedErr    error
-	markedGeneration uuid.UUID
-	appliedDelta     CalendarSyncDelta
+	connection                CoreConnection
+	upserted                  CoreConnectionUpsert
+	windows                   []CoreBusyWindow
+	events                    []CoreCalendarEventSummary
+	event                     CoreCalendarEvent
+	blocks                    []CoreScheduleBlock
+	revoked                   uuid.UUID
+	member                    *bool
+	storyAllowed              *bool
+	storyUserID               uuid.UUID
+	replacements              int
+	replaceErr                error
+	markSyncedErr             error
+	markFailedErr             error
+	markedGeneration          uuid.UUID
+	appliedDelta              CalendarSyncDelta
+	pendingOutboxBatches      [][]CoreScheduleEventOutbox
+	outboxClaimCalls          int
+	processedOutbox           []uuid.UUID
+	processedOutboxOperations []ScheduleEventOperation
+	failedOutbox              []uuid.UUID
+	failedOutboxPermanent     []bool
+	releasedOutbox            []uuid.UUID
+	dispatchLockCalls         int
+	readyOutboxUsers          []uuid.UUID
+	cleanupPending            bool
+	cleanupFinalizeCalls      int
+	upsertCurrent             *bool
+	upsertCurrentChecks       int
 }
 
 func (r *fakeRepo) ListConnections(ctx context.Context, workspaceID uuid.UUID, userID *uuid.UUID) ([]CoreConnection, error) {
@@ -123,6 +165,13 @@ func (r *fakeRepo) GetActiveConnection(ctx context.Context, workspaceID, userID 
 		return CoreConnection{}, ErrCalendarNotFound
 	}
 	return r.connection, nil
+}
+
+func (r *fakeRepo) GetScheduleEventDispatchConnection(_ context.Context, _ uuid.UUID) (CoreConnection, bool, error) {
+	if r.connection.ID == uuid.Nil {
+		return CoreConnection{}, false, ErrCalendarNotFound
+	}
+	return r.connection, r.cleanupPending, nil
 }
 
 func (r *fakeRepo) GetConnection(context.Context, uuid.UUID) (CoreConnection, error) {
@@ -176,6 +225,9 @@ func (r *fakeRepo) ReplaceCalendarSnapshot(ctx context.Context, connection CoreC
 		return r.replaceErr
 	}
 	r.replacements++
+	if strings.TrimSpace(snapshot.Timezone) != "" {
+		r.connection.Timezone = strings.TrimSpace(snapshot.Timezone)
+	}
 	r.windows = snapshot.BusyWindows
 	r.events = make([]CoreCalendarEventSummary, len(snapshot.Events))
 	for i, event := range snapshot.Events {
@@ -200,6 +252,7 @@ func (r *fakeRepo) ReplaceCalendarSnapshot(ctx context.Context, connection CoreC
 
 func (r *fakeRepo) ApplyCalendarChanges(_ context.Context, _ CoreConnection, delta CalendarSyncDelta) error {
 	r.appliedDelta = delta
+	r.connection.SyncToken = delta.NextSyncToken
 	return nil
 }
 
@@ -285,6 +338,386 @@ func TestSyncConnectionFromNotificationUsesIncrementalChanges(t *testing.T) {
 	}
 	if repo.appliedDelta.NextSyncToken != "next-sync-token" {
 		t.Fatalf("expected incremental sync token to be applied, got %q", repo.appliedDelta.NextSyncToken)
+	}
+}
+
+func TestPushSyncEnqueuesReconciliationOnlyAfterRelevantChangesPersist(t *testing.T) {
+	t.Parallel()
+	connectionID := uuid.New()
+	userID := uuid.New()
+	provider := &fakeProvider{delta: CalendarSyncDelta{
+		BusyWindows:   []CoreBusyWindow{{ProviderEventID: "changed", StartAt: time.Now().UTC(), EndAt: time.Now().UTC().Add(time.Hour)}},
+		NextSyncToken: "next",
+	}}
+	repo := &fakeRepo{connection: CoreConnection{
+		ID: connectionID, UserID: userID, Provider: ProviderGoogle, SyncToken: "current",
+		Scopes: []string{GoogleCalendarEventsReadonlyScope}, CredentialGeneration: uuid.New(),
+	}}
+	tasks := &fakeCalendarTasks{}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Tasks: tasks, Providers: map[Provider]CalendarProvider{ProviderGoogle: provider}})
+	repo.connection.TokenPayload, _ = service.encryptTokenPayload(ProviderToken{AccessToken: "access-token"})
+	if err := service.SyncConnectionFromNotification(context.Background(), connectionID); err != nil {
+		t.Fatalf("SyncConnectionFromNotification returned error: %v", err)
+	}
+	if len(tasks.scheduleUserIDs) != 1 || tasks.scheduleUserIDs[0] != userID {
+		t.Fatalf("expected user reconciliation after successful changed delta: %v", tasks.scheduleUserIDs)
+	}
+}
+
+func TestPushSyncRetryEnqueuesAfterCommittedDeltaBecomesEmpty(t *testing.T) {
+	t.Parallel()
+	connectionID := uuid.New()
+	userID := uuid.New()
+	enqueueErr := errors.New("queue unavailable")
+	provider := &fakeProvider{delta: CalendarSyncDelta{
+		BusyWindows:   []CoreBusyWindow{{ProviderEventID: "changed", StartAt: time.Now().UTC(), EndAt: time.Now().UTC().Add(time.Hour)}},
+		NextSyncToken: "committed-next-token",
+	}}
+	repo := &fakeRepo{connection: CoreConnection{
+		ID: connectionID, UserID: userID, Provider: ProviderGoogle, SyncToken: "current-token",
+		Scopes: []string{GoogleCalendarEventsReadonlyScope}, CredentialGeneration: uuid.New(),
+	}}
+	tasks := &fakeCalendarTasks{scheduleErr: enqueueErr}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Tasks: tasks, Providers: map[Provider]CalendarProvider{ProviderGoogle: provider}})
+	repo.connection.TokenPayload, _ = service.encryptTokenPayload(ProviderToken{AccessToken: "access-token"})
+
+	if err := service.SyncConnectionFromNotification(context.Background(), connectionID); !errors.Is(err, enqueueErr) {
+		t.Fatalf("expected first enqueue failure, got %v", err)
+	}
+	if repo.connection.SyncToken != "committed-next-token" {
+		t.Fatalf("expected provider delta to commit before enqueue failure, got %q", repo.connection.SyncToken)
+	}
+
+	provider.delta = CalendarSyncDelta{NextSyncToken: "empty-retry-token"}
+	tasks.scheduleErr = nil
+	if err := service.SyncConnectionFromNotification(context.Background(), connectionID); err != nil {
+		t.Fatalf("empty retry returned error: %v", err)
+	}
+	if len(tasks.scheduleUserIDs) != 2 || tasks.scheduleUserIDs[1] != userID {
+		t.Fatalf("empty retry must preserve the reconciliation handoff: %v", tasks.scheduleUserIDs)
+	}
+}
+
+func TestConnectionWriteCapabilityRequiresOwnedEventsScope(t *testing.T) {
+	t.Parallel()
+	legacy := CoreConnection{Provider: ProviderGoogle, Scopes: []string{GoogleCalendarEventsReadonlyScope}}
+	if legacy.CanWriteEvents() || !legacy.RequiresReauthorization() {
+		t.Fatalf("legacy read-only grant must require reauthorization: %#v", legacy)
+	}
+	upgraded := CoreConnection{Provider: ProviderGoogle, Scopes: []string{GoogleCalendarEventsReadonlyScope, GoogleCalendarEventsOwnedScope}}
+	if !upgraded.CanWriteEvents() || upgraded.RequiresReauthorization() {
+		t.Fatalf("owned-events grant must be write-capable: %#v", upgraded)
+	}
+	partial := CoreConnection{Provider: ProviderGoogle, Scopes: []string{GoogleCalendarEventsOwnedScope}}
+	if partial.CanWriteEvents() || !partial.CanDeleteOwnedEvents() || !partial.RequiresReauthorization() {
+		t.Fatalf("write-only grant cannot safely filter Maya's mirrored events: %#v", partial)
+	}
+}
+
+func TestManagedMayaScheduleBlocksRejectGenericMutation(t *testing.T) {
+	t.Parallel()
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	blockID := uuid.New()
+	repo := &fakeRepo{blocks: []CoreScheduleBlock{{
+		ID: blockID, WorkspaceID: workspaceID, UserID: userID, Source: ScheduleBlockSourceMaya,
+	}}}
+	service := New(nil, repo, Config{})
+	startAt := time.Now().UTC().Add(time.Hour)
+	_, err := service.UpdateScheduleBlock(context.Background(), CoreScheduleBlockInput{
+		ID: blockID, WorkspaceID: workspaceID, UserID: userID, BlockType: ScheduleBlockTypeWork,
+		Title: "Detached edit", StartAt: startAt, EndAt: startAt.Add(time.Hour), Source: ScheduleBlockSourceUser,
+	})
+	if !errors.Is(err, ErrManagedScheduleBlock) {
+		t.Fatalf("expected managed-block update rejection, got %v", err)
+	}
+	if err := service.DeleteScheduleBlock(context.Background(), workspaceID, userID, blockID); !errors.Is(err, ErrManagedScheduleBlock) {
+		t.Fatalf("expected managed-block delete rejection, got %v", err)
+	}
+}
+
+func TestScheduleOutboxWaitsForReauthorizationThenDrains(t *testing.T) {
+	t.Parallel()
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	blockID := uuid.New()
+	event := ExternalScheduleEventInput{
+		CalendarID: "primary", EventID: StableGoogleScheduleEventID(blockID), BlockID: blockID,
+		StoryID: uuid.New(), WorkspaceID: workspaceID, Title: "Scheduled work",
+		StartAt: time.Now().UTC(), EndAt: time.Now().UTC().Add(time.Hour),
+	}
+	payload, _ := json.Marshal(event)
+	item := CoreScheduleEventOutbox{
+		ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, ScheduleBlockID: &blockID,
+		Operation: ScheduleEventOperationUpsert, Provider: ProviderGoogle, CalendarID: "primary",
+		ProviderEventID: event.EventID, Payload: payload,
+	}
+	repo := &fakeRepo{connection: CoreConnection{
+		ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, Provider: ProviderGoogle,
+		Scopes: []string{GoogleCalendarEventsReadonlyScope},
+	}, pendingOutboxBatches: [][]CoreScheduleEventOutbox{{item}}}
+	provider := &fakeProvider{}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Providers: map[Provider]CalendarProvider{ProviderGoogle: provider}})
+	repo.connection.TokenPayload, _ = service.encryptTokenPayload(ProviderToken{AccessToken: "access-token", Scopes: []string{GoogleCalendarEventsOwnedScope}})
+
+	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); err != nil {
+		t.Fatalf("read-only dispatch returned error: %v", err)
+	}
+	if repo.outboxClaimCalls != 0 || len(provider.upsertedEvents) != 0 {
+		t.Fatalf("read-only connection must leave pending rows unclaimed: claims=%d writes=%d", repo.outboxClaimCalls, len(provider.upsertedEvents))
+	}
+	repo.connection.Scopes = []string{GoogleCalendarEventsReadonlyScope, GoogleCalendarEventsOwnedScope}
+	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); err != nil {
+		t.Fatalf("upgraded dispatch returned error: %v", err)
+	}
+	if len(provider.upsertedEvents) != 1 || len(repo.processedOutbox) != 1 {
+		t.Fatalf("expected pending event to deliver after reauthorization: writes=%d processed=%d", len(provider.upsertedEvents), len(repo.processedOutbox))
+	}
+	if repo.dispatchLockCalls != 2 {
+		t.Fatalf("expected both dispatch attempts to use per-user serialization, got %d", repo.dispatchLockCalls)
+	}
+}
+
+func TestScheduleOutboxDrainsEveryBatch(t *testing.T) {
+	t.Parallel()
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	batches := make([][]CoreScheduleEventOutbox, 2)
+	batches[0] = make([]CoreScheduleEventOutbox, 100)
+	batches[1] = make([]CoreScheduleEventOutbox, 1)
+	for batchIndex := range batches {
+		for itemIndex := range batches[batchIndex] {
+			blockID := uuid.New()
+			event := ExternalScheduleEventInput{CalendarID: "primary", EventID: StableGoogleScheduleEventID(blockID), BlockID: blockID, StoryID: uuid.New(), WorkspaceID: workspaceID, StartAt: time.Now().UTC(), EndAt: time.Now().UTC().Add(time.Hour)}
+			payload, _ := json.Marshal(event)
+			batches[batchIndex][itemIndex] = CoreScheduleEventOutbox{
+				ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, ScheduleBlockID: &blockID,
+				Operation: ScheduleEventOperationUpsert, Provider: ProviderGoogle, CalendarID: "primary", ProviderEventID: event.EventID, Payload: payload,
+			}
+		}
+	}
+	repo := &fakeRepo{connection: CoreConnection{
+		ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, Provider: ProviderGoogle,
+		Scopes: []string{GoogleCalendarEventsReadonlyScope, GoogleCalendarEventsOwnedScope},
+	}, pendingOutboxBatches: batches}
+	provider := &fakeProvider{}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Providers: map[Provider]CalendarProvider{ProviderGoogle: provider}})
+	repo.connection.TokenPayload, _ = service.encryptTokenPayload(ProviderToken{AccessToken: "access-token", Scopes: []string{GoogleCalendarEventsReadonlyScope, GoogleCalendarEventsOwnedScope}})
+	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); err != nil {
+		t.Fatalf("DispatchScheduleEventOutbox returned error: %v", err)
+	}
+	if len(provider.upsertedEvents) != 101 || len(repo.processedOutbox) != 101 || repo.outboxClaimCalls != 3 {
+		t.Fatalf("expected all batches plus empty continuation: writes=%d processed=%d claims=%d", len(provider.upsertedEvents), len(repo.processedOutbox), repo.outboxClaimCalls)
+	}
+}
+
+func TestCalendarWriteErrorClassifierKeepsRateLimitsRetryable(t *testing.T) {
+	t.Parallel()
+	for _, reason := range []string{"rateLimitExceeded", "userRateLimitExceeded", "backendError"} {
+		err := &googleapi.Error{Code: 403, Errors: []googleapi.ErrorItem{{Reason: reason}}}
+		if isPermanentCalendarWriteError(err) {
+			t.Fatalf("expected Google 403 reason %q to remain retryable", reason)
+		}
+	}
+	if !isPermanentCalendarWriteError(&googleapi.Error{Code: 403, Errors: []googleapi.ErrorItem{{Reason: "forbidden"}}}) {
+		t.Fatal("expected a non-rate-limit permission failure to be terminal")
+	}
+	for _, code := range []int{408, 409, 429, 500, 503} {
+		if isPermanentCalendarWriteError(&googleapi.Error{Code: code}) {
+			t.Fatalf("expected HTTP %d to remain retryable", code)
+		}
+	}
+}
+
+func TestCleanupPendingDispatchDeletesInsteadOfUpsertingAndPurgesCredentials(t *testing.T) {
+	t.Parallel()
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	blockID := uuid.New()
+	event := ExternalScheduleEventInput{
+		CalendarID: "primary", EventID: StableGoogleScheduleEventID(blockID), BlockID: blockID,
+		StoryID: uuid.New(), WorkspaceID: workspaceID, Title: "Sensitive focus title",
+		StartAt: time.Now().UTC(), EndAt: time.Now().UTC().Add(time.Hour),
+	}
+	payload, _ := json.Marshal(event)
+	item := CoreScheduleEventOutbox{
+		ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, ScheduleBlockID: &blockID,
+		Operation: ScheduleEventOperationUpsert, Provider: ProviderGoogle, CalendarID: "primary",
+		ProviderEventID: event.EventID, Payload: payload, AttemptCount: 1,
+	}
+	repo := &fakeRepo{
+		connection: CoreConnection{
+			ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, Provider: ProviderGoogle,
+			Scopes: []string{GoogleCalendarEventsReadonlyScope, GoogleCalendarEventsOwnedScope},
+		},
+		cleanupPending:       true,
+		pendingOutboxBatches: [][]CoreScheduleEventOutbox{{item}},
+	}
+	provider := &fakeProvider{}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Providers: map[Provider]CalendarProvider{ProviderGoogle: provider}})
+	repo.connection.TokenPayload, _ = service.encryptTokenPayload(ProviderToken{AccessToken: "access-token"})
+	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); err != nil {
+		t.Fatalf("DispatchScheduleEventOutbox returned error: %v", err)
+	}
+	if len(provider.upsertedEvents) != 0 || len(provider.deletedEventIDs) != 1 || provider.deletedEventIDs[0] != event.EventID {
+		t.Fatalf("cleanup-pending credentials must be delete-only: upserts=%#v deletes=%#v", provider.upsertedEvents, provider.deletedEventIDs)
+	}
+	if len(repo.processedOutbox) != 1 || repo.cleanupFinalizeCalls != 1 {
+		t.Fatalf("expected durable delete completion followed by credential purge: processed=%v finalizers=%d", repo.processedOutbox, repo.cleanupFinalizeCalls)
+	}
+}
+
+func TestCleanupPendingDispatchNeedsOnlyOwnedEventScope(t *testing.T) {
+	t.Parallel()
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	blockID := uuid.New()
+	eventID := StableGoogleScheduleEventID(blockID)
+	item := CoreScheduleEventOutbox{
+		ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, ScheduleBlockID: &blockID,
+		Operation: ScheduleEventOperationDelete, Provider: ProviderGoogle, CalendarID: "primary", ProviderEventID: eventID,
+	}
+	repo := &fakeRepo{
+		connection: CoreConnection{
+			ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, Provider: ProviderGoogle,
+			Scopes: []string{GoogleCalendarEventsOwnedScope},
+		},
+		cleanupPending: true, pendingOutboxBatches: [][]CoreScheduleEventOutbox{{item}},
+	}
+	provider := &fakeProvider{}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Providers: map[Provider]CalendarProvider{ProviderGoogle: provider}})
+	repo.connection.TokenPayload, _ = service.encryptTokenPayload(ProviderToken{AccessToken: "access-token"})
+
+	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); err != nil {
+		t.Fatalf("owned-only cleanup returned error: %v", err)
+	}
+	if len(provider.deletedEventIDs) != 1 || provider.deletedEventIDs[0] != eventID || repo.cleanupFinalizeCalls != 1 {
+		t.Fatalf("owned-only grant must delete then purge: deletes=%v finalizers=%d", provider.deletedEventIDs, repo.cleanupFinalizeCalls)
+	}
+}
+
+func TestCleanupPendingWithoutOwnedScopeDeadLettersAndPurgesCredentials(t *testing.T) {
+	t.Parallel()
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	item := CoreScheduleEventOutbox{
+		ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID,
+		Operation: ScheduleEventOperationDelete, Provider: ProviderGoogle, CalendarID: "primary", ProviderEventID: "never-created",
+	}
+	repo := &fakeRepo{
+		connection: CoreConnection{
+			ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, Provider: ProviderGoogle,
+			Scopes: []string{GoogleCalendarEventsReadonlyScope},
+		},
+		cleanupPending: true, pendingOutboxBatches: [][]CoreScheduleEventOutbox{{item}},
+	}
+	provider := &fakeProvider{}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Providers: map[Provider]CalendarProvider{ProviderGoogle: provider}})
+
+	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); err != nil {
+		t.Fatalf("impossible cleanup returned error: %v", err)
+	}
+	if len(provider.deletedEventIDs) != 0 || len(repo.failedOutboxPermanent) != 1 || !repo.failedOutboxPermanent[0] || repo.cleanupFinalizeCalls != 1 {
+		t.Fatalf("no-owned cleanup must dead-letter with audit then purge: deletes=%v terminal=%v finalizers=%d", provider.deletedEventIDs, repo.failedOutboxPermanent, repo.cleanupFinalizeCalls)
+	}
+}
+
+func TestCleanupPendingWithUnreadableCredentialsDeadLettersAndPurges(t *testing.T) {
+	t.Parallel()
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	item := CoreScheduleEventOutbox{
+		ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID,
+		Operation: ScheduleEventOperationDelete, Provider: ProviderGoogle, CalendarID: "primary", ProviderEventID: "cleanup-event",
+	}
+	repo := &fakeRepo{
+		connection: CoreConnection{
+			ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, Provider: ProviderGoogle,
+			Scopes: []string{GoogleCalendarEventsOwnedScope}, TokenPayload: "not-encrypted",
+		},
+		cleanupPending: true, pendingOutboxBatches: [][]CoreScheduleEventOutbox{{item}},
+	}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Providers: map[Provider]CalendarProvider{ProviderGoogle: &fakeProvider{}}})
+
+	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); err != nil {
+		t.Fatalf("unreadable cleanup credentials returned error: %v", err)
+	}
+	if len(repo.failedOutboxPermanent) != 1 || !repo.failedOutboxPermanent[0] || repo.cleanupFinalizeCalls != 1 {
+		t.Fatalf("unreadable cleanup credentials must terminally audit then purge: terminal=%v finalizers=%d", repo.failedOutboxPermanent, repo.cleanupFinalizeCalls)
+	}
+}
+
+func TestStaleScheduleUpsertDeletesProviderEventInsteadOfPublishing(t *testing.T) {
+	t.Parallel()
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	blockID := uuid.New()
+	event := ExternalScheduleEventInput{
+		CalendarID: "primary", EventID: StableGoogleScheduleEventID(blockID), BlockID: blockID,
+		StoryID: uuid.New(), WorkspaceID: workspaceID, Title: "Stale owner",
+		StartAt: time.Now().UTC(), EndAt: time.Now().UTC().Add(time.Hour),
+	}
+	payload, _ := json.Marshal(event)
+	item := CoreScheduleEventOutbox{
+		ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, ScheduleBlockID: &blockID,
+		Operation: ScheduleEventOperationUpsert, Provider: ProviderGoogle, CalendarID: "primary",
+		ProviderEventID: event.EventID, Payload: payload,
+	}
+	current := false
+	repo := &fakeRepo{
+		connection: CoreConnection{
+			ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, Provider: ProviderGoogle,
+			Scopes: []string{GoogleCalendarEventsReadonlyScope, GoogleCalendarEventsOwnedScope},
+		},
+		upsertCurrent: &current, pendingOutboxBatches: [][]CoreScheduleEventOutbox{{item}},
+	}
+	provider := &fakeProvider{}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Providers: map[Provider]CalendarProvider{ProviderGoogle: provider}})
+	repo.connection.TokenPayload, _ = service.encryptTokenPayload(ProviderToken{AccessToken: "access-token"})
+
+	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); err != nil {
+		t.Fatalf("stale upsert dispatch returned error: %v", err)
+	}
+	if repo.upsertCurrentChecks != 1 || len(provider.upsertedEvents) != 0 || len(provider.deletedEventIDs) != 1 {
+		t.Fatalf("stale provider state must be deleted, checks=%d upserts=%v deletes=%v", repo.upsertCurrentChecks, provider.upsertedEvents, provider.deletedEventIDs)
+	}
+	if len(repo.processedOutboxOperations) != 1 || repo.processedOutboxOperations[0] != ScheduleEventOperationDelete {
+		t.Fatalf("stale upsert completion must not mark a block mirrored: %v", repo.processedOutboxOperations)
+	}
+}
+
+func TestTerminalCleanupFailureDeadLettersBeforeCredentialPurge(t *testing.T) {
+	t.Parallel()
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	blockID := uuid.New()
+	event := ExternalScheduleEventInput{
+		CalendarID: "primary", EventID: StableGoogleScheduleEventID(blockID), BlockID: blockID,
+		StoryID: uuid.New(), WorkspaceID: workspaceID,
+	}
+	payload, _ := json.Marshal(event)
+	item := CoreScheduleEventOutbox{
+		ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, ScheduleBlockID: &blockID,
+		Operation: ScheduleEventOperationDelete, Provider: ProviderGoogle, CalendarID: "primary",
+		ProviderEventID: event.EventID, Payload: payload, AttemptCount: 1,
+	}
+	repo := &fakeRepo{
+		connection: CoreConnection{
+			ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, Provider: ProviderGoogle,
+			Scopes: []string{GoogleCalendarEventsReadonlyScope, GoogleCalendarEventsOwnedScope},
+		},
+		cleanupPending:       true,
+		pendingOutboxBatches: [][]CoreScheduleEventOutbox{{item}},
+	}
+	providerErr := &googleapi.Error{Code: 403, Errors: []googleapi.ErrorItem{{Reason: "forbidden"}}}
+	provider := &fakeProvider{writeErr: providerErr}
+	service := New(nil, repo, Config{SecretKey: "test-secret", Providers: map[Provider]CalendarProvider{ProviderGoogle: provider}})
+	repo.connection.TokenPayload, _ = service.encryptTokenPayload(ProviderToken{AccessToken: "access-token"})
+	if err := service.DispatchScheduleEventOutbox(context.Background(), userID); !errors.Is(err, providerErr) {
+		t.Fatalf("expected provider failure, got %v", err)
+	}
+	if len(repo.failedOutboxPermanent) != 1 || !repo.failedOutboxPermanent[0] || repo.cleanupFinalizeCalls != 1 {
+		t.Fatalf("terminal teardown failure must be dead-lettered before credentials are purged: terminal=%v finalizers=%d", repo.failedOutboxPermanent, repo.cleanupFinalizeCalls)
 	}
 }
 
@@ -447,6 +880,15 @@ func (r *fakeRepo) ListScheduleBlocks(ctx context.Context, workspaceID, userID u
 	return r.blocks, nil
 }
 
+func (r *fakeRepo) GetScheduleBlock(_ context.Context, _, _ uuid.UUID, blockID uuid.UUID) (CoreScheduleBlock, error) {
+	for _, block := range r.blocks {
+		if block.ID == blockID {
+			return block, nil
+		}
+	}
+	return CoreScheduleBlock{}, ErrCalendarScheduleBlockNotFound
+}
+
 func (r *fakeRepo) ScheduleStoryExists(ctx context.Context, workspaceID, userID, storyID uuid.UUID) (bool, error) {
 	r.storyUserID = userID
 	if r.storyAllowed == nil {
@@ -498,6 +940,71 @@ func (r *fakeRepo) DeleteScheduleBlock(ctx context.Context, workspaceID, userID,
 		}
 	}
 	return ErrCalendarScheduleBlockNotFound
+}
+
+func (r *fakeRepo) ListSchedulingBlocksForUser(_ context.Context, _, _ uuid.UUID, _, _ time.Time) ([]CoreScheduleBlock, error) {
+	return r.blocks, nil
+}
+
+func (r *fakeRepo) ListMayaScheduleBlocksForStory(_ context.Context, workspaceID, userID, storyID uuid.UUID) ([]CoreScheduleBlock, error) {
+	return r.blocks, nil
+}
+
+func (r *fakeRepo) MayaScheduleOwnershipExists(_ context.Context, _, _, _ uuid.UUID) (bool, error) {
+	return false, nil
+}
+
+func (r *fakeRepo) ReconcileMayaScheduleBlocks(_ context.Context, _ MayaScheduleReconcileInput) (CoreScheduleReconcileResult, error) {
+	return CoreScheduleReconcileResult{}, nil
+}
+
+func (r *fakeRepo) ListReadyScheduleEventOutboxUsers(_ context.Context, _ int) ([]uuid.UUID, error) {
+	return append([]uuid.UUID(nil), r.readyOutboxUsers...), nil
+}
+
+func (r *fakeRepo) WithScheduleEventDispatchLock(_ context.Context, _ uuid.UUID, dispatch func(ScheduleEventOutboxStore) error) error {
+	r.dispatchLockCalls++
+	return dispatch(r)
+}
+
+func (r *fakeRepo) ListPendingScheduleEventOutbox(_ context.Context, _ uuid.UUID, _ int) ([]CoreScheduleEventOutbox, error) {
+	r.outboxClaimCalls++
+	if len(r.pendingOutboxBatches) == 0 {
+		return nil, nil
+	}
+	batch := r.pendingOutboxBatches[0]
+	r.pendingOutboxBatches = r.pendingOutboxBatches[1:]
+	return batch, nil
+}
+
+func (r *fakeRepo) ScheduleEventUpsertIsCurrent(_ context.Context, _ CoreScheduleEventOutbox, _ ExternalScheduleEventInput) (bool, error) {
+	r.upsertCurrentChecks++
+	if r.upsertCurrent == nil {
+		return true, nil
+	}
+	return *r.upsertCurrent, nil
+}
+
+func (r *fakeRepo) MarkScheduleEventOutboxProcessed(_ context.Context, item CoreScheduleEventOutbox, _ string) error {
+	r.processedOutbox = append(r.processedOutbox, item.ID)
+	r.processedOutboxOperations = append(r.processedOutboxOperations, item.Operation)
+	return nil
+}
+
+func (r *fakeRepo) MarkScheduleEventOutboxFailed(_ context.Context, item CoreScheduleEventOutbox, _ string, permanent bool) error {
+	r.failedOutbox = append(r.failedOutbox, item.ID)
+	r.failedOutboxPermanent = append(r.failedOutboxPermanent, permanent)
+	return nil
+}
+
+func (r *fakeRepo) ReleaseScheduleEventOutbox(_ context.Context, outboxIDs []uuid.UUID) error {
+	r.releasedOutbox = append(r.releasedOutbox, outboxIDs...)
+	return nil
+}
+
+func (r *fakeRepo) DeleteCleanupPendingConnectionIfDrained(_ context.Context, _ uuid.UUID) error {
+	r.cleanupFinalizeCalls++
+	return nil
 }
 
 func TestCreateConnectURLSignsWorkspaceAndUserState(t *testing.T) {
@@ -763,9 +1270,11 @@ func TestSyncConnectionStoresOnlyBusyWindows(t *testing.T) {
 		},
 	}
 	updates := &fakeCalendarUpdates{}
+	tasks := &fakeCalendarTasks{}
 	service = New(nil, repo, Config{
 		SecretKey: "test-secret",
 		Updates:   updates,
+		Tasks:     tasks,
 		Providers: map[Provider]CalendarProvider{
 			ProviderGoogle: &fakeProvider{
 				windows: []CoreBusyWindow{
@@ -803,6 +1312,9 @@ func TestSyncConnectionStoresOnlyBusyWindows(t *testing.T) {
 	}
 	if updates.workspaceID != workspaceID || updates.userID != userID || updates.connectionID != connectionID || updates.syncedAt.IsZero() {
 		t.Fatalf("calendar update was not published with the synced connection scope: %#v", updates)
+	}
+	if len(tasks.scheduleUserIDs) != 1 || tasks.scheduleUserIDs[0] != userID {
+		t.Fatalf("manual full sync must enqueue schedule reconciliation: %v", tasks.scheduleUserIDs)
 	}
 }
 

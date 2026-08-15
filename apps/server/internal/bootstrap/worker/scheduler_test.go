@@ -62,3 +62,21 @@ func TestRegisterSchedulesChecksCalendarWatchRenewalsHourly(t *testing.T) {
 		taskType: tasks.TypeCalendarWatchRenewal,
 	})
 }
+
+func TestRegisterSchedulesDispatchesCalendarScheduleOutboxEveryMinute(t *testing.T) {
+	t.Parallel()
+	scheduler := &scheduleCapture{}
+	require.NoError(t, registerSchedules(scheduler))
+	require.Contains(t, scheduler.entries, scheduledTask{
+		spec: "*/1 * * * *", taskType: tasks.TypeCalendarScheduleOutbox,
+	})
+}
+
+func TestRegisterSchedulesRecoversMayaSchedulesEveryMinute(t *testing.T) {
+	t.Parallel()
+	scheduler := &scheduleCapture{}
+	require.NoError(t, registerSchedules(scheduler))
+	require.Contains(t, scheduler.entries, scheduledTask{
+		spec: "*/1 * * * *", taskType: tasks.TypeMayaScheduleRecovery,
+	})
+}

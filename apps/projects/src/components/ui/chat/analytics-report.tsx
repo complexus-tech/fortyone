@@ -875,7 +875,7 @@ export const AnalyticsReport = ({
               value: Number(summary.totalOpenStories ?? 0),
             },
             {
-              label: "Estimate",
+              label: "Complexity",
               value: Number(summary.totalEstimate ?? 0),
             },
             {
@@ -891,7 +891,7 @@ export const AnalyticsReport = ({
               value: Number(summary.unassignedStories ?? 0),
             },
             {
-              label: "Unestimated",
+              label: "No complexity",
               value: Number(summary.unestimatedStories ?? 0),
             },
           ]}

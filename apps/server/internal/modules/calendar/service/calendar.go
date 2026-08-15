@@ -19,35 +19,46 @@ import (
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
+	"google.golang.org/api/googleapi"
 )
 
 var (
-	ErrCalendarNotConfigured         = errors.New("calendar integration is not configured")
-	ErrInvalidCalendarState          = errors.New("invalid calendar setup state")
-	ErrCalendarNotFound              = errors.New("calendar connection not found")
-	ErrCalendarAccessDenied          = errors.New("calendar access denied")
-	ErrCalendarCredentialsIncomplete = errors.New("calendar credentials are incomplete")
-	ErrCalendarEventNotFound         = errors.New("calendar event not found")
-	ErrCalendarSyncSuperseded        = errors.New("calendar sync was superseded by newer credentials")
-	ErrInvalidScheduleRange          = errors.New("calendar schedule range is invalid")
-	ErrInvalidScheduleBlock          = errors.New("calendar schedule block is invalid")
-	ErrCalendarScheduleConflict      = errors.New("calendar time conflicts with an existing meeting or schedule block")
-	ErrCalendarScheduleBlockNotFound = errors.New("calendar schedule block not found")
-	ErrCalendarFullSyncRequired      = errors.New("calendar full sync is required")
-	ErrInvalidCalendarNotification   = errors.New("invalid calendar notification")
-	ErrCalendarWebhookNotConfigured  = errors.New("calendar webhook is not configured")
+	ErrCalendarNotConfigured           = errors.New("calendar integration is not configured")
+	ErrInvalidCalendarState            = errors.New("invalid calendar setup state")
+	ErrCalendarNotFound                = errors.New("calendar connection not found")
+	ErrCalendarAccessDenied            = errors.New("calendar access denied")
+	ErrCalendarCredentialsIncomplete   = errors.New("calendar credentials are incomplete")
+	ErrCalendarEventNotFound           = errors.New("calendar event not found")
+	ErrCalendarSyncSuperseded          = errors.New("calendar sync was superseded by newer credentials")
+	ErrInvalidScheduleRange            = errors.New("calendar schedule range is invalid")
+	ErrInvalidScheduleBlock            = errors.New("calendar schedule block is invalid")
+	ErrCalendarScheduleConflict        = errors.New("calendar time conflicts with an existing meeting or schedule block")
+	ErrCalendarScheduleStalePlan       = errors.New("calendar schedule plan is stale")
+	ErrCalendarScheduleBlockNotFound   = errors.New("calendar schedule block not found")
+	ErrManagedScheduleBlock            = errors.New("Maya-managed schedule blocks can only be changed by automatic scheduling")
+	ErrCalendarCleanupPending          = errors.New("calendar cleanup is still in progress")
+	ErrCalendarAccountChangePending    = errors.New("disconnect the existing calendar before connecting a different Google account")
+	ErrCalendarFullSyncRequired        = errors.New("calendar full sync is required")
+	ErrInvalidCalendarNotification     = errors.New("invalid calendar notification")
+	ErrCalendarWebhookNotConfigured    = errors.New("calendar webhook is not configured")
+	ErrCalendarReauthorizationRequired = errors.New("calendar write access requires reauthorization")
 )
 
 const (
-	connectStateTTL          = 10 * time.Minute
-	defaultSyncLookback      = -7 * 24 * time.Hour
-	defaultSyncLookahead     = 90 * 24 * time.Hour
-	googleWatchTTL           = 7 * 24 * time.Hour
-	googleWatchRenewalWindow = 24 * time.Hour
+	connectStateTTL                    = 10 * time.Minute
+	defaultSyncLookback                = -7 * 24 * time.Hour
+	defaultSyncLookahead               = 90 * 24 * time.Hour
+	googleWatchTTL                     = 7 * 24 * time.Hour
+	googleWatchRenewalWindow           = 24 * time.Hour
+	maximumScheduleEventOutboxAttempts = 8
 )
 
 type CalendarTaskQueue interface {
 	EnqueueCalendarSync(ctx context.Context, connectionID uuid.UUID) error
+}
+
+type CalendarScheduleTaskQueue interface {
+	EnqueueCalendarScheduleReconcile(ctx context.Context, userID uuid.UUID) error
 }
 
 type CalendarUpdatePublisher interface {
@@ -59,6 +70,7 @@ type Repository interface {
 	GetOwnedConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) (CoreConnection, error)
 	GetActiveConnection(ctx context.Context, workspaceID, userID uuid.UUID, provider Provider) (CoreConnection, error)
 	GetConnection(ctx context.Context, connectionID uuid.UUID) (CoreConnection, error)
+	GetScheduleEventDispatchConnection(ctx context.Context, userID uuid.UUID) (CoreConnection, bool, error)
 	ListConnectionsNeedingWatch(ctx context.Context, renewBefore time.Time) ([]CoreConnection, error)
 	WorkspaceMemberExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, error)
 	UpsertConnection(ctx context.Context, input CoreConnectionUpsert) (CoreConnection, error)
@@ -72,12 +84,31 @@ type Repository interface {
 	GetCalendarEvent(ctx context.Context, workspaceID, userID, eventID uuid.UUID) (CoreCalendarEvent, error)
 	ListBusyWindows(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]CoreBusyWindow, error)
 	ListScheduleBlocks(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]CoreScheduleBlock, error)
+	GetScheduleBlock(ctx context.Context, workspaceID, userID, blockID uuid.UUID) (CoreScheduleBlock, error)
 	ScheduleStoryExists(ctx context.Context, workspaceID, userID, storyID uuid.UUID) (bool, error)
 	CreateScheduleBlock(ctx context.Context, input CoreScheduleBlockInput) (CoreScheduleBlock, error)
 	UpdateScheduleBlock(ctx context.Context, input CoreScheduleBlockInput) (CoreScheduleBlock, error)
 	DeleteScheduleBlock(ctx context.Context, workspaceID, userID, blockID uuid.UUID) error
 	MarkConnectionSynced(ctx context.Context, workspaceID, connectionID, credentialGeneration uuid.UUID, syncedAt time.Time) error
 	MarkConnectionSyncFailed(ctx context.Context, workspaceID, connectionID, credentialGeneration uuid.UUID, message string) error
+}
+
+type ScheduleReconciliationRepository interface {
+	ListSchedulingBlocksForUser(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]CoreScheduleBlock, error)
+	ListMayaScheduleBlocksForStory(ctx context.Context, workspaceID, userID, storyID uuid.UUID) ([]CoreScheduleBlock, error)
+	MayaScheduleOwnershipExists(ctx context.Context, workspaceID, userID, storyID uuid.UUID) (bool, error)
+	ReconcileMayaScheduleBlocks(ctx context.Context, input MayaScheduleReconcileInput) (CoreScheduleReconcileResult, error)
+	ListReadyScheduleEventOutboxUsers(ctx context.Context, limit int) ([]uuid.UUID, error)
+	WithScheduleEventDispatchLock(ctx context.Context, userID uuid.UUID, dispatch func(ScheduleEventOutboxStore) error) error
+}
+
+type ScheduleEventOutboxStore interface {
+	ListPendingScheduleEventOutbox(ctx context.Context, userID uuid.UUID, limit int) ([]CoreScheduleEventOutbox, error)
+	ScheduleEventUpsertIsCurrent(ctx context.Context, item CoreScheduleEventOutbox, event ExternalScheduleEventInput) (bool, error)
+	MarkScheduleEventOutboxProcessed(ctx context.Context, item CoreScheduleEventOutbox, syncHash string) error
+	MarkScheduleEventOutboxFailed(ctx context.Context, item CoreScheduleEventOutbox, message string, permanent bool) error
+	ReleaseScheduleEventOutbox(ctx context.Context, outboxIDs []uuid.UUID) error
+	DeleteCleanupPendingConnectionIfDrained(ctx context.Context, userID uuid.UUID) error
 }
 
 type Config struct {
@@ -198,6 +229,11 @@ func (s *Service) CompleteConnect(
 	if err := s.replaceNotificationChannel(ctx, current); err != nil {
 		return CoreConnection{}, "", fmt.Errorf("start calendar notification channel: %w", err)
 	}
+	if scheduleTasks, ok := s.cfg.Tasks.(CalendarScheduleTaskQueue); ok {
+		if err := scheduleTasks.EnqueueCalendarScheduleReconcile(ctx, current.UserID); err != nil {
+			return CoreConnection{}, "", fmt.Errorf("enqueue calendar schedule reconciliation after connect: %w", err)
+		}
+	}
 	return connection, s.workspaceCalendarURL(claims.WorkspaceSlug, "connected=1"), nil
 }
 
@@ -264,7 +300,14 @@ func (s *Service) RevokeConnection(ctx context.Context, workspaceID, userID, con
 		return err
 	}
 	s.stopNotificationChannel(ctx, connection)
-	return s.repo.RevokeConnection(ctx, workspaceID, userID, connectionID)
+	if err := s.repo.RevokeConnection(ctx, workspaceID, userID, connectionID); err != nil {
+		return err
+	}
+	// Provider deletion is backed by the durable outbox. Try immediately for a
+	// responsive disconnect, while the periodic dispatcher remains the retry
+	// contract if Google is temporarily unavailable.
+	_ = s.DispatchScheduleEventOutbox(ctx, userID)
+	return nil
 }
 
 func (s *Service) ProcessGoogleNotification(ctx context.Context, channelID, resourceID, state, token string) error {
@@ -303,7 +346,10 @@ func (s *Service) SyncConnectionFromNotification(ctx context.Context, connection
 		return err
 	}
 	if strings.TrimSpace(connection.SyncToken) == "" || !connection.CanReadEventDetails() {
-		return s.syncConnection(ctx, connection)
+		if err := s.syncConnection(ctx, connection); err != nil {
+			return err
+		}
+		return s.enqueueScheduleReconciliation(ctx, connection.UserID)
 	}
 	connection, err = s.repo.BeginConnectionSync(ctx, connection)
 	if err != nil {
@@ -323,7 +369,10 @@ func (s *Service) SyncConnectionFromNotification(ctx context.Context, connection
 		if getErr != nil {
 			return getErr
 		}
-		return s.syncConnection(ctx, current)
+		if err := s.syncConnection(ctx, current); err != nil {
+			return err
+		}
+		return s.enqueueScheduleReconciliation(ctx, current.UserID)
 	}
 	if err != nil {
 		return s.failConnectionSync(ctx, connection, err)
@@ -332,7 +381,22 @@ func (s *Service) SyncConnectionFromNotification(ctx context.Context, connection
 	if err := s.repo.ApplyCalendarChanges(ctx, connection, delta); err != nil {
 		return s.failConnectionSync(ctx, connection, err)
 	}
-	return s.completeConnectionSync(ctx, connection)
+	if err := s.completeConnectionSync(ctx, connection); err != nil {
+		return err
+	}
+	// Always enqueue after a successful incremental sync, including an empty
+	// delta. If the previous attempt committed Google's next sync token but the
+	// enqueue failed, Asynq retries with an empty delta; this trailing enqueue is
+	// what makes that handoff retry-safe.
+	return s.enqueueScheduleReconciliation(ctx, connection.UserID)
+}
+
+func (s *Service) enqueueScheduleReconciliation(ctx context.Context, userID uuid.UUID) error {
+	scheduleTasks, ok := s.cfg.Tasks.(CalendarScheduleTaskQueue)
+	if !ok {
+		return nil
+	}
+	return scheduleTasks.EnqueueCalendarScheduleReconcile(ctx, userID)
 }
 
 func (s *Service) RenewExpiringNotificationChannels(ctx context.Context) (int, error) {
@@ -363,7 +427,10 @@ func (s *Service) SyncConnection(ctx context.Context, workspaceID, userID, conne
 	if err != nil {
 		return err
 	}
-	return s.syncConnection(ctx, connection)
+	if err := s.syncConnection(ctx, connection); err != nil {
+		return err
+	}
+	return s.enqueueScheduleReconciliation(ctx, connection.UserID)
 }
 
 func (s *Service) SyncActiveGoogleConnection(ctx context.Context, workspaceID, userID uuid.UUID) error {
@@ -374,7 +441,10 @@ func (s *Service) SyncActiveGoogleConnection(ctx context.Context, workspaceID, u
 	if err != nil {
 		return err
 	}
-	return s.syncConnection(ctx, connection)
+	if err := s.syncConnection(ctx, connection); err != nil {
+		return err
+	}
+	return s.enqueueScheduleReconciliation(ctx, connection.UserID)
 }
 
 func (s *Service) ListSchedule(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (CoreSchedule, error) {
@@ -395,9 +465,46 @@ func (s *Service) ListSchedule(ctx context.Context, workspaceID, userID uuid.UUI
 	return CoreSchedule{
 		StartAt:     startAt.UTC(),
 		EndAt:       endAt.UTC(),
+		Timezone:    s.scheduleTimezone(ctx, workspaceID, userID),
 		BusyWindows: busyWindows,
 		Blocks:      blocks,
 	}, nil
+}
+
+// ListSchedulingAvailability is an internal planning view. It includes the
+// user's blocks across workspaces but the repository redacts other-workspace
+// story details so account-wide collision protection cannot leak content.
+func (s *Service) ListSchedulingAvailability(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (CoreSchedule, error) {
+	if s.repo == nil {
+		return CoreSchedule{}, ErrCalendarNotConfigured
+	}
+	if err := validateScheduleRange(startAt, endAt); err != nil {
+		return CoreSchedule{}, err
+	}
+	busyWindows, err := s.repo.ListBusyWindows(ctx, workspaceID, userID, startAt, endAt)
+	if err != nil {
+		return CoreSchedule{}, err
+	}
+	scheduleRepo, err := s.scheduleReconciliationRepository()
+	if err != nil {
+		return CoreSchedule{}, err
+	}
+	blocks, err := scheduleRepo.ListSchedulingBlocksForUser(ctx, workspaceID, userID, startAt, endAt)
+	if err != nil {
+		return CoreSchedule{}, err
+	}
+	return CoreSchedule{
+		StartAt: startAt.UTC(), EndAt: endAt.UTC(), Timezone: s.scheduleTimezone(ctx, workspaceID, userID),
+		BusyWindows: busyWindows, Blocks: blocks,
+	}, nil
+}
+
+func (s *Service) scheduleTimezone(ctx context.Context, workspaceID, userID uuid.UUID) string {
+	connection, err := s.repo.GetActiveConnection(ctx, workspaceID, userID, ProviderGoogle)
+	if err != nil {
+		return "UTC"
+	}
+	return fallbackTimezone(connection.Timezone)
 }
 
 func (s *Service) ListCalendarView(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (CoreCalendarView, error) {
@@ -459,6 +566,13 @@ func (s *Service) UpdateScheduleBlock(ctx context.Context, input CoreScheduleBlo
 	if input.ID == uuid.Nil {
 		return CoreScheduleBlock{}, ErrInvalidScheduleBlock
 	}
+	existing, err := s.repo.GetScheduleBlock(ctx, input.WorkspaceID, input.UserID, input.ID)
+	if err != nil {
+		return CoreScheduleBlock{}, err
+	}
+	if existing.Source == ScheduleBlockSourceMaya {
+		return CoreScheduleBlock{}, ErrManagedScheduleBlock
+	}
 	normalized, err := normalizeScheduleBlockInput(input, s.now())
 	if err != nil {
 		return CoreScheduleBlock{}, err
@@ -477,7 +591,274 @@ func (s *Service) DeleteScheduleBlock(ctx context.Context, workspaceID, userID, 
 	if blockID == uuid.Nil {
 		return ErrInvalidScheduleBlock
 	}
+	existing, err := s.repo.GetScheduleBlock(ctx, workspaceID, userID, blockID)
+	if err != nil {
+		return err
+	}
+	if existing.Source == ScheduleBlockSourceMaya {
+		return ErrManagedScheduleBlock
+	}
 	return s.repo.DeleteScheduleBlock(ctx, workspaceID, userID, blockID)
+}
+
+func (s *Service) ReconcileMayaScheduleBlocks(ctx context.Context, input MayaScheduleReconcileInput) (CoreScheduleReconcileResult, error) {
+	if s.repo == nil {
+		return CoreScheduleReconcileResult{}, ErrCalendarNotConfigured
+	}
+	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.StoryID == uuid.Nil {
+		return CoreScheduleReconcileResult{}, ErrInvalidScheduleBlock
+	}
+	if len(input.Segments) > 0 {
+		if exists, err := s.repo.ScheduleStoryExists(ctx, input.WorkspaceID, input.UserID, input.StoryID); err != nil {
+			return CoreScheduleReconcileResult{}, err
+		} else if !exists {
+			return CoreScheduleReconcileResult{}, ErrCalendarAccessDenied
+		}
+	}
+	for index := range input.Segments {
+		input.Segments[index].Title = strings.TrimSpace(input.Segments[index].Title)
+		if input.Segments[index].Title == "" || len(input.Segments[index].Title) > 255 {
+			return CoreScheduleReconcileResult{}, ErrInvalidScheduleBlock
+		}
+		if err := validateScheduleRange(input.Segments[index].StartAt, input.Segments[index].EndAt); err != nil {
+			return CoreScheduleReconcileResult{}, err
+		}
+	}
+	scheduleRepo, err := s.scheduleReconciliationRepository()
+	if err != nil {
+		return CoreScheduleReconcileResult{}, err
+	}
+	return scheduleRepo.ReconcileMayaScheduleBlocks(ctx, input)
+}
+
+func (s *Service) ListMayaScheduleBlocksForStory(ctx context.Context, workspaceID, userID, storyID uuid.UUID) ([]CoreScheduleBlock, error) {
+	if workspaceID == uuid.Nil || userID == uuid.Nil || storyID == uuid.Nil {
+		return nil, ErrInvalidScheduleBlock
+	}
+	scheduleRepo, err := s.scheduleReconciliationRepository()
+	if err != nil {
+		return nil, err
+	}
+	return scheduleRepo.ListMayaScheduleBlocksForStory(ctx, workspaceID, userID, storyID)
+}
+
+func (s *Service) MayaScheduleOwnershipExists(ctx context.Context, workspaceID, userID, storyID uuid.UUID) (bool, error) {
+	if workspaceID == uuid.Nil || userID == uuid.Nil || storyID == uuid.Nil {
+		return false, ErrInvalidScheduleBlock
+	}
+	scheduleRepo, err := s.scheduleReconciliationRepository()
+	if err != nil {
+		return false, err
+	}
+	return scheduleRepo.MayaScheduleOwnershipExists(ctx, workspaceID, userID, storyID)
+}
+
+func (s *Service) DispatchScheduleEventOutbox(ctx context.Context, userID uuid.UUID) error {
+	if s.repo == nil || userID == uuid.Nil {
+		return ErrCalendarNotConfigured
+	}
+	scheduleRepo, err := s.scheduleReconciliationRepository()
+	if err != nil {
+		return err
+	}
+	var dispatchErr error
+	lockErr := scheduleRepo.WithScheduleEventDispatchLock(ctx, userID, func(outbox ScheduleEventOutboxStore) error {
+		connection, cleanupPending, err := s.repo.GetScheduleEventDispatchConnection(ctx, userID)
+		if err != nil {
+			if errors.Is(err, ErrCalendarNotFound) {
+				return nil
+			}
+			return err
+		}
+		if cleanupPending && !connection.CanDeleteOwnedEvents() {
+			return terminallyFinalizeScheduleCleanup(
+				ctx,
+				outbox,
+				userID,
+				"Calendar cleanup could not call Google because the connection never granted owned-event access.",
+			)
+		}
+		if !cleanupPending && !connection.CanWriteEvents() {
+			return nil
+		}
+		provider, err := s.provider(connection.Provider)
+		if err != nil {
+			if cleanupPending {
+				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, "Calendar cleanup could not initialize the provider writer.")
+			}
+			return err
+		}
+		eventWriter, ok := provider.(CalendarEventWriter)
+		if !ok {
+			if cleanupPending {
+				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, "Calendar cleanup provider does not support event deletion.")
+			}
+			return ErrCalendarNotConfigured
+		}
+		token, err := s.decryptTokenPayload(connection.TokenPayload)
+		if err != nil {
+			if cleanupPending {
+				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, "Calendar cleanup credentials could not be decrypted.")
+			}
+			return err
+		}
+		for {
+			items, err := outbox.ListPendingScheduleEventOutbox(ctx, userID, 100)
+			if err != nil {
+				return err
+			}
+			if len(items) == 0 {
+				return outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID)
+			}
+			for index, item := range items {
+				var event ExternalScheduleEventInput
+				isMember := false
+				if !cleanupPending {
+					var membershipErr error
+					isMember, membershipErr = s.repo.WorkspaceMemberExists(ctx, item.WorkspaceID, userID)
+					if membershipErr != nil {
+						return membershipErr
+					}
+				}
+				needsEventPayload := item.Operation == ScheduleEventOperationUpsert && !cleanupPending && isMember
+				if needsEventPayload {
+					if err := json.Unmarshal(item.Payload, &event); err != nil {
+						if markErr := outbox.MarkScheduleEventOutboxFailed(ctx, item, "Calendar event payload could not be decoded.", true); markErr != nil {
+							return errors.Join(err, markErr)
+						}
+						if releaseErr := outbox.ReleaseScheduleEventOutbox(ctx, scheduleOutboxIDs(items[index+1:])); releaseErr != nil {
+							return errors.Join(err, releaseErr)
+						}
+						if cleanupPending {
+							if finalizeErr := outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID); finalizeErr != nil {
+								return errors.Join(err, finalizeErr)
+							}
+						}
+						dispatchErr = fmt.Errorf("decode calendar schedule event outbox: %w", err)
+						return nil
+					}
+				}
+				forceDelete := cleanupPending || item.Operation == ScheduleEventOperationDelete || item.Operation == ScheduleEventOperationUpsert && !isMember
+				if !forceDelete && item.Operation == ScheduleEventOperationUpsert {
+					current, currentErr := outbox.ScheduleEventUpsertIsCurrent(ctx, item, event)
+					if currentErr != nil {
+						return currentErr
+					}
+					forceDelete = !current
+				}
+				var writeErr error
+				failureMessage := "Calendar event update failed."
+				if forceDelete {
+					writeErr = eventWriter.DeleteScheduleEvent(ctx, token, item.CalendarID, item.ProviderEventID)
+					failureMessage = "Calendar event cleanup failed."
+				} else {
+					writeErr = eventWriter.UpsertScheduleEvent(ctx, token, event)
+				}
+				if writeErr != nil {
+					failureMessage = fmt.Sprintf("%s %v", failureMessage, writeErr)
+					terminal := isPermanentCalendarWriteError(writeErr) || item.AttemptCount >= maximumScheduleEventOutboxAttempts
+					if markErr := outbox.MarkScheduleEventOutboxFailed(ctx, item, failureMessage, terminal); markErr != nil {
+						return errors.Join(writeErr, markErr)
+					}
+					if releaseErr := outbox.ReleaseScheduleEventOutbox(ctx, scheduleOutboxIDs(items[index+1:])); releaseErr != nil {
+						return errors.Join(writeErr, releaseErr)
+					}
+					if terminal && cleanupPending {
+						if finalizeErr := outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID); finalizeErr != nil {
+							return errors.Join(writeErr, finalizeErr)
+						}
+					}
+					dispatchErr = writeErr
+					return nil
+				}
+				processedItem := item
+				if forceDelete {
+					processedItem.Operation = ScheduleEventOperationDelete
+				}
+				if err := outbox.MarkScheduleEventOutboxProcessed(ctx, processedItem, ScheduleEventSyncHash(event)); err != nil {
+					return err
+				}
+			}
+		}
+	})
+	return errors.Join(lockErr, dispatchErr)
+}
+
+func terminallyFinalizeScheduleCleanup(ctx context.Context, outbox ScheduleEventOutboxStore, userID uuid.UUID, message string) error {
+	for {
+		items, err := outbox.ListPendingScheduleEventOutbox(ctx, userID, 100)
+		if err != nil {
+			return err
+		}
+		if len(items) == 0 {
+			return outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID)
+		}
+		for _, item := range items {
+			if err := outbox.MarkScheduleEventOutboxFailed(ctx, item, message, true); err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func isPermanentCalendarWriteError(err error) bool {
+	var apiErr *googleapi.Error
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	if apiErr.Code < 400 || apiErr.Code >= 500 {
+		return false
+	}
+	switch apiErr.Code {
+	case 408, 409, 429:
+		return false
+	}
+	for _, item := range apiErr.Errors {
+		switch item.Reason {
+		case "rateLimitExceeded", "userRateLimitExceeded", "backendError":
+			return false
+		}
+	}
+	return true
+}
+
+func (s *Service) DispatchReadyScheduleEventOutbox(ctx context.Context) (int, error) {
+	if s.repo == nil {
+		return 0, ErrCalendarNotConfigured
+	}
+	scheduleRepo, err := s.scheduleReconciliationRepository()
+	if err != nil {
+		return 0, err
+	}
+	userIDs, err := scheduleRepo.ListReadyScheduleEventOutboxUsers(ctx, 100)
+	if err != nil {
+		return 0, err
+	}
+	var dispatchErr error
+	for _, userID := range userIDs {
+		if err := s.DispatchScheduleEventOutbox(ctx, userID); err != nil {
+			dispatchErr = errors.Join(dispatchErr, err)
+		}
+	}
+	return len(userIDs), dispatchErr
+}
+
+func scheduleOutboxIDs(items []CoreScheduleEventOutbox) []uuid.UUID {
+	ids := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if item.ID != uuid.Nil {
+			ids = append(ids, item.ID)
+		}
+	}
+	return ids
+}
+
+func (s *Service) scheduleReconciliationRepository() (ScheduleReconciliationRepository, error) {
+	repo, ok := s.repo.(ScheduleReconciliationRepository)
+	if !ok {
+		return nil, ErrCalendarNotConfigured
+	}
+	return repo, nil
 }
 
 func (s *Service) validateScheduleStory(ctx context.Context, input CoreScheduleBlockInput) error {

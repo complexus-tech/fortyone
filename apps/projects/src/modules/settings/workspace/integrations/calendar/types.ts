@@ -5,6 +5,9 @@ export type CalendarConnection = {
   timezone: string;
   scopes: string[];
   canReadEventDetails: boolean;
+  canWriteEvents: boolean;
+  requiresReauthorization: boolean;
+  reauthorizationReason?: "google_calendar_write_scope_required";
   syncStatus: string;
   syncError?: string | null;
   lastSyncedAt?: string | null;

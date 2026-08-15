@@ -364,6 +364,7 @@ export const SubStories = ({
               "Status",
               "Assignee",
               "Estimate",
+              "Time needed",
               "Priority",
             ],
           }}

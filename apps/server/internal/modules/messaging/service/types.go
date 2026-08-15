@@ -218,19 +218,21 @@ type StoryMutationConfirmation struct {
 // story mutation. AssigneeAction is one of "unchanged", "me", "named", or
 // "unassigned".
 type StoryMutationPreview struct {
-	StoryID        *uuid.UUID `json:"story_id,omitempty"`
-	Reference      string     `json:"reference,omitempty"`
-	TeamID         uuid.UUID  `json:"team_id"`
-	TeamName       string     `json:"team_name"`
-	TeamCode       string     `json:"team_code"`
-	Title          string     `json:"title"`
-	Description    string     `json:"description,omitempty"`
-	SourceURL      string     `json:"source_url,omitempty"`
-	Priority       *string    `json:"priority,omitempty"`
-	AssigneeID     *uuid.UUID `json:"assignee_id,omitempty"`
-	AssigneeName   string     `json:"assignee_name,omitempty"`
-	AssigneeAction string     `json:"assignee_action"`
-	ChangedFields  []string   `json:"changed_fields,omitempty"`
+	StoryID                  *uuid.UUID `json:"story_id,omitempty"`
+	Reference                string     `json:"reference,omitempty"`
+	TeamID                   uuid.UUID  `json:"team_id"`
+	TeamName                 string     `json:"team_name"`
+	TeamCode                 string     `json:"team_code"`
+	Title                    string     `json:"title"`
+	Description              string     `json:"description,omitempty"`
+	SourceURL                string     `json:"source_url,omitempty"`
+	Priority                 *string    `json:"priority,omitempty"`
+	AssigneeID               *uuid.UUID `json:"assignee_id,omitempty"`
+	AssigneeName             string     `json:"assignee_name,omitempty"`
+	AssigneeAction           string     `json:"assignee_action"`
+	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes,omitempty"`
+	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes,omitempty"`
+	ChangedFields            []string   `json:"changed_fields,omitempty"`
 }
 
 // StoryMutationResult is returned after a provider explicitly confirms a
@@ -238,30 +240,34 @@ type StoryMutationPreview struct {
 // return "partial" alongside an error so providers can show already-created
 // items and offer a safe retry.
 type StoryMutationResult struct {
-	Status        string                    `json:"status"`
-	Operation     StoryMutationOperation    `json:"operation"`
-	StoryID       uuid.UUID                 `json:"story_id"`
-	Reference     string                    `json:"reference"`
-	TeamID        uuid.UUID                 `json:"team_id"`
-	Title         string                    `json:"title"`
-	Priority      string                    `json:"priority"`
-	AssigneeID    *uuid.UUID                `json:"assignee_id,omitempty"`
-	CommentID     *uuid.UUID                `json:"comment_id,omitempty"`
-	AssociationID *uuid.UUID                `json:"association_id,omitempty"`
-	Items         []StoryMutationItemResult `json:"items,omitempty"`
+	Status                   string                    `json:"status"`
+	Operation                StoryMutationOperation    `json:"operation"`
+	StoryID                  uuid.UUID                 `json:"story_id"`
+	Reference                string                    `json:"reference"`
+	TeamID                   uuid.UUID                 `json:"team_id"`
+	Title                    string                    `json:"title"`
+	Priority                 string                    `json:"priority"`
+	AssigneeID               *uuid.UUID                `json:"assignee_id,omitempty"`
+	EstimatedDurationMinutes *int                      `json:"estimated_duration_minutes,omitempty"`
+	MinimumFocusBlockMinutes *int                      `json:"minimum_focus_block_minutes,omitempty"`
+	CommentID                *uuid.UUID                `json:"comment_id,omitempty"`
+	AssociationID            *uuid.UUID                `json:"association_id,omitempty"`
+	Items                    []StoryMutationItemResult `json:"items,omitempty"`
 }
 
 // StoryMutationItemResult is one durable outcome within a confirmed batch.
 // Index preserves the order shown in the confirmation prompt.
 type StoryMutationItemResult struct {
-	Index      int        `json:"index"`
-	Status     string     `json:"status"`
-	StoryID    uuid.UUID  `json:"story_id"`
-	Reference  string     `json:"reference"`
-	TeamID     uuid.UUID  `json:"team_id"`
-	Title      string     `json:"title"`
-	Priority   string     `json:"priority"`
-	AssigneeID *uuid.UUID `json:"assignee_id,omitempty"`
+	Index                    int        `json:"index"`
+	Status                   string     `json:"status"`
+	StoryID                  uuid.UUID  `json:"story_id"`
+	Reference                string     `json:"reference"`
+	TeamID                   uuid.UUID  `json:"team_id"`
+	Title                    string     `json:"title"`
+	Priority                 string     `json:"priority"`
+	AssigneeID               *uuid.UUID `json:"assignee_id,omitempty"`
+	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes,omitempty"`
+	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes,omitempty"`
 }
 
 // StoryMutationCancellationResult describes a successful cancellation. Status

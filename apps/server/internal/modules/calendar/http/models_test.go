@@ -24,6 +24,17 @@ func TestToAppConnectionReportsEventDetailCapability(t *testing.T) {
 	if !connection.CanReadEventDetails {
 		t.Fatal("expected Google event detail scope to enable event details")
 	}
+	if connection.CanWriteEvents || !connection.RequiresReauthorization || connection.ReauthorizationReason == nil || *connection.ReauthorizationReason != calendar.GoogleCalendarWriteScopeReason {
+		t.Fatalf("expected deterministic write-scope reconnect state: %#v", connection)
+	}
+
+	upgraded := toAppConnection(calendar.CoreConnection{
+		ID: uuid.New(), Provider: calendar.ProviderGoogle,
+		Scopes: []string{calendar.GoogleCalendarEventsReadonlyScope, calendar.GoogleCalendarEventsOwnedScope},
+	})
+	if !upgraded.CanWriteEvents || upgraded.RequiresReauthorization || upgraded.ReauthorizationReason != nil {
+		t.Fatalf("expected upgraded grant to be write-capable: %#v", upgraded)
+	}
 }
 
 func TestCalendarSummaryDoesNotLeakEventDetailsOrProviderIdentity(t *testing.T) {

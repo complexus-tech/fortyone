@@ -17,6 +17,8 @@ export type IntegrationRequest = {
   priority: "No Priority" | "Low" | "Medium" | "High" | "Urgent";
   assigneeId?: string;
   estimateValue?: number;
+  estimatedDurationMinutes?: number;
+  minimumFocusBlockMinutes?: number;
   objectiveId?: string;
   keyResultId?: string;
   sprintId?: string;
@@ -48,6 +50,8 @@ export type UpdateIntegrationRequestInput = {
   priority?: IntegrationRequest["priority"];
   assigneeId?: string | null;
   estimateValue?: number | null;
+  estimatedDurationMinutes?: number | null;
+  minimumFocusBlockMinutes?: number | null;
   objectiveId?: string | null;
   keyResultId?: string | null;
   sprintId?: string | null;

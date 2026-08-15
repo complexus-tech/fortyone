@@ -7,11 +7,13 @@ import {
 } from "./new-story-dialog-form";
 
 describe("new story dialog form", () => {
-  it("preserves selected labels and estimate value in the create payload", () => {
+  it("preserves selected labels, complexity, and time in the create payload", () => {
     const storyForm: NewStory = {
       assigneeId: "user-1",
       endDate: "2026-06-20",
       estimateValue: 5,
+      estimatedDurationMinutes: 120,
+      minimumFocusBlockMinutes: 30,
       labelIds: ["label-1", "label-2"],
       objectiveId: "objective-1",
       keyResultId: "key-result-1",
@@ -34,6 +36,8 @@ describe("new story dialog form", () => {
       description: "Plain text description",
       descriptionHTML: "<p>Plain text description</p>",
       estimateValue: 5,
+      estimatedDurationMinutes: 120,
+      minimumFocusBlockMinutes: 30,
       labelIds: ["label-1", "label-2"],
       objectiveId: "objective-1",
       keyResultId: "key-result-1",
@@ -42,6 +46,24 @@ describe("new story dialog form", () => {
       statusId: "status-1",
       teamId: "team-1",
       title: "Add reporting filters",
+    });
+  });
+
+  it("rejects a focus block longer than the serialized duration", () => {
+    const payload = buildNewStoryDialogPayload({
+      currentTeamId: "team-1",
+      description: "",
+      descriptionHTML: "",
+      storyForm: {
+        estimatedDurationMinutes: 30,
+        minimumFocusBlockMinutes: 60,
+      },
+      title: "Keep scheduling inputs valid",
+    });
+
+    expect(payload).toMatchObject({
+      estimatedDurationMinutes: 30,
+      minimumFocusBlockMinutes: null,
     });
   });
 

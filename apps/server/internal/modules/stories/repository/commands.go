@@ -242,7 +242,8 @@ func (r *repo) findByExternalCreationKey(ctx context.Context, workspaceID uuid.U
 		SELECT s.id, s.sequence_id, s.title, s.description, s.description_html,
 		       s.parent_id, s.objective_id, s.status_id, s.assignee_id,
 		       s.blocked_by_id, s.blocking_id, s.related_id, s.reporter_id,
-		       s.priority, s.estimate_unit, s.sprint_id, s.key_result_id,
+		       s.priority, s.estimate_unit, s.estimated_duration_minutes,
+		       s.minimum_focus_block_minutes, s.sprint_id, s.key_result_id,
 		       s.team_id, s.workspace_id, s.start_date, s.end_date,
 		       s.created_at, s.updated_at, s.external_creation_key,
 		       COALESCE(
@@ -326,14 +327,16 @@ func (r *repo) insertStory(ctx context.Context, tx *sqlx.Tx, story *stories.Core
 					sequence_id, title, description, description_html,
 					parent_id, objective_id, status_id, assignee_id, 
 					blocked_by_id, blocking_id, related_id, reporter_id,
-					priority, estimate_unit, sprint_id, key_result_id, team_id, workspace_id, start_date, 
+					priority, estimate_unit, estimated_duration_minutes, minimum_focus_block_minutes,
+					sprint_id, key_result_id, team_id, workspace_id, start_date,
 					end_date, external_creation_key, created_at, updated_at
 			) VALUES (
 					:sequence_id, :title, :description, :description_html,
 					:parent_id, :objective_id, :status_id, :assignee_id, :blocked_by_id,
-					:blocking_id, :related_id, :reporter_id, :priority, :estimate_unit, :sprint_id,
+					:blocking_id, :related_id, :reporter_id, :priority, :estimate_unit,
+					:estimated_duration_minutes, :minimum_focus_block_minutes, :sprint_id,
 					:key_result_id, :team_id, :workspace_id, :start_date, :end_date, :external_creation_key, :created_at, :updated_at
-			) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.sprint_id, stories.key_result_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.external_creation_key, stories.created_at, stories.updated_at;
+			) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.estimated_duration_minutes, stories.minimum_focus_block_minutes, stories.sprint_id, stories.key_result_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.external_creation_key, stories.created_at, stories.updated_at;
 		`
 
 	var cs dbStory
@@ -947,6 +950,8 @@ func isConditionalStoryUpdateField(field string) bool {
 	switch field {
 	case "title",
 		"estimate_unit",
+		"estimated_duration_minutes",
+		"minimum_focus_block_minutes",
 		"description",
 		"description_html",
 		"parent_id",
@@ -1250,6 +1255,8 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 			assignee_id,
 			priority,
 			estimate_unit,
+			estimated_duration_minutes,
+			minimum_focus_block_minutes,
 			sprint_id,
 			workspace_id,
 			reporter_id,
@@ -1266,29 +1273,33 @@ func (r *repo) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, wo
 			:assignee_id,
 			:priority,
 			:estimate_unit,
+			:estimated_duration_minutes,
+			:minimum_focus_block_minutes,
 			:sprint_id,
 			:workspace_id,
 			:reporter_id,
 			NOW(),
 			NOW()
-		) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.sprint_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
+		) RETURNING stories.id, stories.sequence_id, stories.title, stories.description, stories.description_html, stories.parent_id, stories.objective_id, stories.status_id, stories.assignee_id, stories.blocked_by_id, stories.blocking_id, stories.related_id, stories.reporter_id, stories.priority, stories.estimate_unit, stories.estimated_duration_minutes, stories.minimum_focus_block_minutes, stories.sprint_id, stories.team_id, stories.workspace_id, stories.start_date, stories.end_date, stories.created_at, stories.updated_at;
 	`
 
 	// Prepare parameters for the new story
 	params := map[string]any{
-		"sequence_id":      lastSequence + 1,
-		"title":            "Copy of " + originalStory.Title,
-		"description":      originalStory.Description,
-		"description_html": originalStory.DescriptionHTML,
-		"team_id":          originalStory.Team,
-		"objective_id":     originalStory.Objective,
-		"status_id":        originalStory.Status,
-		"assignee_id":      originalStory.Assignee,
-		"priority":         originalStory.Priority,
-		"estimate_unit":    originalStory.EstimateValue,
-		"sprint_id":        originalStory.Sprint,
-		"workspace_id":     workspaceId,
-		"reporter_id":      userID,
+		"sequence_id":                 lastSequence + 1,
+		"title":                       "Copy of " + originalStory.Title,
+		"description":                 originalStory.Description,
+		"description_html":            originalStory.DescriptionHTML,
+		"team_id":                     originalStory.Team,
+		"objective_id":                originalStory.Objective,
+		"status_id":                   originalStory.Status,
+		"assignee_id":                 originalStory.Assignee,
+		"priority":                    originalStory.Priority,
+		"estimate_unit":               originalStory.EstimateValue,
+		"estimated_duration_minutes":  originalStory.EstimatedDurationMinutes,
+		"minimum_focus_block_minutes": originalStory.MinimumFocusBlockMinutes,
+		"sprint_id":                   originalStory.Sprint,
+		"workspace_id":                workspaceId,
+		"reporter_id":                 userID,
 	}
 
 	// Execute the insert

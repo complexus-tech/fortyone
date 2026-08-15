@@ -137,6 +137,18 @@ func (s *Service) UpdatePending(ctx context.Context, workspaceID, requestID, use
 		}
 		input.Priority = &priority
 	}
+	if input.EstimatedDurationMinutes.Set && input.EstimatedDurationMinutes.Value != nil && *input.EstimatedDurationMinutes.Value <= 0 {
+		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, stories.ErrInvalidEstimatedDuration)
+	}
+	if input.EstimatedDurationMinutes.Set && input.EstimatedDurationMinutes.Value != nil && *input.EstimatedDurationMinutes.Value > stories.MaximumEstimatedDurationMinutes {
+		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, stories.ErrEstimatedDurationTooLarge)
+	}
+	if input.MinimumFocusBlockMinutes.Set && input.MinimumFocusBlockMinutes.Value != nil && *input.MinimumFocusBlockMinutes.Value <= 0 {
+		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, stories.ErrInvalidMinimumFocusBlock)
+	}
+	if input.MinimumFocusBlockMinutes.Set && input.MinimumFocusBlockMinutes.Value != nil && *input.MinimumFocusBlockMinutes.Value > stories.MaximumEstimatedDurationMinutes {
+		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, stories.ErrMinimumFocusBlockTooLarge)
+	}
 	return s.repo.UpdatePending(ctx, workspaceID, requestID, userID, input)
 }
 
@@ -199,21 +211,23 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 	creationKey := fmt.Sprintf("integration-request:%s:%s", workspaceID, request.ID)
 
 	story, err := s.stories.CreateExternalUserAction(ctx, conversionActorID, stories.CoreNewStory{
-		Title:         request.Title,
-		Description:   request.Description,
-		Status:        statusID,
-		Reporter:      &conversionActorID,
-		Assignee:      request.AssigneeID,
-		Team:          request.TeamID,
-		Priority:      priority,
-		EstimateValue: request.EstimateValue,
-		Objective:     request.ObjectiveID,
-		KeyResult:     request.KeyResultID,
-		Sprint:        request.SprintID,
-		StartDate:     request.StartDate,
-		EndDate:       request.EndDate,
-		LabelIDs:      request.LabelIDs,
-		CreationKey:   &creationKey,
+		Title:                    request.Title,
+		Description:              request.Description,
+		Status:                   statusID,
+		Reporter:                 &conversionActorID,
+		Assignee:                 request.AssigneeID,
+		Team:                     request.TeamID,
+		Priority:                 priority,
+		EstimateValue:            request.EstimateValue,
+		EstimatedDurationMinutes: request.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: request.MinimumFocusBlockMinutes,
+		Objective:                request.ObjectiveID,
+		KeyResult:                request.KeyResultID,
+		Sprint:                   request.SprintID,
+		StartDate:                request.StartDate,
+		EndDate:                  request.EndDate,
+		LabelIDs:                 request.LabelIDs,
+		CreationKey:              &creationKey,
 	}, workspaceID)
 	if err != nil {
 		return CoreIntegrationRequest{}, err
@@ -304,6 +318,9 @@ func validateUpsertInput(input CoreUpsertRequestInput) error {
 	}
 	if strings.TrimSpace(input.Title) == "" {
 		return errors.New("title is required")
+	}
+	if err := stories.ValidateStoryTimeContract(input.EstimatedDurationMinutes, input.MinimumFocusBlockMinutes); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidRequestProperty, err)
 	}
 	return nil
 }

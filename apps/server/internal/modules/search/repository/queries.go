@@ -94,11 +94,15 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, userID 
 			s.assignee_id,
 			s.reporter_id,
 			s.priority,
+			s.estimate_unit,
+			COALESCE(estimation.scheme, 'tshirt') AS estimate_scheme,
 			s.sprint_id,
 			s.team_id,
 			s.workspace_id,
 			s.start_date,
 			s.end_date,
+			s.estimated_duration_minutes,
+			s.minimum_focus_block_minutes,
 			s.created_at,
 			s.updated_at,
 			COALESCE(
@@ -115,6 +119,7 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, userID 
 		FROM
 			stories s
 			INNER JOIN team_members tm ON tm.team_id = s.team_id AND tm.user_id = :user_id
+			LEFT JOIN team_estimation_settings estimation ON estimation.team_id = s.team_id
 		WHERE
 			s.workspace_id = :workspace_id
 			AND s.deleted_at IS NULL

@@ -215,7 +215,7 @@ const WorkloadRow = ({
           </Text>
           <Text color="muted">
             {formatNumber(member.openStories)} open /{" "}
-            {formatNumber(member.estimateTotal)} estimate
+            {formatNumber(member.estimateTotal)} complexity
           </Text>
         </Box>
         <Flex align="center" className="gap-2">

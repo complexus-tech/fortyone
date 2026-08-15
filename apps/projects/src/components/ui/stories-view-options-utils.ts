@@ -3,6 +3,7 @@ export type DisplayColumn =
   | "Status"
   | "Assignee"
   | "Estimate"
+  | "Time needed"
   | "Priority"
   | "Deadline"
   | "Created"
@@ -13,22 +14,33 @@ export type DisplayColumn =
   | "Epic"
   | "Labels";
 
-export const DISPLAY_COLUMNS_VERSION = 2;
+export const DISPLAY_COLUMNS_VERSION = 3;
 
 export const migrateDisplayColumns = (
   displayColumns: DisplayColumn[],
   version = 1,
 ) => {
-  if (
-    version >= DISPLAY_COLUMNS_VERSION ||
-    !displayColumns.includes("Objective") ||
-    displayColumns.includes("Key Result")
-  ) {
-    return displayColumns;
-  }
+  if (version >= DISPLAY_COLUMNS_VERSION) return displayColumns;
 
   const migratedColumns = [...displayColumns];
-  const objectiveIndex = migratedColumns.indexOf("Objective");
-  migratedColumns.splice(objectiveIndex + 1, 0, "Key Result");
+
+  if (
+    version < 2 &&
+    migratedColumns.includes("Objective") &&
+    !migratedColumns.includes("Key Result")
+  ) {
+    const objectiveIndex = migratedColumns.indexOf("Objective");
+    migratedColumns.splice(objectiveIndex + 1, 0, "Key Result");
+  }
+
+  if (
+    version < 3 &&
+    migratedColumns.includes("Estimate") &&
+    !migratedColumns.includes("Time needed")
+  ) {
+    const estimateIndex = migratedColumns.indexOf("Estimate");
+    migratedColumns.splice(estimateIndex + 1, 0, "Time needed");
+  }
+
   return migratedColumns;
 };

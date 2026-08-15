@@ -33,7 +33,9 @@ export type Story = {
   title: string;
   estimateLabel: string | null;
   estimateValue: number | null;
-  estimateScheme: "points" | "hours" | "tshirt" | "ideal_days";
+  estimateScheme: "points" | "tshirt";
+  estimatedDurationMinutes: number | null;
+  minimumFocusBlockMinutes: number | null;
   description?: string;
   statusId: string;
   sprintId: string | null;

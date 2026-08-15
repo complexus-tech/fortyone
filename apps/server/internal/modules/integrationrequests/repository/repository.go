@@ -11,6 +11,7 @@ import (
 	"time"
 
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -41,6 +42,8 @@ type requestRow struct {
 	Priority                  string         `db:"priority"`
 	AssigneeID                *uuid.UUID     `db:"assignee_id"`
 	EstimateValue             *int16         `db:"estimate_unit"`
+	EstimatedDurationMinutes  *int           `db:"estimated_duration_minutes"`
+	MinimumFocusBlockMinutes  *int           `db:"minimum_focus_block_minutes"`
 	ObjectiveID               *uuid.UUID     `db:"objective_id"`
 	KeyResultID               *uuid.UUID     `db:"key_result_id"`
 	SprintID                  *uuid.UUID     `db:"sprint_id"`
@@ -99,8 +102,9 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 		INSERT INTO integration_requests (
 			workspace_id, team_id, provider, source_type, source_external_id, source_number,
 			source_url, title, description, status_id, priority, assignee_id, estimate_unit,
-			objective_id, key_result_id, sprint_id, start_date, end_date, label_ids, metadata, created_by_user_id
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE(NULLIF($11, ''), 'No Priority'), $12, $13, $14, $15, $16, $17, $18, $19, CAST($20 AS jsonb), $21)
+			estimated_duration_minutes, minimum_focus_block_minutes, objective_id, key_result_id,
+			sprint_id, start_date, end_date, label_ids, metadata, created_by_user_id
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE(NULLIF($11, ''), 'No Priority'), $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, CAST($22 AS jsonb), $23)
 		ON CONFLICT (workspace_id, provider, source_type, source_external_id) DO UPDATE SET
 			team_id = EXCLUDED.team_id,
 			source_number = EXCLUDED.source_number,
@@ -111,6 +115,8 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 			priority = EXCLUDED.priority,
 			assignee_id = COALESCE(integration_requests.assignee_id, EXCLUDED.assignee_id),
 			estimate_unit = COALESCE(integration_requests.estimate_unit, EXCLUDED.estimate_unit),
+			estimated_duration_minutes = COALESCE(integration_requests.estimated_duration_minutes, EXCLUDED.estimated_duration_minutes),
+			minimum_focus_block_minutes = COALESCE(integration_requests.minimum_focus_block_minutes, EXCLUDED.minimum_focus_block_minutes),
 			objective_id = COALESCE(integration_requests.objective_id, EXCLUDED.objective_id),
 			key_result_id = COALESCE(integration_requests.key_result_id, EXCLUDED.key_result_id),
 			sprint_id = COALESCE(integration_requests.sprint_id, EXCLUDED.sprint_id),
@@ -140,6 +146,8 @@ func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.Core
 		input.Priority,
 		input.AssigneeID,
 		input.EstimateValue,
+		input.EstimatedDurationMinutes,
+		input.MinimumFocusBlockMinutes,
 		input.ObjectiveID,
 		input.KeyResultID,
 		input.SprintID,
@@ -207,6 +215,8 @@ func (r *Repo) UpdatePending(ctx context.Context, workspaceID, requestID, userID
 	}
 	assigneeID := optionalValue(current.AssigneeID, input.AssigneeID)
 	estimateValue := optionalValue(current.EstimateValue, input.EstimateValue)
+	estimatedDurationMinutes := optionalValue(current.EstimatedDurationMinutes, input.EstimatedDurationMinutes)
+	minimumFocusBlockMinutes := optionalValue(current.MinimumFocusBlockMinutes, input.MinimumFocusBlockMinutes)
 	objectiveID := optionalValue(current.ObjectiveID, input.ObjectiveID)
 	keyResultID := optionalValue(current.KeyResultID, input.KeyResultID)
 	sprintID := optionalValue(current.SprintID, input.SprintID)
@@ -215,6 +225,9 @@ func (r *Repo) UpdatePending(ctx context.Context, workspaceID, requestID, userID
 	labelIDs, parseErr := requestLabelIDs(current.LabelIDs, input.LabelIDs)
 	if parseErr != nil {
 		return integrationrequests.CoreIntegrationRequest{}, parseErr
+	}
+	if validationErr := stories.ValidateStoryTimeContract(estimatedDurationMinutes, minimumFocusBlockMinutes); validationErr != nil {
+		return integrationrequests.CoreIntegrationRequest{}, fmt.Errorf("%w: %w", integrationrequests.ErrInvalidRequestProperty, validationErr)
 	}
 
 	if err = validatePendingRequestProperties(ctx, tx, current.WorkspaceID, current.TeamID, statusID, assigneeID, objectiveID, keyResultID, sprintID, labelIDs, startDate, endDate); err != nil {
@@ -230,12 +243,14 @@ func (r *Repo) UpdatePending(ctx context.Context, workspaceID, requestID, userID
 			priority = $7,
 			assignee_id = $8,
 			estimate_unit = $9,
-			objective_id = $10,
-			key_result_id = $11,
-			sprint_id = $12,
-			start_date = $13,
-			end_date = $14,
-			label_ids = $15,
+			estimated_duration_minutes = $10,
+			minimum_focus_block_minutes = $11,
+			objective_id = $12,
+			key_result_id = $13,
+			sprint_id = $14,
+			start_date = $15,
+			end_date = $16,
+			label_ids = $17,
 			updated_at = NOW()
 		WHERE workspace_id = $1
 		  AND id = $2
@@ -243,7 +258,7 @@ func (r *Repo) UpdatePending(ctx context.Context, workspaceID, requestID, userID
 		  AND acceptance_state = 'idle'
 		  AND `+teamAccessPredicate("integration_requests.team_id", "integration_requests.workspace_id", "$3")+`
 		RETURNING *
-	`, workspaceID, requestID, userID, title, description, statusID, priority, assigneeID, estimateValue, objectiveID, keyResultID, sprintID, startDate, endDate, pq.Array(uuidStrings(labelIDs))); err != nil {
+	`, workspaceID, requestID, userID, title, description, statusID, priority, assigneeID, estimateValue, estimatedDurationMinutes, minimumFocusBlockMinutes, objectiveID, keyResultID, sprintID, startDate, endDate, pq.Array(uuidStrings(labelIDs))); err != nil {
 		return integrationrequests.CoreIntegrationRequest{}, err
 	}
 	if err = tx.Commit(); err != nil {
@@ -543,6 +558,8 @@ func toCore(row requestRow) integrationrequests.CoreIntegrationRequest {
 		Priority:                  row.Priority,
 		AssigneeID:                row.AssigneeID,
 		EstimateValue:             row.EstimateValue,
+		EstimatedDurationMinutes:  row.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes:  row.MinimumFocusBlockMinutes,
 		ObjectiveID:               row.ObjectiveID,
 		KeyResultID:               row.KeyResultID,
 		SprintID:                  row.SprintID,

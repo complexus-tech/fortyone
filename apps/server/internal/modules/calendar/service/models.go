@@ -1,6 +1,10 @@
 package calendar
 
 import (
+	"crypto/sha256"
+	"encoding/base32"
+	"encoding/hex"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -13,7 +17,11 @@ const (
 	ProviderGoogle Provider = "google"
 )
 
-const GoogleCalendarEventsReadonlyScope = "https://www.googleapis.com/auth/calendar.events.readonly"
+const (
+	GoogleCalendarEventsReadonlyScope = "https://www.googleapis.com/auth/calendar.events.readonly"
+	GoogleCalendarEventsOwnedScope    = "https://www.googleapis.com/auth/calendar.events.owned"
+	GoogleCalendarWriteScopeReason    = "google_calendar_write_scope_required"
+)
 
 type SyncStatus string
 
@@ -80,9 +88,26 @@ func (connection CoreConnection) CanReadEventDetails() bool {
 	return hasProviderScope(connection.Scopes, GoogleCalendarEventsReadonlyScope)
 }
 
+func (connection CoreConnection) CanWriteEvents() bool {
+	return connection.CanDeleteOwnedEvents() &&
+		hasProviderScope(connection.Scopes, GoogleCalendarEventsReadonlyScope)
+}
+
+// CanDeleteOwnedEvents is the narrower cleanup capability. Read access is
+// required for normal mirroring so FortyOne can filter its own events from
+// availability, but deleting a known stable event only needs owned-event scope.
+func (connection CoreConnection) CanDeleteOwnedEvents() bool {
+	return connection.Provider == ProviderGoogle && hasProviderScope(connection.Scopes, GoogleCalendarEventsOwnedScope)
+}
+
+func (connection CoreConnection) RequiresReauthorization() bool {
+	return connection.Provider == ProviderGoogle && !connection.CanWriteEvents()
+}
+
 type CoreSchedule struct {
 	StartAt     time.Time           `json:"startAt"`
 	EndAt       time.Time           `json:"endAt"`
+	Timezone    string              `json:"timezone"`
 	BusyWindows []CoreBusyWindow    `json:"busyWindows"`
 	Blocks      []CoreScheduleBlock `json:"blocks"`
 }
@@ -96,37 +121,118 @@ type CoreCalendarView struct {
 }
 
 type CoreScheduleBlock struct {
-	ID          uuid.UUID           `json:"id"`
-	WorkspaceID uuid.UUID           `json:"workspaceId"`
-	UserID      uuid.UUID           `json:"userId"`
-	StoryID     *uuid.UUID          `json:"storyId,omitempty"`
-	StoryTitle  *string             `json:"storyTitle,omitempty"`
-	StoryCode   *string             `json:"storyCode,omitempty"`
-	TeamID      *uuid.UUID          `json:"teamId,omitempty"`
-	TeamName    *string             `json:"teamName,omitempty"`
-	TeamCode    *string             `json:"teamCode,omitempty"`
-	BlockType   ScheduleBlockType   `json:"blockType"`
-	Title       string              `json:"title"`
-	StartAt     time.Time           `json:"startAt"`
-	EndAt       time.Time           `json:"endAt"`
-	HasConflict bool                `json:"hasConflict"`
-	IsLocked    bool                `json:"isLocked"`
-	Source      ScheduleBlockSource `json:"source"`
-	CreatedAt   time.Time           `json:"createdAt"`
-	UpdatedAt   time.Time           `json:"updatedAt"`
+	ID                 uuid.UUID           `json:"id"`
+	WorkspaceID        uuid.UUID           `json:"workspaceId"`
+	UserID             uuid.UUID           `json:"userId"`
+	StoryID            *uuid.UUID          `json:"storyId,omitempty"`
+	StoryTitle         *string             `json:"storyTitle,omitempty"`
+	StoryCode          *string             `json:"storyCode,omitempty"`
+	TeamID             *uuid.UUID          `json:"teamId,omitempty"`
+	TeamName           *string             `json:"teamName,omitempty"`
+	TeamCode           *string             `json:"teamCode,omitempty"`
+	BlockType          ScheduleBlockType   `json:"blockType"`
+	Title              string              `json:"title"`
+	StartAt            time.Time           `json:"startAt"`
+	EndAt              time.Time           `json:"endAt"`
+	HasConflict        bool                `json:"hasConflict"`
+	IsLocked           bool                `json:"isLocked"`
+	Source             ScheduleBlockSource `json:"source"`
+	SegmentIndex       int                 `json:"segmentIndex"`
+	ExternalProvider   *Provider           `json:"-"`
+	ExternalCalendarID *string             `json:"-"`
+	ExternalEventID    *string             `json:"-"`
+	ExternalSyncHash   *string             `json:"-"`
+	ExternalSyncedAt   *time.Time          `json:"-"`
+	CreatedAt          time.Time           `json:"createdAt"`
+	UpdatedAt          time.Time           `json:"updatedAt"`
 }
 
 type CoreScheduleBlockInput struct {
-	ID          uuid.UUID
-	WorkspaceID uuid.UUID
-	UserID      uuid.UUID
-	StoryID     *uuid.UUID
-	BlockType   ScheduleBlockType
-	Title       string
-	StartAt     time.Time
-	EndAt       time.Time
-	IsLocked    bool
-	Source      ScheduleBlockSource
+	ID           uuid.UUID
+	WorkspaceID  uuid.UUID
+	UserID       uuid.UUID
+	StoryID      *uuid.UUID
+	BlockType    ScheduleBlockType
+	Title        string
+	StartAt      time.Time
+	EndAt        time.Time
+	IsLocked     bool
+	Source       ScheduleBlockSource
+	SegmentIndex int
+}
+
+type MayaScheduleSegmentInput struct {
+	SegmentIndex int
+	Title        string
+	StartAt      time.Time
+	EndAt        time.Time
+}
+
+type MayaScheduleReconcileInput struct {
+	WorkspaceID            uuid.UUID
+	UserID                 uuid.UUID
+	StoryID                uuid.UUID
+	ExpectedStoryUpdatedAt *time.Time
+	Segments               []MayaScheduleSegmentInput
+	KeepOwnership          bool
+}
+
+type ScheduleReconcileAction string
+
+const (
+	ScheduleReconcileActionCreated   ScheduleReconcileAction = "created"
+	ScheduleReconcileActionUpdated   ScheduleReconcileAction = "updated"
+	ScheduleReconcileActionDeleted   ScheduleReconcileAction = "deleted"
+	ScheduleReconcileActionUnchanged ScheduleReconcileAction = "unchanged"
+)
+
+type CoreScheduleReconcileResult struct {
+	Blocks  []CoreScheduleBlock
+	Actions []ScheduleReconcileAction
+}
+
+type ScheduleEventOperation string
+
+const (
+	ScheduleEventOperationUpsert ScheduleEventOperation = "upsert"
+	ScheduleEventOperationDelete ScheduleEventOperation = "delete"
+)
+
+type ExternalScheduleEventInput struct {
+	CalendarID        string
+	EventID           string
+	BlockID           uuid.UUID
+	StoryID           uuid.UUID
+	WorkspaceID       uuid.UUID
+	Title             string
+	StartAt           time.Time
+	EndAt             time.Time
+	PrivateProperties map[string]string
+}
+
+type CoreScheduleEventOutbox struct {
+	ID              uuid.UUID
+	WorkspaceID     uuid.UUID
+	UserID          uuid.UUID
+	ScheduleBlockID *uuid.UUID
+	Operation       ScheduleEventOperation
+	Provider        Provider
+	CalendarID      string
+	ProviderEventID string
+	Payload         json.RawMessage
+	DedupeKey       string
+	AttemptCount    int
+}
+
+func StableGoogleScheduleEventID(blockID uuid.UUID) string {
+	digest := sha256.Sum256(blockID[:])
+	return "f41sched" + strings.ToLower(base32.HexEncoding.WithPadding(base32.NoPadding).EncodeToString(digest[:20]))
+}
+
+func ScheduleEventSyncHash(input ExternalScheduleEventInput) string {
+	payload, _ := json.Marshal(input)
+	digest := sha256.Sum256(payload)
+	return hex.EncodeToString(digest[:])
 }
 
 type CoreConnectionUpsert struct {
@@ -226,13 +332,32 @@ type CalendarSyncSnapshot struct {
 	BusyWindows         []CoreBusyWindow
 	CanReadEventDetails bool
 	NextSyncToken       string
+	Timezone            string
 }
 
 type CalendarSyncDelta struct {
-	Events          []CoreCalendarEvent
-	BusyWindows     []CoreBusyWindow
-	DeletedEventIDs []string
-	NextSyncToken   string
+	Events                      []CoreCalendarEvent
+	BusyWindows                 []CoreBusyWindow
+	DeletedEventIDs             []string
+	ManagedScheduleEventChanges []ManagedScheduleEventChange
+	NextSyncToken               string
+}
+
+type ManagedScheduleEventChange struct {
+	EventID      string
+	Deleted      bool
+	Title        string
+	StartAt      time.Time
+	EndAt        time.Time
+	Visibility   string
+	Transparency string
+	Status       string
+	Source       string
+	BlockID      string
+	StoryID      string
+	WorkspaceID  string
+	HasAttendees bool
+	Recurring    bool
 }
 
 type CalendarWatchInput struct {

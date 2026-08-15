@@ -22,6 +22,7 @@ import {
   CloseIcon,
   ClockIcon,
   CopyIcon,
+  EstimateIcon,
   GitHubIcon,
   LinkIcon,
   MoreHorizontalIcon,
@@ -29,6 +30,7 @@ import {
   SlackIcon,
   SprintsIcon,
   TagsIcon,
+  Time02Icon,
 } from "icons";
 import {
   Avatar,
@@ -53,16 +55,19 @@ import {
   StatusesMenu,
   StoryStatusIcon,
   LabelsMenu,
+  EstimateMenu,
+  TimeNeededMenu,
 } from "@/components/ui";
 import { ObjectiveKeyResultMenu } from "@/components/ui/story/objective-key-result-menu";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import {
+  DEFAULT_ESTIMATE_SCHEME,
   formatEstimate,
-  getEstimateOptions,
   type EstimateScheme,
 } from "@/lib/estimate";
+import { formatTimeNeeded } from "@/lib/time-needed";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useSession } from "@/lib/auth/client";
 import { useMembers } from "@/lib/hooks/members";
@@ -431,7 +436,7 @@ const RequestProperties = ({
   );
   const { data: selectedSprint } = useSprint(request.sprintId ?? null, teamId);
   const estimateScheme = (teamSettings?.estimationSettings.scheme ??
-    "points") as EstimateScheme;
+    DEFAULT_ESTIMATE_SCHEME) as EstimateScheme;
   const requestEstimateLabel = formatEstimate(
     estimateScheme,
     request.estimateValue,
@@ -548,48 +553,60 @@ const RequestProperties = ({
         <Option
           isCompact={isInline}
           isNotifications={isInline}
-          label="Estimate"
+          label="Complexity"
           value={
-            <Menu>
-              <Menu.Button>
+            <EstimateMenu>
+              <EstimateMenu.Trigger>
                 <Button
                   color="tertiary"
                   disabled={!canEditRequest}
+                  leftIcon={<EstimateIcon className="h-4" />}
                   size="sm"
                   variant={isInline ? "solid" : "naked"}
                 >
                   {requestEstimateLabel}
                 </Button>
-              </Menu.Button>
-              <Menu.Items align="start">
-                <Menu.Group>
-                  {request.estimateValue ? (
-                    <>
-                      <Menu.Item
-                        onSelect={() => {
-                          onUpdate({ estimateValue: null });
-                        }}
-                      >
-                        No estimate
-                      </Menu.Item>
-                      <Menu.Separator />
-                    </>
-                  ) : null}
-                  {getEstimateOptions(estimateScheme).map(
-                    ({ label, value }) => (
-                      <Menu.Item
-                        key={value}
-                        onSelect={() => {
-                          onUpdate({ estimateValue: value });
-                        }}
-                      >
-                        {label}
-                      </Menu.Item>
-                    ),
+              </EstimateMenu.Trigger>
+              <EstimateMenu.Items
+                align="start"
+                estimateScheme={estimateScheme}
+                estimateValue={request.estimateValue}
+                setEstimateValue={(estimateValue) => {
+                  onUpdate({ estimateValue });
+                }}
+              />
+            </EstimateMenu>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Time needed"
+          value={
+            <TimeNeededMenu>
+              <TimeNeededMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  disabled={!canEditRequest}
+                  leftIcon={<Time02Icon className="h-4" />}
+                  size="sm"
+                  variant={isInline ? "solid" : "naked"}
+                >
+                  {formatTimeNeeded(
+                    request.estimatedDurationMinutes,
+                    request.estimatedDurationMinutes ? "full" : "compact",
                   )}
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
+                </Button>
+              </TimeNeededMenu.Trigger>
+              <TimeNeededMenu.Items
+                align="start"
+                estimatedDurationMinutes={request.estimatedDurationMinutes}
+                minimumFocusBlockMinutes={request.minimumFocusBlockMinutes}
+                setTimeNeeded={(timeNeeded) => {
+                  onUpdate(timeNeeded);
+                }}
+              />
+            </TimeNeededMenu>
           }
         />
         <Option
@@ -1157,7 +1174,8 @@ export const IntegrationRequestDetails = ({
                     </Tabs.Panel>
                   </Tabs>
                 </Box>
-              ) : request.provider === "slack" ? (
+              ) : null}
+              {request.provider === "slack" ? (
                 <Box>
                   <Text
                     as="h4"
@@ -1184,9 +1202,10 @@ export const IntegrationRequestDetails = ({
                     </Tabs.Panel>
                   </Tabs>
                 </Box>
-              ) : (
+              ) : null}
+              {request.provider !== "github" && request.provider !== "slack" ? (
                 <Text color="muted">No integration activity is available.</Text>
-              )}
+              ) : null}
             </Container>
           </BodyContainer>
         </Box>

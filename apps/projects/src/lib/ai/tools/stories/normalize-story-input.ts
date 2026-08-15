@@ -1,6 +1,6 @@
+import { isEstimateValue } from "@/lib/estimate";
+import { MAX_TIME_NEEDED_MINUTES } from "@/lib/time-needed";
 import { normalizeOptionalString } from "../normalize-input";
-
-const ALLOWED_ESTIMATE_VALUES = new Set([1, 2, 3, 5, 8]);
 
 type StoryInput = {
   title: string;
@@ -11,6 +11,8 @@ type StoryInput = {
   assigneeId?: string | null;
   priority: "No Priority" | "Low" | "Medium" | "High" | "Urgent";
   estimateValue?: number | null;
+  estimatedDurationMinutes?: number | null;
+  minimumFocusBlockMinutes?: number | null;
   sprintId?: string | null;
   objectiveId?: string | null;
   labelIds?: string[];
@@ -25,6 +27,8 @@ type NormalizedStoryInput = {
   statusId: string;
   priority: StoryInput["priority"];
   estimateValue?: number;
+  estimatedDurationMinutes?: number;
+  minimumFocusBlockMinutes?: number;
   labelIds?: string[];
   description?: string;
   descriptionHTML?: string;
@@ -64,10 +68,25 @@ const normalizeEstimateValue = (value?: number | null) => {
     return undefined;
   }
 
-  if (!ALLOWED_ESTIMATE_VALUES.has(value)) {
+  if (!isEstimateValue(value)) {
     throw new Error("estimateValue must be one of 1, 2, 3, 5, or 8.");
   }
 
+  return value;
+};
+
+const normalizePositiveMinutes = (
+  value: number | null | undefined,
+  fieldName: string,
+) => {
+  if (value === null || value === undefined) return undefined;
+  if (
+    !Number.isInteger(value) ||
+    value <= 0 ||
+    value > MAX_TIME_NEEDED_MINUTES
+  ) {
+    throw new Error(`${fieldName} must be a positive whole number of minutes.`);
+  }
   return value;
 };
 
@@ -94,6 +113,25 @@ export const normalizeStoryInput = <T extends StoryInput>(story: T) => {
     "estimateValue",
     normalizeEstimateValue(story.estimateValue),
   );
+  const estimatedDurationMinutes = normalizePositiveMinutes(
+    story.estimatedDurationMinutes,
+    "estimatedDurationMinutes",
+  );
+  const minimumFocusBlockMinutes = normalizePositiveMinutes(
+    story.minimumFocusBlockMinutes,
+    "minimumFocusBlockMinutes",
+  );
+  if (
+    minimumFocusBlockMinutes !== undefined &&
+    (estimatedDurationMinutes === undefined ||
+      minimumFocusBlockMinutes > estimatedDurationMinutes)
+  ) {
+    throw new Error(
+      "minimumFocusBlockMinutes requires a duration and cannot exceed estimatedDurationMinutes.",
+    );
+  }
+  setIfDefined(payload, "estimatedDurationMinutes", estimatedDurationMinutes);
+  setIfDefined(payload, "minimumFocusBlockMinutes", minimumFocusBlockMinutes);
   setIfDefined(payload, "labelIds", story.labelIds);
   setIfDefined(
     payload,

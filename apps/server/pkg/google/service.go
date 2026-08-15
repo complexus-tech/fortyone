@@ -24,6 +24,7 @@ const (
 	scopeCalendarFreeBusy       = "https://www.googleapis.com/auth/calendar.freebusy"
 	scopeCalendarEventsFreeBusy = "https://www.googleapis.com/auth/calendar.events.freebusy"
 	scopeCalendarEventsReadonly = "https://www.googleapis.com/auth/calendar.events.readonly"
+	scopeCalendarEventsOwned    = "https://www.googleapis.com/auth/calendar.events.owned"
 )
 
 type Identity struct {
@@ -99,6 +100,7 @@ func NewService(cfg Config) (*Service, error) {
 				scopeCalendarFreeBusy,
 				scopeCalendarEventsFreeBusy,
 				scopeCalendarEventsReadonly,
+				scopeCalendarEventsOwned,
 			},
 			Endpoint: googoauth.Endpoint,
 		}

@@ -1,4 +1,3 @@
-// New file with helper utilities for optimistic updates
 import type { DetailedStory } from "../../story/types";
 import type { StoryGroup, GroupStoryParams } from "../types";
 
@@ -19,6 +18,64 @@ export const computeTargetKey = (
     default:
       return undefined;
   }
+};
+
+const groupFieldByGroup = {
+  assignee: "assigneeId",
+  priority: "priority",
+  status: "statusId",
+} as const;
+
+const patchesActiveGroup = (
+  groupBy: GroupStoryParams["groupBy"],
+  patch: Partial<DetailedStory>,
+) => {
+  if (groupBy === "none") return false;
+
+  return Object.prototype.hasOwnProperty.call(
+    patch,
+    groupFieldByGroup[groupBy],
+  );
+};
+
+const patchStoryInGroups = (
+  groups: StoryGroup[],
+  storyId: string,
+  patch: Partial<DetailedStory>,
+) =>
+  groups.map((group) => ({
+    ...group,
+    stories: group.stories.map((story) =>
+      story.id === storyId
+        ? ({
+            ...story,
+            subStories: story.subStories,
+            ...patch,
+          } as DetailedStory)
+        : story,
+    ),
+  }));
+
+/**
+ * Patch a story in grouped results, moving it only when the update explicitly
+ * changes the field that defines the active grouping.
+ */
+export const updateStoryInGroups = (
+  groups: StoryGroup[],
+  storyId: string,
+  groupBy: GroupStoryParams["groupBy"],
+  patch: Partial<DetailedStory>,
+) => {
+  if (!patchesActiveGroup(groupBy, patch)) {
+    return patchStoryInGroups(groups, storyId, patch);
+  }
+
+  return moveStoryBetweenGroups(
+    groups,
+    storyId,
+    computeTargetKey(groupBy, patch),
+    patch,
+  );
 };
 
 /**

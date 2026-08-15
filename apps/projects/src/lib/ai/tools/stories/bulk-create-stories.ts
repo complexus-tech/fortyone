@@ -3,6 +3,8 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { isEstimateValue } from "@/lib/estimate";
+import { MAX_TIME_NEEDED_MINUTES } from "@/lib/time-needed";
 import { requireToolConfirmation } from "../tool-helpers";
 import {
   normalizeRequiredStoryId,
@@ -54,10 +56,33 @@ export const bulkCreateStories = tool({
           estimateValue: z
             .number()
             .int()
+            .refine((value) => value === 0 || isEstimateValue(value), {
+              message: "Complexity must be 1, 2, 3, 5, or 8.",
+            })
             .nullable()
             .optional()
             .describe(
-              "Canonical estimate value for the team's estimation scheme. Use 1, 2, 3, 5, or 8. Use 0, null, or omit for unestimated work.",
+              "Relative complexity value using the team's scale. Use 1, 2, 3, 5, or 8. This is not a time duration; use 0, null, or omit when unset.",
+            ),
+          estimatedDurationMinutes: z
+            .number()
+            .int()
+            .positive()
+            .max(MAX_TIME_NEEDED_MINUTES)
+            .nullable()
+            .optional()
+            .describe(
+              "Total time needed in minutes for calendar scheduling. Omit or set null when unknown.",
+            ),
+          minimumFocusBlockMinutes: z
+            .number()
+            .int()
+            .positive()
+            .max(MAX_TIME_NEEDED_MINUTES)
+            .nullable()
+            .optional()
+            .describe(
+              "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes.",
             ),
           labelIds: z
             .array(z.string())

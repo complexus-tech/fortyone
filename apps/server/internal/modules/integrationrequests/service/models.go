@@ -38,6 +38,8 @@ type CoreIntegrationRequest struct {
 	Priority                  string
 	AssigneeID                *uuid.UUID
 	EstimateValue             *int16
+	EstimatedDurationMinutes  *int
+	MinimumFocusBlockMinutes  *int
 	ObjectiveID               *uuid.UUID
 	KeyResultID               *uuid.UUID
 	SprintID                  *uuid.UUID
@@ -60,27 +62,29 @@ type CoreIntegrationRequest struct {
 }
 
 type CoreUpsertRequestInput struct {
-	WorkspaceID      uuid.UUID
-	TeamID           uuid.UUID
-	Provider         string
-	SourceType       string
-	SourceExternalID string
-	SourceNumber     *int
-	SourceURL        *string
-	Title            string
-	Description      *string
-	StatusID         *uuid.UUID
-	Priority         string
-	AssigneeID       *uuid.UUID
-	EstimateValue    *int16
-	ObjectiveID      *uuid.UUID
-	KeyResultID      *uuid.UUID
-	SprintID         *uuid.UUID
-	StartDate        *time.Time
-	EndDate          *time.Time
-	LabelIDs         []uuid.UUID
-	Metadata         map[string]any
-	CreatedByUserID  *uuid.UUID
+	WorkspaceID              uuid.UUID
+	TeamID                   uuid.UUID
+	Provider                 string
+	SourceType               string
+	SourceExternalID         string
+	SourceNumber             *int
+	SourceURL                *string
+	Title                    string
+	Description              *string
+	StatusID                 *uuid.UUID
+	Priority                 string
+	AssigneeID               *uuid.UUID
+	EstimateValue            *int16
+	EstimatedDurationMinutes *int
+	MinimumFocusBlockMinutes *int
+	ObjectiveID              *uuid.UUID
+	KeyResultID              *uuid.UUID
+	SprintID                 *uuid.UUID
+	StartDate                *time.Time
+	EndDate                  *time.Time
+	LabelIDs                 []uuid.UUID
+	Metadata                 map[string]any
+	CreatedByUserID          *uuid.UUID
 }
 
 type CoreListRequestsFilter struct {
@@ -109,18 +113,20 @@ type OptionalValue[T any] struct {
 }
 
 type CoreUpdateRequestInput struct {
-	Title         *string
-	Description   OptionalValue[string]
-	StatusID      OptionalValue[uuid.UUID]
-	Priority      *string
-	AssigneeID    OptionalValue[uuid.UUID]
-	EstimateValue OptionalValue[int16]
-	ObjectiveID   OptionalValue[uuid.UUID]
-	KeyResultID   OptionalValue[uuid.UUID]
-	SprintID      OptionalValue[uuid.UUID]
-	StartDate     OptionalValue[time.Time]
-	EndDate       OptionalValue[time.Time]
-	LabelIDs      *[]uuid.UUID
+	Title                    *string
+	Description              OptionalValue[string]
+	StatusID                 OptionalValue[uuid.UUID]
+	Priority                 *string
+	AssigneeID               OptionalValue[uuid.UUID]
+	EstimateValue            OptionalValue[int16]
+	EstimatedDurationMinutes OptionalValue[int]
+	MinimumFocusBlockMinutes OptionalValue[int]
+	ObjectiveID              OptionalValue[uuid.UUID]
+	KeyResultID              OptionalValue[uuid.UUID]
+	SprintID                 OptionalValue[uuid.UUID]
+	StartDate                OptionalValue[time.Time]
+	EndDate                  OptionalValue[time.Time]
+	LabelIDs                 *[]uuid.UUID
 }
 
 const (

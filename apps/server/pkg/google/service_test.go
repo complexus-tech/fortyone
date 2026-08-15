@@ -44,3 +44,17 @@ func TestCalendarIdentityFromTokenRejectsMissingIDToken(t *testing.T) {
 		t.Fatalf("expected invalid token, got %v", err)
 	}
 }
+
+func TestCalendarOAuthRequestsOwnedEventWriteScope(t *testing.T) {
+	t.Parallel()
+	service, err := NewService(Config{
+		ClientIDs: []string{"client-id"}, ClientSecret: "client-secret",
+		RedirectURL: "https://example.com/auth/callback", CalendarRedirectURL: "https://example.com/calendar/callback",
+	})
+	if err != nil {
+		t.Fatalf("NewService returned error: %v", err)
+	}
+	if service.calendarOAuth == nil || !hasAnyScope(service.calendarOAuth.Scopes, scopeCalendarEventsOwned) {
+		t.Fatalf("expected calendar OAuth to request owned-event write access: %#v", service.calendarOAuth)
+	}
+}

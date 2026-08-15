@@ -39,12 +39,19 @@ const scheduleBlockSelect = `
 				conflict_connection.connection_id = conflict_window.connection_id
 				AND conflict_connection.user_id = conflict_window.user_id
 				AND conflict_connection.revoked_at IS NULL
+				AND conflict_connection.cleanup_pending_at IS NULL
 			WHERE conflict_window.user_id = csb.user_id
 				AND conflict_window.start_at < csb.end_at
 				AND conflict_window.end_at > csb.start_at
 		) AS has_conflict,
 		csb.is_locked,
 		csb.source,
+		csb.segment_index,
+		csb.external_provider,
+		csb.external_calendar_id,
+		csb.external_event_id,
+		csb.external_sync_hash,
+		csb.external_synced_at,
 		csb.created_at,
 		csb.updated_at
 	FROM calendar_schedule_blocks csb
@@ -72,6 +79,7 @@ func (r *Repo) ListBusyWindows(ctx context.Context, _ uuid.UUID, userID uuid.UUI
 			cc.connection_id = cbw.connection_id
 			AND cc.user_id = cbw.user_id
 			AND cc.revoked_at IS NULL
+			AND cc.cleanup_pending_at IS NULL
 		WHERE cbw.user_id = $1
 			AND cbw.start_at < $3
 			AND cbw.end_at > $2
@@ -97,6 +105,68 @@ func (r *Repo) ListScheduleBlocks(ctx context.Context, workspaceID, userID uuid.
 		return nil, fmt.Errorf("list calendar schedule blocks: %w", err)
 	}
 	return toCoreScheduleBlocks(rows), nil
+}
+
+func (r *Repo) ListSchedulingBlocksForUser(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]calendar.CoreScheduleBlock, error) {
+	query := scheduleBlockSelect + `
+		WHERE csb.user_id = $2
+			AND csb.start_at < $4
+			AND csb.end_at > $3
+			AND EXISTS (
+				SELECT 1 FROM workspace_members owner_membership
+				WHERE owner_membership.workspace_id = csb.workspace_id
+					AND owner_membership.user_id = csb.user_id
+			)
+		ORDER BY csb.start_at ASC
+	`
+	rows := []dbScheduleBlock{}
+	if err := r.db.SelectContext(ctx, &rows, query, workspaceID, userID, startAt, endAt); err != nil {
+		return nil, fmt.Errorf("list account-wide scheduling blocks: %w", err)
+	}
+	blocks := toCoreScheduleBlocks(rows)
+	for index := range blocks {
+		if blocks[index].WorkspaceID == workspaceID {
+			continue
+		}
+		blocks[index].StoryID = nil
+		blocks[index].StoryTitle = nil
+		blocks[index].StoryCode = nil
+		blocks[index].TeamID = nil
+		blocks[index].TeamName = nil
+		blocks[index].TeamCode = nil
+		blocks[index].Title = "Busy"
+	}
+	return blocks, nil
+}
+
+func (r *Repo) ListMayaScheduleBlocksForStory(ctx context.Context, workspaceID, userID, storyID uuid.UUID) ([]calendar.CoreScheduleBlock, error) {
+	query := scheduleBlockSelect + `
+		WHERE csb.workspace_id = $1
+			AND csb.user_id = $2
+			AND csb.story_id = $3
+			AND csb.source = 'maya'
+		ORDER BY csb.segment_index, csb.start_at
+	`
+	rows := []dbScheduleBlock{}
+	if err := r.db.SelectContext(ctx, &rows, query, workspaceID, userID, storyID); err != nil {
+		return nil, fmt.Errorf("list Maya schedule blocks for story: %w", err)
+	}
+	return toCoreScheduleBlocks(rows), nil
+}
+
+func (r *Repo) MayaScheduleOwnershipExists(ctx context.Context, workspaceID, userID, storyID uuid.UUID) (bool, error) {
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM calendar_maya_schedule_ownerships
+			WHERE workspace_id = $1 AND user_id = $2 AND story_id = $3
+		)
+	`
+	var exists bool
+	if err := r.db.GetContext(ctx, &exists, query, workspaceID, userID, storyID); err != nil {
+		return false, fmt.Errorf("check Maya schedule ownership: %w", err)
+	}
+	return exists, nil
 }
 
 func (r *Repo) ScheduleStoryExists(ctx context.Context, workspaceID, userID, storyID uuid.UUID) (bool, error) {
@@ -204,6 +274,7 @@ func (r *Repo) UpdateScheduleBlock(ctx context.Context, input calendar.CoreSched
 		WHERE workspace_id = $1
 			AND user_id = $2
 			AND block_id = $3
+			AND source <> 'maya'
 	`
 	result, err := tx.ExecContext(
 		ctx,
@@ -247,8 +318,7 @@ func scheduleBlockConflicts(
 		SELECT EXISTS (
 			SELECT 1
 			FROM calendar_schedule_blocks csb
-			WHERE csb.workspace_id = $1
-				AND csb.user_id = $2
+			WHERE csb.user_id = $2
 				AND csb.start_at < $4
 				AND csb.end_at > $3
 				AND ($5 = CAST('00000000-0000-0000-0000-000000000000' AS uuid) OR csb.block_id <> $5)
@@ -259,6 +329,7 @@ func scheduleBlockConflicts(
 				cc.connection_id = cbw.connection_id
 				AND cc.user_id = cbw.user_id
 				AND cc.revoked_at IS NULL
+				AND cc.cleanup_pending_at IS NULL
 			WHERE cbw.user_id = $2
 				AND cbw.start_at < $4
 				AND cbw.end_at > $3
@@ -281,13 +352,22 @@ func scheduleBlockConflicts(
 }
 
 func (r *Repo) DeleteScheduleBlock(ctx context.Context, workspaceID, userID, blockID uuid.UUID) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin delete calendar schedule block: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := lockCalendarUser(ctx, tx, workspaceID, userID); err != nil {
+		return err
+	}
 	const query = `
 		DELETE FROM calendar_schedule_blocks
 		WHERE workspace_id = $1
 			AND user_id = $2
 			AND block_id = $3
+			AND source <> 'maya'
 	`
-	result, err := r.db.ExecContext(ctx, query, workspaceID, userID, blockID)
+	result, err := tx.ExecContext(ctx, query, workspaceID, userID, blockID)
 	if err != nil {
 		return fmt.Errorf("delete calendar schedule block: %w", err)
 	}
@@ -297,6 +377,9 @@ func (r *Repo) DeleteScheduleBlock(ctx context.Context, workspaceID, userID, blo
 	}
 	if rows == 0 {
 		return calendar.ErrCalendarScheduleBlockNotFound
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit delete calendar schedule block: %w", err)
 	}
 	return nil
 }
@@ -316,4 +399,8 @@ func (r *Repo) getScheduleBlock(ctx context.Context, workspaceID, userID, blockI
 		return calendar.CoreScheduleBlock{}, fmt.Errorf("get calendar schedule block: %w", err)
 	}
 	return toCoreScheduleBlock(row), nil
+}
+
+func (r *Repo) GetScheduleBlock(ctx context.Context, workspaceID, userID, blockID uuid.UUID) (calendar.CoreScheduleBlock, error) {
+	return r.getScheduleBlock(ctx, workspaceID, userID, blockID)
 }

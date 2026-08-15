@@ -689,18 +689,22 @@ func TestFortyOneToolExecutorGetStoryResolvesAuthorizedHumanReferenceAndEnriches
 	statusID := uuid.MustParse("44444444-0000-0000-0000-000000000011")
 	assigneeID := uuid.MustParse("44444444-0000-0000-0000-000000000012")
 	description := "Investigate the login failure."
+	estimatedDurationMinutes := 90
+	minimumFocusBlockMinutes := 30
 	reader := &storyReaderServiceStub{
 		storiesServiceStub: storiesServiceStub{},
 		story: stories.CoreSingleStory{
-			ID:          uuid.MustParse("44444444-0000-0000-0000-000000000013"),
-			SequenceID:  42,
-			Title:       "Fix login",
-			Description: &description,
-			Team:        allowedTeam.ID,
-			Workspace:   scope.WorkspaceID,
-			Status:      &statusID,
-			Assignee:    &assigneeID,
-			Priority:    "High",
+			ID:                       uuid.MustParse("44444444-0000-0000-0000-000000000013"),
+			SequenceID:               42,
+			Title:                    "Fix login",
+			Description:              &description,
+			Team:                     allowedTeam.ID,
+			Workspace:                scope.WorkspaceID,
+			Status:                   &statusID,
+			Assignee:                 &assigneeID,
+			Priority:                 "High",
+			EstimatedDurationMinutes: &estimatedDurationMinutes,
+			MinimumFocusBlockMinutes: &minimumFocusBlockMinutes,
 		},
 	}
 	statesService := &statesServiceStub{items: []states.CoreState{{
@@ -729,6 +733,9 @@ func TestFortyOneToolExecutorGetStoryResolvesAuthorizedHumanReferenceAndEnriches
 	}
 	if result.Reference != "WEB-42" || result.Title != "Fix login" || result.TeamName != "Web" || result.StatusName != "In Progress" || result.AssigneeName != "Ada Lovelace" || result.AssigneeUsername != "ada" {
 		t.Fatalf("story did not contain authorized human-readable details: %#v", result)
+	}
+	if result.EstimatedDurationMinutes == nil || *result.EstimatedDurationMinutes != estimatedDurationMinutes || result.MinimumFocusBlockMinutes == nil || *result.MinimumFocusBlockMinutes != minimumFocusBlockMinutes {
+		t.Fatalf("story did not expose its explicit time contract: %#v", result)
 	}
 	if len(reader.calls) != 1 || reader.calls[0].reference != "WEB-42" || reader.calls[0].actorID != scope.UserID || reader.calls[0].actorErr != nil {
 		t.Fatalf("story reader received an incorrect reference or actor: %#v", reader.calls)

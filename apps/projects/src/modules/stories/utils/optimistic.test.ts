@@ -2,7 +2,7 @@
 
 import type { DetailedStory } from "../../story/types";
 import type { StoryGroup } from "../types";
-import { moveStoryBetweenGroups } from "./optimistic";
+import { moveStoryBetweenGroups, updateStoryInGroups } from "./optimistic";
 
 const story: DetailedStory = {
   archivedAt: null,
@@ -21,6 +21,8 @@ const story: DetailedStory = {
   estimateLabel: null,
   estimateScheme: "points",
   estimateValue: null,
+  estimatedDurationMinutes: null,
+  minimumFocusBlockMinutes: null,
   id: "story-1",
   keyResultId: null,
   labels: null,
@@ -112,6 +114,50 @@ describe("moveStoryBetweenGroups", () => {
         ],
         totalCount: 3,
       }),
+    );
+  });
+});
+
+describe("updateStoryInGroups", () => {
+  it("patches time needed without removing the story from its active group", () => {
+    const groups = [
+      createGroup({
+        key: "development",
+        stories: [story],
+        totalCount: 3,
+      }),
+    ];
+
+    const result = updateStoryInGroups(groups, story.id, "status", {
+      estimatedDurationMinutes: 90,
+      minimumFocusBlockMinutes: 30,
+    });
+
+    expect(result[0]).toEqual(
+      expect.objectContaining({
+        loadedCount: 1,
+        stories: [
+          expect.objectContaining({
+            id: story.id,
+            estimatedDurationMinutes: 90,
+            minimumFocusBlockMinutes: 30,
+          }),
+        ],
+        totalCount: 3,
+      }),
+    );
+  });
+
+  it("still removes an explicitly unassigned story from an assignee group", () => {
+    const assignedStory = { ...story, assigneeId: "user-2" };
+    const groups = [createGroup({ key: "user-2", stories: [assignedStory] })];
+
+    const result = updateStoryInGroups(groups, story.id, "assignee", {
+      assigneeId: null,
+    });
+
+    expect(result[0]).toEqual(
+      expect.objectContaining({ loadedCount: 0, stories: [], totalCount: 0 }),
     );
   });
 });

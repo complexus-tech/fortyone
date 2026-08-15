@@ -21,8 +21,11 @@ import (
 )
 
 const (
-	googleFreeBusyChunkSize = 30 * 24 * time.Hour
-	maxCalendarAttendees    = 100
+	googleFreeBusyChunkSize     = 30 * 24 * time.Hour
+	maxCalendarAttendees        = 100
+	fortyOneGoogleEventIDPrefix = "f41sched"
+	fortyOneGoogleSourceKey     = "fortyone_source"
+	fortyOneGoogleSourceValue   = "maya_schedule"
 )
 
 type GoogleOAuth interface {
@@ -101,6 +104,7 @@ func (p *GoogleProvider) SyncCalendar(ctx context.Context, token ProviderToken, 
 		Events:              []CoreCalendarEvent{},
 		BusyWindows:         windows,
 		CanReadEventDetails: false,
+		Timezone:            normalizedCalendarTimezone(input.Timezone, "UTC"),
 	}, nil
 }
 
@@ -158,6 +162,7 @@ func listGoogleCalendarSnapshot(ctx context.Context, client *calendarapi.Service
 	windows := []CoreBusyWindow{}
 	eventIndexes := make(map[string]int)
 	windowIndexes := make(map[string]int)
+	snapshotTimezone := normalizedCalendarTimezone(input.Timezone, "UTC")
 	call := client.Events.List("primary").
 		Context(ctx).
 		ShowDeleted(false).
@@ -171,12 +176,14 @@ func listGoogleCalendarSnapshot(ctx context.Context, client *calendarapi.Service
 		if err != nil {
 			return CalendarSyncSnapshot{}, err
 		}
-		eventTimezone := strings.TrimSpace(response.TimeZone)
-		if eventTimezone == "" {
-			eventTimezone = input.Timezone
+		if responseTimezone := strings.TrimSpace(response.TimeZone); responseTimezone != "" {
+			snapshotTimezone = normalizedCalendarTimezone(responseTimezone, snapshotTimezone)
 		}
 		for _, googleEvent := range response.Items {
-			event, ok, err := googleEventToCalendarEvent("primary", googleEvent, eventTimezone)
+			if isFortyOneScheduleEvent(googleEvent) {
+				continue
+			}
+			event, ok, err := googleEventToCalendarEvent("primary", googleEvent, snapshotTimezone)
 			if err != nil {
 				return CalendarSyncSnapshot{}, err
 			}
@@ -213,7 +220,12 @@ func listGoogleCalendarSnapshot(ctx context.Context, client *calendarapi.Service
 		}
 		call.PageToken(response.NextPageToken)
 	}
-	return CalendarSyncSnapshot{Events: events, BusyWindows: windows, NextSyncToken: nextSyncToken}, nil
+	return CalendarSyncSnapshot{
+		Events:        events,
+		BusyWindows:   windows,
+		NextSyncToken: nextSyncToken,
+		Timezone:      snapshotTimezone,
+	}, nil
 }
 
 func (p *GoogleProvider) SyncCalendarChanges(ctx context.Context, token ProviderToken, syncToken string) (CalendarSyncDelta, error) {
@@ -222,7 +234,10 @@ func (p *GoogleProvider) SyncCalendarChanges(ctx context.Context, token Provider
 		return CalendarSyncDelta{}, err
 	}
 	call := client.Events.List("primary").Context(ctx).ShowDeleted(true).SingleEvents(true).SyncToken(strings.TrimSpace(syncToken))
-	delta := CalendarSyncDelta{Events: []CoreCalendarEvent{}, BusyWindows: []CoreBusyWindow{}, DeletedEventIDs: []string{}}
+	delta := CalendarSyncDelta{
+		Events: []CoreCalendarEvent{}, BusyWindows: []CoreBusyWindow{}, DeletedEventIDs: []string{},
+		ManagedScheduleEventChanges: []ManagedScheduleEventChange{},
+	}
 	for {
 		response, err := call.Do()
 		if err != nil {
@@ -234,6 +249,14 @@ func (p *GoogleProvider) SyncCalendarChanges(ctx context.Context, token Provider
 		}
 		for _, googleEvent := range response.Items {
 			if googleEvent == nil || strings.TrimSpace(googleEvent.Id) == "" {
+				continue
+			}
+			if isFortyOneScheduleEvent(googleEvent) {
+				change, err := googleManagedScheduleEventChange(googleEvent, response.TimeZone)
+				if err != nil {
+					return CalendarSyncDelta{}, err
+				}
+				delta.ManagedScheduleEventChanges = append(delta.ManagedScheduleEventChanges, change)
 				continue
 			}
 			if googleEvent.Status == "cancelled" {
@@ -259,6 +282,42 @@ func (p *GoogleProvider) SyncCalendarChanges(ctx context.Context, token Provider
 		call.PageToken(response.NextPageToken)
 	}
 	return delta, nil
+}
+
+func googleManagedScheduleEventChange(event *calendarapi.Event, fallbackTimezone string) (ManagedScheduleEventChange, error) {
+	change := ManagedScheduleEventChange{
+		EventID:      strings.TrimSpace(event.Id),
+		Deleted:      event.Status == "cancelled",
+		Visibility:   strings.TrimSpace(event.Visibility),
+		Transparency: strings.TrimSpace(event.Transparency),
+		Status:       strings.TrimSpace(event.Status),
+		HasAttendees: len(event.Attendees) > 0 || event.AttendeesOmitted,
+		Recurring:    strings.TrimSpace(event.RecurringEventId) != "" || len(event.Recurrence) > 0,
+	}
+	if event.ExtendedProperties != nil {
+		change.Source = strings.TrimSpace(event.ExtendedProperties.Private[fortyOneGoogleSourceKey])
+		change.BlockID = strings.TrimSpace(event.ExtendedProperties.Private["fortyone_block_id"])
+		change.StoryID = strings.TrimSpace(event.ExtendedProperties.Private["fortyone_story_id"])
+		change.WorkspaceID = strings.TrimSpace(event.ExtendedProperties.Private["fortyone_workspace_id"])
+	}
+	if change.Deleted {
+		return change, nil
+	}
+	startAt, _, err := googleEventTime(event.Start, fallbackTimezone)
+	if err != nil {
+		return ManagedScheduleEventChange{}, err
+	}
+	endAt, _, err := googleEventTime(event.End, fallbackTimezone)
+	if err != nil {
+		return ManagedScheduleEventChange{}, err
+	}
+	if !endAt.After(startAt) {
+		return ManagedScheduleEventChange{}, ErrInvalidScheduleRange
+	}
+	change.Title = strings.TrimSpace(event.Summary)
+	change.StartAt = startAt.UTC()
+	change.EndAt = endAt.UTC()
+	return change, nil
 }
 
 func (p *GoogleProvider) WatchCalendar(ctx context.Context, token ProviderToken, input CalendarWatchInput) (CalendarWatchChannel, error) {
@@ -295,6 +354,78 @@ func (p *GoogleProvider) StopCalendarWatch(ctx context.Context, token ProviderTo
 	return client.Channels.Stop(&calendarapi.Channel{Id: channel.ChannelID, ResourceId: channel.ResourceID}).Context(ctx).Do()
 }
 
+func (p *GoogleProvider) UpsertScheduleEvent(ctx context.Context, token ProviderToken, input ExternalScheduleEventInput) error {
+	if !hasProviderScope(token.Scopes, GoogleCalendarEventsOwnedScope) {
+		return ErrCalendarReauthorizationRequired
+	}
+	client, err := p.calendarClient(ctx, token)
+	if err != nil {
+		return err
+	}
+	calendarID := strings.TrimSpace(input.CalendarID)
+	if calendarID == "" {
+		calendarID = "primary"
+	}
+	eventID := strings.TrimSpace(input.EventID)
+	if eventID == "" || !strings.HasPrefix(eventID, fortyOneGoogleEventIDPrefix) || !input.EndAt.After(input.StartAt) {
+		return ErrInvalidScheduleBlock
+	}
+	privateProperties := make(map[string]string, len(input.PrivateProperties)+1)
+	for key, value := range input.PrivateProperties {
+		privateProperties[key] = value
+	}
+	privateProperties[fortyOneGoogleSourceKey] = fortyOneGoogleSourceValue
+	event := &calendarapi.Event{
+		Id:                 eventID,
+		Summary:            strings.TrimSpace(input.Title),
+		Status:             "confirmed",
+		Transparency:       "opaque",
+		Visibility:         "private",
+		Start:              &calendarapi.EventDateTime{DateTime: input.StartAt.UTC().Format(time.RFC3339)},
+		End:                &calendarapi.EventDateTime{DateTime: input.EndAt.UTC().Format(time.RFC3339)},
+		ExtendedProperties: &calendarapi.EventExtendedProperties{Private: privateProperties},
+	}
+	_, err = client.Events.Update(calendarID, eventID, event).SendUpdates("none").Context(ctx).Do()
+	if err == nil {
+		return nil
+	}
+	var apiErr *googleapi.Error
+	if !errors.As(err, &apiErr) || apiErr.Code != http.StatusNotFound {
+		return err
+	}
+	_, err = client.Events.Insert(calendarID, event).SendUpdates("none").Context(ctx).Do()
+	if err == nil {
+		return nil
+	}
+	if errors.As(err, &apiErr) && apiErr.Code == http.StatusConflict {
+		_, err = client.Events.Update(calendarID, eventID, event).SendUpdates("none").Context(ctx).Do()
+	}
+	return err
+}
+
+func (p *GoogleProvider) DeleteScheduleEvent(ctx context.Context, token ProviderToken, calendarID, eventID string) error {
+	if !hasProviderScope(token.Scopes, GoogleCalendarEventsOwnedScope) {
+		return ErrCalendarReauthorizationRequired
+	}
+	client, err := p.calendarClient(ctx, token)
+	if err != nil {
+		return err
+	}
+	calendarID = strings.TrimSpace(calendarID)
+	if calendarID == "" {
+		calendarID = "primary"
+	}
+	err = client.Events.Delete(calendarID, strings.TrimSpace(eventID)).SendUpdates("none").Context(ctx).Do()
+	if err == nil {
+		return nil
+	}
+	var apiErr *googleapi.Error
+	if errors.As(err, &apiErr) && (apiErr.Code == http.StatusNotFound || apiErr.Code == http.StatusGone) {
+		return nil
+	}
+	return err
+}
+
 func (p *GoogleProvider) calendarClient(ctx context.Context, token ProviderToken) (*calendarapi.Service, error) {
 	if p.google == nil {
 		return nil, ErrCalendarNotConfigured
@@ -309,7 +440,7 @@ func (p *GoogleProvider) calendarClient(ctx context.Context, token ProviderToken
 }
 
 func googleEventToCalendarEvent(calendarID string, event *calendarapi.Event, fallbackTimezone string) (CoreCalendarEvent, bool, error) {
-	if event == nil || strings.TrimSpace(event.Id) == "" || event.Status == "cancelled" {
+	if event == nil || strings.TrimSpace(event.Id) == "" || event.Status == "cancelled" || isFortyOneScheduleEvent(event) {
 		return CoreCalendarEvent{}, false, nil
 	}
 	startAt, startAllDay, err := googleEventTime(event.Start, fallbackTimezone)
@@ -361,6 +492,16 @@ func googleEventToCalendarEvent(calendarID string, event *calendarapi.Event, fal
 	}
 	calendarEvent.SourceHash = googleEventSourceHash(calendarEvent)
 	return calendarEvent, true, nil
+}
+
+func isFortyOneScheduleEvent(event *calendarapi.Event) bool {
+	if event == nil {
+		return false
+	}
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(event.Id)), fortyOneGoogleEventIDPrefix) {
+		return true
+	}
+	return event.ExtendedProperties != nil && event.ExtendedProperties.Private[fortyOneGoogleSourceKey] == fortyOneGoogleSourceValue
 }
 
 func googleEventTime(value *calendarapi.EventDateTime, fallbackTimezone string) (time.Time, bool, error) {
@@ -437,6 +578,19 @@ func calendarLocation(values ...string) *time.Location {
 		}
 	}
 	return time.UTC
+}
+
+func normalizedCalendarTimezone(value, fallback string) string {
+	for _, candidate := range []string{value, fallback, "UTC"} {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if _, err := time.LoadLocation(candidate); err == nil {
+			return candidate
+		}
+	}
+	return "UTC"
 }
 
 func normalizeGoogleEventVisibility(value string) string {

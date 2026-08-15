@@ -65,7 +65,7 @@ func (r *Repo) CompleteRun(ctx context.Context, runID uuid.UUID, status maya.Run
 			error_message = $4,
 			completed_at = CURRENT_TIMESTAMP,
 			updated_at = CURRENT_TIMESTAMP
-		WHERE run_id = $1
+		WHERE run_id = $1 AND status = 'running'
 		RETURNING
 			run_id,
 			workspace_id,
@@ -155,7 +155,7 @@ func (r *Repo) MarkActionApplied(ctx context.Context, actionID uuid.UUID) error 
 			applied_at = CURRENT_TIMESTAMP,
 			updated_at = CURRENT_TIMESTAMP,
 			error_message = NULL
-		WHERE action_id = $1
+		WHERE action_id = $1 AND status = 'proposed'
 	`
 	if _, err := r.db.ExecContext(ctx, query, actionID, string(maya.ActionStatusApplied)); err != nil {
 		return fmt.Errorf("mark maya action applied: %w", err)
@@ -169,7 +169,7 @@ func (r *Repo) MarkActionFailed(ctx context.Context, actionID uuid.UUID, message
 		SET status = $2,
 			error_message = $3,
 			updated_at = CURRENT_TIMESTAMP
-		WHERE action_id = $1
+		WHERE action_id = $1 AND status = 'proposed'
 	`
 	if _, err := r.db.ExecContext(ctx, query, actionID, string(maya.ActionStatusFailed), message); err != nil {
 		return fmt.Errorf("mark maya action failed: %w", err)

@@ -183,6 +183,8 @@ func (r *repo) MyStories(ctx context.Context, workspaceId uuid.UUID) ([]stories.
 			s.title,
 			s.priority,
 			s.estimate_unit,
+			s.estimated_duration_minutes,
+			s.minimum_focus_block_minutes,
 			s.status_id,
 			s.start_date,
 			s.end_date,
@@ -288,6 +290,8 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 					t.code AS team_code,
 					s.priority,
 					s.estimate_unit,
+					s.estimated_duration_minutes,
+					s.minimum_focus_block_minutes,
 					s.sequence_id,
 					s.status_id,
 					s.description,
@@ -423,6 +427,8 @@ func (r *repo) getStoryById(ctx context.Context, id uuid.UUID, workspaceId uuid.
 												'title', other.title,
 												'priority', other.priority,
 												'estimate_unit', other.estimate_unit,
+												'estimated_duration_minutes', other.estimated_duration_minutes,
+												'minimum_focus_block_minutes', other.minimum_focus_block_minutes,
 												'status_id', other.status_id,
                         'parent_id', other.parent_id,
 												'sprint_id', other.sprint_id,
@@ -555,6 +561,8 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 			s.title,
 			s.priority,
 			s.estimate_unit,
+			s.estimated_duration_minutes,
+			s.minimum_focus_block_minutes,
 			s.status_id,
 			s.start_date,
 			s.end_date,
@@ -1152,6 +1160,8 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 				s.title,
 				s.priority,
 				s.estimate_unit,
+				s.estimated_duration_minutes,
+				s.minimum_focus_block_minutes,
 				s.status_id,
 				s.start_date,
 				s.end_date,
@@ -1201,6 +1211,8 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 						'title', ls.title,
 						'priority', ls.priority,
 						'estimate_unit', ls.estimate_unit,
+						'estimated_duration_minutes', ls.estimated_duration_minutes,
+						'minimum_focus_block_minutes', ls.minimum_focus_block_minutes,
 						'status_id', ls.status_id,
 						'start_date', ls.start_date,
 						'end_date', ls.end_date,
@@ -1622,6 +1634,14 @@ func (r *repo) mapToStoryList(storyMap map[string]any) stories.CoreStoryList {
 	if estimateValue, ok := storyMap["estimate_unit"].(float64); ok {
 		value := int16(estimateValue)
 		story.EstimateValue = &value
+	}
+	if estimatedDurationMinutes, ok := storyMap["estimated_duration_minutes"].(float64); ok {
+		value := int(estimatedDurationMinutes)
+		story.EstimatedDurationMinutes = &value
+	}
+	if minimumFocusBlockMinutes, ok := storyMap["minimum_focus_block_minutes"].(float64); ok {
+		value := int(minimumFocusBlockMinutes)
+		story.MinimumFocusBlockMinutes = &value
 	}
 
 	if statusID, ok := storyMap["status_id"].(string); ok {
@@ -2173,6 +2193,8 @@ func (r *repo) buildSubStoriesJSONExpr(parentAlias string, includeSubStories boo
 							'title', sub.title,
 							'priority', sub.priority,
 							'estimate_unit', sub.estimate_unit,
+							'estimated_duration_minutes', sub.estimated_duration_minutes,
+							'minimum_focus_block_minutes', sub.minimum_focus_block_minutes,
 							'status_id', sub.status_id,
 							'start_date', sub.start_date,
 							'end_date', sub.end_date,
@@ -2233,6 +2255,8 @@ func (r *repo) buildStoriesQuery(filters stories.CoreStoryFilters) string {
 			s.title,
 			s.priority,
 			s.estimate_unit,
+			s.estimated_duration_minutes,
+			s.minimum_focus_block_minutes,
 			s.status_id,
 			s.start_date,
 			s.end_date,
@@ -2821,6 +2845,8 @@ func (r *repo) buildSimpleStoriesQuery(filters stories.CoreStoryFilters) string 
 			s.title,
 			s.priority,
 			s.estimate_unit,
+			s.estimated_duration_minutes,
+			s.minimum_focus_block_minutes,
 			s.status_id,
 			s.start_date,
 			s.end_date,
@@ -3089,6 +3115,8 @@ func (r *repo) ListByCategory(ctx context.Context, workspaceId, userID, teamId u
 			s.title,
 			s.priority,
 			s.estimate_unit,
+			s.estimated_duration_minutes,
+			s.minimum_focus_block_minutes,
 			s.status_id,
 			s.start_date,
 			s.end_date,
@@ -3210,6 +3238,8 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 					t.code AS team_code,
 					s.priority,
 					s.estimate_unit,
+					s.estimated_duration_minutes,
+					s.minimum_focus_block_minutes,
 					s.sequence_id,
 					s.status_id,
 					s.description,
@@ -3256,6 +3286,8 @@ func (r *repo) getStoryByRef(ctx context.Context, workspaceId uuid.UUID, teamCod
 												'title', other.title,
 												'priority', other.priority,
 												'estimate_unit', other.estimate_unit,
+												'estimated_duration_minutes', other.estimated_duration_minutes,
+												'minimum_focus_block_minutes', other.minimum_focus_block_minutes,
 												'status_id', other.status_id,
                         'parent_id', other.parent_id,	
 												'sprint_id', other.sprint_id,

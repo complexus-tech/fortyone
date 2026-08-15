@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Badge, Box, Button, Dialog, Flex, Menu, Skeleton, Text } from "ui";
 import {
   CalendarIcon,
+  CalendarPlusIcon,
   ClockIcon,
   GoogleCalendarIcon,
   MoreHorizontalIcon,
@@ -185,86 +186,138 @@ export const CalendarIntegrationSettings = () => {
         {!integrationQuery.isPending &&
         !integrationQuery.isError &&
         connection ? (
-          <Flex align="center" className="gap-4 px-6 py-4" justify="between">
-            <Flex align="center" className="min-w-0" gap={3}>
+          <>
+            {connection.requiresReauthorization ? (
               <Flex
                 align="center"
-                className="bg-surface-muted size-10 shrink-0 rounded-xl"
-                justify="center"
+                className="border-border bg-surface-prominent/35 gap-4 border-b px-6 py-4"
+                justify="between"
+                role="status"
               >
-                <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
-              </Flex>
-              <Box className="min-w-0">
-                <Text className="truncate font-medium">
-                  {connection.connectedEmail}
-                </Text>
-                <Text className="truncate" color="muted">
-                  Primary calendar ·{" "}
-                  {connection.canReadEventDetails
-                    ? "Event details enabled"
-                    : "Availability only"}
-                  {" · "}
-                  {formatSyncedAt(connection.lastSyncedAt)}
-                </Text>
-              </Box>
-            </Flex>
-            <Flex align="center" className="shrink-0" gap={2}>
-              {connectionStatus ? (
-                <Badge
-                  color={connectionStatus.color}
-                  variant={connectionStatus.variant}
+                <Flex align="center" className="min-w-0" gap={3}>
+                  <Flex
+                    align="center"
+                    className="border-border bg-surface size-10 shrink-0 rounded-xl border"
+                    justify="center"
+                  >
+                    <CalendarPlusIcon
+                      aria-hidden="true"
+                      className="h-5 w-auto"
+                    />
+                  </Flex>
+                  <Box className="min-w-0">
+                    <Text className="font-medium">
+                      Reconnect to schedule work on Google Calendar
+                    </Text>
+                    <Text className="mt-0.5 max-w-2xl" color="muted">
+                      Reconnect once to let FortyOne add and update scheduled
+                      work. Your existing meetings will continue syncing.
+                    </Text>
+                  </Box>
+                </Flex>
+                <Button
+                  className="shrink-0 whitespace-nowrap"
+                  color="tertiary"
+                  leftIcon={
+                    <GoogleCalendarIcon
+                      aria-hidden="true"
+                      className="h-4.5 w-4.5"
+                    />
+                  }
+                  loading={createConnectSession.isPending}
+                  onClick={() => {
+                    createConnectSession.mutate();
+                  }}
+                  variant="outline"
                 >
-                  {connectionStatus.label}
-                </Badge>
-              ) : null}
-              <Menu>
-                <Menu.Button>
-                  <Button
-                    aria-label="Calendar connection actions"
-                    className="px-2"
-                    color="tertiary"
-                    leftIcon={<MoreHorizontalIcon />}
-                  />
-                </Menu.Button>
-                <Menu.Items align="end">
-                  <Menu.Group>
-                    <Menu.Item
-                      onSelect={() => {
-                        syncConnection.mutate({
-                          connectionId: connection.id,
-                        });
-                      }}
-                    >
-                      <ReloadIcon />
-                      {connection.canReadEventDetails
-                        ? "Sync calendar"
-                        : "Sync availability"}
-                    </Menu.Item>
-                    <Menu.Item
-                      onSelect={() => {
-                        createConnectSession.mutate();
-                      }}
-                    >
-                      <GoogleCalendarIcon
-                        aria-hidden="true"
-                        className="h-4 w-4"
-                      />
-                      Update connection
-                    </Menu.Item>
-                    <Menu.Item
-                      className="text-danger"
-                      onSelect={() => {
-                        setDisconnectConnection(connection);
-                      }}
-                    >
-                      <UnlinkIcon className="text-danger" />
-                      Disconnect calendar
-                    </Menu.Item>
-                  </Menu.Group>
-                </Menu.Items>
-              </Menu>
+                  Reconnect Google Calendar
+                </Button>
+              </Flex>
+            ) : null}
+            <Flex align="center" className="gap-4 px-6 py-4" justify="between">
+              <Flex align="center" className="min-w-0" gap={3}>
+                <Flex
+                  align="center"
+                  className="bg-surface-muted size-10 shrink-0 rounded-xl"
+                  justify="center"
+                >
+                  <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
+                </Flex>
+                <Box className="min-w-0">
+                  <Text className="truncate font-medium">
+                    {connection.connectedEmail}
+                  </Text>
+                  <Text className="truncate" color="muted">
+                    Primary calendar ·{" "}
+                    {connection.canReadEventDetails
+                      ? "Event details enabled"
+                      : "Availability only"}
+                    {connection.canWriteEvents
+                      ? " · Scheduled work enabled"
+                      : ""}
+                    {" · "}
+                    {formatSyncedAt(connection.lastSyncedAt)}
+                  </Text>
+                </Box>
+              </Flex>
+              <Flex align="center" className="shrink-0" gap={2}>
+                {connectionStatus ? (
+                  <Badge
+                    color={connectionStatus.color}
+                    variant={connectionStatus.variant}
+                  >
+                    {connectionStatus.label}
+                  </Badge>
+                ) : null}
+                <Menu>
+                  <Menu.Button>
+                    <Button
+                      aria-label="Calendar connection actions"
+                      className="px-2"
+                      color="tertiary"
+                      leftIcon={<MoreHorizontalIcon />}
+                    />
+                  </Menu.Button>
+                  <Menu.Items align="end">
+                    <Menu.Group>
+                      <Menu.Item
+                        onSelect={() => {
+                          syncConnection.mutate({
+                            connectionId: connection.id,
+                          });
+                        }}
+                      >
+                        <ReloadIcon />
+                        {connection.canReadEventDetails
+                          ? "Sync calendar"
+                          : "Sync availability"}
+                      </Menu.Item>
+                      <Menu.Item
+                        onSelect={() => {
+                          createConnectSession.mutate();
+                        }}
+                      >
+                        <GoogleCalendarIcon
+                          aria-hidden="true"
+                          className="h-4 w-4"
+                        />
+                        Update connection
+                      </Menu.Item>
+                      <Menu.Item
+                        className="text-danger"
+                        onSelect={() => {
+                          setDisconnectConnection(connection);
+                        }}
+                      >
+                        <UnlinkIcon className="text-danger" />
+                        Disconnect calendar
+                      </Menu.Item>
+                    </Menu.Group>
+                  </Menu.Items>
+                </Menu>
+              </Flex>
             </Flex>
-          </Flex>
+          </>
         ) : null}
       </Box>
 
