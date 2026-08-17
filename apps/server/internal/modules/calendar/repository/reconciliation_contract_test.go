@@ -48,6 +48,8 @@ func TestMayaScheduleReconciliationPersistsLockedInputWithoutProviderRewrite(t *
 		"IsLocked           bool      `db:\"is_locked\"`",
 		"SELECT block_id, segment_index, title, start_at, end_at, is_locked,",
 		"blockChanged := providerChanged || block.IsLocked != input.Locked",
+		"title = CAST($5 AS text)",
+		"title <> CAST($5 AS text)",
 		"is_locked = $9",
 		"is_locked <> $9",
 		"$10, 'maya'",

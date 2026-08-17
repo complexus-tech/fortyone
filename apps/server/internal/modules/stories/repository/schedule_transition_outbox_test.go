@@ -31,6 +31,7 @@ func TestStoryScheduleTransitionWriteSerializesAndUsesMonotonicLatestEvent(t *te
 	require.NotContains(t, latestStoryScheduleTransitionFingerprintQuery, "ORDER BY created_at")
 	require.Contains(t, insertStoryScheduleTransitionOutboxQuery, "transition_sequence")
 	require.Contains(t, insertStoryScheduleTransitionOutboxQuery, "CAST($5 AS jsonb)")
+	require.Contains(t, insertStoryScheduleTransitionOutboxQuery, "CAST($9 AS uuid)")
 	require.Contains(t, updateStoryAutoSchedulingStateForTransitionQuery, "updated_at = $3")
 }
 

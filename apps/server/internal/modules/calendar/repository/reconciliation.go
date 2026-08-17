@@ -283,9 +283,9 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 		if exists {
 			const updateQuery = `
 				UPDATE calendar_schedule_blocks
-				SET title = $5, start_at = $6, end_at = $7, is_locked = $9,
+				SET title = CAST($5 AS text), start_at = $6, end_at = $7, is_locked = $9,
 					external_provider = 'google', external_calendar_id = 'primary', external_event_id = $8,
-					updated_at = CASE WHEN title <> $5 OR start_at <> $6 OR end_at <> $7 OR is_locked <> $9 THEN CURRENT_TIMESTAMP ELSE updated_at END
+					updated_at = CASE WHEN title <> CAST($5 AS text) OR start_at <> $6 OR end_at <> $7 OR is_locked <> $9 THEN CURRENT_TIMESTAMP ELSE updated_at END
 				WHERE workspace_id = $1 AND user_id = $2 AND story_id = $3 AND segment_index = $4 AND source = 'maya'
 			`
 			if _, err := tx.ExecContext(ctx, updateQuery, input.WorkspaceID, input.UserID, input.StoryID, segment.SegmentIndex, segment.Title, segment.StartAt, segment.EndAt, eventID, input.Locked); err != nil {
