@@ -111,9 +111,9 @@ func (r *Repo) ListScheduleBlocks(ctx context.Context, workspaceID, userID uuid.
 
 func (r *Repo) ListSchedulingBlocksForUser(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]calendar.CoreScheduleBlock, error) {
 	query := scheduleBlockSelect + `
-		WHERE csb.user_id = $2
-			AND csb.start_at < $4
-			AND csb.end_at > $3
+		WHERE csb.user_id = $1
+			AND csb.start_at < $3
+			AND csb.end_at > $2
 			AND EXISTS (
 				SELECT 1 FROM workspace_members owner_membership
 				WHERE owner_membership.workspace_id = csb.workspace_id
@@ -122,7 +122,7 @@ func (r *Repo) ListSchedulingBlocksForUser(ctx context.Context, workspaceID, use
 		ORDER BY csb.start_at ASC
 	`
 	rows := []dbScheduleBlock{}
-	if err := r.db.SelectContext(ctx, &rows, query, workspaceID, userID, startAt, endAt); err != nil {
+	if err := r.db.SelectContext(ctx, &rows, query, userID, startAt, endAt); err != nil {
 		return nil, fmt.Errorf("list account-wide scheduling blocks: %w", err)
 	}
 	blocks := toCoreScheduleBlocks(rows)

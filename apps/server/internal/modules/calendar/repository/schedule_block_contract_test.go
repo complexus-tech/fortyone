@@ -63,3 +63,33 @@ func TestListSchedulingBlocksForUserRedactsCrossWorkspaceAutoSchedulingMetadata(
 		t.Fatal("auto-scheduling metadata must only be redacted after retaining current-workspace blocks")
 	}
 }
+
+func TestListSchedulingBlocksForUserUsesContiguousQueryParameters(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile("schedule.go")
+	if err != nil {
+		t.Fatalf("read schedule repository: %v", err)
+	}
+	source := strings.Join(strings.Fields(string(data)), " ")
+	functionStart := strings.Index(source, "func (r *Repo) ListSchedulingBlocksForUser")
+	functionEnd := strings.Index(source[functionStart+1:], "func (r *Repo)")
+	if functionStart < 0 || functionEnd < 0 {
+		t.Fatal("could not locate ListSchedulingBlocksForUser implementation")
+	}
+	functionSource := source[functionStart : functionStart+1+functionEnd]
+
+	for _, contract := range []string{
+		"WHERE csb.user_id = $1",
+		"AND csb.start_at < $3",
+		"AND csb.end_at > $2",
+		"SelectContext(ctx, &rows, query, userID, startAt, endAt)",
+	} {
+		if !strings.Contains(functionSource, contract) {
+			t.Errorf("account-wide schedule query is missing parameter contract %q", contract)
+		}
+	}
+	if strings.Contains(functionSource, "$4") || strings.Contains(functionSource, "query, workspaceID, userID, startAt, endAt") {
+		t.Fatal("workspace ID must remain a redaction input and must not be passed as an unused SQL parameter")
+	}
+}
