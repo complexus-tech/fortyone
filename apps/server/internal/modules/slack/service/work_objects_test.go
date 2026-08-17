@@ -213,14 +213,22 @@ func TestBuildSlackObjectiveAndSprintUnfurlsKeepDetailsForExpandedView(t *testin
 	require.Equal(t, slackObjectiveExternalRefType, objectiveEntity.ExternalRef.Type)
 	require.Equal(t, "https://acme.fortyone.app/teams/"+teamID+"/objectives/"+objectiveID, objectiveEntity.URL)
 	require.NotContains(t, objectiveEntity.EntityPayload.Fields, "description")
+	require.Equal(t, SlackWorkObjectField{Label: "Health", Value: "On Track"}, objectiveEntity.EntityPayload.Fields["status"])
+	require.Equal(t, SlackWorkObjectField{
+		Label: "Lead",
+		Type:  slackUserFieldType,
+		User:  &SlackWorkObjectUser{Text: "Maya Chen"},
+	}, objectiveEntity.EntityPayload.Fields["assignee"])
+	require.Equal(t, SlackWorkObjectField{
+		Label: "End date",
+		Value: "2026-08-31",
+		Type:  slackDateFieldType,
+	}, objectiveEntity.EntityPayload.Fields["due_date"])
 	require.Equal(t, []SlackWorkObjectCustomField{
-		{Key: "health", Label: "Health", Value: "On Track", Type: "string"},
 		{Key: "progress", Label: "Progress", Value: "60% (6/10 stories)", Type: "string"},
-		{Key: "lead", Label: "Lead", Value: "Maya Chen", Type: "string"},
 		{Key: "start_date", Label: "Start date", Value: "2026-08-01", Type: slackDateFieldType},
-		{Key: "end_date", Label: "End date", Value: "2026-08-31", Type: slackDateFieldType},
 	}, objectiveEntity.EntityPayload.CustomFields)
-	require.Equal(t, []string{"health", "progress", "lead", "start_date", "end_date"}, objectiveEntity.EntityPayload.DisplayOrder)
+	require.Equal(t, []string{"status", "progress", "assignee", "start_date", "due_date"}, objectiveEntity.EntityPayload.DisplayOrder)
 	require.Equal(t, slackOpenObjectiveActionID, objectiveEntity.EntityPayload.Actions.PrimaryActions[0].ActionID)
 
 	objectiveDetails, err := BuildSlackObjectiveEntityDetailsRequest("trigger-objective", SlackObjectiveWorkObjectInput{
@@ -231,6 +239,7 @@ func TestBuildSlackObjectiveAndSprintUnfurlsKeepDetailsForExpandedView(t *testin
 	})
 	require.NoError(t, err)
 	require.Equal(t, "Detailed objective context", objectiveDetails.Metadata.EntityPayload.Fields["description"].Value)
+	require.Equal(t, []string{"description"}, objectiveDetails.Metadata.EntityPayload.DisplayOrder)
 
 	sprintRequest, err := BuildSlackSprintUnfurlRequest("C123", "1754700000.123", SlackSprintWorkObjectInput{
 		AccessGranted: true,

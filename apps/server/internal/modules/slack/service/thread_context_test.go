@@ -54,7 +54,7 @@ func TestLoadSlackThreadReferenceFiltersDeduplicatesAndSortsWithOneRequest(t *te
 		require.NoError(t, json.NewDecoder(request.Body).Decode(&payload))
 		require.Equal(t, "C1", payload["channel"])
 		require.Equal(t, "10.1", payload["ts"])
-		require.Equal(t, float64(slackThreadRepliesPageLimit), payload["limit"])
+		require.Equal(t, float64(15), payload["limit"])
 		w.Header().Set("Content-Type", "application/json")
 		require.NotContains(t, payload, "cursor")
 		_, _ = w.Write([]byte(`{

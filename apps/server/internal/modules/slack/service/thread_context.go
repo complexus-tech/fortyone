@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	slackThreadRepliesPageLimit     = 100
+	// Slack's restricted Conversations API tier caps replies at 15 messages.
+	slackThreadRepliesPageLimit     = 15
 	slackThreadReferenceMaxMessages = 100
 	slackThreadReferenceMaxBytes    = 12 << 10
 	slackThreadMessageTextMaxBytes  = 4 << 10
