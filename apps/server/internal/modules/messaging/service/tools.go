@@ -26,20 +26,23 @@ import (
 )
 
 const (
-	toolListTeams       = "list_teams"
-	toolListMyTasks     = "list_my_tasks"
-	toolListCompleted   = "list_completed_tasks"
-	toolListTeamWork    = "list_team_work"
-	toolSearchWork      = "search_work"
-	toolListObjectives  = "list_objectives"
-	toolListStatuses    = "list_statuses"
-	toolListTeamMembers = "list_team_members"
-	toolGetStory        = "get_story"
-	toolCreateStory     = "create_story"
-	toolCreateStories   = "create_stories"
-	toolUpdateStory     = "update_story"
-	toolAddComment      = "add_story_comment"
-	toolAddRelationship = "add_story_relationship"
+	toolListTeams           = "list_teams"
+	toolListMyTasks         = "list_my_tasks"
+	toolListCompleted       = "list_completed_tasks"
+	toolListTeamWork        = "list_team_work"
+	toolSearchWork          = "search_work"
+	toolListObjectives      = "list_objectives"
+	toolListSprints         = "list_sprints"
+	toolGetSprintSummary    = "get_sprint_summary"
+	toolGetObjectiveSummary = "get_objective_summary"
+	toolListStatuses        = "list_statuses"
+	toolListTeamMembers     = "list_team_members"
+	toolGetStory            = "get_story"
+	toolCreateStory         = "create_story"
+	toolCreateStories       = "create_stories"
+	toolUpdateStory         = "update_story"
+	toolAddComment          = "add_story_comment"
+	toolAddRelationship     = "add_story_relationship"
 
 	defaultToolLimit         = 20
 	maxToolLimit             = 50
@@ -126,6 +129,12 @@ type OperationalToolServices struct {
 	Users  UsersService
 }
 
+// PlanningToolServices groups the read-only planning services used to resolve
+// sprint and objective summaries from natural-language names.
+type PlanningToolServices struct {
+	Sprints SprintsService
+}
+
 var (
 	_ StoryReaderService         = (*stories.Service)(nil)
 	_ TeamWorkStoryReaderService = (*stories.Service)(nil)
@@ -144,6 +153,7 @@ type FortyOneToolExecutor struct {
 	storyReader StoryReaderService
 	search      SearchService
 	objectives  ObjectivesService
+	sprints     SprintsService
 	states      StatesService
 	users       UsersService
 	mutations   *storyMutationExecutor
@@ -154,6 +164,7 @@ type fortyOneToolExecutorConfig struct {
 	storyMutationSecret string
 	storyMutationStore  StoryMutationConfirmationStore
 	operational         *OperationalToolServices
+	planning            *PlanningToolServices
 }
 
 // FortyOneToolExecutorOption configures optional capabilities without
@@ -200,6 +211,20 @@ func WithOperationalTools(services OperationalToolServices) FortyOneToolExecutor
 	}
 }
 
+// WithPlanningTools enables read-only sprint and objective summaries. The
+// stories service remains the source of associated work, while Sprints scopes
+// sprint resolution and analytics to the authenticated workspace member.
+func WithPlanningTools(services PlanningToolServices) FortyOneToolExecutorOption {
+	return func(config *fortyOneToolExecutorConfig) error {
+		if services.Sprints == nil {
+			return errors.New("sprints service is required for planning assistant tools")
+		}
+		configuredServices := services
+		config.planning = &configuredServices
+		return nil
+	}
+}
+
 // NewFortyOneToolExecutor constructs an executor backed by the existing domain
 // services. Every execution re-establishes authoritative user context and
 // resolves joined teams before returning data or proposing a mutation.
@@ -236,6 +261,10 @@ func NewFortyOneToolExecutor(
 		search:      searchService,
 		objectives:  objectivesService,
 		definitions: fortyOneToolDefinitions(),
+	}
+	if config.planning != nil {
+		executor.sprints = config.planning.Sprints
+		executor.definitions = append(executor.definitions, planningToolDefinitions()...)
 	}
 	if config.operational != nil {
 		executor.states = config.operational.States
@@ -294,6 +323,21 @@ func (e *FortyOneToolExecutor) Execute(ctx context.Context, scope ToolScope, cal
 		return e.searchWork(ctx, scope, call.Arguments)
 	case toolListObjectives:
 		return e.listObjectives(ctx, scope, call.Arguments)
+	case toolListSprints:
+		if e.sprints == nil {
+			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
+		}
+		return e.listSprints(ctx, scope, call.Arguments)
+	case toolGetSprintSummary:
+		if e.sprints == nil || e.completed == nil {
+			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
+		}
+		return e.getSprintSummary(ctx, scope, call.Arguments)
+	case toolGetObjectiveSummary:
+		if e.sprints == nil || e.completed == nil {
+			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
+		}
+		return e.getObjectiveSummary(ctx, scope, call.Arguments)
 	case toolListStatuses:
 		if e.states == nil {
 			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)

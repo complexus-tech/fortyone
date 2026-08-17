@@ -105,6 +105,9 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 			States: statesService,
 			Users:  usersService,
 		}),
+		messaging.WithPlanningTools(messaging.PlanningToolServices{
+			Sprints: sprintsService,
+		}),
 		messaging.WithStoryMutations(cfg.Auth.SecretKey),
 		messaging.WithStoryMutationConfirmationStore(messagingRepo),
 	)
