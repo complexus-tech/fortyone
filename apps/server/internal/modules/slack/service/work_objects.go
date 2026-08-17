@@ -1191,23 +1191,47 @@ func buildSlackObjectiveWorkObject(input SlackObjectiveWorkObjectInput, includeA
 		return SlackWorkObjectEntity{}, FortyOneObjectiveLink{}, errors.New("Slack objective Work Object title is required")
 	}
 
-	fields := make(map[string]SlackWorkObjectField, 6)
+	fields := make(map[string]SlackWorkObjectField, 1)
+	customFields := make([]SlackWorkObjectCustomField, 0, 5)
+	displayOrder := make([]string, 0, 5)
 	if !compact {
 		if description := truncateSlackWorkObjectText(slackWorkObjectDescription(input.Description), slackWorkObjectTextFieldLimit); description != "" {
 			fields["description"] = SlackWorkObjectField{Value: description, Format: "markdown"}
 		}
 	}
 	if health := truncateSlackWorkObjectText(input.Health, 255); health != "" {
-		fields["health"] = SlackWorkObjectField{Value: health}
+		customFields = append(customFields, SlackWorkObjectCustomField{
+			Key:   "health",
+			Label: "Health",
+			Value: health,
+			Type:  "string",
+		})
+		displayOrder = append(displayOrder, "health")
 	}
 	if progress := truncateSlackWorkObjectText(input.Progress, 255); progress != "" {
-		fields["progress"] = SlackWorkObjectField{Value: progress}
+		customFields = append(customFields, SlackWorkObjectCustomField{
+			Key:   "progress",
+			Label: "Progress",
+			Value: progress,
+			Type:  "string",
+		})
+		displayOrder = append(displayOrder, "progress")
 	}
-	if lead := slackWorkObjectUser(input.LeadSlackUserID, input.LeadName); lead != nil {
-		fields["lead"] = SlackWorkObjectField{Type: slackUserFieldType, User: lead}
+	if lead := truncateSlackWorkObjectText(input.LeadName, 255); lead != "" {
+		customFields = append(customFields, SlackWorkObjectCustomField{
+			Key:   "lead",
+			Label: "Lead",
+			Value: lead,
+			Type:  "string",
+		})
+		displayOrder = append(displayOrder, "lead")
 	}
-	addSlackWorkObjectDateField(fields, "start_date", input.StartDate)
-	addSlackWorkObjectDateField(fields, "end_date", input.EndDate)
+	if appendSlackWorkObjectCustomDateField(&customFields, "start_date", "Start date", input.StartDate) {
+		displayOrder = append(displayOrder, "start_date")
+	}
+	if appendSlackWorkObjectCustomDateField(&customFields, "end_date", "End date", input.EndDate) {
+		displayOrder = append(displayOrder, "end_date")
+	}
 
 	lastModified := input.UpdatedAt
 	if lastModified.IsZero() {
@@ -1233,8 +1257,10 @@ func buildSlackObjectiveWorkObject(input SlackObjectiveWorkObjectInput, includeA
 				DisplayID:            "Objective",
 				MetadataLastModified: unixTimestamp(lastModified),
 			},
-			Fields:  fields,
-			Actions: &SlackWorkObjectActions{PrimaryActions: []SlackWorkObjectAction{openAction}},
+			Fields:       fields,
+			CustomFields: customFields,
+			DisplayOrder: displayOrder,
+			Actions:      &SlackWorkObjectActions{PrimaryActions: []SlackWorkObjectAction{openAction}},
 		},
 	}
 	if includeAppUnfurlURL {

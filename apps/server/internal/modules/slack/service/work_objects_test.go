@@ -204,6 +204,7 @@ func TestBuildSlackObjectiveAndSprintUnfurlsKeepDetailsForExpandedView(t *testin
 		Description:   "Detailed objective context",
 		Health:        "On Track",
 		Progress:      "60% (6/10 stories)",
+		LeadName:      "Maya Chen",
 		StartDate:     &startDate,
 		EndDate:       &endDate,
 	})
@@ -212,7 +213,14 @@ func TestBuildSlackObjectiveAndSprintUnfurlsKeepDetailsForExpandedView(t *testin
 	require.Equal(t, slackObjectiveExternalRefType, objectiveEntity.ExternalRef.Type)
 	require.Equal(t, "https://acme.fortyone.app/teams/"+teamID+"/objectives/"+objectiveID, objectiveEntity.URL)
 	require.NotContains(t, objectiveEntity.EntityPayload.Fields, "description")
-	require.Equal(t, "60% (6/10 stories)", objectiveEntity.EntityPayload.Fields["progress"].Value)
+	require.Equal(t, []SlackWorkObjectCustomField{
+		{Key: "health", Label: "Health", Value: "On Track", Type: "string"},
+		{Key: "progress", Label: "Progress", Value: "60% (6/10 stories)", Type: "string"},
+		{Key: "lead", Label: "Lead", Value: "Maya Chen", Type: "string"},
+		{Key: "start_date", Label: "Start date", Value: "2026-08-01", Type: slackDateFieldType},
+		{Key: "end_date", Label: "End date", Value: "2026-08-31", Type: slackDateFieldType},
+	}, objectiveEntity.EntityPayload.CustomFields)
+	require.Equal(t, []string{"health", "progress", "lead", "start_date", "end_date"}, objectiveEntity.EntityPayload.DisplayOrder)
 	require.Equal(t, slackOpenObjectiveActionID, objectiveEntity.EntityPayload.Actions.PrimaryActions[0].ActionID)
 
 	objectiveDetails, err := BuildSlackObjectiveEntityDetailsRequest("trigger-objective", SlackObjectiveWorkObjectInput{
