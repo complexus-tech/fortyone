@@ -53,7 +53,6 @@ var claimScheduleRecoveryStoryRefsQuery = `
 				OR story.auto_scheduling_enabled = FALSE
 				OR NOT ` + billing.WorkspaceMayaAccessSQL("workspace") + `
 				OR status.status_id IS NULL
-				OR status.deleted_at IS NOT NULL
 				OR status.category IN ('completed', 'cancelled')
 				OR owner_user.user_id IS NULL
 				OR owner_user.is_active = FALSE
@@ -163,7 +162,7 @@ const storyScheduleOwnershipRetainableQuery = `
 	SELECT EXISTS (
 		SELECT 1
 		FROM stories story
-		INNER JOIN statuses status ON status.status_id = story.status_id AND status.deleted_at IS NULL
+		INNER JOIN statuses status ON status.status_id = story.status_id
 		INNER JOIN users owner_user ON owner_user.user_id = $3 AND owner_user.is_active = TRUE
 		INNER JOIN workspace_members workspace_member ON
 			workspace_member.workspace_id = story.workspace_id
@@ -317,7 +316,7 @@ func (r *Repo) StoryIsSchedulableForUser(ctx context.Context, workspaceID, story
 		SELECT EXISTS (
 			SELECT 1
 			FROM stories story
-			INNER JOIN statuses status ON status.status_id = story.status_id AND status.deleted_at IS NULL
+			INNER JOIN statuses status ON status.status_id = story.status_id
 			INNER JOIN users assignee ON assignee.user_id = $3 AND assignee.is_active = TRUE
 			INNER JOIN workspace_members membership ON
 				membership.workspace_id = story.workspace_id AND membership.user_id = $3
@@ -349,7 +348,7 @@ func (r *Repo) StoryIsActiveForAutoScheduling(ctx context.Context, workspaceID, 
 		SELECT EXISTS (
 			SELECT 1
 			FROM stories story
-			INNER JOIN statuses status ON status.status_id = story.status_id AND status.deleted_at IS NULL
+			INNER JOIN statuses status ON status.status_id = story.status_id
 			WHERE story.workspace_id = $1
 				AND story.id = $2
 				AND story.deleted_at IS NULL

@@ -58,7 +58,7 @@ const scheduleEventUpsertIsCurrentQuery = `
 		INNER JOIN stories story ON
 			story.id = block.story_id
 			AND story.workspace_id = block.workspace_id
-		INNER JOIN statuses status ON status.status_id = story.status_id AND status.deleted_at IS NULL
+		INNER JOIN statuses status ON status.status_id = story.status_id
 		INNER JOIN users owner_user ON owner_user.user_id = block.user_id AND owner_user.is_active = TRUE
 		INNER JOIN workspace_members workspace_member ON
 			workspace_member.workspace_id = block.workspace_id
@@ -98,7 +98,6 @@ const mayaScheduleEligibilityQuery = `
 	FROM stories story
 	INNER JOIN statuses status ON
 		status.status_id = story.status_id
-		AND status.deleted_at IS NULL
 	INNER JOIN users selected_user ON
 		selected_user.user_id = $3
 		AND selected_user.is_active = TRUE

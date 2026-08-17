@@ -9,6 +9,9 @@ import (
 func TestScheduleRecoveryClaimIsBoundedFairAndConcurrencySafe(t *testing.T) {
 	t.Parallel()
 	query := strings.ToLower(claimScheduleRecoveryStoryRefsQuery)
+	if strings.Contains(query, "status.deleted_at") {
+		t.Fatal("schedule recovery must only reference columns defined by statuses")
+	}
 	for _, fragment := range []string{
 		"coalesce(ownership.recovery_attempted_at, timestamp 'epoch') <= $2",
 		"story.updated_at > ownership.updated_at",
@@ -50,7 +53,6 @@ func TestScheduleOwnershipRetentionExcludesPermanentLifecycleStates(t *testing.T
 		"story.deleted_at is null",
 		"story.archived_at is null",
 		"story.completed_at is null",
-		"status.deleted_at is null",
 		"status.category not in ('completed', 'cancelled')",
 		"owner_user.is_active = true",
 		"inner join workspace_members",
@@ -60,6 +62,17 @@ func TestScheduleOwnershipRetentionExcludesPermanentLifecycleStates(t *testing.T
 		if !strings.Contains(query, fragment) {
 			t.Fatalf("ownership retention query must contain %q: %s", fragment, query)
 		}
+	}
+}
+
+func TestSchedulingRepositoryDoesNotReferenceMissingStatusDeletionColumn(t *testing.T) {
+	t.Parallel()
+	data, err := os.ReadFile("scheduling.go")
+	if err != nil {
+		t.Fatalf("read scheduling.go: %v", err)
+	}
+	if strings.Contains(strings.ToLower(string(data)), "status.deleted_at") {
+		t.Fatal("Maya scheduling queries must not reference statuses.deleted_at")
 	}
 }
 

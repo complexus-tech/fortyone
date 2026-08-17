@@ -99,6 +99,9 @@ func TestMayaScheduleVersionGuardRejectsStalePlans(t *testing.T) {
 
 func TestProviderUpsertRequiresCurrentCanonicalStoryState(t *testing.T) {
 	query := strings.ToLower(scheduleEventUpsertIsCurrentQuery)
+	if strings.Contains(query, "status.deleted_at") {
+		t.Fatal("provider upsert must only reference columns defined by statuses")
+	}
 	for _, fragment := range []string{
 		"ownership.user_id = block.user_id",
 		"story.assignee_id = block.user_id",
@@ -114,6 +117,17 @@ func TestProviderUpsertRequiresCurrentCanonicalStoryState(t *testing.T) {
 		if !strings.Contains(query, fragment) {
 			t.Fatalf("provider upsert gate must enforce %q: %s", fragment, query)
 		}
+	}
+}
+
+func TestCalendarReconciliationDoesNotReferenceMissingStatusDeletionColumn(t *testing.T) {
+	t.Parallel()
+	data, err := os.ReadFile("reconciliation.go")
+	if err != nil {
+		t.Fatalf("read reconciliation.go: %v", err)
+	}
+	if strings.Contains(strings.ToLower(string(data)), "status.deleted_at") {
+		t.Fatal("calendar reconciliation queries must not reference statuses.deleted_at")
 	}
 }
 
