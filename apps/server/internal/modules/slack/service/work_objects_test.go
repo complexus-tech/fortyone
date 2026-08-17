@@ -238,6 +238,13 @@ func TestBuildSlackObjectiveAndSprintUnfurlsKeepDetailsForExpandedView(t *testin
 	sprintEntity := sprintRequest.Metadata.Entities[0]
 	require.Equal(t, slackSprintExternalRefType, sprintEntity.ExternalRef.Type)
 	require.NotContains(t, sprintEntity.EntityPayload.Fields, "goal")
+	require.Equal(t, "Active", sprintEntity.EntityPayload.Fields["status"].Value)
+	require.Equal(t, []SlackWorkObjectCustomField{
+		{Key: "progress", Label: "Progress", Value: "40% (4/10 stories)", Type: "string"},
+		{Key: "start_date", Label: "Start date", Value: "2026-08-01", Type: slackDateFieldType},
+		{Key: "end_date", Label: "End date", Value: "2026-08-31", Type: slackDateFieldType},
+	}, sprintEntity.EntityPayload.CustomFields)
+	require.Equal(t, []string{"status", "progress", "start_date", "end_date"}, sprintEntity.EntityPayload.DisplayOrder)
 	require.Equal(t, slackOpenSprintActionID, sprintEntity.EntityPayload.Actions.PrimaryActions[0].ActionID)
 
 	sprintDetails, err := BuildSlackSprintEntityDetailsRequest("trigger-sprint", SlackSprintWorkObjectInput{

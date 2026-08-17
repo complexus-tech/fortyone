@@ -189,9 +189,11 @@ type SlackWorkObjectExternalRef struct {
 }
 
 type SlackWorkObjectEntityPayload struct {
-	Attributes SlackWorkObjectAttributes       `json:"attributes"`
-	Fields     map[string]SlackWorkObjectField `json:"fields,omitempty"`
-	Actions    *SlackWorkObjectActions         `json:"actions,omitempty"`
+	Attributes   SlackWorkObjectAttributes       `json:"attributes"`
+	Fields       map[string]SlackWorkObjectField `json:"fields,omitempty"`
+	CustomFields []SlackWorkObjectCustomField    `json:"custom_fields,omitempty"`
+	DisplayOrder []string                        `json:"display_order,omitempty"`
+	Actions      *SlackWorkObjectActions         `json:"actions,omitempty"`
 }
 
 type SlackWorkObjectAttributes struct {
@@ -212,6 +214,13 @@ type SlackWorkObjectField struct {
 	User     *SlackWorkObjectUser `json:"user,omitempty"`
 	TagColor string               `json:"tag_color,omitempty"`
 	Edit     *SlackWorkObjectEdit `json:"edit,omitempty"`
+}
+
+type SlackWorkObjectCustomField struct {
+	Key   string `json:"key"`
+	Label string `json:"label"`
+	Value any    `json:"value"`
+	Type  string `json:"type"`
 }
 
 type SlackWorkObjectEdit struct {
@@ -1247,7 +1256,9 @@ func buildSlackSprintWorkObject(input SlackSprintWorkObjectInput, includeAppUnfu
 		return SlackWorkObjectEntity{}, FortyOneSprintLink{}, errors.New("Slack sprint Work Object title is required")
 	}
 
-	fields := make(map[string]SlackWorkObjectField, 6)
+	fields := make(map[string]SlackWorkObjectField, 2)
+	customFields := make([]SlackWorkObjectCustomField, 0, 3)
+	displayOrder := make([]string, 0, 4)
 	if !compact {
 		if goal := truncateSlackWorkObjectText(slackWorkObjectDescription(input.Goal), slackWorkObjectTextFieldLimit); goal != "" {
 			fields["goal"] = SlackWorkObjectField{Value: goal, Format: "markdown"}
@@ -1255,12 +1266,23 @@ func buildSlackSprintWorkObject(input SlackSprintWorkObjectInput, includeAppUnfu
 	}
 	if status := truncateSlackWorkObjectText(input.Status, 255); status != "" {
 		fields["status"] = SlackWorkObjectField{Value: status}
+		displayOrder = append(displayOrder, "status")
 	}
 	if progress := truncateSlackWorkObjectText(input.Progress, 255); progress != "" {
-		fields["progress"] = SlackWorkObjectField{Value: progress}
+		customFields = append(customFields, SlackWorkObjectCustomField{
+			Key:   "progress",
+			Label: "Progress",
+			Value: progress,
+			Type:  "string",
+		})
+		displayOrder = append(displayOrder, "progress")
 	}
-	addSlackWorkObjectDateField(fields, "start_date", input.StartDate)
-	addSlackWorkObjectDateField(fields, "end_date", input.EndDate)
+	if appendSlackWorkObjectCustomDateField(&customFields, "start_date", "Start date", input.StartDate) {
+		displayOrder = append(displayOrder, "start_date")
+	}
+	if appendSlackWorkObjectCustomDateField(&customFields, "end_date", "End date", input.EndDate) {
+		displayOrder = append(displayOrder, "end_date")
+	}
 
 	lastModified := input.UpdatedAt
 	if lastModified.IsZero() {
@@ -1286,8 +1308,10 @@ func buildSlackSprintWorkObject(input SlackSprintWorkObjectInput, includeAppUnfu
 				DisplayID:            "Sprint",
 				MetadataLastModified: unixTimestamp(lastModified),
 			},
-			Fields:  fields,
-			Actions: &SlackWorkObjectActions{PrimaryActions: []SlackWorkObjectAction{openAction}},
+			Fields:       fields,
+			CustomFields: customFields,
+			DisplayOrder: displayOrder,
+			Actions:      &SlackWorkObjectActions{PrimaryActions: []SlackWorkObjectAction{openAction}},
 		},
 	}
 	if includeAppUnfurlURL {
@@ -1301,6 +1325,19 @@ func addSlackWorkObjectDateField(fields map[string]SlackWorkObjectField, name st
 		return
 	}
 	fields[name] = SlackWorkObjectField{Value: value.UTC().Format(time.DateOnly), Type: slackDateFieldType}
+}
+
+func appendSlackWorkObjectCustomDateField(fields *[]SlackWorkObjectCustomField, key, label string, value *time.Time) bool {
+	if value == nil || value.IsZero() {
+		return false
+	}
+	*fields = append(*fields, SlackWorkObjectCustomField{
+		Key:   key,
+		Label: label,
+		Value: value.UTC().Format(time.DateOnly),
+		Type:  slackDateFieldType,
+	})
+	return true
 }
 
 func slackWorkObjectCreatorLabel(creatorName string) string {
