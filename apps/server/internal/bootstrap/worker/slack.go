@@ -16,6 +16,8 @@ import (
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
 	okractivitiesrepository "github.com/complexus-tech/projects-api/internal/modules/okractivities/repository"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
+	reportsrepository "github.com/complexus-tech/projects-api/internal/modules/reports/repository"
+	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	searchrepository "github.com/complexus-tech/projects-api/internal/modules/search/repository"
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
@@ -87,6 +89,7 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 		okrActivitiesService,
 	)
 	sprintsService := sprints.New(log, sprintsrepository.New(log, db))
+	reportsService := reports.New(log, reportsrepository.New(log, db))
 	contextProvider, err := messagingcontext.New(
 		usersService,
 		workspacesrepository.New(log, db),
@@ -102,8 +105,9 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 		searchService,
 		objectivesService,
 		messaging.WithOperationalTools(messaging.OperationalToolServices{
-			States: statesService,
-			Users:  usersService,
+			States:   statesService,
+			Users:    usersService,
+			Workload: reportsService,
 		}),
 		messaging.WithPlanningTools(messaging.PlanningToolServices{
 			Sprints: sprintsService,

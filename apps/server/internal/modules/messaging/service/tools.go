@@ -35,6 +35,7 @@ const (
 	toolListSprints         = "list_sprints"
 	toolGetSprintSummary    = "get_sprint_summary"
 	toolGetObjectiveSummary = "get_objective_summary"
+	toolGetWorkloadSummary  = "get_workload_summary"
 	toolListStatuses        = "list_statuses"
 	toolListTeamMembers     = "list_team_members"
 	toolGetStory            = "get_story"
@@ -125,8 +126,9 @@ type UsersService interface {
 // OperationalToolServices groups the optional read-only domain services used
 // for status/member lookups and human-readable story enrichment.
 type OperationalToolServices struct {
-	States StatesService
-	Users  UsersService
+	States   StatesService
+	Users    UsersService
+	Workload WorkloadService
 }
 
 // PlanningToolServices groups the read-only planning services used to resolve
@@ -156,6 +158,7 @@ type FortyOneToolExecutor struct {
 	sprints     SprintsService
 	states      StatesService
 	users       UsersService
+	workload    WorkloadService
 	mutations   *storyMutationExecutor
 	definitions []ToolDefinition
 }
@@ -269,7 +272,11 @@ func NewFortyOneToolExecutor(
 	if config.operational != nil {
 		executor.states = config.operational.States
 		executor.users = config.operational.Users
+		executor.workload = config.operational.Workload
 		executor.definitions = append(executor.definitions, operationalToolDefinitions(storyReader != nil)...)
+		if executor.workload != nil {
+			executor.definitions = append(executor.definitions, workloadToolDefinitions()...)
+		}
 	}
 	if completedReader != nil {
 		executor.definitions = append(executor.definitions, completedTaskToolDefinitions()...)
@@ -338,6 +345,11 @@ func (e *FortyOneToolExecutor) Execute(ctx context.Context, scope ToolScope, cal
 			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
 		}
 		return e.getObjectiveSummary(ctx, scope, call.Arguments)
+	case toolGetWorkloadSummary:
+		if e.workload == nil {
+			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
+		}
+		return e.getWorkloadSummary(ctx, scope, call.Arguments)
 	case toolListStatuses:
 		if e.states == nil {
 			return nil, fmt.Errorf("%w: %s", ErrUnknownTool, call.Name)
