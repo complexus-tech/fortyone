@@ -322,10 +322,10 @@ func scheduleBlockConflicts(
 		SELECT EXISTS (
 			SELECT 1
 			FROM calendar_schedule_blocks csb
-			WHERE csb.user_id = $2
-				AND csb.start_at < $4
-				AND csb.end_at > $3
-				AND ($5 = CAST('00000000-0000-0000-0000-000000000000' AS uuid) OR csb.block_id <> $5)
+			WHERE csb.user_id = $1
+				AND csb.start_at < $3
+				AND csb.end_at > $2
+				AND ($4 = CAST('00000000-0000-0000-0000-000000000000' AS uuid) OR csb.block_id <> $4)
 			UNION ALL
 			SELECT 1
 			FROM calendar_busy_windows cbw
@@ -334,9 +334,9 @@ func scheduleBlockConflicts(
 				AND cc.user_id = cbw.user_id
 				AND cc.revoked_at IS NULL
 				AND cc.cleanup_pending_at IS NULL
-			WHERE cbw.user_id = $2
-				AND cbw.start_at < $4
-				AND cbw.end_at > $3
+			WHERE cbw.user_id = $1
+				AND cbw.start_at < $3
+				AND cbw.end_at > $2
 		)
 	`
 	var conflicts bool
@@ -344,7 +344,6 @@ func scheduleBlockConflicts(
 		ctx,
 		&conflicts,
 		query,
-		input.WorkspaceID,
 		input.UserID,
 		input.StartAt,
 		input.EndAt,

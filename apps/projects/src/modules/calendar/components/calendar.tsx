@@ -208,8 +208,8 @@ const CalendarTimedBlock = ({
   const showSecondaryLine = layout.height >= 39;
   const canShowTwoLineTitle = layout.height >= twoLineTitleMinimumHeight;
   const titleLineClass = canShowTwoLineTitle
-    ? "line-clamp-2 leading-[1.1rem]"
-    : "truncate leading-none";
+    ? "line-clamp-2 leading-5"
+    : "truncate leading-5";
   const blockPaddingClass =
     layout.height >= hourHeight ? "px-2.5 py-1" : "px-2.5 py-px";
 
@@ -238,7 +238,7 @@ const CalendarTimedBlock = ({
         {showSecondaryLine ? (
           <Text
             as="span"
-            className="mt-1 block truncate text-[0.9375rem] leading-[0.9375rem] text-[#3c90ff]"
+            className="mt-1 block truncate text-[0.9375rem] leading-[1.1rem] text-[#3c90ff]"
           >
             {toTimeLabel(item.startAt, item.endAt)}
           </Text>
@@ -265,7 +265,7 @@ const CalendarTimedBlock = ({
         </Text>
         {showSecondaryLine ? (
           <Text
-            className="mt-1 truncate text-[0.9375rem] leading-[0.9375rem]"
+            className="mt-1 truncate text-[0.9375rem] leading-[1.1rem]"
             color="muted"
           >
             {toTimeLabel(item.startAt, item.endAt)}
@@ -329,6 +329,11 @@ const CalendarTimedBlock = ({
   if (block.hasConflict) {
     blockTitleColorClass = "text-danger";
   }
+  const blockSecondaryColorClass = block.hasConflict
+    ? "text-danger"
+    : isScheduledStory
+      ? "text-primary"
+      : "text-text-muted";
 
   return (
     <Box
@@ -361,8 +366,10 @@ const CalendarTimedBlock = ({
         </Text>
         {showSecondaryLine ? (
           <Text
-            className="mt-1 truncate text-[0.9375rem] leading-[0.9375rem]"
-            color="muted"
+            className={cn(
+              "mt-1 truncate text-[0.9375rem] leading-[1.1rem]",
+              blockSecondaryColorClass,
+            )}
           >
             {statusLabel} · {toTimeLabel(block.startAt, block.endAt)}
           </Text>

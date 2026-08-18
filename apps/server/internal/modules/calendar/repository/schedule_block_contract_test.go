@@ -93,3 +93,35 @@ func TestListSchedulingBlocksForUserUsesContiguousQueryParameters(t *testing.T) 
 		t.Fatal("workspace ID must remain a redaction input and must not be passed as an unused SQL parameter")
 	}
 }
+
+func TestScheduleBlockConflictsUsesContiguousQueryParameters(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile("schedule.go")
+	if err != nil {
+		t.Fatalf("read schedule repository: %v", err)
+	}
+	source := strings.Join(strings.Fields(string(data)), " ")
+	functionStart := strings.Index(source, "func scheduleBlockConflicts")
+	functionEnd := strings.Index(source[functionStart+1:], "func ")
+	if functionStart < 0 || functionEnd < 0 {
+		t.Fatal("could not locate scheduleBlockConflicts implementation")
+	}
+	functionSource := source[functionStart : functionStart+1+functionEnd]
+
+	for _, contract := range []string{
+		"WHERE csb.user_id = $1",
+		"AND csb.start_at < $3",
+		"AND csb.end_at > $2",
+		"AND ($4 = CAST('00000000-0000-0000-0000-000000000000' AS uuid) OR csb.block_id <> $4)",
+		"WHERE cbw.user_id = $1",
+		"input.UserID, input.StartAt, input.EndAt, excludeBlockID,",
+	} {
+		if !strings.Contains(functionSource, contract) {
+			t.Errorf("schedule conflict query is missing parameter contract %q", contract)
+		}
+	}
+	if strings.Contains(functionSource, "$5") || strings.Contains(functionSource, "input.WorkspaceID") {
+		t.Fatal("schedule conflict query must not include an unused workspace parameter")
+	}
+}
