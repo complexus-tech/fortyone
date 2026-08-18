@@ -21,7 +21,7 @@ var (
 )
 
 const (
-	defaultMinimumFocusBlockMinutes = 30
+	defaultMinimumFocusBlockMinutes = 60
 	planningStartGranularityMinutes = 5
 	maxFocusBlockMinutes            = 120
 	workdayStartHour                = 9
@@ -591,7 +591,12 @@ func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, durat
 	if duration <= 0 {
 		return timeSlot{}, false
 	}
-	segments, ok := planWorkSegments(candidate, startAt, endAt, int(duration/time.Minute), defaultMinimumFocusBlockMinutes, workingDays)
+	durationMinutes := int(duration / time.Minute)
+	minimumFocusMinutes := defaultMinimumFocusBlockMinutes
+	if durationMinutes > 0 && durationMinutes < minimumFocusMinutes {
+		minimumFocusMinutes = durationMinutes
+	}
+	segments, ok := planWorkSegments(candidate, startAt, endAt, durationMinutes, minimumFocusMinutes, workingDays)
 	if !ok {
 		return timeSlot{}, false
 	}

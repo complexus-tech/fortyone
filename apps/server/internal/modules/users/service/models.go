@@ -77,7 +77,7 @@ type CoreAutomationPreferences struct {
 	UserID                     uuid.UUID
 	WorkspaceID                uuid.UUID
 	AutoAssignSelf             bool
-	AutoAssignMaya             bool
+	AutoScheduling             bool
 	AssignSelfOnBranchCopy     bool
 	MoveStoryToStartedOnBranch bool
 	OpenStoryInDialog          bool
@@ -88,7 +88,7 @@ type CoreAutomationPreferences struct {
 // CoreUpdateAutomationPreferences represents the fields that can be updated for automation preferences
 type CoreUpdateAutomationPreferences struct {
 	AutoAssignSelf             *bool
-	AutoAssignMaya             *bool
+	AutoScheduling             *bool
 	AssignSelfOnBranchCopy     *bool
 	MoveStoryToStartedOnBranch *bool
 	OpenStoryInDialog          *bool

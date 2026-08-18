@@ -52,7 +52,7 @@ type dbAutomationPreferences struct {
 	UserID                     uuid.UUID `db:"user_id"`
 	WorkspaceID                uuid.UUID `db:"workspace_id"`
 	AutoAssignSelf             bool      `db:"auto_assign_self"`
-	AutoAssignMaya             bool      `db:"auto_assign_maya"`
+	AutoScheduling             bool      `db:"auto_scheduling"`
 	AssignSelfOnBranchCopy     bool      `db:"assign_self_on_branch_copy"`
 	MoveStoryToStartedOnBranch bool      `db:"move_story_to_started_on_branch"`
 	OpenStoryInDialog          bool      `db:"open_story_in_dialog"`
@@ -131,7 +131,7 @@ func toCoreAutomationPreferences(p dbAutomationPreferences) users.CoreAutomation
 		UserID:                     p.UserID,
 		WorkspaceID:                p.WorkspaceID,
 		AutoAssignSelf:             p.AutoAssignSelf,
-		AutoAssignMaya:             p.AutoAssignMaya,
+		AutoScheduling:             p.AutoScheduling,
 		AssignSelfOnBranchCopy:     p.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: p.MoveStoryToStartedOnBranch,
 		OpenStoryInDialog:          p.OpenStoryInDialog,

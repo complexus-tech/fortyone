@@ -51,7 +51,7 @@ describe("new story dialog form", () => {
     });
   });
 
-  it("preserves the safe human-assigned default when auto-scheduling is not selected", () => {
+  it("defaults new stories to auto-scheduling when no choice is provided", () => {
     const payload = buildNewStoryDialogPayload({
       currentTeamId: "team-1",
       description: "",
@@ -64,7 +64,7 @@ describe("new story dialog form", () => {
     });
 
     expect(payload).toMatchObject({
-      autoSchedulingEnabled: false,
+      autoSchedulingEnabled: true,
     });
     expect(payload).not.toHaveProperty("autoSchedulingLocked");
   });
@@ -79,7 +79,7 @@ describe("new story dialog form", () => {
         assigneeId: "maya-1",
         autoSchedulingEnabled: false,
       },
-      title: "Let Maya assign and schedule this work",
+      title: "Let Maya schedule this work",
     });
 
     expect(payload.autoSchedulingEnabled).toBe(true);

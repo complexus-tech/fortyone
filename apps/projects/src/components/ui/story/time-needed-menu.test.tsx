@@ -92,7 +92,7 @@ describe("TimeNeededMenu", () => {
     });
   });
 
-  it("lets users restore the automatic 30-minute focus block behavior", () => {
+  it("lets users restore the automatic 60-minute focus block behavior", () => {
     const setTimeNeeded = jest.fn();
     render(
       <TimeNeededMenu>
@@ -108,7 +108,7 @@ describe("TimeNeededMenu", () => {
     );
 
     expect(document.body).toHaveTextContent(
-      "Automatic uses 30m, or the full duration when shorter.",
+      "Automatic uses 1h, or the full duration when shorter.",
     );
     fireEvent.click(screen.getByRole("button", { name: "Automatic" }));
 

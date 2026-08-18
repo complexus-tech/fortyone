@@ -11,20 +11,22 @@ type DisplayOptions = {
 
 type GetTermDisplayFn = (termKey: TermKey, options?: DisplayOptions) => string;
 
+const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
+  storyTerm: "story",
+  sprintTerm: "sprint",
+  objectiveTerm: "objective",
+  keyResultTerm: "key result",
+  objectiveEnabled: true,
+  keyResultEnabled: true,
+};
+
 /**
  * Hook for consistent display of terminology throughout the application
  * @returns A function to format terminology terms with options
  */
 export const useTerminology = () => {
   const {
-    data: terminology = {
-      storyTerm: "story",
-      sprintTerm: "sprint",
-      objectiveTerm: "objective",
-      keyResultTerm: "key result",
-      objectiveEnabled: true,
-      keyResultEnabled: true,
-    },
+    data: terminology = DEFAULT_WORKSPACE_SETTINGS,
   } = useWorkspaceSettings();
 
   const getTermDisplay = useCallback<GetTermDisplayFn>(

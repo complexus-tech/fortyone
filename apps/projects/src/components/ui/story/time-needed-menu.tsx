@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { Box, Button, Divider, Flex, Input, Popover, Text } from "ui";
-import { CheckIcon, Time02Icon } from "icons";
+import { cn } from "lib";
 import {
   formatTimeNeeded,
   MAX_TIME_NEEDED_MINUTES,
@@ -23,6 +23,11 @@ type TimeNeededValue = {
   estimatedDurationMinutes: number | null;
   minimumFocusBlockMinutes: number | null;
 };
+
+const FOCUS_BLOCK_PRESETS = [15, 30, 60, 120] as const;
+
+const getPresetButtonClassName = (active: boolean) =>
+  active ? "ring-primary ring-1" : "bg-state-hover! dark:bg-state-hover!";
 
 const TimeNeededContext = createContext<{
   open: boolean;
@@ -91,7 +96,7 @@ const Items = ({
     selectDuration(duration);
   };
 
-  const presetFocusBlockOptions: number[] = [...TIME_NEEDED_PRESETS].filter(
+  const presetFocusBlockOptions: number[] = [...FOCUS_BLOCK_PRESETS].filter(
     (minutes) =>
       estimatedDurationMinutes && minutes <= estimatedDurationMinutes,
   );
@@ -112,16 +117,13 @@ const Items = ({
     focusBlockOptions.length > 0;
 
   return (
-    <Popover.Content align={align} className="w-72 p-3">
-      <Flex align="center" gap={2}>
-        <Time02Icon aria-hidden className="text-text-muted h-4.5" />
-        <Box>
-          <Text fontWeight="medium">Time needed</Text>
-          <Text className="text-xs" color="muted">
-            Used to reserve enough calendar time.
-          </Text>
-        </Box>
-      </Flex>
+    <Popover.Content align={align} className="w-80 p-3">
+      <Box>
+        <Text fontWeight="medium">Time needed</Text>
+        <Text className="mt-0.5 text-sm leading-5" color="muted">
+          Used to reserve enough calendar time.
+        </Text>
+      </Box>
 
       <Box className="mt-3 grid grid-cols-3 gap-1.5">
         {TIME_NEEDED_PRESETS.map((minutes) => (
@@ -129,7 +131,10 @@ const Items = ({
             active={estimatedDurationMinutes === minutes}
             align="center"
             aria-pressed={estimatedDurationMinutes === minutes}
-            className="w-full justify-center"
+            className={cn(
+              "w-full justify-center",
+              getPresetButtonClassName(estimatedDurationMinutes === minutes),
+            )}
             color="tertiary"
             key={minutes}
             onClick={() => {
@@ -145,14 +150,14 @@ const Items = ({
       </Box>
 
       <form className="mt-3" noValidate onSubmit={submitCustomDuration}>
-        <Text className="mb-1.5 text-xs" color="muted">
+        <Text className="mb-1.5 text-sm" color="muted">
           Custom time
         </Text>
         <Box className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1.5">
           <Input
             aria-describedby={customError ? customErrorId : undefined}
             aria-label="Custom time needed"
-            className="h-[2.1rem] px-2"
+            className="bg-surface-muted dark:bg-surface-muted h-[2.25rem] px-3"
             max={customUnit === "minutes" ? MAX_TIME_NEEDED_MINUTES : 40}
             min="0"
             onChange={(event) => {
@@ -166,7 +171,7 @@ const Items = ({
           />
           <Flex
             aria-label="Custom time unit"
-            className="border-border rounded-lg border p-0.5"
+            className="border-border h-[2.25rem] rounded-lg border p-0.5"
             role="group"
           >
             {(["minutes", "hours"] as const).map((unit) => (
@@ -188,7 +193,13 @@ const Items = ({
               </Button>
             ))}
           </Flex>
-          <Button align="center" color="primary" size="sm" type="submit">
+          <Button
+            align="center"
+            className="h-[2.25rem] px-3"
+            color="primary"
+            size="sm"
+            type="submit"
+          >
             Set
           </Button>
         </Box>
@@ -205,18 +216,15 @@ const Items = ({
       </form>
 
       {estimatedDurationMinutes ? (
-        <Button
-          className="mt-2 px-0"
-          color="tertiary"
+        <button
+          className="text-danger focus-visible:ring-primary mt-2 border-0 bg-transparent px-3 py-1 text-base focus-visible:ring-1 focus-visible:outline-none"
           onClick={() => {
             selectDuration(null);
           }}
-          size="xs"
           type="button"
-          variant="naked"
         >
-          Clear time needed
-        </Button>
+          Clear time
+        </button>
       ) : null}
 
       {canSetFocusBlock ? (
@@ -224,14 +232,15 @@ const Items = ({
           <Divider className="my-3" />
           <Box>
             <Text fontWeight="medium">Minimum focus block</Text>
-            <Text className="mt-0.5 text-xs" color="muted">
-              Automatic uses 30m, or the full duration when shorter.
+            <Text className="mt-0.5 text-[0.95rem] leading-5" color="muted">
+              Automatic uses 1h, or the full duration when shorter.
             </Text>
           </Box>
           <Flex className="mt-2 gap-1.5" wrap>
             <Button
               active={!minimumFocusBlockMinutes}
               aria-pressed={!minimumFocusBlockMinutes}
+              className={getPresetButtonClassName(!minimumFocusBlockMinutes)}
               color="tertiary"
               onClick={() => {
                 setTimeNeeded({
@@ -239,7 +248,7 @@ const Items = ({
                   minimumFocusBlockMinutes: null,
                 });
               }}
-              size="xs"
+              size="sm"
               type="button"
               variant="outline"
             >
@@ -249,6 +258,9 @@ const Items = ({
               <Button
                 active={minimumFocusBlockMinutes === minutes}
                 aria-pressed={minimumFocusBlockMinutes === minutes}
+                className={getPresetButtonClassName(
+                  minimumFocusBlockMinutes === minutes,
+                )}
                 color="tertiary"
                 key={minutes}
                 onClick={() => {
@@ -257,12 +269,7 @@ const Items = ({
                     minimumFocusBlockMinutes: minutes,
                   });
                 }}
-                rightIcon={
-                  minimumFocusBlockMinutes === minutes ? (
-                    <CheckIcon className="h-3.5" strokeWidth={2.1} />
-                  ) : undefined
-                }
-                size="xs"
+                size="sm"
                 type="button"
                 variant="outline"
               >

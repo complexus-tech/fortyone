@@ -72,17 +72,21 @@ export const deriveAutoSchedulingStatus = ({
   return "planning";
 };
 
-export const getAutoSchedulingLabel = (status?: AutoSchedulingStatus | null) =>
-  AUTO_SCHEDULING_STATUS_LABELS[status ?? "planning"];
+export const getAutoSchedulingLabel = (
+  status?: AutoSchedulingStatus | null,
+  options?: { planningLabel?: string },
+) =>
+  status === "planning" && options?.planningLabel
+    ? options.planningLabel
+    : AUTO_SCHEDULING_STATUS_LABELS[status ?? "planning"];
 
 export const getAutoSchedulingHelper = (
   status: AutoSchedulingStatus,
   reason?: string | null,
 ) => reason?.trim() || AUTO_SCHEDULING_STATUS_HELPERS[status];
 
-export const canLockAutoSchedulingStatus = (
-  status: AutoSchedulingStatus,
-) => status === "scheduled" || status === "locked";
+export const canLockAutoSchedulingStatus = (status: AutoSchedulingStatus) =>
+  status === "scheduled" || status === "locked";
 
 export const canToggleAutoSchedulingLock = (
   status: AutoSchedulingStatus,
@@ -96,15 +100,13 @@ export const isMayaAssigneeSelection = (
 
 export const getNewStoryAutoSchedulingEnabled = ({
   currentEnabled,
-  hasExplicitChoice,
   mayaAssigneeId,
   selectedAssigneeId,
 }: {
   currentEnabled: boolean;
-  hasExplicitChoice: boolean;
   mayaAssigneeId?: string | null;
   selectedAssigneeId?: string | null;
 }) => {
   if (isMayaAssigneeSelection(selectedAssigneeId, mayaAssigneeId)) return true;
-  return hasExplicitChoice ? currentEnabled : false;
+  return currentEnabled;
 };

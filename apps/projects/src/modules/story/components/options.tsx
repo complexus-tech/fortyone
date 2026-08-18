@@ -28,11 +28,7 @@ import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { formatEstimate } from "@/lib/estimate";
 import { formatTimeNeeded } from "@/lib/time-needed";
-import {
-  deriveAutoSchedulingStatus,
-  getAutoSchedulingLabel,
-  isMayaAssigneeSelection,
-} from "@/lib/auto-scheduling";
+import { isMayaAssigneeSelection } from "@/lib/auto-scheduling";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
@@ -96,7 +92,7 @@ export const Option = ({
   return (
     <Box
       className={cn(
-        "my-4 grid grid-cols-[7.5rem_auto] items-center gap-3 md:my-5",
+        "my-4 grid grid-cols-[7.875rem_auto] items-center gap-3 md:my-5",
         { "grid-cols-1": isNotifications },
         className,
       )}
@@ -145,9 +141,6 @@ export const Options = ({
     minimumFocusBlockMinutes,
     autoSchedulingEnabled,
     autoSchedulingLocked,
-    autoSchedulingStatus,
-    autoSchedulingReason,
-    autoSchedulingUpdatedAt,
     labels: storyLabels,
     sprintId,
     deletedAt,
@@ -248,14 +241,6 @@ export const Options = ({
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
-  const effectiveAutoSchedulingStatus = deriveAutoSchedulingStatus({
-    assigneeId,
-    autoSchedulingEnabled,
-    autoSchedulingLocked,
-    autoSchedulingStatus,
-    estimatedDurationMinutes,
-  });
-
   // References to button elements for keyboard shortcuts
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   const priorityButtonRef = useRef<HTMLButtonElement>(null);
@@ -686,48 +671,24 @@ export const Options = ({
               <AutoSchedulingMenu>
                 <AutoSchedulingMenu.Trigger>
                   <Button
-                    className={cn("font-medium", {
-                      "text-text-muted":
-                        effectiveAutoSchedulingStatus === "off",
-                    })}
+                    className="font-medium"
                     color="tertiary"
-                    disabled={isDeleted || isGuest}
+                    disabled={isDeleted || isGuest || !canUseBackgroundMaya}
                     leftIcon={
-                      <TimeScheduleIcon
-                        className={cn("h-[1.15rem] w-auto", {
-                          "text-text-muted":
-                            effectiveAutoSchedulingStatus === "off",
-                        })}
-                      />
+                      <TimeScheduleIcon className="h-[1.15rem] w-auto" />
                     }
                     size="sm"
                     type="button"
                     variant={isCompact ? "solid" : "naked"}
                   >
-                    {getAutoSchedulingLabel(effectiveAutoSchedulingStatus)}
+                    {autoSchedulingEnabled ? "On" : "Off"}
                   </Button>
                 </AutoSchedulingMenu.Trigger>
                 <AutoSchedulingMenu.Items
-                  assigneeId={assigneeId}
                   autoSchedulingEnabled={autoSchedulingEnabled}
                   autoSchedulingLocked={autoSchedulingLocked}
-                  autoSchedulingReason={autoSchedulingReason}
-                  autoSchedulingStatus={autoSchedulingStatus}
-                  autoSchedulingUpdatedAt={autoSchedulingUpdatedAt}
-                  canManage={canUseBackgroundMaya}
-                  estimatedDurationMinutes={estimatedDurationMinutes}
-                  onChange={(patch) => {
-                    handleUpdate(patch);
-                  }}
-                  onRequestOwner={() => {
-                    requestAnimationFrame(() => {
-                      assigneeButtonRef.current?.click();
-                    });
-                  }}
-                  onRequestTime={() => {
-                    requestAnimationFrame(() => {
-                      timeNeededButtonRef.current?.click();
-                    });
+                  setAutoSchedulingEnabled={(enabled) => {
+                    handleUpdate({ autoSchedulingEnabled: enabled });
                   }}
                 />
               </AutoSchedulingMenu>

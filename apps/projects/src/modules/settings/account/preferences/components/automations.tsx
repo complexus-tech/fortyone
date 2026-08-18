@@ -16,19 +16,11 @@ export const Automations = () => {
   const handleToggle = (
     field:
       | "autoAssignSelf"
-      | "autoAssignMaya"
+      | "autoScheduling"
       | "assignSelfOnBranchCopy"
       | "moveStoryToStartedOnBranch",
     checked: boolean,
   ) => {
-    if (field === "autoAssignSelf" && checked) {
-      updatePreferences({ autoAssignSelf: true, autoAssignMaya: false });
-      return;
-    }
-    if (field === "autoAssignMaya" && checked) {
-      updatePreferences({ autoAssignMaya: true, autoAssignSelf: false });
-      return;
-    }
     updatePreferences({ [field]: checked });
   };
 
@@ -61,12 +53,12 @@ export const Automations = () => {
 
           <Flex align="center" gap={2} justify="between">
             <Box>
-              <Text className="font-medium">Auto-assign to Maya</Text>
+              <Text className="font-medium">Auto-scheduling</Text>
               <Text className="line-clamp-2" color="muted">
                 When creating new{" "}
-                {getTermDisplay("storyTerm", { variant: "plural" })}, make Maya
-                the default assignee so she can choose the right owner and
-                schedule the work
+                {getTermDisplay("storyTerm", { variant: "plural" })}, enable
+                auto-scheduling by default. You can turn it off on individual{" "}
+                {getTermDisplay("storyTerm", { variant: "plural" })}.
               </Text>
               {!canUseBackgroundMaya && (
                 <Text className="mt-1" color="muted">
@@ -76,13 +68,13 @@ export const Automations = () => {
             </Box>
             <Switch
               checked={Boolean(
-                canUseBackgroundMaya && preferences?.autoAssignMaya,
+                canUseBackgroundMaya && preferences?.autoScheduling,
               )}
               className="shrink-0"
               disabled={!canUseBackgroundMaya}
-              name="autoAssignMaya"
+              name="autoScheduling"
               onCheckedChange={(checked) => {
-                handleToggle("autoAssignMaya", checked);
+                handleToggle("autoScheduling", checked);
               }}
             />
           </Flex>

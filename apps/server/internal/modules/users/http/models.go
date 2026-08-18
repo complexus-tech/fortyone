@@ -101,7 +101,7 @@ type AppAutomationPreferences struct {
 	UserID                     uuid.UUID `json:"userId"`
 	WorkspaceID                uuid.UUID `json:"workspaceId"`
 	AutoAssignSelf             bool      `json:"autoAssignSelf"`
-	AutoAssignMaya             bool      `json:"autoAssignMaya"`
+	AutoScheduling             bool      `json:"autoScheduling"`
 	AssignSelfOnBranchCopy     bool      `json:"assignSelfOnBranchCopy"`
 	MoveStoryToStartedOnBranch bool      `json:"moveStoryToStartedOnBranch"`
 	OpenStoryInDialog          bool      `json:"openStoryInDialog"`
@@ -112,7 +112,7 @@ type AppAutomationPreferences struct {
 // UpdateAutomationPreferencesRequest represents a request to update automation preferences
 type UpdateAutomationPreferencesRequest struct {
 	AutoAssignSelf             *bool `json:"autoAssignSelf,omitempty"`
-	AutoAssignMaya             *bool `json:"autoAssignMaya,omitempty"`
+	AutoScheduling             *bool `json:"autoScheduling,omitempty"`
 	AssignSelfOnBranchCopy     *bool `json:"assignSelfOnBranchCopy,omitempty"`
 	MoveStoryToStartedOnBranch *bool `json:"moveStoryToStartedOnBranch,omitempty"`
 	OpenStoryInDialog          *bool `json:"openStoryInDialog,omitempty"`
@@ -179,7 +179,7 @@ func toAppAutomationPreferences(prefs users.CoreAutomationPreferences) AppAutoma
 		UserID:                     prefs.UserID,
 		WorkspaceID:                prefs.WorkspaceID,
 		AutoAssignSelf:             prefs.AutoAssignSelf,
-		AutoAssignMaya:             prefs.AutoAssignMaya,
+		AutoScheduling:             prefs.AutoScheduling,
 		AssignSelfOnBranchCopy:     prefs.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: prefs.MoveStoryToStartedOnBranch,
 		OpenStoryInDialog:          prefs.OpenStoryInDialog,
@@ -192,7 +192,7 @@ func toAppAutomationPreferences(prefs users.CoreAutomationPreferences) AppAutoma
 func toCoreUpdateAutomationPreferences(req UpdateAutomationPreferencesRequest) users.CoreUpdateAutomationPreferences {
 	return users.CoreUpdateAutomationPreferences{
 		AutoAssignSelf:             req.AutoAssignSelf,
-		AutoAssignMaya:             req.AutoAssignMaya,
+		AutoScheduling:             req.AutoScheduling,
 		AssignSelfOnBranchCopy:     req.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: req.MoveStoryToStartedOnBranch,
 		OpenStoryInDialog:          req.OpenStoryInDialog,

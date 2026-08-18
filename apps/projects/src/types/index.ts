@@ -155,7 +155,7 @@ export type WorkspaceSettings = {
 export type AutomationPreferences = {
   id: string;
   autoAssignSelf: boolean;
-  autoAssignMaya: boolean;
+  autoScheduling: boolean;
   assignSelfOnBranchCopy: boolean;
   moveStoryToStartedOnBranch: boolean;
   openStoryInDialog: boolean;

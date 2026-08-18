@@ -164,7 +164,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 .tiptap input[type="checkbox"] {
-  @apply accent-primary h-[1.1rem] w-[1.1rem];
+  @apply accent-primary h-[1.1rem] w-[1.1rem] shrink-0;
 }
 
 /* style tiptap tables */
@@ -351,5 +351,5 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 .chat-tables ul[data-type="taskList"] input[type="checkbox"] {
-  @apply accent-primary;
+  @apply accent-primary shrink-0;
 }

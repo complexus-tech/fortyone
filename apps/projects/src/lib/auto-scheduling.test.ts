@@ -4,12 +4,19 @@ import {
   canLockAutoSchedulingStatus,
   canToggleAutoSchedulingLock,
   deriveAutoSchedulingStatus,
+  getAutoSchedulingLabel,
   getAutoSchedulingHelper,
   getNewStoryAutoSchedulingEnabled,
   isMayaAssigneeSelection,
 } from "./auto-scheduling";
 
 describe("auto-scheduling state", () => {
+  it("can label draft planning state as enabled", () => {
+    expect(getAutoSchedulingLabel("planning", { planningLabel: "On" })).toBe(
+      "On",
+    );
+  });
+
   it("keeps human-assigned work off until someone explicitly enables it", () => {
     expect(
       deriveAutoSchedulingStatus({
@@ -98,11 +105,10 @@ describe("auto-scheduling state", () => {
     expect(isMayaAssigneeSelection(null, "maya-1")).toBe(false);
   });
 
-  it("keeps human-assigned creation off unless the user explicitly enabled it", () => {
+  it("preserves the default when changing to a human assignee", () => {
     expect(
       getNewStoryAutoSchedulingEnabled({
-        currentEnabled: true,
-        hasExplicitChoice: false,
+        currentEnabled: false,
         mayaAssigneeId: "maya-1",
         selectedAssigneeId: "human-1",
       }),
@@ -110,7 +116,6 @@ describe("auto-scheduling state", () => {
     expect(
       getNewStoryAutoSchedulingEnabled({
         currentEnabled: true,
-        hasExplicitChoice: true,
         mayaAssigneeId: "maya-1",
         selectedAssigneeId: "human-1",
       }),
@@ -118,7 +123,6 @@ describe("auto-scheduling state", () => {
     expect(
       getNewStoryAutoSchedulingEnabled({
         currentEnabled: false,
-        hasExplicitChoice: true,
         mayaAssigneeId: "maya-1",
         selectedAssigneeId: "maya-1",
       }),

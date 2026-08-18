@@ -441,7 +441,7 @@ func (r *repo) GetAutomationPreferences(ctx context.Context, userID, workspaceID
 	defer span.End()
 
 	query := `
-		SELECT user_id, workspace_id, auto_assign_self, auto_assign_maya, assign_self_on_branch_copy,
+		SELECT user_id, workspace_id, auto_assign_self, auto_scheduling, assign_self_on_branch_copy,
 			   move_story_to_started_on_branch, open_story_in_dialog, created_at, updated_at
 		FROM user_automation_preferences
 		WHERE user_id = :user_id AND workspace_id = :workspace_id;
