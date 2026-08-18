@@ -66,6 +66,10 @@ jest.mock("@/lib/hooks/subscription-features", () => ({
 }));
 
 jest.mock("@/hooks", () => ({
+  useLocalStorage: <T,>(_key: string, initialValue: T) => [
+    initialValue,
+    jest.fn(),
+  ],
   useUserRole: () => ({ userRole: mockUserRole }),
   useWorkspacePath: () => ({
     withWorkspace: (path: string) => `/acme${path}`,

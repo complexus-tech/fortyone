@@ -1,6 +1,6 @@
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
-import { Box, Collapsible, Flex } from "ui";
+import { Box, Collapsible, Divider, Flex, Tooltip } from "ui";
 import {
   ActiveSprintIcon,
   AiIcon,
@@ -30,7 +30,11 @@ type MenuItem = {
   disabled?: boolean;
 };
 
-export const Navigation = () => {
+export const Navigation = ({
+  isCollapsed = false,
+}: {
+  isCollapsed?: boolean;
+}) => {
   const pathname = usePathname();
   const { withWorkspace, workspaceSlug } = useWorkspacePath();
   const { data: runningSprints = [] } = useRunningSprints();
@@ -53,7 +57,7 @@ export const Navigation = () => {
 
     return {
       name: `Active ${sprintTerm.charAt(0).toUpperCase()}${sprintTerm.slice(1)}`,
-      icon: <ActiveSprintIcon />,
+      icon: <ActiveSprintIcon className="h-6" />,
       href:
         runningSprints.length > 1
           ? withWorkspace("/sprints")
@@ -67,42 +71,42 @@ export const Navigation = () => {
   const primaryLinks: MenuItem[] = [
     {
       name: "My work",
-      icon: <UserIcon />,
+      icon: <UserIcon className="h-6" />,
       href: withWorkspace("/my-work"),
     },
     {
       name: "Calendar",
-      icon: <CalendarIcon />,
+      icon: <CalendarIcon className="h-6" />,
       href: withWorkspace("/calendar"),
     },
     ...(sprintItem ? [sprintItem] : []),
     {
       name: "Summary",
-      icon: <DashboardIcon />,
+      icon: <DashboardIcon className="h-6" />,
       href: withWorkspace("/summary"),
     },
     {
       name: "AI Agent",
-      icon: <AiIcon />,
+      icon: <AiIcon className="h-6" />,
       href: withWorkspace("/maya"),
     },
   ];
   const workspaceLinks: MenuItem[] = [
     {
       name: "Roadmap",
-      icon: <RoadmapIcon />,
+      icon: <RoadmapIcon className="h-6" />,
       href: withWorkspace("/roadmap"),
       disabled: !features.objectiveEnabled,
     },
     {
       name: "Strategy Map",
-      icon: <StrategyIcon />,
+      icon: <StrategyIcon className="h-6" />,
       href: withWorkspace("/strategy"),
       disabled: !features.objectiveEnabled,
     },
     {
       name: "Documents",
-      icon: <DocsIcon />,
+      icon: <DocsIcon className="h-6" />,
       href: withWorkspace("/docs"),
     },
   ];
@@ -120,7 +124,12 @@ export const Navigation = () => {
         <NavLink
           active={isActive}
           aria-current={isActive ? "page" : undefined}
-          className={isActive ? "text-foreground" : undefined}
+          aria-label={name}
+          className={cn(
+            isActive ? "text-foreground" : undefined,
+            isCollapsed && "justify-center px-0",
+            isCollapsed && "[&_svg]:!h-6 [&_svg]:!w-auto",
+          )}
           data-nav-ai-assistant={
             href === withWorkspace("/maya") ? "" : undefined
           }
@@ -131,9 +140,17 @@ export const Navigation = () => {
           data-nav-summary={href === withWorkspace("/summary") ? "" : undefined}
           href={href}
           key={name}
+          title={isCollapsed ? name : undefined}
         >
-          <span className="shrink-0">{icon}</span>
-          <span className="line-clamp-1 min-w-0 flex-1 first-letter:capitalize">
+          <Tooltip side="right" title={isCollapsed ? name : null}>
+            <span className="shrink-0">{icon}</span>
+          </Tooltip>
+          <span
+            className={cn(
+              "line-clamp-1 min-w-0 flex-1 first-letter:capitalize",
+              isCollapsed && "hidden",
+            )}
+          >
             {name}
           </span>
         </NavLink>
@@ -146,38 +163,45 @@ export const Navigation = () => {
 
   return (
     <Box>
-      <Flex className="gap-1.5" direction="column">
+      <Flex
+        className={cn("gap-1.5", isCollapsed && "gap-2")}
+        direction="column"
+      >
         {renderLinks(primaryLinks)}
       </Flex>
-      <Collapsible onOpenChange={setIsWorkspaceOpen} open={isWorkspaceOpen}>
+      <Collapsible
+        onOpenChange={setIsWorkspaceOpen}
+        open={isCollapsed || isWorkspaceOpen}
+      >
         <Box className="mt-4">
-          <Collapsible.Trigger asChild>
-            <button
-              className={cn(
-                "text-text-muted focus-visible:ring-primary/40 hover:text-foreground flex h-8 items-center gap-1 rounded-lg px-2.5 text-left font-medium transition-colors outline-none focus-visible:ring-2",
-                {
-                  "text-foreground": workspaceIsActive,
-                },
-              )}
-              suppressHydrationWarning
-              type="button"
-            >
-              <span>Workspace</span>
-              <ChevronRightIcon
+          {isCollapsed ? (
+            <Divider className="my-3" />
+          ) : (
+            <Collapsible.Trigger asChild>
+              <button
+                aria-label="Workspace navigation"
                 className={cn(
-                  "h-3.5 w-auto transition-transform duration-200",
-                  {
-                    "rotate-90": isWorkspaceOpen,
-                  },
+                  "text-text-muted focus-visible:ring-primary/40 hover:text-foreground flex h-8 items-center gap-1 rounded-lg px-2.5 text-left font-medium transition-colors outline-none focus-visible:ring-2",
+                  workspaceIsActive && "text-foreground",
                 )}
-                strokeWidth={3.5}
-              />
-            </button>
-          </Collapsible.Trigger>
+                suppressHydrationWarning
+                type="button"
+              >
+                <span>Workspace</span>
+                <ChevronRightIcon
+                  className={cn(
+                    "h-3.5 w-auto transition-transform duration-200",
+                    isWorkspaceOpen && "rotate-90",
+                  )}
+                  strokeWidth={3.5}
+                />
+              </button>
+            </Collapsible.Trigger>
+          )}
           <Collapsible.Content>
             <Flex
               aria-label="Workspace navigation"
-              className="mt-1 gap-1.5"
+              className={cn("mt-1 gap-1.5", isCollapsed && "gap-2")}
               direction="column"
               role="group"
             >

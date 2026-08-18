@@ -1,4 +1,4 @@
-import { CloseIcon, HistoryIcon, NewTabIcon, PlusIcon } from "icons";
+import { HistoryIcon, MinusIcon, NewTabIcon, PlusIcon } from "icons";
 import {
   Avatar,
   Flex,
@@ -201,12 +201,12 @@ export const ChatHeader = ({
             </Tooltip>
           ) : null}
 
-          <Tooltip title="Close">
+          <Tooltip title="Minimize">
             <Button
               asIcon
               color="tertiary"
               leftIcon={
-                <CloseIcon
+                <MinusIcon
                   className="text-foreground/70"
                   strokeWidth={HEADER_ICON_STROKE_WIDTH}
                 />
@@ -217,7 +217,7 @@ export const ChatHeader = ({
               size="sm"
               variant="naked"
             >
-              <span className="sr-only">Close</span>
+              <span className="sr-only">Minimize</span>
             </Button>
           </Tooltip>
         </Flex>

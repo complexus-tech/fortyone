@@ -13,6 +13,7 @@ import {
 } from "icons";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import { cn } from "lib";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useProfile } from "@/lib/hooks/profile";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
@@ -21,7 +22,11 @@ import { getPublicEnv } from "@/public-env";
 import { logOut } from "./actions";
 import { clearAllStorage } from "./utils";
 
-export const ProfileMenu = () => {
+export const ProfileMenu = ({
+  isCollapsed = false,
+}: {
+  isCollapsed?: boolean;
+}) => {
   const { data: myInvitations = [] } = useMyInvitations();
   const { data: profile } = useProfile();
   const { workspace } = useCurrentWorkspace();
@@ -59,7 +64,11 @@ export const ProfileMenu = () => {
         <Menu.Button>
           <Box className="relative">
             <Button
-              className="h-9 justify-between px-2"
+              aria-label="Open profile menu"
+              className={cn(
+                "h-9 justify-between px-2",
+                isCollapsed && "w-full justify-center px-0",
+              )}
               color="tertiary"
               fullWidth
               size="sm"
@@ -74,11 +83,18 @@ export const ProfileMenu = () => {
                     backgroundColor: workspace?.color,
                   }}
                 />
-                <Text className="line-clamp-1 text-left">
+                <Text
+                  className={cn(
+                    "line-clamp-1 text-left",
+                    isCollapsed && "hidden",
+                  )}
+                >
                   {profile?.fullName || profile?.username}{" "}
                 </Text>
               </Flex>
-              <ArrowRight2Icon className="shrink-0" />
+              <ArrowRight2Icon
+                className={cn("shrink-0", isCollapsed && "hidden")}
+              />
             </Button>
             {myInvitations.length > 0 && (
               <Box className="bg-primary absolute top-0.5 right-1 z-2 size-2.5 animate-pulse rounded-full" />

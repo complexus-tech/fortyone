@@ -1,6 +1,7 @@
 "use client";
 import { Box, Flex, Text, Button } from "ui";
 import { MoreHorizontalIcon } from "icons";
+import { cn } from "lib";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
@@ -28,7 +29,13 @@ import {
 
 const DEFAULT_EXPANDED_TEAM_ID = "__first-visible-team__";
 
-export const Teams = () => {
+export const Teams = ({
+  isCollapsed = false,
+  onExpand,
+}: {
+  isCollapsed?: boolean;
+  onExpand?: () => void;
+}) => {
   const { data: teams = [] } = useJoinedTeams();
   const { data: feedbackSummaries = [] } = useTeamFeedbackSummaries();
   const { userRole } = useUserRole();
@@ -116,8 +123,16 @@ export const Teams = () => {
 
   return (
     <Box className="mt-4">
-      <Flex align="center" className="mb-2" justify="between">
-        <Text className="pl-2.5 font-medium" color="muted" data-teams-heading>
+      <Flex
+        align="center"
+        className={cn("mb-2", isCollapsed && "justify-center")}
+        justify="between"
+      >
+        <Text
+          className={cn("pl-2.5 font-medium", isCollapsed && "hidden")}
+          color="muted"
+          data-teams-heading
+        >
           Your Teams
         </Text>
         {userRole !== "guest" || overflowTeams.length > 0 ? (
@@ -149,16 +164,22 @@ export const Teams = () => {
           items={visibleTeamIds}
           strategy={verticalListSortingStrategy}
         >
-          <Flex className="pl-px" direction="column" gap={1}>
+          <Flex
+            className={cn(isCollapsed && "gap-1.5")}
+            direction="column"
+            gap={1}
+          >
             {visibleTeams.map((team) => (
               <Team
                 color={team.color}
                 feedbackSummary={feedbackSummaryByTeamId.get(team.id)}
                 id={team.id}
+                isCollapsed={isCollapsed}
                 isOpen={expandedTeamId === team.id}
                 isPrivate={team.isPrivate}
                 key={team.id}
                 name={team.name}
+                onExpand={onExpand}
                 onOpenChange={(open) => {
                   setStoredExpandedTeamId(open ? team.id : null);
                 }}

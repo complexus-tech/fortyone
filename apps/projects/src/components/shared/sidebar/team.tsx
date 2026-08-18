@@ -2,7 +2,7 @@
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Box, Button, Collapsible, ContextMenu, Flex, Menu } from "ui";
+import { Box, Button, Collapsible, ContextMenu, Flex, Menu, Tooltip } from "ui";
 import {
   ArchiveIcon,
   // BacklogIcon,
@@ -44,13 +44,17 @@ export const Team = ({
   feedbackSummary,
   totalTeams,
   isOpen,
+  isCollapsed,
   onOpenChange,
+  onExpand,
   sortingDisabled,
 }: Pick<TeamType, "id" | "name" | "color" | "isPrivate"> & {
   feedbackSummary?: TeamFeedbackSummary;
   totalTeams: number;
   isOpen: boolean;
+  isCollapsed: boolean;
   onOpenChange: (open: boolean) => void;
+  onExpand?: () => void;
   sortingDisabled: boolean;
 }) => {
   const { getTermDisplay } = useTerminology();
@@ -141,11 +145,11 @@ export const Team = ({
             <Box>
               <Flex
                 align="center"
-                className="relative"
+                className={cn("relative", isCollapsed && "justify-center")}
                 gap={1}
                 justify="between"
               >
-                {!sortingDisabled ? (
+                {!sortingDisabled && !isCollapsed ? (
                   <DragIcon
                     className={cn(
                       "absolute top-1/2 bottom-1/2 -left-2.5 h-[1.1rem] -translate-y-1/2 opacity-0 transition-opacity outline-none group-hover:opacity-100",
@@ -163,128 +167,161 @@ export const Team = ({
                 ) : null}
                 <Collapsible.Trigger asChild>
                   <button
-                    className="focus-visible:ring-primary/40 flex h-10 min-w-0 flex-1 items-center justify-between rounded-lg pr-2 pl-3 text-left transition outline-none select-none focus-visible:ring-2"
+                    aria-label={
+                      isCollapsed
+                        ? `Expand sidebar and open ${teamName} team`
+                        : `${isOpen ? "Collapse" : "Expand"} ${teamName} team`
+                    }
+                    className={cn(
+                      "focus-visible:ring-primary/40 flex h-10 min-w-0 flex-1 items-center justify-between rounded-lg pr-2 pl-3 text-left transition outline-none select-none focus-visible:ring-2",
+                      isCollapsed && "w-10 flex-none justify-center px-0",
+                    )}
+                    onClick={(event) => {
+                      if (isCollapsed) {
+                        event.preventDefault();
+                        onExpand?.();
+                        onOpenChange(true);
+                      }
+                    }}
                     suppressHydrationWarning
                     type="button"
                   >
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <TeamColor color={color} />
-                      <span className="ml-0.5 block max-w-[15ch] truncate">
-                        {teamName}
-                      </span>
-                      <ChevronRightIcon
-                        className={cn("relative top-[0.5px] h-3.5", {
-                          "rotate-90": isOpen,
-                        })}
-                        strokeWidth={3.5}
-                        suppressHydrationWarning
-                      />
-                    </span>
-                  </button>
-                </Collapsible.Trigger>
-                <Menu>
-                  <Menu.Button>
-                    <Button
-                      asIcon
-                      className="opacity-0 transition-opacity group-hover:opacity-100"
-                      color="tertiary"
-                      leftIcon={<MoreHorizontalIcon />}
-                      size="sm"
-                      variant="naked"
-                    >
-                      <span className="sr-only">Team menu</span>
-                    </Button>
-                  </Menu.Button>
-                  <Menu.Items>
-                    <Menu.Group>
-                      <Menu.Item
-                        className="py-0"
-                        disabled={userRole !== "admin"}
-                      >
-                        <Link
-                          className="flex items-center gap-1.5 py-1.5"
-                          href={withWorkspace(
-                            `/settings/workspace/teams/${id}`,
+                    <Tooltip side="right" title={isCollapsed ? teamName : null}>
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <TeamColor
+                          className={isCollapsed ? "size-4" : undefined}
+                          color={color}
+                        />
+                        <span
+                          className={cn(
+                            "ml-0.5 block max-w-[15ch] truncate",
+                            isCollapsed && "hidden",
                           )}
                         >
-                          <SettingsIcon />
-                          Team settings
-                        </Link>
-                      </Menu.Item>
-                      <Menu.Item
-                        className="py-0"
-                        disabled={userRole !== "admin"}
-                      >
-                        <Link
-                          className="flex items-center gap-1.5 py-1.5"
-                          href={withWorkspace(`/teams/${id}/archived`)}
-                        >
-                          <ArchiveIcon />
-                          Archived{" "}
-                          {getTermDisplay("storyTerm", { variant: "plural" })}
-                        </Link>
-                      </Menu.Item>
-                      <Menu.Item
-                        className="py-0"
-                        disabled={userRole !== "admin"}
-                      >
-                        <Link
-                          className="flex items-center gap-1.5 py-1.5"
-                          href={withWorkspace(`/teams/${id}/deleted`)}
-                        >
-                          <DeleteIcon />
-                          Deleted{" "}
-                          {getTermDisplay("storyTerm", { variant: "plural" })}
-                        </Link>
-                      </Menu.Item>
-                    </Menu.Group>
-                    <Menu.Separator />
-                    <Menu.Group>
-                      <Menu.Item
-                        className="text-danger"
-                        disabled={totalTeams === 1}
-                        onClick={() => {
-                          setIsLeaving(true);
-                        }}
-                      >
-                        <LogoutIcon className="text-danger" />
-                        Leave team
-                      </Menu.Item>
-                    </Menu.Group>
-                  </Menu.Items>
-                </Menu>
-              </Flex>
-              <Collapsible.Content>
-                <Flex
-                  className="border-border mt-2 ml-5 border-l-[0.5px] pl-2"
-                  direction="column"
-                  gap={1}
-                >
-                  {links.map(({ name, icon, href, count, disabled }) => {
-                    if (disabled) return null;
-
-                    const isActive =
-                      href === withWorkspace("/")
-                        ? pathname === href ||
-                          pathname.startsWith(withWorkspace("/dashboard"))
-                        : pathname.startsWith(href);
-                    return (
-                      <NavLink
-                        active={isActive}
-                        className={isActive ? "text-foreground" : undefined}
-                        href={href}
-                        key={name}
-                      >
-                        {icon}
-                        <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                          <span className="capitalize">{name}</span>
-                          <NavCount count={count ?? 0} />
+                          {teamName}
                         </span>
-                      </NavLink>
-                    );
-                  })}
-                </Flex>
-              </Collapsible.Content>
+                        <ChevronRightIcon
+                          className={cn(
+                            "relative top-[0.5px] h-3.5",
+                            {
+                              "rotate-90": isOpen,
+                            },
+                            isCollapsed && "hidden",
+                          )}
+                          strokeWidth={3.5}
+                          suppressHydrationWarning
+                        />
+                      </span>
+                    </Tooltip>
+                  </button>
+                </Collapsible.Trigger>
+                {!isCollapsed ? (
+                  <Menu>
+                    <Menu.Button>
+                      <Button
+                        asIcon
+                        className="opacity-0 transition-opacity group-hover:opacity-100"
+                        color="tertiary"
+                        leftIcon={<MoreHorizontalIcon />}
+                        size="sm"
+                        variant="naked"
+                      >
+                        <span className="sr-only">Team menu</span>
+                      </Button>
+                    </Menu.Button>
+                    <Menu.Items>
+                      <Menu.Group>
+                        <Menu.Item
+                          className="py-0"
+                          disabled={userRole !== "admin"}
+                        >
+                          <Link
+                            className="flex items-center gap-1.5 py-1.5"
+                            href={withWorkspace(
+                              `/settings/workspace/teams/${id}`,
+                            )}
+                          >
+                            <SettingsIcon />
+                            Team settings
+                          </Link>
+                        </Menu.Item>
+                        <Menu.Item
+                          className="py-0"
+                          disabled={userRole !== "admin"}
+                        >
+                          <Link
+                            className="flex items-center gap-1.5 py-1.5"
+                            href={withWorkspace(`/teams/${id}/archived`)}
+                          >
+                            <ArchiveIcon />
+                            Archived{" "}
+                            {getTermDisplay("storyTerm", { variant: "plural" })}
+                          </Link>
+                        </Menu.Item>
+                        <Menu.Item
+                          className="py-0"
+                          disabled={userRole !== "admin"}
+                        >
+                          <Link
+                            className="flex items-center gap-1.5 py-1.5"
+                            href={withWorkspace(`/teams/${id}/deleted`)}
+                          >
+                            <DeleteIcon />
+                            Deleted{" "}
+                            {getTermDisplay("storyTerm", { variant: "plural" })}
+                          </Link>
+                        </Menu.Item>
+                      </Menu.Group>
+                      <Menu.Separator />
+                      <Menu.Group>
+                        <Menu.Item
+                          className="text-danger"
+                          disabled={totalTeams === 1}
+                          onClick={() => {
+                            setIsLeaving(true);
+                          }}
+                        >
+                          <LogoutIcon className="text-danger" />
+                          Leave team
+                        </Menu.Item>
+                      </Menu.Group>
+                    </Menu.Items>
+                  </Menu>
+                ) : null}
+              </Flex>
+              {!isCollapsed ? (
+                <Collapsible.Content>
+                  <Flex
+                    className="border-border mt-2 ml-5 border-l-[0.5px] pl-2"
+                    direction="column"
+                    gap={1}
+                  >
+                    {links.map(({ name, icon, href, count, disabled }) => {
+                      if (disabled) return null;
+
+                      const isActive =
+                        href === withWorkspace("/")
+                          ? pathname === href ||
+                            pathname.startsWith(withWorkspace("/dashboard"))
+                          : pathname.startsWith(href);
+                      return (
+                        <NavLink
+                          active={isActive}
+                          className={isActive ? "text-foreground" : undefined}
+                          href={href}
+                          key={name}
+                        >
+                          {icon}
+                          <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                            <span className="capitalize">{name}</span>
+                            <NavCount count={count ?? 0} />
+                          </span>
+                        </NavLink>
+                      );
+                    })}
+                  </Flex>
+                </Collapsible.Content>
+              ) : null}
             </Box>
           </Collapsible>
         </div>

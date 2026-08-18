@@ -27,7 +27,11 @@ const getWorkspaceUrl = (slug: string) => {
   return `/${slug}/my-work`;
 };
 
-export const WorkspacesMenu = () => {
+export const WorkspacesMenu = ({
+  isCollapsed = false,
+}: {
+  isCollapsed?: boolean;
+}) => {
   const pathname = usePathname();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
   const { userRole } = useUserRole();
@@ -68,12 +72,16 @@ export const WorkspacesMenu = () => {
     <Menu>
       <Menu.Button>
         <Button
-          className="max-w-full min-w-0 gap-1.5 pl-1"
+          aria-label={isCollapsed ? workspaceName : undefined}
+          className={cn(
+            "max-w-full min-w-0 gap-1.5 pl-1",
+            isCollapsed && "h-9 w-9 justify-center px-0",
+          )}
           color="tertiary"
           data-workspace-switcher
           leftIcon={
             <Avatar
-              className="h-[1.6rem] text-sm"
+              className="h-[1.75rem] text-sm"
               name={workspace?.name}
               rounded="md"
               src={workspace?.avatarUrl}
@@ -85,13 +93,18 @@ export const WorkspacesMenu = () => {
             />
           }
           rightIcon={
-            <ArrowDown2Icon className="text-text-muted relative top-[0.5px] h-4 w-auto" />
+            isCollapsed ? null : (
+              <ArrowDown2Icon className="text-text-muted relative top-[0.5px] h-4 w-auto" />
+            )
           }
           size="sm"
           suppressHydrationWarning
+          title={isCollapsed ? workspaceName : undefined}
           variant="naked"
         >
-          <span className="max-w-[18ch] truncate">{workspaceName}</span>
+          <span className={isCollapsed ? "hidden" : "max-w-[18ch] truncate"}>
+            {workspaceName}
+          </span>
         </Button>
       </Menu.Button>
       <Menu.Items align="start" className="min-w-80 pt-0">

@@ -1,13 +1,23 @@
 "use client";
 import type { ReactNode } from "react";
 import { Box, Button, Flex, Menu, Text, Tooltip } from "ui";
-import { CommandIcon, DocsIcon, EmailIcon, HelpIcon, PlusIcon } from "icons";
+import {
+  CommandIcon,
+  DocsIcon,
+  EmailIcon,
+  HelpIcon,
+  PlusIcon,
+  SidebarCollapseIcon,
+  SidebarExpandIcon,
+} from "icons";
+import { cn } from "lib";
+import { useHotkeys } from "react-hotkeys-hook";
 import { useState } from "react";
 import { addHours, differenceInHours } from "date-fns";
 import { InviteMembersDialog } from "@/components/ui";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { useUserRole, useWorkspacePath } from "@/hooks";
+import { useLocalStorage, useUserRole, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { Commands } from "../commands";
 import { Header } from "./header";
@@ -18,13 +28,21 @@ import { UpcomingMeetingCard } from "./upcoming-meeting-card";
 
 const SidebarFooterActions = ({
   leadingAction,
+  isCollapsed,
   onOpenKeyboardShortcuts,
 }: {
   leadingAction: ReactNode;
+  isCollapsed: boolean;
   onOpenKeyboardShortcuts: () => void;
 }) => (
-  <Flex align="center" className="mt-3">
-    <Box className="min-w-0 flex-1">{leadingAction}</Box>
+  <Flex
+    align="center"
+    className="mt-3"
+    justify={isCollapsed ? "center" : undefined}
+  >
+    <Box className={cn("min-w-0 flex-1", isCollapsed && "hidden")}>
+      {leadingAction}
+    </Box>
     <Menu>
       <Menu.Button>
         <Button
@@ -78,7 +96,11 @@ export const Sidebar = () => {
   const [isInviteMembersOpen, setIsInviteMembersOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const { workspace } = useCurrentWorkspace();
-  const { withWorkspace } = useWorkspacePath();
+  const { withWorkspace, workspaceSlug } = useWorkspacePath();
+  const [isCollapsed, setIsCollapsed] = useLocalStorage(
+    `sidebar:${workspaceSlug}:collapsed`,
+    false,
+  );
 
   const { tier, trialDaysRemaining } = useSubscriptionFeatures();
   const { userRole } = useUserRole();
@@ -139,21 +161,46 @@ export const Sidebar = () => {
   const openKeyboardShortcuts = () => {
     setIsKeyboardShortcutsOpen(true);
   };
+  const toggleSidebar = () => {
+    setIsCollapsed((currentValue) => !currentValue);
+  };
+
+  useHotkeys("mod+b", toggleSidebar, { preventDefault: true });
 
   return (
-    <Box className="bg-sidebar border-border dark:bg-sidebar/40 relative flex h-dvh w-(--sidebar-width) shrink-0 flex-col overflow-hidden border-r-[0.5px]">
-      <Box className="relative z-1 shrink-0 px-4" data-sidebar-header>
-        <Header />
+    <Box
+      className={cn(
+        "bg-sidebar border-border dark:bg-sidebar/40 relative flex h-dvh w-(--sidebar-width) shrink-0 flex-col overflow-hidden border-r-[0.5px] transition-[width] duration-200 ease-linear",
+        isCollapsed && "w-(--sidebar-width-collapsed)",
+      )}
+      data-sidebar-collapsed={isCollapsed ? "true" : "false"}
+    >
+      <Box
+        className={cn("relative z-1 shrink-0 px-4", isCollapsed && "px-2")}
+        data-sidebar-header
+      >
+        <Header isCollapsed={isCollapsed} />
       </Box>
       <Box
-        className="relative z-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3"
+        className={cn(
+          "relative z-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3",
+          isCollapsed && "px-2",
+        )}
         data-sidebar-content
       >
-        <Navigation />
-        <Teams />
+        <Navigation isCollapsed={isCollapsed} />
+        <Teams
+          isCollapsed={isCollapsed}
+          onExpand={() => {
+            setIsCollapsed(false);
+          }}
+        />
       </Box>
-      <Box className="relative z-1 shrink-0 pb-4" data-sidebar-footer>
-        <Box className="mb-2.5 px-3.5">
+      <Box
+        className={cn("relative z-1 shrink-0 pb-4", isCollapsed && "px-2")}
+        data-sidebar-footer
+      >
+        <Box className={cn("mb-2.5 px-3.5", isCollapsed && "px-0")}>
           {workspace?.deletedAt ? (
             <Box className="border-warning bg-warning/20 shadow-shadow mb-4 rounded-xl border-[0.5px] p-4 shadow-lg">
               <Text className="text-foreground" fontWeight="semibold">
@@ -187,6 +234,7 @@ export const Sidebar = () => {
             <UpcomingMeetingCard
               fallback={
                 <SidebarFooterActions
+                  isCollapsed={isCollapsed}
                   leadingAction={subscriptionAction ?? inviteMembersAction}
                   onOpenKeyboardShortcuts={openKeyboardShortcuts}
                 />
@@ -194,7 +242,26 @@ export const Sidebar = () => {
             />
           )}
         </Box>
-        <ProfileMenu />
+        <ProfileMenu isCollapsed={isCollapsed} />
+        <Tooltip
+          side="right"
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <Button
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            asIcon={isCollapsed}
+            className={cn(
+              "mt-2 h-9 w-full justify-start px-2",
+              isCollapsed && "justify-center px-0",
+            )}
+            color="tertiary"
+            onClick={toggleSidebar}
+            variant="naked"
+          >
+            {isCollapsed ? <SidebarExpandIcon /> : <SidebarCollapseIcon />}
+            <span className={isCollapsed ? "hidden" : undefined}>Collapse</span>
+          </Button>
+        </Tooltip>
       </Box>
 
       <KeyboardShortcuts

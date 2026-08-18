@@ -7,6 +7,7 @@ type NavLinkProps = LinkProps & {
   active?: boolean;
   className?: string;
   children: ReactNode;
+  title?: string;
 };
 
 export const NavLink = ({
