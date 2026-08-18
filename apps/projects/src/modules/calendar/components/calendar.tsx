@@ -33,7 +33,6 @@ import {
   Menu,
   Popover,
   Text,
-  Tooltip,
 } from "ui";
 import { useLocalStorage, useTerminology, useWorkspacePath } from "@/hooks";
 import {
@@ -193,23 +192,6 @@ const getBusyWindowTitle = (window: CalendarBusyWindow) => {
 
 const getCalendarBlockStoryCode = (block: CalendarScheduleBlock) =>
   block.storyCode?.trim() || block.teamCode?.trim() || null;
-
-const getCalendarStoryTooltip = (block: CalendarScheduleBlock) => (
-  <Box className="space-y-1">
-    <Text fontSize="md" fontWeight="semibold">
-      {getCalendarBlockStoryCode(block) || "Story"}
-    </Text>
-    <Text fontSize="md">{block.title}</Text>
-    <Text color="muted" fontSize="sm">
-      {toTimeLabel(block.startAt, block.endAt)}
-    </Text>
-    {getMayaCalendarBlockReason(block) ? (
-      <Text color="muted" fontSize="sm">
-        {getMayaCalendarBlockReason(block)}
-      </Text>
-    ) : null}
-  </Box>
-);
 
 const CalendarTimedBlock = ({
   item,
@@ -473,11 +455,7 @@ const CalendarTimedBlock = ({
     </Box>
   );
 
-  return block.storyId ? (
-    <Tooltip title={getCalendarStoryTooltip(block)}>{blockContent}</Tooltip>
-  ) : (
-    blockContent
-  );
+  return blockContent;
 };
 
 const CalendarAllDayEvent = ({
@@ -1459,11 +1437,7 @@ const CalendarMonthItem = ({
     </Box>
   );
 
-  return block.storyId ? (
-    <Tooltip title={getCalendarStoryTooltip(block)}>{blockContent}</Tooltip>
-  ) : (
-    blockContent
-  );
+  return blockContent;
 };
 
 const CalendarMonthGrid = ({
