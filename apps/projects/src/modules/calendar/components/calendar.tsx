@@ -12,6 +12,7 @@ import {
 import { cn } from "lib";
 import {
   ArrowDown2Icon,
+  CalendarIcon,
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -19,6 +20,7 @@ import {
   GoogleCalendarIcon,
   StoryIcon,
   TimeScheduleIcon,
+  Video02Icon,
 } from "icons";
 import {
   Box,
@@ -192,13 +194,16 @@ const CalendarTimedBlock = ({
   layout,
   onEdit,
   onSelectEvent,
+  today,
 }: {
   item: CalendarItem;
   layout: { top: number; height: number; lane: number; laneCount: number };
   onEdit: (block: CalendarScheduleBlock) => void;
   onSelectEvent: (event: CalendarEventSummary) => void;
+  today: Date;
 }) => {
   const laneWidth = 100 / layout.laneCount;
+  const isCompleted = new Date(item.endAt).getTime() <= today.getTime();
   const style = {
     height: `${layout.height - timedBlockVerticalGap}px`,
     left: `calc(${layout.lane * laneWidth}% + 0.25rem)`,
@@ -217,11 +222,18 @@ const CalendarTimedBlock = ({
     layout.height >= hourHeight ? "px-2.5 py-1" : "px-2.5 py-px";
 
   if (item.kind === "event") {
+    const EventIcon = item.event.meetingUrl ? Video02Icon : CalendarIcon;
+    const eventTextClass = isCompleted ? "text-text-muted" : "text-[#3c90ff]";
+    const eventAccentClass = isCompleted ? "bg-border-strong" : "bg-[#3c90ff]";
+
     return (
       <button
         aria-label={`Open ${getCalendarEventTitle(item.event)} details, ${getCalendarEventTimeLabel(item.event)}`}
         className={cn(
-          "absolute overflow-hidden rounded-lg border border-[#3c90ff]/80 bg-[#3c90ff]/[0.035] text-left transition-colors hover:bg-[#3c90ff]/[0.08] focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50 focus-visible:outline-none",
+          "absolute overflow-hidden rounded-l-none rounded-r-lg border text-left transition-colors focus-visible:ring-2 focus-visible:outline-none",
+          isCompleted
+            ? "border-border-strong/40 bg-surface-muted/45 dark:bg-surface-elevated/45 hover:bg-surface-muted/60 dark:hover:bg-surface-elevated/60 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]"
+            : "border-[#3c90ff]/20 bg-[#3c90ff]/[0.06] hover:bg-[#3c90ff]/[0.1] focus-visible:ring-[#3c90ff]/50",
           blockPaddingClass,
         )}
         onClick={() => {
@@ -230,20 +242,31 @@ const CalendarTimedBlock = ({
         style={style}
         type="button"
       >
-        <Text
-          as="span"
-          className={cn("block text-[#3c90ff]", titleLineClass)}
-          fontSize="md"
-          fontWeight="medium"
-        >
-          {getCalendarEventTitle(item.event)}
-        </Text>
+        <span
+          aria-hidden="true"
+          className={cn("absolute inset-y-0 left-0 w-1", eventAccentClass)}
+        />
+        <Box className="flex min-w-0 items-start gap-1.5">
+          <EventIcon
+            aria-hidden="true"
+            className={cn("mt-0.5 h-4 w-4 shrink-0", eventTextClass)}
+          />
+          <Text
+            as="span"
+            className={cn("min-w-0", titleLineClass, eventTextClass)}
+            fontSize="md"
+            fontWeight="medium"
+          >
+            {getCalendarEventTitle(item.event)}
+          </Text>
+        </Box>
         {showSecondaryLine ? (
           <Text
             as="span"
             className={cn(
-              "mt-1 block truncate text-[0.9375rem] text-[#3c90ff]",
+              "mt-1 block truncate text-[0.9375rem]",
               secondaryLineClass,
+              eventTextClass,
             )}
           >
             {toTimeLabel(item.startAt, item.endAt)}
@@ -257,13 +280,23 @@ const CalendarTimedBlock = ({
     return (
       <Box
         className={cn(
-          "border-border-strong/60 bg-surface-muted/35 absolute overflow-hidden rounded-lg border border-dashed",
+          "absolute overflow-hidden rounded-l-none rounded-r-lg border border-dashed",
+          isCompleted
+            ? "border-border-strong/40 bg-surface-muted/45 dark:bg-surface-elevated/45 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]"
+            : "border-border-strong/40 bg-surface-muted/25 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(148,163,184,0.08)_5px,rgba(148,163,184,0.08)_8px)]",
           blockPaddingClass,
         )}
         style={style}
       >
+        <span
+          aria-hidden="true"
+          className="bg-border-strong absolute inset-y-0 left-0 w-1"
+        />
         <Text
-          className={cn("text-foreground", titleLineClass)}
+          className={cn(
+            isCompleted ? "text-text-muted" : "text-foreground",
+            titleLineClass,
+          )}
           fontSize="md"
           fontWeight="medium"
         >
@@ -271,8 +304,11 @@ const CalendarTimedBlock = ({
         </Text>
         {showSecondaryLine ? (
           <Text
-            className={cn("mt-1 truncate text-[0.9375rem]", secondaryLineClass)}
-            color="muted"
+            className={cn(
+              "mt-1 truncate text-[0.9375rem]",
+              secondaryLineClass,
+              isCompleted ? "text-text-muted" : "text-foreground",
+            )}
           >
             {toTimeLabel(item.startAt, item.endAt)}
           </Text>
@@ -308,6 +344,10 @@ const CalendarTimedBlock = ({
       blockColorClass += " hover:bg-danger/[0.12]";
     }
   }
+  if (isCompleted) {
+    blockColorClass =
+      "border-border-strong/40 bg-surface-muted/45 dark:bg-surface-elevated/45 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]";
+  }
   const isScheduledStory = block.blockType === "work";
   const secondaryLabel = isMayaManaged
     ? toTimeLabel(block.startAt, block.endAt)
@@ -331,29 +371,44 @@ const CalendarTimedBlock = ({
       blockActionLabel += `. ${mayaReason}`;
     }
   }
-  let blockTitleColorClass = "text-foreground";
-  if (block.hasConflict) {
+  let blockTitleColorClass = isCompleted
+    ? "text-text-muted"
+    : "text-foreground";
+  if (block.hasConflict && !isCompleted) {
     blockTitleColorClass = "text-danger";
   }
-  const blockSecondaryColorClass = block.hasConflict
-    ? "text-danger"
-    : isScheduledStory
-      ? "text-foreground"
-      : "text-text-muted";
+  let blockSecondaryColorClass = "text-text-muted";
+  let blockIconClass = "text-text-muted";
+  let blockAccentClass = "bg-border-strong";
+  if (isScheduledStory && !isCompleted) {
+    blockSecondaryColorClass = "text-foreground";
+    blockIconClass = "text-primary";
+    blockAccentClass = "bg-primary";
+  }
+  if (block.hasConflict && !isCompleted) {
+    blockSecondaryColorClass = "text-danger";
+    blockIconClass = "text-danger";
+    blockAccentClass = "bg-danger";
+  }
+  const BlockIcon = isScheduledStory ? StoryIcon : TimeScheduleIcon;
 
   return (
     <Box
       className={cn(
-        "absolute flex items-center overflow-hidden rounded-lg border transition-colors",
+        "absolute flex items-center overflow-hidden rounded-l-none rounded-r-lg border transition-colors",
         blockPaddingClass,
         blockColorClass,
       )}
       style={style}
       title={mayaReason ?? undefined}
     >
+      <span
+        aria-hidden="true"
+        className={cn("absolute inset-y-0 left-0 w-1", blockAccentClass)}
+      />
       <button
         aria-label={blockActionLabel}
-        className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-lg focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+        className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-l-none rounded-r-lg focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
         disabled={!canOpenBlock}
         onClick={() => {
           if (canOpenBlock) {
@@ -363,13 +418,19 @@ const CalendarTimedBlock = ({
         type="button"
       />
       <Box className="pointer-events-none relative z-10 min-w-0">
-        <Text
-          className={cn(titleLineClass, blockTitleColorClass)}
-          fontSize="md"
-          fontWeight="medium"
-        >
-          {block.title}
-        </Text>
+        <Box className="flex min-w-0 items-start gap-1.5">
+          <BlockIcon
+            aria-hidden="true"
+            className={cn("mt-0.5 h-4 w-4 shrink-0", blockIconClass)}
+          />
+          <Text
+            className={cn("min-w-0", titleLineClass, blockTitleColorClass)}
+            fontSize="md"
+            fontWeight="medium"
+          >
+            {block.title}
+          </Text>
+        </Box>
         {showSecondaryLine ? (
           <Text
             className={cn(
@@ -389,21 +450,32 @@ const CalendarTimedBlock = ({
 const CalendarAllDayEvent = ({
   event,
   onSelect,
+  today,
 }: {
   event: CalendarEventSummary;
   onSelect: (event: CalendarEventSummary) => void;
-}) => (
-  <button
-    aria-label={`Open ${getCalendarEventTitle(event)} details, ${getCalendarEventTimeLabel(event)}`}
-    className="w-full truncate rounded-lg border border-[#3c90ff]/80 bg-[#3c90ff]/10 px-3 py-1.5 text-left text-base font-medium text-[#3c90ff] transition-colors hover:bg-[#3c90ff]/15 focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50 focus-visible:outline-none"
-    onClick={() => {
-      onSelect(event);
-    }}
-    type="button"
-  >
-    {getCalendarEventTitle(event)}
-  </button>
-);
+  today: Date;
+}) => {
+  const isCompleted = new Date(event.endAt).getTime() <= today.getTime();
+
+  return (
+    <button
+      aria-label={`Open ${getCalendarEventTitle(event)} details, ${getCalendarEventTimeLabel(event)}`}
+      className={cn(
+        "w-full truncate rounded-l-none rounded-r-lg border px-3 py-1.5 text-left text-base font-medium transition-colors focus-visible:outline-none",
+        isCompleted
+          ? "border-border-strong/40 bg-surface-muted/45 text-text-muted dark:bg-surface-elevated/45 hover:bg-surface-muted/60 dark:hover:bg-surface-elevated/60 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]"
+          : "border-[#3c90ff]/80 bg-[#3c90ff]/10 text-[#3c90ff] hover:bg-[#3c90ff]/15 focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50",
+      )}
+      onClick={() => {
+        onSelect(event);
+      }}
+      type="button"
+    >
+      {getCalendarEventTitle(event)}
+    </button>
+  );
+};
 
 const CalendarStoryPicker = ({
   onSelect,
@@ -1125,6 +1197,7 @@ const CalendarTimeGrid = ({
                     event={event}
                     key={event.id}
                     onSelect={onSelectEvent}
+                    today={today}
                   />
                 ))}
               </Box>
@@ -1200,6 +1273,7 @@ const CalendarTimeGrid = ({
                     layout={layout}
                     onEdit={onEdit}
                     onSelectEvent={onSelectEvent}
+                    today={today}
                   />
                 );
               })}

@@ -196,7 +196,7 @@ export const MainDetails = ({
 
       <Container
         className={cn("max-w-6xl pt-4 md:pt-7", {
-          "md:pt-2": isDialog,
+          "md:px-6 md:pt-2": isDialog,
         })}
       >
         {isNotifications ? (

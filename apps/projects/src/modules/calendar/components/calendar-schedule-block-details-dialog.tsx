@@ -113,7 +113,7 @@ const ScheduledStoryHeader = ({
     <Flex align="center" className="w-full" justify="between">
       <Text
         className="text-text-muted tracking-wide"
-        fontSize="sm"
+        fontSize="md"
         fontWeight="semibold"
         transform="uppercase"
       >
@@ -181,6 +181,28 @@ export const CalendarScheduleBlockDetailsDialog = ({
   const isScheduledStory = Boolean(
     block?.blockType === "work" && block.storyId,
   );
+  let bodyContent = null;
+  if (block) {
+    if (isScheduledStory && block.storyId) {
+      bodyContent = (
+        <ScheduledStoryDetails block={{ ...block, storyId: block.storyId }} />
+      );
+    } else {
+      bodyContent = (
+        <Box className="space-y-4 px-6 py-3">
+          <Text as="h2" className="text-2xl leading-8" fontWeight="semibold">
+            {block.title}
+          </Text>
+          <Flex align="start" gap={3}>
+            <ClockIcon className="text-text-muted mt-0.5 h-5 w-auto shrink-0" />
+            <Text fontSize="md">
+              {getCalendarScheduleBlockTimeLabel(block)}
+            </Text>
+          </Flex>
+        </Box>
+      );
+    }
+  }
 
   return (
     <Dialog onOpenChange={onOpenChange} open={Boolean(block)}>
@@ -204,29 +226,7 @@ export const CalendarScheduleBlockDetailsDialog = ({
         </Dialog.Description>
 
         <Dialog.Body className="h-[calc(100dvh-8rem)] max-h-[calc(100dvh-8rem)] overflow-hidden px-0 py-0">
-          {block ? (
-            isScheduledStory && block.storyId ? (
-              <ScheduledStoryDetails
-                block={{ ...block, storyId: block.storyId }}
-              />
-            ) : (
-              <Box className="space-y-4 px-6 py-3">
-                <Text
-                  as="h2"
-                  className="text-2xl leading-8"
-                  fontWeight="semibold"
-                >
-                  {block.title}
-                </Text>
-                <Flex align="start" gap={3}>
-                  <ClockIcon className="text-text-muted mt-0.5 h-5 w-auto shrink-0" />
-                  <Text fontSize="md">
-                    {getCalendarScheduleBlockTimeLabel(block)}
-                  </Text>
-                </Flex>
-              </Box>
-            )
-          ) : null}
+          {bodyContent}
         </Dialog.Body>
       </Dialog.Content>
     </Dialog>
