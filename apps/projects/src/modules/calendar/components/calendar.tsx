@@ -209,7 +209,10 @@ const CalendarTimedBlock = ({
   const canShowTwoLineTitle = layout.height >= twoLineTitleMinimumHeight;
   const titleLineClass = canShowTwoLineTitle
     ? "line-clamp-2 leading-5"
-    : "truncate leading-5";
+    : "truncate leading-none";
+  const secondaryLineClass = canShowTwoLineTitle
+    ? "leading-[1.1rem]"
+    : "leading-[0.9375rem]";
   const blockPaddingClass =
     layout.height >= hourHeight ? "px-2.5 py-1" : "px-2.5 py-px";
 
@@ -238,7 +241,10 @@ const CalendarTimedBlock = ({
         {showSecondaryLine ? (
           <Text
             as="span"
-            className="mt-1 block truncate text-[0.9375rem] leading-[1.1rem] text-[#3c90ff]"
+            className={cn(
+              "mt-1 block truncate text-[0.9375rem] text-[#3c90ff]",
+              secondaryLineClass,
+            )}
           >
             {toTimeLabel(item.startAt, item.endAt)}
           </Text>
@@ -265,7 +271,7 @@ const CalendarTimedBlock = ({
         </Text>
         {showSecondaryLine ? (
           <Text
-            className="mt-1 truncate text-[0.9375rem] leading-[1.1rem]"
+            className={cn("mt-1 truncate text-[0.9375rem]", secondaryLineClass)}
             color="muted"
           >
             {toTimeLabel(item.startAt, item.endAt)}
@@ -303,6 +309,9 @@ const CalendarTimedBlock = ({
     }
   }
   const isScheduledStory = block.blockType === "work";
+  const secondaryLabel = isMayaManaged
+    ? toTimeLabel(block.startAt, block.endAt)
+    : `${statusLabel} · ${toTimeLabel(block.startAt, block.endAt)}`;
   const canOpenBlock = isScheduledStory || isEditable;
   let blockActionLabel = isScheduledStory
     ? "Open scheduled story details"
@@ -364,11 +373,12 @@ const CalendarTimedBlock = ({
         {showSecondaryLine ? (
           <Text
             className={cn(
-              "mt-1 truncate text-[0.9375rem] leading-[1.1rem]",
+              "mt-1 truncate text-[0.9375rem]",
+              secondaryLineClass,
               blockSecondaryColorClass,
             )}
           >
-            {statusLabel} · {toTimeLabel(block.startAt, block.endAt)}
+            {secondaryLabel}
           </Text>
         ) : null}
       </Box>
