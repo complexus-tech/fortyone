@@ -33,6 +33,7 @@ import {
   Menu,
   Popover,
   Text,
+  Tooltip,
 } from "ui";
 import { useLocalStorage, useTerminology, useWorkspacePath } from "@/hooks";
 import {
@@ -83,7 +84,8 @@ import { CalendarGridSkeleton } from "./calendar-skeleton";
 const defaultVisibleStartHour = 8;
 const defaultVisibleEndHour = 21;
 const hourHeight = 52;
-const timedBlockVerticalGap = 2;
+const timedBlockVerticalGap = 6;
+const timedBlockVerticalInset = timedBlockVerticalGap / 2;
 const twoLineTitleMinimumHeight = hourHeight * 1.5;
 const timeRailWidth = 8;
 const calendarHistoryDays = 7;
@@ -189,6 +191,26 @@ const getBusyWindowTitle = (window: CalendarBusyWindow) => {
   return window.title?.trim() || "Busy";
 };
 
+const getCalendarBlockStoryCode = (block: CalendarScheduleBlock) =>
+  block.storyCode?.trim() || block.teamCode?.trim() || null;
+
+const getCalendarStoryTooltip = (block: CalendarScheduleBlock) => (
+  <Box className="space-y-1">
+    <Text fontSize="md" fontWeight="semibold">
+      {getCalendarBlockStoryCode(block) || "Story"}
+    </Text>
+    <Text fontSize="md">{block.title}</Text>
+    <Text color="muted" fontSize="sm">
+      {toTimeLabel(block.startAt, block.endAt)}
+    </Text>
+    {getMayaCalendarBlockReason(block) ? (
+      <Text color="muted" fontSize="sm">
+        {getMayaCalendarBlockReason(block)}
+      </Text>
+    ) : null}
+  </Box>
+);
+
 const CalendarTimedBlock = ({
   item,
   layout,
@@ -207,7 +229,7 @@ const CalendarTimedBlock = ({
   const style = {
     height: `${layout.height - timedBlockVerticalGap}px`,
     left: `calc(${layout.lane * laneWidth}% + 0.25rem)`,
-    top: `${layout.top}px`,
+    top: `${layout.top + timedBlockVerticalInset}px`,
     width: `calc(${laneWidth}% - 0.5rem)`,
   };
   const showSecondaryLine = layout.height >= 39;
@@ -230,7 +252,7 @@ const CalendarTimedBlock = ({
       <button
         aria-label={`Open ${getCalendarEventTitle(item.event)} details, ${getCalendarEventTimeLabel(item.event)}`}
         className={cn(
-          "absolute overflow-hidden rounded-l-none rounded-r-lg border text-left transition-colors focus-visible:ring-2 focus-visible:outline-none",
+          "absolute overflow-hidden rounded-l-none rounded-r-md border text-left transition-colors focus-visible:ring-2 focus-visible:outline-none",
           isCompleted
             ? "border-border-strong/40 bg-surface-muted/45 dark:bg-surface-elevated/45 hover:bg-surface-muted/60 dark:hover:bg-surface-elevated/60 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]"
             : "border-[#3c90ff]/20 bg-[#3c90ff]/[0.06] hover:bg-[#3c90ff]/[0.1] focus-visible:ring-[#3c90ff]/50",
@@ -245,7 +267,7 @@ const CalendarTimedBlock = ({
         <span
           aria-hidden="true"
           className={cn(
-            "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-1 -translate-y-1/2 rounded-full",
+            "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-[0.1875rem] -translate-y-1/2 rounded-md",
             eventAccentClass,
           )}
         />
@@ -283,7 +305,7 @@ const CalendarTimedBlock = ({
     return (
       <Box
         className={cn(
-          "absolute overflow-hidden rounded-l-none rounded-r-lg border border-dashed",
+          "absolute overflow-hidden rounded-l-none rounded-r-md border border-dashed",
           isCompleted
             ? "border-border-strong/40 bg-surface-muted/45 dark:bg-surface-elevated/45 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]"
             : "border-border-strong/40 bg-surface-muted/25 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(148,163,184,0.08)_5px,rgba(148,163,184,0.08)_8px)]",
@@ -293,7 +315,7 @@ const CalendarTimedBlock = ({
       >
         <span
           aria-hidden="true"
-          className="bg-border-strong absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-1 -translate-y-1/2 rounded-full"
+          className="bg-border-strong absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-[0.1875rem] -translate-y-1/2 rounded-md"
         />
         <Text
           className={cn(
@@ -325,9 +347,10 @@ const CalendarTimedBlock = ({
   const isEditable = isCalendarScheduleBlockEditable(block);
   const mayaLabel = getMayaCalendarBlockLabel(block);
   const mayaReason = getMayaCalendarBlockReason(block);
+  const storyCode = block.storyId ? getCalendarBlockStoryCode(block) : null;
   const label =
     block.blockType === "work"
-      ? block.storyCode || block.teamCode || "Work"
+      ? storyCode || block.teamCode || "Work"
       : "Focus";
   let statusLabel = mayaLabel ? `${mayaLabel} · ${label}` : label;
   if (block.hasConflict) {
@@ -336,9 +359,9 @@ const CalendarTimedBlock = ({
   let blockColorClass =
     "border-border-strong/60 bg-surface-muted/35 hover:bg-state-hover border-dashed";
   if (block.blockType === "work") {
-    blockColorClass = "border-info/60 bg-info/[0.055]";
+    blockColorClass = "border-border-strong/60 bg-surface-muted/35";
     if (!isMayaManaged) {
-      blockColorClass += " hover:bg-info/[0.1]";
+      blockColorClass += " hover:bg-state-hover";
     }
   }
   if (block.hasConflict) {
@@ -383,38 +406,31 @@ const CalendarTimedBlock = ({
   let blockSecondaryColorClass = "text-text-muted";
   let blockIconClass = "text-text-muted";
   let blockAccentClass = "bg-border-strong";
-  if (isScheduledStory && !isCompleted) {
-    blockSecondaryColorClass = "text-foreground";
-    blockIconClass = "text-info";
-    blockAccentClass = "bg-info";
-  }
   if (block.hasConflict && !isCompleted) {
     blockSecondaryColorClass = "text-danger";
     blockIconClass = "text-danger";
     blockAccentClass = "bg-danger";
   }
-  const BlockIcon = isScheduledStory ? StoryIcon : TimeScheduleIcon;
-
-  return (
+  const blockContent = (
     <Box
       className={cn(
-        "absolute flex items-center overflow-hidden rounded-l-none rounded-r-lg border transition-colors",
+        "absolute flex items-center overflow-hidden rounded-l-none rounded-r-md border transition-colors",
         blockPaddingClass,
         blockColorClass,
       )}
       style={style}
-      title={mayaReason ?? undefined}
+      title={block.storyId ? undefined : mayaReason ?? undefined}
     >
       <span
         aria-hidden="true"
         className={cn(
-          "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-1 -translate-y-1/2 rounded-full",
+          "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-[0.1875rem] -translate-y-1/2 rounded-md",
           blockAccentClass,
         )}
       />
       <button
         aria-label={blockActionLabel}
-        className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-l-none rounded-r-lg focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+        className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-l-none rounded-r-md focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
         disabled={!canOpenBlock}
         onClick={() => {
           if (canOpenBlock) {
@@ -425,15 +441,20 @@ const CalendarTimedBlock = ({
       />
       <Box className="pointer-events-none relative z-10 min-w-0">
         <Box className="flex min-w-0 items-start gap-1.5">
-          <BlockIcon
-            aria-hidden="true"
-            className={cn("mt-0.5 h-4 w-4 shrink-0", blockIconClass)}
-          />
+          {!isScheduledStory ? (
+            <TimeScheduleIcon
+              aria-hidden="true"
+              className={cn("mt-0.5 h-4 w-4 shrink-0", blockIconClass)}
+            />
+          ) : null}
           <Text
             className={cn("min-w-0", titleLineClass, blockTitleColorClass)}
             fontSize="md"
             fontWeight="medium"
           >
+            {storyCode ? (
+              <span className="text-text-muted mr-1">{storyCode}</span>
+            ) : null}
             {block.title}
           </Text>
         </Box>
@@ -450,6 +471,12 @@ const CalendarTimedBlock = ({
         ) : null}
       </Box>
     </Box>
+  );
+
+  return block.storyId ? (
+    <Tooltip title={getCalendarStoryTooltip(block)}>{blockContent}</Tooltip>
+  ) : (
+    blockContent
   );
 };
 
@@ -468,7 +495,7 @@ const CalendarAllDayEvent = ({
     <button
       aria-label={`Open ${getCalendarEventTitle(event)} details, ${getCalendarEventTimeLabel(event)}`}
       className={cn(
-        "w-full truncate rounded-l-none rounded-r-lg border px-3 py-1.5 text-left text-base font-medium transition-colors focus-visible:outline-none",
+        "w-full truncate rounded-l-none rounded-r-md border px-3 py-1.5 text-left text-base font-medium transition-colors focus-visible:outline-none",
         isCompleted
           ? "border-border-strong/40 bg-surface-muted/45 text-text-muted dark:bg-surface-elevated/45 hover:bg-surface-muted/60 dark:hover:bg-surface-elevated/60 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]"
           : "border-[#3c90ff]/80 bg-[#3c90ff]/10 text-[#3c90ff] hover:bg-[#3c90ff]/15 focus-visible:ring-2 focus-visible:ring-[#3c90ff]/50",
@@ -1370,13 +1397,11 @@ const CalendarMonthItem = ({
   const isEditable = isCalendarScheduleBlockEditable(block);
   const mayaLabel = getMayaCalendarBlockLabel(block);
   const mayaReason = getMayaCalendarBlockReason(block);
+  const storyCode = block.storyId ? getCalendarBlockStoryCode(block) : null;
   const displayTitle = mayaLabel ? `${mayaLabel} · ${title}` : title;
   const isScheduledStory = block.blockType === "work";
   const canOpenBlock = isScheduledStory || isEditable;
   let toneClass = "bg-surface-muted/35 text-text-muted";
-  if (block.blockType === "work") {
-    toneClass = "bg-primary/[0.07] text-primary";
-  }
   if (block.hasConflict) {
     toneClass = "bg-danger/[0.08] text-danger";
   }
@@ -1399,13 +1424,13 @@ const CalendarMonthItem = ({
     }
   }
 
-  return (
+  const blockContent = (
     <Box
       className={cn(
         "relative flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-base",
         toneClass,
       )}
-      title={mayaReason ?? undefined}
+      title={block.storyId ? undefined : mayaReason ?? undefined}
     >
       <button
         aria-label={blockActionLabel}
@@ -1425,10 +1450,19 @@ const CalendarMonthItem = ({
       <span className="pointer-events-none relative z-10 shrink-0 tabular-nums">
         {time}
       </span>
-      <span className="pointer-events-none relative z-10 truncate">
+      <span className="pointer-events-none relative z-10 min-w-0 flex-1 truncate">
+        {storyCode ? (
+          <span className="text-text-muted mr-1">{storyCode}</span>
+        ) : null}
         {displayTitle}
       </span>
     </Box>
+  );
+
+  return block.storyId ? (
+    <Tooltip title={getCalendarStoryTooltip(block)}>{blockContent}</Tooltip>
+  ) : (
+    blockContent
   );
 };
 
