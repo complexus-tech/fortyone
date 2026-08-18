@@ -82,6 +82,7 @@ import { CalendarGridSkeleton } from "./calendar-skeleton";
 const defaultVisibleStartHour = 8;
 const defaultVisibleEndHour = 21;
 const hourHeight = 52;
+const timedBlockVerticalGap = 2;
 const timeRailWidth = 8;
 const calendarHistoryDays = 7;
 const calendarLookaheadDays = 90;
@@ -206,7 +207,7 @@ const CalendarTimedBlock = ({
   const { withWorkspace } = useWorkspacePath();
   const laneWidth = 100 / layout.laneCount;
   const style = {
-    height: `${layout.height}px`,
+    height: `${layout.height - timedBlockVerticalGap}px`,
     left: `calc(${layout.lane * laneWidth}% + 0.25rem)`,
     top: `${layout.top}px`,
     width: `calc(${laneWidth}% - 0.5rem)`,
@@ -324,7 +325,7 @@ const CalendarTimedBlock = ({
   return (
     <Box
       className={cn(
-        "absolute overflow-hidden rounded-lg border transition-colors",
+        "absolute flex items-center overflow-hidden rounded-lg border transition-colors",
         blockPaddingClass,
         blockColorClass,
       )}
