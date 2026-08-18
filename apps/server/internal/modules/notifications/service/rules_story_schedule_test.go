@@ -185,7 +185,7 @@ func TestFirstScheduleActivityShowsReservedTimeInsteadOfInternalState(t *testing
 		State:         events.StoryScheduleStateScheduled,
 		StartAt:       &start,
 		Timezone:      "Africa/Harare",
-	})
+	}, "Africa/Harare")
 
 	require.Equal(t, "auto_scheduling_time", field)
 	require.Equal(t, "18 Aug 2026 at 11:00 CAT", currentValue)
@@ -200,12 +200,28 @@ func TestRepeatedRiskWithNewReasonRecordsStatusActivity(t *testing.T) {
 		Kind:          events.StoryScheduleTransitionStateChanged,
 		PreviousState: events.StoryScheduleStateAtRisk,
 		State:         events.StoryScheduleStateAtRisk,
-	})
+	}, "UTC")
 
 	require.Equal(t, "auto_scheduling_status", field)
 	require.Equal(t, "At risk", currentValue)
 	require.Equal(t, events.StoryScheduleStateAtRisk, oldValue)
 	require.Equal(t, events.StoryScheduleStateAtRisk, newValue)
+}
+
+func TestScheduleTransitionDisplayUsesUserTimezone(t *testing.T) {
+	t.Parallel()
+
+	start := time.Date(2026, time.August, 20, 7, 45, 0, 0, time.UTC)
+	transition := &events.StoryScheduleTransition{
+		Kind:     events.StoryScheduleTransitionMoved,
+		StartAt:  &start,
+		Timezone: "UTC",
+	}
+
+	field, currentValue, _, _ := scheduleTransitionActivityValues(transition, "Africa/Harare")
+
+	require.Equal(t, "auto_scheduling_time", field)
+	require.Equal(t, "20 Aug 2026 at 09:45 CAT", currentValue)
 }
 
 func timePointer(value time.Time) *time.Time {

@@ -24,15 +24,18 @@ func (r *Rules) handleScheduleTransition(
 		return nil
 	}
 
-	message := scheduleTransitionMessage(payload)
-	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
-	recipientID := payload.Schedule.UserID
+	transition := payload.Schedule
+	recipientID := transition.UserID
 	if recipientID == uuid.Nil || !shouldNotify(recipientID, actorID) {
 		return nil
 	}
 	if _, excluded := excludedRecipients[recipientID]; excluded {
 		return nil
 	}
+
+	timezone := r.getUserTimezone(ctx, recipientID, transition.Timezone)
+	message := scheduleTransitionMessage(payload, timezone)
+	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 	return []CoreNewNotification{r.createNotification(
 		recipientID,
 		payload,
@@ -56,7 +59,8 @@ func (r *Rules) RecordScheduleTransitionActivity(
 		return nil
 	}
 
-	field, currentValue, oldValue, newValue := scheduleTransitionActivityValues(transition)
+	timezone := r.getUserTimezone(ctx, transition.UserID, transition.Timezone)
+	field, currentValue, oldValue, newValue := scheduleTransitionActivityValues(transition, timezone)
 	reason := normalizedMayaReason(payload)
 	var activityReason *string
 	if reason != "" {
@@ -142,7 +146,7 @@ func scheduleShiftMinutes(transition *events.StoryScheduleTransition) int {
 	return minutes
 }
 
-func scheduleTransitionMessage(payload events.StoryUpdatedPayload) NotificationMessage {
+func scheduleTransitionMessage(payload events.StoryUpdatedPayload, timezone string) NotificationMessage {
 	transition := payload.Schedule
 	reason := normalizedMayaReason(payload)
 	variables := map[string]Variable{}
@@ -166,7 +170,7 @@ func scheduleTransitionMessage(payload events.StoryUpdatedPayload) NotificationM
 	}
 
 	if transition != nil {
-		if scheduledFor := formatScheduleTransitionTime(transition); scheduledFor != "" {
+		if scheduledFor := formatScheduleTransitionTime(transition, timezone); scheduledFor != "" {
 			variables["scheduled_for"] = Variable{Value: scheduledFor, Type: "date"}
 			template += " to {scheduled_for}"
 		}
@@ -177,14 +181,14 @@ func scheduleTransitionMessage(payload events.StoryUpdatedPayload) NotificationM
 	return NotificationMessage{Template: template, Variables: variables}
 }
 
-func scheduleTransitionActivityValues(transition *events.StoryScheduleTransition) (string, string, any, any) {
+func scheduleTransitionActivityValues(transition *events.StoryScheduleTransition, timezone string) (string, string, any, any) {
 	if transition == nil {
 		return "auto_scheduling_status", "Updated", nil, nil
 	}
 	if transition.StartAt != nil && (transition.Kind == events.StoryScheduleTransitionFirstSchedule ||
 		transition.Kind == events.StoryScheduleTransitionDayChanged ||
 		transition.Kind == events.StoryScheduleTransitionMoved) {
-		return "auto_scheduling_time", formatScheduleTransitionTime(transition), transition.PreviousStartAt, transition.StartAt
+		return "auto_scheduling_time", formatScheduleTransitionTime(transition, timezone), transition.PreviousStartAt, transition.StartAt
 	}
 	if transition.Kind == events.StoryScheduleTransitionStateChanged && transition.State != "" {
 		return "auto_scheduling_status", scheduleStateLabel(transition.State), transition.PreviousState, transition.State
@@ -192,7 +196,7 @@ func scheduleTransitionActivityValues(transition *events.StoryScheduleTransition
 	if transition.State != transition.PreviousState && transition.State != "" {
 		return "auto_scheduling_status", scheduleStateLabel(transition.State), transition.PreviousState, transition.State
 	}
-	return "auto_scheduling_time", formatScheduleTransitionTime(transition), transition.PreviousStartAt, transition.StartAt
+	return "auto_scheduling_time", formatScheduleTransitionTime(transition, timezone), transition.PreviousStartAt, transition.StartAt
 }
 
 func scheduleStateLabel(state events.StoryScheduleState) string {
@@ -216,12 +220,12 @@ func scheduleStateLabel(state events.StoryScheduleState) string {
 	}
 }
 
-func formatScheduleTransitionTime(transition *events.StoryScheduleTransition) string {
+func formatScheduleTransitionTime(transition *events.StoryScheduleTransition, timezone string) string {
 	if transition == nil || transition.StartAt == nil {
 		return ""
 	}
 	value := transition.StartAt.UTC()
-	if timezone := strings.TrimSpace(transition.Timezone); timezone != "" {
+	if timezone := strings.TrimSpace(timezone); timezone != "" {
 		if location, err := time.LoadLocation(timezone); err == nil {
 			value = value.In(location)
 		}

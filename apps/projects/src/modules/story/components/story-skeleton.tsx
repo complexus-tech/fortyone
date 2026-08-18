@@ -14,7 +14,7 @@ export const StorySkeleton = ({
   if (bodyOnly) {
     return (
       <Box>
-        <MainDetailsSkeleton />
+        <MainDetailsSkeleton isDialog={isDialog} />
       </Box>
     );
   }
@@ -26,7 +26,7 @@ export const StorySkeleton = ({
           "dark:bg-surface": isDialog,
         })}
       >
-        <MainDetailsSkeleton />
+        <MainDetailsSkeleton isDialog={isDialog} />
       </Box>
       <Box className="hidden md:flex">
         <Box
@@ -34,7 +34,7 @@ export const StorySkeleton = ({
             "dark:bg-surface": isDialog,
           })}
         >
-          <MainDetailsSkeleton />
+          <MainDetailsSkeleton isDialog={isDialog} />
         </Box>
         <Box className="border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px]">
           <OptionsSkeleton />

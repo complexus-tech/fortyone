@@ -25,7 +25,7 @@ const CalendarStoryMainDetails = dynamic(
     loading: () => (
       <Box
         aria-label="Loading story details"
-        className="space-y-5"
+        className="space-y-5 px-6"
         role="status"
       >
         <Skeleton className="h-8 w-4/5" />
@@ -58,7 +58,7 @@ const ScheduledStoryDetails = ({
     return (
       <Box
         aria-label="Loading story details"
-        className="space-y-5"
+        className="space-y-5 px-6"
         role="status"
       >
         <Skeleton className="h-4 w-20" />

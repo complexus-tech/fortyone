@@ -3,6 +3,7 @@ package notifications
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
@@ -20,6 +21,22 @@ func (r *Rules) getUserName(ctx context.Context, userID uuid.UUID) string {
 		userName = user.Username
 	}
 	return userName
+}
+
+// getUserTimezone returns the recipient's profile timezone when available.
+// The transition timezone is retained as a fallback for older events and
+// deployments where the user record cannot be loaded.
+func (r *Rules) getUserTimezone(ctx context.Context, userID uuid.UUID, fallback string) string {
+	timezone := strings.TrimSpace(fallback)
+	if r.users == nil || userID == uuid.Nil {
+		return timezone
+	}
+	if user, err := r.users.GetUser(ctx, userID); err == nil {
+		if profileTimezone := strings.TrimSpace(user.Timezone); profileTimezone != "" {
+			return profileTimezone
+		}
+	}
+	return timezone
 }
 
 // getStoryTitle gets a story's title with fallback

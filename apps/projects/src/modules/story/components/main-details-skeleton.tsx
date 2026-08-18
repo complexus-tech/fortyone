@@ -1,14 +1,19 @@
 "use client";
 import { Box, Container, Divider, Flex, Skeleton, Wrapper } from "ui";
+import { cn } from "lib";
 import { BodyContainer } from "@/components/shared";
 import { ActivitiesSkeleton } from "./activities-skeleton";
 import { LinksSkeleton } from "./links-skeleton";
 import { AttachmentsSkeleton } from "./attachments-skeleton";
 
-export const MainDetailsSkeleton = () => {
+export const MainDetailsSkeleton = ({
+  isDialog = false,
+}: {
+  isDialog?: boolean;
+}) => {
   return (
     <BodyContainer className="h-screen overflow-y-auto pb-8">
-      <Container className="pt-7">
+      <Container className={cn("pt-7", isDialog && "px-6 md:px-6")}>
         {/* Title skeleton */}
         <Skeleton className="h-8 w-3/4 rounded md:h-10" />
 

@@ -219,7 +219,7 @@ const CalendarTimedBlock = ({
     ? "leading-[1.1rem]"
     : "leading-[0.9375rem]";
   const blockPaddingClass =
-    layout.height >= hourHeight ? "px-2.5 py-1" : "px-2.5 py-px";
+    layout.height >= hourHeight ? "py-1 pr-2.5 pl-3" : "py-px pr-2.5 pl-3";
 
   if (item.kind === "event") {
     const EventIcon = item.event.meetingUrl ? Video02Icon : CalendarIcon;
@@ -244,7 +244,10 @@ const CalendarTimedBlock = ({
       >
         <span
           aria-hidden="true"
-          className={cn("absolute inset-y-0 left-0 w-1", eventAccentClass)}
+          className={cn(
+            "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-1 -translate-y-1/2 rounded-full",
+            eventAccentClass,
+          )}
         />
         <Box className="flex min-w-0 items-start gap-1.5">
           <EventIcon
@@ -290,7 +293,7 @@ const CalendarTimedBlock = ({
       >
         <span
           aria-hidden="true"
-          className="bg-border-strong absolute inset-y-0 left-0 w-1"
+          className="bg-border-strong absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-1 -translate-y-1/2 rounded-full"
         />
         <Text
           className={cn(
@@ -404,7 +407,10 @@ const CalendarTimedBlock = ({
     >
       <span
         aria-hidden="true"
-        className={cn("absolute inset-y-0 left-0 w-1", blockAccentClass)}
+        className={cn(
+          "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-1 -translate-y-1/2 rounded-full",
+          blockAccentClass,
+        )}
       />
       <button
         aria-label={blockActionLabel}
