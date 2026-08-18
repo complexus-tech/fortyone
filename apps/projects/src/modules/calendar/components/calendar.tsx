@@ -336,9 +336,9 @@ const CalendarTimedBlock = ({
   let blockColorClass =
     "border-border-strong/60 bg-surface-muted/35 hover:bg-state-hover border-dashed";
   if (block.blockType === "work") {
-    blockColorClass = "border-primary/60 bg-primary/[0.055]";
+    blockColorClass = "border-info/60 bg-info/[0.055]";
     if (!isMayaManaged) {
-      blockColorClass += " hover:bg-primary/[0.1]";
+      blockColorClass += " hover:bg-info/[0.1]";
     }
   }
   if (block.hasConflict) {
@@ -385,8 +385,8 @@ const CalendarTimedBlock = ({
   let blockAccentClass = "bg-border-strong";
   if (isScheduledStory && !isCompleted) {
     blockSecondaryColorClass = "text-foreground";
-    blockIconClass = "text-primary";
-    blockAccentClass = "bg-primary";
+    blockIconClass = "text-info";
+    blockAccentClass = "bg-info";
   }
   if (block.hasConflict && !isCompleted) {
     blockSecondaryColorClass = "text-danger";
