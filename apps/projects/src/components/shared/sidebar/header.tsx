@@ -70,10 +70,13 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
 
   const notificationsAction = (
     <Tooltip side="right" title="Notifications">
-      <Box data-sidebar-notifications-button>
+      <Box
+        className={cn(isCollapsed && "w-full")}
+        data-sidebar-notifications-button
+      >
         <Button
           asIcon
-          className="group relative"
+          className={cn("group relative", isCollapsed && "h-[2.3rem] w-full")}
           color="tertiary"
           href={withWorkspace("/notifications")}
           leftIcon={
