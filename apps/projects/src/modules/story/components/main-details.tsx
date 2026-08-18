@@ -45,11 +45,13 @@ type QueuedStoryUpdate = {
 };
 
 export const MainDetails = ({
+  inlineProperties = false,
   storyId,
   isNotifications,
   isDialog,
   mainHeader,
 }: {
+  inlineProperties?: boolean;
   storyId: string;
   isNotifications: boolean;
   isDialog?: boolean;
@@ -253,6 +255,7 @@ export const MainDetails = ({
         <RelatedDocuments entityId={storyId} entityType="story" />
         <Box
           className={cn("md:hidden", {
+            "md:block": inlineProperties,
             "mt-4": isNotifications && isLinksOpen && links.length > 0,
             "notification-story-inline-options": isNotifications,
           })}
@@ -260,7 +263,7 @@ export const MainDetails = ({
           <Options
             isNotifications={isNotifications}
             storyId={storyId}
-            variant={isNotifications ? "inline" : "sidebar"}
+            variant={isNotifications || inlineProperties ? "inline" : "sidebar"}
           />
         </Box>
 

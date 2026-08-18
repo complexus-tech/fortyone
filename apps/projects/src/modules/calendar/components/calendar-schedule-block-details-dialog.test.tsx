@@ -6,27 +6,53 @@ import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
 import { CalendarScheduleBlockDetailsDialog } from "./calendar-schedule-block-details-dialog";
 
 const useStoryById = jest.fn();
+const copyText = jest.fn();
 
 jest.mock("@/hooks", () => ({
+  useCopyToClipboard: () => [null, copyText],
   useWorkspacePath: () => ({
     withWorkspace: (path: string) => `/workspace${path}`,
   }),
+}));
+
+jest.mock("@/hooks/owner", () => ({
+  useIsAdminOrOwner: () => ({ isAdminOrOwner: true }),
 }));
 
 jest.mock("@/modules/story/hooks/story", () => ({
   useStoryById: (storyId: string) => useStoryById(storyId),
 }));
 
-jest.mock("@/modules/story/components/options", () => ({
-  Options: () => <div>Story properties</div>,
+jest.mock("@/modules/story/components/story-actions-menu", () => ({
+  StoryActionsMenu: () => <button type="button">More story actions</button>,
+}));
+
+jest.mock(
+  "next/dynamic",
+  () => () =>
+    function MockMainDetails({ storyId }: { storyId: string }) {
+      return <div>Editable story details for {storyId}</div>;
+    },
+);
+
+jest.mock("sonner", () => ({
+  toast: { success: jest.fn() },
 }));
 
 jest.mock("@/modules/story/utils/story-url", () => ({
   getStoryPath: ({ id }: { id: string }) => `/stories/${id}`,
+  getStoryReference: ({
+    sequenceId,
+    teamCode,
+  }: {
+    sequenceId: number;
+    teamCode: string;
+  }) => `${teamCode}-${sequenceId}`,
 }));
 
 jest.mock("icons", () => ({
   ClockIcon: () => <span aria-hidden>Clock icon</span>,
+  CopyIcon: () => <span aria-hidden>Copy icon</span>,
   EditIcon: () => <span aria-hidden>Edit icon</span>,
   ExternalLinkIcon: () => <span aria-hidden>External link icon</span>,
   StoryIcon: () => <span aria-hidden>Story icon</span>,
@@ -99,6 +125,8 @@ const block: CalendarScheduleBlock = {
 describe("CalendarScheduleBlockDetailsDialog", () => {
   beforeEach(() => {
     useStoryById.mockReset();
+    copyText.mockReset();
+    copyText.mockResolvedValue(true);
     useStoryById.mockReturnValue({
       data: {
         description: "Show the real story context from the calendar.",
@@ -110,7 +138,7 @@ describe("CalendarScheduleBlockDetailsDialog", () => {
     });
   });
 
-  it("shows the scheduled story and its editable property controls", () => {
+  it("uses the editable story surface and exposes story actions in the header", () => {
     render(
       <CalendarScheduleBlockDetailsDialog
         block={block}
@@ -122,12 +150,30 @@ describe("CalendarScheduleBlockDetailsDialog", () => {
     expect(useStoryById).toHaveBeenCalledWith("story-62");
     expect(screen.getByText("PRID-62")).toBeInTheDocument();
     expect(
-      screen.getByText("Show the real story context from the calendar."),
+      screen.getByText("Editable story details for story-62"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Story properties")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "More story actions" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Open story in a new tab" }),
     ).toHaveAttribute("target", "_blank");
+  });
+
+  it("copies the canonical story link from the header", () => {
+    render(
+      <CalendarScheduleBlockDetailsDialog
+        block={block}
+        onEdit={jest.fn()}
+        onOpenChange={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy story link" }));
+
+    expect(copyText).toHaveBeenCalledWith(
+      `${window.location.origin}/workspace/stories/story-62`,
+    );
   });
 
   it("keeps the schedule editor available for user-managed blocks", () => {

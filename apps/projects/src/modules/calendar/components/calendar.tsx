@@ -323,16 +323,13 @@ const CalendarTimedBlock = ({
     }
   }
   let blockTitleColorClass = "text-foreground";
-  if (isScheduledStory) {
-    blockTitleColorClass = "text-primary";
-  }
   if (block.hasConflict) {
     blockTitleColorClass = "text-danger";
   }
   const blockSecondaryColorClass = block.hasConflict
     ? "text-danger"
     : isScheduledStory
-      ? "text-primary"
+      ? "text-foreground"
       : "text-text-muted";
 
   return (
