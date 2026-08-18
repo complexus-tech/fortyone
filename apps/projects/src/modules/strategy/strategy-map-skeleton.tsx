@@ -132,12 +132,12 @@ const StrategySkeletonConnections = () => (
 export const StrategyMapSkeleton = () => (
   <Box
     aria-label="Loading strategy map"
-    className="bg-surface-muted/20 dark:bg-surface-elevated/35 relative h-full overflow-hidden"
+    className="bg-surface-muted/20 dark:bg-background relative h-full overflow-hidden"
     role="status"
   >
     <span className="sr-only">Loading strategy map</span>
     <Box
-      className="bg-surface-muted/15 dark:bg-surface-elevated/25 absolute top-0 left-1/2 h-[1000px] -translate-x-1/2"
+      className="bg-surface-muted/15 dark:bg-background absolute top-0 left-1/2 h-[1000px] -translate-x-1/2"
       style={{
         backgroundImage:
           "radial-gradient(var(--color-border-strong) 1.15px, transparent 1.15px)",

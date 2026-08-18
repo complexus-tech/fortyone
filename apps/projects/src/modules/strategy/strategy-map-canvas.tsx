@@ -839,7 +839,7 @@ export const StrategyMapCanvas = ({
     <Box className="relative h-full overflow-hidden">
       <div
         className={cn(
-          "bg-surface-muted/20 dark:bg-surface-elevated/35 h-full overflow-auto overscroll-none",
+          "bg-surface-muted/20 dark:bg-background h-full overflow-auto overscroll-none",
           isPanning ? "cursor-grabbing" : "cursor-grab",
         )}
         onPointerCancel={handleViewportPointerUp}
@@ -857,7 +857,7 @@ export const StrategyMapCanvas = ({
           }}
         >
           <div
-            className="bg-surface-muted/15 dark:bg-surface-elevated/25 absolute top-0 left-0 origin-top-left"
+            className="bg-surface-muted/15 dark:bg-background absolute top-0 left-0 origin-top-left"
             ref={canvasRef}
             style={{
               backgroundImage:
