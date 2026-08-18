@@ -231,9 +231,10 @@ const Items = ({
         <>
           <Divider className="my-3" />
           <Box>
-            <Text fontWeight="medium">Minimum focus block</Text>
+            <Text fontWeight="medium">Focus blocks</Text>
             <Text className="mt-0.5 text-[0.95rem] leading-5" color="muted">
-              Automatic uses 1h, or the full duration when shorter.
+              No chunks keeps this work together when possible. Smaller blocks
+              let Maya fit it around other commitments.
             </Text>
           </Box>
           <Flex className="mt-2 gap-1.5" wrap>
@@ -252,7 +253,7 @@ const Items = ({
               type="button"
               variant="outline"
             >
-              Automatic
+              No chunks
             </Button>
             {focusBlockOptions.map((minutes) => (
               <Button

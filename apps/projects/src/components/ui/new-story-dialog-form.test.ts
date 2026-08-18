@@ -3,10 +3,49 @@
 import type { DetailedStory, NewStory } from "@/modules/story/types";
 import {
   buildNewStoryDialogPayload,
+  getDeadlineForSprintSelection,
+  getInitialDeadlineSource,
   runStoryCreatedFollowUp,
 } from "./new-story-dialog-form";
 
 describe("new story dialog form", () => {
+  it("inherits the sprint end date when no deadline has been provided", () => {
+    expect(
+      getDeadlineForSprintSelection({
+        currentEndDate: null,
+        currentSource: getInitialDeadlineSource({ sprintId: null }),
+        sprintEndDate: "2026-06-20",
+      }),
+    ).toEqual({
+      endDate: "2026-06-20",
+      source: "sprint",
+    });
+  });
+
+  it("preserves a manually selected or cleared deadline when the sprint changes", () => {
+    expect(
+      getDeadlineForSprintSelection({
+        currentEndDate: "2026-06-18",
+        currentSource: "manual",
+        sprintEndDate: "2026-06-20",
+      }),
+    ).toEqual({
+      endDate: "2026-06-18",
+      source: "manual",
+    });
+
+    expect(
+      getDeadlineForSprintSelection({
+        currentEndDate: null,
+        currentSource: "cleared",
+        sprintEndDate: "2026-06-20",
+      }),
+    ).toEqual({
+      endDate: null,
+      source: "cleared",
+    });
+  });
+
   it("preserves selected labels, complexity, and time in the create payload", () => {
     const storyForm: NewStory = {
       assigneeId: "user-1",

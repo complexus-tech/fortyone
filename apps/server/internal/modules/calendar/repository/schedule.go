@@ -22,6 +22,8 @@ const scheduleBlockSelect = `
 			WHEN s.id IS NOT NULL AND t.code IS NOT NULL THEN CONCAT(t.code, '-', CAST(s.sequence_id AS text))
 			ELSE NULL
 		END AS story_code,
+		COALESCE(s.priority, '') AS story_priority,
+		s.end_date AS story_end_date,
 		t.team_id,
 		t.name AS team_name,
 		t.code AS team_code,
@@ -133,6 +135,8 @@ func (r *Repo) ListSchedulingBlocksForUser(ctx context.Context, workspaceID, use
 		blocks[index].StoryID = nil
 		blocks[index].StoryTitle = nil
 		blocks[index].StoryCode = nil
+		blocks[index].StoryPriority = ""
+		blocks[index].StoryEndDate = nil
 		blocks[index].TeamID = nil
 		blocks[index].TeamName = nil
 		blocks[index].TeamCode = nil

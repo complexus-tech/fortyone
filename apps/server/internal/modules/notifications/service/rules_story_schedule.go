@@ -150,19 +150,19 @@ func scheduleTransitionMessage(payload events.StoryUpdatedPayload) NotificationM
 		variables["reason"] = Variable{Value: safeNotificationText(reason), Type: "value"}
 	}
 
-	template := "Maya updated this task's schedule"
+	template := "updated this task's schedule"
 	switch {
 	case transition == nil:
 	case transition.State == events.StoryScheduleStateNeedsTime:
-		template = "Maya needs a time estimate before scheduling this task"
+		template = "needs a time estimate before scheduling this task"
 	case transition.State == events.StoryScheduleStateAtRisk:
-		template = "Maya flagged this task's schedule as at risk"
+		template = "flagged this task's schedule as at risk"
 	case transition.State == events.StoryScheduleStateCannotFit:
-		template = "Maya could not fit this task into the current schedule"
+		template = "could not fit this task into the current schedule"
 	case transition.Kind == events.StoryScheduleTransitionFirstSchedule:
-		template = "Maya scheduled this task"
+		template = "scheduled this task"
 	case transition.Kind == events.StoryScheduleTransitionDayChanged || scheduleShiftMinutes(transition) >= meaningfulScheduleShiftMinutes:
-		template = "Maya moved this task"
+		template = "moved this task"
 	}
 
 	if transition != nil {

@@ -157,17 +157,30 @@ type CoreNewNotification struct {
 
 // CoreNotification represents a notification.
 type CoreNotification struct {
-	ID          uuid.UUID           `json:"id"`
-	RecipientID uuid.UUID           `json:"recipient_id"`
-	WorkspaceID uuid.UUID           `json:"workspace_id"`
-	Type        string              `json:"type"`
-	EntityType  string              `json:"entity_type"`
-	EntityID    uuid.UUID           `json:"entity_id"`
-	ActorID     uuid.UUID           `json:"actor_id"`
-	Title       string              `json:"title"`
-	Message     NotificationMessage `json:"message"`
-	CreatedAt   time.Time           `json:"created_at"`
-	ReadAt      *time.Time          `json:"read_at"`
+	ID          uuid.UUID              `json:"id"`
+	RecipientID uuid.UUID              `json:"recipient_id"`
+	WorkspaceID uuid.UUID              `json:"workspace_id"`
+	Type        string                 `json:"type"`
+	EntityType  string                 `json:"entity_type"`
+	EntityID    uuid.UUID              `json:"entity_id"`
+	ActorID     uuid.UUID              `json:"actor_id"`
+	Actor       *CoreNotificationActor `json:"actor,omitempty"`
+	Title       string                 `json:"title"`
+	Message     NotificationMessage    `json:"message"`
+	CreatedAt   time.Time              `json:"created_at"`
+	ReadAt      *time.Time             `json:"read_at"`
+}
+
+// CoreNotificationActor is the user snapshot exposed with a notification.
+// AvatarURL is resolved to an accessible URL by the HTTP layer before the
+// notification is returned to a client.
+type CoreNotificationActor struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	FullName  string    `json:"full_name"`
+	AvatarURL string    `json:"avatar_url"`
+	IsActive  bool      `json:"is_active"`
+	IsSystem  bool      `json:"is_system"`
 }
 
 // Public returns a value copy safe for HTTP and realtime clients.

@@ -60,7 +60,7 @@ export const updateStory = tool({
       .nullable()
       .optional()
       .describe(
-        "Updated minimum schedulable focus block in minutes. Set null to use the automatic default.",
+        "Updated minimum schedulable focus block in minutes. Set null to keep the work in one block when possible.",
       ),
     autoSchedulingEnabled: z
       .boolean()

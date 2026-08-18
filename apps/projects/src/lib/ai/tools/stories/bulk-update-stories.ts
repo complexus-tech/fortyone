@@ -87,7 +87,7 @@ export const bulkUpdateStories = tool({
           .nullable()
           .optional()
           .describe(
-            "Updated minimum focus block in minutes. Set null to use the automatic default.",
+            "Updated minimum focus block in minutes. Set null to keep the work in one block when possible.",
           ),
         autoSchedulingEnabled: z
           .boolean()

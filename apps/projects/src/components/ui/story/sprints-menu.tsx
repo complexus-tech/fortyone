@@ -59,7 +59,7 @@ const Items = ({
   teamId,
 }: {
   sprintId?: string;
-  setSprintId: (sprintId: string | null) => void;
+  setSprintId: (sprintId: string | null, sprintEndDate?: string) => void;
   align?: "center" | "start" | "end" | undefined;
   teamId?: string;
   objectiveId?: string;
@@ -159,7 +159,7 @@ const Items = ({
               key={id}
               onSelect={() => {
                 if (id !== sprintId) {
-                  setSprintId(id);
+                  setSprintId(id, endDate);
                 }
                 setOpen(false);
               }}

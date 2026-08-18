@@ -339,6 +339,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		TasksService: cfg.TasksService,
 		Cache:        cfg.Cache,
 		Service:      svcs.notifications,
+		Users:        svcs.users,
 		Attachments:  svcs.attachments,
 	}, app)
 

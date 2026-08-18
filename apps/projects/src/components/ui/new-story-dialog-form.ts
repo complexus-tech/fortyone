@@ -2,6 +2,40 @@ import type { DetailedStory, NewStory } from "@/modules/story/types";
 import { isMayaAssigneeSelection } from "@/lib/auto-scheduling";
 import { normalizeTimeNeeded } from "@/lib/time-needed";
 
+export type DeadlineSource = "unset" | "sprint" | "manual" | "cleared";
+
+export const getInitialDeadlineSource = ({
+  sprintId,
+  sprintEndDate,
+}: {
+  sprintId?: string | null;
+  sprintEndDate?: string | null;
+}): DeadlineSource => (sprintId && sprintEndDate ? "sprint" : "unset");
+
+export const getDeadlineForSprintSelection = ({
+  currentEndDate,
+  currentSource,
+  sprintEndDate,
+}: {
+  currentEndDate: string | null | undefined;
+  currentSource: DeadlineSource;
+  sprintEndDate?: string | null;
+}): { endDate: string | null; source: DeadlineSource } => {
+  const shouldInheritSprintDeadline =
+    currentSource === "unset" || currentSource === "sprint";
+
+  if (!shouldInheritSprintDeadline) {
+    return {
+      endDate: currentEndDate ?? null,
+      source: currentSource,
+    };
+  }
+
+  return sprintEndDate
+    ? { endDate: sprintEndDate, source: "sprint" }
+    : { endDate: null, source: "unset" };
+};
+
 export const buildNewStoryDialogPayload = ({
   currentTeamId,
   description,

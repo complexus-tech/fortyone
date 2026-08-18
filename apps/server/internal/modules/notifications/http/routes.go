@@ -3,6 +3,7 @@ package notificationshttp
 import (
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -20,6 +21,7 @@ type Config struct {
 	TasksService *tasks.Service
 	Cache        *cache.Service
 	Service      *notifications.Service
+	Users        *users.Service
 	Attachments  *attachments.Service
 }
 
@@ -28,7 +30,7 @@ func Routes(cfg Config, app *web.App) {
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
 
-	h := New(notificationsService, cfg.Attachments, cfg.Log)
+	h := New(notificationsService, cfg.Users, cfg.Attachments, cfg.Log)
 
 	app.Get("/portals/{portalSlug}/notifications", h.ListPortalFeedback, auth)
 	app.Get("/portals/{portalSlug}/notifications/unread-count", h.GetPortalFeedbackUnreadCount, auth)

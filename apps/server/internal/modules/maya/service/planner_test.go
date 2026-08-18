@@ -172,6 +172,7 @@ func TestPlannerSpreadsLargerWorkAcrossAvailableWindows(t *testing.T) {
 	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
 	endAt := time.Date(2026, 6, 18, 17, 0, 0, 0, time.UTC)
 	expectedPlannedEnd := time.Date(2026, 6, 16, 13, 0, 0, 0, time.UTC)
+	minimumFocus := 60
 
 	planner := NewPlanner()
 	result, err := planner.Plan(PlanInput{
@@ -180,7 +181,7 @@ func TestPlannerSpreadsLargerWorkAcrossAvailableWindows(t *testing.T) {
 			ID:                       storyID,
 			Workspace:                workspaceID,
 			Title:                    "Implement WhatsApp campaigns end-to-end",
-			EstimatedDurationMinutes: intPtr(8 * 60),
+			EstimatedDurationMinutes: intPtr(8 * 60), MinimumFocusBlockMinutes: &minimumFocus,
 		},
 		WindowStart: startAt,
 		WindowEnd:   endAt,
@@ -212,6 +213,83 @@ func TestPlannerSpreadsLargerWorkAcrossAvailableWindows(t *testing.T) {
 	}
 	if !scheduleBlock.PlannedEndAt.Equal(expectedPlannedEnd) {
 		t.Fatalf("expected larger work to plan through %s, got %s", expectedPlannedEnd, scheduleBlock.PlannedEndAt)
+	}
+}
+
+func TestPlannerKeepsNoChunkWorkContiguousWhenAvailable(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
+	endAt := time.Date(2026, 6, 15, 17, 0, 0, 0, time.UTC)
+	duration := 4 * 60
+
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID: storyID, Workspace: workspaceID, Title: "Keep focused work together",
+			Assignee: &userID, EstimatedDurationMinutes: &duration,
+		},
+		WindowStart: startAt, WindowEnd: endAt,
+		Candidates: []CandidateSchedule{{
+			Member: reports.CoreMemberWorkload{UserID: userID},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if len(result.Actions) != 1 {
+		t.Fatalf("expected one contiguous schedule action, got %d", len(result.Actions))
+	}
+
+	segment := result.Actions[0].Payload.ScheduleBlock
+	if segment == nil {
+		t.Fatal("expected schedule block payload")
+	}
+	if !segment.StartAt.Equal(startAt) || !segment.EndAt.Equal(startAt.Add(4*time.Hour)) {
+		t.Fatalf("expected one four-hour block, got %s-%s", segment.StartAt, segment.EndAt)
+	}
+}
+
+func TestPlannerSplitsNoChunkWorkOnlyWhenConflictsRequireIt(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
+	endAt := time.Date(2026, 6, 15, 17, 0, 0, 0, time.UTC)
+	duration := 6 * 60
+
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID: storyID, Workspace: workspaceID, Title: "Split around a commitment",
+			Assignee: &userID, EstimatedDurationMinutes: &duration,
+		},
+		WindowStart: startAt, WindowEnd: endAt,
+		Candidates: []CandidateSchedule{{
+			Member: reports.CoreMemberWorkload{UserID: userID},
+			BusyWindows: []calendar.CoreBusyWindow{{
+				StartAt: startAt.Add(5 * time.Hour), EndAt: startAt.Add(7 * time.Hour),
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if len(result.Actions) != 2 {
+		t.Fatalf("expected two schedule segments, got %d", len(result.Actions))
+	}
+
+	first := result.Actions[0].Payload.ScheduleBlock
+	second := result.Actions[1].Payload.ScheduleBlock
+	if first == nil || second == nil {
+		t.Fatal("expected schedule block payloads")
+	}
+	if !first.StartAt.Equal(startAt) || !first.EndAt.Equal(startAt.Add(5*time.Hour)) {
+		t.Fatalf("expected first slice to use the five-hour window, got %s-%s", first.StartAt, first.EndAt)
+	}
+	if !second.StartAt.Equal(startAt.Add(7*time.Hour)) || !second.EndAt.Equal(endAt) {
+		t.Fatalf("expected remaining hour after the conflict, got %s-%s", second.StartAt, second.EndAt)
 	}
 }
 
@@ -587,6 +665,102 @@ func TestPlannerSkipsScheduleActionWhenStoryAlreadyHasBlock(t *testing.T) {
 	}
 	if len(result.Actions) != 0 {
 		t.Fatalf("expected no actions for already assigned and scheduled story, got %d", len(result.Actions))
+	}
+}
+
+func TestPlannerPreemptsMovableLowerPriorityBlock(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	lowerStoryID := uuid.New()
+	userID := uuid.New()
+	startAt := time.Now().UTC().Add(2 * time.Hour).Truncate(5 * time.Minute)
+	deadline := time.Now().UTC().Add(24 * time.Hour)
+	lowerBlockID := uuid.New()
+
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID: storyID, Workspace: workspaceID, Assignee: &userID,
+			Priority: "High", EndDate: &deadline,
+		},
+		DurationMinutes: 60,
+		WindowStart:     startAt,
+		WindowEnd:       startAt.Add(8 * time.Hour),
+		Candidates: []CandidateSchedule{{
+			Member: reports.CoreMemberWorkload{UserID: userID},
+			Blocks: []calendar.CoreScheduleBlock{{
+				ID: lowerBlockID, WorkspaceID: workspaceID, UserID: userID, StoryID: &lowerStoryID,
+				Source: calendar.ScheduleBlockSourceMaya, StartAt: startAt, EndAt: startAt.Add(time.Hour),
+				StoryPriority: "Medium", StoryEndDate: &deadline,
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if len(result.Actions) != 1 || result.Actions[0].Payload.ScheduleBlock == nil {
+		t.Fatalf("expected one schedule action, got %#v", result.Actions)
+	}
+	if got := result.Actions[0].Payload.ScheduleBlock.StartAt; !got.Equal(startAt) {
+		t.Fatalf("expected high-priority work to claim the lower-priority slot, got %s", got)
+	}
+	if len(result.PreemptedBlockIDs) != 1 || result.PreemptedBlockIDs[0] != lowerBlockID {
+		t.Fatalf("expected lower-priority block to be marked preemptible, got %v", result.PreemptedBlockIDs)
+	}
+	if len(result.Actions[0].Payload.ScheduleBlock.PreemptBlockIDs) != 1 || result.Actions[0].Payload.ScheduleBlock.PreemptBlockIDs[0] != lowerBlockID {
+		t.Fatalf("expected preemption metadata on schedule action, got %v", result.Actions[0].Payload.ScheduleBlock.PreemptBlockIDs)
+	}
+}
+
+func TestPlannerDoesNotPreemptProtectedOrMoreUrgentWork(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	now := time.Now().UTC()
+	startAt := now.Add(2 * time.Hour).Truncate(5 * time.Minute)
+	deadline := now.Add(72 * time.Hour)
+	earlierDeadline := now.Add(24 * time.Hour)
+
+	for _, test := range []struct {
+		name          string
+		priority      string
+		storyEnd      *time.Time
+		blockEnd      *time.Time
+		locked        bool
+		blockStart    time.Time
+		expectedStart time.Time
+	}{
+		{name: "locked", priority: "Medium", storyEnd: &deadline, blockEnd: &deadline, locked: true, blockStart: startAt, expectedStart: startAt.Add(time.Hour)},
+		{name: "in progress", priority: "Medium", storyEnd: &deadline, blockEnd: &deadline, blockStart: now.Add(-30 * time.Minute), expectedStart: startAt},
+		{name: "more urgent deadline", priority: "Medium", storyEnd: &deadline, blockEnd: &earlierDeadline, blockStart: startAt, expectedStart: startAt.Add(time.Hour)},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			lowerStoryID := uuid.New()
+			result, err := NewPlanner().Plan(PlanInput{
+				WorkspaceID:     workspaceID,
+				Story:           stories.CoreSingleStory{ID: storyID, Workspace: workspaceID, Assignee: &userID, Priority: "High", EndDate: test.storyEnd},
+				DurationMinutes: 60,
+				WindowStart:     startAt,
+				WindowEnd:       startAt.Add(8 * time.Hour),
+				Candidates: []CandidateSchedule{{
+					Member: reports.CoreMemberWorkload{UserID: userID},
+					Blocks: []calendar.CoreScheduleBlock{{
+						ID: uuid.New(), WorkspaceID: workspaceID, UserID: userID, StoryID: &lowerStoryID,
+						Source: calendar.ScheduleBlockSourceMaya, StartAt: test.blockStart, EndAt: test.blockStart.Add(time.Hour),
+						StoryPriority: "Medium", StoryEndDate: test.blockEnd, IsLocked: test.locked,
+					}},
+				}},
+			})
+			if err != nil {
+				t.Fatalf("Plan returned error: %v", err)
+			}
+			if len(result.Actions) != 1 || !result.Actions[0].Payload.ScheduleBlock.StartAt.Equal(test.expectedStart) {
+				t.Fatalf("expected protected work to remain occupied, got %#v", result.Actions)
+			}
+			if len(result.PreemptedBlockIDs) != 0 {
+				t.Fatalf("expected no preemption, got %v", result.PreemptedBlockIDs)
+			}
+		})
 	}
 }
 

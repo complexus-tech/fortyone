@@ -107,6 +107,8 @@ type dbScheduleBlock struct {
 	StoryID              *uuid.UUID `db:"story_id"`
 	StoryTitle           *string    `db:"story_title"`
 	StoryCode            *string    `db:"story_code"`
+	StoryPriority        string     `db:"story_priority"`
+	StoryEndDate         *time.Time `db:"story_end_date"`
 	TeamID               *uuid.UUID `db:"team_id"`
 	TeamName             *string    `db:"team_name"`
 	TeamCode             *string    `db:"team_code"`
@@ -284,6 +286,8 @@ func toCoreScheduleBlock(row dbScheduleBlock) calendar.CoreScheduleBlock {
 		StoryID:              row.StoryID,
 		StoryTitle:           row.StoryTitle,
 		StoryCode:            row.StoryCode,
+		StoryPriority:        row.StoryPriority,
+		StoryEndDate:         row.StoryEndDate,
 		TeamID:               row.TeamID,
 		TeamName:             row.TeamName,
 		TeamCode:             row.TeamCode,

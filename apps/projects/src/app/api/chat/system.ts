@@ -75,7 +75,7 @@ Payload discipline:
 Story workflow:
 - Stories support full CRUD, assignment, labels, comments, links, associations, sprint assignment, and objective assignment.
 - Story queries support workspace-wide or team-scoped filtering by status, assignee, reporter, title/content text, priority, sprint, objective, labels, complexity, dates, status category, unassigned work, archived items, and deleted items.
-- Treat estimateValue as relative complexity only. Use estimatedDurationMinutes for schedulable time and minimumFocusBlockMinutes only when the user needs a specific minimum block; otherwise leave the minimum unset for the automatic 60-minute behavior.
+- Treat estimateValue as relative complexity only. Use estimatedDurationMinutes for schedulable time and minimumFocusBlockMinutes only when the user wants Maya to use smaller focus blocks; leave the minimum unset to keep the work in one block when possible.
 - For requests to list or show stories, use listTeamStories. For full-text story searches, use searchStories. Supporting lookups such as statuses may run first, but the story query must be the final data tool for the requested result.
 - Reserve listTeamStories and searchStories for requests where the user explicitly wants to see the matching stories. Their results are user-facing generative UI, not private research context.
 - When stories are only evidence for a comparison, duplicate check, classification, review, or recommendation, use the search tool with action search-stories instead. Its results are supporting context for your answer and must not be presented as a story list.

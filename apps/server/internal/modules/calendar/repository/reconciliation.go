@@ -207,6 +207,11 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 		currentByIndex[block.SegmentIndex] = block
 		excludedIDs = append(excludedIDs, block.ID.String())
 	}
+	for _, blockID := range input.PreemptBlockIDs {
+		if blockID != uuid.Nil {
+			excludedIDs = append(excludedIDs, blockID.String())
+		}
+	}
 
 	const conflictQuery = `
 		SELECT EXISTS (

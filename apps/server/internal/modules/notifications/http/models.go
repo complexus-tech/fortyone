@@ -1,6 +1,7 @@
 package notificationshttp
 
 import (
+	"strings"
 	"time"
 
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
@@ -15,10 +16,20 @@ type AppNotification struct {
 	EntityType  string                            `json:"entityType"`
 	EntityID    uuid.UUID                         `json:"entityId"`
 	ActorID     uuid.UUID                         `json:"actorId"`
+	Actor       *AppNotificationActor             `json:"actor,omitempty"`
 	Title       string                            `json:"title"`
 	Message     notifications.NotificationMessage `json:"message"`
 	CreatedAt   time.Time                         `json:"createdAt"`
 	ReadAt      *time.Time                        `json:"readAt"`
+}
+
+type AppNotificationActor struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	FullName  string    `json:"fullName"`
+	AvatarURL string    `json:"avatarUrl"`
+	IsActive  bool      `json:"isActive"`
+	IsSystem  bool      `json:"isSystem"`
 }
 
 type AppPagination struct {
@@ -88,6 +99,7 @@ type AppUpdatePreference struct {
 
 func toAppNotification(n notifications.CoreNotification) AppNotification {
 	n = n.Public()
+	n.Message = normalizeSystemActorMessage(n.Message, n.Actor)
 	return AppNotification{
 		ID:          n.ID,
 		RecipientID: n.RecipientID,
@@ -96,10 +108,45 @@ func toAppNotification(n notifications.CoreNotification) AppNotification {
 		EntityType:  n.EntityType,
 		EntityID:    n.EntityID,
 		ActorID:     n.ActorID,
+		Actor:       toAppNotificationActor(n.Actor),
 		Title:       n.Title,
 		Message:     n.Message,
 		CreatedAt:   n.CreatedAt,
 		ReadAt:      n.ReadAt,
+	}
+}
+
+func normalizeSystemActorMessage(message notifications.NotificationMessage, actor *notifications.CoreNotificationActor) notifications.NotificationMessage {
+	if actor == nil || !actor.IsSystem {
+		return message
+	}
+
+	for _, prefix := range []string{actor.FullName, actor.Username, "Maya"} {
+		prefix = strings.TrimSpace(prefix)
+		if prefix == "" {
+			continue
+		}
+		if strings.HasPrefix(message.Template, prefix+" ") {
+			message.Template = strings.TrimSpace(strings.TrimPrefix(message.Template, prefix))
+			break
+		}
+	}
+
+	return message
+}
+
+func toAppNotificationActor(actor *notifications.CoreNotificationActor) *AppNotificationActor {
+	if actor == nil {
+		return nil
+	}
+
+	return &AppNotificationActor{
+		ID:        actor.ID,
+		Username:  actor.Username,
+		FullName:  actor.FullName,
+		AvatarURL: actor.AvatarURL,
+		IsActive:  actor.IsActive,
+		IsSystem:  actor.IsSystem,
 	}
 }
 

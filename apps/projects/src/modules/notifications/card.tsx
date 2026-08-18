@@ -11,9 +11,9 @@ import {
 import Link from "next/link";
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
-import { useMembers } from "@/lib/hooks/members";
 import { PriorityIcon, StoryStatusIcon } from "@/components/ui";
 import { LIST_ITEM_ATTENTION_BORDER } from "@/components/ui/list-item-attention";
+import { MayaAvatar } from "@/components/ui/maya-avatar";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import type { AppNotification } from "./types";
 import { useReadNotificationMutation } from "./hooks/read-mutation";
@@ -31,13 +31,12 @@ export const NotificationCard = ({
   entityType,
   readAt,
   createdAt,
-  actorId,
+  actor,
   index,
 }: AppNotification & { index: number }) => {
   const pathname = usePathname();
-  const { data: members = [] } = useMembers();
   const { withWorkspace } = useWorkspacePath();
-  const actor = members.find((member) => member.id === actorId);
+  const mayaActor = actor?.isSystem ? actor : null;
   const isUnread = !readAt;
   const { mutate: readNotification } = useReadNotificationMutation();
   const { mutate: unreadNotification } = useMarkUnreadMutation();
@@ -56,8 +55,29 @@ export const NotificationCard = ({
     unreadNotification(id);
   };
   const storyTerm = getTermDisplay("storyTerm");
-  const html = renderTemplate(message).html.replace("story", storyTerm);
-  const text = renderTemplate(message).text.replace("story", storyTerm);
+  const hasActorVariable = Object.hasOwn(message.variables, "actor");
+  const messageWithActor =
+    actor && !hasActorVariable
+      ? {
+          ...message,
+          template: `{actor} ${message.template}`,
+          variables: {
+            ...message.variables,
+            actor: {
+              value: actor.fullName || actor.username || "Someone",
+              type: "actor",
+            },
+          },
+        }
+      : message;
+  const html = renderTemplate(messageWithActor).html.replace(
+    "story",
+    storyTerm,
+  );
+  const text = renderTemplate(messageWithActor).text.replace(
+    "story",
+    storyTerm,
+  );
 
   return (
     <ContextMenu>
@@ -96,12 +116,21 @@ export const NotificationCard = ({
               </Flex>
               <Flex align="center" gap={3} justify="between">
                 <Flex align="center" className="flex-1" gap={2}>
-                  <Avatar
-                    className="shrink-0"
-                    name={actor?.fullName || actor?.username}
-                    size="xs"
-                    src={actor?.avatarUrl}
-                  />
+                  {mayaActor ? (
+                    <MayaAvatar
+                      className="shrink-0"
+                      name={mayaActor.fullName}
+                      size="xs"
+                      src={mayaActor.avatarUrl}
+                    />
+                  ) : (
+                    <Avatar
+                      className="shrink-0"
+                      name={actor?.fullName || actor?.username}
+                      size="xs"
+                      src={actor?.avatarUrl}
+                    />
+                  )}
 
                   <Tooltip
                     className="max-w-[200px]"

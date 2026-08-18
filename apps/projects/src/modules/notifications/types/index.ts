@@ -13,6 +13,14 @@ export type AppNotification = {
   entityType: "story" | "objective" | "key_result" | "strategy";
   entityId: string;
   actorId: string;
+  actor?: {
+    id: string;
+    username: string;
+    fullName: string;
+    avatarUrl: string;
+    isActive: boolean;
+    isSystem: boolean;
+  };
   title: string;
   message: {
     template: string;

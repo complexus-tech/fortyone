@@ -9,6 +9,7 @@ import (
 	"time"
 
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -22,7 +23,7 @@ var (
 	ErrInvalidWorkspaceID    = errors.New("workspace id is not in its proper form")
 )
 
-const portalNotificationAvatarExpiry = 24 * time.Hour
+const notificationAvatarExpiry = 24 * time.Hour
 
 type profileImageResolver interface {
 	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
@@ -30,13 +31,15 @@ type profileImageResolver interface {
 
 type Handlers struct {
 	notifications *notifications.Service
+	users         *users.Service
 	profileImages profileImageResolver
 	log           *logger.Logger
 }
 
-func New(notifications *notifications.Service, profileImages profileImageResolver, log *logger.Logger) *Handlers {
+func New(notifications *notifications.Service, users *users.Service, profileImages profileImageResolver, log *logger.Logger) *Handlers {
 	return &Handlers{
 		notifications: notifications,
+		users:         users,
 		profileImages: profileImages,
 		log:           log,
 	}
@@ -140,7 +143,7 @@ func (h *Handlers) resolvePortalNotificationAvatars(ctx context.Context, portalN
 			portalNotifications[index].ActorAvatar = nil
 			continue
 		}
-		avatarURL, err := h.profileImages.ResolveProfileImageURL(ctx, avatarKey, portalNotificationAvatarExpiry)
+		avatarURL, err := h.profileImages.ResolveProfileImageURL(ctx, avatarKey, notificationAvatarExpiry)
 		if err != nil || strings.TrimSpace(avatarURL) == "" {
 			if err != nil && h.log != nil {
 				h.log.Warn(ctx, "failed to resolve portal notification actor avatar", "error", err)
@@ -152,6 +155,69 @@ func (h *Handlers) resolvePortalNotificationAvatars(ctx context.Context, portalN
 		resolved[avatarKey] = &avatarURL
 		portalNotifications[index].ActorAvatar = &avatarURL
 	}
+}
+
+func (h *Handlers) resolveNotificationActors(ctx context.Context, items []notifications.CoreNotification) {
+	if h.users == nil || len(items) == 0 {
+		return
+	}
+
+	actorIDs := make([]uuid.UUID, 0, len(items))
+	seen := make(map[uuid.UUID]struct{}, len(items))
+	for _, notification := range items {
+		if notification.ActorID == uuid.Nil {
+			continue
+		}
+		if _, exists := seen[notification.ActorID]; exists {
+			continue
+		}
+		seen[notification.ActorID] = struct{}{}
+		actorIDs = append(actorIDs, notification.ActorID)
+	}
+
+	actors, err := h.users.GetUsersByIDs(ctx, actorIDs)
+	if err != nil {
+		if h.log != nil {
+			h.log.Warn(ctx, "failed to resolve notification actors", "error", err)
+		}
+		return
+	}
+
+	actorsByID := make(map[uuid.UUID]users.CoreUser, len(actors))
+	for _, actor := range actors {
+		actor.AvatarURL = h.resolveNotificationAvatarURL(ctx, actor.AvatarURL)
+		actorsByID[actor.ID] = actor
+	}
+
+	for index := range items {
+		actor, exists := actorsByID[items[index].ActorID]
+		if !exists {
+			continue
+		}
+		items[index].Actor = &notifications.CoreNotificationActor{
+			ID:        actor.ID,
+			Username:  actor.Username,
+			FullName:  actor.FullName,
+			AvatarURL: actor.AvatarURL,
+			IsActive:  actor.IsActive,
+			IsSystem:  actor.IsSystem,
+		}
+	}
+}
+
+func (h *Handlers) resolveNotificationAvatarURL(ctx context.Context, avatar string) string {
+	if strings.TrimSpace(avatar) == "" || h.profileImages == nil {
+		return avatar
+	}
+
+	resolved, err := h.profileImages.ResolveProfileImageURL(ctx, avatar, notificationAvatarExpiry)
+	if err != nil {
+		if h.log != nil {
+			h.log.Warn(ctx, "failed to resolve notification actor avatar", "error", err)
+		}
+		return ""
+	}
+	return resolved
 }
 
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -215,6 +281,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if hasMore {
 		notifications = notifications[:pageSize]
 	}
+	h.resolveNotificationActors(ctx, notifications)
 
 	span.AddEvent("notifications retrieved", trace.WithAttributes(
 		attribute.Int("notifications.count", len(notifications)),

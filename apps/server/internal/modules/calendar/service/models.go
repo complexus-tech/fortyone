@@ -147,6 +147,10 @@ type CoreScheduleBlock struct {
 	ExternalSyncedAt     *time.Time          `json:"-"`
 	CreatedAt            time.Time           `json:"createdAt"`
 	UpdatedAt            time.Time           `json:"updatedAt"`
+	// StoryPriority and StoryEndDate are planning metadata and intentionally
+	// remain outside the public calendar response.
+	StoryPriority string     `json:"-"`
+	StoryEndDate  *time.Time `json:"-"`
 }
 
 type CoreScheduleBlockInput struct {
@@ -176,6 +180,7 @@ type MayaScheduleReconcileInput struct {
 	StoryID                uuid.UUID
 	ExpectedStoryUpdatedAt *time.Time
 	Segments               []MayaScheduleSegmentInput
+	PreemptBlockIDs        []uuid.UUID
 	KeepOwnership          bool
 	Locked                 bool
 }

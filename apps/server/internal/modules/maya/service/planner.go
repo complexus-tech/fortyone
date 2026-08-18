@@ -21,12 +21,12 @@ var (
 )
 
 const (
-	defaultMinimumFocusBlockMinutes = 60
-	planningStartGranularityMinutes = 5
-	maxFocusBlockMinutes            = 120
-	workdayStartHour                = 9
-	workdayEndHour                  = 17
-	recentActivityDays              = 30
+	fallbackMinimumFocusBlockMinutes = 60
+	planningStartGranularityMinutes  = 5
+	maxFocusBlockMinutes             = 120
+	workdayStartHour                 = 9
+	workdayEndHour                   = 17
+	recentActivityDays               = 30
 )
 
 type Planner struct {
@@ -109,16 +109,18 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 		if candidate.Member.UserID == uuid.Nil {
 			continue
 		}
+		candidate.PreemptibleBlockIDs = preemptibleBlockIDs(normalized.Story, candidate.Blocks, time.Now().UTC())
 		candidateWindowStart, candidateWindowEnd := clampWindowToSprint(normalized, candidate.Timezone)
 		segments, ok := planWorkSegments(candidate, candidateWindowStart, candidateWindowEnd, normalized.DurationMinutes, normalized.MinimumFocusBlockMinutes, normalized.WorkingDays)
 		if !ok {
 			continue
 		}
 		candidates = append(candidates, candidateChoice{
-			candidate: candidate,
-			slot:      segments[0],
-			plan:      timeSlot{start: segments[0].start, end: segments[len(segments)-1].end},
-			segments:  segments,
+			candidate:         candidate,
+			slot:              segments[0],
+			plan:              timeSlot{start: segments[0].start, end: segments[len(segments)-1].end},
+			segments:          segments,
+			preemptedBlockIDs: preemptedBlockIDsForSegments(candidate.Blocks, candidate.PreemptibleBlockIDs, segments),
 		})
 	}
 	candidates = preferRecentlyActiveChoices(candidates)
@@ -234,15 +236,17 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 					PlannedStartAt:         selected.plan.start,
 					PlannedEndAt:           selected.plan.end,
 					ExpectedStoryUpdatedAt: normalized.Story.UpdatedAt,
+					PreemptBlockIDs:        append([]uuid.UUID(nil), selected.preemptedBlockIDs...),
 				}},
 			})
 		}
 	}
 
 	return PlanResult{
-		Summary:        planSummary(normalized.Story.Title, selected),
-		SelectedUserID: &selectedUserID,
-		Actions:        actions,
+		Summary:           planSummary(normalized.Story.Title, selected),
+		SelectedUserID:    &selectedUserID,
+		Actions:           actions,
+		PreemptedBlockIDs: append([]uuid.UUID(nil), selected.preemptedBlockIDs...),
 	}, nil
 }
 
@@ -509,10 +513,11 @@ func displayCandidateName(candidate CandidateRecommendation) string {
 }
 
 type candidateChoice struct {
-	candidate CandidateSchedule
-	slot      timeSlot
-	plan      timeSlot
-	segments  []timeSlot
+	candidate         CandidateSchedule
+	slot              timeSlot
+	plan              timeSlot
+	segments          []timeSlot
+	preemptedBlockIDs []uuid.UUID
 }
 
 type timeSlot struct {
@@ -541,9 +546,6 @@ func normalizePlanInput(input PlanInput) (PlanInput, error) {
 	}
 	if input.MinimumFocusBlockMinutes <= 0 && input.Story.MinimumFocusBlockMinutes != nil {
 		input.MinimumFocusBlockMinutes = *input.Story.MinimumFocusBlockMinutes
-	}
-	if input.MinimumFocusBlockMinutes <= 0 {
-		input.MinimumFocusBlockMinutes = defaultMinimumFocusBlockMinutes
 	}
 	if input.MinimumFocusBlockMinutes > input.DurationMinutes {
 		input.MinimumFocusBlockMinutes = input.DurationMinutes
@@ -592,11 +594,7 @@ func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, durat
 		return timeSlot{}, false
 	}
 	durationMinutes := int(duration / time.Minute)
-	minimumFocusMinutes := defaultMinimumFocusBlockMinutes
-	if durationMinutes > 0 && durationMinutes < minimumFocusMinutes {
-		minimumFocusMinutes = durationMinutes
-	}
-	segments, ok := planWorkSegments(candidate, startAt, endAt, durationMinutes, minimumFocusMinutes, workingDays)
+	segments, ok := planWorkSegments(candidate, startAt, endAt, durationMinutes, 0, workingDays)
 	if !ok {
 		return timeSlot{}, false
 	}
@@ -604,13 +602,31 @@ func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, durat
 }
 
 func planWorkSegments(candidate CandidateSchedule, startAt, endAt time.Time, durationMinutes, minimumFocusMinutes int, workingDays []int) ([]timeSlot, bool) {
+	if minimumFocusMinutes <= 0 {
+		// No chunks prefers one contiguous block. If conflicts make that
+		// impossible, fall back to larger available windows so replanning can
+		// split the remaining work around higher-priority commitments.
+		if segments, ok := planWorkSegmentsWithLimits(candidate, startAt, endAt, durationMinutes, durationMinutes, durationMinutes, workingDays); ok {
+			return segments, true
+		}
+		minimumFocusMinutes = fallbackMinimumFocusBlockMinutes
+		if minimumFocusMinutes > durationMinutes {
+			minimumFocusMinutes = durationMinutes
+		}
+		return planWorkSegmentsWithLimits(candidate, startAt, endAt, durationMinutes, minimumFocusMinutes, durationMinutes, workingDays)
+	}
+
+	return planWorkSegmentsWithLimits(candidate, startAt, endAt, durationMinutes, minimumFocusMinutes, maxFocusBlockMinutes, workingDays)
+}
+
+func planWorkSegmentsWithLimits(candidate CandidateSchedule, startAt, endAt time.Time, durationMinutes, minimumFocusMinutes, maximumFocusMinutes int, workingDays []int) ([]timeSlot, bool) {
 	occupied := occupiedSlots(candidate)
 	location := calendarLocation(candidate.Timezone)
 	cursor := alignToPlanningGranularity(startAt.In(location))
 	endAt = endAt.In(location)
 	remaining := time.Duration(durationMinutes) * time.Minute
 	minimumFocus := time.Duration(minimumFocusMinutes) * time.Minute
-	maximumFocus := time.Duration(maxFocusBlockMinutes) * time.Minute
+	maximumFocus := time.Duration(maximumFocusMinutes) * time.Minute
 	if maximumFocus < minimumFocus {
 		maximumFocus = minimumFocus
 	}
@@ -718,16 +734,101 @@ func minTime(left, right time.Time) time.Time {
 func occupiedSlots(candidate CandidateSchedule) []timeSlot {
 	location := calendarLocation(candidate.Timezone)
 	slots := make([]timeSlot, 0, len(candidate.BusyWindows)+len(candidate.Blocks))
+	preemptible := make(map[uuid.UUID]struct{}, len(candidate.PreemptibleBlockIDs))
+	for _, blockID := range candidate.PreemptibleBlockIDs {
+		preemptible[blockID] = struct{}{}
+	}
 	for _, window := range candidate.BusyWindows {
 		slots = append(slots, timeSlot{start: window.StartAt.In(location), end: window.EndAt.In(location)})
 	}
 	for _, block := range candidate.Blocks {
+		if _, ok := preemptible[block.ID]; ok {
+			continue
+		}
 		slots = append(slots, timeSlot{start: block.StartAt.In(location), end: block.EndAt.In(location)})
 	}
 	sort.SliceStable(slots, func(i, j int) bool {
 		return slots[i].start.Before(slots[j].start)
 	})
 	return slots
+}
+
+const (
+	priorityUrgent = iota
+	priorityHigh
+	priorityMedium
+	priorityLow
+	priorityNone
+)
+
+func storyPriorityRank(priority string) int {
+	switch strings.TrimSpace(priority) {
+	case "Urgent":
+		return priorityUrgent
+	case "High":
+		return priorityHigh
+	case "Medium":
+		return priorityMedium
+	case "Low":
+		return priorityLow
+	default:
+		return priorityNone
+	}
+}
+
+func preemptibleBlockIDs(story stories.CoreSingleStory, blocks []calendar.CoreScheduleBlock, now time.Time) []uuid.UUID {
+	ids := make([]uuid.UUID, 0)
+	for _, block := range blocks {
+		if !shouldPreemptBlock(story, block, now) {
+			continue
+		}
+		ids = append(ids, block.ID)
+	}
+	return ids
+}
+
+func preemptedBlockIDsForSegments(blocks []calendar.CoreScheduleBlock, preemptibleIDs []uuid.UUID, segments []timeSlot) []uuid.UUID {
+	preemptible := make(map[uuid.UUID]struct{}, len(preemptibleIDs))
+	for _, blockID := range preemptibleIDs {
+		preemptible[blockID] = struct{}{}
+	}
+	ids := make([]uuid.UUID, 0)
+	for _, block := range blocks {
+		if _, ok := preemptible[block.ID]; !ok {
+			continue
+		}
+		for _, segment := range segments {
+			if block.StartAt.Before(segment.end) && block.EndAt.After(segment.start) {
+				ids = append(ids, block.ID)
+				break
+			}
+		}
+	}
+	return ids
+}
+
+func shouldPreemptBlock(story stories.CoreSingleStory, block calendar.CoreScheduleBlock, now time.Time) bool {
+	if block.ID == uuid.Nil || block.Source != calendar.ScheduleBlockSourceMaya || block.StoryID == nil || *block.StoryID == story.ID {
+		return false
+	}
+	if block.WorkspaceID != story.Workspace || block.IsLocked || !block.StartAt.After(now) {
+		return false
+	}
+	if storyPriorityRank(story.Priority) >= storyPriorityRank(block.StoryPriority) {
+		return false
+	}
+	if story.EndDate == nil {
+		return block.StoryEndDate == nil
+	}
+	if block.StoryEndDate == nil {
+		return true
+	}
+	return !calendarDateOnly(story.EndDate.UTC()).After(calendarDateOnly(block.StoryEndDate.UTC()))
+}
+
+func calendarDateOnly(value time.Time) time.Time {
+	value = value.UTC()
+	return time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 func alignToPlanningGranularity(value time.Time) time.Time {

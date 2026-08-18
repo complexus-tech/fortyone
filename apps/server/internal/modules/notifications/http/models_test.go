@@ -60,6 +60,35 @@ func TestToAppNotificationRedactsEmailDeliveryContext(t *testing.T) {
 	require.NotNil(t, source.Message.Strategy)
 }
 
+func TestToAppNotificationIncludesActorAndRemovesSystemActorMessagePrefix(t *testing.T) {
+	actorID := uuid.New()
+	avatarURL := "https://cdn.example.com/maya.png"
+
+	appNotification := toAppNotification(notifications.CoreNotification{
+		ActorID: actorID,
+		Actor: &notifications.CoreNotificationActor{
+			ID:        actorID,
+			Username:  "maya",
+			FullName:  "Maya",
+			AvatarURL: avatarURL,
+			IsActive:  true,
+			IsSystem:  true,
+		},
+		Message: notifications.NotificationMessage{
+			Template: "Maya scheduled this task to {scheduled_for}",
+			Variables: map[string]notifications.Variable{
+				"scheduled_for": {Value: "Wednesday at 11:00", Type: "date"},
+			},
+		},
+	})
+
+	require.NotNil(t, appNotification.Actor)
+	require.Equal(t, actorID, appNotification.Actor.ID)
+	require.Equal(t, avatarURL, appNotification.Actor.AvatarURL)
+	require.True(t, appNotification.Actor.IsSystem)
+	require.Equal(t, "scheduled this task to {scheduled_for}", appNotification.Message.Template)
+}
+
 func TestToAppPortalNotificationRedactsDeliveryContext(t *testing.T) {
 	source := notifications.CoreNotification{
 		ID:         uuid.New(),

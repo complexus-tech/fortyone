@@ -269,7 +269,7 @@ export const updateIntegrationRequestTool = tool({
       .nullable()
       .optional()
       .describe(
-        "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes; set null to use the automatic default.",
+        "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes; set null to keep the work in one block when possible.",
       ),
     objectiveId: z.string().optional(),
     keyResultId: z.string().optional(),

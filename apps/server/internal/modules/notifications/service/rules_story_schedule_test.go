@@ -117,7 +117,7 @@ func TestScheduleTransitionNotificationAndActivityPreserveReason(t *testing.T) {
 	notifications := rules.handleScheduleTransition(context.Background(), payload, actorID, nil)
 	require.Len(t, notifications, 1)
 	require.Equal(t, assigneeID, notifications[0].RecipientID, "calendar movement must notify only the affected calendar owner")
-	require.Equal(t, "Maya moved this task to {scheduled_for}: {reason}", notifications[0].Message.Template)
+	require.Equal(t, "moved this task to {scheduled_for}: {reason}", notifications[0].Message.Template)
 	require.Equal(t, "18 Aug 2026 at 09:30 CAT", notifications[0].Message.Variables["scheduled_for"].Value)
 	require.Equal(t, payload.Reason, notifications[0].Message.Variables["reason"].Value)
 

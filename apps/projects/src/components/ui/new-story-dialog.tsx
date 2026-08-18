@@ -110,7 +110,10 @@ import { LabelsMenu } from "./story/labels-menu";
 import { FeatureGuard } from "./feature-guard";
 import {
   buildNewStoryDialogPayload,
+  getDeadlineForSprintSelection,
+  getInitialDeadlineSource,
   runStoryCreatedFollowUp,
+  type DeadlineSource,
 } from "./new-story-dialog-form";
 
 type StoryFormAction =
@@ -198,6 +201,12 @@ export const NewStoryDialog = ({
     teams.find((team) => team.id === currentTeamId) || firstTeam;
   const { data: objectives = [] } = useTeamObjectives(currentTeamId ?? "");
   const { data: sprints = [] } = useTeamSprints(currentTeamId ?? "");
+  const initialSprintEndDate =
+    sprints.find((candidate) => candidate.id === sprintId)?.endDate ?? null;
+  const initialDeadlineSource = getInitialDeadlineSource({
+    sprintId,
+    sprintEndDate: initialSprintEndDate,
+  });
   const { data: teamSettings } = useTeamSettings(currentTeamId);
   const { data: automationPreferences } = useAutomationPreferences();
   const { tier, getLimit, hasFeature } = useSubscriptionFeatures();
@@ -229,7 +238,7 @@ export const NewStoryDialog = ({
       descriptionHTML: "",
       teamId: currentTeamId,
       statusId: defaultStatus?.id,
-      endDate: null,
+      endDate: initialSprintEndDate,
       startDate: null,
       assigneeId: assigneeId !== undefined ? assigneeId : autoAssignedUserId,
       priority,
@@ -252,10 +261,12 @@ export const NewStoryDialog = ({
       priority,
       objectiveId,
       sprintId,
+      initialSprintEndDate,
     ],
   );
 
   const [storyForm, dispatch] = useReducer(storyFormReducer, initialForm);
+  const deadlineSourceRef = useRef<DeadlineSource>(initialDeadlineSource);
   const [loading, setLoading] = useState(false);
   const [createMore, setCreateMore] = useState(false);
   const [storyTitle, setStoryTitle] = useState("");
@@ -395,6 +406,7 @@ export const NewStoryDialog = ({
       clearRichTextContent(editor);
       resetForNextStory();
       dispatch({ type: "RESET_FORM", payload: initialForm });
+      deadlineSourceRef.current = initialDeadlineSource;
       if (tier === "free") {
         void queryClient.invalidateQueries({
           queryKey: storyKeys.total(workspaceSlug),
@@ -463,7 +475,8 @@ export const NewStoryDialog = ({
   // Initialize form when props change
   useEffect(() => {
     dispatch({ type: "INITIALIZE", payload: initialForm });
-  }, [initialForm]);
+    deadlineSourceRef.current = initialDeadlineSource;
+  }, [initialDeadlineSource, initialForm]);
 
   useEffect(() => {
     if (isMayaAssigned && !storyForm.autoSchedulingEnabled) {
@@ -784,6 +797,7 @@ export const NewStoryDialog = ({
                               field: "endDate",
                               value: null,
                             });
+                            deadlineSourceRef.current = "cleared";
                           }}
                           role="button"
                         />
@@ -809,6 +823,7 @@ export const NewStoryDialog = ({
                       field: "endDate",
                       value: formatISO(date, { representation: "date" }),
                     });
+                    deadlineSourceRef.current = "manual";
                   }}
                 />
               </DatePicker>
@@ -1136,12 +1151,23 @@ export const NewStoryDialog = ({
                       </Button>
                     </SprintsMenu.Trigger>
                     <SprintsMenu.Items
-                      setSprintId={(sprintId) => {
+                      setSprintId={(sprintId, sprintEndDate) => {
+                        const nextDeadline = getDeadlineForSprintSelection({
+                          currentEndDate: storyForm.endDate,
+                          currentSource: deadlineSourceRef.current,
+                          sprintEndDate,
+                        });
                         dispatch({
                           type: "SET_FIELD",
                           field: "sprintId",
                           value: sprintId,
                         });
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "endDate",
+                          value: nextDeadline.endDate,
+                        });
+                        deadlineSourceRef.current = nextDeadline.source;
                       }}
                       sprintId={storyForm.sprintId ?? undefined}
                       teamId={currentTeamId}

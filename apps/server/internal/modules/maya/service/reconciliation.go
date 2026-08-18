@@ -35,6 +35,21 @@ func (s *Service) ReconcileSchedule(ctx context.Context, input ReconcileSchedule
 		return err
 	}
 	refs := []ScheduleStoryRef{}
+	if input.UserID == nil && input.StoryID != nil && *input.StoryID != uuid.Nil {
+		if input.WorkspaceID == nil || *input.WorkspaceID == uuid.Nil {
+			return fmt.Errorf("%w: story reconciliation requires a workspace", ErrInvalidPlanInput)
+		}
+		story, storyErr := s.stories.Get(ctx, *input.StoryID, *input.WorkspaceID)
+		if storyErr != nil && !errors.Is(storyErr, stories.ErrNotFound) {
+			return storyErr
+		}
+		if storyErr == nil && story.AutoSchedulingEnabled && story.Assignee != nil && *story.Assignee != uuid.Nil && *story.Assignee != s.mayaActorID {
+			// A story update can change the ordering of the owner's entire
+			// future workload. Reconcile the owner as a batch so a newly higher
+			// priority story can displace movable lower-priority blocks.
+			input.UserID = story.Assignee
+		}
+	}
 	if input.UserID != nil && *input.UserID != uuid.Nil {
 		userRefs, err := scheduleRepo.ListScheduleStoryRefsForUser(ctx, *input.UserID)
 		if err != nil {
@@ -324,6 +339,7 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 	summary := "Maya removed scheduled work because the story is no longer eligible for automatic scheduling."
 	desiredSegments := []calendar.MayaScheduleSegmentInput{}
 	previousBlocks := make([]calendar.CoreScheduleBlock, 0)
+	preemptedBlockIDs := []uuid.UUID(nil)
 	blocksByOwner := make(map[uuid.UUID][]calendar.CoreScheduleBlock, len(owners)+1)
 	for _, ownerID := range owners {
 		blocks, listErr := scheduleCalendar.ListMayaScheduleBlocksForStory(ctx, ref.WorkspaceID, ownerID, ref.StoryID)
@@ -408,6 +424,7 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 		}
 		planTimezone = planResult.Timezone
 		summary = planResult.Summary
+		preemptedBlockIDs = append([]uuid.UUID(nil), planResult.PreemptedBlockIDs...)
 		actions = append(actions, planResult.Actions...)
 		for _, action := range planResult.Actions {
 			if action.Type != ActionTypeScheduleWorkBlock || action.Payload.ScheduleBlock == nil || action.Payload.ScheduleBlock.Operation == ScheduleBlockOperationRetain {
@@ -489,7 +506,7 @@ func (s *Service) reconcileStorySchedule(ctx context.Context, ref ScheduleStoryR
 		if _, err := scheduleCalendar.ReconcileMayaScheduleBlocks(ctx, calendar.MayaScheduleReconcileInput{
 			WorkspaceID: ref.WorkspaceID, UserID: desiredOwner, StoryID: ref.StoryID,
 			ExpectedStoryUpdatedAt: &story.UpdatedAt, Segments: desiredSegments, KeepOwnership: true,
-			Locked: story.AutoSchedulingLocked,
+			PreemptBlockIDs: preemptedBlockIDs, Locked: story.AutoSchedulingLocked,
 		}); err != nil {
 			s.markScheduleActionsFailed(ctx, persistedActions, err)
 			return affectedUsers, s.failScheduleRun(ctx, run, err)
@@ -559,7 +576,7 @@ func lockedScheduleRisk(story stories.CoreSingleStory, blocks []calendar.CoreSch
 
 	expectedMinutes := *story.EstimatedDurationMinutes
 	reservedMinutes := 0
-	minimumFocusMinutes := defaultMinimumFocusBlockMinutes
+	minimumFocusMinutes := 0
 	if story.MinimumFocusBlockMinutes != nil && *story.MinimumFocusBlockMinutes > 0 {
 		minimumFocusMinutes = *story.MinimumFocusBlockMinutes
 	}
@@ -568,7 +585,7 @@ func lockedScheduleRisk(story stories.CoreSingleStory, blocks []calendar.CoreSch
 	}
 	for _, block := range blocks {
 		blockMinutes := int(block.EndAt.Sub(block.StartAt) / time.Minute)
-		if blockMinutes < minimumFocusMinutes {
+		if minimumFocusMinutes > 0 && blockMinutes < minimumFocusMinutes {
 			return fmt.Sprintf(
 				"A locked work block is shorter than the %d-minute minimum focus block. Unlock it so Maya can rebuild the schedule.",
 				minimumFocusMinutes,
@@ -692,27 +709,105 @@ func (s *Service) planAssignedStory(ctx context.Context, story stories.CoreSingl
 		return PlanResult{}, err
 	}
 	blocks := make([]calendar.CoreScheduleBlock, 0, len(schedule.Blocks))
+	var activeBlock *calendar.CoreScheduleBlock
+	elapsedMinutes := 0
+	hasUnfinishedScheduledTime := false
+	now := time.Now().UTC()
 	for _, block := range schedule.Blocks {
 		if block.WorkspaceID == story.Workspace && block.StoryID != nil && *block.StoryID == story.ID && block.Source == calendar.ScheduleBlockSourceMaya {
+			elapsedMinutes += elapsedScheduleMinutes(block, now)
+			hasUnfinishedScheduledTime = hasUnfinishedScheduledTime || block.EndAt.After(now)
+			if !block.IsLocked && block.StartAt.Before(now) && block.EndAt.After(now) {
+				current := block
+				activeBlock = &current
+			}
 			continue
 		}
 		blocks = append(blocks, block)
+	}
+	if activeBlock != nil {
+		// Keep the in-progress block as an anonymous occupied interval. The
+		// planner must not move it, while the reconciliation layer will restore
+		// its story metadata and segment index in the desired schedule below.
+		current := *activeBlock
+		current.StoryID = nil
+		current.StoryTitle = nil
+		current.StoryCode = nil
+		blocks = append(blocks, current)
 	}
 	workingDays, err := s.getWorkingDays(ctx, story.Team, story.Workspace)
 	if err != nil {
 		return PlanResult{}, err
 	}
+	if !hasUnfinishedScheduledTime {
+		// A fully elapsed unlocked schedule is treated as unfinished work by
+		// the existing recovery contract; reserve the full estimate again.
+		elapsedMinutes = 0
+	}
+	durationMinutes := effectiveRemainingDurationMinutes(story, elapsedMinutes)
 	result, err := s.planner.Plan(PlanInput{
 		Context: ctx, WorkspaceID: story.Workspace, Story: story,
-		WindowStart: windowStart, WindowEnd: windowEnd, WorkingDays: workingDays,
+		DurationMinutes: durationMinutes,
+		WindowStart:     windowStart, WindowEnd: windowEnd, WorkingDays: workingDays,
 		MinimumFocusBlockMinutes: valueOrZero(story.MinimumFocusBlockMinutes),
 		Candidates: []CandidateSchedule{{
 			Member: reports.CoreMemberWorkload{UserID: userID}, Timezone: schedule.Timezone,
 			BusyWindows: schedule.BusyWindows, Blocks: blocks,
 		}},
 	})
+	if activeBlock != nil {
+		result = retainActiveScheduleBlock(result, story, userID, *activeBlock)
+	}
 	result.Timezone = schedule.Timezone
 	return result, err
+}
+
+func elapsedScheduleMinutes(block calendar.CoreScheduleBlock, now time.Time) int {
+	if !block.StartAt.Before(now) {
+		return 0
+	}
+	endAt := block.EndAt
+	if endAt.After(now) {
+		endAt = now
+	}
+	return max(0, int(endAt.Sub(block.StartAt)/time.Minute))
+}
+
+func effectiveRemainingDurationMinutes(story stories.CoreSingleStory, elapsedMinutes int) int {
+	if story.EstimatedDurationMinutes == nil || *story.EstimatedDurationMinutes <= 0 {
+		return 0
+	}
+	remaining := *story.EstimatedDurationMinutes - elapsedMinutes
+	if remaining < 0 {
+		return 0
+	}
+	return remaining
+}
+
+func retainActiveScheduleBlock(result PlanResult, story stories.CoreSingleStory, userID uuid.UUID, block calendar.CoreScheduleBlock) PlanResult {
+	activeAction := CoreAction{
+		WorkspaceID: story.Workspace,
+		StoryID:     story.ID,
+		Type:        ActionTypeScheduleWorkBlock,
+		Status:      ActionStatusProposed,
+		Reason:      "Maya retained the work already in progress while rebalancing future focus blocks.",
+		Payload: ActionPayload{ScheduleBlock: &ScheduleBlockPayload{
+			UserID: userID, SegmentIndex: 0, Title: story.Title,
+			StartAt: block.StartAt, EndAt: block.EndAt,
+			PlannedStartAt: block.StartAt, PlannedEndAt: block.EndAt,
+			ExpectedStoryUpdatedAt: story.UpdatedAt,
+		}},
+	}
+	shifted := make([]CoreAction, 0, len(result.Actions)+1)
+	shifted = append(shifted, activeAction)
+	for _, action := range result.Actions {
+		if action.Payload.ScheduleBlock != nil && action.Type == ActionTypeScheduleWorkBlock && action.Payload.ScheduleBlock.Operation != ScheduleBlockOperationRetain {
+			action.Payload.ScheduleBlock.SegmentIndex++
+		}
+		shifted = append(shifted, action)
+	}
+	result.Actions = shifted
+	return result
 }
 
 func autoSchedulingOutcome(result PlanResult, segments []calendar.MayaScheduleSegmentInput) (string, string) {

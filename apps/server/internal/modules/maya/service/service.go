@@ -815,6 +815,7 @@ func (s *Service) applyScheduleActionsAtomically(ctx context.Context, actions []
 		})
 	}
 	segments := make([]calendar.MayaScheduleSegmentInput, 0, len(actions))
+	preemptBlockIDs := []uuid.UUID(nil)
 	for _, action := range actions {
 		payload := action.Payload.ScheduleBlock
 		if payload == nil || action.WorkspaceID != first.WorkspaceID || action.StoryID != first.StoryID || payload.UserID != userID {
@@ -822,6 +823,13 @@ func (s *Service) applyScheduleActionsAtomically(ctx context.Context, actions []
 		}
 		if !payload.ExpectedStoryUpdatedAt.Equal(expectedStoryUpdatedAt) {
 			return appliedScheduleState{}, fmt.Errorf("schedule actions were planned from different story versions")
+		}
+		if len(payload.PreemptBlockIDs) > 0 {
+			if len(preemptBlockIDs) == 0 {
+				preemptBlockIDs = append([]uuid.UUID(nil), payload.PreemptBlockIDs...)
+			} else if !slices.Equal(preemptBlockIDs, payload.PreemptBlockIDs) {
+				return appliedScheduleState{}, fmt.Errorf("schedule actions were planned with different preemption sets")
+			}
 		}
 		if payload.Operation == ScheduleBlockOperationRetain {
 			continue
@@ -838,7 +846,7 @@ func (s *Service) applyScheduleActionsAtomically(ctx context.Context, actions []
 	}
 	if _, err := scheduleCalendar.ReconcileMayaScheduleBlocks(ctx, calendar.MayaScheduleReconcileInput{
 		WorkspaceID: first.WorkspaceID, UserID: userID, StoryID: first.StoryID,
-		ExpectedStoryUpdatedAt: &expectedStoryUpdatedAt, Segments: segments, KeepOwnership: true,
+		ExpectedStoryUpdatedAt: &expectedStoryUpdatedAt, Segments: segments, PreemptBlockIDs: preemptBlockIDs, KeepOwnership: true,
 	}); err != nil {
 		return appliedScheduleState{}, err
 	}

@@ -86,15 +86,16 @@ type AssignStoryPayload struct {
 }
 
 type ScheduleBlockPayload struct {
-	UserID                 uuid.UUID `json:"userId"`
-	SegmentIndex           int       `json:"segmentIndex"`
-	Operation              string    `json:"operation,omitempty"`
-	Title                  string    `json:"title"`
-	StartAt                time.Time `json:"startAt"`
-	EndAt                  time.Time `json:"endAt"`
-	PlannedStartAt         time.Time `json:"plannedStartAt"`
-	PlannedEndAt           time.Time `json:"plannedEndAt"`
-	ExpectedStoryUpdatedAt time.Time `json:"expectedStoryUpdatedAt"`
+	UserID                 uuid.UUID   `json:"userId"`
+	SegmentIndex           int         `json:"segmentIndex"`
+	Operation              string      `json:"operation,omitempty"`
+	Title                  string      `json:"title"`
+	StartAt                time.Time   `json:"startAt"`
+	EndAt                  time.Time   `json:"endAt"`
+	PlannedStartAt         time.Time   `json:"plannedStartAt"`
+	PlannedEndAt           time.Time   `json:"plannedEndAt"`
+	ExpectedStoryUpdatedAt time.Time   `json:"expectedStoryUpdatedAt"`
+	PreemptBlockIDs        []uuid.UUID `json:"preemptBlockIds,omitempty"`
 }
 
 const (
@@ -122,17 +123,19 @@ type PlanInput struct {
 }
 
 type CandidateSchedule struct {
-	Member      reports.CoreMemberWorkload
-	Timezone    string
-	BusyWindows []calendar.CoreBusyWindow
-	Blocks      []calendar.CoreScheduleBlock
+	Member              reports.CoreMemberWorkload
+	Timezone            string
+	BusyWindows         []calendar.CoreBusyWindow
+	Blocks              []calendar.CoreScheduleBlock
+	PreemptibleBlockIDs []uuid.UUID
 }
 
 type PlanResult struct {
-	Summary        string
-	SelectedUserID *uuid.UUID
-	Actions        []CoreAction
-	Timezone       string
+	Summary           string
+	SelectedUserID    *uuid.UUID
+	Actions           []CoreAction
+	Timezone          string
+	PreemptedBlockIDs []uuid.UUID
 }
 
 type CandidateRecommendationInput struct {

@@ -92,7 +92,7 @@ describe("TimeNeededMenu", () => {
     });
   });
 
-  it("lets users restore the automatic 60-minute focus block behavior", () => {
+  it("lets users keep the work in one block when possible", () => {
     const setTimeNeeded = jest.fn();
     render(
       <TimeNeededMenu>
@@ -108,9 +108,9 @@ describe("TimeNeededMenu", () => {
     );
 
     expect(document.body).toHaveTextContent(
-      "Automatic uses 1h, or the full duration when shorter.",
+      "No chunks keeps this work together when possible.",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Automatic" }));
+    fireEvent.click(screen.getByRole("button", { name: "No chunks" }));
 
     expect(setTimeNeeded).toHaveBeenCalledWith({
       estimatedDurationMinutes: 120,
@@ -133,8 +133,8 @@ describe("TimeNeededMenu", () => {
       </TimeNeededMenu>,
     );
 
-    expect(document.body).toHaveTextContent("Minimum focus block");
-    fireEvent.click(screen.getByRole("button", { name: "Automatic" }));
+    expect(document.body).toHaveTextContent("Focus blocks");
+    fireEvent.click(screen.getByRole("button", { name: "No chunks" }));
 
     expect(setTimeNeeded).toHaveBeenCalledWith({
       estimatedDurationMinutes: 30,
