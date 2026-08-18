@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   addDays,
   addHours,
@@ -52,7 +51,6 @@ import type {
 import type { CalendarConnection } from "@/modules/settings/workspace/integrations/calendar/types";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
 import type { Story } from "@/modules/stories/types";
-import { getStoryPath } from "@/modules/story/utils/story-url";
 import {
   getMayaCalendarBlockLabel,
   getMayaCalendarBlockReason,
@@ -69,6 +67,7 @@ import {
   getCalendarEventTitle,
   getCalendarEventTimeLabel,
 } from "./calendar-event-details-dialog";
+import { CalendarScheduleBlockDetailsDialog } from "./calendar-schedule-block-details-dialog";
 import {
   getCalendarViewDays,
   getCalendarViewRange,
@@ -83,6 +82,7 @@ const defaultVisibleStartHour = 8;
 const defaultVisibleEndHour = 21;
 const hourHeight = 52;
 const timedBlockVerticalGap = 2;
+const twoLineTitleMinimumHeight = hourHeight * 1.5;
 const timeRailWidth = 8;
 const calendarHistoryDays = 7;
 const calendarLookaheadDays = 90;
@@ -180,12 +180,6 @@ const getStoryCode = (story: Story) =>
     ? `${story.team.code}-${story.sequenceId}`
     : `#${story.sequenceId}`;
 
-const getStoryHref = (
-  withWorkspace: (path: string) => string,
-  storyId: string,
-  storyCode?: string,
-) => withWorkspace(getStoryPath({ id: storyCode || storyId }));
-
 const getBusyWindowTitle = (window: CalendarBusyWindow) => {
   if (window.isPrivate) {
     return "Busy";
@@ -204,7 +198,6 @@ const CalendarTimedBlock = ({
   onEdit: (block: CalendarScheduleBlock) => void;
   onSelectEvent: (event: CalendarEventSummary) => void;
 }) => {
-  const { withWorkspace } = useWorkspacePath();
   const laneWidth = 100 / layout.laneCount;
   const style = {
     height: `${layout.height - timedBlockVerticalGap}px`,
@@ -213,6 +206,10 @@ const CalendarTimedBlock = ({
     width: `calc(${laneWidth}% - 0.5rem)`,
   };
   const showSecondaryLine = layout.height >= 39;
+  const canShowTwoLineTitle = layout.height >= twoLineTitleMinimumHeight;
+  const titleLineClass = canShowTwoLineTitle
+    ? "line-clamp-2 leading-[1.1rem]"
+    : "truncate leading-none";
   const blockPaddingClass =
     layout.height >= hourHeight ? "px-2.5 py-1" : "px-2.5 py-px";
 
@@ -232,7 +229,7 @@ const CalendarTimedBlock = ({
       >
         <Text
           as="span"
-          className="block truncate leading-none text-[#3c90ff]"
+          className={cn("block text-[#3c90ff]", titleLineClass)}
           fontSize="md"
           fontWeight="medium"
         >
@@ -260,7 +257,7 @@ const CalendarTimedBlock = ({
         style={style}
       >
         <Text
-          className="text-foreground truncate leading-none"
+          className={cn("text-foreground", titleLineClass)}
           fontSize="md"
           fontWeight="medium"
         >
@@ -291,10 +288,6 @@ const CalendarTimedBlock = ({
   if (block.hasConflict) {
     statusLabel = "Conflict";
   }
-  const href =
-    block.blockType === "work" && block.storyId
-      ? getStoryHref(withWorkspace, block.storyId, block.storyCode)
-      : null;
   let blockColorClass =
     "border-border-strong/60 bg-surface-muted/35 hover:bg-state-hover border-dashed";
   if (block.blockType === "work") {
@@ -309,17 +302,32 @@ const CalendarTimedBlock = ({
       blockColorClass += " hover:bg-danger/[0.12]";
     }
   }
-  let blockActionLabel = "Edit calendar block";
+  const isScheduledStory = block.blockType === "work";
+  const canOpenBlock = isScheduledStory || isEditable;
+  let blockActionLabel = isScheduledStory
+    ? "Open scheduled story details"
+    : "Edit calendar block";
   if (block.hasConflict) {
     blockActionLabel = "Resolve calendar block conflict";
   }
   if (isMayaManaged) {
-    blockActionLabel = block.isLocked
-      ? "Locked Maya-managed calendar block"
-      : "Maya-managed calendar block";
+    if (isScheduledStory) {
+      blockActionLabel = "Open Maya-managed scheduled story details";
+    } else if (block.isLocked) {
+      blockActionLabel = "Locked Maya-managed calendar block";
+    } else {
+      blockActionLabel = "Maya-managed calendar block";
+    }
     if (mayaReason) {
       blockActionLabel += `. ${mayaReason}`;
     }
+  }
+  let blockTitleColorClass = "text-foreground";
+  if (isScheduledStory) {
+    blockTitleColorClass = "text-primary";
+  }
+  if (block.hasConflict) {
+    blockTitleColorClass = "text-danger";
   }
 
   return (
@@ -335,38 +343,22 @@ const CalendarTimedBlock = ({
       <button
         aria-label={blockActionLabel}
         className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-lg focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
-        disabled={!isEditable}
+        disabled={!canOpenBlock}
         onClick={() => {
-          if (isEditable) {
+          if (canOpenBlock) {
             onEdit(block);
           }
         }}
         type="button"
       />
       <Box className="pointer-events-none relative z-10 min-w-0">
-        {href ? (
-          <Link className="pointer-events-auto block" href={href}>
-            <Text
-              className="text-foreground hover:text-primary truncate leading-none"
-              fontSize="md"
-              fontWeight="medium"
-            >
-              {block.title}
-            </Text>
-          </Link>
-        ) : (
-          <Text
-            className={cn(
-              "truncate leading-none",
-              block.hasConflict && "text-danger",
-              !block.hasConflict && "text-foreground",
-            )}
-            fontSize="md"
-            fontWeight="medium"
-          >
-            {block.title}
-          </Text>
-        )}
+        <Text
+          className={cn(titleLineClass, blockTitleColorClass)}
+          fontSize="md"
+          fontWeight="medium"
+        >
+          {block.title}
+        </Text>
         {showSecondaryLine ? (
           <Text
             className="mt-1 truncate text-[0.9375rem] leading-[0.9375rem]"
@@ -1224,7 +1216,6 @@ const CalendarMonthItem = ({
   onEdit: (block: CalendarScheduleBlock) => void;
   onSelectEvent: (event: CalendarEventSummary) => void;
 }) => {
-  const { withWorkspace } = useWorkspacePath();
   const title = getMonthItemTitle(item);
   const start = new Date(item.startAt);
   const time = toClockLabel(start, true);
@@ -1286,10 +1277,8 @@ const CalendarMonthItem = ({
   const mayaLabel = getMayaCalendarBlockLabel(block);
   const mayaReason = getMayaCalendarBlockReason(block);
   const displayTitle = mayaLabel ? `${mayaLabel} · ${title}` : title;
-  const href =
-    block.blockType === "work" && block.storyId
-      ? getStoryHref(withWorkspace, block.storyId, block.storyCode)
-      : null;
+  const isScheduledStory = block.blockType === "work";
+  const canOpenBlock = isScheduledStory || isEditable;
   let toneClass = "bg-surface-muted/35 text-text-muted";
   if (block.blockType === "work") {
     toneClass = "bg-primary/[0.07] text-primary";
@@ -1297,14 +1286,20 @@ const CalendarMonthItem = ({
   if (block.hasConflict) {
     toneClass = "bg-danger/[0.08] text-danger";
   }
-  let blockActionLabel = `Edit ${title}`;
+  let blockActionLabel = isScheduledStory
+    ? `Open ${title} details`
+    : `Edit ${title}`;
   if (block.hasConflict) {
     blockActionLabel = `Resolve conflict for ${title}`;
   }
   if (isMayaManaged) {
-    blockActionLabel = block.isLocked
-      ? `Locked Maya-managed block for ${title}`
-      : `Maya-managed block for ${title}`;
+    if (isScheduledStory) {
+      blockActionLabel = `Open Maya-managed ${title} details`;
+    } else if (block.isLocked) {
+      blockActionLabel = `Locked Maya-managed block for ${title}`;
+    } else {
+      blockActionLabel = `Maya-managed block for ${title}`;
+    }
     if (mayaReason) {
       blockActionLabel += `. ${mayaReason}`;
     }
@@ -1321,9 +1316,9 @@ const CalendarMonthItem = ({
       <button
         aria-label={blockActionLabel}
         className="focus-visible:ring-primary/40 absolute inset-0 z-0 rounded-md focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
-        disabled={!isEditable}
+        disabled={!canOpenBlock}
         onClick={() => {
-          if (isEditable) {
+          if (canOpenBlock) {
             onEdit(block);
           }
         }}
@@ -1336,18 +1331,9 @@ const CalendarMonthItem = ({
       <span className="pointer-events-none relative z-10 shrink-0 tabular-nums">
         {time}
       </span>
-      {href ? (
-        <Link
-          className="text-foreground hover:text-primary pointer-events-auto relative z-10 truncate"
-          href={href}
-        >
-          {displayTitle}
-        </Link>
-      ) : (
-        <span className="text-foreground pointer-events-none relative z-10 truncate">
-          {displayTitle}
-        </span>
-      )}
+      <span className="pointer-events-none relative z-10 truncate">
+        {displayTitle}
+      </span>
     </Box>
   );
 };
@@ -1502,6 +1488,8 @@ export const PersonalCalendar = ({
     useState<CalendarScheduleBlock | null>(null);
   const [selectedEvent, setSelectedEvent] =
     useState<CalendarEventSummary | null>(null);
+  const [selectedBlock, setSelectedBlock] =
+    useState<CalendarScheduleBlock | null>(null);
   const { withWorkspace } = useWorkspacePath();
   const viewRange = getCalendarViewRange(cursor, calendarView);
   const scheduleStartAt = viewRange.start.toISOString();
@@ -1597,13 +1585,27 @@ export const PersonalCalendar = ({
 
   const openDialog = (mode: "work" | "focus") => {
     onScheduleDialogOpenChange(false);
+    setSelectedBlock(null);
     setEditingBlock(null);
     setDialogMode(mode);
   };
   const openEditDialog = (block: CalendarScheduleBlock) => {
     onScheduleDialogOpenChange(false);
+    setSelectedBlock(null);
     setEditingBlock(block);
     setDialogMode(block.blockType);
+  };
+  const openBlock = (block: CalendarScheduleBlock) => {
+    if (block.blockType === "work") {
+      setSelectedEvent(null);
+      setSelectedBlock(block);
+      return;
+    }
+    openEditDialog(block);
+  };
+  const openEventDetails = (event: CalendarEventSummary) => {
+    setSelectedBlock(null);
+    setSelectedEvent(event);
   };
   const closeDialog = (value: boolean) => {
     if (!value) {
@@ -1711,9 +1713,9 @@ export const PersonalCalendar = ({
             cursor={cursor}
             days={days}
             isDaySelectable={isDaySelectable}
-            onEdit={openEditDialog}
+            onEdit={openBlock}
             onSelectDay={selectDay}
-            onSelectEvent={setSelectedEvent}
+            onSelectEvent={openEventDetails}
             today={today}
           />
         ) : null}
@@ -1725,9 +1727,9 @@ export const PersonalCalendar = ({
             days={days}
             hours={hours}
             isDaySelectable={isDaySelectable}
-            onEdit={openEditDialog}
+            onEdit={openBlock}
             onSelectDay={selectDay}
-            onSelectEvent={setSelectedEvent}
+            onSelectEvent={openEventDetails}
             timeZoneLabel={timeZoneLabel}
             timeZoneName={timeZoneName}
             timedCalendarItems={timedCalendarItems}
@@ -1751,6 +1753,13 @@ export const PersonalCalendar = ({
         event={selectedEvent}
         onOpenChange={(open) => {
           if (!open) setSelectedEvent(null);
+        }}
+      />
+      <CalendarScheduleBlockDetailsDialog
+        block={selectedBlock}
+        onEdit={openEditDialog}
+        onOpenChange={(open) => {
+          if (!open) setSelectedBlock(null);
         }}
       />
     </Box>
