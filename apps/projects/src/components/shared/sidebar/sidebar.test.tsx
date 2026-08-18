@@ -90,6 +90,13 @@ jest.mock("@/components/shared/keyboard-shortcuts", () => ({
 }));
 
 jest.mock("../commands", () => ({ Commands: () => null }));
+jest.mock("./sidebar-context", () => ({
+  useSidebar: () => ({
+    isCollapsed: false,
+    setIsCollapsed: jest.fn(),
+    toggleSidebar: jest.fn(),
+  }),
+}));
 jest.mock("./header", () => ({ Header: () => <div>Header</div> }));
 jest.mock("./navigation", () => ({ Navigation: () => <div>Navigation</div> }));
 jest.mock("./teams", () => ({ Teams: () => <div>Teams</div> }));

@@ -1,6 +1,5 @@
 "use client";
 import { BreadCrumbs, Flex } from "ui";
-import { ObjectiveIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -11,7 +10,6 @@ import {
   NewStoryButton,
   StoriesFilterButton,
   StoriesViewOptionsButton,
-  TeamColor,
 } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
@@ -33,7 +31,7 @@ export const Header = ({
   const { getTermDisplay } = useTerminology();
   const { data: teams = [] } = useTeams();
   const { data: objective } = useObjective(objectiveId, teamId);
-  const { name: teamName, color: teamColor } = teams.find(
+  const { name: teamName } = teams.find(
     (team) => team.id === teamId,
   )!;
   const objectiveName = objective?.name || "";
@@ -55,7 +53,6 @@ export const Header = ({
           breadCrumbs={[
             {
               name: objectiveName,
-              icon: <ObjectiveIcon />,
             },
           ]}
           className="md:hidden"
@@ -64,11 +61,9 @@ export const Header = ({
           breadCrumbs={[
             {
               name: teamName,
-              icon: <TeamColor color={teamColor} />,
             },
             {
               name: objectiveName,
-              icon: <ObjectiveIcon />,
             },
             {
               name:
@@ -78,12 +73,6 @@ export const Header = ({
                       capitalize: true,
                     })
                   : "Overview",
-              icon:
-                tab === "stories" ? (
-                  <StoryIcon className="h-[1.1rem]" />
-                ) : (
-                  <ObjectiveIcon />
-                ),
             },
           ]}
           className="hidden md:flex"

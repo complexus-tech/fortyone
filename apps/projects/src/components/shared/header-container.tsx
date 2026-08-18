@@ -1,6 +1,31 @@
+import * as React from "react";
 import { cn } from "lib";
 import type { ContainerProps } from "ui";
-import { Container } from "ui";
+import { Box, Container } from "ui";
+import { SidebarToggleButton } from "./sidebar/sidebar-toggle-button";
+
+const injectSidebarToggle = (children: React.ReactNode) => {
+  const childArray = React.Children.toArray(children);
+  const firstChild = childArray[0];
+
+  if (!React.isValidElement<{ children?: React.ReactNode }>(firstChild)) {
+    return children;
+  }
+
+  return [
+    React.cloneElement(
+      firstChild,
+      { key: firstChild.key ?? "header-content" },
+      <>
+        <Box className="hidden shrink-0 md:flex">
+          <SidebarToggleButton />
+        </Box>
+        {firstChild.props.children}
+      </>,
+    ),
+    ...childArray.slice(1),
+  ];
+};
 
 export const HeaderContainer = ({ children, className }: ContainerProps) => {
   return (
@@ -10,7 +35,7 @@ export const HeaderContainer = ({ children, className }: ContainerProps) => {
         className,
       )}
     >
-      {children}
+      {injectSidebarToggle(children)}
     </Container>
   );
 };

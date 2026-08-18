@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarIcon, PlusIcon } from "icons";
+import { PlusIcon } from "icons";
 import { Box, BreadCrumbs, Button, Flex } from "ui";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useTerminology } from "@/hooks";
@@ -16,7 +16,6 @@ export const CalendarHeader = ({ onSchedule }: { onSchedule: () => void }) => {
           breadCrumbs={[
             {
               name: "Calendar",
-              icon: <CalendarIcon />,
             },
           ]}
         />

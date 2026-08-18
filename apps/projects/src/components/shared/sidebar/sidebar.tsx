@@ -1,23 +1,14 @@
 "use client";
 import type { ReactNode } from "react";
 import { Box, Button, Flex, Menu, Text, Tooltip } from "ui";
-import {
-  CommandIcon,
-  DocsIcon,
-  EmailIcon,
-  HelpIcon,
-  PlusIcon,
-  SidebarCollapseIcon,
-  SidebarExpandIcon,
-} from "icons";
+import { CommandIcon, DocsIcon, EmailIcon, HelpIcon, PlusIcon } from "icons";
 import { cn } from "lib";
-import { useHotkeys } from "react-hotkeys-hook";
 import { useState } from "react";
 import { addHours, differenceInHours } from "date-fns";
 import { InviteMembersDialog } from "@/components/ui";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { useLocalStorage, useUserRole, useWorkspacePath } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { Commands } from "../commands";
 import { Header } from "./header";
@@ -25,6 +16,7 @@ import { Navigation } from "./navigation";
 import { Teams } from "./teams";
 import { ProfileMenu } from "./profile-menu";
 import { UpcomingMeetingCard } from "./upcoming-meeting-card";
+import { useSidebar } from "./sidebar-context";
 
 const SidebarFooterActions = ({
   leadingAction,
@@ -96,11 +88,8 @@ export const Sidebar = () => {
   const [isInviteMembersOpen, setIsInviteMembersOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const { workspace } = useCurrentWorkspace();
-  const { withWorkspace, workspaceSlug } = useWorkspacePath();
-  const [isCollapsed, setIsCollapsed] = useLocalStorage(
-    `sidebar:${workspaceSlug}:collapsed`,
-    false,
-  );
+  const { withWorkspace } = useWorkspacePath();
+  const { isCollapsed, setIsCollapsed } = useSidebar();
 
   const { tier, trialDaysRemaining } = useSubscriptionFeatures();
   const { userRole } = useUserRole();
@@ -161,11 +150,6 @@ export const Sidebar = () => {
   const openKeyboardShortcuts = () => {
     setIsKeyboardShortcutsOpen(true);
   };
-  const toggleSidebar = () => {
-    setIsCollapsed((currentValue) => !currentValue);
-  };
-
-  useHotkeys("mod+b", toggleSidebar, { preventDefault: true });
 
   return (
     <Box
@@ -243,25 +227,6 @@ export const Sidebar = () => {
           )}
         </Box>
         <ProfileMenu isCollapsed={isCollapsed} />
-        <Tooltip
-          side="right"
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <Button
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            asIcon={isCollapsed}
-            className={cn(
-              "mt-2 h-9 w-full justify-start px-2",
-              isCollapsed && "justify-center px-0",
-            )}
-            color="tertiary"
-            onClick={toggleSidebar}
-            variant="naked"
-          >
-            {isCollapsed ? <SidebarExpandIcon /> : <SidebarCollapseIcon />}
-            <span className={isCollapsed ? "hidden" : undefined}>Collapse</span>
-          </Button>
-        </Tooltip>
       </Box>
 
       <KeyboardShortcuts

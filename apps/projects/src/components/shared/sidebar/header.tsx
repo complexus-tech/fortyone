@@ -83,7 +83,7 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
             <Notification02Icon
               className={cn(
                 "transition-transform group-hover:rotate-12",
-                "h-6",
+                isCollapsed ? "h-6" : "h-[1.4rem]",
               )}
             />
           }

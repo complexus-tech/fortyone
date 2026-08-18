@@ -57,7 +57,7 @@ export const Navigation = ({
 
     return {
       name: `Active ${sprintTerm.charAt(0).toUpperCase()}${sprintTerm.slice(1)}`,
-      icon: <ActiveSprintIcon className="h-6" />,
+      icon: <ActiveSprintIcon className={isCollapsed ? "h-6" : undefined} />,
       href:
         runningSprints.length > 1
           ? withWorkspace("/sprints")
@@ -71,42 +71,42 @@ export const Navigation = ({
   const primaryLinks: MenuItem[] = [
     {
       name: "My work",
-      icon: <UserIcon className="h-6" />,
+      icon: <UserIcon className={isCollapsed ? "h-6" : undefined} />,
       href: withWorkspace("/my-work"),
     },
     {
       name: "Calendar",
-      icon: <CalendarIcon className="h-6" />,
+      icon: <CalendarIcon className={isCollapsed ? "h-6" : undefined} />,
       href: withWorkspace("/calendar"),
     },
     ...(sprintItem ? [sprintItem] : []),
     {
       name: "Summary",
-      icon: <DashboardIcon className="h-6" />,
+      icon: <DashboardIcon className={isCollapsed ? "h-6" : undefined} />,
       href: withWorkspace("/summary"),
     },
     {
       name: "AI Agent",
-      icon: <AiIcon className="h-6" />,
+      icon: <AiIcon className={isCollapsed ? "h-6" : undefined} />,
       href: withWorkspace("/maya"),
     },
   ];
   const workspaceLinks: MenuItem[] = [
     {
       name: "Roadmap",
-      icon: <RoadmapIcon className="h-6" />,
+      icon: <RoadmapIcon className={isCollapsed ? "h-6" : undefined} />,
       href: withWorkspace("/roadmap"),
       disabled: !features.objectiveEnabled,
     },
     {
       name: "Strategy Map",
-      icon: <StrategyIcon className="h-6" />,
+      icon: <StrategyIcon className={isCollapsed ? "h-6" : undefined} />,
       href: withWorkspace("/strategy"),
       disabled: !features.objectiveEnabled,
     },
     {
       name: "Documents",
-      icon: <DocsIcon className="h-6" />,
+      icon: <DocsIcon className={isCollapsed ? "h-6" : undefined} />,
       href: withWorkspace("/docs"),
     },
   ];

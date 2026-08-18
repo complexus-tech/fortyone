@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BreadCrumbs, Flex, Button, Box, Text } from "ui";
-import { ObjectiveIcon, PlusIcon, RoadmapIcon } from "icons";
+import { ObjectiveIcon, PlusIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLocalStorage, useTerminology, useUserRole } from "@/hooks";
@@ -136,9 +136,6 @@ export const RoadmapPage = () => {
             breadCrumbs={[
               {
                 name: "Roadmap",
-                icon: (
-                  <RoadmapIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
-                ),
               },
             ]}
           />

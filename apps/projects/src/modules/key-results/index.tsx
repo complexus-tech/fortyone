@@ -44,7 +44,6 @@ const KeyResultsHeader = ({
                 variant: "plural",
                 capitalize: true,
               }),
-              icon: <OKRIcon />,
             },
           ]}
         />

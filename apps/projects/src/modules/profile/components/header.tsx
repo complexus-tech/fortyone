@@ -1,6 +1,5 @@
 "use client";
-import { Avatar, BreadCrumbs, Flex } from "ui";
-import { UserIcon } from "icons";
+import { BreadCrumbs, Flex } from "ui";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useParams } from "next/navigation";
 import { HeaderContainer } from "@/components/shared";
@@ -43,17 +42,9 @@ export const Header = ({
           breadCrumbs={[
             {
               name: "Profile",
-              icon: <UserIcon className="h-4 w-auto" />,
             },
             {
               name: member?.fullName || member?.username || "",
-              icon: (
-                <Avatar
-                  name={member?.fullName || member?.username}
-                  size="xs"
-                  src={member?.avatarUrl}
-                />
-              ),
             },
           ]}
         />

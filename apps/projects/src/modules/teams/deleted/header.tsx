@@ -1,6 +1,5 @@
 "use client";
 import { BreadCrumbs, Flex } from "ui";
-import { DeleteIcon } from "icons";
 import { useParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
@@ -10,7 +9,6 @@ import {
   NewStoryButton,
   StoriesFilterButton,
   StoriesViewOptionsButton,
-  TeamColor,
 } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamOptions } from "./provider";
@@ -28,7 +26,6 @@ export const Header = ({
   const { data: teams = [] } = useTeams();
   const selectedTeam = teams.find((team) => team.id === teamId);
   const name = selectedTeam?.name ?? "Team";
-  const color = selectedTeam?.color;
   const {
     viewOptions,
     setViewOptions,
@@ -53,11 +50,9 @@ export const Header = ({
           breadCrumbs={[
             {
               name,
-              icon: <TeamColor color={color} />,
             },
             {
               name: "Deleted",
-              icon: <DeleteIcon className="h-[1.1rem]" />,
             },
           ]}
           className="hidden md:flex"
@@ -66,7 +61,6 @@ export const Header = ({
           breadCrumbs={[
             {
               name,
-              icon: <TeamColor color={color} />,
             },
           ]}
           className="md:hidden"

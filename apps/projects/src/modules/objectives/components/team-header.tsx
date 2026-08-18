@@ -1,10 +1,10 @@
 "use client";
 import { BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
-import { PlusIcon, ObjectiveIcon } from "icons";
+import { PlusIcon } from "icons";
 import { useParams } from "next/navigation";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
-import { NewObjectiveDialog, TeamColor } from "@/components/ui";
+import { NewObjectiveDialog } from "@/components/ui";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole, useTerminology, useMediaQuery } from "@/hooks";
 
@@ -26,14 +26,12 @@ export const TeamObjectivesHeader = () => {
           breadCrumbs={[
             {
               name: isMobile ? "" : name,
-              icon: <TeamColor color={selectedTeam?.color} />,
             },
             {
               name: getTermDisplay("objectiveTerm", {
                 variant: "plural",
                 capitalize: true,
               }),
-              icon: <ObjectiveIcon strokeWidth={2} />,
             },
           ]}
         />

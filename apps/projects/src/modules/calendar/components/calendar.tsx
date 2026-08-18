@@ -95,7 +95,7 @@ import type { CalendarView } from "./calendar-view";
 import { CalendarGridSkeleton } from "./calendar-skeleton";
 
 const defaultVisibleStartHour = 8;
-const defaultVisibleEndHour = 21;
+const defaultVisibleEndHour = 24;
 const hourHeight = 52;
 const timedBlockVerticalGap = 6;
 const timedBlockVerticalInset = timedBlockVerticalGap / 2;
