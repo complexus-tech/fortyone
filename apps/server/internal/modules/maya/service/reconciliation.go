@@ -745,15 +745,25 @@ func (s *Service) planAssignedStory(ctx context.Context, story stories.CoreSingl
 		elapsedMinutes = 0
 	}
 	durationMinutes := effectiveRemainingDurationMinutes(story, elapsedMinutes)
+	candidate := CandidateSchedule{
+		Member: reports.CoreMemberWorkload{UserID: userID}, Timezone: schedule.Timezone,
+		BusyWindows: schedule.BusyWindows, Blocks: blocks,
+	}
+	if feedbackService, ok := s.calendar.(ScheduleFeedbackService); ok {
+		preference, preferenceErr := feedbackService.ListManualSchedulePreference(ctx, story.Workspace, userID)
+		if preferenceErr != nil {
+			return PlanResult{}, fmt.Errorf("list calendar schedule preference for %s: %w", userID, preferenceErr)
+		}
+		if preference.Confidence > 0 {
+			candidate.PreferredStartMinute = preference.PreferredStartMinute
+		}
+	}
 	result, err := s.planner.Plan(PlanInput{
 		Context: ctx, WorkspaceID: story.Workspace, Story: story,
 		DurationMinutes: durationMinutes,
 		WindowStart:     windowStart, WindowEnd: windowEnd, WorkingDays: workingDays,
 		MinimumFocusBlockMinutes: valueOrZero(story.MinimumFocusBlockMinutes),
-		Candidates: []CandidateSchedule{{
-			Member: reports.CoreMemberWorkload{UserID: userID}, Timezone: schedule.Timezone,
-			BusyWindows: schedule.BusyWindows, Blocks: blocks,
-		}},
+		Candidates:               []CandidateSchedule{candidate},
 	})
 	if activeBlock != nil {
 		result = retainActiveScheduleBlock(result, story, userID, *activeBlock)

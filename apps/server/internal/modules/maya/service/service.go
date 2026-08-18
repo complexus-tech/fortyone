@@ -53,6 +53,10 @@ type ScheduleCalendarService interface {
 	DispatchScheduleEventOutbox(ctx context.Context, userID uuid.UUID) error
 }
 
+type ScheduleFeedbackService interface {
+	ListManualSchedulePreference(ctx context.Context, workspaceID, userID uuid.UUID) (calendar.CoreSchedulePreference, error)
+}
+
 type UsersService interface {
 	List(ctx context.Context, workspaceID uuid.UUID, filter users.CoreListUsersFilter) ([]users.CoreUser, error)
 }
@@ -645,12 +649,22 @@ func (s *Service) buildCandidates(ctx context.Context, input CreateWorkPlanInput
 		if err != nil {
 			return nil, nil, fmt.Errorf("list calendar schedule for candidate %s: %w", userID, err)
 		}
-		candidates = append(candidates, CandidateSchedule{
+		candidate := CandidateSchedule{
 			Member:      member,
 			Timezone:    schedule.Timezone,
 			BusyWindows: schedule.BusyWindows,
 			Blocks:      schedule.Blocks,
-		})
+		}
+		if feedbackService, ok := s.calendar.(ScheduleFeedbackService); ok {
+			preference, preferenceErr := feedbackService.ListManualSchedulePreference(ctx, input.WorkspaceID, userID)
+			if preferenceErr != nil {
+				return nil, nil, fmt.Errorf("list calendar schedule preference for candidate %s: %w", userID, preferenceErr)
+			}
+			if preference.Confidence > 0 {
+				candidate.PreferredStartMinute = preference.PreferredStartMinute
+			}
+		}
+		candidates = append(candidates, candidate)
 	}
 
 	contextPayload, err := json.Marshal(map[string]any{

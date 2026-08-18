@@ -1,13 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { calendarKeys } from "@/constants/keys";
 import { useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import {
   createCalendarScheduleBlock,
   deleteCalendarScheduleBlock,
   updateCalendarScheduleBlock,
+  manuallyRescheduleCalendarScheduleBlock,
 } from "@/lib/queries/calendar/schedule-blocks";
-import type { CalendarScheduleBlockInput } from "@/lib/queries/calendar/types";
+import type {
+  CalendarManualScheduleBlockInput,
+  CalendarSchedule,
+  CalendarScheduleBlockInput,
+} from "@/lib/queries/calendar/types";
 
 const useInvalidateCalendarSchedule = () => {
   const queryClient = useQueryClient();
@@ -81,6 +87,67 @@ export const useDeleteCalendarScheduleBlock = () => {
     },
     onSuccess: () => {
       toast.success("Calendar block removed");
+      void invalidateSchedule();
+    },
+  });
+};
+
+export const useManualRescheduleCalendarScheduleBlock = () => {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
+  const invalidateSchedule = useInvalidateCalendarSchedule();
+
+  return useMutation({
+    onMutate: async ({ blockId, input }) => {
+      const scheduleKey = calendarKeys.schedules(workspaceSlug);
+      await queryClient.cancelQueries({ queryKey: scheduleKey });
+      const previousSchedules = queryClient.getQueriesData<CalendarSchedule>({
+        queryKey: scheduleKey,
+      });
+      const optimisticUpdatedAt = new Date().toISOString();
+      queryClient.setQueriesData<CalendarSchedule>(
+        { queryKey: scheduleKey },
+        (schedule) => {
+          if (!schedule) return schedule;
+          return {
+            ...schedule,
+            blocks: schedule.blocks.map((block) =>
+              block.id === blockId
+                ? {
+                    ...block,
+                    startAt: input.startAt,
+                    endAt: input.endAt,
+                    updatedAt: optimisticUpdatedAt,
+                    manualOverrideAt: optimisticUpdatedAt,
+                  }
+                : block,
+            ),
+          };
+        },
+      );
+      return { previousSchedules };
+    },
+    mutationFn: ({
+      blockId,
+      input,
+    }: {
+      blockId: string;
+      input: CalendarManualScheduleBlockInput;
+    }) =>
+      manuallyRescheduleCalendarScheduleBlock(
+        { session: session!, workspaceSlug },
+        blockId,
+        input,
+      ),
+    onError: (error: Error, _variables, context) => {
+      context?.previousSchedules.forEach(([queryKey, schedule]) => {
+        queryClient.setQueryData(queryKey, schedule);
+      });
+      toast.error("Calendar", { description: error.message });
+    },
+    onSuccess: () => {
+      toast.success("Calendar updated");
       void invalidateSchedule();
     },
   });

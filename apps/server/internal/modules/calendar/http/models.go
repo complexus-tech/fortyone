@@ -121,6 +121,8 @@ type AppScheduleBlock struct {
 	Source               string     `json:"source"`
 	CreatedAt            time.Time  `json:"createdAt"`
 	UpdatedAt            time.Time  `json:"updatedAt"`
+	ManualOverrideAt     *time.Time `json:"manualOverrideAt,omitempty"`
+	ManualOverrideBy     *uuid.UUID `json:"manualOverrideBy,omitempty"`
 }
 
 type AppScheduleBlockRequest struct {
@@ -130,6 +132,15 @@ type AppScheduleBlockRequest struct {
 	StartAt   time.Time  `json:"startAt"`
 	EndAt     time.Time  `json:"endAt"`
 	IsLocked  *bool      `json:"isLocked"`
+}
+
+type AppManualScheduleBlockRequest struct {
+	StartAt           time.Time  `json:"startAt"`
+	EndAt             time.Time  `json:"endAt"`
+	ExpectedUpdatedAt *time.Time `json:"expectedUpdatedAt"`
+	Timezone          string     `json:"timezone"`
+	Change            string     `json:"change"`
+	ClientMutationID  uuid.UUID  `json:"clientMutationId"`
 }
 
 func toAppIntegration(connections []calendar.CoreConnection) AppIntegration {
@@ -314,5 +325,7 @@ func toAppScheduleBlock(block calendar.CoreScheduleBlock) AppScheduleBlock {
 		Source:               string(block.Source),
 		CreatedAt:            block.CreatedAt,
 		UpdatedAt:            block.UpdatedAt,
+		ManualOverrideAt:     block.ManualOverrideAt,
+		ManualOverrideBy:     block.ManualOverrideBy,
 	}
 }

@@ -123,11 +123,12 @@ type PlanInput struct {
 }
 
 type CandidateSchedule struct {
-	Member              reports.CoreMemberWorkload
-	Timezone            string
-	BusyWindows         []calendar.CoreBusyWindow
-	Blocks              []calendar.CoreScheduleBlock
-	PreemptibleBlockIDs []uuid.UUID
+	Member               reports.CoreMemberWorkload
+	Timezone             string
+	BusyWindows          []calendar.CoreBusyWindow
+	Blocks               []calendar.CoreScheduleBlock
+	PreemptibleBlockIDs  []uuid.UUID
+	PreferredStartMinute *int
 }
 
 type PlanResult struct {

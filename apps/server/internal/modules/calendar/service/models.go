@@ -1,6 +1,7 @@
 package calendar
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base32"
 	"encoding/hex"
@@ -112,6 +113,18 @@ type CoreSchedule struct {
 	Blocks      []CoreScheduleBlock `json:"blocks"`
 }
 
+type CoreScheduleRescheduleEvent struct {
+	NextStartAt time.Time `json:"nextStartAt"`
+	Timezone    string    `json:"timezone"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+type CoreSchedulePreference struct {
+	PreferredStartMinute *int
+	SampleCount          int
+	Confidence           float64
+}
+
 type CoreCalendarView struct {
 	StartAt     time.Time                  `json:"startAt"`
 	EndAt       time.Time                  `json:"endAt"`
@@ -147,10 +160,40 @@ type CoreScheduleBlock struct {
 	ExternalSyncedAt     *time.Time          `json:"-"`
 	CreatedAt            time.Time           `json:"createdAt"`
 	UpdatedAt            time.Time           `json:"updatedAt"`
+	ManualOverrideAt     *time.Time          `json:"manualOverrideAt,omitempty"`
+	ManualOverrideBy     *uuid.UUID          `json:"manualOverrideBy,omitempty"`
 	// StoryPriority and StoryEndDate are planning metadata and intentionally
 	// remain outside the public calendar response.
 	StoryPriority string     `json:"-"`
 	StoryEndDate  *time.Time `json:"-"`
+}
+
+type ManualScheduleBlockChange string
+
+const (
+	ManualScheduleBlockChangeMove   ManualScheduleBlockChange = "move"
+	ManualScheduleBlockChangeResize ManualScheduleBlockChange = "resize"
+)
+
+type ManualScheduleBlockInput struct {
+	WorkspaceID       uuid.UUID
+	UserID            uuid.UUID
+	ActorID           uuid.UUID
+	BlockID           uuid.UUID
+	StartAt           time.Time
+	EndAt             time.Time
+	ExpectedUpdatedAt *time.Time
+	Timezone          string
+	Change            ManualScheduleBlockChange
+	ClientMutationID  uuid.UUID
+}
+
+type ManualScheduleBlockRepository interface {
+	ManuallyRescheduleScheduleBlock(ctx context.Context, input ManualScheduleBlockInput) (CoreScheduleBlock, error)
+}
+
+type ScheduleFeedbackRepository interface {
+	ListManualScheduleRescheduleEvents(ctx context.Context, workspaceID, userID uuid.UUID, since time.Time) ([]CoreScheduleRescheduleEvent, error)
 }
 
 type CoreScheduleBlockInput struct {

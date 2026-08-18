@@ -17,16 +17,18 @@ import (
 )
 
 type reconciliationBlock struct {
-	ID                 uuid.UUID `db:"block_id"`
-	SegmentIndex       int       `db:"segment_index"`
-	Title              string    `db:"title"`
-	StartAt            time.Time `db:"start_at"`
-	EndAt              time.Time `db:"end_at"`
+	ID                 uuid.UUID  `db:"block_id"`
+	SegmentIndex       int        `db:"segment_index"`
+	Title              string     `db:"title"`
+	StartAt            time.Time  `db:"start_at"`
+	EndAt              time.Time  `db:"end_at"`
 	IsLocked           bool      `db:"is_locked"`
-	ExternalProvider   *string   `db:"external_provider"`
-	ExternalCalendarID *string   `db:"external_calendar_id"`
-	ExternalEventID    *string   `db:"external_event_id"`
-	ExternalSyncHash   *string   `db:"external_sync_hash"`
+	ExternalProvider   *string    `db:"external_provider"`
+	ExternalCalendarID *string    `db:"external_calendar_id"`
+	ExternalEventID    *string    `db:"external_event_id"`
+	ExternalSyncHash   *string    `db:"external_sync_hash"`
+	ManualOverrideAt   *time.Time `db:"manual_override_at"`
+	ManualOverrideBy   *uuid.UUID `db:"manual_override_by"`
 }
 
 type dbScheduleEventOutbox struct {
@@ -189,7 +191,8 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 
 	const currentQuery = `
 		SELECT block_id, segment_index, title, start_at, end_at, is_locked,
-		       external_provider, external_calendar_id, external_event_id, external_sync_hash
+		       external_provider, external_calendar_id, external_event_id, external_sync_hash,
+		       manual_override_at, manual_override_by
 		FROM calendar_schedule_blocks
 		WHERE workspace_id = $1
 			AND user_id = $2
@@ -202,9 +205,14 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 		return calendar.CoreScheduleReconcileResult{}, fmt.Errorf("list existing Maya schedule segments: %w", err)
 	}
 	currentByIndex := make(map[int]reconciliationBlock, len(current))
+	manualByIndex := make(map[int]reconciliationBlock)
 	excludedIDs := make([]string, 0, len(current))
 	for _, block := range current {
-		currentByIndex[block.SegmentIndex] = block
+		if block.ManualOverrideAt != nil {
+			manualByIndex[block.SegmentIndex] = block
+		} else {
+			currentByIndex[block.SegmentIndex] = block
+		}
 		excludedIDs = append(excludedIDs, block.ID.String())
 	}
 	for _, blockID := range input.PreemptBlockIDs {
@@ -235,6 +243,9 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 		)
 	`
 	for _, segment := range segments {
+		if _, exists := manualByIndex[segment.SegmentIndex]; exists {
+			continue
+		}
 		if current, exists := currentByIndex[segment.SegmentIndex]; input.Locked && exists && current.StartAt.Equal(segment.StartAt) && current.EndAt.Equal(segment.EndAt) {
 			// A locked segment is an explicit instruction to keep this exact
 			// time. New busy data can make it conflicting, but must not make the
@@ -256,6 +267,12 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 		Actions: make([]calendar.ScheduleReconcileAction, 0, len(segments)+len(current)),
 	}
 	for _, segment := range segments {
+		if manual, exists := manualByIndex[segment.SegmentIndex]; exists {
+			result.Blocks = append(result.Blocks, toManualOverrideScheduleBlock(input, manual))
+			result.Actions = append(result.Actions, calendar.ScheduleReconcileActionUnchanged)
+			delete(manualByIndex, segment.SegmentIndex)
+			continue
+		}
 		block, exists := currentByIndex[segment.SegmentIndex]
 		blockID := block.ID
 		if !exists {
@@ -356,6 +373,10 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 		}
 		result.Actions = append(result.Actions, calendar.ScheduleReconcileActionDeleted)
 	}
+	for _, block := range manualByIndex {
+		result.Blocks = append(result.Blocks, toManualOverrideScheduleBlock(input, block))
+		result.Actions = append(result.Actions, calendar.ScheduleReconcileActionUnchanged)
+	}
 
 	if len(segments) > 0 || input.KeepOwnership {
 		const ownershipQuery = `
@@ -383,6 +404,31 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 		return calendar.CoreScheduleReconcileResult{}, fmt.Errorf("commit Maya schedule reconciliation: %w", err)
 	}
 	return result, nil
+}
+
+func toManualOverrideScheduleBlock(input calendar.MayaScheduleReconcileInput, block reconciliationBlock) calendar.CoreScheduleBlock {
+	storyID := input.StoryID
+	provider := calendar.ProviderGoogle
+	calendarID := "primary"
+	return calendar.CoreScheduleBlock{
+		ID:                 block.ID,
+		WorkspaceID:        input.WorkspaceID,
+		UserID:             input.UserID,
+		StoryID:            &storyID,
+		BlockType:          calendar.ScheduleBlockTypeWork,
+		Title:              block.Title,
+		StartAt:            block.StartAt,
+		EndAt:              block.EndAt,
+		IsLocked:           true,
+		Source:             calendar.ScheduleBlockSourceMaya,
+		SegmentIndex:       block.SegmentIndex,
+		ExternalProvider:   &provider,
+		ExternalCalendarID: &calendarID,
+		ExternalEventID:    block.ExternalEventID,
+		ExternalSyncHash:   block.ExternalSyncHash,
+		ManualOverrideAt:   block.ManualOverrideAt,
+		ManualOverrideBy:   block.ManualOverrideBy,
+	}
 }
 
 func scheduleBlockNeedsProviderUpsert(block reconciliationBlock, exists bool, event calendar.ExternalScheduleEventInput, syncHash string) bool {

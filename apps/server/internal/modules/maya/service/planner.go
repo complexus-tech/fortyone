@@ -622,7 +622,7 @@ func planWorkSegments(candidate CandidateSchedule, startAt, endAt time.Time, dur
 func planWorkSegmentsWithLimits(candidate CandidateSchedule, startAt, endAt time.Time, durationMinutes, minimumFocusMinutes, maximumFocusMinutes int, workingDays []int) ([]timeSlot, bool) {
 	occupied := occupiedSlots(candidate)
 	location := calendarLocation(candidate.Timezone)
-	cursor := alignToPlanningGranularity(startAt.In(location))
+	cursor := preferredPlanningCursor(candidate, startAt, location)
 	endAt = endAt.In(location)
 	remaining := time.Duration(durationMinutes) * time.Minute
 	minimumFocus := time.Duration(minimumFocusMinutes) * time.Minute
@@ -634,7 +634,7 @@ func planWorkSegmentsWithLimits(candidate CandidateSchedule, startAt, endAt time
 
 	for cursor.Before(endAt) {
 		if !workweek.IsWorkingDay(cursor, workingDays) {
-			cursor = nextWorkdayStart(cursor, workingDays)
+			cursor = nextPlanningWorkdayStart(cursor, candidate, workingDays)
 			continue
 		}
 
@@ -644,7 +644,7 @@ func planWorkSegmentsWithLimits(candidate CandidateSchedule, startAt, endAt time
 			cursor = dayStart
 		}
 		if !cursor.Before(dayEnd) {
-			cursor = nextWorkdayStart(cursor, workingDays)
+			cursor = nextPlanningWorkdayStart(cursor, candidate, workingDays)
 			continue
 		}
 
@@ -722,6 +722,40 @@ func nextWorkdayStart(value time.Time, workingDays []int) time.Time {
 		next = next.AddDate(0, 0, 1)
 	}
 	return next
+}
+
+func preferredPlanningCursor(candidate CandidateSchedule, startAt time.Time, location *time.Location) time.Time {
+	cursor := alignToPlanningGranularity(startAt.In(location))
+	if candidate.PreferredStartMinute == nil {
+		return cursor
+	}
+	preferred := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), 0, 0, 0, 0, location).
+		Add(time.Duration(clampPreferredStartMinute(*candidate.PreferredStartMinute)) * time.Minute)
+	if preferred.After(cursor) {
+		return preferred
+	}
+	return cursor
+}
+
+func nextPlanningWorkdayStart(value time.Time, candidate CandidateSchedule, workingDays []int) time.Time {
+	next := nextWorkdayStart(value, workingDays)
+	if candidate.PreferredStartMinute == nil {
+		return next
+	}
+	return time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location()).
+		Add(time.Duration(clampPreferredStartMinute(*candidate.PreferredStartMinute)) * time.Minute)
+}
+
+func clampPreferredStartMinute(value int) int {
+	minimum := workdayStartHour * 60
+	maximum := workdayEndHour*60 - planningStartGranularityMinutes
+	if value < minimum {
+		return minimum
+	}
+	if value > maximum {
+		return maximum
+	}
+	return value
 }
 
 func minTime(left, right time.Time) time.Time {

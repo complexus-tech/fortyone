@@ -129,6 +129,8 @@ type dbScheduleBlock struct {
 	ExternalSyncedAt     *time.Time `db:"external_synced_at"`
 	CreatedAt            time.Time  `db:"created_at"`
 	UpdatedAt            time.Time  `db:"updated_at"`
+	ManualOverrideAt     *time.Time `db:"manual_override_at"`
+	ManualOverrideBy     *uuid.UUID `db:"manual_override_by"`
 }
 
 func toCoreConnection(row dbConnection) calendar.CoreConnection {
@@ -307,6 +309,8 @@ func toCoreScheduleBlock(row dbScheduleBlock) calendar.CoreScheduleBlock {
 		ExternalSyncedAt:     row.ExternalSyncedAt,
 		CreatedAt:            row.CreatedAt,
 		UpdatedAt:            row.UpdatedAt,
+		ManualOverrideAt:     row.ManualOverrideAt,
+		ManualOverrideBy:     row.ManualOverrideBy,
 	}
 	if row.ExternalProvider != nil {
 		provider := calendar.Provider(*row.ExternalProvider)

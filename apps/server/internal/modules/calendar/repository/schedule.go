@@ -57,7 +57,9 @@ const scheduleBlockSelect = `
 		csb.external_sync_hash,
 		csb.external_synced_at,
 		csb.created_at,
-		csb.updated_at
+		csb.updated_at,
+		csb.manual_override_at,
+		csb.manual_override_by
 	FROM calendar_schedule_blocks csb
 	LEFT JOIN stories s ON
 		s.id = csb.story_id
@@ -145,6 +147,37 @@ func (r *Repo) ListSchedulingBlocksForUser(ctx context.Context, workspaceID, use
 		blocks[index].Title = "Busy"
 	}
 	return blocks, nil
+}
+
+func (r *Repo) ListManualScheduleRescheduleEvents(ctx context.Context, workspaceID, userID uuid.UUID, since time.Time) ([]calendar.CoreScheduleRescheduleEvent, error) {
+	const query = `
+		SELECT next_start_at, timezone, created_at
+		FROM calendar_schedule_reschedule_events
+		WHERE workspace_id = $1
+			AND user_id = $2
+			AND source = 'user'
+			AND created_at >= $3
+		ORDER BY created_at DESC
+		LIMIT 100
+	`
+	type row struct {
+		NextStartAt time.Time `db:"next_start_at"`
+		Timezone    string    `db:"timezone"`
+		CreatedAt   time.Time `db:"created_at"`
+	}
+	rows := []row{}
+	if err := r.db.SelectContext(ctx, &rows, query, workspaceID, userID, since.UTC()); err != nil {
+		return nil, fmt.Errorf("list manual calendar reschedule events: %w", err)
+	}
+	events := make([]calendar.CoreScheduleRescheduleEvent, 0, len(rows))
+	for _, item := range rows {
+		events = append(events, calendar.CoreScheduleRescheduleEvent{
+			NextStartAt: item.NextStartAt,
+			Timezone:    item.Timezone,
+			CreatedAt:   item.CreatedAt,
+		})
+	}
+	return events, nil
 }
 
 func (r *Repo) ListMayaScheduleBlocksForStory(ctx context.Context, workspaceID, userID, storyID uuid.UUID) ([]calendar.CoreScheduleBlock, error) {
@@ -312,6 +345,125 @@ func (r *Repo) UpdateScheduleBlock(ctx context.Context, input calendar.CoreSched
 		return calendar.CoreScheduleBlock{}, fmt.Errorf("commit update calendar schedule block: %w", err)
 	}
 	return r.getScheduleBlock(ctx, input.WorkspaceID, input.UserID, input.ID)
+}
+
+func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calendar.ManualScheduleBlockInput) (calendar.CoreScheduleBlock, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return calendar.CoreScheduleBlock{}, fmt.Errorf("begin manual calendar reschedule: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := lockCalendarUser(ctx, tx, input.WorkspaceID, input.UserID); err != nil {
+		return calendar.CoreScheduleBlock{}, err
+	}
+
+	var existingEventBlockID uuid.UUID
+	if err := tx.GetContext(ctx, &existingEventBlockID, `
+		SELECT schedule_block_id
+		FROM calendar_schedule_reschedule_events
+		WHERE client_mutation_id = $1
+	`, input.ClientMutationID); err == nil {
+		if err := tx.Commit(); err != nil {
+			return calendar.CoreScheduleBlock{}, fmt.Errorf("commit idempotent manual calendar reschedule: %w", err)
+		}
+		return r.getScheduleBlock(ctx, input.WorkspaceID, input.UserID, existingEventBlockID)
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return calendar.CoreScheduleBlock{}, fmt.Errorf("check manual calendar reschedule idempotency: %w", err)
+	}
+
+	var current struct {
+		ID                 uuid.UUID  `db:"block_id"`
+		StoryID            *uuid.UUID `db:"story_id"`
+		BlockType          string     `db:"block_type"`
+		Title              string     `db:"title"`
+		StartAt            time.Time  `db:"start_at"`
+		EndAt              time.Time  `db:"end_at"`
+		IsLocked           bool       `db:"is_locked"`
+		Source             string     `db:"source"`
+		ExternalProvider   *string    `db:"external_provider"`
+		ExternalCalendarID *string    `db:"external_calendar_id"`
+		ExternalEventID    *string    `db:"external_event_id"`
+		UpdatedAt          time.Time  `db:"updated_at"`
+	}
+	if err := tx.GetContext(ctx, &current, `
+		SELECT block_id, story_id, block_type, title, start_at, end_at, is_locked, source,
+		       external_provider, external_calendar_id, external_event_id, updated_at
+		FROM calendar_schedule_blocks
+		WHERE workspace_id = $1 AND user_id = $2 AND block_id = $3
+		FOR UPDATE
+	`, input.WorkspaceID, input.UserID, input.BlockID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return calendar.CoreScheduleBlock{}, calendar.ErrCalendarScheduleBlockNotFound
+		}
+		return calendar.CoreScheduleBlock{}, fmt.Errorf("load manual calendar reschedule block: %w", err)
+	}
+	if input.ExpectedUpdatedAt != nil && !current.UpdatedAt.Equal(input.ExpectedUpdatedAt.UTC()) {
+		return calendar.CoreScheduleBlock{}, calendar.ErrCalendarScheduleStalePlan
+	}
+	conflicts, err := scheduleBlockConflicts(ctx, tx, calendar.CoreScheduleBlockInput{
+		WorkspaceID: input.WorkspaceID,
+		UserID:      input.UserID,
+		ID:          input.BlockID,
+		StoryID:     current.StoryID,
+		BlockType:   calendar.ScheduleBlockType(current.BlockType),
+		Title:       current.Title,
+		StartAt:     input.StartAt,
+		EndAt:       input.EndAt,
+		IsLocked:    true,
+		Source:      calendar.ScheduleBlockSource(current.Source),
+	}, input.BlockID)
+	if err != nil {
+		return calendar.CoreScheduleBlock{}, err
+	}
+	if conflicts {
+		return calendar.CoreScheduleBlock{}, calendar.ErrCalendarScheduleConflict
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE calendar_schedule_blocks
+		SET start_at = $4,
+		    end_at = $5,
+		    is_locked = TRUE,
+		    manual_override_at = CURRENT_TIMESTAMP,
+		    manual_override_by = $6,
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE workspace_id = $1 AND user_id = $2 AND block_id = $3
+	`, input.WorkspaceID, input.UserID, input.BlockID, input.StartAt.UTC(), input.EndAt.UTC(), input.ActorID); err != nil {
+		return calendar.CoreScheduleBlock{}, fmt.Errorf("update manually rescheduled calendar block: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO calendar_schedule_reschedule_events (
+			workspace_id, user_id, story_id, schedule_block_id, action, source, timezone,
+			previous_start_at, previous_end_at, next_start_at, next_end_at, client_mutation_id
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	`, input.WorkspaceID, input.UserID, current.StoryID, input.BlockID, string(input.Change), "user", input.Timezone,
+		current.StartAt.UTC(), current.EndAt.UTC(), input.StartAt.UTC(), input.EndAt.UTC(), input.ClientMutationID); err != nil {
+		return calendar.CoreScheduleBlock{}, fmt.Errorf("record manual calendar reschedule: %w", err)
+	}
+
+	if current.StoryID != nil && current.ExternalProvider != nil && current.ExternalCalendarID != nil && current.ExternalEventID != nil {
+		event := calendar.ExternalScheduleEventInput{
+			CalendarID:  *current.ExternalCalendarID,
+			EventID:     *current.ExternalEventID,
+			BlockID:     input.BlockID,
+			StoryID:     *current.StoryID,
+			WorkspaceID: input.WorkspaceID,
+			Title:       current.Title,
+			StartAt:     input.StartAt.UTC(),
+			EndAt:       input.EndAt.UTC(),
+			PrivateProperties: map[string]string{
+				"fortyone_source": "fortyone",
+			},
+		}
+		syncHash := calendar.ScheduleEventSyncHash(event)
+		if err := enqueueScheduleEventOutbox(ctx, tx, input.WorkspaceID, input.UserID, &input.BlockID, calendar.ScheduleEventOperationUpsert, event, syncHash, true); err != nil {
+			return calendar.CoreScheduleBlock{}, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return calendar.CoreScheduleBlock{}, fmt.Errorf("commit manual calendar reschedule: %w", err)
+	}
+	return r.getScheduleBlock(ctx, input.WorkspaceID, input.UserID, input.BlockID)
 }
 
 func scheduleBlockConflicts(

@@ -66,6 +66,8 @@ export type CalendarScheduleBlock = {
   autoSchedulingReason?: string | null;
   createdAt: string;
   updatedAt: string;
+  manualOverrideAt?: string;
+  manualOverrideBy?: string;
 };
 
 export type CalendarSchedule = {
@@ -83,4 +85,13 @@ export type CalendarScheduleBlockInput = {
   startAt: string;
   endAt: string;
   isLocked?: boolean;
+};
+
+export type CalendarManualScheduleBlockInput = {
+  startAt: string;
+  endAt: string;
+  expectedUpdatedAt?: string;
+  timezone: string;
+  change: "move" | "resize";
+  clientMutationId: string;
 };

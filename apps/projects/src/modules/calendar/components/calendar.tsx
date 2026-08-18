@@ -4,11 +4,23 @@ import { useState } from "react";
 import {
   addDays,
   addHours,
+  addMinutes,
   format,
   isSameDay,
   isSameMonth,
   startOfDay,
 } from "date-fns";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import { cn } from "lib";
 import {
   ArrowDown2Icon,
@@ -41,6 +53,7 @@ import {
   useCalendarSchedule,
   useCreateCalendarScheduleBlock,
   useDeleteCalendarScheduleBlock,
+  useManualRescheduleCalendarScheduleBlock,
   useSyncCalendarConnection,
   useUpdateCalendarScheduleBlock,
 } from "@/lib/hooks/calendar";
@@ -53,6 +66,7 @@ import type {
 import type { CalendarConnection } from "@/modules/settings/workspace/integrations/calendar/types";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
 import type { Story } from "@/modules/stories/types";
+import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import {
   getMayaCalendarBlockLabel,
   getMayaCalendarBlockReason,
@@ -114,6 +128,18 @@ type CalendarItem =
       block: CalendarScheduleBlock;
     };
 
+type CalendarDragData = {
+  kind: "move" | "resize";
+  block: CalendarScheduleBlock;
+};
+
+type CalendarManualChange = {
+  block: CalendarScheduleBlock;
+  change: "move" | "resize";
+  startAt: Date;
+  endAt: Date;
+};
+
 const toDateTimeInputValue = (value: Date | string) =>
   format(new Date(value), "yyyy-MM-dd'T'HH:mm");
 
@@ -155,6 +181,12 @@ const roundToNextHalfHour = (date: Date) => {
   next.setMinutes(minutes < 30 ? 30 : 60, 0, 0);
   return next;
 };
+
+const snapCalendarDeltaMinutes = (deltaY: number) =>
+  Math.round(deltaY / (hourHeight / 60) / 15) * 15;
+
+const getCalendarDragData = (active: DragEndEvent["active"]) =>
+  (active.data.current?.calendarDrag as CalendarDragData | undefined) ?? null;
 
 const overlapsDay = (
   item: Pick<CalendarItem, "startAt" | "endAt">,
@@ -206,6 +238,26 @@ const CalendarTimedBlock = ({
   onSelectEvent: (event: CalendarEventSummary) => void;
   today: Date;
 }) => {
+  const draggableBlock =
+    item.kind === "block" &&
+    item.block.blockType === "work" &&
+    item.block.storyId
+      ? item.block
+      : null;
+  const moveDrag = useDraggable({
+    id: `calendar-move-${item.id}`,
+    disabled: !draggableBlock,
+    data: draggableBlock
+      ? { calendarDrag: { kind: "move", block: draggableBlock } }
+      : undefined,
+  });
+  const resizeDrag = useDraggable({
+    id: `calendar-resize-${item.id}`,
+    disabled: !draggableBlock,
+    data: draggableBlock
+      ? { calendarDrag: { kind: "resize", block: draggableBlock } }
+      : undefined,
+  });
   const laneWidth = 100 / layout.laneCount;
   const isCompleted = new Date(item.endAt).getTime() <= today.getTime();
   const style = {
@@ -394,12 +446,17 @@ const CalendarTimedBlock = ({
     blockAccentClass = "bg-danger";
   }
   const blockContent = (
-    <Box
+    <div
+      {...moveDrag.attributes}
+      {...moveDrag.listeners}
       className={cn(
         "absolute flex items-center overflow-hidden rounded-l-none rounded-r-md border transition-colors",
+        draggableBlock ? "cursor-grab active:cursor-grabbing" : null,
+        moveDrag.isDragging ? "opacity-40" : null,
         blockPaddingClass,
         blockColorClass,
       )}
+      ref={moveDrag.setNodeRef}
       style={style}
       title={block.storyId ? undefined : mayaReason ?? undefined}
     >
@@ -452,7 +509,20 @@ const CalendarTimedBlock = ({
           </Text>
         ) : null}
       </Box>
-    </Box>
+      {draggableBlock ? (
+        <button
+          {...resizeDrag.attributes}
+          {...resizeDrag.listeners}
+          aria-label={`Resize ${storyCode || block.title}`}
+          className="absolute inset-x-1 bottom-0 z-20 h-2 cursor-ns-resize rounded-sm focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+          ref={resizeDrag.setNodeRef}
+          type="button"
+        />
+      ) : null}
+    </div>
   );
 
   return blockContent;
@@ -1078,12 +1148,88 @@ const CalendarNotices = ({
   </>
 );
 
+const CalendarTimedDayColumn = ({
+  day,
+  dayItems,
+  hours,
+  onEdit,
+  onSelectEvent,
+  today,
+  visibleEndHour,
+  visibleStartHour,
+}: {
+  day: Date;
+  dayItems: CalendarItem[];
+  hours: number[];
+  onEdit: (block: CalendarScheduleBlock) => void;
+  onSelectEvent: (event: CalendarEventSummary) => void;
+  today: Date;
+  visibleEndHour: number;
+  visibleStartHour: number;
+}) => {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `calendar-day-${day.toISOString()}`,
+    data: { calendarDay: day.toISOString() },
+  });
+  const layouts = buildCalendarEventLayouts({
+    day,
+    events: dayItems.map((item) => ({
+      id: `${item.kind}-${item.id}`,
+      startAt: item.startAt,
+      endAt: item.endAt,
+    })),
+    hourHeight,
+    visibleEndHour,
+    visibleStartHour,
+  });
+  const layoutById = new Map(layouts.map((layout) => [layout.id, layout]));
+
+  return (
+    <div
+      className={cn(
+        "border-border/60 relative border-l",
+        isOver ? "bg-state-hover/30" : null,
+      )}
+      ref={setNodeRef}
+      style={{
+        height: `${(visibleEndHour - visibleStartHour) * hourHeight}px`,
+      }}
+    >
+      {hours.slice(1, -1).map((hour) => (
+        <Box
+          className="border-border/60 absolute inset-x-0 border-t"
+          key={hour}
+          style={{
+            top: `${(hour - visibleStartHour) * hourHeight}px`,
+          }}
+        />
+      ))}
+      {dayItems.map((item) => {
+        const key = `${item.kind}-${item.id}`;
+        const layout = layoutById.get(key);
+        if (!layout) return null;
+        return (
+          <CalendarTimedBlock
+            item={item}
+            key={key}
+            layout={layout}
+            onEdit={onEdit}
+            onSelectEvent={onSelectEvent}
+            today={today}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
 const CalendarTimeGrid = ({
   allDayEvents,
   days,
   hours,
   isDaySelectable,
   onEdit,
+  onManualChange,
   onSelectDay,
   onSelectEvent,
   timedCalendarItems,
@@ -1098,6 +1244,7 @@ const CalendarTimeGrid = ({
   hours: number[];
   isDaySelectable: (day: Date) => boolean;
   onEdit: (block: CalendarScheduleBlock) => void;
+  onManualChange: (change: CalendarManualChange) => void;
   onSelectDay: (day: Date) => void;
   onSelectEvent: (event: CalendarEventSummary) => void;
   timedCalendarItems: CalendarItem[];
@@ -1111,188 +1258,230 @@ const CalendarTimeGrid = ({
   const dayColumn = isDayView ? "minmax(0, 1fr)" : "minmax(9.5rem, 1fr)";
   const gridTemplateColumns = `${timeRailWidth}rem repeat(${days.length}, ${dayColumn})`;
   const minimumWidthClass = isDayView ? "min-w-full" : "min-w-[72rem]";
+  const [activeDrag, setActiveDrag] = useState<CalendarDragData | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 8 },
+    }),
+  );
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDrag(getCalendarDragData(event.active));
+  };
+  const handleDragEnd = (event: DragEndEvent) => {
+    const dragData = getCalendarDragData(event.active);
+    const targetDay = event.over?.data.current?.calendarDay as
+      | string
+      | undefined;
+    setActiveDrag(null);
+    if (!dragData || !targetDay) return;
+
+    const originalStart = new Date(dragData.block.startAt);
+    const originalEnd = new Date(dragData.block.endAt);
+    const deltaMinutes = snapCalendarDeltaMinutes(event.delta.y);
+    let startAt = originalStart;
+    let endAt = originalEnd;
+
+    if (dragData.kind === "resize") {
+      const durationMinutes = Math.max(
+        15,
+        (originalEnd.getTime() - originalStart.getTime()) / 60_000 +
+          deltaMinutes,
+      );
+      endAt = addMinutes(originalStart, durationMinutes);
+    } else {
+      const day = new Date(targetDay);
+      startAt = new Date(day);
+      startAt.setHours(
+        originalStart.getHours(),
+        originalStart.getMinutes(),
+        0,
+        0,
+      );
+      startAt = addMinutes(startAt, deltaMinutes);
+      endAt = addMinutes(
+        startAt,
+        (originalEnd.getTime() - originalStart.getTime()) / 60_000,
+      );
+    }
+
+    if (
+      startAt.getTime() === originalStart.getTime() &&
+      endAt.getTime() === originalEnd.getTime()
+    ) {
+      return;
+    }
+    onManualChange({
+      block: dragData.block,
+      change: dragData.kind,
+      startAt,
+      endAt,
+    });
+  };
 
   return (
-    <Box className="min-h-0 flex-1 overflow-auto overscroll-contain">
-      <Box
-        className={cn(
-          "border-border/70 bg-background sticky top-0 z-30 grid h-18 border-b",
-          minimumWidthClass,
-        )}
-        style={{ gridTemplateColumns }}
-      >
-        <Box className="flex flex-col items-center justify-between px-3 pt-2.5 pb-2 text-center">
-          <Text
-            className="max-w-full truncate"
-            fontSize="md"
-            fontWeight="medium"
-          >
-            {timeZoneName}
-          </Text>
-          <Text className="tabular-nums" color="muted" fontSize="md">
-            {timeZoneLabel}
-          </Text>
-        </Box>
-        {days.map((day) => {
-          const isToday = isSameDay(day, today);
-          const canSelectDay = isDaySelectable(day);
-          return (
-            <Box
-              className="border-border/60 flex flex-col items-center justify-between border-l px-3 pt-2.5 pb-1"
-              key={day.toISOString()}
-            >
-              <Text
-                className="text-[0.875rem] leading-none tracking-[0.08em]"
-                color={isToday ? "primary" : "muted"}
-                fontWeight="medium"
-                transform="uppercase"
-              >
-                {format(day, "EEE")}
-              </Text>
-              <button
-                aria-current={isToday ? "date" : undefined}
-                aria-label={`Open ${format(day, "MMMM d, yyyy")} in day view`}
-                className={cn(
-                  "group focus-visible:ring-primary/40 grid size-10 place-items-center rounded-full focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40",
-                  isToday
-                    ? "text-primary-foreground"
-                    : "text-foreground hover:bg-state-hover",
-                )}
-                disabled={!canSelectDay}
-                onClick={() => {
-                  onSelectDay(day);
-                }}
-                type="button"
-              >
-                <Text
-                  as="span"
-                  className={cn(
-                    "grid place-items-center leading-none text-current tabular-nums",
-                    isToday
-                      ? "bg-primary group-hover:bg-primary/90 size-8 rounded-full text-base transition-colors"
-                      : "text-lg",
-                  )}
-                  fontWeight="medium"
-                >
-                  {format(day, "d")}
-                </Text>
-              </button>
-            </Box>
-          );
-        })}
-      </Box>
-      {allDayEvents.length > 0 ? (
+    <DndContext
+      onDragCancel={() => {
+        setActiveDrag(null);
+      }}
+      onDragEnd={handleDragEnd}
+      onDragStart={handleDragStart}
+      sensors={sensors}
+    >
+      <Box className="min-h-0 flex-1 overflow-auto overscroll-contain">
         <Box
           className={cn(
-            "border-border/70 bg-background sticky top-18 z-20 grid min-h-14 border-b",
+            "border-border/70 bg-background sticky top-0 z-30 grid h-18 border-b",
             minimumWidthClass,
           )}
           style={{ gridTemplateColumns }}
         >
-          <Box className="flex items-center justify-center px-3 py-2">
-            <Text color="muted" fontSize="md">
-              All day
+          <Box className="flex flex-col items-center justify-between px-3 pt-2.5 pb-2 text-center">
+            <Text
+              className="max-w-full truncate"
+              fontSize="md"
+              fontWeight="medium"
+            >
+              {timeZoneName}
+            </Text>
+            <Text className="tabular-nums" color="muted" fontSize="md">
+              {timeZoneLabel}
             </Text>
           </Box>
           {days.map((day) => {
-            const dayEvents = allDayEvents.filter((event) =>
-              calendarEventOverlapsDay(event, day),
-            );
+            const isToday = isSameDay(day, today);
+            const canSelectDay = isDaySelectable(day);
             return (
               <Box
-                className="border-border/60 min-h-14 space-y-1.5 border-l p-2"
+                className="border-border/60 flex flex-col items-center justify-between border-l px-3 pt-2.5 pb-1"
                 key={day.toISOString()}
               >
-                {dayEvents.map((event) => (
-                  <CalendarAllDayEvent
-                    event={event}
-                    key={event.id}
-                    onSelect={onSelectEvent}
-                    today={today}
-                  />
-                ))}
+                <Text
+                  className="text-[0.875rem] leading-none tracking-[0.08em]"
+                  color={isToday ? "primary" : "muted"}
+                  fontWeight="medium"
+                  transform="uppercase"
+                >
+                  {format(day, "EEE")}
+                </Text>
+                <button
+                  aria-current={isToday ? "date" : undefined}
+                  aria-label={`Open ${format(day, "MMMM d, yyyy")} in day view`}
+                  className={cn(
+                    "group focus-visible:ring-primary/40 grid size-10 place-items-center rounded-full focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40",
+                    isToday
+                      ? "text-primary-foreground"
+                      : "text-foreground hover:bg-state-hover",
+                  )}
+                  disabled={!canSelectDay}
+                  onClick={() => {
+                    onSelectDay(day);
+                  }}
+                  type="button"
+                >
+                  <Text
+                    as="span"
+                    className={cn(
+                      "grid place-items-center leading-none text-current tabular-nums",
+                      isToday
+                        ? "bg-primary group-hover:bg-primary/90 size-8 rounded-full text-base transition-colors"
+                        : "text-lg",
+                    )}
+                    fontWeight="medium"
+                  >
+                    {format(day, "d")}
+                  </Text>
+                </button>
               </Box>
             );
           })}
         </Box>
-      ) : null}
-      <Box
-        className={cn("grid", minimumWidthClass)}
-        style={{ gridTemplateColumns }}
-      >
-        <Box className="relative">
-          {hours.slice(1, -1).map((hour) => (
-            <Box
-              className="absolute right-4 -translate-y-1/2"
-              key={hour}
-              style={{ top: `${(hour - visibleStartHour) * hourHeight}px` }}
-            >
-              <Text
-                className="text-[0.9375rem] tabular-nums"
-                color="muted"
-                fontWeight="medium"
-              >
-                {format(new Date(2026, 0, 1, hour), "h a")}
+        {allDayEvents.length > 0 ? (
+          <Box
+            className={cn(
+              "border-border/70 bg-background sticky top-18 z-20 grid min-h-14 border-b",
+              minimumWidthClass,
+            )}
+            style={{ gridTemplateColumns }}
+          >
+            <Box className="flex items-center justify-center px-3 py-2">
+              <Text color="muted" fontSize="md">
+                All day
               </Text>
             </Box>
+            {days.map((day) => {
+              const dayEvents = allDayEvents.filter((event) =>
+                calendarEventOverlapsDay(event, day),
+              );
+              return (
+                <Box
+                  className="border-border/60 min-h-14 space-y-1.5 border-l p-2"
+                  key={day.toISOString()}
+                >
+                  {dayEvents.map((event) => (
+                    <CalendarAllDayEvent
+                      event={event}
+                      key={event.id}
+                      onSelect={onSelectEvent}
+                      today={today}
+                    />
+                  ))}
+                </Box>
+              );
+            })}
+          </Box>
+        ) : null}
+        <Box
+          className={cn("grid", minimumWidthClass)}
+          style={{ gridTemplateColumns }}
+        >
+          <Box className="relative">
+            {hours.slice(1, -1).map((hour) => (
+              <Box
+                className="absolute right-4 -translate-y-1/2"
+                key={hour}
+                style={{ top: `${(hour - visibleStartHour) * hourHeight}px` }}
+              >
+                <Text
+                  className="text-[0.9375rem] tabular-nums"
+                  color="muted"
+                  fontWeight="medium"
+                >
+                  {format(new Date(2026, 0, 1, hour), "h a")}
+                </Text>
+              </Box>
+            ))}
+          </Box>
+          {days.map((day) => (
+            <CalendarTimedDayColumn
+              day={day}
+              dayItems={timedCalendarItems.filter((item) =>
+                overlapsDay(item, day),
+              )}
+              hours={hours}
+              key={day.toISOString()}
+              onEdit={onEdit}
+              onSelectEvent={onSelectEvent}
+              today={today}
+              visibleEndHour={visibleEndHour}
+              visibleStartHour={visibleStartHour}
+            />
           ))}
         </Box>
-        {days.map((day) => {
-          const dayItems = timedCalendarItems.filter((item) =>
-            overlapsDay(item, day),
-          );
-          const layouts = buildCalendarEventLayouts({
-            day,
-            events: dayItems.map((item) => ({
-              id: `${item.kind}-${item.id}`,
-              startAt: item.startAt,
-              endAt: item.endAt,
-            })),
-            hourHeight,
-            visibleEndHour,
-            visibleStartHour,
-          });
-          const layoutById = new Map(
-            layouts.map((layout) => [layout.id, layout]),
-          );
-
-          return (
-            <Box
-              className="border-border/60 relative border-l"
-              key={day.toISOString()}
-              style={{
-                height: `${(visibleEndHour - visibleStartHour) * hourHeight}px`,
-              }}
-            >
-              {hours.slice(1, -1).map((hour) => (
-                <Box
-                  className="border-border/60 absolute inset-x-0 border-t"
-                  key={hour}
-                  style={{
-                    top: `${(hour - visibleStartHour) * hourHeight}px`,
-                  }}
-                />
-              ))}
-              {dayItems.map((item) => {
-                const key = `${item.kind}-${item.id}`;
-                const layout = layoutById.get(key);
-                if (!layout) return null;
-                return (
-                  <CalendarTimedBlock
-                    item={item}
-                    key={key}
-                    layout={layout}
-                    onEdit={onEdit}
-                    onSelectEvent={onSelectEvent}
-                    today={today}
-                  />
-                );
-              })}
-            </Box>
-          );
-        })}
       </Box>
-    </Box>
+      <DragOverlay className="pointer-events-none">
+        {activeDrag ? (
+          <Box className="border-border bg-surface-muted/90 shadow-shadow rounded-r-md border px-3 py-2 backdrop-blur">
+            <Text className="text-text-muted text-sm" fontWeight="medium">
+              {activeDrag.block.storyCode || "Story"}
+            </Text>
+            <Text className="max-w-xs truncate text-sm" fontWeight="medium">
+              {activeDrag.block.title}
+            </Text>
+          </Box>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 };
 
@@ -1622,6 +1811,8 @@ export const PersonalCalendar = ({
   const canReadEventDetails = Boolean(connection?.canReadEventDetails);
   const createConnectSession = useCreateCalendarConnectSession();
   const syncCalendar = useSyncCalendarConnection();
+  const manualReschedule = useManualRescheduleCalendarScheduleBlock();
+  const updateStory = useUpdateStoryMutation();
   const { data: assignedStories } = useMyStoriesGrouped("none", {
     assignedToMe: true,
     categories: ["backlog", "unstarted", "started", "paused"],
@@ -1734,6 +1925,39 @@ export const PersonalCalendar = ({
     setCursor(day);
     setCalendarView("day");
   };
+  const handleManualCalendarChange = ({
+    block,
+    change,
+    endAt,
+    startAt,
+  }: CalendarManualChange) => {
+    manualReschedule.mutate(
+      {
+        blockId: block.id,
+        input: {
+          startAt: startAt.toISOString(),
+          endAt: endAt.toISOString(),
+          expectedUpdatedAt: block.updatedAt,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          change,
+          clientMutationId: crypto.randomUUID(),
+        },
+      },
+      {
+        onSuccess: () => {
+          if (change !== "resize" || !block.storyId) return;
+          updateStory.mutate({
+            storyId: block.storyId,
+            payload: {
+              estimatedDurationMinutes: Math.round(
+                (endAt.getTime() - startAt.getTime()) / 60_000,
+              ),
+            },
+          });
+        },
+      },
+    );
+  };
 
   return (
     <Box className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden">
@@ -1830,6 +2054,7 @@ export const PersonalCalendar = ({
             hours={hours}
             isDaySelectable={isDaySelectable}
             onEdit={openBlock}
+            onManualChange={handleManualCalendarChange}
             onSelectDay={selectDay}
             onSelectEvent={openEventDetails}
             timeZoneLabel={timeZoneLabel}

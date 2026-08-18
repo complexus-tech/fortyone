@@ -180,6 +180,41 @@ func (h *Handlers) UpdateScheduleBlock(ctx context.Context, w http.ResponseWrite
 	return web.Respond(ctx, w, toAppScheduleBlock(block), http.StatusOK)
 }
 
+func (h *Handlers) ManualRescheduleScheduleBlock(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	blockID, err := uuid.Parse(web.Params(r, "blockId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	var req AppManualScheduleBlockRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	block, err := h.service.ManuallyRescheduleScheduleBlock(ctx, calendar.ManualScheduleBlockInput{
+		WorkspaceID:       workspace.ID,
+		UserID:            userID,
+		ActorID:           userID,
+		BlockID:           blockID,
+		StartAt:           req.StartAt,
+		EndAt:             req.EndAt,
+		ExpectedUpdatedAt: req.ExpectedUpdatedAt,
+		Timezone:          req.Timezone,
+		Change:            calendar.ManualScheduleBlockChange(req.Change),
+		ClientMutationID:  req.ClientMutationID,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, h.statusCode(err))
+	}
+	return web.Respond(ctx, w, toAppScheduleBlock(block), http.StatusOK)
+}
+
 func (h *Handlers) DeleteScheduleBlock(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -263,6 +298,8 @@ func (h *Handlers) statusCode(err error) int {
 	case errors.Is(err, calendar.ErrCalendarEventNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, calendar.ErrCalendarSyncSuperseded):
+		return http.StatusConflict
+	case errors.Is(err, calendar.ErrCalendarScheduleStalePlan):
 		return http.StatusConflict
 	case errors.Is(err, calendar.ErrInvalidScheduleRange):
 		return http.StatusBadRequest

@@ -499,6 +499,55 @@ func (s *Service) ListSchedulingAvailability(ctx context.Context, workspaceID, u
 	}, nil
 }
 
+func (s *Service) ListManualSchedulePreference(ctx context.Context, workspaceID, userID uuid.UUID) (CoreSchedulePreference, error) {
+	feedbackRepo, ok := s.repo.(ScheduleFeedbackRepository)
+	if !ok {
+		return CoreSchedulePreference{}, nil
+	}
+	events, err := feedbackRepo.ListManualScheduleRescheduleEvents(ctx, workspaceID, userID, time.Now().UTC().Add(-90*24*time.Hour))
+	if err != nil {
+		return CoreSchedulePreference{}, err
+	}
+	if len(events) == 0 {
+		return CoreSchedulePreference{}, nil
+	}
+
+	now := time.Now().UTC()
+	var weightedStart float64
+	var totalWeight float64
+	for _, event := range events {
+		location, locationErr := time.LoadLocation(fallbackTimezone(event.Timezone))
+		if locationErr != nil {
+			location = time.UTC
+		}
+		localStart := event.NextStartAt.In(location)
+		minutes := localStart.Hour()*60 + localStart.Minute()
+		ageDays := now.Sub(event.CreatedAt.UTC()).Hours() / 24
+		if ageDays < 0 {
+			ageDays = 0
+		}
+		weight := 1 / (1 + ageDays/30)
+		weightedStart += float64(minutes) * weight
+		totalWeight += weight
+	}
+	if totalWeight == 0 {
+		return CoreSchedulePreference{}, nil
+	}
+	preferredStartMinute := int(weightedStart/totalWeight + 0.5)
+	return CoreSchedulePreference{
+		PreferredStartMinute: &preferredStartMinute,
+		SampleCount:          len(events),
+		Confidence:           minFloat(totalWeight/3, 1),
+	}, nil
+}
+
+func minFloat(left, right float64) float64 {
+	if left < right {
+		return left
+	}
+	return right
+}
+
 func (s *Service) scheduleTimezone(ctx context.Context, workspaceID, userID uuid.UUID) string {
 	connection, err := s.repo.GetActiveConnection(ctx, workspaceID, userID, ProviderGoogle)
 	if err != nil {
@@ -582,6 +631,38 @@ func (s *Service) UpdateScheduleBlock(ctx context.Context, input CoreScheduleBlo
 	}
 	normalized.ID = input.ID
 	return s.repo.UpdateScheduleBlock(ctx, normalized)
+}
+
+func (s *Service) ManuallyRescheduleScheduleBlock(ctx context.Context, input ManualScheduleBlockInput) (CoreScheduleBlock, error) {
+	if s.repo == nil {
+		return CoreScheduleBlock{}, ErrCalendarNotConfigured
+	}
+	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.ActorID == uuid.Nil || input.BlockID == uuid.Nil || input.ClientMutationID == uuid.Nil {
+		return CoreScheduleBlock{}, ErrInvalidScheduleBlock
+	}
+	if input.Change != ManualScheduleBlockChangeMove && input.Change != ManualScheduleBlockChangeResize {
+		return CoreScheduleBlock{}, ErrInvalidScheduleBlock
+	}
+	if err := validateScheduleRange(input.StartAt, input.EndAt); err != nil {
+		return CoreScheduleBlock{}, err
+	}
+	if strings.TrimSpace(input.Timezone) == "" {
+		input.Timezone = "UTC"
+	}
+	manualRepo, ok := s.repo.(ManualScheduleBlockRepository)
+	if !ok {
+		return CoreScheduleBlock{}, ErrCalendarNotConfigured
+	}
+	block, err := manualRepo.ManuallyRescheduleScheduleBlock(ctx, input)
+	if err != nil {
+		return CoreScheduleBlock{}, err
+	}
+	if s.cfg.Updates != nil {
+		if publishErr := s.cfg.Updates.PublishCalendarUpdated(ctx, input.WorkspaceID, input.UserID, uuid.Nil, s.now().UTC()); publishErr != nil && s.log != nil {
+			s.log.Error(ctx, "failed to publish manual calendar update", "error", publishErr, "block_id", input.BlockID)
+		}
+	}
+	return block, nil
 }
 
 func (s *Service) DeleteScheduleBlock(ctx context.Context, workspaceID, userID, blockID uuid.UUID) error {

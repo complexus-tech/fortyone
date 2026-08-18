@@ -764,6 +764,39 @@ func TestPlannerDoesNotPreemptProtectedOrMoreUrgentWork(t *testing.T) {
 	}
 }
 
+func TestPlannerUsesManualSchedulePreferenceAsSoftStartTime(t *testing.T) {
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	preferredStartMinute := 16 * 60
+	startAt := time.Date(2026, 8, 19, 9, 0, 0, 0, time.UTC)
+
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID:        uuid.New(),
+			Workspace: workspaceID,
+			Assignee:  &userID,
+		},
+		DurationMinutes: 60,
+		WindowStart:     startAt,
+		WindowEnd:       startAt.Add(8 * time.Hour),
+		Candidates: []CandidateSchedule{{
+			Member:               reports.CoreMemberWorkload{UserID: userID},
+			Timezone:             "UTC",
+			PreferredStartMinute: &preferredStartMinute,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if len(result.Actions) != 1 || result.Actions[0].Payload.ScheduleBlock == nil {
+		t.Fatalf("expected one schedule action, got %#v", result.Actions)
+	}
+	if got := result.Actions[0].Payload.ScheduleBlock.StartAt; !got.Equal(startAt.Add(7 * time.Hour)) {
+		t.Fatalf("expected preferred start at 16:00 UTC, got %s", got)
+	}
+}
+
 func int16Ptr(value int16) *int16 {
 	return &value
 }

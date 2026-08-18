@@ -8,4 +8,5 @@ export {
   useCreateCalendarScheduleBlock,
   useUpdateCalendarScheduleBlock,
   useDeleteCalendarScheduleBlock,
+  useManualRescheduleCalendarScheduleBlock,
 } from "./use-schedule-blocks";
