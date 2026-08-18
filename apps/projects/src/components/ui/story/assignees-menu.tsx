@@ -10,14 +10,8 @@ import {
 } from "react";
 import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
 import { useSession } from "@/lib/auth/client";
-import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import {
-  MEMBER_MENU_PAGE_SIZE,
-  useMayaAssignee,
-  useMembersInfinite,
-} from "@/lib/hooks/members";
+import { MEMBER_MENU_PAGE_SIZE, useMembersInfinite } from "@/lib/hooks/members";
 import { useTeamMembersInfinite } from "@/lib/hooks/team-members";
-import { MayaAvatar } from "../maya-avatar";
 import { MenuLoadingSkeleton } from "../menu-loading-skeleton";
 
 const AssigneesContext = createContext<{
@@ -64,20 +58,17 @@ const Items = ({
   onAssigneeSelected,
   disallowEmptySelection = false,
   excludeUsers = EMPTY_EXCLUDED_USERS,
-  showMaya = true,
   teamId,
 }: {
   placeholder?: string;
   align?: "start" | "end" | "center";
   disallowEmptySelection?: boolean;
   excludeUsers?: string[];
-  showMaya?: boolean;
   assigneeId?: string | null;
   teamId?: string;
   onAssigneeSelected: (assigneeId: string | null) => void;
 }) => {
   const { data: session } = useSession();
-  const { hasFeature } = useSubscriptionFeatures();
   const { open, setOpen } = useAssigneesMenu();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
@@ -93,35 +84,17 @@ const Items = ({
     open && Boolean(teamId),
   );
   const membersQuery = teamId ? teamMembersQuery : workspaceMembersQuery;
-  const mayaQuery = useMayaAssignee(open && showMaya);
   const members =
     membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
   const excludedUserIds = new Set(excludeUsers);
   const isLoadingMembers =
     membersQuery.isFetching && !membersQuery.isFetchingNextPage;
-  const mayaAssignee = mayaQuery.data;
-  const canUseBackgroundMaya = hasFeature("backgroundMaya");
-  const normalizedQuery = deferredQuery.trim().toLowerCase();
-  const visibleMayaAssignee =
-    showMaya &&
-    mayaAssignee !== undefined &&
-    !excludedUserIds.has(mayaAssignee.id) &&
-    (normalizedQuery === "" ||
-      "maya ai agent ai assistant".includes(normalizedQuery))
-      ? mayaAssignee
-      : null;
   const currentUserId = session?.user.id ?? null;
   const self = members.find(({ id }) => id === currentUserId);
   const visibleMembers = members.filter(
-    ({ id }) =>
-      !excludedUserIds.has(id) &&
-      id !== currentUserId &&
-      id !== visibleMayaAssignee?.id,
+    ({ id }) => !excludedUserIds.has(id) && id !== currentUserId,
   );
-  const indexOffset =
-    (disallowEmptySelection ? 0 : 1) +
-    (visibleMayaAssignee ? 1 : 0) +
-    (self ? 1 : 0);
+  const indexOffset = (disallowEmptySelection ? 0 : 1) + (self ? 1 : 0);
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -188,43 +161,6 @@ const Items = ({
                       <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
                     )}
                     <Text color="muted">0</Text>
-                  </Flex>
-                </Command.Item>
-              ) : null}
-              {visibleMayaAssignee ? (
-                <Command.Item
-                  active={visibleMayaAssignee.id === assigneeId}
-                  className="justify-between"
-                  disabled={!canUseBackgroundMaya}
-                  onSelect={() => {
-                    if (!canUseBackgroundMaya) {
-                      return;
-                    }
-                    if (visibleMayaAssignee.id !== assigneeId) {
-                      onAssigneeSelected(visibleMayaAssignee.id);
-                    }
-                    setOpen(false);
-                  }}
-                  value="Maya AI agent"
-                >
-                  <Flex align="center" gap={2}>
-                    <MayaAvatar
-                      name={visibleMayaAssignee.fullName}
-                      size="sm"
-                      src={visibleMayaAssignee.avatarUrl}
-                    />
-                    <Text className="max-w-48 truncate">
-                      Maya{" "}
-                      <Text as="span" color="muted">
-                        {canUseBackgroundMaya ? "(AI)" : "(Paid plan)"}
-                      </Text>
-                    </Text>
-                  </Flex>
-                  <Flex align="center" gap={1}>
-                    {visibleMayaAssignee.id === assigneeId && (
-                      <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                    )}
-                    <Text color="muted">{disallowEmptySelection ? 0 : 1}</Text>
                   </Flex>
                 </Command.Item>
               ) : null}

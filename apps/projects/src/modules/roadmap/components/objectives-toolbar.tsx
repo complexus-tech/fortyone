@@ -143,7 +143,6 @@ export const ObjectivesToolbar = ({
             onAssigneeSelected={(leadUser) => {
               handleBulkUpdate({ leadUser });
             }}
-            showMaya={false}
             teamId={teamId}
           />
         </AssigneesMenu>

@@ -333,7 +333,6 @@ export const KeyResultDetails = ({
                     });
                   }}
                   placeholder="Assign lead..."
-                  showMaya={false}
                   teamId={objective.teamId}
                 />
               </AssigneesMenu>

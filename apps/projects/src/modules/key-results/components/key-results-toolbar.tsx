@@ -97,7 +97,6 @@ export const KeyResultsToolbar = ({
                 updateSelected({ lead });
               }}
               placeholder="Assign lead..."
-              showMaya={false}
               teamId={sharedTeamId}
             />
           </AssigneesMenu>

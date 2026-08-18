@@ -354,7 +354,6 @@ const KeyResultLeadMenu = ({
           });
         }}
         placeholder="Assign lead..."
-        showMaya={false}
       />
     </AssigneesMenu>
   );
