@@ -327,6 +327,8 @@ const renderSlashCommand = () => {
       component = nextComponent;
       const overlayRoot = getRichTextOverlayRoot(props.editor);
       popup = tippy(document.body, {
+        // Keep the menu inside the dialog's interactive subtree while
+        // allowing the editor surface to render it beyond the body bounds.
         appendTo: () => overlayRoot,
         content: nextComponent.element,
         getReferenceClientRect: () =>
@@ -335,6 +337,7 @@ const renderSlashCommand = () => {
         placement: "bottom-start",
         showOnCreate: true,
         trigger: "manual",
+        zIndex: 1000,
       });
       activeSlashCommandMenu = { destroy, owner };
     },
