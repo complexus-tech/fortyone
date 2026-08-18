@@ -19,7 +19,11 @@ export const SidebarToggleButton = () => {
         size="sm"
         variant="naked"
       >
-        {isCollapsed ? <SidebarExpandIcon /> : <SidebarCollapseIcon />}
+        {isCollapsed ? (
+          <SidebarExpandIcon className="text-foreground" />
+        ) : (
+          <SidebarCollapseIcon className="text-foreground" />
+        )}
       </Button>
     </Tooltip>
   );
