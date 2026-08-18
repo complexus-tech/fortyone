@@ -121,7 +121,7 @@ const Items = ({
       <Box>
         <Text fontWeight="medium">Time needed</Text>
         <Text className="mt-0.5 text-sm leading-5" color="muted">
-          Used to reserve enough calendar time.
+          Estimate how long this work will take.
         </Text>
       </Box>
 
@@ -217,7 +217,7 @@ const Items = ({
 
       {estimatedDurationMinutes ? (
         <button
-          className="text-danger focus-visible:ring-primary mt-2 border-0 bg-transparent px-3 py-1 text-base focus-visible:ring-1 focus-visible:outline-none"
+          className="text-foreground focus-visible:ring-primary mt-2 border-0 bg-transparent px-0 py-1 text-[0.95rem] focus-visible:ring-1 focus-visible:outline-none"
           onClick={() => {
             selectDuration(null);
           }}

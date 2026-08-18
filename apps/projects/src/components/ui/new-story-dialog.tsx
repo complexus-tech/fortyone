@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Box,
   Button,
   Dialog,
   Flex,
@@ -811,185 +812,235 @@ export const NewStoryDialog = ({
                   }}
                 />
               </DatePicker>
-              <AssigneesMenu>
-                <AssigneesMenu.Trigger>
-                  <Button
-                    className="dark:bg-surface-elevated/90 gap-1.5 px-2"
-                    color="tertiary"
-                    leftIcon={
-                      <Avatar
-                        name={member?.fullName}
-                        size="xs"
-                        src={member?.avatarUrl}
-                      />
-                    }
-                    ref={assigneeButtonRef}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <span className="relative -top-px inline-block max-w-[12ch] truncate">
-                      {member?.username || "Assignee"}
-                    </span>
-                  </Button>
-                </AssigneesMenu.Trigger>
-                <AssigneesMenu.Items
-                  assigneeId={storyForm.assigneeId}
-                  onAssigneeSelected={(assigneeId) => {
-                    dispatch({
-                      type: "PATCH_FORM",
-                      payload: {
-                        assigneeId,
-                        autoSchedulingEnabled: getNewStoryAutoSchedulingEnabled(
-                          {
-                            currentEnabled: Boolean(
-                              storyForm.autoSchedulingEnabled,
-                            ),
-                            mayaAssigneeId: mayaAssignee?.id,
-                            selectedAssigneeId: assigneeId,
-                          },
-                        ),
-                      },
-                    });
-                  }}
-                  teamId={currentTeamId}
-                />
-              </AssigneesMenu>
-              <EstimateMenu>
-                <EstimateMenu.Trigger>
-                  <Button
-                    className={cn("dark:bg-surface-elevated/90 gap-1.5 px-2", {
-                      "text-text-muted": !storyForm.estimateValue,
-                    })}
-                    color="tertiary"
-                    leftIcon={
-                      <EstimateIcon
-                        className={cn("h-4.5 w-auto", {
+              <Box className="order-8">
+                <AssigneesMenu>
+                  <AssigneesMenu.Trigger>
+                    <Button
+                      className="dark:bg-surface-elevated/90 gap-1.5 px-2"
+                      color="tertiary"
+                      leftIcon={
+                        <Avatar
+                          name={member?.fullName}
+                          size="xs"
+                          src={member?.avatarUrl}
+                        />
+                      }
+                      ref={assigneeButtonRef}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <span className="relative -top-px inline-block max-w-[12ch] truncate">
+                        {member?.username || "Assignee"}
+                      </span>
+                    </Button>
+                  </AssigneesMenu.Trigger>
+                  <AssigneesMenu.Items
+                    assigneeId={storyForm.assigneeId}
+                    onAssigneeSelected={(assigneeId) => {
+                      dispatch({
+                        type: "PATCH_FORM",
+                        payload: {
+                          assigneeId,
+                          autoSchedulingEnabled:
+                            getNewStoryAutoSchedulingEnabled({
+                              currentEnabled: Boolean(
+                                storyForm.autoSchedulingEnabled,
+                              ),
+                              mayaAssigneeId: mayaAssignee?.id,
+                              selectedAssigneeId: assigneeId,
+                            }),
+                        },
+                      });
+                    }}
+                    teamId={currentTeamId}
+                  />
+                </AssigneesMenu>
+              </Box>
+              <Box className="order-9">
+                <EstimateMenu>
+                  <EstimateMenu.Trigger>
+                    <Button
+                      className={cn(
+                        "dark:bg-surface-elevated/90 gap-1.5 px-2",
+                        {
                           "text-text-muted": !storyForm.estimateValue,
-                        })}
-                      />
-                    }
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {storyForm.estimateValue
-                      ? formatEstimate(
-                          estimateScheme,
-                          storyForm.estimateValue,
-                          "full",
-                        )
-                      : "Complexity"}
-                  </Button>
-                </EstimateMenu.Trigger>
-                <EstimateMenu.Items
-                  estimateScheme={estimateScheme}
-                  estimateValue={storyForm.estimateValue}
-                  setEstimateValue={(estimateValue) => {
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "estimateValue",
-                      value: estimateValue,
-                    });
-                  }}
-                />
-              </EstimateMenu>
-              <TimeNeededMenu>
-                <TimeNeededMenu.Trigger>
-                  <Button
-                    className={cn("dark:bg-surface-elevated/90 gap-1.5 px-2", {
-                      "text-text-muted": !storyForm.estimatedDurationMinutes,
-                    })}
-                    color="tertiary"
-                    leftIcon={
-                      <Time02Icon
-                        className={cn("h-4.5 w-auto", {
+                        },
+                      )}
+                      color="tertiary"
+                      leftIcon={
+                        <EstimateIcon
+                          className={cn("h-4.5 w-auto", {
+                            "text-text-muted": !storyForm.estimateValue,
+                          })}
+                        />
+                      }
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {storyForm.estimateValue
+                        ? formatEstimate(
+                            estimateScheme,
+                            storyForm.estimateValue,
+                            "full",
+                          )
+                        : "Complexity"}
+                    </Button>
+                  </EstimateMenu.Trigger>
+                  <EstimateMenu.Items
+                    estimateScheme={estimateScheme}
+                    estimateValue={storyForm.estimateValue}
+                    setEstimateValue={(estimateValue) => {
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "estimateValue",
+                        value: estimateValue,
+                      });
+                    }}
+                  />
+                </EstimateMenu>
+              </Box>
+              <Box className="order-10">
+                <TimeNeededMenu>
+                  <TimeNeededMenu.Trigger>
+                    <Button
+                      className={cn(
+                        "dark:bg-surface-elevated/90 gap-1.5 px-2",
+                        {
                           "text-text-muted":
                             !storyForm.estimatedDurationMinutes,
-                        })}
-                      />
+                        },
+                      )}
+                      color="tertiary"
+                      leftIcon={
+                        <Time02Icon
+                          className={cn("h-4.5 w-auto", {
+                            "text-text-muted":
+                              !storyForm.estimatedDurationMinutes,
+                          })}
+                        />
+                      }
+                      ref={timeNeededButtonRef}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {storyForm.estimatedDurationMinutes
+                        ? formatTimeNeeded(
+                            storyForm.estimatedDurationMinutes,
+                            "full",
+                          )
+                        : "Time needed"}
+                    </Button>
+                  </TimeNeededMenu.Trigger>
+                  <TimeNeededMenu.Items
+                    estimatedDurationMinutes={
+                      storyForm.estimatedDurationMinutes
                     }
-                    ref={timeNeededButtonRef}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {storyForm.estimatedDurationMinutes
-                      ? formatTimeNeeded(
-                          storyForm.estimatedDurationMinutes,
-                          "full",
-                        )
-                      : "Time needed"}
-                  </Button>
-                </TimeNeededMenu.Trigger>
-                <TimeNeededMenu.Items
-                  estimatedDurationMinutes={storyForm.estimatedDurationMinutes}
-                  minimumFocusBlockMinutes={storyForm.minimumFocusBlockMinutes}
-                  setTimeNeeded={({
-                    estimatedDurationMinutes,
-                    minimumFocusBlockMinutes,
-                  }) => {
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "estimatedDurationMinutes",
-                      value: estimatedDurationMinutes,
-                    });
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "minimumFocusBlockMinutes",
-                      value: minimumFocusBlockMinutes,
-                    });
-                  }}
-                />
-              </TimeNeededMenu>
-              <AutoSchedulingMenu>
-                <AutoSchedulingMenu.Trigger>
-                  <Button
-                    className="dark:bg-surface-elevated/90 gap-1.5 px-2"
-                    color="tertiary"
-                    disabled={!canUseBackgroundMaya || isMayaAssigned}
-                    leftIcon={<TimeScheduleIcon className="h-4.5 w-auto" />}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    Auto-scheduling:{" "}
-                    {storyForm.autoSchedulingEnabled ? "On" : "Off"}
-                  </Button>
-                </AutoSchedulingMenu.Trigger>
-                <AutoSchedulingMenu.Items
-                  autoSchedulingEnabled={Boolean(
-                    storyForm.autoSchedulingEnabled,
-                  )}
-                  autoSchedulingLocked={Boolean(storyForm.autoSchedulingLocked)}
-                  setAutoSchedulingEnabled={(enabled) => {
-                    dispatch({
-                      type: "PATCH_FORM",
-                      payload: { autoSchedulingEnabled: enabled },
-                    });
-                  }}
-                />
-              </AutoSchedulingMenu>
-              {selectedLabels.length > 0 ? (
-                <Flex align="center" className="gap-1" wrap>
-                  {selectedLabels.map((label) => (
-                    <LabelsMenu key={label.id}>
+                    minimumFocusBlockMinutes={
+                      storyForm.minimumFocusBlockMinutes
+                    }
+                    setTimeNeeded={({
+                      estimatedDurationMinutes,
+                      minimumFocusBlockMinutes,
+                    }) => {
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "estimatedDurationMinutes",
+                        value: estimatedDurationMinutes,
+                      });
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "minimumFocusBlockMinutes",
+                        value: minimumFocusBlockMinutes,
+                      });
+                    }}
+                  />
+                </TimeNeededMenu>
+              </Box>
+              <Box className="order-11">
+                <AutoSchedulingMenu>
+                  <AutoSchedulingMenu.Trigger>
+                    <Button
+                      className="dark:bg-surface-elevated/90 gap-1.5 px-2"
+                      color="tertiary"
+                      disabled={!canUseBackgroundMaya || isMayaAssigned}
+                      leftIcon={<TimeScheduleIcon className="h-4.5 w-auto" />}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Auto-scheduling:{" "}
+                      {storyForm.autoSchedulingEnabled ? "On" : "Off"}
+                    </Button>
+                  </AutoSchedulingMenu.Trigger>
+                  <AutoSchedulingMenu.Items
+                    autoSchedulingEnabled={Boolean(
+                      storyForm.autoSchedulingEnabled,
+                    )}
+                    autoSchedulingLocked={Boolean(
+                      storyForm.autoSchedulingLocked,
+                    )}
+                    setAutoSchedulingEnabled={(enabled) => {
+                      dispatch({
+                        type: "PATCH_FORM",
+                        payload: { autoSchedulingEnabled: enabled },
+                      });
+                    }}
+                  />
+                </AutoSchedulingMenu>
+              </Box>
+              <Box className="order-5">
+                {selectedLabels.length > 0 ? (
+                  <Flex align="center" className="gap-1" wrap>
+                    {selectedLabels.map((label) => (
+                      <LabelsMenu key={label.id}>
+                        <LabelsMenu.Trigger>
+                          <Button
+                            className="dark:bg-surface-elevated/90 gap-1.5 px-2.5"
+                            color="tertiary"
+                            leftIcon={
+                              <TagsIcon
+                                className="h-4.5 w-auto"
+                                style={{ color: label.color }}
+                              />
+                            }
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >
+                            <span className="inline-block max-w-[12ch] truncate">
+                              {label.name}
+                            </span>
+                          </Button>
+                        </LabelsMenu.Trigger>
+                        <LabelsMenu.Items
+                          labelIds={selectedLabelIds}
+                          setLabelIds={(labelIds) => {
+                            dispatch({
+                              type: "SET_FIELD",
+                              field: "labelIds",
+                              value: labelIds,
+                            });
+                          }}
+                          teamId={currentTeamId ?? ""}
+                        />
+                      </LabelsMenu>
+                    ))}
+                    <LabelsMenu>
                       <LabelsMenu.Trigger>
                         <Button
-                          className="dark:bg-surface-elevated/90 gap-1.5 px-2.5"
+                          asIcon
+                          className="dark:bg-surface-elevated/90"
                           color="tertiary"
-                          leftIcon={
-                            <TagsIcon
-                              className="h-4.5 w-auto"
-                              style={{ color: label.color }}
-                            />
-                          }
+                          leftIcon={<PlusIcon />}
+                          rounded="full"
                           size="sm"
+                          title="Add labels"
                           type="button"
                           variant="outline"
                         >
-                          <span className="inline-block max-w-[12ch] truncate">
-                            {label.name}
-                          </span>
+                          <span className="sr-only">Add labels</span>
                         </Button>
                       </LabelsMenu.Trigger>
                       <LabelsMenu.Items
@@ -1004,21 +1055,19 @@ export const NewStoryDialog = ({
                         teamId={currentTeamId ?? ""}
                       />
                     </LabelsMenu>
-                  ))}
+                  </Flex>
+                ) : (
                   <LabelsMenu>
                     <LabelsMenu.Trigger>
                       <Button
-                        asIcon
-                        className="dark:bg-surface-elevated/90"
+                        className="dark:bg-surface-elevated/90 gap-1.5 px-2"
                         color="tertiary"
-                        leftIcon={<PlusIcon />}
-                        rounded="full"
+                        leftIcon={<TagsIcon className="h-4.5 w-auto" />}
                         size="sm"
-                        title="Add labels"
                         type="button"
                         variant="outline"
                       >
-                        <span className="sr-only">Add labels</span>
+                        Labels
                       </Button>
                     </LabelsMenu.Trigger>
                     <LabelsMenu.Items
@@ -1033,95 +1082,73 @@ export const NewStoryDialog = ({
                       teamId={currentTeamId ?? ""}
                     />
                   </LabelsMenu>
-                </Flex>
-              ) : (
-                <LabelsMenu>
-                  <LabelsMenu.Trigger>
-                    <Button
-                      className="dark:bg-surface-elevated/90 gap-1.5 px-2"
-                      color="tertiary"
-                      leftIcon={<TagsIcon className="h-4.5 w-auto" />}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      Labels
-                    </Button>
-                  </LabelsMenu.Trigger>
-                  <LabelsMenu.Items
-                    labelIds={selectedLabelIds}
-                    setLabelIds={(labelIds) => {
+                )}
+              </Box>
+              <Box className="order-6">
+                {features.objectiveEnabled && objectives.length > 0 ? (
+                  <ObjectiveKeyResultMenu
+                    keyResultId={storyForm.keyResultId ?? null}
+                    objectiveId={storyForm.objectiveId ?? null}
+                    onChange={(selection) => {
                       dispatch({
                         type: "SET_FIELD",
-                        field: "labelIds",
-                        value: labelIds,
+                        field: "objectiveId",
+                        value: selection.objectiveId,
+                      });
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "keyResultId",
+                        value: selection.keyResultId,
                       });
                     }}
                     teamId={currentTeamId ?? ""}
-                  />
-                </LabelsMenu>
-              )}
-              {features.objectiveEnabled && objectives.length > 0 ? (
-                <ObjectiveKeyResultMenu
-                  keyResultId={storyForm.keyResultId ?? null}
-                  objectiveId={storyForm.objectiveId ?? null}
-                  onChange={(selection) => {
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "objectiveId",
-                      value: selection.objectiveId,
-                    });
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "keyResultId",
-                      value: selection.keyResultId,
-                    });
-                  }}
-                  teamId={currentTeamId ?? ""}
-                >
-                  <Button
-                    className="dark:bg-surface-elevated/90 gap-1 px-2"
-                    color="tertiary"
-                    leftIcon={<ObjectiveIcon />}
-                    size="sm"
-                    variant="outline"
                   >
-                    <span className="inline-block max-w-[18ch] truncate">
-                      {strategyLinkLabel ||
-                        getTermDisplay("objectiveTerm", { capitalize: true })}
-                    </span>
-                  </Button>
-                </ObjectiveKeyResultMenu>
-              ) : null}
-              {sprintsEnabled && sprints.length > 0 ? (
-                <SprintsMenu>
-                  <SprintsMenu.Trigger>
                     <Button
                       className="dark:bg-surface-elevated/90 gap-1 px-2"
                       color="tertiary"
-                      leftIcon={<SprintsIcon />}
+                      leftIcon={<ObjectiveIcon />}
                       size="sm"
                       variant="outline"
                     >
-                      <span className="inline-block max-w-[12ch] truncate">
-                        {sprint?.name ||
-                          getTermDisplay("sprintTerm", { capitalize: true })}
+                      <span className="inline-block max-w-[18ch] truncate">
+                        {strategyLinkLabel ||
+                          getTermDisplay("objectiveTerm", { capitalize: true })}
                       </span>
                     </Button>
-                  </SprintsMenu.Trigger>
-                  <SprintsMenu.Items
-                    setSprintId={(sprintId) => {
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "sprintId",
-                        value: sprintId,
-                      });
-                    }}
-                    sprintId={storyForm.sprintId ?? undefined}
-                    teamId={currentTeamId}
-                  />
-                </SprintsMenu>
-              ) : null}
+                  </ObjectiveKeyResultMenu>
+                ) : null}
+              </Box>
+              <Box className="order-7">
+                {sprintsEnabled && sprints.length > 0 ? (
+                  <SprintsMenu>
+                    <SprintsMenu.Trigger>
+                      <Button
+                        className="dark:bg-surface-elevated/90 gap-1 px-2"
+                        color="tertiary"
+                        leftIcon={<SprintsIcon />}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <span className="inline-block max-w-[12ch] truncate">
+                          {sprint?.name ||
+                            getTermDisplay("sprintTerm", { capitalize: true })}
+                        </span>
+                      </Button>
+                    </SprintsMenu.Trigger>
+                    <SprintsMenu.Items
+                      setSprintId={(sprintId) => {
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "sprintId",
+                          value: sprintId,
+                        });
+                      }}
+                      sprintId={storyForm.sprintId ?? undefined}
+                      teamId={currentTeamId}
+                    />
+                  </SprintsMenu>
+                ) : null}
+              </Box>
             </Flex>
           </Dialog.Body>
           <Dialog.Footer className="flex items-center justify-between gap-2">
