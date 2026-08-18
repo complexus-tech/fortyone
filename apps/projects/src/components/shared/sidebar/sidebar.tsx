@@ -89,7 +89,7 @@ export const Sidebar = () => {
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const { workspace } = useCurrentWorkspace();
   const { withWorkspace } = useWorkspacePath();
-  const { isCollapsed, setIsCollapsed } = useSidebar();
+  const { isCollapsed } = useSidebar();
 
   const { tier, trialDaysRemaining } = useSubscriptionFeatures();
   const { userRole } = useUserRole();
@@ -173,12 +173,7 @@ export const Sidebar = () => {
         data-sidebar-content
       >
         <Navigation isCollapsed={isCollapsed} />
-        <Teams
-          isCollapsed={isCollapsed}
-          onExpand={() => {
-            setIsCollapsed(false);
-          }}
-        />
+        <Teams isCollapsed={isCollapsed} />
       </Box>
       <Box
         className={cn("relative z-1 shrink-0 pb-4", isCollapsed && "px-2")}

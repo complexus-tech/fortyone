@@ -2,7 +2,19 @@
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Box, Button, Collapsible, ContextMenu, Flex, Menu, Tooltip } from "ui";
+import type { ReactNode } from "react";
+import {
+  Box,
+  Button,
+  Collapsible,
+  ContextMenu,
+  Divider,
+  Flex,
+  Menu,
+  Popover,
+  Text,
+  Tooltip,
+} from "ui";
 import {
   ArchiveIcon,
   // BacklogIcon,
@@ -36,6 +48,87 @@ import type { TeamFeedbackSummary } from "@/modules/team-feedback/types";
 import { useTeamIntegrationRequests } from "@/modules/integration-requests/hooks/use-team-requests";
 import { NavCount } from "./nav-count";
 
+type TeamLink = {
+  name: string;
+  icon: ReactNode;
+  href: string;
+  count?: number;
+  disabled?: boolean;
+};
+
+const CollapsedTeamNavigation = ({
+  color,
+  isTeamActive,
+  links,
+  pathname,
+  teamName,
+}: {
+  color?: string;
+  isTeamActive: boolean;
+  links: TeamLink[];
+  pathname: string;
+  teamName: string;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Popover onOpenChange={setIsOpen} open={isOpen}>
+      <Popover.Trigger asChild>
+        <button
+          aria-expanded={isOpen}
+          aria-label={`${isOpen ? "Close" : "Open"} ${teamName} team navigation`}
+          className={cn(
+            "border-border/70 bg-surface/40 focus-visible:ring-primary/40 hover:bg-accent flex h-10 w-10 flex-none items-center justify-center rounded-lg border transition outline-none focus-visible:ring-2",
+            isTeamActive && "bg-accent",
+          )}
+          type="button"
+        >
+          <Tooltip side="right" title={teamName}>
+            <span>
+              <TeamColor className="size-4" color={color} />
+            </span>
+          </Tooltip>
+        </button>
+      </Popover.Trigger>
+      <Popover.Content
+        align="start"
+        aria-label={`${teamName} team navigation`}
+        className="w-56 p-1.5"
+        side="right"
+        sideOffset={8}
+      >
+        <Text className="truncate px-2 py-1.5 font-medium">{teamName}</Text>
+        <Divider className="my-1" />
+        <Flex direction="column" gap={1}>
+          {links.map(({ name, icon, href, count, disabled }) => {
+            if (disabled) return null;
+
+            const isActive = pathname.startsWith(href);
+            return (
+              <NavLink
+                active={isActive}
+                aria-current={isActive ? "page" : undefined}
+                className="px-2 py-1.5"
+                href={href}
+                key={name}
+                onClick={() => {
+                  setIsOpen(false);
+                }}
+              >
+                {icon}
+                <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                  <span className="capitalize">{name}</span>
+                  <NavCount count={count ?? 0} />
+                </span>
+              </NavLink>
+            );
+          })}
+        </Flex>
+      </Popover.Content>
+    </Popover>
+  );
+};
+
 export const Team = ({
   id,
   name: teamName,
@@ -46,7 +139,6 @@ export const Team = ({
   isOpen,
   isCollapsed,
   onOpenChange,
-  onExpand,
   sortingDisabled,
 }: Pick<TeamType, "id" | "name" | "color" | "isPrivate"> & {
   feedbackSummary?: TeamFeedbackSummary;
@@ -54,7 +146,6 @@ export const Team = ({
   isOpen: boolean;
   isCollapsed: boolean;
   onOpenChange: (open: boolean) => void;
-  onExpand?: () => void;
   sortingDisabled: boolean;
 }) => {
   const { getTermDisplay } = useTerminology();
@@ -91,7 +182,7 @@ export const Team = ({
     transition,
   };
 
-  const links = [
+  const links: TeamLink[] = [
     {
       name: "Intake",
       icon: <IntakeIcon className="h-[1.15rem]" />,
@@ -130,6 +221,9 @@ export const Team = ({
       disabled: !sprintsEnabled,
     },
   ];
+  const teamPath = withWorkspace(`/teams/${id}`);
+  const isTeamActive =
+    pathname === teamPath || pathname.startsWith(`${teamPath}/`);
 
   return (
     <ContextMenu>
@@ -165,56 +259,39 @@ export const Team = ({
                     {...listeners}
                   />
                 ) : null}
-                <Collapsible.Trigger asChild>
-                  <button
-                    aria-label={
-                      isCollapsed
-                        ? `Expand sidebar and open ${teamName} team`
-                        : `${isOpen ? "Collapse" : "Expand"} ${teamName} team`
-                    }
-                    className={cn(
-                      "focus-visible:ring-primary/40 flex h-10 min-w-0 flex-1 items-center justify-between rounded-lg pr-2 pl-3 text-left transition outline-none select-none focus-visible:ring-2",
-                      isCollapsed && "w-10 flex-none justify-center px-0",
-                    )}
-                    onClick={(event) => {
-                      if (isCollapsed) {
-                        event.preventDefault();
-                        onExpand?.();
-                        onOpenChange(true);
-                      }
-                    }}
-                    suppressHydrationWarning
-                    type="button"
-                  >
-                    <Tooltip side="right" title={isCollapsed ? teamName : null}>
+                {isCollapsed ? (
+                  <CollapsedTeamNavigation
+                    color={color}
+                    isTeamActive={isTeamActive}
+                    links={links}
+                    pathname={pathname}
+                    teamName={teamName}
+                  />
+                ) : (
+                  <Collapsible.Trigger asChild>
+                    <button
+                      aria-label={`${isOpen ? "Collapse" : "Expand"} ${teamName} team`}
+                      className="focus-visible:ring-primary/40 flex h-10 min-w-0 flex-1 items-center justify-between rounded-lg pr-2 pl-3 text-left transition outline-none select-none focus-visible:ring-2"
+                      suppressHydrationWarning
+                      type="button"
+                    >
                       <span className="flex min-w-0 items-center gap-1.5">
-                        <TeamColor
-                          className={isCollapsed ? "size-4" : undefined}
-                          color={color}
-                        />
-                        <span
-                          className={cn(
-                            "ml-0.5 block max-w-[15ch] truncate",
-                            isCollapsed && "hidden",
-                          )}
-                        >
+                        <TeamColor color={color} />
+                        <span className="ml-0.5 block max-w-[15ch] truncate">
                           {teamName}
                         </span>
                         <ChevronRightIcon
                           className={cn(
                             "relative top-[0.5px] h-3.5",
-                            {
-                              "rotate-90": isOpen,
-                            },
-                            isCollapsed && "hidden",
+                            isOpen && "rotate-90",
                           )}
                           strokeWidth={3.5}
                           suppressHydrationWarning
                         />
                       </span>
-                    </Tooltip>
-                  </button>
-                </Collapsible.Trigger>
+                    </button>
+                  </Collapsible.Trigger>
+                )}
                 {!isCollapsed ? (
                   <Menu>
                     <Menu.Button>

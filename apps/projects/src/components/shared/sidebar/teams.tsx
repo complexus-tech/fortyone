@@ -29,13 +29,7 @@ import {
 
 const DEFAULT_EXPANDED_TEAM_ID = "__first-visible-team__";
 
-export const Teams = ({
-  isCollapsed = false,
-  onExpand,
-}: {
-  isCollapsed?: boolean;
-  onExpand?: () => void;
-}) => {
+export const Teams = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
   const { data: teams = [] } = useJoinedTeams();
   const { data: feedbackSummaries = [] } = useTeamFeedbackSummaries();
   const { userRole } = useUserRole();
@@ -179,7 +173,6 @@ export const Teams = ({
                 isPrivate={team.isPrivate}
                 key={team.id}
                 name={team.name}
-                onExpand={onExpand}
                 onOpenChange={(open) => {
                   setStoredExpandedTeamId(open ? team.id : null);
                 }}
