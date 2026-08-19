@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const removeLegacyNotificationUniquenessMigration = "000134_remove_legacy_notification_entity_uniqueness"
+const removeLegacyNotificationUniquenessMigration = "000137_remove_legacy_notification_entity_uniqueness"
 
 func TestRemoveLegacyNotificationUniquenessMigrationContracts(t *testing.T) {
 	t.Parallel()
