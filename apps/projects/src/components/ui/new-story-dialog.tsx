@@ -113,6 +113,7 @@ import {
   getDeadlineForSprintSelection,
   getInitialDeadlineSource,
   runStoryCreatedFollowUp,
+  toDateOnly,
   type DeadlineSource,
 } from "./new-story-dialog-form";
 
@@ -201,8 +202,9 @@ export const NewStoryDialog = ({
     teams.find((team) => team.id === currentTeamId) || firstTeam;
   const { data: objectives = [] } = useTeamObjectives(currentTeamId ?? "");
   const { data: sprints = [] } = useTeamSprints(currentTeamId ?? "");
-  const initialSprintEndDate =
-    sprints.find((candidate) => candidate.id === sprintId)?.endDate ?? null;
+  const initialSprintEndDate = toDateOnly(
+    sprints.find((candidate) => candidate.id === sprintId)?.endDate,
+  );
   const initialDeadlineSource = getInitialDeadlineSource({
     sprintId,
     sprintEndDate: initialSprintEndDate,
@@ -1155,7 +1157,7 @@ export const NewStoryDialog = ({
                         const nextDeadline = getDeadlineForSprintSelection({
                           currentEndDate: storyForm.endDate,
                           currentSource: deadlineSourceRef.current,
-                          sprintEndDate,
+                          sprintEndDate: toDateOnly(sprintEndDate),
                         });
                         dispatch({
                           type: "SET_FIELD",

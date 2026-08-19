@@ -4,6 +4,13 @@ import { normalizeTimeNeeded } from "@/lib/time-needed";
 
 export type DeadlineSource = "unset" | "sprint" | "manual" | "cleared";
 
+export const toDateOnly = (value?: string | null): string | null => {
+  if (!value) return null;
+
+  const dateOnly = /^\d{4}-\d{2}-\d{2}/.exec(value)?.[0];
+  return dateOnly ?? value;
+};
+
 export const getInitialDeadlineSource = ({
   sprintId,
   sprintEndDate,
@@ -63,7 +70,7 @@ export const buildNewStoryDialogPayload = ({
     teamId: currentTeamId,
     priority: storyForm.priority,
     statusId: storyForm.statusId,
-    endDate: storyForm.endDate,
+    endDate: toDateOnly(storyForm.endDate),
     startDate: storyForm.startDate,
     assigneeId: storyForm.assigneeId,
     objectiveId: storyForm.objectiveId,

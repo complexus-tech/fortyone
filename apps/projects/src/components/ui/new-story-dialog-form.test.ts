@@ -6,9 +6,16 @@ import {
   getDeadlineForSprintSelection,
   getInitialDeadlineSource,
   runStoryCreatedFollowUp,
+  toDateOnly,
 } from "./new-story-dialog-form";
 
 describe("new story dialog form", () => {
+  it("removes the time component from sprint deadlines", () => {
+    expect(toDateOnly("2026-06-20T23:59:59.000Z")).toBe("2026-06-20");
+    expect(toDateOnly("2026-06-20")).toBe("2026-06-20");
+    expect(toDateOnly(null)).toBeNull();
+  });
+
   it("inherits the sprint end date when no deadline has been provided", () => {
     expect(
       getDeadlineForSprintSelection({
@@ -88,6 +95,20 @@ describe("new story dialog form", () => {
       teamId: "team-1",
       title: "Add reporting filters",
     });
+  });
+
+  it("serializes a timestamped deadline as an ISO date", () => {
+    const payload = buildNewStoryDialogPayload({
+      currentTeamId: "team-1",
+      description: "",
+      descriptionHTML: "",
+      storyForm: {
+        endDate: "2026-06-20T23:59:59.000Z",
+      },
+      title: "Use the sprint deadline",
+    });
+
+    expect(payload.endDate).toBe("2026-06-20");
   });
 
   it("defaults new stories to auto-scheduling when no choice is provided", () => {
