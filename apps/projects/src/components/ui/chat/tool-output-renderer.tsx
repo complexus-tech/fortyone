@@ -9,10 +9,12 @@ import { MayaWorkPlanResult } from "./maya-work-plan-result";
 import type { ToolMessagePart } from "./tool-output-policy";
 import {
   asToolOutputRecord,
+  getStoryCreationMessage,
   getToolSuggestions,
   isAnalyticsReportOutput,
   isEntityResultToolType,
   isRenderableToolPart,
+  isStoryCreationToolType,
   isStoryResultToolType,
 } from "./tool-output-policy";
 
@@ -33,6 +35,16 @@ export const ToolOutputRenderer = ({
     return (
       <GenerativeOutputFrame>
         <StoryResults output={part.output} />
+      </GenerativeOutputFrame>
+    );
+  }
+
+  if (isStoryCreationToolType(part.type)) {
+    return (
+      <GenerativeOutputFrame>
+        <p className="text-text-muted text-base">
+          {getStoryCreationMessage(part.output)}
+        </p>
       </GenerativeOutputFrame>
     );
   }

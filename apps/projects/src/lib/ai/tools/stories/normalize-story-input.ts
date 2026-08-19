@@ -16,7 +16,8 @@ type StoryInput = {
   autoSchedulingEnabled?: boolean;
   sprintId?: string | null;
   objectiveId?: string | null;
-  labelIds?: string[];
+  keyResultId?: string | null;
+  labelIds?: string[] | null;
   parentId?: string | null;
   startDate?: string | null;
   endDate?: string | null;
@@ -37,6 +38,7 @@ type NormalizedStoryInput = {
   assigneeId?: string;
   sprintId?: string;
   objectiveId?: string;
+  keyResultId?: string;
   parentId?: string;
   startDate?: string;
   endDate?: string;
@@ -47,6 +49,20 @@ const isPlaceholderValue = (value: string) => {
   return trimmed.startsWith("[") && trimmed.endsWith("]");
 };
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const isValidUuid = (value: string) => UUID_PATTERN.test(value);
+
+const normalizeRequiredString = (value: string, fieldName: string) => {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) {
+    throw new Error(`${fieldName} is required.`);
+  }
+  return normalized;
+};
+
 export const normalizeRequiredStoryId = (value: string, fieldName: string) => {
   const normalized = normalizeOptionalString(value);
   if (!normalized || isPlaceholderValue(normalized)) {
@@ -54,15 +70,68 @@ export const normalizeRequiredStoryId = (value: string, fieldName: string) => {
       `${fieldName} must be resolved to a real ID before creating a story.`,
     );
   }
+  if (!isValidUuid(normalized)) {
+    throw new Error(`${fieldName} must be a valid UUID.`);
+  }
   return normalized;
 };
 
-const normalizeOptionalId = (value?: string | null) => {
+export const normalizeOptionalStoryId = (
+  value: string | null | undefined,
+  fieldName: string,
+) => {
   const normalized = normalizeOptionalString(value);
   if (!normalized || isPlaceholderValue(normalized)) {
     return undefined;
   }
+  if (!isValidUuid(normalized)) {
+    throw new Error(`${fieldName} must be a valid UUID.`);
+  }
   return normalized;
+};
+
+const normalizeOptionalIds = (values?: string[] | null) => {
+  if (values === null || values === undefined) return undefined;
+
+  const normalizedIds = values.flatMap((value) => {
+    const normalized = normalizeOptionalString(value);
+    if (!normalized || isPlaceholderValue(normalized)) return [];
+    if (!isValidUuid(normalized)) {
+      throw new Error("labelIds must contain only valid UUIDs.");
+    }
+    return [normalized];
+  });
+
+  return normalizedIds.length > 0 ? [...new Set(normalizedIds)] : undefined;
+};
+
+const normalizeOptionalDate = (
+  value: string | null | undefined,
+  fieldName: "startDate" | "endDate",
+) => {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized || isPlaceholderValue(normalized)) return undefined;
+
+  const dateValue = normalized.slice(0, 10);
+  const timeValue = normalized.slice(10);
+  if (
+    !ISO_DATE_PATTERN.test(dateValue) ||
+    (timeValue && !timeValue.startsWith("T"))
+  ) {
+    throw new Error(`${fieldName} must be an ISO date in YYYY-MM-DD format.`);
+  }
+
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new Error(`${fieldName} must be a valid calendar date.`);
+  }
+
+  return dateValue;
 };
 
 const normalizeEstimateValue = (value?: number | null) => {
@@ -104,7 +173,7 @@ const setIfDefined = <Key extends keyof NormalizedStoryInput>(
 
 export const normalizeStoryInput = <T extends StoryInput>(story: T) => {
   const payload: NormalizedStoryInput = {
-    title: story.title,
+    title: normalizeRequiredString(story.title, "title"),
     teamId: normalizeRequiredStoryId(story.teamId, "teamId"),
     statusId: normalizeRequiredStoryId(story.statusId, "statusId"),
     priority: story.priority,
@@ -135,7 +204,7 @@ export const normalizeStoryInput = <T extends StoryInput>(story: T) => {
   setIfDefined(payload, "estimatedDurationMinutes", estimatedDurationMinutes);
   setIfDefined(payload, "minimumFocusBlockMinutes", minimumFocusBlockMinutes);
   setIfDefined(payload, "autoSchedulingEnabled", story.autoSchedulingEnabled);
-  setIfDefined(payload, "labelIds", story.labelIds);
+  setIfDefined(payload, "labelIds", normalizeOptionalIds(story.labelIds));
   setIfDefined(
     payload,
     "description",
@@ -146,12 +215,38 @@ export const normalizeStoryInput = <T extends StoryInput>(story: T) => {
     "descriptionHTML",
     normalizeOptionalString(story.descriptionHTML),
   );
-  setIfDefined(payload, "assigneeId", normalizeOptionalId(story.assigneeId));
-  setIfDefined(payload, "sprintId", normalizeOptionalId(story.sprintId));
-  setIfDefined(payload, "objectiveId", normalizeOptionalId(story.objectiveId));
-  setIfDefined(payload, "parentId", normalizeOptionalId(story.parentId));
-  setIfDefined(payload, "startDate", normalizeOptionalId(story.startDate));
-  setIfDefined(payload, "endDate", normalizeOptionalId(story.endDate));
+  setIfDefined(
+    payload,
+    "assigneeId",
+    normalizeOptionalStoryId(story.assigneeId, "assigneeId"),
+  );
+  setIfDefined(
+    payload,
+    "sprintId",
+    normalizeOptionalStoryId(story.sprintId, "sprintId"),
+  );
+  setIfDefined(
+    payload,
+    "objectiveId",
+    normalizeOptionalStoryId(story.objectiveId, "objectiveId"),
+  );
+  setIfDefined(
+    payload,
+    "keyResultId",
+    normalizeOptionalStoryId(story.keyResultId, "keyResultId"),
+  );
+  setIfDefined(
+    payload,
+    "parentId",
+    normalizeOptionalStoryId(story.parentId, "parentId"),
+  );
+  const startDate = normalizeOptionalDate(story.startDate, "startDate");
+  const endDate = normalizeOptionalDate(story.endDate, "endDate");
+  if (startDate && endDate && startDate > endDate) {
+    throw new Error("endDate cannot be before startDate.");
+  }
+  setIfDefined(payload, "startDate", startDate);
+  setIfDefined(payload, "endDate", endDate);
 
   return payload;
 };

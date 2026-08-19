@@ -17,22 +17,22 @@ import (
 const createNotificationQuery = `
 	INSERT INTO notifications (
 		dedupe_key, recipient_id, workspace_id, type, entity_type,
-		entity_id, actor_id, title, message
+		entity_id, actor_id, title, message, in_app_enabled
 	)
 	SELECT
 		:dedupe_key, :recipient_id, :workspace_id, :type, :entity_type,
-		:entity_id, :actor_id, :title, :message
+		:entity_id, :actor_id, :title, :message, :in_app_enabled
 	FROM users u
 	WHERE u.user_id = :recipient_id
 		AND u.is_active = true
 	ON CONFLICT (dedupe_key) DO NOTHING
 	RETURNING notification_id, recipient_id, workspace_id, type, entity_type,
-		entity_id, actor_id, title, message, created_at, read_at;
+		entity_id, actor_id, title, message, in_app_enabled, created_at, read_at;
 `
 
 const getNotificationByDedupeKeyQuery = `
 	SELECT notification_id, recipient_id, workspace_id, type, entity_type,
-		entity_id, actor_id, title, message, created_at, read_at
+		entity_id, actor_id, title, message, in_app_enabled, created_at, read_at
 	FROM notifications
 	WHERE dedupe_key = $1 AND recipient_id = $2;
 `
@@ -190,7 +190,7 @@ func (r *repo) UpdatePreference(ctx context.Context, userID, workspaceID uuid.UU
 		case "email_enabled":
 			prefs[notificationType]["email"] = value.(bool)
 		case "in_app_enabled":
-			prefs[notificationType]["in_app"] = value.(bool)
+			prefs[notificationType]["in_app"] = notifications.SupportsInAppDelivery(notificationType) && value.(bool)
 		}
 	}
 

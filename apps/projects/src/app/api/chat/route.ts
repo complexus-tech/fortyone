@@ -26,8 +26,8 @@ import { normalizeInlineFileData } from "./normalize-file-data";
 
 export const maxDuration = 120;
 
-const MAX_OUTPUT_TOKENS = 2000;
-const MAX_TOOL_STEPS = 8;
+const MAX_OUTPUT_TOKENS = 4000;
+const MAX_TOOL_STEPS = 12;
 const MAYA_PROMPT_CACHE_NAMESPACE = "maya-projects-v1";
 
 export async function POST(req: NextRequest) {

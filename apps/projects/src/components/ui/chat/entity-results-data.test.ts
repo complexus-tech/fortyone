@@ -87,6 +87,16 @@ describe("entity results generative UI", () => {
     expect(isRenderableToolPart(mutationPart)).toBe(false);
   });
 
+  it("renders a compact story creation acknowledgement", () => {
+    const part = asToolPart({
+      output: { message: "Successfully created 20 stories.", success: true },
+      state: "output-available",
+      type: "tool-bulkCreateStories",
+    });
+
+    expect(isRenderableToolPart(part)).toBe(true);
+  });
+
   it("keeps unsafe link protocols non-interactive", () => {
     const model = getEntityResultsModel("tool-links", {
       links: [
@@ -194,6 +204,38 @@ describe("entity results generative UI", () => {
           },
           state: "output-available",
           type: "tool-searchStories",
+        },
+      ],
+      role: "assistant",
+    } as unknown as MayaUIMessage;
+
+    expect(Array.from(getVisibleToolPartIndexes(message))).toEqual([2]);
+  });
+
+  it("hides lookup cards when they only prepare a story creation", () => {
+    const message = {
+      id: "message-4",
+      parts: [
+        {
+          output: {
+            members: [{ id: "member-1", name: "Ada Lovelace" }],
+            success: true,
+          },
+          state: "output-available",
+          type: "tool-listTeamMembers",
+        },
+        {
+          output: {
+            sprints: [{ id: "sprint-1", name: "Launch" }],
+            success: true,
+          },
+          state: "output-available",
+          type: "tool-listSprints",
+        },
+        {
+          output: { message: "Story created successfully.", success: true },
+          state: "output-available",
+          type: "tool-createStory",
         },
       ],
       role: "assistant",

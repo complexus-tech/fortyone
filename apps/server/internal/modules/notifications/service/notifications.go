@@ -95,11 +95,14 @@ func (s *Service) publishNotification(ctx context.Context, notification CoreNoti
 	return nil
 }
 
-// Create creates a new notification, saves it to the database, publishes it to Redis for SSE, and enqueues an email task.
+// Create saves a notification for email processing and, when enabled, exposes it
+// through the in-app inbox and realtime stream.
 func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotification, error) {
 	s.log.Info(ctx, "business.core.notifications.Create")
 	ctx, span := web.AddSpan(ctx, "business.core.notifications.Create")
 	defer span.End()
+
+	s.resolveInAppDelivery(ctx, &n)
 
 	notification, inserted, err := s.repo.Create(ctx, n)
 	if err != nil {
@@ -120,7 +123,7 @@ func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotifi
 	// Public feedback notifications are consumed through the portal-scoped query
 	// API. Publishing them on the generic user channel would expose them to any
 	// workspace SSE connection for the same user.
-	if notification.EntityType != "feedback" {
+	if *n.InAppEnabled && notification.EntityType != "feedback" {
 		if err := s.publishRealtime(ctx, notification.Public()); err != nil {
 			span.RecordError(err)
 			s.log.Error(ctx, "notifications.Service.Create: failed to publish notification to Redis", "error", err, "notificationID", notification.ID)
@@ -153,6 +156,33 @@ func (s *Service) Create(ctx context.Context, n CoreNewNotification) (CoreNotifi
 	}
 
 	return notification, nil
+}
+
+func (s *Service) resolveInAppDelivery(ctx context.Context, notification *CoreNewNotification) {
+	if !SupportsInAppDelivery(notification.Type) {
+		enabled := false
+		notification.InAppEnabled = &enabled
+		return
+	}
+
+	if notification.InAppEnabled != nil {
+		return
+	}
+
+	enabled := true
+	preferences, err := s.repo.GetPreferences(ctx, notification.RecipientID, notification.WorkspaceID)
+	if err != nil {
+		s.log.Warn(ctx, "notifications.Service.Create: failed to load preferences; using in-app default", "error", err, "recipient_id", notification.RecipientID, "workspace_id", notification.WorkspaceID, "notification_type", notification.Type)
+		notification.InAppEnabled = &enabled
+		return
+	}
+
+	if configuredChannels, ok := preferences.Preferences[notification.Type].(map[string]interface{}); ok {
+		if configured, ok := configuredChannels["in_app"].(bool); ok {
+			enabled = configured
+		}
+	}
+	notification.InAppEnabled = &enabled
 }
 
 // List returns a list of notifications.

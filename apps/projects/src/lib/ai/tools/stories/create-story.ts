@@ -7,9 +7,11 @@ import { isEstimateValue } from "@/lib/estimate";
 import { MAX_TIME_NEEDED_MINUTES } from "@/lib/time-needed";
 import { requireToolConfirmation } from "../tool-helpers";
 import {
+  normalizeOptionalStoryId,
   normalizeRequiredStoryId,
   normalizeStoryInput,
 } from "./normalize-story-input";
+import { createSprintEndDateResolver } from "./resolve-sprint-end-date";
 import { createStoryStatusResolver } from "./resolve-story-status";
 
 export const createStory = tool({
@@ -89,6 +91,7 @@ export const createStory = tool({
       ),
     labelIds: z
       .array(z.string())
+      .nullable()
       .optional()
       .describe("Label IDs to attach to the story."),
     sprintId: z
@@ -101,6 +104,11 @@ export const createStory = tool({
       .nullable()
       .optional()
       .describe("Objective ID to assign story (UUID)"),
+    keyResultId: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Key result ID to assign story (UUID)"),
     parentId: z
       .string()
       .nullable()
@@ -135,6 +143,7 @@ export const createStory = tool({
       labelIds,
       sprintId,
       objectiveId,
+      keyResultId,
       parentId,
       startDate,
       endDate,
@@ -174,6 +183,12 @@ export const createStory = tool({
       const resolvedTeamId = normalizeRequiredStoryId(teamId, "teamId");
       const resolveStatusId = createStoryStatusResolver(ctx);
       const resolvedStatusId = await resolveStatusId(resolvedTeamId, statusId);
+      const resolvedSprintId = normalizeOptionalStoryId(sprintId, "sprintId");
+      const resolveSprintEndDate = createSprintEndDateResolver(ctx);
+      const resolvedEndDate = await resolveSprintEndDate(
+        resolvedSprintId,
+        endDate,
+      );
 
       const storyData = normalizeStoryInput({
         title,
@@ -188,11 +203,12 @@ export const createStory = tool({
         minimumFocusBlockMinutes,
         autoSchedulingEnabled,
         labelIds,
-        sprintId,
+        sprintId: resolvedSprintId,
         objectiveId,
+        keyResultId,
         parentId,
         startDate,
-        endDate,
+        endDate: resolvedEndDate,
       });
 
       const result = await createStoryAction(storyData, workspaceSlug);

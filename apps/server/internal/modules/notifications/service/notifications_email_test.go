@@ -18,13 +18,16 @@ type notificationRepoStub struct {
 	notification           CoreNotification
 	notifications          []CoreNotification
 	insertedResults        []bool
+	preferences            CoreNotificationPreferences
+	createdInputs          []CoreNewNotification
 	createCalls            int
 	portalListCalls        int
 	portalUnreadOnly       bool
 	markAllPortalReadCalls int
 }
 
-func (r *notificationRepoStub) Create(context.Context, CoreNewNotification) (CoreNotification, bool, error) {
+func (r *notificationRepoStub) Create(_ context.Context, input CoreNewNotification) (CoreNotification, bool, error) {
+	r.createdInputs = append(r.createdInputs, input)
 	inserted := true
 	if r.createCalls < len(r.insertedResults) {
 		inserted = r.insertedResults[r.createCalls]
@@ -50,7 +53,7 @@ func (r *notificationRepoStub) MarkAllAsRead(context.Context, uuid.UUID, uuid.UU
 }
 
 func (r *notificationRepoStub) GetPreferences(context.Context, uuid.UUID, uuid.UUID) (CoreNotificationPreferences, error) {
-	return CoreNotificationPreferences{}, nil
+	return r.preferences, nil
 }
 
 func (r *notificationRepoStub) UpdatePreference(context.Context, uuid.UUID, uuid.UUID, string, map[string]any) error {
@@ -223,7 +226,44 @@ func TestCreatePublishesOnlyWorkspaceNotificationsToGenericRealtimeChannel(t *te
 	}
 }
 
-func TestCreateRedactsStrategyDeliveryContextFromRealtime(t *testing.T) {
+func TestCreateHonorsInAppPreferenceWhileKeepingEmailDelivery(t *testing.T) {
+	repo := &notificationRepoStub{
+		notification: CoreNotification{
+			ID:          uuid.New(),
+			RecipientID: uuid.New(),
+			WorkspaceID: uuid.New(),
+			EntityType:  "story",
+		},
+		preferences: CoreNotificationPreferences{
+			Preferences: map[string]interface{}{
+				"story_update": map[string]interface{}{"in_app": false},
+			},
+		},
+	}
+	taskService := &notificationTasksStub{}
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, taskService)
+	publishCount := 0
+	service.publishRealtime = func(context.Context, CoreNotification) error {
+		publishCount++
+		return nil
+	}
+
+	_, err := service.Create(context.Background(), CoreNewNotification{
+		RecipientID: repo.notification.RecipientID,
+		WorkspaceID: repo.notification.WorkspaceID,
+		Type:        "story_update",
+		EntityType:  "story",
+	})
+
+	require.NoError(t, err)
+	require.Len(t, repo.createdInputs, 1)
+	require.NotNil(t, repo.createdInputs[0].InAppEnabled)
+	require.False(t, *repo.createdInputs[0].InAppEnabled)
+	require.Zero(t, publishCount)
+	require.Len(t, taskService.digestPayloads, 1)
+}
+
+func TestCreateKeepsStrategyGuidanceOutOfRealtimeInbox(t *testing.T) {
 	repo := &notificationRepoStub{notification: CoreNotification{
 		ID:          uuid.New(),
 		RecipientID: uuid.New(),
@@ -238,19 +278,25 @@ func TestCreateRedactsStrategyDeliveryContextFromRealtime(t *testing.T) {
 		},
 	}}
 	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, &notificationTasksStub{})
-	var published CoreNotification
+	publishCount := 0
 	service.publishRealtime = func(_ context.Context, notification CoreNotification) error {
-		published = notification
+		publishCount++
 		return nil
 	}
 
-	created, err := service.Create(context.Background(), CoreNewNotification{})
+	created, err := service.Create(context.Background(), CoreNewNotification{
+		RecipientID: repo.notification.RecipientID,
+		WorkspaceID: repo.notification.WorkspaceID,
+		Type:        "strategy_update",
+		EntityType:  "strategy",
+	})
 
 	require.NoError(t, err)
 	require.NotNil(t, created.Message.Strategy, "internal create result keeps email delivery context")
-	require.Nil(t, published.Message.Strategy, "realtime payload must not expose delivery context")
-	require.Equal(t, "Strategy guidance is ready to review.", published.Message.Template)
-	require.Empty(t, published.Message.Variables)
+	require.Len(t, repo.createdInputs, 1)
+	require.NotNil(t, repo.createdInputs[0].InAppEnabled)
+	require.False(t, *repo.createdInputs[0].InAppEnabled)
+	require.Zero(t, publishCount)
 }
 
 func TestListRedactsStrategyDeliveryContext(t *testing.T) {

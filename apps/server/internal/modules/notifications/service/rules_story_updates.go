@@ -26,7 +26,8 @@ func (r *Rules) isPureUnassignment(payload events.StoryUpdatedPayload) bool {
 	return payload.AssigneeID != nil && isUnassignment(payload.Updates)
 }
 
-// hasNonAssignmentUpdates detects updates to status, priority, due date (excluding assignment changes)
+// hasNonAssignmentUpdates detects changes that affect another person's ability
+// to complete the work. Administrative edits stay in the activity trail.
 func (r *Rules) hasNonAssignmentUpdates(payload events.StoryUpdatedPayload) bool {
 	if payload.AssigneeID == nil && len(payload.AudienceIDs) == 0 {
 		return false
@@ -35,12 +36,7 @@ func (r *Rules) hasNonAssignmentUpdates(payload events.StoryUpdatedPayload) bool
 	nonAssignmentFields := []string{
 		"status_id",
 		"priority",
-		"start_date",
 		"end_date",
-		"sprint_id",
-		"estimate_unit",
-		"collaborator_ids",
-		"title",
 	}
 	for _, field := range nonAssignmentFields {
 		if _, exists := payload.Updates[field]; exists {

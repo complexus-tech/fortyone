@@ -168,7 +168,7 @@ func (s *service) buildMessage(email Email) (*gomail.Message, error) {
 	msg := gomail.NewMessage()
 	fromAddress, fromName := s.senderForProfile(email.Sender)
 
-	msg.SetHeader("From", fmt.Sprintf("%s <%s>", fromName, fromAddress))
+	msg.SetAddressHeader("From", fromAddress, fromName)
 	msg.SetHeader("To", email.To...)
 	msg.SetHeader("Subject", email.Subject)
 	if messageID := strings.TrimSpace(email.MessageID); messageID != "" {

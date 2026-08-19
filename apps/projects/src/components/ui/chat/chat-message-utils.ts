@@ -2,6 +2,7 @@ import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { ToolMessagePart } from "./tool-output-policy";
 import {
   isAnalyticsReportOutput,
+  isMutationToolType,
   isRenderableToolPart,
   isSupportingToolType,
   isToolMessagePart,
@@ -84,6 +85,13 @@ export const getPromptTextSegments = (text: string): PromptTextSegment[] => {
 };
 
 export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
+  const mutationPartIndexes = message.parts.flatMap((part, index) =>
+    isToolMessagePart(part) &&
+    part.state === "output-available" &&
+    isMutationToolType(part.type)
+      ? [index]
+      : [],
+  );
   const toolParts = message.parts.flatMap((part, index) =>
     isToolMessagePart(part) && isRenderableToolPart(part)
       ? [{ index, part }]
@@ -106,10 +114,16 @@ export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
       const hasLaterResultOfSameType = laterToolParts.some(
         ({ part: laterPart }) => laterPart.type === part.type,
       );
+      const feedsLaterMutation =
+        !isMutationToolType(part.type) &&
+        mutationPartIndexes.some(
+          (mutationPartIndex) => mutationPartIndex > index,
+        );
 
       return feedsLaterReport ||
         feedsLaterTeamResult ||
-        hasLaterResultOfSameType
+        hasLaterResultOfSameType ||
+        feedsLaterMutation
         ? []
         : [index];
     }),

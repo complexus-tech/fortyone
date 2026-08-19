@@ -135,6 +135,20 @@ func TestWeeklyDigestStatsEnforceCurrentWorkspaceAndTeamAccess(t *testing.T) {
 	require.Contains(t, query, "OR o.team_id IN (SELECT team_id FROM visible_teams)")
 }
 
+func TestWeeklyDigestStatsRequireActionableSignal(t *testing.T) {
+	for name, stats := range map[string]WeeklyDigestStats{
+		"unread administrative updates only": {UnreadNotifications: 3},
+		"team comments only":                 {TeamComments: 2},
+		"unread mention":                     {UnreadPriorityNotifications: 1},
+		"overdue work":                       {OverdueStories: 1},
+		"strategy risk":                      {ObjectiveRisks: 1},
+	} {
+		t.Run(name, func(t *testing.T) {
+			require.Equal(t, name != "unread administrative updates only" && name != "team comments only", stats.hasSignal())
+		})
+	}
+}
+
 func TestWeeklyDigestUnreadNotificationsUseCurrentEntityAccess(t *testing.T) {
 	query := weeklyDigestStatsQuery()
 

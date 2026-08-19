@@ -255,7 +255,7 @@ func (s *Service) recordUpdateSideEffects(ctx context.Context, id, workspaceID, 
 }
 
 func hasNotifiableObjectiveUpdate(updates map[string]any) bool {
-	for _, field := range []string{"lead_user_id", "status_id", "health", "priority", "start_date", "end_date"} {
+	for _, field := range []string{"lead_user_id", "status_id", "health", "end_date"} {
 		if _, exists := updates[field]; exists {
 			return true
 		}

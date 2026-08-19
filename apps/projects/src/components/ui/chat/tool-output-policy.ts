@@ -21,6 +21,55 @@ const STORY_RESULT_TOOL_TYPES = new Set([
   "tool-searchStories",
 ]);
 
+const STORY_CREATION_TOOL_TYPES = new Set([
+  "tool-createStory",
+  "tool-bulkCreateStories",
+]);
+
+const MUTATION_TOOL_TYPES = new Set([
+  "tool-createStory",
+  "tool-updateStory",
+  "tool-deleteStory",
+  "tool-bulkCreateStories",
+  "tool-bulkUpdateStories",
+  "tool-bulkDeleteStories",
+  "tool-assignStoriesToUser",
+  "tool-duplicateStory",
+  "tool-restoreStory",
+  "tool-addStoryAssociation",
+  "tool-removeStoryAssociation",
+  "tool-createTeamTool",
+  "tool-updateTeam",
+  "tool-joinTeam",
+  "tool-leaveTeam",
+  "tool-deleteTeam",
+  "tool-createObjectiveTool",
+  "tool-updateObjectiveTool",
+  "tool-deleteObjectiveTool",
+  "tool-createKeyResultTool",
+  "tool-updateKeyResultTool",
+  "tool-deleteKeyResultTool",
+  "tool-updateSprintSettings",
+  "tool-createMemory",
+  "tool-updateMemory",
+  "tool-deleteMemory",
+  "tool-createGitHubInstallSessionTool",
+  "tool-resyncGitHubRepositoriesTool",
+  "tool-createGitHubIssueSyncLinkTool",
+  "tool-deleteGitHubIssueSyncLinkTool",
+  "tool-updateGitHubWorkspaceSettingsTool",
+  "tool-updateGitHubTeamSettingsTool",
+  "tool-postStoryGitHubCommentTool",
+  "tool-deleteStoryGitHubLinkTool",
+  "tool-updateIntegrationRequestTool",
+  "tool-acceptIntegrationRequestTool",
+  "tool-declineIntegrationRequestTool",
+  "tool-acceptAllIntegrationRequestsTool",
+  "tool-declineAllIntegrationRequestsTool",
+  "tool-postRequestGitHubCommentTool",
+  "tool-deleteAttachment",
+]);
+
 const isToolPart = (type: string): boolean => type.startsWith("tool-");
 
 export const isToolMessagePart = (
@@ -36,10 +85,29 @@ export const isStoryResultToolType = (type: string) =>
 export const isEntityResultToolType = (type: string) =>
   ENTITY_RESULT_TOOL_TYPES.has(type);
 
+export const isMutationToolType = (type: string) =>
+  MUTATION_TOOL_TYPES.has(type);
+
+export const isStoryCreationToolType = (type: string) =>
+  STORY_CREATION_TOOL_TYPES.has(type);
+
 export const asToolOutputRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+
+export const getStoryCreationMessage = (output: unknown) => {
+  const outputRecord = asToolOutputRecord(output);
+  const message = outputRecord.message;
+  if (typeof message === "string" && message.trim()) return message.trim();
+
+  if (outputRecord.success === false) {
+    const error = outputRecord.error;
+    if (typeof error === "string" && error.trim()) return error.trim();
+  }
+
+  return undefined;
+};
 
 export const isAnalyticsReportOutput = (
   output: unknown,
@@ -66,6 +134,10 @@ export const isRenderableToolPart = (part: ToolMessagePart) => {
 
   if (isStoryResultToolType(part.type)) {
     return isStoryResultsOutput(part.output);
+  }
+
+  if (isStoryCreationToolType(part.type)) {
+    return getStoryCreationMessage(part.output) !== undefined;
   }
 
   if (isEntityResultToolType(part.type)) {

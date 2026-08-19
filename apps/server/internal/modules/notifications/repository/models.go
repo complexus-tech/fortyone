@@ -36,17 +36,18 @@ const (
 )
 
 type dbNotification struct {
-	ID          uuid.UUID        `db:"notification_id"`
-	RecipientID uuid.UUID        `db:"recipient_id"`
-	WorkspaceID uuid.UUID        `db:"workspace_id"`
-	Type        NotificationType `db:"type"`
-	EntityType  EntityType       `db:"entity_type"`
-	EntityID    uuid.UUID        `db:"entity_id"`
-	ActorID     uuid.UUID        `db:"actor_id"`
-	Title       string           `db:"title"`
-	Message     json.RawMessage  `db:"message"` // JSONB field for structured message
-	CreatedAt   time.Time        `db:"created_at"`
-	ReadAt      *time.Time       `db:"read_at"`
+	ID           uuid.UUID        `db:"notification_id"`
+	RecipientID  uuid.UUID        `db:"recipient_id"`
+	WorkspaceID  uuid.UUID        `db:"workspace_id"`
+	InAppEnabled bool             `db:"in_app_enabled"`
+	Type         NotificationType `db:"type"`
+	EntityType   EntityType       `db:"entity_type"`
+	EntityID     uuid.UUID        `db:"entity_id"`
+	ActorID      uuid.UUID        `db:"actor_id"`
+	Title        string           `db:"title"`
+	Message      json.RawMessage  `db:"message"` // JSONB field for structured message
+	CreatedAt    time.Time        `db:"created_at"`
+	ReadAt       *time.Time       `db:"read_at"`
 }
 
 // New model for the JSONB-based notification preferences
@@ -60,21 +61,23 @@ type dbNotificationPreferences struct {
 }
 
 type dbNewNotification struct {
-	DedupeKey   string           `db:"dedupe_key"`
-	RecipientID uuid.UUID        `db:"recipient_id"`
-	WorkspaceID uuid.UUID        `db:"workspace_id"`
-	Type        NotificationType `db:"type"`
-	EntityType  EntityType       `db:"entity_type"`
-	EntityID    uuid.UUID        `db:"entity_id"`
-	ActorID     uuid.UUID        `db:"actor_id"`
-	Title       string           `db:"title"`
-	Message     json.RawMessage  `db:"message"` // JSONB field for structured message
+	DedupeKey    string           `db:"dedupe_key"`
+	RecipientID  uuid.UUID        `db:"recipient_id"`
+	WorkspaceID  uuid.UUID        `db:"workspace_id"`
+	InAppEnabled bool             `db:"in_app_enabled"`
+	Type         NotificationType `db:"type"`
+	EntityType   EntityType       `db:"entity_type"`
+	EntityID     uuid.UUID        `db:"entity_id"`
+	ActorID      uuid.UUID        `db:"actor_id"`
+	Title        string           `db:"title"`
+	Message      json.RawMessage  `db:"message"` // JSONB field for structured message
 }
 
 type dbPortalNotification struct {
 	ID            uuid.UUID        `db:"notification_id"`
 	RecipientID   uuid.UUID        `db:"recipient_id"`
 	WorkspaceID   uuid.UUID        `db:"workspace_id"`
+	InAppEnabled  bool             `db:"in_app_enabled"`
 	Type          NotificationType `db:"type"`
 	EntityType    EntityType       `db:"entity_type"`
 	EntityID      uuid.UUID        `db:"entity_id"`
@@ -102,15 +105,16 @@ func toDBNewNotification(n notifications.CoreNewNotification) (dbNewNotification
 	}
 
 	return dbNewNotification{
-		DedupeKey:   dedupeKey,
-		RecipientID: n.RecipientID,
-		WorkspaceID: n.WorkspaceID,
-		Type:        NotificationType(n.Type),
-		EntityType:  EntityType(n.EntityType),
-		EntityID:    n.EntityID,
-		ActorID:     n.ActorID,
-		Title:       n.Title,
-		Message:     messageBytes,
+		DedupeKey:    dedupeKey,
+		RecipientID:  n.RecipientID,
+		WorkspaceID:  n.WorkspaceID,
+		InAppEnabled: n.InAppEnabled == nil || *n.InAppEnabled,
+		Type:         NotificationType(n.Type),
+		EntityType:   EntityType(n.EntityType),
+		EntityID:     n.EntityID,
+		ActorID:      n.ActorID,
+		Title:        n.Title,
+		Message:      messageBytes,
 	}, nil
 }
 
@@ -121,17 +125,18 @@ func toCoreNotification(n dbNotification) (notifications.CoreNotification, error
 	}
 
 	return notifications.CoreNotification{
-		ID:          n.ID,
-		RecipientID: n.RecipientID,
-		WorkspaceID: n.WorkspaceID,
-		Type:        string(n.Type),
-		EntityType:  string(n.EntityType),
-		EntityID:    n.EntityID,
-		ActorID:     n.ActorID,
-		Title:       n.Title,
-		Message:     message,
-		CreatedAt:   n.CreatedAt,
-		ReadAt:      n.ReadAt,
+		ID:           n.ID,
+		RecipientID:  n.RecipientID,
+		WorkspaceID:  n.WorkspaceID,
+		InAppEnabled: n.InAppEnabled,
+		Type:         string(n.Type),
+		EntityType:   string(n.EntityType),
+		EntityID:     n.EntityID,
+		ActorID:      n.ActorID,
+		Title:        n.Title,
+		Message:      message,
+		CreatedAt:    n.CreatedAt,
+		ReadAt:       n.ReadAt,
 	}, nil
 }
 
@@ -151,17 +156,18 @@ func toCorePortalNotifications(rows []dbPortalNotification) ([]notifications.Cor
 	result := make([]notifications.CorePortalNotification, 0, len(rows))
 	for _, row := range rows {
 		notification, err := toCoreNotification(dbNotification{
-			ID:          row.ID,
-			RecipientID: row.RecipientID,
-			WorkspaceID: row.WorkspaceID,
-			Type:        row.Type,
-			EntityType:  row.EntityType,
-			EntityID:    row.EntityID,
-			ActorID:     row.ActorID,
-			Title:       row.Title,
-			Message:     row.Message,
-			CreatedAt:   row.CreatedAt,
-			ReadAt:      row.ReadAt,
+			ID:           row.ID,
+			RecipientID:  row.RecipientID,
+			WorkspaceID:  row.WorkspaceID,
+			InAppEnabled: row.InAppEnabled,
+			Type:         row.Type,
+			EntityType:   row.EntityType,
+			EntityID:     row.EntityID,
+			ActorID:      row.ActorID,
+			Title:        row.Title,
+			Message:      row.Message,
+			CreatedAt:    row.CreatedAt,
+			ReadAt:       row.ReadAt,
 		})
 		if err != nil {
 			return nil, err
@@ -206,6 +212,10 @@ func backfillPreferenceDefaults(prefs map[string]interface{}) map[string]interfa
 			existingChannels = make(map[string]interface{}, len(channels))
 		}
 		for channel, enabled := range channels {
+			if channel == "in_app" && !notifications.SupportsInAppDelivery(preferenceType) {
+				existingChannels[channel] = false
+				continue
+			}
 			if _, exists := existingChannels[channel]; !exists {
 				existingChannels[channel] = enabled
 			}

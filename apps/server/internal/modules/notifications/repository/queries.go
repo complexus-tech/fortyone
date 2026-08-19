@@ -63,11 +63,12 @@ func (r *repo) List(ctx context.Context, userID, workspaceID uuid.UUID, search s
 func listWorkspaceNotificationsQuery() string {
 	return `
 		SELECT notification_id, recipient_id, workspace_id, type, entity_type,
-			entity_id, actor_id, title, message, created_at, read_at
+			entity_id, actor_id, title, message, in_app_enabled, created_at, read_at
 		FROM notifications notification
 		WHERE notification.recipient_id = :user_id
 		AND notification.workspace_id = :workspace_id
 		AND CAST(notification.entity_type AS text) <> 'feedback'
+		AND notification.in_app_enabled = true
 		AND ` + workspaceNotificationAccessPredicate("notification") + `
 		AND (
 			:search = ''
@@ -123,6 +124,7 @@ func unreadWorkspaceNotificationsQuery() string {
 		WHERE notification.recipient_id = :user_id
 		AND notification.workspace_id = :workspace_id
 		AND CAST(notification.entity_type AS text) <> 'feedback'
+		AND notification.in_app_enabled = true
 		AND notification.read_at IS NULL
 		AND ` + workspaceNotificationAccessPredicate("notification") + `;
 	`
@@ -279,7 +281,7 @@ func (r *repo) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalS
 	var rows []dbPortalNotification
 	if err := r.db.SelectContext(ctx, &rows, `
 		SELECT n.notification_id, n.recipient_id, n.workspace_id, n.type, n.entity_type,
-			n.entity_id, n.actor_id, n.title, n.message, n.created_at, n.read_at,
+			n.entity_id, n.actor_id, n.title, n.message, n.in_app_enabled, n.created_at, n.read_at,
 			COALESCE(NULLIF(actor.full_name, ''), NULLIF(actor.username, ''), actor.email, 'Someone') AS actor_name,
 			actor.avatar_url AS actor_avatar,
 			fi.title AS feedback_title,
@@ -295,6 +297,7 @@ func (r *repo) ListPortalFeedback(ctx context.Context, userID uuid.UUID, portalS
 			AND fi.deleted_at IS NULL
 			AND CAST(n.entity_type AS text) = 'feedback'
 			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update', 'feedback_update_published', 'feedback_item_merged')
+			AND n.in_app_enabled = true
 			AND ($3 = false OR n.read_at IS NULL)
 		ORDER BY n.created_at DESC
 		LIMIT $4 OFFSET $5
@@ -329,6 +332,7 @@ func (r *repo) GetPortalFeedbackUnreadCount(ctx context.Context, userID uuid.UUI
 			AND fi.deleted_at IS NULL
 			AND CAST(n.entity_type AS text) = 'feedback'
 			AND CAST(n.type AS text) IN ('feedback_comment', 'feedback_status_update', 'feedback_update_published', 'feedback_item_merged')
+			AND n.in_app_enabled = true
 			AND n.read_at IS NULL
 	`, userID, portalSlug); err != nil {
 		span.RecordError(err)

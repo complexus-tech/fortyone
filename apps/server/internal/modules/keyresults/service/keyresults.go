@@ -407,7 +407,7 @@ func (s *Service) UpdateExternalUserActionIfUnchanged(
 }
 
 func hasNotifiableKeyResultUpdate(updates map[string]any) bool {
-	for _, field := range []string{"lead", "contributors", "current_value", "target_value", "start_date", "end_date"} {
+	for _, field := range []string{"lead", "contributors", "target_value", "end_date"} {
 		if _, exists := updates[field]; exists {
 			return true
 		}

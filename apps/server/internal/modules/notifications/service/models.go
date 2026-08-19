@@ -144,31 +144,35 @@ type StrategyMonthlySummarySnapshot struct {
 
 // CoreNewNotification represents a new notification to be created.
 type CoreNewNotification struct {
-	DedupeKey   string              `json:"-"`
-	RecipientID uuid.UUID           `json:"recipient_id"`
-	WorkspaceID uuid.UUID           `json:"workspace_id"`
-	Type        string              `json:"type"`
-	EntityType  string              `json:"entity_type"`
-	EntityID    uuid.UUID           `json:"entity_id"`
-	ActorID     uuid.UUID           `json:"actor_id"`
-	Title       string              `json:"title"`
-	Message     NotificationMessage `json:"message"`
+	DedupeKey   string    `json:"-"`
+	RecipientID uuid.UUID `json:"recipient_id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	// InAppEnabled is resolved when the notification is created. A nil value
+	// uses the recipient's preference for this notification type.
+	InAppEnabled *bool               `json:"-"`
+	Type         string              `json:"type"`
+	EntityType   string              `json:"entity_type"`
+	EntityID     uuid.UUID           `json:"entity_id"`
+	ActorID      uuid.UUID           `json:"actor_id"`
+	Title        string              `json:"title"`
+	Message      NotificationMessage `json:"message"`
 }
 
 // CoreNotification represents a notification.
 type CoreNotification struct {
-	ID          uuid.UUID              `json:"id"`
-	RecipientID uuid.UUID              `json:"recipient_id"`
-	WorkspaceID uuid.UUID              `json:"workspace_id"`
-	Type        string                 `json:"type"`
-	EntityType  string                 `json:"entity_type"`
-	EntityID    uuid.UUID              `json:"entity_id"`
-	ActorID     uuid.UUID              `json:"actor_id"`
-	Actor       *CoreNotificationActor `json:"actor,omitempty"`
-	Title       string                 `json:"title"`
-	Message     NotificationMessage    `json:"message"`
-	CreatedAt   time.Time              `json:"created_at"`
-	ReadAt      *time.Time             `json:"read_at"`
+	ID           uuid.UUID              `json:"id"`
+	RecipientID  uuid.UUID              `json:"recipient_id"`
+	WorkspaceID  uuid.UUID              `json:"workspace_id"`
+	InAppEnabled bool                   `json:"-"`
+	Type         string                 `json:"type"`
+	EntityType   string                 `json:"entity_type"`
+	EntityID     uuid.UUID              `json:"entity_id"`
+	ActorID      uuid.UUID              `json:"actor_id"`
+	Actor        *CoreNotificationActor `json:"actor,omitempty"`
+	Title        string                 `json:"title"`
+	Message      NotificationMessage    `json:"message"`
+	CreatedAt    time.Time              `json:"created_at"`
+	ReadAt       *time.Time             `json:"read_at"`
 }
 
 // CoreNotificationActor is the user snapshot exposed with a notification.
@@ -232,4 +236,16 @@ type CoreNotificationPreference struct {
 type NotificationChannels struct {
 	Email bool `json:"email"`
 	InApp bool `json:"in_app"`
+}
+
+// SupportsInAppDelivery defines notification types that may be shown in the
+// product inbox. Guidance emails and email-only jobs are intentionally kept
+// out of that surface so the inbox remains a place for direct, actionable work.
+func SupportsInAppDelivery(notificationType string) bool {
+	switch notificationType {
+	case "strategy_update", "reminders", "weekly_digest":
+		return false
+	default:
+		return true
+	}
 }

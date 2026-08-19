@@ -12,11 +12,11 @@ import (
 func TestDefaultPreferencesIncludeDigestChannels(t *testing.T) {
 	preferences := getDefaultPreferences()
 
-	require.Equal(t, map[string]bool{"email": true, "in_app": true}, preferences["reminders"])
-	require.Equal(t, map[string]bool{"email": true, "in_app": true}, preferences["weekly_digest"])
+	require.Equal(t, map[string]bool{"email": true, "in_app": false}, preferences["reminders"])
+	require.Equal(t, map[string]bool{"email": true, "in_app": false}, preferences["weekly_digest"])
 	require.Equal(t, map[string]bool{"email": true, "in_app": true}, preferences["feedback_comment"])
 	require.Equal(t, map[string]bool{"email": true, "in_app": true}, preferences["feedback_status_update"])
-	require.Equal(t, map[string]bool{"email": true, "in_app": true}, preferences["strategy_update"])
+	require.Equal(t, map[string]bool{"email": true, "in_app": false}, preferences["strategy_update"])
 }
 
 func TestToDBNewNotificationUsesExplicitEventDedupeKey(t *testing.T) {
@@ -69,4 +69,7 @@ func TestToCoreNotificationPreferencesBackfillsMissingDefaults(t *testing.T) {
 	require.Equal(t, true, corePreferences.Preferences["weekly_digest"].(map[string]interface{})["email"])
 	require.Equal(t, true, corePreferences.Preferences["feedback_comment"].(map[string]interface{})["email"])
 	require.Equal(t, true, corePreferences.Preferences["strategy_update"].(map[string]interface{})["email"])
+	require.Equal(t, false, corePreferences.Preferences["strategy_update"].(map[string]interface{})["in_app"])
+	require.Equal(t, false, corePreferences.Preferences["reminders"].(map[string]interface{})["in_app"])
+	require.Equal(t, false, corePreferences.Preferences["weekly_digest"].(map[string]interface{})["in_app"])
 }

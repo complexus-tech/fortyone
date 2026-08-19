@@ -2,6 +2,7 @@ package mailer
 
 import (
 	"bytes"
+	"net/mail"
 	"strings"
 	"testing"
 
@@ -56,6 +57,31 @@ func TestBuildMessageCreatesMultipartThreadedEmail(t *testing.T) {
 	require.Contains(t, email, "multipart/alternative")
 	require.Contains(t, email, "Content-Type: text/plain")
 	require.Contains(t, email, "Content-Type: text/html")
+}
+
+func TestBuildMessageFormatsCommaDisplayNameAsValidAddress(t *testing.T) {
+	mailerService := &service{config: Config{
+		FromAddress:     "notifications@fortyone.app",
+		FromName:        "FortyOne",
+		MayaFromAddress: "maya@fortyone.app",
+		MayaFromName:    "Maya, AI Agent",
+	}}
+
+	message, err := mailerService.buildMessage(Email{
+		To:      []string{"joseph@example.com"},
+		Subject: "A strategy update",
+		Body:    "Your objective is back on track.",
+		Sender:  SenderProfileMaya,
+	})
+	require.NoError(t, err)
+
+	fromHeaders := message.GetHeader("From")
+	require.Len(t, fromHeaders, 1)
+
+	from, err := mail.ParseAddress(fromHeaders[0])
+	require.NoError(t, err)
+	require.Equal(t, "maya@fortyone.app", from.Address)
+	require.Equal(t, "Maya, AI Agent", from.Name)
 }
 
 func TestBuildMessageRejectsHeaderInjection(t *testing.T) {

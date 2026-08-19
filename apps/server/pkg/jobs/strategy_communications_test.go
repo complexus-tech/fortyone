@@ -103,6 +103,13 @@ func TestStrategyCheckInSummaryOmitsZeroSignals(t *testing.T) {
 	require.Equal(t, "2 at-risk objectives, 3 stalled key results", summary)
 }
 
+func TestStrategyPlanningReminderIsSentOnceNearThePlanningPeriod(t *testing.T) {
+	require.False(t, isStrategyPlanningReminderDue(21))
+	require.False(t, isStrategyPlanningReminderDue(8))
+	require.True(t, isStrategyPlanningReminderDue(7))
+	require.False(t, isStrategyPlanningReminderDue(6))
+}
+
 func TestBuildStrategyCheckInsDeduplicatesAndPreservesSignalCounts(t *testing.T) {
 	workspaceID := uuid.MustParse("10000000-0000-0000-0000-000000000001")
 	userID := uuid.MustParse("20000000-0000-0000-0000-000000000001")
@@ -294,6 +301,13 @@ func TestStrategyMonthlySummaryTextDoesNotInventZeroProgressWithoutKeyResults(t 
 	})
 	require.Contains(t, withoutProgress, "no key results in the current snapshot")
 	require.NotContains(t, withoutProgress, "0%")
+}
+
+func TestStrategyMonthlySummaryRequiresAnActionableSignal(t *testing.T) {
+	require.False(t, (strategyMonthlySummary{PillarCount: 2, ObjectiveCount: 4, KeyResultCount: 8}).hasActionableSignal())
+	require.True(t, (strategyMonthlySummary{PillarsNeedingReview: 1}).hasActionableSignal())
+	require.True(t, (strategyMonthlySummary{AtRiskObjectives: 1}).hasActionableSignal())
+	require.True(t, (strategyMonthlySummary{UnalignedObjectives: 1}).hasActionableSignal())
 }
 
 func TestStrategyWeeklyTeamCountsAreCompleteDeterministicAndDeduplicateObjectiveOverlap(t *testing.T) {

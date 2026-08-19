@@ -138,7 +138,7 @@ func NewService(cfg Config, log *logger.Logger) (Service, error) {
 
 func (s *service) SendEmail(ctx context.Context, email Email) error {
 	msg := gomail.NewMessage()
-	msg.SetHeader("From", fmt.Sprintf("%s <%s>", s.config.FromName, s.config.FromAddress))
+	msg.SetAddressHeader("From", s.config.FromAddress, s.config.FromName)
 	msg.SetHeader("To", email.To...)
 	msg.SetHeader("Subject", email.Subject)
 

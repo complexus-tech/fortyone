@@ -21,11 +21,12 @@ const (
 	strategySnapshotVersion   = 1
 	strategyStaleAfterDays    = 7
 	strategyWeeklyDetailLimit = 10
+	strategyPlanningLeadDays  = 7
 )
 
 // StrategyNotificationCreator is the notification boundary used by strategy jobs.
 // The concrete service persists the notification, publishes it in-app, and queues
-// the existing coalesced email digest.
+// the existing coalesced email digest. Strategy notifications are email-only.
 type StrategyNotificationCreator interface {
 	Create(context.Context, notifications.CoreNewNotification) (notifications.CoreNotification, error)
 }
@@ -137,7 +138,7 @@ func processStrategyPlanningReminders(ctx context.Context, db *sqlx.DB, notifier
 
 		quarterStart := nextQuarterStart(localNow)
 		daysUntil := calendarDaysBetween(localNow, quarterStart)
-		if daysUntil != 21 && daysUntil != 7 {
+		if !isStrategyPlanningReminderDue(daysUntil) {
 			continue
 		}
 
@@ -191,6 +192,10 @@ func processStrategyPlanningReminders(ctx context.Context, db *sqlx.DB, notifier
 		}
 	}
 	return errors.Join(processingErrors...)
+}
+
+func isStrategyPlanningReminderDue(daysUntil int) bool {
+	return daysUntil == strategyPlanningLeadDays
 }
 
 func processStrategyWeeklyCheckIns(ctx context.Context, db *sqlx.DB, notifier StrategyNotificationCreator, systemUserID uuid.UUID, now time.Time) error {
@@ -734,7 +739,7 @@ func processStrategyMonthlySummaries(ctx context.Context, db *sqlx.DB, notifier 
 			processingErrors = append(processingErrors, loadErr)
 			continue
 		}
-		if summary.PillarCount == 0 && summary.ObjectiveCount == 0 {
+		if !summary.hasActionableSignal() {
 			continue
 		}
 
@@ -782,6 +787,12 @@ func processStrategyMonthlySummaries(ctx context.Context, db *sqlx.DB, notifier 
 		}
 	}
 	return errors.Join(processingErrors...)
+}
+
+func (summary strategyMonthlySummary) hasActionableSignal() bool {
+	return summary.PillarsNeedingReview > 0 ||
+		summary.AtRiskObjectives > 0 ||
+		summary.UnalignedObjectives > 0
 }
 
 func strategyMonthlySummaryText(summary strategyMonthlySummary) string {

@@ -41,11 +41,10 @@ type WeeklyDigestStats struct {
 }
 
 func (s WeeklyDigestStats) hasSignal() bool {
-	return s.UnreadNotifications+
+	return s.UnreadPriorityNotifications+
 		s.OverdueStories+
 		s.DueThisWeekStories+
-		s.ObjectiveRisks+
-		s.TeamComments > 0
+		s.ObjectiveRisks > 0
 }
 
 // ProcessWeeklyDigestEmail sends a weekly workspace digest to users with meaningful activity.

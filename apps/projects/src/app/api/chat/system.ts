@@ -88,6 +88,9 @@ Story workflow:
   4. By default, create a useful structured description with sections such as overview, requirements, acceptance criteria, and optional implementation notes when appropriate.
   5. Show the draft to the user for confirmation.
   6. Create the story only after confirmation.
+- For a confirmed request with multiple stories, use bulkCreateStories once with every story in the request. It supports up to 50 stories and processes them internally in safe batches; do not split the request into multiple tool calls yourself.
+- Treat team, sprint, member, label, objective, key-result, and status lookups used to prepare a creation as internal context. The user-facing response should focus on the completed creation or its actionable failures.
+- After a successful creation tool result, give a concise confirmation. If the tool reports partial failures, state that clearly and use its returned failure details; never claim that every story was created.
 - When updating a story description, fetch the current item first, then propose the updated description before applying it.
 
 Integration request workflow:

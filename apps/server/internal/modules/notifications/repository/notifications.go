@@ -42,7 +42,7 @@ func getDefaultPreferences() map[string]map[string]bool {
 		},
 		"strategy_update": {
 			"email":  true,
-			"in_app": true,
+			"in_app": false,
 		},
 		"mention": {
 			"email":  true,
@@ -66,11 +66,11 @@ func getDefaultPreferences() map[string]map[string]bool {
 		},
 		"reminders": {
 			"email":  true,
-			"in_app": true,
+			"in_app": false,
 		},
 		"weekly_digest": {
 			"email":  true,
-			"in_app": true,
+			"in_app": false,
 		},
 	}
 }

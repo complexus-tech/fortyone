@@ -7,6 +7,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNotificationRules(t *testing.T) {
@@ -123,6 +124,27 @@ func TestNotificationRules(t *testing.T) {
 			case "Rule 1: New assignment notification":
 				assert.False(t, isUnassign, "Should not detect unassignment for new assignment")
 			}
+		})
+	}
+}
+
+func TestHasNonAssignmentUpdatesSkipsAdministrativeEdits(t *testing.T) {
+	rules := &Rules{}
+	assigneeID := uuid.New()
+
+	for name, updates := range map[string]map[string]any{
+		"title":              {"title": "A clearer title"},
+		"start date":         {"start_date": "2026-08-20"},
+		"sprint":             {"sprint_id": uuid.New().String()},
+		"estimate":           {"estimate_unit": 3},
+		"collaborators":      {"collaborator_ids": []string{uuid.New().String()}},
+		"administrative mix": {"title": "A clearer title", "estimate_unit": 3},
+	} {
+		t.Run(name, func(t *testing.T) {
+			require.False(t, rules.hasNonAssignmentUpdates(events.StoryUpdatedPayload{
+				AssigneeID: &assigneeID,
+				Updates:    updates,
+			}))
 		})
 	}
 }
