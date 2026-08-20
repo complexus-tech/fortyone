@@ -9,6 +9,8 @@ import { StoryBanners } from "./story-banners";
 const mockGitHubLinks: StoryGitHubLink[] = [];
 const mockFeedbackLinks: StoryFeedbackLink[] = [];
 const mockRequestLinks: unknown[] = [];
+const mockRetryMutate = jest.fn();
+const mockOverrideMutate = jest.fn();
 
 jest.mock("@/hooks", () => ({
   useTerminology: () => ({
@@ -18,6 +20,40 @@ jest.mock("@/hooks", () => ({
 
 jest.mock("@/lib/hooks/github", () => ({
   useStoryGitHubLinks: () => ({ data: mockGitHubLinks }),
+}));
+
+jest.mock("@/lib/hooks/calendar/use-schedule-issues", () => ({
+  useOverrideCalendarScheduleIssue: () => ({
+    isPending: false,
+    mutate: mockOverrideMutate,
+  }),
+  useRetryCalendarScheduleIssue: () => ({
+    isPending: false,
+    mutate: mockRetryMutate,
+    variables: undefined,
+  }),
+}));
+
+jest.mock("@/components/ui/story/schedule-issue-dialog", () => ({
+  ScheduleIssueDialog: ({
+    issue,
+    onSubmit,
+  }: {
+    issue: { storyCode: string };
+    onSubmit: (startAt: string) => void;
+  }) => (
+    <div role="dialog">
+      Choose a time for {issue.storyCode}
+      <button
+        onClick={() => {
+          onSubmit("2026-08-21T08:00:00.000Z");
+        }}
+        type="button"
+      >
+        Confirm time
+      </button>
+    </div>
+  ),
 }));
 
 jest.mock("@/modules/team-feedback/hooks/use-story-feedback-links", () => ({
@@ -64,6 +100,8 @@ describe("StoryBanners", () => {
     mockGitHubLinks.length = 0;
     mockFeedbackLinks.length = 0;
     mockRequestLinks.length = 0;
+    mockRetryMutate.mockReset();
+    mockOverrideMutate.mockReset();
   });
 
   it("shows Maya's actionable scheduling reason with workspace terminology", () => {
@@ -105,5 +143,50 @@ describe("StoryBanners", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Next story banner" }));
     expect(screen.getByTestId("feedback-banner")).toBeInTheDocument();
+  });
+
+  it("offers retry and manual placement for a story Maya cannot fit", () => {
+    render(
+      <StoryBanners
+        story={createStory({
+          autoSchedulingStatus: "cannot_fit",
+          estimatedDurationMinutes: 60,
+          sequenceId: 42,
+          teamCode: "ENG",
+          title: "Ship banner actions",
+        })}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "More Maya scheduling actions" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Retry" }));
+    expect(mockRetryMutate).toHaveBeenCalledWith("story-1");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "More Maya scheduling actions" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Choose time" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent(
+      "Choose a time for ENG-42",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm time" }));
+    expect(mockOverrideMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startAt: "2026-08-21T08:00:00.000Z",
+        storyId: "story-1",
+      }),
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+  });
+
+  it("does not show scheduling actions before Maya has a placement failure", () => {
+    render(<StoryBanners story={createStory()} />);
+
+    expect(
+      screen.queryByRole("button", { name: "More Maya scheduling actions" }),
+    ).not.toBeInTheDocument();
   });
 });

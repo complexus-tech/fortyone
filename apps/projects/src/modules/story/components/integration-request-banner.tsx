@@ -27,7 +27,7 @@ export const IntegrationRequestBannerRow = ({
       <Flex
         align="center"
         className={cn(
-          "border-primary/20 bg-primary/5 rounded-xl border px-4 py-3",
+          "border-primary/20 bg-primary/5 rounded-xl border px-4 py-3 backdrop-blur-md",
           {
             "rounded-b-none": isThreadOpen && !embedded,
             "rounded-none border-0 bg-transparent": embedded,
@@ -106,7 +106,7 @@ export const IntegrationRequestBannerRow = ({
       <Collapsible.Content>
         <Box
           className={cn(
-            "border-primary/20 bg-surface/50 rounded-b-xl border border-t-0 px-4 py-4",
+            "border-primary/20 bg-surface/50 rounded-b-xl border border-t-0 px-4 py-4 backdrop-blur-md",
             { "rounded-none border-x-0 border-b-0": embedded },
           )}
         >

@@ -49,7 +49,7 @@ export const FeedbackBannerRow = ({
     <Flex
       align="center"
       className={cn(
-        "border-primary/20 bg-primary/5 rounded-xl border px-4 py-3",
+        "border-primary/20 bg-primary/5 rounded-xl border px-4 py-3 backdrop-blur-md",
         { "rounded-none border-0 bg-transparent": embedded },
       )}
       justify="between"

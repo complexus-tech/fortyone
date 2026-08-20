@@ -2,9 +2,21 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { AiIcon, ChevronLeftIcon, ChevronRightIcon } from "icons";
-import { Box, Flex, Text } from "ui";
+import {
+  AiIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MoreHorizontalIcon,
+  RefreshIcon,
+  TimeScheduleIcon,
+} from "icons";
+import { Box, Flex, Menu, Text } from "ui";
+import { ScheduleIssueDialog } from "@/components/ui/story/schedule-issue-dialog";
 import { useTerminology } from "@/hooks";
+import {
+  useOverrideCalendarScheduleIssue,
+  useRetryCalendarScheduleIssue,
+} from "@/lib/hooks/calendar/use-schedule-issues";
 import { useStoryGitHubLinks } from "@/lib/hooks/github";
 import {
   deriveAutoSchedulingStatus,
@@ -49,31 +61,67 @@ const getGitHubBannerLinks = (links: StoryGitHubLink[]) => {
 
 const MayaScheduleBannerRow = ({
   embedded,
+  isRetrying,
+  onChooseTime,
+  onRetry,
   reason,
 }: {
   embedded: boolean;
+  isRetrying: boolean;
+  onChooseTime?: () => void;
+  onRetry?: () => void;
   reason: string;
 }) => (
   <Flex
     align="center"
     className={
       embedded
-        ? "min-w-0 rounded-none px-4 py-3"
-        : "border-primary/20 bg-primary/5 min-w-0 rounded-xl border px-4 py-3"
+        ? "min-w-0 rounded-none px-4 py-3 backdrop-blur-md"
+        : "border-primary/20 bg-primary/5 min-w-0 rounded-xl border px-4 py-3 backdrop-blur-md"
     }
+    justify="between"
   >
-    <AiIcon className="text-primary h-5 shrink-0" />
-    <Text
-      as="span"
-      className="ml-2 min-w-0 truncate"
-      color="primary"
-      fontWeight="medium"
-      title={`Maya needs your help · ${reason}`}
-    >
-      Maya needs your help
-      <span aria-hidden="true"> · </span>
-      {reason}
-    </Text>
+    <Flex align="center" className="min-w-0 flex-1">
+      <AiIcon className="text-primary h-5 shrink-0" />
+      <Text
+        as="span"
+        className="ml-2 min-w-0 truncate"
+        color="primary"
+        fontWeight="medium"
+        title={`Maya needs your help · ${reason}`}
+      >
+        Maya needs your help
+        <span aria-hidden="true"> · </span>
+        {reason}
+      </Text>
+    </Flex>
+    {onRetry ? (
+      <Menu>
+        <Menu.Button>
+          <button
+            aria-label="More Maya scheduling actions"
+            className="text-primary hover:text-primary/80 ml-2 shrink-0 rounded-md p-1 transition"
+            type="button"
+          >
+            <MoreHorizontalIcon className="h-5 text-current" />
+          </button>
+        </Menu.Button>
+        <Menu.Items align="end" className="min-w-40">
+          <Menu.Group>
+            <Menu.Item disabled={isRetrying} onSelect={onRetry}>
+              <RefreshIcon className="h-5 w-auto" />
+              {isRetrying ? "Retrying…" : "Retry"}
+            </Menu.Item>
+            {onChooseTime ? (
+              <Menu.Item onSelect={onChooseTime}>
+                <TimeScheduleIcon className="h-5 w-auto" />
+                Choose time
+              </Menu.Item>
+            ) : null}
+          </Menu.Group>
+        </Menu.Items>
+      </Menu>
+    ) : null}
   </Flex>
 );
 
@@ -91,22 +139,22 @@ const StoryBannerStack = ({ items }: { items: BannerItem[] }) => {
     <Box aria-live="polite" className="relative mb-3 pb-1.5">
       <Box
         aria-hidden="true"
-        className="border-primary/15 bg-primary/[0.03] absolute inset-x-2 bottom-0 h-4 rounded-b-xl border opacity-70"
+        className="border-primary/15 bg-primary/[0.03] absolute inset-x-2 bottom-0 h-4 rounded-b-xl border opacity-70 backdrop-blur-md"
       />
-      <Box className="border-primary/20 bg-primary/5 relative overflow-hidden rounded-xl border">
+      <Box className="border-primary/20 bg-primary/5 relative overflow-hidden rounded-xl border backdrop-blur-md">
         {activeItem.render(true)}
         <Flex
           align="center"
           className="border-primary/15 border-t px-3 py-2"
           justify="between"
         >
-          <Text className="tabular-nums" color="primary" fontSize="xs">
+          <Text className="tabular-nums" color="primary" fontSize="sm">
             {safeActiveIndex + 1} of {items.length}
           </Text>
           <Flex className="gap-1">
             <button
               aria-label="Previous story banner"
-              className="text-primary hover:bg-primary/10 focus-visible:ring-ring grid size-6 place-items-center rounded-md outline-none focus-visible:ring-2"
+              className="text-primary hover:bg-primary/10 focus-visible:ring-ring grid size-7 place-items-center rounded-md outline-none focus-visible:ring-2"
               onClick={() => {
                 setActiveIndex(
                   (safeActiveIndex - 1 + items.length) % items.length,
@@ -114,17 +162,17 @@ const StoryBannerStack = ({ items }: { items: BannerItem[] }) => {
               }}
               type="button"
             >
-              <ChevronLeftIcon aria-hidden="true" className="h-3.5" />
+              <ChevronLeftIcon aria-hidden="true" className="h-4" />
             </button>
             <button
               aria-label="Next story banner"
-              className="text-primary hover:bg-primary/10 focus-visible:ring-ring grid size-6 place-items-center rounded-md outline-none focus-visible:ring-2"
+              className="text-primary hover:bg-primary/10 focus-visible:ring-ring grid size-7 place-items-center rounded-md outline-none focus-visible:ring-2"
               onClick={() => {
                 setActiveIndex((safeActiveIndex + 1) % items.length);
               }}
               type="button"
             >
-              <ChevronRightIcon aria-hidden="true" className="h-3.5" />
+              <ChevronRightIcon aria-hidden="true" className="h-4" />
             </button>
           </Flex>
         </Flex>
@@ -134,10 +182,15 @@ const StoryBannerStack = ({ items }: { items: BannerItem[] }) => {
 };
 
 export const StoryBanners = ({ story }: { story: DetailedStory }) => {
+  const [scheduleDialogNow, setScheduleDialogNow] = useState<number | null>(
+    null,
+  );
   const { getTermDisplay } = useTerminology();
   const { data: githubLinks = [] } = useStoryGitHubLinks(story.id);
   const { data: feedbackLinks = [] } = useStoryFeedbackLinks(story.id);
   const { data: requestLinks = [] } = useStoryIntegrationRequestLinks(story.id);
+  const retryIssue = useRetryCalendarScheduleIssue();
+  const overrideIssue = useOverrideCalendarScheduleIssue();
   const autoSchedulingStatus = deriveAutoSchedulingStatus(story);
   const items: BannerItem[] = [];
 
@@ -149,7 +202,28 @@ export const StoryBanners = ({ story }: { story: DetailedStory }) => {
     items.push({
       id: `maya:${autoSchedulingStatus}`,
       render: (embedded) => (
-        <MayaScheduleBannerRow embedded={embedded} reason={reason} />
+        <MayaScheduleBannerRow
+          embedded={embedded}
+          isRetrying={Boolean(
+            retryIssue.isPending && retryIssue.variables === story.id,
+          )}
+          onChooseTime={
+            autoSchedulingStatus === "cannot_fit" &&
+            (story.estimatedDurationMinutes ?? 0) > 0
+              ? () => {
+                  setScheduleDialogNow(Date.now());
+                }
+              : undefined
+          }
+          onRetry={
+            autoSchedulingStatus === "cannot_fit"
+              ? () => {
+                  retryIssue.mutate(story.id);
+                }
+              : undefined
+          }
+          reason={reason}
+        />
       ),
     });
   }
@@ -181,5 +255,37 @@ export const StoryBanners = ({ story }: { story: DetailedStory }) => {
     });
   });
 
-  return <StoryBannerStack items={items} />;
+  return (
+    <>
+      <StoryBannerStack items={items} />
+      {scheduleDialogNow !== null ? (
+        <ScheduleIssueDialog
+          isSaving={overrideIssue.isPending}
+          issue={{
+            estimatedDurationMinutes: story.estimatedDurationMinutes,
+            storyCode: `${story.teamCode}-${story.sequenceId}`,
+            storyTitle: story.title,
+          }}
+          now={scheduleDialogNow}
+          onClose={() => {
+            setScheduleDialogNow(null);
+          }}
+          onSubmit={(startAt) => {
+            overrideIssue.mutate(
+              {
+                storyId: story.id,
+                startAt,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              },
+              {
+                onSuccess: () => {
+                  setScheduleDialogNow(null);
+                },
+              },
+            );
+          }}
+        />
+      ) : null}
+    </>
+  );
 };
