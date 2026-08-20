@@ -9,6 +9,7 @@ import {
   ChevronRightIcon,
   CloseIcon,
   ExternalLinkIcon,
+  RefreshIcon,
   Video02Icon,
 } from "icons";
 import { Box, Button, Dialog, Flex, Input, Text } from "ui";
@@ -280,6 +281,7 @@ const ScheduleIssueContent = ({
         <Button
           className="shrink-0 px-3"
           color="tertiary"
+          leftIcon={<RefreshIcon className="h-3.5" />}
           loading={isRetrying}
           onClick={onRetry}
           size="sm"
@@ -288,6 +290,7 @@ const ScheduleIssueContent = ({
           Retry
         </Button>
         <Button
+          align="right"
           className="min-w-0 flex-1 px-2"
           color="invert"
           onClick={onChooseTime}

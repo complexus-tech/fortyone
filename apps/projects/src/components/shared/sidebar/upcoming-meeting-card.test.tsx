@@ -71,6 +71,7 @@ jest.mock("icons", () => ({
   ChevronRightIcon: () => null,
   CloseIcon: () => null,
   ExternalLinkIcon: () => null,
+  RefreshIcon: () => null,
   Video02Icon: () => null,
 }));
 
