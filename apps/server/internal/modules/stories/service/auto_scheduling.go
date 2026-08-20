@@ -120,7 +120,7 @@ func (s *Service) prepareAutoSchedulingUpdate(ctx context.Context, story CoreSin
 		updates["auto_scheduling_status"] = AutoSchedulingStatusOff
 		updates["auto_scheduling_reason"] = stringPointer("Auto-scheduling stopped because this story is complete or cancelled.")
 		updates["auto_scheduling_updated_at"] = time.Now().UTC()
-		return story.AutoSchedulingEnabled || story.AutoSchedulingLocked, nil
+		return story.AutoSchedulingEnabled || story.AutoSchedulingLocked || terminalLifecycleUpdateRequested(updates), nil
 	}
 	if !enabled {
 		_, enabledWasRequested := updates["auto_scheduling_enabled"]
@@ -205,6 +205,12 @@ func (s *Service) autoSchedulingUpdateIsTerminal(ctx context.Context, story Core
 		return false, err
 	}
 	return category == "completed" || category == "cancelled", nil
+}
+
+func terminalLifecycleUpdateRequested(updates map[string]any) bool {
+	_, statusChanged := updates["status_id"]
+	_, completedAtChanged := updates["completed_at"]
+	return statusChanged || completedAtChanged
 }
 
 func schedulingConstraintsChanged(updates map[string]any) bool {

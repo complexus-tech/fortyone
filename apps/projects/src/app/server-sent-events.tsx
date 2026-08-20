@@ -10,10 +10,7 @@ import { calendarKeys, notificationKeys } from "@/constants/keys";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useWorkspacePath } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
-import type {
-  AutoSchedulingStatus,
-  Story,
-} from "@/modules/stories/types";
+import type { AutoSchedulingStatus, Story } from "@/modules/stories/types";
 
 const apiURL = getApiUrl();
 
@@ -24,6 +21,7 @@ type WorkspaceUpdate = {
   workspaceId: string;
   changes: {
     statusId?: string;
+    completedAt?: string | null;
     assigneeId?: string;
     priority?: string;
     title?: string;
@@ -104,6 +102,15 @@ export const ServerSentEvents = () => {
           };
         },
       );
+
+      if (
+        "statusId" in workspaceUpdate.changes ||
+        "completedAt" in workspaceUpdate.changes
+      ) {
+        void queryClient.invalidateQueries({
+          queryKey: calendarKeys.all(workspaceSlug),
+        });
+      }
     },
     [queryClient, workspaceSlug],
   );

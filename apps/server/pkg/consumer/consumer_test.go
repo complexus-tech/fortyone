@@ -199,3 +199,15 @@ func TestAutoSchedulingUpdatesBroadcastWithoutRequeueingReconciliation(t *testin
 		"autoSchedulingUpdatedAt": updates["auto_scheduling_updated_at"],
 	}, frontendStoryChanges(updates))
 }
+
+func TestCompletionUpdatesBroadcastForCalendarRefresh(t *testing.T) {
+	completedAt := time.Date(2026, 8, 20, 13, 0, 0, 0, time.UTC)
+	updates := map[string]any{"completed_at": completedAt}
+
+	consumer := &Consumer{}
+	require.True(t, consumer.hasSignificantChanges(updates))
+	require.True(t, shouldReconcileStorySchedule(updates))
+	require.Equal(t, map[string]any{
+		"completedAt": completedAt,
+	}, frontendStoryChanges(updates))
+}

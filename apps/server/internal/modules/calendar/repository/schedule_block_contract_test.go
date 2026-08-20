@@ -125,3 +125,23 @@ func TestScheduleBlockConflictsUsesContiguousQueryParameters(t *testing.T) {
 		t.Fatal("schedule conflict query must not include an unused workspace parameter")
 	}
 }
+
+func TestManualRescheduleAllowsExplicitCalendarOverlaps(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile("schedule.go")
+	if err != nil {
+		t.Fatalf("read schedule repository: %v", err)
+	}
+	source := strings.Join(strings.Fields(string(data)), " ")
+	functionStart := strings.Index(source, "func (r *Repo) ManuallyRescheduleScheduleBlock")
+	functionEnd := strings.Index(source[functionStart+1:], "func ")
+	if functionStart < 0 || functionEnd < 0 {
+		t.Fatal("could not locate ManuallyRescheduleScheduleBlock implementation")
+	}
+	functionSource := source[functionStart : functionStart+1+functionEnd]
+
+	if strings.Contains(functionSource, "scheduleBlockConflicts") || strings.Contains(functionSource, "ErrCalendarScheduleConflict") {
+		t.Fatal("an explicit user reschedule must allow overlaps that the calendar can render")
+	}
+}

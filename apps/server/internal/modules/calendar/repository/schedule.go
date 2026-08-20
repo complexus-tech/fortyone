@@ -400,25 +400,9 @@ func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calend
 	if input.ExpectedUpdatedAt != nil && !current.UpdatedAt.Equal(input.ExpectedUpdatedAt.UTC()) {
 		return calendar.CoreScheduleBlock{}, calendar.ErrCalendarScheduleStalePlan
 	}
-	conflicts, err := scheduleBlockConflicts(ctx, tx, calendar.CoreScheduleBlockInput{
-		WorkspaceID: input.WorkspaceID,
-		UserID:      input.UserID,
-		ID:          input.BlockID,
-		StoryID:     current.StoryID,
-		BlockType:   calendar.ScheduleBlockType(current.BlockType),
-		Title:       current.Title,
-		StartAt:     input.StartAt,
-		EndAt:       input.EndAt,
-		IsLocked:    true,
-		Source:      calendar.ScheduleBlockSource(current.Source),
-	}, input.BlockID)
-	if err != nil {
-		return calendar.CoreScheduleBlock{}, err
-	}
-	if conflicts {
-		return calendar.CoreScheduleBlock{}, calendar.ErrCalendarScheduleConflict
-	}
-
+	// A drag is an explicit placement by the user. The calendar renders
+	// simultaneous work in lanes and marks meeting overlaps as conflicts; free-slot
+	// enforcement remains in create, edit, and automatic scheduling paths.
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE calendar_schedule_blocks
 		SET start_at = $4,

@@ -101,10 +101,10 @@ export const useManualRescheduleCalendarScheduleBlock = () => {
   return useMutation({
     onMutate: async ({ blockId, input }) => {
       const scheduleKey = calendarKeys.schedules(workspaceSlug);
-      await queryClient.cancelQueries({ queryKey: scheduleKey });
       const previousSchedules = queryClient.getQueriesData<CalendarSchedule>({
         queryKey: scheduleKey,
       });
+      const cancellation = queryClient.cancelQueries({ queryKey: scheduleKey });
       const optimisticUpdatedAt = new Date().toISOString();
       queryClient.setQueriesData<CalendarSchedule>(
         { queryKey: scheduleKey },
@@ -126,6 +126,7 @@ export const useManualRescheduleCalendarScheduleBlock = () => {
           };
         },
       );
+      await cancellation;
       return { previousSchedules };
     },
     mutationFn: ({
@@ -146,7 +147,20 @@ export const useManualRescheduleCalendarScheduleBlock = () => {
       });
       toast.error("Calendar", { description: error.message });
     },
-    onSuccess: () => {
+    onSuccess: (updatedBlock) => {
+      const scheduleKey = calendarKeys.schedules(workspaceSlug);
+      queryClient.setQueriesData<CalendarSchedule>(
+        { queryKey: scheduleKey },
+        (schedule) => {
+          if (!schedule) return schedule;
+          return {
+            ...schedule,
+            blocks: schedule.blocks.map((block) =>
+              block.id === updatedBlock.id ? updatedBlock : block,
+            ),
+          };
+        },
+      );
       toast.success("Calendar updated");
       void invalidateSchedule();
     },

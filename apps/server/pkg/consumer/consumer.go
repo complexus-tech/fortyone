@@ -497,6 +497,7 @@ func (c *Consumer) handleStoryCreated(ctx context.Context, event events.Event) e
 func (c *Consumer) hasSignificantChanges(updates map[string]any) bool {
 	significantFields := map[string]bool{
 		"status_id":                  true,
+		"completed_at":               true,
 		"assignee_id":                true,
 		"collaborator_ids":           true,
 		"priority":                   true,
@@ -565,6 +566,7 @@ func (c *Consumer) broadcastToWorkspace(ctx context.Context, payload events.Stor
 func frontendStoryChanges(updates map[string]any) map[string]any {
 	dbToFrontendFields := map[string]string{
 		"status_id":                  "statusId",
+		"completed_at":               "completedAt",
 		"assignee_id":                "assigneeId",
 		"priority":                   "priority",
 		"title":                      "title",

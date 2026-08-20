@@ -4,18 +4,24 @@ import { useState } from "react";
 import {
   addDays,
   addHours,
-  addMinutes,
   format,
   isSameDay,
   isSameMonth,
   startOfDay,
 } from "date-fns";
-import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import type {
+  CollisionDetection,
+  DragEndEvent,
+  DragStartEvent,
+  Modifier,
+} from "@dnd-kit/core";
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
   TouchSensor,
+  pointerWithin,
+  rectIntersection,
   useDraggable,
   useDroppable,
   useSensor,
@@ -72,6 +78,11 @@ import {
   getMayaCalendarBlockReason,
   isCalendarScheduleBlockEditable,
 } from "./calendar-block";
+import type { CalendarDragKind } from "./calendar-drag";
+import {
+  getCalendarManualChange,
+  snapCalendarDeltaPixels,
+} from "./calendar-drag";
 import {
   buildCalendarEventLayouts,
   deriveCalendarVisibleHours,
@@ -104,6 +115,10 @@ const timeRailWidth = 8;
 const calendarHistoryDays = 7;
 const calendarLookaheadDays = 90;
 const calendarViews = ["day", "week", "month"] as const;
+const scheduledTaskBackgroundClass =
+  "bg-surface-muted dark:bg-surface-prominent/55";
+const scheduledTaskHoverBackgroundClass =
+  "hover:bg-accent dark:hover:bg-surface-prominent/70";
 
 type CalendarItem =
   | {
@@ -129,13 +144,13 @@ type CalendarItem =
     };
 
 type CalendarDragData = {
-  kind: "move" | "resize";
+  kind: CalendarDragKind;
   block: CalendarScheduleBlock;
 };
 
 type CalendarManualChange = {
   block: CalendarScheduleBlock;
-  change: "move" | "resize";
+  change: CalendarDragKind;
   startAt: Date;
   endAt: Date;
 };
@@ -182,11 +197,47 @@ const roundToNextHalfHour = (date: Date) => {
   return next;
 };
 
-const snapCalendarDeltaMinutes = (deltaY: number) =>
-  Math.round(deltaY / (hourHeight / 60) / 15) * 15;
-
 const getCalendarDragData = (active: DragEndEvent["active"]) =>
   (active.data.current?.calendarDrag as CalendarDragData | undefined) ?? null;
+
+const calendarCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  return pointerCollisions.length > 0
+    ? pointerCollisions
+    : rectIntersection(args);
+};
+
+const snapCalendarDragModifier: Modifier = ({ active, transform }) => {
+  if (!active?.data.current?.calendarDrag) return transform;
+  return {
+    ...transform,
+    y: snapCalendarDeltaPixels(transform.y, hourHeight),
+  };
+};
+
+const calendarDragModifiers = [snapCalendarDragModifier];
+
+const CalendarDragPreview = ({ drag }: { drag: CalendarDragData | null }) => {
+  if (!drag) return null;
+  if (drag.kind === "resize") {
+    return <Box className="bg-border-strong h-full w-full rounded-sm" />;
+  }
+
+  return (
+    <Box className="border-border-strong/60 bg-surface-muted/95 shadow-shadow relative h-full w-full overflow-hidden rounded-l-none rounded-r-md border px-3 py-1 backdrop-blur-sm">
+      <span
+        aria-hidden="true"
+        className="bg-border-strong absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-[0.1875rem] -translate-y-1/2 rounded-md"
+      />
+      <Text className="truncate leading-tight" fontWeight="medium">
+        {drag.block.storyCode ? (
+          <span className="text-text-muted mr-1">{drag.block.storyCode}</span>
+        ) : null}
+        {drag.block.title}
+      </Text>
+    </Box>
+  );
+};
 
 const overlapsDay = (
   item: Pick<CalendarItem, "startAt" | "endAt">,
@@ -227,12 +278,14 @@ const getCalendarBlockStoryCode = (block: CalendarScheduleBlock) =>
 
 const CalendarTimedBlock = ({
   item,
+  isDragDisabled,
   layout,
   onEdit,
   onSelectEvent,
   today,
 }: {
   item: CalendarItem;
+  isDragDisabled: boolean;
   layout: { top: number; height: number; lane: number; laneCount: number };
   onEdit: (block: CalendarScheduleBlock) => void;
   onSelectEvent: (event: CalendarEventSummary) => void;
@@ -246,22 +299,25 @@ const CalendarTimedBlock = ({
       : null;
   const moveDrag = useDraggable({
     id: `calendar-move-${item.id}`,
-    disabled: !draggableBlock,
+    disabled: !draggableBlock || isDragDisabled,
     data: draggableBlock
       ? { calendarDrag: { kind: "move", block: draggableBlock } }
       : undefined,
   });
   const resizeDrag = useDraggable({
     id: `calendar-resize-${item.id}`,
-    disabled: !draggableBlock,
+    disabled: !draggableBlock || isDragDisabled,
     data: draggableBlock
       ? { calendarDrag: { kind: "resize", block: draggableBlock } }
       : undefined,
   });
   const laneWidth = 100 / layout.laneCount;
   const isCompleted = new Date(item.endAt).getTime() <= today.getTime();
+  const resizeDelta = resizeDrag.isDragging
+    ? snapCalendarDeltaPixels(resizeDrag.transform?.y ?? 0, hourHeight)
+    : 0;
   const style = {
-    height: `${layout.height - timedBlockVerticalGap}px`,
+    height: `${Math.max(18, layout.height - timedBlockVerticalGap + resizeDelta)}px`,
     left: `calc(${layout.lane * laneWidth}% + 0.25rem)`,
     top: `${layout.top + timedBlockVerticalInset}px`,
     width: `calc(${laneWidth}% - 0.5rem)`,
@@ -393,9 +449,12 @@ const CalendarTimedBlock = ({
   let blockColorClass =
     "border-border-strong/60 bg-surface-muted/35 hover:bg-state-hover border-dashed";
   if (block.blockType === "work") {
-    blockColorClass = "border-border-strong/60 bg-surface-muted/35";
+    blockColorClass = cn(
+      "border-border-strong/70 dark:border-border-strong",
+      scheduledTaskBackgroundClass,
+    );
     if (!isMayaManaged) {
-      blockColorClass += " hover:bg-state-hover";
+      blockColorClass = cn(blockColorClass, scheduledTaskHoverBackgroundClass);
     }
   }
   if (block.hasConflict) {
@@ -405,8 +464,10 @@ const CalendarTimedBlock = ({
     }
   }
   if (isCompleted) {
-    blockColorClass =
-      "border-border-strong/40 bg-surface-muted/45 dark:bg-surface-elevated/45 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]";
+    blockColorClass = cn(
+      "border-border-strong/40 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]",
+      scheduledTaskBackgroundClass,
+    );
   }
   const isScheduledStory = block.blockType === "work";
   const secondaryLabel = isMayaManaged
@@ -451,8 +512,10 @@ const CalendarTimedBlock = ({
       {...moveDrag.listeners}
       className={cn(
         "absolute flex items-center overflow-hidden rounded-l-none rounded-r-md border transition-colors",
-        draggableBlock ? "cursor-grab active:cursor-grabbing" : null,
-        moveDrag.isDragging ? "opacity-40" : null,
+        draggableBlock && !isDragDisabled
+          ? "cursor-grab touch-none active:cursor-grabbing"
+          : null,
+        moveDrag.isDragging ? "opacity-0" : null,
         blockPaddingClass,
         blockColorClass,
       )}
@@ -514,7 +577,11 @@ const CalendarTimedBlock = ({
           {...resizeDrag.attributes}
           {...resizeDrag.listeners}
           aria-label={`Resize ${storyCode || block.title}`}
-          className="absolute inset-x-1 bottom-0 z-20 h-2 cursor-ns-resize rounded-sm focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+          className={cn(
+            "absolute inset-x-1 bottom-0 z-20 h-2 rounded-sm focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset",
+            isDragDisabled ? "cursor-wait" : "cursor-ns-resize",
+          )}
+          disabled={isDragDisabled}
           onPointerDown={(event) => {
             event.stopPropagation();
           }}
@@ -1152,6 +1219,7 @@ const CalendarTimedDayColumn = ({
   day,
   dayItems,
   hours,
+  isDragDisabled,
   onEdit,
   onSelectEvent,
   today,
@@ -1161,6 +1229,7 @@ const CalendarTimedDayColumn = ({
   day: Date;
   dayItems: CalendarItem[];
   hours: number[];
+  isDragDisabled: boolean;
   onEdit: (block: CalendarScheduleBlock) => void;
   onSelectEvent: (event: CalendarEventSummary) => void;
   today: Date;
@@ -1187,7 +1256,7 @@ const CalendarTimedDayColumn = ({
   return (
     <div
       className={cn(
-        "border-border/60 relative border-l",
+        "border-border/60 relative border-l transition-colors duration-100",
         isOver ? "bg-state-hover/30" : null,
       )}
       ref={setNodeRef}
@@ -1210,6 +1279,7 @@ const CalendarTimedDayColumn = ({
         if (!layout) return null;
         return (
           <CalendarTimedBlock
+            isDragDisabled={isDragDisabled}
             item={item}
             key={key}
             layout={layout}
@@ -1228,6 +1298,7 @@ const CalendarTimeGrid = ({
   days,
   hours,
   isDaySelectable,
+  isManualChangePending,
   onEdit,
   onManualChange,
   onSelectDay,
@@ -1243,6 +1314,7 @@ const CalendarTimeGrid = ({
   days: Date[];
   hours: number[];
   isDaySelectable: (day: Date) => boolean;
+  isManualChangePending: boolean;
   onEdit: (block: CalendarScheduleBlock) => void;
   onManualChange: (change: CalendarManualChange) => void;
   onSelectDay: (day: Date) => void;
@@ -1260,9 +1332,9 @@ const CalendarTimeGrid = ({
   const minimumWidthClass = isDayView ? "min-w-full" : "min-w-[72rem]";
   const [activeDrag, setActiveDrag] = useState<CalendarDragData | null>(null);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 8 },
+      activationConstraint: { delay: 150, tolerance: 8 },
     }),
   );
   const handleDragStart = (event: DragStartEvent) => {
@@ -1278,32 +1350,13 @@ const CalendarTimeGrid = ({
 
     const originalStart = new Date(dragData.block.startAt);
     const originalEnd = new Date(dragData.block.endAt);
-    const deltaMinutes = snapCalendarDeltaMinutes(event.delta.y);
-    let startAt = originalStart;
-    let endAt = originalEnd;
-
-    if (dragData.kind === "resize") {
-      const durationMinutes = Math.max(
-        15,
-        (originalEnd.getTime() - originalStart.getTime()) / 60_000 +
-          deltaMinutes,
-      );
-      endAt = addMinutes(originalStart, durationMinutes);
-    } else {
-      const day = new Date(targetDay);
-      startAt = new Date(day);
-      startAt.setHours(
-        originalStart.getHours(),
-        originalStart.getMinutes(),
-        0,
-        0,
-      );
-      startAt = addMinutes(startAt, deltaMinutes);
-      endAt = addMinutes(
-        startAt,
-        (originalEnd.getTime() - originalStart.getTime()) / 60_000,
-      );
-    }
+    const { endAt, startAt } = getCalendarManualChange({
+      block: dragData.block,
+      deltaY: event.delta.y,
+      hourHeight,
+      kind: dragData.kind,
+      targetDay: new Date(targetDay),
+    });
 
     if (
       startAt.getTime() === originalStart.getTime() &&
@@ -1321,6 +1374,8 @@ const CalendarTimeGrid = ({
 
   return (
     <DndContext
+      collisionDetection={calendarCollisionDetection}
+      modifiers={calendarDragModifiers}
       onDragCancel={() => {
         setActiveDrag(null);
       }}
@@ -1459,6 +1514,7 @@ const CalendarTimeGrid = ({
                 overlapsDay(item, day),
               )}
               hours={hours}
+              isDragDisabled={isManualChangePending}
               key={day.toISOString()}
               onEdit={onEdit}
               onSelectEvent={onSelectEvent}
@@ -1469,17 +1525,12 @@ const CalendarTimeGrid = ({
           ))}
         </Box>
       </Box>
-      <DragOverlay className="pointer-events-none">
-        {activeDrag ? (
-          <Box className="border-border bg-surface-muted/90 shadow-shadow rounded-r-md border px-3 py-2 backdrop-blur">
-            <Text className="text-text-muted text-sm" fontWeight="medium">
-              {activeDrag.block.storyCode || "Story"}
-            </Text>
-            <Text className="max-w-xs truncate text-sm" fontWeight="medium">
-              {activeDrag.block.title}
-            </Text>
-          </Box>
-        ) : null}
+      <DragOverlay
+        className="pointer-events-none"
+        dropAnimation={null}
+        zIndex={50}
+      >
+        <CalendarDragPreview drag={activeDrag} />
       </DragOverlay>
     </DndContext>
   );
@@ -1568,7 +1619,9 @@ const CalendarMonthItem = ({
   const displayTitle = mayaLabel ? `${mayaLabel} · ${title}` : title;
   const isScheduledStory = block.blockType === "work";
   const canOpenBlock = isScheduledStory || isEditable;
-  let toneClass = "bg-surface-muted/35 text-text-muted";
+  let toneClass = isScheduledStory
+    ? cn(scheduledTaskBackgroundClass, "text-text-muted")
+    : "bg-surface-muted/35 text-text-muted";
   if (block.hasConflict) {
     toneClass = "bg-danger/[0.08] text-danger";
   }
@@ -2053,6 +2106,7 @@ export const PersonalCalendar = ({
             days={days}
             hours={hours}
             isDaySelectable={isDaySelectable}
+            isManualChangePending={manualReschedule.isPending}
             onEdit={openBlock}
             onManualChange={handleManualCalendarChange}
             onSelectDay={selectDay}

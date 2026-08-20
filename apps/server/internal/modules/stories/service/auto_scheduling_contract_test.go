@@ -182,6 +182,21 @@ func TestPrepareAutoSchedulingUpdatePreservesEnabledIntentForTerminalStory(t *te
 	}
 }
 
+func TestPrepareAutoSchedulingUpdateRequestsCleanupForTerminalLifecycle(t *testing.T) {
+	service := &Service{}
+	updates := map[string]any{"completed_at": time.Now().UTC()}
+
+	reconcile, err := service.prepareAutoSchedulingUpdate(context.Background(), CoreSingleStory{
+		AutoSchedulingStatus: AutoSchedulingStatusOff,
+	}, updates)
+	if err != nil {
+		t.Fatalf("terminal update returned error: %v", err)
+	}
+	if !reconcile {
+		t.Fatal("terminal lifecycle update must enqueue schedule cleanup even when auto-scheduling is already off")
+	}
+}
+
 func TestPrepareAutoSchedulingUpdateDoesNotRewriteAlreadyOffStory(t *testing.T) {
 	service := &Service{}
 	updates := map[string]any{"title": "Updated title"}
