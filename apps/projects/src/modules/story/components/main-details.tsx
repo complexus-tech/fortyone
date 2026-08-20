@@ -28,11 +28,9 @@ import type { StoryUpdate } from "../types";
 import { Activities } from "./activities";
 import { Associations } from "./associations";
 import { Attachments } from "./attachments";
-import { FeedbackSection } from "./feedback-section";
-import { GitHubSection } from "./github-section";
-import { IntegrationRequestSection } from "./integration-request-section";
 import { Links } from "./links";
 import { SubStories } from "./sub-stories";
+import { StoryBanners } from "./story-banners";
 import { LinksSkeleton } from "./links-skeleton";
 import { OptionsHeader } from "./options-header";
 import { Options } from "./options";
@@ -204,8 +202,7 @@ export const MainDetails = ({
             <OptionsHeader isAdminOrOwner={isAdminOrOwner} storyId={storyId} />
           </Box>
         ) : null}
-        <GitHubSection.Banner storyId={storyId} />
-        <FeedbackSection.Banner storyId={storyId} />
+        <StoryBanners story={data!} />
         <TextEditor
           asTitle
           className="text-foreground relative -left-px mb-6 text-3xl font-semibold md:text-4xl"
@@ -269,7 +266,6 @@ export const MainDetails = ({
 
         <Attachments className="mt-4" storyId={storyId} />
         <Divider className="my-6" />
-        <IntegrationRequestSection.Banner storyId={storyId} />
         <Activities isDialog={isDialog} storyId={storyId} teamId={teamId} />
       </Container>
     </BodyContainer>

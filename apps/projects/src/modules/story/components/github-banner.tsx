@@ -1,13 +1,8 @@
 "use client";
 
 import { Box, Flex, Text, Menu } from "ui";
-import {
-  GitHubIcon,
-  LinkIcon,
-  MoreHorizontalIcon,
-  NewTabIcon,
-  UnlinkIcon,
-} from "icons";
+import { GitHubIcon, LinkIcon, MoreHorizontalIcon, UnlinkIcon } from "icons";
+import { cn } from "lib";
 import { useDeleteStoryGitHubLink } from "@/lib/hooks/github";
 import type { StoryGitHubLink } from "@/modules/settings/workspace/integrations/github/types";
 
@@ -35,24 +30,25 @@ export const GitHubBanner = ({
 }) => {
   const issueLink = links.find((l) => l.externalType === "issue");
   const prLinks = links.filter((l) => l.externalType === "pull_request");
-  const primaryLink = issueLink ?? prLinks[0];
+  const bannerLinks = issueLink ? [issueLink, ...prLinks] : prLinks;
 
-  if (!primaryLink) return null;
+  if (bannerLinks.length === 0) return null;
 
   return (
     <Box className="mb-3 space-y-2">
-      {issueLink && <BannerRow link={issueLink} storyId={storyId} />}
-      {prLinks.map((pr) => (
-        <BannerRow key={pr.id} link={pr} storyId={storyId} />
+      {bannerLinks.map((link) => (
+        <GitHubBannerRow key={link.id} link={link} storyId={storyId} />
       ))}
     </Box>
   );
 };
 
-const BannerRow = ({
+export const GitHubBannerRow = ({
+  embedded = false,
   link,
   storyId,
 }: {
+  embedded?: boolean;
   link: StoryGitHubLink;
   storyId: string;
 }) => {
@@ -63,7 +59,10 @@ const BannerRow = ({
   return (
     <Flex
       align="center"
-      className="border-primary/20 bg-primary/5 rounded-xl border px-4 py-3"
+      className={cn(
+        "border-primary/20 bg-primary/5 rounded-xl border px-4 py-3",
+        { "rounded-none border-0 bg-transparent": embedded },
+      )}
       justify="between"
     >
       <Flex align="center" gap={2}>
@@ -92,6 +91,7 @@ const BannerRow = ({
         <Menu>
           <Menu.Button>
             <button
+              aria-label="More GitHub link actions"
               className="text-primary hover:text-primary/80 rounded-md p-1 transition"
               type="button"
             >

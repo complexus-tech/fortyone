@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CopyIcon, LinkIcon, MoreHorizontalIcon, RequestsIcon } from "icons";
+import { cn } from "lib";
 import { Box, Flex, Menu, Text } from "ui";
 import { useWorkspacePath } from "@/hooks";
 import type { StoryFeedbackLink } from "@/modules/team-feedback/types";
@@ -26,7 +27,13 @@ export const FeedbackBanner = ({ links }: { links: StoryFeedbackLink[] }) => (
   </Box>
 );
 
-const FeedbackBannerRow = ({ link }: { link: StoryFeedbackLink }) => {
+export const FeedbackBannerRow = ({
+  embedded = false,
+  link,
+}: {
+  embedded?: boolean;
+  link: StoryFeedbackLink;
+}) => {
   const router = useRouter();
   const { withWorkspace } = useWorkspacePath();
   const feedbackHref = withWorkspace(
@@ -41,7 +48,10 @@ const FeedbackBannerRow = ({ link }: { link: StoryFeedbackLink }) => {
   return (
     <Flex
       align="center"
-      className="border-primary/20 bg-primary/5 rounded-xl border px-4 py-3"
+      className={cn(
+        "border-primary/20 bg-primary/5 rounded-xl border px-4 py-3",
+        { "rounded-none border-0 bg-transparent": embedded },
+      )}
       justify="between"
     >
       <Link

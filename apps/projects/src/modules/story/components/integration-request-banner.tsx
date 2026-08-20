@@ -9,9 +9,11 @@ import { useWorkspacePath } from "@/hooks";
 import { IntegrationRequestThreadActivity } from "@/modules/integration-requests/thread-activity";
 import type { IntegrationRequestProviderThread } from "@/modules/integration-requests/types";
 
-const IntegrationRequestBannerRow = ({
+export const IntegrationRequestBannerRow = ({
+  embedded = false,
   link,
 }: {
+  embedded?: boolean;
   link: IntegrationRequestProviderThread;
 }) => {
   const [isThreadOpen, setIsThreadOpen] = useState(true);
@@ -26,7 +28,10 @@ const IntegrationRequestBannerRow = ({
         align="center"
         className={cn(
           "border-primary/20 bg-primary/5 rounded-xl border px-4 py-3",
-          { "rounded-b-none": isThreadOpen },
+          {
+            "rounded-b-none": isThreadOpen && !embedded,
+            "rounded-none border-0 bg-transparent": embedded,
+          },
         )}
         justify="between"
       >
@@ -99,7 +104,12 @@ const IntegrationRequestBannerRow = ({
         </Flex>
       </Flex>
       <Collapsible.Content>
-        <Box className="border-primary/20 bg-surface/50 rounded-b-xl border border-t-0 px-4 py-4">
+        <Box
+          className={cn(
+            "border-primary/20 bg-surface/50 rounded-b-xl border border-t-0 px-4 py-4",
+            { "rounded-none border-x-0 border-b-0": embedded },
+          )}
+        >
           <IntegrationRequestThreadActivity
             compact
             requestId={link.integrationRequestId}
