@@ -3,8 +3,8 @@
 import { format, isSameDay } from "date-fns";
 import dynamic from "next/dynamic";
 import { ClockIcon, CopyIcon, EditIcon, ExternalLinkIcon } from "icons";
-import { Box, Button, Dialog, Flex, Skeleton, Text, Tooltip } from "ui";
 import { toast } from "sonner";
+import { Box, Button, Dialog, Flex, Skeleton, Text, Tooltip } from "ui";
 import { useCopyToClipboard, useWorkspacePath } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
@@ -103,8 +103,8 @@ const ScheduledStoryHeader = ({
 
   const copyStoryLink = () => {
     void copyText(`${window.location.origin}${storyHref}`).then((copied) => {
-      if (copied) {
-        toast.success("Link copied to clipboard");
+      if (!copied) {
+        toast.error("Could not copy story link");
       }
     });
   };

@@ -37,6 +37,11 @@ import {
   isMeetingDismissed,
 } from "./upcoming-meeting";
 import type { UpcomingMeeting } from "./upcoming-meeting";
+import {
+  dismissScheduleIssue,
+  getScheduleIssueDismissalToken,
+  isScheduleIssueDismissed,
+} from "./schedule-issue-dismissal";
 
 const CLOCK_REFRESH_INTERVAL_MS = 30 * 1000;
 const OBJECTIVE_RISK_DISMISSAL_PREFIX = "fortyone:objective-forecast-risk:";
@@ -346,9 +351,9 @@ export const SidebarAssistantCards = ({
   const [dismissedMeetingIds, setDismissedMeetingIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const [dismissedIssueIds, setDismissedIssueIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [dismissedIssueTokens, setDismissedIssueTokens] = useState<
+    Map<string, number>
+  >(() => new Map());
   const [dismissedObjectiveRiskTokens, setDismissedObjectiveRiskTokens] =
     useState<Set<string>>(() => new Set());
   const [selectedIssue, setSelectedIssue] =
@@ -356,6 +361,7 @@ export const SidebarAssistantCards = ({
   const [isCollapsedPopoverOpen, setIsCollapsedPopoverOpen] = useState(false);
   const collapsedPopoverCloseTimer = useRef<number | undefined>(undefined);
   const integrationQuery = useCalendarIntegration();
+  const { workspaceSlug } = useWorkspacePath();
   const { data: session } = useSession();
   const { data: objectives = EMPTY_OBJECTIVES } = useObjectives();
   const { data: objectiveStatuses = EMPTY_OBJECTIVE_STATUSES } =
@@ -402,7 +408,14 @@ export const SidebarAssistantCards = ({
       )
     : [];
   const issues = (scheduleQuery.data?.scheduleIssues ?? []).filter(
-    (issue) => !dismissedIssueIds.has(issue.storyId),
+    (issue) =>
+      !isHydrated ||
+      !isScheduleIssueDismissed(
+        issue,
+        workspaceSlug,
+        now,
+        dismissedIssueTokens,
+      ),
   );
   const activeObjectiveStatusIds = new Set(
     objectiveStatuses
@@ -471,9 +484,17 @@ export const SidebarAssistantCards = ({
         return next;
       });
     } else if (activeItem.kind === "schedule-issue") {
-      setDismissedIssueIds((current) => {
-        const next = new Set(current);
-        next.add(activeItem.issue.storyId);
+      const dismissedUntil = dismissScheduleIssue(
+        activeItem.issue,
+        workspaceSlug,
+        now,
+      );
+      setDismissedIssueTokens((current) => {
+        const next = new Map(current);
+        next.set(
+          getScheduleIssueDismissalToken(activeItem.issue),
+          dismissedUntil,
+        );
         return next;
       });
     } else {

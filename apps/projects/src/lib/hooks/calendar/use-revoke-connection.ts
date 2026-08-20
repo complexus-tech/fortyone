@@ -42,7 +42,6 @@ export const useRevokeCalendarConnection = () => {
           schedule ? { ...schedule, busyWindows: [], events: [] } : schedule,
       );
       queryClient.removeQueries({ queryKey: eventQueryKey });
-      toast.success("Calendar disconnected");
       await queryClient.invalidateQueries({ queryKey: allQueryKey });
     },
   });

@@ -3,7 +3,10 @@
 import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
 import {
   CALENDAR_DRAG_STEP_MINUTES,
+  activateCalendarResize,
   getCalendarManualChange,
+  isCalendarBlockResizeTerminalDay,
+  resizeCalendarBlockByMinutes,
   snapCalendarDeltaMinutes,
 } from "./calendar-drag";
 
@@ -25,6 +28,21 @@ const createBlock = (
 });
 
 describe("calendar drag calculations", () => {
+  it("stops the parent drag while preserving the resize activator", () => {
+    const calls: string[] = [];
+    const event = {
+      stopPropagation: () => {
+        calls.push("stop");
+      },
+    };
+
+    activateCalendarResize(event, () => {
+      calls.push("resize");
+    });
+
+    expect(calls).toEqual(["stop", "resize"]);
+  });
+
   it("snaps vertical movement to five-minute increments", () => {
     const fiveMinutePixels = (52 / 60) * CALENDAR_DRAG_STEP_MINUTES;
 
@@ -64,5 +82,30 @@ describe("calendar drag calculations", () => {
     });
 
     expect(result.endAt.getTime() - result.startAt.getTime()).toBe(5 * 60_000);
+  });
+
+  it("resizes from the end while preserving the scheduled start", () => {
+    const block = createBlock();
+    const result = resizeCalendarBlockByMinutes(
+      block,
+      CALENDAR_DRAG_STEP_MINUTES,
+    );
+
+    expect(result.startAt.toISOString()).toBe(block.startAt);
+    expect(result.endAt.getTime() - result.startAt.getTime()).toBe(65 * 60_000);
+  });
+
+  it("offers duration resize only on the terminal segment of a multi-day block", () => {
+    const block = createBlock({
+      endAt: new Date(2026, 7, 21, 1).toISOString(),
+      startAt: new Date(2026, 7, 20, 23).toISOString(),
+    });
+
+    expect(isCalendarBlockResizeTerminalDay(block, new Date(2026, 7, 20))).toBe(
+      false,
+    );
+    expect(isCalendarBlockResizeTerminalDay(block, new Date(2026, 7, 21))).toBe(
+      true,
+    );
   });
 });

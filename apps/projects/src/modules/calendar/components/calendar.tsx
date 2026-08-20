@@ -1,5 +1,9 @@
 "use client";
 
+import type {
+  PointerEvent as ReactPointerEvent,
+  TouchEvent as ReactTouchEvent,
+} from "react";
 import { useState } from "react";
 import {
   addDays,
@@ -56,6 +60,7 @@ import {
   useSyncCalendarConnection,
   useUpdateCalendarScheduleBlock,
 } from "@/lib/hooks/calendar";
+import { formatTimeNeeded } from "@/lib/time-needed";
 import type {
   CalendarBusyWindow,
   CalendarEventSummary,
@@ -65,7 +70,6 @@ import type {
 import type { CalendarConnection } from "@/modules/settings/workspace/integrations/calendar/types";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
 import type { Story } from "@/modules/stories/types";
-import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import {
   CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE,
   CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP,
@@ -78,7 +82,12 @@ import {
 } from "./calendar-block";
 import type { CalendarDragKind } from "./calendar-drag";
 import {
+  CALENDAR_DRAG_STEP_MINUTES,
+  activateCalendarResize,
   getCalendarManualChange,
+  isCalendarBlockResizeTerminalDay,
+  resizeCalendarBlockByMinutes,
+  snapCalendarDeltaMinutes,
   snapCalendarDeltaPixels,
 } from "./calendar-drag";
 import {
@@ -176,6 +185,11 @@ const toTimeLabel = (startAt: string, endAt: string) => {
   return `${toClockLabel(start, !isSamePeriod)} – ${toClockLabel(end, true)}`;
 };
 
+const toResizeEndLabel = (startAt: Date, endAt: Date) =>
+  isSameDay(startAt, endAt)
+    ? toClockLabel(endAt, true)
+    : `${format(endAt, "EEE")} ${toClockLabel(endAt, true)}`;
+
 const getUtcOffsetLabel = (date: Date) => {
   const offsetMinutes = -date.getTimezoneOffset();
   const sign = offsetMinutes >= 0 ? "+" : "-";
@@ -212,8 +226,10 @@ const calendarCollisionDetection: CollisionDetection = (args) => {
 
 const snapCalendarDragModifier: Modifier = ({ active, transform }) => {
   if (!active?.data.current?.calendarDrag) return transform;
+  const drag = active.data.current.calendarDrag as CalendarDragData;
   return {
     ...transform,
+    x: drag.kind === "resize" ? 0 : transform.x,
     y: snapCalendarDeltaPixels(transform.y, hourHeight),
   };
 };
@@ -287,17 +303,21 @@ const getBusyWindowTitle = (window: CalendarBusyWindow) => {
 };
 
 const CalendarTimedBlock = ({
+  day,
   item,
   isDragDisabled,
   layout,
   onEdit,
+  onManualChange,
   onSelectEvent,
   today,
 }: {
+  day: Date;
   item: CalendarItem;
   isDragDisabled: boolean;
   layout: { top: number; height: number; lane: number; laneCount: number };
   onEdit: (block: CalendarScheduleBlock) => void;
+  onManualChange: (change: CalendarManualChange) => void;
   onSelectEvent: (event: CalendarEventSummary) => void;
   today: Date;
 }) => {
@@ -308,25 +328,46 @@ const CalendarTimedBlock = ({
     item.block.storyId
       ? item.block
       : null;
+  const resizableBlock =
+    draggableBlock && isCalendarBlockResizeTerminalDay(draggableBlock, day)
+      ? draggableBlock
+      : null;
+  const dragSegmentID = `${item.id}-${day.getTime()}`;
   const moveDrag = useDraggable({
-    id: `calendar-move-${item.id}`,
+    id: `calendar-move-${dragSegmentID}`,
     disabled: !draggableBlock || isDragDisabled,
     data: draggableBlock
       ? { calendarDrag: { kind: "move", block: draggableBlock } }
       : undefined,
   });
-  const resizeDrag = useDraggable({
-    id: `calendar-resize-${item.id}`,
-    disabled: !draggableBlock || isDragDisabled,
-    data: draggableBlock
-      ? { calendarDrag: { kind: "resize", block: draggableBlock } }
+  const {
+    isDragging: isResizeDragging,
+    listeners: resizeListeners,
+    setNodeRef: setResizeNodeRef,
+    transform: resizeTransform,
+  } = useDraggable({
+    id: `calendar-resize-${dragSegmentID}`,
+    disabled: !resizableBlock || isDragDisabled,
+    data: resizableBlock
+      ? { calendarDrag: { kind: "resize", block: resizableBlock } }
       : undefined,
   });
+  const resizePointerDown = resizeListeners?.onPointerDown as
+    | ((event: ReactPointerEvent<HTMLButtonElement>) => void)
+    | undefined;
+  const resizeTouchStart = resizeListeners?.onTouchStart as
+    | ((event: ReactTouchEvent<HTMLButtonElement>) => void)
+    | undefined;
   const laneWidth = 100 / layout.laneCount;
   const isCompleted = new Date(item.endAt).getTime() <= today.getTime();
-  const resizeDelta = resizeDrag.isDragging
-    ? snapCalendarDeltaPixels(resizeDrag.transform?.y ?? 0, hourHeight)
+  const resizeDeltaMinutes = isResizeDragging
+    ? snapCalendarDeltaMinutes(resizeTransform?.y ?? 0, hourHeight)
     : 0;
+  const resizeDelta = resizeDeltaMinutes * (hourHeight / 60);
+  const resizePreview =
+    resizableBlock && isResizeDragging
+      ? resizeCalendarBlockByMinutes(resizableBlock, resizeDeltaMinutes)
+      : null;
   const renderedHeight = Math.max(
     18,
     layout.height - timedBlockVerticalGap + resizeDelta,
@@ -509,6 +550,12 @@ const CalendarTimedBlock = ({
     layout.height >= hourHeight && layout.height < twoLineTitleMinimumHeight;
   const hasLeadingIcon = isCrossWorkspace || !isScheduledStory;
   const timeLabel = toTimeLabel(block.startAt, block.endAt);
+  const resizeStartAt = resizePreview?.startAt ?? new Date(block.startAt);
+  const resizeEndAt = resizePreview?.endAt ?? new Date(block.endAt);
+  const resizeDurationMinutes = Math.round(
+    (resizeEndAt.getTime() - resizeStartAt.getTime()) / 60_000,
+  );
+  const resizeFeedbackLabel = `Ends ${toResizeEndLabel(resizeStartAt, resizeEndAt)} · ${formatTimeNeeded(resizeDurationMinutes)}`;
   const secondaryLabel = getCalendarScheduleBlockSecondaryLabel(
     block,
     timeLabel,
@@ -539,6 +586,21 @@ const CalendarTimedBlock = ({
   if (isCrossWorkspace) {
     blockTooltip = CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP;
   }
+  const resizeByKeyboard = (deltaMinutes: number) => {
+    if (!resizableBlock || isDragDisabled) return;
+    const { endAt, startAt } = resizeCalendarBlockByMinutes(
+      resizableBlock,
+      deltaMinutes,
+    );
+    if (endAt.getTime() === new Date(resizableBlock.endAt).getTime()) return;
+
+    onManualChange({
+      block: resizableBlock,
+      change: "resize",
+      startAt,
+      endAt,
+    });
+  };
   let blockTitleColorClass = isCompleted
     ? "text-text-muted"
     : "text-foreground";
@@ -563,10 +625,11 @@ const CalendarTimedBlock = ({
   }
   const blockContent = (
     <div
-      {...moveDrag.attributes}
       {...moveDrag.listeners}
       className={cn(
-        "absolute flex items-center overflow-hidden rounded-md border backdrop-blur-sm transition-colors",
+        "absolute flex items-center rounded-md border backdrop-blur-sm transition-colors",
+        resizableBlock ? "overflow-visible" : "overflow-hidden",
+        isResizeDragging && "z-30",
         draggableBlock && !isDragDisabled
           ? "cursor-grab touch-none active:cursor-grabbing"
           : null,
@@ -604,7 +667,7 @@ const CalendarTimedBlock = ({
       />
       <Box
         className={cn(
-          "pointer-events-none relative z-10 min-w-0",
+          "pointer-events-none relative z-10 max-h-full min-w-0 overflow-hidden",
           hasLeadingIcon
             ? cn(
                 "flex gap-1.5",
@@ -656,22 +719,57 @@ const CalendarTimedBlock = ({
           ) : null}
         </Box>
       </Box>
-      {draggableBlock ? (
+      {resizePreview ? (
+        <span
+          aria-hidden="true"
+          className="border-border-strong/70 bg-surface-elevated/95 text-foreground shadow-shadow pointer-events-none absolute right-1 bottom-6 z-30 rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap tabular-nums"
+        >
+          {resizeFeedbackLabel}
+        </span>
+      ) : null}
+      {resizableBlock ? (
+        <span aria-atomic="true" aria-live="polite" className="sr-only">
+          {resizeFeedbackLabel}
+        </span>
+      ) : null}
+      {resizableBlock ? (
         <button
-          {...resizeDrag.attributes}
-          {...resizeDrag.listeners}
-          aria-label={`Resize ${blockTitle}`}
+          {...resizeListeners}
+          aria-keyshortcuts="ArrowUp ArrowDown"
+          aria-label={`Resize ${blockTitle}. ${resizeFeedbackLabel}. Use Arrow Up to shorten or Arrow Down to extend by five minutes.`}
+          aria-roledescription="resize handle"
           className={cn(
-            "absolute inset-x-1 bottom-0 z-20 h-2 rounded-sm focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset",
+            "group/resize focus-visible:ring-primary/60 absolute inset-x-0 -bottom-[3px] z-20 h-6 max-h-full touch-none rounded-md focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset",
             isDragDisabled ? "cursor-wait" : "cursor-ns-resize",
           )}
           disabled={isDragDisabled}
-          onPointerDown={(event) => {
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+            event.preventDefault();
             event.stopPropagation();
+            resizeByKeyboard(
+              event.key === "ArrowUp"
+                ? -CALENDAR_DRAG_STEP_MINUTES
+                : CALENDAR_DRAG_STEP_MINUTES,
+            );
           }}
-          ref={resizeDrag.setNodeRef}
+          onPointerDown={(event) => {
+            activateCalendarResize(event, resizePointerDown);
+          }}
+          onTouchStart={(event) => {
+            activateCalendarResize(event, resizeTouchStart);
+          }}
+          ref={setResizeNodeRef}
           type="button"
-        />
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "bg-border-strong/80 group-hover/resize:bg-foreground/70 group-focus-visible/resize:bg-primary group-active/resize:bg-primary absolute bottom-0.5 left-1/2 h-0.5 w-7 -translate-x-1/2 rounded-full",
+              isResizeDragging && "bg-primary",
+            )}
+          />
+        </button>
       ) : null}
     </div>
   );
@@ -1341,6 +1439,7 @@ const CalendarTimedDayColumn = ({
   hours,
   isDragDisabled,
   onEdit,
+  onManualChange,
   onSelectEvent,
   today,
   visibleEndHour,
@@ -1351,6 +1450,7 @@ const CalendarTimedDayColumn = ({
   hours: number[];
   isDragDisabled: boolean;
   onEdit: (block: CalendarScheduleBlock) => void;
+  onManualChange: (change: CalendarManualChange) => void;
   onSelectEvent: (event: CalendarEventSummary) => void;
   today: Date;
   visibleEndHour: number;
@@ -1399,11 +1499,13 @@ const CalendarTimedDayColumn = ({
         if (!layout) return null;
         return (
           <CalendarTimedBlock
+            day={day}
             isDragDisabled={isDragDisabled}
             item={item}
             key={key}
             layout={layout}
             onEdit={onEdit}
+            onManualChange={onManualChange}
             onSelectEvent={onSelectEvent}
             today={today}
           />
@@ -1466,7 +1568,7 @@ const CalendarTimeGrid = ({
       | string
       | undefined;
     setActiveDrag(null);
-    if (!dragData || !targetDay) return;
+    if (!dragData || (dragData.kind === "move" && !targetDay)) return;
 
     const originalStart = new Date(dragData.block.startAt);
     const originalEnd = new Date(dragData.block.endAt);
@@ -1475,7 +1577,7 @@ const CalendarTimeGrid = ({
       deltaY: event.delta.y,
       hourHeight,
       kind: dragData.kind,
-      targetDay: new Date(targetDay),
+      targetDay: targetDay ? new Date(targetDay) : originalStart,
     });
 
     if (
@@ -1637,6 +1739,7 @@ const CalendarTimeGrid = ({
               isDragDisabled={isManualChangePending}
               key={day.toISOString()}
               onEdit={onEdit}
+              onManualChange={onManualChange}
               onSelectEvent={onSelectEvent}
               today={today}
               visibleEndHour={visibleEndHour}
@@ -2013,7 +2116,6 @@ export const PersonalCalendar = ({
   const createConnectSession = useCreateCalendarConnectSession();
   const syncCalendar = useSyncCalendarConnection();
   const manualReschedule = useManualRescheduleCalendarScheduleBlock();
-  const updateStory = useUpdateStoryMutation();
   const { data: assignedStories } = useMyStoriesGrouped("none", {
     assignedToMe: true,
     categories: ["backlog", "unstarted", "started", "paused"],
@@ -2132,32 +2234,17 @@ export const PersonalCalendar = ({
     endAt,
     startAt,
   }: CalendarManualChange) => {
-    manualReschedule.mutate(
-      {
-        blockId: block.id,
-        input: {
-          startAt: startAt.toISOString(),
-          endAt: endAt.toISOString(),
-          expectedUpdatedAt: block.updatedAt,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          change,
-          clientMutationId: crypto.randomUUID(),
-        },
+    manualReschedule.mutate({
+      blockId: block.id,
+      input: {
+        startAt: startAt.toISOString(),
+        endAt: endAt.toISOString(),
+        expectedUpdatedAt: block.updatedAt,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        change,
+        clientMutationId: crypto.randomUUID(),
       },
-      {
-        onSuccess: () => {
-          if (change !== "resize" || !block.storyId) return;
-          updateStory.mutate({
-            storyId: block.storyId,
-            payload: {
-              estimatedDurationMinutes: Math.round(
-                (endAt.getTime() - startAt.getTime()) / 60_000,
-              ),
-            },
-          });
-        },
-      },
-    );
+    });
   };
 
   return (

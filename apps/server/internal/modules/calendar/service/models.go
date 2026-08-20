@@ -209,8 +209,17 @@ type ManualScheduleBlockInput struct {
 	ClientMutationID  uuid.UUID
 }
 
+// ManualScheduleBlockResult reports both the persisted block and whether this
+// mutation changed the estimate of an auto-scheduled story. The reconcile ID
+// is intentionally nil for moves, idempotent retries, unchanged estimates, and
+// stories with auto-scheduling disabled.
+type ManualScheduleBlockResult struct {
+	Block                    CoreScheduleBlock
+	StoryScheduleReconcileID *uuid.UUID
+}
+
 type ManualScheduleBlockRepository interface {
-	ManuallyRescheduleScheduleBlock(ctx context.Context, input ManualScheduleBlockInput) (CoreScheduleBlock, error)
+	ManuallyRescheduleScheduleBlock(ctx context.Context, input ManualScheduleBlockInput) (ManualScheduleBlockResult, error)
 }
 
 type ScheduleFeedbackRepository interface {

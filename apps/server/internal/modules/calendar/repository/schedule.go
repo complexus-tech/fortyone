@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
 )
 
@@ -408,14 +410,14 @@ func (r *Repo) UpdateScheduleBlock(ctx context.Context, input calendar.CoreSched
 	return r.getScheduleBlock(ctx, input.WorkspaceID, input.UserID, input.ID)
 }
 
-func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calendar.ManualScheduleBlockInput) (calendar.CoreScheduleBlock, error) {
+func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calendar.ManualScheduleBlockInput) (calendar.ManualScheduleBlockResult, error) {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return calendar.CoreScheduleBlock{}, fmt.Errorf("begin manual calendar reschedule: %w", err)
+		return calendar.ManualScheduleBlockResult{}, fmt.Errorf("begin manual calendar reschedule: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 	if err := lockCalendarUser(ctx, tx, input.WorkspaceID, input.UserID); err != nil {
-		return calendar.CoreScheduleBlock{}, err
+		return calendar.ManualScheduleBlockResult{}, err
 	}
 
 	var existingEventBlockID uuid.UUID
@@ -425,11 +427,15 @@ func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calend
 		WHERE client_mutation_id = $1
 	`, input.ClientMutationID); err == nil {
 		if err := tx.Commit(); err != nil {
-			return calendar.CoreScheduleBlock{}, fmt.Errorf("commit idempotent manual calendar reschedule: %w", err)
+			return calendar.ManualScheduleBlockResult{}, fmt.Errorf("commit idempotent manual calendar reschedule: %w", err)
 		}
-		return r.getScheduleBlock(ctx, input.WorkspaceID, input.UserID, existingEventBlockID)
+		block, err := r.getScheduleBlock(ctx, input.WorkspaceID, input.UserID, existingEventBlockID)
+		if err != nil {
+			return calendar.ManualScheduleBlockResult{}, err
+		}
+		return calendar.ManualScheduleBlockResult{Block: block}, nil
 	} else if !errors.Is(err, sql.ErrNoRows) {
-		return calendar.CoreScheduleBlock{}, fmt.Errorf("check manual calendar reschedule idempotency: %w", err)
+		return calendar.ManualScheduleBlockResult{}, fmt.Errorf("check manual calendar reschedule idempotency: %w", err)
 	}
 
 	var current struct {
@@ -454,12 +460,61 @@ func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calend
 		FOR UPDATE
 	`, input.WorkspaceID, input.UserID, input.BlockID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return calendar.CoreScheduleBlock{}, calendar.ErrCalendarScheduleBlockNotFound
+			return calendar.ManualScheduleBlockResult{}, calendar.ErrCalendarScheduleBlockNotFound
 		}
-		return calendar.CoreScheduleBlock{}, fmt.Errorf("load manual calendar reschedule block: %w", err)
+		return calendar.ManualScheduleBlockResult{}, fmt.Errorf("load manual calendar reschedule block: %w", err)
 	}
 	if input.ExpectedUpdatedAt != nil && !current.UpdatedAt.Equal(input.ExpectedUpdatedAt.UTC()) {
-		return calendar.CoreScheduleBlock{}, calendar.ErrCalendarScheduleStalePlan
+		return calendar.ManualScheduleBlockResult{}, calendar.ErrCalendarScheduleStalePlan
+	}
+
+	var storyScheduleReconcileID *uuid.UUID
+	if input.Change == calendar.ManualScheduleBlockChangeResize && current.StoryID != nil {
+		var storyTime struct {
+			EstimatedDurationMinutes *int `db:"estimated_duration_minutes"`
+			MinimumFocusBlockMinutes *int `db:"minimum_focus_block_minutes"`
+			AutoSchedulingEnabled    bool `db:"auto_scheduling_enabled"`
+		}
+		if err := tx.GetContext(ctx, &storyTime, `
+			SELECT estimated_duration_minutes, minimum_focus_block_minutes, auto_scheduling_enabled
+			FROM stories
+			WHERE workspace_id = $1 AND id = $2 AND deleted_at IS NULL
+			FOR UPDATE
+		`, input.WorkspaceID, *current.StoryID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return calendar.ManualScheduleBlockResult{}, fmt.Errorf("%w: resized calendar block story is unavailable", calendar.ErrInvalidScheduleBlock)
+			}
+			return calendar.ManualScheduleBlockResult{}, fmt.Errorf("load resized calendar block story time: %w", err)
+		}
+
+		estimatedDurationMinutes, err := resizedStoryEstimateMinutes(
+			storyTime.EstimatedDurationMinutes,
+			storyTime.MinimumFocusBlockMinutes,
+			current.StartAt,
+			current.EndAt,
+			input.StartAt,
+			input.EndAt,
+		)
+		if err != nil {
+			return calendar.ManualScheduleBlockResult{}, err
+		}
+		if storyTime.EstimatedDurationMinutes == nil || *storyTime.EstimatedDurationMinutes != estimatedDurationMinutes {
+			if _, err := tx.ExecContext(ctx, `
+				UPDATE stories
+				SET estimated_duration_minutes = $3,
+				    updated_at = CURRENT_TIMESTAMP
+				WHERE workspace_id = $1 AND id = $2 AND deleted_at IS NULL
+			`, input.WorkspaceID, *current.StoryID, estimatedDurationMinutes); err != nil {
+				return calendar.ManualScheduleBlockResult{}, fmt.Errorf("update resized calendar block story estimate: %w", err)
+			}
+			// Maya owns the auto-scheduling status state machine. Return a
+			// post-commit reconciliation request instead of duplicating its
+			// assignee, lock, and status transitions inside this transaction.
+			if storyTime.AutoSchedulingEnabled {
+				storyID := *current.StoryID
+				storyScheduleReconcileID = &storyID
+			}
+		}
 	}
 	// A drag is an explicit placement by the user. The calendar renders
 	// simultaneous work in lanes and marks meeting overlaps as conflicts; free-slot
@@ -474,8 +529,11 @@ func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calend
 		    updated_at = CURRENT_TIMESTAMP
 		WHERE workspace_id = $1 AND user_id = $2 AND block_id = $3
 	`, input.WorkspaceID, input.UserID, input.BlockID, input.StartAt.UTC(), input.EndAt.UTC(), input.ActorID); err != nil {
-		return calendar.CoreScheduleBlock{}, fmt.Errorf("update manually rescheduled calendar block: %w", err)
+		return calendar.ManualScheduleBlockResult{}, fmt.Errorf("update manually rescheduled calendar block: %w", err)
 	}
+	// This reschedule event is the canonical audit record for the coupled block
+	// and story-estimate change. Its exact before/after ranges retain the duration
+	// delta without recording the same user action in a second activity stream.
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO calendar_schedule_reschedule_events (
 			workspace_id, user_id, story_id, schedule_block_id, action, source, timezone,
@@ -483,7 +541,7 @@ func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calend
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`, input.WorkspaceID, input.UserID, current.StoryID, input.BlockID, string(input.Change), "user", input.Timezone,
 		current.StartAt.UTC(), current.EndAt.UTC(), input.StartAt.UTC(), input.EndAt.UTC(), input.ClientMutationID); err != nil {
-		return calendar.CoreScheduleBlock{}, fmt.Errorf("record manual calendar reschedule: %w", err)
+		return calendar.ManualScheduleBlockResult{}, fmt.Errorf("record manual calendar reschedule: %w", err)
 	}
 
 	if current.StoryID != nil && current.ExternalProvider != nil && current.ExternalCalendarID != nil && current.ExternalEventID != nil {
@@ -502,13 +560,55 @@ func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calend
 		}
 		syncHash := calendar.ScheduleEventSyncHash(event)
 		if err := enqueueScheduleEventOutbox(ctx, tx, input.WorkspaceID, input.UserID, &input.BlockID, calendar.ScheduleEventOperationUpsert, event, syncHash, true); err != nil {
-			return calendar.CoreScheduleBlock{}, err
+			return calendar.ManualScheduleBlockResult{}, err
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		return calendar.CoreScheduleBlock{}, fmt.Errorf("commit manual calendar reschedule: %w", err)
+		return calendar.ManualScheduleBlockResult{}, fmt.Errorf("commit manual calendar reschedule: %w", err)
 	}
-	return r.getScheduleBlock(ctx, input.WorkspaceID, input.UserID, input.BlockID)
+	block, err := r.getScheduleBlock(ctx, input.WorkspaceID, input.UserID, input.BlockID)
+	if err != nil {
+		return calendar.ManualScheduleBlockResult{}, err
+	}
+	return calendar.ManualScheduleBlockResult{Block: block, StoryScheduleReconcileID: storyScheduleReconcileID}, nil
+}
+
+func resizedStoryEstimateMinutes(
+	currentEstimate, minimumFocusBlock *int,
+	previousStartAt, previousEndAt, nextStartAt, nextEndAt time.Time,
+) (int, error) {
+	previousDurationMinutes, err := roundedScheduleBlockDurationMinutes(previousStartAt, previousEndAt)
+	if err != nil {
+		return 0, err
+	}
+	nextDurationMinutes, err := roundedScheduleBlockDurationMinutes(nextStartAt, nextEndAt)
+	if err != nil {
+		return 0, err
+	}
+
+	nextEstimate := int64(nextDurationMinutes)
+	if currentEstimate != nil {
+		nextEstimate = int64(*currentEstimate) + int64(nextDurationMinutes-previousDurationMinutes)
+	}
+	var candidate int
+	if nextEstimate < 1 {
+		candidate = 0
+	} else if nextEstimate > int64(stories.MaximumEstimatedDurationMinutes) {
+		candidate = stories.MaximumEstimatedDurationMinutes + 1
+	} else {
+		candidate = int(nextEstimate)
+	}
+	if err := stories.ValidateStoryTimeContract(&candidate, minimumFocusBlock); err != nil {
+		return 0, fmt.Errorf("%w: %w", calendar.ErrInvalidScheduleBlock, err)
+	}
+	return candidate, nil
+}
+
+func roundedScheduleBlockDurationMinutes(startAt, endAt time.Time) (int, error) {
+	if !endAt.After(startAt) {
+		return 0, fmt.Errorf("%w: resized calendar block must end after it starts", calendar.ErrInvalidScheduleBlock)
+	}
+	return int(math.Round(endAt.Sub(startAt).Minutes())), nil
 }
 
 func scheduleBlockConflicts(

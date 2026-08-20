@@ -61,6 +61,10 @@ type CalendarScheduleTaskQueue interface {
 	EnqueueCalendarScheduleReconcile(ctx context.Context, userID uuid.UUID) error
 }
 
+type StoryScheduleTaskQueue interface {
+	EnqueueStoryScheduleReconcile(ctx context.Context, workspaceID, storyID uuid.UUID) error
+}
+
 type CalendarUpdatePublisher interface {
 	PublishCalendarUpdated(ctx context.Context, workspaceID, userID, connectionID uuid.UUID, syncedAt time.Time) error
 }
@@ -669,16 +673,31 @@ func (s *Service) ManuallyRescheduleScheduleBlock(ctx context.Context, input Man
 	if !ok {
 		return CoreScheduleBlock{}, ErrCalendarNotConfigured
 	}
-	block, err := manualRepo.ManuallyRescheduleScheduleBlock(ctx, input)
+	result, err := manualRepo.ManuallyRescheduleScheduleBlock(ctx, input)
 	if err != nil {
 		return CoreScheduleBlock{}, err
+	}
+	if result.StoryScheduleReconcileID != nil {
+		s.enqueueStoryScheduleReconciliation(ctx, input.WorkspaceID, *result.StoryScheduleReconcileID)
 	}
 	if s.cfg.Updates != nil {
 		if publishErr := s.cfg.Updates.PublishCalendarUpdated(ctx, input.WorkspaceID, input.UserID, uuid.Nil, s.now().UTC()); publishErr != nil && s.log != nil {
 			s.log.Error(ctx, "failed to publish manual calendar update", "error", publishErr, "block_id", input.BlockID)
 		}
 	}
-	return block, nil
+	return result.Block, nil
+}
+
+func (s *Service) enqueueStoryScheduleReconciliation(ctx context.Context, workspaceID, storyID uuid.UUID) {
+	tasks, ok := s.cfg.Tasks.(StoryScheduleTaskQueue)
+	if !ok {
+		return
+	}
+	enqueueCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	if err := tasks.EnqueueStoryScheduleReconcile(enqueueCtx, workspaceID, storyID); err != nil && s.log != nil {
+		s.log.Error(ctx, "failed to enqueue story schedule reconciliation after manual calendar resize", "error", err, "workspace_id", workspaceID, "story_id", storyID)
+	}
 }
 
 func (s *Service) DeleteScheduleBlock(ctx context.Context, workspaceID, userID, blockID uuid.UUID) error {

@@ -14,6 +14,7 @@ import type {
   CalendarSchedule,
   CalendarScheduleBlockInput,
 } from "@/lib/queries/calendar/types";
+import { storyKeys } from "@/modules/stories/constants";
 
 const useInvalidateCalendarSchedule = () => {
   const queryClient = useQueryClient();
@@ -37,7 +38,6 @@ export const useCreateCalendarScheduleBlock = () => {
       toast.error("Calendar", { description: error.message });
     },
     onSuccess: () => {
-      toast.success("Calendar updated");
       void invalidateSchedule();
     },
   });
@@ -65,7 +65,6 @@ export const useUpdateCalendarScheduleBlock = () => {
       toast.error("Calendar", { description: error.message });
     },
     onSuccess: () => {
-      toast.success("Calendar updated");
       void invalidateSchedule();
     },
   });
@@ -86,7 +85,6 @@ export const useDeleteCalendarScheduleBlock = () => {
       toast.error("Calendar", { description: error.message });
     },
     onSuccess: () => {
-      toast.success("Calendar block removed");
       void invalidateSchedule();
     },
   });
@@ -147,7 +145,7 @@ export const useManualRescheduleCalendarScheduleBlock = () => {
       });
       toast.error("Calendar", { description: error.message });
     },
-    onSuccess: (updatedBlock) => {
+    onSuccess: (updatedBlock, { input }) => {
       const scheduleKey = calendarKeys.schedules(workspaceSlug);
       queryClient.setQueriesData<CalendarSchedule>(
         { queryKey: scheduleKey },
@@ -161,7 +159,11 @@ export const useManualRescheduleCalendarScheduleBlock = () => {
           };
         },
       );
-      toast.success("Calendar updated");
+      if (input.change === "resize" && updatedBlock.storyId) {
+        void queryClient.invalidateQueries({
+          queryKey: storyKeys.all(workspaceSlug),
+        });
+      }
       void invalidateSchedule();
     },
   });

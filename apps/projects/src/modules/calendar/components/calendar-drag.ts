@@ -1,9 +1,19 @@
-import { addMinutes } from "date-fns";
+import { addDays, addMinutes, startOfDay } from "date-fns";
 import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
 
 export const CALENDAR_DRAG_STEP_MINUTES = 5;
 
 export type CalendarDragKind = "move" | "resize";
+
+export const activateCalendarResize = <
+  TEvent extends { stopPropagation: () => void },
+>(
+  event: TEvent,
+  listener?: (event: TEvent) => void,
+) => {
+  event.stopPropagation();
+  listener?.(event);
+};
 
 export const snapCalendarDeltaMinutes = (deltaY: number, hourHeight: number) =>
   Math.round(deltaY / (hourHeight / 60) / CALENDAR_DRAG_STEP_MINUTES) *
@@ -11,6 +21,32 @@ export const snapCalendarDeltaMinutes = (deltaY: number, hourHeight: number) =>
 
 export const snapCalendarDeltaPixels = (deltaY: number, hourHeight: number) =>
   snapCalendarDeltaMinutes(deltaY, hourHeight) * (hourHeight / 60);
+
+export const resizeCalendarBlockByMinutes = (
+  block: CalendarScheduleBlock,
+  deltaMinutes: number,
+) => {
+  const startAt = new Date(block.startAt);
+  const endAt = new Date(block.endAt);
+  const durationMinutes = Math.max(
+    CALENDAR_DRAG_STEP_MINUTES,
+    (endAt.getTime() - startAt.getTime()) / 60_000 + deltaMinutes,
+  );
+
+  return {
+    endAt: addMinutes(startAt, durationMinutes),
+    startAt,
+  };
+};
+
+export const isCalendarBlockResizeTerminalDay = (
+  block: Pick<CalendarScheduleBlock, "endAt">,
+  day: Date,
+) => {
+  const dayStart = startOfDay(day);
+  const endAt = new Date(block.endAt);
+  return endAt > dayStart && endAt <= addDays(dayStart, 1);
+};
 
 export const getCalendarManualChange = ({
   block,
@@ -30,15 +66,7 @@ export const getCalendarManualChange = ({
   const deltaMinutes = snapCalendarDeltaMinutes(deltaY, hourHeight);
 
   if (kind === "resize") {
-    const durationMinutes = Math.max(
-      CALENDAR_DRAG_STEP_MINUTES,
-      (originalEnd.getTime() - originalStart.getTime()) / 60_000 + deltaMinutes,
-    );
-
-    return {
-      endAt: addMinutes(originalStart, durationMinutes),
-      startAt: originalStart,
-    };
+    return resizeCalendarBlockByMinutes(block, deltaMinutes);
   }
 
   const startAt = new Date(targetDay);

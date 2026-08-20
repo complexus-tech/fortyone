@@ -83,11 +83,9 @@ export const CalendarIntegrationSettings = () => {
       return;
     }
     handledCallbackResult.current = callbackResult;
-    if (connected) {
-      toast.success("Google Calendar connected");
-    } else if (calendarError === "access_denied") {
+    if (!connected && calendarError === "access_denied") {
       toast.error("Google Calendar connection was cancelled.");
-    } else {
+    } else if (!connected) {
       toast.error("Google Calendar could not be connected. Please try again.");
     }
     const url = new URL(window.location.href);

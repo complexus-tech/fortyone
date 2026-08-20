@@ -38,7 +38,6 @@ export const useRetryCalendarScheduleIssue = () => {
       });
     },
     onSuccess: async () => {
-      toast.success("Maya checked the schedule again");
       await invalidate();
     },
   });
@@ -70,7 +69,6 @@ export const useOverrideCalendarScheduleIssue = () => {
       });
     },
     onSuccess: async () => {
-      toast.success("Time chosen and locked on your calendar");
       await invalidate();
     },
   });

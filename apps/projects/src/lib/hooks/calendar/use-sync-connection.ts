@@ -27,9 +27,6 @@ export const useSyncCalendarConnection = () => {
         await queryClient.invalidateQueries({ queryKey: integrationQueryKey });
         return;
       }
-      if (!silent) {
-        toast.success("Calendar synced");
-      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: integrationQueryKey }),
         queryClient.invalidateQueries({ queryKey: eventQueryKey }),

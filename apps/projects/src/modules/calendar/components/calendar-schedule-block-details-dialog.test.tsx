@@ -1,15 +1,16 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ElementType, ReactNode } from "react";
 import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
 import { CalendarScheduleBlockDetailsDialog } from "./calendar-schedule-block-details-dialog";
 
-const useStoryById = jest.fn();
-const copyText = jest.fn();
+const mockUseStoryById = jest.fn();
+const mockCopyText = jest.fn();
+const mockToastError = jest.fn();
 
 jest.mock("@/hooks", () => ({
-  useCopyToClipboard: () => [null, copyText],
+  useCopyToClipboard: () => [null, mockCopyText],
   useWorkspacePath: () => ({
     withWorkspace: (path: string) => `/workspace${path}`,
   }),
@@ -20,11 +21,21 @@ jest.mock("@/hooks/owner", () => ({
 }));
 
 jest.mock("@/modules/story/hooks/story", () => ({
-  useStoryById: (storyId: string) => useStoryById(storyId),
+  useStoryById: (storyId: string) => mockUseStoryById(storyId),
 }));
 
 jest.mock("@/modules/story/components/story-actions-menu", () => ({
   StoryActionsMenu: () => <button type="button">More story actions</button>,
+}));
+
+jest.mock("./calendar-block", () => ({
+  isCalendarScheduleBlockEditable: () => true,
+}));
+
+jest.mock("sonner", () => ({
+  toast: {
+    error: (...args: unknown[]) => mockToastError(...args),
+  },
 }));
 
 jest.mock(
@@ -34,10 +45,6 @@ jest.mock(
       return <div>Editable story details for {storyId}</div>;
     },
 );
-
-jest.mock("sonner", () => ({
-  toast: { success: jest.fn() },
-}));
 
 jest.mock("@/modules/story/utils/story-url", () => ({
   getStoryPath: ({ id }: { id: string }) => `/stories/${id}`,
@@ -124,10 +131,11 @@ const block: CalendarScheduleBlock = {
 
 describe("CalendarScheduleBlockDetailsDialog", () => {
   beforeEach(() => {
-    useStoryById.mockReset();
-    copyText.mockReset();
-    copyText.mockResolvedValue(true);
-    useStoryById.mockReturnValue({
+    mockUseStoryById.mockReset();
+    mockCopyText.mockReset();
+    mockToastError.mockReset();
+    mockCopyText.mockResolvedValue(true);
+    mockUseStoryById.mockReturnValue({
       data: {
         description: "Show the real story context from the calendar.",
         id: "story-62",
@@ -147,7 +155,7 @@ describe("CalendarScheduleBlockDetailsDialog", () => {
       />,
     );
 
-    expect(useStoryById).toHaveBeenCalledWith("story-62");
+    expect(mockUseStoryById).toHaveBeenCalledWith("story-62");
     expect(screen.getByText("PRID-62")).toBeInTheDocument();
     expect(
       screen.getByText("Editable story details for story-62"),
@@ -171,9 +179,27 @@ describe("CalendarScheduleBlockDetailsDialog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Copy story link" }));
 
-    expect(copyText).toHaveBeenCalledWith(
+    expect(mockCopyText).toHaveBeenCalledWith(
       `${window.location.origin}/workspace/stories/story-62`,
     );
+    expect(mockToastError).not.toHaveBeenCalled();
+  });
+
+  it("shows an error toast when the story link cannot be copied", async () => {
+    mockCopyText.mockResolvedValue(false);
+    render(
+      <CalendarScheduleBlockDetailsDialog
+        block={block}
+        onEdit={jest.fn()}
+        onOpenChange={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy story link" }));
+
+    await waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith("Could not copy story link");
+    });
   });
 
   it("keeps the schedule editor available for user-managed blocks", () => {
