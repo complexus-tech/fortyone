@@ -2,7 +2,8 @@
 
 import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
 import {
-  CALENDAR_DRAG_STEP_MINUTES,
+  CALENDAR_MOVE_STEP_MINUTES,
+  CALENDAR_RESIZE_STEP_MINUTES,
   activateCalendarResize,
   getCalendarManualChange,
   isCalendarBlockResizeTerminalDay,
@@ -43,19 +44,22 @@ describe("calendar drag calculations", () => {
     expect(calls).toEqual(["stop", "resize"]);
   });
 
-  it("snaps vertical movement to five-minute increments", () => {
-    const fiveMinutePixels = (52 / 60) * CALENDAR_DRAG_STEP_MINUTES;
+  it("snaps moves to one minute and resizes to five minutes", () => {
+    const oneMinutePixels = (52 / 60) * CALENDAR_MOVE_STEP_MINUTES;
+    const fiveMinutePixels = (52 / 60) * CALENDAR_RESIZE_STEP_MINUTES;
 
-    expect(snapCalendarDeltaMinutes(fiveMinutePixels, 52)).toBe(5);
-    expect(snapCalendarDeltaMinutes(fiveMinutePixels * 1.6, 52)).toBe(10);
-    expect(snapCalendarDeltaMinutes(-fiveMinutePixels, 52)).toBe(-5);
+    expect(snapCalendarDeltaMinutes(oneMinutePixels, 52, "move")).toBe(1);
+    expect(snapCalendarDeltaMinutes(oneMinutePixels * 1.6, 52, "move")).toBe(2);
+    expect(snapCalendarDeltaMinutes(-oneMinutePixels, 52, "move")).toBe(-1);
+    expect(snapCalendarDeltaMinutes(oneMinutePixels, 52, "resize")).toBe(0);
+    expect(snapCalendarDeltaMinutes(fiveMinutePixels, 52, "resize")).toBe(5);
   });
 
   it("moves a block across dates while preserving its duration", () => {
     const block = createBlock();
     const result = getCalendarManualChange({
       block,
-      deltaY: (52 / 60) * 5,
+      deltaY: (52 / 60) * CALENDAR_MOVE_STEP_MINUTES,
       hourHeight: 52,
       kind: "move",
       targetDay: new Date(2026, 7, 21),
@@ -65,7 +69,7 @@ describe("calendar drag calculations", () => {
     expect(result.startAt.getMonth()).toBe(7);
     expect(result.startAt.getDate()).toBe(21);
     expect(result.startAt.getHours()).toBe(10);
-    expect(result.startAt.getMinutes()).toBe(5);
+    expect(result.startAt.getMinutes()).toBe(1);
     expect(result.endAt.getTime() - result.startAt.getTime()).toBe(60 * 60_000);
   });
 
@@ -88,7 +92,7 @@ describe("calendar drag calculations", () => {
     const block = createBlock();
     const result = resizeCalendarBlockByMinutes(
       block,
-      CALENDAR_DRAG_STEP_MINUTES,
+      CALENDAR_RESIZE_STEP_MINUTES,
     );
 
     expect(result.startAt.toISOString()).toBe(block.startAt);

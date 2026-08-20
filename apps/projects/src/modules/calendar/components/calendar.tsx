@@ -4,7 +4,7 @@ import type {
   PointerEvent as ReactPointerEvent,
   TouchEvent as ReactTouchEvent,
 } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   addDays,
   addHours,
@@ -16,6 +16,7 @@ import {
 import type {
   CollisionDetection,
   DragEndEvent,
+  DragMoveEvent,
   DragStartEvent,
   Modifier,
 } from "@dnd-kit/core";
@@ -26,6 +27,7 @@ import {
   TouchSensor,
   pointerWithin,
   rectIntersection,
+  useDndMonitor,
   useDraggable,
   useDroppable,
   useSensor,
@@ -82,7 +84,7 @@ import {
 } from "./calendar-block";
 import type { CalendarDragKind } from "./calendar-drag";
 import {
-  CALENDAR_DRAG_STEP_MINUTES,
+  CALENDAR_RESIZE_STEP_MINUTES,
   activateCalendarResize,
   getCalendarManualChange,
   isCalendarBlockResizeTerminalDay,
@@ -190,6 +192,11 @@ const toResizeEndLabel = (startAt: Date, endAt: Date) =>
     ? toClockLabel(endAt, true)
     : `${format(endAt, "EEE")} ${toClockLabel(endAt, true)}`;
 
+const toMoveTimeLabel = (startAt: Date, endAt: Date) =>
+  isSameDay(startAt, endAt)
+    ? toTimeLabel(startAt.toISOString(), endAt.toISOString())
+    : `${format(startAt, "EEE")} ${toClockLabel(startAt, true)} – ${format(endAt, "EEE")} ${toClockLabel(endAt, true)}`;
+
 const getUtcOffsetLabel = (date: Date) => {
   const offsetMinutes = -date.getTimezoneOffset();
   const sign = offsetMinutes >= 0 ? "+" : "-";
@@ -230,40 +237,103 @@ const snapCalendarDragModifier: Modifier = ({ active, transform }) => {
   return {
     ...transform,
     x: drag.kind === "resize" ? 0 : transform.x,
-    y: snapCalendarDeltaPixels(transform.y, hourHeight),
+    y: snapCalendarDeltaPixels(transform.y, hourHeight, drag.kind),
   };
 };
 
 const calendarDragModifiers = [snapCalendarDragModifier];
 
 const CalendarDragPreview = ({ drag }: { drag: CalendarDragData | null }) => {
+  const [movePreview, setMovePreview] = useState<{
+    endAt: Date;
+    startAt: Date;
+  } | null>(null);
+  const moveTargetDayRef = useRef<Date | null>(null);
+
+  const resetMovePreview = () => {
+    moveTargetDayRef.current = null;
+    setMovePreview(null);
+  };
+
+  const updateMovePreview = (event: DragMoveEvent) => {
+    const moveDrag = getCalendarDragData(event.active);
+    if (moveDrag?.kind !== "move") return;
+
+    const targetDay = event.over?.data.current?.calendarDay as
+      | string
+      | undefined;
+    if (targetDay) {
+      moveTargetDayRef.current = new Date(targetDay);
+    }
+
+    const nextPreview = getCalendarManualChange({
+      block: moveDrag.block,
+      deltaY: event.delta.y,
+      hourHeight,
+      kind: "move",
+      targetDay: moveTargetDayRef.current ?? new Date(moveDrag.block.startAt),
+    });
+    setMovePreview((currentPreview) =>
+      currentPreview?.startAt.getTime() === nextPreview.startAt.getTime() &&
+      currentPreview.endAt.getTime() === nextPreview.endAt.getTime()
+        ? currentPreview
+        : nextPreview,
+    );
+  };
+
+  useDndMonitor({
+    onDragCancel: resetMovePreview,
+    onDragEnd: resetMovePreview,
+    onDragMove: updateMovePreview,
+    onDragOver: updateMovePreview,
+    onDragStart: (event) => {
+      const moveDrag = getCalendarDragData(event.active);
+      moveTargetDayRef.current =
+        moveDrag?.kind === "move" ? new Date(moveDrag.block.startAt) : null;
+      setMovePreview(null);
+    },
+  });
+
   if (!drag) return null;
   if (drag.kind === "resize") {
     return <Box className="bg-border-strong h-full w-full rounded-sm" />;
   }
 
   const storyStyle = getCalendarStoryBlockStyle(drag.block);
+  const previewStartAt = movePreview?.startAt ?? new Date(drag.block.startAt);
+  const previewEndAt = movePreview?.endAt ?? new Date(drag.block.endAt);
+  const moveFeedbackLabel = toMoveTimeLabel(previewStartAt, previewEndAt);
 
   return (
-    <Box
-      className={cn(
-        "shadow-shadow relative h-full w-full overflow-hidden rounded-md border px-3 py-1 backdrop-blur-sm",
-        storyStyle
-          ? scheduledStoryStatusClass
-          : "border-border-strong/60 bg-surface-muted/95",
-      )}
-      style={storyStyle}
-    >
+    <Box className="relative h-full w-full overflow-visible">
+      <Box
+        className={cn(
+          "shadow-shadow relative h-full w-full overflow-hidden rounded-md border px-3 py-1 backdrop-blur-sm",
+          storyStyle
+            ? scheduledStoryStatusClass
+            : "border-border-strong/60 bg-surface-muted/95",
+        )}
+        style={storyStyle}
+      >
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] max-h-14 w-[0.1875rem] -translate-y-1/2 rounded-full",
+            storyStyle
+              ? "bg-[var(--calendar-story-accent)]"
+              : "bg-border-strong",
+          )}
+        />
+        <Text className="truncate leading-tight" fontWeight="medium">
+          {drag.block.title}
+        </Text>
+      </Box>
       <span
         aria-hidden="true"
-        className={cn(
-          "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] max-h-14 w-[0.1875rem] -translate-y-1/2 rounded-full",
-          storyStyle ? "bg-[var(--calendar-story-accent)]" : "bg-border-strong",
-        )}
-      />
-      <Text className="truncate leading-tight" fontWeight="medium">
-        {drag.block.title}
-      </Text>
+        className="border-border-strong/70 bg-surface-elevated/95 text-foreground shadow-shadow pointer-events-none absolute -top-7 right-1 z-10 rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap tabular-nums"
+      >
+        {moveFeedbackLabel}
+      </span>
     </Box>
   );
 };
@@ -361,7 +431,7 @@ const CalendarTimedBlock = ({
   const laneWidth = 100 / layout.laneCount;
   const isCompleted = new Date(item.endAt).getTime() <= today.getTime();
   const resizeDeltaMinutes = isResizeDragging
-    ? snapCalendarDeltaMinutes(resizeTransform?.y ?? 0, hourHeight)
+    ? snapCalendarDeltaMinutes(resizeTransform?.y ?? 0, hourHeight, "resize")
     : 0;
   const resizeDelta = resizeDeltaMinutes * (hourHeight / 60);
   const resizePreview =
@@ -749,8 +819,8 @@ const CalendarTimedBlock = ({
             event.stopPropagation();
             resizeByKeyboard(
               event.key === "ArrowUp"
-                ? -CALENDAR_DRAG_STEP_MINUTES
-                : CALENDAR_DRAG_STEP_MINUTES,
+                ? -CALENDAR_RESIZE_STEP_MINUTES
+                : CALENDAR_RESIZE_STEP_MINUTES,
             );
           }}
           onPointerDown={(event) => {

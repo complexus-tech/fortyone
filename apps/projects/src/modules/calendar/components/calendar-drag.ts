@@ -1,7 +1,8 @@
 import { addDays, addMinutes, startOfDay } from "date-fns";
 import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
 
-export const CALENDAR_DRAG_STEP_MINUTES = 5;
+export const CALENDAR_MOVE_STEP_MINUTES = 1;
+export const CALENDAR_RESIZE_STEP_MINUTES = 5;
 
 export type CalendarDragKind = "move" | "resize";
 
@@ -15,12 +16,23 @@ export const activateCalendarResize = <
   listener?.(event);
 };
 
-export const snapCalendarDeltaMinutes = (deltaY: number, hourHeight: number) =>
-  Math.round(deltaY / (hourHeight / 60) / CALENDAR_DRAG_STEP_MINUTES) *
-  CALENDAR_DRAG_STEP_MINUTES;
+const getCalendarDragStepMinutes = (kind: CalendarDragKind) =>
+  kind === "move" ? CALENDAR_MOVE_STEP_MINUTES : CALENDAR_RESIZE_STEP_MINUTES;
 
-export const snapCalendarDeltaPixels = (deltaY: number, hourHeight: number) =>
-  snapCalendarDeltaMinutes(deltaY, hourHeight) * (hourHeight / 60);
+export const snapCalendarDeltaMinutes = (
+  deltaY: number,
+  hourHeight: number,
+  kind: CalendarDragKind,
+) => {
+  const stepMinutes = getCalendarDragStepMinutes(kind);
+  return Math.round(deltaY / (hourHeight / 60) / stepMinutes) * stepMinutes;
+};
+
+export const snapCalendarDeltaPixels = (
+  deltaY: number,
+  hourHeight: number,
+  kind: CalendarDragKind,
+) => snapCalendarDeltaMinutes(deltaY, hourHeight, kind) * (hourHeight / 60);
 
 export const resizeCalendarBlockByMinutes = (
   block: CalendarScheduleBlock,
@@ -29,7 +41,7 @@ export const resizeCalendarBlockByMinutes = (
   const startAt = new Date(block.startAt);
   const endAt = new Date(block.endAt);
   const durationMinutes = Math.max(
-    CALENDAR_DRAG_STEP_MINUTES,
+    CALENDAR_RESIZE_STEP_MINUTES,
     (endAt.getTime() - startAt.getTime()) / 60_000 + deltaMinutes,
   );
 
@@ -63,7 +75,7 @@ export const getCalendarManualChange = ({
 }) => {
   const originalStart = new Date(block.startAt);
   const originalEnd = new Date(block.endAt);
-  const deltaMinutes = snapCalendarDeltaMinutes(deltaY, hourHeight);
+  const deltaMinutes = snapCalendarDeltaMinutes(deltaY, hourHeight, kind);
 
   if (kind === "resize") {
     return resizeCalendarBlockByMinutes(block, deltaMinutes);
