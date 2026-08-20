@@ -217,6 +217,37 @@ func TestScheduleBlockResponsePropagatesAutoSchedulingMetadata(t *testing.T) {
 	}
 }
 
+func TestCalendarSummaryIncludesActionableScheduleIssues(t *testing.T) {
+	t.Parallel()
+
+	storyID := uuid.New()
+	duration := 90
+	reason := "Maya could not fit this work before its deadline."
+	summary := toAppSchedule(calendar.CoreCalendarView{
+		ScheduleIssues: []calendar.CoreScheduleIssue{{
+			StoryID:                  storyID,
+			StoryTitle:               "Prepare launch brief",
+			StoryCode:                "ENG-42",
+			EstimatedDurationMinutes: &duration,
+			AutoSchedulingStatus:     "cannot_fit",
+			AutoSchedulingReason:     &reason,
+		}},
+	})
+	if len(summary.ScheduleIssues) != 1 || summary.ScheduleIssues[0].StoryID != storyID {
+		t.Fatalf("expected one schedule issue, got %#v", summary.ScheduleIssues)
+	}
+	payload, err := json.Marshal(summary)
+	if err != nil {
+		t.Fatalf("marshal calendar summary: %v", err)
+	}
+	serialized := string(payload)
+	for _, required := range []string{`"scheduleIssues"`, `"storyCode":"ENG-42"`, `"estimatedDurationMinutes":90`, `"autoSchedulingStatus":"cannot_fit"`} {
+		if !strings.Contains(serialized, required) {
+			t.Errorf("calendar summary is missing %s: %s", required, serialized)
+		}
+	}
+}
+
 func TestScheduleBlockResponsePropagatesStoryStatusColor(t *testing.T) {
 	t.Parallel()
 

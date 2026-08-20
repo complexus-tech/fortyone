@@ -126,11 +126,28 @@ type CoreSchedulePreference struct {
 }
 
 type CoreCalendarView struct {
-	StartAt     time.Time                  `json:"startAt"`
-	EndAt       time.Time                  `json:"endAt"`
-	Events      []CoreCalendarEventSummary `json:"events"`
-	BusyWindows []CoreBusyWindow           `json:"busyWindows"`
-	Blocks      []CoreScheduleBlock        `json:"blocks"`
+	StartAt        time.Time                  `json:"startAt"`
+	EndAt          time.Time                  `json:"endAt"`
+	Events         []CoreCalendarEventSummary `json:"events"`
+	BusyWindows    []CoreBusyWindow           `json:"busyWindows"`
+	Blocks         []CoreScheduleBlock        `json:"blocks"`
+	ScheduleIssues []CoreScheduleIssue        `json:"scheduleIssues"`
+}
+
+// CoreScheduleIssue is an active Maya placement failure that needs a decision
+// from the assigned user. It intentionally exposes only the story metadata the
+// calendar sidebar needs to offer retry and explicit-placement actions.
+type CoreScheduleIssue struct {
+	StoryID                  uuid.UUID `db:"story_id" json:"storyId"`
+	StoryTitle               string    `db:"story_title" json:"storyTitle"`
+	StoryCode                string    `db:"story_code" json:"storyCode"`
+	TeamID                   uuid.UUID `db:"team_id" json:"teamId"`
+	TeamName                 string    `db:"team_name" json:"teamName"`
+	TeamCode                 string    `db:"team_code" json:"teamCode"`
+	EstimatedDurationMinutes *int      `db:"estimated_duration_minutes" json:"estimatedDurationMinutes"`
+	AutoSchedulingStatus     string    `db:"auto_scheduling_status" json:"autoSchedulingStatus"`
+	AutoSchedulingReason     *string   `db:"auto_scheduling_reason" json:"autoSchedulingReason,omitempty"`
+	UpdatedAt                time.Time `db:"updated_at" json:"updatedAt"`
 }
 
 type CoreScheduleBlock struct {
@@ -228,6 +245,9 @@ type MayaScheduleReconcileInput struct {
 	PreemptBlockIDs        []uuid.UUID
 	KeepOwnership          bool
 	Locked                 bool
+	// AllowConflicts is reserved for an explicit user placement. Automatic
+	// planning must leave it false so Maya never creates overlapping work.
+	AllowConflicts bool
 }
 
 type ScheduleReconcileAction string

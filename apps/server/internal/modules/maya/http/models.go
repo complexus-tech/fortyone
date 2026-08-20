@@ -20,6 +20,11 @@ type AppCreateWorkPlanRequest struct {
 	AutoApply        bool        `json:"autoApply"`
 }
 
+type AppManualScheduleStoryRequest struct {
+	StartAt  time.Time `json:"startAt"`
+	Timezone string    `json:"timezone"`
+}
+
 type AppWorkPlan struct {
 	Run     maya.CoreRun      `json:"run"`
 	Actions []maya.CoreAction `json:"actions"`

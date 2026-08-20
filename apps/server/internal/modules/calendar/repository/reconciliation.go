@@ -22,7 +22,7 @@ type reconciliationBlock struct {
 	Title              string     `db:"title"`
 	StartAt            time.Time  `db:"start_at"`
 	EndAt              time.Time  `db:"end_at"`
-	IsLocked           bool      `db:"is_locked"`
+	IsLocked           bool       `db:"is_locked"`
 	ExternalProvider   *string    `db:"external_provider"`
 	ExternalCalendarID *string    `db:"external_calendar_id"`
 	ExternalEventID    *string    `db:"external_event_id"`
@@ -243,6 +243,9 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 		)
 	`
 	for _, segment := range segments {
+		if input.AllowConflicts {
+			continue
+		}
 		if _, exists := manualByIndex[segment.SegmentIndex]; exists {
 			continue
 		}

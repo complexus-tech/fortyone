@@ -151,6 +151,65 @@ func TestCreateWorkPlanUsesBoundedDefaultCandidatePool(t *testing.T) {
 	}
 }
 
+func TestManuallyScheduleStoryLocksExplicitConflictingTime(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	mayaActorID := uuid.New()
+	duration := 90
+	updatedAt := time.Date(2026, 8, 20, 8, 0, 0, 0, time.UTC)
+	startAt := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Minute)
+	repo := &fakeMayaRepository{schedulable: true}
+	storiesService := &fakeMayaStories{story: stories.CoreSingleStory{
+		ID:                       storyID,
+		Workspace:                workspaceID,
+		Title:                    "Prepare launch brief",
+		Assignee:                 &userID,
+		EstimatedDurationMinutes: &duration,
+		AutoSchedulingEnabled:    true,
+		AutoSchedulingStatus:     stories.AutoSchedulingStatusCannotFit,
+		UpdatedAt:                updatedAt,
+	}}
+	calendarService := &fakeMayaCalendar{hasOwnership: true}
+	service := New(Dependencies{
+		Repository:  repo,
+		Stories:     storiesService,
+		Reports:     &fakeMayaReports{},
+		Calendar:    calendarService,
+		Users:       &fakeMayaUsers{},
+		Planner:     NewPlanner(),
+		MayaActorID: mayaActorID,
+	})
+
+	block, err := service.ManuallyScheduleStory(context.Background(), ManualScheduleStoryInput{
+		WorkspaceID: workspaceID,
+		StoryID:     storyID,
+		UserID:      userID,
+		StartAt:     startAt,
+		Timezone:    "Africa/Harare",
+	})
+	if err != nil {
+		t.Fatalf("ManuallyScheduleStory returned error: %v", err)
+	}
+	if !block.StartAt.Equal(startAt) || !block.EndAt.Equal(startAt.Add(90*time.Minute)) || !block.IsLocked {
+		t.Fatalf("unexpected manual block: %#v", block)
+	}
+	if !calendarService.reconciled.AllowConflicts || !calendarService.reconciled.Locked || !calendarService.reconciled.KeepOwnership {
+		t.Fatalf("explicit placement did not preserve the override contract: %#v", calendarService.reconciled)
+	}
+	if !storiesService.story.AutoSchedulingLocked || storiesService.story.AutoSchedulingStatus != stories.AutoSchedulingStatusLocked {
+		t.Fatalf("story was not locked after explicit placement: %#v", storiesService.story)
+	}
+	if len(storiesService.scheduleTransitions) != 1 || storiesService.scheduleTransitions[0] == nil || storiesService.scheduleTransitions[0].StartAt == nil || !storiesService.scheduleTransitions[0].StartAt.Equal(startAt) {
+		t.Fatalf("expected one schedule transition for the chosen time: %#v", storiesService.scheduleTransitions)
+	}
+	if len(calendarService.dispatchedUsers) != 1 || calendarService.dispatchedUsers[0] != userID {
+		t.Fatalf("expected provider outbox dispatch for %s, got %v", userID, calendarService.dispatchedUsers)
+	}
+}
+
 func TestCreateWorkPlanUsesAccountWideAvailabilityTimezoneAndMinimumFocus(t *testing.T) {
 	workspaceID := uuid.New()
 	otherWorkspaceID := uuid.New()

@@ -1,7 +1,11 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import type { CalendarEventSummary } from "@/lib/queries/calendar/types";
-import { getUpcomingMeeting } from "./upcoming-meeting";
+import {
+  getUpcomingMeeting,
+  getUpcomingMeetings,
+  isMeetingDismissed,
+} from "./upcoming-meeting";
 
 const now = Date.parse("2026-08-08T10:00:00.000Z");
 
@@ -55,6 +59,44 @@ describe("getUpcomingMeeting", () => {
     expect(
       getUpcomingMeeting([laterMeeting, earlierMeeting], now)?.event.id,
     ).toBe("meeting-earlier");
+  });
+
+  it("returns simultaneous meetings so the sidebar can page through them", () => {
+    const meetings = getUpcomingMeetings(
+      [
+        createEvent({
+          id: "meeting-later",
+          startAt: "2026-08-08T10:12:00.000Z",
+        }),
+        createEvent({ id: "meeting-now", startAt: "2026-08-08T09:55:00.000Z" }),
+        createEvent({
+          id: "meeting-next",
+          startAt: "2026-08-08T10:05:00.000Z",
+        }),
+      ],
+      now,
+    );
+
+    expect(meetings.map(({ event }) => event.id)).toEqual([
+      "meeting-now",
+      "meeting-next",
+      "meeting-later",
+    ]);
+  });
+
+  it("matches only the dismissed meeting cookie", () => {
+    expect(
+      isMeetingDismissed(
+        "meeting-1",
+        "theme=dark; fortyone_meeting_dismissed_meeting-1=1",
+      ),
+    ).toBe(true);
+    expect(
+      isMeetingDismissed(
+        "meeting-2",
+        "theme=dark; fortyone_meeting_dismissed_meeting-1=1",
+      ),
+    ).toBe(false);
   });
 
   it.each([

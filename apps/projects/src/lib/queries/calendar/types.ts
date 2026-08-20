@@ -72,12 +72,26 @@ export type CalendarScheduleBlock = {
   manualOverrideBy?: string;
 };
 
+export type CalendarScheduleIssue = {
+  storyId: string;
+  storyTitle: string;
+  storyCode: string;
+  teamId: string;
+  teamName: string;
+  teamCode: string;
+  estimatedDurationMinutes: number | null;
+  autoSchedulingStatus: "cannot_fit";
+  autoSchedulingReason?: string | null;
+  updatedAt: string;
+};
+
 export type CalendarSchedule = {
   startAt: string;
   endAt: string;
   events: CalendarEventSummary[];
   busyWindows: CalendarBusyWindow[];
   blocks: CalendarScheduleBlock[];
+  scheduleIssues: CalendarScheduleIssue[];
 };
 
 export type CalendarScheduleBlockInput = {

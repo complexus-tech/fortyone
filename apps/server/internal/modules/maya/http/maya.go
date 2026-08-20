@@ -18,6 +18,7 @@ import (
 	"unicode"
 
 	activities "github.com/complexus-tech/projects-api/internal/modules/activities/service"
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
@@ -208,6 +209,54 @@ func (h *Handlers) CreateRealtimeSession(ctx context.Context, w http.ResponseWri
 	return web.Respond(ctx, w, session, http.StatusCreated)
 }
 
+func (h *Handlers) RetryScheduleIssue(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	storyID, err := uuid.Parse(web.Params(r, "storyId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if err := h.service.RetryScheduleIssue(ctx, workspace.ID, storyID, userID); err != nil {
+		return web.RespondError(ctx, w, err, h.statusCode(err))
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func (h *Handlers) OverrideScheduleIssue(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	storyID, err := uuid.Parse(web.Params(r, "storyId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	var req AppManualScheduleStoryRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	if _, err := h.service.ManuallyScheduleStory(ctx, maya.ManualScheduleStoryInput{
+		WorkspaceID: workspace.ID,
+		StoryID:     storyID,
+		UserID:      userID,
+		StartAt:     req.StartAt,
+		Timezone:    req.Timezone,
+	}); err != nil {
+		return web.RespondError(ctx, w, err, h.statusCode(err))
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
 func (h *Handlers) EndRealtimeSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -345,7 +394,11 @@ func (h *Handlers) statusCode(err error) int {
 		return http.StatusServiceUnavailable
 	case errors.Is(err, maya.ErrMayaAccessDenied), errors.Is(err, ErrMayaAccessRequired):
 		return http.StatusPaymentRequired
-	case errors.Is(err, stories.ErrAutoSchedulingOwnerLocked), errors.Is(err, stories.ErrAutoSchedulingLockEmpty), errors.Is(err, stories.ErrStoryChanged):
+	case errors.Is(err, stories.ErrAutoSchedulingOwnerLocked),
+		errors.Is(err, stories.ErrAutoSchedulingLockEmpty),
+		errors.Is(err, stories.ErrStoryChanged),
+		errors.Is(err, calendar.ErrCalendarScheduleStalePlan),
+		errors.Is(err, calendar.ErrCalendarScheduleConflict):
 		return http.StatusConflict
 	case errors.Is(err, maya.ErrInvalidPlanInput):
 		return http.StatusBadRequest

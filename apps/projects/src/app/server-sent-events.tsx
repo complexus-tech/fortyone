@@ -105,7 +105,10 @@ export const ServerSentEvents = () => {
 
       if (
         "statusId" in workspaceUpdate.changes ||
-        "completedAt" in workspaceUpdate.changes
+        "completedAt" in workspaceUpdate.changes ||
+        "autoSchedulingStatus" in workspaceUpdate.changes ||
+        "autoSchedulingReason" in workspaceUpdate.changes ||
+        "autoSchedulingUpdatedAt" in workspaceUpdate.changes
       ) {
         void queryClient.invalidateQueries({
           queryKey: calendarKeys.all(workspaceSlug),

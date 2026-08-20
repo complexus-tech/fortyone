@@ -54,6 +54,7 @@ const schedule: CalendarSchedule = {
   busyWindows: [],
   endAt: "2026-08-27T00:00:00.000Z",
   events: [],
+  scheduleIssues: [],
   startAt: "2026-08-20T00:00:00.000Z",
 };
 

@@ -15,7 +15,7 @@ import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
 import { ProfileMenu } from "./profile-menu";
-import { UpcomingMeetingCard } from "./upcoming-meeting-card";
+import { SidebarAssistantCards } from "./upcoming-meeting-card";
 import { useSidebar } from "./sidebar-context";
 
 const SidebarFooterActions = ({
@@ -210,7 +210,7 @@ export const Sidebar = () => {
               )}
             </Box>
           ) : (
-            <UpcomingMeetingCard
+            <SidebarAssistantCards
               fallback={
                 <SidebarFooterActions
                   isCollapsed={isCollapsed}

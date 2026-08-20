@@ -117,6 +117,42 @@ func (r *Repo) ListScheduleBlocks(ctx context.Context, workspaceID, userID uuid.
 	return toCoreScheduleBlocks(rows), nil
 }
 
+func (r *Repo) ListScheduleIssues(ctx context.Context, workspaceID, userID uuid.UUID) ([]calendar.CoreScheduleIssue, error) {
+	const query = `
+		SELECT
+			story.id AS story_id,
+			story.title AS story_title,
+			CONCAT(team.code, '-', CAST(story.sequence_id AS text)) AS story_code,
+			team.team_id,
+			team.name AS team_name,
+			team.code AS team_code,
+			story.estimated_duration_minutes,
+			story.auto_scheduling_status,
+			story.auto_scheduling_reason,
+			story.updated_at
+		FROM stories story
+		INNER JOIN teams team ON team.team_id = story.team_id
+		INNER JOIN statuses status ON status.status_id = story.status_id
+		INNER JOIN team_members membership ON
+			membership.team_id = story.team_id
+			AND membership.user_id = $2
+		WHERE story.workspace_id = $1
+			AND story.assignee_id = $2
+			AND story.auto_scheduling_enabled = TRUE
+			AND story.auto_scheduling_status = 'cannot_fit'
+			AND story.deleted_at IS NULL
+			AND story.archived_at IS NULL
+			AND story.completed_at IS NULL
+			AND status.category NOT IN ('completed', 'cancelled')
+		ORDER BY story.auto_scheduling_updated_at DESC NULLS LAST, story.updated_at DESC, story.id
+	`
+	issues := []calendar.CoreScheduleIssue{}
+	if err := r.db.SelectContext(ctx, &issues, query, workspaceID, userID); err != nil {
+		return nil, fmt.Errorf("list Maya schedule issues: %w", err)
+	}
+	return issues, nil
+}
+
 func (r *Repo) ListSchedulingBlocksForUser(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]calendar.CoreScheduleBlock, error) {
 	query := scheduleBlockSelect + `
 		WHERE csb.user_id = $1

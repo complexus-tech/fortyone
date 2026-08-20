@@ -45,7 +45,7 @@ func TestMayaScheduleReconciliationPersistsLockedInputWithoutProviderRewrite(t *
 	}
 	source := string(data)
 	for _, contract := range []string{
-		"IsLocked           bool      `db:\"is_locked\"`",
+		"IsLocked           bool       `db:\"is_locked\"`",
 		"SELECT block_id, segment_index, title, start_at, end_at, is_locked,",
 		"blockChanged := providerChanged || block.IsLocked != input.Locked",
 		"title = CAST($5 AS text)",
@@ -65,6 +65,9 @@ func TestMayaScheduleReconciliationPersistsLockedInputWithoutProviderRewrite(t *
 	}
 	if strings.Contains(source, "syncHash, blockChanged") {
 		t.Fatal("an internal lock-only change must not reactivate or rewrite the provider event")
+	}
+	if !strings.Contains(source, "if input.AllowConflicts") {
+		t.Fatal("explicit user placement must have a narrow conflict-override branch")
 	}
 }
 

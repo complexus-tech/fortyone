@@ -102,6 +102,10 @@ type ScheduleReconciliationRepository interface {
 	WithScheduleEventDispatchLock(ctx context.Context, userID uuid.UUID, dispatch func(ScheduleEventOutboxStore) error) error
 }
 
+type ScheduleIssueRepository interface {
+	ListScheduleIssues(ctx context.Context, workspaceID, userID uuid.UUID) ([]CoreScheduleIssue, error)
+}
+
 type ScheduleEventOutboxStore interface {
 	ListPendingScheduleEventOutbox(ctx context.Context, userID uuid.UUID, limit int) ([]CoreScheduleEventOutbox, error)
 	ScheduleEventUpsertIsCurrent(ctx context.Context, item CoreScheduleEventOutbox, event ExternalScheduleEventInput) (bool, error)
@@ -579,12 +583,20 @@ func (s *Service) ListCalendarView(ctx context.Context, workspaceID, userID uuid
 	if err != nil {
 		return CoreCalendarView{}, err
 	}
+	scheduleIssues := []CoreScheduleIssue{}
+	if issueRepo, ok := s.repo.(ScheduleIssueRepository); ok {
+		scheduleIssues, err = issueRepo.ListScheduleIssues(ctx, workspaceID, userID)
+		if err != nil {
+			return CoreCalendarView{}, err
+		}
+	}
 	return CoreCalendarView{
-		StartAt:     startAt.UTC(),
-		EndAt:       endAt.UTC(),
-		Events:      events,
-		BusyWindows: busyWindows,
-		Blocks:      blocks,
+		StartAt:        startAt.UTC(),
+		EndAt:          endAt.UTC(),
+		Events:         events,
+		BusyWindows:    busyWindows,
+		Blocks:         blocks,
+		ScheduleIssues: scheduleIssues,
 	}, nil
 }
 
@@ -691,6 +703,9 @@ func (s *Service) ReconcileMayaScheduleBlocks(ctx context.Context, input MayaSch
 		return CoreScheduleReconcileResult{}, ErrCalendarNotConfigured
 	}
 	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil || input.StoryID == uuid.Nil {
+		return CoreScheduleReconcileResult{}, ErrInvalidScheduleBlock
+	}
+	if input.AllowConflicts && !input.Locked {
 		return CoreScheduleReconcileResult{}, ErrInvalidScheduleBlock
 	}
 	if len(input.Segments) > 0 {

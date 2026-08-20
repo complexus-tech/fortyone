@@ -1,6 +1,7 @@
 import type { CalendarEventSummary } from "@/lib/queries/calendar/types";
 
 const UPCOMING_MEETING_WINDOW_MS = 15 * 60 * 1000;
+const MEETING_DISMISSAL_COOKIE_PREFIX = "fortyone_meeting_dismissed_";
 
 export type UpcomingMeeting = {
   event: CalendarEventSummary;
@@ -23,9 +24,13 @@ const getSafeMeetingUrl = (value?: string) => {
 export const getUpcomingMeeting = (
   events: CalendarEventSummary[],
   now: number,
-): UpcomingMeeting | null => {
-  let inProgress: UpcomingMeeting | null = null;
-  let upcoming: UpcomingMeeting | null = null;
+): UpcomingMeeting | null => getUpcomingMeetings(events, now).at(0) ?? null;
+
+export const getUpcomingMeetings = (
+  events: CalendarEventSummary[],
+  now: number,
+): UpcomingMeeting[] => {
+  const meetings: UpcomingMeeting[] = [];
   const windowEnd = now + UPCOMING_MEETING_WINDOW_MS;
 
   for (const event of events) {
@@ -47,26 +52,68 @@ export const getUpcomingMeeting = (
     }
 
     if (startAt <= now) {
-      if (!inProgress || startAt < Date.parse(inProgress.event.startAt)) {
-        inProgress = {
-          event,
-          meetingUrl,
-          minutesUntilStart: 0,
-          status: "in-progress",
-        };
-      }
+      meetings.push({
+        event,
+        meetingUrl,
+        minutesUntilStart: 0,
+        status: "in-progress",
+      });
       continue;
     }
 
-    if (!upcoming || startAt < Date.parse(upcoming.event.startAt)) {
-      upcoming = {
-        event,
-        meetingUrl,
-        minutesUntilStart: Math.ceil((startAt - now) / (60 * 1000)),
-        status: "upcoming",
-      };
-    }
+    meetings.push({
+      event,
+      meetingUrl,
+      minutesUntilStart: Math.ceil((startAt - now) / (60 * 1000)),
+      status: "upcoming",
+    });
   }
 
-  return inProgress ?? upcoming;
+  return meetings.sort((left, right) => {
+    if (left.status !== right.status) {
+      return left.status === "in-progress" ? -1 : 1;
+    }
+    return Date.parse(left.event.startAt) - Date.parse(right.event.startAt);
+  });
+};
+
+const getMeetingDismissalCookieName = (meetingId: string) =>
+  `${MEETING_DISMISSAL_COOKIE_PREFIX}${meetingId}`;
+
+export const isMeetingDismissed = (
+  meetingId: string,
+  cookieHeader = typeof document === "undefined" ? "" : document.cookie,
+) => {
+  const cookieName = `${getMeetingDismissalCookieName(meetingId)}=`;
+  return cookieHeader
+    .split(";")
+    .some((cookie) => cookie.trim().startsWith(cookieName));
+};
+
+export const dismissMeetingUntilEnd = (
+  meeting: UpcomingMeeting,
+  options?: { isSecure?: boolean },
+) => {
+  if (typeof document === "undefined") return;
+
+  const endAt = new Date(meeting.event.endAt);
+  if (!Number.isFinite(endAt.getTime())) return;
+
+  const secure =
+    options?.isSecure ??
+    (typeof window !== "undefined" && window.location.protocol === "https:");
+  const maxAgeSeconds = Math.max(
+    0,
+    Math.ceil((endAt.getTime() - Date.now()) / 1000),
+  );
+  document.cookie = [
+    `${getMeetingDismissalCookieName(meeting.event.id)}=1`,
+    "Path=/",
+    `Expires=${endAt.toUTCString()}`,
+    `Max-Age=${maxAgeSeconds}`,
+    "SameSite=Lax",
+    secure ? "Secure" : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
 };

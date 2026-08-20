@@ -33,11 +33,25 @@ type AppCreateConnectSession struct {
 }
 
 type AppSchedule struct {
-	StartAt     time.Time                 `json:"startAt"`
-	EndAt       time.Time                 `json:"endAt"`
-	Events      []AppCalendarEventSummary `json:"events"`
-	BusyWindows []AppBusyWindow           `json:"busyWindows"`
-	Blocks      []AppScheduleBlock        `json:"blocks"`
+	StartAt        time.Time                 `json:"startAt"`
+	EndAt          time.Time                 `json:"endAt"`
+	Events         []AppCalendarEventSummary `json:"events"`
+	BusyWindows    []AppBusyWindow           `json:"busyWindows"`
+	Blocks         []AppScheduleBlock        `json:"blocks"`
+	ScheduleIssues []AppScheduleIssue        `json:"scheduleIssues"`
+}
+
+type AppScheduleIssue struct {
+	StoryID                  uuid.UUID `json:"storyId"`
+	StoryTitle               string    `json:"storyTitle"`
+	StoryCode                string    `json:"storyCode"`
+	TeamID                   uuid.UUID `json:"teamId"`
+	TeamName                 string    `json:"teamName"`
+	TeamCode                 string    `json:"teamCode"`
+	EstimatedDurationMinutes *int      `json:"estimatedDurationMinutes"`
+	AutoSchedulingStatus     string    `json:"autoSchedulingStatus"`
+	AutoSchedulingReason     *string   `json:"autoSchedulingReason,omitempty"`
+	UpdatedAt                time.Time `json:"updatedAt"`
 }
 
 type AppCalendarEventSummary struct {
@@ -182,12 +196,32 @@ func toAppConnection(connection calendar.CoreConnection) AppConnection {
 
 func toAppSchedule(schedule calendar.CoreCalendarView) AppSchedule {
 	return AppSchedule{
-		StartAt:     schedule.StartAt,
-		EndAt:       schedule.EndAt,
-		Events:      toAppCalendarEventSummaries(schedule.Events),
-		BusyWindows: toAppBusyWindows(schedule.BusyWindows),
-		Blocks:      toAppScheduleBlocks(schedule.Blocks),
+		StartAt:        schedule.StartAt,
+		EndAt:          schedule.EndAt,
+		Events:         toAppCalendarEventSummaries(schedule.Events),
+		BusyWindows:    toAppBusyWindows(schedule.BusyWindows),
+		Blocks:         toAppScheduleBlocks(schedule.Blocks),
+		ScheduleIssues: toAppScheduleIssues(schedule.ScheduleIssues),
 	}
+}
+
+func toAppScheduleIssues(issues []calendar.CoreScheduleIssue) []AppScheduleIssue {
+	out := make([]AppScheduleIssue, len(issues))
+	for index, issue := range issues {
+		out[index] = AppScheduleIssue{
+			StoryID:                  issue.StoryID,
+			StoryTitle:               issue.StoryTitle,
+			StoryCode:                issue.StoryCode,
+			TeamID:                   issue.TeamID,
+			TeamName:                 issue.TeamName,
+			TeamCode:                 issue.TeamCode,
+			EstimatedDurationMinutes: issue.EstimatedDurationMinutes,
+			AutoSchedulingStatus:     issue.AutoSchedulingStatus,
+			AutoSchedulingReason:     issue.AutoSchedulingReason,
+			UpdatedAt:                issue.UpdatedAt,
+		}
+	}
+	return out
 }
 
 func toAppCalendarEventSummaries(events []calendar.CoreCalendarEventSummary) []AppCalendarEventSummary {

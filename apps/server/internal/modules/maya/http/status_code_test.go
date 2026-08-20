@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 )
@@ -19,6 +20,8 @@ func TestStatusCodeMapsAutoSchedulingContractErrors(t *testing.T) {
 		{name: "locked schedule", err: stories.ErrAutoSchedulingOwnerLocked, status: http.StatusConflict},
 		{name: "lock without blocks", err: stories.ErrAutoSchedulingLockEmpty, status: http.StatusConflict},
 		{name: "stale story", err: stories.ErrStoryChanged, status: http.StatusConflict},
+		{name: "stale calendar plan", err: calendar.ErrCalendarScheduleStalePlan, status: http.StatusConflict},
+		{name: "calendar conflict", err: calendar.ErrCalendarScheduleConflict, status: http.StatusConflict},
 		{name: "lost entitlement", err: maya.ErrMayaAccessDenied, status: http.StatusPaymentRequired},
 		{name: "invalid plan", err: maya.ErrInvalidPlanInput, status: http.StatusBadRequest},
 	}
