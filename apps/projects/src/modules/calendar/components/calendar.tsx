@@ -253,9 +253,6 @@ const CalendarDragPreview = ({ drag }: { drag: CalendarDragData | null }) => {
         )}
       />
       <Text className="truncate leading-tight" fontWeight="medium">
-        {drag.block.storyCode ? (
-          <span className="text-text-muted mr-1">{drag.block.storyCode}</span>
-        ) : null}
         {drag.block.title}
       </Text>
     </Box>
@@ -295,9 +292,6 @@ const getBusyWindowTitle = (window: CalendarBusyWindow) => {
   }
   return window.title?.trim() || "Busy";
 };
-
-const getCalendarBlockStoryCode = (block: CalendarScheduleBlock) =>
-  block.storyCode?.trim() || block.teamCode?.trim() || null;
 
 const CalendarTimedBlock = ({
   item,
@@ -480,20 +474,10 @@ const CalendarTimedBlock = ({
   const isCrossWorkspace = Boolean(block.isCrossWorkspace);
   const isMayaManaged = block.source === "maya";
   const isEditable = isCalendarScheduleBlockEditable(block);
-  const mayaLabel = getMayaCalendarBlockLabel(block);
   const mayaReason = getMayaCalendarBlockReason(block);
-  const storyCode = block.storyId ? getCalendarBlockStoryCode(block) : null;
   const blockTitle = isCrossWorkspace
     ? CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE
     : block.title;
-  const label =
-    block.blockType === "work"
-      ? storyCode || block.teamCode || "Work"
-      : "Focus";
-  let statusLabel = mayaLabel ? `${mayaLabel} · ${label}` : label;
-  if (block.hasConflict) {
-    statusLabel = "Conflict";
-  }
   const storyStyle = getCalendarStoryBlockStyle(block);
   let blockColorClass = RESERVED_TIME_BLOCK_CLASS;
   if (block.blockType === "work") {
@@ -528,15 +512,12 @@ const CalendarTimedBlock = ({
     blockColorClass = RESERVED_TIME_BLOCK_CLASS;
   }
   const isScheduledStory = block.blockType === "work";
-  const isStandardHeightStory =
-    isScheduledStory &&
-    layout.height >= hourHeight &&
-    layout.height < twoLineTitleMinimumHeight;
+  const isStandardHeightBlock =
+    layout.height >= hourHeight && layout.height < twoLineTitleMinimumHeight;
   const hasLeadingIcon = isCrossWorkspace || !isScheduledStory;
   const timeLabel = toTimeLabel(block.startAt, block.endAt);
   const secondaryLabel = getCalendarScheduleBlockSecondaryLabel(
     block,
-    statusLabel,
     timeLabel,
   );
   const canOpenBlock = !isCrossWorkspace && (isScheduledStory || isEditable);
@@ -631,29 +612,41 @@ const CalendarTimedBlock = ({
       <Box
         className={cn(
           "pointer-events-none relative z-10 min-w-0",
-          hasLeadingIcon ? "flex items-start gap-1.5" : null,
+          hasLeadingIcon
+            ? cn(
+                "flex gap-1.5",
+                showSecondaryLine ? "items-start" : "items-center",
+              )
+            : null,
         )}
       >
         {hasLeadingIcon ? (
           <TimeScheduleIcon
             aria-hidden="true"
-            className={cn("mt-0.5 h-4 w-4 shrink-0", blockIconClass)}
+            className={cn(
+              "h-4 w-4 shrink-0",
+              showSecondaryLine && "mt-0.5",
+              blockIconClass,
+            )}
           />
         ) : null}
-        <Box className={cn("min-w-0", hasLeadingIcon ? "-mt-px flex-1" : null)}>
+        <Box
+          className={cn(
+            "min-w-0",
+            hasLeadingIcon && "flex-1",
+            hasLeadingIcon && showSecondaryLine && "-mt-px",
+          )}
+        >
           <Text
             className={cn(
               "min-w-0",
               titleLineClass,
-              isStandardHeightStory && "leading-4",
+              isStandardHeightBlock && "leading-4",
               blockTitleColorClass,
             )}
             fontSize="md"
             fontWeight="medium"
           >
-            {storyCode ? (
-              <span className="text-text-muted mr-1">{storyCode}</span>
-            ) : null}
             {blockTitle}
           </Text>
           {showSecondaryLine ? (
@@ -661,7 +654,7 @@ const CalendarTimedBlock = ({
               className={cn(
                 "truncate text-[0.9375rem]",
                 secondaryLineClass,
-                isStandardHeightStory && "mt-1 leading-4",
+                isStandardHeightBlock && "mt-1 leading-4",
                 blockSecondaryColorClass,
               )}
             >
@@ -674,7 +667,7 @@ const CalendarTimedBlock = ({
         <button
           {...resizeDrag.attributes}
           {...resizeDrag.listeners}
-          aria-label={`Resize ${storyCode || blockTitle}`}
+          aria-label={`Resize ${blockTitle}`}
           className={cn(
             "absolute inset-x-1 bottom-0 z-20 h-2 rounded-sm focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset",
             isDragDisabled ? "cursor-wait" : "cursor-ns-resize",
@@ -1714,7 +1707,6 @@ const CalendarMonthItem = ({
   const isEditable = isCalendarScheduleBlockEditable(block);
   const mayaLabel = getMayaCalendarBlockLabel(block);
   const mayaReason = getMayaCalendarBlockReason(block);
-  const storyCode = block.storyId ? getCalendarBlockStoryCode(block) : null;
   let displayTitle = mayaLabel ? `${mayaLabel} · ${title}` : title;
   if (isCrossWorkspace) {
     displayTitle = CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE;
@@ -1801,9 +1793,6 @@ const CalendarMonthItem = ({
         {time}
       </span>
       <span className="pointer-events-none relative z-10 min-w-0 flex-1 truncate">
-        {storyCode ? (
-          <span className="text-text-muted mr-1">{storyCode}</span>
-        ) : null}
         {displayTitle}
       </span>
     </Box>

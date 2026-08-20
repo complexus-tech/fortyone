@@ -46,12 +46,8 @@ export const isCalendarScheduleBlockEditable = (block: CalendarScheduleBlock) =>
 
 export const getCalendarScheduleBlockSecondaryLabel = (
   block: CalendarScheduleBlock,
-  statusLabel: string,
   timeLabel: string,
-) =>
-  block.isCrossWorkspace || block.source === "maya"
-    ? timeLabel
-    : `${statusLabel} · ${timeLabel}`;
+) => (block.hasConflict ? `Conflict · ${timeLabel}` : timeLabel);
 
 export const getMayaCalendarBlockLabel = (
   block: CalendarScheduleBlock,

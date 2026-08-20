@@ -80,17 +80,37 @@ describe("calendar block presentation", () => {
 
     expect(getMayaCalendarBlockLabel(block)).toBeNull();
     expect(getMayaCalendarBlockReason(block)).toBeNull();
-    expect(
-      getCalendarScheduleBlockSecondaryLabel(
-        block,
-        "Another workspace",
-        "9 – 10am",
-      ),
-    ).toBe("9 – 10am");
+    expect(getCalendarScheduleBlockSecondaryLabel(block, "9 – 10am")).toBe(
+      "9 – 10am",
+    );
     expect(CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE).toBe("Scheduled elsewhere");
     expect(CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP).toBe(
       "This time is reserved by a task in another workspace. Task details are hidden here.",
     );
+  });
+
+  it("uses time alone beneath focus and story titles", () => {
+    expect(
+      getCalendarScheduleBlockSecondaryLabel(
+        createBlock({ blockType: "focus", source: "user" }),
+        "9 – 10am",
+      ),
+    ).toBe("9 – 10am");
+    expect(
+      getCalendarScheduleBlockSecondaryLabel(
+        createBlock({ source: "user" }),
+        "9 – 10am",
+      ),
+    ).toBe("9 – 10am");
+  });
+
+  it("keeps conflict context beside the time", () => {
+    expect(
+      getCalendarScheduleBlockSecondaryLabel(
+        createBlock({ hasConflict: true }),
+        "9 – 10am",
+      ),
+    ).toBe("Conflict · 9 – 10am");
   });
 
   it("shows Maya provenance and enriched scheduling state when available", () => {
