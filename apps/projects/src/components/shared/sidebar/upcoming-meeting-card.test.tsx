@@ -80,13 +80,26 @@ jest.mock("ui", () => {
       className?: string;
     }) => <div className={className}>{children}</div>,
     Input: ({
+      hasError: _hasError,
+      helpText,
       label,
       labelClassName: _labelClassName,
+      rightIcon,
       ...props
     }: React.InputHTMLAttributes<HTMLInputElement> & {
+      hasError?: boolean;
+      helpText?: string;
       label?: string;
       labelClassName?: string;
-    }) => <input aria-label={label} {...props} />,
+      rightIcon?: ReactNode;
+    }) => (
+      <label>
+        {label}
+        <input aria-label={label} {...props} />
+        {rightIcon}
+        {helpText}
+      </label>
+    ),
     Popover,
     Text: ({
       children,
@@ -101,6 +114,13 @@ jest.mock("ui", () => {
         {children}
       </span>
     ),
+    Wrapper: ({
+      children,
+      className,
+    }: {
+      children: ReactNode;
+      className?: string;
+    }) => <div className={className}>{children}</div>,
   };
 });
 
@@ -110,6 +130,7 @@ jest.mock("icons", () => ({
   ChevronRightIcon: () => null,
   CloseIcon: () => null,
   ExternalLinkIcon: () => null,
+  InfoIcon: () => null,
   RefreshIcon: () => null,
   Video02Icon: () => null,
   WarningIcon: ({ className }: { className?: string }) => (
@@ -319,6 +340,12 @@ describe("UpcomingMeetingCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Choose time" }));
     expect(
       screen.getByRole("heading", { name: "Choose a time for ENG-42" }),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Start"), {
+      target: { value: "today at 8:07pm" },
+    });
+    expect(
+      screen.getByText(/Starts Saturday, Aug 8 at 8:07 PM/),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Lock this time" }));

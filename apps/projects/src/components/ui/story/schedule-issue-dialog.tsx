@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { addMinutes, format } from "date-fns";
-import { Box, Button, Dialog, Input, Text } from "ui";
+import { InfoIcon } from "icons";
+import { Box, Button, Dialog, Flex, Text, Wrapper } from "ui";
+import { SmartDateTimeInput } from "@/components/ui/smart-datetime-input";
 import { formatTimeNeeded } from "@/lib/time-needed";
 
 export type ScheduleIssueDialogDetails = {
@@ -38,14 +40,33 @@ export const ScheduleIssueDialog = ({
   const [startAt, setStartAt] = useState(() =>
     toDateTimeInputValue(defaultStart),
   );
+  const [isStartInputValid, setIsStartInputValid] = useState(true);
   const parsedStartAt = new Date(startAt);
   const durationMinutes =
     issue.remainingDurationMinutes ?? issue.estimatedDurationMinutes ?? 0;
-  const endAt = addMinutes(parsedStartAt, durationMinutes);
   const canSubmit =
     durationMinutes > 0 &&
+    isStartInputValid &&
     Number.isFinite(parsedStartAt.getTime()) &&
     parsedStartAt.getTime() >= now - 5 * 60 * 1000;
+  let scheduleFeedback = null;
+  if (canSubmit) {
+    scheduleFeedback = (
+      <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-start gap-2 rounded-xl border px-4 py-3 shadow-none">
+        <InfoIcon className="text-warning dark:text-warning mt-1 h-4.5 shrink-0" />
+        <Text fontSize="md">
+          Starts {format(parsedStartAt, "EEEE, MMM d 'at' h:mm a")}. Conflicts
+          are shown, but your time stays locked.
+        </Text>
+      </Wrapper>
+    );
+  } else if (isStartInputValid) {
+    scheduleFeedback = (
+      <Text color="danger" fontSize="md">
+        Choose a future start time.
+      </Text>
+    );
+  }
 
   return (
     <Dialog
@@ -68,43 +89,32 @@ export const ScheduleIssueDialog = ({
               keep this exact time locked.
             </Text>
           </Box>
-          <Input
-            className="text-base"
+          <SmartDateTimeInput
             label="Start"
-            labelClassName="text-base"
             min={toDateTimeInputValue(new Date(now))}
-            onChange={(event) => {
-              setStartAt(event.target.value);
-            }}
-            type="datetime-local"
+            onChange={setStartAt}
+            onValidityChange={setIsStartInputValid}
+            referenceDate={new Date(now)}
             value={startAt}
           />
-          {canSubmit ? (
-            <Text color="muted" fontSize="md">
-              Ends {format(endAt, "EEEE, MMM d 'at' h:mm a")}. If this overlaps
-              a meeting or another task, FortyOne will show the conflict but
-              keep your choice.
-            </Text>
-          ) : (
-            <Text color="danger" fontSize="md">
-              Choose a future start time.
-            </Text>
-          )}
+          {scheduleFeedback}
         </Dialog.Body>
-        <Dialog.Footer className="gap-3 border-0 pt-2">
-          <Button color="tertiary" onClick={onClose} variant="outline">
-            Cancel
-          </Button>
-          <Button
-            color="invert"
-            disabled={!canSubmit}
-            loading={isSaving}
-            onClick={() => {
-              onSubmit(parsedStartAt.toISOString());
-            }}
-          >
-            Lock this time
-          </Button>
+        <Dialog.Footer className="justify-end border-0 pt-2">
+          <Flex align="center" gap={2}>
+            <Button color="tertiary" onClick={onClose} variant="outline">
+              Cancel
+            </Button>
+            <Button
+              color="invert"
+              disabled={!canSubmit}
+              loading={isSaving}
+              onClick={() => {
+                onSubmit(parsedStartAt.toISOString());
+              }}
+            >
+              Lock this time
+            </Button>
+          </Flex>
         </Dialog.Footer>
       </Dialog.Content>
     </Dialog>

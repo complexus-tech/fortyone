@@ -52,6 +52,7 @@ import {
   Popover,
   Text,
 } from "ui";
+import { SmartDateTimeInput } from "@/components/ui/smart-datetime-input";
 import { useLocalStorage, useTerminology, useWorkspacePath } from "@/hooks";
 import {
   useCalendarIntegration,
@@ -248,7 +249,7 @@ const CalendarDragPreview = ({ drag }: { drag: CalendarDragData | null }) => {
       <span
         aria-hidden="true"
         className={cn(
-          "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-[0.1875rem] -translate-y-1/2 rounded-md",
+          "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] max-h-14 w-[0.1875rem] -translate-y-1/2 rounded-full",
           storyStyle ? "bg-[var(--calendar-story-accent)]" : "bg-border-strong",
         )}
       />
@@ -383,7 +384,7 @@ const CalendarTimedBlock = ({
         <span
           aria-hidden="true"
           className={cn(
-            "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-[0.1875rem] -translate-y-1/2 rounded-md",
+            "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] max-h-14 w-[0.1875rem] -translate-y-1/2 rounded-full",
             eventAccentClass,
           )}
         />
@@ -443,7 +444,7 @@ const CalendarTimedBlock = ({
       >
         <span
           aria-hidden="true"
-          className="bg-border-strong absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-[0.1875rem] -translate-y-1/2 rounded-md"
+          className="bg-border-strong absolute top-1/2 left-1 h-[calc(100%-0.5rem)] max-h-14 w-[0.1875rem] -translate-y-1/2 rounded-full"
         />
         <Text
           className={cn(
@@ -594,7 +595,7 @@ const CalendarTimedBlock = ({
       <span
         aria-hidden="true"
         className={cn(
-          "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-[0.1875rem] -translate-y-1/2 rounded-md",
+          "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] max-h-14 w-[0.1875rem] -translate-y-1/2 rounded-full",
           blockAccentClass,
         )}
       />
@@ -850,6 +851,8 @@ const CalendarDialog = ({
   const [endAt, setEndAt] = useState(() =>
     toDateTimeInputValue(editingBlock?.endAt ?? addHours(defaultStart, 1)),
   );
+  const [isStartInputValid, setIsStartInputValid] = useState(true);
+  const [isEndInputValid, setIsEndInputValid] = useState(true);
   const storyTerm = getTermDisplay("storyTerm");
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const selectedStory = candidateStories.find(
@@ -872,7 +875,10 @@ const CalendarDialog = ({
     ? Boolean(selectedStoryId)
     : title.trim().length > 0;
   const canSubmit =
-    hasRequiredContent && hasChronologicalRange && isWithinScheduleHorizon;
+    hasRequiredContent &&
+    hasChronologicalRange &&
+    isWithinScheduleHorizon &&
+    (isWork || (isStartInputValid && isEndInputValid));
   const isSaving = createBlock.isPending || updateBlock.isPending;
   let dialogTitle = "Add focus time";
   if (editingBlock) {
@@ -957,30 +963,52 @@ const CalendarDialog = ({
             />
           )}
           <Box className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Input
-              className="text-base"
-              label="Start"
-              labelClassName="text-base"
-              max={toDateTimeInputValue(latestScheduleAt)}
-              min={toDateTimeInputValue(earliestScheduleAt)}
-              onChange={(event) => {
-                setStartAt(event.target.value);
-              }}
-              type="datetime-local"
-              value={startAt}
-            />
-            <Input
-              className="text-base"
-              label="End"
-              labelClassName="text-base"
-              max={toDateTimeInputValue(latestScheduleAt)}
-              min={toDateTimeInputValue(earliestScheduleAt)}
-              onChange={(event) => {
-                setEndAt(event.target.value);
-              }}
-              type="datetime-local"
-              value={endAt}
-            />
+            {isWork ? (
+              <Input
+                className="text-base"
+                label="Start"
+                labelClassName="text-base"
+                max={toDateTimeInputValue(latestScheduleAt)}
+                min={toDateTimeInputValue(earliestScheduleAt)}
+                onChange={(event) => {
+                  setStartAt(event.target.value);
+                }}
+                type="datetime-local"
+                value={startAt}
+              />
+            ) : (
+              <SmartDateTimeInput
+                label="Start"
+                max={toDateTimeInputValue(latestScheduleAt)}
+                min={toDateTimeInputValue(earliestScheduleAt)}
+                onChange={setStartAt}
+                onValidityChange={setIsStartInputValid}
+                value={startAt}
+              />
+            )}
+            {isWork ? (
+              <Input
+                className="text-base"
+                label="End"
+                labelClassName="text-base"
+                max={toDateTimeInputValue(latestScheduleAt)}
+                min={toDateTimeInputValue(earliestScheduleAt)}
+                onChange={(event) => {
+                  setEndAt(event.target.value);
+                }}
+                type="datetime-local"
+                value={endAt}
+              />
+            ) : (
+              <SmartDateTimeInput
+                label="End"
+                max={toDateTimeInputValue(latestScheduleAt)}
+                min={toDateTimeInputValue(earliestScheduleAt)}
+                onChange={setEndAt}
+                onValidityChange={setIsEndInputValid}
+                value={endAt}
+              />
+            )}
           </Box>
           {!hasChronologicalRange ? (
             <Text color="danger" fontSize="md">
