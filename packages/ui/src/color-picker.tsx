@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Box } from "./box";
 import { Button, type ButtonProps } from "./button";
 import { Popover } from "./popover";
@@ -11,7 +11,11 @@ type ColorPickerProps = {
   onChange?: (color: string) => void;
   onClick?: () => void;
   className?: string;
+  children?: ReactNode;
+  disabled?: ButtonProps["disabled"];
+  ariaLabel?: string;
   size?: ButtonProps["size"];
+  style?: ButtonProps["style"];
 };
 
 export const ColorPicker = ({
@@ -19,7 +23,11 @@ export const ColorPicker = ({
   onChange,
   onClick,
   className,
+  children,
+  disabled,
+  ariaLabel = "Choose color",
   size = "sm",
+  style,
 }: ColorPickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -27,17 +35,22 @@ export const ColorPicker = ({
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <Popover.Trigger asChild>
         <Button
-          type="button"
-          className={className}
+          aria-label={ariaLabel}
           asIcon
+          className={className}
           color="tertiary"
+          disabled={disabled}
           onClick={onClick}
           size={size}
+          style={style}
+          type="button"
         >
-          <span
-            className="size-3.5 cursor-pointer rounded-sm"
-            style={{ backgroundColor: value }}
-          />
+          {children ?? (
+            <span
+              className="size-3.5 cursor-pointer rounded-sm"
+              style={{ backgroundColor: value }}
+            />
+          )}
         </Button>
       </Popover.Trigger>
       <Popover.Content className="rounded-lg p-2.5">

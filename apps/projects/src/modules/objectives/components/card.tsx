@@ -8,6 +8,7 @@ import {
   Checkbox,
   DatePicker,
   CircleProgressBar,
+  ColorPicker,
 } from "ui";
 import Link from "next/link";
 import { ArrowRight2Icon, ObjectiveIcon, CalendarIcon } from "icons";
@@ -44,6 +45,7 @@ export const ObjectiveCard = ({
   statusId,
   health,
   priority,
+  color,
   onSelect,
   onSelectionChange,
   selected = false,
@@ -126,41 +128,42 @@ export const ObjectiveCard = ({
             />
           </button>
         ) : null}
-        {onSelect ? (
-          <button
-            className="focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-2 rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"
-            onClick={onSelect}
-            type="button"
-          >
-            {onSelectionChange ? null : (
-              <Flex
-                align="center"
-                className="bg-surface-muted size-8 shrink-0 rounded-lg"
-                justify="center"
-              >
-                <ObjectiveIcon className="h-4" />
-              </Flex>
-            )}
-            <Text className="min-w-0 truncate pr-2">{name}</Text>
-          </button>
-        ) : (
-          <Link
-            className="flex min-w-0 flex-1 items-center gap-2 hover:opacity-90"
-            href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
-            prefetch
-          >
-            {onSelectionChange ? null : (
-              <Flex
-                align="center"
-                className="bg-surface-muted size-8 shrink-0 rounded-lg"
-                justify="center"
-              >
-                <ObjectiveIcon className="h-4" />
-              </Flex>
-            )}
-            <Text className="min-w-0 truncate pr-2">{name}</Text>
-          </Link>
-        )}
+        <Box className="flex min-w-0 flex-1 items-center gap-2">
+          {onSelectionChange ? null : (
+            <ColorPicker
+              ariaLabel={`Change color for ${name}`}
+              className="shrink-0"
+              disabled={!canUpdate}
+              onChange={(color) => {
+                handleUpdate({ color });
+              }}
+              style={{
+                backgroundColor: hexToRgba(color, 0.1),
+                borderColor: hexToRgba(color, 0.2),
+              }}
+              value={color}
+            >
+              <ObjectiveIcon className="h-4" style={{ color }} />
+            </ColorPicker>
+          )}
+          {onSelect ? (
+            <button
+              className="focus-visible:ring-primary flex min-w-0 flex-1 items-center rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"
+              onClick={onSelect}
+              type="button"
+            >
+              <Text className="min-w-0 truncate pr-2">{name}</Text>
+            </button>
+          ) : (
+            <Link
+              className="flex min-w-0 flex-1 items-center hover:opacity-90"
+              href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
+              prefetch
+            >
+              <Text className="min-w-0 truncate pr-2">{name}</Text>
+            </Link>
+          )}
+        </Box>
       </Box>
       <Flex align="center" className="shrink-0 gap-2 md:gap-4">
         {!isInTeam ? (
@@ -221,8 +224,8 @@ export const ObjectiveCard = ({
                 leftIcon={<ObjectiveStatusIcon statusId={statusId} />}
                 size="sm"
                 style={{
-                  backgroundColor: hexToRgba(status?.color),
-                  borderColor: hexToRgba(status?.color),
+                  backgroundColor: hexToRgba(status?.color, 0.1),
+                  borderColor: hexToRgba(status?.color, 0.2),
                 }}
                 type="button"
               >
