@@ -74,10 +74,10 @@ import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grou
 import type { Story } from "@/modules/stories/types";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import {
-  CROSS_WORKSPACE_CALENDAR_BLOCK_CONTEXT,
   CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE,
   CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP,
   RESERVED_TIME_BLOCK_CLASS,
+  getCalendarScheduleBlockSecondaryLabel,
   getCalendarStoryBlockStyle,
   getMayaCalendarBlockLabel,
   getMayaCalendarBlockReason,
@@ -390,27 +390,29 @@ const CalendarTimedBlock = ({
             aria-hidden="true"
             className={cn("mt-0.5 h-4 w-4 shrink-0", eventTextClass)}
           />
-          <Text
-            as="span"
-            className={cn("min-w-0", titleLineClass, eventTextClass)}
-            fontSize="md"
-            fontWeight="medium"
-          >
-            {getCalendarEventTitle(item.event)}
-          </Text>
+          <Box className="min-w-0 flex-1">
+            <Text
+              as="span"
+              className={cn("min-w-0", titleLineClass, eventTextClass)}
+              fontSize="md"
+              fontWeight="medium"
+            >
+              {getCalendarEventTitle(item.event)}
+            </Text>
+            {showSecondaryLine ? (
+              <Text
+                as="span"
+                className={cn(
+                  "mt-1 block truncate text-[0.9375rem]",
+                  secondaryLineClass,
+                  eventTextClass,
+                )}
+              >
+                {toTimeLabel(item.startAt, item.endAt)}
+              </Text>
+            ) : null}
+          </Box>
         </Box>
-        {showSecondaryLine ? (
-          <Text
-            as="span"
-            className={cn(
-              "mt-1 block truncate text-[0.9375rem]",
-              secondaryLineClass,
-              eventTextClass,
-            )}
-          >
-            {toTimeLabel(item.startAt, item.endAt)}
-          </Text>
-        ) : null}
       </button>
     );
   }
@@ -508,14 +510,13 @@ const CalendarTimedBlock = ({
     blockColorClass = RESERVED_TIME_BLOCK_CLASS;
   }
   const isScheduledStory = block.blockType === "work";
+  const hasLeadingIcon = isCrossWorkspace || !isScheduledStory;
   const timeLabel = toTimeLabel(block.startAt, block.endAt);
-  let secondaryLabel = `${statusLabel} · ${timeLabel}`;
-  if (isMayaManaged) {
-    secondaryLabel = timeLabel;
-  }
-  if (isCrossWorkspace) {
-    secondaryLabel = `${CROSS_WORKSPACE_CALENDAR_BLOCK_CONTEXT} · ${timeLabel}`;
-  }
+  const secondaryLabel = getCalendarScheduleBlockSecondaryLabel(
+    block,
+    statusLabel,
+    timeLabel,
+  );
   const canOpenBlock = !isCrossWorkspace && (isScheduledStory || isEditable);
   let blockActionLabel = isScheduledStory
     ? "Open scheduled story details"
@@ -605,14 +606,19 @@ const CalendarTimedBlock = ({
         }}
         type="button"
       />
-      <Box className="pointer-events-none relative z-10 min-w-0">
-        <Box className="flex min-w-0 items-start gap-1.5">
-          {isCrossWorkspace || !isScheduledStory ? (
-            <TimeScheduleIcon
-              aria-hidden="true"
-              className={cn("mt-0.5 h-4 w-4 shrink-0", blockIconClass)}
-            />
-          ) : null}
+      <Box
+        className={cn(
+          "pointer-events-none relative z-10 min-w-0",
+          hasLeadingIcon ? "flex items-start gap-1.5" : null,
+        )}
+      >
+        {hasLeadingIcon ? (
+          <TimeScheduleIcon
+            aria-hidden="true"
+            className={cn("mt-0.5 h-4 w-4 shrink-0", blockIconClass)}
+          />
+        ) : null}
+        <Box className={cn("min-w-0", hasLeadingIcon ? "flex-1" : null)}>
           <Text
             className={cn("min-w-0", titleLineClass, blockTitleColorClass)}
             fontSize="md"
@@ -623,18 +629,18 @@ const CalendarTimedBlock = ({
             ) : null}
             {blockTitle}
           </Text>
+          {showSecondaryLine ? (
+            <Text
+              className={cn(
+                "mt-1 truncate text-[0.9375rem]",
+                secondaryLineClass,
+                blockSecondaryColorClass,
+              )}
+            >
+              {secondaryLabel}
+            </Text>
+          ) : null}
         </Box>
-        {showSecondaryLine ? (
-          <Text
-            className={cn(
-              "mt-1 truncate text-[0.9375rem]",
-              secondaryLineClass,
-              blockSecondaryColorClass,
-            )}
-          >
-            {secondaryLabel}
-          </Text>
-        ) : null}
       </Box>
       {draggableBlock ? (
         <button

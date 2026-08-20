@@ -2,10 +2,10 @@
 
 import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
 import {
-  CROSS_WORKSPACE_CALENDAR_BLOCK_CONTEXT,
   CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE,
   CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP,
   RESERVED_TIME_BLOCK_CLASS,
+  getCalendarScheduleBlockSecondaryLabel,
   getCalendarStoryBlockStyle,
   getMayaCalendarBlockLabel,
   getMayaCalendarBlockReason,
@@ -80,8 +80,14 @@ describe("calendar block presentation", () => {
 
     expect(getMayaCalendarBlockLabel(block)).toBeNull();
     expect(getMayaCalendarBlockReason(block)).toBeNull();
+    expect(
+      getCalendarScheduleBlockSecondaryLabel(
+        block,
+        "Another workspace",
+        "9 – 10am",
+      ),
+    ).toBe("9 – 10am");
     expect(CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE).toBe("Scheduled elsewhere");
-    expect(CROSS_WORKSPACE_CALENDAR_BLOCK_CONTEXT).toBe("Another workspace");
     expect(CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP).toBe(
       "This time is reserved by a task in another workspace. Task details are hidden here.",
     );

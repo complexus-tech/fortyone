@@ -4,7 +4,6 @@ import { getAutoSchedulingLabel } from "@/lib/auto-scheduling";
 import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
 
 export const CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE = "Scheduled elsewhere";
-export const CROSS_WORKSPACE_CALENDAR_BLOCK_CONTEXT = "Another workspace";
 export const CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP =
   "This time is reserved by a task in another workspace. Task details are hidden here.";
 export const RESERVED_TIME_BLOCK_CLASS =
@@ -44,6 +43,15 @@ export const getCalendarStoryBlockStyle = (
 
 export const isCalendarScheduleBlockEditable = (block: CalendarScheduleBlock) =>
   !block.isCrossWorkspace && block.source !== "maya";
+
+export const getCalendarScheduleBlockSecondaryLabel = (
+  block: CalendarScheduleBlock,
+  statusLabel: string,
+  timeLabel: string,
+) =>
+  block.isCrossWorkspace || block.source === "maya"
+    ? timeLabel
+    : `${statusLabel} · ${timeLabel}`;
 
 export const getMayaCalendarBlockLabel = (
   block: CalendarScheduleBlock,
