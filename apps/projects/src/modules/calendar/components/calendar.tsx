@@ -34,25 +34,17 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CloseIcon,
+  ClockIcon,
   DeleteIcon,
   GoogleCalendarIcon,
+  SearchIcon,
   StoryIcon,
   TimeScheduleIcon,
   Video02Icon,
 } from "icons";
-import {
-  Box,
-  Button,
-  Command,
-  Dialog,
-  Divider,
-  Flex,
-  Input,
-  Menu,
-  Popover,
-  Text,
-} from "ui";
-import { SmartDateTimeInput } from "@/components/ui/smart-datetime-input";
+import { Box, Button, Dialog, Flex, Input, Menu, Popover, Text } from "ui";
+import { SmartDateTimeRangeInput } from "@/components/ui/smart-datetime-input";
 import { useLocalStorage, useTerminology, useWorkspacePath } from "@/hooks";
 import {
   useCalendarIntegration,
@@ -733,6 +725,16 @@ const CalendarStoryPicker = ({
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const selectedStory = stories.find((story) => story.id === selectedStoryId);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredStories = normalizedQuery
+    ? stories.filter((story) => {
+        const code = getStoryCode(story).toLowerCase();
+        return (
+          code.includes(normalizedQuery) ||
+          story.title.toLowerCase().includes(normalizedQuery)
+        );
+      })
+    : stories;
 
   const changeOpen = (open: boolean) => {
     setIsOpen(open);
@@ -747,7 +749,7 @@ const CalendarStoryPicker = ({
         <Button
           align="between"
           aria-expanded={isOpen}
-          className="min-w-0 text-base"
+          className="h-[2.8rem] min-w-0 rounded-lg px-4 text-base md:h-[2.8rem]"
           color="tertiary"
           fullWidth
           rightIcon={<ArrowDown2Icon className="h-4 shrink-0" />}
@@ -768,55 +770,82 @@ const CalendarStoryPicker = ({
       </Popover.Trigger>
       <Popover.Content
         align="start"
-        className="border-border-strong w-[var(--radix-popover-trigger-width)] max-w-[34rem] min-w-[22rem] border"
+        className="z-[100] w-[var(--radix-popover-trigger-width)] max-w-[34rem] min-w-[22rem] overflow-hidden p-0"
+        sideOffset={8}
       >
-        <Command>
-          <Command.Input
+        <Box className="p-4">
+          <Flex align="center" className="mb-4 min-w-0" justify="between">
+            <Text
+              className="min-w-0 flex-1 pr-3"
+              color="muted"
+              fontWeight="semibold"
+            >
+              Select {storyTerm}
+            </Text>
+            <Button
+              aria-label={`Close ${storyTerm.toLowerCase()} picker`}
+              asIcon
+              color="tertiary"
+              onClick={() => {
+                changeOpen(false);
+              }}
+              rounded="full"
+              size="xs"
+              variant="naked"
+            >
+              <CloseIcon className="h-4" />
+            </Button>
+          </Flex>
+          <Input
             aria-label={`Search ${storyTermPlural}`}
             autoFocus
-            className="text-base"
-            onValueChange={setQuery}
+            onChange={(event) => {
+              setQuery(event.target.value);
+            }}
             placeholder={`Search ${storyTermPlural}...`}
+            rightIcon={<SearchIcon className="text-icon h-5" />}
             value={query}
           />
-          <Divider className="my-2" />
-          <Command.List className="max-h-72 overflow-y-auto">
-            <Command.Empty className="py-4 text-base">
-              <Text color="muted" fontSize="md">
+          <Box className="mt-3 max-h-72 overflow-y-auto pr-1">
+            {filteredStories.length === 0 ? (
+              <Text className="px-2 py-3" color="muted" fontSize="md">
                 No matching {storyTermPlural}.
               </Text>
-            </Command.Empty>
-            <Command.Group>
-              {stories.map((story) => {
+            ) : (
+              filteredStories.map((story) => {
                 const code = getStoryCode(story);
                 const isSelected = story.id === selectedStoryId;
                 return (
-                  <Command.Item
-                    active={isSelected}
-                    className="justify-between gap-4 py-2 text-base"
+                  <button
+                    className={cn(
+                      "hover:bg-state-hover focus-visible:bg-state-active flex w-full min-w-0 items-center gap-3 rounded-lg px-2 py-2 text-left text-base focus-visible:outline-0",
+                      { "bg-state-selected": isSelected },
+                    )}
                     key={story.id}
-                    onSelect={() => {
+                    onClick={() => {
                       onSelect(story.id);
                       changeOpen(false);
                     }}
-                    value={`${code} ${story.title}`}
+                    type="button"
                   >
-                    <Flex align="center" className="min-w-0" gap={2}>
-                      <StoryIcon className="h-[1.1rem] shrink-0" />
-                      <Text className="min-w-0 truncate" fontSize="md">
-                        <span className="text-text-muted mr-2">{code}</span>
-                        {story.title}
-                      </Text>
-                    </Flex>
+                    <StoryIcon className="h-[1.1rem] shrink-0" />
+                    <Text
+                      className="min-w-0 flex-1 truncate"
+                      fontSize="md"
+                      title={story.title}
+                    >
+                      <span className="text-text-muted mr-2">{code}</span>
+                      {story.title}
+                    </Text>
                     {isSelected ? (
                       <CheckIcon className="h-5 shrink-0" strokeWidth={2.1} />
                     ) : null}
-                  </Command.Item>
+                  </button>
                 );
-              })}
-            </Command.Group>
-          </Command.List>
-        </Command>
+              })
+            )}
+          </Box>
+        </Box>
       </Popover.Content>
     </Popover>
   );
@@ -851,8 +880,7 @@ const CalendarDialog = ({
   const [endAt, setEndAt] = useState(() =>
     toDateTimeInputValue(editingBlock?.endAt ?? addHours(defaultStart, 1)),
   );
-  const [isStartInputValid, setIsStartInputValid] = useState(true);
-  const [isEndInputValid, setIsEndInputValid] = useState(true);
+  const [isRangeInputValid, setIsRangeInputValid] = useState(true);
   const storyTerm = getTermDisplay("storyTerm");
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const selectedStory = candidateStories.find(
@@ -878,13 +906,17 @@ const CalendarDialog = ({
     hasRequiredContent &&
     hasChronologicalRange &&
     isWithinScheduleHorizon &&
-    (isWork || (isStartInputValid && isEndInputValid));
+    isRangeInputValid;
   const isSaving = createBlock.isPending || updateBlock.isPending;
   let dialogTitle = "Add focus time";
   if (editingBlock) {
     dialogTitle = "Edit calendar block";
   } else if (isWork) {
     dialogTitle = `Schedule ${storyTerm}`;
+  }
+  let submitLabel = isWork ? `Schedule ${storyTerm}` : "Add focus time";
+  if (editingBlock) {
+    submitLabel = "Save";
   }
 
   const close = () => {
@@ -962,54 +994,23 @@ const CalendarDialog = ({
               value={title}
             />
           )}
-          <Box className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {isWork ? (
-              <Input
-                className="text-base"
-                label="Start"
-                labelClassName="text-base"
-                max={toDateTimeInputValue(latestScheduleAt)}
-                min={toDateTimeInputValue(earliestScheduleAt)}
-                onChange={(event) => {
-                  setStartAt(event.target.value);
-                }}
-                type="datetime-local"
-                value={startAt}
-              />
-            ) : (
-              <SmartDateTimeInput
-                label="Start"
-                max={toDateTimeInputValue(latestScheduleAt)}
-                min={toDateTimeInputValue(earliestScheduleAt)}
-                onChange={setStartAt}
-                onValidityChange={setIsStartInputValid}
-                value={startAt}
-              />
-            )}
-            {isWork ? (
-              <Input
-                className="text-base"
-                label="End"
-                labelClassName="text-base"
-                max={toDateTimeInputValue(latestScheduleAt)}
-                min={toDateTimeInputValue(earliestScheduleAt)}
-                onChange={(event) => {
-                  setEndAt(event.target.value);
-                }}
-                type="datetime-local"
-                value={endAt}
-              />
-            ) : (
-              <SmartDateTimeInput
-                label="End"
-                max={toDateTimeInputValue(latestScheduleAt)}
-                min={toDateTimeInputValue(earliestScheduleAt)}
-                onChange={setEndAt}
-                onValidityChange={setIsEndInputValid}
-                value={endAt}
-              />
-            )}
-          </Box>
+          <SmartDateTimeRangeInput
+            endValue={endAt}
+            label="Date and time"
+            leftIcon={
+              isWork ? (
+                <ClockIcon className="h-5" />
+              ) : (
+                <TimeScheduleIcon className="h-5" />
+              )
+            }
+            onChange={({ end, start }) => {
+              setStartAt(start);
+              setEndAt(end);
+            }}
+            onValidityChange={setIsRangeInputValid}
+            startValue={startAt}
+          />
           {!hasChronologicalRange ? (
             <Text color="danger" fontSize="md">
               End time must be after start time.
@@ -1053,7 +1054,7 @@ const CalendarDialog = ({
               loading={isSaving}
               onClick={submit}
             >
-              {editingBlock ? "Save" : "Add"}
+              {submitLabel}
             </Button>
           </Flex>
         </Dialog.Footer>
