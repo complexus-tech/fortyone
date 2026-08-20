@@ -17,6 +17,7 @@ import {
 import { Box, Calendar, Flex, Menu, Text } from "ui";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { ScheduleIssueDialog } from "@/components/ui/story/schedule-issue-dialog";
+import { SignalBannerRow } from "@/components/ui/signal-banner-row";
 import { TimeNeededMenu } from "@/components/ui/story/time-needed-menu";
 import { useTerminology } from "@/hooks";
 import {
@@ -97,7 +98,7 @@ const MayaBannerActions = ({
         <Menu.Button>
           <button
             aria-label="More Maya scheduling actions"
-            className="text-primary hover:text-primary/80 ml-2 shrink-0 rounded-md p-1 transition"
+            className="text-primary hover:text-primary/80 rounded-md p-1 transition"
             type="button"
           >
             <MoreHorizontalIcon className="h-5 text-current" />
@@ -237,31 +238,16 @@ const MayaScheduleBannerRow = ({
   status: MayaBannerStatus;
   story: DetailedStory;
 }) => (
-  <Flex
-    align="center"
-    className={
-      embedded
-        ? "min-w-0 rounded-none px-4 py-3 backdrop-blur-md"
-        : "border-primary/20 bg-primary/5 min-w-0 rounded-xl border px-4 py-3 backdrop-blur-md"
-    }
-    justify="between"
+  <SignalBannerRow
+    actions={<MayaBannerActions status={status} story={story} />}
+    icon={<AiIcon className="text-primary h-5 shrink-0" />}
+    title={`Maya needs your help · ${reason}`}
+    variant={embedded ? "embedded" : "standalone"}
   >
-    <Flex align="center" className="min-w-0 flex-1">
-      <AiIcon className="text-primary h-5 shrink-0" />
-      <Text
-        as="span"
-        className="ml-2 min-w-0 truncate"
-        color="primary"
-        fontWeight="medium"
-        title={`Maya needs your help · ${reason}`}
-      >
-        Maya needs your help
-        <span aria-hidden="true"> · </span>
-        {reason}
-      </Text>
-    </Flex>
-    <MayaBannerActions status={status} story={story} />
-  </Flex>
+    Maya needs your help
+    <span aria-hidden="true"> · </span>
+    {reason}
+  </SignalBannerRow>
 );
 
 const StoryBannerStack = ({ items }: { items: BannerItem[] }) => {

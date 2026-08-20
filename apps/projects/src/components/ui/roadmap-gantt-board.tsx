@@ -11,7 +11,7 @@ import {
 } from "react";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarPlusIcon } from "icons";
+import { CalendarPlusIcon, WarningIcon } from "icons";
 import type { DateRange } from "react-day-picker";
 import { useSession } from "@/lib/auth/client";
 import type { Objective, ObjectiveUpdate } from "@/modules/objectives/types";
@@ -140,9 +140,12 @@ const ObjectiveRow = ({
             : ""
         }`}
       >
-        <Text className="shrink-0 text-[0.95rem]" color="danger">
-          +{objective.forecastDaysDelta}d
-        </Text>
+        <Flex align="center" className="text-primary shrink-0" gap={1}>
+          <WarningIcon aria-hidden="true" className="h-4 w-auto text-current" />
+          <Text as="span" color="primary" fontWeight="semibold">
+            +{objective.forecastDaysDelta}d
+          </Text>
+        </Flex>
       </Tooltip>
     );
   } else if (duration !== null) {
@@ -541,14 +544,24 @@ export const RoadmapGanttBoard = ({
             {objective.name}
           </Text>
           {isAtRisk ? (
-            <Text
-              as="span"
-              className="shrink-0 text-[0.8rem]"
-              color="danger"
-              fontWeight="semibold"
+            <Flex
+              align="center"
+              className="border-primary/20 bg-primary/10 text-primary shrink-0 rounded-md border px-1.5 py-1 leading-none"
+              gap={1}
             >
-              +{objective.forecastDaysDelta}d
-            </Text>
+              <WarningIcon
+                aria-hidden="true"
+                className="h-3.5 w-auto text-current"
+              />
+              <Text
+                as="span"
+                className="text-[0.78rem] leading-none"
+                color="primary"
+                fontWeight="semibold"
+              >
+                +{objective.forecastDaysDelta}d
+              </Text>
+            </Flex>
           ) : null}
         </Flex>
       </Box>

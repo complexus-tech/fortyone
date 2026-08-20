@@ -467,9 +467,24 @@ describe("UpcomingMeetingCard", () => {
       "href",
       "/acme/teams/team-1/objectives/objective-1?tab=overview",
     );
-    expect(
-      screen.getByText(/Linked work is forecast for Aug 29, 2026/),
-    ).toBeInTheDocument();
+    const objectiveTitle = screen
+      .getByText("Launch the new workspace experience")
+      .closest("a");
+    expect(objectiveTitle).toHaveClass("line-clamp-2");
+    expect(objectiveTitle).toHaveAttribute(
+      "title",
+      "Launch the new workspace experience",
+    );
+    const description = screen.getByText(
+      /Linked work is forecast for Aug 29, 2026/,
+    );
+    expect(description).toHaveClass("line-clamp-3");
+    expect(description).toHaveAttribute("title", description.textContent);
+    const reviewLink = screen.getByRole("link", {
+      name: "Review objective: Launch the new workspace experience",
+    });
+    expect(reviewLink).toHaveAttribute("data-next-link", "true");
+    expect(reviewLink).toHaveClass("justify-center", "text-center");
 
     fireEvent.click(
       screen.getByRole("button", {

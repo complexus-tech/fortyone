@@ -316,7 +316,7 @@ const ObjectiveRiskContent = ({ objective }: { objective: Objective }) => {
           Forecast risk
         </Text>
         <Text
-          className="bg-danger/10 text-danger ml-auto rounded-md px-1.5 py-0.5 text-[0.78rem] tabular-nums"
+          className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[0.78rem] tabular-nums"
           fontWeight="medium"
         >
           +{objective.forecastDaysDelta}d
@@ -330,17 +330,21 @@ const ObjectiveRiskContent = ({ objective }: { objective: Objective }) => {
       >
         {objective.name}
       </Link>
-      <Text className="mt-1.5 leading-snug" color="muted" fontSize="sm">
+      <Text
+        className="mt-1.5 line-clamp-3 leading-snug"
+        color="muted"
+        fontSize="sm"
+        title={copy.description}
+      >
         {copy.description}
       </Text>
-      <Button
-        className="mt-3 w-full"
-        color="invert"
+      <Link
+        aria-label={`Review objective: ${objective.name}`}
+        className="bg-background-inverse text-foreground-inverse focus-visible:ring-ring mt-3 flex h-[2.1rem] w-full items-center justify-center rounded-xl px-2 text-center font-medium transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
         href={objectiveHref}
-        size="sm"
       >
         Review objective
-      </Button>
+      </Link>
     </>
   );
 };

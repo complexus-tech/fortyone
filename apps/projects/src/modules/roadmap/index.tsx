@@ -54,6 +54,9 @@ export const RoadmapPage = () => {
   const displayedObjectives = isForecastRiskFilterActive
     ? forecastRiskObjectives
     : objectives;
+  const forecastRiskCountLabel = `${forecastRiskObjectives.length} ${
+    forecastRiskObjectives.length === 1 ? "item needs" : "items need"
+  } attention`;
 
   const selectObjective = (objective: Objective) => {
     setSelectedKeyResult(null);
@@ -150,9 +153,21 @@ export const RoadmapPage = () => {
           {forecastRiskObjectives.length > 0 ? (
             <Button
               aria-pressed={isForecastRiskFilterActive}
-              className="hidden gap-1.5 sm:flex"
-              color="danger"
-              leftIcon={<WarningIcon className="h-4 w-auto" />}
+              className={
+                isForecastRiskFilterActive
+                  ? "hidden gap-1.5 text-white sm:flex dark:text-white"
+                  : "text-primary dark:text-primary hidden gap-1.5 sm:flex"
+              }
+              color="primary"
+              leftIcon={
+                <WarningIcon
+                  className={
+                    isForecastRiskFilterActive
+                      ? "h-4 w-auto text-white dark:text-white"
+                      : "text-primary dark:text-primary h-4 w-auto"
+                  }
+                />
+              }
               onClick={() => {
                 setShowForecastRisksOnly((current) => !current);
               }}
@@ -160,7 +175,7 @@ export const RoadmapPage = () => {
               type="button"
               variant={isForecastRiskFilterActive ? "solid" : "naked"}
             >
-              {forecastRiskObjectives.length} need attention
+              {forecastRiskCountLabel}
             </Button>
           ) : null}
         </Flex>
