@@ -10,7 +10,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MoreHorizontalIcon,
-  RefreshIcon,
   Time02Icon,
   TimeScheduleIcon,
 } from "icons";
@@ -20,10 +19,7 @@ import { ScheduleIssueDialog } from "@/components/ui/story/schedule-issue-dialog
 import { SignalBannerRow } from "@/components/ui/signal-banner-row";
 import { TimeNeededMenu } from "@/components/ui/story/time-needed-menu";
 import { useTerminology } from "@/hooks";
-import {
-  useOverrideCalendarScheduleIssue,
-  useRetryCalendarScheduleIssue,
-} from "@/lib/hooks/calendar/use-schedule-issues";
+import { useOverrideCalendarScheduleIssue } from "@/lib/hooks/calendar/use-schedule-issues";
 import { useStoryGitHubLinks } from "@/lib/hooks/github";
 import {
   deriveAutoSchedulingStatus,
@@ -80,12 +76,8 @@ const MayaBannerActions = ({
   const [scheduleDialogNow, setScheduleDialogNow] = useState<number | null>(
     null,
   );
-  const retryIssue = useRetryCalendarScheduleIssue();
   const overrideIssue = useOverrideCalendarScheduleIssue();
   const updateStory = useUpdateStoryMutation();
-  const isRetrying = Boolean(
-    retryIssue.isPending && retryIssue.variables === story.id,
-  );
 
   const updateSchedulingInput = (payload: StoryUpdate) => {
     updateStory.mutate({ payload, storyId: story.id });
@@ -170,26 +162,15 @@ const MayaBannerActions = ({
             ) : null}
 
             {status === "cannot_fit" ? (
-              <>
-                <Menu.Item
-                  disabled={isRetrying}
-                  onSelect={() => {
-                    retryIssue.mutate(story.id);
-                  }}
-                >
-                  <RefreshIcon className="h-5 w-auto" />
-                  {isRetrying ? "Retrying…" : "Retry"}
-                </Menu.Item>
-                <Menu.Item
-                  disabled={(story.estimatedDurationMinutes ?? 0) <= 0}
-                  onSelect={() => {
-                    setScheduleDialogNow(Date.now());
-                  }}
-                >
-                  <TimeScheduleIcon className="h-5 w-auto" />
-                  Choose time
-                </Menu.Item>
-              </>
+              <Menu.Item
+                disabled={(story.estimatedDurationMinutes ?? 0) <= 0}
+                onSelect={() => {
+                  setScheduleDialogNow(Date.now());
+                }}
+              >
+                <TimeScheduleIcon className="h-5 w-auto" />
+                Choose time
+              </Menu.Item>
             ) : null}
           </Menu.Group>
         </Menu.Items>

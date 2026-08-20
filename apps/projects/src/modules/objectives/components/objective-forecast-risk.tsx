@@ -1,6 +1,7 @@
 "use client";
 
 import { LinkIcon, WarningIcon } from "icons";
+import { cn } from "lib";
 import Link from "next/link";
 import { Tooltip } from "ui";
 import { SignalBannerRow } from "@/components/ui/signal-banner-row";
@@ -10,8 +11,10 @@ import type { Objective } from "../types";
 import { getObjectiveForecastRiskCopy } from "./objective-forecast-risk-utils";
 
 export const ObjectiveForecastRiskBadge = ({
+  className,
   objective,
 }: {
+  className?: string;
   objective: Pick<
     Objective,
     | "endDate"
@@ -30,8 +33,13 @@ export const ObjectiveForecastRiskBadge = ({
 
   return (
     <Tooltip className="max-w-80" title={copy.description}>
-      <span className="border-primary/20 bg-primary/5 text-primary inline-flex h-6 shrink-0 items-center gap-1 rounded-md border px-1.5 text-[0.75rem] leading-none font-medium tabular-nums">
-        <WarningIcon aria-hidden="true" className="h-3.5 w-auto" />
+      <span
+        className={cn(
+          "border-primary/20 bg-primary/5 text-primary inline-flex h-6 shrink-0 items-center gap-1 rounded-md border px-1.5 text-[0.75rem] leading-none font-medium tabular-nums",
+          className,
+        )}
+      >
+        <WarningIcon aria-hidden="true" className="text-primary h-3.5 w-auto" />
         {copy.shortLabel}
       </span>
     </Tooltip>

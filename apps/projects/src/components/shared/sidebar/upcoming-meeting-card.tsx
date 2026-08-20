@@ -9,8 +9,6 @@ import {
   ChevronRightIcon,
   CloseIcon,
   ExternalLinkIcon,
-  LoadingIcon,
-  RefreshIcon,
   Video02Icon,
   WarningIcon,
 } from "icons";
@@ -22,7 +20,6 @@ import {
   useCalendarIntegration,
   useCalendarSchedule,
   useOverrideCalendarScheduleIssue,
-  useRetryCalendarScheduleIssue,
 } from "@/lib/hooks/calendar";
 import { formatTimeNeeded } from "@/lib/time-needed";
 import type { CalendarScheduleIssue } from "@/lib/queries/calendar/types";
@@ -205,14 +202,10 @@ const MeetingContent = ({ meeting }: { meeting: UpcomingMeeting }) => {
 
 const ScheduleIssueContent = ({
   issue,
-  isRetrying,
   onChooseTime,
-  onRetry,
 }: {
   issue: CalendarScheduleIssue;
-  isRetrying: boolean;
   onChooseTime: () => void;
-  onRetry: () => void;
 }) => {
   const { withWorkspace } = useWorkspacePath();
   const remainingMinutes =
@@ -266,34 +259,15 @@ const ScheduleIssueContent = ({
       >
         {description}
       </Text>
-      <Flex className="mt-3 gap-2">
-        <Button
-          className="shrink-0 px-3"
-          color="tertiary"
-          disabled={isRetrying}
-          leftIcon={
-            isRetrying ? (
-              <LoadingIcon aria-hidden="true" className="h-3.5 animate-spin" />
-            ) : (
-              <RefreshIcon aria-hidden="true" className="h-3.5" />
-            )
-          }
-          onClick={onRetry}
-          size="sm"
-          variant="outline"
-        >
-          Retry
-        </Button>
-        <Button
-          align="right"
-          className="min-w-0 flex-1 px-2"
-          color="invert"
-          onClick={onChooseTime}
-          size="sm"
-        >
-          Choose time
-        </Button>
-      </Flex>
+      <Button
+        align="center"
+        className="mt-3 w-full"
+        color="invert"
+        onClick={onChooseTime}
+        size="sm"
+      >
+        Choose time
+      </Button>
     </>
   );
 };
@@ -395,7 +369,6 @@ export const SidebarAssistantCards = ({
     },
     { enabled: Boolean(connection) },
   );
-  const retryIssue = useRetryCalendarScheduleIssue();
   const overrideIssue = useOverrideCalendarScheduleIssue();
   const isHydrated = useSyncExternalStore(
     subscribeToHydration,
@@ -522,17 +495,10 @@ export const SidebarAssistantCards = ({
   } else if (activeItem.kind === "schedule-issue") {
     activeContent = (
       <ScheduleIssueContent
-        isRetrying={Boolean(
-          retryIssue.isPending &&
-            retryIssue.variables === activeItem.issue.storyId,
-        )}
         issue={activeItem.issue}
         onChooseTime={() => {
           setSelectedIssue(activeItem.issue);
           setIsCollapsedPopoverOpen(false);
-        }}
-        onRetry={() => {
-          retryIssue.mutate(activeItem.issue.storyId);
         }}
       />
     );

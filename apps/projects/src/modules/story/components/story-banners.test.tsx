@@ -9,7 +9,6 @@ import { StoryBanners } from "./story-banners";
 const mockGitHubLinks: StoryGitHubLink[] = [];
 const mockFeedbackLinks: StoryFeedbackLink[] = [];
 const mockRequestLinks: unknown[] = [];
-const mockRetryMutate = jest.fn();
 const mockOverrideMutate = jest.fn();
 const mockUpdateStory = jest.fn();
 
@@ -27,11 +26,6 @@ jest.mock("@/lib/hooks/calendar/use-schedule-issues", () => ({
   useOverrideCalendarScheduleIssue: () => ({
     isPending: false,
     mutate: mockOverrideMutate,
-  }),
-  useRetryCalendarScheduleIssue: () => ({
-    isPending: false,
-    mutate: mockRetryMutate,
-    variables: undefined,
   }),
 }));
 
@@ -116,7 +110,6 @@ describe("StoryBanners", () => {
     mockGitHubLinks.length = 0;
     mockFeedbackLinks.length = 0;
     mockRequestLinks.length = 0;
-    mockRetryMutate.mockReset();
     mockOverrideMutate.mockReset();
     mockUpdateStory.mockReset();
   });
@@ -257,7 +250,7 @@ describe("StoryBanners", () => {
     expect(screen.getByText("2 of 2")).toBeInTheDocument();
   });
 
-  it("offers retry and manual placement for a story Maya cannot fit", () => {
+  it("offers manual placement for a story Maya cannot fit", () => {
     render(
       <StoryBanners
         story={createStory({
@@ -273,12 +266,9 @@ describe("StoryBanners", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "More Maya scheduling actions" }),
     );
-    fireEvent.click(screen.getByRole("menuitem", { name: "Retry" }));
-    expect(mockRetryMutate).toHaveBeenCalledWith("story-1");
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "More Maya scheduling actions" }),
-    );
+    expect(
+      screen.queryByRole("menuitem", { name: "Retry" }),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("menuitem", { name: "Choose time" }));
     expect(screen.getByRole("dialog")).toHaveTextContent(
       "Choose a time for ENG-42",

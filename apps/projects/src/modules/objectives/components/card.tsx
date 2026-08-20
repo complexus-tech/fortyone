@@ -165,7 +165,10 @@ export const ObjectiveCard = ({
               type="button"
             >
               <Text className="min-w-0 truncate pr-2">{name}</Text>
-              <ObjectiveForecastRiskBadge objective={forecastRisk} />
+              <ObjectiveForecastRiskBadge
+                className={isInTeam ? "h-7 px-2 text-[0.8125rem]" : undefined}
+                objective={forecastRisk}
+              />
             </button>
           ) : (
             <Link
@@ -174,7 +177,10 @@ export const ObjectiveCard = ({
               prefetch
             >
               <Text className="min-w-0 truncate pr-2">{name}</Text>
-              <ObjectiveForecastRiskBadge objective={forecastRisk} />
+              <ObjectiveForecastRiskBadge
+                className={isInTeam ? "h-7 px-2 text-[0.8125rem]" : undefined}
+                objective={forecastRisk}
+              />
             </Link>
           )}
         </Box>
