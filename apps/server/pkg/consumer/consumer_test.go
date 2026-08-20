@@ -180,7 +180,37 @@ func TestShouldReconcileStoryScheduleUsesOnlySchedulingFields(t *testing.T) {
 	require.True(t, shouldReconcileStorySchedule(map[string]any{"status_id": uuid.New()}))
 	require.True(t, shouldReconcileStorySchedule(map[string]any{"end_date": time.Now()}))
 	require.True(t, shouldReconcileStorySchedule(map[string]any{"title": "Copy edit"}))
+	require.True(t, shouldReconcileStorySchedule(map[string]any{"auto_scheduling_enabled": true}))
 	require.False(t, shouldReconcileStorySchedule(map[string]any{"description": "Copy edit"}))
+}
+
+func TestStoryScheduleDispatchBatchesPlanningChanges(t *testing.T) {
+	require.Equal(t, storyScheduleReconcileBatch, storyScheduleDispatch(map[string]any{
+		"estimated_duration_minutes": 90,
+		"auto_scheduling_status":     "planning",
+	}))
+	require.Equal(t, storyScheduleReconcileBatch, storyScheduleDispatch(map[string]any{
+		"priority": "Urgent",
+	}))
+}
+
+func TestStoryScheduleDispatchKeepsCleanupImmediate(t *testing.T) {
+	require.Equal(t, storyScheduleReconcileImmediate, storyScheduleDispatch(map[string]any{
+		"auto_scheduling_enabled": false,
+		"auto_scheduling_status":  "off",
+	}))
+	require.Equal(t, storyScheduleReconcileImmediate, storyScheduleDispatch(map[string]any{
+		"assignee_id": nil,
+	}))
+	require.Equal(t, storyScheduleReconcileImmediate, storyScheduleDispatch(map[string]any{
+		"assignee_id": uuid.Nil.String(),
+	}))
+	require.Equal(t, storyScheduleReconcileImmediate, storyScheduleDispatch(map[string]any{
+		"completed_at": time.Now(),
+	}))
+	require.Equal(t, storyScheduleReconcileImmediate, storyScheduleDispatch(map[string]any{
+		"archived_at": time.Now(),
+	}))
 }
 
 func TestAutoSchedulingUpdatesBroadcastWithoutRequeueingReconciliation(t *testing.T) {

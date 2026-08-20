@@ -60,3 +60,17 @@ func (h *handlers) HandleCalendarScheduleReconcile(ctx context.Context, task *as
 	}
 	return h.mayaService.ReconcileSchedule(ctx, maya.ReconcileScheduleInput{WorkspaceID: payload.WorkspaceID, UserID: payload.UserID, StoryID: payload.StoryID})
 }
+
+func (h *handlers) HandleCalendarWorkspaceScheduleBatch(ctx context.Context, task *asynq.Task) error {
+	if h.mayaService == nil || h.db == nil || h.systemUserID == uuid.Nil {
+		return fmt.Errorf("Maya workspace schedule batch worker is not configured")
+	}
+	var payload tasks.CalendarWorkspaceScheduleBatchPayload
+	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
+		return fmt.Errorf("decode calendar workspace schedule batch payload: %w", err)
+	}
+	if payload.WorkspaceID == uuid.Nil {
+		return fmt.Errorf("calendar workspace schedule batch workspace ID is required")
+	}
+	return h.processWorkspaceScheduleBatch(ctx, payload.WorkspaceID)
+}

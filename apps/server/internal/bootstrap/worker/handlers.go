@@ -45,6 +45,7 @@ func buildTaskMux(log *logger.Logger, db *sqlx.DB, brevoService *brevo.Service, 
 	mux.HandleFunc(tasks.TypeCalendarSync, workerTaskService.HandleCalendarSync)
 	mux.HandleFunc(tasks.TypeCalendarWatchRenewal, workerTaskService.HandleCalendarWatchRenewal)
 	mux.HandleFunc(tasks.TypeCalendarScheduleReconcile, workerTaskService.HandleCalendarScheduleReconcile)
+	mux.HandleFunc(tasks.TypeCalendarWorkspaceScheduleBatch, workerTaskService.HandleCalendarWorkspaceScheduleBatch)
 	mux.HandleFunc(tasks.TypeCalendarScheduleOutbox, workerTaskService.HandleCalendarScheduleOutboxDispatch)
 	mux.HandleFunc(tasks.TypeStoryScheduleTransitionOutbox, workerTaskService.HandleStoryScheduleTransitionOutboxDispatch)
 

@@ -46,6 +46,26 @@ func TestMayaAssignmentRecoveryDispatchContract(t *testing.T) {
 	}
 }
 
+func TestWorkspaceScheduleBatchContract(t *testing.T) {
+	t.Parallel()
+
+	source := readNormalizedMayaHandlerSource(t)
+	for name, contract := range map[string]string{
+		"batch includes every active enabled story": "WHERE s.workspace_id = $1 AND s.auto_scheduling_enabled = TRUE AND s.assignee_id IS NOT NULL",
+		"human owners reconcile once":               "humanOwnerIDs[story.AssigneeID] = struct{}{}",
+		"Maya stories stay grouped by team":         "groupMayaAssignmentCandidates(mayaAssigned)",
+		"large Maya batches remain bounded":         "start += mayaWorkspaceAssignmentBatchSize",
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if !strings.Contains(source, contract) {
+				t.Fatalf("workspace schedule batch is missing contract %q", contract)
+			}
+		})
+	}
+}
+
 func readNormalizedMayaHandlerSource(t *testing.T) string {
 	t.Helper()
 

@@ -52,3 +52,11 @@ func TestBuildTaskMuxRegistersStoryScheduleTransitionOutbox(t *testing.T) {
 	require.NotNil(t, handler)
 	require.Equal(t, tasks.TypeStoryScheduleTransitionOutbox, pattern)
 }
+
+func TestBuildTaskMuxRegistersCalendarWorkspaceScheduleBatch(t *testing.T) {
+	mux := buildTaskMux(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, uuid.Nil, nil, nil, nil, "")
+
+	handler, pattern := mux.Handler(asynq.NewTask(tasks.TypeCalendarWorkspaceScheduleBatch, nil))
+	require.NotNil(t, handler)
+	require.Equal(t, tasks.TypeCalendarWorkspaceScheduleBatch, pattern)
+}

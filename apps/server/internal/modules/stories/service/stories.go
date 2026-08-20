@@ -320,7 +320,7 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 		s.enqueueGitHubStorySync(ctx, cs.ID, workspaceId)
 	}
 	if cs.AutoSchedulingEnabled {
-		s.enqueueStoryScheduleReconcile(ctx, cs.ID, workspaceId)
+		s.enqueueWorkspaceScheduleBatch(ctx, workspaceId)
 	}
 	span.AddEvent("story created.", trace.WithAttributes(
 		attribute.String("story.title", cs.Title),
@@ -956,7 +956,11 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		s.enqueueGitHubStorySync(ctx, storyID, workspaceID)
 	}
 	if reconcileAutoScheduling {
-		s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceID)
+		if scheduleReconcileMustRunImmediately(updates) {
+			s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceID)
+		} else {
+			s.enqueueWorkspaceScheduleBatch(ctx, workspaceID)
+		}
 	}
 
 	return nil
@@ -1007,6 +1011,36 @@ func (s *Service) enqueueStoryScheduleReconcile(ctx context.Context, storyID, wo
 	if err := s.tasksService.EnqueueStoryScheduleReconcile(enqueueCtx, workspaceID, storyID); err != nil {
 		s.log.Error(ctx, "failed to enqueue story schedule reconciliation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
 	}
+}
+
+func (s *Service) enqueueWorkspaceScheduleBatch(ctx context.Context, workspaceID uuid.UUID) {
+	if s.tasksService == nil {
+		return
+	}
+	enqueueCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	if err := s.tasksService.EnqueueCalendarWorkspaceScheduleBatch(enqueueCtx, workspaceID); err != nil {
+		s.log.Error(ctx, "failed to enqueue workspace schedule batch", "workspace_id", workspaceID, "error", err)
+	}
+}
+
+func scheduleReconcileMustRunImmediately(updates map[string]any) bool {
+	if status, ok := updates["auto_scheduling_status"].(string); ok && status == AutoSchedulingStatusOff {
+		return true
+	}
+	if enabled, ok := updates["auto_scheduling_enabled"].(bool); ok && !enabled {
+		return true
+	}
+	if rawAssignee, changed := updates["assignee_id"]; changed {
+		assignee, valid := optionalUUIDUpdate(rawAssignee)
+		if valid && assignee == nil {
+			return true
+		}
+	}
+	if archivedAt, changed := updates["archived_at"]; changed && archivedAt != nil {
+		return true
+	}
+	return false
 }
 
 // handleCompletionStatusChange handles auto-setting completed_at based on status category changes

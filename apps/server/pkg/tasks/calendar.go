@@ -12,10 +12,14 @@ import (
 )
 
 const (
-	TypeCalendarSync              = "calendar:sync"
-	TypeCalendarWatchRenewal      = "calendar:watch:renewal"
-	TypeCalendarScheduleReconcile = "calendar:schedule:reconcile"
-	TypeCalendarScheduleOutbox    = "calendar:schedule:outbox:dispatch"
+	TypeCalendarSync                   = "calendar:sync"
+	TypeCalendarWatchRenewal           = "calendar:watch:renewal"
+	TypeCalendarScheduleReconcile      = "calendar:schedule:reconcile"
+	TypeCalendarWorkspaceScheduleBatch = "calendar:schedule:workspace-batch"
+	TypeCalendarScheduleOutbox         = "calendar:schedule:outbox:dispatch"
+
+	CalendarWorkspaceScheduleBatchDelay = 15 * time.Minute
+	calendarWorkspaceScheduleBatchTTL   = 30 * time.Minute
 )
 
 type CalendarSyncPayload struct {
@@ -26,6 +30,10 @@ type CalendarScheduleReconcilePayload struct {
 	WorkspaceID *uuid.UUID `json:"workspaceId,omitempty"`
 	UserID      *uuid.UUID `json:"userId,omitempty"`
 	StoryID     *uuid.UUID `json:"storyId,omitempty"`
+}
+
+type CalendarWorkspaceScheduleBatchPayload struct {
+	WorkspaceID uuid.UUID `json:"workspaceId"`
 }
 
 func (s *Service) EnqueueCalendarSync(ctx context.Context, connectionID uuid.UUID) error {
@@ -71,6 +79,33 @@ func (s *Service) EnqueueStoryScheduleReconcile(ctx context.Context, workspaceID
 	}
 	if err != nil {
 		return fmt.Errorf("enqueue calendar schedule reconciliation: %w", err)
+	}
+	return nil
+}
+
+// EnqueueCalendarWorkspaceScheduleBatch opens a collection window for story
+// creation and planning changes. Asynq's uniqueness lock coalesces every
+// request for the same workspace into the first task waiting in that window.
+func (s *Service) EnqueueCalendarWorkspaceScheduleBatch(ctx context.Context, workspaceID uuid.UUID) error {
+	if workspaceID == uuid.Nil {
+		return fmt.Errorf("calendar workspace schedule batch workspace ID is required")
+	}
+	body, err := json.Marshal(CalendarWorkspaceScheduleBatchPayload{WorkspaceID: workspaceID})
+	if err != nil {
+		return fmt.Errorf("marshal calendar workspace schedule batch payload: %w", err)
+	}
+	_, err = s.asynqClient.EnqueueContext(
+		ctx,
+		asynq.NewTask(TypeCalendarWorkspaceScheduleBatch, body),
+		asynq.Queue("integrations"),
+		asynq.ProcessIn(CalendarWorkspaceScheduleBatchDelay),
+		asynq.Unique(calendarWorkspaceScheduleBatchTTL),
+	)
+	if errors.Is(err, asynq.ErrDuplicateTask) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("enqueue calendar workspace schedule batch: %w", err)
 	}
 	return nil
 }

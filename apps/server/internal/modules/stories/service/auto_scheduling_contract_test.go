@@ -214,3 +214,31 @@ func TestPrepareAutoSchedulingUpdateDoesNotRewriteAlreadyOffStory(t *testing.T) 
 		}
 	}
 }
+
+func TestScheduleReconcileMustRunImmediatelyOnlyForCleanup(t *testing.T) {
+	for name, updates := range map[string]map[string]any{
+		"disabled":   {"auto_scheduling_enabled": false},
+		"stopped":    {"auto_scheduling_status": AutoSchedulingStatusOff},
+		"unassigned": {"assignee_id": nil},
+		"nil owner":  {"assignee_id": uuid.Nil},
+		"archived":   {"archived_at": time.Now().UTC()},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if !scheduleReconcileMustRunImmediately(updates) {
+				t.Fatalf("cleanup update should reconcile immediately: %#v", updates)
+			}
+		})
+	}
+
+	for name, updates := range map[string]map[string]any{
+		"estimate": {"estimated_duration_minutes": 90, "auto_scheduling_status": AutoSchedulingStatusPlanning},
+		"deadline": {"end_date": time.Now().UTC(), "auto_scheduling_status": AutoSchedulingStatusPlanning},
+		"priority": {"priority": "Urgent"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if scheduleReconcileMustRunImmediately(updates) {
+				t.Fatalf("planning update should join the workspace batch: %#v", updates)
+			}
+		})
+	}
+}

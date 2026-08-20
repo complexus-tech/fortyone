@@ -42,7 +42,16 @@ type FeedbackStatusBridge interface {
 
 type StoryScheduleReconcileQueue interface {
 	EnqueueStoryScheduleReconcile(context.Context, uuid.UUID, uuid.UUID) error
+	EnqueueCalendarWorkspaceScheduleBatch(context.Context, uuid.UUID) error
 }
+
+type storyScheduleReconcileDispatch uint8
+
+const (
+	storyScheduleReconcileNone storyScheduleReconcileDispatch = iota
+	storyScheduleReconcileBatch
+	storyScheduleReconcileImmediate
+)
 
 type notificationCreator interface {
 	Create(context.Context, notifications.CoreNewNotification) (notifications.CoreNotification, error)
@@ -404,9 +413,16 @@ func (c *Consumer) handleStoryUpdated(ctx context.Context, event events.Event) e
 			return fmt.Errorf("bridge linked story feedback status: %w", err)
 		}
 	}
-	if shouldReconcileStorySchedule(payload.Updates) && c.scheduleReconcile != nil {
-		if err := c.scheduleReconcile.EnqueueStoryScheduleReconcile(ctx, payload.WorkspaceID, payload.StoryID); err != nil {
-			return fmt.Errorf("enqueue story schedule reconciliation: %w", err)
+	if c.scheduleReconcile != nil {
+		switch storyScheduleDispatch(payload.Updates) {
+		case storyScheduleReconcileImmediate:
+			if err := c.scheduleReconcile.EnqueueStoryScheduleReconcile(ctx, payload.WorkspaceID, payload.StoryID); err != nil {
+				return fmt.Errorf("enqueue story schedule reconciliation: %w", err)
+			}
+		case storyScheduleReconcileBatch:
+			if err := c.scheduleReconcile.EnqueueCalendarWorkspaceScheduleBatch(ctx, payload.WorkspaceID); err != nil {
+				return fmt.Errorf("enqueue workspace schedule batch: %w", err)
+			}
 		}
 	}
 
@@ -435,6 +451,11 @@ func (c *Consumer) createStoryUpdateNotifications(
 }
 
 func shouldReconcileStorySchedule(updates map[string]any) bool {
+	return storyScheduleDispatch(updates) != storyScheduleReconcileNone
+}
+
+func storyScheduleDispatch(updates map[string]any) storyScheduleReconcileDispatch {
+	relevant := false
 	for _, field := range []string{
 		"title",
 		"estimated_duration_minutes",
@@ -447,12 +468,48 @@ func shouldReconcileStorySchedule(updates map[string]any) bool {
 		"sprint_id",
 		"completed_at",
 		"archived_at",
+		"auto_scheduling_enabled",
+		"auto_scheduling_locked",
 	} {
 		if _, changed := updates[field]; changed {
-			return true
+			relevant = true
+			break
 		}
 	}
-	return false
+	if !relevant {
+		return storyScheduleReconcileNone
+	}
+	if status, ok := updates["auto_scheduling_status"].(string); ok && status == "off" {
+		return storyScheduleReconcileImmediate
+	}
+	if enabled, ok := updates["auto_scheduling_enabled"].(bool); ok && !enabled {
+		return storyScheduleReconcileImmediate
+	}
+	if assignee, changed := updates["assignee_id"]; changed && storyAssigneeWasCleared(assignee) {
+		return storyScheduleReconcileImmediate
+	}
+	if completedAt, changed := updates["completed_at"]; changed && completedAt != nil {
+		return storyScheduleReconcileImmediate
+	}
+	if archivedAt, changed := updates["archived_at"]; changed && archivedAt != nil {
+		return storyScheduleReconcileImmediate
+	}
+	return storyScheduleReconcileBatch
+}
+
+func storyAssigneeWasCleared(value any) bool {
+	switch assignee := value.(type) {
+	case nil:
+		return true
+	case uuid.UUID:
+		return assignee == uuid.Nil
+	case *uuid.UUID:
+		return assignee == nil || *assignee == uuid.Nil
+	case string:
+		return assignee == uuid.Nil.String()
+	default:
+		return false
+	}
 }
 
 func shouldBridgeFeedbackStatus(payload events.StoryUpdatedPayload) bool {
