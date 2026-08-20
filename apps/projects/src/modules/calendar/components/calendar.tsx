@@ -77,6 +77,8 @@ import {
   CROSS_WORKSPACE_CALENDAR_BLOCK_CONTEXT,
   CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE,
   CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP,
+  RESERVED_TIME_BLOCK_CLASS,
+  getCalendarStoryBlockStyle,
   getMayaCalendarBlockLabel,
   getMayaCalendarBlockReason,
   isCalendarScheduleBlockEditable,
@@ -122,8 +124,11 @@ const scheduledTaskBackgroundClass =
   "bg-surface-muted dark:bg-surface-prominent/65";
 const scheduledTaskHoverBackgroundClass =
   "hover:bg-accent dark:hover:bg-surface-prominent/70";
-const crossWorkspaceBlockClass =
-  "border-border-strong/50 bg-surface-muted/55 text-text-muted dark:bg-surface-elevated/65 border-dashed bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.1)_5px,rgba(100,116,139,0.1)_8px)]";
+const scheduledStoryStatusClass =
+  "border-[var(--calendar-story-border)] bg-[var(--calendar-story-background)]";
+const scheduledStoryStatusHoverClass = "hover:bg-[var(--calendar-story-hover)]";
+const completedCalendarBlockPattern =
+  "repeating-linear-gradient(135deg, transparent 0, transparent 5px, rgba(100, 116, 139, 0.12) 5px, rgba(100, 116, 139, 0.12) 8px)";
 
 type CalendarItem =
   | {
@@ -228,11 +233,24 @@ const CalendarDragPreview = ({ drag }: { drag: CalendarDragData | null }) => {
     return <Box className="bg-border-strong h-full w-full rounded-sm" />;
   }
 
+  const storyStyle = getCalendarStoryBlockStyle(drag.block);
+
   return (
-    <Box className="border-border-strong/60 bg-surface-muted/95 shadow-shadow relative h-full w-full overflow-hidden rounded-md border px-3 py-1 backdrop-blur-sm">
+    <Box
+      className={cn(
+        "shadow-shadow relative h-full w-full overflow-hidden rounded-md border px-3 py-1 backdrop-blur-sm",
+        storyStyle
+          ? scheduledStoryStatusClass
+          : "border-border-strong/60 bg-surface-muted/95",
+      )}
+      style={storyStyle}
+    >
       <span
         aria-hidden="true"
-        className="bg-border-strong absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-[0.1875rem] -translate-y-1/2 rounded-md"
+        className={cn(
+          "absolute top-1/2 left-1 h-[calc(100%-0.5rem)] w-[0.1875rem] -translate-y-1/2 rounded-md",
+          storyStyle ? "bg-[var(--calendar-story-accent)]" : "bg-border-strong",
+        )}
       />
       <Text className="truncate leading-tight" fontWeight="medium">
         {drag.block.storyCode ? (
@@ -456,15 +474,22 @@ const CalendarTimedBlock = ({
   if (block.hasConflict) {
     statusLabel = "Conflict";
   }
-  let blockColorClass =
-    "border-border-strong/60 bg-surface-muted/45 hover:bg-state-hover border-dashed";
+  const storyStyle = getCalendarStoryBlockStyle(block);
+  let blockColorClass = RESERVED_TIME_BLOCK_CLASS;
   if (block.blockType === "work") {
-    blockColorClass = cn(
-      "border-border-strong/70 dark:border-border-strong",
-      scheduledTaskBackgroundClass,
-    );
+    blockColorClass = storyStyle
+      ? scheduledStoryStatusClass
+      : cn(
+          "border-border-strong/70 dark:border-border-strong",
+          scheduledTaskBackgroundClass,
+        );
     if (!isMayaManaged) {
-      blockColorClass = cn(blockColorClass, scheduledTaskHoverBackgroundClass);
+      blockColorClass = cn(
+        blockColorClass,
+        storyStyle
+          ? scheduledStoryStatusHoverClass
+          : scheduledTaskHoverBackgroundClass,
+      );
     }
   }
   if (block.hasConflict) {
@@ -473,14 +498,14 @@ const CalendarTimedBlock = ({
       blockColorClass += " hover:bg-danger/25";
     }
   }
-  if (isCompleted) {
+  if (isCompleted && block.blockType === "work") {
     blockColorClass = cn(
-      "border-border-strong/40 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]",
-      scheduledTaskBackgroundClass,
+      "border-border-strong/40",
+      storyStyle ? scheduledStoryStatusClass : scheduledTaskBackgroundClass,
     );
   }
   if (isCrossWorkspace) {
-    blockColorClass = crossWorkspaceBlockClass;
+    blockColorClass = RESERVED_TIME_BLOCK_CLASS;
   }
   const isScheduledStory = block.blockType === "work";
   const timeLabel = toTimeLabel(block.startAt, block.endAt);
@@ -525,7 +550,9 @@ const CalendarTimedBlock = ({
   }
   let blockSecondaryColorClass = "text-text-muted";
   let blockIconClass = "text-text-muted";
-  let blockAccentClass = "bg-border-strong";
+  let blockAccentClass = storyStyle
+    ? "bg-[var(--calendar-story-accent)]"
+    : "bg-border-strong";
   if (block.hasConflict && !isCompleted) {
     blockSecondaryColorClass = "text-danger";
     blockIconClass = "text-danger";
@@ -551,7 +578,13 @@ const CalendarTimedBlock = ({
         blockColorClass,
       )}
       ref={moveDrag.setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        ...storyStyle,
+        ...(isCompleted && block.blockType === "work"
+          ? { backgroundImage: completedCalendarBlockPattern }
+          : null),
+      }}
       title={blockTooltip}
     >
       <span
@@ -1654,14 +1687,20 @@ const CalendarMonthItem = ({
   }
   const isScheduledStory = block.blockType === "work";
   const canOpenBlock = !isCrossWorkspace && (isScheduledStory || isEditable);
+  const storyStyle = getCalendarStoryBlockStyle(block);
   let toneClass = isScheduledStory
-    ? cn(scheduledTaskBackgroundClass, "text-text-muted")
-    : "bg-surface-muted/45 text-text-muted";
+    ? cn(
+        storyStyle
+          ? scheduledStoryStatusClass
+          : cn("border-border-strong/70", scheduledTaskBackgroundClass),
+        "text-text-muted",
+      )
+    : RESERVED_TIME_BLOCK_CLASS;
   if (block.hasConflict) {
-    toneClass = "bg-danger/20 text-danger";
+    toneClass = "border-danger/60 bg-danger/20 text-danger";
   }
   if (isCrossWorkspace) {
-    toneClass = crossWorkspaceBlockClass;
+    toneClass = RESERVED_TIME_BLOCK_CLASS;
   }
   let blockActionLabel = isScheduledStory
     ? `Open ${title} details`
@@ -1692,9 +1731,11 @@ const CalendarMonthItem = ({
   const blockContent = (
     <Box
       className={cn(
-        "relative flex min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-base backdrop-blur-sm",
+        "relative flex min-w-0 items-center gap-2 overflow-hidden rounded-md border px-2 py-1 text-base backdrop-blur-sm transition-colors",
         toneClass,
+        storyStyle && !isMayaManaged ? scheduledStoryStatusHoverClass : null,
       )}
+      style={storyStyle}
       title={blockTooltip}
     >
       <button
@@ -1717,6 +1758,9 @@ const CalendarMonthItem = ({
         <span
           aria-hidden="true"
           className="pointer-events-none size-2 shrink-0 rounded-full bg-current"
+          style={
+            storyStyle ? { backgroundColor: block.storyStatusColor } : undefined
+          }
         />
       )}
       <span className="pointer-events-none relative z-10 shrink-0 tabular-nums">

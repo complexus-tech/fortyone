@@ -123,6 +123,7 @@ export const ObjectiveDetailsProperties = ({
                 onChange={(color) => {
                   handleUpdate({ color });
                 }}
+                size="xs"
                 value={objective.color}
               />
               <Text color="muted" fontSize="sm">

@@ -217,6 +217,27 @@ func TestScheduleBlockResponsePropagatesAutoSchedulingMetadata(t *testing.T) {
 	}
 }
 
+func TestScheduleBlockResponsePropagatesStoryStatusColor(t *testing.T) {
+	t.Parallel()
+
+	color := "#3c90ff"
+	block := toAppScheduleBlock(calendar.CoreScheduleBlock{
+		StoryStatusColor: &color,
+		Source:           calendar.ScheduleBlockSourceUser,
+	})
+	if block.StoryStatusColor == nil || *block.StoryStatusColor != color {
+		t.Fatalf("story status color = %v, want %q", block.StoryStatusColor, color)
+	}
+
+	payload, err := json.Marshal(block)
+	if err != nil {
+		t.Fatalf("marshal schedule block: %v", err)
+	}
+	if !strings.Contains(string(payload), `"storyStatusColor":"#3c90ff"`) {
+		t.Fatalf("schedule block response is missing story status color: %s", payload)
+	}
+}
+
 func TestCrossWorkspaceScheduleBlockResponseUsesGenericProvenance(t *testing.T) {
 	t.Parallel()
 

@@ -140,6 +140,7 @@ type CoreScheduleBlock struct {
 	StoryID              *uuid.UUID          `json:"storyId,omitempty"`
 	StoryTitle           *string             `json:"storyTitle,omitempty"`
 	StoryCode            *string             `json:"storyCode,omitempty"`
+	StoryStatusColor     *string             `json:"storyStatusColor,omitempty"`
 	TeamID               *uuid.UUID          `json:"teamId,omitempty"`
 	TeamName             *string             `json:"teamName,omitempty"`
 	TeamCode             *string             `json:"teamCode,omitempty"`

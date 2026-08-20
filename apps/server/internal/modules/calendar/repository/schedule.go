@@ -22,6 +22,7 @@ const scheduleBlockSelect = `
 			WHEN s.id IS NOT NULL AND t.code IS NOT NULL THEN CONCAT(t.code, '-', CAST(s.sequence_id AS text))
 			ELSE NULL
 		END AS story_code,
+		status.color AS story_status_color,
 		COALESCE(s.priority, '') AS story_priority,
 		s.end_date AS story_end_date,
 		t.team_id,
@@ -72,6 +73,9 @@ const scheduleBlockSelect = `
 				AND viewer_membership.user_id = csb.user_id
 		)
 	LEFT JOIN teams t ON t.team_id = s.team_id
+	LEFT JOIN statuses status ON
+		status.status_id = s.status_id
+		AND status.team_id = s.team_id
 `
 
 func (r *Repo) ListBusyWindows(ctx context.Context, _ uuid.UUID, userID uuid.UUID, startAt, endAt time.Time) ([]calendar.CoreBusyWindow, error) {
@@ -142,6 +146,7 @@ func redactCrossWorkspaceScheduleBlocks(blocks []calendar.CoreScheduleBlock, wor
 		blocks[index].StoryID = nil
 		blocks[index].StoryTitle = nil
 		blocks[index].StoryCode = nil
+		blocks[index].StoryStatusColor = nil
 		blocks[index].StoryPriority = ""
 		blocks[index].StoryEndDate = nil
 		blocks[index].TeamID = nil

@@ -52,6 +52,7 @@ export type CalendarScheduleBlock = {
   storyId?: string;
   storyTitle?: string;
   storyCode?: string;
+  storyStatusColor?: string;
   teamId?: string;
   teamName?: string;
   teamCode?: string;

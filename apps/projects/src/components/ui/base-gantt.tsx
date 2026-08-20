@@ -542,7 +542,7 @@ const Bar = <T extends GanttItem>({
           handleMouseDown(e, "resize-end");
         }}
       />
-      <Box className="absolute inset-0 overflow-hidden">
+      <Box className="absolute inset-0 overflow-hidden rounded-[inherit]">
         <Box className="px-3 leading-10">{renderContent(item)}</Box>
       </Box>
     </Box>

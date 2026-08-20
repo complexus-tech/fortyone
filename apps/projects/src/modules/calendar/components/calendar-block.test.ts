@@ -5,6 +5,8 @@ import {
   CROSS_WORKSPACE_CALENDAR_BLOCK_CONTEXT,
   CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE,
   CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP,
+  RESERVED_TIME_BLOCK_CLASS,
+  getCalendarStoryBlockStyle,
   getMayaCalendarBlockLabel,
   getMayaCalendarBlockReason,
   isCalendarScheduleBlockEditable,
@@ -27,6 +29,37 @@ const createBlock = (
 });
 
 describe("calendar block presentation", () => {
+  it("keeps reserved time dashed and lined", () => {
+    expect(RESERVED_TIME_BLOCK_CLASS).toContain("border-dashed");
+    expect(RESERVED_TIME_BLOCK_CLASS).toContain("repeating-linear-gradient");
+  });
+
+  it("uses the story status color for scheduled work", () => {
+    expect(
+      getCalendarStoryBlockStyle(createBlock({ storyStatusColor: "#3c90ff" })),
+    ).toEqual({
+      "--calendar-story-accent": "#3c90ff",
+      "--calendar-story-background": "rgba(60, 144, 255, 0.1)",
+      "--calendar-story-border": "rgba(60, 144, 255, 0.2)",
+      "--calendar-story-hover": "rgba(60, 144, 255, 0.15)",
+    });
+  });
+
+  it("keeps conflicts, focus time, and cross-workspace blocks semantic", () => {
+    for (const patch of [
+      { hasConflict: true },
+      { blockType: "focus" as const },
+      { isCrossWorkspace: true },
+      { storyStatusColor: "invalid" },
+    ]) {
+      expect(
+        getCalendarStoryBlockStyle(
+          createBlock({ storyStatusColor: "#3c90ff", ...patch }),
+        ),
+      ).toBeUndefined();
+    }
+  });
+
   it("keeps every Maya block managed by reconciliation", () => {
     expect(isCalendarScheduleBlockEditable(createBlock())).toBe(false);
     expect(

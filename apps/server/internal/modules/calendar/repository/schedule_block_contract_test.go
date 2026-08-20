@@ -13,13 +13,27 @@ import (
 func TestScheduleBlockSelectScopesAutoSchedulingMetadataToMayaBlocks(t *testing.T) {
 	t.Parallel()
 
-	query := strings.ToLower(scheduleBlockSelect)
+	query := strings.Join(strings.Fields(strings.ToLower(scheduleBlockSelect)), " ")
 	for _, contract := range []string{
 		"case when csb.source = 'maya' then s.auto_scheduling_status else null end as auto_scheduling_status",
 		"case when csb.source = 'maya' then s.auto_scheduling_reason else null end as auto_scheduling_reason",
 	} {
 		if !strings.Contains(query, contract) {
 			t.Errorf("schedule block query is missing Maya metadata contract %q", contract)
+		}
+	}
+}
+
+func TestScheduleBlockSelectIncludesStoryStatusColor(t *testing.T) {
+	t.Parallel()
+
+	query := strings.Join(strings.Fields(strings.ToLower(scheduleBlockSelect)), " ")
+	for _, contract := range []string{
+		"status.color as story_status_color",
+		"left join statuses status on status.status_id = s.status_id and status.team_id = s.team_id",
+	} {
+		if !strings.Contains(query, contract) {
+			t.Errorf("schedule block query is missing story status contract %q", contract)
 		}
 	}
 }
@@ -42,6 +56,17 @@ func TestToCoreScheduleBlockPropagatesAutoSchedulingMetadata(t *testing.T) {
 	}
 }
 
+func TestToCoreScheduleBlockPropagatesStoryStatusColor(t *testing.T) {
+	t.Parallel()
+
+	color := "#3c90ff"
+	block := toCoreScheduleBlock(dbScheduleBlock{StoryStatusColor: &color})
+
+	if block.StoryStatusColor == nil || *block.StoryStatusColor != color {
+		t.Fatalf("story status color = %v, want %q", block.StoryStatusColor, color)
+	}
+}
+
 func TestRedactCrossWorkspaceScheduleBlocksHidesTaskDetails(t *testing.T) {
 	t.Parallel()
 
@@ -55,17 +80,27 @@ func TestRedactCrossWorkspaceScheduleBlocksHidesTaskDetails(t *testing.T) {
 	storyCode := "SEC-41"
 	teamName := "Secret team"
 	teamCode := "SEC"
+	storyStatusColor := "#3c90ff"
 	status := "scheduled"
 	reason := "Private scheduling reason"
 	blocks := []calendar.CoreScheduleBlock{
 		{WorkspaceID: workspaceID, Title: "Visible current task"},
 		{
-			WorkspaceID: otherWorkspaceID, StoryID: &storyID, StoryTitle: &storyTitle,
-			StoryCode: &storyCode, StoryPriority: "high", TeamID: &teamID, TeamName: &teamName,
-			TeamCode: &teamCode, Title: storyTitle, AutoSchedulingStatus: &status,
-			AutoSchedulingReason: &reason, ManualOverrideBy: &manualOverrideBy,
-			ManualOverrideAt: &manualOverrideAt,
-			Source:           calendar.ScheduleBlockSourceMaya,
+			WorkspaceID:          otherWorkspaceID,
+			StoryID:              &storyID,
+			StoryTitle:           &storyTitle,
+			StoryCode:            &storyCode,
+			StoryStatusColor:     &storyStatusColor,
+			StoryPriority:        "high",
+			TeamID:               &teamID,
+			TeamName:             &teamName,
+			TeamCode:             &teamCode,
+			Title:                storyTitle,
+			AutoSchedulingStatus: &status,
+			AutoSchedulingReason: &reason,
+			ManualOverrideBy:     &manualOverrideBy,
+			ManualOverrideAt:     &manualOverrideAt,
+			Source:               calendar.ScheduleBlockSourceMaya,
 		},
 	}
 
@@ -80,6 +115,9 @@ func TestRedactCrossWorkspaceScheduleBlocksHidesTaskDetails(t *testing.T) {
 	}
 	if redacted.StoryID != nil || redacted.StoryTitle != nil || redacted.StoryCode != nil || redacted.TeamID != nil || redacted.TeamName != nil || redacted.TeamCode != nil {
 		t.Fatalf("cross-workspace task identity leaked: %#v", redacted)
+	}
+	if redacted.StoryStatusColor != nil {
+		t.Fatalf("cross-workspace story status color leaked: %#v", redacted)
 	}
 	if redacted.StoryPriority != "" || redacted.AutoSchedulingStatus != nil || redacted.AutoSchedulingReason != nil || redacted.ManualOverrideBy != nil || redacted.ManualOverrideAt != nil {
 		t.Fatalf("cross-workspace planning metadata leaked: %#v", redacted)

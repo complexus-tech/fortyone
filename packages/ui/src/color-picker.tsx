@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Box } from "./box";
-import { Button } from "./button";
+import { Button, type ButtonProps } from "./button";
 import { Popover } from "./popover";
 import { cn, colors } from "lib";
 
@@ -11,6 +11,7 @@ type ColorPickerProps = {
   onChange?: (color: string) => void;
   onClick?: () => void;
   className?: string;
+  size?: ButtonProps["size"];
 };
 
 export const ColorPicker = ({
@@ -18,6 +19,7 @@ export const ColorPicker = ({
   onChange,
   onClick,
   className,
+  size = "sm",
 }: ColorPickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -30,8 +32,7 @@ export const ColorPicker = ({
           asIcon
           color="tertiary"
           onClick={onClick}
-          rounded="sm"
-          size="sm"
+          size={size}
         >
           <span
             className="size-3.5 cursor-pointer rounded-sm"

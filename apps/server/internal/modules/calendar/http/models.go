@@ -107,6 +107,7 @@ type AppScheduleBlock struct {
 	StoryID              *uuid.UUID `json:"storyId,omitempty"`
 	StoryTitle           *string    `json:"storyTitle,omitempty"`
 	StoryCode            *string    `json:"storyCode,omitempty"`
+	StoryStatusColor     *string    `json:"storyStatusColor,omitempty"`
 	TeamID               *uuid.UUID `json:"teamId,omitempty"`
 	TeamName             *string    `json:"teamName,omitempty"`
 	TeamCode             *string    `json:"teamCode,omitempty"`
@@ -316,6 +317,7 @@ func toAppScheduleBlock(block calendar.CoreScheduleBlock) AppScheduleBlock {
 		StoryID:              block.StoryID,
 		StoryTitle:           block.StoryTitle,
 		StoryCode:            block.StoryCode,
+		StoryStatusColor:     block.StoryStatusColor,
 		TeamID:               block.TeamID,
 		TeamName:             block.TeamName,
 		TeamCode:             block.TeamCode,
