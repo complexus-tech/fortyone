@@ -14,6 +14,8 @@ const syncCalendar = jest.fn();
 const retryScheduleIssue = jest.fn();
 const overrideScheduleIssue = jest.fn();
 const mockObjectives: Objective[] = [];
+let isRetryScheduleIssuePending = false;
+let retryScheduleIssueVariables: string | undefined;
 
 jest.mock("next/link", () => ({
   __esModule: true,
@@ -73,11 +75,13 @@ jest.mock("ui", () => {
     }) => <div className={className}>{children}</div>,
     Button: ({
       children,
+      disabled,
       href,
       leftIcon,
       onClick,
     }: {
       children: ReactNode;
+      disabled?: boolean;
       href?: string;
       leftIcon?: ReactNode;
       onClick?: () => void;
@@ -88,7 +92,7 @@ jest.mock("ui", () => {
           {children}
         </a>
       ) : (
-        <button onClick={onClick} type="button">
+        <button disabled={disabled} onClick={onClick} type="button">
           {leftIcon}
           {children}
         </button>
@@ -153,7 +157,10 @@ jest.mock("icons", () => ({
   CloseIcon: () => null,
   ExternalLinkIcon: () => null,
   InfoIcon: () => null,
-  RefreshIcon: () => null,
+  LoadingIcon: ({ className }: { className?: string }) => (
+    <svg className={className} data-testid="retry-loading-icon" />
+  ),
+  RefreshIcon: () => <svg data-testid="retry-icon" />,
   Video02Icon: () => null,
   WarningIcon: ({ className }: { className?: string }) => (
     <svg className={className} data-testid="collapsed-warning-icon" />
@@ -204,9 +211,9 @@ jest.mock("@/lib/hooks/calendar", () => ({
     mutate: overrideScheduleIssue,
   }),
   useRetryCalendarScheduleIssue: () => ({
-    isPending: false,
+    isPending: isRetryScheduleIssuePending,
     mutate: retryScheduleIssue,
-    variables: undefined,
+    variables: retryScheduleIssueVariables,
   }),
   useSyncCalendarConnection: () => ({
     isPending: false,
@@ -280,6 +287,8 @@ describe("UpcomingMeetingCard", () => {
     retryScheduleIssue.mockReset();
     overrideScheduleIssue.mockReset();
     mockObjectives.length = 0;
+    isRetryScheduleIssuePending = false;
+    retryScheduleIssueVariables = undefined;
     window.localStorage.clear();
     document.cookie =
       "fortyone_meeting_dismissed_meeting-1=; Path=/; Max-Age=0";
@@ -420,6 +429,27 @@ describe("UpcomingMeetingCard", () => {
     );
   });
 
+  it("keeps the Retry label and replaces only its icon while retrying", () => {
+    isRetryScheduleIssuePending = true;
+    retryScheduleIssueVariables = "story-1";
+    useCalendarSchedule.mockReturnValue({
+      data: {
+        ...createSchedule(),
+        events: [],
+        scheduleIssues: [createScheduleIssue()],
+      },
+    });
+
+    render(<UpcomingMeetingCard fallback={<div>Normal footer</div>} />);
+
+    expect(screen.getByRole("button", { name: "Retry" })).toBeDisabled();
+    expect(screen.getByTestId("retry-loading-icon")).toHaveClass(
+      "animate-spin",
+    );
+    expect(screen.queryByTestId("retry-icon")).not.toBeInTheDocument();
+    expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
+  });
+
   it("adds brief guidance when Maya only reports the remaining duration", () => {
     useCalendarSchedule.mockReturnValue({
       data: {
@@ -476,7 +506,7 @@ describe("UpcomingMeetingCard", () => {
     const description = screen.getByText(
       /Linked work is forecast for Aug 29, 2026/,
     );
-    expect(description).toHaveClass("line-clamp-3");
+    expect(description).toHaveClass("line-clamp-2");
     expect(description).toHaveAttribute("title", description.textContent);
     const reviewLink = screen.getByRole("link", {
       name: "Review objective: Launch the new workspace experience",

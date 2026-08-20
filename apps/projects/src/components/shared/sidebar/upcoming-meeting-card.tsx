@@ -9,6 +9,7 @@ import {
   ChevronRightIcon,
   CloseIcon,
   ExternalLinkIcon,
+  LoadingIcon,
   RefreshIcon,
   Video02Icon,
   WarningIcon,
@@ -269,8 +270,14 @@ const ScheduleIssueContent = ({
         <Button
           className="shrink-0 px-3"
           color="tertiary"
-          leftIcon={<RefreshIcon className="h-3.5" />}
-          loading={isRetrying}
+          disabled={isRetrying}
+          leftIcon={
+            isRetrying ? (
+              <LoadingIcon aria-hidden="true" className="h-3.5 animate-spin" />
+            ) : (
+              <RefreshIcon aria-hidden="true" className="h-3.5" />
+            )
+          }
           onClick={onRetry}
           size="sm"
           variant="outline"
@@ -331,7 +338,7 @@ const ObjectiveRiskContent = ({ objective }: { objective: Objective }) => {
         {objective.name}
       </Link>
       <Text
-        className="mt-1.5 line-clamp-3 leading-snug"
+        className="mt-1.5 line-clamp-2 leading-snug"
         color="muted"
         fontSize="sm"
         title={copy.description}
