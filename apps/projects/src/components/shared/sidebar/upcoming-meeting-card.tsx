@@ -450,10 +450,19 @@ export const SidebarAssistantCards = ({
               >
                 <CollapsedIndicatorIcon
                   aria-hidden="true"
-                  className="h-5 w-auto"
+                  className="text-primary dark:text-primary h-5 w-auto"
                   strokeWidth={2.1}
                 />
-                {items.length > 1 ? (
+                {items.length > 9 ? (
+                  <span
+                    aria-hidden="true"
+                    className="bg-primary absolute -top-0.5 -right-0.5 size-2.5 rounded-full"
+                    data-testid="collapsed-overflow-pin"
+                  >
+                    <span className="bg-primary absolute inset-0 animate-ping rounded-full opacity-75 motion-reduce:animate-none" />
+                  </span>
+                ) : null}
+                {items.length > 1 && items.length <= 9 ? (
                   <span className="bg-background-inverse text-foreground-inverse absolute -top-1 -right-1 grid min-w-4 place-items-center rounded-full px-1 text-[0.625rem] leading-4 font-semibold tabular-nums">
                     {items.length}
                   </span>

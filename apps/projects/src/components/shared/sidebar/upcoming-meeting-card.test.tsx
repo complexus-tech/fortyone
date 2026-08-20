@@ -112,7 +112,9 @@ jest.mock("icons", () => ({
   ExternalLinkIcon: () => null,
   RefreshIcon: () => null,
   Video02Icon: () => null,
-  WarningIcon: () => null,
+  WarningIcon: ({ className }: { className?: string }) => (
+    <svg className={className} data-testid="collapsed-warning-icon" />
+  ),
 }));
 
 jest.mock("@/hooks", () => ({
@@ -290,6 +292,10 @@ describe("UpcomingMeetingCard", () => {
       name: "Open Maya scheduling message",
     });
     expect(collapsedIndicator).toHaveClass("text-primary", "dark:text-primary");
+    expect(screen.getByTestId("collapsed-warning-icon")).toHaveClass(
+      "text-primary",
+      "dark:text-primary",
+    );
     expect(screen.getByText("Maya needs your help")).toBeInTheDocument();
     const storyLink = screen.getByText("Prepare the launch brief").closest("a");
     expect(storyLink).toHaveClass("line-clamp-1");
@@ -351,5 +357,33 @@ describe("UpcomingMeetingCard", () => {
       "1h remains. Choose a time or let Maya try again.",
     );
     expect(screen.queryByText("1h left to schedule.")).not.toBeInTheDocument();
+  });
+
+  it("uses a pulsing pin instead of a two-digit collapsed count", () => {
+    useCalendarSchedule.mockReturnValue({
+      data: {
+        ...createSchedule(),
+        events: [],
+        scheduleIssues: Array.from({ length: 10 }, (_, index) =>
+          createScheduleIssue({
+            storyCode: `ENG-${index + 1}`,
+            storyId: `story-${index + 1}`,
+            storyTitle: `Story ${index + 1}`,
+          }),
+        ),
+      },
+    });
+
+    render(
+      <UpcomingMeetingCard fallback={<div>Normal footer</div>} isCollapsed />,
+    );
+
+    expect(screen.queryByText("10")).not.toBeInTheDocument();
+    expect(screen.getByTestId("collapsed-overflow-pin")).toHaveClass(
+      "bg-primary",
+    );
+    expect(
+      screen.getByTestId("collapsed-overflow-pin").firstElementChild,
+    ).toHaveClass("animate-ping", "motion-reduce:animate-none");
   });
 });
