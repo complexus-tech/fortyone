@@ -2,7 +2,10 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import type { CalendarSchedule } from "@/lib/queries/calendar/types";
+import type {
+  CalendarSchedule,
+  CalendarScheduleIssue,
+} from "@/lib/queries/calendar/types";
 import { UpcomingMeetingCard } from "./upcoming-meeting-card";
 
 const useCalendarSchedule = jest.fn();
@@ -169,6 +172,24 @@ const createSchedule = (): CalendarSchedule => ({
   scheduleIssues: [],
 });
 
+const createScheduleIssue = (
+  overrides: Partial<CalendarScheduleIssue> = {},
+): CalendarScheduleIssue => ({
+  storyId: "story-1",
+  storyTitle: "Prepare the launch brief",
+  storyCode: "ENG-42",
+  teamId: "team-1",
+  teamName: "Engineering",
+  teamCode: "ENG",
+  estimatedDurationMinutes: 90,
+  scheduledDurationMinutes: 60,
+  remainingDurationMinutes: 30,
+  autoSchedulingStatus: "cannot_fit",
+  autoSchedulingReason: "No safe focus window remains before Friday.",
+  updatedAt: "2026-08-08T09:55:00.000Z",
+  ...overrides,
+});
+
 describe("UpcomingMeetingCard", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -244,20 +265,7 @@ describe("UpcomingMeetingCard", () => {
   });
 
   it("shows an actionable Maya card for a story that could not fit", () => {
-    const issue = {
-      storyId: "story-1",
-      storyTitle: "Prepare the launch brief",
-      storyCode: "ENG-42",
-      teamId: "team-1",
-      teamName: "Engineering",
-      teamCode: "ENG",
-      estimatedDurationMinutes: 90,
-      scheduledDurationMinutes: 60,
-      remainingDurationMinutes: 30,
-      autoSchedulingStatus: "cannot_fit" as const,
-      autoSchedulingReason: "No safe focus window remains before Friday.",
-      updatedAt: "2026-08-08T09:55:00.000Z",
-    };
+    const issue = createScheduleIssue();
     useCalendarSchedule.mockReturnValue({
       data: {
         ...createSchedule(),
@@ -315,5 +323,33 @@ describe("UpcomingMeetingCard", () => {
       }),
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
+  });
+
+  it("adds brief guidance when Maya only reports the remaining duration", () => {
+    useCalendarSchedule.mockReturnValue({
+      data: {
+        ...createSchedule(),
+        events: [],
+        scheduleIssues: [
+          createScheduleIssue({
+            estimatedDurationMinutes: 60,
+            scheduledDurationMinutes: 0,
+            remainingDurationMinutes: 60,
+            autoSchedulingReason: "1h left to schedule.",
+          }),
+        ],
+      },
+    });
+
+    render(<UpcomingMeetingCard fallback={<div>Normal footer</div>} />);
+
+    const description = screen.getByText(
+      "1h remains. Choose a time or let Maya try again.",
+    );
+    expect(description).toHaveAttribute(
+      "title",
+      "1h remains. Choose a time or let Maya try again.",
+    );
+    expect(screen.queryByText("1h left to schedule.")).not.toBeInTheDocument();
   });
 });

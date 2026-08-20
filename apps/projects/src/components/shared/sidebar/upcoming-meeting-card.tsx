@@ -143,15 +143,26 @@ const ScheduleIssueContent = ({
   const { withWorkspace } = useWorkspacePath();
   const remainingMinutes =
     issue.remainingDurationMinutes ?? issue.estimatedDurationMinutes;
-  const progress = remainingMinutes
-    ? `${formatTimeNeeded(remainingMinutes)} left to schedule.`
+  const remainingDuration = remainingMinutes
+    ? formatTimeNeeded(remainingMinutes)
     : null;
-  const description =
-    issue.autoSchedulingReason?.trim() ||
-    (remainingMinutes
-      ? `Maya needs your input to place the remaining ${formatTimeNeeded(remainingMinutes)} before the deadline.`
-      : "Maya needs your input to finish scheduling this task before the deadline.");
-  const descriptionTitle = [progress, description].filter(Boolean).join(" ");
+  const progress = remainingDuration
+    ? `${remainingDuration} left to schedule.`
+    : null;
+  const schedulingReason = issue.autoSchedulingReason?.trim();
+  const isProgressOnlyReason =
+    Boolean(schedulingReason) &&
+    schedulingReason?.toLowerCase() === progress?.toLowerCase();
+  let description = schedulingReason;
+  if (!description || isProgressOnlyReason) {
+    description = remainingDuration
+      ? `${remainingDuration} remains. Choose a time or let Maya try again.`
+      : "Choose a time or let Maya try again.";
+  }
+  const descriptionTitle =
+    schedulingReason && !isProgressOnlyReason && progress
+      ? `${progress} ${description}`
+      : description;
 
   return (
     <>
