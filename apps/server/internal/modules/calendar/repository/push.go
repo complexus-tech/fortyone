@@ -28,6 +28,20 @@ type managedScheduleBlockState struct {
 	EndAt       time.Time  `db:"end_at"`
 }
 
+// calendar_schedule_blocks.updated_at is the concurrency token for user-visible
+// schedule content. Provider mirror bookkeeping must preserve it.
+const invalidateDeletedManagedScheduleEventQuery = `
+	UPDATE calendar_schedule_blocks
+	SET external_sync_hash = NULL, external_synced_at = NULL
+	WHERE user_id = $1 AND external_provider = 'google' AND external_event_id = $2
+`
+
+const invalidateChangedManagedScheduleEventQuery = `
+	UPDATE calendar_schedule_blocks
+	SET external_sync_hash = NULL, external_synced_at = NULL
+	WHERE block_id = $1
+`
+
 func (r *Repo) GetConnection(ctx context.Context, connectionID uuid.UUID) (calendar.CoreConnection, error) {
 	var row dbConnection
 	query := `SELECT ` + connectionColumns + ` FROM calendar_connections WHERE connection_id = $1 AND revoked_at IS NULL AND cleanup_pending_at IS NULL`
@@ -174,11 +188,7 @@ func (r *Repo) ApplyCalendarChanges(ctx context.Context, connection calendar.Cor
 			continue
 		}
 		if change.Deleted {
-			if _, err := tx.ExecContext(ctx, `
-				UPDATE calendar_schedule_blocks
-				SET external_sync_hash = NULL, external_synced_at = NULL, updated_at = NOW()
-				WHERE user_id = $1 AND external_provider = 'google' AND external_event_id = $2
-			`, connection.UserID, change.EventID); err != nil {
+			if _, err := tx.ExecContext(ctx, invalidateDeletedManagedScheduleEventQuery, connection.UserID, change.EventID); err != nil {
 				return fmt.Errorf("invalidate deleted managed calendar event: %w", err)
 			}
 			continue
@@ -200,11 +210,7 @@ func (r *Repo) ApplyCalendarChanges(ctx context.Context, connection calendar.Cor
 		if managedScheduleEventMatchesBlock(change, block) {
 			continue
 		}
-		if _, err := tx.ExecContext(ctx, `
-			UPDATE calendar_schedule_blocks
-			SET external_sync_hash = NULL, external_synced_at = NULL, updated_at = NOW()
-			WHERE block_id = $1
-		`, block.ID); err != nil {
+		if _, err := tx.ExecContext(ctx, invalidateChangedManagedScheduleEventQuery, block.ID); err != nil {
 			return fmt.Errorf("invalidate changed managed calendar event: %w", err)
 		}
 	}

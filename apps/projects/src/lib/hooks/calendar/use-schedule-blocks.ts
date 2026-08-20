@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "api-client";
 import { toast } from "sonner";
 import { calendarKeys } from "@/constants/keys";
 import { useWorkspacePath } from "@/hooks";
@@ -16,13 +17,30 @@ import type {
 } from "@/lib/queries/calendar/types";
 import { storyKeys } from "@/modules/stories/constants";
 
+const CALENDAR_SCHEDULE_STALE_MESSAGE = "calendar schedule plan is stale";
+const CALENDAR_SCHEDULE_STALE_DESCRIPTION =
+  "The calendar changed in the background. It has been refreshed—please try again.";
+
+const isCalendarScheduleStaleError = (error: Error) =>
+  error instanceof ApiError &&
+  error.status === 409 &&
+  error.message === CALENDAR_SCHEDULE_STALE_MESSAGE;
+
+const shouldRetryManualReschedule = (failureCount: number, error: Error) => {
+  if (failureCount >= 1) return false;
+  if (!(error instanceof ApiError)) return true;
+
+  return error.status === 408 || error.status === 429 || error.status >= 500;
+};
+
 const useInvalidateCalendarSchedule = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
 
   return () =>
     queryClient.invalidateQueries({
-      queryKey: ["calendar", workspaceSlug, "schedule"],
+      queryKey: calendarKeys.schedules(workspaceSlug),
+      refetchType: "active",
     });
 };
 
@@ -97,6 +115,7 @@ export const useManualRescheduleCalendarScheduleBlock = () => {
   const invalidateSchedule = useInvalidateCalendarSchedule();
 
   return useMutation({
+    retry: shouldRetryManualReschedule,
     onMutate: async ({ blockId, input }) => {
       const scheduleKey = calendarKeys.schedules(workspaceSlug);
       const previousSchedules = queryClient.getQueriesData<CalendarSchedule>({
@@ -139,11 +158,19 @@ export const useManualRescheduleCalendarScheduleBlock = () => {
         blockId,
         input,
       ),
-    onError: (error: Error, _variables, context) => {
+    onError: async (error: Error, _variables, context) => {
       context?.previousSchedules.forEach(([queryKey, schedule]) => {
         queryClient.setQueryData(queryKey, schedule);
       });
-      toast.error("Calendar", { description: error.message });
+      const isStalePlan = isCalendarScheduleStaleError(error);
+      if (isStalePlan) {
+        await invalidateSchedule();
+      }
+      toast.error("Calendar", {
+        description: isStalePlan
+          ? CALENDAR_SCHEDULE_STALE_DESCRIPTION
+          : error.message,
+      });
     },
     onSuccess: (updatedBlock, { input }) => {
       const scheduleKey = calendarKeys.schedules(workspaceSlug);

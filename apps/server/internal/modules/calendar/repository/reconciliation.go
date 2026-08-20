@@ -95,6 +95,14 @@ const scheduleEventUpsertIsCurrentQuery = `
 	)
 `
 
+// calendar_schedule_blocks.updated_at is the concurrency token for user-visible
+// schedule content. Provider mirror bookkeeping must preserve it.
+const markScheduleBlockMirroredQuery = `
+	UPDATE calendar_schedule_blocks
+	SET external_sync_hash = $2, external_synced_at = CURRENT_TIMESTAMP
+	WHERE block_id = $1 AND external_event_id = $3
+`
+
 const mayaScheduleEligibilityQuery = `
 	SELECT story.id
 	FROM stories story
@@ -626,11 +634,7 @@ func markScheduleEventOutboxProcessed(ctx context.Context, executor sqlx.ExtCont
 		return fmt.Errorf("complete calendar schedule event outbox: %w", err)
 	}
 	if item.Operation == calendar.ScheduleEventOperationUpsert && item.ScheduleBlockID != nil {
-		if _, err := executor.ExecContext(ctx, `
-			UPDATE calendar_schedule_blocks
-			SET external_sync_hash = $2, external_synced_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-			WHERE block_id = $1 AND external_event_id = $3
-		`, *item.ScheduleBlockID, syncHash, item.ProviderEventID); err != nil {
+		if _, err := executor.ExecContext(ctx, markScheduleBlockMirroredQuery, *item.ScheduleBlockID, syncHash, item.ProviderEventID); err != nil {
 			return fmt.Errorf("mark calendar schedule block mirrored: %w", err)
 		}
 	}

@@ -31,6 +31,30 @@ const lockExistingCalendarConnectionQuery = `
 	FOR UPDATE
 `
 
+// calendar_schedule_blocks.updated_at is the concurrency token for user-visible
+// schedule content. Provider mirror bookkeeping must preserve it.
+const detachMayaScheduleMirrorsQuery = `
+	UPDATE calendar_schedule_blocks
+	SET external_provider = NULL,
+		external_calendar_id = NULL,
+		external_event_id = NULL,
+		external_sync_hash = NULL,
+		external_synced_at = NULL
+	WHERE user_id = $1
+		AND source = 'maya'
+		AND external_provider = 'google'
+`
+
+const invalidateMayaScheduleMirrorHashesQuery = `
+	UPDATE calendar_schedule_blocks
+	SET external_sync_hash = NULL,
+		external_synced_at = NULL
+	WHERE user_id = $1
+		AND source = 'maya'
+		AND external_provider = 'google'
+		AND external_sync_hash IS NOT NULL
+`
+
 func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnectionUpsert) (calendar.CoreConnection, error) {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -272,18 +296,7 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			return err
 		}
 	}
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE calendar_schedule_blocks
-		SET external_provider = NULL,
-			external_calendar_id = NULL,
-			external_event_id = NULL,
-			external_sync_hash = NULL,
-			external_synced_at = NULL,
-			updated_at = CURRENT_TIMESTAMP
-		WHERE user_id = $1
-			AND source = 'maya'
-			AND external_provider = 'google'
-	`, userID); err != nil {
+	if _, err := tx.ExecContext(ctx, detachMayaScheduleMirrorsQuery, userID); err != nil {
 		return fmt.Errorf("detach Maya schedule mirrors during calendar cleanup: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM calendar_events WHERE connection_id = $1`, connectionID); err != nil {
@@ -360,16 +373,7 @@ func (r *Repo) ReplaceCalendarSnapshot(ctx context.Context, connection calendar.
 			return fmt.Errorf("downgrade calendar event detail access: %w", err)
 		}
 	}
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE calendar_schedule_blocks
-		SET external_sync_hash = NULL,
-			external_synced_at = NULL,
-			updated_at = CURRENT_TIMESTAMP
-		WHERE user_id = $1
-			AND source = 'maya'
-			AND external_provider = 'google'
-			AND external_sync_hash IS NOT NULL
-	`, connection.UserID); err != nil {
+	if _, err := tx.ExecContext(ctx, invalidateMayaScheduleMirrorHashesQuery, connection.UserID); err != nil {
 		return fmt.Errorf("invalidate Maya schedule mirrors before full calendar sync: %w", err)
 	}
 

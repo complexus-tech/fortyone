@@ -1,8 +1,13 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type { ReactNode } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { ApiError } from "api-client";
 import { toast } from "sonner";
 import { calendarKeys } from "@/constants/keys";
 import { useSession } from "@/lib/auth/client";
@@ -47,6 +52,19 @@ jest.mock("sonner", () => ({
   },
 }));
 
+jest.mock("api-client", () => ({
+  ApiError: class ApiError extends Error {
+    data: unknown;
+    status: number;
+
+    constructor(message: string, status: number, data: unknown) {
+      super(message);
+      this.data = data;
+      this.status = status;
+    }
+  },
+}));
+
 const initialBlock: CalendarScheduleBlock = {
   blockType: "work",
   createdAt: "2026-08-20T08:00:00.000Z",
@@ -82,7 +100,7 @@ const blockInput: CalendarScheduleBlockInput = {
 const createQueryClient = () =>
   new QueryClient({
     defaultOptions: {
-      mutations: { retry: false },
+      mutations: { retry: false, retryDelay: 0 },
       queries: { retry: false },
     },
   });
@@ -99,6 +117,14 @@ const useDirectScheduleBlockMutations = () => ({
   deleteBlock: useDeleteCalendarScheduleBlock(),
   updateBlock: useUpdateCalendarScheduleBlock(),
 });
+
+const useActiveScheduleAndManualMutation = (
+  queryKey: ReturnType<typeof calendarKeys.schedule>,
+  queryFn: () => Promise<CalendarSchedule>,
+) => {
+  useQuery({ queryFn, queryKey, staleTime: Infinity });
+  return useManualRescheduleCalendarScheduleBlock();
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -227,7 +253,7 @@ describe("useManualRescheduleCalendarScheduleBlock", () => {
     expect(toast.success).not.toHaveBeenCalled();
   });
 
-  it("rolls back a failed optimistic resize and displays one error toast", async () => {
+  it("rolls back a stale plan, refetches active schedules, and does not retry the obsolete version", async () => {
     const queryClient = createQueryClient();
     const invalidateQueries = jest.spyOn(queryClient, "invalidateQueries");
     const queryKey = calendarKeys.schedule(
@@ -236,7 +262,79 @@ describe("useManualRescheduleCalendarScheduleBlock", () => {
       schedule.endAt,
     );
     queryClient.setQueryData(queryKey, schedule);
-    const error = new Error("Calendar schedule plan is stale");
+    const refreshedSchedule = {
+      ...schedule,
+      blocks: [
+        {
+          ...initialBlock,
+          updatedAt: "2026-08-20T09:30:00.000Z",
+        },
+      ],
+    };
+    const fetchSchedule = jest.fn(async () => {
+      expect(queryClient.getQueryData(queryKey)).toEqual(schedule);
+      return refreshedSchedule;
+    });
+    const error = new ApiError("calendar schedule plan is stale", 409, {
+      error: { message: "calendar schedule plan is stale" },
+    });
+    jest
+      .mocked(manuallyRescheduleCalendarScheduleBlock)
+      .mockRejectedValue(error);
+    const { result } = renderHook(
+      () => useActiveScheduleAndManualMutation(queryKey, fetchSchedule),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    act(() => {
+      result.current.mutate({
+        blockId: initialBlock.id,
+        input: {
+          change: "resize",
+          clientMutationId: "aa7dadc5-ce79-47e8-93c4-6fe0f9c3db3c",
+          endAt: "2026-08-20T11:05:00.000Z",
+          expectedUpdatedAt: initialBlock.updatedAt,
+          startAt: initialBlock.startAt,
+          timezone: "Africa/Harare",
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(
+      queryClient.getQueryData<CalendarSchedule>(queryKey)?.blocks[0],
+    ).toEqual(refreshedSchedule.blocks[0]);
+    expect(manuallyRescheduleCalendarScheduleBlock).toHaveBeenCalledTimes(1);
+    expect(fetchSchedule).toHaveBeenCalledTimes(1);
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: calendarKeys.schedules("acme"),
+      refetchType: "active",
+    });
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith("Calendar", {
+      description:
+        "The calendar changed in the background. It has been refreshed—please try again.",
+    });
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it("does not retry or refetch for a non-stale conflict", async () => {
+    const queryClient = createQueryClient();
+    const invalidateQueries = jest.spyOn(queryClient, "invalidateQueries");
+    const queryKey = calendarKeys.schedule(
+      "acme",
+      schedule.startAt,
+      schedule.endAt,
+    );
+    queryClient.setQueryData(queryKey, schedule);
+    const error = new ApiError(
+      "calendar time conflicts with an existing meeting",
+      409,
+      null,
+    );
     jest
       .mocked(manuallyRescheduleCalendarScheduleBlock)
       .mockRejectedValue(error);
@@ -266,11 +364,72 @@ describe("useManualRescheduleCalendarScheduleBlock", () => {
     expect(
       queryClient.getQueryData<CalendarSchedule>(queryKey)?.blocks[0],
     ).toEqual(initialBlock);
+    expect(manuallyRescheduleCalendarScheduleBlock).toHaveBeenCalledTimes(1);
+    expect(invalidateQueries).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledTimes(1);
     expect(toast.error).toHaveBeenCalledWith("Calendar", {
       description: error.message,
     });
-    expect(invalidateQueries).not.toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["network", new TypeError("Failed to fetch")],
+    ["request timeout", new ApiError("Request timeout", 408, null)],
+    ["rate limit", new ApiError("Too many requests", 429, null)],
+    ["server", new ApiError("Service unavailable", 503, null)],
+  ])(
+    "retries a transient %s error once with the same mutation",
+    async (_errorType, error) => {
+      const queryClient = createQueryClient();
+      const invalidateQueries = jest.spyOn(queryClient, "invalidateQueries");
+      const queryKey = calendarKeys.schedule(
+        "acme",
+        schedule.startAt,
+        schedule.endAt,
+      );
+      queryClient.setQueryData(queryKey, schedule);
+      jest
+        .mocked(manuallyRescheduleCalendarScheduleBlock)
+        .mockRejectedValue(error);
+      const { result } = renderHook(
+        () => useManualRescheduleCalendarScheduleBlock(),
+        { wrapper: createWrapper(queryClient) },
+      );
+      const variables = {
+        blockId: initialBlock.id,
+        input: {
+          change: "resize" as const,
+          clientMutationId: "47b8752d-f2d3-4483-a551-9d0110efe987",
+          endAt: "2026-08-20T11:05:00.000Z",
+          expectedUpdatedAt: initialBlock.updatedAt,
+          startAt: initialBlock.startAt,
+          timezone: "Africa/Harare",
+        },
+      };
+
+      act(() => {
+        result.current.mutate(variables);
+      });
+
+      await waitFor(() => {
+        expect(result.current.isError).toBe(true);
+      });
+
+      expect(manuallyRescheduleCalendarScheduleBlock).toHaveBeenCalledTimes(2);
+      expect(
+        jest.mocked(manuallyRescheduleCalendarScheduleBlock).mock.calls[1],
+      ).toEqual(
+        jest.mocked(manuallyRescheduleCalendarScheduleBlock).mock.calls[0],
+      );
+      expect(
+        queryClient.getQueryData<CalendarSchedule>(queryKey)?.blocks[0],
+      ).toEqual(initialBlock);
+      expect(invalidateQueries).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledTimes(1);
+      expect(toast.error).toHaveBeenCalledWith("Calendar", {
+        description: error.message,
+      });
+    },
+  );
 });

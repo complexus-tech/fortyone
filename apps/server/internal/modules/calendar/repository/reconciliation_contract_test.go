@@ -252,6 +252,94 @@ func TestFullSnapshotInvalidatesManagedMirrorHashes(t *testing.T) {
 	}
 }
 
+func TestProviderMirrorBookkeepingPreservesScheduleBlockConcurrencyVersion(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		query          string
+		metadataFields []string
+	}{
+		{
+			name:           "outbox completion",
+			query:          markScheduleBlockMirroredQuery,
+			metadataFields: []string{"external_sync_hash", "external_synced_at"},
+		},
+		{
+			name:           "full snapshot invalidation",
+			query:          invalidateMayaScheduleMirrorHashesQuery,
+			metadataFields: []string{"external_sync_hash", "external_synced_at"},
+		},
+		{
+			name:           "incremental deleted event invalidation",
+			query:          invalidateDeletedManagedScheduleEventQuery,
+			metadataFields: []string{"external_sync_hash", "external_synced_at"},
+		},
+		{
+			name:           "incremental changed event invalidation",
+			query:          invalidateChangedManagedScheduleEventQuery,
+			metadataFields: []string{"external_sync_hash", "external_synced_at"},
+		},
+		{
+			name:  "disconnect cleanup",
+			query: detachMayaScheduleMirrorsQuery,
+			metadataFields: []string{
+				"external_provider",
+				"external_calendar_id",
+				"external_event_id",
+				"external_sync_hash",
+				"external_synced_at",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			query := strings.ToLower(strings.Join(strings.Fields(tt.query), " "))
+			if !strings.HasPrefix(query, "update calendar_schedule_blocks set ") {
+				t.Fatalf("query must update calendar schedule blocks: %s", query)
+			}
+			if strings.Contains(query, "updated_at") {
+				t.Fatalf("provider metadata write must preserve updated_at: %s", query)
+			}
+			for _, field := range tt.metadataFields {
+				if !strings.Contains(query, field+" = ") {
+					t.Errorf("query must update provider metadata field %q: %s", field, query)
+				}
+			}
+		})
+	}
+}
+
+func TestUserVisibleScheduleWritesAdvanceScheduleBlockConcurrencyVersion(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile("schedule.go")
+	if err != nil {
+		t.Fatalf("read schedule repository: %v", err)
+	}
+	scheduleSource := strings.Join(strings.Fields(string(data)), " ")
+	for _, contract := range []string{
+		"SET story_id = $4, block_type = $5, title = $6, start_at = $7, end_at = $8, is_locked = $9, source = $10, updated_at = CURRENT_TIMESTAMP",
+		"SET start_at = $4, end_at = $5, is_locked = TRUE, manual_override_at = CURRENT_TIMESTAMP, manual_override_by = $6, updated_at = CURRENT_TIMESTAMP",
+	} {
+		if !strings.Contains(scheduleSource, contract) {
+			t.Errorf("user-visible schedule write must advance updated_at; missing %q", contract)
+		}
+	}
+
+	reconciliationData, err := os.ReadFile("reconciliation.go")
+	if err != nil {
+		t.Fatalf("read reconciliation repository: %v", err)
+	}
+	reconciliationSource := strings.Join(strings.Fields(string(reconciliationData)), " ")
+	const visibleChangeVersionContract = "updated_at = CASE WHEN title <> CAST($5 AS text) OR start_at <> $6 OR end_at <> $7 OR is_locked <> $9 THEN CURRENT_TIMESTAMP ELSE updated_at END"
+	if !strings.Contains(reconciliationSource, visibleChangeVersionContract) {
+		t.Errorf("Maya reconciliation must advance updated_at only for user-visible content changes")
+	}
+}
+
 func TestOutboxBackoffDeadLetterAndFairnessContracts(t *testing.T) {
 	data, err := os.ReadFile("reconciliation.go")
 	if err != nil {
