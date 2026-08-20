@@ -7,6 +7,8 @@ import { Sidebar } from "./sidebar";
 let mockUserRole = "admin";
 let mockHasMeeting = true;
 let mockTier = "free";
+let mockSidebarCollapsed = false;
+let mockAssistantCollapsed = false;
 
 jest.mock("ui", () => {
   const MockBox = ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => (
@@ -92,7 +94,7 @@ jest.mock("@/components/shared/keyboard-shortcuts", () => ({
 jest.mock("../commands", () => ({ Commands: () => null }));
 jest.mock("./sidebar-context", () => ({
   useSidebar: () => ({
-    isCollapsed: false,
+    isCollapsed: mockSidebarCollapsed,
     setIsCollapsed: jest.fn(),
     toggleSidebar: jest.fn(),
   }),
@@ -104,8 +106,16 @@ jest.mock("./profile-menu", () => ({
   ProfileMenu: () => <div>Profile</div>,
 }));
 jest.mock("./upcoming-meeting-card", () => ({
-  UpcomingMeetingCard: ({ fallback }: { fallback: ReactNode }) =>
-    mockHasMeeting ? <div>Upcoming meeting</div> : fallback,
+  SidebarAssistantCards: ({
+    fallback,
+    isCollapsed,
+  }: {
+    fallback: ReactNode;
+    isCollapsed?: boolean;
+  }) => {
+    mockAssistantCollapsed = Boolean(isCollapsed);
+    return mockHasMeeting ? <div>Upcoming meeting</div> : fallback;
+  },
 }));
 
 describe("Sidebar", () => {
@@ -113,6 +123,8 @@ describe("Sidebar", () => {
     mockHasMeeting = true;
     mockTier = "free";
     mockUserRole = "admin";
+    mockSidebarCollapsed = false;
+    mockAssistantCollapsed = false;
   });
 
   it("keeps only the middle region scrollable", () => {
@@ -139,6 +151,14 @@ describe("Sidebar", () => {
     expect(screen.queryByRole("button", { name: "Invite members" })).toBeNull();
     expect(screen.queryByText("You're on the free plan")).toBeNull();
     expect(screen.queryByText("Upgrade plan")).toBeNull();
+  });
+
+  it("passes the collapsed state to the sidebar assistant", () => {
+    mockSidebarCollapsed = true;
+
+    render(<Sidebar />);
+
+    expect(mockAssistantCollapsed).toBe(true);
   });
 
   it("keeps the Upgrade action non-navigational for members", () => {

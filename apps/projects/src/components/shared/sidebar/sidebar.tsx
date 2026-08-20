@@ -218,6 +218,7 @@ export const Sidebar = () => {
                   onOpenKeyboardShortcuts={openKeyboardShortcuts}
                 />
               }
+              isCollapsed={isCollapsed}
             />
           )}
         </Box>

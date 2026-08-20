@@ -34,6 +34,17 @@ jest.mock("ui", () => {
   Dialog.Title = DialogTitle;
   Dialog.Body = DialogBody;
   Dialog.Footer = DialogFooter;
+  function Popover({ children }: { children: ReactNode }) {
+    return <div>{children}</div>;
+  }
+  function PopoverTrigger({ children }: { children: ReactNode }) {
+    return <>{children}</>;
+  }
+  function PopoverContent({ children }: { children: ReactNode }) {
+    return <div>{children}</div>;
+  }
+  Popover.Trigger = PopoverTrigger;
+  Popover.Content = PopoverContent;
 
   return {
     Box: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -61,6 +72,7 @@ jest.mock("ui", () => {
       label?: string;
       labelClassName?: string;
     }) => <input aria-label={label} {...props} />,
+    Popover,
     Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
   };
 });
@@ -73,6 +85,7 @@ jest.mock("icons", () => ({
   ExternalLinkIcon: () => null,
   RefreshIcon: () => null,
   Video02Icon: () => null,
+  WarningIcon: () => null,
 }));
 
 jest.mock("@/hooks", () => ({
@@ -228,8 +241,13 @@ describe("UpcomingMeetingCard", () => {
       },
     });
 
-    render(<UpcomingMeetingCard fallback={<div>Normal footer</div>} />);
+    render(
+      <UpcomingMeetingCard fallback={<div>Normal footer</div>} isCollapsed />,
+    );
 
+    expect(
+      screen.getByRole("button", { name: "Open Maya scheduling message" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Maya needs your help")).toBeInTheDocument();
     expect(screen.getByText("Prepare the launch brief")).toBeInTheDocument();
     expect(screen.queryByText("ENG-42")).not.toBeInTheDocument();

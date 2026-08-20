@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { addDays, addMinutes, format, startOfDay } from "date-fns";
 import {
   CalendarIcon,
@@ -11,8 +11,9 @@ import {
   ExternalLinkIcon,
   RefreshIcon,
   Video02Icon,
+  WarningIcon,
 } from "icons";
-import { Box, Button, Dialog, Flex, Input, Text } from "ui";
+import { Box, Button, Dialog, Flex, Input, Popover, Text } from "ui";
 import { useWorkspacePath } from "@/hooks";
 import {
   useCalendarIntegration,
@@ -305,8 +306,10 @@ const ScheduleIssueContent = ({
 
 export const SidebarAssistantCards = ({
   fallback = null,
+  isCollapsed = false,
 }: {
   fallback?: ReactNode;
+  isCollapsed?: boolean;
 }) => {
   const now = useSyncExternalStore(
     subscribeToClock,
@@ -322,6 +325,8 @@ export const SidebarAssistantCards = ({
   );
   const [selectedIssue, setSelectedIssue] =
     useState<CalendarScheduleIssue | null>(null);
+  const [isCollapsedPopoverOpen, setIsCollapsedPopoverOpen] = useState(false);
+  const collapsedPopoverCloseTimer = useRef<number | undefined>(undefined);
   const integrationQuery = useCalendarIntegration();
   const connection = integrationQuery.data?.connections[0];
   const rangeStart = startOfDay(now);
@@ -338,6 +343,15 @@ export const SidebarAssistantCards = ({
     subscribeToHydration,
     () => true,
     () => false,
+  );
+
+  useEffect(
+    () => () => {
+      if (collapsedPopoverCloseTimer.current !== undefined) {
+        window.clearTimeout(collapsedPopoverCloseTimer.current);
+      }
+    },
+    [],
   );
 
   const meetings = isHydrated
@@ -367,6 +381,24 @@ export const SidebarAssistantCards = ({
   const safeActiveIndex = activeIndex % items.length;
   const activeItem = items[safeActiveIndex];
 
+  const cancelCollapsedPopoverClose = () => {
+    if (collapsedPopoverCloseTimer.current !== undefined) {
+      window.clearTimeout(collapsedPopoverCloseTimer.current);
+      collapsedPopoverCloseTimer.current = undefined;
+    }
+  };
+  const openCollapsedPopover = () => {
+    cancelCollapsedPopoverClose();
+    setIsCollapsedPopoverOpen(true);
+  };
+  const scheduleCollapsedPopoverClose = () => {
+    cancelCollapsedPopoverClose();
+    collapsedPopoverCloseTimer.current = window.setTimeout(() => {
+      setIsCollapsedPopoverOpen(false);
+      collapsedPopoverCloseTimer.current = undefined;
+    }, 150);
+  };
+
   const dismissActiveItem = () => {
     if (activeItem.kind === "meeting") {
       dismissMeetingUntilEnd(activeItem.meeting);
@@ -385,90 +417,152 @@ export const SidebarAssistantCards = ({
     setActiveIndex(0);
   };
 
+  const assistantCard = (
+    <Box aria-live="polite" className="relative pb-1.5">
+      {items.length > 1 ? (
+        <Box
+          aria-hidden="true"
+          className="border-border bg-surface-elevated absolute inset-x-2 bottom-0 h-4 rounded-b-xl border-[0.5px] opacity-70"
+        />
+      ) : null}
+      <Box className="border-border bg-surface-elevated shadow-shadow relative rounded-xl border-[0.5px] px-3.5 pt-3 pb-3.5 shadow-lg">
+        <button
+          aria-label={
+            activeItem.kind === "meeting"
+              ? "Dismiss meeting"
+              : "Dismiss scheduling message"
+          }
+          className="text-foreground hover:bg-state-hover focus-visible:ring-ring absolute top-2 right-1.5 z-1 grid size-6 place-items-center rounded-md transition-colors outline-none focus-visible:ring-2"
+          onClick={dismissActiveItem}
+          type="button"
+        >
+          <CloseIcon
+            aria-hidden="true"
+            className="h-3.5 w-auto"
+            strokeWidth={2.5}
+          />
+        </button>
+
+        <Box>
+          {activeItem.kind === "meeting" ? (
+            <MeetingContent meeting={activeItem.meeting} />
+          ) : (
+            <ScheduleIssueContent
+              isRetrying={Boolean(
+                retryIssue.isPending &&
+                  retryIssue.variables === activeItem.issue.storyId,
+              )}
+              issue={activeItem.issue}
+              onChooseTime={() => {
+                setSelectedIssue(activeItem.issue);
+                setIsCollapsedPopoverOpen(false);
+              }}
+              onRetry={() => {
+                retryIssue.mutate(activeItem.issue.storyId);
+              }}
+            />
+          )}
+        </Box>
+
+        {items.length > 1 ? (
+          <Flex align="center" className="mt-3 border-t pt-2" justify="between">
+            <Text className="tabular-nums" color="muted" fontSize="xs">
+              {safeActiveIndex + 1} of {items.length}
+            </Text>
+            <Flex className="gap-1">
+              <button
+                aria-label="Previous message"
+                className="hover:bg-state-hover focus-visible:ring-ring grid size-6 place-items-center rounded-md outline-none focus-visible:ring-2"
+                onClick={() => {
+                  setActiveIndex(
+                    (safeActiveIndex - 1 + items.length) % items.length,
+                  );
+                }}
+                type="button"
+              >
+                <ChevronLeftIcon aria-hidden="true" className="h-3.5" />
+              </button>
+              <button
+                aria-label="Next message"
+                className="hover:bg-state-hover focus-visible:ring-ring grid size-6 place-items-center rounded-md outline-none focus-visible:ring-2"
+                onClick={() => {
+                  setActiveIndex((safeActiveIndex + 1) % items.length);
+                }}
+                type="button"
+              >
+                <ChevronRightIcon aria-hidden="true" className="h-3.5" />
+              </button>
+            </Flex>
+          </Flex>
+        ) : null}
+      </Box>
+    </Box>
+  );
+
+  const CollapsedIndicatorIcon =
+    activeItem.kind === "schedule-issue" ? WarningIcon : Video02Icon;
+  const collapsedIndicatorLabel =
+    activeItem.kind === "schedule-issue"
+      ? "Open Maya scheduling message"
+      : "Open upcoming meeting";
+  const collapsedIndicatorClass =
+    activeItem.kind === "schedule-issue"
+      ? "border-warning/35 bg-warning/10 text-warning hover:bg-warning/15 dark:text-warning"
+      : "border-primary/25 bg-primary/10 text-primary hover:bg-primary/15 dark:text-primary";
+
   return (
     <>
-      <Box aria-live="polite" className="relative pb-1.5">
-        {items.length > 1 ? (
+      {isCollapsed ? (
+        <Popover
+          onOpenChange={setIsCollapsedPopoverOpen}
+          open={isCollapsedPopoverOpen}
+        >
           <Box
-            aria-hidden="true"
-            className="border-border bg-surface-elevated absolute inset-x-2 bottom-0 h-4 rounded-b-xl border-[0.5px] opacity-70"
-          />
-        ) : null}
-        <Box className="border-border bg-surface-elevated shadow-shadow relative rounded-xl border-[0.5px] px-3.5 pt-3 pb-3.5 shadow-lg">
-          <button
-            aria-label={
-              activeItem.kind === "meeting"
-                ? "Dismiss meeting"
-                : "Dismiss scheduling message"
-            }
-            className="text-foreground hover:bg-state-hover focus-visible:ring-ring absolute top-2 right-1.5 z-1 grid size-6 place-items-center rounded-md transition-colors outline-none focus-visible:ring-2"
-            onClick={dismissActiveItem}
-            type="button"
+            aria-live="polite"
+            className="relative w-full"
+            onMouseEnter={openCollapsedPopover}
+            onMouseLeave={scheduleCollapsedPopoverClose}
           >
-            <CloseIcon
-              aria-hidden="true"
-              className="h-3.5 w-auto"
-              strokeWidth={2.5}
-            />
-          </button>
-
-          <Box>
-            {activeItem.kind === "meeting" ? (
-              <MeetingContent meeting={activeItem.meeting} />
-            ) : (
-              <ScheduleIssueContent
-                isRetrying={Boolean(
-                  retryIssue.isPending &&
-                    retryIssue.variables === activeItem.issue.storyId,
-                )}
-                issue={activeItem.issue}
-                onChooseTime={() => {
-                  setSelectedIssue(activeItem.issue);
-                }}
-                onRetry={() => {
-                  retryIssue.mutate(activeItem.issue.storyId);
-                }}
-              />
-            )}
+            <Popover.Trigger asChild>
+              <button
+                aria-expanded={isCollapsedPopoverOpen}
+                aria-label={collapsedIndicatorLabel}
+                className={`focus-visible:ring-ring relative grid h-10 w-full place-items-center rounded-xl border transition-colors outline-none focus-visible:ring-2 ${collapsedIndicatorClass}`}
+                type="button"
+              >
+                <CollapsedIndicatorIcon
+                  aria-hidden="true"
+                  className="h-5 w-auto"
+                  strokeWidth={2.1}
+                />
+                {items.length > 1 ? (
+                  <span className="bg-background-inverse text-foreground-inverse absolute -top-1 -right-1 grid min-w-4 place-items-center rounded-full px-1 text-[0.625rem] leading-4 font-semibold tabular-nums">
+                    {items.length}
+                  </span>
+                ) : null}
+              </button>
+            </Popover.Trigger>
           </Box>
-
-          {items.length > 1 ? (
-            <Flex
-              align="center"
-              className="mt-3 border-t pt-2"
-              justify="between"
-            >
-              <Text className="tabular-nums" color="muted" fontSize="xs">
-                {safeActiveIndex + 1} of {items.length}
-              </Text>
-              <Flex className="gap-1">
-                <button
-                  aria-label="Previous message"
-                  className="hover:bg-state-hover focus-visible:ring-ring grid size-6 place-items-center rounded-md outline-none focus-visible:ring-2"
-                  onClick={() => {
-                    setActiveIndex(
-                      (safeActiveIndex - 1 + items.length) % items.length,
-                    );
-                  }}
-                  type="button"
-                >
-                  <ChevronLeftIcon aria-hidden="true" className="h-3.5" />
-                </button>
-                <button
-                  aria-label="Next message"
-                  className="hover:bg-state-hover focus-visible:ring-ring grid size-6 place-items-center rounded-md outline-none focus-visible:ring-2"
-                  onClick={() => {
-                    setActiveIndex((safeActiveIndex + 1) % items.length);
-                  }}
-                  type="button"
-                >
-                  <ChevronRightIcon aria-hidden="true" className="h-3.5" />
-                </button>
-              </Flex>
-            </Flex>
-          ) : null}
-        </Box>
-      </Box>
+          <Popover.Content
+            align="end"
+            className="m-0 w-[calc(var(--sidebar-width)-1.75rem)] max-w-[calc(100vw-5rem)] min-w-0 border-0 bg-transparent p-0 shadow-none backdrop-blur-none dark:bg-transparent"
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+            }}
+            onMouseEnter={openCollapsedPopover}
+            onMouseLeave={scheduleCollapsedPopoverClose}
+            onOpenAutoFocus={(event) => {
+              event.preventDefault();
+            }}
+            side="right"
+            sideOffset={10}
+          >
+            {assistantCard}
+          </Popover.Content>
+        </Popover>
+      ) : (
+        assistantCard
+      )}
 
       {selectedIssue ? (
         <ScheduleIssueDialog
