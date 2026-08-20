@@ -14,25 +14,38 @@ import (
 
 // AppObjectiveList represents a list of objectives in the application.
 type AppObjectiveList struct {
-	ID             uuid.UUID      `json:"id"`
-	SequenceID     int            `json:"sequenceId"`
-	Name           string         `json:"name"`
-	Description    *string        `json:"description"`
-	ShortSummary   *string        `json:"shortSummary"`
-	LeadUser       *uuid.UUID     `json:"leadUser"`
-	Team           uuid.UUID      `json:"teamId"`
-	Workspace      uuid.UUID      `json:"workspaceId"`
-	StartDate      *time.Time     `json:"startDate"`
-	EndDate        *time.Time     `json:"endDate"`
-	IsPrivate      bool           `json:"isPrivate"`
-	CreatedAt      time.Time      `json:"createdAt"`
-	UpdatedAt      time.Time      `json:"updatedAt"`
-	Status         uuid.UUID      `json:"statusId"`
-	Priority       *string        `json:"priority"`
-	Health         *string        `json:"health"`
-	KeyResultCount int            `json:"keyResultCount"`
-	CreatedBy      uuid.UUID      `json:"createdBy"`
-	Stats          ObjectiveStats `json:"stats"`
+	ID                 uuid.UUID              `json:"id"`
+	SequenceID         int                    `json:"sequenceId"`
+	Name               string                 `json:"name"`
+	Description        *string                `json:"description"`
+	ShortSummary       *string                `json:"shortSummary"`
+	LeadUser           *uuid.UUID             `json:"leadUser"`
+	Team               uuid.UUID              `json:"teamId"`
+	Workspace          uuid.UUID              `json:"workspaceId"`
+	StartDate          *time.Time             `json:"startDate"`
+	EndDate            *time.Time             `json:"endDate"`
+	IsPrivate          bool                   `json:"isPrivate"`
+	CreatedAt          time.Time              `json:"createdAt"`
+	UpdatedAt          time.Time              `json:"updatedAt"`
+	Status             uuid.UUID              `json:"statusId"`
+	Priority           *string                `json:"priority"`
+	Health             *string                `json:"health"`
+	Color              string                 `json:"color"`
+	ForecastStartDate  *time.Time             `json:"forecastStartDate"`
+	ForecastEndDate    *time.Time             `json:"forecastEndDate"`
+	ScheduleStatus     string                 `json:"scheduleStatus"`
+	ForecastDaysDelta  int                    `json:"forecastDaysDelta"`
+	ForecastCauseStory *AppForecastCauseStory `json:"forecastCauseStory"`
+	KeyResultCount     int                    `json:"keyResultCount"`
+	CreatedBy          uuid.UUID              `json:"createdBy"`
+	Stats              ObjectiveStats         `json:"stats"`
+}
+
+type AppForecastCauseStory struct {
+	ID         uuid.UUID `json:"id"`
+	SequenceID int       `json:"sequenceId"`
+	Title      string    `json:"title"`
+	Source     string    `json:"source"`
 }
 
 type ObjectiveStats struct {
@@ -67,40 +80,7 @@ type AppObjectivesResponse struct {
 func toAppObjectives(objectives []objectives.CoreObjective) []AppObjectiveList {
 	appObjectives := make([]AppObjectiveList, len(objectives))
 	for i, objective := range objectives {
-		var healthStr *string
-		if objective.Health != nil {
-			h := string(*objective.Health)
-			healthStr = &h
-		}
-
-		appObjectives[i] = AppObjectiveList{
-			ID:             objective.ID,
-			SequenceID:     objective.SequenceID,
-			Name:           objective.Name,
-			Description:    objective.Description,
-			ShortSummary:   objective.ShortSummary,
-			LeadUser:       objective.LeadUser,
-			Team:           objective.Team,
-			Workspace:      objective.Workspace,
-			StartDate:      objective.StartDate,
-			EndDate:        objective.EndDate,
-			IsPrivate:      objective.IsPrivate,
-			CreatedAt:      objective.CreatedAt,
-			UpdatedAt:      objective.UpdatedAt,
-			Status:         objective.Status,
-			Priority:       objective.Priority,
-			CreatedBy:      objective.CreatedBy,
-			Health:         healthStr,
-			KeyResultCount: objective.KeyResultCount,
-			Stats: ObjectiveStats{
-				Total:     objective.TotalStories,
-				Cancelled: objective.CancelledStories,
-				Completed: objective.CompletedStories,
-				Started:   objective.StartedStories,
-				Unstarted: objective.UnstartedStories,
-				Backlog:   objective.BacklogStories,
-			},
-		}
+		appObjectives[i] = toAppObjective(objective)
 	}
 	return appObjectives
 }
@@ -134,6 +114,7 @@ type AppNewObjective struct {
 	IsPrivate    bool              `json:"isPrivate"`
 	Status       uuid.UUID         `json:"statusId"`
 	Priority     *string           `json:"priority"`
+	Color        string            `json:"color" validate:"omitempty,hexcolor"`
 	KeyResults   []AppNewKeyResult `json:"keyResults,omitempty"`
 }
 
@@ -202,6 +183,7 @@ func toCoreNewObjective(ano AppNewObjective, createdBy uuid.UUID) objectives.Cor
 		IsPrivate:    ano.IsPrivate,
 		Status:       ano.Status,
 		Priority:     ano.Priority,
+		Color:        ano.Color,
 		CreatedBy:    createdBy,
 	}
 }
@@ -214,24 +196,30 @@ func toAppObjective(objective objectives.CoreObjective) AppObjectiveList {
 		healthStr = &h
 	}
 
-	return AppObjectiveList{
-		ID:           objective.ID,
-		SequenceID:   objective.SequenceID,
-		Name:         objective.Name,
-		Description:  objective.Description,
-		ShortSummary: objective.ShortSummary,
-		LeadUser:     objective.LeadUser,
-		Team:         objective.Team,
-		Workspace:    objective.Workspace,
-		StartDate:    objective.StartDate,
-		EndDate:      objective.EndDate,
-		IsPrivate:    objective.IsPrivate,
-		CreatedAt:    objective.CreatedAt,
-		UpdatedAt:    objective.UpdatedAt,
-		Status:       objective.Status,
-		Priority:     objective.Priority,
-		CreatedBy:    objective.CreatedBy,
-		Health:       healthStr,
+	appObjective := AppObjectiveList{
+		ID:                objective.ID,
+		SequenceID:        objective.SequenceID,
+		Name:              objective.Name,
+		Description:       objective.Description,
+		ShortSummary:      objective.ShortSummary,
+		LeadUser:          objective.LeadUser,
+		Team:              objective.Team,
+		Workspace:         objective.Workspace,
+		StartDate:         objective.StartDate,
+		EndDate:           objective.EndDate,
+		IsPrivate:         objective.IsPrivate,
+		CreatedAt:         objective.CreatedAt,
+		UpdatedAt:         objective.UpdatedAt,
+		Status:            objective.Status,
+		Priority:          objective.Priority,
+		CreatedBy:         objective.CreatedBy,
+		Health:            healthStr,
+		Color:             objective.Color,
+		ForecastStartDate: objective.ForecastStartDate,
+		ForecastEndDate:   objective.ForecastEndDate,
+		ScheduleStatus:    string(objective.ScheduleStatus),
+		ForecastDaysDelta: objective.ForecastDaysDelta,
+		KeyResultCount:    objective.KeyResultCount,
 		Stats: ObjectiveStats{
 			Total:     objective.TotalStories,
 			Cancelled: objective.CancelledStories,
@@ -241,6 +229,15 @@ func toAppObjective(objective objectives.CoreObjective) AppObjectiveList {
 			Backlog:   objective.BacklogStories,
 		},
 	}
+	if objective.ForecastCauseStory != nil {
+		appObjective.ForecastCauseStory = &AppForecastCauseStory{
+			ID:         objective.ForecastCauseStory.ID,
+			SequenceID: objective.ForecastCauseStory.SequenceID,
+			Title:      objective.ForecastCauseStory.Title,
+			Source:     objective.ForecastCauseStory.Source,
+		}
+	}
+	return appObjective
 }
 
 // AppUpdateObjective represents the data needed to update an objective
@@ -255,6 +252,7 @@ type AppUpdateObjective struct {
 	Status       *uuid.UUID `json:"statusId" db:"status_id"`
 	Priority     *string    `json:"priority" db:"priority"`
 	Health       *string    `json:"health" db:"health"`
+	Color        *string    `json:"color" db:"color" validate:"omitempty,hexcolor"`
 	Comment      *string    `json:"comment" db:"comment"`
 }
 

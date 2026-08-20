@@ -21,10 +21,62 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 
 	var objectives []dbObjective
 	q := `
-		WITH story_stats AS (
+		WITH story_schedule AS (
+			SELECT
+				s.id,
+				s.sequence_id,
+				s.title,
+				s.objective_id,
+				CASE
+					WHEN MIN(csb.start_at) IS NULL THEN s.start_date
+					WHEN s.start_date IS NULL THEN CAST(MIN(csb.start_at) AS date)
+					ELSE LEAST(s.start_date, CAST(MIN(csb.start_at) AS date))
+				END AS forecast_start_date,
+				CASE
+					WHEN MAX(csb.end_at) IS NULL THEN s.end_date
+					WHEN s.end_date IS NULL THEN CAST(MAX(csb.end_at) AS date)
+					ELSE GREATEST(s.end_date, CAST(MAX(csb.end_at) AS date))
+				END AS forecast_end_date,
+				CASE
+					WHEN MAX(csb.end_at) IS NOT NULL
+						AND (s.end_date IS NULL OR CAST(MAX(csb.end_at) AS date) >= s.end_date)
+					THEN 'calendar'
+					ELSE 'planning'
+				END AS forecast_source
+			FROM stories s
+			INNER JOIN statuses st ON st.status_id = s.status_id
+			LEFT JOIN calendar_schedule_blocks csb
+				ON csb.story_id = s.id
+				AND csb.workspace_id = s.workspace_id
+				AND csb.block_type = 'work'
+			WHERE s.deleted_at IS NULL
+				AND s.archived_at IS NULL
+				AND s.objective_id IS NOT NULL
+				AND st.category NOT IN ('completed', 'cancelled')
+			GROUP BY s.id, s.sequence_id, s.title, s.objective_id, s.start_date, s.end_date
+		),
+		ranked_story_schedule AS (
+			SELECT
+				story_schedule.*,
+				ROW_NUMBER() OVER (
+					PARTITION BY objective_id
+					ORDER BY forecast_end_date DESC, sequence_id DESC, id
+				) AS forecast_rank
+			FROM story_schedule
+			WHERE forecast_end_date IS NOT NULL
+		),
+		objective_schedule AS (
+			SELECT
+				objective_id,
+				MIN(forecast_start_date) AS forecast_start_date,
+				MAX(forecast_end_date) AS forecast_end_date
+			FROM story_schedule
+			GROUP BY objective_id
+		),
+		story_stats AS (
 			SELECT 
 				o.objective_id,
-				COUNT(*) as total,
+				COUNT(s.id) as total,
 				COUNT(CASE WHEN st.category = 'cancelled' THEN 1 END) as cancelled,
 				COUNT(CASE WHEN st.category = 'completed' THEN 1 END) as completed,
 				COUNT(CASE WHEN st.category = 'started' THEN 1 END) as started,
@@ -54,6 +106,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			o.status_id,
 			o.priority,
 			o.health,
+			o.color,
 			o.end_date,
 			o.is_private,
 			o.created_at,
@@ -65,12 +118,21 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			COALESCE(ss.completed, 0) as completed_stories,
 			COALESCE(ss.started, 0) as started_stories,
 			COALESCE(ss.unstarted, 0) as unstarted_stories,
-			COALESCE(ss.backlog, 0) as backlog_stories
+			COALESCE(ss.backlog, 0) as backlog_stories,
+			os.forecast_start_date,
+			os.forecast_end_date,
+			rss.id AS forecast_cause_id,
+			rss.sequence_id AS forecast_cause_sequence_id,
+			rss.title AS forecast_cause_title,
+			rss.forecast_source AS forecast_cause_source
 		FROM
 		objectives o
 		INNER JOIN team_members tm ON tm.team_id = o.team_id AND tm.user_id = :user_id
 		LEFT JOIN story_stats ss ON o.objective_id = ss.objective_id
 		LEFT JOIN key_result_stats krs ON o.objective_id = krs.objective_id
+		LEFT JOIN objective_schedule os ON o.objective_id = os.objective_id
+		LEFT JOIN ranked_story_schedule rss
+			ON o.objective_id = rss.objective_id AND rss.forecast_rank = 1
 	`
 	var setClauses []string
 	filters["workspace_id"] = workspaceId
@@ -137,10 +199,62 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 
 	var objective dbObjective
 	q := `
-		WITH story_stats AS (
+		WITH story_schedule AS (
+			SELECT
+				s.id,
+				s.sequence_id,
+				s.title,
+				s.objective_id,
+				CASE
+					WHEN MIN(csb.start_at) IS NULL THEN s.start_date
+					WHEN s.start_date IS NULL THEN CAST(MIN(csb.start_at) AS date)
+					ELSE LEAST(s.start_date, CAST(MIN(csb.start_at) AS date))
+				END AS forecast_start_date,
+				CASE
+					WHEN MAX(csb.end_at) IS NULL THEN s.end_date
+					WHEN s.end_date IS NULL THEN CAST(MAX(csb.end_at) AS date)
+					ELSE GREATEST(s.end_date, CAST(MAX(csb.end_at) AS date))
+				END AS forecast_end_date,
+				CASE
+					WHEN MAX(csb.end_at) IS NOT NULL
+						AND (s.end_date IS NULL OR CAST(MAX(csb.end_at) AS date) >= s.end_date)
+					THEN 'calendar'
+					ELSE 'planning'
+				END AS forecast_source
+			FROM stories s
+			INNER JOIN statuses st ON st.status_id = s.status_id
+			LEFT JOIN calendar_schedule_blocks csb
+				ON csb.story_id = s.id
+				AND csb.workspace_id = s.workspace_id
+				AND csb.block_type = 'work'
+			WHERE s.deleted_at IS NULL
+				AND s.archived_at IS NULL
+				AND s.objective_id IS NOT NULL
+				AND st.category NOT IN ('completed', 'cancelled')
+			GROUP BY s.id, s.sequence_id, s.title, s.objective_id, s.start_date, s.end_date
+		),
+		ranked_story_schedule AS (
+			SELECT
+				story_schedule.*,
+				ROW_NUMBER() OVER (
+					PARTITION BY objective_id
+					ORDER BY forecast_end_date DESC, sequence_id DESC, id
+				) AS forecast_rank
+			FROM story_schedule
+			WHERE forecast_end_date IS NOT NULL
+		),
+		objective_schedule AS (
+			SELECT
+				objective_id,
+				MIN(forecast_start_date) AS forecast_start_date,
+				MAX(forecast_end_date) AS forecast_end_date
+			FROM story_schedule
+			GROUP BY objective_id
+		),
+		story_stats AS (
 			SELECT 
 				o.objective_id,
-				COUNT(*) as total,
+				COUNT(s.id) as total,
 				COUNT(CASE WHEN st.category = 'cancelled' THEN 1 END) as cancelled,
 				COUNT(CASE WHEN st.category = 'completed' THEN 1 END) as completed,
 				COUNT(CASE WHEN st.category = 'started' THEN 1 END) as started,
@@ -174,6 +288,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 			o.status_id,
 			o.priority,
 			o.health,
+			o.color,
 			o.created_by,
 			COALESCE(krs.total, 0) as key_result_count,
 			COALESCE(ss.total, 0) as total_stories,
@@ -181,11 +296,20 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 			COALESCE(ss.completed, 0) as completed_stories,
 			COALESCE(ss.started, 0) as started_stories,
 			COALESCE(ss.unstarted, 0) as unstarted_stories,
-			COALESCE(ss.backlog, 0) as backlog_stories
+			COALESCE(ss.backlog, 0) as backlog_stories,
+			os.forecast_start_date,
+			os.forecast_end_date,
+			rss.id AS forecast_cause_id,
+			rss.sequence_id AS forecast_cause_sequence_id,
+			rss.title AS forecast_cause_title,
+			rss.forecast_source AS forecast_cause_source
 		FROM
 			objectives o
 		LEFT JOIN story_stats ss ON o.objective_id = ss.objective_id
 		LEFT JOIN key_result_stats krs ON o.objective_id = krs.objective_id
+		LEFT JOIN objective_schedule os ON o.objective_id = os.objective_id
+		LEFT JOIN ranked_story_schedule rss
+			ON o.objective_id = rss.objective_id AND rss.forecast_rank = 1
 		WHERE o.objective_id = :id AND o.workspace_id = :workspace_id;
 	`
 

@@ -130,6 +130,11 @@ func (r *Repo) ListSchedulingBlocksForUser(ctx context.Context, workspaceID, use
 		return nil, fmt.Errorf("list account-wide scheduling blocks: %w", err)
 	}
 	blocks := toCoreScheduleBlocks(rows)
+	redactCrossWorkspaceScheduleBlocks(blocks, workspaceID)
+	return blocks, nil
+}
+
+func redactCrossWorkspaceScheduleBlocks(blocks []calendar.CoreScheduleBlock, workspaceID uuid.UUID) {
 	for index := range blocks {
 		if blocks[index].WorkspaceID == workspaceID {
 			continue
@@ -144,9 +149,11 @@ func (r *Repo) ListSchedulingBlocksForUser(ctx context.Context, workspaceID, use
 		blocks[index].TeamCode = nil
 		blocks[index].AutoSchedulingStatus = nil
 		blocks[index].AutoSchedulingReason = nil
-		blocks[index].Title = "Busy"
+		blocks[index].ManualOverrideBy = nil
+		blocks[index].ManualOverrideAt = nil
+		blocks[index].Title = "Scheduled elsewhere"
+		blocks[index].IsCrossWorkspace = true
 	}
-	return blocks, nil
 }
 
 func (r *Repo) ListManualScheduleRescheduleEvents(ctx context.Context, workspaceID, userID uuid.UUID, since time.Time) ([]calendar.CoreScheduleRescheduleEvent, error) {

@@ -46,6 +46,7 @@ export const useUpdateObjectiveMutation = () => {
             shortSummary: data.shortSummary ?? prevObjective.shortSummary,
             leadUser: data.leadUser ?? prevObjective.leadUser,
             health: data.health ?? prevObjective.health,
+            color: data.color ?? prevObjective.color,
             startDate: data.startDate ?? prevObjective.startDate,
             endDate: data.endDate ?? prevObjective.endDate,
             statusId: data.statusId ?? prevObjective.statusId,
@@ -70,6 +71,7 @@ export const useUpdateObjectiveMutation = () => {
                   statusId: data.statusId ?? objective.statusId,
                   priority: data.priority ?? objective.priority,
                   health: data.health ?? objective.health,
+                  color: data.color ?? objective.color,
                 }
               : objective,
           ),
@@ -96,6 +98,7 @@ export const useUpdateObjectiveMutation = () => {
                       statusId: data.statusId ?? objective.statusId,
                       priority: data.priority ?? objective.priority,
                       health: data.health ?? objective.health,
+                      color: data.color ?? objective.color,
                     }
                   : objective,
               ),

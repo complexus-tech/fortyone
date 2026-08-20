@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { memberKeys } from "@/constants/keys";
+import { objectiveKeys } from "@/modules/objectives/constants";
 import { deriveAutoSchedulingStatus } from "@/lib/auto-scheduling";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
@@ -141,6 +142,9 @@ export const useUpdateStoryMutation = () => {
       queryClient.invalidateQueries({
         queryKey: storyKeys.activitiesInfinite(workspaceSlug, storyId),
         refetchType: "all",
+      });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
       });
     },
   });

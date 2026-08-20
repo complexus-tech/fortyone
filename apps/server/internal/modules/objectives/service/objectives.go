@@ -290,6 +290,10 @@ func (s *Service) Create(ctx context.Context, newObjective CoreNewObjective, wor
 	ctx, span := web.AddSpan(ctx, "business.core.objectives.Create")
 	defer span.End()
 
+	if newObjective.Color == "" {
+		newObjective.Color = DefaultObjectiveColor
+	}
+
 	createdObj, createdKRs, err := s.repo.Create(ctx, newObjective, workspaceID, keyResults)
 	if err != nil {
 		span.RecordError(err)

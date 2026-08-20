@@ -149,6 +149,7 @@ type CoreScheduleBlock struct {
 	EndAt                time.Time           `json:"endAt"`
 	HasConflict          bool                `json:"hasConflict"`
 	IsLocked             bool                `json:"isLocked"`
+	IsCrossWorkspace     bool                `json:"isCrossWorkspace,omitempty"`
 	AutoSchedulingStatus *string             `json:"autoSchedulingStatus,omitempty"`
 	AutoSchedulingReason *string             `json:"autoSchedulingReason,omitempty"`
 	Source               ScheduleBlockSource `json:"source"`

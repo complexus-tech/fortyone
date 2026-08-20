@@ -571,7 +571,11 @@ func (s *Service) ListCalendarView(ctx context.Context, workspaceID, userID uuid
 	if err != nil {
 		return CoreCalendarView{}, err
 	}
-	blocks, err := s.repo.ListScheduleBlocks(ctx, workspaceID, userID, startAt, endAt)
+	scheduleRepo, err := s.scheduleReconciliationRepository()
+	if err != nil {
+		return CoreCalendarView{}, err
+	}
+	blocks, err := scheduleRepo.ListSchedulingBlocksForUser(ctx, workspaceID, userID, startAt, endAt)
 	if err != nil {
 		return CoreCalendarView{}, err
 	}

@@ -19,6 +19,7 @@ import { formatTimeNeeded } from "@/lib/time-needed";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useLabels } from "@/lib/hooks/labels";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
+import { useProfile } from "@/lib/hooks/profile";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
@@ -26,6 +27,7 @@ import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import type { Label } from "@/types";
 import {
+  formatScheduleActivityValue,
   getActivityCopy,
   getActivityValueIds,
   getDisplayActivityReason,
@@ -213,6 +215,7 @@ export const Activity = ({
   const { data: mayaAssignee } = useMayaAssignee();
   const { data: statuses = [] } = useStatuses();
   const { data: allLabels = [] } = useLabels();
+  const { data: profile } = useProfile();
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
   const { data: session } = useSession();
@@ -503,6 +506,12 @@ export const Activity = ({
     displayCurrentValue = getLabelActivityDisplayValue(activityLabels);
   } else if (field === "collaborator_ids") {
     displayCurrentValue = collaboratorDisplayValue;
+  } else if (field === "auto_scheduling_time") {
+    displayCurrentValue = formatScheduleActivityValue(
+      currentValue,
+      newValue,
+      profile?.timezone,
+    );
   }
   const activityCopy = getActivityCopy({
     currentValue: displayCurrentValue,

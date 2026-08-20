@@ -230,7 +230,7 @@ func formatScheduleTransitionTime(transition *events.StoryScheduleTransition, ti
 			value = value.In(location)
 		}
 	}
-	return value.Format("2 Jan 2006 at 15:04 MST")
+	return value.Format("2 Jan 2006 at 15:04")
 }
 
 func normalizedMayaReason(payload events.StoryUpdatedPayload) string {

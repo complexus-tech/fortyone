@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
+import { objectiveKeys } from "@/modules/objectives/constants";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import type {
@@ -189,6 +190,9 @@ export const useBulkUpdateStoriesMutation = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
+      });
 
       toast.error(
         `Failed to update ${getTermDisplay("storyTerm", { variant: "plural" })}`,

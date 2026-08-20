@@ -9,30 +9,37 @@ import (
 )
 
 type dbObjective struct {
-	ID               uuid.UUID                   `db:"objective_id"`
-	SequenceID       int                         `db:"sequence_id"`
-	Name             string                      `db:"name"`
-	Description      *string                     `db:"description"`
-	ShortSummary     *string                     `db:"short_summary"`
-	LeadUser         *uuid.UUID                  `db:"lead_user_id"`
-	Team             uuid.UUID                   `db:"team_id"`
-	Workspace        uuid.UUID                   `db:"workspace_id"`
-	StartDate        *time.Time                  `db:"start_date"`
-	EndDate          *time.Time                  `db:"end_date"`
-	IsPrivate        bool                        `db:"is_private"`
-	Status           uuid.UUID                   `db:"status_id"`
-	Priority         *string                     `db:"priority"`
-	Health           *objectives.ObjectiveHealth `db:"health"`
-	CreatedAt        time.Time                   `db:"created_at"`
-	UpdatedAt        time.Time                   `db:"updated_at"`
-	CreatedBy        uuid.UUID                   `db:"created_by"`
-	KeyResultCount   int                         `db:"key_result_count"`
-	TotalStories     int                         `db:"total_stories"`
-	CancelledStories int                         `db:"cancelled_stories"`
-	CompletedStories int                         `db:"completed_stories"`
-	StartedStories   int                         `db:"started_stories"`
-	UnstartedStories int                         `db:"unstarted_stories"`
-	BacklogStories   int                         `db:"backlog_stories"`
+	ID                      uuid.UUID                   `db:"objective_id"`
+	SequenceID              int                         `db:"sequence_id"`
+	Name                    string                      `db:"name"`
+	Description             *string                     `db:"description"`
+	ShortSummary            *string                     `db:"short_summary"`
+	LeadUser                *uuid.UUID                  `db:"lead_user_id"`
+	Team                    uuid.UUID                   `db:"team_id"`
+	Workspace               uuid.UUID                   `db:"workspace_id"`
+	StartDate               *time.Time                  `db:"start_date"`
+	EndDate                 *time.Time                  `db:"end_date"`
+	IsPrivate               bool                        `db:"is_private"`
+	Status                  uuid.UUID                   `db:"status_id"`
+	Priority                *string                     `db:"priority"`
+	Health                  *objectives.ObjectiveHealth `db:"health"`
+	Color                   string                      `db:"color"`
+	ForecastStartDate       *time.Time                  `db:"forecast_start_date"`
+	ForecastEndDate         *time.Time                  `db:"forecast_end_date"`
+	ForecastCauseID         *uuid.UUID                  `db:"forecast_cause_id"`
+	ForecastCauseSequenceID *int                        `db:"forecast_cause_sequence_id"`
+	ForecastCauseTitle      *string                     `db:"forecast_cause_title"`
+	ForecastCauseSource     *string                     `db:"forecast_cause_source"`
+	CreatedAt               time.Time                   `db:"created_at"`
+	UpdatedAt               time.Time                   `db:"updated_at"`
+	CreatedBy               uuid.UUID                   `db:"created_by"`
+	KeyResultCount          int                         `db:"key_result_count"`
+	TotalStories            int                         `db:"total_stories"`
+	CancelledStories        int                         `db:"cancelled_stories"`
+	CompletedStories        int                         `db:"completed_stories"`
+	StartedStories          int                         `db:"started_stories"`
+	UnstartedStories        int                         `db:"unstarted_stories"`
+	BacklogStories          int                         `db:"backlog_stories"`
 }
 
 type dbKeyResult struct {
@@ -66,37 +73,55 @@ func toDBObjective(co objectives.CoreNewObjective, workspaceID uuid.UUID) dbObje
 		IsPrivate:    co.IsPrivate,
 		Status:       co.Status,
 		Priority:     co.Priority,
+		Color:        co.Color,
 		CreatedBy:    co.CreatedBy,
 	}
 }
 
 func toCoreObjective(dbo dbObjective) objectives.CoreObjective {
-	return objectives.CoreObjective{
-		ID:               dbo.ID,
-		SequenceID:       dbo.SequenceID,
-		Name:             dbo.Name,
-		Description:      dbo.Description,
-		ShortSummary:     dbo.ShortSummary,
-		LeadUser:         dbo.LeadUser,
-		Team:             dbo.Team,
-		Workspace:        dbo.Workspace,
-		StartDate:        dbo.StartDate,
-		EndDate:          dbo.EndDate,
-		IsPrivate:        dbo.IsPrivate,
-		CreatedAt:        dbo.CreatedAt,
-		UpdatedAt:        dbo.UpdatedAt,
-		CreatedBy:        dbo.CreatedBy,
-		Status:           dbo.Status,
-		Priority:         dbo.Priority,
-		Health:           dbo.Health,
-		KeyResultCount:   dbo.KeyResultCount,
-		TotalStories:     dbo.TotalStories,
-		CancelledStories: dbo.CancelledStories,
-		CompletedStories: dbo.CompletedStories,
-		StartedStories:   dbo.StartedStories,
-		UnstartedStories: dbo.UnstartedStories,
-		BacklogStories:   dbo.BacklogStories,
+	objective := objectives.CoreObjective{
+		ID:                dbo.ID,
+		SequenceID:        dbo.SequenceID,
+		Name:              dbo.Name,
+		Description:       dbo.Description,
+		ShortSummary:      dbo.ShortSummary,
+		LeadUser:          dbo.LeadUser,
+		Team:              dbo.Team,
+		Workspace:         dbo.Workspace,
+		StartDate:         dbo.StartDate,
+		EndDate:           dbo.EndDate,
+		IsPrivate:         dbo.IsPrivate,
+		CreatedAt:         dbo.CreatedAt,
+		UpdatedAt:         dbo.UpdatedAt,
+		CreatedBy:         dbo.CreatedBy,
+		Status:            dbo.Status,
+		Priority:          dbo.Priority,
+		Health:            dbo.Health,
+		Color:             dbo.Color,
+		ForecastStartDate: dbo.ForecastStartDate,
+		ForecastEndDate:   dbo.ForecastEndDate,
+		KeyResultCount:    dbo.KeyResultCount,
+		TotalStories:      dbo.TotalStories,
+		CancelledStories:  dbo.CancelledStories,
+		CompletedStories:  dbo.CompletedStories,
+		StartedStories:    dbo.StartedStories,
+		UnstartedStories:  dbo.UnstartedStories,
+		BacklogStories:    dbo.BacklogStories,
 	}
+	if dbo.ForecastCauseID != nil && dbo.ForecastCauseSequenceID != nil && dbo.ForecastCauseTitle != nil {
+		source := "planning"
+		if dbo.ForecastCauseSource != nil {
+			source = *dbo.ForecastCauseSource
+		}
+		objective.ForecastCauseStory = &objectives.CoreForecastCauseStory{
+			ID:         *dbo.ForecastCauseID,
+			SequenceID: *dbo.ForecastCauseSequenceID,
+			Title:      *dbo.ForecastCauseTitle,
+			Source:     source,
+		}
+	}
+	objective.ApplyScheduleForecast()
+	return objective
 }
 
 func toCoreObjectives(do []dbObjective) []objectives.CoreObjective {

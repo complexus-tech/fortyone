@@ -38,6 +38,52 @@ type ActivityCopyInput = {
   type: StoryActivity["type"];
 };
 
+const SCHEDULE_TIMEZONE_SUFFIX_PATTERN = /\s+(?:[A-Z]{2,6}|[+-]\d{2,4})$/;
+
+const scheduleTimeFormatters = new Map<
+  string,
+  { date: Intl.DateTimeFormat; time: Intl.DateTimeFormat }
+>();
+
+export const formatScheduleActivityValue = (
+  currentValue: string,
+  newValue: unknown,
+  timezone?: string,
+) => {
+  const normalizedTimezone = timezone?.trim();
+  if (typeof newValue === "string" && normalizedTimezone) {
+    const scheduledAt = new Date(newValue);
+    if (!Number.isNaN(scheduledAt.getTime())) {
+      try {
+        let formatters = scheduleTimeFormatters.get(normalizedTimezone);
+        if (!formatters) {
+          formatters = {
+            date: new Intl.DateTimeFormat("en-GB", {
+              day: "numeric",
+              month: "short",
+              timeZone: normalizedTimezone,
+              year: "numeric",
+            }),
+            time: new Intl.DateTimeFormat("en-GB", {
+              hour: "2-digit",
+              hourCycle: "h23",
+              minute: "2-digit",
+              timeZone: normalizedTimezone,
+            }),
+          };
+          scheduleTimeFormatters.set(normalizedTimezone, formatters);
+        }
+
+        return `${formatters.date.format(scheduledAt)} at ${formatters.time.format(scheduledAt)}`;
+      } catch {
+        // Keep legacy activity rows readable if a persisted timezone is invalid.
+      }
+    }
+  }
+
+  return currentValue.replace(SCHEDULE_TIMEZONE_SUFFIX_PATTERN, "");
+};
+
 export const getDisplayActivityReason = (reason?: string | null) => {
   const normalizedReason = reason?.trim() ?? "";
   return ASSOCIATION_REASONS.has(normalizedReason) ? "" : normalizedReason;

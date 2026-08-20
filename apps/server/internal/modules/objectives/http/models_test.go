@@ -57,6 +57,37 @@ func TestObjectiveSequenceMapping(t *testing.T) {
 	}
 }
 
+func TestObjectiveForecastMapping(t *testing.T) {
+	t.Parallel()
+
+	forecast := time.Date(2026, time.June, 29, 0, 0, 0, 0, time.UTC)
+	storyID := uuid.New()
+	appObjective := toAppObjective(objectives.CoreObjective{
+		ID:                uuid.New(),
+		Name:              "Launch MVP",
+		Color:             "#686DE0",
+		ForecastEndDate:   &forecast,
+		ScheduleStatus:    objectives.ScheduleStatusAtRisk,
+		ForecastDaysDelta: 4,
+		ForecastCauseStory: &objectives.CoreForecastCauseStory{
+			ID:         storyID,
+			SequenceID: 17,
+			Title:      "Complete billing integration",
+			Source:     "calendar",
+		},
+	})
+
+	if appObjective.Color != "#686DE0" || appObjective.ForecastEndDate == nil {
+		t.Fatalf("expected color and forecast to be mapped, got %#v", appObjective)
+	}
+	if appObjective.ScheduleStatus != "at_risk" || appObjective.ForecastDaysDelta != 4 {
+		t.Fatalf("expected at-risk forecast metadata, got %#v", appObjective)
+	}
+	if appObjective.ForecastCauseStory == nil || appObjective.ForecastCauseStory.ID != storyID {
+		t.Fatalf("expected forecast cause story to be mapped, got %#v", appObjective.ForecastCauseStory)
+	}
+}
+
 func TestCreateKeyResultsRequestValidation(t *testing.T) {
 	t.Parallel()
 

@@ -118,7 +118,7 @@ func TestScheduleTransitionNotificationAndActivityPreserveReason(t *testing.T) {
 	require.Len(t, notifications, 1)
 	require.Equal(t, assigneeID, notifications[0].RecipientID, "calendar movement must notify only the affected calendar owner")
 	require.Equal(t, "moved this task to {scheduled_for}: {reason}", notifications[0].Message.Template)
-	require.Equal(t, "18 Aug 2026 at 09:30 CAT", notifications[0].Message.Variables["scheduled_for"].Value)
+	require.Equal(t, "18 Aug 2026 at 09:30", notifications[0].Message.Variables["scheduled_for"].Value)
 	require.Equal(t, payload.Reason, notifications[0].Message.Variables["reason"].Value)
 
 	eventTimestamp := time.Date(2026, time.August, 18, 7, 0, 0, 0, time.UTC)
@@ -127,7 +127,7 @@ func TestScheduleTransitionNotificationAndActivityPreserveReason(t *testing.T) {
 	activity := storyService.activities[0]
 	require.NotEqual(t, uuid.Nil, activity.ID)
 	require.Equal(t, "auto_scheduling_time", activity.Field)
-	require.Equal(t, "18 Aug 2026 at 09:30 CAT", activity.CurrentValue)
+	require.Equal(t, "18 Aug 2026 at 09:30", activity.CurrentValue)
 	require.NotNil(t, activity.Reason)
 	require.Equal(t, payload.Reason, *activity.Reason)
 }
@@ -188,7 +188,7 @@ func TestFirstScheduleActivityShowsReservedTimeInsteadOfInternalState(t *testing
 	}, "Africa/Harare")
 
 	require.Equal(t, "auto_scheduling_time", field)
-	require.Equal(t, "18 Aug 2026 at 11:00 CAT", currentValue)
+	require.Equal(t, "18 Aug 2026 at 11:00", currentValue)
 	require.Nil(t, oldValue)
 	require.Equal(t, &start, newValue)
 }
@@ -221,7 +221,7 @@ func TestScheduleTransitionDisplayUsesUserTimezone(t *testing.T) {
 	field, currentValue, _, _ := scheduleTransitionActivityValues(transition, "Africa/Harare")
 
 	require.Equal(t, "auto_scheduling_time", field)
-	require.Equal(t, "20 Aug 2026 at 09:45 CAT", currentValue)
+	require.Equal(t, "20 Aug 2026 at 09:45", currentValue)
 }
 
 func timePointer(value time.Time) *time.Time {

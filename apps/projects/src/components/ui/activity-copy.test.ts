@@ -1,6 +1,7 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import {
+  formatScheduleActivityValue,
   getActivityCopy,
   getActivityValueIds,
   getDisplayActivityReason,
@@ -160,6 +161,26 @@ describe("activity copy", () => {
         type: "update",
       }).text,
     ).toBe("locked the auto-scheduled calendar blocks");
+  });
+
+  it("formats Maya schedule times in the viewer's profile timezone without a suffix", () => {
+    expect(
+      formatScheduleActivityValue(
+        "21 Aug 2026 at 08:23 UTC",
+        "2026-08-21T08:23:00Z",
+        "Africa/Harare",
+      ),
+    ).toBe("21 Aug 2026 at 10:23");
+  });
+
+  it("removes the timezone suffix from legacy schedule copy when raw data is unavailable", () => {
+    expect(
+      formatScheduleActivityValue(
+        "21 Aug 2026 at 08:23 UTC",
+        undefined,
+        "Africa/Harare",
+      ),
+    ).toBe("21 Aug 2026 at 08:23");
   });
 
   it("describes the user's auto-scheduling preference as intent", () => {

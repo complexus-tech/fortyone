@@ -2,9 +2,9 @@
 
 import type { ReactNode } from "react";
 import { format, formatISO } from "date-fns";
-import { CalendarIcon } from "icons";
+import { CalendarIcon, ClockIcon, WarningIcon } from "icons";
 import { cn } from "lib";
-import { Avatar, Box, Button, DatePicker, Flex, Text } from "ui";
+import { Avatar, Box, Button, ColorPicker, DatePicker, Flex, Text } from "ui";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useCanUpdateObjective } from "@/modules/objectives/hooks";
@@ -110,6 +110,25 @@ export const ObjectiveDetailsProperties = ({
                 {objective.health ?? "No health"}
               </Button>
             </ObjectiveHealthEditor>
+          }
+        />
+        <DetailRow
+          label="Color"
+          value={
+            <Flex align="center" gap={1}>
+              <ColorPicker
+                className={cn("-ml-2", {
+                  "pointer-events-none opacity-60": !canUpdate,
+                })}
+                onChange={(color) => {
+                  handleUpdate({ color });
+                }}
+                value={objective.color}
+              />
+              <Text color="muted" fontSize="sm">
+                {objective.color.toUpperCase()}
+              </Text>
+            </Flex>
           }
         />
         <DetailRow
@@ -259,6 +278,41 @@ export const ObjectiveDetailsProperties = ({
             </DatePicker>
           }
         />
+        {objective.forecastEndDate ? (
+          <DetailRow
+            label="Forecast"
+            value={
+              <Box className="py-1">
+                <Flex align="center" gap={2}>
+                  {objective.scheduleStatus === "at_risk" ? (
+                    <WarningIcon className="text-danger h-4 w-auto shrink-0" />
+                  ) : (
+                    <ClockIcon className="text-text-muted h-4 w-auto shrink-0" />
+                  )}
+                  <Text
+                    color={
+                      objective.scheduleStatus === "at_risk"
+                        ? "danger"
+                        : undefined
+                    }
+                    fontWeight="medium"
+                  >
+                    {format(new Date(objective.forecastEndDate), "MMM d, yyyy")}
+                    {objective.forecastDaysDelta > 0
+                      ? ` · ${objective.forecastDaysDelta} days late`
+                      : " · On track"}
+                  </Text>
+                </Flex>
+                {objective.forecastCauseStory ? (
+                  <Text className="mt-0.5 pl-6" color="muted" fontSize="sm">
+                    Driven by task {objective.forecastCauseStory.sequenceId}:{" "}
+                    {objective.forecastCauseStory.title}
+                  </Text>
+                ) : null}
+              </Box>
+            }
+          />
+        ) : null}
       </Flex>
     </>
   );

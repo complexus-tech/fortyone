@@ -61,7 +61,8 @@ export type CalendarScheduleBlock = {
   endAt: string;
   hasConflict: boolean;
   isLocked: boolean;
-  source: "user" | "maya";
+  isCrossWorkspace?: boolean;
+  source: "user" | "maya" | "other_workspace";
   autoSchedulingStatus?: AutoSchedulingStatus;
   autoSchedulingReason?: string | null;
   createdAt: string;

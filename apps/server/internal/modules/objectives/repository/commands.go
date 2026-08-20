@@ -47,12 +47,12 @@ func (r *repo) Create(ctx context.Context, objective objectives.CoreNewObjective
 		INSERT INTO objectives (
 			sequence_id, name, description, short_summary, lead_user_id, team_id,
 			workspace_id, start_date, end_date, is_private,
-			status_id, priority, created_by
+			status_id, priority, color, created_by
 		) VALUES (
 			:sequence_id, :name, :description, :short_summary, :lead_user_id, :team_id,
 			:workspace_id, :start_date, :end_date, :is_private,
-			:status_id, :priority, :created_by
-		) RETURNING objectives.objective_id, objectives.sequence_id, objectives.name, objectives.description, objectives.short_summary, objectives.lead_user_id, objectives.team_id, objectives.workspace_id, objectives.start_date, objectives.end_date, objectives.is_private, objectives.status_id, objectives.priority, objectives.created_at, objectives.updated_at, objectives.created_by, objectives.health;
+			:status_id, :priority, :color, :created_by
+		) RETURNING objectives.objective_id, objectives.sequence_id, objectives.name, objectives.description, objectives.short_summary, objectives.lead_user_id, objectives.team_id, objectives.workspace_id, objectives.start_date, objectives.end_date, objectives.is_private, objectives.status_id, objectives.priority, objectives.color, objectives.created_at, objectives.updated_at, objectives.created_by, objectives.health;
 	`
 
 	var createdObj dbObjective

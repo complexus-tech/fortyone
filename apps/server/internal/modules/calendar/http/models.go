@@ -116,6 +116,7 @@ type AppScheduleBlock struct {
 	EndAt                time.Time  `json:"endAt"`
 	HasConflict          bool       `json:"hasConflict"`
 	IsLocked             bool       `json:"isLocked"`
+	IsCrossWorkspace     bool       `json:"isCrossWorkspace,omitempty"`
 	AutoSchedulingStatus *string    `json:"autoSchedulingStatus,omitempty"`
 	AutoSchedulingReason *string    `json:"autoSchedulingReason,omitempty"`
 	Source               string     `json:"source"`
@@ -306,6 +307,10 @@ func toAppScheduleBlocks(blocks []calendar.CoreScheduleBlock) []AppScheduleBlock
 }
 
 func toAppScheduleBlock(block calendar.CoreScheduleBlock) AppScheduleBlock {
+	source := string(block.Source)
+	if block.IsCrossWorkspace {
+		source = "other_workspace"
+	}
 	return AppScheduleBlock{
 		ID:                   block.ID,
 		StoryID:              block.StoryID,
@@ -320,9 +325,10 @@ func toAppScheduleBlock(block calendar.CoreScheduleBlock) AppScheduleBlock {
 		EndAt:                block.EndAt,
 		HasConflict:          block.HasConflict,
 		IsLocked:             block.IsLocked,
+		IsCrossWorkspace:     block.IsCrossWorkspace,
 		AutoSchedulingStatus: block.AutoSchedulingStatus,
 		AutoSchedulingReason: block.AutoSchedulingReason,
-		Source:               string(block.Source),
+		Source:               source,
 		CreatedAt:            block.CreatedAt,
 		UpdatedAt:            block.UpdatedAt,
 		ManualOverrideAt:     block.ManualOverrideAt,

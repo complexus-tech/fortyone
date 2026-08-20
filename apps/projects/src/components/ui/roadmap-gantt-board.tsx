@@ -1,8 +1,8 @@
 "use client";
 
 import { Box, Flex, Text, Tooltip, Avatar, Button, DatePicker } from "ui";
-import { differenceInDays, formatISO } from "date-fns";
-import { useCallback, useState } from "react";
+import { differenceInDays, format, formatISO } from "date-fns";
+import { useCallback, useMemo, useState } from "react";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarPlusIcon } from "icons";
@@ -30,6 +30,31 @@ const ROADMAP_STICKY_COLUMNS_WIDTH = 640;
 const ROADMAP_ROW_HEIGHT = "3.5rem";
 const ROADMAP_COLUMNS =
   "grid-cols-[2rem_minmax(0,7rem)_2rem_2rem_minmax(0,1fr)_5.25rem]";
+
+type RoadmapGanttItem = {
+  id: string;
+  startDate: string | null;
+  endDate: string | null;
+  objective: Objective;
+};
+
+const getTimelineDate = (
+  dates: (string | null | undefined)[],
+  mode: "earliest" | "latest",
+) => {
+  const validDates = dates
+    .filter((date): date is string => Boolean(date))
+    .map((date) => new Date(date))
+    .filter((date) => !Number.isNaN(date.getTime()));
+
+  if (validDates.length === 0) return null;
+  const timestamp =
+    mode === "earliest"
+      ? Math.min(...validDates.map((date) => date.getTime()))
+      : Math.max(...validDates.map((date) => date.getTime()));
+
+  return formatISO(new Date(timestamp), { representation: "date" });
+};
 
 // Individual Objective Row Component
 const ObjectiveRow = ({
@@ -223,13 +248,40 @@ const ObjectiveRow = ({
             }}
             type="button"
           >
-            <Text className="line-clamp-1 hover:opacity-90" fontWeight="medium">
-              {objective.name}
-            </Text>
+            <Flex align="center" className="min-w-0" gap={2}>
+              <span
+                aria-hidden
+                className="size-2.5 shrink-0 rounded-sm"
+                style={{ backgroundColor: objective.color }}
+              />
+              <Text
+                className="line-clamp-1 hover:opacity-90"
+                fontWeight="medium"
+              >
+                {objective.name}
+              </Text>
+            </Flex>
           </button>
         </Flex>
         <Flex justify="end">
-          {duration !== null ? (
+          {objective.scheduleStatus === "at_risk" ? (
+            <Tooltip
+              className="pointer-events-none max-w-72"
+              title={`Forecast ${
+                objective.forecastEndDate
+                  ? format(new Date(objective.forecastEndDate), "MMM d, yyyy")
+                  : "is late"
+              }${
+                objective.forecastCauseStory
+                  ? `. Driven by task ${objective.forecastCauseStory.sequenceId}: ${objective.forecastCauseStory.title}`
+                  : ""
+              }`}
+            >
+              <Text className="shrink-0 text-[0.95rem]" color="danger">
+                +{objective.forecastDaysDelta}d
+              </Text>
+            </Tooltip>
+          ) : duration !== null ? (
             <Text className="shrink-0 text-[0.95rem]" color="muted">
               {duration} day{duration !== 1 ? "s" : ""}
             </Text>
@@ -289,6 +341,22 @@ export const RoadmapGanttBoard = ({
 }: RoadmapGanttBoardProps) => {
   const { mutate } = useUpdateObjectiveMutation();
   const { data: statuses = [] } = useObjectiveStatuses();
+  const ganttItems = useMemo<RoadmapGanttItem[]>(
+    () =>
+      objectives.map((objective) => ({
+        id: objective.id,
+        startDate: getTimelineDate(
+          [objective.startDate, objective.forecastStartDate],
+          "earliest",
+        ),
+        endDate: getTimelineDate(
+          [objective.endDate, objective.forecastEndDate],
+          "latest",
+        ),
+        objective,
+      })),
+    [objectives],
+  );
 
   // Handle date updates from drag operations
   const handleDateUpdate = useCallback(
@@ -317,7 +385,7 @@ export const RoadmapGanttBoard = ({
   // Render sidebar for objectives
   const renderSidebar = useCallback(
     (
-      objectives: Objective[],
+      items: RoadmapGanttItem[],
       onReset: () => void,
       sidebarZoomLevel: ZoomLevel,
       onZoomChange: (zoom: ZoomLevel) => void,
@@ -332,7 +400,7 @@ export const RoadmapGanttBoard = ({
               zoomLevel={sidebarZoomLevel}
             />
           </Box>
-          {objectives.map((objective) => {
+          {items.map(({ objective }) => {
             const startDate = objective.startDate
               ? new Date(objective.startDate)
               : null;
@@ -367,22 +435,80 @@ export const RoadmapGanttBoard = ({
   );
 
   // Render bar content
-  const renderBarContent = useCallback(
-    (objective: Objective) => (
-      <Text className="line-clamp-1" fontWeight="medium">
-        {objective.name}
-      </Text>
-    ),
-    [],
-  );
+  const renderBarContent = useCallback((item: RoadmapGanttItem) => {
+    const { objective } = item;
+    const isAtRisk = objective.scheduleStatus === "at_risk";
+    const timelineStart = item.startDate ? new Date(item.startDate) : null;
+    const timelineEnd = item.endDate ? new Date(item.endDate) : null;
+    const targetEnd = objective.endDate ? new Date(objective.endDate) : null;
+    const timelineDays =
+      timelineStart && timelineEnd
+        ? Math.max(1, differenceInDays(timelineEnd, timelineStart))
+        : 1;
+    const targetPosition =
+      timelineStart && targetEnd
+        ? Math.min(
+            100,
+            Math.max(
+              0,
+              (differenceInDays(targetEnd, timelineStart) / timelineDays) * 100,
+            ),
+          )
+        : 100;
+
+    return (
+      <Box
+        className="absolute inset-0 overflow-hidden rounded-[inherit]"
+        style={{
+          background: isAtRisk
+            ? `linear-gradient(to right, ${hexToRgba(
+                objective.color,
+                0.28,
+              )} 0%, ${hexToRgba(
+                objective.color,
+                0.28,
+              )} ${targetPosition}%, ${hexToRgba(
+                objective.color,
+                0.1,
+              )} ${targetPosition}%, ${hexToRgba(objective.color, 0.1)} 100%)`
+            : hexToRgba(objective.color, 0.22),
+        }}
+      >
+        {isAtRisk && targetEnd ? (
+          <span
+            aria-label={`Target date ${format(targetEnd, "MMM d, yyyy")}`}
+            className="absolute inset-y-0 w-px bg-current opacity-35"
+            style={{ left: `${targetPosition}%` }}
+          />
+        ) : null}
+        <Flex align="center" className="h-full min-w-0 px-3" gap={2}>
+          <Text className="line-clamp-1 min-w-0" fontWeight="medium">
+            {objective.name}
+          </Text>
+          {isAtRisk ? (
+            <Text
+              as="span"
+              className="shrink-0 text-[0.8rem]"
+              color="danger"
+              fontWeight="semibold"
+            >
+              +{objective.forecastDaysDelta}d
+            </Text>
+          ) : null}
+        </Flex>
+      </Box>
+    );
+  }, []);
 
   return (
     <BaseGantt
-      barClassName="dark:bg-white/[0.07] dark:hover:bg-white/[0.1]"
+      barClassName="hover:border-border-strong dark:hover:border-border-strong"
       className={className}
       controlledZoomLevel={zoomLevel}
-      items={objectives}
-      onBarClick={onObjectiveSelect}
+      items={ganttItems}
+      onBarClick={(item) => {
+        onObjectiveSelect(item.objective);
+      }}
       onDateUpdate={handleDateUpdate}
       onZoomLevelChange={onZoomLevelChange}
       renderBarContent={renderBarContent}

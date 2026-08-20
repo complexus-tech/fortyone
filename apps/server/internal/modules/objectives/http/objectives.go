@@ -147,17 +147,6 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return nil
 	}
 
-	cacheKey := cache.ObjectiveDetailCacheKey(workspace.ID, objID)
-	var cachedObjective objectives.CoreObjective
-
-	if err := h.cache.Get(ctx, cacheKey, &cachedObjective); err == nil {
-		span.AddEvent("cache hit", trace.WithAttributes(
-			attribute.String("cache_key", cacheKey),
-		))
-		web.Respond(ctx, w, toAppObjective(cachedObjective), http.StatusOK)
-		return nil
-	}
-
 	objective, err := h.objectives.Get(ctx, objID, workspace.ID)
 	if err != nil {
 		if errors.Is(err, objectives.ErrNotFound) {
@@ -166,10 +155,6 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		}
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
-	}
-
-	if err := h.cache.Set(ctx, cacheKey, objective, cache.DetailTTL); err != nil {
-		h.log.Error(ctx, "failed to set cache", "key", cacheKey, "error", err)
 	}
 
 	web.Respond(ctx, w, toAppObjective(objective), http.StatusOK)
@@ -238,6 +223,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if uo.Health != nil {
 		health := objectives.ObjectiveHealth(*uo.Health)
 		updates["health"] = health
+	}
+	if uo.Color != nil {
+		updates["color"] = *uo.Color
 	}
 
 	if err := h.objectives.Update(ctx, objID, workspace.ID, userID, comment, updates); err != nil {

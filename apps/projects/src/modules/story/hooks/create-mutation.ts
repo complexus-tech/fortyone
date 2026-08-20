@@ -6,6 +6,7 @@ import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
 import { deriveAutoSchedulingStatus } from "@/lib/auto-scheduling";
 import { getStoryPath } from "@/modules/story/utils/story-url";
+import { objectiveKeys } from "@/modules/objectives/constants";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
@@ -382,6 +383,9 @@ export const useCreateStoryMutation = () => {
 
       queryClient.invalidateQueries({
         queryKey: storyKeys.all(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
       });
 
       if (createdStory.parentId) {

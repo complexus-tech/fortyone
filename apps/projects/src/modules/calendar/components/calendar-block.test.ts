@@ -2,6 +2,9 @@
 
 import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
 import {
+  CROSS_WORKSPACE_CALENDAR_BLOCK_CONTEXT,
+  CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE,
+  CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP,
   getMayaCalendarBlockLabel,
   getMayaCalendarBlockReason,
   isCalendarScheduleBlockEditable,
@@ -32,6 +35,23 @@ describe("calendar block presentation", () => {
     expect(
       isCalendarScheduleBlockEditable(createBlock({ source: "user" })),
     ).toBe(true);
+    expect(
+      isCalendarScheduleBlockEditable(
+        createBlock({ isCrossWorkspace: true, source: "other_workspace" }),
+      ),
+    ).toBe(false);
+  });
+
+  it("does not expose Maya provenance for another workspace", () => {
+    const block = createBlock({ isCrossWorkspace: true });
+
+    expect(getMayaCalendarBlockLabel(block)).toBeNull();
+    expect(getMayaCalendarBlockReason(block)).toBeNull();
+    expect(CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE).toBe("Scheduled elsewhere");
+    expect(CROSS_WORKSPACE_CALENDAR_BLOCK_CONTEXT).toBe("Another workspace");
+    expect(CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP).toBe(
+      "This time is reserved by a task in another workspace. Task details are hidden here.",
+    );
   });
 
   it("shows Maya provenance and enriched scheduling state when available", () => {

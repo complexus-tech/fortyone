@@ -216,3 +216,35 @@ func TestScheduleBlockResponsePropagatesAutoSchedulingMetadata(t *testing.T) {
 		}
 	}
 }
+
+func TestCrossWorkspaceScheduleBlockResponseUsesGenericProvenance(t *testing.T) {
+	t.Parallel()
+
+	block := toAppScheduleBlock(calendar.CoreScheduleBlock{
+		ID:               uuid.New(),
+		IsCrossWorkspace: true,
+		Source:           calendar.ScheduleBlockSourceMaya,
+		Title:            "Scheduled elsewhere",
+	})
+	if !block.IsCrossWorkspace || block.Source != "other_workspace" {
+		t.Fatalf("unexpected cross-workspace response: %#v", block)
+	}
+
+	payload, err := json.Marshal(block)
+	if err != nil {
+		t.Fatalf("marshal cross-workspace schedule block: %v", err)
+	}
+	serialized := string(payload)
+	for _, contract := range []string{
+		`"isCrossWorkspace":true`,
+		`"source":"other_workspace"`,
+		`"title":"Scheduled elsewhere"`,
+	} {
+		if !strings.Contains(serialized, contract) {
+			t.Errorf("cross-workspace response is missing %s: %s", contract, serialized)
+		}
+	}
+	if strings.Contains(serialized, `"source":"maya"`) {
+		t.Fatalf("cross-workspace response leaked scheduling provenance: %s", serialized)
+	}
+}

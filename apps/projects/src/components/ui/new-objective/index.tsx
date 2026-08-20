@@ -17,7 +17,9 @@ import {
   Menu,
   Avatar,
   Box,
+  ColorPicker,
   Divider,
+  Tooltip,
   Wrapper,
 } from "ui";
 import { useEditor } from "@tiptap/react";
@@ -130,6 +132,7 @@ export const NewObjectiveDialog = ({
     endDate: null,
     statusId: statuses.length > 0 ? defaultStatus.id : "",
     priority: "No Priority",
+    color: "#4A90E2",
     keyResults: [],
   };
   const features = useFeatures();
@@ -523,6 +526,16 @@ export const NewObjectiveDialog = ({
                   }}
                 />
               </PrioritiesMenu>
+              <Tooltip title="Objective color">
+                <span>
+                  <ColorPicker
+                    onChange={(color) => {
+                      setObjectiveForm((prev) => ({ ...prev, color }));
+                    }}
+                    value={objectiveForm.color}
+                  />
+                </span>
+              </Tooltip>
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button

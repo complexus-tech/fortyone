@@ -15,31 +15,57 @@ const (
 	HealthOffTrack ObjectiveHealth = "Off Track"
 )
 
+const DefaultObjectiveColor = "#4A90E2"
+
+// ObjectiveScheduleStatus describes the objective's live delivery forecast.
+// It is deliberately separate from the manually managed objective health.
+type ObjectiveScheduleStatus string
+
+const (
+	ScheduleStatusOnTrack    ObjectiveScheduleStatus = "on_track"
+	ScheduleStatusAtRisk     ObjectiveScheduleStatus = "at_risk"
+	ScheduleStatusNoTarget   ObjectiveScheduleStatus = "no_target"
+	ScheduleStatusNoSchedule ObjectiveScheduleStatus = "no_schedule"
+)
+
+type CoreForecastCauseStory struct {
+	ID         uuid.UUID
+	SequenceID int
+	Title      string
+	Source     string
+}
+
 type CoreObjective struct {
-	ID               uuid.UUID
-	SequenceID       int
-	Name             string
-	Description      *string
-	ShortSummary     *string
-	LeadUser         *uuid.UUID
-	Team             uuid.UUID
-	Workspace        uuid.UUID
-	StartDate        *time.Time
-	EndDate          *time.Time
-	IsPrivate        bool
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Status           uuid.UUID
-	CreatedBy        uuid.UUID
-	Priority         *string
-	Health           *ObjectiveHealth
-	KeyResultCount   int
-	TotalStories     int
-	CancelledStories int
-	CompletedStories int
-	StartedStories   int
-	UnstartedStories int
-	BacklogStories   int
+	ID                 uuid.UUID
+	SequenceID         int
+	Name               string
+	Description        *string
+	ShortSummary       *string
+	LeadUser           *uuid.UUID
+	Team               uuid.UUID
+	Workspace          uuid.UUID
+	StartDate          *time.Time
+	EndDate            *time.Time
+	IsPrivate          bool
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	Status             uuid.UUID
+	CreatedBy          uuid.UUID
+	Priority           *string
+	Health             *ObjectiveHealth
+	Color              string
+	ForecastStartDate  *time.Time
+	ForecastEndDate    *time.Time
+	ScheduleStatus     ObjectiveScheduleStatus
+	ForecastDaysDelta  int
+	ForecastCauseStory *CoreForecastCauseStory
+	KeyResultCount     int
+	TotalStories       int
+	CancelledStories   int
+	CompletedStories   int
+	StartedStories     int
+	UnstartedStories   int
+	BacklogStories     int
 }
 
 type CoreNewObjective struct {
@@ -53,6 +79,7 @@ type CoreNewObjective struct {
 	IsPrivate    bool
 	Status       uuid.UUID
 	Priority     *string
+	Color        string
 	CreatedBy    uuid.UUID
 }
 
@@ -69,6 +96,36 @@ type CoreUpdateObjective struct {
 	Status       *uuid.UUID
 	Priority     *string
 	Health       *ObjectiveHealth
+	Color        *string
+}
+
+// ApplyScheduleForecast derives delivery risk from the committed objective
+// target and the latest active linked work. It never mutates target dates.
+func (objective *CoreObjective) ApplyScheduleForecast() {
+	objective.ForecastDaysDelta = 0
+
+	if objective.EndDate == nil {
+		objective.ScheduleStatus = ScheduleStatusNoTarget
+		return
+	}
+	if objective.ForecastEndDate == nil {
+		objective.ScheduleStatus = ScheduleStatusNoSchedule
+		return
+	}
+
+	objective.ForecastDaysDelta = calendarDayDelta(*objective.EndDate, *objective.ForecastEndDate)
+	if objective.ForecastDaysDelta > 0 {
+		objective.ScheduleStatus = ScheduleStatusAtRisk
+		return
+	}
+
+	objective.ScheduleStatus = ScheduleStatusOnTrack
+}
+
+func calendarDayDelta(from, to time.Time) int {
+	fromDate := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
+	toDate := time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, time.UTC)
+	return int(toDate.Sub(fromDate).Hours() / 24)
 }
 
 type CoreStrategyMap struct {

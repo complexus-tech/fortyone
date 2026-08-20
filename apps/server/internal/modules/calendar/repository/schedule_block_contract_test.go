@@ -4,6 +4,10 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
+
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	"github.com/google/uuid"
 )
 
 func TestScheduleBlockSelectScopesAutoSchedulingMetadataToMayaBlocks(t *testing.T) {
@@ -38,29 +42,50 @@ func TestToCoreScheduleBlockPropagatesAutoSchedulingMetadata(t *testing.T) {
 	}
 }
 
-func TestListSchedulingBlocksForUserRedactsCrossWorkspaceAutoSchedulingMetadata(t *testing.T) {
+func TestRedactCrossWorkspaceScheduleBlocksHidesTaskDetails(t *testing.T) {
 	t.Parallel()
 
-	data, err := os.ReadFile("schedule.go")
-	if err != nil {
-		t.Fatalf("read schedule repository: %v", err)
+	workspaceID := uuid.New()
+	otherWorkspaceID := uuid.New()
+	storyID := uuid.New()
+	teamID := uuid.New()
+	manualOverrideBy := uuid.New()
+	manualOverrideAt := time.Now()
+	storyTitle := "Private roadmap task"
+	storyCode := "SEC-41"
+	teamName := "Secret team"
+	teamCode := "SEC"
+	status := "scheduled"
+	reason := "Private scheduling reason"
+	blocks := []calendar.CoreScheduleBlock{
+		{WorkspaceID: workspaceID, Title: "Visible current task"},
+		{
+			WorkspaceID: otherWorkspaceID, StoryID: &storyID, StoryTitle: &storyTitle,
+			StoryCode: &storyCode, StoryPriority: "high", TeamID: &teamID, TeamName: &teamName,
+			TeamCode: &teamCode, Title: storyTitle, AutoSchedulingStatus: &status,
+			AutoSchedulingReason: &reason, ManualOverrideBy: &manualOverrideBy,
+			ManualOverrideAt: &manualOverrideAt,
+			Source:           calendar.ScheduleBlockSourceMaya,
+		},
 	}
-	source := strings.Join(strings.Fields(string(data)), " ")
-	functionStart := strings.Index(source, "func (r *Repo) ListSchedulingBlocksForUser")
-	functionEnd := strings.Index(source[functionStart+1:], "func (r *Repo)")
-	if functionStart < 0 || functionEnd < 0 {
-		t.Fatal("could not locate ListSchedulingBlocksForUser implementation")
-	}
-	functionSource := source[functionStart : functionStart+1+functionEnd]
 
-	workspaceGuard := strings.Index(functionSource, "if blocks[index].WorkspaceID == workspaceID { continue }")
-	statusRedaction := strings.Index(functionSource, "blocks[index].AutoSchedulingStatus = nil")
-	reasonRedaction := strings.Index(functionSource, "blocks[index].AutoSchedulingReason = nil")
-	if workspaceGuard < 0 || statusRedaction < 0 || reasonRedaction < 0 {
-		t.Fatalf("cross-workspace schedule redaction is incomplete: %s", functionSource)
+	redactCrossWorkspaceScheduleBlocks(blocks, workspaceID)
+
+	if blocks[0].Title != "Visible current task" || blocks[0].IsCrossWorkspace {
+		t.Fatalf("current-workspace block was changed: %#v", blocks[0])
 	}
-	if workspaceGuard >= statusRedaction || workspaceGuard >= reasonRedaction {
-		t.Fatal("auto-scheduling metadata must only be redacted after retaining current-workspace blocks")
+	redacted := blocks[1]
+	if redacted.Title != "Scheduled elsewhere" || !redacted.IsCrossWorkspace {
+		t.Fatalf("cross-workspace presentation state is incomplete: %#v", redacted)
+	}
+	if redacted.StoryID != nil || redacted.StoryTitle != nil || redacted.StoryCode != nil || redacted.TeamID != nil || redacted.TeamName != nil || redacted.TeamCode != nil {
+		t.Fatalf("cross-workspace task identity leaked: %#v", redacted)
+	}
+	if redacted.StoryPriority != "" || redacted.AutoSchedulingStatus != nil || redacted.AutoSchedulingReason != nil || redacted.ManualOverrideBy != nil || redacted.ManualOverrideAt != nil {
+		t.Fatalf("cross-workspace planning metadata leaked: %#v", redacted)
+	}
+	if redacted.Source != calendar.ScheduleBlockSourceMaya {
+		t.Fatal("internal planning must retain the block's scheduling mechanics")
 	}
 }
 

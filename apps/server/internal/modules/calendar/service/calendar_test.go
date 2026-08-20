@@ -127,6 +127,8 @@ type fakeRepo struct {
 	events                    []CoreCalendarEventSummary
 	event                     CoreCalendarEvent
 	blocks                    []CoreScheduleBlock
+	scheduleBlocksCalls       int
+	accountScheduleBlockCalls int
 	revoked                   uuid.UUID
 	member                    *bool
 	storyAllowed              *bool
@@ -881,6 +883,7 @@ func (r *fakeRepo) GetCalendarEvent(ctx context.Context, workspaceID, userID, ev
 }
 
 func (r *fakeRepo) ListScheduleBlocks(ctx context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) ([]CoreScheduleBlock, error) {
+	r.scheduleBlocksCalls++
 	return r.blocks, nil
 }
 
@@ -947,6 +950,7 @@ func (r *fakeRepo) DeleteScheduleBlock(ctx context.Context, workspaceID, userID,
 }
 
 func (r *fakeRepo) ListSchedulingBlocksForUser(_ context.Context, _, _ uuid.UUID, _, _ time.Time) ([]CoreScheduleBlock, error) {
+	r.accountScheduleBlockCalls++
 	return r.blocks, nil
 }
 
@@ -1483,6 +1487,9 @@ func TestCalendarViewKeepsBusyWindowsForBackwardCompatibleAvailability(t *testin
 	}
 	if len(view.Events) != 1 || len(view.BusyWindows) != 1 {
 		t.Fatalf("expected owner event and backward-compatible busy window: %#v", view)
+	}
+	if repo.accountScheduleBlockCalls != 1 || repo.scheduleBlocksCalls != 0 {
+		t.Fatalf("calendar view must use privacy-redacted account-wide blocks: account=%d workspace=%d", repo.accountScheduleBlockCalls, repo.scheduleBlocksCalls)
 	}
 
 	schedule, err := service.ListSchedule(context.Background(), workspaceID, userID, startAt, endAt)
