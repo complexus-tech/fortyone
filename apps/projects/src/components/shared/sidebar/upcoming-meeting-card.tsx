@@ -278,7 +278,7 @@ const ScheduleIssueContent = ({
 
       <Flex className="mt-3 gap-2">
         <Button
-          className="min-w-0 flex-1 px-2"
+          className="shrink-0 px-3"
           color="tertiary"
           loading={isRetrying}
           onClick={onRetry}
