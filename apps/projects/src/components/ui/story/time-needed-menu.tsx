@@ -8,7 +8,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { Box, Button, Divider, Flex, Input, Popover, Text } from "ui";
+import { Box, Button, Divider, Flex, Input, Menu, Popover, Text } from "ui";
 import { cn } from "lib";
 import {
   formatTimeNeeded,
@@ -55,20 +55,21 @@ const Trigger = ({ children }: { children: ReactNode }) => (
   <Popover.Trigger asChild>{children}</Popover.Trigger>
 );
 
-const Items = ({
-  align = "center",
-  estimatedDurationMinutes,
-  minimumFocusBlockMinutes,
-  setTimeNeeded,
-  showMinimumFocusBlock = true,
-}: {
-  align?: "start" | "end" | "center";
+type TimeNeededContentProps = {
   estimatedDurationMinutes?: number | null;
   minimumFocusBlockMinutes?: number | null;
+  onDurationSelected?: () => void;
   setTimeNeeded: (value: TimeNeededValue) => void;
   showMinimumFocusBlock?: boolean;
-}) => {
-  const { setOpen } = useTimeNeededMenu();
+};
+
+const TimeNeededContent = ({
+  estimatedDurationMinutes,
+  minimumFocusBlockMinutes,
+  onDurationSelected,
+  setTimeNeeded,
+  showMinimumFocusBlock = true,
+}: TimeNeededContentProps) => {
   const [customValue, setCustomValue] = useState("");
   const [customUnit, setCustomUnit] = useState<TimeNeededUnit>("hours");
   const [customError, setCustomError] = useState<string | null>(null);
@@ -81,7 +82,7 @@ const Items = ({
         minimumFocusBlockMinutes,
       }),
     );
-    setOpen(false);
+    onDurationSelected?.();
   };
 
   const submitCustomDuration = (event: FormEvent<HTMLFormElement>) => {
@@ -117,7 +118,7 @@ const Items = ({
     focusBlockOptions.length > 0;
 
   return (
-    <Popover.Content align={align} className="w-80 p-3">
+    <>
       <Box>
         <Text fontWeight="medium">Time needed</Text>
         <Text className="mt-0.5 text-sm leading-5" color="muted">
@@ -279,9 +280,37 @@ const Items = ({
           </Flex>
         </>
       ) : null}
+    </>
+  );
+};
+
+const Items = ({
+  align = "center",
+  ...contentProps
+}: TimeNeededContentProps & {
+  align?: "start" | "end" | "center";
+}) => {
+  const { setOpen } = useTimeNeededMenu();
+
+  return (
+    <Popover.Content align={align} className="w-80 p-3">
+      <TimeNeededContent
+        {...contentProps}
+        onDurationSelected={() => {
+          contentProps.onDurationSelected?.();
+          setOpen(false);
+        }}
+      />
     </Popover.Content>
   );
 };
 
+const SubItems = (props: TimeNeededContentProps) => (
+  <Menu.SubItems className="w-80 p-3">
+    <TimeNeededContent {...props} />
+  </Menu.SubItems>
+);
+
 TimeNeededMenu.Trigger = Trigger;
 TimeNeededMenu.Items = Items;
+TimeNeededMenu.SubItems = SubItems;

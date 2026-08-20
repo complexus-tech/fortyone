@@ -2,7 +2,13 @@
 
 import { Box, Flex, Text, Tooltip, Avatar, Button, DatePicker } from "ui";
 import { differenceInDays, format, formatISO } from "date-fns";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarPlusIcon } from "icons";
@@ -90,6 +96,24 @@ const ObjectiveRow = ({
   const selectedAssignee = members.find(
     (member) => member.id === objective.leadUser,
   );
+  const rowStyle = {
+    "--objective-row-background": hexToRgba(
+      objective.color,
+      isSelected ? 0.09 : 0.045,
+    ),
+    "--objective-row-background-dark": hexToRgba(
+      objective.color,
+      isSelected ? 0.11 : 0.06,
+    ),
+    "--objective-row-hover-background": hexToRgba(
+      objective.color,
+      isSelected ? 0.13 : 0.085,
+    ),
+    "--objective-row-hover-background-dark": hexToRgba(
+      objective.color,
+      isSelected ? 0.15 : 0.11,
+    ),
+  } as CSSProperties;
   let scheduleCell: ReactNode;
 
   if (objective.scheduleStatus === "at_risk") {
@@ -165,10 +189,10 @@ const ObjectiveRow = ({
     >
       <Box
         className={cn(
-          "group border-border hover:bg-state-hover/50 dark:border-border/70 grid h-14 items-center gap-4 border-b-[0.5px] px-4 transition-colors dark:hover:bg-white/[0.025]",
+          "group border-border dark:border-border/70 grid h-14 items-center gap-4 border-b-[0.5px] bg-[var(--objective-row-background)] px-4 transition-colors duration-150 hover:bg-[var(--objective-row-hover-background)] dark:bg-[var(--objective-row-background-dark)] dark:hover:bg-[var(--objective-row-hover-background-dark)]",
           ROADMAP_COLUMNS,
-          { "bg-state-active/50 dark:bg-white/[0.03]": isSelected },
         )}
+        style={rowStyle}
       >
         <Flex align="center" justify="center">
           <AssigneesMenu>

@@ -8,7 +8,15 @@ import {
   type ReactNode,
   type UIEvent,
 } from "react";
-import { Avatar, Command, Flex, Popover, Text, Divider } from "ui";
+import {
+  Avatar,
+  Command,
+  Divider,
+  Flex,
+  Menu as DropdownMenu,
+  Popover,
+  Text,
+} from "ui";
 import { useSession } from "@/lib/auth/client";
 import { MEMBER_MENU_PAGE_SIZE, useMembersInfinite } from "@/lib/hooks/members";
 import { useTeamMembersInfinite } from "@/lib/hooks/team-members";
@@ -29,7 +37,7 @@ export const useAssigneesMenu = () => {
   return { open, setOpen };
 };
 
-const Menu = ({ children }: { children: ReactNode }) => {
+const PopoverMenu = ({ children }: { children: ReactNode }) => {
   const { open, setOpen } = useAssigneesMenu();
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -42,7 +50,7 @@ export const AssigneesMenu = ({ children }: { children: ReactNode }) => {
   const [open, setOpen] = useState(false);
   return (
     <AssigneesContext.Provider value={{ open, setOpen }}>
-      <Menu>{children}</Menu>
+      <PopoverMenu>{children}</PopoverMenu>
     </AssigneesContext.Provider>
   );
 };
@@ -51,25 +59,29 @@ const Trigger = ({ children }: { children: ReactNode }) => (
   <Popover.Trigger asChild>{children}</Popover.Trigger>
 );
 
-const Items = ({
+type AssigneePickerProps = {
+  assigneeId?: string | null;
+  disallowEmptySelection?: boolean;
+  excludeUsers?: string[];
+  onAssigneeSelected: (assigneeId: string | null) => void;
+  placeholder?: string;
+  teamId?: string;
+};
+
+const AssigneePickerContent = ({
   placeholder = "Assign to...",
-  align,
   assigneeId,
   onAssigneeSelected,
   disallowEmptySelection = false,
   excludeUsers = EMPTY_EXCLUDED_USERS,
+  open,
+  setOpen,
   teamId,
-}: {
-  placeholder?: string;
-  align?: "start" | "end" | "center";
-  disallowEmptySelection?: boolean;
-  excludeUsers?: string[];
-  assigneeId?: string | null;
-  teamId?: string;
-  onAssigneeSelected: (assigneeId: string | null) => void;
+}: AssigneePickerProps & {
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }) => {
   const { data: session } = useSession();
-  const { open, setOpen } = useAssigneesMenu();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const workspaceMembersQuery = useMembersInfinite(
@@ -111,137 +123,167 @@ const Items = ({
   };
 
   return (
-    <Popover.Content align={align} className="w-80">
-      <Command>
-        <Command.Input
-          autoFocus
-          onValueChange={setQuery}
-          placeholder={placeholder}
-          value={query}
-        />
-        <Divider className="my-2" />
-        {!isLoadingMembers ? (
-          <Command.Empty className="py-2">
-            <Text color="muted">No user found.</Text>
-          </Command.Empty>
+    <Command>
+      <Command.Input
+        autoFocus
+        onValueChange={setQuery}
+        placeholder={placeholder}
+        value={query}
+      />
+      <Divider className="my-2" />
+      {!isLoadingMembers ? (
+        <Command.Empty className="py-2">
+          <Text color="muted">No user found.</Text>
+        </Command.Empty>
+      ) : null}
+      <Command.Group
+        className="max-h-80 overflow-y-auto md:max-h-100"
+        onScroll={handleScroll}
+      >
+        {isLoadingMembers ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton avatar rows={5} />
+          </Command.Loading>
         ) : null}
-        <Command.Group
-          className="max-h-80 overflow-y-auto md:max-h-100"
-          onScroll={handleScroll}
-        >
-          {isLoadingMembers ? (
-            <Command.Loading className="p-2">
-              <MenuLoadingSkeleton avatar rows={5} />
-            </Command.Loading>
-          ) : null}
 
-          {!isLoadingMembers && (
-            <>
-              {!disallowEmptySelection ? (
-                <Command.Item
-                  active={!assigneeId}
-                  className="justify-between opacity-70"
-                  onSelect={() => {
-                    if (assigneeId) {
-                      onAssigneeSelected(null);
-                    }
-                    setOpen(false);
-                  }}
-                >
-                  <Flex align="center" gap={2}>
-                    <Avatar
-                      className="text-foreground/80"
-                      color="primary"
-                      size="sm"
-                    />
-                    <Text className="max-w-40 truncate">Unassigned</Text>
-                  </Flex>
-                  <Flex align="center" gap={1}>
-                    {!assigneeId && (
-                      <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                    )}
-                    <Text color="muted">0</Text>
-                  </Flex>
-                </Command.Item>
-              ) : null}
-              {self ? (
-                <Command.Item
-                  active={self.id === assigneeId}
-                  className="justify-between"
-                  onSelect={() => {
-                    if (self.id !== assigneeId) {
-                      onAssigneeSelected(self.id);
-                    }
-                    setOpen(false);
-                  }}
-                  value={self.fullName || self.username || self.email}
-                >
-                  <Flex align="center" gap={2}>
-                    <Avatar
-                      color="primary"
-                      name={self.fullName}
-                      size="sm"
-                      src={self.avatarUrl}
-                    />
-                    <Text className="max-w-48 truncate">
-                      {self.fullName || self.username}{" "}
-                      <Text as="span" color="muted">
-                        (You)
-                      </Text>
+        {!isLoadingMembers && (
+          <>
+            {!disallowEmptySelection ? (
+              <Command.Item
+                active={!assigneeId}
+                className="justify-between opacity-70"
+                onSelect={() => {
+                  if (assigneeId) {
+                    onAssigneeSelected(null);
+                  }
+                  setOpen(false);
+                }}
+              >
+                <Flex align="center" gap={2}>
+                  <Avatar
+                    className="text-foreground/80"
+                    color="primary"
+                    size="sm"
+                  />
+                  <Text className="max-w-40 truncate">Unassigned</Text>
+                </Flex>
+                <Flex align="center" gap={1}>
+                  {!assigneeId && (
+                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                  )}
+                  <Text color="muted">0</Text>
+                </Flex>
+              </Command.Item>
+            ) : null}
+            {self ? (
+              <Command.Item
+                active={self.id === assigneeId}
+                className="justify-between"
+                onSelect={() => {
+                  if (self.id !== assigneeId) {
+                    onAssigneeSelected(self.id);
+                  }
+                  setOpen(false);
+                }}
+                value={self.fullName || self.username || self.email}
+              >
+                <Flex align="center" gap={2}>
+                  <Avatar
+                    color="primary"
+                    name={self.fullName}
+                    size="sm"
+                    src={self.avatarUrl}
+                  />
+                  <Text className="max-w-48 truncate">
+                    {self.fullName || self.username}{" "}
+                    <Text as="span" color="muted">
+                      (You)
                     </Text>
-                  </Flex>
-                  <Flex align="center" gap={1}>
-                    {self.id === assigneeId && (
-                      <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                    )}
-                    <Text color="muted">{disallowEmptySelection ? 0 : 1}</Text>
-                  </Flex>
-                </Command.Item>
-              ) : null}
-            </>
-          )}
-          {visibleMembers.map(({ id, fullName, username, avatarUrl }, idx) => (
-            <Command.Item
-              active={id === assigneeId}
-              className="justify-between"
-              key={id}
-              onSelect={() => {
-                if (id !== assigneeId) {
-                  onAssigneeSelected(id);
-                }
-                setOpen(false);
-              }}
-              value={fullName || username}
-            >
-              <Flex align="center" gap={2}>
-                <Avatar
-                  color="primary"
-                  name={fullName || username}
-                  size="sm"
-                  src={avatarUrl}
-                />
-                <Text className="max-w-48 truncate">
-                  {fullName || username}
-                </Text>
-              </Flex>
-              <Flex align="center" gap={1}>
-                {id === assigneeId && (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                )}
-                <Text color="muted">{idx + indexOffset}</Text>
-              </Flex>
-            </Command.Item>
-          ))}
-          {membersQuery.isFetchingNextPage ? (
-            <Command.Loading className="p-2">
-              <MenuLoadingSkeleton avatar rows={2} />
-            </Command.Loading>
-          ) : null}
-        </Command.Group>
-      </Command>
+                  </Text>
+                </Flex>
+                <Flex align="center" gap={1}>
+                  {self.id === assigneeId && (
+                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+                  )}
+                  <Text color="muted">{disallowEmptySelection ? 0 : 1}</Text>
+                </Flex>
+              </Command.Item>
+            ) : null}
+          </>
+        )}
+        {visibleMembers.map(({ id, fullName, username, avatarUrl }, idx) => (
+          <Command.Item
+            active={id === assigneeId}
+            className="justify-between"
+            key={id}
+            onSelect={() => {
+              if (id !== assigneeId) {
+                onAssigneeSelected(id);
+              }
+              setOpen(false);
+            }}
+            value={fullName || username}
+          >
+            <Flex align="center" gap={2}>
+              <Avatar
+                color="primary"
+                name={fullName || username}
+                size="sm"
+                src={avatarUrl}
+              />
+              <Text className="max-w-48 truncate">{fullName || username}</Text>
+            </Flex>
+            <Flex align="center" gap={1}>
+              {id === assigneeId && (
+                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+              )}
+              <Text color="muted">{idx + indexOffset}</Text>
+            </Flex>
+          </Command.Item>
+        ))}
+        {membersQuery.isFetchingNextPage ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton avatar rows={2} />
+          </Command.Loading>
+        ) : null}
+      </Command.Group>
+    </Command>
+  );
+};
+
+const Items = ({
+  align,
+  ...pickerProps
+}: AssigneePickerProps & {
+  align?: "start" | "end" | "center";
+}) => {
+  const { open, setOpen } = useAssigneesMenu();
+
+  return (
+    <Popover.Content align={align} className="w-80">
+      <AssigneePickerContent {...pickerProps} open={open} setOpen={setOpen} />
     </Popover.Content>
+  );
+};
+
+const SubMenu = ({
+  children,
+  ...pickerProps
+}: AssigneePickerProps & { children: ReactNode }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <DropdownMenu.SubMenu onOpenChange={setOpen} open={open}>
+      <DropdownMenu.SubTrigger className="justify-between gap-4">
+        {children}
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubItems className="w-80 overflow-hidden">
+        <AssigneePickerContent {...pickerProps} open={open} setOpen={setOpen} />
+      </DropdownMenu.SubItems>
+    </DropdownMenu.SubMenu>
   );
 };
 
 AssigneesMenu.Trigger = Trigger;
 AssigneesMenu.Items = Items;
+AssigneesMenu.SubMenu = SubMenu;

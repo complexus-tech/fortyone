@@ -1,6 +1,6 @@
-/* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
+/* global afterEach, beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { StoryGitHubLink } from "@/modules/settings/workspace/integrations/github/types";
 import type { StoryFeedbackLink } from "@/modules/team-feedback/types";
 import type { DetailedStory } from "../types";
@@ -11,6 +11,7 @@ const mockFeedbackLinks: StoryFeedbackLink[] = [];
 const mockRequestLinks: unknown[] = [];
 const mockRetryMutate = jest.fn();
 const mockOverrideMutate = jest.fn();
+const mockUpdateStory = jest.fn();
 
 jest.mock("@/hooks", () => ({
   useTerminology: () => ({
@@ -31,6 +32,13 @@ jest.mock("@/lib/hooks/calendar/use-schedule-issues", () => ({
     isPending: false,
     mutate: mockRetryMutate,
     variables: undefined,
+  }),
+}));
+
+jest.mock("../hooks/update-mutation", () => ({
+  useUpdateStoryMutation: () => ({
+    isPending: false,
+    mutate: mockUpdateStory,
   }),
 }));
 
@@ -97,11 +105,24 @@ const createStory = (overrides: Partial<DetailedStory> = {}): DetailedStory =>
 
 describe("StoryBanners", () => {
   beforeEach(() => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: jest.fn().mockReturnValue({
+        addEventListener: jest.fn(),
+        matches: false,
+        removeEventListener: jest.fn(),
+      }),
+    });
     mockGitHubLinks.length = 0;
     mockFeedbackLinks.length = 0;
     mockRequestLinks.length = 0;
     mockRetryMutate.mockReset();
     mockOverrideMutate.mockReset();
+    mockUpdateStory.mockReset();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("shows Maya's actionable scheduling reason with workspace terminology", () => {
@@ -145,6 +166,97 @@ describe("StoryBanners", () => {
     expect(screen.getByTestId("feedback-banner")).toBeInTheDocument();
   });
 
+  it("automatically rotates through banners every five seconds and loops", () => {
+    jest.useFakeTimers();
+    mockGitHubLinks.push({
+      externalType: "issue",
+      id: "github-1",
+      title: "GitHub issue",
+    } as StoryGitHubLink);
+    mockFeedbackLinks.push({
+      feedbackTitle: "Customer feedback",
+      id: "feedback-1",
+    } as StoryFeedbackLink);
+
+    render(<StoryBanners story={createStory()} />);
+
+    expect(screen.getByText("1 of 3")).toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(screen.getByText("2 of 3")).toBeInTheDocument();
+    expect(screen.getByTestId("github-banner")).toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(screen.getByText("3 of 3")).toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(screen.getByText("1 of 3")).toBeInTheDocument();
+  });
+
+  it("pauses on hover and restarts a full interval after the pointer leaves", () => {
+    jest.useFakeTimers();
+    mockGitHubLinks.push({
+      externalType: "issue",
+      id: "github-1",
+      title: "GitHub issue",
+    } as StoryGitHubLink);
+
+    render(<StoryBanners story={createStory()} />);
+
+    const stack = screen.getByText("1 of 2").parentElement?.parentElement;
+    expect(stack).not.toBeNull();
+
+    fireEvent.mouseEnter(stack!);
+    act(() => {
+      jest.advanceTimersByTime(10000);
+    });
+    expect(screen.getByText("1 of 2")).toBeInTheDocument();
+
+    fireEvent.mouseLeave(stack!);
+    act(() => {
+      jest.advanceTimersByTime(4999);
+    });
+    expect(screen.getByText("1 of 2")).toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(1);
+    });
+    expect(screen.getByText("2 of 2")).toBeInTheDocument();
+  });
+
+  it("lets the user pause and resume banner rotation", () => {
+    jest.useFakeTimers();
+    mockGitHubLinks.push({
+      externalType: "issue",
+      id: "github-1",
+      title: "GitHub issue",
+    } as StoryGitHubLink);
+
+    render(<StoryBanners story={createStory()} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Pause banner rotation" }),
+    );
+    act(() => {
+      jest.advanceTimersByTime(10000);
+    });
+    expect(screen.getByText("1 of 2")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Play banner rotation" }),
+    );
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(screen.getByText("2 of 2")).toBeInTheDocument();
+  });
+
   it("offers retry and manual placement for a story Maya cannot fit", () => {
     render(
       <StoryBanners
@@ -182,11 +294,67 @@ describe("StoryBanners", () => {
     );
   });
 
-  it("does not show scheduling actions before Maya has a placement failure", () => {
+  it("offers the time-needed picker when Maya needs an estimate", () => {
     render(<StoryBanners story={createStory()} />);
 
+    fireEvent.click(
+      screen.getByRole("button", { name: "More Maya scheduling actions" }),
+    );
+
     expect(
-      screen.queryByRole("button", { name: "More Maya scheduling actions" }),
+      screen.getByRole("menuitem", { name: "Add time needed" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: "Choose owner" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: "Update end date" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers the owner picker when Maya needs an assignee", () => {
+    render(
+      <StoryBanners
+        story={createStory({
+          assigneeId: null,
+          autoSchedulingStatus: "needs_owner",
+          teamId: "team-1",
+        })}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "More Maya scheduling actions" }),
+    );
+
+    expect(
+      screen.getByRole("menuitem", { name: "Choose owner" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: "Add time needed" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers an end-date picker when Maya marks the schedule at risk", () => {
+    render(
+      <StoryBanners
+        story={createStory({
+          autoSchedulingStatus: "at_risk",
+          endDate: "2026-08-21",
+          estimatedDurationMinutes: 60,
+        })}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "More Maya scheduling actions" }),
+    );
+
+    expect(
+      screen.getByRole("menuitem", { name: "Update end date" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: "Choose time" }),
     ).not.toBeInTheDocument();
   });
 });
