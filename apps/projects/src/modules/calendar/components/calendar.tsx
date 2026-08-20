@@ -340,20 +340,24 @@ const CalendarTimedBlock = ({
   const resizeDelta = resizeDrag.isDragging
     ? snapCalendarDeltaPixels(resizeDrag.transform?.y ?? 0, hourHeight)
     : 0;
+  const renderedHeight = Math.max(
+    18,
+    layout.height - timedBlockVerticalGap + resizeDelta,
+  );
   const style = {
-    height: `${Math.max(18, layout.height - timedBlockVerticalGap + resizeDelta)}px`,
+    height: `${renderedHeight}px`,
     left: `calc(${layout.lane * laneWidth}% + 0.25rem)`,
     top: `${layout.top + timedBlockVerticalInset}px`,
     width: `calc(${laneWidth}% - 0.5rem)`,
   };
-  const showSecondaryLine = layout.height >= 39;
+  const showSecondaryLine = renderedHeight >= 40;
   const canShowTwoLineTitle = layout.height >= twoLineTitleMinimumHeight;
   const titleLineClass = canShowTwoLineTitle
     ? "line-clamp-2 leading-5"
-    : "truncate leading-none";
+    : "truncate leading-[0.9375rem]";
   const secondaryLineClass = canShowTwoLineTitle
-    ? "leading-[1.1rem]"
-    : "leading-[0.9375rem]";
+    ? "mt-1 leading-[1.1rem]"
+    : "mt-0.5 leading-[0.9375rem]";
   const blockPaddingClass =
     layout.height >= hourHeight ? "py-1 pr-2.5 pl-3" : "py-px pr-2.5 pl-3";
 
@@ -390,7 +394,7 @@ const CalendarTimedBlock = ({
             aria-hidden="true"
             className={cn("mt-0.5 h-4 w-4 shrink-0", eventTextClass)}
           />
-          <Box className="min-w-0 flex-1">
+          <Box className="-mt-px min-w-0 flex-1">
             <Text
               as="span"
               className={cn("min-w-0", titleLineClass, eventTextClass)}
@@ -403,7 +407,7 @@ const CalendarTimedBlock = ({
               <Text
                 as="span"
                 className={cn(
-                  "mt-1 block truncate text-[0.9375rem]",
+                  "block truncate text-[0.9375rem]",
                   secondaryLineClass,
                   eventTextClass,
                 )}
@@ -446,7 +450,7 @@ const CalendarTimedBlock = ({
         {showSecondaryLine ? (
           <Text
             className={cn(
-              "mt-1 truncate text-[0.9375rem]",
+              "truncate text-[0.9375rem]",
               secondaryLineClass,
               isCompleted ? "text-text-muted" : "text-foreground",
             )}
@@ -618,7 +622,7 @@ const CalendarTimedBlock = ({
             className={cn("mt-0.5 h-4 w-4 shrink-0", blockIconClass)}
           />
         ) : null}
-        <Box className={cn("min-w-0", hasLeadingIcon ? "flex-1" : null)}>
+        <Box className={cn("min-w-0", hasLeadingIcon ? "-mt-px flex-1" : null)}>
           <Text
             className={cn("min-w-0", titleLineClass, blockTitleColorClass)}
             fontSize="md"
@@ -632,7 +636,7 @@ const CalendarTimedBlock = ({
           {showSecondaryLine ? (
             <Text
               className={cn(
-                "mt-1 truncate text-[0.9375rem]",
+                "truncate text-[0.9375rem]",
                 secondaryLineClass,
                 blockSecondaryColorClass,
               )}

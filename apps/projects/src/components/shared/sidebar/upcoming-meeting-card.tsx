@@ -9,7 +9,6 @@ import {
   ChevronRightIcon,
   CloseIcon,
   ExternalLinkIcon,
-  RefreshIcon,
   Video02Icon,
 } from "icons";
 import { Box, Button, Dialog, Flex, Input, Text } from "ui";
@@ -178,7 +177,7 @@ const MeetingContent = ({ meeting }: { meeting: UpcomingMeeting }) => {
 
   return (
     <>
-      <Flex align="center" className="gap-1.5">
+      <Flex align="center" className="gap-1.5 pr-6">
         <span className="bg-primary relative flex size-2 rounded-full">
           <span className="bg-primary absolute inset-0 animate-ping rounded-full opacity-40 motion-reduce:animate-none" />
         </span>
@@ -244,7 +243,7 @@ const ScheduleIssueContent = ({
 
   return (
     <>
-      <Flex align="center" className="gap-1.5">
+      <Flex align="center" className="gap-1.5 pr-6">
         <span className="bg-warning flex size-2 rounded-full" />
         <Text
           className="text-[0.72rem] tracking-[0.08em] uppercase"
@@ -259,9 +258,6 @@ const ScheduleIssueContent = ({
         className="focus-visible:ring-ring mt-2 block rounded-sm leading-snug font-medium outline-none hover:underline focus-visible:ring-2"
         href={withWorkspace(getStoryPath({ id: issue.storyId }))}
       >
-        <span className="text-text-muted mr-1.5 text-[0.78rem] font-semibold tracking-wide uppercase">
-          {issue.storyCode}
-        </span>
         {issue.storyTitle}
       </a>
       <Text
@@ -284,13 +280,12 @@ const ScheduleIssueContent = ({
         <Button
           className="min-w-0 flex-1 px-2"
           color="tertiary"
-          leftIcon={<RefreshIcon className="h-3.5" />}
           loading={isRetrying}
           onClick={onRetry}
           size="sm"
           variant="outline"
         >
-          Try again
+          Retry
         </Button>
         <Button
           className="min-w-0 flex-1 px-2"
@@ -414,7 +409,7 @@ export const SidebarAssistantCards = ({
             />
           </button>
 
-          <Box className="pr-6">
+          <Box>
             {activeItem.kind === "meeting" ? (
               <MeetingContent meeting={activeItem.meeting} />
             ) : (

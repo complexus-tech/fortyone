@@ -71,7 +71,6 @@ jest.mock("icons", () => ({
   ChevronRightIcon: () => null,
   CloseIcon: () => null,
   ExternalLinkIcon: () => null,
-  RefreshIcon: () => null,
   Video02Icon: () => null,
 }));
 
@@ -232,9 +231,10 @@ describe("UpcomingMeetingCard", () => {
 
     expect(screen.getByText("Maya needs your help")).toBeInTheDocument();
     expect(screen.getByText("Prepare the launch brief")).toBeInTheDocument();
+    expect(screen.queryByText("ENG-42")).not.toBeInTheDocument();
     expect(screen.getByText("1 hour 30 minutes needed")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(retryScheduleIssue).toHaveBeenCalledWith("story-1");
 
     fireEvent.click(screen.getByRole("button", { name: "Choose time" }));
