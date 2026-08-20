@@ -8,6 +8,7 @@ import { useObjectiveAnalytics } from "@/modules/objectives/hooks/objective-anal
 import { useKeyResults } from "@/modules/objectives/hooks/use-key-results";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import type { KeyResult, Objective } from "@/modules/objectives/types";
+import { ObjectiveForecastRiskBanner } from "@/modules/objectives/components/objective-forecast-risk";
 import { ProgressChart } from "@/modules/objectives/stories/progress-chart";
 import { ObjectiveDetailsProperties } from "./objective-details-properties";
 import { ObjectiveDetailsKeyResults } from "./objective-details-key-results";
@@ -68,6 +69,8 @@ export const RoadmapObjectiveDetails = ({
             {objective.shortSummary}
           </Text>
         ) : null}
+
+        <ObjectiveForecastRiskBanner className="mb-5" objective={objective} />
 
         <ObjectiveDetailsProperties objective={objective} />
 

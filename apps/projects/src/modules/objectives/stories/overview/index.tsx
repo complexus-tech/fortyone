@@ -23,6 +23,7 @@ import { useIsAdminOrOwner } from "@/hooks/owner";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useChatContext } from "@/context/chat-context";
 import { RelatedDocuments } from "@/modules/documents/related-documents";
+import { ObjectiveForecastRiskBanner } from "@/modules/objectives/components/objective-forecast-risk";
 import {
   useCanUpdateObjective,
   useDeleteObjectiveMutation,
@@ -176,6 +177,13 @@ export const Overview = () => {
                   </Flex>
                 </Flex>
 
+                {objective ? (
+                  <ObjectiveForecastRiskBanner
+                    className="mt-5"
+                    objective={objective}
+                  />
+                ) : null}
+
                 <TextArea
                   aria-label="Objective short summary"
                   className="mt-4 min-h-20 resize-none border-0 bg-transparent px-0 py-2 leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
@@ -246,6 +254,13 @@ export const Overview = () => {
                 </Menu>
               ) : null}
             </Flex>
+
+            {objective ? (
+              <ObjectiveForecastRiskBanner
+                className="mt-4"
+                objective={objective}
+              />
+            ) : null}
 
             <TextArea
               aria-label="Objective short summary"

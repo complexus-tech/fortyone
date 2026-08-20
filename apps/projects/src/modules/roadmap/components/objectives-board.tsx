@@ -45,6 +45,7 @@ import { useMembers } from "@/lib/hooks/members";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
+import { ObjectiveForecastRiskBadge } from "@/modules/objectives/components/objective-forecast-risk";
 import { TableHeader } from "@/modules/objectives/components/heading";
 import {
   useCanUpdateObjective,
@@ -185,6 +186,7 @@ const ObjectiveBoardCard = ({
         </button>
       </Box>
       <Flex align="center" className="mt-1 gap-1.5" wrap>
+        <ObjectiveForecastRiskBadge objective={objective} />
         <AssigneesMenu>
           <AssigneesMenu.Trigger>
             <Button

@@ -6,12 +6,26 @@ import type {
   CalendarSchedule,
   CalendarScheduleIssue,
 } from "@/lib/queries/calendar/types";
+import type { Objective } from "@/modules/objectives/types";
 import { UpcomingMeetingCard } from "./upcoming-meeting-card";
 
 const useCalendarSchedule = jest.fn();
 const syncCalendar = jest.fn();
 const retryScheduleIssue = jest.fn();
 const overrideScheduleIssue = jest.fn();
+const mockObjectives: Objective[] = [];
+
+jest.mock("next/link", () => ({
+  __esModule: true,
+  default: ({
+    children,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a data-next-link="true" {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 jest.mock("ui", () => {
   function Dialog({ children }: { children: ReactNode }) {
@@ -59,18 +73,26 @@ jest.mock("ui", () => {
     }) => <div className={className}>{children}</div>,
     Button: ({
       children,
+      href,
       leftIcon,
       onClick,
     }: {
       children: ReactNode;
+      href?: string;
       leftIcon?: ReactNode;
       onClick?: () => void;
-    }) => (
-      <button onClick={onClick} type="button">
-        {leftIcon}
-        {children}
-      </button>
-    ),
+    }) =>
+      href ? (
+        <a href={href}>
+          {leftIcon}
+          {children}
+        </a>
+      ) : (
+        <button onClick={onClick} type="button">
+          {leftIcon}
+          {children}
+        </button>
+      ),
     Dialog,
     Flex: ({
       children,
@@ -139,9 +161,26 @@ jest.mock("icons", () => ({
 }));
 
 jest.mock("@/hooks", () => ({
+  useTerminology: () => ({
+    getTermDisplay: () => "story",
+  }),
   useWorkspacePath: () => ({
     withWorkspace: (path: string) => `/acme${path}`,
     workspaceSlug: "acme",
+  }),
+}));
+
+jest.mock("@/lib/auth/client", () => ({
+  useSession: () => ({ data: { user: { id: "user-1" } } }),
+}));
+
+jest.mock("@/modules/objectives/hooks/use-objectives", () => ({
+  useObjectives: () => ({ data: mockObjectives }),
+}));
+
+jest.mock("@/lib/hooks/objective-statuses", () => ({
+  useObjectiveStatuses: () => ({
+    data: [{ category: "started", id: "status-1" }],
   }),
 }));
 
@@ -213,6 +252,26 @@ const createScheduleIssue = (
   ...overrides,
 });
 
+const createObjectiveRisk = (overrides: Partial<Objective> = {}): Objective =>
+  ({
+    endDate: "2026-08-21",
+    forecastCauseStory: {
+      id: "story-42",
+      sequenceId: 42,
+      source: "planning",
+      title: "Prepare the launch brief",
+    },
+    forecastDaysDelta: 8,
+    forecastEndDate: "2026-08-29",
+    id: "objective-1",
+    leadUser: "user-1",
+    name: "Launch the new workspace experience",
+    scheduleStatus: "at_risk",
+    statusId: "status-1",
+    teamId: "team-1",
+    ...overrides,
+  }) as Objective;
+
 describe("UpcomingMeetingCard", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -220,6 +279,8 @@ describe("UpcomingMeetingCard", () => {
     useCalendarSchedule.mockReset();
     retryScheduleIssue.mockReset();
     overrideScheduleIssue.mockReset();
+    mockObjectives.length = 0;
+    window.localStorage.clear();
     document.cookie =
       "fortyone_meeting_dismissed_meeting-1=; Path=/; Max-Age=0";
   });
@@ -319,6 +380,7 @@ describe("UpcomingMeetingCard", () => {
     );
     expect(screen.getByText("Maya needs your help")).toBeInTheDocument();
     const storyLink = screen.getByText("Prepare the launch brief").closest("a");
+    expect(storyLink).toHaveAttribute("data-next-link", "true");
     expect(storyLink).toHaveClass("line-clamp-1");
     expect(storyLink).toHaveAttribute("title", "Prepare the launch brief");
     expect(screen.queryByText("ENG-42")).not.toBeInTheDocument();
@@ -384,6 +446,52 @@ describe("UpcomingMeetingCard", () => {
       "1h remains. Choose a time or let Maya try again.",
     );
     expect(screen.queryByText("1h left to schedule.")).not.toBeInTheDocument();
+  });
+
+  it("shows forecast risk to the objective lead until that forecast is dismissed", () => {
+    const objective = createObjectiveRisk();
+    mockObjectives.push(objective);
+    useCalendarSchedule.mockReturnValue({
+      data: { ...createSchedule(), events: [] },
+    });
+
+    const { unmount } = render(
+      <UpcomingMeetingCard fallback={<div>Normal footer</div>} />,
+    );
+
+    expect(screen.getByText("Forecast risk")).toBeInTheDocument();
+    expect(screen.getByText("+8d")).toBeInTheDocument();
+    expect(
+      screen.getByText("Launch the new workspace experience").closest("a"),
+    ).toHaveAttribute(
+      "href",
+      "/acme/teams/team-1/objectives/objective-1?tab=overview",
+    );
+    expect(
+      screen.getByText(/Linked work is forecast for Aug 29, 2026/),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Dismiss objective forecast risk",
+      }),
+    );
+    expect(screen.getByText("Normal footer")).toBeInTheDocument();
+
+    unmount();
+    const dismissedForecast = render(
+      <UpcomingMeetingCard fallback={<div>Normal footer</div>} />,
+    );
+    expect(screen.queryByText("Forecast risk")).not.toBeInTheDocument();
+
+    dismissedForecast.unmount();
+    mockObjectives[0] = createObjectiveRisk({
+      forecastDaysDelta: 10,
+      forecastEndDate: "2026-08-31",
+    });
+    render(<UpcomingMeetingCard fallback={<div>Normal footer</div>} />);
+    expect(screen.getByText("Forecast risk")).toBeInTheDocument();
+    expect(screen.getByText("+10d")).toBeInTheDocument();
   });
 
   it("uses a pulsing pin instead of a two-digit collapsed count", () => {

@@ -32,6 +32,7 @@ import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useCanUpdateObjective } from "../hooks/use-can-update-objective";
 import { useUpdateObjectiveMutation } from "../hooks/update-mutation";
 import type { Objective, ObjectiveUpdate } from "../types";
+import { ObjectiveForecastRiskBadge } from "./objective-forecast-risk";
 import { ObjectiveHealthEditor } from "./objective-health-editor";
 
 export const ObjectiveCard = ({
@@ -40,11 +41,15 @@ export const ObjectiveCard = ({
   leadUser,
   teamId,
   endDate,
+  forecastCauseStory,
+  forecastDaysDelta,
+  forecastEndDate,
   isInTeam,
   isInSearch,
   statusId,
   health,
   priority,
+  scheduleStatus,
   color,
   onSelect,
   onSelectionChange,
@@ -86,6 +91,13 @@ export const ObjectiveCard = ({
       objectiveId: id,
       data,
     });
+  };
+  const forecastRisk = {
+    endDate,
+    forecastCauseStory,
+    forecastDaysDelta,
+    forecastEndDate,
+    scheduleStatus,
   };
 
   return (
@@ -153,6 +165,7 @@ export const ObjectiveCard = ({
               type="button"
             >
               <Text className="min-w-0 truncate pr-2">{name}</Text>
+              <ObjectiveForecastRiskBadge objective={forecastRisk} />
             </button>
           ) : (
             <Link
@@ -161,6 +174,7 @@ export const ObjectiveCard = ({
               prefetch
             >
               <Text className="min-w-0 truncate pr-2">{name}</Text>
+              <ObjectiveForecastRiskBadge objective={forecastRisk} />
             </Link>
           )}
         </Box>

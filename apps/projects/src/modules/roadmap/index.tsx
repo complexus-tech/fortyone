@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BreadCrumbs, Flex, Button, Box, Text } from "ui";
-import { ObjectiveIcon, PlusIcon } from "icons";
+import { ObjectiveIcon, PlusIcon, WarningIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLocalStorage, useTerminology, useUserRole } from "@/hooks";
@@ -13,6 +13,7 @@ import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
 import type { ZoomLevel } from "@/components/ui/base-gantt";
 import { KeyResultDetails } from "@/modules/key-results/components/key-result-details";
 import type { KeyResult, Objective } from "@/modules/objectives/types";
+import { isObjectiveForecastAtRisk } from "@/modules/objectives/components/objective-forecast-risk-utils";
 import { RoadmapObjectiveDetails } from "./components/objective-details";
 import { ObjectivesBoard } from "./components/objectives-board";
 import { ObjectiveViewOptionsButton } from "./components/objective-view-options-button";
@@ -30,6 +31,7 @@ export const RoadmapPage = () => {
     "gantt",
   );
   const { data: objectives = [], isPending } = useObjectives();
+  const [showForecastRisksOnly, setShowForecastRisksOnly] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useLocalStorage<ZoomLevel>(
     "roadmapZoomLevel",
@@ -46,6 +48,12 @@ export const RoadmapPage = () => {
     keyResult: KeyResult;
     objective: Objective;
   } | null>(null);
+  const forecastRiskObjectives = objectives.filter(isObjectiveForecastAtRisk);
+  const isForecastRiskFilterActive =
+    showForecastRisksOnly && forecastRiskObjectives.length > 0;
+  const displayedObjectives = isForecastRiskFilterActive
+    ? forecastRiskObjectives
+    : objectives;
 
   const selectObjective = (objective: Objective) => {
     setSelectedKeyResult(null);
@@ -100,7 +108,7 @@ export const RoadmapPage = () => {
         return (
           <RoadmapGanttBoard
             className="h-full"
-            objectives={objectives}
+            objectives={displayedObjectives}
             onObjectiveSelect={selectObjective}
             onZoomLevelChange={setZoomLevel}
             selectedObjectiveId={selectedObjective?.id}
@@ -112,7 +120,7 @@ export const RoadmapPage = () => {
         return (
           <ObjectivesBoard
             layout={layout}
-            objectives={objectives}
+            objectives={displayedObjectives}
             onCreateObjective={() => {
               if (userRole !== "guest") setIsOpen(true);
             }}
@@ -139,6 +147,22 @@ export const RoadmapPage = () => {
               },
             ]}
           />
+          {forecastRiskObjectives.length > 0 ? (
+            <Button
+              aria-pressed={isForecastRiskFilterActive}
+              className="hidden gap-1.5 sm:flex"
+              color="danger"
+              leftIcon={<WarningIcon className="h-4 w-auto" />}
+              onClick={() => {
+                setShowForecastRisksOnly((current) => !current);
+              }}
+              size="sm"
+              type="button"
+              variant={isForecastRiskFilterActive ? "solid" : "naked"}
+            >
+              {forecastRiskObjectives.length} need attention
+            </Button>
+          ) : null}
         </Flex>
         <Flex align="center" gap={2}>
           <RoadmapLayoutSwitcher

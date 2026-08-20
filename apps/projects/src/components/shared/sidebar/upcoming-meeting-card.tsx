@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { addDays, format, startOfDay } from "date-fns";
+import Link from "next/link";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -13,8 +14,9 @@ import {
   WarningIcon,
 } from "icons";
 import { Box, Button, Flex, Popover, Text } from "ui";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { ScheduleIssueDialog } from "@/components/ui/story/schedule-issue-dialog";
+import { useSession } from "@/lib/auth/client";
 import {
   useCalendarIntegration,
   useCalendarSchedule,
@@ -23,6 +25,13 @@ import {
 } from "@/lib/hooks/calendar";
 import { formatTimeNeeded } from "@/lib/time-needed";
 import type { CalendarScheduleIssue } from "@/lib/queries/calendar/types";
+import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
+import {
+  getObjectiveForecastRiskCopy,
+  isObjectiveForecastAtRisk,
+} from "@/modules/objectives/components/objective-forecast-risk-utils";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import type { Objective, ObjectiveStatus } from "@/modules/objectives/types";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import {
   dismissMeetingUntilEnd,
@@ -32,6 +41,9 @@ import {
 import type { UpcomingMeeting } from "./upcoming-meeting";
 
 const CLOCK_REFRESH_INTERVAL_MS = 30 * 1000;
+const OBJECTIVE_RISK_DISMISSAL_PREFIX = "fortyone:objective-forecast-risk:";
+const EMPTY_OBJECTIVES: Objective[] = [];
+const EMPTY_OBJECTIVE_STATUSES: ObjectiveStatus[] = [];
 const subscribeToHydration = () => () => undefined;
 let clockSnapshot = typeof window === "undefined" ? 0 : Date.now();
 let clockInterval: number | undefined;
@@ -67,7 +79,68 @@ const getServerClockSnapshot = () => 0;
 
 type SidebarAssistantItem =
   | { id: string; kind: "meeting"; meeting: UpcomingMeeting }
-  | { id: string; issue: CalendarScheduleIssue; kind: "schedule-issue" };
+  | { id: string; issue: CalendarScheduleIssue; kind: "schedule-issue" }
+  | { id: string; kind: "objective-risk"; objective: Objective };
+
+const getDismissLabel = (item: SidebarAssistantItem) => {
+  switch (item.kind) {
+    case "meeting":
+      return "Dismiss meeting";
+    case "schedule-issue":
+      return "Dismiss scheduling message";
+    case "objective-risk":
+      return "Dismiss objective forecast risk";
+  }
+};
+
+const getCollapsedIndicatorLabel = (item: SidebarAssistantItem) => {
+  switch (item.kind) {
+    case "meeting":
+      return "Open upcoming meeting";
+    case "schedule-issue":
+      return "Open Maya scheduling message";
+    case "objective-risk":
+      return "Open objective forecast risk";
+  }
+};
+
+const getObjectiveRiskVersion = (objective: Objective) =>
+  `${objective.forecastEndDate ?? "unknown"}:${objective.forecastDaysDelta}`;
+const getObjectiveRiskToken = (objective: Objective) =>
+  `${objective.id}:${getObjectiveRiskVersion(objective)}`;
+
+const isObjectiveRiskDismissed = (objective: Objective) => {
+  try {
+    return (
+      window.localStorage.getItem(
+        `${OBJECTIVE_RISK_DISMISSAL_PREFIX}${objective.id}`,
+      ) === getObjectiveRiskVersion(objective)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const dismissObjectiveRisk = (objective: Objective) => {
+  try {
+    window.localStorage.setItem(
+      `${OBJECTIVE_RISK_DISMISSAL_PREFIX}${objective.id}`,
+      getObjectiveRiskVersion(objective),
+    );
+  } catch {
+    // The in-memory dismissal still applies when storage is unavailable.
+  }
+};
+
+const clearObjectiveRiskDismissal = (objectiveId: string) => {
+  try {
+    window.localStorage.removeItem(
+      `${OBJECTIVE_RISK_DISMISSAL_PREFIX}${objectiveId}`,
+    );
+  } catch {
+    // Storage is optional; there is nothing else to clear.
+  }
+};
 
 const getMeetingTitle = (title?: string) => title?.trim() || "Upcoming meeting";
 
@@ -177,13 +250,13 @@ const ScheduleIssueContent = ({
         </Text>
       </Flex>
 
-      <a
+      <Link
         className="focus-visible:ring-ring mt-2 line-clamp-1 rounded-sm leading-snug font-medium outline-none hover:underline focus-visible:ring-2"
         href={withWorkspace(getStoryPath({ id: issue.storyId }))}
         title={issue.storyTitle}
       >
         {issue.storyTitle}
-      </a>
+      </Link>
       <Text
         className="mt-1.5 leading-snug"
         color="muted"
@@ -218,6 +291,60 @@ const ScheduleIssueContent = ({
   );
 };
 
+const ObjectiveRiskContent = ({ objective }: { objective: Objective }) => {
+  const { getTermDisplay } = useTerminology();
+  const { withWorkspace } = useWorkspacePath();
+  const copy = getObjectiveForecastRiskCopy(
+    objective,
+    getTermDisplay("storyTerm", { capitalize: true }),
+  );
+  if (!copy) return null;
+
+  const objectiveHref = withWorkspace(
+    `/teams/${objective.teamId}/objectives/${objective.id}?tab=overview`,
+  );
+
+  return (
+    <>
+      <Flex align="center" className="gap-1.5 pr-6">
+        <span className="bg-danger flex size-2 rounded-full" />
+        <Text
+          className="text-[0.72rem] tracking-[0.08em] uppercase"
+          color="muted"
+          fontWeight="semibold"
+        >
+          Forecast risk
+        </Text>
+        <Text
+          className="bg-danger/10 text-danger ml-auto rounded-md px-1.5 py-0.5 text-[0.78rem] tabular-nums"
+          fontWeight="medium"
+        >
+          +{objective.forecastDaysDelta}d
+        </Text>
+      </Flex>
+
+      <Link
+        className="focus-visible:ring-ring mt-2 line-clamp-2 rounded-sm leading-snug font-medium outline-none hover:underline focus-visible:ring-2"
+        href={objectiveHref}
+        title={objective.name}
+      >
+        {objective.name}
+      </Link>
+      <Text className="mt-1.5 leading-snug" color="muted" fontSize="sm">
+        {copy.description}
+      </Text>
+      <Button
+        className="mt-3 w-full"
+        color="invert"
+        href={objectiveHref}
+        size="sm"
+      >
+        Review objective
+      </Button>
+    </>
+  );
+};
+
 export const SidebarAssistantCards = ({
   fallback = null,
   isCollapsed = false,
@@ -237,11 +364,17 @@ export const SidebarAssistantCards = ({
   const [dismissedIssueIds, setDismissedIssueIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [dismissedObjectiveRiskTokens, setDismissedObjectiveRiskTokens] =
+    useState<Set<string>>(() => new Set());
   const [selectedIssue, setSelectedIssue] =
     useState<CalendarScheduleIssue | null>(null);
   const [isCollapsedPopoverOpen, setIsCollapsedPopoverOpen] = useState(false);
   const collapsedPopoverCloseTimer = useRef<number | undefined>(undefined);
   const integrationQuery = useCalendarIntegration();
+  const { data: session } = useSession();
+  const { data: objectives = EMPTY_OBJECTIVES } = useObjectives();
+  const { data: objectiveStatuses = EMPTY_OBJECTIVE_STATUSES } =
+    useObjectiveStatuses();
   const connection = integrationQuery.data?.connections[0];
   const rangeStart = startOfDay(now);
   const scheduleQuery = useCalendarSchedule(
@@ -258,6 +391,15 @@ export const SidebarAssistantCards = ({
     () => true,
     () => false,
   );
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    objectives.forEach((objective) => {
+      if (!isObjectiveForecastAtRisk(objective)) {
+        clearObjectiveRiskDismissal(objective.id);
+      }
+    });
+  }, [isHydrated, objectives]);
 
   useEffect(
     () => () => {
@@ -278,6 +420,24 @@ export const SidebarAssistantCards = ({
   const issues = (scheduleQuery.data?.scheduleIssues ?? []).filter(
     (issue) => !dismissedIssueIds.has(issue.storyId),
   );
+  const activeObjectiveStatusIds = new Set(
+    objectiveStatuses
+      .filter(
+        (status) =>
+          status.category !== "completed" && status.category !== "cancelled",
+      )
+      .map((status) => status.id),
+  );
+  const objectiveRisks = isHydrated
+    ? objectives.filter(
+        (objective) =>
+          objective.leadUser === session?.user.id &&
+          activeObjectiveStatusIds.has(objective.statusId) &&
+          isObjectiveForecastAtRisk(objective) &&
+          !dismissedObjectiveRiskTokens.has(getObjectiveRiskToken(objective)) &&
+          !isObjectiveRiskDismissed(objective),
+      )
+    : [];
   const items: SidebarAssistantItem[] = [
     ...meetings.map((meeting) => ({
       id: `meeting:${meeting.event.id}`,
@@ -288,6 +448,11 @@ export const SidebarAssistantCards = ({
       id: `schedule-issue:${issue.storyId}`,
       issue,
       kind: "schedule-issue" as const,
+    })),
+    ...objectiveRisks.map((objective) => ({
+      id: `objective-risk:${objective.id}`,
+      kind: "objective-risk" as const,
+      objective,
     })),
   ];
   if (items.length === 0) return fallback;
@@ -321,15 +486,48 @@ export const SidebarAssistantCards = ({
         next.add(activeItem.meeting.event.id);
         return next;
       });
-    } else {
+    } else if (activeItem.kind === "schedule-issue") {
       setDismissedIssueIds((current) => {
         const next = new Set(current);
         next.add(activeItem.issue.storyId);
         return next;
       });
+    } else {
+      dismissObjectiveRisk(activeItem.objective);
+      setDismissedObjectiveRiskTokens((current) => {
+        const next = new Set(current);
+        next.add(getObjectiveRiskToken(activeItem.objective));
+        return next;
+      });
     }
     setActiveIndex(0);
   };
+
+  const dismissLabel = getDismissLabel(activeItem);
+
+  let activeContent: ReactNode;
+  if (activeItem.kind === "meeting") {
+    activeContent = <MeetingContent meeting={activeItem.meeting} />;
+  } else if (activeItem.kind === "schedule-issue") {
+    activeContent = (
+      <ScheduleIssueContent
+        isRetrying={Boolean(
+          retryIssue.isPending &&
+            retryIssue.variables === activeItem.issue.storyId,
+        )}
+        issue={activeItem.issue}
+        onChooseTime={() => {
+          setSelectedIssue(activeItem.issue);
+          setIsCollapsedPopoverOpen(false);
+        }}
+        onRetry={() => {
+          retryIssue.mutate(activeItem.issue.storyId);
+        }}
+      />
+    );
+  } else {
+    activeContent = <ObjectiveRiskContent objective={activeItem.objective} />;
+  }
 
   const assistantCard = (
     <Box aria-live="polite" className="relative pb-1.5">
@@ -341,11 +539,7 @@ export const SidebarAssistantCards = ({
       ) : null}
       <Box className="border-border bg-surface-elevated shadow-shadow relative rounded-xl border-[0.5px] px-3.5 pt-3 pb-3.5 shadow-lg">
         <button
-          aria-label={
-            activeItem.kind === "meeting"
-              ? "Dismiss meeting"
-              : "Dismiss scheduling message"
-          }
+          aria-label={dismissLabel}
           className="text-foreground hover:bg-state-hover focus-visible:ring-ring absolute top-2 right-1.5 z-1 grid size-6 place-items-center rounded-md transition-colors outline-none focus-visible:ring-2"
           onClick={dismissActiveItem}
           type="button"
@@ -357,26 +551,7 @@ export const SidebarAssistantCards = ({
           />
         </button>
 
-        <Box>
-          {activeItem.kind === "meeting" ? (
-            <MeetingContent meeting={activeItem.meeting} />
-          ) : (
-            <ScheduleIssueContent
-              isRetrying={Boolean(
-                retryIssue.isPending &&
-                  retryIssue.variables === activeItem.issue.storyId,
-              )}
-              issue={activeItem.issue}
-              onChooseTime={() => {
-                setSelectedIssue(activeItem.issue);
-                setIsCollapsedPopoverOpen(false);
-              }}
-              onRetry={() => {
-                retryIssue.mutate(activeItem.issue.storyId);
-              }}
-            />
-          )}
-        </Box>
+        <Box>{activeContent}</Box>
 
         {items.length > 1 ? (
           <Flex
@@ -417,16 +592,12 @@ export const SidebarAssistantCards = ({
     </Box>
   );
 
-  const CollapsedIndicatorIcon =
-    activeItem.kind === "schedule-issue" ? WarningIcon : Video02Icon;
-  const collapsedIndicatorLabel =
-    activeItem.kind === "schedule-issue"
-      ? "Open Maya scheduling message"
-      : "Open upcoming meeting";
-  const collapsedIndicatorClass =
-    activeItem.kind === "schedule-issue"
-      ? "border-warning/35 bg-warning/10 text-primary hover:bg-warning/15 dark:text-primary"
-      : "border-primary/25 bg-primary/10 text-primary hover:bg-primary/15 dark:text-primary";
+  const isWarningItem = activeItem.kind !== "meeting";
+  const CollapsedIndicatorIcon = isWarningItem ? WarningIcon : Video02Icon;
+  const collapsedIndicatorLabel = getCollapsedIndicatorLabel(activeItem);
+  const collapsedIndicatorClass = isWarningItem
+    ? "border-warning/35 bg-warning/10 text-primary hover:bg-warning/15 dark:text-primary"
+    : "border-primary/25 bg-primary/10 text-primary hover:bg-primary/15 dark:text-primary";
 
   return (
     <>

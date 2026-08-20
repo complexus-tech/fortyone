@@ -36,6 +36,16 @@ const ROADMAP_STICKY_COLUMNS_WIDTH = 640;
 const ROADMAP_ROW_HEIGHT = "3.5rem";
 const ROADMAP_COLUMNS =
   "grid-cols-[2rem_minmax(0,7rem)_2rem_2rem_minmax(0,1fr)_5.25rem]";
+const DAYS_PER_DISPLAY_MONTH = 30;
+
+const formatObjectiveDuration = (days: number) => {
+  if (days < DAYS_PER_DISPLAY_MONTH) {
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+
+  const months = Math.max(1, Math.round(days / DAYS_PER_DISPLAY_MONTH));
+  return `${months} month${months === 1 ? "" : "s"}`;
+};
 
 type RoadmapGanttItem = {
   id: string;
@@ -136,10 +146,20 @@ const ObjectiveRow = ({
       </Tooltip>
     );
   } else if (duration !== null) {
+    const durationLabel = formatObjectiveDuration(duration);
     scheduleCell = (
-      <Text className="shrink-0 text-[0.95rem]" color="muted">
-        {duration} day{duration !== 1 ? "s" : ""}
-      </Text>
+      <Tooltip
+        className="pointer-events-none"
+        title={`${duration} calendar day${duration === 1 ? "" : "s"}`}
+      >
+        <Text
+          aria-label={`${durationLabel}, ${duration} calendar day${duration === 1 ? "" : "s"}`}
+          className="shrink-0 text-[0.95rem]"
+          color="muted"
+        >
+          {durationLabel}
+        </Text>
+      </Tooltip>
     );
   } else {
     scheduleCell = (
