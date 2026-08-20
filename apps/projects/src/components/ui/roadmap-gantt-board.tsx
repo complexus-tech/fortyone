@@ -2,7 +2,7 @@
 
 import { Box, Flex, Text, Tooltip, Avatar, Button, DatePicker } from "ui";
 import { differenceInDays, format, formatISO } from "date-fns";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarPlusIcon } from "icons";
@@ -21,10 +21,10 @@ import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { ObjectiveHealthIcon } from "@/components/ui/objective-health-icon";
+import { hexToRgba } from "@/utils";
 import { PriorityIcon } from "./priority-icon";
 import { ObjectiveStatusIcon } from "./objective-status-icon";
 import { BaseGantt, GanttControls, type ZoomLevel } from "./base-gantt";
-import { hexToRgba } from "@/utils";
 
 const ROADMAP_STICKY_COLUMNS_WIDTH = 640;
 const ROADMAP_ROW_HEIGHT = "3.5rem";
@@ -42,17 +42,21 @@ const getTimelineDate = (
   dates: (string | null | undefined)[],
   mode: "earliest" | "latest",
 ) => {
-  const validDates = dates
-    .filter((date): date is string => Boolean(date))
-    .map((date) => new Date(date))
-    .filter((date) => !Number.isNaN(date.getTime()));
+  let timestamp: number | null = null;
+  for (const value of dates) {
+    if (!value) continue;
+    const candidate = new Date(value).getTime();
+    if (Number.isNaN(candidate)) continue;
 
-  if (validDates.length === 0) return null;
-  const timestamp =
-    mode === "earliest"
-      ? Math.min(...validDates.map((date) => date.getTime()))
-      : Math.max(...validDates.map((date) => date.getTime()));
+    if (
+      timestamp === null ||
+      (mode === "earliest" ? candidate < timestamp : candidate > timestamp)
+    ) {
+      timestamp = candidate;
+    }
+  }
 
+  if (timestamp === null) return null;
   return formatISO(new Date(timestamp), { representation: "date" });
 };
 
@@ -86,6 +90,66 @@ const ObjectiveRow = ({
   const selectedAssignee = members.find(
     (member) => member.id === objective.leadUser,
   );
+  let scheduleCell: ReactNode;
+
+  if (objective.scheduleStatus === "at_risk") {
+    scheduleCell = (
+      <Tooltip
+        className="pointer-events-none max-w-72"
+        title={`Forecast ${
+          objective.forecastEndDate
+            ? format(new Date(objective.forecastEndDate), "MMM d, yyyy")
+            : "is late"
+        }${
+          objective.forecastCauseStory
+            ? `. Driven by task ${objective.forecastCauseStory.sequenceId}: ${objective.forecastCauseStory.title}`
+            : ""
+        }`}
+      >
+        <Text className="shrink-0 text-[0.95rem]" color="danger">
+          +{objective.forecastDaysDelta}d
+        </Text>
+      </Tooltip>
+    );
+  } else if (duration !== null) {
+    scheduleCell = (
+      <Text className="shrink-0 text-[0.95rem]" color="muted">
+        {duration} day{duration !== 1 ? "s" : ""}
+      </Text>
+    );
+  } else {
+    scheduleCell = (
+      <DatePicker>
+        <Tooltip title="Add dates">
+          <span className="mt-1">
+            <DatePicker.Trigger>
+              <button aria-label="Add objective dates" type="button">
+                <CalendarPlusIcon />
+              </button>
+            </DatePicker.Trigger>
+          </span>
+        </Tooltip>
+        <DatePicker.Calendar
+          mode="range"
+          numberOfMonths={2}
+          onSelect={(range) => {
+            setDates(range);
+            if (range?.from && range.to) {
+              handleUpdate(objective.id, {
+                startDate: formatISO(range.from, {
+                  representation: "date",
+                }),
+                endDate: formatISO(range.to, {
+                  representation: "date",
+                }),
+              });
+            }
+          }}
+          selected={dates}
+        />
+      </DatePicker>
+    );
+  }
 
   return (
     <Box
@@ -263,60 +327,7 @@ const ObjectiveRow = ({
             </Flex>
           </button>
         </Flex>
-        <Flex justify="end">
-          {objective.scheduleStatus === "at_risk" ? (
-            <Tooltip
-              className="pointer-events-none max-w-72"
-              title={`Forecast ${
-                objective.forecastEndDate
-                  ? format(new Date(objective.forecastEndDate), "MMM d, yyyy")
-                  : "is late"
-              }${
-                objective.forecastCauseStory
-                  ? `. Driven by task ${objective.forecastCauseStory.sequenceId}: ${objective.forecastCauseStory.title}`
-                  : ""
-              }`}
-            >
-              <Text className="shrink-0 text-[0.95rem]" color="danger">
-                +{objective.forecastDaysDelta}d
-              </Text>
-            </Tooltip>
-          ) : duration !== null ? (
-            <Text className="shrink-0 text-[0.95rem]" color="muted">
-              {duration} day{duration !== 1 ? "s" : ""}
-            </Text>
-          ) : (
-            <DatePicker>
-              <Tooltip title="Add dates">
-                <span className="mt-1">
-                  <DatePicker.Trigger>
-                    <button aria-label="Add objective dates" type="button">
-                      <CalendarPlusIcon />
-                    </button>
-                  </DatePicker.Trigger>
-                </span>
-              </Tooltip>
-              <DatePicker.Calendar
-                mode="range"
-                numberOfMonths={2}
-                onSelect={(range) => {
-                  setDates(range);
-                  if (range?.from && range.to) {
-                    handleUpdate(objective.id, {
-                      startDate: formatISO(range.from, {
-                        representation: "date",
-                      }),
-                      endDate: formatISO(range.to, {
-                        representation: "date",
-                      }),
-                    });
-                  }
-                }}
-                selected={dates}
-              />
-            </DatePicker>
-          )}
-        </Flex>
+        <Flex justify="end">{scheduleCell}</Flex>
       </Box>
     </Box>
   );

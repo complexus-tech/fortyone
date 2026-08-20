@@ -51,6 +51,7 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 				AND csb.block_type = 'work'
 			WHERE s.deleted_at IS NULL
 				AND s.archived_at IS NULL
+				AND s.workspace_id = :workspace_id
 				AND s.objective_id IS NOT NULL
 				AND st.category NOT IN ('completed', 'cancelled')
 			GROUP BY s.id, s.sequence_id, s.title, s.objective_id, s.start_date, s.end_date
@@ -85,13 +86,17 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID
 			FROM objectives o
 			LEFT JOIN stories s ON o.objective_id = s.objective_id
 			LEFT JOIN statuses st ON s.status_id = st.status_id
-			WHERE s.deleted_at IS NULL AND s.archived_at IS NULL
+			WHERE o.workspace_id = :workspace_id
+				AND s.deleted_at IS NULL
+				AND s.archived_at IS NULL
 			GROUP BY o.objective_id
 		),
 		key_result_stats AS (
-			SELECT objective_id, COUNT(*) AS total
-			FROM key_results
-			GROUP BY objective_id
+			SELECT kr.objective_id, COUNT(*) AS total
+			FROM key_results kr
+			INNER JOIN objectives o ON o.objective_id = kr.objective_id
+			WHERE o.workspace_id = :workspace_id
+			GROUP BY kr.objective_id
 		)
 		SELECT
 			o.objective_id,
@@ -229,6 +234,7 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 				AND csb.block_type = 'work'
 			WHERE s.deleted_at IS NULL
 				AND s.archived_at IS NULL
+				AND s.workspace_id = :workspace_id
 				AND s.objective_id IS NOT NULL
 				AND st.category NOT IN ('completed', 'cancelled')
 			GROUP BY s.id, s.sequence_id, s.title, s.objective_id, s.start_date, s.end_date
@@ -263,13 +269,17 @@ func (r *repo) Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (ob
 			FROM objectives o
 			LEFT JOIN stories s ON o.objective_id = s.objective_id
 			LEFT JOIN statuses st ON s.status_id = st.status_id
-			WHERE s.deleted_at IS NULL AND s.archived_at IS NULL
+			WHERE o.workspace_id = :workspace_id
+				AND s.deleted_at IS NULL
+				AND s.archived_at IS NULL
 			GROUP BY o.objective_id
 		),
 		key_result_stats AS (
-			SELECT objective_id, COUNT(*) AS total
-			FROM key_results
-			GROUP BY objective_id
+			SELECT kr.objective_id, COUNT(*) AS total
+			FROM key_results kr
+			INNER JOIN objectives o ON o.objective_id = kr.objective_id
+			WHERE o.workspace_id = :workspace_id
+			GROUP BY kr.objective_id
 		)
 		SELECT
 			o.objective_id,

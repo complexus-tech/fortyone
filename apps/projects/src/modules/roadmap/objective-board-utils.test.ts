@@ -29,6 +29,12 @@ const objective = (overrides: Partial<Objective>): Objective => ({
   keyResultCount: 0,
   priority: "High",
   health: "On Track",
+  color: "#4A90E2",
+  forecastStartDate: null,
+  forecastEndDate: null,
+  scheduleStatus: "no_schedule",
+  forecastDaysDelta: 0,
+  forecastCauseStory: null,
   ...overrides,
 });
 
