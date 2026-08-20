@@ -143,9 +143,15 @@ const ScheduleIssueContent = ({
   const { withWorkspace } = useWorkspacePath();
   const remainingMinutes =
     issue.remainingDurationMinutes ?? issue.estimatedDurationMinutes;
-  const reason = remainingMinutes
+  const progress = remainingMinutes
     ? `${formatTimeNeeded(remainingMinutes)} left to schedule.`
-    : "No time available before the deadline.";
+    : null;
+  const description =
+    issue.autoSchedulingReason?.trim() ||
+    (remainingMinutes
+      ? `Maya needs your input to place the remaining ${formatTimeNeeded(remainingMinutes)} before the deadline.`
+      : "Maya needs your input to finish scheduling this task before the deadline.");
+  const descriptionTitle = [progress, description].filter(Boolean).join(" ");
 
   return (
     <>
@@ -161,17 +167,19 @@ const ScheduleIssueContent = ({
       </Flex>
 
       <a
-        className="focus-visible:ring-ring mt-2 block rounded-sm leading-snug font-medium outline-none hover:underline focus-visible:ring-2"
+        className="focus-visible:ring-ring mt-2 line-clamp-1 rounded-sm leading-snug font-medium outline-none hover:underline focus-visible:ring-2"
         href={withWorkspace(getStoryPath({ id: issue.storyId }))}
+        title={issue.storyTitle}
       >
         {issue.storyTitle}
       </a>
       <Text
-        className="mt-1.5 line-clamp-3 leading-snug"
+        className="mt-1.5 leading-snug"
         color="muted"
         fontSize="sm"
+        title={descriptionTitle}
       >
-        {reason}
+        {description}
       </Text>
       <Flex className="mt-3 gap-2">
         <Button
@@ -360,7 +368,11 @@ export const SidebarAssistantCards = ({
         </Box>
 
         {items.length > 1 ? (
-          <Flex align="center" className="mt-3 border-t pt-2" justify="between">
+          <Flex
+            align="center"
+            className="border-border mt-3 border-t pt-2"
+            justify="between"
+          >
             <Text className="tabular-nums" color="muted" fontSize="xs">
               {safeActiveIndex + 1} of {items.length}
             </Text>
@@ -402,7 +414,7 @@ export const SidebarAssistantCards = ({
       : "Open upcoming meeting";
   const collapsedIndicatorClass =
     activeItem.kind === "schedule-issue"
-      ? "border-warning/35 bg-warning/10 text-warning hover:bg-warning/15 dark:text-warning"
+      ? "border-warning/35 bg-warning/10 text-primary hover:bg-warning/15 dark:text-primary"
       : "border-primary/25 bg-primary/10 text-primary hover:bg-primary/15 dark:text-primary";
 
   return (

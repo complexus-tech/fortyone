@@ -47,7 +47,13 @@ jest.mock("ui", () => {
   Popover.Content = PopoverContent;
 
   return {
-    Box: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    Box: ({
+      children,
+      className,
+    }: {
+      children: ReactNode;
+      className?: string;
+    }) => <div className={className}>{children}</div>,
     Button: ({
       children,
       leftIcon,
@@ -63,7 +69,13 @@ jest.mock("ui", () => {
       </button>
     ),
     Dialog,
-    Flex: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    Flex: ({
+      children,
+      className,
+    }: {
+      children: ReactNode;
+      className?: string;
+    }) => <div className={className}>{children}</div>,
     Input: ({
       label,
       labelClassName: _labelClassName,
@@ -73,7 +85,19 @@ jest.mock("ui", () => {
       labelClassName?: string;
     }) => <input aria-label={label} {...props} />,
     Popover,
-    Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
+    Text: ({
+      children,
+      className,
+      title,
+    }: {
+      children: ReactNode;
+      className?: string;
+      title?: string;
+    }) => (
+      <span className={className} title={title}>
+        {children}
+      </span>
+    ),
   };
 });
 
@@ -220,24 +244,31 @@ describe("UpcomingMeetingCard", () => {
   });
 
   it("shows an actionable Maya card for a story that could not fit", () => {
+    const issue = {
+      storyId: "story-1",
+      storyTitle: "Prepare the launch brief",
+      storyCode: "ENG-42",
+      teamId: "team-1",
+      teamName: "Engineering",
+      teamCode: "ENG",
+      estimatedDurationMinutes: 90,
+      scheduledDurationMinutes: 60,
+      remainingDurationMinutes: 30,
+      autoSchedulingStatus: "cannot_fit" as const,
+      autoSchedulingReason: "No safe focus window remains before Friday.",
+      updatedAt: "2026-08-08T09:55:00.000Z",
+    };
     useCalendarSchedule.mockReturnValue({
       data: {
         ...createSchedule(),
         events: [],
         scheduleIssues: [
+          issue,
           {
-            storyId: "story-1",
-            storyTitle: "Prepare the launch brief",
-            storyCode: "ENG-42",
-            teamId: "team-1",
-            teamName: "Engineering",
-            teamCode: "ENG",
-            estimatedDurationMinutes: 90,
-            scheduledDurationMinutes: 60,
-            remainingDurationMinutes: 30,
-            autoSchedulingStatus: "cannot_fit",
-            autoSchedulingReason: "No safe focus window remains before Friday.",
-            updatedAt: "2026-08-08T09:55:00.000Z",
+            ...issue,
+            storyCode: "ENG-43",
+            storyId: "story-2",
+            storyTitle: "Prepare the launch checklist",
           },
         ],
       },
@@ -247,13 +278,26 @@ describe("UpcomingMeetingCard", () => {
       <UpcomingMeetingCard fallback={<div>Normal footer</div>} isCollapsed />,
     );
 
-    expect(
-      screen.getByRole("button", { name: "Open Maya scheduling message" }),
-    ).toBeInTheDocument();
+    const collapsedIndicator = screen.getByRole("button", {
+      name: "Open Maya scheduling message",
+    });
+    expect(collapsedIndicator).toHaveClass("text-primary", "dark:text-primary");
     expect(screen.getByText("Maya needs your help")).toBeInTheDocument();
-    expect(screen.getByText("Prepare the launch brief")).toBeInTheDocument();
+    const storyLink = screen.getByText("Prepare the launch brief").closest("a");
+    expect(storyLink).toHaveClass("line-clamp-1");
+    expect(storyLink).toHaveAttribute("title", "Prepare the launch brief");
     expect(screen.queryByText("ENG-42")).not.toBeInTheDocument();
-    expect(screen.getByText("30m left to schedule.")).toBeInTheDocument();
+    const description = screen.getByText(
+      "No safe focus window remains before Friday.",
+    );
+    expect(description).not.toHaveClass("line-clamp-2");
+    expect(description).toHaveAttribute(
+      "title",
+      "30m left to schedule. No safe focus window remains before Friday.",
+    );
+    expect(screen.getByText("1 of 2").parentElement).toHaveClass(
+      "border-border",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(retryScheduleIssue).toHaveBeenCalledWith("story-1");

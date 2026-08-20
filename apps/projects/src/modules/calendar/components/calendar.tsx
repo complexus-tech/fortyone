@@ -393,25 +393,24 @@ const CalendarTimedBlock = ({
             eventAccentClass,
           )}
         />
-        <Box className="flex min-w-0 items-start gap-1.5">
+        <Box
+          className={cn(
+            "flex min-w-0 items-start gap-1.5",
+            isCompactEvent && "-mt-0.5",
+          )}
+        >
           <EventIcon
             aria-hidden="true"
-            className={cn("mt-0.5 h-4 w-4 shrink-0", eventTextClass)}
-          />
-          <Box
             className={cn(
-              "min-w-0 flex-1",
-              isCompactEvent ? "-mt-0.5" : "-mt-px",
+              "h-4 w-4 shrink-0",
+              isCompactEvent ? "mt-1" : "mt-0.5",
+              eventTextClass,
             )}
-          >
+          />
+          <Box className="-mt-px min-w-0 flex-1">
             <Text
               as="span"
-              className={cn(
-                "min-w-0",
-                titleLineClass,
-                isCompactEvent && "text-sm leading-[0.875rem]",
-                eventTextClass,
-              )}
+              className={cn("min-w-0", titleLineClass, eventTextClass)}
               fontSize="md"
               fontWeight="medium"
             >
@@ -423,7 +422,7 @@ const CalendarTimedBlock = ({
                 className={cn(
                   "block truncate text-[0.9375rem]",
                   secondaryLineClass,
-                  isCompactEvent && "mt-px text-xs leading-3",
+                  isCompactEvent && "mt-0 leading-[0.9375rem]",
                   eventTextClass,
                 )}
               >
@@ -529,6 +528,10 @@ const CalendarTimedBlock = ({
     blockColorClass = RESERVED_TIME_BLOCK_CLASS;
   }
   const isScheduledStory = block.blockType === "work";
+  const isStandardHeightStory =
+    isScheduledStory &&
+    layout.height >= hourHeight &&
+    layout.height < twoLineTitleMinimumHeight;
   const hasLeadingIcon = isCrossWorkspace || !isScheduledStory;
   const timeLabel = toTimeLabel(block.startAt, block.endAt);
   const secondaryLabel = getCalendarScheduleBlockSecondaryLabel(
@@ -639,7 +642,12 @@ const CalendarTimedBlock = ({
         ) : null}
         <Box className={cn("min-w-0", hasLeadingIcon ? "-mt-px flex-1" : null)}>
           <Text
-            className={cn("min-w-0", titleLineClass, blockTitleColorClass)}
+            className={cn(
+              "min-w-0",
+              titleLineClass,
+              isStandardHeightStory && "leading-4",
+              blockTitleColorClass,
+            )}
             fontSize="md"
             fontWeight="medium"
           >
@@ -653,6 +661,7 @@ const CalendarTimedBlock = ({
               className={cn(
                 "truncate text-[0.9375rem]",
                 secondaryLineClass,
+                isStandardHeightStory && "mt-1 leading-4",
                 blockSecondaryColorClass,
               )}
             >
