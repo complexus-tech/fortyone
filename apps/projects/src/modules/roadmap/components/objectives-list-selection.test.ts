@@ -55,28 +55,55 @@ describe("Roadmap objective list selection", () => {
     expect(keyResultSource).toContain("KeyResultContextMenu");
     expect(keyResultSource).toContain("RoadmapKeyResultRow");
     expect(keyResultSource).toContain("getKeyResultReference");
-    expect(keyResultSource).toContain("<ProgressBar");
-    expect(keyResultSource).not.toContain("CircleProgressBar");
+    expect(keyResultSource).toContain("<CircleProgressBar");
+    expect(keyResultSource).not.toContain("<ProgressBar ");
+    expect(keyResultSource).toContain("py-[0.925rem]");
+    expect(keyResultSource).toContain("h-4 w-4 shrink-0");
     expect(keyResultSource).toContain("keyResultProgress");
     expect(cardSource).toContain("onToggleExpanded");
     expect(cardSource).toContain("childCount > 0");
+    expect(cardSource).toContain("<CircleProgressBar");
     expect(cardSource).toContain("strokeWidth={2.8}");
   });
 
+  it("matches the list forecast badge to the objective property controls", () => {
+    const cardSource = readSource("src/modules/objectives/components/card.tsx");
+    const forecastSource = readSource(
+      "src/modules/objectives/components/objective-forecast-risk.tsx",
+    );
+
+    expect(cardSource).toContain('size="row"');
+    expect(forecastSource).toContain("h-[2.1rem] rounded-xl px-2 text-[1rem]");
+  });
+
   it("opens the shared key-result details panel from roadmap surfaces", () => {
-    const pageSource = readSource("src/modules/roadmap/index.tsx");
+    const viewsSource = readSource(
+      "src/modules/roadmap/components/objective-views.tsx",
+    );
     const detailsSource = readSource(
       "src/modules/key-results/components/key-result-details.tsx",
     );
 
-    expect(pageSource).toContain("selectKeyResult");
-    expect(pageSource).toContain("KeyResultDetails");
+    expect(viewsSource).toContain("selectKeyResult");
+    expect(viewsSource).toContain("KeyResultDetails");
     expect(detailsSource).toContain("Progress history");
     expect(detailsSource).toContain("Update progress");
     expect(detailsSource).toContain("AssigneesMenu");
     expect(detailsSource).toContain("DatePicker");
     expect(detailsSource).toContain('label="Objective"');
     expect(detailsSource).not.toContain('label="Parent objective"');
+  });
+
+  it("reuses roadmap views for team-scoped objectives", () => {
+    const teamObjectivesSource = readSource("src/modules/objectives/index.tsx");
+    const teamHeaderSource = readSource(
+      "src/modules/objectives/components/team-header.tsx",
+    );
+
+    expect(teamObjectivesSource).toContain("useTeamObjectives(teamId)");
+    expect(teamObjectivesSource).toContain("<ObjectiveViews");
+    expect(teamHeaderSource).toContain("<RoadmapLayoutSwitcher");
+    expect(teamHeaderSource).toContain("<ObjectiveViewOptionsButton");
   });
 
   it("keeps linked work in details rather than the edit dialog", () => {

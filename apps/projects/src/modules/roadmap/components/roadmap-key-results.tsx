@@ -6,9 +6,9 @@ import {
   Avatar,
   Box,
   Button,
+  CircleProgressBar,
   Flex,
   Popover,
-  ProgressBar,
   Text,
   Tooltip,
 } from "ui";
@@ -153,7 +153,7 @@ const RoadmapKeyResultRow = ({
         onSelect(keyResult);
       }}
     >
-      <RowWrapper className="bg-surface-muted/45 px-5 py-2.5 md:pr-12 md:pl-18">
+      <RowWrapper className="bg-surface-muted/45 px-5 py-[0.925rem] md:pr-12 md:pl-18">
         <Box className="relative flex min-w-10 flex-1 items-center gap-2 @sm:min-w-20">
           <button
             className="focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-2 rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"
@@ -167,24 +167,19 @@ const RoadmapKeyResultRow = ({
               strokeWidth={2}
             />
             {reference ? (
-              <Text className="text-text-muted shrink-0 text-[0.95rem] uppercase">
+              <Text className="text-text-muted shrink-0 text-[0.875rem] uppercase">
                 {reference}
               </Text>
             ) : null}
-            <Text className="min-w-0 flex-1 truncate pr-4">
+            <Text className="min-w-0 flex-1 truncate pr-4 text-[0.9375rem]">
               {keyResult.name}
             </Text>
           </button>
         </Box>
         <Flex align="center" className="ml-4 shrink-0 gap-5">
-          <Flex align="center" className="hidden w-40 gap-2 sm:flex">
-            <ProgressBar className="min-w-0 flex-1" progress={progress} />
-            <Text
-              className="w-10 shrink-0 text-right text-[0.95rem] tabular-nums"
-              color="muted"
-            >
-              {progress}%
-            </Text>
+          <Flex align="center" className="hidden w-[60px] gap-1.5 sm:flex">
+            <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
+            <Text className="tabular-nums">{progress}%</Text>
           </Flex>
           <Tooltip title={lead?.fullName || lead?.username || "No lead"}>
             <span className="flex w-7 shrink-0 justify-end">

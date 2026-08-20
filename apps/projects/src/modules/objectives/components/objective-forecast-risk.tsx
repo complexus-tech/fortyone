@@ -11,10 +11,11 @@ import type { Objective } from "../types";
 import { getObjectiveForecastRiskCopy } from "./objective-forecast-risk-utils";
 
 export const ObjectiveForecastRiskBadge = ({
-  className,
+  label = "forecast",
   objective,
+  size = "compact",
 }: {
-  className?: string;
+  label?: "delta" | "forecast";
   objective: Pick<
     Objective,
     | "endDate"
@@ -23,6 +24,7 @@ export const ObjectiveForecastRiskBadge = ({
     | "forecastEndDate"
     | "scheduleStatus"
   >;
+  size?: "compact" | "control" | "row";
 }) => {
   const { getTermDisplay } = useTerminology();
   const copy = getObjectiveForecastRiskCopy(
@@ -36,11 +38,22 @@ export const ObjectiveForecastRiskBadge = ({
       <span
         className={cn(
           "border-primary/20 bg-primary/5 text-primary inline-flex h-6 shrink-0 items-center gap-1 rounded-md border px-1.5 text-[0.75rem] leading-none font-medium tabular-nums",
-          className,
+          {
+            "h-[2.1rem] rounded-xl px-2 text-[1rem]": size === "row",
+            "h-[1.85rem] gap-[2px] rounded-xl px-1.5 text-[0.95rem]":
+              size === "control",
+          },
         )}
       >
-        <WarningIcon aria-hidden="true" className="text-primary h-3.5 w-auto" />
-        {copy.shortLabel}
+        <WarningIcon
+          aria-hidden="true"
+          className={cn("text-primary h-3.5 w-auto", {
+            "h-4": size === "control" || size === "row",
+          })}
+        />
+        {label === "delta"
+          ? `+${objective.forecastDaysDelta}d`
+          : copy.shortLabel}
       </span>
     </Tooltip>
   );

@@ -73,6 +73,7 @@ import { PrioritiesMenu } from "../story/priorities-menu";
 import { ObjectiveStatusesMenu } from "../objective-statuses-menu";
 import { KeyResultEditor } from "./key-result-editor";
 import { KeyResultsList } from "./key-results-list";
+import { getAvailableObjectiveColor } from "./color-utils";
 
 type KeyResultFormMode = "add" | "edit" | null;
 
@@ -95,6 +96,9 @@ export const NewObjectiveDialog = ({
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useObjectiveStatuses();
   const { data: objectives = [] } = useObjectives();
+  const defaultObjectiveColor = getAvailableObjectiveColor(
+    objectives.map(({ color }) => color),
+  );
   const { getTermDisplay } = useTerminology();
   const { tier, getLimit } = useSubscriptionFeatures();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -132,7 +136,7 @@ export const NewObjectiveDialog = ({
     endDate: null,
     statusId: statuses.length > 0 ? defaultStatus.id : "",
     priority: "No Priority",
-    color: "#4A90E2",
+    color: defaultObjectiveColor,
     keyResults: [],
   };
   const features = useFeatures();
@@ -197,13 +201,19 @@ export const NewObjectiveDialog = ({
   const wasOpenRef = useRef(false);
 
   useEffect(() => {
-    if (isOpen && !wasOpenRef.current && editor) {
-      editor.commands.setContent(
-        marked.parse(description || "", { gfm: true }),
-      );
+    if (isOpen && !wasOpenRef.current) {
+      setObjectiveForm((current) => ({
+        ...current,
+        color: defaultObjectiveColor,
+      }));
+      if (editor) {
+        editor.commands.setContent(
+          marked.parse(description || "", { gfm: true }),
+        );
+      }
     }
     wasOpenRef.current = isOpen;
-  }, [description, editor, isOpen]);
+  }, [defaultObjectiveColor, description, editor, isOpen]);
 
   const handleCreateObjective = () => {
     if (!titleEditor || !editor) return;
@@ -475,6 +485,16 @@ export const NewObjectiveDialog = ({
               editor={editor}
             />
             <Flex align="center" className="mt-4 gap-1.5" wrap>
+              <Tooltip title="Objective color">
+                <span>
+                  <ColorPicker
+                    onChange={(color) => {
+                      setObjectiveForm((prev) => ({ ...prev, color }));
+                    }}
+                    value={objectiveForm.color}
+                  />
+                </span>
+              </Tooltip>
               <ObjectiveStatusesMenu>
                 <ObjectiveStatusesMenu.Trigger>
                   <Button
@@ -526,16 +546,6 @@ export const NewObjectiveDialog = ({
                   }}
                 />
               </PrioritiesMenu>
-              <Tooltip title="Objective color">
-                <span>
-                  <ColorPicker
-                    onChange={(color) => {
-                      setObjectiveForm((prev) => ({ ...prev, color }));
-                    }}
-                    value={objectiveForm.color}
-                  />
-                </span>
-              </Tooltip>
               <DatePicker>
                 <DatePicker.Trigger>
                   <Button

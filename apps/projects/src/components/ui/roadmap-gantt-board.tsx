@@ -11,7 +11,7 @@ import {
 } from "react";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarPlusIcon, WarningIcon } from "icons";
+import { CalendarPlusIcon } from "icons";
 import type { DateRange } from "react-day-picker";
 import { useSession } from "@/lib/auth/client";
 import type { Objective, ObjectiveUpdate } from "@/modules/objectives/types";
@@ -22,6 +22,7 @@ import { useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
 import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
+import { ObjectiveForecastRiskBadge } from "@/modules/objectives/components/objective-forecast-risk";
 import { useCanUpdateObjective } from "@/modules/objectives/hooks";
 import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
@@ -35,7 +36,7 @@ import { BaseGantt, GanttControls, type ZoomLevel } from "./base-gantt";
 const ROADMAP_STICKY_COLUMNS_WIDTH = 640;
 const ROADMAP_ROW_HEIGHT = "3.5rem";
 const ROADMAP_COLUMNS =
-  "grid-cols-[2rem_minmax(0,7rem)_2rem_2rem_minmax(0,1fr)_5.25rem]";
+  "grid-cols-[2rem_minmax(0,7rem)_2rem_2rem_minmax(0,1fr)_7rem]";
 const DAYS_PER_DISPLAY_MONTH = 30;
 
 const formatObjectiveDuration = (days: number) => {
@@ -128,25 +129,7 @@ const ObjectiveRow = ({
 
   if (objective.scheduleStatus === "at_risk") {
     scheduleCell = (
-      <Tooltip
-        className="pointer-events-none max-w-72"
-        title={`Forecast ${
-          objective.forecastEndDate
-            ? format(new Date(objective.forecastEndDate), "MMM d, yyyy")
-            : "is late"
-        }${
-          objective.forecastCauseStory
-            ? `. Driven by task ${objective.forecastCauseStory.sequenceId}: ${objective.forecastCauseStory.title}`
-            : ""
-        }`}
-      >
-        <Flex align="center" className="text-primary shrink-0" gap={1}>
-          <WarningIcon aria-hidden="true" className="h-4 w-auto text-current" />
-          <Text as="span" color="primary" fontWeight="semibold">
-            +{objective.forecastDaysDelta}d
-          </Text>
-        </Flex>
-      </Tooltip>
+      <ObjectiveForecastRiskBadge objective={objective} size="row" />
     );
   } else if (duration !== null) {
     const durationLabel = formatObjectiveDuration(duration);
@@ -544,24 +527,7 @@ export const RoadmapGanttBoard = ({
             {objective.name}
           </Text>
           {isAtRisk ? (
-            <Flex
-              align="center"
-              className="border-primary/20 bg-primary/10 text-primary shrink-0 rounded-md border px-1.5 py-1 leading-none"
-              gap={1}
-            >
-              <WarningIcon
-                aria-hidden="true"
-                className="h-3.5 w-auto text-current"
-              />
-              <Text
-                as="span"
-                className="text-[0.78rem] leading-none"
-                color="primary"
-                fontWeight="semibold"
-              >
-                +{objective.forecastDaysDelta}d
-              </Text>
-            </Flex>
+            <ObjectiveForecastRiskBadge label="delta" objective={objective} />
           ) : null}
         </Flex>
       </Box>

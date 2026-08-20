@@ -6,16 +6,11 @@ import { ObjectiveIcon, PlusIcon, WarningIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLocalStorage, useTerminology, useUserRole } from "@/hooks";
-import { RoadmapGanttBoard } from "@/components/ui/roadmap-gantt-board";
-import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { NewObjectiveDialog } from "@/components/ui";
 import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
 import type { ZoomLevel } from "@/components/ui/base-gantt";
-import { KeyResultDetails } from "@/modules/key-results/components/key-result-details";
-import type { KeyResult, Objective } from "@/modules/objectives/types";
 import { isObjectiveForecastAtRisk } from "@/modules/objectives/components/objective-forecast-risk-utils";
-import { RoadmapObjectiveDetails } from "./components/objective-details";
-import { ObjectivesBoard } from "./components/objectives-board";
+import { ObjectiveViews } from "./components/objective-views";
 import { ObjectiveViewOptionsButton } from "./components/objective-view-options-button";
 import {
   DEFAULT_OBJECTIVE_VIEW_OPTIONS,
@@ -41,13 +36,6 @@ export const RoadmapPage = () => {
     "objectivesViewOptions",
     DEFAULT_OBJECTIVE_VIEW_OPTIONS,
   );
-  const [selectedObjective, setSelectedObjective] = useState<Objective | null>(
-    null,
-  );
-  const [selectedKeyResult, setSelectedKeyResult] = useState<{
-    keyResult: KeyResult;
-    objective: Objective;
-  } | null>(null);
   const forecastRiskObjectives = objectives.filter(isObjectiveForecastAtRisk);
   const isForecastRiskFilterActive =
     showForecastRisksOnly && forecastRiskObjectives.length > 0;
@@ -58,85 +46,35 @@ export const RoadmapPage = () => {
     forecastRiskObjectives.length === 1 ? "item needs" : "items need"
   } attention`;
 
-  const selectObjective = (objective: Objective) => {
-    setSelectedKeyResult(null);
-    setSelectedObjective(objective);
-  };
-
-  const selectKeyResult = (objective: Objective, keyResult: KeyResult) => {
-    setSelectedObjective(null);
-    setSelectedKeyResult({ keyResult, objective });
-  };
-
-  const renderContent = () => {
-    if (isPending) {
-      return <BoardSkeleton className="h-full" layout={layout} />;
-    }
-
-    if (objectives.length === 0) {
-      return (
-        <Box className="flex h-full items-center justify-center">
-          <Box className="flex flex-col items-center">
-            <ObjectiveIcon className="h-12 w-auto" strokeWidth={1.3} />
-            <Text className="mt-8 mb-6" fontSize="3xl">
-              Set your first{" "}
-              {getTermDisplay("objectiveTerm", { capitalize: true })}
-            </Text>
-            <Text className="mb-6 max-w-md text-center" color="muted">
-              Define what the workspace wants to achieve, then connect
-              measurable key results and the work that moves them forward.
-            </Text>
-            <Flex gap={2}>
-              <Button
-                color="tertiary"
-                disabled={userRole === "guest"}
-                leftIcon={<PlusIcon className="h-[1.1rem]" />}
-                onClick={() => {
-                  if (userRole !== "guest") {
-                    setIsOpen(true);
-                  }
-                }}
-                size="md"
-              >
-                Set your first {getTermDisplay("objectiveTerm")}
-              </Button>
-            </Flex>
-          </Box>
-        </Box>
-      );
-    }
-
-    switch (layout) {
-      case "gantt":
-        return (
-          <RoadmapGanttBoard
-            className="h-full"
-            objectives={displayedObjectives}
-            onObjectiveSelect={selectObjective}
-            onZoomLevelChange={setZoomLevel}
-            selectedObjectiveId={selectedObjective?.id}
-            zoomLevel={zoomLevel}
-          />
-        );
-      case "kanban":
-      case "list":
-        return (
-          <ObjectivesBoard
-            layout={layout}
-            objectives={displayedObjectives}
-            onCreateObjective={() => {
-              if (userRole !== "guest") setIsOpen(true);
+  const emptyState = (
+    <Box className="flex h-full items-center justify-center">
+      <Box className="flex flex-col items-center">
+        <ObjectiveIcon className="h-12 w-auto" strokeWidth={1.3} />
+        <Text className="mt-8 mb-6" fontSize="3xl">
+          Set your first {getTermDisplay("objectiveTerm", { capitalize: true })}
+        </Text>
+        <Text className="mb-6 max-w-md text-center" color="muted">
+          Define what the workspace wants to achieve, then connect measurable
+          key results and the work that moves them forward.
+        </Text>
+        <Flex gap={2}>
+          <Button
+            color="tertiary"
+            disabled={userRole === "guest"}
+            leftIcon={<PlusIcon className="h-[1.1rem]" />}
+            onClick={() => {
+              if (userRole !== "guest") {
+                setIsOpen(true);
+              }
             }}
-            onKeyResultSelect={selectKeyResult}
-            onObjectiveSelect={selectObjective}
-            setViewOptions={setViewOptions}
-            viewOptions={viewOptions}
-          />
-        );
-      default:
-        return null;
-    }
-  };
+            size="md"
+          >
+            Set your first {getTermDisplay("objectiveTerm")}
+          </Button>
+        </Flex>
+      </Box>
+    </Box>
+  );
 
   return (
     <>
@@ -209,28 +147,20 @@ export const RoadmapPage = () => {
         </Flex>
       </HeaderContainer>
 
-      <Box className="relative h-[calc(100dvh-4rem)] min-w-0">
-        {renderContent()}
-        {selectedObjective ? (
-          <RoadmapObjectiveDetails
-            objective={selectedObjective}
-            onClose={() => {
-              setSelectedObjective(null);
-            }}
-            onKeyResultSelect={(keyResult) => {
-              selectKeyResult(selectedObjective, keyResult);
-            }}
-          />
-        ) : null}
-        {selectedKeyResult ? (
-          <KeyResultDetails
-            initialKeyResult={selectedKeyResult.keyResult}
-            objective={selectedKeyResult.objective}
-            onClose={() => {
-              setSelectedKeyResult(null);
-            }}
-          />
-        ) : null}
+      <Box className="h-[calc(100dvh-4rem)] min-w-0">
+        <ObjectiveViews
+          emptyState={emptyState}
+          isPending={isPending}
+          layout={layout}
+          objectives={displayedObjectives}
+          onCreateObjective={() => {
+            if (userRole !== "guest") setIsOpen(true);
+          }}
+          onZoomLevelChange={setZoomLevel}
+          setViewOptions={setViewOptions}
+          viewOptions={viewOptions}
+          zoomLevel={zoomLevel}
+        />
       </Box>
       <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </>

@@ -186,7 +186,7 @@ const ObjectiveBoardCard = ({
         </button>
       </Box>
       <Flex align="center" className="mt-1 gap-1.5" wrap>
-        <ObjectiveForecastRiskBadge objective={objective} />
+        <ObjectiveForecastRiskBadge objective={objective} size="control" />
         <AssigneesMenu>
           <AssigneesMenu.Trigger>
             <Button
