@@ -296,7 +296,7 @@ describe("UpcomingMeetingCard", () => {
       <UpcomingMeetingCard fallback={<div>Upgrade plan</div>} />,
     );
 
-    expect(screen.getByText("Weekly planning")).toBeInTheDocument();
+    expect(screen.getByText("Weekly planning")).toHaveClass("line-clamp-1");
     expect(screen.getByText("Starts in 10 min")).toBeInTheDocument();
     expect(screen.queryByText("Upgrade plan")).toBeNull();
     expect(screen.getByRole("link", { name: /join meeting/i })).toHaveAttribute(
@@ -461,16 +461,14 @@ describe("UpcomingMeetingCard", () => {
 
     expect(screen.getByText("Forecast risk")).toBeInTheDocument();
     expect(screen.getByText("+8d")).toBeInTheDocument();
-    expect(
-      screen.getByText("Launch the new workspace experience").closest("a"),
-    ).toHaveAttribute(
-      "href",
-      "/acme/teams/team-1/objectives/objective-1?tab=overview",
-    );
     const objectiveTitle = screen
       .getByText("Launch the new workspace experience")
       .closest("a");
-    expect(objectiveTitle).toHaveClass("line-clamp-2");
+    expect(objectiveTitle).toHaveClass("line-clamp-1");
+    expect(objectiveTitle).toHaveAttribute(
+      "href",
+      "/acme/teams/team-1/objectives/objective-1?tab=overview",
+    );
     expect(objectiveTitle).toHaveAttribute(
       "title",
       "Launch the new workspace experience",

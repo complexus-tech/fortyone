@@ -173,7 +173,7 @@ const MeetingContent = ({ meeting }: { meeting: UpcomingMeeting }) => {
         </Text>
       </Flex>
 
-      <Text className="mt-2 line-clamp-2 leading-snug" fontWeight="medium">
+      <Text className="mt-2 line-clamp-1 leading-snug" fontWeight="medium">
         {getMeetingTitle(meeting.event.title)}
       </Text>
       <Text className="mt-1 tabular-nums" color="muted" fontSize="sm">
@@ -324,7 +324,7 @@ const ObjectiveRiskContent = ({ objective }: { objective: Objective }) => {
       </Flex>
 
       <Link
-        className="focus-visible:ring-ring mt-2 line-clamp-2 rounded-sm leading-snug font-medium outline-none hover:underline focus-visible:ring-2"
+        className="focus-visible:ring-ring mt-2 line-clamp-1 rounded-sm leading-snug font-medium outline-none hover:underline focus-visible:ring-2"
         href={objectiveHref}
         title={objective.name}
       >
