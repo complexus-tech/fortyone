@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useWorkspaceSettings } from "@/lib/hooks/workspace/settings";
 import type { WorkspaceSettings } from "@/types";
 
-type TermKey = keyof WorkspaceSettings;
+type TermKey = "storyTerm" | "sprintTerm" | "objectiveTerm" | "keyResultTerm";
 
 type DisplayOptions = {
   variant?: "singular" | "plural";
@@ -11,13 +11,11 @@ type DisplayOptions = {
 
 type GetTermDisplayFn = (termKey: TermKey, options?: DisplayOptions) => string;
 
-const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
+const DEFAULT_WORKSPACE_SETTINGS: Pick<WorkspaceSettings, TermKey> = {
   storyTerm: "story",
   sprintTerm: "sprint",
   objectiveTerm: "objective",
   keyResultTerm: "key result",
-  objectiveEnabled: true,
-  keyResultEnabled: true,
 };
 
 /**
@@ -25,9 +23,8 @@ const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
  * @returns A function to format terminology terms with options
  */
 export const useTerminology = () => {
-  const {
-    data: terminology = DEFAULT_WORKSPACE_SETTINGS,
-  } = useWorkspaceSettings();
+  const { data: terminology = DEFAULT_WORKSPACE_SETTINGS } =
+    useWorkspaceSettings();
 
   const getTermDisplay = useCallback<GetTermDisplayFn>(
     (termKey, options = {}) => {
@@ -35,10 +32,6 @@ export const useTerminology = () => {
 
       // Get the current term value directly using the key
       const currentValue = terminology[termKey];
-      if (typeof currentValue === "boolean") {
-        throw new Error(`Invalid term key: ${termKey}`);
-      }
-
       // Handle singular/plural variants
       let result: string = currentValue;
 

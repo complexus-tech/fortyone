@@ -92,7 +92,7 @@ describe("TimeNeededMenu", () => {
     });
   });
 
-  it("lets users keep the work in one block when possible", () => {
+  it("lets users schedule automatically around open time", () => {
     const setTimeNeeded = jest.fn();
     render(
       <TimeNeededMenu>
@@ -108,13 +108,38 @@ describe("TimeNeededMenu", () => {
     );
 
     expect(document.body).toHaveTextContent(
-      "No chunks keeps this work together when possible.",
+      "Automatic fills open time. Or choose a minimum block size.",
     );
-    fireEvent.click(screen.getByRole("button", { name: "No chunks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Automatic" }));
 
     expect(setTimeNeeded).toHaveBeenCalledWith({
       estimatedDurationMinutes: 120,
       minimumFocusBlockMinutes: null,
+    });
+  });
+
+  it("offers a two-hour focus block", () => {
+    const setTimeNeeded = jest.fn();
+    render(
+      <TimeNeededMenu>
+        <TimeNeededMenu.Trigger>
+          <button type="button">Open</button>
+        </TimeNeededMenu.Trigger>
+        <TimeNeededMenu.Items
+          estimatedDurationMinutes={8 * 60}
+          setTimeNeeded={setTimeNeeded}
+        />
+      </TimeNeededMenu>,
+    );
+
+    const twoHourButtons = screen.getAllByRole("button", { name: "2h" });
+    const twoHourFocusBlock = twoHourButtons.at(-1);
+    expect(twoHourFocusBlock).toBeDefined();
+    fireEvent.click(twoHourFocusBlock as HTMLButtonElement);
+
+    expect(setTimeNeeded).toHaveBeenCalledWith({
+      estimatedDurationMinutes: 8 * 60,
+      minimumFocusBlockMinutes: 120,
     });
   });
 
@@ -134,7 +159,7 @@ describe("TimeNeededMenu", () => {
     );
 
     expect(document.body).toHaveTextContent("Focus blocks");
-    fireEvent.click(screen.getByRole("button", { name: "No chunks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Automatic" }));
 
     expect(setTimeNeeded).toHaveBeenCalledWith({
       estimatedDurationMinutes: 30,

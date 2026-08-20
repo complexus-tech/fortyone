@@ -1,5 +1,5 @@
-import type { ApiResponse, User } from "@/types";
 import ky from "ky";
+import type { ApiResponse, User } from "@/types";
 import { auth } from "@/auth";
 import { getApiUrl } from "@/lib/api-url";
 import { buildAuthHeaders } from "@/lib/http/auth-headers";
@@ -11,6 +11,11 @@ export type UpdateProfile = {
   username?: string;
   hasSeenWalkthrough?: boolean;
   timezone?: string;
+  workSchedule?: {
+    workingDays: number[] | null;
+    workingStartMinute: number | null;
+    workingEndMinute: number | null;
+  };
 };
 
 const apiURL = getApiUrl();

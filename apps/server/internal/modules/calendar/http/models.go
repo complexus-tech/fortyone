@@ -49,6 +49,8 @@ type AppScheduleIssue struct {
 	TeamName                 string    `json:"teamName"`
 	TeamCode                 string    `json:"teamCode"`
 	EstimatedDurationMinutes *int      `json:"estimatedDurationMinutes"`
+	ScheduledDurationMinutes int       `json:"scheduledDurationMinutes"`
+	RemainingDurationMinutes int       `json:"remainingDurationMinutes"`
 	AutoSchedulingStatus     string    `json:"autoSchedulingStatus"`
 	AutoSchedulingReason     *string   `json:"autoSchedulingReason,omitempty"`
 	UpdatedAt                time.Time `json:"updatedAt"`
@@ -216,6 +218,8 @@ func toAppScheduleIssues(issues []calendar.CoreScheduleIssue) []AppScheduleIssue
 			TeamName:                 issue.TeamName,
 			TeamCode:                 issue.TeamCode,
 			EstimatedDurationMinutes: issue.EstimatedDurationMinutes,
+			ScheduledDurationMinutes: issue.ScheduledDurationMinutes,
+			RemainingDurationMinutes: issue.RemainingDurationMinutes,
 			AutoSchedulingStatus:     issue.AutoSchedulingStatus,
 			AutoSchedulingReason:     issue.AutoSchedulingReason,
 			UpdatedAt:                issue.UpdatedAt,

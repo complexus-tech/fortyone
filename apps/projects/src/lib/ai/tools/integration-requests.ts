@@ -269,7 +269,7 @@ export const updateIntegrationRequestTool = tool({
       .nullable()
       .optional()
       .describe(
-        "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes; set null to keep the work in one block when possible.",
+        "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes; set null to let Maya automatically fill available calendar time.",
       ),
     objectiveId: z.string().optional(),
     keyResultId: z.string().optional(),

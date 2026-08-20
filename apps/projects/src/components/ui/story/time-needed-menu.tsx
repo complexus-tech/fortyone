@@ -233,8 +233,7 @@ const Items = ({
           <Box>
             <Text fontWeight="medium">Focus blocks</Text>
             <Text className="mt-0.5 text-[0.95rem] leading-5" color="muted">
-              No chunks keeps this work together when possible. Smaller blocks
-              let Maya fit it around other commitments.
+              Automatic fills open time. Or choose a minimum block size.
             </Text>
           </Box>
           <Flex className="mt-2 gap-1.5" wrap>
@@ -253,7 +252,7 @@ const Items = ({
               type="button"
               variant="outline"
             >
-              No chunks
+              Automatic
             </Button>
             {focusBlockOptions.map((minutes) => (
               <Button

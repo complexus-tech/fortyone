@@ -87,7 +87,7 @@ export const bulkUpdateStories = tool({
           .nullable()
           .optional()
           .describe(
-            "Updated minimum focus block in minutes. Set null to keep the work in one block when possible.",
+            "Updated minimum focus block in minutes. Set null to let Maya automatically fill available calendar time.",
           ),
         autoSchedulingEnabled: z
           .boolean()

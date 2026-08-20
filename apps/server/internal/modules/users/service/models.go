@@ -31,6 +31,9 @@ type CoreUser struct {
 	IsInternal                    bool
 	HasSeenWalkthrough            bool
 	Timezone                      string
+	WorkingDays                   []int
+	WorkingStartMinute            *int
+	WorkingEndMinute              *int
 	LastLoginAt                   time.Time
 	LastUsedWorkspaceID           *uuid.UUID
 	GitHubUsername                *string
@@ -62,6 +65,13 @@ type CoreUpdateUser struct {
 	AvatarURL          *string
 	HasSeenWalkthrough *bool
 	Timezone           *string
+	WorkSchedule       *CoreWorkScheduleOverride
+}
+
+type CoreWorkScheduleOverride struct {
+	WorkingDays        []int
+	WorkingStartMinute *int
+	WorkingEndMinute   *int
 }
 
 // CoreNewUser represents a new user to be created.

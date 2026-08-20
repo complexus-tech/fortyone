@@ -668,19 +668,19 @@ func calculateIdealRemaining(currentTotal, initialStories, dayIndex int, startDa
 	return max(int(float64(currentTotal)*float64(remainingTransitions)/float64(totalWorkingDays-1)), 0)
 }
 
-func (r *repo) getTeamWorkingDays(ctx context.Context, teamID, workspaceID uuid.UUID) ([]int, error) {
+func (r *repo) getTeamWorkingDays(ctx context.Context, _ uuid.UUID, workspaceID uuid.UUID) ([]int, error) {
 	var stored pq.Int64Array
 	if err := r.db.GetContext(ctx, &stored, `
 		SELECT COALESCE(
 			(
 				SELECT working_days
-				FROM team_sprint_settings
-				WHERE team_id = $1 AND workspace_id = $2
+				FROM workspace_settings
+				WHERE workspace_id = $1
 			),
 			CAST(ARRAY[1, 2, 3, 4, 5] AS smallint[])
 		)
-	`, teamID, workspaceID); err != nil {
-		return nil, fmt.Errorf("get team working days: %w", err)
+	`, workspaceID); err != nil {
+		return nil, fmt.Errorf("get workspace working days: %w", err)
 	}
 
 	days := make([]int, len(stored))

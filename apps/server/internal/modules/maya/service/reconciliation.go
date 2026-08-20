@@ -11,6 +11,7 @@ import (
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/internal/platform/workschedule"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 )
@@ -610,8 +611,9 @@ func lockedScheduleRisk(story stories.CoreSingleStory, blocks []calendar.CoreSch
 			return "A locked work block is after this story's deadline. Unlock it so Maya can move the work into the valid window.", true
 		}
 		if story.SprintSummary != nil {
-			sprintStart := sprintWorkdayStart(story.SprintSummary.StartDate, location)
-			sprintEnd := sprintWorkdayEnd(story.SprintSummary.EndDate, location)
+			defaultSchedule := workschedule.Default()
+			sprintStart := workdayBoundary(story.SprintSummary.StartDate, defaultSchedule.StartMinute, location)
+			sprintEnd := workdayBoundary(story.SprintSummary.EndDate, defaultSchedule.EndMinute, location)
 			if block.StartAt.Before(sprintStart) || block.EndAt.After(sprintEnd) {
 				return "A locked work block falls outside this story's sprint. Unlock it so Maya can move the work into the sprint window.", true
 			}
@@ -735,7 +737,7 @@ func (s *Service) planAssignedStory(ctx context.Context, story stories.CoreSingl
 		current.StoryCode = nil
 		blocks = append(blocks, current)
 	}
-	workingDays, err := s.getWorkingDays(ctx, story.Team, story.Workspace)
+	workSchedule, err := s.getUserWorkSchedule(ctx, story.Workspace, userID)
 	if err != nil {
 		return PlanResult{}, err
 	}
@@ -747,6 +749,7 @@ func (s *Service) planAssignedStory(ctx context.Context, story stories.CoreSingl
 	durationMinutes := effectiveRemainingDurationMinutes(story, elapsedMinutes)
 	candidate := CandidateSchedule{
 		Member: reports.CoreMemberWorkload{UserID: userID}, Timezone: schedule.Timezone,
+		WorkingDays: workSchedule.WorkingDays, WorkingStartMinute: workSchedule.StartMinute, WorkingEndMinute: workSchedule.EndMinute,
 		BusyWindows: schedule.BusyWindows, Blocks: blocks,
 	}
 	if feedbackService, ok := s.calendar.(ScheduleFeedbackService); ok {
@@ -761,7 +764,7 @@ func (s *Service) planAssignedStory(ctx context.Context, story stories.CoreSingl
 	result, err := s.planner.Plan(PlanInput{
 		Context: ctx, WorkspaceID: story.Workspace, Story: story,
 		DurationMinutes: durationMinutes,
-		WindowStart:     windowStart, WindowEnd: windowEnd, WorkingDays: workingDays,
+		WindowStart:     windowStart, WindowEnd: windowEnd,
 		MinimumFocusBlockMinutes: valueOrZero(story.MinimumFocusBlockMinutes),
 		Candidates:               []CandidateSchedule{candidate},
 	})
@@ -821,6 +824,12 @@ func retainActiveScheduleBlock(result PlanResult, story stories.CoreSingleStory,
 }
 
 func autoSchedulingOutcome(result PlanResult, segments []calendar.MayaScheduleSegmentInput) (string, string) {
+	if result.RemainingMinutes > 0 {
+		if result.ScheduledMinutes > 0 {
+			return stories.AutoSchedulingStatusCannotFit, partialScheduleReason(result.ScheduledMinutes, result.RemainingMinutes)
+		}
+		return stories.AutoSchedulingStatusCannotFit, fmt.Sprintf("%s left to schedule.", formatMinutes(result.RemainingMinutes))
+	}
 	if len(segments) > 0 {
 		return stories.AutoSchedulingStatusScheduled, "Maya scheduled this story around the assignee's availability."
 	}

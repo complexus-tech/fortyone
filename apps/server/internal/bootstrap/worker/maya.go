@@ -11,10 +11,9 @@ import (
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	teamsettingsrepository "github.com/complexus-tech/projects-api/internal/modules/teamsettings/repository"
-	teamsettings "github.com/complexus-tech/projects-api/internal/modules/teamsettings/service"
 	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/google/uuid"
@@ -44,13 +43,13 @@ func buildMayaService(
 	}
 
 	return maya.New(maya.Dependencies{
-		Repository:   mayarepository.New(log, db),
-		Stories:      storiesService,
-		Reports:      reportsService,
-		Calendar:     calendarService,
-		Users:        usersService,
-		TeamSettings: teamsettings.New(log, teamsettingsrepository.New(log, db), nil),
-		Planner:      planner,
-		MayaActorID:  mayaActorID,
+		Repository:        mayarepository.New(log, db),
+		Stories:           storiesService,
+		Reports:           reportsService,
+		Calendar:          calendarService,
+		Users:             usersService,
+		WorkspaceSettings: workspacesrepository.New(log, db),
+		Planner:           planner,
+		MayaActorID:       mayaActorID,
 	})
 }

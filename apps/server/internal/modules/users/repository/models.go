@@ -5,33 +5,37 @@ import (
 
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type dbUser struct {
-	ID                            uuid.UUID  `db:"user_id"`
-	Username                      string     `db:"username"`
-	Email                         string     `db:"email"`
-	FullName                      *string    `db:"full_name"`
-	AvatarURL                     *string    `db:"avatar_url"`
-	IsActive                      bool       `db:"is_active"`
-	IsSystem                      bool       `db:"is_system"`
-	IsInternal                    bool       `db:"is_internal"`
-	HasSeenWalkthrough            bool       `db:"has_seen_walkthrough"`
-	Timezone                      string     `db:"timezone"`
-	LastLoginAt                   *time.Time `db:"last_login_at"`
-	LastUsedWorkspaceID           *uuid.UUID `db:"last_used_workspace_id"`
-	GitHubUsername                *string    `db:"github_username"`
-	CreatedAt                     time.Time  `db:"created_at"`
-	UpdatedAt                     time.Time  `db:"updated_at"`
-	Role                          *string    `db:"role"`
-	TeamAIRoleTitle               *string    `db:"team_ai_role_title"`
-	TeamAIRoleDescription         *string    `db:"team_ai_role_description"`
-	InferredTeamAIRoleTitle       *string    `db:"inferred_team_ai_role_title"`
-	InferredTeamAIRoleDescription *string    `db:"inferred_team_ai_role_description"`
-	InferredTeamAIRoleStoryCount  int        `db:"inferred_team_ai_role_story_count"`
-	InferredTeamAIRoleConfidence  float32    `db:"inferred_team_ai_role_confidence"`
-	InferredTeamAIRoleGeneratedAt *time.Time `db:"inferred_team_ai_role_generated_at"`
-	LastStoryActivityAt           *time.Time `db:"last_story_activity_at"`
+	ID                            uuid.UUID     `db:"user_id"`
+	Username                      string        `db:"username"`
+	Email                         string        `db:"email"`
+	FullName                      *string       `db:"full_name"`
+	AvatarURL                     *string       `db:"avatar_url"`
+	IsActive                      bool          `db:"is_active"`
+	IsSystem                      bool          `db:"is_system"`
+	IsInternal                    bool          `db:"is_internal"`
+	HasSeenWalkthrough            bool          `db:"has_seen_walkthrough"`
+	Timezone                      string        `db:"timezone"`
+	WorkingDays                   pq.Int64Array `db:"working_days"`
+	WorkingStartMinute            *int          `db:"working_start_minute"`
+	WorkingEndMinute              *int          `db:"working_end_minute"`
+	LastLoginAt                   *time.Time    `db:"last_login_at"`
+	LastUsedWorkspaceID           *uuid.UUID    `db:"last_used_workspace_id"`
+	GitHubUsername                *string       `db:"github_username"`
+	CreatedAt                     time.Time     `db:"created_at"`
+	UpdatedAt                     time.Time     `db:"updated_at"`
+	Role                          *string       `db:"role"`
+	TeamAIRoleTitle               *string       `db:"team_ai_role_title"`
+	TeamAIRoleDescription         *string       `db:"team_ai_role_description"`
+	InferredTeamAIRoleTitle       *string       `db:"inferred_team_ai_role_title"`
+	InferredTeamAIRoleDescription *string       `db:"inferred_team_ai_role_description"`
+	InferredTeamAIRoleStoryCount  int           `db:"inferred_team_ai_role_story_count"`
+	InferredTeamAIRoleConfidence  float32       `db:"inferred_team_ai_role_confidence"`
+	InferredTeamAIRoleGeneratedAt *time.Time    `db:"inferred_team_ai_role_generated_at"`
+	LastStoryActivityAt           *time.Time    `db:"last_story_activity_at"`
 }
 
 // dbVerificationToken represents a verification token in the database
@@ -61,6 +65,10 @@ type dbAutomationPreferences struct {
 }
 
 func toCoreUser(p dbUser) users.CoreUser {
+	workingDays := make([]int, len(p.WorkingDays))
+	for index, day := range p.WorkingDays {
+		workingDays[index] = int(day)
+	}
 	return users.CoreUser{
 		ID:                            p.ID,
 		Username:                      p.Username,
@@ -72,6 +80,9 @@ func toCoreUser(p dbUser) users.CoreUser {
 		IsInternal:                    p.IsInternal,
 		HasSeenWalkthrough:            p.HasSeenWalkthrough,
 		Timezone:                      p.Timezone,
+		WorkingDays:                   workingDays,
+		WorkingStartMinute:            p.WorkingStartMinute,
+		WorkingEndMinute:              p.WorkingEndMinute,
 		LastLoginAt:                   derefTime(p.LastLoginAt),
 		LastUsedWorkspaceID:           p.LastUsedWorkspaceID,
 		GitHubUsername:                p.GitHubUsername,

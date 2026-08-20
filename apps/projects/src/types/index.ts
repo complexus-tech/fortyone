@@ -19,6 +19,9 @@ export type User = {
   lastUsedWorkspaceId: string;
   hasSeenWalkthrough: boolean;
   timezone: string;
+  workingDays?: number[] | null;
+  workingStartMinute?: number | null;
+  workingEndMinute?: number | null;
   githubUsername: string | null;
   createdAt: string;
   updatedAt: string;
@@ -150,6 +153,9 @@ export type WorkspaceSettings = {
   keyResultTerm: "key result" | "milestone" | "focus area";
   objectiveEnabled: boolean;
   keyResultEnabled: boolean;
+  workingDays: number[];
+  workingStartMinute: number;
+  workingEndMinute: number;
 };
 
 export type AutomationPreferences = {

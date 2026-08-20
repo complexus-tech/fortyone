@@ -216,7 +216,7 @@ func TestPlannerSpreadsLargerWorkAcrossAvailableWindows(t *testing.T) {
 	}
 }
 
-func TestPlannerKeepsNoChunkWorkContiguousWhenAvailable(t *testing.T) {
+func TestPlannerKeepsAutomaticWorkContiguousWhenAvailable(t *testing.T) {
 	workspaceID := uuid.New()
 	storyID := uuid.New()
 	userID := uuid.New()
@@ -251,7 +251,7 @@ func TestPlannerKeepsNoChunkWorkContiguousWhenAvailable(t *testing.T) {
 	}
 }
 
-func TestPlannerSplitsNoChunkWorkOnlyWhenConflictsRequireIt(t *testing.T) {
+func TestPlannerSplitsAutomaticWorkWhenConflictsRequireIt(t *testing.T) {
 	workspaceID := uuid.New()
 	storyID := uuid.New()
 	userID := uuid.New()
@@ -290,6 +290,115 @@ func TestPlannerSplitsNoChunkWorkOnlyWhenConflictsRequireIt(t *testing.T) {
 	}
 	if !second.StartAt.Equal(startAt.Add(7*time.Hour)) || !second.EndAt.Equal(endAt) {
 		t.Fatalf("expected remaining hour after the conflict, got %s-%s", second.StartAt, second.EndAt)
+	}
+}
+
+func TestPlannerCarriesAutomaticWorkIntoTheNextAvailableDay(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
+	endAt := time.Date(2026, 6, 16, 17, 0, 0, 0, time.UTC)
+	duration := 8 * 60
+
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID: storyID, Workspace: workspaceID, Title: "Schedule across open days",
+			Assignee: &userID, EstimatedDurationMinutes: &duration,
+		},
+		WindowStart: startAt,
+		WindowEnd:   endAt,
+		Candidates: []CandidateSchedule{{
+			Member: reports.CoreMemberWorkload{UserID: userID},
+			BusyWindows: []calendar.CoreBusyWindow{{
+				StartAt: startAt, EndAt: startAt.Add(2 * time.Hour),
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if len(result.Actions) != 2 {
+		t.Fatalf("expected two schedule segments, got %d", len(result.Actions))
+	}
+	first := result.Actions[0].Payload.ScheduleBlock
+	second := result.Actions[1].Payload.ScheduleBlock
+	if first == nil || second == nil {
+		t.Fatalf("expected schedule block payloads: %#v", result.Actions)
+	}
+	if !first.StartAt.Equal(startAt.Add(2*time.Hour)) || first.EndAt.Sub(first.StartAt) != 6*time.Hour {
+		t.Fatalf("expected the first block to fill six open hours, got %#v", first)
+	}
+	expectedSecondStart := time.Date(2026, 6, 16, 9, 0, 0, 0, time.UTC)
+	if !second.StartAt.Equal(expectedSecondStart) || second.EndAt.Sub(second.StartAt) != 2*time.Hour {
+		t.Fatalf("expected the remaining two hours on the next day, got %#v", second)
+	}
+	if result.ScheduledMinutes != duration || result.RemainingMinutes != 0 {
+		t.Fatalf("expected all %d minutes scheduled, got scheduled=%d remaining=%d", duration, result.ScheduledMinutes, result.RemainingMinutes)
+	}
+}
+
+func TestPlannerKeepsPartialAutomaticScheduleAndReportsOnlyTheRemainder(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
+	duration := 8 * 60
+
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID: storyID, Workspace: workspaceID, Title: "Keep partial placement",
+			Assignee: &userID, EstimatedDurationMinutes: &duration,
+		},
+		WindowStart: startAt,
+		WindowEnd:   startAt.Add(7*time.Hour + 30*time.Minute),
+		Candidates:  []CandidateSchedule{{Member: reports.CoreMemberWorkload{UserID: userID}}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	if result.ScheduledMinutes != 7*60+30 || result.RemainingMinutes != 30 {
+		t.Fatalf("expected 450 minutes scheduled and 30 remaining, got scheduled=%d remaining=%d", result.ScheduledMinutes, result.RemainingMinutes)
+	}
+	if len(result.Actions) != 2 || result.Actions[0].Payload.ScheduleBlock == nil || result.Actions[1].Payload.Risk == nil {
+		t.Fatalf("expected a partial block followed by a risk action: %#v", result.Actions)
+	}
+	risk := result.Actions[1].Payload.Risk
+	if risk.RequiredMinutes != duration || risk.ScheduledMinutes != 7*60+30 || risk.RemainingMinutes != 30 {
+		t.Fatalf("unexpected partial schedule risk: %#v", risk)
+	}
+}
+
+func TestPlannerHonorsCandidateWorkingHours(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	duration := 60
+	windowStart := time.Date(2026, 6, 15, 0, 0, 0, 0, time.UTC)
+
+	result, err := NewPlanner().Plan(PlanInput{
+		WorkspaceID: workspaceID,
+		Story: stories.CoreSingleStory{
+			ID: storyID, Workspace: workspaceID, Title: "Start at personal working time",
+			Assignee: &userID, EstimatedDurationMinutes: &duration,
+		},
+		WindowStart: windowStart,
+		WindowEnd:   windowStart.Add(24 * time.Hour),
+		Candidates: []CandidateSchedule{{
+			Member:             reports.CoreMemberWorkload{UserID: userID},
+			WorkingDays:        []int{1, 2, 3, 4, 5},
+			WorkingStartMinute: 8 * 60,
+			WorkingEndMinute:   17 * 60,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("Plan returned error: %v", err)
+	}
+	expectedStart := time.Date(2026, 6, 15, 8, 0, 0, 0, time.UTC)
+	if len(result.Actions) != 1 || result.Actions[0].Payload.ScheduleBlock == nil || !result.Actions[0].Payload.ScheduleBlock.StartAt.Equal(expectedStart) {
+		t.Fatalf("expected work to start at the personal 08:00 boundary, got %#v", result.Actions)
 	}
 }
 

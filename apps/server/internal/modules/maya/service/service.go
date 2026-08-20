@@ -11,9 +11,9 @@ import (
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	teamsettings "github.com/complexus-tech/projects-api/internal/modules/teamsettings/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
-	"github.com/complexus-tech/projects-api/internal/platform/workweek"
+	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
+	"github.com/complexus-tech/projects-api/internal/platform/workschedule"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -61,30 +61,34 @@ type UsersService interface {
 	List(ctx context.Context, workspaceID uuid.UUID, filter users.CoreListUsersFilter) ([]users.CoreUser, error)
 }
 
-type TeamSettingsService interface {
-	GetSprintSettings(ctx context.Context, teamID, workspaceID uuid.UUID) (teamsettings.CoreTeamSprintSettings, error)
+type UserScheduleReader interface {
+	GetUser(ctx context.Context, userID uuid.UUID) (users.CoreUser, error)
+}
+
+type WorkspaceSettingsService interface {
+	GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) (workspaces.CoreWorkspaceSettings, error)
 }
 
 type Dependencies struct {
-	Repository   Repository
-	Stories      StoriesService
-	Reports      ReportsService
-	Calendar     CalendarService
-	Users        UsersService
-	TeamSettings TeamSettingsService
-	Planner      Planner
-	MayaActorID  uuid.UUID
+	Repository        Repository
+	Stories           StoriesService
+	Reports           ReportsService
+	Calendar          CalendarService
+	Users             UsersService
+	WorkspaceSettings WorkspaceSettingsService
+	Planner           Planner
+	MayaActorID       uuid.UUID
 }
 
 type Service struct {
-	repo         Repository
-	stories      StoriesService
-	reports      ReportsService
-	calendar     CalendarService
-	users        UsersService
-	teamSettings TeamSettingsService
-	planner      Planner
-	mayaActorID  uuid.UUID
+	repo              Repository
+	stories           StoriesService
+	reports           ReportsService
+	calendar          CalendarService
+	users             UsersService
+	workspaceSettings WorkspaceSettingsService
+	planner           Planner
+	mayaActorID       uuid.UUID
 }
 
 type CreateWorkPlanInput struct {
@@ -125,14 +129,14 @@ type ProcessAssignmentBatchResult struct {
 func New(deps Dependencies) *Service {
 	planner := deps.Planner
 	return &Service{
-		repo:         deps.Repository,
-		stories:      deps.Stories,
-		reports:      deps.Reports,
-		calendar:     deps.Calendar,
-		users:        deps.Users,
-		teamSettings: deps.TeamSettings,
-		planner:      planner,
-		mayaActorID:  deps.MayaActorID,
+		repo:              deps.Repository,
+		stories:           deps.Stories,
+		reports:           deps.Reports,
+		calendar:          deps.Calendar,
+		users:             deps.Users,
+		workspaceSettings: deps.WorkspaceSettings,
+		planner:           planner,
+		mayaActorID:       deps.MayaActorID,
 	}
 }
 
@@ -227,11 +231,6 @@ func (s *Service) createWorkPlan(ctx context.Context, input CreateWorkPlanInput)
 			return WorkPlan{}, fmt.Errorf("reload story after enabling Maya auto-scheduling: %w", err)
 		}
 	}
-	workingDays, err := s.getWorkingDays(ctx, story.Team, input.WorkspaceID)
-	if err != nil {
-		span.RecordError(err)
-		return WorkPlan{}, err
-	}
 	candidates, contextPayload, err := s.buildCandidates(ctx, input, story)
 	if err != nil {
 		span.RecordError(err)
@@ -257,7 +256,6 @@ func (s *Service) createWorkPlan(ctx context.Context, input CreateWorkPlanInput)
 		DurationMinutes:  input.DurationMinutes,
 		WindowStart:      input.WindowStart,
 		WindowEnd:        input.WindowEnd,
-		WorkingDays:      workingDays,
 		Candidates:       candidates,
 		AssignmentReason: input.AssignmentReason,
 	})
@@ -441,12 +439,7 @@ func (s *Service) ProcessAssignmentBatch(ctx context.Context, input ProcessAssig
 		storyByID[story.ID] = story
 	}
 
-	workingDays, err := s.getWorkingDays(ctx, input.TeamID, input.WorkspaceID)
-	if err != nil {
-		span.RecordError(err)
-		return ProcessAssignmentBatchResult{}, err
-	}
-	candidateRecommendations := candidateRecommendationsFromSchedules(candidates, input.WindowStart, input.WindowEnd, batchCandidateDurationMinutes(storiesForBatch, input.DurationMinutes), workingDays)
+	candidateRecommendations := candidateRecommendationsFromSchedules(candidates, input.WindowStart, input.WindowEnd, batchCandidateDurationMinutes(storiesForBatch, input.DurationMinutes))
 	recommendations, err := s.planner.RecommendAssignments(ctx, BatchAssignmentRecommendationInput{
 		WorkspaceID: input.WorkspaceID,
 		Stories:     batchStories,
@@ -530,7 +523,7 @@ func (s *Service) validate() error {
 	return nil
 }
 
-func candidateRecommendationsFromSchedules(candidates []CandidateSchedule, windowStart, windowEnd time.Time, durationMinutes int, workingDays []int) []CandidateRecommendation {
+func candidateRecommendationsFromSchedules(candidates []CandidateSchedule, windowStart, windowEnd time.Time, durationMinutes int) []CandidateRecommendation {
 	recommendations := make([]CandidateRecommendation, 0, len(candidates))
 	duration := time.Duration(durationMinutes) * time.Minute
 	for _, candidate := range candidates {
@@ -546,7 +539,7 @@ func candidateRecommendationsFromSchedules(candidates []CandidateSchedule, windo
 			DaysSinceLastActivity: daysSinceLastActivity(candidate.Member.LastStoryActivityAt),
 			RecentlyActive:        isRecentlyActive(candidate.Member.LastStoryActivityAt),
 		}
-		if slot, ok := planWorkWindow(candidate, windowStart, windowEnd, duration, workingDays); ok {
+		if slot, ok := planWorkWindow(candidate, windowStart, windowEnd, duration); ok {
 			recommendation.HasAvailableSlot = true
 			recommendation.SlotStart = slot.start
 			recommendation.SlotEnd = slot.end
@@ -556,18 +549,43 @@ func candidateRecommendationsFromSchedules(candidates []CandidateSchedule, windo
 	return recommendations
 }
 
-func (s *Service) getWorkingDays(ctx context.Context, teamID, workspaceID uuid.UUID) ([]int, error) {
-	if s.teamSettings == nil {
-		return workweek.DefaultWorkingDays(), nil
+func (s *Service) getWorkspaceWorkSchedule(ctx context.Context, workspaceID uuid.UUID) (workschedule.Schedule, error) {
+	if s.workspaceSettings == nil {
+		return workschedule.Default(), nil
 	}
-	settings, err := s.teamSettings.GetSprintSettings(ctx, teamID, workspaceID)
+	settings, err := s.workspaceSettings.GetWorkspaceSettings(ctx, workspaceID)
 	if err != nil {
-		return nil, fmt.Errorf("get team working days for maya plan: %w", err)
+		return workschedule.Schedule{}, fmt.Errorf("get workspace work schedule for Maya plan: %w", err)
 	}
-	return workweek.Normalize(settings.WorkingDays), nil
+	return workschedule.Normalize(settings.WorkingDays, settings.WorkingStartMinute, settings.WorkingEndMinute), nil
+}
+
+func (s *Service) getUserWorkSchedule(ctx context.Context, workspaceID, userID uuid.UUID) (workschedule.Schedule, error) {
+	workspaceSchedule, err := s.getWorkspaceWorkSchedule(ctx, workspaceID)
+	if err != nil {
+		return workschedule.Schedule{}, err
+	}
+	reader, ok := s.users.(UserScheduleReader)
+	if !ok {
+		return workspaceSchedule, nil
+	}
+	user, err := reader.GetUser(ctx, userID)
+	if err != nil {
+		return workschedule.Schedule{}, fmt.Errorf("get user work schedule for Maya plan: %w", err)
+	}
+	return workschedule.Resolve(
+		workspaceSchedule,
+		user.WorkingDays,
+		user.WorkingStartMinute,
+		user.WorkingEndMinute,
+	), nil
 }
 
 func (s *Service) buildCandidates(ctx context.Context, input CreateWorkPlanInput, story stories.CoreSingleStory) ([]CandidateSchedule, json.RawMessage, error) {
+	workspaceSchedule, err := s.getWorkspaceWorkSchedule(ctx, input.WorkspaceID)
+	if err != nil {
+		return nil, nil, err
+	}
 	usersFilter := users.CoreListUsersFilter{TeamID: &story.Team}
 	if len(input.CandidateUserIDs) == 0 {
 		usersFilter.Limit = defaultCandidateLimit
@@ -655,6 +673,16 @@ func (s *Service) buildCandidates(ctx context.Context, input CreateWorkPlanInput
 			BusyWindows: schedule.BusyWindows,
 			Blocks:      schedule.Blocks,
 		}
+		user := memberByUserID[userID]
+		resolvedSchedule := workschedule.Resolve(
+			workspaceSchedule,
+			user.WorkingDays,
+			user.WorkingStartMinute,
+			user.WorkingEndMinute,
+		)
+		candidate.WorkingDays = resolvedSchedule.WorkingDays
+		candidate.WorkingStartMinute = resolvedSchedule.StartMinute
+		candidate.WorkingEndMinute = resolvedSchedule.EndMinute
 		if feedbackService, ok := s.calendar.(ScheduleFeedbackService); ok {
 			preference, preferenceErr := feedbackService.ListManualSchedulePreference(ctx, input.WorkspaceID, userID)
 			if preferenceErr != nil {

@@ -19,6 +19,7 @@ import (
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/internal/platform/workschedule"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/validate"
@@ -554,6 +555,9 @@ func (h *Handlers) UpdateWorkspaceSettings(ctx context.Context, w http.ResponseW
 	coreSettings := toCoreWorkspaceSettings(input, workspace.ID, currentSettings)
 	updatedSettings, err := h.workspaces.UpdateWorkspaceSettings(ctx, workspace.ID, coreSettings)
 	if err != nil {
+		if errors.Is(err, workschedule.ErrInvalidWorkingDays) || errors.Is(err, workschedule.ErrInvalidWorkingHours) {
+			return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 

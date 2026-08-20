@@ -80,6 +80,8 @@ export type CalendarScheduleIssue = {
   teamName: string;
   teamCode: string;
   estimatedDurationMinutes: number | null;
+  scheduledDurationMinutes?: number;
+  remainingDurationMinutes?: number;
   autoSchedulingStatus: "cannot_fit";
   autoSchedulingReason?: string | null;
   updatedAt: string;

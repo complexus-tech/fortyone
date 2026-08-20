@@ -127,6 +127,11 @@ func (r *Repo) ListScheduleIssues(ctx context.Context, workspaceID, userID uuid.
 			team.name AS team_name,
 			team.code AS team_code,
 			story.estimated_duration_minutes,
+			COALESCE(scheduled.scheduled_duration_minutes, 0)::int AS scheduled_duration_minutes,
+			GREATEST(
+				COALESCE(story.estimated_duration_minutes, 0) - COALESCE(scheduled.scheduled_duration_minutes, 0),
+				0
+			)::int AS remaining_duration_minutes,
 			story.auto_scheduling_status,
 			story.auto_scheduling_reason,
 			story.updated_at
@@ -136,6 +141,14 @@ func (r *Repo) ListScheduleIssues(ctx context.Context, workspaceID, userID uuid.
 		INNER JOIN team_members membership ON
 			membership.team_id = story.team_id
 			AND membership.user_id = $2
+		LEFT JOIN LATERAL (
+			SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (block.end_at - block.start_at)) / 60), 0)::int AS scheduled_duration_minutes
+			FROM calendar_schedule_blocks block
+			WHERE block.workspace_id = story.workspace_id
+				AND block.user_id = story.assignee_id
+				AND block.story_id = story.id
+				AND block.source = 'maya'
+		) scheduled ON TRUE
 		WHERE story.workspace_id = $1
 			AND story.assignee_id = $2
 			AND story.auto_scheduling_enabled = TRUE

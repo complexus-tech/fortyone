@@ -12,6 +12,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -52,6 +53,20 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 		setClauses = append(setClauses, "timezone = :timezone")
 		params["timezone"] = *updates.Timezone
 	}
+	if updates.WorkSchedule != nil {
+		setClauses = append(setClauses,
+			"working_days = :working_days",
+			"working_start_minute = :working_start_minute",
+			"working_end_minute = :working_end_minute",
+		)
+		if len(updates.WorkSchedule.WorkingDays) == 0 {
+			params["working_days"] = nil
+		} else {
+			params["working_days"] = pq.Array(updates.WorkSchedule.WorkingDays)
+		}
+		params["working_start_minute"] = updates.WorkSchedule.WorkingStartMinute
+		params["working_end_minute"] = updates.WorkSchedule.WorkingEndMinute
+	}
 
 	// If no fields to update, just return the current user
 	if len(setClauses) == 0 {
@@ -78,6 +93,9 @@ func (r *repo) UpdateUser(ctx context.Context, userID uuid.UUID, updates users.C
 			is_internal,
 			has_seen_walkthrough,
 			timezone,
+			working_days,
+			working_start_minute,
+			working_end_minute,
 			last_login_at,
 			last_used_workspace_id,
 			created_at,

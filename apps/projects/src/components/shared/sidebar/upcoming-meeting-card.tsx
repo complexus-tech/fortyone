@@ -2,9 +2,8 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { addDays, addMinutes, format, startOfDay } from "date-fns";
+import { addDays, format, startOfDay } from "date-fns";
 import {
-  CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CloseIcon,
@@ -13,8 +12,9 @@ import {
   Video02Icon,
   WarningIcon,
 } from "icons";
-import { Box, Button, Dialog, Flex, Input, Popover, Text } from "ui";
+import { Box, Button, Flex, Popover, Text } from "ui";
 import { useWorkspacePath } from "@/hooks";
+import { ScheduleIssueDialog } from "@/components/ui/story/schedule-issue-dialog";
 import {
   useCalendarIntegration,
   useCalendarSchedule,
@@ -70,104 +70,6 @@ type SidebarAssistantItem =
   | { id: string; issue: CalendarScheduleIssue; kind: "schedule-issue" };
 
 const getMeetingTitle = (title?: string) => title?.trim() || "Upcoming meeting";
-
-const roundToNextHalfHour = (date: Date) => {
-  const next = new Date(date);
-  next.setMinutes(next.getMinutes() < 30 ? 30 : 60, 0, 0);
-  return next;
-};
-
-const toDateTimeInputValue = (value: Date) =>
-  format(value, "yyyy-MM-dd'T'HH:mm");
-
-const ScheduleIssueDialog = ({
-  issue,
-  isSaving,
-  now,
-  onClose,
-  onSubmit,
-}: {
-  issue: CalendarScheduleIssue;
-  isSaving: boolean;
-  now: number;
-  onClose: () => void;
-  onSubmit: (startAt: string) => void;
-}) => {
-  const defaultStart = roundToNextHalfHour(addMinutes(new Date(now), 30));
-  const [startAt, setStartAt] = useState(() =>
-    toDateTimeInputValue(defaultStart),
-  );
-  const parsedStartAt = new Date(startAt);
-  const durationMinutes = issue.estimatedDurationMinutes ?? 0;
-  const endAt = addMinutes(parsedStartAt, durationMinutes);
-  const canSubmit =
-    durationMinutes > 0 &&
-    Number.isFinite(parsedStartAt.getTime()) &&
-    parsedStartAt.getTime() >= now - 5 * 60 * 1000;
-
-  return (
-    <Dialog
-      onOpenChange={(isOpen) => {
-        if (!isOpen) onClose();
-      }}
-      open
-    >
-      <Dialog.Content>
-        <Dialog.Header>
-          <Dialog.Title className="px-6 pt-0.5 text-lg">
-            Choose a time for {issue.storyCode}
-          </Dialog.Title>
-        </Dialog.Header>
-        <Dialog.Body className="space-y-4">
-          <Box>
-            <Text fontWeight="medium">{issue.storyTitle}</Text>
-            <Text className="mt-1" color="muted" fontSize="md">
-              Maya will reserve {formatTimeNeeded(durationMinutes, "full")} and
-              keep this exact time locked.
-            </Text>
-          </Box>
-          <Input
-            className="text-base"
-            label="Start"
-            labelClassName="text-base"
-            min={toDateTimeInputValue(new Date(now))}
-            onChange={(event) => {
-              setStartAt(event.target.value);
-            }}
-            type="datetime-local"
-            value={startAt}
-          />
-          {canSubmit ? (
-            <Text color="muted" fontSize="md">
-              Ends {format(endAt, "EEEE, MMM d 'at' h:mm a")}. If this overlaps
-              a meeting or another task, FortyOne will show the conflict but
-              keep your choice.
-            </Text>
-          ) : (
-            <Text color="danger" fontSize="md">
-              Choose a future start time.
-            </Text>
-          )}
-        </Dialog.Body>
-        <Dialog.Footer className="gap-3 border-0 pt-2">
-          <Button color="tertiary" onClick={onClose} variant="outline">
-            Cancel
-          </Button>
-          <Button
-            color="invert"
-            disabled={!canSubmit}
-            loading={isSaving}
-            onClick={() => {
-              onSubmit(parsedStartAt.toISOString());
-            }}
-          >
-            Lock this time
-          </Button>
-        </Dialog.Footer>
-      </Dialog.Content>
-    </Dialog>
-  );
-};
 
 const MeetingContent = ({ meeting }: { meeting: UpcomingMeeting }) => {
   const startAt = new Date(meeting.event.startAt);
@@ -239,9 +141,11 @@ const ScheduleIssueContent = ({
   onRetry: () => void;
 }) => {
   const { withWorkspace } = useWorkspacePath();
-  const reason =
-    issue.autoSchedulingReason?.trim() ||
-    "Maya could not find enough available time in the planning window.";
+  const remainingMinutes =
+    issue.remainingDurationMinutes ?? issue.estimatedDurationMinutes;
+  const reason = remainingMinutes
+    ? `${formatTimeNeeded(remainingMinutes)} left to schedule.`
+    : "No time available before the deadline.";
 
   return (
     <>
@@ -269,15 +173,6 @@ const ScheduleIssueContent = ({
       >
         {reason}
       </Text>
-      {issue.estimatedDurationMinutes ? (
-        <Flex align="center" className="mt-2 gap-1.5">
-          <CalendarIcon aria-hidden="true" className="h-3.5" />
-          <Text color="muted" fontSize="sm">
-            {formatTimeNeeded(issue.estimatedDurationMinutes, "full")} needed
-          </Text>
-        </Flex>
-      ) : null}
-
       <Flex className="mt-3 gap-2">
         <Button
           className="shrink-0 px-3"

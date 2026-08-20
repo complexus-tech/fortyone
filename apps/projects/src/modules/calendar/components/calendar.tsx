@@ -350,7 +350,11 @@ const CalendarTimedBlock = ({
     top: `${layout.top + timedBlockVerticalInset}px`,
     width: `calc(${laneWidth}% - 0.5rem)`,
   };
-  const showSecondaryLine = renderedHeight >= 40;
+  const isCompactEvent =
+    item.kind === "event" &&
+    renderedHeight < hourHeight - timedBlockVerticalGap;
+  const showSecondaryLine =
+    item.kind === "event" ? renderedHeight >= 31 : renderedHeight >= 40;
   const canShowTwoLineTitle = layout.height >= twoLineTitleMinimumHeight;
   const titleLineClass = canShowTwoLineTitle
     ? "line-clamp-2 leading-5"
@@ -394,10 +398,20 @@ const CalendarTimedBlock = ({
             aria-hidden="true"
             className={cn("mt-0.5 h-4 w-4 shrink-0", eventTextClass)}
           />
-          <Box className="-mt-px min-w-0 flex-1">
+          <Box
+            className={cn(
+              "min-w-0 flex-1",
+              isCompactEvent ? "-mt-0.5" : "-mt-px",
+            )}
+          >
             <Text
               as="span"
-              className={cn("min-w-0", titleLineClass, eventTextClass)}
+              className={cn(
+                "min-w-0",
+                titleLineClass,
+                isCompactEvent && "text-sm leading-[0.875rem]",
+                eventTextClass,
+              )}
               fontSize="md"
               fontWeight="medium"
             >
@@ -409,6 +423,7 @@ const CalendarTimedBlock = ({
                 className={cn(
                   "block truncate text-[0.9375rem]",
                   secondaryLineClass,
+                  isCompactEvent && "mt-px text-xs leading-3",
                   eventTextClass,
                 )}
               >

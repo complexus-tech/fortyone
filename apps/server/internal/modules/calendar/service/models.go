@@ -145,6 +145,8 @@ type CoreScheduleIssue struct {
 	TeamName                 string    `db:"team_name" json:"teamName"`
 	TeamCode                 string    `db:"team_code" json:"teamCode"`
 	EstimatedDurationMinutes *int      `db:"estimated_duration_minutes" json:"estimatedDurationMinutes"`
+	ScheduledDurationMinutes int       `db:"scheduled_duration_minutes" json:"scheduledDurationMinutes"`
+	RemainingDurationMinutes int       `db:"remaining_duration_minutes" json:"remainingDurationMinutes"`
 	AutoSchedulingStatus     string    `db:"auto_scheduling_status" json:"autoSchedulingStatus"`
 	AutoSchedulingReason     *string   `db:"auto_scheduling_reason" json:"autoSchedulingReason,omitempty"`
 	UpdatedAt                time.Time `db:"updated_at" json:"updatedAt"`

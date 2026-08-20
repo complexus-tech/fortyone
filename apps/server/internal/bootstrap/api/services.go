@@ -251,14 +251,14 @@ func buildServices(cfg mux.Config) services {
 		mayaPlanner = maya.NewPlannerWithAdvisor(maya.NewOpenAIAdvisor(aiClient))
 	}
 	mayaService := maya.New(maya.Dependencies{
-		Repository:   mayarepository.New(cfg.Log, cfg.DB),
-		Stories:      storiesService,
-		Reports:      reportsService,
-		Calendar:     calendarService,
-		Users:        usersService,
-		TeamSettings: teamSettingsService,
-		Planner:      mayaPlanner,
-		MayaActorID:  mayaActorID,
+		Repository:        mayarepository.New(cfg.Log, cfg.DB),
+		Stories:           storiesService,
+		Reports:           reportsService,
+		Calendar:          calendarService,
+		Users:             usersService,
+		WorkspaceSettings: workspacesService,
+		Planner:           mayaPlanner,
+		MayaActorID:       mayaActorID,
 	})
 	storiesService.ConfigureMayaAssignment(mayaActorID, func(ctx context.Context, input stories.MayaAssignmentInput) error {
 		if err := ensureBackgroundMayaEnabled(ctx, cfg.DB, input.Story.Workspace); err != nil {

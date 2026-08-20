@@ -83,16 +83,31 @@ func (s *Service) ManuallyScheduleStory(ctx context.Context, input ManualSchedul
 		if story.EstimatedDurationMinutes == nil || *story.EstimatedDurationMinutes <= 0 {
 			return fmt.Errorf("%w: the story needs a valid time estimate", ErrInvalidPlanInput)
 		}
-		endAt := input.StartAt.UTC().Add(time.Duration(*story.EstimatedDurationMinutes) * time.Minute)
 		existingBlocks, listErr := scheduleCalendar.ListMayaScheduleBlocksForStory(ctx, input.WorkspaceID, input.UserID, input.StoryID)
 		if listErr != nil {
 			return listErr
 		}
+		scheduledMinutes := 0
+		existingSegments := make([]calendar.MayaScheduleSegmentInput, 0, len(existingBlocks))
+		for index, block := range existingBlocks {
+			scheduledMinutes += int(block.EndAt.Sub(block.StartAt) / time.Minute)
+			existingSegments = append(existingSegments, calendar.MayaScheduleSegmentInput{
+				SegmentIndex: index,
+				Title:        story.Title,
+				StartAt:      block.StartAt,
+				EndAt:        block.EndAt,
+			})
+		}
+		remainingMinutes := *story.EstimatedDurationMinutes - scheduledMinutes
+		if remainingMinutes <= 0 {
+			return stories.ErrStoryChanged
+		}
+		endAt := input.StartAt.UTC().Add(time.Duration(remainingMinutes) * time.Minute)
 		if story.AutoSchedulingLocked && exactManualScheduleExists(existingBlocks, input.StartAt.UTC(), endAt) {
 			scheduledBlock = existingBlocks[0]
 			return nil
 		}
-		if story.AutoSchedulingStatus != stories.AutoSchedulingStatusCannotFit || len(existingBlocks) > 0 {
+		if story.AutoSchedulingStatus != stories.AutoSchedulingStatusCannotFit {
 			return stories.ErrStoryChanged
 		}
 		schedulable, eligibilityErr := scheduleRepo.StoryIsSchedulableForUser(ctx, input.WorkspaceID, input.StoryID, input.UserID)
@@ -106,12 +121,12 @@ func (s *Service) ManuallyScheduleStory(ctx context.Context, input ManualSchedul
 		if ownershipErr != nil {
 			return ownershipErr
 		}
-		segments := []calendar.MayaScheduleSegmentInput{{
-			SegmentIndex: 0,
+		segments := append(existingSegments, calendar.MayaScheduleSegmentInput{
+			SegmentIndex: len(existingSegments),
 			Title:        story.Title,
 			StartAt:      input.StartAt.UTC(),
 			EndAt:        endAt,
-		}}
+		})
 		result, reconcileErr := scheduleCalendar.ReconcileMayaScheduleBlocks(ctx, calendar.MayaScheduleReconcileInput{
 			WorkspaceID:            input.WorkspaceID,
 			UserID:                 input.UserID,
@@ -152,14 +167,23 @@ func (s *Service) ManuallyScheduleStory(ctx context.Context, input ManualSchedul
 				WorkspaceID:   input.WorkspaceID,
 				UserID:        input.UserID,
 				StoryID:       input.StoryID,
+				Segments:      existingSegments,
 				KeepOwnership: previousOwnership,
 			})
 			return errors.Join(updateErr, restoreErr)
 		}
-		if len(result.Blocks) != 1 {
-			return errors.New("manual Maya schedule did not produce exactly one block")
+		if len(result.Blocks) != len(segments) {
+			return errors.New("manual Maya schedule did not preserve all focus blocks")
 		}
-		scheduledBlock = result.Blocks[0]
+		for _, block := range result.Blocks {
+			if block.SegmentIndex == len(existingSegments) {
+				scheduledBlock = block
+				break
+			}
+		}
+		if scheduledBlock.ID == uuid.Nil {
+			return errors.New("manual Maya schedule did not create the remaining focus block")
+		}
 		return nil
 	})
 	if err != nil {

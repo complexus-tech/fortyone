@@ -43,13 +43,16 @@ var DefaultObjectiveStatuses = []DefaultStatus{
 // CoreWorkspaceSettings represents workspace settings in the application layer
 // including both terminology preferences and feature toggles.
 type CoreWorkspaceSettings struct {
-	WorkspaceID      uuid.UUID
-	StoryTerm        string
-	SprintTerm       string
-	ObjectiveTerm    string
-	KeyResultTerm    string
-	ObjectiveEnabled bool
-	KeyResultEnabled bool
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	WorkspaceID        uuid.UUID
+	StoryTerm          string
+	SprintTerm         string
+	ObjectiveTerm      string
+	KeyResultTerm      string
+	ObjectiveEnabled   bool
+	KeyResultEnabled   bool
+	WorkingDays        []int
+	WorkingStartMinute int
+	WorkingEndMinute   int
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }

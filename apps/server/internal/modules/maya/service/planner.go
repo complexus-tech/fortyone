@@ -11,6 +11,7 @@ import (
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/internal/platform/workschedule"
 	"github.com/complexus-tech/projects-api/internal/platform/workweek"
 	"github.com/google/uuid"
 )
@@ -21,12 +22,10 @@ var (
 )
 
 const (
-	fallbackMinimumFocusBlockMinutes = 60
-	planningStartGranularityMinutes  = 5
-	maxFocusBlockMinutes             = 120
-	workdayStartHour                 = 9
-	workdayEndHour                   = 17
-	recentActivityDays               = 30
+	automaticMinimumFocusBlockMinutes = 15
+	planningStartGranularityMinutes   = 5
+	maxFocusBlockMinutes              = 120
+	recentActivityDays                = 30
 )
 
 type Planner struct {
@@ -110,17 +109,18 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 			continue
 		}
 		candidate.PreemptibleBlockIDs = preemptibleBlockIDs(normalized.Story, candidate.Blocks, time.Now().UTC())
-		candidateWindowStart, candidateWindowEnd := clampWindowToSprint(normalized, candidate.Timezone)
-		segments, ok := planWorkSegments(candidate, candidateWindowStart, candidateWindowEnd, normalized.DurationMinutes, normalized.MinimumFocusBlockMinutes, normalized.WorkingDays)
-		if !ok {
+		candidateWindowStart, candidateWindowEnd := clampWindowToSprint(normalized, candidate)
+		segmentPlan := planWorkSegments(candidate, candidateWindowStart, candidateWindowEnd, normalized.DurationMinutes, normalized.MinimumFocusBlockMinutes)
+		if len(segmentPlan.segments) == 0 {
 			continue
 		}
 		candidates = append(candidates, candidateChoice{
 			candidate:         candidate,
-			slot:              segments[0],
-			plan:              timeSlot{start: segments[0].start, end: segments[len(segments)-1].end},
-			segments:          segments,
-			preemptedBlockIDs: preemptedBlockIDsForSegments(candidate.Blocks, candidate.PreemptibleBlockIDs, segments),
+			slot:              segmentPlan.segments[0],
+			plan:              timeSlot{start: segmentPlan.segments[0].start, end: segmentPlan.segments[len(segmentPlan.segments)-1].end},
+			segments:          segmentPlan.segments,
+			remainingMinutes:  segmentPlan.remainingMinutes,
+			preemptedBlockIDs: preemptedBlockIDsForSegments(candidate.Blocks, candidate.PreemptibleBlockIDs, segmentPlan.segments),
 		})
 	}
 	candidates = preferRecentlyActiveChoices(candidates)
@@ -134,8 +134,10 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 			Status:      ActionStatusProposed,
 			Reason:      "Maya could not find enough available calendar time for this work in the selected planning window.",
 			Payload: ActionPayload{Risk: &RiskPayload{
-				Code:    "no_available_slot",
-				Message: "No candidate has enough free time in the selected planning window.",
+				Code:             "no_available_slot",
+				Message:          "No candidate has free time in the selected planning window.",
+				RequiredMinutes:  normalized.DurationMinutes,
+				RemainingMinutes: normalized.DurationMinutes,
 			}},
 		}
 		if ok {
@@ -169,20 +171,27 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 			))
 			actions = append(actions, action)
 			return PlanResult{
-				Summary:        "Maya selected an owner, but no safe schedule slot was found for this work.",
-				SelectedUserID: &selectedUserID,
-				Actions:        actions,
+				Summary:          "Maya selected an owner, but no safe schedule slot was found for this work.",
+				SelectedUserID:   &selectedUserID,
+				Actions:          actions,
+				DurationMinutes:  normalized.DurationMinutes,
+				RemainingMinutes: normalized.DurationMinutes,
 			}, nil
 		}
 		return PlanResult{
-			Summary: "No safe schedule slot was found for this work.",
-			Actions: []CoreAction{action},
+			Summary:          "No safe schedule slot was found for this work.",
+			Actions:          []CoreAction{action},
+			DurationMinutes:  normalized.DurationMinutes,
+			RemainingMinutes: normalized.DurationMinutes,
 		}, nil
 	}
 
 	sort.SliceStable(candidates, func(i, j int) bool {
 		left := candidates[i]
 		right := candidates[j]
+		if left.remainingMinutes != right.remainingMinutes {
+			return left.remainingMinutes < right.remainingMinutes
+		}
 		if !left.slot.start.Equal(right.slot.start) {
 			return left.slot.start.Before(right.slot.start)
 		}
@@ -241,12 +250,32 @@ func (p Planner) Plan(input PlanInput) (PlanResult, error) {
 			})
 		}
 	}
+	scheduledMinutes := normalized.DurationMinutes - selected.remainingMinutes
+	if selected.remainingMinutes > 0 {
+		actions = append(actions, CoreAction{
+			WorkspaceID: normalized.WorkspaceID,
+			StoryID:     normalized.Story.ID,
+			Type:        ActionTypeFlagScheduleRisk,
+			Status:      ActionStatusProposed,
+			Reason:      partialScheduleReason(scheduledMinutes, selected.remainingMinutes),
+			Payload: ActionPayload{Risk: &RiskPayload{
+				Code:             "no_available_slot",
+				Message:          "Some focus time still needs a slot.",
+				RequiredMinutes:  normalized.DurationMinutes,
+				ScheduledMinutes: scheduledMinutes,
+				RemainingMinutes: selected.remainingMinutes,
+			}},
+		})
+	}
 
 	return PlanResult{
 		Summary:           planSummary(normalized.Story.Title, selected),
 		SelectedUserID:    &selectedUserID,
 		Actions:           actions,
 		PreemptedBlockIDs: append([]uuid.UUID(nil), selected.preemptedBlockIDs...),
+		DurationMinutes:   normalized.DurationMinutes,
+		ScheduledMinutes:  scheduledMinutes,
+		RemainingMinutes:  selected.remainingMinutes,
 	}, nil
 }
 
@@ -286,7 +315,14 @@ func scheduleOwnershipRetentionAction(workspaceID uuid.UUID, story stories.CoreS
 
 func (p Planner) selectCandidate(input PlanInput, candidates []candidateChoice) (candidateChoice, string) {
 	selected := candidates[0]
-	if p.advisor == nil || len(candidates) == 1 {
+	bestRemainingMinutes := selected.remainingMinutes
+	eligibleCandidates := make([]candidateChoice, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.remainingMinutes == bestRemainingMinutes {
+			eligibleCandidates = append(eligibleCandidates, candidate)
+		}
+	}
+	if p.advisor == nil || len(eligibleCandidates) == 1 {
 		return selected, ""
 	}
 
@@ -294,8 +330,8 @@ func (p Planner) selectCandidate(input PlanInput, candidates []candidateChoice) 
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	recommendations := make([]CandidateRecommendation, 0, len(candidates))
-	for _, candidate := range candidates {
+	recommendations := make([]CandidateRecommendation, 0, len(eligibleCandidates))
+	for _, candidate := range eligibleCandidates {
 		recommendations = append(recommendations, CandidateRecommendation{
 			UserID:                candidate.candidate.Member.UserID,
 			FullName:              candidate.candidate.Member.FullName,
@@ -323,7 +359,7 @@ func (p Planner) selectCandidate(input PlanInput, candidates []candidateChoice) 
 	if err != nil || result.UserID == uuid.Nil {
 		return selected, ""
 	}
-	for _, candidate := range candidates {
+	for _, candidate := range eligibleCandidates {
 		if candidate.candidate.Member.UserID == result.UserID {
 			return candidate, result.Reason
 		}
@@ -517,12 +553,18 @@ type candidateChoice struct {
 	slot              timeSlot
 	plan              timeSlot
 	segments          []timeSlot
+	remainingMinutes  int
 	preemptedBlockIDs []uuid.UUID
 }
 
 type timeSlot struct {
 	start time.Time
 	end   time.Time
+}
+
+type segmentPlan struct {
+	segments         []timeSlot
+	remainingMinutes int
 }
 
 func normalizePlanInput(input PlanInput) (PlanInput, error) {
@@ -553,6 +595,17 @@ func normalizePlanInput(input PlanInput) (PlanInput, error) {
 	input.WindowStart = input.WindowStart.UTC()
 	input.WindowEnd = input.WindowEnd.UTC()
 	input.WorkingDays = workweek.Normalize(input.WorkingDays)
+	for index := range input.Candidates {
+		candidate := &input.Candidates[index]
+		workingDays := candidate.WorkingDays
+		if len(workingDays) == 0 {
+			workingDays = input.WorkingDays
+		}
+		schedule := workschedule.Normalize(workingDays, candidate.WorkingStartMinute, candidate.WorkingEndMinute)
+		candidate.WorkingDays = schedule.WorkingDays
+		candidate.WorkingStartMinute = schedule.StartMinute
+		candidate.WorkingEndMinute = schedule.EndMinute
+	}
 	return input, nil
 }
 
@@ -563,13 +616,13 @@ func estimatedWorkDurationMinutes(story stories.CoreSingleStory) int {
 	return 0
 }
 
-func clampWindowToSprint(input PlanInput, timezone string) (time.Time, time.Time) {
+func clampWindowToSprint(input PlanInput, candidate CandidateSchedule) (time.Time, time.Time) {
 	if input.Story.SprintSummary == nil {
 		return input.WindowStart, input.WindowEnd
 	}
-	location := calendarLocation(timezone)
-	sprintStart := sprintWorkdayStart(input.Story.SprintSummary.StartDate, location)
-	sprintEnd := sprintWorkdayEnd(input.Story.SprintSummary.EndDate, location)
+	location := calendarLocation(candidate.Timezone)
+	sprintStart := workdayBoundary(input.Story.SprintSummary.StartDate, candidate.WorkingStartMinute, location)
+	sprintEnd := workdayBoundary(input.Story.SprintSummary.EndDate, candidate.WorkingEndMinute, location)
 	startAt := input.WindowStart
 	endAt := input.WindowEnd
 	if startAt.Before(sprintStart) {
@@ -581,45 +634,33 @@ func clampWindowToSprint(input PlanInput, timezone string) (time.Time, time.Time
 	return startAt, endAt
 }
 
-func sprintWorkdayStart(value time.Time, location *time.Location) time.Time {
-	return time.Date(value.Year(), value.Month(), value.Day(), workdayStartHour, 0, 0, 0, location)
-}
-
-func sprintWorkdayEnd(value time.Time, location *time.Location) time.Time {
-	return time.Date(value.Year(), value.Month(), value.Day(), workdayEndHour, 0, 0, 0, location)
-}
-
-func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, duration time.Duration, workingDays []int) (timeSlot, bool) {
+func planWorkWindow(candidate CandidateSchedule, startAt, endAt time.Time, duration time.Duration) (timeSlot, bool) {
 	if duration <= 0 {
 		return timeSlot{}, false
 	}
 	durationMinutes := int(duration / time.Minute)
-	segments, ok := planWorkSegments(candidate, startAt, endAt, durationMinutes, 0, workingDays)
-	if !ok {
+	plan := planWorkSegments(candidate, startAt, endAt, durationMinutes, 0)
+	if plan.remainingMinutes > 0 || len(plan.segments) == 0 {
 		return timeSlot{}, false
 	}
-	return timeSlot{start: segments[0].start, end: segments[len(segments)-1].end}, true
+	return timeSlot{start: plan.segments[0].start, end: plan.segments[len(plan.segments)-1].end}, true
 }
 
-func planWorkSegments(candidate CandidateSchedule, startAt, endAt time.Time, durationMinutes, minimumFocusMinutes int, workingDays []int) ([]timeSlot, bool) {
+func planWorkSegments(candidate CandidateSchedule, startAt, endAt time.Time, durationMinutes, minimumFocusMinutes int) segmentPlan {
 	if minimumFocusMinutes <= 0 {
-		// No chunks prefers one contiguous block. If conflicts make that
-		// impossible, fall back to larger available windows so replanning can
-		// split the remaining work around higher-priority commitments.
-		if segments, ok := planWorkSegmentsWithLimits(candidate, startAt, endAt, durationMinutes, durationMinutes, durationMinutes, workingDays); ok {
-			return segments, true
-		}
-		minimumFocusMinutes = fallbackMinimumFocusBlockMinutes
+		// Automatic fills the earliest useful windows, keeping each segment as
+		// large as the calendar allows while retaining only a small lower bound.
+		minimumFocusMinutes = automaticMinimumFocusBlockMinutes
 		if minimumFocusMinutes > durationMinutes {
 			minimumFocusMinutes = durationMinutes
 		}
-		return planWorkSegmentsWithLimits(candidate, startAt, endAt, durationMinutes, minimumFocusMinutes, durationMinutes, workingDays)
+		return planWorkSegmentsWithLimits(candidate, startAt, endAt, durationMinutes, minimumFocusMinutes, durationMinutes)
 	}
 
-	return planWorkSegmentsWithLimits(candidate, startAt, endAt, durationMinutes, minimumFocusMinutes, maxFocusBlockMinutes, workingDays)
+	return planWorkSegmentsWithLimits(candidate, startAt, endAt, durationMinutes, minimumFocusMinutes, maxFocusBlockMinutes)
 }
 
-func planWorkSegmentsWithLimits(candidate CandidateSchedule, startAt, endAt time.Time, durationMinutes, minimumFocusMinutes, maximumFocusMinutes int, workingDays []int) ([]timeSlot, bool) {
+func planWorkSegmentsWithLimits(candidate CandidateSchedule, startAt, endAt time.Time, durationMinutes, minimumFocusMinutes, maximumFocusMinutes int) segmentPlan {
 	occupied := occupiedSlots(candidate)
 	location := calendarLocation(candidate.Timezone)
 	cursor := preferredPlanningCursor(candidate, startAt, location)
@@ -633,18 +674,18 @@ func planWorkSegmentsWithLimits(candidate CandidateSchedule, startAt, endAt time
 	segments := make([]timeSlot, 0, durationMinutes/minimumFocusMinutes+1)
 
 	for cursor.Before(endAt) {
-		if !workweek.IsWorkingDay(cursor, workingDays) {
-			cursor = nextPlanningWorkdayStart(cursor, candidate, workingDays)
+		if !workweek.IsWorkingDay(cursor, candidate.WorkingDays) {
+			cursor = nextPlanningWorkdayStart(cursor, candidate)
 			continue
 		}
 
-		dayStart := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), workdayStartHour, 0, 0, 0, location)
-		dayEnd := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), workdayEndHour, 0, 0, 0, location)
+		dayStart := workdayBoundary(cursor, candidate.WorkingStartMinute, location)
+		dayEnd := workdayBoundary(cursor, candidate.WorkingEndMinute, location)
 		if cursor.Before(dayStart) {
 			cursor = dayStart
 		}
 		if !cursor.Before(dayEnd) {
-			cursor = nextPlanningWorkdayStart(cursor, candidate, workingDays)
+			cursor = nextPlanningWorkdayStart(cursor, candidate)
 			continue
 		}
 
@@ -689,12 +730,12 @@ func planWorkSegmentsWithLimits(candidate CandidateSchedule, startAt, endAt time
 		segments = append(segments, timeSlot{start: cursor.UTC(), end: cursor.Add(take).UTC()})
 		remaining -= take
 		if remaining == 0 {
-			return segments, true
+			return segmentPlan{segments: segments}
 		}
 		cursor = cursor.Add(take)
 	}
 
-	return nil, false
+	return segmentPlan{segments: segments, remainingMinutes: int(remaining / time.Minute)}
 }
 
 func minDuration(values ...time.Duration) time.Duration {
@@ -716,9 +757,9 @@ func advancePastOccupiedSlot(cursor time.Time, occupied []timeSlot) (time.Time, 
 	return cursor, false
 }
 
-func nextWorkdayStart(value time.Time, workingDays []int) time.Time {
-	next := time.Date(value.Year(), value.Month(), value.Day()+1, workdayStartHour, 0, 0, 0, value.Location())
-	for !workweek.IsWorkingDay(next, workingDays) {
+func nextWorkdayStart(value time.Time, candidate CandidateSchedule) time.Time {
+	next := workdayBoundary(value.AddDate(0, 0, 1), candidate.WorkingStartMinute, value.Location())
+	for !workweek.IsWorkingDay(next, candidate.WorkingDays) {
 		next = next.AddDate(0, 0, 1)
 	}
 	return next
@@ -730,25 +771,25 @@ func preferredPlanningCursor(candidate CandidateSchedule, startAt time.Time, loc
 		return cursor
 	}
 	preferred := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), 0, 0, 0, 0, location).
-		Add(time.Duration(clampPreferredStartMinute(*candidate.PreferredStartMinute)) * time.Minute)
+		Add(time.Duration(clampPreferredStartMinute(*candidate.PreferredStartMinute, candidate)) * time.Minute)
 	if preferred.After(cursor) {
 		return preferred
 	}
 	return cursor
 }
 
-func nextPlanningWorkdayStart(value time.Time, candidate CandidateSchedule, workingDays []int) time.Time {
-	next := nextWorkdayStart(value, workingDays)
+func nextPlanningWorkdayStart(value time.Time, candidate CandidateSchedule) time.Time {
+	next := nextWorkdayStart(value, candidate)
 	if candidate.PreferredStartMinute == nil {
 		return next
 	}
 	return time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location()).
-		Add(time.Duration(clampPreferredStartMinute(*candidate.PreferredStartMinute)) * time.Minute)
+		Add(time.Duration(clampPreferredStartMinute(*candidate.PreferredStartMinute, candidate)) * time.Minute)
 }
 
-func clampPreferredStartMinute(value int) int {
-	minimum := workdayStartHour * 60
-	maximum := workdayEndHour*60 - planningStartGranularityMinutes
+func clampPreferredStartMinute(value int, candidate CandidateSchedule) int {
+	minimum := candidate.WorkingStartMinute
+	maximum := candidate.WorkingEndMinute - planningStartGranularityMinutes
 	if value < minimum {
 		return minimum
 	}
@@ -756,6 +797,11 @@ func clampPreferredStartMinute(value int) int {
 		return maximum
 	}
 	return value
+}
+
+func workdayBoundary(value time.Time, minute int, location *time.Location) time.Time {
+	return time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, location).
+		Add(time.Duration(minute) * time.Minute)
 }
 
 func minTime(left, right time.Time) time.Time {
@@ -923,5 +969,24 @@ func planSummary(storyTitle string, choice candidateChoice) string {
 	if name == "" {
 		name = "the selected teammate"
 	}
+	if choice.remainingMinutes > 0 {
+		return fmt.Sprintf("Maya recommends assigning %q to %s, scheduling %d focus segment(s), and finding another slot for %s.", storyTitle, name, len(choice.segments), formatMinutes(choice.remainingMinutes))
+	}
 	return fmt.Sprintf("Maya recommends assigning %q to %s and scheduling %d focus segment(s) from %s to %s.", storyTitle, name, len(choice.segments), choice.plan.start.Format(time.RFC3339), choice.plan.end.Format(time.RFC3339))
+}
+
+func partialScheduleReason(scheduledMinutes, remainingMinutes int) string {
+	return fmt.Sprintf("Maya scheduled %s. %s still needs a slot.", formatMinutes(scheduledMinutes), formatMinutes(remainingMinutes))
+}
+
+func formatMinutes(minutes int) string {
+	hours := minutes / 60
+	remainder := minutes % 60
+	if hours == 0 {
+		return fmt.Sprintf("%dm", remainder)
+	}
+	if remainder == 0 {
+		return fmt.Sprintf("%dh", hours)
+	}
+	return fmt.Sprintf("%dh %dm", hours, remainder)
 }

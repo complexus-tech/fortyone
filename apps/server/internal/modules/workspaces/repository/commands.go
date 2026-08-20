@@ -12,6 +12,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -510,6 +511,9 @@ func (r *repo) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUI
 			key_result_term = CASE WHEN :key_result_term = '' THEN key_result_term ELSE :key_result_term END,
 			objective_enabled = :objective_enabled,
 			key_result_enabled = :key_result_enabled,
+			working_days = :working_days,
+			working_start_minute = :working_start_minute,
+			working_end_minute = :working_end_minute,
 			updated_at = NOW()
 		WHERE 
 			workspace_id = :workspace_id
@@ -521,18 +525,24 @@ func (r *repo) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.UUI
 			key_result_term,
 			objective_enabled,
 			key_result_enabled,
+			working_days,
+			working_start_minute,
+			working_end_minute,
 			created_at,
 			updated_at
 	`
 
 	params := map[string]any{
-		"workspace_id":       workspaceID,
-		"story_term":         settings.StoryTerm,
-		"sprint_term":        settings.SprintTerm,
-		"objective_term":     settings.ObjectiveTerm,
-		"key_result_term":    settings.KeyResultTerm,
-		"objective_enabled":  settings.ObjectiveEnabled,
-		"key_result_enabled": settings.KeyResultEnabled,
+		"workspace_id":         workspaceID,
+		"story_term":           settings.StoryTerm,
+		"sprint_term":          settings.SprintTerm,
+		"objective_term":       settings.ObjectiveTerm,
+		"key_result_term":      settings.KeyResultTerm,
+		"objective_enabled":    settings.ObjectiveEnabled,
+		"key_result_enabled":   settings.KeyResultEnabled,
+		"working_days":         pq.Array(settings.WorkingDays),
+		"working_start_minute": settings.WorkingStartMinute,
+		"working_end_minute":   settings.WorkingEndMinute,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -570,7 +580,10 @@ func (r *repo) InitializeWorkspaceSettings(ctx context.Context, tx *sqlx.Tx, wor
 			objective_term,
 			key_result_term,
 			objective_enabled,
-			key_result_enabled
+			key_result_enabled,
+			working_days,
+			working_start_minute,
+			working_end_minute
 		)
 		VALUES (
 			:workspace_id,
@@ -579,7 +592,10 @@ func (r *repo) InitializeWorkspaceSettings(ctx context.Context, tx *sqlx.Tx, wor
 			'objective',
 			'key result',
 			true,
-			true
+			true,
+			ARRAY[1, 2, 3, 4, 5]::smallint[],
+			540,
+			1020
 		)
 	`
 

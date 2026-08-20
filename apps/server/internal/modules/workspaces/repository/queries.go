@@ -376,6 +376,9 @@ func (r *repo) GetWorkspaceSettings(ctx context.Context, workspaceID uuid.UUID) 
 			key_result_term,
 			objective_enabled,
 			key_result_enabled,
+			working_days,
+			working_start_minute,
+			working_end_minute,
 			created_at,
 			updated_at
 		FROM 

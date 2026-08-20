@@ -81,7 +81,7 @@ export const createStory = tool({
       .nullable()
       .optional()
       .describe(
-        "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes; omit to keep the work in one block when possible.",
+        "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes; omit to let Maya automatically fill available calendar time.",
       ),
     autoSchedulingEnabled: z
       .boolean()

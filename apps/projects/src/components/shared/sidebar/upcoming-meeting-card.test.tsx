@@ -233,6 +233,8 @@ describe("UpcomingMeetingCard", () => {
             teamName: "Engineering",
             teamCode: "ENG",
             estimatedDurationMinutes: 90,
+            scheduledDurationMinutes: 60,
+            remainingDurationMinutes: 30,
             autoSchedulingStatus: "cannot_fit",
             autoSchedulingReason: "No safe focus window remains before Friday.",
             updatedAt: "2026-08-08T09:55:00.000Z",
@@ -251,7 +253,7 @@ describe("UpcomingMeetingCard", () => {
     expect(screen.getByText("Maya needs your help")).toBeInTheDocument();
     expect(screen.getByText("Prepare the launch brief")).toBeInTheDocument();
     expect(screen.queryByText("ENG-42")).not.toBeInTheDocument();
-    expect(screen.getByText("1 hour 30 minutes needed")).toBeInTheDocument();
+    expect(screen.getByText("30m left to schedule.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(retryScheduleIssue).toHaveBeenCalledWith("story-1");

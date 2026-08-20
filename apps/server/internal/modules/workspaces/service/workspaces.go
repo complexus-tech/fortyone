@@ -14,6 +14,7 @@ import (
 	subscriptions "github.com/complexus-tech/projects-api/internal/modules/subscriptions/service"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	"github.com/complexus-tech/projects-api/internal/platform/workschedule"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -728,6 +729,12 @@ func (s *Service) UpdateWorkspaceSettings(ctx context.Context, workspaceID uuid.
 
 	// Ensure workspaceID is set correctly
 	settings.WorkspaceID = workspaceID
+	if err := workschedule.ValidateWorkingDays(settings.WorkingDays); err != nil {
+		return CoreWorkspaceSettings{}, err
+	}
+	if err := workschedule.ValidateHours(settings.WorkingStartMinute, settings.WorkingEndMinute); err != nil {
+		return CoreWorkspaceSettings{}, err
+	}
 
 	updated, err := s.repo.UpdateWorkspaceSettings(ctx, workspaceID, settings)
 	if err != nil {

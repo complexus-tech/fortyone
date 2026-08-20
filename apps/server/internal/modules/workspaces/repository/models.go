@@ -5,6 +5,7 @@ import (
 
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type dbWorkspace struct {
@@ -40,15 +41,18 @@ type dbWorkspaceWithRole struct {
 
 // dbWorkspaceSettings represents workspace settings in the database.
 type dbWorkspaceSettings struct {
-	WorkspaceID      uuid.UUID `db:"workspace_id"`
-	StoryTerm        string    `db:"story_term"`
-	SprintTerm       string    `db:"sprint_term"`
-	ObjectiveTerm    string    `db:"objective_term"`
-	KeyResultTerm    string    `db:"key_result_term"`
-	ObjectiveEnabled bool      `db:"objective_enabled"`
-	KeyResultEnabled bool      `db:"key_result_enabled"`
-	CreatedAt        time.Time `db:"created_at"`
-	UpdatedAt        time.Time `db:"updated_at"`
+	WorkspaceID        uuid.UUID     `db:"workspace_id"`
+	StoryTerm          string        `db:"story_term"`
+	SprintTerm         string        `db:"sprint_term"`
+	ObjectiveTerm      string        `db:"objective_term"`
+	KeyResultTerm      string        `db:"key_result_term"`
+	ObjectiveEnabled   bool          `db:"objective_enabled"`
+	KeyResultEnabled   bool          `db:"key_result_enabled"`
+	WorkingDays        pq.Int64Array `db:"working_days"`
+	WorkingStartMinute int           `db:"working_start_minute"`
+	WorkingEndMinute   int           `db:"working_end_minute"`
+	CreatedAt          time.Time     `db:"created_at"`
+	UpdatedAt          time.Time     `db:"updated_at"`
 }
 
 func toCoreWorkspace(p dbWorkspace) workspaces.CoreWorkspace {
@@ -95,15 +99,22 @@ func toCoreWorkspacesWithRole(du []dbWorkspaceWithRole) []workspaces.CoreWorkspa
 
 // toCoreWorkspaceSettings converts a database workspace settings to core workspace settings.
 func toCoreWorkspaceSettings(s dbWorkspaceSettings) workspaces.CoreWorkspaceSettings {
+	workingDays := make([]int, len(s.WorkingDays))
+	for index, day := range s.WorkingDays {
+		workingDays[index] = int(day)
+	}
 	return workspaces.CoreWorkspaceSettings{
-		WorkspaceID:      s.WorkspaceID,
-		StoryTerm:        s.StoryTerm,
-		SprintTerm:       s.SprintTerm,
-		ObjectiveTerm:    s.ObjectiveTerm,
-		KeyResultTerm:    s.KeyResultTerm,
-		ObjectiveEnabled: s.ObjectiveEnabled,
-		KeyResultEnabled: s.KeyResultEnabled,
-		CreatedAt:        s.CreatedAt,
-		UpdatedAt:        s.UpdatedAt,
+		WorkspaceID:        s.WorkspaceID,
+		StoryTerm:          s.StoryTerm,
+		SprintTerm:         s.SprintTerm,
+		ObjectiveTerm:      s.ObjectiveTerm,
+		KeyResultTerm:      s.KeyResultTerm,
+		ObjectiveEnabled:   s.ObjectiveEnabled,
+		KeyResultEnabled:   s.KeyResultEnabled,
+		WorkingDays:        workingDays,
+		WorkingStartMinute: s.WorkingStartMinute,
+		WorkingEndMinute:   s.WorkingEndMinute,
+		CreatedAt:          s.CreatedAt,
+		UpdatedAt:          s.UpdatedAt,
 	}
 }

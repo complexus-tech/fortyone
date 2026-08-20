@@ -9,6 +9,7 @@ import (
 
 	"mime/multipart"
 
+	"github.com/complexus-tech/projects-api/internal/platform/workschedule"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -236,6 +237,23 @@ func (s *Service) UpdateUser(ctx context.Context, userID uuid.UUID, updates Core
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.id", userID.String()))
+	if updates.WorkSchedule != nil {
+		if len(updates.WorkSchedule.WorkingDays) > 0 {
+			if err := workschedule.ValidateWorkingDays(updates.WorkSchedule.WorkingDays); err != nil {
+				return err
+			}
+		}
+		hasStart := updates.WorkSchedule.WorkingStartMinute != nil
+		hasEnd := updates.WorkSchedule.WorkingEndMinute != nil
+		if hasStart != hasEnd {
+			return workschedule.ErrInvalidWorkingHours
+		}
+		if hasStart {
+			if err := workschedule.ValidateHours(*updates.WorkSchedule.WorkingStartMinute, *updates.WorkSchedule.WorkingEndMinute); err != nil {
+				return err
+			}
+		}
+	}
 
 	user, err := s.repo.UpdateUser(ctx, userID, updates)
 	if err != nil {

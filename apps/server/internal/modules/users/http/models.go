@@ -18,6 +18,9 @@ type AppUser struct {
 	IsInternal                    bool       `json:"isInternal"`
 	HasSeenWalkthrough            bool       `json:"hasSeenWalkthrough"`
 	Timezone                      string     `json:"timezone"`
+	WorkingDays                   []int      `json:"workingDays"`
+	WorkingStartMinute            *int       `json:"workingStartMinute"`
+	WorkingEndMinute              *int       `json:"workingEndMinute"`
 	LastLoginAt                   time.Time  `json:"-"`
 	LastUsedWorkspaceID           *uuid.UUID `json:"lastUsedWorkspaceId"`
 	GitHubUsername                *string    `json:"githubUsername"`
@@ -52,11 +55,18 @@ type AppMembersResponse struct {
 }
 
 type UpdateProfileRequest struct {
-	Username           string  `json:"username"`
-	FullName           *string `json:"fullName,omitempty"`
-	AvatarURL          *string `json:"avatarUrl,omitempty"`
-	HasSeenWalkthrough *bool   `json:"hasSeenWalkthrough,omitempty"`
-	Timezone           *string `json:"timezone,omitempty"`
+	Username           string                     `json:"username"`
+	FullName           *string                    `json:"fullName,omitempty"`
+	AvatarURL          *string                    `json:"avatarUrl,omitempty"`
+	HasSeenWalkthrough *bool                      `json:"hasSeenWalkthrough,omitempty"`
+	Timezone           *string                    `json:"timezone,omitempty"`
+	WorkSchedule       *UpdateWorkScheduleRequest `json:"workSchedule,omitempty"`
+}
+
+type UpdateWorkScheduleRequest struct {
+	WorkingDays        []int `json:"workingDays"`
+	WorkingStartMinute *int  `json:"workingStartMinute"`
+	WorkingEndMinute   *int  `json:"workingEndMinute"`
 }
 
 type SwitchWorkspaceRequest struct {
@@ -130,6 +140,9 @@ func toAppUser(user users.CoreUser) AppUser {
 		IsInternal:                    user.IsInternal,
 		HasSeenWalkthrough:            user.HasSeenWalkthrough,
 		Timezone:                      user.Timezone,
+		WorkingDays:                   user.WorkingDays,
+		WorkingStartMinute:            user.WorkingStartMinute,
+		WorkingEndMinute:              user.WorkingEndMinute,
 		LastLoginAt:                   user.LastLoginAt,
 		LastUsedWorkspaceID:           user.LastUsedWorkspaceID,
 		GitHubUsername:                user.GitHubUsername,

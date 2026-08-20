@@ -105,8 +105,11 @@ const (
 )
 
 type RiskPayload struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Code             string `json:"code"`
+	Message          string `json:"message"`
+	RequiredMinutes  int    `json:"requiredMinutes,omitempty"`
+	ScheduledMinutes int    `json:"scheduledMinutes,omitempty"`
+	RemainingMinutes int    `json:"remainingMinutes,omitempty"`
 }
 
 type PlanInput struct {
@@ -125,6 +128,9 @@ type PlanInput struct {
 type CandidateSchedule struct {
 	Member               reports.CoreMemberWorkload
 	Timezone             string
+	WorkingDays          []int
+	WorkingStartMinute   int
+	WorkingEndMinute     int
 	BusyWindows          []calendar.CoreBusyWindow
 	Blocks               []calendar.CoreScheduleBlock
 	PreemptibleBlockIDs  []uuid.UUID
@@ -137,6 +143,9 @@ type PlanResult struct {
 	Actions           []CoreAction
 	Timezone          string
 	PreemptedBlockIDs []uuid.UUID
+	DurationMinutes   int
+	ScheduledMinutes  int
+	RemainingMinutes  int
 }
 
 type CandidateRecommendationInput struct {

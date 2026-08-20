@@ -15,6 +15,7 @@ import (
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/internal/platform/workschedule"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/google"
@@ -326,10 +327,20 @@ func (h *Handlers) UpdateProfile(ctx context.Context, w http.ResponseWriter, r *
 	if req.Timezone != nil {
 		updates.Timezone = req.Timezone
 	}
+	if req.WorkSchedule != nil {
+		updates.WorkSchedule = &users.CoreWorkScheduleOverride{
+			WorkingDays:        append([]int(nil), req.WorkSchedule.WorkingDays...),
+			WorkingStartMinute: req.WorkSchedule.WorkingStartMinute,
+			WorkingEndMinute:   req.WorkSchedule.WorkingEndMinute,
+		}
+	}
 
 	if err := h.users.UpdateUser(ctx, userID, updates); err != nil {
 		if errors.Is(err, users.ErrNotFound) {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		if errors.Is(err, workschedule.ErrInvalidWorkingDays) || errors.Is(err, workschedule.ErrInvalidWorkingHours) {
+			return web.RespondError(ctx, w, err, http.StatusBadRequest)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -414,7 +425,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 		users, err := h.users.List(ctx, workspace.ID, filter)
 		if err != nil {
-			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+			return web.RespondError(ctx, w, err, http.StatusBadRequest)
 		}
 
 		hasMore := len(users) > pageSize
