@@ -225,14 +225,19 @@ func buildServices(cfg mux.Config) services {
 		cfg.Log,
 		calendarrepository.New(cfg.Log, cfg.DB),
 		calendar.Config{
-			SecretKey:      cfg.SecretKey,
-			WebsiteURL:     cfg.WebsiteURL,
-			WebhookURL:     cfg.GoogleCalendarWebhookURL,
+			SecretKey:  cfg.SecretKey,
+			WebsiteURL: cfg.WebsiteURL,
+			WebhookURL: cfg.GoogleCalendarWebhookURL,
+			WebhookURLs: map[calendar.Provider]string{
+				calendar.ProviderGoogle:    cfg.GoogleCalendarWebhookURL,
+				calendar.ProviderMicrosoft: cfg.MicrosoftCalendarWebhookURL,
+			},
 			RequireWebhook: true,
 			Tasks:          cfg.TasksService,
 			Updates:        cfg.Publisher,
 			Providers: map[calendar.Provider]calendar.CalendarProvider{
-				calendar.ProviderGoogle: calendar.NewGoogleProvider(cfg.GoogleService),
+				calendar.ProviderGoogle:    calendar.NewGoogleProvider(cfg.GoogleService),
+				calendar.ProviderMicrosoft: calendar.NewMicrosoftProvider(cfg.MicrosoftService),
 			},
 		},
 	)

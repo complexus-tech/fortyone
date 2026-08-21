@@ -50,6 +50,7 @@ import {
   Video02Icon,
 } from "icons";
 import { Box, Button, Dialog, Flex, Input, Menu, Popover, Text } from "ui";
+import { MicrosoftIcon } from "@/components/ui";
 import { SmartDateTimeRangeInput } from "@/components/ui/smart-datetime-input";
 import { useLocalStorage, useTerminology, useWorkspacePath } from "@/hooks";
 import {
@@ -1342,6 +1343,22 @@ const CalendarToolbar = ({
   </Flex>
 );
 
+const getCalendarProviderName = (connection?: CalendarConnection) =>
+  connection?.provider === "microsoft"
+    ? "Outlook Calendar"
+    : "Google Calendar";
+
+const CalendarProviderIcon = ({
+  connection,
+}: {
+  connection?: CalendarConnection;
+}) =>
+  connection?.provider === "microsoft" ? (
+    <MicrosoftIcon />
+  ) : (
+    <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
+  );
+
 const CalendarNotices = ({
   canReadEventDetails,
   conflictCount,
@@ -1371,11 +1388,11 @@ const CalendarNotices = ({
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" className="min-w-0" gap={3}>
             <Box className="flex h-10 w-10 shrink-0 items-center justify-center">
-              <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
+              <CalendarIcon aria-hidden="true" className="h-6 w-6" />
             </Box>
             <Box className="min-w-0">
               <Text fontSize="md" fontWeight="medium">
-                Google Calendar is not connected
+                Calendar is not connected
               </Text>
               <Text className="line-clamp-1" color="muted" fontSize="md">
                 FortyOne can still schedule work blocks, but availability will
@@ -1400,11 +1417,12 @@ const CalendarNotices = ({
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" className="min-w-0" gap={3}>
             <Box className="flex h-10 w-10 shrink-0 items-center justify-center">
-              <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
+              <CalendarProviderIcon connection={connection} />
             </Box>
             <Box className="min-w-0">
               <Text fontSize="md" fontWeight="medium">
-                Reconnect to update Google Calendar work blocks
+                Reconnect to update {getCalendarProviderName(connection)} work
+                blocks
               </Text>
               <Text className="line-clamp-1" color="muted" fontSize="md">
                 Reconnect once to let FortyOne add and update scheduled work in
@@ -1432,15 +1450,15 @@ const CalendarNotices = ({
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" className="min-w-0" gap={3}>
             <Box className="flex h-10 w-10 shrink-0 items-center justify-center">
-              <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
+              <CalendarProviderIcon connection={connection} />
             </Box>
             <Box className="min-w-0">
               <Text fontSize="md" fontWeight="medium">
                 Event details are not enabled
               </Text>
               <Text className="line-clamp-1" color="muted" fontSize="md">
-                Reconnect your primary Google Calendar to show event titles
-                instead of availability-only busy blocks.
+                Reconnect your primary {getCalendarProviderName(connection)} to
+                show event titles instead of availability-only busy blocks.
               </Text>
             </Box>
           </Flex>
@@ -1466,7 +1484,7 @@ const CalendarNotices = ({
             </Text>
             <Text color="muted" fontSize="md">
               {connection.syncError?.trim() ||
-                "Google Calendar could not be refreshed."}{" "}
+                `${getCalendarProviderName(connection)} could not be refreshed.`}{" "}
               {connection.lastSyncedAt
                 ? `Showing the last successful sync from ${format(new Date(connection.lastSyncedAt), "MMM d 'at' h:mm a")}.`
                 : "No successful calendar sync is available yet."}
@@ -2179,10 +2197,16 @@ export const PersonalCalendar = ({
   const integrationQuery = useCalendarIntegration();
   const schedule = scheduleQuery.data;
   const integration = integrationQuery.data;
-  const connection = integration?.connections[0];
+  const connections = integration?.connections ?? [];
+  const connection =
+    connections.find((item) => item.requiresReauthorization) ??
+    connections.find((item) => item.syncStatus === "failed") ??
+    connections[0];
   const timeZoneLabel = getUtcOffsetLabel(viewRange.start);
   const timeZoneName = getLocalTimeZoneName();
-  const canReadEventDetails = Boolean(connection?.canReadEventDetails);
+  const canReadEventDetails = connections.some(
+    (item) => item.canReadEventDetails,
+  );
   const createConnectSession = useCreateCalendarConnectSession();
   const syncCalendar = useSyncCalendarConnection();
   const manualReschedule = useManualRescheduleCalendarScheduleBlock();
@@ -2329,7 +2353,9 @@ export const PersonalCalendar = ({
         isReconnectPending={createConnectSession.isPending}
         isSyncing={syncCalendar.isPending}
         onReconnect={() => {
-          createConnectSession.mutate();
+          createConnectSession.mutate(
+            connection.provider === "microsoft" ? "microsoft" : "google",
+          );
         }}
         onSync={syncConnection}
       />

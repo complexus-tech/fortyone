@@ -36,15 +36,16 @@ const (
 )
 
 type Config struct {
-	ClientID     string
-	ClientSecret string
-	Tenant       string
-	RedirectURL  string
-	HTTPClient   *http.Client
-	AuthURL      string
-	TokenURL     string
-	ProfileURL   string
-	JWKSURL      string
+	ClientID            string
+	ClientSecret        string
+	Tenant              string
+	RedirectURL         string
+	CalendarRedirectURL string
+	HTTPClient          *http.Client
+	AuthURL             string
+	TokenURL            string
+	ProfileURL          string
+	JWKSURL             string
 }
 
 type Identity struct {
@@ -60,16 +61,24 @@ type Identity struct {
 }
 
 type Service struct {
-	clientID   string
-	oauth      *oauth2.Config
-	httpClient *http.Client
-	profileURL string
-	jwksURL    string
+	clientID      string
+	oauth         *oauth2.Config
+	calendarOAuth *oauth2.Config
+	httpClient    *http.Client
+	profileURL    string
+	jwksURL       string
 
 	keysMu       sync.RWMutex
 	keys         map[string]*rsa.PublicKey
 	keysExpireAt time.Time
 	now          func() time.Time
+}
+
+type CalendarToken struct {
+	Token     *oauth2.Token
+	AccountID string
+	Email     string
+	Scopes    []string
 }
 
 type idTokenClaims struct {
@@ -109,6 +118,7 @@ func NewService(cfg Config) *Service {
 	clientID := strings.TrimSpace(cfg.ClientID)
 	clientSecret := strings.TrimSpace(cfg.ClientSecret)
 	redirectURL := strings.TrimSpace(cfg.RedirectURL)
+	calendarRedirectURL := strings.TrimSpace(cfg.CalendarRedirectURL)
 	tenant := strings.TrimSpace(cfg.Tenant)
 	if tenant == "" {
 		tenant = defaultTenant
@@ -141,6 +151,19 @@ func NewService(cfg Config) *Service {
 			},
 		}
 	}
+	var calendarOAuthConfig *oauth2.Config
+	if clientID != "" && clientSecret != "" && calendarRedirectURL != "" {
+		calendarOAuthConfig = &oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  calendarRedirectURL,
+			Scopes:       []string{"offline_access", "User.Read", "Calendars.ReadWrite"},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  authURL,
+				TokenURL: tokenURL,
+			},
+		}
+	}
 
 	profileURL := strings.TrimSpace(cfg.ProfileURL)
 	if profileURL == "" {
@@ -152,14 +175,85 @@ func NewService(cfg Config) *Service {
 	}
 
 	return &Service{
-		clientID:   clientID,
-		oauth:      oauthConfig,
-		httpClient: httpClient,
-		profileURL: profileURL,
-		jwksURL:    jwksURL,
-		keys:       make(map[string]*rsa.PublicKey),
-		now:        time.Now,
+		clientID:      clientID,
+		oauth:         oauthConfig,
+		calendarOAuth: calendarOAuthConfig,
+		httpClient:    httpClient,
+		profileURL:    profileURL,
+		jwksURL:       jwksURL,
+		keys:          make(map[string]*rsa.PublicKey),
+		now:           time.Now,
 	}
+}
+
+func (s *Service) CalendarAuthCodeURL(state string) (string, error) {
+	if s.calendarOAuth == nil {
+		return "", ErrNotConfigured
+	}
+	if strings.TrimSpace(state) == "" {
+		return "", ErrInvalidToken
+	}
+	return s.calendarOAuth.AuthCodeURL(
+		state,
+		oauth2.SetAuthURLParam("prompt", "select_account"),
+		oauth2.SetAuthURLParam("response_mode", "query"),
+	), nil
+}
+
+func (s *Service) ExchangeCalendarCode(ctx context.Context, code string) (CalendarToken, error) {
+	if s.calendarOAuth == nil {
+		return CalendarToken{}, ErrNotConfigured
+	}
+	if strings.TrimSpace(code) == "" {
+		return CalendarToken{}, ErrInvalidToken
+	}
+	oauthContext := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
+	token, err := s.calendarOAuth.Exchange(oauthContext, strings.TrimSpace(code))
+	if err != nil {
+		return CalendarToken{}, fmt.Errorf("exchange Microsoft calendar authorization code: %w", err)
+	}
+	profile, err := s.fetchProfile(ctx, token.AccessToken)
+	if err != nil {
+		return CalendarToken{}, err
+	}
+	email := firstNonEmpty(profile.Mail, profile.UserPrincipalName)
+	if strings.TrimSpace(profile.ID) == "" || strings.TrimSpace(email) == "" || strings.TrimSpace(token.RefreshToken) == "" {
+		return CalendarToken{}, ErrInvalidToken
+	}
+	scopes := append([]string(nil), s.calendarOAuth.Scopes...)
+	if rawScopes, ok := token.Extra("scope").(string); ok && strings.TrimSpace(rawScopes) != "" {
+		scopes = strings.Fields(rawScopes)
+	}
+	return CalendarToken{Token: token, AccountID: profile.ID, Email: email, Scopes: scopes}, nil
+}
+
+func (s *Service) CalendarHTTPClient(ctx context.Context, token *oauth2.Token) (*http.Client, error) {
+	if s.calendarOAuth == nil {
+		return nil, ErrNotConfigured
+	}
+	if token == nil {
+		return nil, ErrInvalidToken
+	}
+	oauthContext := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
+	return s.calendarOAuth.Client(oauthContext, token), nil
+}
+
+func (s *Service) RefreshCalendarToken(ctx context.Context, token *oauth2.Token) (*oauth2.Token, error) {
+	if s.calendarOAuth == nil {
+		return nil, ErrNotConfigured
+	}
+	if token == nil || strings.TrimSpace(token.RefreshToken) == "" {
+		return nil, ErrInvalidToken
+	}
+	oauthContext := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
+	refreshed, err := s.calendarOAuth.TokenSource(oauthContext, token).Token()
+	if err != nil {
+		return nil, fmt.Errorf("refresh Microsoft calendar token: %w", err)
+	}
+	if strings.TrimSpace(refreshed.RefreshToken) == "" {
+		refreshed.RefreshToken = token.RefreshToken
+	}
+	return refreshed, nil
 }
 
 func (s *Service) AuthCodeURL(state, nonce, verifier string) (string, error) {

@@ -33,7 +33,7 @@ type managedScheduleBlockState struct {
 const invalidateDeletedManagedScheduleEventQuery = `
 	UPDATE calendar_schedule_blocks
 	SET external_sync_hash = NULL, external_synced_at = NULL
-	WHERE user_id = $1 AND external_provider = 'google' AND external_event_id = $2
+	WHERE user_id = $1 AND external_provider = $2 AND external_event_id = $3
 `
 
 const invalidateChangedManagedScheduleEventQuery = `
@@ -60,7 +60,6 @@ func (r *Repo) ListConnectionsNeedingWatch(ctx context.Context, renewBefore time
 		FROM calendar_connections
 		WHERE revoked_at IS NULL
 		  AND cleanup_pending_at IS NULL
-		  AND provider = 'google'
 		  AND (notification_channel_id IS NULL OR notification_expires_at IS NULL OR notification_expires_at <= $1)
 		ORDER BY notification_expires_at NULLS FIRST, connection_id`
 	if err := r.db.SelectContext(ctx, &rows, query, renewBefore); err != nil {
@@ -188,7 +187,7 @@ func (r *Repo) ApplyCalendarChanges(ctx context.Context, connection calendar.Cor
 			continue
 		}
 		if change.Deleted {
-			if _, err := tx.ExecContext(ctx, invalidateDeletedManagedScheduleEventQuery, connection.UserID, change.EventID); err != nil {
+			if _, err := tx.ExecContext(ctx, invalidateDeletedManagedScheduleEventQuery, connection.UserID, string(connection.Provider), change.EventID); err != nil {
 				return fmt.Errorf("invalidate deleted managed calendar event: %w", err)
 			}
 			continue
@@ -198,10 +197,10 @@ func (r *Repo) ApplyCalendarChanges(ctx context.Context, connection calendar.Cor
 			SELECT block_id, workspace_id, story_id, title, start_at, end_at
 			FROM calendar_schedule_blocks
 			WHERE user_id = $1
-				AND external_provider = 'google'
-				AND external_event_id = $2
+				AND external_provider = $2
+				AND external_event_id = $3
 			FOR UPDATE
-		`, connection.UserID, change.EventID); err != nil {
+		`, connection.UserID, string(connection.Provider), change.EventID); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				continue
 			}

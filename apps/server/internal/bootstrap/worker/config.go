@@ -57,11 +57,16 @@ type Config struct {
 		APIKey string `env:"APP_BREVO_API_KEY"`
 	}
 	Auth struct {
-		SecretKey                 string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
-		GoogleClientIDs           string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
-		GoogleClientSecret        string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
-		GoogleCalendarRedirectURL string `env:"APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL"`
-		GoogleCalendarWebhookURL  string `env:"APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL"`
+		SecretKey                    string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+		GoogleClientIDs              string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
+		GoogleClientSecret           string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
+		GoogleCalendarRedirectURL    string `env:"APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL"`
+		GoogleCalendarWebhookURL     string `env:"APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL"`
+		MicrosoftClientID            string `env:"APP_AUTH_MICROSOFT_CLIENT_ID"`
+		MicrosoftClientSecret        string `env:"APP_AUTH_MICROSOFT_CLIENT_SECRET"`
+		MicrosoftTenant              string `default:"common" env:"APP_AUTH_MICROSOFT_TENANT"`
+		MicrosoftCalendarRedirectURL string `env:"APP_AUTH_MICROSOFT_CALENDAR_REDIRECT_URL"`
+		MicrosoftCalendarWebhookURL  string `env:"APP_AUTH_MICROSOFT_CALENDAR_WEBHOOK_URL"`
 	}
 	Website struct {
 		URL string `default:"http://localhost:3000" env:"APP_WEBSITE_URL"`

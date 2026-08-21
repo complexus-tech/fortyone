@@ -355,13 +355,13 @@ func (p *GoogleProvider) StopCalendarWatch(ctx context.Context, token ProviderTo
 	return client.Channels.Stop(&calendarapi.Channel{Id: channel.ChannelID, ResourceId: channel.ResourceID}).Context(ctx).Do()
 }
 
-func (p *GoogleProvider) UpsertScheduleEvent(ctx context.Context, token ProviderToken, input ExternalScheduleEventInput) error {
+func (p *GoogleProvider) UpsertScheduleEvent(ctx context.Context, token ProviderToken, input ExternalScheduleEventInput) (ExternalScheduleEventResult, error) {
 	if !hasProviderScope(token.Scopes, GoogleCalendarEventsOwnedScope) {
-		return ErrCalendarReauthorizationRequired
+		return ExternalScheduleEventResult{}, ErrCalendarReauthorizationRequired
 	}
 	client, err := p.calendarClient(ctx, token)
 	if err != nil {
-		return err
+		return ExternalScheduleEventResult{}, err
 	}
 	calendarID := strings.TrimSpace(input.CalendarID)
 	if calendarID == "" {
@@ -369,7 +369,7 @@ func (p *GoogleProvider) UpsertScheduleEvent(ctx context.Context, token Provider
 	}
 	eventID := strings.TrimSpace(input.EventID)
 	if eventID == "" || !strings.HasPrefix(eventID, fortyOneGoogleEventIDPrefix) || !input.EndAt.After(input.StartAt) {
-		return ErrInvalidScheduleBlock
+		return ExternalScheduleEventResult{}, ErrInvalidScheduleBlock
 	}
 	privateProperties := make(map[string]string, len(input.PrivateProperties)+1)
 	for key, value := range input.PrivateProperties {
@@ -389,20 +389,23 @@ func (p *GoogleProvider) UpsertScheduleEvent(ctx context.Context, token Provider
 	}
 	_, err = client.Events.Update(calendarID, eventID, event).SendUpdates("none").Context(ctx).Do()
 	if err == nil {
-		return nil
+		return ExternalScheduleEventResult{EventID: eventID}, nil
 	}
 	var apiErr *googleapi.Error
 	if !errors.As(err, &apiErr) || apiErr.Code != http.StatusNotFound {
-		return err
+		return ExternalScheduleEventResult{}, err
 	}
 	_, err = client.Events.Insert(calendarID, event).SendUpdates("none").Context(ctx).Do()
 	if err == nil {
-		return nil
+		return ExternalScheduleEventResult{EventID: eventID}, nil
 	}
 	if errors.As(err, &apiErr) && apiErr.Code == http.StatusConflict {
 		_, err = client.Events.Update(calendarID, eventID, event).SendUpdates("none").Context(ctx).Do()
 	}
-	return err
+	if err != nil {
+		return ExternalScheduleEventResult{}, err
+	}
+	return ExternalScheduleEventResult{EventID: eventID}, nil
 }
 
 func (p *GoogleProvider) DeleteScheduleEvent(ctx context.Context, token ProviderToken, calendarID, eventID string) error {

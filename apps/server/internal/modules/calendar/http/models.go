@@ -191,6 +191,9 @@ func toAppConnection(connection calendar.CoreConnection) AppConnection {
 	}
 	if result.RequiresReauthorization {
 		reason := calendar.GoogleCalendarWriteScopeReason
+		if connection.Provider == calendar.ProviderMicrosoft {
+			reason = calendar.MicrosoftCalendarWriteScopeReason
+		}
 		result.ReauthorizationReason = &reason
 	}
 	return result

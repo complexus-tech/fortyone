@@ -26,12 +26,12 @@ func TestScheduleBlockNeedsProviderUpsertChecksMappingAndHash(t *testing.T) {
 		ID: blockID, Title: event.Title, StartAt: event.StartAt, EndAt: event.EndAt,
 		ExternalProvider: &provider, ExternalCalendarID: &calendarID, ExternalEventID: &eventID, ExternalSyncHash: &hash,
 	}
-	if scheduleBlockNeedsProviderUpsert(block, true, event, hash) {
+	if scheduleBlockNeedsProviderUpsert(block, true, calendar.ProviderGoogle, event, hash) {
 		t.Fatal("canonical provider mapping and hash must not enqueue a redundant upsert")
 	}
 	wrongCalendarID := "secondary"
 	block.ExternalCalendarID = &wrongCalendarID
-	if !scheduleBlockNeedsProviderUpsert(block, true, event, hash) {
+	if !scheduleBlockNeedsProviderUpsert(block, true, calendar.ProviderGoogle, event, hash) {
 		t.Fatal("a matching hash must not hide a noncanonical provider mapping")
 	}
 }
@@ -144,7 +144,8 @@ func TestSameStateUpsertPreservesDeadLetterWhileDeleteReactivates(t *testing.T) 
 	source := string(data)
 	for _, contract := range []string{
 		"dedupe_key <> $2",
-		"WHEN $9 OR calendar_schedule_event_outbox.dead_lettered_at IS NULL THEN NULL",
+		"AND (provider = $3 OR operation = 'upsert')",
+		"WHEN $10 OR calendar_schedule_event_outbox.dead_lettered_at IS NULL THEN NULL",
 		"reactivateTerminal bool",
 		"ScheduleEventOperationDelete, event, \"\", true",
 	} {
@@ -163,7 +164,8 @@ func TestCalendarDisconnectReactivatesUnprocessedDeadLetters(t *testing.T) {
 	for _, contract := range []string{
 		"Retrying provider cleanup during calendar disconnect.",
 		"SET dead_lettered_at = NULL",
-		"WHERE user_id = $1 AND processed_at IS NULL",
+		"AND provider = $2",
+		"AND processed_at IS NULL",
 	} {
 		if !strings.Contains(source, contract) {
 			t.Fatalf("disconnect cleanup must reactivate pending terminal rows with %q", contract)
@@ -244,7 +246,7 @@ func TestFullSnapshotInvalidatesManagedMirrorHashes(t *testing.T) {
 		"external_sync_hash = NULL",
 		"external_synced_at = NULL",
 		"AND source = 'maya'",
-		"AND external_provider = 'google'",
+		"AND external_provider = $2",
 	} {
 		if !strings.Contains(source, contract) {
 			t.Errorf("full snapshot is missing mirror invalidation contract %q", contract)

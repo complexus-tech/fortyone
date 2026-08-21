@@ -11,7 +11,15 @@ type CalendarProvider interface {
 	StopCalendarWatch(ctx context.Context, token ProviderToken, channel CalendarWatchChannel) error
 }
 
+type CalendarWatchRenewer interface {
+	RenewCalendarWatch(ctx context.Context, token ProviderToken, channel CalendarWatchChannel, input CalendarWatchInput) (CalendarWatchChannel, error)
+}
+
+type CalendarTokenRefresher interface {
+	RefreshToken(ctx context.Context, token ProviderToken) (ProviderToken, error)
+}
+
 type CalendarEventWriter interface {
-	UpsertScheduleEvent(ctx context.Context, token ProviderToken, input ExternalScheduleEventInput) error
+	UpsertScheduleEvent(ctx context.Context, token ProviderToken, input ExternalScheduleEventInput) (ExternalScheduleEventResult, error)
 	DeleteScheduleEvent(ctx context.Context, token ProviderToken, calendarID, eventID string) error
 }

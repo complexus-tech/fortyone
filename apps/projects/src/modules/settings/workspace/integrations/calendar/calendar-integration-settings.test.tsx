@@ -1,7 +1,7 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { render, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
 import {
   useCalendarIntegration,
@@ -42,6 +42,10 @@ jest.mock("@/modules/settings/components", () => ({
   SettingsBackButton: ({ href, label }: { href: string; label: string }) => (
     <a href={href}>{label}</a>
   ),
+}));
+
+jest.mock("@/components/ui", () => ({
+  MicrosoftIcon: () => <svg aria-label="Microsoft" />,
 }));
 
 jest.mock("icons", () => ({
@@ -157,6 +161,14 @@ beforeEach(() => {
 });
 
 describe("CalendarIntegrationSettings callback feedback", () => {
+  it("offers Google and Outlook calendar connections", () => {
+    render(<CalendarIntegrationSettings />);
+
+    expect(screen.getByText("Google Calendar")).toBeInTheDocument();
+    expect(screen.getByText("Outlook Calendar")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Connect" })).toHaveLength(2);
+  });
+
   it("silently clears a successful connection callback from the URL", async () => {
     window.history.replaceState(
       {},
@@ -192,5 +204,23 @@ describe("CalendarIntegrationSettings callback feedback", () => {
       "Google Calendar connection was cancelled.",
     );
     expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it("attributes a Microsoft callback error to Outlook Calendar", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/acme/settings/account/calendar?calendar_error=access_denied&calendar_provider=microsoft",
+    );
+    mockSearchParams = new URLSearchParams(window.location.search);
+
+    render(<CalendarIntegrationSettings />);
+
+    await waitFor(() => {
+      expect(window.location.search).toBe("");
+    });
+    expect(toast.error).toHaveBeenCalledWith(
+      "Outlook Calendar connection was cancelled.",
+    );
   });
 });

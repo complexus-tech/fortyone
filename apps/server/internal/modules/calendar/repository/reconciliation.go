@@ -76,13 +76,13 @@ const scheduleEventUpsertIsCurrentQuery = `
 			AND block.workspace_id = $2
 			AND block.user_id = $3
 			AND block.source = 'maya'
-			AND block.external_provider = 'google'
-			AND block.external_calendar_id = $4
-			AND block.external_event_id = $5
-			AND block.title = $6
-			AND story.title = $6
-			AND block.start_at = $7
-			AND block.end_at = $8
+			AND block.external_provider = $4
+			AND block.external_calendar_id = $5
+			AND block.external_event_id = $6
+			AND block.title = $7
+			AND story.title = $7
+			AND block.start_at = $8
+			AND block.end_at = $9
 			AND story.assignee_id = block.user_id
 			AND story.auto_scheduling_enabled = TRUE
 			AND ownership.updated_at >= story.updated_at
@@ -99,8 +99,12 @@ const scheduleEventUpsertIsCurrentQuery = `
 // schedule content. Provider mirror bookkeeping must preserve it.
 const markScheduleBlockMirroredQuery = `
 	UPDATE calendar_schedule_blocks
-	SET external_sync_hash = $2, external_synced_at = CURRENT_TIMESTAMP
-	WHERE block_id = $1 AND external_event_id = $3
+	SET external_provider = $4,
+		external_calendar_id = $5,
+		external_event_id = $3,
+		external_sync_hash = $2,
+		external_synced_at = CURRENT_TIMESTAMP
+	WHERE block_id = $1
 `
 
 const mayaScheduleEligibilityQuery = `
@@ -228,6 +232,10 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 			excludedIDs = append(excludedIDs, blockID.String())
 		}
 	}
+	scheduleProvider, err := preferredScheduleProvider(ctx, tx, input.UserID, current)
+	if err != nil {
+		return calendar.CoreScheduleReconcileResult{}, err
+	}
 
 	const conflictQuery = `
 		SELECT EXISTS (
@@ -290,6 +298,12 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 			blockID = uuid.New()
 		}
 		eventID := calendar.StableGoogleScheduleEventID(blockID)
+		if scheduleProvider == calendar.ProviderMicrosoft {
+			eventID = "pending:" + blockID.String()
+			if exists && block.ExternalProvider != nil && *block.ExternalProvider == string(scheduleProvider) && block.ExternalEventID != nil && strings.TrimSpace(*block.ExternalEventID) != "" {
+				eventID = strings.TrimSpace(*block.ExternalEventID)
+			}
+		}
 		event := calendar.ExternalScheduleEventInput{
 			CalendarID:  "primary",
 			EventID:     eventID,
@@ -308,7 +322,7 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 		}
 		syncHash := calendar.ScheduleEventSyncHash(event)
 		providerChanged := !exists || block.Title != segment.Title || !block.StartAt.Equal(segment.StartAt) || !block.EndAt.Equal(segment.EndAt) ||
-			block.ExternalProvider == nil || *block.ExternalProvider != string(calendar.ProviderGoogle) ||
+			block.ExternalProvider == nil || *block.ExternalProvider != string(scheduleProvider) ||
 			block.ExternalCalendarID == nil || *block.ExternalCalendarID != "primary" ||
 			block.ExternalEventID == nil || *block.ExternalEventID != eventID
 		blockChanged := providerChanged || block.IsLocked != input.Locked
@@ -317,11 +331,11 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 			const updateQuery = `
 				UPDATE calendar_schedule_blocks
 				SET title = CAST($5 AS text), start_at = $6, end_at = $7, is_locked = $9,
-					external_provider = 'google', external_calendar_id = 'primary', external_event_id = $8,
+					external_provider = $10, external_calendar_id = 'primary', external_event_id = $8,
 					updated_at = CASE WHEN title <> CAST($5 AS text) OR start_at <> $6 OR end_at <> $7 OR is_locked <> $9 THEN CURRENT_TIMESTAMP ELSE updated_at END
 				WHERE workspace_id = $1 AND user_id = $2 AND story_id = $3 AND segment_index = $4 AND source = 'maya'
 			`
-			if _, err := tx.ExecContext(ctx, updateQuery, input.WorkspaceID, input.UserID, input.StoryID, segment.SegmentIndex, segment.Title, segment.StartAt, segment.EndAt, eventID, input.Locked); err != nil {
+			if _, err := tx.ExecContext(ctx, updateQuery, input.WorkspaceID, input.UserID, input.StoryID, segment.SegmentIndex, segment.Title, segment.StartAt, segment.EndAt, eventID, input.Locked, string(scheduleProvider)); err != nil {
 				return calendar.CoreScheduleReconcileResult{}, fmt.Errorf("update Maya schedule segment: %w", err)
 			}
 		} else {
@@ -329,14 +343,14 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 				INSERT INTO calendar_schedule_blocks (
 					block_id, workspace_id, user_id, story_id, block_type, title, start_at, end_at,
 					is_locked, source, segment_index, external_provider, external_calendar_id, external_event_id
-				) VALUES ($1, $2, $3, $4, 'work', $5, $6, $7, $10, 'maya', $8, 'google', 'primary', $9)
+				) VALUES ($1, $2, $3, $4, 'work', $5, $6, $7, $10, 'maya', $8, $11, 'primary', $9)
 			`
-			if _, err := tx.ExecContext(ctx, insertQuery, blockID, input.WorkspaceID, input.UserID, input.StoryID, segment.Title, segment.StartAt, segment.EndAt, segment.SegmentIndex, eventID, input.Locked); err != nil {
+			if _, err := tx.ExecContext(ctx, insertQuery, blockID, input.WorkspaceID, input.UserID, input.StoryID, segment.Title, segment.StartAt, segment.EndAt, segment.SegmentIndex, eventID, input.Locked, string(scheduleProvider)); err != nil {
 				return calendar.CoreScheduleReconcileResult{}, fmt.Errorf("create Maya schedule segment: %w", err)
 			}
 		}
-		if scheduleBlockNeedsProviderUpsert(block, exists, event, syncHash) {
-			if err := enqueueScheduleEventOutbox(ctx, tx, input.WorkspaceID, input.UserID, &blockID, calendar.ScheduleEventOperationUpsert, event, syncHash, providerChanged); err != nil {
+		if scheduleBlockNeedsProviderUpsert(block, exists, scheduleProvider, event, syncHash) {
+			if err := enqueueScheduleEventOutbox(ctx, tx, input.WorkspaceID, input.UserID, &blockID, scheduleProvider, calendar.ScheduleEventOperationUpsert, event, syncHash, providerChanged); err != nil {
 				return calendar.CoreScheduleReconcileResult{}, err
 			}
 		}
@@ -348,7 +362,7 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 			result.Actions = append(result.Actions, calendar.ScheduleReconcileActionUnchanged)
 		}
 		storyID := input.StoryID
-		provider := calendar.ProviderGoogle
+		provider := scheduleProvider
 		calendarID := "primary"
 		result.Blocks = append(result.Blocks, calendar.CoreScheduleBlock{
 			ID:                 blockID,
@@ -371,12 +385,16 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 	}
 
 	for _, block := range currentByIndex {
+		provider := scheduleProvider
+		if block.ExternalProvider != nil && strings.TrimSpace(*block.ExternalProvider) != "" {
+			provider = calendar.Provider(*block.ExternalProvider)
+		}
 		eventID := calendar.StableGoogleScheduleEventID(block.ID)
 		if block.ExternalEventID != nil && strings.TrimSpace(*block.ExternalEventID) != "" {
 			eventID = *block.ExternalEventID
 		}
 		event := calendar.ExternalScheduleEventInput{CalendarID: "primary", EventID: eventID, BlockID: block.ID, StoryID: input.StoryID, WorkspaceID: input.WorkspaceID}
-		if err := enqueueScheduleEventOutbox(ctx, tx, input.WorkspaceID, input.UserID, &block.ID, calendar.ScheduleEventOperationDelete, event, "", true); err != nil {
+		if err := enqueueScheduleEventOutbox(ctx, tx, input.WorkspaceID, input.UserID, &block.ID, provider, calendar.ScheduleEventOperationDelete, event, "", true); err != nil {
 			return calendar.CoreScheduleReconcileResult{}, err
 		}
 		if _, err := tx.ExecContext(ctx, `DELETE FROM calendar_schedule_blocks WHERE block_id = $1`, block.ID); err != nil {
@@ -420,6 +438,9 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 func toManualOverrideScheduleBlock(input calendar.MayaScheduleReconcileInput, block reconciliationBlock) calendar.CoreScheduleBlock {
 	storyID := input.StoryID
 	provider := calendar.ProviderGoogle
+	if block.ExternalProvider != nil && strings.TrimSpace(*block.ExternalProvider) != "" {
+		provider = calendar.Provider(*block.ExternalProvider)
+	}
 	calendarID := "primary"
 	return calendar.CoreScheduleBlock{
 		ID:                 block.ID,
@@ -442,11 +463,45 @@ func toManualOverrideScheduleBlock(input calendar.MayaScheduleReconcileInput, bl
 	}
 }
 
-func scheduleBlockNeedsProviderUpsert(block reconciliationBlock, exists bool, event calendar.ExternalScheduleEventInput, syncHash string) bool {
+func preferredScheduleProvider(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, blocks []reconciliationBlock) (calendar.Provider, error) {
+	providers := []string{}
+	if err := tx.SelectContext(ctx, &providers, `
+		SELECT provider
+		FROM calendar_connections
+		WHERE user_id = $1
+			AND revoked_at IS NULL
+			AND cleanup_pending_at IS NULL
+			AND (
+				(provider = 'google' AND $2 = ANY(scopes) AND $3 = ANY(scopes))
+				OR (provider = 'microsoft' AND $4 = ANY(scopes))
+			)
+		ORDER BY CASE provider WHEN 'google' THEN 0 ELSE 1 END
+	`, userID, calendar.GoogleCalendarEventsReadonlyScope, calendar.GoogleCalendarEventsOwnedScope, calendar.MicrosoftCalendarReadWriteScope); err != nil {
+		return "", fmt.Errorf("list writable calendar providers: %w", err)
+	}
+	active := make(map[string]struct{}, len(providers))
+	for _, provider := range providers {
+		active[provider] = struct{}{}
+	}
+	for _, block := range blocks {
+		if block.ExternalProvider == nil {
+			continue
+		}
+		if _, ok := active[*block.ExternalProvider]; ok {
+			return calendar.Provider(*block.ExternalProvider), nil
+		}
+	}
+	if len(providers) > 0 {
+		return calendar.Provider(providers[0]), nil
+	}
+	return calendar.ProviderGoogle, nil
+}
+
+func scheduleBlockNeedsProviderUpsert(block reconciliationBlock, exists bool, provider calendar.Provider, event calendar.ExternalScheduleEventInput, syncHash string) bool {
 	if !exists || block.Title != event.Title || !block.StartAt.Equal(event.StartAt) || !block.EndAt.Equal(event.EndAt) {
 		return true
 	}
-	if block.ExternalProvider == nil || *block.ExternalProvider != string(calendar.ProviderGoogle) ||
+	if block.ExternalProvider == nil || *block.ExternalProvider != string(provider) ||
 		block.ExternalCalendarID == nil || *block.ExternalCalendarID != event.CalendarID ||
 		block.ExternalEventID == nil || *block.ExternalEventID != event.EventID {
 		return true
@@ -454,18 +509,21 @@ func scheduleBlockNeedsProviderUpsert(block reconciliationBlock, exists bool, ev
 	return block.ExternalSyncHash == nil || *block.ExternalSyncHash != syncHash
 }
 
-func enqueueScheduleEventOutbox(ctx context.Context, executor sqlx.ExtContext, workspaceID, userID uuid.UUID, blockID *uuid.UUID, operation calendar.ScheduleEventOperation, event calendar.ExternalScheduleEventInput, syncHash string, reactivateTerminal bool) error {
+func enqueueScheduleEventOutbox(ctx context.Context, executor sqlx.ExtContext, workspaceID, userID uuid.UUID, blockID *uuid.UUID, provider calendar.Provider, operation calendar.ScheduleEventOperation, event calendar.ExternalScheduleEventInput, syncHash string, reactivateTerminal bool) error {
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("encode calendar schedule event outbox payload: %w", err)
 	}
-	dedupeKey := fmt.Sprintf("%s:%s:%s", operation, event.EventID, syncHash)
+	dedupeKey := fmt.Sprintf("%s:%s:%s:%s", provider, operation, event.BlockID, syncHash)
 	if blockID != nil {
 		if _, err := executor.ExecContext(ctx, `
 			UPDATE calendar_schedule_event_outbox
 			SET processed_at = CURRENT_TIMESTAMP, last_error = 'Superseded by a newer schedule state.', updated_at = CURRENT_TIMESTAMP
-			WHERE schedule_block_id = $1 AND processed_at IS NULL AND dedupe_key <> $2
-		`, *blockID, dedupeKey); err != nil {
+			WHERE schedule_block_id = $1
+				AND processed_at IS NULL
+				AND dedupe_key <> $2
+				AND (provider = $3 OR operation = 'upsert')
+		`, *blockID, dedupeKey, string(provider)); err != nil {
 			return fmt.Errorf("supersede stale calendar schedule event outbox: %w", err)
 		}
 	}
@@ -473,32 +531,32 @@ func enqueueScheduleEventOutbox(ctx context.Context, executor sqlx.ExtContext, w
 		INSERT INTO calendar_schedule_event_outbox (
 			workspace_id, user_id, schedule_block_id, operation, provider, calendar_id,
 			provider_event_id, payload, dedupe_key
-		) VALUES ($1, $2, $3, $4, 'google', $5, $6, $7, $8)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (dedupe_key) DO UPDATE SET
 			payload = EXCLUDED.payload,
 			processed_at = CASE
-				WHEN $9 OR calendar_schedule_event_outbox.dead_lettered_at IS NULL THEN NULL
+				WHEN $10 OR calendar_schedule_event_outbox.dead_lettered_at IS NULL THEN NULL
 				ELSE calendar_schedule_event_outbox.processed_at
 			END,
 			dead_lettered_at = CASE
-				WHEN $9 THEN NULL
+				WHEN $10 THEN NULL
 				ELSE calendar_schedule_event_outbox.dead_lettered_at
 			END,
 			attempt_count = CASE
-				WHEN $9 OR calendar_schedule_event_outbox.dead_lettered_at IS NULL THEN 0
+				WHEN $10 OR calendar_schedule_event_outbox.dead_lettered_at IS NULL THEN 0
 				ELSE calendar_schedule_event_outbox.attempt_count
 			END,
 			last_error = CASE
-				WHEN $9 OR calendar_schedule_event_outbox.dead_lettered_at IS NULL THEN NULL
+				WHEN $10 OR calendar_schedule_event_outbox.dead_lettered_at IS NULL THEN NULL
 				ELSE calendar_schedule_event_outbox.last_error
 			END,
 			available_at = CASE
-				WHEN $9 OR calendar_schedule_event_outbox.dead_lettered_at IS NULL THEN CURRENT_TIMESTAMP
+				WHEN $10 OR calendar_schedule_event_outbox.dead_lettered_at IS NULL THEN CURRENT_TIMESTAMP
 				ELSE calendar_schedule_event_outbox.available_at
 			END,
 			updated_at = CURRENT_TIMESTAMP
 	`
-	if _, err := executor.ExecContext(ctx, query, workspaceID, userID, blockID, string(operation), event.CalendarID, event.EventID, payload, dedupeKey, reactivateTerminal); err != nil {
+	if _, err := executor.ExecContext(ctx, query, workspaceID, userID, blockID, string(operation), string(provider), event.CalendarID, event.EventID, payload, dedupeKey, reactivateTerminal); err != nil {
 		return fmt.Errorf("enqueue calendar schedule event outbox: %w", err)
 	}
 	return nil
@@ -513,13 +571,13 @@ func (r *Repo) ListReadyScheduleEventOutboxUsers(ctx context.Context, limit int)
 		FROM calendar_schedule_event_outbox outbox
 		INNER JOIN calendar_connections connection ON
 			connection.user_id = outbox.user_id
-			AND connection.provider = 'google'
+			AND connection.provider = outbox.provider
 			AND connection.revoked_at IS NULL
 			AND (
 				connection.cleanup_pending_at IS NOT NULL
 				OR (
-					$2 = ANY(connection.scopes)
-					AND $3 = ANY(connection.scopes)
+					(connection.provider = 'google' AND $2 = ANY(connection.scopes) AND $3 = ANY(connection.scopes))
+					OR (connection.provider = 'microsoft' AND $4 = ANY(connection.scopes))
 				)
 			)
 		WHERE outbox.processed_at IS NULL
@@ -530,18 +588,18 @@ func (r *Repo) ListReadyScheduleEventOutboxUsers(ctx context.Context, limit int)
 		LIMIT $1
 	`
 	userIDs := []uuid.UUID{}
-	if err := r.db.SelectContext(ctx, &userIDs, query, limit, calendar.GoogleCalendarEventsOwnedScope, calendar.GoogleCalendarEventsReadonlyScope); err != nil {
+	if err := r.db.SelectContext(ctx, &userIDs, query, limit, calendar.GoogleCalendarEventsOwnedScope, calendar.GoogleCalendarEventsReadonlyScope, calendar.MicrosoftCalendarReadWriteScope); err != nil {
 		return nil, fmt.Errorf("list users with ready calendar schedule events: %w", err)
 	}
 	return userIDs, nil
 }
 
-func (r *Repo) ListPendingScheduleEventOutbox(ctx context.Context, userID uuid.UUID, limit int) ([]calendar.CoreScheduleEventOutbox, error) {
-	return listPendingScheduleEventOutbox(ctx, r.db, userID, limit)
+func (r *Repo) ListPendingScheduleEventOutbox(ctx context.Context, userID uuid.UUID, provider calendar.Provider, limit int) ([]calendar.CoreScheduleEventOutbox, error) {
+	return listPendingScheduleEventOutbox(ctx, r.db, userID, provider, limit)
 }
 
-func (s transactionScheduleEventOutboxStore) ListPendingScheduleEventOutbox(ctx context.Context, userID uuid.UUID, limit int) ([]calendar.CoreScheduleEventOutbox, error) {
-	return listPendingScheduleEventOutbox(ctx, s.tx, userID, limit)
+func (s transactionScheduleEventOutboxStore) ListPendingScheduleEventOutbox(ctx context.Context, userID uuid.UUID, provider calendar.Provider, limit int) ([]calendar.CoreScheduleEventOutbox, error) {
+	return listPendingScheduleEventOutbox(ctx, s.tx, userID, provider, limit)
 }
 
 func (s transactionScheduleEventOutboxStore) ScheduleEventUpsertIsCurrent(ctx context.Context, item calendar.CoreScheduleEventOutbox, event calendar.ExternalScheduleEventInput) (bool, error) {
@@ -556,6 +614,7 @@ func (s transactionScheduleEventOutboxStore) ScheduleEventUpsertIsCurrent(ctx co
 		*item.ScheduleBlockID,
 		item.WorkspaceID,
 		item.UserID,
+		string(item.Provider),
 		item.CalendarID,
 		item.ProviderEventID,
 		event.Title,
@@ -567,7 +626,7 @@ func (s transactionScheduleEventOutboxStore) ScheduleEventUpsertIsCurrent(ctx co
 	return current, nil
 }
 
-func listPendingScheduleEventOutbox(ctx context.Context, executor sqlx.ExtContext, userID uuid.UUID, limit int) ([]calendar.CoreScheduleEventOutbox, error) {
+func listPendingScheduleEventOutbox(ctx context.Context, executor sqlx.ExtContext, userID uuid.UUID, provider calendar.Provider, limit int) ([]calendar.CoreScheduleEventOutbox, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 100
 	}
@@ -576,11 +635,12 @@ func listPendingScheduleEventOutbox(ctx context.Context, executor sqlx.ExtContex
 			SELECT outbox_id
 			FROM calendar_schedule_event_outbox
 			WHERE user_id = $1
+				AND provider = $2
 				AND processed_at IS NULL
 				AND dead_lettered_at IS NULL
 				AND available_at <= CURRENT_TIMESTAMP
 			ORDER BY created_at, outbox_id
-			LIMIT $2
+			LIMIT $3
 			FOR UPDATE SKIP LOCKED
 		)
 		UPDATE calendar_schedule_event_outbox outbox
@@ -594,7 +654,7 @@ func listPendingScheduleEventOutbox(ctx context.Context, executor sqlx.ExtContex
 		          outbox.payload, outbox.dedupe_key, outbox.attempt_count
 	`
 	rows := []dbScheduleEventOutbox{}
-	if err := sqlx.SelectContext(ctx, executor, &rows, query, userID, limit); err != nil {
+	if err := sqlx.SelectContext(ctx, executor, &rows, query, userID, string(provider), limit); err != nil {
 		return nil, fmt.Errorf("claim calendar schedule event outbox: %w", err)
 	}
 	items := make([]calendar.CoreScheduleEventOutbox, len(rows))
@@ -634,7 +694,7 @@ func markScheduleEventOutboxProcessed(ctx context.Context, executor sqlx.ExtCont
 		return fmt.Errorf("complete calendar schedule event outbox: %w", err)
 	}
 	if item.Operation == calendar.ScheduleEventOperationUpsert && item.ScheduleBlockID != nil {
-		if _, err := executor.ExecContext(ctx, markScheduleBlockMirroredQuery, *item.ScheduleBlockID, syncHash, item.ProviderEventID); err != nil {
+		if _, err := executor.ExecContext(ctx, markScheduleBlockMirroredQuery, *item.ScheduleBlockID, syncHash, item.ProviderEventID, string(item.Provider), item.CalendarID); err != nil {
 			return fmt.Errorf("mark calendar schedule block mirrored: %w", err)
 		}
 	}
@@ -696,20 +756,21 @@ func (s transactionScheduleEventOutboxStore) ReleaseScheduleEventOutbox(ctx cont
 	return nil
 }
 
-func (s transactionScheduleEventOutboxStore) DeleteCleanupPendingConnectionIfDrained(ctx context.Context, userID uuid.UUID) error {
+func (s transactionScheduleEventOutboxStore) DeleteCleanupPendingConnectionIfDrained(ctx context.Context, userID uuid.UUID, provider calendar.Provider) error {
 	if _, err := s.tx.ExecContext(ctx, `
 		DELETE FROM calendar_connections connection
 		WHERE connection.user_id = $1
-			AND connection.provider = 'google'
+			AND connection.provider = $2
 			AND connection.cleanup_pending_at IS NOT NULL
 			AND NOT EXISTS (
 				SELECT 1
 				FROM calendar_schedule_event_outbox outbox
 				WHERE outbox.user_id = connection.user_id
+					AND outbox.provider = connection.provider
 					AND outbox.processed_at IS NULL
 					AND outbox.dead_lettered_at IS NULL
 			)
-	`, userID); err != nil {
+	`, userID, string(provider)); err != nil {
 		return fmt.Errorf("delete drained calendar cleanup connection: %w", err)
 	}
 	return nil

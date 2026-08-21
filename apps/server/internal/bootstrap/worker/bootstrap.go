@@ -30,6 +30,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
+	"github.com/complexus-tech/projects-api/pkg/microsoft"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -224,6 +225,12 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		_ = db.Close()
 		return App{}, fmt.Errorf("initialize worker Google service: %w", err)
 	}
+	microsoftService := microsoft.NewService(microsoft.Config{
+		ClientID:            cfg.Auth.MicrosoftClientID,
+		ClientSecret:        cfg.Auth.MicrosoftClientSecret,
+		Tenant:              cfg.Auth.MicrosoftTenant,
+		CalendarRedirectURL: cfg.Auth.MicrosoftCalendarRedirectURL,
+	})
 	eventPublisher := publisher.New(redisClient, log)
 	storyScheduleOutbox := stories.NewScheduleTransitionOutboxDispatcher(
 		log,
@@ -241,8 +248,13 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		SecretKey:  cfg.Auth.SecretKey,
 		WebsiteURL: cfg.Website.URL,
 		WebhookURL: cfg.Auth.GoogleCalendarWebhookURL,
+		WebhookURLs: map[calendar.Provider]string{
+			calendar.ProviderGoogle:    cfg.Auth.GoogleCalendarWebhookURL,
+			calendar.ProviderMicrosoft: cfg.Auth.MicrosoftCalendarWebhookURL,
+		},
 		Providers: map[calendar.Provider]calendar.CalendarProvider{
-			calendar.ProviderGoogle: calendar.NewGoogleProvider(googleService),
+			calendar.ProviderGoogle:    calendar.NewGoogleProvider(googleService),
+			calendar.ProviderMicrosoft: calendar.NewMicrosoftProvider(microsoftService),
 		},
 		Tasks:   tasksService,
 		Updates: eventPublisher,

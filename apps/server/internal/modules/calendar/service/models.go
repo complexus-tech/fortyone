@@ -15,13 +15,16 @@ import (
 type Provider string
 
 const (
-	ProviderGoogle Provider = "google"
+	ProviderGoogle    Provider = "google"
+	ProviderMicrosoft Provider = "microsoft"
 )
 
 const (
 	GoogleCalendarEventsReadonlyScope = "https://www.googleapis.com/auth/calendar.events.readonly"
 	GoogleCalendarEventsOwnedScope    = "https://www.googleapis.com/auth/calendar.events.owned"
 	GoogleCalendarWriteScopeReason    = "google_calendar_write_scope_required"
+	MicrosoftCalendarReadWriteScope   = "Calendars.ReadWrite"
+	MicrosoftCalendarWriteScopeReason = "microsoft_calendar_write_scope_required"
 )
 
 type SyncStatus string
@@ -83,26 +86,43 @@ type CoreConnection struct {
 }
 
 func (connection CoreConnection) CanReadEventDetails() bool {
-	if connection.Provider != ProviderGoogle {
+	switch connection.Provider {
+	case ProviderGoogle:
+		return hasProviderScope(connection.Scopes, GoogleCalendarEventsReadonlyScope)
+	case ProviderMicrosoft:
+		return hasProviderScope(connection.Scopes, MicrosoftCalendarReadWriteScope)
+	default:
 		return false
 	}
-	return hasProviderScope(connection.Scopes, GoogleCalendarEventsReadonlyScope)
 }
 
 func (connection CoreConnection) CanWriteEvents() bool {
-	return connection.CanDeleteOwnedEvents() &&
-		hasProviderScope(connection.Scopes, GoogleCalendarEventsReadonlyScope)
+	switch connection.Provider {
+	case ProviderGoogle:
+		return connection.CanDeleteOwnedEvents() && hasProviderScope(connection.Scopes, GoogleCalendarEventsReadonlyScope)
+	case ProviderMicrosoft:
+		return hasProviderScope(connection.Scopes, MicrosoftCalendarReadWriteScope)
+	default:
+		return false
+	}
 }
 
 // CanDeleteOwnedEvents is the narrower cleanup capability. Read access is
 // required for normal mirroring so FortyOne can filter its own events from
 // availability, but deleting a known stable event only needs owned-event scope.
 func (connection CoreConnection) CanDeleteOwnedEvents() bool {
-	return connection.Provider == ProviderGoogle && hasProviderScope(connection.Scopes, GoogleCalendarEventsOwnedScope)
+	switch connection.Provider {
+	case ProviderGoogle:
+		return hasProviderScope(connection.Scopes, GoogleCalendarEventsOwnedScope)
+	case ProviderMicrosoft:
+		return hasProviderScope(connection.Scopes, MicrosoftCalendarReadWriteScope)
+	default:
+		return false
+	}
 }
 
 func (connection CoreConnection) RequiresReauthorization() bool {
-	return connection.Provider == ProviderGoogle && !connection.CanWriteEvents()
+	return (connection.Provider == ProviderGoogle || connection.Provider == ProviderMicrosoft) && !connection.CanWriteEvents()
 }
 
 type CoreSchedule struct {
@@ -292,6 +312,10 @@ type ExternalScheduleEventInput struct {
 	StartAt           time.Time
 	EndAt             time.Time
 	PrivateProperties map[string]string
+}
+
+type ExternalScheduleEventResult struct {
+	EventID string
 }
 
 type CoreScheduleEventOutbox struct {
@@ -487,7 +511,7 @@ type stateClaims struct {
 
 func hasProviderScope(scopes []string, required string) bool {
 	for _, scope := range scopes {
-		if strings.TrimSpace(scope) == required {
+		if strings.EqualFold(strings.TrimSpace(scope), strings.TrimSpace(required)) {
 			return true
 		}
 	}

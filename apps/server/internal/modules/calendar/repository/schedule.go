@@ -559,7 +559,7 @@ func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calend
 			},
 		}
 		syncHash := calendar.ScheduleEventSyncHash(event)
-		if err := enqueueScheduleEventOutbox(ctx, tx, input.WorkspaceID, input.UserID, &input.BlockID, calendar.ScheduleEventOperationUpsert, event, syncHash, true); err != nil {
+		if err := enqueueScheduleEventOutbox(ctx, tx, input.WorkspaceID, input.UserID, &input.BlockID, calendar.Provider(*current.ExternalProvider), calendar.ScheduleEventOperationUpsert, event, syncHash, true); err != nil {
 			return calendar.ManualScheduleBlockResult{}, err
 		}
 	}

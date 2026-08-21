@@ -48,17 +48,19 @@ var (
 
 type Config struct {
 	Auth struct {
-		SecretKey                 string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
-		CookieDomain              string `env:"APP_AUTH_COOKIE_DOMAIN"`
-		GoogleClientIDs           string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
-		GoogleClientSecret        string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
-		GoogleRedirectURL         string `env:"APP_AUTH_GOOGLE_REDIRECT_URL"`
-		GoogleCalendarRedirectURL string `env:"APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL"`
-		GoogleCalendarWebhookURL  string `env:"APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL"`
-		MicrosoftClientID         string `env:"APP_AUTH_MICROSOFT_CLIENT_ID"`
-		MicrosoftClientSecret     string `env:"APP_AUTH_MICROSOFT_CLIENT_SECRET"`
-		MicrosoftTenant           string `default:"common" env:"APP_AUTH_MICROSOFT_TENANT"`
-		MicrosoftRedirectURL      string `env:"APP_AUTH_MICROSOFT_REDIRECT_URL"`
+		SecretKey                    string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
+		CookieDomain                 string `env:"APP_AUTH_COOKIE_DOMAIN"`
+		GoogleClientIDs              string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
+		GoogleClientSecret           string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
+		GoogleRedirectURL            string `env:"APP_AUTH_GOOGLE_REDIRECT_URL"`
+		GoogleCalendarRedirectURL    string `env:"APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL"`
+		GoogleCalendarWebhookURL     string `env:"APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL"`
+		MicrosoftClientID            string `env:"APP_AUTH_MICROSOFT_CLIENT_ID"`
+		MicrosoftClientSecret        string `env:"APP_AUTH_MICROSOFT_CLIENT_SECRET"`
+		MicrosoftTenant              string `default:"common" env:"APP_AUTH_MICROSOFT_TENANT"`
+		MicrosoftRedirectURL         string `env:"APP_AUTH_MICROSOFT_REDIRECT_URL"`
+		MicrosoftCalendarRedirectURL string `env:"APP_AUTH_MICROSOFT_CALENDAR_REDIRECT_URL"`
+		MicrosoftCalendarWebhookURL  string `env:"APP_AUTH_MICROSOFT_CALENDAR_WEBHOOK_URL"`
 	}
 	Feedback struct {
 		IngressSecret string `env:"FEEDBACK_INGRESS_SECRET"`
@@ -386,10 +388,11 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 	log.Info(ctx, "google auth service initialized")
 	microsoftService := microsoft.NewService(microsoft.Config{
-		ClientID:     cfg.Auth.MicrosoftClientID,
-		ClientSecret: cfg.Auth.MicrosoftClientSecret,
-		Tenant:       cfg.Auth.MicrosoftTenant,
-		RedirectURL:  cfg.Auth.MicrosoftRedirectURL,
+		ClientID:            cfg.Auth.MicrosoftClientID,
+		ClientSecret:        cfg.Auth.MicrosoftClientSecret,
+		Tenant:              cfg.Auth.MicrosoftTenant,
+		RedirectURL:         cfg.Auth.MicrosoftRedirectURL,
+		CalendarRedirectURL: cfg.Auth.MicrosoftCalendarRedirectURL,
 	})
 	log.Info(ctx, "microsoft auth service initialized")
 
@@ -408,43 +411,44 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Update mux configuration
 	muxConfig := mux.Config{
-		DB:                       db,
-		Redis:                    rdb,
-		Publisher:                publisher,
-		Shutdown:                 shutdown,
-		Log:                      log,
-		Tracer:                   tracer,
-		SecretKey:                cfg.Auth.SecretKey,
-		FeedbackIngressSecret:    cfg.Feedback.IngressSecret,
-		CookieDomain:             cfg.Auth.CookieDomain,
-		EmailService:             mailerService,
-		BrevoService:             brevoService,
-		GoogleService:            googleService,
-		MicrosoftService:         microsoftService,
-		GoogleCalendarWebhookURL: cfg.Auth.GoogleCalendarWebhookURL,
-		Validate:                 validate,
-		StorageConfig:            storageConfig,
-		StorageService:           storageService,
-		Cache:                    cacheService,
-		TasksService:             tasksService,
-		StripeClient:             stripeClient,
-		WebhookSecret:            cfg.Stripe.WebhookSecret,
-		WebsiteURL:               cfg.Website.URL,
-		GitHubAppID:              cfg.GitHub.AppID,
-		GitHubAppSlug:            cfg.GitHub.AppSlug,
-		GitHubClientID:           cfg.GitHub.ClientID,
-		GitHubClientSecret:       cfg.GitHub.ClientSecret,
-		GitHubUserID:             githubUserID,
-		GitHubKeyBase64:          cfg.GitHub.PrivateKeyBase64,
-		GitHubRedirect:           cfg.GitHub.RedirectURL,
-		GitHubWebhook:            cfg.GitHub.WebhookSecret,
-		SlackSigningSecret:       cfg.Slack.SigningSecret,
-		SlackClientID:            cfg.Slack.ClientID,
-		SlackClientSecret:        cfg.Slack.ClientSecret,
-		SlackRedirectURL:         cfg.Slack.RedirectURL,
-		AIAPIKey:                 strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
-		SSEHub:                   sseHub,
-		CorsOrigin:               "*",
+		DB:                          db,
+		Redis:                       rdb,
+		Publisher:                   publisher,
+		Shutdown:                    shutdown,
+		Log:                         log,
+		Tracer:                      tracer,
+		SecretKey:                   cfg.Auth.SecretKey,
+		FeedbackIngressSecret:       cfg.Feedback.IngressSecret,
+		CookieDomain:                cfg.Auth.CookieDomain,
+		EmailService:                mailerService,
+		BrevoService:                brevoService,
+		GoogleService:               googleService,
+		MicrosoftService:            microsoftService,
+		GoogleCalendarWebhookURL:    cfg.Auth.GoogleCalendarWebhookURL,
+		MicrosoftCalendarWebhookURL: cfg.Auth.MicrosoftCalendarWebhookURL,
+		Validate:                    validate,
+		StorageConfig:               storageConfig,
+		StorageService:              storageService,
+		Cache:                       cacheService,
+		TasksService:                tasksService,
+		StripeClient:                stripeClient,
+		WebhookSecret:               cfg.Stripe.WebhookSecret,
+		WebsiteURL:                  cfg.Website.URL,
+		GitHubAppID:                 cfg.GitHub.AppID,
+		GitHubAppSlug:               cfg.GitHub.AppSlug,
+		GitHubClientID:              cfg.GitHub.ClientID,
+		GitHubClientSecret:          cfg.GitHub.ClientSecret,
+		GitHubUserID:                githubUserID,
+		GitHubKeyBase64:             cfg.GitHub.PrivateKeyBase64,
+		GitHubRedirect:              cfg.GitHub.RedirectURL,
+		GitHubWebhook:               cfg.GitHub.WebhookSecret,
+		SlackSigningSecret:          cfg.Slack.SigningSecret,
+		SlackClientID:               cfg.Slack.ClientID,
+		SlackClientSecret:           cfg.Slack.ClientSecret,
+		SlackRedirectURL:            cfg.Slack.RedirectURL,
+		AIAPIKey:                    strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
+		SSEHub:                      sseHub,
+		CorsOrigin:                  "*",
 	}
 
 	runtime, err := bootstrapapi.BuildRuntime(muxConfig, cfg.Website.URL, mailerService)

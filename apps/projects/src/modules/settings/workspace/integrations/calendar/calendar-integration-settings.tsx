@@ -14,6 +14,7 @@ import {
   ReloadIcon,
   UnlinkIcon,
 } from "icons";
+import { MicrosoftIcon } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
 import {
   SectionHeader,
@@ -25,7 +26,31 @@ import {
   useRevokeCalendarConnection,
   useSyncCalendarConnection,
 } from "@/lib/hooks/calendar";
-import type { CalendarConnection } from "./types";
+import type { CalendarConnection, CalendarProvider } from "./types";
+
+const providers: {
+  id: CalendarProvider;
+  name: string;
+  description: string;
+}[] = [
+  {
+    id: "google",
+    name: "Google Calendar",
+    description: "Sync meetings, availability, and FortyOne scheduled work.",
+  },
+  {
+    id: "microsoft",
+    name: "Outlook Calendar",
+    description: "Sync meetings, availability, and FortyOne scheduled work.",
+  },
+];
+
+const ProviderIcon = ({ provider }: { provider: CalendarProvider }) =>
+  provider === "google" ? (
+    <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
+  ) : (
+    <MicrosoftIcon />
+  );
 
 const getConnectionStatus = (status?: string) => {
   if (status === "failed") {
@@ -58,7 +83,7 @@ const formatExactDate = (value?: string | null) => {
 export const CalendarIntegrationSettings = () => {
   const searchParams = useSearchParams();
   const integrationQuery = useCalendarIntegration();
-  const integration = integrationQuery.data;
+  const connections = integrationQuery.data?.connections ?? [];
   const { withWorkspace } = useWorkspacePath();
   const createConnectSession = useCreateCalendarConnectSession();
   const syncConnection = useSyncCalendarConnection();
@@ -67,32 +92,33 @@ export const CalendarIntegrationSettings = () => {
     useState<CalendarConnection | null>(null);
   const handledCallbackResult = useRef<string | null>(null);
 
-  const connection = integration?.connections.find(
-    (item) => item.provider === "google",
-  );
-  const connectionStatus = getConnectionStatus(connection?.syncStatus);
-
   useEffect(() => {
     const connected = searchParams.get("connected") === "1";
     const calendarError = searchParams.get("calendar_error");
-    if (!connected && !calendarError) {
-      return;
-    }
-    const callbackResult = connected ? "connected" : calendarError;
-    if (handledCallbackResult.current === callbackResult) {
-      return;
-    }
+    const provider = searchParams.get("calendar_provider");
+    if (!connected && !calendarError) return;
+
+    const callbackResult = `${provider}:${connected ? "connected" : calendarError}`;
+    if (handledCallbackResult.current === callbackResult) return;
     handledCallbackResult.current = callbackResult;
+    const providerName =
+      provider === "microsoft" ? "Outlook Calendar" : "Google Calendar";
     if (!connected && calendarError === "access_denied") {
-      toast.error("Google Calendar connection was cancelled.");
+      toast.error(`${providerName} connection was cancelled.`);
     } else if (!connected) {
-      toast.error("Google Calendar could not be connected. Please try again.");
+      toast.error(`${providerName} could not be connected. Please try again.`);
     }
     const url = new URL(window.location.href);
     url.searchParams.delete("connected");
     url.searchParams.delete("calendar_error");
+    url.searchParams.delete("calendar_provider");
     window.history.replaceState({}, "", url.toString());
   }, [searchParams]);
+
+  const latestSync = connections
+    .map((connection) => connection.lastSyncedAt)
+    .filter((value): value is string => Boolean(value))
+    .toSorted((left, right) => Date.parse(right) - Date.parse(left))[0];
 
   return (
     <Box>
@@ -102,226 +128,199 @@ export const CalendarIntegrationSettings = () => {
           label="Back to account settings"
         />
         <Text as="h1" className="text-2xl font-medium">
-          Google Calendar
+          Calendar
         </Text>
       </Flex>
 
       <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
           action={
-            <Flex className="shrink-0">
-              {integrationQuery.isPending ? (
-                <Skeleton className="h-10 w-48" />
-              ) : null}
-              {integrationQuery.isError ? (
-                <Button
-                  className="shrink-0 whitespace-nowrap"
-                  color="tertiary"
-                  loading={integrationQuery.isFetching}
-                  onClick={() => {
-                    void integrationQuery.refetch();
-                  }}
-                  variant="outline"
-                >
-                  Try again
-                </Button>
-              ) : null}
-              {!integrationQuery.isPending && !integrationQuery.isError ? (
-                <Button
-                  className="shrink-0 whitespace-nowrap"
-                  color="invert"
-                  leftIcon={
-                    <GoogleCalendarIcon
-                      aria-hidden="true"
-                      className="h-4.5 w-4.5 shrink-0"
-                    />
-                  }
-                  loading={createConnectSession.isPending}
-                  onClick={() => {
-                    createConnectSession.mutate();
-                  }}
-                >
-                  {connection ? "Reconnect" : "Connect"}
-                </Button>
-              ) : null}
-            </Flex>
+            integrationQuery.isError ? (
+              <Button
+                color="tertiary"
+                loading={integrationQuery.isFetching}
+                onClick={() => void integrationQuery.refetch()}
+                variant="outline"
+              >
+                Try again
+              </Button>
+            ) : null
           }
-          description="Connect your primary Google Calendar to see meetings alongside FortyOne work and help future plans respect that calendar's availability."
-          title="Calendar"
+          description="Connect the calendars you use so meetings and FortyOne scheduled work stay in sync."
+          title="Calendar connections"
         />
 
         {integrationQuery.isPending ? (
           <Box
-            aria-label="Loading calendar connection"
+            aria-label="Loading calendar connections"
             className="px-6 py-8"
             role="status"
           >
-            <Skeleton className="h-5 w-48" />
-            <Skeleton className="mt-3 h-4 w-96 max-w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="mt-3 h-12 w-full" />
           </Box>
         ) : null}
         {integrationQuery.isError ? (
           <Box className="px-6 py-8" role="alert">
             <Text className="font-medium">
-              Couldn&apos;t load your calendar connection
+              Couldn&apos;t load your calendar connections
             </Text>
             <Text className="mt-1" color="muted">
               Try again before connecting or changing calendar access.
             </Text>
           </Box>
         ) : null}
-        {!integrationQuery.isPending &&
-        !integrationQuery.isError &&
-        !connection ? (
-          <Box className="px-6 py-8">
-            <Text className="font-medium">No calendar connected</Text>
-            <Text className="mt-1" color="muted">
-              Connect your primary Google Calendar to bring its meetings into
-              Calendar and keep scheduled work clear of those commitments.
-            </Text>
-          </Box>
-        ) : null}
-        {!integrationQuery.isPending &&
-        !integrationQuery.isError &&
-        connection ? (
-          <>
-            {connection.requiresReauthorization ? (
-              <Flex
-                align="center"
-                className="border-border bg-surface-prominent/35 gap-4 border-b px-6 py-4"
-                justify="between"
-                role="status"
-              >
-                <Flex align="center" className="min-w-0" gap={3}>
+        {!integrationQuery.isPending && !integrationQuery.isError
+          ? providers.map((provider, index) => {
+              const connection = connections.find(
+                (item) => item.provider === provider.id,
+              );
+              const status = getConnectionStatus(connection?.syncStatus);
+              const isConnecting =
+                createConnectSession.isPending &&
+                createConnectSession.variables === provider.id;
+              return (
+                <Box
+                  className={index > 0 ? "border-border border-t" : undefined}
+                  key={provider.id}
+                >
+                  {connection?.requiresReauthorization ? (
+                    <Flex
+                      align="center"
+                      className="border-border bg-surface-prominent/35 gap-4 border-b px-6 py-4"
+                      justify="between"
+                      role="status"
+                    >
+                      <Flex align="center" className="min-w-0" gap={3}>
+                        <CalendarPlusIcon
+                          aria-hidden="true"
+                          className="h-5 w-auto"
+                        />
+                        <Box className="min-w-0">
+                          <Text className="font-medium">
+                            Reconnect to schedule work on {provider.name}
+                          </Text>
+                          <Text className="mt-0.5" color="muted">
+                            Reconnect once to restore event updates and cleanup.
+                          </Text>
+                        </Box>
+                      </Flex>
+                      <Button
+                        color="tertiary"
+                        loading={isConnecting}
+                        onClick={() => {
+                          createConnectSession.mutate(provider.id);
+                        }}
+                        variant="outline"
+                      >
+                        Reconnect
+                      </Button>
+                    </Flex>
+                  ) : null}
                   <Flex
                     align="center"
-                    className="border-border bg-surface size-10 shrink-0 rounded-xl border"
-                    justify="center"
+                    className="gap-4 px-6 py-4"
+                    justify="between"
                   >
-                    <CalendarPlusIcon
-                      aria-hidden="true"
-                      className="h-5 w-auto"
-                    />
+                    <Flex align="center" className="min-w-0" gap={3}>
+                      <Flex
+                        align="center"
+                        className="bg-surface-muted size-10 shrink-0 rounded-xl"
+                        justify="center"
+                      >
+                        <ProviderIcon provider={provider.id} />
+                      </Flex>
+                      <Box className="min-w-0">
+                        <Text className="truncate font-medium">
+                          {connection?.connectedEmail ?? provider.name}
+                        </Text>
+                        <Text className="truncate" color="muted">
+                          {connection
+                            ? `Primary calendar · ${connection.canWriteEvents ? "Scheduled work enabled" : "Read only"} · ${formatSyncedAt(connection.lastSyncedAt)}`
+                            : provider.description}
+                        </Text>
+                      </Box>
+                    </Flex>
+                    <Flex align="center" className="shrink-0" gap={2}>
+                      {status ? (
+                        <Badge color={status.color} variant={status.variant}>
+                          {status.label}
+                        </Badge>
+                      ) : null}
+                      {!connection ? (
+                        <Button
+                          color="invert"
+                          loading={isConnecting}
+                          onClick={() => {
+                            createConnectSession.mutate(provider.id);
+                          }}
+                        >
+                          Connect
+                        </Button>
+                      ) : (
+                        <Menu>
+                          <Menu.Button>
+                            <Button
+                              aria-label={`${provider.name} connection actions`}
+                              className="px-2"
+                              color="tertiary"
+                              leftIcon={<MoreHorizontalIcon />}
+                            />
+                          </Menu.Button>
+                          <Menu.Items align="end">
+                            <Menu.Group>
+                              <Menu.Item
+                                onSelect={() => {
+                                  syncConnection.mutate({
+                                    connectionId: connection.id,
+                                  });
+                                }}
+                              >
+                                <ReloadIcon />
+                                Sync calendar
+                              </Menu.Item>
+                              <Menu.Item
+                                onSelect={() => {
+                                  createConnectSession.mutate(provider.id);
+                                }}
+                              >
+                                <ProviderIcon provider={provider.id} />
+                                Update connection
+                              </Menu.Item>
+                              <Menu.Item
+                                className="text-danger"
+                                onSelect={() => {
+                                  setDisconnectConnection(connection);
+                                }}
+                              >
+                                <UnlinkIcon className="text-danger" />
+                                Disconnect calendar
+                              </Menu.Item>
+                            </Menu.Group>
+                          </Menu.Items>
+                        </Menu>
+                      )}
+                    </Flex>
                   </Flex>
-                  <Box className="min-w-0">
-                    <Text className="font-medium">
-                      Reconnect to schedule work on Google Calendar
-                    </Text>
-                    <Text className="mt-0.5 max-w-2xl" color="muted">
-                      Reconnect once to let FortyOne add and update scheduled
-                      work. Your existing meetings will continue syncing.
-                    </Text>
-                  </Box>
-                </Flex>
-                <Button
-                  className="shrink-0 whitespace-nowrap"
-                  color="tertiary"
-                  leftIcon={
-                    <GoogleCalendarIcon
-                      aria-hidden="true"
-                      className="h-4.5 w-4.5"
-                    />
-                  }
-                  loading={createConnectSession.isPending}
-                  onClick={() => {
-                    createConnectSession.mutate();
-                  }}
-                  variant="outline"
-                >
-                  Reconnect Google Calendar
-                </Button>
-              </Flex>
-            ) : null}
-            <Flex align="center" className="gap-4 px-6 py-4" justify="between">
-              <Flex align="center" className="min-w-0" gap={3}>
-                <Flex
-                  align="center"
-                  className="bg-surface-muted size-10 shrink-0 rounded-xl"
-                  justify="center"
-                >
-                  <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
-                </Flex>
-                <Box className="min-w-0">
-                  <Text className="truncate font-medium">
-                    {connection.connectedEmail}
-                  </Text>
-                  <Text className="truncate" color="muted">
-                    Primary calendar ·{" "}
-                    {connection.canReadEventDetails
-                      ? "Event details enabled"
-                      : "Availability only"}
-                    {connection.canWriteEvents
-                      ? " · Scheduled work enabled"
-                      : ""}
-                    {" · "}
-                    {formatSyncedAt(connection.lastSyncedAt)}
-                  </Text>
+                  {connection?.syncError ? (
+                    <Box className="border-border border-t px-6 py-4">
+                      <Text className="font-medium" color="danger">
+                        Sync failed
+                      </Text>
+                      <Text className="mt-1" color="muted">
+                        {connection.syncError}
+                      </Text>
+                    </Box>
+                  ) : null}
                 </Box>
-              </Flex>
-              <Flex align="center" className="shrink-0" gap={2}>
-                {connectionStatus ? (
-                  <Badge
-                    color={connectionStatus.color}
-                    variant={connectionStatus.variant}
-                  >
-                    {connectionStatus.label}
-                  </Badge>
-                ) : null}
-                <Menu>
-                  <Menu.Button>
-                    <Button
-                      aria-label="Calendar connection actions"
-                      className="px-2"
-                      color="tertiary"
-                      leftIcon={<MoreHorizontalIcon />}
-                    />
-                  </Menu.Button>
-                  <Menu.Items align="end">
-                    <Menu.Group>
-                      <Menu.Item
-                        onSelect={() => {
-                          syncConnection.mutate({
-                            connectionId: connection.id,
-                          });
-                        }}
-                      >
-                        <ReloadIcon />
-                        {connection.canReadEventDetails
-                          ? "Sync calendar"
-                          : "Sync availability"}
-                      </Menu.Item>
-                      <Menu.Item
-                        onSelect={() => {
-                          createConnectSession.mutate();
-                        }}
-                      >
-                        <GoogleCalendarIcon
-                          aria-hidden="true"
-                          className="h-4 w-4"
-                        />
-                        Update connection
-                      </Menu.Item>
-                      <Menu.Item
-                        className="text-danger"
-                        onSelect={() => {
-                          setDisconnectConnection(connection);
-                        }}
-                      >
-                        <UnlinkIcon className="text-danger" />
-                        Disconnect calendar
-                      </Menu.Item>
-                    </Menu.Group>
-                  </Menu.Items>
-                </Menu>
-              </Flex>
-            </Flex>
-          </>
-        ) : null}
+              );
+            })
+          : null}
       </Box>
 
       <Box className="border-border bg-surface mt-6 rounded-2xl border">
         <SectionHeader
-          description="FortyOne keeps an owner-only cache of your primary calendar so Calendar can show titles, locations, meeting links, descriptions, and attendees. Private events remain Busy; teammates and managers receive availability only."
+          description="FortyOne keeps an owner-only cache of connected calendars. Private events remain Busy; teammates and managers receive availability only."
           title="Calendar data"
         />
         <Box className="grid grid-cols-1 gap-3 px-6 py-5 md:grid-cols-2">
@@ -344,22 +343,10 @@ export const CalendarIntegrationSettings = () => {
             <ClockIcon className="h-5 w-auto" />
             <Box>
               <Text className="font-medium">Latest sync</Text>
-              <Text color="muted">
-                {formatExactDate(connection?.lastSyncedAt)}
-              </Text>
+              <Text color="muted">{formatExactDate(latestSync)}</Text>
             </Box>
           </Flex>
         </Box>
-        {connection?.syncError ? (
-          <Box className="border-border border-t px-6 py-4">
-            <Text className="font-medium" color="danger">
-              Sync failed
-            </Text>
-            <Text className="mt-1" color="muted">
-              {connection.syncError}
-            </Text>
-          </Box>
-        ) : null}
       </Box>
 
       <Dialog
@@ -376,13 +363,12 @@ export const CalendarIntegrationSettings = () => {
           </Dialog.Header>
           <Dialog.Body>
             <Text color="muted">
-              FortyOne will stop syncing this primary Google Calendar and remove
-              its events from your FortyOne calendar.
+              FortyOne will stop syncing this calendar, remove its imported
+              events, and clean up FortyOne work events written to it.
             </Text>
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
             <Button
-              className="px-4"
               color="tertiary"
               onClick={() => {
                 setDisconnectConnection(null);
@@ -391,15 +377,12 @@ export const CalendarIntegrationSettings = () => {
               Cancel
             </Button>
             <Button
-              className="px-4"
               loading={revokeConnection.isPending}
               onClick={() => {
                 if (!disconnectConnection) return;
                 revokeConnection.mutate(disconnectConnection.id, {
                   onSuccess: (res) => {
-                    if (!res.error) {
-                      setDisconnectConnection(null);
-                    }
+                    if (!res.error) setDisconnectConnection(null);
                   },
                 });
               }}

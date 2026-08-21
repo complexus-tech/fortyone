@@ -362,7 +362,7 @@ func TestGoogleProviderUpsertCreatesWithStablePrivateProvenance(t *testing.T) {
 	storyID := uuid.New()
 	workspaceID := uuid.New()
 	eventID := StableGoogleScheduleEventID(blockID)
-	err := provider.UpsertScheduleEvent(context.Background(), ProviderToken{Scopes: []string{GoogleCalendarEventsOwnedScope}}, ExternalScheduleEventInput{
+	_, err := provider.UpsertScheduleEvent(context.Background(), ProviderToken{Scopes: []string{GoogleCalendarEventsOwnedScope}}, ExternalScheduleEventInput{
 		CalendarID: "primary", EventID: eventID, BlockID: blockID, StoryID: storyID, WorkspaceID: workspaceID,
 		Title: "Private project work", StartAt: time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC), EndAt: time.Date(2026, 6, 15, 10, 0, 0, 0, time.UTC),
 		PrivateProperties: map[string]string{"fortyone_block_id": blockID.String()},
@@ -414,7 +414,7 @@ func TestGoogleProviderUpsertRecoversFromInsertRaceAndDeleteIsIdempotent(t *test
 	token := ProviderToken{Scopes: []string{GoogleCalendarEventsOwnedScope}}
 	eventID := StableGoogleScheduleEventID(uuid.New())
 	input := ExternalScheduleEventInput{CalendarID: "primary", EventID: eventID, StartAt: time.Now().UTC(), EndAt: time.Now().UTC().Add(time.Hour)}
-	if err := provider.UpsertScheduleEvent(context.Background(), token, input); err != nil {
+	if _, err := provider.UpsertScheduleEvent(context.Background(), token, input); err != nil {
 		t.Fatalf("expected insert race to retry update: %v", err)
 	}
 	if putCalls.Load() != 2 {
@@ -428,7 +428,7 @@ func TestGoogleProviderUpsertRecoversFromInsertRaceAndDeleteIsIdempotent(t *test
 func TestGoogleProviderRequiresOwnedEventsScope(t *testing.T) {
 	t.Parallel()
 	provider := NewGoogleProvider(googleTestOAuth{client: http.DefaultClient})
-	err := provider.UpsertScheduleEvent(context.Background(), ProviderToken{Scopes: []string{GoogleCalendarEventsReadonlyScope}}, ExternalScheduleEventInput{})
+	_, err := provider.UpsertScheduleEvent(context.Background(), ProviderToken{Scopes: []string{GoogleCalendarEventsReadonlyScope}}, ExternalScheduleEventInput{})
 	if !errors.Is(err, ErrCalendarReauthorizationRequired) {
 		t.Fatalf("expected reauthorization error, got %v", err)
 	}

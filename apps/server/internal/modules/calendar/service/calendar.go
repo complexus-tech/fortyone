@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -37,7 +38,7 @@ var (
 	ErrCalendarScheduleBlockNotFound   = errors.New("calendar schedule block not found")
 	ErrManagedScheduleBlock            = errors.New("Maya-managed schedule blocks can only be changed by automatic scheduling")
 	ErrCalendarCleanupPending          = errors.New("calendar cleanup is still in progress")
-	ErrCalendarAccountChangePending    = errors.New("disconnect the existing calendar before connecting a different Google account")
+	ErrCalendarAccountChangePending    = errors.New("disconnect the existing calendar before connecting a different provider account")
 	ErrCalendarFullSyncRequired        = errors.New("calendar full sync is required")
 	ErrInvalidCalendarNotification     = errors.New("invalid calendar notification")
 	ErrCalendarWebhookNotConfigured    = errors.New("calendar webhook is not configured")
@@ -78,6 +79,7 @@ type Repository interface {
 	ListConnectionsNeedingWatch(ctx context.Context, renewBefore time.Time) ([]CoreConnection, error)
 	WorkspaceMemberExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, error)
 	UpsertConnection(ctx context.Context, input CoreConnectionUpsert) (CoreConnection, error)
+	UpdateConnectionToken(ctx context.Context, connection CoreConnection, tokenPayload string) error
 	BeginConnectionSync(ctx context.Context, connection CoreConnection) (CoreConnection, error)
 	RevokeConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) error
 	ReplaceCalendarSnapshot(ctx context.Context, connection CoreConnection, snapshot CalendarSyncSnapshot) error
@@ -111,18 +113,19 @@ type ScheduleIssueRepository interface {
 }
 
 type ScheduleEventOutboxStore interface {
-	ListPendingScheduleEventOutbox(ctx context.Context, userID uuid.UUID, limit int) ([]CoreScheduleEventOutbox, error)
+	ListPendingScheduleEventOutbox(ctx context.Context, userID uuid.UUID, provider Provider, limit int) ([]CoreScheduleEventOutbox, error)
 	ScheduleEventUpsertIsCurrent(ctx context.Context, item CoreScheduleEventOutbox, event ExternalScheduleEventInput) (bool, error)
 	MarkScheduleEventOutboxProcessed(ctx context.Context, item CoreScheduleEventOutbox, syncHash string) error
 	MarkScheduleEventOutboxFailed(ctx context.Context, item CoreScheduleEventOutbox, message string, permanent bool) error
 	ReleaseScheduleEventOutbox(ctx context.Context, outboxIDs []uuid.UUID) error
-	DeleteCleanupPendingConnectionIfDrained(ctx context.Context, userID uuid.UUID) error
+	DeleteCleanupPendingConnectionIfDrained(ctx context.Context, userID uuid.UUID, provider Provider) error
 }
 
 type Config struct {
 	SecretKey      string
 	WebsiteURL     string
 	WebhookURL     string
+	WebhookURLs    map[Provider]string
 	RequireWebhook bool
 	Providers      map[Provider]CalendarProvider
 	Tasks          CalendarTaskQueue
@@ -154,8 +157,12 @@ func (s *Service) ListConnections(ctx context.Context, workspaceID uuid.UUID, us
 	return s.repo.ListConnections(ctx, workspaceID, userID)
 }
 
-func (s *Service) CreateConnectSession(ctx context.Context, workspaceID, userID uuid.UUID, workspaceSlug string) (CoreConnectSession, error) {
-	provider, err := s.provider(ProviderGoogle)
+func (s *Service) CreateConnectSession(ctx context.Context, workspaceID, userID uuid.UUID, workspaceSlug string, providerName ...Provider) (CoreConnectSession, error) {
+	providerID := ProviderGoogle
+	if len(providerName) > 0 {
+		providerID = providerName[0]
+	}
+	provider, err := s.provider(providerID)
 	if err != nil {
 		return CoreConnectSession{}, err
 	}
@@ -163,7 +170,7 @@ func (s *Service) CreateConnectSession(ctx context.Context, workspaceID, userID 
 		WorkspaceID:   workspaceID,
 		UserID:        userID,
 		WorkspaceSlug: strings.TrimSpace(workspaceSlug),
-		Provider:      ProviderGoogle,
+		Provider:      providerID,
 		ExpiresAt:     s.now().Add(connectStateTTL).Unix(),
 	})
 	if err != nil {
@@ -242,7 +249,7 @@ func (s *Service) CompleteConnect(
 			return CoreConnection{}, "", fmt.Errorf("enqueue calendar schedule reconciliation after connect: %w", err)
 		}
 	}
-	return connection, s.workspaceCalendarURL(claims.WorkspaceSlug, "connected=1"), nil
+	return connection, s.workspaceCalendarURL(claims.WorkspaceSlug, "connected=1&calendar_provider="+url.QueryEscape(string(claims.Provider))), nil
 }
 
 func (s *Service) withRetainedRefreshToken(
@@ -295,7 +302,7 @@ func (s *Service) CalendarCallbackErrorURL(state string, callbackUserID uuid.UUI
 	}
 	return s.workspaceCalendarURL(
 		claims.WorkspaceSlug,
-		"calendar_error="+url.QueryEscape(code),
+		"calendar_error="+url.QueryEscape(code)+"&calendar_provider="+url.QueryEscape(string(claims.Provider)),
 	), nil
 }
 
@@ -313,7 +320,7 @@ func (s *Service) RevokeConnection(ctx context.Context, workspaceID, userID, con
 	}
 	// Provider deletion is backed by the durable outbox. Try immediately for a
 	// responsive disconnect, while the periodic dispatcher remains the retry
-	// contract if Google is temporarily unavailable.
+	// contract if the calendar provider is temporarily unavailable.
 	_ = s.DispatchScheduleEventOutbox(ctx, userID)
 	return nil
 }
@@ -345,6 +352,27 @@ func (s *Service) ProcessGoogleNotification(ctx context.Context, channelID, reso
 	return s.cfg.Tasks.EnqueueCalendarSync(ctx, connectionID)
 }
 
+func (s *Service) ProcessMicrosoftNotification(ctx context.Context, subscriptionID, clientState string) error {
+	connectionID, _, err := s.verifyNotificationToken(clientState)
+	if err != nil {
+		return ErrInvalidCalendarNotification
+	}
+	connection, err := s.repo.GetConnection(ctx, connectionID)
+	if err != nil {
+		if errors.Is(err, ErrCalendarNotFound) {
+			return nil
+		}
+		return err
+	}
+	if connection.Provider != ProviderMicrosoft || connection.NotificationChannelID != strings.TrimSpace(subscriptionID) {
+		return nil
+	}
+	if s.cfg.Tasks == nil {
+		return ErrCalendarNotConfigured
+	}
+	return s.cfg.Tasks.EnqueueCalendarSync(ctx, connectionID)
+}
+
 func (s *Service) SyncConnectionFromNotification(ctx context.Context, connectionID uuid.UUID) error {
 	connection, err := s.repo.GetConnection(ctx, connectionID)
 	if err != nil {
@@ -367,7 +395,7 @@ func (s *Service) SyncConnectionFromNotification(ctx context.Context, connection
 	if err != nil {
 		return s.failConnectionSync(ctx, connection, err)
 	}
-	token, err := s.decryptTokenPayload(connection.TokenPayload)
+	token, err := s.tokenForConnection(ctx, connection, provider)
 	if err != nil {
 		return s.failConnectionSync(ctx, connection, err)
 	}
@@ -393,7 +421,7 @@ func (s *Service) SyncConnectionFromNotification(ctx context.Context, connection
 		return err
 	}
 	// Always enqueue after a successful incremental sync, including an empty
-	// delta. If the previous attempt committed Google's next sync token but the
+	// delta. If the previous attempt committed the provider's next sync token but the
 	// enqueue failed, Asynq retries with an empty delta; this trailing enqueue is
 	// what makes that handoff retry-safe.
 	return s.enqueueScheduleReconciliation(ctx, connection.UserID)
@@ -408,7 +436,7 @@ func (s *Service) enqueueScheduleReconciliation(ctx context.Context, userID uuid
 }
 
 func (s *Service) RenewExpiringNotificationChannels(ctx context.Context) (int, error) {
-	if strings.TrimSpace(s.cfg.WebhookURL) == "" {
+	if strings.TrimSpace(s.cfg.WebhookURL) == "" && len(s.cfg.WebhookURLs) == 0 {
 		return 0, nil
 	}
 	connections, err := s.repo.ListConnectionsNeedingWatch(ctx, s.now().Add(googleWatchRenewalWindow))
@@ -559,7 +587,10 @@ func minFloat(left, right float64) float64 {
 func (s *Service) scheduleTimezone(ctx context.Context, workspaceID, userID uuid.UUID) string {
 	connection, err := s.repo.GetActiveConnection(ctx, workspaceID, userID, ProviderGoogle)
 	if err != nil {
-		return "UTC"
+		connection, err = s.repo.GetActiveConnection(ctx, workspaceID, userID, ProviderMicrosoft)
+		if err != nil {
+			return "UTC"
+		}
 	}
 	return fallbackTimezone(connection.Timezone)
 }
@@ -822,7 +853,8 @@ func (s *Service) DispatchScheduleEventOutbox(ctx context.Context, userID uuid.U
 				ctx,
 				outbox,
 				userID,
-				"Calendar cleanup could not call Google because the connection never granted owned-event access.",
+				connection.Provider,
+				"Calendar cleanup could not call the provider because the connection never granted event deletion access.",
 			)
 		}
 		if !cleanupPending && !connection.CanWriteEvents() {
@@ -831,31 +863,31 @@ func (s *Service) DispatchScheduleEventOutbox(ctx context.Context, userID uuid.U
 		provider, err := s.provider(connection.Provider)
 		if err != nil {
 			if cleanupPending {
-				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, "Calendar cleanup could not initialize the provider writer.")
+				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, connection.Provider, "Calendar cleanup could not initialize the provider writer.")
 			}
 			return err
 		}
 		eventWriter, ok := provider.(CalendarEventWriter)
 		if !ok {
 			if cleanupPending {
-				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, "Calendar cleanup provider does not support event deletion.")
+				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, connection.Provider, "Calendar cleanup provider does not support event deletion.")
 			}
 			return ErrCalendarNotConfigured
 		}
-		token, err := s.decryptTokenPayload(connection.TokenPayload)
+		token, err := s.tokenForConnection(ctx, connection, provider)
 		if err != nil {
 			if cleanupPending {
-				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, "Calendar cleanup credentials could not be decrypted.")
+				return terminallyFinalizeScheduleCleanup(ctx, outbox, userID, connection.Provider, "Calendar cleanup credentials could not be decrypted.")
 			}
 			return err
 		}
 		for {
-			items, err := outbox.ListPendingScheduleEventOutbox(ctx, userID, 100)
+			items, err := outbox.ListPendingScheduleEventOutbox(ctx, userID, connection.Provider, 100)
 			if err != nil {
 				return err
 			}
 			if len(items) == 0 {
-				return outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID)
+				return outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID, connection.Provider)
 			}
 			for index, item := range items {
 				var event ExternalScheduleEventInput
@@ -877,7 +909,7 @@ func (s *Service) DispatchScheduleEventOutbox(ctx context.Context, userID uuid.U
 							return errors.Join(err, releaseErr)
 						}
 						if cleanupPending {
-							if finalizeErr := outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID); finalizeErr != nil {
+							if finalizeErr := outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID, connection.Provider); finalizeErr != nil {
 								return errors.Join(err, finalizeErr)
 							}
 						}
@@ -894,12 +926,13 @@ func (s *Service) DispatchScheduleEventOutbox(ctx context.Context, userID uuid.U
 					forceDelete = !current
 				}
 				var writeErr error
+				writeResult := ExternalScheduleEventResult{EventID: item.ProviderEventID}
 				failureMessage := "Calendar event update failed."
 				if forceDelete {
 					writeErr = eventWriter.DeleteScheduleEvent(ctx, token, item.CalendarID, item.ProviderEventID)
 					failureMessage = "Calendar event cleanup failed."
 				} else {
-					writeErr = eventWriter.UpsertScheduleEvent(ctx, token, event)
+					writeResult, writeErr = eventWriter.UpsertScheduleEvent(ctx, token, event)
 				}
 				if writeErr != nil {
 					failureMessage = fmt.Sprintf("%s %v", failureMessage, writeErr)
@@ -911,7 +944,7 @@ func (s *Service) DispatchScheduleEventOutbox(ctx context.Context, userID uuid.U
 						return errors.Join(writeErr, releaseErr)
 					}
 					if terminal && cleanupPending {
-						if finalizeErr := outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID); finalizeErr != nil {
+						if finalizeErr := outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID, connection.Provider); finalizeErr != nil {
 							return errors.Join(writeErr, finalizeErr)
 						}
 					}
@@ -921,6 +954,9 @@ func (s *Service) DispatchScheduleEventOutbox(ctx context.Context, userID uuid.U
 				processedItem := item
 				if forceDelete {
 					processedItem.Operation = ScheduleEventOperationDelete
+				} else if strings.TrimSpace(writeResult.EventID) != "" {
+					processedItem.ProviderEventID = strings.TrimSpace(writeResult.EventID)
+					event.EventID = processedItem.ProviderEventID
 				}
 				if err := outbox.MarkScheduleEventOutboxProcessed(ctx, processedItem, ScheduleEventSyncHash(event)); err != nil {
 					return err
@@ -931,14 +967,14 @@ func (s *Service) DispatchScheduleEventOutbox(ctx context.Context, userID uuid.U
 	return errors.Join(lockErr, dispatchErr)
 }
 
-func terminallyFinalizeScheduleCleanup(ctx context.Context, outbox ScheduleEventOutboxStore, userID uuid.UUID, message string) error {
+func terminallyFinalizeScheduleCleanup(ctx context.Context, outbox ScheduleEventOutboxStore, userID uuid.UUID, provider Provider, message string) error {
 	for {
-		items, err := outbox.ListPendingScheduleEventOutbox(ctx, userID, 100)
+		items, err := outbox.ListPendingScheduleEventOutbox(ctx, userID, provider, 100)
 		if err != nil {
 			return err
 		}
 		if len(items) == 0 {
-			return outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID)
+			return outbox.DeleteCleanupPendingConnectionIfDrained(ctx, userID, provider)
 		}
 		for _, item := range items {
 			if err := outbox.MarkScheduleEventOutboxFailed(ctx, item, message, true); err != nil {
@@ -949,6 +985,18 @@ func terminallyFinalizeScheduleCleanup(ctx context.Context, outbox ScheduleEvent
 }
 
 func isPermanentCalendarWriteError(err error) bool {
+	var graphErr *MicrosoftGraphError
+	if errors.As(err, &graphErr) {
+		if graphErr.StatusCode < 400 || graphErr.StatusCode >= 500 {
+			return false
+		}
+		switch graphErr.StatusCode {
+		case http.StatusRequestTimeout, http.StatusConflict, http.StatusTooManyRequests:
+			return false
+		default:
+			return true
+		}
+	}
 	var apiErr *googleapi.Error
 	if !errors.As(err, &apiErr) {
 		return false
@@ -1031,7 +1079,7 @@ func (s *Service) syncConnection(ctx context.Context, connection CoreConnection)
 	if err != nil {
 		return s.failConnectionSync(ctx, connection, err)
 	}
-	token, err := s.decryptTokenPayload(connection.TokenPayload)
+	token, err := s.tokenForConnection(ctx, connection, provider)
 	if err != nil {
 		return s.failConnectionSync(ctx, connection, err)
 	}
@@ -1105,7 +1153,7 @@ func (s *Service) completeConnectionSync(ctx context.Context, connection CoreCon
 }
 
 func (s *Service) replaceNotificationChannel(ctx context.Context, connection CoreConnection) error {
-	address := strings.TrimSpace(s.cfg.WebhookURL)
+	address := s.webhookURL(connection.Provider)
 	if address == "" {
 		if !s.cfg.RequireWebhook {
 			return nil
@@ -1120,17 +1168,30 @@ func (s *Service) replaceNotificationChannel(ctx context.Context, connection Cor
 	if err != nil {
 		return err
 	}
-	token, err := s.decryptTokenPayload(connection.TokenPayload)
+	token, err := s.tokenForConnection(ctx, connection, provider)
 	if err != nil {
 		return err
 	}
 	channelID := uuid.NewString()
-	channel, err := provider.WatchCalendar(ctx, token, CalendarWatchInput{
+	watchInput := CalendarWatchInput{
 		ChannelID: channelID,
 		Address:   parsedAddress.String(),
 		Token:     s.notificationToken(connection.ID, channelID),
-		TTL:       googleWatchTTL,
-	})
+		TTL:       s.watchTTL(connection.Provider),
+	}
+	var channel CalendarWatchChannel
+	if connection.NotificationChannelID != "" {
+		if renewer, ok := provider.(CalendarWatchRenewer); ok {
+			channel, err = renewer.RenewCalendarWatch(ctx, token, CalendarWatchChannel{
+				ChannelID: connection.NotificationChannelID, ResourceID: connection.NotificationResourceID,
+				ExpiresAt: valueOrZeroTime(connection.NotificationExpiresAt),
+			}, watchInput)
+		} else {
+			channel, err = provider.WatchCalendar(ctx, token, watchInput)
+		}
+	} else {
+		channel, err = provider.WatchCalendar(ctx, token, watchInput)
+	}
 	if err != nil {
 		return err
 	}
@@ -1143,7 +1204,8 @@ func (s *Service) replaceNotificationChannel(ctx context.Context, connection Cor
 		_ = provider.StopCalendarWatch(ctx, token, channel)
 		return err
 	}
-	if connection.NotificationChannelID != "" && connection.NotificationResourceID != "" {
+	_, renewedInPlace := provider.(CalendarWatchRenewer)
+	if !renewedInPlace && connection.NotificationChannelID != "" && connection.NotificationResourceID != "" {
 		old := CalendarWatchChannel{
 			ChannelID:  connection.NotificationChannelID,
 			ResourceID: connection.NotificationResourceID,
@@ -1155,6 +1217,30 @@ func (s *Service) replaceNotificationChannel(ctx context.Context, connection Cor
 	return nil
 }
 
+func (s *Service) webhookURL(provider Provider) string {
+	if value := strings.TrimSpace(s.cfg.WebhookURLs[provider]); value != "" {
+		return value
+	}
+	if provider == ProviderGoogle {
+		return strings.TrimSpace(s.cfg.WebhookURL)
+	}
+	return ""
+}
+
+func (s *Service) watchTTL(provider Provider) time.Duration {
+	if provider == ProviderMicrosoft {
+		return microsoftWatchTTL
+	}
+	return googleWatchTTL
+}
+
+func valueOrZeroTime(value *time.Time) time.Time {
+	if value == nil {
+		return time.Time{}
+	}
+	return *value
+}
+
 func (s *Service) stopNotificationChannel(ctx context.Context, connection CoreConnection) {
 	if connection.NotificationChannelID == "" || connection.NotificationResourceID == "" {
 		return
@@ -1163,7 +1249,7 @@ func (s *Service) stopNotificationChannel(ctx context.Context, connection CoreCo
 	if err != nil {
 		return
 	}
-	token, err := s.decryptTokenPayload(connection.TokenPayload)
+	token, err := s.tokenForConnection(ctx, connection, provider)
 	if err != nil {
 		return
 	}
@@ -1301,7 +1387,7 @@ func (s *Service) verifyActiveState(value string) (stateClaims, error) {
 	}
 	if claims.WorkspaceID == uuid.Nil ||
 		claims.UserID == uuid.Nil ||
-		claims.Provider != ProviderGoogle ||
+		(claims.Provider != ProviderGoogle && claims.Provider != ProviderMicrosoft) ||
 		strings.TrimSpace(claims.WorkspaceSlug) == "" {
 		return stateClaims{}, ErrInvalidCalendarState
 	}
@@ -1361,6 +1447,35 @@ func (s *Service) decryptTokenPayload(value string) (ProviderToken, error) {
 		return ProviderToken{}, err
 	}
 	return token, nil
+}
+
+func (s *Service) tokenForConnection(ctx context.Context, connection CoreConnection, provider CalendarProvider) (ProviderToken, error) {
+	token, err := s.decryptTokenPayload(connection.TokenPayload)
+	if err != nil {
+		return ProviderToken{}, err
+	}
+	refresher, ok := provider.(CalendarTokenRefresher)
+	if !ok {
+		return token, nil
+	}
+	refreshed, err := refresher.RefreshToken(ctx, token)
+	if err != nil {
+		return ProviderToken{}, err
+	}
+	if refreshed.AccessToken == token.AccessToken &&
+		refreshed.RefreshToken == token.RefreshToken &&
+		refreshed.TokenType == token.TokenType &&
+		refreshed.Expiry.Equal(token.Expiry) {
+		return refreshed, nil
+	}
+	payload, err := s.encryptTokenPayload(refreshed)
+	if err != nil {
+		return ProviderToken{}, err
+	}
+	if err := s.repo.UpdateConnectionToken(ctx, connection, payload); err != nil {
+		return ProviderToken{}, err
+	}
+	return refreshed, nil
 }
 
 func (s *Service) encryptionKey() [32]byte {

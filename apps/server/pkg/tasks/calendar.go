@@ -46,7 +46,11 @@ func (s *Service) EnqueueCalendarSync(ctx context.Context, connectionID uuid.UUI
 		ctx,
 		asynq.NewTask(TypeCalendarSync, payload),
 		asynq.Queue("integrations"),
+		asynq.Unique(10*time.Second),
 	)
+	if errors.Is(err, asynq.ErrDuplicateTask) {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("enqueue calendar sync: %w", err)
 	}

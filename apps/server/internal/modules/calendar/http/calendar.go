@@ -2,6 +2,7 @@ package calendarhttp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
@@ -49,7 +50,11 @@ func (h *Handlers) CreateConnectSession(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	session, err := h.service.CreateConnectSession(ctx, workspace.ID, userID, workspace.Slug)
+	provider := calendar.Provider(web.Params(r, "provider"))
+	if provider != calendar.ProviderGoogle && provider != calendar.ProviderMicrosoft {
+		return web.RespondError(ctx, w, calendar.ErrCalendarNotConfigured, http.StatusNotFound)
+	}
+	session, err := h.service.CreateConnectSession(ctx, workspace.ID, userID, workspace.Slug, provider)
 	if err != nil {
 		return web.RespondError(ctx, w, err, h.statusCode(err))
 	}
@@ -280,6 +285,31 @@ func (h *Handlers) HandleGoogleNotification(ctx context.Context, w http.Response
 		return web.RespondError(ctx, w, err, h.statusCode(err))
 	}
 	w.WriteHeader(http.StatusNoContent)
+	return nil
+}
+
+func (h *Handlers) HandleMicrosoftNotification(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if validationToken := r.URL.Query().Get("validationToken"); validationToken != "" {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(validationToken))
+		return nil
+	}
+	var notification struct {
+		Value []struct {
+			SubscriptionID string `json:"subscriptionId"`
+			ClientState    string `json:"clientState"`
+		} `json:"value"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&notification); err != nil {
+		return web.RespondError(ctx, w, calendar.ErrInvalidCalendarNotification, http.StatusBadRequest)
+	}
+	for _, item := range notification.Value {
+		if err := h.service.ProcessMicrosoftNotification(ctx, item.SubscriptionID, item.ClientState); err != nil {
+			return web.RespondError(ctx, w, err, h.statusCode(err))
+		}
+	}
+	w.WriteHeader(http.StatusAccepted)
 	return nil
 }
 

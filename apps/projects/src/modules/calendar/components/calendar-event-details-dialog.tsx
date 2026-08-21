@@ -59,10 +59,12 @@ export const getCalendarEventTimeLabel = (
   return `${format(start, "MMM d, h:mm a")} – ${format(end, "MMM d, h:mm a")}`;
 };
 
-const getCalendarLabel = (event: CalendarEventSummary) => {
-  const calendarId = event.calendarId?.trim();
+const getCalendarLabel = (event?: CalendarEventSummary | null) => {
+  const calendarId = event?.calendarId?.trim();
   if (calendarId && calendarId !== "primary") return calendarId;
-  return event.provider === "google" ? "Google Calendar" : "External calendar";
+  if (event?.provider === "google") return "Google Calendar";
+  if (event?.provider === "microsoft") return "Outlook Calendar";
+  return "External calendar";
 };
 
 const getPersonLabel = ({
@@ -248,7 +250,7 @@ export const CalendarEventDetailsDialog = ({
                           target="_blank"
                         >
                           <ExternalLinkIcon className="h-4 w-auto" />
-                          Open in Google Calendar
+                          Open in {getCalendarLabel(visibleEvent)}
                         </a>
                       ) : null}
                     </Flex>

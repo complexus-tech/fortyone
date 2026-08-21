@@ -113,7 +113,22 @@ func (r *Repo) GetScheduleEventDispatchConnection(ctx context.Context, userID uu
 		       revoked_at, created_at, updated_at
 		FROM calendar_connections
 		WHERE user_id = $1
-			AND provider = 'google'
+			AND provider = COALESCE((
+				SELECT outbox.provider
+				FROM calendar_schedule_event_outbox outbox
+				WHERE outbox.user_id = $1
+					AND outbox.processed_at IS NULL
+					AND outbox.dead_lettered_at IS NULL
+					AND EXISTS (
+						SELECT 1
+						FROM calendar_connections provider_connection
+						WHERE provider_connection.user_id = outbox.user_id
+							AND provider_connection.provider = outbox.provider
+							AND provider_connection.revoked_at IS NULL
+					)
+				ORDER BY outbox.created_at, outbox.outbox_id
+				LIMIT 1
+			), provider)
 			AND revoked_at IS NULL
 		ORDER BY cleanup_pending_at NULLS FIRST
 		LIMIT 1

@@ -113,12 +113,12 @@ func (p *fakeProvider) StopCalendarWatch(context.Context, ProviderToken, Calenda
 	return nil
 }
 
-func (p *fakeProvider) UpsertScheduleEvent(_ context.Context, _ ProviderToken, input ExternalScheduleEventInput) error {
+func (p *fakeProvider) UpsertScheduleEvent(_ context.Context, _ ProviderToken, input ExternalScheduleEventInput) (ExternalScheduleEventResult, error) {
 	if p.writeErr != nil {
-		return p.writeErr
+		return ExternalScheduleEventResult{}, p.writeErr
 	}
 	p.upsertedEvents = append(p.upsertedEvents, input)
-	return nil
+	return ExternalScheduleEventResult{EventID: input.EventID}, nil
 }
 
 func (p *fakeProvider) DeleteScheduleEvent(_ context.Context, _ ProviderToken, _, eventID string) error {
@@ -225,6 +225,12 @@ func (r *fakeRepo) UpsertConnection(ctx context.Context, input CoreConnectionUps
 		UpdatedAt:            time.Now(),
 	}
 	return r.connection, nil
+}
+
+func (r *fakeRepo) UpdateConnectionToken(_ context.Context, connection CoreConnection, tokenPayload string) error {
+	r.connection = connection
+	r.connection.TokenPayload = tokenPayload
+	return nil
 }
 
 func (r *fakeRepo) BeginConnectionSync(ctx context.Context, connection CoreConnection) (CoreConnection, error) {
@@ -995,7 +1001,7 @@ func (r *fakeRepo) WithScheduleEventDispatchLock(_ context.Context, _ uuid.UUID,
 	return dispatch(r)
 }
 
-func (r *fakeRepo) ListPendingScheduleEventOutbox(_ context.Context, _ uuid.UUID, _ int) ([]CoreScheduleEventOutbox, error) {
+func (r *fakeRepo) ListPendingScheduleEventOutbox(_ context.Context, _ uuid.UUID, _ Provider, _ int) ([]CoreScheduleEventOutbox, error) {
 	r.outboxClaimCalls++
 	if len(r.pendingOutboxBatches) == 0 {
 		return nil, nil
@@ -1030,7 +1036,7 @@ func (r *fakeRepo) ReleaseScheduleEventOutbox(_ context.Context, outboxIDs []uui
 	return nil
 }
 
-func (r *fakeRepo) DeleteCleanupPendingConnectionIfDrained(_ context.Context, _ uuid.UUID) error {
+func (r *fakeRepo) DeleteCleanupPendingConnectionIfDrained(_ context.Context, _ uuid.UUID, _ Provider) error {
 	r.cleanupFinalizeCalls++
 	return nil
 }
@@ -1163,7 +1169,7 @@ func TestCalendarCallbackErrorURLUsesSignedStateAndSafeCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CalendarCallbackErrorURL returned error: %v", err)
 	}
-	if redirectURL != "https://app.fortyone.test/acme%20workspace/settings/account/calendar?calendar_error=connection_failed" {
+	if redirectURL != "https://app.fortyone.test/acme%20workspace/settings/account/calendar?calendar_error=connection_failed&calendar_provider=google" {
 		t.Fatalf("unexpected callback error URL: %s", redirectURL)
 	}
 	if strings.Contains(redirectURL, "raw") || strings.Contains(redirectURL, "secret") {
@@ -1226,7 +1232,7 @@ func TestCompleteConnectEncryptsProviderToken(t *testing.T) {
 	if connection.ConnectedEmail != "joseph@example.com" {
 		t.Fatalf("unexpected connected email: %s", connection.ConnectedEmail)
 	}
-	if redirectURL != "https://app.fortyone.test/acme/settings/account/calendar?connected=1" {
+	if redirectURL != "https://app.fortyone.test/acme/settings/account/calendar?connected=1&calendar_provider=google" {
 		t.Fatalf("unexpected redirect url: %s", redirectURL)
 	}
 	if strings.Contains(repo.upserted.TokenPayload, "refresh-token") || strings.Contains(repo.upserted.TokenPayload, "access-token") {

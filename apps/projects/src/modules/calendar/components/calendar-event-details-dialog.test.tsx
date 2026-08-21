@@ -114,6 +114,36 @@ describe("CalendarEventDetailsDialog", () => {
       "href",
       "https://meet.google.com/example",
     );
+    expect(
+      screen.getByRole("link", { name: "Open in Google Calendar" }),
+    ).toHaveAttribute("href", "https://calendar.google.com/event?eid=example");
+  });
+
+  it("labels Microsoft event links as Outlook Calendar", () => {
+    const outlookEvent = {
+      ...event,
+      provider: "microsoft",
+      htmlLink: "https://outlook.office.com/calendar/item/example",
+    } satisfies CalendarEventSummary;
+    useCalendarEvent.mockReturnValue({
+      data: { ...outlookEvent, attendees: [], attendeesOmitted: false },
+      isError: false,
+      isPending: false,
+    });
+
+    render(
+      <CalendarEventDetailsDialog
+        event={outlookEvent}
+        onOpenChange={jest.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Open in Outlook Calendar" }),
+    ).toHaveAttribute(
+      "href",
+      "https://outlook.office.com/calendar/item/example",
+    );
   });
 
   it("never fetches or reveals metadata for a private event", () => {

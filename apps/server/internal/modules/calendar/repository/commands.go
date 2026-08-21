@@ -42,7 +42,7 @@ const detachMayaScheduleMirrorsQuery = `
 		external_synced_at = NULL
 	WHERE user_id = $1
 		AND source = 'maya'
-		AND external_provider = 'google'
+		AND external_provider = $2
 `
 
 const invalidateMayaScheduleMirrorHashesQuery = `
@@ -51,7 +51,7 @@ const invalidateMayaScheduleMirrorHashesQuery = `
 		external_synced_at = NULL
 	WHERE user_id = $1
 		AND source = 'maya'
-		AND external_provider = 'google'
+		AND external_provider = $2
 		AND external_sync_hash IS NOT NULL
 `
 
@@ -153,15 +153,38 @@ func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnecti
 			last_error = 'Retrying after calendar authorization refresh.',
 			updated_at = CURRENT_TIMESTAMP
 		WHERE user_id = $1
+			AND provider = $2
 			AND processed_at IS NULL
 			AND dead_lettered_at IS NOT NULL
-	`, input.UserID); err != nil {
+	`, input.UserID, string(input.Provider)); err != nil {
 		return calendar.CoreConnection{}, fmt.Errorf("reactivate calendar outbox after authorization refresh: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
 		return calendar.CoreConnection{}, fmt.Errorf("commit upsert calendar connection: %w", err)
 	}
 	return toCoreConnection(row), nil
+}
+
+func (r *Repo) UpdateConnectionToken(ctx context.Context, connection calendar.CoreConnection, tokenPayload string) error {
+	result, err := r.db.ExecContext(ctx, `
+		UPDATE calendar_connections
+		SET token_payload = $1,
+			updated_at = NOW()
+		WHERE connection_id = $2
+			AND credential_generation = $3
+			AND revoked_at IS NULL
+	`, tokenPayload, connection.ID, connection.CredentialGeneration)
+	if err != nil {
+		return fmt.Errorf("update calendar connection token: %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read updated calendar connection token rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return calendar.ErrCalendarSyncSuperseded
+	}
+	return nil
 }
 
 // BeginConnectionSync rotates the generation before provider I/O. A later sync
@@ -226,7 +249,7 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 		return err
 	}
 
-	const revokeQuery = `
+	revokeQuery := `
 		UPDATE calendar_connections
 		SET cleanup_pending_at = NOW(),
 			sync_status = 'revoked',
@@ -241,16 +264,14 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			AND revoked_at IS NULL
 			AND cleanup_pending_at IS NULL
 	`
-	result, err := tx.ExecContext(ctx, revokeQuery, userID, connectionID)
+	revokeQuery += " RETURNING provider"
+	var revokedProvider string
+	err = tx.GetContext(ctx, &revokedProvider, revokeQuery, userID, connectionID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return calendar.ErrCalendarNotFound
+		}
 		return fmt.Errorf("revoke calendar connection: %w", err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("read revoked calendar connection result: %w", err)
-	}
-	if affected == 0 {
-		return calendar.ErrCalendarNotFound
 	}
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE calendar_schedule_event_outbox
@@ -259,8 +280,10 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			available_at = CURRENT_TIMESTAMP,
 			last_error = 'Retrying provider cleanup during calendar disconnect.',
 			updated_at = CURRENT_TIMESTAMP
-		WHERE user_id = $1 AND processed_at IS NULL
-	`, userID); err != nil {
+		WHERE user_id = $1
+			AND provider = $2
+			AND processed_at IS NULL
+	`, userID, revokedProvider); err != nil {
 		return fmt.Errorf("reactivate calendar cleanup outbox: %w", err)
 	}
 	mappings := []scheduleEventMapping{}
@@ -269,10 +292,10 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 		FROM calendar_schedule_blocks
 		WHERE user_id = $1
 			AND source = 'maya'
-			AND external_provider = 'google'
+			AND external_provider = $2
 			AND external_event_id IS NOT NULL
 		FOR UPDATE
-	`, userID); err != nil {
+	`, userID, revokedProvider); err != nil {
 		return fmt.Errorf("list Maya schedule mirrors for calendar cleanup: %w", err)
 	}
 	for _, mapping := range mappings {
@@ -281,6 +304,9 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			calendarID = strings.TrimSpace(*mapping.ExternalCalendarID)
 		}
 		eventID := calendar.StableGoogleScheduleEventID(mapping.BlockID)
+		if revokedProvider == string(calendar.ProviderMicrosoft) {
+			eventID = "pending:" + mapping.BlockID.String()
+		}
 		if mapping.ExternalEventID != nil && strings.TrimSpace(*mapping.ExternalEventID) != "" {
 			eventID = strings.TrimSpace(*mapping.ExternalEventID)
 		}
@@ -292,11 +318,11 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			CalendarID: calendarID, EventID: eventID, BlockID: mapping.BlockID,
 			StoryID: storyID, WorkspaceID: mapping.WorkspaceID,
 		}
-		if err := enqueueScheduleEventOutbox(ctx, tx, mapping.WorkspaceID, userID, &mapping.BlockID, calendar.ScheduleEventOperationDelete, event, "", true); err != nil {
+		if err := enqueueScheduleEventOutbox(ctx, tx, mapping.WorkspaceID, userID, &mapping.BlockID, calendar.Provider(revokedProvider), calendar.ScheduleEventOperationDelete, event, "", true); err != nil {
 			return err
 		}
 	}
-	if _, err := tx.ExecContext(ctx, detachMayaScheduleMirrorsQuery, userID); err != nil {
+	if _, err := tx.ExecContext(ctx, detachMayaScheduleMirrorsQuery, userID, revokedProvider); err != nil {
 		return fmt.Errorf("detach Maya schedule mirrors during calendar cleanup: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM calendar_events WHERE connection_id = $1`, connectionID); err != nil {
@@ -313,6 +339,7 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 				SELECT 1
 				FROM calendar_schedule_event_outbox outbox
 				WHERE outbox.user_id = connection.user_id
+					AND outbox.provider = connection.provider
 					AND outbox.processed_at IS NULL
 					AND outbox.dead_lettered_at IS NULL
 			)
@@ -373,7 +400,7 @@ func (r *Repo) ReplaceCalendarSnapshot(ctx context.Context, connection calendar.
 			return fmt.Errorf("downgrade calendar event detail access: %w", err)
 		}
 	}
-	if _, err := tx.ExecContext(ctx, invalidateMayaScheduleMirrorHashesQuery, connection.UserID); err != nil {
+	if _, err := tx.ExecContext(ctx, invalidateMayaScheduleMirrorHashesQuery, connection.UserID, string(connection.Provider)); err != nil {
 		return fmt.Errorf("invalidate Maya schedule mirrors before full calendar sync: %w", err)
 	}
 
