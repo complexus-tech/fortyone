@@ -14,6 +14,7 @@ type AppIntegration struct {
 type AppConnection struct {
 	ID                      uuid.UUID  `json:"id"`
 	Provider                string     `json:"provider"`
+	IsPrimary               bool       `json:"isPrimary"`
 	ConnectedEmail          string     `json:"connectedEmail"`
 	Timezone                string     `json:"timezone"`
 	Scopes                  []string   `json:"scopes"`
@@ -177,6 +178,7 @@ func toAppConnection(connection calendar.CoreConnection) AppConnection {
 	result := AppConnection{
 		ID:                      connection.ID,
 		Provider:                string(connection.Provider),
+		IsPrimary:               connection.IsPrimary,
 		ConnectedEmail:          connection.ConnectedEmail,
 		Timezone:                connection.Timezone,
 		Scopes:                  connection.Scopes,

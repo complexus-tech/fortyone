@@ -24,6 +24,7 @@ import {
   useCalendarIntegration,
   useCreateCalendarConnectSession,
   useRevokeCalendarConnection,
+  useSetPrimaryCalendarConnection,
   useSyncCalendarConnection,
 } from "@/lib/hooks/calendar";
 import type { CalendarConnection, CalendarProvider } from "./types";
@@ -80,6 +81,12 @@ const formatExactDate = (value?: string | null) => {
   return format(new Date(value), "MMM d, yyyy 'at' h:mm a");
 };
 
+const getConnectionUsage = (connection: CalendarConnection) => {
+  if (connection.isPrimary) return "FortyOne scheduled work";
+  if (connection.canWriteEvents) return "Availability only";
+  return "Read only";
+};
+
 export const CalendarIntegrationSettings = () => {
   const searchParams = useSearchParams();
   const integrationQuery = useCalendarIntegration();
@@ -87,6 +94,7 @@ export const CalendarIntegrationSettings = () => {
   const { withWorkspace } = useWorkspacePath();
   const createConnectSession = useCreateCalendarConnectSession();
   const syncConnection = useSyncCalendarConnection();
+  const setPrimaryConnection = useSetPrimaryCalendarConnection();
   const revokeConnection = useRevokeCalendarConnection();
   const [disconnectConnection, setDisconnectConnection] =
     useState<CalendarConnection | null>(null);
@@ -146,7 +154,7 @@ export const CalendarIntegrationSettings = () => {
               </Button>
             ) : null
           }
-          description="Connect the calendars you use so meetings and FortyOne scheduled work stay in sync."
+          description="Connect calendars for availability, then choose where FortyOne writes scheduled work."
           title="Calendar connections"
         />
 
@@ -179,6 +187,9 @@ export const CalendarIntegrationSettings = () => {
               const isConnecting =
                 createConnectSession.isPending &&
                 createConnectSession.variables === provider.id;
+              const isMakingPrimary =
+                setPrimaryConnection.isPending &&
+                setPrimaryConnection.variables === connection?.id;
               return (
                 <Box
                   className={index > 0 ? "border-border border-t" : undefined}
@@ -236,12 +247,17 @@ export const CalendarIntegrationSettings = () => {
                         </Text>
                         <Text className="truncate" color="muted">
                           {connection
-                            ? `Primary calendar · ${connection.canWriteEvents ? "Scheduled work enabled" : "Read only"} · ${formatSyncedAt(connection.lastSyncedAt)}`
+                            ? `${getConnectionUsage(connection)} · ${formatSyncedAt(connection.lastSyncedAt)}`
                             : provider.description}
                         </Text>
                       </Box>
                     </Flex>
                     <Flex align="center" className="shrink-0" gap={2}>
+                      {connection?.isPrimary ? (
+                        <Badge color="tertiary" variant="solid">
+                          Primary
+                        </Badge>
+                      ) : null}
                       {status ? (
                         <Badge color={status.color} variant={status.variant}>
                           {status.label}
@@ -258,47 +274,62 @@ export const CalendarIntegrationSettings = () => {
                           Connect
                         </Button>
                       ) : (
-                        <Menu>
-                          <Menu.Button>
+                        <>
+                          {!connection.isPrimary &&
+                          connection.canWriteEvents ? (
                             <Button
-                              aria-label={`${provider.name} connection actions`}
-                              className="px-2"
                               color="tertiary"
-                              leftIcon={<MoreHorizontalIcon />}
-                            />
-                          </Menu.Button>
-                          <Menu.Items align="end">
-                            <Menu.Group>
-                              <Menu.Item
-                                onSelect={() => {
-                                  syncConnection.mutate({
-                                    connectionId: connection.id,
-                                  });
-                                }}
-                              >
-                                <ReloadIcon />
-                                Sync calendar
-                              </Menu.Item>
-                              <Menu.Item
-                                onSelect={() => {
-                                  createConnectSession.mutate(provider.id);
-                                }}
-                              >
-                                <ProviderIcon provider={provider.id} />
-                                Update connection
-                              </Menu.Item>
-                              <Menu.Item
-                                className="text-danger"
-                                onSelect={() => {
-                                  setDisconnectConnection(connection);
-                                }}
-                              >
-                                <UnlinkIcon className="text-danger" />
-                                Disconnect calendar
-                              </Menu.Item>
-                            </Menu.Group>
-                          </Menu.Items>
-                        </Menu>
+                              loading={isMakingPrimary}
+                              onClick={() => {
+                                setPrimaryConnection.mutate(connection.id);
+                              }}
+                              variant="outline"
+                            >
+                              Make primary
+                            </Button>
+                          ) : null}
+                          <Menu>
+                            <Menu.Button>
+                              <Button
+                                aria-label={`${provider.name} connection actions`}
+                                className="px-2"
+                                color="tertiary"
+                                leftIcon={<MoreHorizontalIcon />}
+                              />
+                            </Menu.Button>
+                            <Menu.Items align="end">
+                              <Menu.Group>
+                                <Menu.Item
+                                  onSelect={() => {
+                                    syncConnection.mutate({
+                                      connectionId: connection.id,
+                                    });
+                                  }}
+                                >
+                                  <ReloadIcon />
+                                  Sync calendar
+                                </Menu.Item>
+                                <Menu.Item
+                                  onSelect={() => {
+                                    createConnectSession.mutate(provider.id);
+                                  }}
+                                >
+                                  <ProviderIcon provider={provider.id} />
+                                  Update connection
+                                </Menu.Item>
+                                <Menu.Item
+                                  className="text-danger"
+                                  onSelect={() => {
+                                    setDisconnectConnection(connection);
+                                  }}
+                                >
+                                  <UnlinkIcon className="text-danger" />
+                                  Disconnect calendar
+                                </Menu.Item>
+                              </Menu.Group>
+                            </Menu.Items>
+                          </Menu>
+                        </>
                       )}
                     </Flex>
                   </Flex>

@@ -12,7 +12,7 @@ import (
 
 func (r *Repo) ListConnections(ctx context.Context, workspaceID uuid.UUID, userID *uuid.UUID) ([]calendar.CoreConnection, error) {
 	query := `
-		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
+		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, is_primary, connected_email, timezone,
 		       token_payload, scopes, sync_status, sync_error, last_synced_at, sync_token,
 		       notification_channel_id, notification_resource_id, notification_expires_at,
 		       revoked_at, created_at, updated_at
@@ -43,7 +43,7 @@ func (r *Repo) ListConnections(ctx context.Context, workspaceID uuid.UUID, userI
 
 func (r *Repo) GetOwnedConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) (calendar.CoreConnection, error) {
 	const query = `
-		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
+		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, is_primary, connected_email, timezone,
 		       token_payload, scopes, sync_status, sync_error, last_synced_at, sync_token,
 		       notification_channel_id, notification_resource_id, notification_expires_at,
 		       revoked_at, created_at, updated_at
@@ -84,7 +84,7 @@ func (r *Repo) WorkspaceMemberExists(ctx context.Context, workspaceID, userID uu
 
 func (r *Repo) GetActiveConnection(ctx context.Context, workspaceID, userID uuid.UUID, provider calendar.Provider) (calendar.CoreConnection, error) {
 	const query = `
-		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
+		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, is_primary, connected_email, timezone,
 		       token_payload, scopes, sync_status, sync_error, last_synced_at, sync_token,
 		       notification_channel_id, notification_resource_id, notification_expires_at,
 		       revoked_at, created_at, updated_at
@@ -107,7 +107,7 @@ func (r *Repo) GetActiveConnection(ctx context.Context, workspaceID, userID uuid
 
 func (r *Repo) GetScheduleEventDispatchConnection(ctx context.Context, userID uuid.UUID) (calendar.CoreConnection, bool, error) {
 	const query = `
-		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
+		SELECT connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, is_primary, connected_email, timezone,
 		       token_payload, scopes, sync_status, sync_error, last_synced_at, sync_token,
 		       notification_channel_id, notification_resource_id, notification_expires_at,
 		       revoked_at, created_at, updated_at

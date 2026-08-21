@@ -165,6 +165,7 @@ type fakeRepo struct {
 	manualRescheduleInputs    []ManualScheduleBlockInput
 	manualRescheduleResult    ManualScheduleBlockResult
 	manualRescheduleErr       error
+	primaryConnectionID       uuid.UUID
 }
 
 func (r *fakeRepo) ListConnections(ctx context.Context, workspaceID uuid.UUID, userID *uuid.UUID) ([]CoreConnection, error) {
@@ -225,6 +226,31 @@ func (r *fakeRepo) UpsertConnection(ctx context.Context, input CoreConnectionUps
 		UpdatedAt:            time.Now(),
 	}
 	return r.connection, nil
+}
+
+func (r *fakeRepo) SetPrimaryConnection(_ context.Context, _, _ uuid.UUID, connectionID uuid.UUID) (CoreConnection, error) {
+	r.primaryConnectionID = connectionID
+	r.connection.IsPrimary = true
+	return r.connection, nil
+}
+
+func TestSetPrimaryConnectionUsesAccountOwnedConnection(t *testing.T) {
+	t.Parallel()
+
+	connectionID := uuid.New()
+	repo := &fakeRepo{connection: CoreConnection{ID: connectionID, Provider: ProviderMicrosoft}}
+	service := New(nil, repo, Config{})
+
+	connection, err := service.SetPrimaryConnection(context.Background(), uuid.New(), uuid.New(), connectionID)
+	if err != nil {
+		t.Fatalf("set primary calendar connection: %v", err)
+	}
+	if repo.primaryConnectionID != connectionID {
+		t.Fatalf("expected primary connection %s, got %s", connectionID, repo.primaryConnectionID)
+	}
+	if !connection.IsPrimary {
+		t.Fatal("expected selected connection to be primary")
+	}
 }
 
 func (r *fakeRepo) UpdateConnectionToken(_ context.Context, connection CoreConnection, tokenPayload string) error {

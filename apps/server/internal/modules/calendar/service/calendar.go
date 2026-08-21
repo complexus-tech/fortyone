@@ -79,6 +79,7 @@ type Repository interface {
 	ListConnectionsNeedingWatch(ctx context.Context, renewBefore time.Time) ([]CoreConnection, error)
 	WorkspaceMemberExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, error)
 	UpsertConnection(ctx context.Context, input CoreConnectionUpsert) (CoreConnection, error)
+	SetPrimaryConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) (CoreConnection, error)
 	UpdateConnectionToken(ctx context.Context, connection CoreConnection, tokenPayload string) error
 	BeginConnectionSync(ctx context.Context, connection CoreConnection) (CoreConnection, error)
 	RevokeConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) error
@@ -155,6 +156,13 @@ func (s *Service) ListConnections(ctx context.Context, workspaceID uuid.UUID, us
 		return nil, ErrCalendarNotConfigured
 	}
 	return s.repo.ListConnections(ctx, workspaceID, userID)
+}
+
+func (s *Service) SetPrimaryConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) (CoreConnection, error) {
+	if s.repo == nil {
+		return CoreConnection{}, ErrCalendarNotConfigured
+	}
+	return s.repo.SetPrimaryConnection(ctx, workspaceID, userID, connectionID)
 }
 
 func (s *Service) CreateConnectSession(ctx context.Context, workspaceID, userID uuid.UUID, workspaceSlug string, providerName ...Provider) (CoreConnectSession, error) {

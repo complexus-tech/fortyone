@@ -14,8 +14,9 @@ func TestToAppConnectionReportsEventDetailCapability(t *testing.T) {
 	t.Parallel()
 
 	connection := toAppConnection(calendar.CoreConnection{
-		ID:       uuid.New(),
-		Provider: calendar.ProviderGoogle,
+		ID:        uuid.New(),
+		Provider:  calendar.ProviderGoogle,
+		IsPrimary: true,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/calendar.events.readonly",
 		},
@@ -23,6 +24,9 @@ func TestToAppConnectionReportsEventDetailCapability(t *testing.T) {
 
 	if !connection.CanReadEventDetails {
 		t.Fatal("expected Google event detail scope to enable event details")
+	}
+	if !connection.IsPrimary {
+		t.Fatal("expected primary calendar state in the API contract")
 	}
 	if connection.CanWriteEvents || !connection.RequiresReauthorization || connection.ReauthorizationReason == nil || *connection.ReauthorizationReason != calendar.GoogleCalendarWriteScopeReason {
 		t.Fatalf("expected deterministic write-scope reconnect state: %#v", connection)

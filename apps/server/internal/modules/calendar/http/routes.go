@@ -25,6 +25,7 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceSlug}/integrations/calendar", h.GetIntegration, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/integrations/calendar/{provider}/connect-session", h.CreateConnectSession, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/integrations/calendar/{connectionId}/sync", h.SyncConnection, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/integrations/calendar/{connectionId}/primary", h.SetPrimaryConnection, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/integrations/calendar/{connectionId}", h.RevokeConnection, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/calendar/schedule", h.GetSchedule, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/calendar/events/{eventId}", h.GetCalendarEvent, auth, workspace)

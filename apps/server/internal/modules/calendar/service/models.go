@@ -69,6 +69,7 @@ type CoreConnection struct {
 	CredentialGeneration   uuid.UUID  `json:"-"`
 	ProviderAccountID      string     `json:"-"`
 	Provider               Provider   `json:"provider"`
+	IsPrimary              bool       `json:"isPrimary"`
 	ConnectedEmail         string     `json:"connectedEmail"`
 	Timezone               string     `json:"timezone"`
 	TokenPayload           string     `json:"-"`

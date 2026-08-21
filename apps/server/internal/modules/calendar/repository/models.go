@@ -17,6 +17,7 @@ type dbConnection struct {
 	CredentialGeneration   uuid.UUID      `db:"credential_generation"`
 	ProviderAccountID      string         `db:"provider_account_id"`
 	Provider               string         `db:"provider"`
+	IsPrimary              bool           `db:"is_primary"`
 	ConnectedEmail         string         `db:"connected_email"`
 	Timezone               string         `db:"timezone"`
 	TokenPayload           string         `db:"token_payload"`
@@ -142,6 +143,7 @@ func toCoreConnection(row dbConnection) calendar.CoreConnection {
 		CredentialGeneration:   row.CredentialGeneration,
 		ProviderAccountID:      row.ProviderAccountID,
 		Provider:               calendar.Provider(row.Provider),
+		IsPrimary:              row.IsPrimary,
 		ConnectedEmail:         row.ConnectedEmail,
 		Timezone:               row.Timezone,
 		TokenPayload:           row.TokenPayload,

@@ -1,6 +1,7 @@
 export type CalendarConnection = {
   id: string;
   provider: CalendarProvider;
+  isPrimary: boolean;
   connectedEmail: string;
   timezone: string;
   scopes: string[];

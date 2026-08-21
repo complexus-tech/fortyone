@@ -464,24 +464,32 @@ func toManualOverrideScheduleBlock(input calendar.MayaScheduleReconcileInput, bl
 }
 
 func preferredScheduleProvider(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, blocks []reconciliationBlock) (calendar.Provider, error) {
-	providers := []string{}
-	if err := tx.SelectContext(ctx, &providers, `
-		SELECT provider
+	type providerConnection struct {
+		Provider  string `db:"provider"`
+		IsPrimary bool   `db:"is_primary"`
+		CanWrite  bool   `db:"can_write"`
+	}
+	connections := []providerConnection{}
+	if err := tx.SelectContext(ctx, &connections, `
+		SELECT
+			provider,
+			is_primary,
+			CASE
+				WHEN provider = 'google' THEN $2 = ANY(scopes) AND $3 = ANY(scopes)
+				WHEN provider = 'microsoft' THEN $4 = ANY(scopes)
+				ELSE FALSE
+			END AS can_write
 		FROM calendar_connections
 		WHERE user_id = $1
 			AND revoked_at IS NULL
 			AND cleanup_pending_at IS NULL
-			AND (
-				(provider = 'google' AND $2 = ANY(scopes) AND $3 = ANY(scopes))
-				OR (provider = 'microsoft' AND $4 = ANY(scopes))
-			)
-		ORDER BY CASE provider WHEN 'google' THEN 0 ELSE 1 END
+		ORDER BY is_primary DESC, created_at, connection_id
 	`, userID, calendar.GoogleCalendarEventsReadonlyScope, calendar.GoogleCalendarEventsOwnedScope, calendar.MicrosoftCalendarReadWriteScope); err != nil {
-		return "", fmt.Errorf("list writable calendar providers: %w", err)
+		return "", fmt.Errorf("list calendar write destinations: %w", err)
 	}
-	active := make(map[string]struct{}, len(providers))
-	for _, provider := range providers {
-		active[provider] = struct{}{}
+	active := make(map[string]struct{}, len(connections))
+	for _, connection := range connections {
+		active[connection.Provider] = struct{}{}
 	}
 	for _, block := range blocks {
 		if block.ExternalProvider == nil {
@@ -491,8 +499,15 @@ func preferredScheduleProvider(ctx context.Context, tx *sqlx.Tx, userID uuid.UUI
 			return calendar.Provider(*block.ExternalProvider), nil
 		}
 	}
-	if len(providers) > 0 {
-		return calendar.Provider(providers[0]), nil
+	for _, connection := range connections {
+		if connection.IsPrimary {
+			return calendar.Provider(connection.Provider), nil
+		}
+	}
+	for _, connection := range connections {
+		if connection.CanWrite {
+			return calendar.Provider(connection.Provider), nil
+		}
 	}
 	return calendar.ProviderGoogle, nil
 }

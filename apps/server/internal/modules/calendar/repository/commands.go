@@ -92,16 +92,26 @@ func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnecti
 	credentialGeneration := uuid.New()
 	const query = `
 		INSERT INTO calendar_connections (
-			workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
+			workspace_id, user_id, credential_generation, provider_account_id, provider, is_primary, connected_email, timezone,
 			token_payload, scopes, sync_status, sync_error, revoked_at, updated_at
 		) VALUES (
-			:workspace_id, :user_id, :credential_generation, :provider_account_id, :provider, :connected_email, :timezone,
+			:workspace_id, :user_id, :credential_generation, :provider_account_id, :provider,
+			(
+				CAST(:can_write AS boolean)
+				AND NOT EXISTS (
+					SELECT 1 FROM calendar_connections primary_connection
+					WHERE primary_connection.user_id = :user_id
+						AND primary_connection.is_primary = TRUE
+				)
+			),
+			:connected_email, :timezone,
 			:token_payload, :scopes, 'connected', NULL, NULL, NOW()
 		)
 		ON CONFLICT (user_id, provider)
 		WHERE revoked_at IS NULL
 		DO UPDATE SET
 			credential_generation = EXCLUDED.credential_generation,
+			is_primary = calendar_connections.is_primary OR EXCLUDED.is_primary,
 			provider_account_id = EXCLUDED.provider_account_id,
 			connected_email = EXCLUDED.connected_email,
 			timezone = EXCLUDED.timezone,
@@ -120,7 +130,7 @@ func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnecti
 				ELSE NULL
 			END,
 			updated_at = NOW()
-		RETURNING connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, connected_email, timezone,
+		RETURNING connection_id, workspace_id, user_id, credential_generation, provider_account_id, provider, is_primary, connected_email, timezone,
 		          token_payload, scopes, sync_status, sync_error, last_synced_at, sync_token,
 		          notification_channel_id, notification_resource_id, notification_expires_at,
 		          revoked_at, created_at, updated_at
@@ -131,6 +141,7 @@ func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnecti
 		"credential_generation": credentialGeneration,
 		"provider_account_id":   input.ProviderAccountID,
 		"provider":              string(input.Provider),
+		"can_write":             (calendar.CoreConnection{Provider: input.Provider, Scopes: input.Scopes}).CanWriteEvents(),
 		"connected_email":       input.ConnectedEmail,
 		"timezone":              input.Timezone,
 		"token_payload":         input.TokenPayload,
@@ -163,6 +174,64 @@ func (r *Repo) UpsertConnection(ctx context.Context, input calendar.CoreConnecti
 		return calendar.CoreConnection{}, fmt.Errorf("commit upsert calendar connection: %w", err)
 	}
 	return toCoreConnection(row), nil
+}
+
+func (r *Repo) SetPrimaryConnection(ctx context.Context, workspaceID, userID, connectionID uuid.UUID) (calendar.CoreConnection, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return calendar.CoreConnection{}, fmt.Errorf("begin set primary calendar connection: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := lockCalendarUser(ctx, tx, workspaceID, userID); err != nil {
+		return calendar.CoreConnection{}, err
+	}
+
+	query := `SELECT ` + connectionColumns + `
+		FROM calendar_connections
+		WHERE user_id = $1
+			AND connection_id = $2
+			AND revoked_at IS NULL
+			AND cleanup_pending_at IS NULL
+		FOR UPDATE`
+	var selected dbConnection
+	if err := tx.GetContext(ctx, &selected, query, userID, connectionID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return calendar.CoreConnection{}, calendar.ErrCalendarNotFound
+		}
+		return calendar.CoreConnection{}, fmt.Errorf("load primary calendar connection: %w", err)
+	}
+	connection := toCoreConnection(selected)
+	if !connection.CanWriteEvents() {
+		return calendar.CoreConnection{}, calendar.ErrCalendarReauthorizationRequired
+	}
+	if connection.IsPrimary {
+		if err := tx.Commit(); err != nil {
+			return calendar.CoreConnection{}, fmt.Errorf("commit unchanged primary calendar connection: %w", err)
+		}
+		return connection, nil
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE calendar_connections
+		SET is_primary = FALSE,
+			updated_at = NOW()
+		WHERE user_id = $1
+			AND is_primary = TRUE
+	`, userID); err != nil {
+		return calendar.CoreConnection{}, fmt.Errorf("clear primary calendar connection: %w", err)
+	}
+	updateQuery := `UPDATE calendar_connections
+		SET is_primary = TRUE,
+			updated_at = NOW()
+		WHERE connection_id = $1
+		RETURNING ` + connectionColumns
+	if err := tx.GetContext(ctx, &selected, updateQuery, connectionID); err != nil {
+		return calendar.CoreConnection{}, fmt.Errorf("set primary calendar connection: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return calendar.CoreConnection{}, fmt.Errorf("commit primary calendar connection: %w", err)
+	}
+	return toCoreConnection(selected), nil
 }
 
 func (r *Repo) UpdateConnectionToken(ctx context.Context, connection calendar.CoreConnection, tokenPayload string) error {
@@ -212,7 +281,7 @@ func (r *Repo) BeginConnectionSync(ctx context.Context, connection calendar.Core
 			AND revoked_at IS NULL
 			AND cleanup_pending_at IS NULL
 		RETURNING connection_id, workspace_id, user_id, credential_generation, provider_account_id,
-		          provider, connected_email, timezone, token_payload, scopes, sync_status,
+		          provider, is_primary, connected_email, timezone, token_payload, scopes, sync_status,
 		          sync_error, last_synced_at, sync_token, notification_channel_id,
 		          notification_resource_id, notification_expires_at, revoked_at, created_at, updated_at
 	`
@@ -249,9 +318,29 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 		return err
 	}
 
-	revokeQuery := `
+	var revoked struct {
+		Provider  string `db:"provider"`
+		IsPrimary bool   `db:"is_primary"`
+	}
+	if err := tx.GetContext(ctx, &revoked, `
+		SELECT provider, is_primary
+		FROM calendar_connections
+		WHERE user_id = $1
+			AND connection_id = $2
+			AND revoked_at IS NULL
+			AND cleanup_pending_at IS NULL
+		FOR UPDATE
+	`, userID, connectionID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return calendar.ErrCalendarNotFound
+		}
+		return fmt.Errorf("lock revoked calendar connection: %w", err)
+	}
+
+	const revokeQuery = `
 		UPDATE calendar_connections
 		SET cleanup_pending_at = NOW(),
+			is_primary = FALSE,
 			sync_status = 'revoked',
 			sync_error = NULL,
 			sync_token = NULL,
@@ -264,14 +353,16 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			AND revoked_at IS NULL
 			AND cleanup_pending_at IS NULL
 	`
-	revokeQuery += " RETURNING provider"
-	var revokedProvider string
-	err = tx.GetContext(ctx, &revokedProvider, revokeQuery, userID, connectionID)
+	result, err := tx.ExecContext(ctx, revokeQuery, userID, connectionID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return calendar.ErrCalendarNotFound
-		}
 		return fmt.Errorf("revoke calendar connection: %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read revoked calendar connection count: %w", err)
+	}
+	if rowsAffected == 0 {
+		return calendar.ErrCalendarNotFound
 	}
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE calendar_schedule_event_outbox
@@ -283,7 +374,7 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 		WHERE user_id = $1
 			AND provider = $2
 			AND processed_at IS NULL
-	`, userID, revokedProvider); err != nil {
+	`, userID, revoked.Provider); err != nil {
 		return fmt.Errorf("reactivate calendar cleanup outbox: %w", err)
 	}
 	mappings := []scheduleEventMapping{}
@@ -295,7 +386,7 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			AND external_provider = $2
 			AND external_event_id IS NOT NULL
 		FOR UPDATE
-	`, userID, revokedProvider); err != nil {
+	`, userID, revoked.Provider); err != nil {
 		return fmt.Errorf("list Maya schedule mirrors for calendar cleanup: %w", err)
 	}
 	for _, mapping := range mappings {
@@ -304,7 +395,7 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			calendarID = strings.TrimSpace(*mapping.ExternalCalendarID)
 		}
 		eventID := calendar.StableGoogleScheduleEventID(mapping.BlockID)
-		if revokedProvider == string(calendar.ProviderMicrosoft) {
+		if revoked.Provider == string(calendar.ProviderMicrosoft) {
 			eventID = "pending:" + mapping.BlockID.String()
 		}
 		if mapping.ExternalEventID != nil && strings.TrimSpace(*mapping.ExternalEventID) != "" {
@@ -318,12 +409,34 @@ func (r *Repo) RevokeConnection(ctx context.Context, workspaceID, userID, connec
 			CalendarID: calendarID, EventID: eventID, BlockID: mapping.BlockID,
 			StoryID: storyID, WorkspaceID: mapping.WorkspaceID,
 		}
-		if err := enqueueScheduleEventOutbox(ctx, tx, mapping.WorkspaceID, userID, &mapping.BlockID, calendar.Provider(revokedProvider), calendar.ScheduleEventOperationDelete, event, "", true); err != nil {
+		if err := enqueueScheduleEventOutbox(ctx, tx, mapping.WorkspaceID, userID, &mapping.BlockID, calendar.Provider(revoked.Provider), calendar.ScheduleEventOperationDelete, event, "", true); err != nil {
 			return err
 		}
 	}
-	if _, err := tx.ExecContext(ctx, detachMayaScheduleMirrorsQuery, userID, revokedProvider); err != nil {
+	if _, err := tx.ExecContext(ctx, detachMayaScheduleMirrorsQuery, userID, revoked.Provider); err != nil {
 		return fmt.Errorf("detach Maya schedule mirrors during calendar cleanup: %w", err)
+	}
+	if revoked.IsPrimary {
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE calendar_connections
+			SET is_primary = TRUE,
+				updated_at = NOW()
+			WHERE connection_id = (
+				SELECT connection_id
+				FROM calendar_connections
+				WHERE user_id = $1
+					AND revoked_at IS NULL
+					AND cleanup_pending_at IS NULL
+					AND (
+						(provider = 'google' AND $2 = ANY(scopes) AND $3 = ANY(scopes))
+						OR (provider = 'microsoft' AND $4 = ANY(scopes))
+					)
+				ORDER BY created_at, connection_id
+				LIMIT 1
+			)
+		`, userID, calendar.GoogleCalendarEventsReadonlyScope, calendar.GoogleCalendarEventsOwnedScope, calendar.MicrosoftCalendarReadWriteScope); err != nil {
+			return fmt.Errorf("promote replacement primary calendar connection: %w", err)
+		}
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM calendar_events WHERE connection_id = $1`, connectionID); err != nil {
 		return fmt.Errorf("delete calendar events for revoked connection: %w", err)

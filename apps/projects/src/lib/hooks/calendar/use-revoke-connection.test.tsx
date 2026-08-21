@@ -52,6 +52,7 @@ const createConnection = (
   connectedEmail,
   createdAt: "2026-08-20T08:00:00.000Z",
   id,
+  isPrimary: false,
   provider: "google",
   requiresReauthorization: false,
   scopes: ["calendar.events.readonly"],

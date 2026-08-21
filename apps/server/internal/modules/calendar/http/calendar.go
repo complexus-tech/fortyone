@@ -80,6 +80,27 @@ func (h *Handlers) SyncConnection(ctx context.Context, w http.ResponseWriter, r 
 	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
+func (h *Handlers) SetPrimaryConnection(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Cache-Control", "private, no-store")
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	connectionID, err := uuid.Parse(web.Params(r, "connectionId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	connection, err := h.service.SetPrimaryConnection(ctx, workspace.ID, userID, connectionID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, h.statusCode(err))
+	}
+	return web.Respond(ctx, w, toAppConnection(connection), http.StatusOK)
+}
+
 func (h *Handlers) RevokeConnection(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -340,6 +361,8 @@ func (h *Handlers) statusCode(err error) int {
 	case errors.Is(err, calendar.ErrCalendarScheduleBlockNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, calendar.ErrManagedScheduleBlock):
+		return http.StatusConflict
+	case errors.Is(err, calendar.ErrCalendarReauthorizationRequired):
 		return http.StatusConflict
 	case errors.Is(err, calendar.ErrInvalidCalendarNotification):
 		return http.StatusUnauthorized

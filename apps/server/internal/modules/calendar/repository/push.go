@@ -15,7 +15,7 @@ import (
 
 const connectionColumns = `
 	connection_id, workspace_id, user_id, credential_generation, provider_account_id,
-	provider, connected_email, timezone, token_payload, scopes, sync_status, sync_error,
+	provider, is_primary, connected_email, timezone, token_payload, scopes, sync_status, sync_error,
 	last_synced_at, sync_token, notification_channel_id, notification_resource_id,
 	notification_expires_at, revoked_at, created_at, updated_at`
 

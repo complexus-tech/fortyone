@@ -37,14 +37,28 @@ func (r *Repo) ListCalendarEvents(ctx context.Context, _ uuid.UUID, userID uuid.
 			AND cc.user_id = ce.user_id
 			AND cc.revoked_at IS NULL
 			AND cc.cleanup_pending_at IS NULL
-			AND $4 = ANY(cc.scopes)
+			AND (
+				(cc.provider = $4 AND $5 = ANY(cc.scopes))
+				OR (cc.provider = $6 AND $7 = ANY(cc.scopes))
+			)
 		WHERE ce.user_id = $1
 			AND ce.start_at < $3
 			AND ce.end_at > $2
 		ORDER BY ce.start_at ASC, ce.event_id ASC
 	`
 	rows := []dbCalendarEventSummary{}
-	if err := r.db.SelectContext(ctx, &rows, query, userID, startAt, endAt, calendar.GoogleCalendarEventsReadonlyScope); err != nil {
+	if err := r.db.SelectContext(
+		ctx,
+		&rows,
+		query,
+		userID,
+		startAt,
+		endAt,
+		calendar.ProviderGoogle,
+		calendar.GoogleCalendarEventsReadonlyScope,
+		calendar.ProviderMicrosoft,
+		calendar.MicrosoftCalendarReadWriteScope,
+	); err != nil {
 		return nil, fmt.Errorf("list calendar events: %w", err)
 	}
 	return toCoreCalendarEventSummaries(rows), nil
@@ -84,13 +98,26 @@ func (r *Repo) GetCalendarEvent(ctx context.Context, _ uuid.UUID, userID, eventI
 			AND cc.user_id = ce.user_id
 			AND cc.revoked_at IS NULL
 			AND cc.cleanup_pending_at IS NULL
-			AND $3 = ANY(cc.scopes)
+			AND (
+				(cc.provider = $3 AND $4 = ANY(cc.scopes))
+				OR (cc.provider = $5 AND $6 = ANY(cc.scopes))
+			)
 		WHERE ce.user_id = $1
 			AND ce.event_id = $2
 		LIMIT 1
 	`
 	var row dbCalendarEvent
-	if err := r.db.GetContext(ctx, &row, query, userID, eventID, calendar.GoogleCalendarEventsReadonlyScope); err != nil {
+	if err := r.db.GetContext(
+		ctx,
+		&row,
+		query,
+		userID,
+		eventID,
+		calendar.ProviderGoogle,
+		calendar.GoogleCalendarEventsReadonlyScope,
+		calendar.ProviderMicrosoft,
+		calendar.MicrosoftCalendarReadWriteScope,
+	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return calendar.CoreCalendarEvent{}, calendar.ErrCalendarEventNotFound
 		}

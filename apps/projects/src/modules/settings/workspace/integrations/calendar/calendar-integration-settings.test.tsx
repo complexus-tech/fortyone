@@ -1,12 +1,13 @@
 /* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
 import {
   useCalendarIntegration,
   useCreateCalendarConnectSession,
   useRevokeCalendarConnection,
+  useSetPrimaryCalendarConnection,
   useSyncCalendarConnection,
 } from "@/lib/hooks/calendar";
 import { CalendarIntegrationSettings } from "./calendar-integration-settings";
@@ -95,8 +96,16 @@ jest.mock("ui", () => {
   return {
     Badge: passthrough,
     Box: passthrough,
-    Button: ({ children }: { children?: ReactNode }) => (
-      <button type="button">{children}</button>
+    Button: ({
+      children,
+      onClick,
+    }: {
+      children?: ReactNode;
+      onClick?: () => void;
+    }) => (
+      <button onClick={onClick} type="button">
+        {children}
+      </button>
     ),
     Dialog,
     Flex: passthrough,
@@ -116,6 +125,7 @@ jest.mock("@/lib/hooks/calendar", () => ({
   useCalendarIntegration: jest.fn(),
   useCreateCalendarConnectSession: jest.fn(),
   useRevokeCalendarConnection: jest.fn(),
+  useSetPrimaryCalendarConnection: jest.fn(),
   useSyncCalendarConnection: jest.fn(),
 }));
 
@@ -134,6 +144,9 @@ const mockUseRevokeCalendarConnection = jest.mocked(
   useRevokeCalendarConnection,
 );
 const mockUseSyncCalendarConnection = jest.mocked(useSyncCalendarConnection);
+const mockUseSetPrimaryCalendarConnection = jest.mocked(
+  useSetPrimaryCalendarConnection,
+);
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -158,6 +171,10 @@ beforeEach(() => {
     isPending: false,
     mutate: jest.fn(),
   } as unknown as ReturnType<typeof useSyncCalendarConnection>);
+  mockUseSetPrimaryCalendarConnection.mockReturnValue({
+    isPending: false,
+    mutate: jest.fn(),
+  } as unknown as ReturnType<typeof useSetPrimaryCalendarConnection>);
 });
 
 describe("CalendarIntegrationSettings callback feedback", () => {
@@ -167,6 +184,46 @@ describe("CalendarIntegrationSettings callback feedback", () => {
     expect(screen.getByText("Google Calendar")).toBeInTheDocument();
     expect(screen.getByText("Outlook Calendar")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Connect" })).toHaveLength(2);
+  });
+
+  it("allows one writable connection to become primary", () => {
+    const mutate = jest.fn();
+    mockUseSetPrimaryCalendarConnection.mockReturnValue({
+      isPending: false,
+      mutate,
+    } as unknown as ReturnType<typeof useSetPrimaryCalendarConnection>);
+    mockUseCalendarIntegration.mockReturnValue({
+      data: {
+        connections: [
+          {
+            id: "google-connection",
+            provider: "google",
+            connectedEmail: "personal@example.com",
+            isPrimary: true,
+            canWriteEvents: true,
+            syncStatus: "synced",
+          },
+          {
+            id: "microsoft-connection",
+            provider: "microsoft",
+            connectedEmail: "work@example.com",
+            isPrimary: false,
+            canWriteEvents: true,
+            syncStatus: "synced",
+          },
+        ],
+      },
+      isError: false,
+      isFetching: false,
+      isPending: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useCalendarIntegration>);
+
+    render(<CalendarIntegrationSettings />);
+
+    expect(screen.getByText("Primary")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Make primary" }));
+    expect(mutate).toHaveBeenCalledWith("microsoft-connection");
   });
 
   it("silently clears a successful connection callback from the URL", async () => {

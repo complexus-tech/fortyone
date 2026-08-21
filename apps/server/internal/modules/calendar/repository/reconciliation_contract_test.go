@@ -36,6 +36,25 @@ func TestScheduleBlockNeedsProviderUpsertChecksMappingAndHash(t *testing.T) {
 	}
 }
 
+func TestNewScheduleBlocksPreferTheSelectedPrimaryProvider(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile("reconciliation.go")
+	if err != nil {
+		t.Fatalf("read reconciliation.go: %v", err)
+	}
+	source := string(data)
+	for _, contract := range []string{
+		"ORDER BY is_primary DESC, created_at, connection_id",
+		"if connection.IsPrimary",
+		"if connection.CanWrite",
+	} {
+		if !strings.Contains(source, contract) {
+			t.Fatalf("primary provider selection is missing %q", contract)
+		}
+	}
+}
+
 func TestMayaScheduleReconciliationPersistsLockedInputWithoutProviderRewrite(t *testing.T) {
 	t.Parallel()
 
