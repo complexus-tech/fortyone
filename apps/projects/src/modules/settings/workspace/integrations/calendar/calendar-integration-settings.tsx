@@ -295,6 +295,7 @@ export const CalendarIntegrationSettings = () => {
                                 className="px-2"
                                 color="tertiary"
                                 leftIcon={<MoreHorizontalIcon />}
+                                variant="naked"
                               />
                             </Menu.Button>
                             <Menu.Items align="end">
