@@ -30,4 +30,14 @@
     line-height: 1.45 !important;
     margin-block: 0 !important;
   }
+
+  .rich-text-editor a.figma-smart-link::before {
+    background: url("/images/integrations/figma.svg") center / contain no-repeat;
+    content: "";
+    display: inline-block;
+    height: 0.9em;
+    margin-right: 0.3em;
+    vertical-align: -0.08em;
+    width: 0.6em;
+  }
 }

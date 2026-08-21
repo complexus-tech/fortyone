@@ -35,6 +35,7 @@ import { LinksSkeleton } from "./links-skeleton";
 import { FigmaSection } from "./figma-section";
 import { OptionsHeader } from "./options-header";
 import { Options } from "./options";
+import { useFigmaDescriptionPaste } from "./use-figma-description-paste";
 
 const DEBOUNCE_DELAY = 1000; // 1000ms delay
 
@@ -150,6 +151,10 @@ export const MainDetails = ({
     },
     immediatelyRender: false,
   });
+  const handleDescriptionPaste = useFigmaDescriptionPaste({
+    editor: descriptionEditor,
+    storyId,
+  });
 
   useEffect(
     () => () => {
@@ -227,6 +232,7 @@ export const MainDetails = ({
         <TextEditor
           className="rich-document-editor text-foreground dark:text mb-10 text-[1.1rem]"
           editor={descriptionEditor}
+          onPaste={handleDescriptionPaste}
         />
         <RichTextTableMenu editor={descriptionEditor} scrollTarget={null} />
         <SubStories
