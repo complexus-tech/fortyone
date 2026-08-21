@@ -6,10 +6,10 @@ import { Box, Input, Text, Button, Flex } from "ui";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Logo, GoogleIcon } from "@/components/ui";
+import { Logo, GoogleIcon, MicrosoftIcon } from "@/components/ui";
 import { OTPInput } from "@/components/ui/otp-input";
 import { requestMagicEmail } from "@/lib/actions/request-magic-email";
-import { signInWithGoogle } from "@/lib/actions/sign-in";
+import { signInWithGoogle, signInWithMicrosoft } from "@/lib/actions/sign-in";
 import {
   getAuthCallbackPath,
   getSafeCallbackUrl,
@@ -46,18 +46,9 @@ export const AuthLayout = ({
       email,
       isMobileApp,
       safeCallbackUrl,
-    ).catch((error) => {
-      toast.error("Failed to send magic link", {
-        description:
-          error instanceof Error ? error.message : "Please try again.",
-      });
-      return null;
+    ).finally(() => {
+      setLoading(false);
     });
-    setLoading(false);
-
-    if (!result) {
-      return;
-    }
 
     if (result.error.message) {
       toast.error("Failed to send magic link", {
@@ -228,6 +219,33 @@ export const AuthLayout = ({
               type="button"
             >
               Continue with Google
+            </Button>
+            <Button
+              align="center"
+              className="mb-3 md:py-2.5"
+              color="tertiary"
+              fullWidth
+              leftIcon={<MicrosoftIcon />}
+              onClick={async () => {
+                try {
+                  await signInWithMicrosoft(
+                    isMobileApp
+                      ? "/auth-callback?mobileApp=true"
+                      : getAuthCallbackPath(safeCallbackUrl),
+                  );
+                } catch (error) {
+                  toast.error("Microsoft sign-in failed", {
+                    description:
+                      error instanceof Error
+                        ? error.message
+                        : "Please try again.",
+                  });
+                }
+              }}
+              size="lg"
+              type="button"
+            >
+              Continue with Microsoft
             </Button>
           </form>
           <Text className="mt-3 pl-px text-[90%]" color="muted">

@@ -11,6 +11,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
+	"github.com/complexus-tech/projects-api/pkg/microsoft"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -42,6 +43,7 @@ type Config struct {
 	EmailService             mailer.Service
 	BrevoService             *brevo.Service
 	GoogleService            *google.Service
+	MicrosoftService         *microsoft.Service
 	GoogleCalendarWebhookURL string
 	Validate                 *validator.Validate
 	Cache                    *cache.Service

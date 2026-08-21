@@ -39,7 +39,12 @@ var (
 	ErrUsernameAlreadyExists = errors.New("username already exists")
 	ErrTokenNotFound         = errors.New("token not found")
 	ErrWorkspaceNotFound     = errors.New("workspace not found")
+	ErrIdentityStoreMissing  = errors.New("external identity storage is not configured")
 )
+
+type ExternalIdentityRepository interface {
+	ResolveExternalIdentity(ctx context.Context, input CoreExternalIdentityInput) (CoreExternalIdentityResult, error)
+}
 
 // Repository provides access to the users storage.
 type Repository interface {
@@ -211,6 +216,30 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 		s.log.Error(ctx, "Error enqueuing onboarding task: %v", err)
 	}
 	return user, nil
+}
+
+func (s *Service) AuthenticateExternalIdentity(ctx context.Context, input CoreExternalIdentityInput) (CoreUser, error) {
+	identityRepo, ok := s.repo.(ExternalIdentityRepository)
+	if !ok {
+		return CoreUser{}, ErrIdentityStoreMissing
+	}
+
+	result, err := identityRepo.ResolveExternalIdentity(ctx, input)
+	if err != nil {
+		return CoreUser{}, err
+	}
+
+	if result.Created && s.tasksService != nil {
+		if _, enqueueErr := s.tasksService.EnqueueUserOnboardingStart(tasks.UserOnboardingStartPayload{
+			UserID:   result.User.ID.String(),
+			Email:    result.User.Email,
+			FullName: result.User.FullName,
+		}); enqueueErr != nil {
+			s.log.Error(ctx, "error enqueuing external identity user onboarding", "error", enqueueErr, "user_id", result.User.ID)
+		}
+	}
+
+	return result.User, nil
 }
 
 // ActivateUser reactivates a previously inactive user account.

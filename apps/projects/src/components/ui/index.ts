@@ -49,4 +49,5 @@ export * from "./new-sprint-button";
 export * from "./feature-guard";
 export * from "./member-tooltip";
 export * from "./google-icon";
+export * from "./microsoft-icon";
 export * from "./otp-input";

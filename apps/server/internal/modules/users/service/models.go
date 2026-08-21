@@ -82,6 +82,21 @@ type CoreNewUser struct {
 	Timezone  string
 }
 
+type CoreExternalIdentityInput struct {
+	Provider  string
+	Issuer    string
+	Subject   string
+	Email     string
+	FullName  string
+	AvatarURL string
+	Timezone  string
+}
+
+type CoreExternalIdentityResult struct {
+	User    CoreUser
+	Created bool
+}
+
 // CoreAutomationPreferences represents the automation preferences for a user in a workspace
 type CoreAutomationPreferences struct {
 	UserID                     uuid.UUID

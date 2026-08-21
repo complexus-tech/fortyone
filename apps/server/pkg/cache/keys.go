@@ -19,23 +19,24 @@ const (
 
 // Key formats for different types of cache entries
 const (
-	ObjectiveListKey     = "objectives:list:%s"        // workspaceID
-	ObjectiveDetailKey   = "objectives:detail:%s:%s"   // workspaceID, objectiveID
-	KeyResultsListKey    = "key-results:list:%s:%s"    // workspaceID, objectiveID
-	StoryListKey         = "stories:list:%s"           // workspaceID
-	StoryDetailKey       = "stories:detail:%s:%s"      // workspaceID, storyID
-	WorkspaceDetailKey   = "workspaces:detail:%s"      // workspaceID
-	UserDetailKey        = "users:detail:%s"           // userID
-	MyStoriesKey         = "stories:my-stories:%s"     // workspaceID
-	StoryCommentsKey     = "stories:comments:%s:%s"    // workspaceID, storyID
-	StoryActivitiesKey   = "stories:activities:%s:%s"  // workspaceID, storyID
-	StoryAttachmentsKey  = "stories:attachments:%s:%s" // workspaceID, storyID
-	WorkspacesListKey    = "workspaces:list:%s"        // userID (list of workspaces for a user)
-	WorkspaceMembersKey  = "workspaces:members:%s"     // workspaceID (members of a workspace)
-	WorkspaceTeamsKey    = "workspaces:teams:%s"       // workspaceID (teams in a workspace)
-	WorkspaceSettingsKey = "workspaces:settings:%s"    // workspaceID
-	AuthSessionKey       = "auth:session:%s"           // session token
-	AuthGoogleStateKey   = "auth:google:state:%s"      // oauth state
+	ObjectiveListKey      = "objectives:list:%s"        // workspaceID
+	ObjectiveDetailKey    = "objectives:detail:%s:%s"   // workspaceID, objectiveID
+	KeyResultsListKey     = "key-results:list:%s:%s"    // workspaceID, objectiveID
+	StoryListKey          = "stories:list:%s"           // workspaceID
+	StoryDetailKey        = "stories:detail:%s:%s"      // workspaceID, storyID
+	WorkspaceDetailKey    = "workspaces:detail:%s"      // workspaceID
+	UserDetailKey         = "users:detail:%s"           // userID
+	MyStoriesKey          = "stories:my-stories:%s"     // workspaceID
+	StoryCommentsKey      = "stories:comments:%s:%s"    // workspaceID, storyID
+	StoryActivitiesKey    = "stories:activities:%s:%s"  // workspaceID, storyID
+	StoryAttachmentsKey   = "stories:attachments:%s:%s" // workspaceID, storyID
+	WorkspacesListKey     = "workspaces:list:%s"        // userID (list of workspaces for a user)
+	WorkspaceMembersKey   = "workspaces:members:%s"     // workspaceID (members of a workspace)
+	WorkspaceTeamsKey     = "workspaces:teams:%s"       // workspaceID (teams in a workspace)
+	WorkspaceSettingsKey  = "workspaces:settings:%s"    // workspaceID
+	AuthSessionKey        = "auth:session:%s"           // session token
+	AuthGoogleStateKey    = "auth:google:state:%s"      // oauth state
+	AuthMicrosoftStateKey = "auth:microsoft:state:%s"   // oauth state
 )
 
 // ObjectiveListCacheKey generates a cache key for a user's list of objectives.
@@ -122,6 +123,11 @@ func AuthSessionCacheKey(token string) string {
 // AuthGoogleStateCacheKey generates a cache key for Google OAuth state values.
 func AuthGoogleStateCacheKey(state string) string {
 	return fmt.Sprintf(AuthGoogleStateKey, state)
+}
+
+// AuthMicrosoftStateCacheKey generates a cache key for Microsoft OAuth state values.
+func AuthMicrosoftStateCacheKey(state string) string {
+	return fmt.Sprintf(AuthMicrosoftStateKey, state)
 }
 
 // InvalidateObjectiveKeys invalidates all cache keys related to an objective

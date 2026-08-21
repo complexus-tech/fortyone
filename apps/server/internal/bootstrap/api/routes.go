@@ -253,19 +253,20 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	}, app)
 
 	usershttp.Routes(usershttp.Config{
-		DB:             cfg.DB,
-		Log:            cfg.Log,
-		SecretKey:      cfg.SecretKey,
-		CookieDomain:   cfg.CookieDomain,
-		WebsiteURL:     cfg.WebsiteURL,
-		GoogleService:  cfg.GoogleService,
-		Publisher:      cfg.Publisher,
-		TasksService:   cfg.TasksService,
-		StorageConfig:  cfg.StorageConfig,
-		StorageService: cfg.StorageService,
-		Cache:          cfg.Cache,
-		Users:          svcs.users,
-		Attachments:    svcs.attachments,
+		DB:               cfg.DB,
+		Log:              cfg.Log,
+		SecretKey:        cfg.SecretKey,
+		CookieDomain:     cfg.CookieDomain,
+		WebsiteURL:       cfg.WebsiteURL,
+		GoogleService:    cfg.GoogleService,
+		MicrosoftService: cfg.MicrosoftService,
+		Publisher:        cfg.Publisher,
+		TasksService:     cfg.TasksService,
+		StorageConfig:    cfg.StorageConfig,
+		StorageService:   cfg.StorageService,
+		Cache:            cfg.Cache,
+		Users:            svcs.users,
+		Attachments:      svcs.attachments,
 	}, app)
 
 	workspaceshttp.Routes(workspaceshttp.Config{

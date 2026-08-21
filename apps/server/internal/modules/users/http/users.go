@@ -19,10 +19,12 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/google"
+	"github.com/complexus-tech/projects-api/pkg/microsoft"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"golang.org/x/oauth2"
 )
 
 var (
@@ -33,29 +35,31 @@ var (
 
 const sessionCookieName = "fortyone_session"
 
-const googleAuthStateTTL = 10 * time.Minute
+const oauthStateTTL = 10 * time.Minute
 
 type Handlers struct {
-	users         *users.Service
-	attachments   users.AttachmentsService
-	secretKey     string
-	cookieDomain  string
-	websiteURL    string
-	cache         *cache.Service
-	googleService *google.Service
-	publisher     *publisher.Publisher
+	users            *users.Service
+	attachments      users.AttachmentsService
+	secretKey        string
+	cookieDomain     string
+	websiteURL       string
+	cache            *cache.Service
+	googleService    *google.Service
+	microsoftService *microsoft.Service
+	publisher        *publisher.Publisher
 }
 
-func New(users *users.Service, attachments users.AttachmentsService, secretKey, cookieDomain, websiteURL string, cacheService *cache.Service, googleService *google.Service, publisher *publisher.Publisher) *Handlers {
+func New(users *users.Service, attachments users.AttachmentsService, secretKey, cookieDomain, websiteURL string, cacheService *cache.Service, googleService *google.Service, microsoftService *microsoft.Service, publisher *publisher.Publisher) *Handlers {
 	return &Handlers{
-		users:         users,
-		attachments:   attachments,
-		secretKey:     secretKey,
-		cookieDomain:  cookieDomain,
-		websiteURL:    websiteURL,
-		cache:         cacheService,
-		googleService: googleService,
-		publisher:     publisher,
+		users:            users,
+		attachments:      attachments,
+		secretKey:        secretKey,
+		cookieDomain:     cookieDomain,
+		websiteURL:       websiteURL,
+		cache:            cacheService,
+		googleService:    googleService,
+		microsoftService: microsoftService,
+		publisher:        publisher,
 	}
 }
 
@@ -518,7 +522,7 @@ func (h *Handlers) StartGoogleAuth(ctx context.Context, w http.ResponseWriter, r
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	if err := h.cache.Set(ctx, cache.AuthGoogleStateCacheKey(state), googleAuthState{CallbackURL: callbackURL}, googleAuthStateTTL); err != nil {
+	if err := h.cache.Set(ctx, cache.AuthGoogleStateCacheKey(state), googleAuthState{CallbackURL: callbackURL}, oauthStateTTL); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
@@ -534,6 +538,167 @@ func (h *Handlers) StartGoogleAuth(ctx context.Context, w http.ResponseWriter, r
 
 	http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
 	return nil
+}
+
+func (h *Handlers) StartMicrosoftAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if h.cache == nil {
+		return web.RespondError(ctx, w, errors.New("auth session cache is not configured"), http.StatusServiceUnavailable)
+	}
+	if h.microsoftService == nil {
+		return web.RespondError(ctx, w, microsoft.ErrNotConfigured, http.StatusServiceUnavailable)
+	}
+
+	callbackURL, err := sanitizeCallbackURL(
+		r.URL.Query().Get("callbackURL"),
+		h.cookieDomain,
+		h.websiteURL,
+	)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	state, err := h.createSessionToken()
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	nonce, err := h.createSessionToken()
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	verifier := oauth2.GenerateVerifier()
+	if err := h.cache.Set(ctx, cache.AuthMicrosoftStateCacheKey(state), microsoftAuthState{
+		CallbackURL: callbackURL,
+		Verifier:    verifier,
+		Nonce:       nonce,
+	}, oauthStateTTL); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	authURL, err := h.microsoftService.AuthCodeURL(state, nonce, verifier)
+	if err != nil {
+		_ = h.cache.Delete(ctx, cache.AuthMicrosoftStateCacheKey(state))
+		status := http.StatusInternalServerError
+		if errors.Is(err, microsoft.ErrNotConfigured) {
+			status = http.StatusServiceUnavailable
+		}
+		return web.RespondError(ctx, w, err, status)
+	}
+	http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
+	return nil
+}
+
+func (h *Handlers) CompleteMicrosoftAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if h.cache == nil {
+		return web.RespondError(ctx, w, errors.New("auth session cache is not configured"), http.StatusServiceUnavailable)
+	}
+	if h.microsoftService == nil {
+		return web.RespondError(ctx, w, microsoft.ErrNotConfigured, http.StatusServiceUnavailable)
+	}
+
+	state := strings.TrimSpace(r.URL.Query().Get("state"))
+	if state == "" {
+		return web.RespondError(ctx, w, errors.New("missing oauth state"), http.StatusBadRequest)
+	}
+	var authState microsoftAuthState
+	if err := h.cache.Get(ctx, cache.AuthMicrosoftStateCacheKey(state), &authState); err != nil {
+		return web.RespondError(ctx, w, errors.New("invalid oauth state"), http.StatusUnauthorized)
+	}
+	_ = h.cache.Delete(ctx, cache.AuthMicrosoftStateCacheKey(state))
+
+	if providerError := strings.TrimSpace(r.URL.Query().Get("error")); providerError != "" {
+		if failureURL := microsoftFailureURL(authState.CallbackURL, providerError); failureURL != "" {
+			http.Redirect(w, r, failureURL, http.StatusTemporaryRedirect)
+			return nil
+		}
+		return web.RespondError(ctx, w, errors.New("microsoft sign-in was not completed"), http.StatusUnauthorized)
+	}
+
+	code := strings.TrimSpace(r.URL.Query().Get("code"))
+	if code == "" {
+		return web.RespondError(ctx, w, errors.New("missing oauth authorization code"), http.StatusBadRequest)
+	}
+	identity, err := h.microsoftService.ExchangeCode(ctx, code, authState.Verifier, authState.Nonce)
+	if err != nil {
+		status := http.StatusInternalServerError
+		switch {
+		case errors.Is(err, microsoft.ErrInvalidToken):
+			status = http.StatusUnauthorized
+		case errors.Is(err, microsoft.ErrNotConfigured):
+			status = http.StatusServiceUnavailable
+		}
+		return web.RespondError(ctx, w, err, status)
+	}
+
+	email, err := validate.Email(identity.Email)
+	if err != nil {
+		return web.RespondError(ctx, w, errors.New("microsoft account did not provide a valid email address"), http.StatusUnauthorized)
+	}
+	user, err := h.users.AuthenticateExternalIdentity(ctx, users.CoreExternalIdentityInput{
+		Provider: "microsoft",
+		Issuer:   identity.Issuer,
+		Subject:  identity.ObjectID,
+		Email:    email,
+		FullName: buildMicrosoftFullName(identity, email),
+		Timezone: "Antarctica/Troll",
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	user, err = h.reactivateUserForSignIn(ctx, user)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+
+	tokenString, err := h.createSessionToken()
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	expiresAt := time.Now().Add(SessionDuration)
+	if err := h.persistSession(ctx, user.ID, tokenString, expiresAt); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	h.setSessionCookie(w, r, tokenString, expiresAt)
+
+	if authState.CallbackURL != "" {
+		http.Redirect(w, r, authState.CallbackURL, http.StatusTemporaryRedirect)
+		return nil
+	}
+	h.resolveUserAvatar(ctx, &user)
+	return web.Respond(ctx, w, toAppUser(user), http.StatusOK)
+}
+
+func buildMicrosoftFullName(identity microsoft.Identity, email string) string {
+	if fullName := strings.TrimSpace(identity.FullName); fullName != "" {
+		return fullName
+	}
+	fullName := strings.TrimSpace(strings.TrimSpace(identity.FirstName) + " " + strings.TrimSpace(identity.LastName))
+	if fullName != "" {
+		return fullName
+	}
+	if preferred := strings.TrimSpace(identity.PreferredUsername); preferred != "" {
+		return preferred
+	}
+	if localPart := strings.TrimSpace(strings.Split(email, "@")[0]); localPart != "" {
+		return localPart
+	}
+	return "User"
+}
+
+func microsoftFailureURL(callbackURL, providerError string) string {
+	parsed, err := url.Parse(strings.TrimSpace(callbackURL))
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return ""
+	}
+	query := parsed.Query()
+	if parsed.Path == "/auth-callback" {
+		parsed.Path = "/"
+	}
+	message := "Microsoft sign-in failed. Please try again."
+	if providerError == "access_denied" {
+		message = "Microsoft sign-in was cancelled."
+	}
+	query.Set("error", message)
+	parsed.RawQuery = query.Encode()
+	return parsed.String()
 }
 
 func (h *Handlers) CompleteGoogleAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

@@ -87,6 +87,12 @@ type googleAuthState struct {
 	CallbackURL string `json:"callbackURL,omitempty"`
 }
 
+type microsoftAuthState struct {
+	CallbackURL string `json:"callbackURL,omitempty"`
+	Verifier    string `json:"verifier"`
+	Nonce       string `json:"nonce"`
+}
+
 // EmailVerificationRequest represents a request to send a verification email
 type EmailVerificationRequest struct {
 	Email       string `json:"email"`

@@ -29,6 +29,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
+	"github.com/complexus-tech/projects-api/pkg/microsoft"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -54,6 +55,10 @@ type Config struct {
 		GoogleRedirectURL         string `env:"APP_AUTH_GOOGLE_REDIRECT_URL"`
 		GoogleCalendarRedirectURL string `env:"APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL"`
 		GoogleCalendarWebhookURL  string `env:"APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL"`
+		MicrosoftClientID         string `env:"APP_AUTH_MICROSOFT_CLIENT_ID"`
+		MicrosoftClientSecret     string `env:"APP_AUTH_MICROSOFT_CLIENT_SECRET"`
+		MicrosoftTenant           string `default:"common" env:"APP_AUTH_MICROSOFT_TENANT"`
+		MicrosoftRedirectURL      string `env:"APP_AUTH_MICROSOFT_REDIRECT_URL"`
 	}
 	Feedback struct {
 		IngressSecret string `env:"FEEDBACK_INGRESS_SECRET"`
@@ -380,6 +385,13 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("error initializing google service: %w", err)
 	}
 	log.Info(ctx, "google auth service initialized")
+	microsoftService := microsoft.NewService(microsoft.Config{
+		ClientID:     cfg.Auth.MicrosoftClientID,
+		ClientSecret: cfg.Auth.MicrosoftClientSecret,
+		Tenant:       cfg.Auth.MicrosoftTenant,
+		RedirectURL:  cfg.Auth.MicrosoftRedirectURL,
+	})
+	log.Info(ctx, "microsoft auth service initialized")
 
 	// Initialize Stripe client
 	stripeClient := client.New(cfg.Stripe.SecretKey, nil)
@@ -408,6 +420,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		EmailService:             mailerService,
 		BrevoService:             brevoService,
 		GoogleService:            googleService,
+		MicrosoftService:         microsoftService,
 		GoogleCalendarWebhookURL: cfg.Auth.GoogleCalendarWebhookURL,
 		Validate:                 validate,
 		StorageConfig:            storageConfig,

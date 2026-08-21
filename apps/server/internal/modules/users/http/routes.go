@@ -7,6 +7,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/microsoft"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -15,19 +16,20 @@ import (
 )
 
 type Config struct {
-	DB             *sqlx.DB
-	Log            *logger.Logger
-	SecretKey      string
-	CookieDomain   string
-	WebsiteURL     string
-	GoogleService  *google.Service
-	Publisher      *publisher.Publisher
-	TasksService   *tasks.Service
-	StorageConfig  storage.Config
-	StorageService storage.StorageService
-	Cache          *cache.Service
-	Users          *users.Service
-	Attachments    *attachments.Service
+	DB               *sqlx.DB
+	Log              *logger.Logger
+	SecretKey        string
+	CookieDomain     string
+	WebsiteURL       string
+	GoogleService    *google.Service
+	MicrosoftService *microsoft.Service
+	Publisher        *publisher.Publisher
+	TasksService     *tasks.Service
+	StorageConfig    storage.Config
+	StorageService   storage.StorageService
+	Cache            *cache.Service
+	Users            *users.Service
+	Attachments      *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -42,6 +44,7 @@ func Routes(cfg Config, app *web.App) {
 		cfg.WebsiteURL,
 		cfg.Cache,
 		cfg.GoogleService,
+		cfg.MicrosoftService,
 		cfg.Publisher,
 	)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
@@ -52,6 +55,8 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/auth/me", h.Me, auth)
 	app.Get("/auth/google", h.StartGoogleAuth)
 	app.Get("/auth/google/callback", h.CompleteGoogleAuth)
+	app.Get("/auth/microsoft", h.StartMicrosoftAuth)
+	app.Get("/auth/microsoft/callback", h.CompleteMicrosoftAuth)
 	app.Post("/auth/google/verify", h.GoogleAuth)
 	app.Post("/users/google/verify", h.GoogleAuth)
 	app.Post("/users/verify/email", h.SendEmailVerification)
