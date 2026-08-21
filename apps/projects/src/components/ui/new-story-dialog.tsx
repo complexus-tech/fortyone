@@ -92,6 +92,7 @@ import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useTotalStories } from "@/modules/stories/hooks/total-stories";
 import { useLinkFigmaStory } from "@/lib/hooks/figma";
 import type { FigmaArtifact } from "@/modules/settings/workspace/integrations/figma/types";
+import type { FigmaDescription } from "@/modules/settings/workspace/integrations/figma/description";
 import { storyKeys } from "@/modules/stories/constants";
 import { useSimilarStories } from "@/modules/search/hooks/use-similar-stories";
 import { getStoryPath } from "@/modules/story/utils/story-url";
@@ -403,9 +404,30 @@ export const NewStoryDialog = ({
     immediatelyRender: false,
   });
 
-  const addFigmaTextToDescription = (artifact: FigmaArtifact) => {
-    if (!editor || !artifact.textContent?.length) return;
-    const name = artifact.nodeName ?? artifact.fileName;
+  const addFigmaDescription = (description: FigmaDescription) => {
+    if (!editor) return;
+    const listSection = (heading: string, items: string[]) =>
+      items.length > 0
+        ? [
+            {
+              type: "heading",
+              attrs: { level: 3 },
+              content: [{ type: "text", text: heading }],
+            },
+            {
+              type: "bulletList",
+              content: items.map((text) => ({
+                type: "listItem",
+                content: [
+                  {
+                    type: "paragraph",
+                    content: [{ type: "text", text }],
+                  },
+                ],
+              })),
+            },
+          ]
+        : [];
     editor
       .chain()
       .focus()
@@ -413,20 +435,15 @@ export const NewStoryDialog = ({
         {
           type: "heading",
           attrs: { level: 3 },
-          content: [{ type: "text", text: `Design notes — ${name}` }],
+          content: [{ type: "text", text: "Overview" }],
         },
         {
-          type: "bulletList",
-          content: artifact.textContent.map((text) => ({
-            type: "listItem",
-            content: [
-              {
-                type: "paragraph",
-                content: [{ type: "text", text }],
-              },
-            ],
-          })),
+          type: "paragraph",
+          content: [{ type: "text", text: description.overview }],
         },
+        ...listSection("Requirements", description.requirements),
+        ...listSection("Acceptance criteria", description.acceptanceCriteria),
+        ...listSection("Implementation notes", description.implementationNotes),
       ])
       .run();
   };
@@ -1274,7 +1291,7 @@ export const NewStoryDialog = ({
               <NewStoryFigmaSource
                 artifacts={figmaArtifacts}
                 enabled={isOpen}
-                onAddDescription={addFigmaTextToDescription}
+                onAddDescription={addFigmaDescription}
                 onArtifactsChange={setFigmaArtifacts}
                 onTitleSuggestion={(title) => {
                   if (titleEditor && !titleEditor.getText().trim()) {

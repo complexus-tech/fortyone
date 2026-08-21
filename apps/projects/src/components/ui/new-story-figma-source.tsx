@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, Flex, Input, Popover, Text } from "ui";
-import { CloseIcon } from "icons";
+import { Box, Button, Flex, Input, Menu, Popover, Text } from "ui";
+import { AiIcon, CloseIcon, MoreHorizontalIcon } from "icons";
 import { toast } from "sonner";
-import { useFigmaIntegration, useResolveFigmaLink } from "@/lib/hooks/figma";
+import {
+  useExtractFigmaDescription,
+  useFigmaIntegration,
+  useResolveFigmaLink,
+} from "@/lib/hooks/figma";
 import { FigmaIcon } from "@/modules/settings/workspace/integrations/figma/icon";
 import type { FigmaArtifact } from "@/modules/settings/workspace/integrations/figma/types";
+import type { FigmaDescription } from "@/modules/settings/workspace/integrations/figma/description";
 
 const artifactName = (artifact: FigmaArtifact) =>
   artifact.nodeName ?? artifact.fileName;
@@ -20,12 +25,13 @@ export const NewStoryFigmaSource = ({
 }: {
   artifacts: FigmaArtifact[];
   enabled: boolean;
-  onAddDescription: (artifact: FigmaArtifact) => void;
+  onAddDescription: (description: FigmaDescription) => void;
   onArtifactsChange: (artifacts: FigmaArtifact[]) => void;
   onTitleSuggestion: (title: string) => void;
 }) => {
   const { data: integration } = useFigmaIntegration({ enabled });
   const resolveLink = useResolveFigmaLink();
+  const extractDescription = useExtractFigmaDescription();
   const [isOpen, setIsOpen] = useState(false);
   const [url, setURL] = useState("");
   if (!integration?.connection?.isActive) return null;
@@ -56,6 +62,24 @@ export const NewStoryFigmaSource = ({
     }
   };
 
+  const handleExtractDescription = async (artifact: FigmaArtifact) => {
+    const toastId = toast.loading("Extracting story description...");
+    try {
+      const description = await extractDescription.mutateAsync(artifact);
+      onAddDescription(description);
+      toast.success("Description added", {
+        description: "Review the AI-generated draft before creating the story.",
+        id: toastId,
+      });
+    } catch (error) {
+      toast.error("Description could not be extracted", {
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+        id: toastId,
+      });
+    }
+  };
+
   return (
     <Box className="order-12">
       <Popover modal onOpenChange={setIsOpen} open={isOpen}>
@@ -77,7 +101,7 @@ export const NewStoryFigmaSource = ({
         </Popover.Trigger>
         <Popover.Content
           align="end"
-          className="w-[30rem] max-w-[calc(100vw-2rem)] p-5"
+          className="w-[32rem] max-w-[calc(100vw-2rem)] p-5"
         >
           <Box>
             <Text className="mb-1.5 text-lg font-medium">
@@ -95,7 +119,7 @@ export const NewStoryFigmaSource = ({
                 return (
                   <Flex
                     align="center"
-                    className="border-border bg-surface-muted/50 overflow-hidden rounded-lg border p-2"
+                    className="border-border bg-surface-muted/50 overflow-hidden rounded-lg border py-3 pr-3 pl-4"
                     gap={3}
                     key={artifact.canonicalUrl}
                   >
@@ -128,39 +152,47 @@ export const NewStoryFigmaSource = ({
                           ? artifact.fileName
                           : "Entire Figma file"}
                       </Text>
-                      {(artifact.textContent?.length ?? 0) > 0 ? (
-                        <Button
-                          className="mt-1 h-auto p-0 text-xs"
-                          color="tertiary"
-                          onClick={() => {
-                            onAddDescription(artifact);
-                          }}
-                          size="xs"
-                          type="button"
-                          variant="naked"
-                        >
-                          Add design text to description
-                        </Button>
-                      ) : null}
                     </Box>
-                    <Button
-                      asIcon
-                      color="tertiary"
-                      onClick={() => {
-                        onArtifactsChange(
-                          artifacts.filter(
-                            ({ canonicalUrl }) =>
-                              canonicalUrl !== artifact.canonicalUrl,
-                          ),
-                        );
-                      }}
-                      size="xs"
-                      title={`Remove ${artifactName(artifact)}`}
-                      type="button"
-                      variant="naked"
-                    >
-                      <CloseIcon className="h-4 w-auto" />
-                    </Button>
+                    <Menu>
+                      <Menu.Button>
+                        <button
+                          aria-label={`More actions for ${artifactName(artifact)}`}
+                          className="text-icon hover:bg-surface-muted rounded-md p-1.5"
+                          type="button"
+                        >
+                          <MoreHorizontalIcon className="h-5 w-auto" />
+                        </button>
+                      </Menu.Button>
+                      <Menu.Items align="end" className="w-52">
+                        <Menu.Group>
+                          <Menu.Item
+                            disabled={
+                              !artifact.textContent?.length ||
+                              extractDescription.isPending
+                            }
+                            onSelect={() => {
+                              void handleExtractDescription(artifact);
+                            }}
+                          >
+                            <AiIcon />
+                            Extract description
+                          </Menu.Item>
+                          <Menu.Item
+                            onSelect={() => {
+                              onArtifactsChange(
+                                artifacts.filter(
+                                  ({ canonicalUrl }) =>
+                                    canonicalUrl !== artifact.canonicalUrl,
+                                ),
+                              );
+                            }}
+                          >
+                            <CloseIcon />
+                            Remove design
+                          </Menu.Item>
+                        </Menu.Group>
+                      </Menu.Items>
+                    </Menu>
                   </Flex>
                 );
               })}
@@ -170,10 +202,11 @@ export const NewStoryFigmaSource = ({
           <Box className="mt-4">
             <Input
               autoFocus
+              className="dark:bg-surface/60"
               label={
                 artifacts.length > 0 ? "Add another Figma URL" : "Figma URL"
               }
-              labelClassName="mb-0.5"
+              labelClassName="mb-1"
               onChange={(event) => {
                 setURL(event.target.value);
               }}
@@ -188,12 +221,7 @@ export const NewStoryFigmaSource = ({
               value={url}
             />
           </Box>
-          <Flex className="mt-4" justify="between">
-            <Text className="self-center text-xs" color="muted">
-              {artifacts.length > 0
-                ? `${artifacts.length} ready to attach`
-                : "Frame links provide the richest preview and handoff sync."}
-            </Text>
+          <Flex className="mt-4" justify="end">
             <Button
               color="tertiary"
               disabled={!url.trim() || resolveLink.isPending}

@@ -16,6 +16,8 @@ import {
   refreshFigmaStoryLinkAction,
   resolveFigmaLinkAction,
 } from "@/lib/actions/figma";
+import { figmaDescriptionSchema } from "@/modules/settings/workspace/integrations/figma/description";
+import type { FigmaArtifact } from "@/modules/settings/workspace/integrations/figma/types";
 
 export const useFigmaIntegration = ({ enabled = true } = {}) => {
   const { data: session } = useSession();
@@ -104,6 +106,35 @@ export const useResolveFigmaLink = () => {
     },
   });
 };
+
+export const useExtractFigmaDescription = () =>
+  useMutation({
+    mutationFn: async (artifact: FigmaArtifact) => {
+      if (!artifact.textContent?.length) {
+        throw new Error("This design does not contain extractable text.");
+      }
+      const response = await fetch("/api/figma-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: artifact.fileName,
+          nodeName: artifact.nodeName,
+          nodeType: artifact.nodeType,
+          textContent: artifact.textContent,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          (await response.text()) || "The description could not be extracted.",
+        );
+      }
+      const parsed = figmaDescriptionSchema.safeParse(await response.json());
+      if (!parsed.success) {
+        throw new Error("The AI returned an invalid story description.");
+      }
+      return parsed.data;
+    },
+  });
 
 export const useLinkFigmaStory = () => {
   const queryClient = useQueryClient();

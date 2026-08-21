@@ -1,7 +1,13 @@
 "use client";
 
-import { Badge, Box, Button, Flex, Menu, Text, TimeAgo } from "ui";
-import { LinkIcon, MoreHorizontalIcon, RefreshIcon, UnlinkIcon } from "icons";
+import { Badge, Box, Flex, Menu, Text, TimeAgo } from "ui";
+import {
+  ExternalLinkIcon,
+  LinkIcon,
+  MoreHorizontalIcon,
+  RefreshIcon,
+  UnlinkIcon,
+} from "icons";
 import { toast } from "sonner";
 import {
   useDeleteFigmaStoryLink,
@@ -77,65 +83,61 @@ const FigmaDesignCard = ({
             </Text>
           </Box>
         </Flex>
-        <Flex align="center" gap={1}>
-          <Button
-            color="tertiary"
-            onClick={() =>
-              window.open(
-                link.artifact.canonicalUrl,
-                "_blank",
-                "noopener,noreferrer",
-              )
-            }
-            size="sm"
-            variant="naked"
-          >
-            Open in Figma
-          </Button>
-          <Menu>
-            <Menu.Button>
-              <button
-                aria-label="More Figma design actions"
-                className="text-icon hover:bg-surface-muted rounded-md p-1.5"
-                type="button"
+        <Menu>
+          <Menu.Button>
+            <button
+              aria-label="More Figma design actions"
+              className="text-icon hover:bg-surface-muted rounded-md p-1.5"
+              type="button"
+            >
+              <MoreHorizontalIcon className="h-5" />
+            </button>
+          </Menu.Button>
+          <Menu.Items align="end">
+            <Menu.Group>
+              <Menu.Item
+                onSelect={() => {
+                  window.open(
+                    link.artifact.canonicalUrl,
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                }}
               >
-                <MoreHorizontalIcon className="h-5" />
-              </button>
-            </Menu.Button>
-            <Menu.Items align="end">
-              <Menu.Group>
-                <Menu.Item
-                  disabled={refreshLink.isPending}
-                  onSelect={() => {
-                    refreshLink.mutate({ storyId, linkId: link.id });
-                  }}
-                >
-                  <RefreshIcon />
-                  Refresh preview
-                </Menu.Item>
-                <Menu.Item
-                  onSelect={() => {
-                    void navigator.clipboard.writeText(
-                      link.artifact.canonicalUrl,
-                    );
-                    toast.success("Figma link copied");
-                  }}
-                >
-                  <LinkIcon />
-                  Copy link
-                </Menu.Item>
-                <Menu.Item
-                  onSelect={() => {
-                    removeLink.mutate({ storyId, linkId: link.id });
-                  }}
-                >
-                  <UnlinkIcon />
-                  Remove design
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Flex>
+                <ExternalLinkIcon />
+                Open in Figma
+              </Menu.Item>
+              <Menu.Item
+                disabled={refreshLink.isPending}
+                onSelect={() => {
+                  refreshLink.mutate({ storyId, linkId: link.id });
+                }}
+              >
+                <RefreshIcon />
+                Refresh preview
+              </Menu.Item>
+              <Menu.Item
+                onSelect={() => {
+                  void navigator.clipboard.writeText(
+                    link.artifact.canonicalUrl,
+                  );
+                  toast.success("Figma link copied");
+                }}
+              >
+                <LinkIcon />
+                Copy link
+              </Menu.Item>
+              <Menu.Item
+                onSelect={() => {
+                  removeLink.mutate({ storyId, linkId: link.id });
+                }}
+              >
+                <UnlinkIcon />
+                Remove design
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
       </Flex>
     </Box>
   );
@@ -151,7 +153,7 @@ export const FigmaSection = ({ storyId }: { storyId: string }) => {
         <FigmaIcon className="h-4 w-auto" />
         <Text className="font-semibold">Design</Text>
       </Flex>
-      <Box className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),24rem))] gap-4">
+      <Box className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {links.map((link) => (
           <FigmaDesignCard key={link.id} link={link} storyId={storyId} />
         ))}
