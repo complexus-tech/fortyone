@@ -26,12 +26,14 @@ html {
   @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-[13px] font-medium antialiased 2xl:text-[13.5px];
 }
 
-.onboarding-layout {
-  font-size: 1rem;
+/* Restore the browser typography scale for authentication and onboarding. */
+html:has(.onboarding-layout),
+html:has(.onboarding-layout) body {
+  font-size: 15px;
 }
 
-.onboarding-layout :is(input, textarea, select) {
-  font-size: 1rem;
+html:has(.onboarding-layout) :is(input, textarea, select) {
+  font-size: 15px;
 }
 
 @media (prefers-reduced-motion: reduce) {
