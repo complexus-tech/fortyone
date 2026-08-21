@@ -18,7 +18,7 @@ const workspace: Workspace = {
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
-const teams: Team[] = [
+const joinedTeams: Team[] = [
   {
     id: "team-1",
     name: "Product",
@@ -43,7 +43,7 @@ const contextInput = {
     billingEndsAt: "2026-08-01",
     status: "active",
   },
-  teams,
+  joinedTeams,
   memories: [],
   terminology: {
     stories: "Stories",
@@ -76,6 +76,49 @@ describe("getUserContext", () => {
     expect(context).toContain("User: Maya (@maya) [user-1]");
     expect(context).toContain("resolve to Maya [user-1].");
     expect(context).toContain("Product (PROD) [team-1]");
+    expect(context).toContain("Joined teams:");
+    expect(context).toContain(
+      'If the user says "my team" without naming one, use Product [team-1].',
+    );
+    expect(context).not.toContain("Growth");
+    expect(context).toContain(
+      "Never treat a discoverable public team as one of the user's teams.",
+    );
+  });
+
+  it("does not substitute public teams when the user has no memberships", () => {
+    const context = getUserContext({
+      ...contextInput,
+      joinedTeams: [],
+      user: {
+        id: "user-1",
+        name: "Maya",
+      },
+    });
+
+    expect(context).toContain("Joined teams:\n- None");
+    expect(context).toContain(
+      'The user has not joined a team. Say that plainly when they ask about "my team"; do not offer public teams as substitutes.',
+    );
+  });
+
+  it("requires a membership lookup when joined teams are unavailable", () => {
+    const context = getUserContext({
+      ...contextInput,
+      joinedTeams: null,
+      user: {
+        id: "user-1",
+        name: "Maya",
+      },
+    });
+
+    expect(context).toContain("Joined teams:\n- Unavailable");
+    expect(context).toContain(
+      'Joined-team membership could not be loaded. Call listTeams before answering a request about "my team"',
+    );
+    expect(context).toContain(
+      "do not infer membership from accessible or public teams",
+    );
   });
 
   it("does not render an undefined username", () => {

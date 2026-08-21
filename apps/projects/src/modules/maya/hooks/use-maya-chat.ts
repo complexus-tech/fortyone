@@ -18,7 +18,6 @@ import {
 import { storyKeys } from "@/modules/stories/constants";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
-import { useTeams } from "@/modules/teams/hooks/teams";
 import { fileToBase64 } from "@/lib/utils/files";
 import { useAiChatMessages } from "@/modules/ai-chats/hooks/use-ai-chat-messages";
 import { getAiChatMessages } from "@/modules/ai-chats/queries/get-ai-chat-messages";
@@ -41,7 +40,6 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { data: subscription } = useSubscription();
-  const { data: teams = [] } = useTeams();
   const { data: profile } = useProfile();
   const { data: memories = [] } = useMemories();
   const { data: totalMessages = 0 } = useTotalMessages();
@@ -267,7 +265,6 @@ export const useMayaChat = (config: MayaChatConfig) => {
           status: subscription?.status,
           username: profile?.username,
         },
-        teams,
         memories,
         totalMessages: {
           current: totalMessages,
@@ -331,7 +328,6 @@ export const useMayaChat = (config: MayaChatConfig) => {
             status: subscription?.status,
             username: profile?.username,
           },
-          teams,
           workspace,
           memories,
           terminology,

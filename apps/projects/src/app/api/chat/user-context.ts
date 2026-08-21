@@ -13,7 +13,7 @@ export function getUserContext({
   currentTheme,
   resolvedTheme,
   subscription,
-  teams,
+  joinedTeams,
   username,
   terminology,
   workspace,
@@ -30,7 +30,7 @@ export function getUserContext({
     billingEndsAt: string;
     status: string;
   };
-  teams: Team[];
+  joinedTeams: Team[] | null;
   memories: Memory[];
   username?: string;
   terminology: {
@@ -60,22 +60,32 @@ export function getUserContext({
   });
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const teamsSummary =
-    teams.length > 0
-      ? teams
-          .map((team) => `${team.name} (${team.code}) [${team.id}]`)
-          .join(", ")
-      : "None";
+  let joinedTeamsSummary = "Unavailable";
+  if (joinedTeams) {
+    joinedTeamsSummary =
+      joinedTeams.length > 0
+        ? joinedTeams
+            .map((team) => `${team.name} (${team.code}) [${team.id}]`)
+            .join(", ")
+        : "None";
+  }
 
   const memoriesSummary =
     memories.length > 0
       ? memories.map((memory) => `- ${memory.id}: ${memory.content}`).join("\n")
       : "- None";
 
-  const teamSelectionGuidance =
-    teams.length === 1
-      ? `If team selection is needed and the user does not specify one, default to ${teams[0]?.name} [${teams[0]?.id}].`
-      : "If team selection is needed and the user does not specify one, infer from context or ask a clarifying question.";
+  let teamSelectionGuidance =
+    'Joined-team membership could not be loaded. Call listTeams before answering a request about "my team"; do not infer membership from accessible or public teams.';
+  if (joinedTeams?.length === 0) {
+    teamSelectionGuidance =
+      'The user has not joined a team. Say that plainly when they ask about "my team"; do not offer public teams as substitutes.';
+  } else if (joinedTeams?.length === 1) {
+    teamSelectionGuidance = `If the user says "my team" without naming one, use ${joinedTeams[0]?.name} [${joinedTeams[0]?.id}].`;
+  } else if (joinedTeams && joinedTeams.length > 1) {
+    teamSelectionGuidance =
+      'If the user says "my team" and belongs to multiple teams, infer from conversation or the current path only when that team appears in this joined list; otherwise ask which joined team they mean.';
+  }
 
   return `
 Runtime context:
@@ -95,9 +105,10 @@ Terminology:
 - Objectives => ${terminology.objectives}
 - Key Results => ${terminology.keyResults}
 
-Teams:
-- ${teamsSummary}
+Joined teams:
+- ${joinedTeamsSummary}
 - ${teamSelectionGuidance}
+- Public teams the user has not joined are not included here. Never treat a discoverable public team as one of the user's teams.
 
 Subscription:
 - Tier: ${subscription?.tier ?? "unknown"}

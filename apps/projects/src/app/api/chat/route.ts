@@ -23,6 +23,7 @@ import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
 import { saveChat } from "./save-chat";
 import { normalizeInlineFileData } from "./normalize-file-data";
+import { resolveJoinedTeams } from "./resolve-joined-teams";
 
 export const maxDuration = 120;
 
@@ -37,7 +38,6 @@ export async function POST(req: NextRequest) {
     currentTheme,
     resolvedTheme,
     subscription,
-    teams,
     id,
     username,
     terminology,
@@ -52,6 +52,10 @@ export async function POST(req: NextRequest) {
     auth(),
   ]);
   const modelMessages = normalizeInlineFileData(convertedMessages);
+  const joinedTeams = await resolveJoinedTeams({
+    session,
+    workspaceSlug: workspace?.slug,
+  });
 
   // Get user context for "me" resolution
   const userContext = getUserContext({
@@ -61,7 +65,7 @@ export async function POST(req: NextRequest) {
     resolvedTheme,
     subscription,
     memories,
-    teams,
+    joinedTeams,
     username: username ?? subscription?.username,
     terminology,
     workspace,

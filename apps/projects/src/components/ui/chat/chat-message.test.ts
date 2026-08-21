@@ -161,6 +161,25 @@ describe("ChatMessage", () => {
     );
   });
 
+  it("limits my-team context and clarification to joined teams", () => {
+    const chatHookSource = readSource(
+      "src/modules/maya/hooks/use-maya-chat.ts",
+    );
+    const routeSource = readSource("src/app/api/chat/route.ts");
+    const promptSource = readSource("src/app/api/chat/system.ts");
+
+    expect(chatHookSource).not.toContain("useTeams()");
+    expect(chatHookSource).not.toContain("useJoinedTeams()");
+    expect(routeSource).toContain("resolveJoinedTeams");
+    expect(routeSource).not.toContain("joinedTeams = []");
+    expect(promptSource).toContain(
+      '"My team" and "our team" always mean teams the user has joined',
+    );
+    expect(promptSource).toContain(
+      'Never offer a public-but-unjoined team as a clarification option for "my team" or "our team"',
+    );
+  });
+
   it("renders empty list results as plain text without generative list chrome", () => {
     const source = readSource("src/components/ui/chat/generative-list.tsx");
 
