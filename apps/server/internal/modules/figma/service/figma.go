@@ -18,6 +18,7 @@ import (
 	"time"
 
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/internal/platform/workspaceurl"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 )
@@ -130,7 +131,20 @@ func (s *Service) CompleteOAuth(ctx context.Context, code, state string) (string
 }
 
 func (s *Service) integrationURL(workspaceSlug, rawQuery string) string {
-	return strings.TrimRight(s.config.WebsiteURL, "/") + "/" + url.PathEscape(workspaceSlug) + "/settings/workspace/integrations/figma?" + rawQuery
+	destination := workspaceurl.Build(
+		s.config.WebsiteURL,
+		workspaceSlug,
+		"settings",
+		"workspace",
+		"integrations",
+		"figma",
+	)
+	parsed, err := url.Parse(destination)
+	if err != nil || parsed.Host == "" {
+		return "/"
+	}
+	parsed.RawQuery = rawQuery
+	return parsed.String()
 }
 
 func (s *Service) Disconnect(ctx context.Context, workspaceID uuid.UUID) error {
@@ -159,6 +173,18 @@ func (s *Service) ListStoryLinks(ctx context.Context, workspaceID, storyID uuid.
 		return nil, err
 	}
 	return s.repo.ListStoryLinks(ctx, workspaceID, storyID)
+}
+
+func (s *Service) ListStoryHandoffStatuses(ctx context.Context, workspaceID uuid.UUID) (map[uuid.UUID]string, error) {
+	statuses, err := s.repo.ListStoryHandoffStatuses(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[uuid.UUID]string, len(statuses))
+	for _, status := range statuses {
+		result[status.StoryID] = status.Status
+	}
+	return result, nil
 }
 
 func (s *Service) LinkStory(ctx context.Context, workspaceID, actorID, storyID uuid.UUID, workspaceSlug, rawURL string) (StoryLink, error) {

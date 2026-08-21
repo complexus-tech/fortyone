@@ -226,7 +226,7 @@ describe("CalendarIntegrationSettings callback feedback", () => {
     expect(mutate).toHaveBeenCalledWith("microsoft-connection");
   });
 
-  it("silently clears a successful connection callback from the URL", async () => {
+  it("confirms a successful connection and clears callback parameters", async () => {
     window.history.replaceState(
       {},
       "",
@@ -239,7 +239,7 @@ describe("CalendarIntegrationSettings callback feedback", () => {
     await waitFor(() => {
       expect(window.location.search).toBe("?keep=1");
     });
-    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith("Google Calendar connected");
     expect(toast.error).not.toHaveBeenCalled();
   });
 

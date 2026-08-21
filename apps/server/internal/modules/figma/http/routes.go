@@ -25,6 +25,7 @@ func Routes(cfg Config, app *web.App) {
 	member := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
 	app.Get("/workspaces/{workspaceSlug}/integrations/figma", h.GetIntegration, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/integrations/figma/handoff-statuses", h.ListStoryHandoffStatuses, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/integrations/figma/install-session", h.CreateInstallSession, auth, workspace, admin)
 	app.Post("/workspaces/{workspaceSlug}/integrations/figma/resolve-link", h.ResolveLink, auth, workspace, member)
 	app.Delete("/workspaces/{workspaceSlug}/integrations/figma", h.Disconnect, auth, workspace, admin)

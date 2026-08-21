@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/platform/workspaceurl"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 	"google.golang.org/api/googleapi"
@@ -1491,11 +1492,16 @@ func (s *Service) encryptionKey() [32]byte {
 }
 
 func (s *Service) workspaceCalendarURL(workspaceSlug, query string) string {
-	base := strings.TrimRight(s.cfg.WebsiteURL, "/")
-	if base == "" {
-		base = "/"
+	path := workspaceurl.Build(
+		s.cfg.WebsiteURL,
+		workspaceSlug,
+		"settings",
+		"account",
+		"calendar",
+	)
+	if path == "" {
+		return "/"
 	}
-	path := fmt.Sprintf("%s/%s/settings/account/calendar", base, url.PathEscape(workspaceSlug))
 	if strings.TrimSpace(query) == "" {
 		return path
 	}

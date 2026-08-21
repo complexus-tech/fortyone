@@ -111,9 +111,11 @@ export const CalendarIntegrationSettings = () => {
     handledCallbackResult.current = callbackResult;
     const providerName =
       provider === "microsoft" ? "Outlook Calendar" : "Google Calendar";
-    if (!connected && calendarError === "access_denied") {
+    if (connected) {
+      toast.success(`${providerName} connected`);
+    } else if (calendarError === "access_denied") {
       toast.error(`${providerName} connection was cancelled.`);
-    } else if (!connected) {
+    } else {
       toast.error(`${providerName} could not be connected. Please try again.`);
     }
     const url = new URL(window.location.href);

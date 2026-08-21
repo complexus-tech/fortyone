@@ -28,7 +28,11 @@ export type FigmaArtifact = {
   thumbnailUrl: string | null;
   version: string | null;
   lastModified: string | null;
+  textContent?: string[];
 };
+
+export type FigmaHandoffStatus = "READY_FOR_DEV" | "COMPLETED";
+export type FigmaHandoffStatuses = Record<string, FigmaHandoffStatus>;
 
 export type StoryFigmaLink = {
   id: string;

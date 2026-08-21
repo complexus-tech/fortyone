@@ -69,7 +69,13 @@ type Artifact struct {
 	ThumbnailURL *string         `json:"thumbnailUrl"`
 	Version      *string         `json:"version"`
 	LastModified *time.Time      `json:"lastModified"`
+	TextContent  []string        `json:"textContent,omitempty"`
 	Metadata     json.RawMessage `json:"metadata"`
+}
+
+type StoryHandoffStatus struct {
+	StoryID uuid.UUID `json:"storyId" db:"story_id"`
+	Status  string    `json:"status" db:"status"`
 }
 
 type StoryLink struct {
@@ -153,6 +159,7 @@ type Repository interface {
 	UpdateConnectionToken(ctx context.Context, connectionID uuid.UUID, payload string, expiresAt time.Time) error
 	Disconnect(ctx context.Context, workspaceID uuid.UUID) error
 	ListStoryLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]StoryLink, error)
+	ListStoryHandoffStatuses(ctx context.Context, workspaceID uuid.UUID) ([]StoryHandoffStatus, error)
 	ListLinksByFile(ctx context.Context, workspaceID uuid.UUID, fileKey string) ([]StoryLink, error)
 	UpsertStoryLink(ctx context.Context, link StoryLink) (StoryLink, error)
 	UpdateStoryLink(ctx context.Context, link StoryLink) error

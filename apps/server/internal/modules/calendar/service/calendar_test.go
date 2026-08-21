@@ -49,6 +49,38 @@ type fakeCalendarUpdates struct {
 	err          error
 }
 
+func TestWorkspaceCalendarURLUsesWorkspaceRouting(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		websiteURL string
+		want       string
+	}{
+		{
+			name:       "hosted subdomain",
+			websiteURL: "https://cloud.fortyone.app",
+			want:       "https://acme.fortyone.app/settings/account/calendar?connected=1&calendar_provider=microsoft",
+		},
+		{
+			name:       "local path",
+			websiteURL: "http://localhost:3000",
+			want:       "http://localhost:3000/acme/settings/account/calendar?connected=1&calendar_provider=microsoft",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			service := &Service{cfg: Config{WebsiteURL: test.websiteURL}}
+			got := service.workspaceCalendarURL("acme", "connected=1&calendar_provider=microsoft")
+			if got != test.want {
+				t.Fatalf("workspaceCalendarURL() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
 func (p *fakeCalendarUpdates) PublishCalendarUpdated(_ context.Context, workspaceID, userID, connectionID uuid.UUID, syncedAt time.Time) error {
 	p.calls++
 	p.workspaceID = workspaceID

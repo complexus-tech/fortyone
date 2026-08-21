@@ -46,7 +46,7 @@ const FigmaDesignCard = ({
       {link.artifact.thumbnailUrl ? (
         <a
           aria-label={`Open ${link.artifact.nodeName ?? link.artifact.fileName} in Figma`}
-          className="bg-surface-muted block aspect-[2.4/1] bg-cover bg-center transition-opacity hover:opacity-90"
+          className="bg-surface-muted block aspect-video bg-cover bg-center transition-opacity hover:opacity-90"
           href={link.artifact.canonicalUrl}
           rel="noopener noreferrer"
           style={{
@@ -151,9 +151,11 @@ export const FigmaSection = ({ storyId }: { storyId: string }) => {
         <FigmaIcon className="h-4 w-auto" />
         <Text className="font-semibold">Design</Text>
       </Flex>
-      {links.map((link) => (
-        <FigmaDesignCard key={link.id} link={link} storyId={storyId} />
-      ))}
+      <Box className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),24rem))] gap-4">
+        {links.map((link) => (
+          <FigmaDesignCard key={link.id} link={link} storyId={storyId} />
+        ))}
+      </Box>
     </Box>
   );
 };

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Box, Flex, Button, Text, Avatar } from "ui";
+import { Avatar, Badge, Box, Button, Flex, Text } from "ui";
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,8 @@ import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
 import { linkKeys } from "@/constants/keys";
 import { getLinks } from "@/lib/queries/links/get-links";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
+import { useFigmaHandoffStatuses } from "@/lib/hooks/figma";
+import { FigmaIcon } from "@/modules/settings/workspace/integrations/figma/icon";
 import { useBoard } from "../board-context";
 import { MemberTooltip } from "../member-tooltip";
 import { StoryContextMenu } from "./context-menu";
@@ -40,12 +42,14 @@ export const StoryCard = ({
   const { userRole } = useUserRole();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const queryClient = useQueryClient();
+  const { data: figmaHandoffStatuses } = useFigmaHandoffStatuses();
 
   const teamCode = story.team?.code;
   const storyReference = teamCode
     ? `${teamCode}-${story.sequenceId}`
     : String(story.sequenceId);
   const selectedAssignee = story.assignee;
+  const figmaHandoffStatus = figmaHandoffStatuses?.[story.id];
 
   const { mutate } = useUpdateStoryMutation();
 
@@ -141,6 +145,22 @@ export const StoryCard = ({
             </Link>
           </div>
           <Flex align="center" className="mt-1 gap-1.5" wrap>
+            {figmaHandoffStatus ? (
+              <Badge
+                className="gap-1"
+                color={
+                  figmaHandoffStatus === "COMPLETED" ? "success" : "secondary"
+                }
+                title={
+                  figmaHandoffStatus === "COMPLETED"
+                    ? "Completed in Figma"
+                    : "Ready for development in Figma"
+                }
+              >
+                <FigmaIcon className="h-3 w-auto" />
+                {figmaHandoffStatus === "COMPLETED" ? "Completed" : "Dev ready"}
+              </Badge>
+            ) : null}
             {isColumnVisible("Assignee") && (
               <AssigneesMenu>
                 <MemberTooltip member={selectedAssignee}>

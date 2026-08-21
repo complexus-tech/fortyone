@@ -3,7 +3,11 @@ import { toast } from "sonner";
 import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { figmaKeys, linkKeys } from "@/constants/keys";
-import { getFigmaIntegration, getStoryFigmaLinks } from "@/lib/queries/figma";
+import {
+  getFigmaHandoffStatuses,
+  getFigmaIntegration,
+  getStoryFigmaLinks,
+} from "@/lib/queries/figma";
 import {
   createFigmaInstallSessionAction,
   deleteFigmaStoryLinkAction,
@@ -32,6 +36,19 @@ export const useStoryFigmaLinks = (storyId: string) => {
     queryFn: () =>
       getStoryFigmaLinks(storyId, { session: session!, workspaceSlug }),
     refetchInterval: 60_000,
+  });
+};
+
+export const useFigmaHandoffStatuses = () => {
+  const { data: session } = useSession();
+  const { workspaceSlug } = useWorkspacePath();
+  return useQuery({
+    enabled: Boolean(session && workspaceSlug),
+    queryKey: figmaKeys.handoffStatuses(workspaceSlug),
+    queryFn: () =>
+      getFigmaHandoffStatuses({ session: session!, workspaceSlug }),
+    refetchInterval: 60_000,
+    staleTime: 60_000,
   });
 };
 
@@ -107,6 +124,9 @@ export const useLinkFigmaStory = () => {
           queryKey: figmaKeys.storyLinks(workspaceSlug, storyId),
         }),
         queryClient.invalidateQueries({ queryKey: linkKeys.story(storyId) }),
+        queryClient.invalidateQueries({
+          queryKey: figmaKeys.handoffStatuses(workspaceSlug),
+        }),
       ]);
     },
   });
@@ -136,6 +156,9 @@ export const useDeleteFigmaStoryLink = () => {
           queryKey: figmaKeys.storyLinks(workspaceSlug, storyId),
         }),
         queryClient.invalidateQueries({ queryKey: linkKeys.story(storyId) }),
+        queryClient.invalidateQueries({
+          queryKey: figmaKeys.handoffStatuses(workspaceSlug),
+        }),
       ]);
     },
     onError: (error) => toast.error("Figma", { description: error.message }),

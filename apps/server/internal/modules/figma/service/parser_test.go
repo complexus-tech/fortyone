@@ -57,6 +57,21 @@ func TestStoryURL(t *testing.T) {
 	require.Equal(t, "http://localhost:3000/acme/work/PRD-42", (&Service{config: Config{WebsiteURL: "http://localhost:3000"}}).storyURL("acme", story))
 }
 
+func TestIntegrationURLUsesWorkspaceRouting(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(
+		t,
+		"https://acme.fortyone.app/settings/workspace/integrations/figma?connected=1",
+		(&Service{config: Config{WebsiteURL: "https://cloud.fortyone.app"}}).integrationURL("acme", "connected=1"),
+	)
+	require.Equal(
+		t,
+		"http://localhost:3000/acme/settings/workspace/integrations/figma?connected=1",
+		(&Service{config: Config{WebsiteURL: "http://localhost:3000"}}).integrationURL("acme", "connected=1"),
+	)
+}
+
 func TestWebhookIDAcceptsStringAndNumber(t *testing.T) {
 	t.Parallel()
 	for _, payload := range []string{`{"webhook_id":"434"}`, `{"webhook_id":434}`} {

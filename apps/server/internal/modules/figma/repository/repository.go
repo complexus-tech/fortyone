@@ -92,6 +92,22 @@ func (r *Repo) ListStoryLinks(ctx context.Context, workspaceID, storyID uuid.UUI
 	return coreLinks(rows), err
 }
 
+func (r *Repo) ListStoryHandoffStatuses(ctx context.Context, workspaceID uuid.UUID) ([]figma.StoryHandoffStatus, error) {
+	var statuses []figma.StoryHandoffStatus
+	err := r.db.SelectContext(ctx, &statuses, `
+		SELECT story_id,
+			CASE
+				WHEN BOOL_AND(dev_status = 'COMPLETED') THEN 'COMPLETED'
+				ELSE 'READY_FOR_DEV'
+			END AS status
+		FROM story_figma_links
+		WHERE workspace_id = $1
+		GROUP BY story_id
+		HAVING BOOL_OR(dev_status IN ('READY_FOR_DEV', 'COMPLETED'))
+	`, workspaceID)
+	return statuses, err
+}
+
 func (r *Repo) ListLinksByFile(ctx context.Context, workspaceID uuid.UUID, fileKey string) ([]figma.StoryLink, error) {
 	var rows []storyLinkRow
 	err := r.db.SelectContext(ctx, &rows, storyLinkSelect+` WHERE workspace_id=$1 AND file_key=$2 ORDER BY created_at`, workspaceID, fileKey)

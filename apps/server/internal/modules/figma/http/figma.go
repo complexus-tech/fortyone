@@ -104,6 +104,18 @@ func (h *Handlers) ListStoryLinks(ctx context.Context, w http.ResponseWriter, r 
 	}
 	return web.Respond(ctx, w, links, http.StatusOK)
 }
+
+func (h *Handlers) ListStoryHandoffStatuses(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	statuses, err := h.service.ListStoryHandoffStatuses(ctx, workspace.ID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, statuses, http.StatusOK)
+}
 func (h *Handlers) LinkStory(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {

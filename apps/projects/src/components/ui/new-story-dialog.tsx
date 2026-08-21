@@ -131,6 +131,53 @@ type StoryFormAction =
   | { type: "PATCH_FORM"; payload: Partial<NewStory> }
   | { type: "SYNC_TEAM_STATUS"; teamId: string; statusId: string };
 
+const attachFigmaDesigns = async ({
+  artifacts,
+  linkDesign,
+  storyId,
+}: {
+  artifacts: FigmaArtifact[];
+  linkDesign: (input: { storyId: string; url: string }) => Promise<unknown>;
+  storyId: string;
+}) => {
+  const results = await Promise.allSettled(
+    artifacts.map((artifact) =>
+      linkDesign({ storyId, url: artifact.canonicalUrl }),
+    ),
+  );
+  const failedArtifacts = artifacts.filter(
+    (_, index) => results[index]?.status === "rejected",
+  );
+  const attachedCount = artifacts.length - failedArtifacts.length;
+
+  if (failedArtifacts.length === 0) {
+    toast.success(
+      `${artifacts.length} Figma design${artifacts.length === 1 ? "" : "s"} attached`,
+    );
+    return;
+  }
+
+  toast.error(
+    failedArtifacts.length === artifacts.length
+      ? "Figma designs could not be attached"
+      : `${attachedCount} of ${artifacts.length} Figma designs attached`,
+    {
+      description:
+        "The story was created. Retry the remaining design attachments.",
+      action: {
+        label: "Retry",
+        onClick: () => {
+          void attachFigmaDesigns({
+            artifacts: failedArtifacts,
+            linkDesign,
+            storyId,
+          });
+        },
+      },
+    },
+  );
+};
+
 const storyFormReducer = (
   state: NewStory,
   action: StoryFormAction,
@@ -276,9 +323,7 @@ export const NewStoryDialog = ({
   const [createMore, setCreateMore] = useState(false);
   const [storyTitle, setStoryTitle] = useState("");
   const [storySearchQuery, setStorySearchQuery] = useState("");
-  const [figmaArtifact, setFigmaArtifact] = useState<FigmaArtifact | null>(
-    null,
-  );
+  const [figmaArtifacts, setFigmaArtifacts] = useState<FigmaArtifact[]>([]);
   const assigneeButtonRef = useRef<HTMLButtonElement>(null);
   const timeNeededButtonRef = useRef<HTMLButtonElement>(null);
   const mutation = useCreateStoryMutation();
@@ -358,6 +403,34 @@ export const NewStoryDialog = ({
     immediatelyRender: false,
   });
 
+  const addFigmaTextToDescription = (artifact: FigmaArtifact) => {
+    if (!editor || !artifact.textContent?.length) return;
+    const name = artifact.nodeName ?? artifact.fileName;
+    editor
+      .chain()
+      .focus()
+      .insertContent([
+        {
+          type: "heading",
+          attrs: { level: 3 },
+          content: [{ type: "text", text: `Design notes — ${name}` }],
+        },
+        {
+          type: "bulletList",
+          content: artifact.textContent.map((text) => ({
+            type: "listItem",
+            content: [
+              {
+                type: "paragraph",
+                content: [{ type: "text", text }],
+              },
+            ],
+          })),
+        },
+      ])
+      .run();
+  };
+
   const handleCreateStory = async () => {
     if (!titleEditor || !editor) return;
     if (isMayaAssigneeLoading) return;
@@ -369,7 +442,7 @@ export const NewStoryDialog = ({
       return;
     }
     setLoading(true);
-    const selectedFigmaArtifact = figmaArtifact;
+    const selectedFigmaArtifacts = figmaArtifacts;
 
     const initialContent = getPersistableRichTextContent(editor);
     const newStory = buildNewStoryDialogPayload({
@@ -416,7 +489,7 @@ export const NewStoryDialog = ({
       clearRichTextContent(editor);
       resetForNextStory();
       dispatch({ type: "RESET_FORM", payload: initialForm });
-      setFigmaArtifact(null);
+      setFigmaArtifacts([]);
       deadlineSourceRef.current = initialDeadlineSource;
       if (tier === "free") {
         void queryClient.invalidateQueries({
@@ -424,24 +497,16 @@ export const NewStoryDialog = ({
         });
       }
 
-      const followUpError = await runStoryCreatedFollowUp(
-        committedStory,
-        selectedFigmaArtifact || onCreated
-          ? async (story) => {
-              const followUps: Promise<unknown>[] = [];
-              if (selectedFigmaArtifact) {
-                followUps.push(
-                  linkFigmaStory.mutateAsync({
-                    storyId: story.id,
-                    url: selectedFigmaArtifact.canonicalUrl,
-                  }),
-                );
-              }
-              if (onCreated) followUps.push(Promise.resolve(onCreated(story)));
-              await Promise.all(followUps);
-            }
-          : undefined,
-      );
+      const [followUpError] = await Promise.all([
+        runStoryCreatedFollowUp(committedStory, onCreated),
+        selectedFigmaArtifacts.length > 0
+          ? attachFigmaDesigns({
+              artifacts: selectedFigmaArtifacts,
+              linkDesign: linkFigmaStory.mutateAsync,
+              storyId: committedStory.id,
+            })
+          : Promise.resolve(),
+      ]);
       if (followUpError) {
         toast.error(
           `${getTermDisplay("storyTerm", { capitalize: true })} created, but the follow-up action failed`,
@@ -592,7 +657,7 @@ export const NewStoryDialog = ({
     >
       <Dialog
         onOpenChange={(open) => {
-          if (!open) setFigmaArtifact(null);
+          if (!open) setFigmaArtifacts([]);
           setIsOpen(open);
         }}
         open={isOpen}
@@ -1207,9 +1272,10 @@ export const NewStoryDialog = ({
                 ) : null}
               </Box>
               <NewStoryFigmaSource
-                artifact={figmaArtifact}
+                artifacts={figmaArtifacts}
                 enabled={isOpen}
-                onArtifactChange={setFigmaArtifact}
+                onAddDescription={addFigmaTextToDescription}
+                onArtifactsChange={setFigmaArtifacts}
                 onTitleSuggestion={(title) => {
                   if (titleEditor && !titleEditor.getText().trim()) {
                     titleEditor.commands.setContent(title);

@@ -166,6 +166,8 @@ export const figmaKeys = {
     ["figma", workspaceSlug, "integration"] as const,
   storyLinks: (workspaceSlug: string, storyId: string) =>
     ["figma", workspaceSlug, "story-links", storyId] as const,
+  handoffStatuses: (workspaceSlug: string) =>
+    ["figma", workspaceSlug, "handoff-statuses"] as const,
 };
 
 export const slackKeys = {

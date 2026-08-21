@@ -44,11 +44,72 @@ type fileResponse struct {
 }
 
 type nodeEnvelope struct {
-	Document struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-		Type string `json:"type"`
-	} `json:"document"`
+	Document figmaNode `json:"document"`
+}
+
+type figmaNode struct {
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	Type       string      `json:"type"`
+	Characters string      `json:"characters"`
+	Children   []figmaNode `json:"children"`
+}
+
+const (
+	maxImportedTextItems      = 24
+	maxImportedTextItemRunes  = 500
+	maxImportedTextTotalRunes = 4_000
+)
+
+func collectTextContent(node figmaNode) []string {
+	items := make([]string, 0, maxImportedTextItems)
+	seen := make(map[string]struct{}, maxImportedTextItems)
+	totalRunes := 0
+	var visit func(figmaNode)
+	visit = func(current figmaNode) {
+		if len(items) >= maxImportedTextItems {
+			return
+		}
+		if current.Type == "TEXT" {
+			value := strings.TrimSpace(current.Characters)
+			runes := []rune(value)
+			if len(runes) > maxImportedTextItemRunes {
+				runes = runes[:maxImportedTextItemRunes]
+				value = string(runes)
+			}
+			if value != "" {
+				if _, exists := seen[value]; !exists {
+					remaining := maxImportedTextTotalRunes - totalRunes
+					if remaining <= 0 {
+						return
+					}
+					if len(runes) > remaining {
+						runes = runes[:remaining]
+						value = string(runes)
+					}
+					seen[value] = struct{}{}
+					items = append(items, value)
+					totalRunes += len(runes)
+				}
+			}
+		}
+		for _, child := range current.Children {
+			visit(child)
+			if len(items) >= maxImportedTextItems {
+				return
+			}
+		}
+	}
+	visit(node)
+	return items
+}
+
+func extractTextContent(data json.RawMessage) []string {
+	var node figmaNode
+	if err := json.Unmarshal(data, &node); err != nil {
+		return nil
+	}
+	return collectTextContent(node)
 }
 
 func (c apiClient) exchange(ctx context.Context, code, redirectURL, verifier string) (oauthTokenResponse, error) {
@@ -97,6 +158,7 @@ func (c apiClient) resolve(ctx context.Context, token string, artifact Artifact)
 	artifact.LastModified = &response.LastModified
 	artifact.ThumbnailURL = optional(response.ThumbnailURL)
 	artifact.Metadata = response.Document
+	artifact.TextContent = extractTextContent(response.Document)
 	if artifact.NodeID != nil {
 		raw, ok := response.Nodes[*artifact.NodeID]
 		if !ok {
@@ -109,6 +171,7 @@ func (c apiClient) resolve(ctx context.Context, token string, artifact Artifact)
 		artifact.NodeName = optional(node.Document.Name)
 		artifact.NodeType = optional(node.Document.Type)
 		artifact.Metadata = raw
+		artifact.TextContent = collectTextContent(node.Document)
 		var images struct {
 			Images map[string]string `json:"images"`
 		}
