@@ -32,6 +32,7 @@ const (
 	defaultJWKSURL     = "https://login.microsoftonline.com/common/discovery/v2.0/keys"
 	defaultHTTPTimeout = 10 * time.Second
 	defaultJWKSMaxAge  = time.Hour
+	personalTenantID   = "9188040d-6c67-4c5b-b112-36a304b66dad"
 )
 
 type Config struct {
@@ -201,7 +202,10 @@ func (s *Service) ExchangeCode(ctx context.Context, code, verifier, nonce string
 	if err != nil {
 		return Identity{}, err
 	}
-	if !strings.EqualFold(strings.TrimSpace(profile.ID), identity.ObjectID) {
+	// Personal Microsoft accounts can expose a legacy Microsoft Graph profile
+	// identifier that differs from the signed oid claim. Keep tid + oid as the
+	// canonical identity for those accounts; Entra tenant profiles must match.
+	if !graphProfileMatchesIdentity(profile.ID, identity) {
 		return Identity{}, fmt.Errorf("%w: graph profile does not match token subject", ErrInvalidToken)
 	}
 
@@ -413,4 +417,13 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func isPersonalTenant(tenantID string) bool {
+	return strings.EqualFold(strings.TrimSpace(tenantID), personalTenantID)
+}
+
+func graphProfileMatchesIdentity(profileID string, identity Identity) bool {
+	return isPersonalTenant(identity.TenantID) ||
+		strings.EqualFold(strings.TrimSpace(profileID), strings.TrimSpace(identity.ObjectID))
 }

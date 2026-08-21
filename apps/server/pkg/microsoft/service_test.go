@@ -167,6 +167,47 @@ func TestVerifyIDTokenRejectsNonceMismatch(t *testing.T) {
 	}
 }
 
+func TestGraphProfileMatchesIdentity(t *testing.T) {
+	tests := []struct {
+		name      string
+		tenantID  string
+		profileID string
+		objectID  string
+		want      bool
+	}{
+		{
+			name:      "personal account can use legacy graph identifier",
+			tenantID:  personalTenantID,
+			profileID: "legacy-msa-graph-id",
+			objectID:  testObjectID,
+			want:      true,
+		},
+		{
+			name:      "organizational account with matching object ID",
+			tenantID:  testTenantID,
+			profileID: testObjectID,
+			objectID:  testObjectID,
+			want:      true,
+		},
+		{
+			name:      "organizational account with mismatched object ID",
+			tenantID:  testTenantID,
+			profileID: "44444444-4444-4444-8444-444444444444",
+			objectID:  testObjectID,
+			want:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			identity := Identity{TenantID: tt.tenantID, ObjectID: tt.objectID}
+			if got := graphProfileMatchesIdentity(tt.profileID, identity); got != tt.want {
+				t.Errorf("graphProfileMatchesIdentity() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func signIDToken(t *testing.T, privateKey *rsa.PrivateKey, now time.Time, nonce, tenantID, objectID string) string {
 	t.Helper()
 	claims := idTokenClaims{
