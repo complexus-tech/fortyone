@@ -29,11 +29,11 @@ html {
 /* Restore the browser typography scale for authentication and onboarding. */
 html:has(.onboarding-layout),
 html:has(.onboarding-layout) body {
-  font-size: 15px;
+  font-size: 14.5px;
 }
 
 html:has(.onboarding-layout) :is(input, textarea, select) {
-  font-size: 15px;
+  font-size: 14.5px;
 }
 
 @media (prefers-reduced-motion: reduce) {
