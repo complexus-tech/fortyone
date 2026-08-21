@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge, Box, Button, Flex, Text } from "ui";
 import { ArrowRight2Icon } from "icons";
+import { toast } from "sonner";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import {
   useCreateFigmaInstallSession,
@@ -15,11 +18,32 @@ import {
 import { FigmaIcon } from "./icon";
 
 export const FigmaIntegrationSettings = () => {
+  const searchParams = useSearchParams();
   const { data: integration } = useFigmaIntegration();
   const connect = useCreateFigmaInstallSession();
   const disconnect = useDisconnectFigma();
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
+  const handledCallbackResult = useRef<string | null>(null);
+
+  useEffect(() => {
+    const connected = searchParams.get("connected") === "1";
+    const connectionError = searchParams.get("figma_error");
+    if (!connected && !connectionError) return;
+
+    const callbackResult = connected ? "connected" : connectionError;
+    if (handledCallbackResult.current === callbackResult) return;
+    handledCallbackResult.current = callbackResult;
+    if (connected) {
+      toast.success("Figma connected");
+    } else {
+      toast.error("Figma could not be connected. Please try again.");
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.delete("connected");
+    url.searchParams.delete("figma_error");
+    window.history.replaceState({}, "", url.toString());
+  }, [searchParams]);
 
   return (
     <Box>

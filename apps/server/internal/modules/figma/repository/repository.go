@@ -8,6 +8,7 @@ import (
 	figma "github.com/complexus-tech/projects-api/internal/modules/figma/service"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type Repo struct{ db *sqlx.DB }
@@ -56,7 +57,7 @@ func (r *Repo) UpsertConnection(ctx context.Context, connection figma.Connection
 		INSERT INTO figma_connections (workspace_id, figma_user_id, figma_email, figma_handle, token_payload, scopes, expires_at, connected_by_user_id)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
 		RETURNING id, workspace_id, figma_user_id, figma_email, figma_handle, token_payload, scopes, expires_at, connected_by_user_id, is_active, created_at, updated_at
-	`, connection.WorkspaceID, connection.FigmaUserID, connection.Email, connection.Handle, connection.TokenPayload, connection.Scopes, connection.ExpiresAt, connection.ConnectedByUserID)
+	`, connection.WorkspaceID, connection.FigmaUserID, connection.Email, connection.Handle, connection.TokenPayload, pq.StringArray(connection.Scopes), connection.ExpiresAt, connection.ConnectedByUserID)
 	if err != nil {
 		return figma.Connection{}, err
 	}
@@ -244,22 +245,22 @@ func (r *Repo) DeactivateWebhook(ctx context.Context, figmaWebhookID int64) erro
 }
 
 type connectionRow struct {
-	ID                uuid.UUID `db:"id"`
-	WorkspaceID       uuid.UUID `db:"workspace_id"`
-	FigmaUserID       string    `db:"figma_user_id"`
-	Email             *string   `db:"figma_email"`
-	Handle            *string   `db:"figma_handle"`
-	TokenPayload      string    `db:"token_payload"`
-	Scopes            []string  `db:"scopes"`
-	ExpiresAt         time.Time `db:"expires_at"`
-	ConnectedByUserID uuid.UUID `db:"connected_by_user_id"`
-	IsActive          bool      `db:"is_active"`
-	CreatedAt         time.Time `db:"created_at"`
-	UpdatedAt         time.Time `db:"updated_at"`
+	ID                uuid.UUID      `db:"id"`
+	WorkspaceID       uuid.UUID      `db:"workspace_id"`
+	FigmaUserID       string         `db:"figma_user_id"`
+	Email             *string        `db:"figma_email"`
+	Handle            *string        `db:"figma_handle"`
+	TokenPayload      string         `db:"token_payload"`
+	Scopes            pq.StringArray `db:"scopes"`
+	ExpiresAt         time.Time      `db:"expires_at"`
+	ConnectedByUserID uuid.UUID      `db:"connected_by_user_id"`
+	IsActive          bool           `db:"is_active"`
+	CreatedAt         time.Time      `db:"created_at"`
+	UpdatedAt         time.Time      `db:"updated_at"`
 }
 
 func (r connectionRow) core() figma.Connection {
-	return figma.Connection{ID: r.ID, WorkspaceID: r.WorkspaceID, FigmaUserID: r.FigmaUserID, Email: r.Email, Handle: r.Handle, TokenPayload: r.TokenPayload, Scopes: r.Scopes, ExpiresAt: r.ExpiresAt, ConnectedByUserID: r.ConnectedByUserID, IsActive: r.IsActive, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
+	return figma.Connection{ID: r.ID, WorkspaceID: r.WorkspaceID, FigmaUserID: r.FigmaUserID, Email: r.Email, Handle: r.Handle, TokenPayload: r.TokenPayload, Scopes: []string(r.Scopes), ExpiresAt: r.ExpiresAt, ConnectedByUserID: r.ConnectedByUserID, IsActive: r.IsActive, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
 }
 
 const storyLinkColumns = `id,workspace_id,story_id,created_by_user_id,story_link_id,file_key,node_id,original_url,canonical_url,file_name,node_name,node_type,thumbnail_url,version,last_modified,dev_status,dev_resource_id,metadata,last_synced_at,unavailable_at,created_at,updated_at`

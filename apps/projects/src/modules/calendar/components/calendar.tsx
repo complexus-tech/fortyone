@@ -2201,7 +2201,7 @@ export const PersonalCalendar = ({
   const connection =
     connections.find((item) => item.requiresReauthorization) ??
     connections.find((item) => item.syncStatus === "failed") ??
-    connections[0];
+    connections.at(0);
   const timeZoneLabel = getUtcOffsetLabel(viewRange.start);
   const timeZoneName = getLocalTimeZoneName();
   const canReadEventDetails = connections.some(
@@ -2353,6 +2353,10 @@ export const PersonalCalendar = ({
         isReconnectPending={createConnectSession.isPending}
         isSyncing={syncCalendar.isPending}
         onReconnect={() => {
+          if (!connection) {
+            return;
+          }
+
           createConnectSession.mutate(
             connection.provider === "microsoft" ? "microsoft" : "google",
           );

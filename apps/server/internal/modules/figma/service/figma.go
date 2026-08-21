@@ -94,19 +94,23 @@ func (s *Service) CompleteOAuth(ctx context.Context, code, state string) (string
 	if err != nil {
 		return "", errors.New("the Figma connection session expired; try again")
 	}
+	failureURL := s.integrationURL(stored.WorkspaceSlug, "figma_error=connection_failed")
 	response, err := s.client.exchange(ctx, code, s.config.RedirectURL, stored.CodeVerifier)
 	if err != nil {
-		return "", err
+		s.log.Error(ctx, "failed exchanging Figma OAuth code", "error", err, "workspace_id", stored.WorkspaceID)
+		return failureURL, err
 	}
 	user, err := s.client.currentUser(ctx, response.AccessToken)
 	if err != nil {
-		return "", err
+		s.log.Error(ctx, "failed loading Figma OAuth user", "error", err, "workspace_id", stored.WorkspaceID)
+		return failureURL, err
 	}
 	expiresAt := s.now().UTC().Add(time.Duration(response.ExpiresIn) * time.Second)
 	token := Token{AccessToken: response.AccessToken, RefreshToken: response.RefreshToken, TokenType: response.TokenType, ExpiresAt: expiresAt}
 	payload, err := encryptToken(s.config.SecretKey, token)
 	if err != nil {
-		return "", err
+		s.log.Error(ctx, "failed encrypting Figma OAuth token", "error", err, "workspace_id", stored.WorkspaceID)
+		return failureURL, err
 	}
 	userID := user.ID
 	if userID == "" {
@@ -119,9 +123,14 @@ func (s *Service) CompleteOAuth(ctx context.Context, code, state string) (string
 	}
 	_, err = s.repo.UpsertConnection(ctx, Connection{WorkspaceID: stored.WorkspaceID, FigmaUserID: userID, Email: optional(user.Email), Handle: optional(user.Handle), TokenPayload: payload, Scopes: append([]string(nil), oauthScopes...), ExpiresAt: expiresAt, ConnectedByUserID: stored.UserID, IsActive: true})
 	if err != nil {
-		return "", err
+		s.log.Error(ctx, "failed storing Figma OAuth connection", "error", err, "workspace_id", stored.WorkspaceID)
+		return failureURL, err
 	}
-	return strings.TrimRight(s.config.WebsiteURL, "/") + "/" + url.PathEscape(stored.WorkspaceSlug) + "/settings/workspace/integrations/figma?connected=1", nil
+	return s.integrationURL(stored.WorkspaceSlug, "connected=1"), nil
+}
+
+func (s *Service) integrationURL(workspaceSlug, rawQuery string) string {
+	return strings.TrimRight(s.config.WebsiteURL, "/") + "/" + url.PathEscape(workspaceSlug) + "/settings/workspace/integrations/figma?" + rawQuery
 }
 
 func (s *Service) Disconnect(ctx context.Context, workspaceID uuid.UUID) error {

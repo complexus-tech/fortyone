@@ -55,6 +55,10 @@ func (h *Handlers) CreateInstallSession(ctx context.Context, w http.ResponseWrit
 func (h *Handlers) CompleteOAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	redirect, err := h.service.CompleteOAuth(ctx, r.URL.Query().Get("code"), r.URL.Query().Get("state"))
 	if err != nil {
+		if redirect != "" {
+			http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+			return nil
+		}
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
