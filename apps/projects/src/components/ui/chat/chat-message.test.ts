@@ -141,6 +141,26 @@ describe("ChatMessage", () => {
     );
   });
 
+  it("uses private evidence for focus advice and reserves reports for explicit intent", () => {
+    const promptSource = readSource("src/app/api/chat/system.ts");
+
+    expect(promptSource).toContain(
+      "Default to at most one user-facing generative UI result per response",
+    );
+    expect(promptSource).toContain(
+      'For advice such as "what should I focus on today/next?", "what needs attention?", or "what should this person/team focus on?", use focusBrief',
+    );
+    expect(promptSource).toContain(
+      "Treat focusBrief as private evidence. Never expose or describe its payload",
+    );
+    expect(promptSource).toContain(
+      "Do not infer a visual report from a request for advice",
+    );
+    expect(promptSource).toContain(
+      "Use resolveMember when a member name or username must be converted to an ID",
+    );
+  });
+
   it("renders empty list results as plain text without generative list chrome", () => {
     const source = readSource("src/components/ui/chat/generative-list.tsx");
 

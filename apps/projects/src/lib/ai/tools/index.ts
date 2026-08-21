@@ -52,7 +52,7 @@ import {
   getTeamSettingsTool,
 } from "@/lib/ai/tools/teams";
 import { navigation } from "./navigation";
-import { membersTool } from "./members";
+import { membersTool, resolveMemberTool } from "./members";
 import { theme } from "./theme";
 import { searchTool } from "./search";
 import { linksTool } from "./links";
@@ -81,6 +81,7 @@ import {
   timelineTrendsReportTool,
 } from "./analytics";
 import { workloadPlanningTool } from "./workload";
+import { focusBriefTool } from "./focus-brief";
 import { mayaWorkPlanTool } from "./maya";
 import { activitySummaryTool } from "./activity-summary";
 import {
@@ -112,7 +113,7 @@ import { getCustomerFeedbackTool, listCustomerFeedbackTool } from "./feedback";
 import { getDocumentDetailsTool, listDocumentsTool } from "./documents";
 
 export { navigation } from "./navigation";
-export { membersTool } from "./members";
+export { membersTool, resolveMemberTool } from "./members";
 export { statusesTool } from "./statuses";
 export { objectiveStatusesTool } from "./objective-statuses";
 export { searchTool } from "./search";
@@ -140,6 +141,7 @@ export {
   timelineTrendsReportTool,
 } from "./analytics";
 export { workloadPlanningTool } from "./workload";
+export { focusBriefTool } from "./focus-brief";
 export { mayaWorkPlanTool } from "./maya";
 export { activitySummaryTool } from "./activity-summary";
 export {
@@ -175,6 +177,7 @@ export const tools = {
   theme,
   suggestions,
   members: membersTool,
+  resolveMember: resolveMemberTool,
   search: searchTool,
   notifications: notificationsTool,
   comments: commentsTool,
@@ -187,6 +190,7 @@ export const tools = {
   sprintPerformanceReportTool,
   timelineTrendsReportTool,
   workloadPlanningTool,
+  focusBrief: focusBriefTool,
   mayaWorkPlanTool,
   activitySummaryTool,
   // GitHub

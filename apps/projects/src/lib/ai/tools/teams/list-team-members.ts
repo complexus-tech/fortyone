@@ -6,7 +6,7 @@ import { resolvePaginationInput } from "../tool-helpers";
 
 export const listTeamMembers = tool({
   description:
-    "List all members of a specific team. Returns member details including roles and contact information.",
+    "Show a user-facing list of members in a specific team, including roles and contact information. Use this only when the requested outcome is to browse or search that team roster; use resolveMember for an internal name-to-ID lookup.",
   inputSchema: z.object({
     teamId: z.string().describe("Team ID to list members for (required)"),
     searchQuery: z

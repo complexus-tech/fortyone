@@ -243,4 +243,131 @@ describe("entity results generative UI", () => {
 
     expect(Array.from(getVisibleToolPartIndexes(message))).toEqual([2]);
   });
+
+  it("hides a legacy member search as soon as its story query starts", () => {
+    const message = {
+      id: "message-5",
+      parts: [
+        {
+          input: { action: "search-members", searchQuery: "Thomas" },
+          output: {
+            members: [{ id: "member-1", name: "Thomas Moyo" }],
+            success: true,
+          },
+          state: "output-available",
+          type: "tool-members",
+        },
+        {
+          input: { filters: { assigneeIds: ["member-1"] } },
+          state: "input-streaming",
+          type: "tool-listTeamStories",
+        },
+      ],
+      role: "assistant",
+    } as unknown as MayaUIMessage;
+
+    expect(Array.from(getVisibleToolPartIndexes(message))).toEqual([]);
+  });
+
+  it("keeps a member search visible when people are the requested result", () => {
+    const message = {
+      id: "message-member-search",
+      parts: [
+        {
+          input: { action: "search-members", searchQuery: "Thomas" },
+          output: {
+            members: [{ id: "member-1", name: "Thomas Moyo" }],
+            success: true,
+          },
+          state: "output-available",
+          type: "tool-members",
+        },
+      ],
+      role: "assistant",
+    } as unknown as MayaUIMessage;
+
+    expect(Array.from(getVisibleToolPartIndexes(message))).toEqual([0]);
+  });
+
+  it("shows only stories after a member resolver lookup", () => {
+    const message = {
+      id: "message-6",
+      parts: [
+        {
+          input: { query: "Thomas" },
+          output: {
+            match: { id: "member-1", name: "Thomas Moyo" },
+            matches: [{ id: "member-1", name: "Thomas Moyo" }],
+            success: true,
+          },
+          state: "output-available",
+          type: "tool-resolveMember",
+        },
+        {
+          input: { filters: { assigneeIds: ["member-1"] } },
+          output: {
+            kind: "story-list",
+            stories: [{ id: "story-1", title: "Prepare launch" }],
+            success: true,
+          },
+          state: "output-available",
+          type: "tool-listTeamStories",
+        },
+      ],
+      role: "assistant",
+    } as unknown as MayaUIMessage;
+
+    expect(Array.from(getVisibleToolPartIndexes(message))).toEqual([1]);
+  });
+
+  it("keeps an explicit member list alongside a separately requested story list", () => {
+    const message = {
+      id: "message-7",
+      parts: [
+        {
+          input: { action: "list-all-members" },
+          output: {
+            members: [{ id: "member-1", name: "Thomas Moyo" }],
+            success: true,
+          },
+          state: "output-available",
+          type: "tool-members",
+        },
+        {
+          input: { filters: {} },
+          output: { kind: "story-list", stories: [], success: true },
+          state: "output-available",
+          type: "tool-listTeamStories",
+        },
+      ],
+      role: "assistant",
+    } as unknown as MayaUIMessage;
+
+    expect(Array.from(getVisibleToolPartIndexes(message))).toEqual([0, 1]);
+  });
+
+  it("does not throw on a saved member lookup without input", () => {
+    const message = {
+      id: "message-8",
+      parts: [
+        {
+          output: {
+            members: [{ id: "member-1", name: "Thomas Moyo" }],
+            success: true,
+          },
+          state: "output-available",
+          type: "tool-members",
+        },
+        {
+          input: { filters: { assigneeIds: ["member-1"] } },
+          output: { kind: "story-list", stories: [], success: true },
+          state: "output-available",
+          type: "tool-listTeamStories",
+        },
+      ],
+      role: "assistant",
+    } as unknown as MayaUIMessage;
+
+    expect(Array.from(getVisibleToolPartIndexes(message))).toEqual([1]);
+  });
 });

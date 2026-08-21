@@ -2,6 +2,7 @@ import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { ToolMessagePart } from "./tool-output-policy";
 import {
   isAnalyticsReportOutput,
+  isMemberResolverToolPart,
   isMutationToolType,
   isRenderableToolPart,
   isSupportingToolType,
@@ -19,6 +20,25 @@ const TEAM_SCOPED_RESULT_TYPES = new Set([
 ]);
 
 const TEAM_RESOLVER_TYPES = new Set(["tool-listTeams", "tool-listPublicTeams"]);
+
+const MEMBER_RESULT_TYPES = new Set(["tool-members", "tool-listTeamMembers"]);
+
+const MEMBER_SCOPED_RESULT_TYPES = new Set([
+  "tool-listTeamStories",
+  "tool-searchStories",
+  "tool-focusBrief",
+  "tool-workspacePerformanceReportTool",
+  "tool-workspaceCommandCenterReportTool",
+  "tool-pulseReportTool",
+  "tool-storyPerformanceReportTool",
+  "tool-objectiveProgressReportTool",
+  "tool-teamPerformanceReportTool",
+  "tool-sprintPerformanceReportTool",
+  "tool-timelineTrendsReportTool",
+  "tool-workloadPlanningTool",
+  "tool-mayaWorkPlanTool",
+  "tool-activitySummaryTool",
+]);
 
 const PROMPT_URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<>"']+/gi;
 const TRAILING_PROMPT_URL_PUNCTUATION = /[.,!?;:]+$/;
@@ -85,6 +105,9 @@ export const getPromptTextSegments = (text: string): PromptTextSegment[] => {
 };
 
 export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
+  const invokedToolParts = message.parts.flatMap((part, index) =>
+    isToolMessagePart(part) ? [{ index, part }] : [],
+  );
   const mutationPartIndexes = message.parts.flatMap((part, index) =>
     isToolMessagePart(part) &&
     part.state === "output-available" &&
@@ -101,6 +124,9 @@ export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
   return new Set(
     toolParts.flatMap(({ index, part }, toolIndex) => {
       const laterToolParts = toolParts.slice(toolIndex + 1);
+      const laterInvokedToolParts = invokedToolParts.filter(
+        ({ index: laterIndex }) => laterIndex > index,
+      );
       const feedsLaterReport =
         !isAnalyticsReportOutput(part.output) &&
         laterToolParts.some(({ part: laterPart }) =>
@@ -110,6 +136,14 @@ export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
         TEAM_RESOLVER_TYPES.has(part.type) &&
         laterToolParts.some(({ part: laterPart }) =>
           TEAM_SCOPED_RESULT_TYPES.has(laterPart.type),
+        );
+      const feedsLaterMemberResult =
+        (isMemberResolverToolPart(part) ||
+          (MEMBER_RESULT_TYPES.has(part.type) && !("input" in part))) &&
+        laterInvokedToolParts.some(
+          ({ part: laterPart }) =>
+            MEMBER_SCOPED_RESULT_TYPES.has(laterPart.type) ||
+            isMutationToolType(laterPart.type),
         );
       const hasLaterResultOfSameType = laterToolParts.some(
         ({ part: laterPart }) => laterPart.type === part.type,
@@ -122,6 +156,7 @@ export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
 
       return feedsLaterReport ||
         feedsLaterTeamResult ||
+        feedsLaterMemberResult ||
         hasLaterResultOfSameType ||
         feedsLaterMutation
         ? []
@@ -182,6 +217,7 @@ const TOOL_THINKING_LABELS: Record<string, string> = {
   "tool-navigation": "Navigating",
   "tool-search": "Searching",
   "tool-members": "Loading members",
+  "tool-resolveMember": "Resolving member",
   "tool-comments": "Loading comments",
   "tool-notifications": "Checking notifications",
   "tool-workspacePerformanceReportTool": "Building workspace report",
@@ -193,6 +229,7 @@ const TOOL_THINKING_LABELS: Record<string, string> = {
   "tool-sprintPerformanceReportTool": "Building sprint report",
   "tool-timelineTrendsReportTool": "Building trends report",
   "tool-workloadPlanningTool": "Analyzing workload",
+  "tool-focusBrief": "Reviewing priorities",
   "tool-mayaWorkPlanTool": "Planning work",
   "tool-getGitHubIntegrationTool": "Checking GitHub integration",
   "tool-createGitHubInstallSessionTool": "Creating GitHub install link",

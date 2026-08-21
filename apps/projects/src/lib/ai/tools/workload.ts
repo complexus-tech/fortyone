@@ -14,7 +14,7 @@ const compactFilters = (filters: AnalyticsFilters) => {
 
 export const workloadPlanningTool = tool({
   description:
-    "Answer workload and planning questions from the backend workload analysis report. Use for overloaded people, unassigned work, overdue/high-priority work, team workload, sprint workload, and who may need help.",
+    "Build a visible workload analysis report. Use only when the user explicitly asks to see or compare overloaded people, unassigned work, overdue or high-priority work, team or sprint workload, capacity distribution, or who may need help. Use focusBrief instead for what-to-focus-on advice.",
   inputSchema: z.object({
     teamIds: z
       .array(z.string())

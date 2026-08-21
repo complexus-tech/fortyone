@@ -29,12 +29,27 @@ describe("ChatContent", () => {
     expect(layoutSource).not.toContain("ResizablePanel");
     expect(popupSource).toContain("w-[min(460px,calc(100vw-36px))]");
     expect(popupSource).toContain("h-[min(760px,calc(100dvh-64px))]");
-    expect(popupSource).toContain("border-border/70 dark:border-border");
+    expect(popupSource).toContain("border-border/80 dark:border-border");
     expect(popupSource).toContain("border-[0.5px]");
     expect(popupSource).toContain("rounded-2xl");
     expect(popupSource).toContain("bg-white/80");
     expect(popupSource).toContain("dark:bg-surface-elevated/90");
     expect(popupSource).toContain("<ChatContent isPopup />");
+  });
+
+  it("keeps the popup header open to content with restrained top spacing", () => {
+    const contentSource = readSource("src/components/ui/chat/content.tsx");
+    const messagesSource = readSource(
+      "src/components/ui/chat/chat-messages.tsx",
+    );
+    const suggestionsSource = readSource(
+      "src/components/ui/chat/suggested-prompts.tsx",
+    );
+
+    expect(contentSource).toContain('"h-19 px-5 py-3": isPopup');
+    expect(contentSource).not.toContain("border-b-[0.5px]");
+    expect(messagesSource).toContain('"px-[18px] pt-4 pb-5": isPopup');
+    expect(suggestionsSource).toContain('className="px-[18px] pt-8 pb-[18px]"');
   });
 
   it("uses a subtle prompt border inside the popup", () => {

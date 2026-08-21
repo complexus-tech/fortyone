@@ -90,7 +90,7 @@ export const ChatMessages = ({
     <Box
       className={cn("flex-1 overflow-y-auto", {
         "hide-scrollbar": !isOnPage,
-        "px-[18px] py-5": isPopup,
+        "px-[18px] pt-4 pb-5": isPopup,
       })}
       onScroll={handleScroll}
     >

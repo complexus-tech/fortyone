@@ -2,6 +2,7 @@
 
 import {
   isRenderableToolPart,
+  isSupportingToolType,
   type ToolMessagePart,
 } from "./tool-output-policy";
 
@@ -30,6 +31,21 @@ describe("tool output policy", () => {
       type: "tool-mayaWorkPlanTool",
     } as unknown as ToolMessagePart;
 
+    expect(isRenderableToolPart(part)).toBe(false);
+  });
+
+  it.each([
+    ["tool-resolveMember", { kind: "member-resolution", matches: [] }],
+    ["tool-focusBrief", { kind: "focus-brief-data", candidates: [] }],
+  ])("keeps %s supporting data out of generative UI", (type, output) => {
+    const part = {
+      input: {},
+      output: { success: true, ...output },
+      state: "output-available",
+      type,
+    } as unknown as ToolMessagePart;
+
+    expect(isSupportingToolType(type)).toBe(true);
     expect(isRenderableToolPart(part)).toBe(false);
   });
 });

@@ -14,6 +14,13 @@ export type ToolMessagePart = MayaUIMessage["parts"][number] & {
 const SUPPORTING_TOOL_TYPES = new Set([
   "tool-statuses",
   "tool-objectiveStatuses",
+  "tool-resolveMember",
+  "tool-focusBrief",
+]);
+
+const LEGACY_MEMBER_RESOLUTION_ACTIONS = new Set([
+  "search-members",
+  "get-member-details",
 ]);
 
 const STORY_RESULT_TOOL_TYPES = new Set([
@@ -95,6 +102,25 @@ export const asToolOutputRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+
+export const isMemberResolverToolPart = (part: ToolMessagePart) => {
+  if (part.type === "tool-resolveMember") return true;
+
+  if (part.type === "tool-members") {
+    const input = "input" in part ? asToolOutputRecord(part.input) : {};
+    return (
+      typeof input.action === "string" &&
+      LEGACY_MEMBER_RESOLUTION_ACTIONS.has(input.action)
+    );
+  }
+
+  if (part.type === "tool-listTeamMembers") {
+    const input = "input" in part ? asToolOutputRecord(part.input) : {};
+    return typeof input.searchQuery === "string" && Boolean(input.searchQuery);
+  }
+
+  return false;
+};
 
 export const getStoryCreationMessage = (output: unknown) => {
   const outputRecord = asToolOutputRecord(output);
