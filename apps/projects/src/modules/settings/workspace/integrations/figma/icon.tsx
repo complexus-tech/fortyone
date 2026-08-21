@@ -1,0 +1,34 @@
+export const FigmaIcon = ({
+  className = "h-5 w-5",
+}: {
+  className?: string;
+}) => (
+  <svg
+    aria-hidden="true"
+    className={className}
+    fill="none"
+    viewBox="0 0 38 57"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M19 28.5C19 23.3 23.3 19 28.5 19S38 23.3 38 28.5 33.7 38 28.5 38 19 33.7 19 28.5Z"
+      fill="#1ABCFE"
+    />
+    <path
+      d="M0 47.5C0 42.3 4.3 38 9.5 38H19v9.5C19 52.7 14.7 57 9.5 57S0 52.7 0 47.5Z"
+      fill="#0ACF83"
+    />
+    <path
+      d="M19 0v19h9.5C33.7 19 38 14.7 38 9.5S33.7 0 28.5 0H19Z"
+      fill="#FF7262"
+    />
+    <path
+      d="M0 9.5C0 14.7 4.3 19 9.5 19H19V0H9.5C4.3 0 0 4.3 0 9.5Z"
+      fill="#F24E1E"
+    />
+    <path
+      d="M0 28.5C0 33.7 4.3 38 9.5 38H19V19H9.5C4.3 19 0 23.3 0 28.5Z"
+      fill="#A259FF"
+    />
+  </svg>
+);

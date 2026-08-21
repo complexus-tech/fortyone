@@ -8,6 +8,8 @@ import type { NewLink } from "@/lib/actions/links/create-link";
 import type { Link } from "@/types";
 import { useUpdateLinkMutation } from "@/lib/hooks/update-link-mutation";
 import { useTerminology } from "@/hooks";
+import { useLinkFigmaStory } from "@/lib/hooks/figma";
+import { isFigmaURL } from "@/modules/settings/workspace/integrations/figma/url";
 
 export const AddLinkDialog = ({
   isOpen,
@@ -23,6 +25,7 @@ export const AddLinkDialog = ({
   const { getTermDisplay } = useTerminology();
   const { mutate: createLink } = useCreateLinkMutation();
   const { mutate: updateLink } = useUpdateLinkMutation();
+  const linkFigmaStory = useLinkFigmaStory();
   const [form, setForm] = useState<NewLink>({
     url: link?.url || "",
     title: link?.title || "",
@@ -54,6 +57,17 @@ export const AddLinkDialog = ({
         },
       );
     } else {
+      if (isFigmaURL(form.url)) {
+        linkFigmaStory.mutate(
+          { storyId, url: form.url },
+          {
+            onError: () => {
+              setIsOpen(true);
+            },
+          },
+        );
+        return;
+      }
       createLink(form, {
         onError: () => {
           setIsOpen(true);
@@ -108,9 +122,7 @@ export const AddLinkDialog = ({
                   "px-4": isEditing,
                 })}
                 leftIcon={
-                  isEditing ? null : (
-                    <PlusIcon className="text-current" />
-                  )
+                  isEditing ? null : <PlusIcon className="text-current" />
                 }
                 type="submit"
               >

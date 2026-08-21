@@ -18,6 +18,7 @@ import { useCopyToClipboard } from "@/hooks/clipboard";
 import { useLinkMetadata } from "@/lib/hooks/link-metadata";
 import { useDeleteLinkMutation } from "@/lib/hooks/delete-link-mutation";
 import { useUserRole } from "@/hooks";
+import { useStoryFigmaLinks } from "@/lib/hooks/figma";
 import { AddLinkDialog } from "./add-link-dialog";
 
 const StoryLink = ({ link }: { link: LinkType }) => {
@@ -153,14 +154,19 @@ export const Links = ({
 }) => {
   const [isAddLinkDialogOpen, setIsAddLinkDialogOpen] = useState(false);
   const { userRole } = useUserRole();
+  const { data: figmaLinks = [] } = useStoryFigmaLinks(storyId);
+  const mirroredFigmaURLs = new Set(
+    figmaLinks.map(({ artifact }) => artifact.canonicalUrl),
+  );
+  const visibleLinks = links.filter((link) => !mirroredFigmaURLs.has(link.url));
 
   return (
     <Box className="mt-4">
-      {links.length > 0 && (
+      {visibleLinks.length > 0 && (
         <Flex
           align="center"
           className="border-border border-b-[0.5px] pb-2"
-          justify={links.length > 0 ? "between" : "end"}
+          justify={visibleLinks.length > 0 ? "between" : "end"}
         >
           <Button
             className="font-semibold"
@@ -200,9 +206,9 @@ export const Links = ({
         </Flex>
       )}
 
-      {isLinksOpen && links.length > 0 ? (
+      {isLinksOpen && visibleLinks.length > 0 ? (
         <Box>
-          {links.map((link) => (
+          {visibleLinks.map((link) => (
             <StoryLink key={link.id} link={link} />
           ))}
         </Box>

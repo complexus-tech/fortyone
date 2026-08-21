@@ -66,6 +66,10 @@ type Config struct {
 	SlackClientID               string
 	SlackClientSecret           string
 	SlackRedirectURL            string
+	FigmaClientID               string
+	FigmaClientSecret           string
+	FigmaRedirectURL            string
+	FigmaWebhookURL             string
 	AIAPIKey                    string
 	SSEHub                      *sse.Hub
 	CorsOrigin                  string

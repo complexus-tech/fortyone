@@ -161,6 +161,13 @@ export const githubKeys = {
     ["github", workspaceSlug, "request-comments", requestId] as const,
 };
 
+export const figmaKeys = {
+  integration: (workspaceSlug: string) =>
+    ["figma", workspaceSlug, "integration"] as const,
+  storyLinks: (workspaceSlug: string, storyId: string) =>
+    ["figma", workspaceSlug, "story-links", storyId] as const,
+};
+
 export const slackKeys = {
   integration: (workspaceSlug: string) =>
     ["slack", workspaceSlug, "integration"] as const,

@@ -32,6 +32,7 @@ import { Links } from "./links";
 import { SubStories } from "./sub-stories";
 import { StoryBanners } from "./story-banners";
 import { LinksSkeleton } from "./links-skeleton";
+import { FigmaSection } from "./figma-section";
 import { OptionsHeader } from "./options-header";
 import { Options } from "./options";
 
@@ -239,6 +240,7 @@ export const MainDetails = ({
           setIsAssociationsOpen={setIsAssociationsOpen}
           storyId={storyId}
         />
+        <FigmaSection storyId={storyId} />
         {isLinksLoading ? (
           <LinksSkeleton />
         ) : (

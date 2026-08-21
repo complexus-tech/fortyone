@@ -12,6 +12,7 @@ import (
 	emailreplyhttp "github.com/complexus-tech/projects-api/internal/modules/emailreply/http"
 	epicshttp "github.com/complexus-tech/projects-api/internal/modules/epics/http"
 	feedbackhttp "github.com/complexus-tech/projects-api/internal/modules/feedback/http"
+	figmahttp "github.com/complexus-tech/projects-api/internal/modules/figma/http"
 	githubhttp "github.com/complexus-tech/projects-api/internal/modules/github/http"
 	healthhttp "github.com/complexus-tech/projects-api/internal/modules/health/http"
 	integrationrequestshttp "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/http"
@@ -99,6 +100,13 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:     cfg.Cache,
 		Service:   svcs.github,
 		Users:     &userLookupAdapter{svc: svcs.users},
+	}, app)
+	figmahttp.Routes(figmahttp.Config{
+		DB:        cfg.DB,
+		Log:       cfg.Log,
+		SecretKey: cfg.SecretKey,
+		Cache:     cfg.Cache,
+		Service:   svcs.figma,
 	}, app)
 	slackhttp.Routes(slackhttp.Config{
 		DB:        cfg.DB,

@@ -162,6 +162,7 @@ export const NewStoryDialog = ({
   objectiveId,
   sprintId,
   description,
+  initialTitle,
   onCreated,
 }: {
   isOpen: boolean;
@@ -173,6 +174,7 @@ export const NewStoryDialog = ({
   priority?: StoryPriority;
   assigneeId?: string | null;
   description?: string;
+  initialTitle?: string;
   onCreated?: (story: DetailedStory) => Promise<void> | void;
 }) => {
   const router = useRouter();
@@ -455,9 +457,12 @@ export const NewStoryDialog = ({
 
   useEffect(() => {
     if (isOpen && titleEditor) {
+      if (initialTitle && titleEditor.getText() !== initialTitle) {
+        titleEditor.commands.setContent(initialTitle);
+      }
       titleEditor.commands.focus();
     }
-  }, [isOpen, titleEditor]);
+  }, [initialTitle, isOpen, titleEditor]);
 
   useEffect(() => {
     if (!isOpen) cancelStagedUploads();

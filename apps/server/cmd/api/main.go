@@ -160,6 +160,12 @@ type Config struct {
 		SigningSecret string `env:"SLACK_SIGNING_SECRET"`
 		RedirectURL   string `default:"https://api.fortyone.app/integrations/slack/setup" env:"SLACK_REDIRECT_URL"`
 	}
+	Figma struct {
+		ClientID     string `env:"FIGMA_CLIENT_ID"`
+		ClientSecret string `env:"FIGMA_CLIENT_SECRET"`
+		RedirectURL  string `default:"https://api.fortyone.app/integrations/figma/callback" env:"FIGMA_REDIRECT_URL"`
+		WebhookURL   string `default:"https://api.fortyone.app/webhooks/figma" env:"FIGMA_WEBHOOK_URL"`
+	}
 }
 
 func main() {
@@ -446,6 +452,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 		SlackClientID:               cfg.Slack.ClientID,
 		SlackClientSecret:           cfg.Slack.ClientSecret,
 		SlackRedirectURL:            cfg.Slack.RedirectURL,
+		FigmaClientID:               cfg.Figma.ClientID,
+		FigmaClientSecret:           cfg.Figma.ClientSecret,
+		FigmaRedirectURL:            cfg.Figma.RedirectURL,
+		FigmaWebhookURL:             cfg.Figma.WebhookURL,
 		AIAPIKey:                    strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
 		SSEHub:                      sseHub,
 		CorsOrigin:                  "*",

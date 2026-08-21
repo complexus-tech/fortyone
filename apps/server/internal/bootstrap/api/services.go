@@ -24,6 +24,8 @@ import (
 	epics "github.com/complexus-tech/projects-api/internal/modules/epics/service"
 	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
+	figmarepository "github.com/complexus-tech/projects-api/internal/modules/figma/repository"
+	figma "github.com/complexus-tech/projects-api/internal/modules/figma/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	integrationrequestsrepository "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/repository"
@@ -89,6 +91,7 @@ type services struct {
 	emailReply          *emailreply.Service
 	epics               *epics.Service
 	feedback            *feedback.Service
+	figma               *figma.Service
 	github              *github.Service
 	slack               *slack.Service
 	integrationRequests *integrationrequests.Service
@@ -288,6 +291,19 @@ func buildServices(cfg mux.Config) services {
 		feedback.WithContributorFeatures(cfg.SecretKey, cfg.WebsiteURL, cfg.TasksService),
 		feedback.WithGuestNotificationActor(mayaActorID),
 	)
+	figmaService := figma.New(
+		cfg.Log,
+		figmarepository.New(cfg.DB),
+		storiesService,
+		figma.Config{
+			ClientID:     cfg.FigmaClientID,
+			ClientSecret: cfg.FigmaClientSecret,
+			RedirectURL:  cfg.FigmaRedirectURL,
+			WebhookURL:   cfg.FigmaWebhookURL,
+			WebsiteURL:   cfg.WebsiteURL,
+			SecretKey:    cfg.SecretKey,
+		},
+	)
 
 	return services{
 		activities: activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
@@ -304,6 +320,7 @@ func buildServices(cfg mux.Config) services {
 		emailReply:          emailReplyService,
 		epics:               epics.New(cfg.Log, epicsrepository.New(cfg.Log, cfg.DB)),
 		feedback:            feedbackService,
+		figma:               figmaService,
 		github:              githubService,
 		slack:               slackService,
 		integrationRequests: integrationRequestsService,
@@ -370,6 +387,9 @@ func (s services) validate() error {
 	}
 	if s.feedback == nil {
 		return fmt.Errorf("missing service: feedback")
+	}
+	if s.figma == nil {
+		return fmt.Errorf("missing service: figma")
 	}
 	if s.github == nil {
 		return fmt.Errorf("missing service: github")
