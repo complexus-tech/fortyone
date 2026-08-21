@@ -90,6 +90,8 @@ import { useTeamSprints } from "@/modules/sprints/hooks/team-sprints";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useTotalStories } from "@/modules/stories/hooks/total-stories";
+import { useLinkFigmaStory } from "@/lib/hooks/figma";
+import type { FigmaArtifact } from "@/modules/settings/workspace/integrations/figma/types";
 import { storyKeys } from "@/modules/stories/constants";
 import { useSimilarStories } from "@/modules/search/hooks/use-similar-stories";
 import { getStoryPath } from "@/modules/story/utils/story-url";
@@ -108,6 +110,7 @@ import { TimeNeededMenu } from "./story/time-needed-menu";
 import { AutoSchedulingMenu } from "./story/auto-scheduling-menu";
 import { LabelsMenu } from "./story/labels-menu";
 import { FeatureGuard } from "./feature-guard";
+import { NewStoryFigmaSource } from "./new-story-figma-source";
 import {
   buildNewStoryDialogPayload,
   getDeadlineForSprintSelection,
@@ -162,7 +165,6 @@ export const NewStoryDialog = ({
   objectiveId,
   sprintId,
   description,
-  initialTitle,
   onCreated,
 }: {
   isOpen: boolean;
@@ -174,7 +176,6 @@ export const NewStoryDialog = ({
   priority?: StoryPriority;
   assigneeId?: string | null;
   description?: string;
-  initialTitle?: string;
   onCreated?: (story: DetailedStory) => Promise<void> | void;
 }) => {
   const router = useRouter();
@@ -275,9 +276,13 @@ export const NewStoryDialog = ({
   const [createMore, setCreateMore] = useState(false);
   const [storyTitle, setStoryTitle] = useState("");
   const [storySearchQuery, setStorySearchQuery] = useState("");
+  const [figmaArtifact, setFigmaArtifact] = useState<FigmaArtifact | null>(
+    null,
+  );
   const assigneeButtonRef = useRef<HTMLButtonElement>(null);
   const timeNeededButtonRef = useRef<HTMLButtonElement>(null);
   const mutation = useCreateStoryMutation();
+  const linkFigmaStory = useLinkFigmaStory();
   const {
     cancelStagedUploads,
     finalizeStagedMedia,
@@ -364,6 +369,7 @@ export const NewStoryDialog = ({
       return;
     }
     setLoading(true);
+    const selectedFigmaArtifact = figmaArtifact;
 
     const initialContent = getPersistableRichTextContent(editor);
     const newStory = buildNewStoryDialogPayload({
@@ -410,6 +416,7 @@ export const NewStoryDialog = ({
       clearRichTextContent(editor);
       resetForNextStory();
       dispatch({ type: "RESET_FORM", payload: initialForm });
+      setFigmaArtifact(null);
       deadlineSourceRef.current = initialDeadlineSource;
       if (tier === "free") {
         void queryClient.invalidateQueries({
@@ -419,7 +426,21 @@ export const NewStoryDialog = ({
 
       const followUpError = await runStoryCreatedFollowUp(
         committedStory,
-        onCreated,
+        selectedFigmaArtifact || onCreated
+          ? async (story) => {
+              const followUps: Promise<unknown>[] = [];
+              if (selectedFigmaArtifact) {
+                followUps.push(
+                  linkFigmaStory.mutateAsync({
+                    storyId: story.id,
+                    url: selectedFigmaArtifact.canonicalUrl,
+                  }),
+                );
+              }
+              if (onCreated) followUps.push(Promise.resolve(onCreated(story)));
+              await Promise.all(followUps);
+            }
+          : undefined,
       );
       if (followUpError) {
         toast.error(
@@ -457,12 +478,9 @@ export const NewStoryDialog = ({
 
   useEffect(() => {
     if (isOpen && titleEditor) {
-      if (initialTitle && titleEditor.getText() !== initialTitle) {
-        titleEditor.commands.setContent(initialTitle);
-      }
       titleEditor.commands.focus();
     }
-  }, [initialTitle, isOpen, titleEditor]);
+  }, [isOpen, titleEditor]);
 
   useEffect(() => {
     if (!isOpen) cancelStagedUploads();
@@ -572,7 +590,13 @@ export const NewStoryDialog = ({
       }
       feature="maxStories"
     >
-      <Dialog onOpenChange={setIsOpen} open={isOpen}>
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) setFigmaArtifact(null);
+          setIsOpen(open);
+        }}
+        open={isOpen}
+      >
         <Dialog.Content
           className="overflow-visible"
           hideClose
@@ -1182,6 +1206,16 @@ export const NewStoryDialog = ({
                   </SprintsMenu>
                 ) : null}
               </Box>
+              <NewStoryFigmaSource
+                artifact={figmaArtifact}
+                enabled={isOpen}
+                onArtifactChange={setFigmaArtifact}
+                onTitleSuggestion={(title) => {
+                  if (titleEditor && !titleEditor.getText().trim()) {
+                    titleEditor.commands.setContent(title);
+                  }
+                }}
+              />
             </Flex>
           </Dialog.Body>
           <Dialog.Footer className="flex items-center justify-between gap-2">
