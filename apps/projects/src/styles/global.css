@@ -26,6 +26,14 @@ html {
   @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-[13px] font-medium antialiased 2xl:text-[13.5px];
 }
 
+.onboarding-layout {
+  font-size: 1rem;
+}
+
+.onboarding-layout :is(input, textarea, select) {
+  font-size: 1rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
