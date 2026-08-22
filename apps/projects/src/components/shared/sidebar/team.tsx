@@ -79,7 +79,7 @@ const CollapsedTeamNavigation = ({
           className={cn(
             "border-border/70 bg-surface/40 focus-visible:ring-primary/40 hover:bg-accent relative flex min-h-14 w-full flex-none flex-col items-center justify-center gap-1 rounded-lg border px-1 py-2 text-center transition outline-none focus-visible:ring-2",
             isTeamActive &&
-              "bg-accent before:bg-primary before:absolute before:top-1/2 before:-left-2 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",
+              "bg-accent before:bg-primary before:absolute before:top-1/2 before:-left-3 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",
           )}
           type="button"
         >

@@ -117,7 +117,9 @@ export const Teams = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
 
   return (
     <Box className={cn("mt-4", isCollapsed && "mt-3")}>
-      {isCollapsed ? <Divider className="mb-3 border-t border-dashed" /> : null}
+      {isCollapsed ? (
+        <Divider className="mx-auto mb-3 w-4/5 border-t border-dashed" />
+      ) : null}
       <Flex
         align="center"
         className={cn("mb-2", isCollapsed && "justify-center")}

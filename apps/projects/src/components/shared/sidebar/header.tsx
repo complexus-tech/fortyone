@@ -116,13 +116,9 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
   return (
     <>
       {isCollapsed ? (
-        <Flex
-          align="center"
-          className="h-[3.6rem] flex-col pt-2"
-          justify="between"
-        >
+        <Flex align="center" className="flex-col pt-2">
           <WorkspacesMenu isCollapsed />
-          <Divider className="w-8 self-center" />
+          <Divider className="mx-auto mt-3 w-4/5 border-t border-dashed" />
         </Flex>
       ) : (
         <Flex align="center" className="h-[3.6rem] pt-2" justify="between">
@@ -132,20 +128,22 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
       )}
       <Flex
         align={isCollapsed ? "center" : undefined}
-        className={cn("mt-2 mb-3 gap-1.5", isCollapsed && "flex-col")}
+        className={cn("mt-2 mb-3 gap-1.5", isCollapsed && "mt-3 flex-col")}
       >
         <Tooltip side="right" title={isCollapsed ? "Create story" : null}>
           <Button
             asIcon={isCollapsed}
             className={
-              isCollapsed ? "h-11 w-11 px-0 md:h-11" : "truncate md:h-[2.4rem]"
+              isCollapsed ? "h-12 w-12 px-0 md:h-12" : "truncate md:h-[2.4rem]"
             }
             color="tertiary"
             data-sidebar-create-story-button
             disabled={userRole === "guest"}
             fullWidth={!isCollapsed}
             leftIcon={
-              <PlusIcon className={cn("shrink-0", isCollapsed && "h-5")} />
+              <PlusIcon
+                className={cn("shrink-0", isCollapsed && "h-[1.375rem]")}
+              />
             }
             onClick={() => {
               if (userRole !== "guest") {

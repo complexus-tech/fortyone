@@ -168,7 +168,7 @@ export const Sidebar = () => {
       <Box
         className={cn(
           "relative z-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3",
-          isCollapsed && "px-2",
+          isCollapsed && "px-3",
         )}
         data-sidebar-content
       >

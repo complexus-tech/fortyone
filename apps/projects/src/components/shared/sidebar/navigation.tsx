@@ -132,7 +132,7 @@ export const Navigation = ({
             isCollapsed && "[&_svg]:!h-6 [&_svg]:!w-auto",
             isCollapsed &&
               isActive &&
-              "before:bg-primary before:absolute before:top-1/2 before:-left-2 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",
+              "before:bg-primary before:absolute before:top-1/2 before:-left-3 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",
           )}
           data-nav-ai-assistant={
             href === withWorkspace("/maya") ? "" : undefined
@@ -178,7 +178,7 @@ export const Navigation = ({
       >
         <Box className="mt-4">
           {isCollapsed ? (
-            <Divider className="my-3 border-t border-dashed" />
+            <Divider className="mx-auto my-3 w-4/5 border-t border-dashed" />
           ) : (
             <Collapsible.Trigger asChild>
               <button

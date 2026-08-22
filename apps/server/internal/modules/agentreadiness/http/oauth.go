@@ -162,6 +162,13 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
       line-height: 1.6;
     }
 
+    .consent-note {
+      margin: 18px 0 0;
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
     .permissions {
       margin: 24px 0 0;
       padding: 0;
@@ -284,24 +291,26 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
     </div>
 
     <section class="card" aria-labelledby="approval-title">
-      <h1 id="approval-title">Connect {{.ClientName}} to FortyOne?</h1>
-      <p class="description">Choose whether to give this connection access to your FortyOne workspace.</p>
+      <h1 id="approval-title">{{.ClientName}} would like to connect to FortyOne</h1>
+      <p class="description">This connection will be able to:</p>
 
       <ul class="permissions" aria-label="Connection permissions">
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M3 12s3.25-6 9-6 9 6 9 6-3.25 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
-          <span>Read work you already have access to</span>
+          <span>Access workspaces, teams, stories, sprints, objectives, and key results you can already access</span>
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3v18M3 12h18"/></svg>
-          <span>Create stories, sprints, objectives, and key results when you approve a tool call</span>
+          <span>Create and organize work in FortyOne after you approve each action</span>
         </li>
       </ul>
+
+      <p class="consent-note">By allowing access, you let {{.ClientName}} read your accessible FortyOne data and request changes on your behalf. You stay in control: changes require your approval in the connected client.</p>
 
       <form method="post" action="/oauth/authorize">
         <input type="hidden" name="approval" value="{{.Approval}}">
         <button class="deny" type="submit" name="decision" value="deny">Cancel</button>
-        <button class="allow" type="submit" name="decision" value="allow">Allow access</button>
+        <button class="allow" type="submit" name="decision" value="allow">Agree &amp; allow access</button>
       </form>
     </section>
   </main>
