@@ -16,12 +16,14 @@ jest.mock("ui", () => ({
   ),
   Button: ({
     children,
+    color,
     onClick,
   }: {
     children: ReactNode;
+    color?: string;
     onClick: () => void;
   }) => (
-    <button onClick={onClick} type="button">
+    <button data-color={color} onClick={onClick} type="button">
       {children}
     </button>
   ),
@@ -48,7 +50,12 @@ describe("CalendarHeader", () => {
     render(<CalendarHeader onSchedule={onSchedule} />);
 
     expect(screen.getByText("Calendar")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Schedule task" }));
+    const scheduleButton = screen.getByRole("button", {
+      name: "Schedule task",
+    });
+
+    expect(scheduleButton).toHaveAttribute("data-color", "primary");
+    fireEvent.click(scheduleButton);
     expect(onSchedule).toHaveBeenCalledTimes(1);
   });
 });

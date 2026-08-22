@@ -183,8 +183,15 @@ describe("Navigation", () => {
 
     const calendarLink = screen.getByRole("link", { name: "Calendar" });
     const calendarLabel = screen.getByText("Calendar");
+    const myWorkLink = screen.getByRole("link", { name: "My work" });
 
     expect(calendarLink).toHaveClass("flex-col", "text-center");
+    expect(calendarLink).toHaveClass("bg-primary/5", "text-primary");
+    expect(myWorkLink).toHaveClass(
+      "hover:bg-primary/5",
+      "hover:text-primary",
+      "hover:[&_svg]:text-primary",
+    );
     expect(calendarLabel).toBeVisible();
     expect(calendarLabel).not.toHaveClass("hidden");
   });

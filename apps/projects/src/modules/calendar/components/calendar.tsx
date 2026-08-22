@@ -1218,7 +1218,7 @@ const CalendarDialog = ({
             </Button>
             <Button
               className="text-base"
-              color="invert"
+              color="primary"
               disabled={!canSubmit}
               loading={isSaving}
               onClick={submit}

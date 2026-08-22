@@ -59,7 +59,7 @@ export const RoadmapPage = () => {
         </Text>
         <Flex gap={2}>
           <Button
-            color="tertiary"
+            color="primary"
             disabled={userRole === "guest"}
             leftIcon={<PlusIcon className="h-[1.1rem]" />}
             onClick={() => {
@@ -93,7 +93,7 @@ export const RoadmapPage = () => {
               aria-pressed={isForecastRiskFilterActive}
               className={
                 isForecastRiskFilterActive
-                  ? "hidden gap-1.5 text-white sm:flex dark:text-white"
+                  ? "text-primary-foreground dark:text-primary-foreground hidden gap-1.5 sm:flex"
                   : "text-primary dark:text-primary hidden gap-1.5 sm:flex"
               }
               color="primary"
@@ -101,7 +101,7 @@ export const RoadmapPage = () => {
                 <WarningIcon
                   className={
                     isForecastRiskFilterActive
-                      ? "h-4 w-auto text-white dark:text-white"
+                      ? "text-primary-foreground dark:text-primary-foreground h-4 w-auto"
                       : "text-primary dark:text-primary h-4 w-auto"
                   }
                 />
@@ -130,7 +130,7 @@ export const RoadmapPage = () => {
             />
           ) : null}
           <Button
-            color="invert"
+            color="primary"
             disabled={userRole === "guest"}
             leftIcon={
               <PlusIcon className="h-[1.1rem] text-current dark:text-current" />

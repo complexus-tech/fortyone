@@ -65,13 +65,19 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
   <style>
     :root {
       color-scheme: light;
+      --radius-scale: 0.75;
+      --radius-base-lg: 0.6rem;
+      --radius-base-xl: 0.8rem;
+      --radius-lg: calc(var(--radius-base-lg) * var(--radius-scale));
+      --radius-xl: calc(var(--radius-base-xl) * var(--radius-scale));
+      --font-body: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
       --background: oklch(0.997 0.002 95);
       --surface: oklch(0.997 0.002 95);
       --surface-muted: oklch(0.975 0.003 95);
       --foreground: oklch(0.145 0.006 95);
       --text-secondary: oklch(0.35 0.005 95);
-      --border: oklch(0.92 0.004 95);
-      --border-strong: oklch(0.89 0.005 95);
+      --color-border: oklch(0.92 0.004 95);
+      --color-border-strong: oklch(0.89 0.005 95);
       --primary: oklch(0.6522 0.2135 38);
       --primary-foreground: oklch(0.1821 0.0139 94);
       --focus: oklch(0.6522 0.2135 38);
@@ -86,8 +92,8 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
         --surface-muted: oklch(0.2351 0.0115 91.7);
         --foreground: oklch(0.9439 0.0011 17.2);
         --text-secondary: oklch(0.9439 0.0011 17.2 / 60%);
-        --border: oklch(0.9439 0.0011 17.2 / 10%);
-        --border-strong: oklch(0.9439 0.0011 17.2 / 16%);
+        --color-border: oklch(0.9439 0.0011 17.2 / 10%);
+        --color-border-strong: oklch(0.9439 0.0011 17.2 / 16%);
         --primary: oklch(0.6522 0.2135 38);
         --primary-foreground: oklch(0.1821 0.0139 94);
         --focus: oklch(0.6522 0.2135 38);
@@ -112,13 +118,13 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
       padding: 24px;
       background: var(--background);
       color: var(--foreground);
-      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+      font-family: var(--font-body);
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
 
     .shell {
-      width: min(100%, 480px);
+      width: min(100%, 448px);
     }
 
     .brand {
@@ -141,8 +147,8 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
     .card {
       padding: 32px;
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
       box-shadow: 0 16px 48px var(--shadow);
     }
 
@@ -173,8 +179,8 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
       margin: 24px 0 0;
       padding: 0;
       list-style: none;
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
       overflow: hidden;
     }
 
@@ -190,7 +196,7 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
     }
 
     .permissions li + li {
-      border-top: 1px solid var(--border);
+      border-top: 1px solid var(--color-border);
     }
 
     .permissions svg {
@@ -212,7 +218,7 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
       min-height: 44px;
       padding: 10px 16px;
       border: 1px solid transparent;
-      border-radius: 8px;
+      border-radius: var(--radius-lg);
       font: inherit;
       font-size: 14px;
       font-weight: 650;
@@ -241,7 +247,7 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
     .deny {
       background: var(--surface);
       color: var(--foreground);
-      border-color: var(--border-strong);
+      border-color: var(--color-border-strong);
     }
 
     .deny:hover {
@@ -249,6 +255,10 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
     }
 
     @supports (corner-shape: squircle) {
+      :root {
+        --radius-scale: 2.5;
+      }
+
       .card,
       .permissions,
       button {

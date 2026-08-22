@@ -77,13 +77,13 @@ const CollapsedTeamNavigation = ({
           aria-expanded={isOpen}
           aria-label={`${isOpen ? "Close" : "Open"} ${teamName} team navigation`}
           className={cn(
-            "border-border/70 bg-surface/40 focus-visible:ring-primary/40 hover:bg-accent relative flex min-h-14 w-full flex-none flex-col items-center justify-center gap-1 rounded-lg border px-1 py-2 text-center transition outline-none focus-visible:ring-2",
+            "group border-border/70 bg-surface/40 focus-visible:ring-primary/40 hover:bg-primary/5 hover:text-primary relative flex min-h-14 w-full flex-none flex-col items-center justify-center gap-1 rounded-lg border px-1 py-2 text-center transition outline-none focus-visible:ring-2",
             isTeamActive &&
               "bg-accent before:bg-primary before:absolute before:top-1/2 before:-left-3 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",
           )}
           type="button"
         >
-          <TeamColor className="size-4" color={color} />
+          <TeamColor className="group-hover:!bg-primary size-4" color={color} />
           <span className="line-clamp-2 w-full text-xs leading-3.5 font-semibold">
             {teamName}
           </span>
@@ -107,7 +107,10 @@ const CollapsedTeamNavigation = ({
               <NavLink
                 active={isActive}
                 aria-current={isActive ? "page" : undefined}
-                className="px-2 py-1.5"
+                className={cn(
+                  "hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary px-2 py-1.5",
+                  isActive && "bg-primary/5 text-primary [&_svg]:text-primary",
+                )}
                 href={href}
                 key={name}
                 onClick={() => {
@@ -383,7 +386,12 @@ export const Team = ({
                       return (
                         <NavLink
                           active={isActive}
-                          className={isActive ? "text-foreground" : undefined}
+                          aria-current={isActive ? "page" : undefined}
+                          className={cn(
+                            "hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary",
+                            isActive &&
+                              "bg-primary/5 text-primary [&_svg]:text-primary",
+                          )}
                           href={href}
                           key={name}
                         >

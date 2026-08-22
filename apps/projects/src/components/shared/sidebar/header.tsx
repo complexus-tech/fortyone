@@ -116,7 +116,7 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
   return (
     <>
       {isCollapsed ? (
-        <Flex align="center" className="flex-col pt-2">
+        <Flex align="center" className="flex-col pt-3">
           <WorkspacesMenu isCollapsed />
           <Divider className="mx-auto mt-3 w-4/5 border-t border-dashed" />
         </Flex>

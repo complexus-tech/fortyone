@@ -111,7 +111,7 @@ export const TeamObjectivesList = () => {
           new {getTermDisplay("objectiveTerm")} to get started.
         </Text>
         <Button
-          color="tertiary"
+          color="primary"
           disabled={userRole === "guest"}
           leftIcon={<PlusIcon className="h-[1.1rem]" />}
           onClick={openNewObjectiveDialog}

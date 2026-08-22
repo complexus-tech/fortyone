@@ -23,7 +23,7 @@ export const CalendarHeader = ({ onSchedule }: { onSchedule: () => void }) => {
       <Box className="hidden md:block">
         <Button
           className="shrink-0"
-          color="invert"
+          color="primary"
           data-header-schedule-story-button
           leftIcon={<PlusIcon className="text-current dark:text-current" />}
           onClick={onSchedule}

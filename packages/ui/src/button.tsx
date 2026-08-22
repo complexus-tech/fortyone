@@ -24,7 +24,7 @@ export const buttonVariants = cva(
         full: "rounded-full",
       },
       color: {
-        primary: "border-primary bg-primary",
+        primary: "border-primary-solid bg-primary-solid",
         danger: "text-danger border-danger bg-danger ring-danger",
         info: "text-info border-info bg-info ring-info",
         warning: "text-warning border-warning bg-warning ring-warning",
@@ -69,7 +69,7 @@ export const buttonVariants = cva(
       {
         variant: "solid",
         color: "primary",
-        className: "text-primary-foreground",
+        className: "text-primary-foreground [&_svg]:!text-current",
       },
       {
         variant: "solid",

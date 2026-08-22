@@ -62,9 +62,11 @@ export const TeamObjectivesHeader = ({
           />
         ) : null}
         <Button
-          color="tertiary"
+          color="primary"
           disabled={userRole === "guest"}
-          leftIcon={<PlusIcon className="h-[1.1rem]" />}
+          leftIcon={
+            <PlusIcon className="h-[1.1rem] text-current dark:text-current" />
+          }
           onClick={() => {
             if (userRole !== "guest") {
               onCreateObjective();

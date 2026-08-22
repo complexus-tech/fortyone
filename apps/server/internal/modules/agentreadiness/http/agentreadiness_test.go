@@ -62,7 +62,12 @@ func TestApprovalPageUsesApplicationThemeAndEscapesClientName(t *testing.T) {
 
 	body := recorder.Body.String()
 	require.Contains(t, body, "@media (prefers-color-scheme: dark)")
-	require.Contains(t, body, `font-family: -apple-system, BlinkMacSystemFont, "Inter"`)
+	require.Contains(t, body, `--font-body: -apple-system, BlinkMacSystemFont, "Inter", sans-serif`)
+	require.Contains(t, body, "width: min(100%, 448px)")
+	require.Contains(t, body, "--color-border: oklch(0.92 0.004 95)")
+	require.Contains(t, body, "--radius-scale: 0.75")
+	require.Contains(t, body, "--radius-scale: 2.5")
+	require.Contains(t, body, "border-radius: var(--radius-xl)")
 	require.Contains(t, body, "corner-shape: squircle")
 	require.Contains(t, body, "oklch(0.6522 0.2135 38)")
 	require.Contains(t, body, "would like to connect to FortyOne")

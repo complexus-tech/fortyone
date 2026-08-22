@@ -9,7 +9,7 @@ import { NewStoryDialog } from "./new-story-dialog";
 
 export const NewStoryButton = ({
   size = "sm",
-  color = "invert",
+  color = "primary",
   children,
   leftIcon,
   teamId,

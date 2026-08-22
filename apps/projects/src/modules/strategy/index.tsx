@@ -95,7 +95,7 @@ export const WorkspaceStrategyMapPage = () => {
             </button>
           </Flex>
           <Button
-            color="invert"
+            color="primary"
             disabled={isGuest}
             leftIcon={<PlusIcon className="h-[1.1rem] text-current" />}
             onClick={() => {

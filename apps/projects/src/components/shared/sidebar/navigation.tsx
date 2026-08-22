@@ -126,7 +126,8 @@ export const Navigation = ({
           aria-current={isActive ? "page" : undefined}
           aria-label={name}
           className={cn(
-            isActive ? "text-foreground" : undefined,
+            "hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary",
+            isActive && "bg-primary/5 text-primary [&_svg]:text-primary",
             isCollapsed &&
               "relative min-h-14 flex-col justify-center gap-1 px-1 py-2 text-center",
             isCollapsed && "[&_svg]:!h-6 [&_svg]:!w-auto",

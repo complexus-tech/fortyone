@@ -28,7 +28,7 @@ export const ObjectivesHeader = () => {
       </Flex>
       <Flex align="center" gap={2}>
         <Button
-          color="tertiary"
+          color="primary"
           disabled={userRole === "guest"}
           leftIcon={<PlusIcon className="h-[1.1rem]" />}
           onClick={() => {
