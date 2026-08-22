@@ -1,7 +1,7 @@
 import { Dialog, Command, Text, Divider, Flex, Box, Kbd } from "ui";
 import {
   PlusIcon,
-  NotificationsIcon,
+  Notification02Icon,
   RoadmapIcon,
   SunIcon,
   HelpIcon,
@@ -142,7 +142,7 @@ export const CommandBar = ({
         },
         {
           label: "Inbox",
-          icon: <NotificationsIcon />,
+          icon: <Notification02Icon />,
           shortcut: (
             <Flex align="center" gap={1}>
               <Kbd>g</Kbd>

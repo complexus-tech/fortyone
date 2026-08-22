@@ -1,5 +1,5 @@
 "use client";
-import { NotificationsIcon } from "icons";
+import { Notification02Icon } from "icons";
 import { Flex, Text } from "ui";
 import { NotificationsEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useNotifications } from "./hooks/notifications";
@@ -30,7 +30,7 @@ export const SelectNotificationMessage = () => {
           </>
         ) : (
           <>
-            <NotificationsIcon className="mb-3 h-16 w-auto" />
+            <Notification02Icon className="mb-3 h-16 w-auto" />
             <Text color="muted">Select a notification to view</Text>
           </>
         )}

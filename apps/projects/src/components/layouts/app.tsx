@@ -6,6 +6,7 @@ import { AppCommandBar } from "../shared/app-command-bar";
 import { AppCommandActionProvider } from "../shared/app-command-action-context";
 import { SidebarProvider } from "../shared/sidebar/sidebar-context";
 import { Sidebar } from "../shared/sidebar/sidebar";
+import { SidebarEdgeToggle } from "../shared/sidebar/sidebar-edge-toggle";
 
 export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
   return (
@@ -14,8 +15,9 @@ export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
         <Box className="flex h-dvh flex-col" data-app-shell>
           <AppCommandBar />
           <Box className="min-h-0 flex-1 md:flex">
-            <Box className="hidden md:block">
+            <Box className="relative hidden md:block">
               <Sidebar />
+              <SidebarEdgeToggle />
             </Box>
             <Box className="h-dvh min-w-0 flex-1 md:h-full md:pr-(--app-content-inset) md:pb-(--app-content-inset) md:pl-2">
               <Box

@@ -4,7 +4,7 @@ import {
   CommentIcon,
   IntakeIcon,
   LinkIcon,
-  NotificationsIcon,
+  Notification02Icon,
   ObjectiveIcon,
   OKRIcon,
   SprintsIcon,
@@ -56,7 +56,7 @@ const EntityIcon = ({ icon }: { icon: EntityResultIcon }) => {
     case "link":
       return <LinkIcon className={className} />;
     case "notification":
-      return <NotificationsIcon className={className} />;
+      return <Notification02Icon className={className} />;
     case "objective":
       return <ObjectiveIcon className={className} />;
     case "sprint":

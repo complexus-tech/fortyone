@@ -1,53 +1,58 @@
 **Comparison Target**
 
-- Source visual truth: `/Users/joseph/.codex/generated_images/01a02929-e0a5-71a0-9156-054675c9b444/exec-62ad5ca0-4704-407f-a38b-28915d1d1c60.png`
-- Source pixels: `1491 x 1055`
-- Intended implementation: FortyOne Projects desktop app, light theme, My Work, expanded and collapsed sidebar states.
-- Implementation screenshot: unavailable. The local browser opened `/private/tmp/fortyone-design-qa-auth-blocker.png`, which is the sign-in screen rather than the authenticated application shell.
-- Attempted viewport: `1280 x 720` CSS pixels at `devicePixelRatio: 2`.
+- Source visual truth:
+  - `/Users/joseph/Downloads/Screenshot 2026-08-22 at 6.49.23 PM.png` (`746 x 1426` pixels)
+  - `/Users/joseph/Downloads/Screenshot 2026-08-22 at 6.49.31 PM.png` (`626 x 1108` pixels)
+  - `/Users/joseph/Downloads/Screenshot 2026-08-22 at 6.49.41 PM.png` (`420 x 1420` pixels)
+  - `/Users/joseph/Downloads/Screenshot 2026-08-22 at 6.49.49 PM.png` (`570 x 1358` pixels)
+- Intended implementation: FortyOne Projects desktop application shell with the edge control positioned above center, a prominent resting bar that morphs into a directional arrow, short Expand/Collapse tooltips, and expanded/collapsed states.
+- Implementation screenshot: unavailable. The local Projects preview at `http://127.0.0.1:3000/` opened the sign-in screen rather than the authenticated application shell.
+- Intended viewport: the active desktop Projects viewport, matched across expanded, collapsed, resting, and hovered states.
 - Density normalization: not performed because an authenticated implementation capture was unavailable.
 
 **State**
 
-- Source: authenticated desktop My Work shell in light mode.
-- Browser result: unauthenticated sign-in screen at `http://localhost:3000/`.
-- Primary interactions tested: none; the application shell was not reachable without signing in.
-- Console errors checked: no warnings or errors were reported on the sign-in screen.
+- Source: Stripe dashboard sidebar edge toggle in expanded/resting, expanded/hovered, collapsed/resting, and collapsed/hovered states.
+- Browser result: unauthenticated FortyOne sign-in screen.
+- Primary interactions tested: none in the rendered application shell because it was not reachable without signing in.
+- Console errors checked: not applicable to the unreachable authenticated shell.
 
 **Full-view Comparison Evidence**
 
-- Blocked. The source visual was opened successfully, but the local browser did not have an authenticated FortyOne session and redirected to sign-in. The source and implementation therefore could not be put into a valid same-state comparison.
+- Blocked. All four source references were opened successfully, but no same-state authenticated implementation screenshot could be captured.
 
 **Focused Region Comparison Evidence**
 
-- Not available. Header spacing, search treatment, action alignment, sidebar width, canvas radius, and right/bottom inset require an authenticated shell capture before a focused comparison is meaningful.
+- Blocked. The sidebar edge, resting bar, directional hover icon, tooltip, and width transition require the authenticated application shell for a valid comparison.
 
 **Findings**
 
 - [P1] Authenticated implementation capture unavailable
   Location: local Projects preview.
-  Evidence: the source shows the My Work app shell; the browser capture shows the FortyOne sign-in screen.
-  Impact: visual fidelity cannot be verified at the selected route and state.
-  Fix: open the local app in an authenticated browser session, capture My Work at the same viewport and light theme, then compare the full shell and focused header/canvas regions against the source visual.
+  Evidence: the source shows four sidebar interaction states; the browser opens the FortyOne sign-in screen.
+  Impact: visual fidelity and the live expanded/collapsed interaction cannot be verified against the references.
+  Fix: open the local Projects application in an authenticated in-app browser session and capture the same four states.
 
 **Open Questions**
 
-- None about implementation intent. The remaining blocker is preview authentication only.
+- None about implementation intent. The remaining blocker is preview authentication.
 
 **Implementation Checklist**
 
-- Capture authenticated My Work in light mode at `1280 x 720`.
-- Capture the collapsed sidebar state at the same viewport.
-- Build a same-canvas source/implementation comparison.
-- Verify typography, header control alignment, sidebar width, search and shortcut-chip colors, wrapper radius, right/bottom 8px inset, icon fidelity, and visible copy.
-- Re-run comparison after any P0/P1/P2 correction.
+- Capture the expanded resting state.
+- Hover or keyboard-focus the control and capture the collapse direction and tooltip.
+- Toggle the sidebar and capture the collapsed resting state.
+- Hover or keyboard-focus the control and capture the expand direction and tooltip.
+- Verify typography, spacing, colors, icon fidelity, copy, focus treatment, and width transition against the source references.
 
 **Comparison History**
 
 - Pass 1: blocked before visual comparison because the local browser session was unauthenticated. No visual fixes were made from browser evidence.
+- Pass 2: source implementation was refined from user feedback, but post-fix capture remains blocked by the unauthenticated local browser session.
+- Pass 3: the two-stroke rotation and fade was replaced with a single thinner path that bends into a shallower angle; authenticated post-fix capture remains unavailable.
 
 **Follow-up Polish**
 
-- None classified until an authenticated implementation screenshot is available.
+- None classified until authenticated captures are available.
 
 final result: blocked

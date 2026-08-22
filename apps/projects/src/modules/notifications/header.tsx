@@ -4,8 +4,8 @@ import {
   DeleteIcon,
   FilterIcon,
   MoreVerticalIcon,
+  Notification02Icon,
   NotificationsCheckIcon,
-  NotificationsIcon,
   NotificationsUnreadIcon,
   SettingsIcon,
 } from "icons";
@@ -76,7 +76,7 @@ export const NotificationsHeader = ({
                 <Menu.Separator />
                 <Menu.Group>
                   <Menu.Item>
-                    <NotificationsIcon />
+                    <Notification02Icon />
                     All notifications
                   </Menu.Item>
                   <Menu.Item>
@@ -155,7 +155,7 @@ export const NotificationsHeader = ({
         leading={
           <Flex align="center" className="gap-2">
             <MobileMenuButton />
-            <NotificationsIcon className="h-5 w-auto" strokeWidth={2} />
+            <Notification02Icon className="h-5 w-auto" strokeWidth={2} />
             <Text>Notifications</Text>
           </Flex>
         }

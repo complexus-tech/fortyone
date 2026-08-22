@@ -71,6 +71,21 @@ html:has(.onboarding-layout) :is(input, textarea, select) {
   }
 }
 
+.sidebar-edge-toggle-path {
+  d: path("M 12 4 L 12 12 L 12 20");
+  transition: d 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.group:hover .sidebar-edge-toggle-path[data-direction="left"],
+.group:focus-visible .sidebar-edge-toggle-path[data-direction="left"] {
+  d: path("M 13.5 4 L 10.5 12 L 13.5 20");
+}
+
+.group:hover .sidebar-edge-toggle-path[data-direction="right"],
+.group:focus-visible .sidebar-edge-toggle-path[data-direction="right"] {
+  d: path("M 10.5 4 L 13.5 12 L 10.5 20");
+}
+
 @layer utilities {
   .hide-scrollbar {
     scrollbar-width: none;

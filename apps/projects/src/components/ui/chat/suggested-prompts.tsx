@@ -1,4 +1,4 @@
-import { NotificationsIcon, StoryIcon, TeamIcon } from "icons";
+import { Notification02Icon, StoryIcon, TeamIcon } from "icons";
 import { Box, Flex, Wrapper, Text } from "ui";
 import { cn } from "lib";
 import { useProfile } from "@/lib/hooks/profile";
@@ -46,7 +46,7 @@ export const SuggestedPrompts = ({
       classes: "bg-warning/10 dark:bg-warning/10",
     },
     {
-      icon: <NotificationsIcon className="text-info dark:text-info" />,
+      icon: <Notification02Icon className="text-info dark:text-info" />,
       label: "What's new for me?",
       value: "Check your latest unread notifications and updates.",
       classes: "bg-info/10 dark:bg-info/10",
