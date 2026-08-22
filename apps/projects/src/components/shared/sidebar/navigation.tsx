@@ -1,6 +1,6 @@
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
-import { Box, Collapsible, Divider, Flex, Tooltip } from "ui";
+import { Box, Collapsible, Divider, Flex } from "ui";
 import {
   ActiveSprintIcon,
   AiIcon,
@@ -127,7 +127,8 @@ export const Navigation = ({
           aria-label={name}
           className={cn(
             isActive ? "text-foreground" : undefined,
-            isCollapsed && "justify-center px-0",
+            isCollapsed &&
+              "min-h-14 flex-col justify-center gap-1 px-1 py-2 text-center",
             isCollapsed && "[&_svg]:!h-6 [&_svg]:!w-auto",
           )}
           data-nav-ai-assistant={
@@ -140,15 +141,14 @@ export const Navigation = ({
           data-nav-summary={href === withWorkspace("/summary") ? "" : undefined}
           href={href}
           key={name}
-          title={isCollapsed ? name : undefined}
         >
-          <Tooltip side="right" title={isCollapsed ? name : null}>
-            <span className="shrink-0">{icon}</span>
-          </Tooltip>
+          <span className="shrink-0">{icon}</span>
           <span
             className={cn(
-              "line-clamp-1 min-w-0 flex-1 first-letter:capitalize",
-              isCollapsed && "hidden",
+              "min-w-0 first-letter:capitalize",
+              isCollapsed
+                ? "line-clamp-2 w-full flex-none text-[0.6875rem] leading-3.5 font-semibold"
+                : "line-clamp-1 flex-1",
             )}
           >
             {name}

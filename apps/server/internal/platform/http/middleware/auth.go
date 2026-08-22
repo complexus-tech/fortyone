@@ -31,6 +31,12 @@ func GetUserID(ctx context.Context) (uuid.UUID, error) {
 	return auth.GetUserID(ctx)
 }
 
+// ResolveSessionUserID resolves the browser session without writing an HTTP
+// response. Authorization endpoints use it before issuing scoped credentials.
+func ResolveSessionUserID(ctx context.Context, r *http.Request) (uuid.UUID, bool, error) {
+	return resolveUserIDFromSessionCookie(ctx, r)
+}
+
 func Auth(log *logger.Logger, secretKey string) web.Middleware {
 	m := func(next web.Handler) web.Handler {
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

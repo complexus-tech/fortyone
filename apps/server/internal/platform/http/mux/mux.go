@@ -54,6 +54,8 @@ type Config struct {
 	StorageService              storage.StorageService
 	WebhookSecret               string
 	WebsiteURL                  string
+	APIPublicURL                string
+	MCPLoginURL                 string
 	GitHubAppID                 int64
 	GitHubAppSlug               string
 	GitHubClientID              string

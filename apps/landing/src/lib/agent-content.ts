@@ -44,7 +44,7 @@ The published OpenAPI description documents the stable public discovery endpoint
 - Streamable HTTP endpoint: https://api.fortyone.app/mcp
 - [MCP server metadata](${SITE_URL}/server.json)
 
-The public MCP surface exposes product and developer documentation as readable resources. Product data and mutation tools are not advertised without a user-authorized authentication contract.
+Connect through FortyOne OAuth to use permission-aware workspace tools. Agents can inspect work and delivery risk, and can create user-approved stories, sprints, objectives, and key results. Story creation supports estimates, duration, minimum focus blocks, auto-scheduling, dates, labels, and strategy links.
 
 ## Help
 

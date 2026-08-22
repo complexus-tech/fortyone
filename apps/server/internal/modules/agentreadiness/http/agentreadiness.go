@@ -2,53 +2,81 @@ package agentreadinesshttp
 
 import (
 	"context"
+	"crypto/sha256"
 	_ "embed"
-	"encoding/json"
-	"errors"
-	"mime"
+	"fmt"
 	"net/http"
+	"slices"
+	"strings"
+	"time"
+
+	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
+	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
+	objectivestatus "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/service"
+	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
+	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
+	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
+	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	mcpauth "github.com/modelcontextprotocol/go-sdk/auth"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const protocolVersion = "2025-06-18"
-
-const (
-	productOverviewURI    = "https://www.fortyone.app/llms.txt"
-	developerResourcesURI = "https://www.fortyone.app/developers.md"
-)
+const mcpScope = "mcp:access"
 
 //go:embed openapi.json
 var openAPIDescription []byte
 
-type Handler struct{}
-
-type rpcRequest struct {
-	JSONRPC string          `json:"jsonrpc"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Method  string          `json:"method"`
-	Params  json.RawMessage `json:"params,omitempty"`
+type Config struct {
+	SecretKey         string
+	APIPublicURL      string
+	Workspaces        *workspaces.Service
+	Teams             *teams.Service
+	States            *states.Service
+	Stories           *stories.Service
+	Sprints           *sprints.Service
+	Objectives        *objectives.Service
+	ObjectiveStatuses *objectivestatus.Service
+	KeyResults        *keyresults.Service
+	Reports           *reports.Service
+	Cache             oauthStore
+	LoginURL          string
 }
 
-type rpcResponse struct {
-	JSONRPC string    `json:"jsonrpc"`
-	ID      any       `json:"id"`
-	Result  any       `json:"result,omitempty"`
-	Error   *rpcError `json:"error,omitempty"`
+type oauthStore interface {
+	Set(ctx context.Context, key string, value any, ttl time.Duration) error
+	Get(ctx context.Context, key string, dest any) error
+	Delete(ctx context.Context, key string) error
 }
 
-type rpcError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+type Handler struct {
+	cfg      Config
+	resource string
+	handler  http.Handler
 }
 
-type resource struct {
-	URI         string `json:"uri"`
-	Name        string `json:"name"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	MimeType    string `json:"mimeType"`
+type mcpClaims struct {
+	jwt.RegisteredClaims
+	Scope string `json:"scope"`
 }
 
-func New() *Handler { return &Handler{} }
+func New(cfg Config) *Handler {
+	resource := strings.TrimRight(cfg.APIPublicURL, "/") + "/mcp"
+	server := mcp.NewServer(&mcp.Implementation{Name: "app.fortyone", Version: "1.0.0"}, &mcp.ServerOptions{
+		Instructions: "Use FortyOne as the system of record for delivery. Read before writing, preserve scheduling fields, and ask the user before invoking a write tool.",
+	})
+	h := &Handler{cfg: cfg, resource: resource}
+	h.addTools(server)
+	transport := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, &mcp.StreamableHTTPOptions{Stateless: true, JSONResponse: true})
+	h.handler = mcpauth.RequireBearerToken(h.verifyToken, &mcpauth.RequireBearerTokenOptions{
+		ResourceMetadataURL: strings.TrimRight(cfg.APIPublicURL, "/") + "/.well-known/oauth-protected-resource",
+		Scopes:              []string{mcpScope}, ClockSkew: 30 * time.Second,
+	})(transport)
+	return h
+}
 
 func (h *Handler) OpenAPI(_ context.Context, w http.ResponseWriter, _ *http.Request) error {
 	w.Header().Set("Cache-Control", "public, max-age=3600")
@@ -58,163 +86,32 @@ func (h *Handler) OpenAPI(_ context.Context, w http.ResponseWriter, _ *http.Requ
 	return err
 }
 
-func (h *Handler) MCPGet(_ context.Context, w http.ResponseWriter, _ *http.Request) error {
-	w.Header().Set("Allow", "POST")
-	return writeRPC(w, http.StatusMethodNotAllowed, rpcResponse{
-		JSONRPC: "2.0",
-		ID:      nil,
-		Error:   &rpcError{Code: -32600, Message: "This stateless MCP server accepts messages with POST; server-initiated SSE is not enabled."},
-	})
+func (h *Handler) MCP(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	h.handler.ServeHTTP(w, r.WithContext(ctx))
+	return nil
 }
 
-func (h *Handler) MCPPost(_ context.Context, w http.ResponseWriter, r *http.Request) error {
-	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	if err != nil || mediaType != "application/json" {
-		return writeRPC(w, http.StatusUnsupportedMediaType, rpcResponse{
-			JSONRPC: "2.0",
-			ID:      nil,
-			Error:   &rpcError{Code: -32600, Message: "Content-Type must be application/json."},
-		})
-	}
-
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
-	decoder.DisallowUnknownFields()
-	var request rpcRequest
-	if err := decoder.Decode(&request); err != nil {
-		return writeRPC(w, http.StatusBadRequest, rpcResponse{
-			JSONRPC: "2.0",
-			ID:      nil,
-			Error:   &rpcError{Code: -32700, Message: "Invalid JSON-RPC request."},
-		})
-	}
-
-	if request.JSONRPC != "2.0" || request.Method == "" {
-		return writeRPC(w, http.StatusBadRequest, rpcResponse{
-			JSONRPC: "2.0",
-			ID:      decodeID(request.ID),
-			Error:   &rpcError{Code: -32600, Message: "jsonrpc must be 2.0 and method is required."},
-		})
-	}
-
-	if len(request.ID) == 0 || string(request.ID) == "null" {
-		w.WriteHeader(http.StatusAccepted)
-		return nil
-	}
-
-	response := rpcResponse{JSONRPC: "2.0", ID: decodeID(request.ID)}
-	switch request.Method {
-	case "initialize":
-		response.Result = map[string]any{
-			"protocolVersion": protocolVersion,
-			"capabilities": map[string]any{
-				"resources": map[string]any{},
-				"tools":     map[string]any{},
-			},
-			"serverInfo": map[string]any{
-				"name":        "app.fortyone/public",
-				"title":       "FortyOne",
-				"version":     "1.0.0",
-				"description": "Public FortyOne product and developer resources.",
-			},
-			"instructions": "Use these public resources to understand FortyOne. Do not infer access to private workspace data.",
+func (h *Handler) verifyToken(_ context.Context, raw string, _ *http.Request) (*mcpauth.TokenInfo, error) {
+	claims := &mcpClaims{}
+	token, err := jwt.ParseWithClaims(raw, claims, func(token *jwt.Token) (any, error) {
+		if token.Method != jwt.SigningMethodHS256 {
+			return nil, mcpauth.ErrInvalidToken
 		}
-	case "ping":
-		response.Result = map[string]any{}
-	case "resources/list":
-		response.Result = map[string]any{"resources": resources()}
-	case "resources/read":
-		result, err := readResource(request.Params)
-		if err != nil {
-			response.Error = &rpcError{Code: -32602, Message: err.Error()}
-		} else {
-			response.Result = result
-		}
-	case "tools/list":
-		response.Result = map[string]any{"tools": tools()}
-	case "tools/call":
-		result, err := callTool(request.Params)
-		if err != nil {
-			response.Error = &rpcError{Code: -32602, Message: err.Error()}
-		} else {
-			response.Result = result
-		}
-	default:
-		response.Error = &rpcError{Code: -32601, Message: "Method not found."}
+		return h.signingKey(), nil
+	}, jwt.WithAudience(h.resource), jwt.WithExpirationRequired())
+	if err != nil || !token.Valid || claims.Subject == "" || claims.ExpiresAt == nil {
+		return nil, fmt.Errorf("%w: bearer token is invalid or expired", mcpauth.ErrInvalidToken)
 	}
-
-	return writeRPC(w, http.StatusOK, response)
+	if !slices.Contains(strings.Fields(claims.Scope), mcpScope) {
+		return nil, fmt.Errorf("%w: bearer token does not grant MCP access", mcpauth.ErrInvalidToken)
+	}
+	if _, err := uuid.Parse(claims.Subject); err != nil {
+		return nil, fmt.Errorf("%w: bearer token subject is invalid", mcpauth.ErrInvalidToken)
+	}
+	return &mcpauth.TokenInfo{Scopes: strings.Fields(claims.Scope), Expiration: claims.ExpiresAt.Time, UserID: claims.Subject}, nil
 }
 
-func resources() []resource {
-	return []resource{
-		{URI: productOverviewURI, Name: "fortyone-product-overview", Title: "FortyOne product overview", Description: "When to use FortyOne, core capabilities, trust links, and discovery resources.", MimeType: "text/plain"},
-		{URI: developerResourcesURI, Name: "fortyone-developer-resources", Title: "FortyOne developer resources", Description: "API, OpenAPI, MCP, documentation, and authentication-boundary guidance.", MimeType: "text/markdown"},
-	}
-}
-
-func readResource(rawParams json.RawMessage) (map[string]any, error) {
-	var params struct {
-		URI string `json:"uri"`
-	}
-	if err := json.Unmarshal(rawParams, &params); err != nil || params.URI == "" {
-		return nil, errors.New("params.uri is required")
-	}
-
-	var text, mimeType string
-	switch params.URI {
-	case productOverviewURI:
-		mimeType = "text/plain"
-		text = "FortyOne connects strategy and customer feedback to project work teams can deliver. Use it for connected OKRs, feedback, project planning, tasks, schedules, documents, delivery reporting, and permission-aware AI assistance. Start at https://www.fortyone.app/llms.txt."
-	case developerResourcesURI:
-		mimeType = "text/markdown"
-		text = "# FortyOne developer resources\n\n- OpenAPI: https://www.fortyone.app/openapi.json\n- Documentation: https://docs.fortyone.app\n- MCP: https://api.fortyone.app/mcp\n- Support: https://www.fortyone.app/contact\n\nThe public agent surface is read-only. Private workspace operations require an explicit user-authorized authentication contract."
-	default:
-		return nil, errors.New("unknown resource URI")
-	}
-
-	return map[string]any{"contents": []map[string]any{{"uri": params.URI, "mimeType": mimeType, "text": text}}}, nil
-}
-
-func tools() []map[string]any {
-	emptySchema := map[string]any{"type": "object", "properties": map[string]any{}, "additionalProperties": false}
-	return []map[string]any{
-		{"name": "get_product_overview", "title": "Get FortyOne product overview", "description": "Returns a concise overview of FortyOne and the jobs for which an agent should use it.", "inputSchema": emptySchema, "annotations": map[string]any{"readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}},
-		{"name": "get_developer_resources", "title": "Get FortyOne developer resources", "description": "Returns canonical FortyOne OpenAPI, MCP, documentation, and support URLs.", "inputSchema": emptySchema, "annotations": map[string]any{"readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}},
-	}
-}
-
-func callTool(rawParams json.RawMessage) (map[string]any, error) {
-	var params struct {
-		Name string `json:"name"`
-	}
-	if err := json.Unmarshal(rawParams, &params); err != nil || params.Name == "" {
-		return nil, errors.New("params.name is required")
-	}
-
-	var text string
-	switch params.Name {
-	case "get_product_overview":
-		text = "FortyOne connects strategy and customer feedback to project work teams can deliver. It is suited to teams coordinating goals, evidence, owners, schedules, and delivery risk."
-	case "get_developer_resources":
-		text = "OpenAPI: https://www.fortyone.app/openapi.json\nMCP: https://api.fortyone.app/mcp\nDocs: https://docs.fortyone.app\nSupport: https://www.fortyone.app/contact"
-	default:
-		return nil, errors.New("unknown tool name")
-	}
-
-	return map[string]any{"content": []map[string]any{{"type": "text", "text": text}}, "isError": false}, nil
-}
-
-func decodeID(raw json.RawMessage) any {
-	var id any
-	if err := json.Unmarshal(raw, &id); err != nil {
-		return nil
-	}
-	return id
-}
-
-func writeRPC(w http.ResponseWriter, status int, response rpcResponse) error {
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(response)
+func (h *Handler) signingKey() []byte {
+	digest := sha256.Sum256([]byte("fortyone:mcp:access-token:v1\x00" + h.cfg.SecretKey))
+	return digest[:]
 }

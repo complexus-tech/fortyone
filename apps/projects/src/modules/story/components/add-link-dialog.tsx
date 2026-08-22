@@ -3,6 +3,7 @@ import { PlusIcon } from "icons";
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import { cn } from "lib";
+import { toast } from "sonner";
 import { useCreateLinkMutation } from "@/lib/hooks/create-link-mutation";
 import type { NewLink } from "@/lib/actions/links/create-link";
 import type { Link } from "@/types";
@@ -59,10 +60,17 @@ export const AddLinkDialog = ({
     } else {
       if (isFigmaURL(form.url)) {
         linkFigmaStory.mutate(
-          { storyId, url: form.url },
+          { storyId, title: form.title, url: form.url },
           {
             onError: () => {
               setIsOpen(true);
+            },
+            onSuccess: (result) => {
+              if (result.kind === "generic") {
+                toast.success("Figma link saved", {
+                  description: "Saved as a normal link without a preview.",
+                });
+              }
             },
           },
         );

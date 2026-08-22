@@ -32,7 +32,16 @@ export const useFigmaDescriptionPaste = ({
       toast.loading("Attaching Figma design...", { id: toastId });
 
       try {
-        const link = await linkFigmaStory({ storyId, url: rawURL });
+        const result = await linkFigmaStory({ storyId, url: rawURL });
+        if (result.kind === "generic") {
+          toast.success("Figma link saved", {
+            description: "Saved as a normal link without a preview.",
+            id: toastId,
+          });
+          return;
+        }
+
+        const link = result.link;
         const updatedLabel = editor
           ? replacePastedFigmaURLLabel({
               approximatePosition,

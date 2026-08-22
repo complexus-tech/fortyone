@@ -3,7 +3,7 @@
   "info": {
     "title": "FortyOne Public API",
     "version": "1.0.0",
-    "description": "Machine-readable contract for stable public FortyOne discovery, health, feedback, and agent endpoints. Authenticated workspace endpoints are intentionally not advertised as a public integration API until a third-party authorization contract is available.",
+    "description": "Machine-readable contract for stable FortyOne discovery, health, feedback, and the user-authorized remote MCP endpoint.",
     "contact": {
       "name": "FortyOne",
       "email": "hello@complexus.tech",
@@ -155,8 +155,9 @@
       "post": {
         "operationId": "sendMCPMessage",
         "summary": "Send an MCP JSON-RPC message",
-        "description": "Streamable HTTP endpoint for MCP initialization, public resources, and read-only discovery tools.",
+        "description": "Authenticated Streamable HTTP endpoint for permission-aware workspace, planning, creation, and delivery-analysis tools.",
         "tags": ["Discovery"],
+        "security": [{ "oauth2": ["mcp:access"] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -172,13 +173,25 @@
               "application/json": { "schema": { "type": "object" } }
             }
           },
-          "202": { "description": "Notification accepted" },
+          "401": { "description": "OAuth bearer token required" },
           "400": { "$ref": "#/components/responses/Error" }
         }
       }
     }
   },
   "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://api.fortyone.app/oauth/authorize",
+            "tokenUrl": "https://api.fortyone.app/oauth/token",
+            "scopes": { "mcp:access": "Use FortyOne MCP tools as the connected user" }
+          }
+        }
+      }
+    },
     "parameters": {
       "PortalSlug": {
         "name": "portalSlug",

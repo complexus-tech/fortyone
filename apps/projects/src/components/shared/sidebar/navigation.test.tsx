@@ -70,14 +70,20 @@ jest.mock("ui", () => {
 jest.mock("@/components/ui", () => ({
   NavLink: ({
     active,
+    className,
     children,
     href,
   }: {
     active?: boolean;
+    className?: string;
     children: ReactNode;
     href: string;
   }) => (
-    <a aria-current={active ? "page" : undefined} href={href}>
+    <a
+      aria-current={active ? "page" : undefined}
+      className={className}
+      href={href}
+    >
       {children}
     </a>
   ),
@@ -170,5 +176,16 @@ describe("Navigation", () => {
     expect(screen.getByRole("link", { name: "Active Sprint" })).toBeVisible();
     expect(screen.queryByRole("link", { name: "Roadmap" })).toBeNull();
     expect(screen.getByRole("link", { name: "Calendar" })).toBeVisible();
+  });
+
+  it("keeps destination labels visible in the collapsed sidebar", () => {
+    render(<Navigation isCollapsed />);
+
+    const calendarLink = screen.getByRole("link", { name: "Calendar" });
+    const calendarLabel = screen.getByText("Calendar");
+
+    expect(calendarLink).toHaveClass("flex-col", "text-center");
+    expect(calendarLabel).toBeVisible();
+    expect(calendarLabel).not.toHaveClass("hidden");
   });
 });

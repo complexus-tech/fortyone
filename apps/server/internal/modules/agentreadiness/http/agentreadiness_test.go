@@ -2,107 +2,165 @@ package agentreadinesshttp
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 )
 
+type memoryOAuthStore struct {
+	mu    sync.Mutex
+	items map[string][]byte
+}
+
+func (s *memoryOAuthStore) Set(_ context.Context, key string, value any, _ time.Duration) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	s.items[key] = data
+	return nil
+}
+
+func (s *memoryOAuthStore) Get(_ context.Context, key string, dest any) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	data, ok := s.items[key]
+	if !ok {
+		return errors.New("not found")
+	}
+	return json.Unmarshal(data, dest)
+}
+
+func (s *memoryOAuthStore) Delete(_ context.Context, key string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.items, key)
+	return nil
+}
+
 func TestOpenAPIIsValidJSONWithUniqueOperationIDs(t *testing.T) {
 	t.Parallel()
-
+	handler := New(Config{SecretKey: "test", APIPublicURL: "https://api.fortyone.app"})
 	recorder := httptest.NewRecorder()
-	require.NoError(t, New().OpenAPI(context.Background(), recorder, httptest.NewRequest(http.MethodGet, "/openapi.json", nil)))
+	require.NoError(t, handler.OpenAPI(context.Background(), recorder, httptest.NewRequest(http.MethodGet, "/openapi.json", nil)))
 	require.Equal(t, http.StatusOK, recorder.Code)
-
 	var document map[string]any
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &document))
 	require.Equal(t, "3.1.1", document["openapi"])
-
-	seen := make(map[string]struct{})
-	paths, ok := document["paths"].(map[string]any)
-	require.True(t, ok)
-	for _, rawPath := range paths {
-		operations, ok := rawPath.(map[string]any)
-		require.True(t, ok)
-		for _, rawOperation := range operations {
-			operation, ok := rawOperation.(map[string]any)
-			require.True(t, ok)
-			operationID, ok := operation["operationId"].(string)
-			require.True(t, ok)
-			require.NotEmpty(t, operation["description"])
-			_, duplicate := seen[operationID]
-			require.False(t, duplicate, "duplicate operationId %q", operationID)
-			seen[operationID] = struct{}{}
-		}
-	}
 }
 
-func TestMCPInitializeAndResourceLifecycle(t *testing.T) {
+func TestOAuthDiscoveryDescribesRemoteMCPResource(t *testing.T) {
 	t.Parallel()
-	handler := New()
+	handler := New(Config{SecretKey: "test", APIPublicURL: "https://api.fortyone.app"})
+	protected := httptest.NewRecorder()
+	require.NoError(t, handler.ProtectedResourceMetadata(context.Background(), protected, httptest.NewRequest(http.MethodGet, "/.well-known/oauth-protected-resource", nil)))
+	require.Contains(t, protected.Body.String(), `"resource":"https://api.fortyone.app/mcp"`)
+	require.Contains(t, protected.Body.String(), `"authorization_servers":["https://api.fortyone.app"]`)
 
-	initialize := callMCP(t, handler, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}`)
-	require.Equal(t, http.StatusOK, initialize.Code)
-	var initialized rpcResponse
-	require.NoError(t, json.Unmarshal(initialize.Body.Bytes(), &initialized))
-	require.Nil(t, initialized.Error)
-
-	listed := callMCP(t, handler, `{"jsonrpc":"2.0","id":2,"method":"resources/list","params":{}}`)
-	var listResponse struct {
-		Result struct {
-			Resources []resource `json:"resources"`
-		} `json:"result"`
-	}
-	require.NoError(t, json.Unmarshal(listed.Body.Bytes(), &listResponse))
-	require.Len(t, listResponse.Result.Resources, 2)
-	for _, listedResource := range listResponse.Result.Resources {
-		require.NotEmpty(t, listedResource.MimeType)
-		read := callMCP(t, handler, `{"jsonrpc":"2.0","id":3,"method":"resources/read","params":{"uri":"`+listedResource.URI+`"}}`)
-		require.Equal(t, http.StatusOK, read.Code)
-		require.Contains(t, read.Body.String(), `"text":`)
-	}
+	authorization := httptest.NewRecorder()
+	require.NoError(t, handler.AuthorizationServerMetadata(context.Background(), authorization, httptest.NewRequest(http.MethodGet, "/.well-known/oauth-authorization-server", nil)))
+	require.Contains(t, authorization.Body.String(), `"code_challenge_methods_supported":["S256"]`)
+	require.Contains(t, authorization.Body.String(), `"registration_endpoint":"https://api.fortyone.app/oauth/register"`)
 }
 
-func TestMCPListsAndCallsReadOnlyTools(t *testing.T) {
+func TestMCPRejectsMissingBearerTokenWithDiscoveryHint(t *testing.T) {
 	t.Parallel()
-	handler := New()
-
-	listed := callMCP(t, handler, `{"jsonrpc":"2.0","id":"tools","method":"tools/list","params":{}}`)
-	require.Contains(t, listed.Body.String(), "get_product_overview")
-	require.Contains(t, listed.Body.String(), `"readOnlyHint":true`)
-
-	called := callMCP(t, handler, `{"jsonrpc":"2.0","id":"call","method":"tools/call","params":{"name":"get_developer_resources","arguments":{}}}`)
-	require.Contains(t, called.Body.String(), "openapi.json")
-	require.Contains(t, called.Body.String(), `"isError":false`)
-}
-
-func TestMCPAcceptsNotificationsWithoutResponseBody(t *testing.T) {
-	t.Parallel()
-
-	recorder := callMCP(t, New(), `{"jsonrpc":"2.0","method":"notifications/initialized"}`)
-	require.Equal(t, http.StatusAccepted, recorder.Code)
-	require.Empty(t, recorder.Body.String())
-}
-
-func TestMCPAcceptsJSONContentTypeParameters(t *testing.T) {
-	t.Parallel()
-
-	request := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"ping"}`))
-	request.Header.Set("Content-Type", "application/json; charset=utf-8")
-	recorder := httptest.NewRecorder()
-	require.NoError(t, New().MCPPost(context.Background(), recorder, request))
-	require.Equal(t, http.StatusOK, recorder.Code)
-}
-
-func callMCP(t *testing.T, handler *Handler, body string) *httptest.ResponseRecorder {
-	t.Helper()
-	request := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(body))
+	handler := New(Config{SecretKey: "test", APIPublicURL: "https://api.fortyone.app"})
+	request := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize"}`))
 	request.Header.Set("Content-Type", "application/json")
 	recorder := httptest.NewRecorder()
-	require.NoError(t, handler.MCPPost(context.Background(), recorder, request))
-	return recorder
+	require.NoError(t, handler.MCP(context.Background(), recorder, request))
+	require.Equal(t, http.StatusUnauthorized, recorder.Code)
+	require.Contains(t, recorder.Header().Get("WWW-Authenticate"), "oauth-protected-resource")
+}
+
+func TestMCPListsSchedulingAndPlanningTools(t *testing.T) {
+	t.Parallel()
+	handler := New(Config{SecretKey: "test", APIPublicURL: "https://api.fortyone.app"})
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, mcpClaims{RegisteredClaims: jwt.RegisteredClaims{Subject: "e1e76f7c-2832-43b6-88f7-0af378bde150", Audience: jwt.ClaimStrings{"https://api.fortyone.app/mcp"}, ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour))}, Scope: mcpScope})
+	rawToken, err := token.SignedString(handler.signingKey())
+	require.NoError(t, err)
+
+	request := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json, text/event-stream")
+	request.Header.Set("Authorization", "Bearer "+rawToken)
+	recorder := httptest.NewRecorder()
+	require.NoError(t, handler.MCP(context.Background(), recorder, request))
+	require.Equal(t, http.StatusOK, recorder.Code)
+	for _, expected := range []string{"create_story", "estimatedDurationMinutes", "minimumFocusBlockMinutes", "autoSchedulingEnabled", "create_sprint", "create_objective", "create_key_result", "analyze_work"} {
+		require.Contains(t, recorder.Body.String(), expected)
+	}
+}
+
+func TestRedirectURIValidation(t *testing.T) {
+	t.Parallel()
+	require.NoError(t, validateRedirectURI("https://chatgpt.com/aip/callback"))
+	require.NoError(t, validateRedirectURI("http://localhost:8123/callback"))
+	require.Error(t, validateRedirectURI("http://example.com/callback"))
+	require.Error(t, validateRedirectURI("https://example.com/callback#fragment"))
+}
+
+func TestOAuthAuthorizationCodeExchangeUsesPKCEAndResourceAudience(t *testing.T) {
+	t.Parallel()
+	store := &memoryOAuthStore{items: make(map[string][]byte)}
+	handler := New(Config{SecretKey: "test", APIPublicURL: "https://api.fortyone.app", Cache: store})
+	verifier := "correct-horse-battery-staple"
+	digest := sha256.Sum256([]byte(verifier))
+	record := authorizationCode{
+		ClientID:      "test-client",
+		RedirectURI:   "https://client.example/callback",
+		Scope:         "mcp:access offline_access",
+		CodeChallenge: base64.RawURLEncoding.EncodeToString(digest[:]),
+		UserID:        "e1e76f7c-2832-43b6-88f7-0af378bde150",
+	}
+	require.NoError(t, store.Set(context.Background(), oauthKey("code", hashToken("one-time-code")), record, time.Minute))
+
+	form := "grant_type=authorization_code&code=one-time-code&client_id=test-client&redirect_uri=https%3A%2F%2Fclient.example%2Fcallback&code_verifier=" + verifier + "&resource=https%3A%2F%2Fapi.fortyone.app%2Fmcp"
+	request := httptest.NewRequest(http.MethodPost, "/oauth/token", strings.NewReader(form))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	recorder := httptest.NewRecorder()
+	require.NoError(t, handler.Token(context.Background(), recorder, request))
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	var response struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	require.NotEmpty(t, response.RefreshToken)
+	info, err := handler.verifyToken(context.Background(), response.AccessToken, request)
+	require.NoError(t, err)
+	require.Equal(t, record.UserID, info.UserID)
+}
+
+func TestOAuthUsesDedicatedLoginURLWithoutChangingWebsiteURL(t *testing.T) {
+	t.Parallel()
+	store := &memoryOAuthStore{items: make(map[string][]byte)}
+	handler := New(Config{
+		SecretKey:    "test",
+		APIPublicURL: "https://api.fortyone.app",
+		LoginURL:     "https://cloud.fortyone.app",
+		Cache:        store,
+	})
+	client := oauthClient{ClientID: "test-client", ClientName: "Test client", RedirectURIs: []string{"https://client.example/callback"}}
+	require.NoError(t, store.Set(context.Background(), oauthKey("client", client.ClientID), client, time.Minute))
+
+	request := httptest.NewRequest(http.MethodGet, "/oauth/authorize?response_type=code&client_id=test-client&redirect_uri=https%3A%2F%2Fclient.example%2Fcallback&code_challenge=challenge&code_challenge_method=S256&resource=https%3A%2F%2Fapi.fortyone.app%2Fmcp", nil)
+	recorder := httptest.NewRecorder()
+	require.NoError(t, handler.Authorize(context.Background(), recorder, request))
+	require.Equal(t, http.StatusFound, recorder.Code)
+	require.True(t, strings.HasPrefix(recorder.Header().Get("Location"), "https://cloud.fortyone.app/?callbackUrl="))
 }

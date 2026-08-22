@@ -82,7 +82,21 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		panic("bootstrap service validation failed: " + err.Error())
 	}
 
-	agentreadinesshttp.Routes(app)
+	agentreadinesshttp.Routes(agentreadinesshttp.Config{
+		SecretKey:         cfg.SecretKey,
+		APIPublicURL:      cfg.APIPublicURL,
+		Workspaces:        svcs.workspaces,
+		Teams:             svcs.teams,
+		States:            svcs.states,
+		Stories:           svcs.stories,
+		Sprints:           svcs.sprints,
+		Objectives:        svcs.objectives,
+		ObjectiveStatuses: svcs.objectiveStats,
+		KeyResults:        svcs.keyResults,
+		Reports:           svcs.reports,
+		Cache:             cfg.Cache,
+		LoginURL:          cfg.MCPLoginURL,
+	}, app)
 
 	healthhttp.Routes(healthhttp.Config{
 		DB:  cfg.DB,

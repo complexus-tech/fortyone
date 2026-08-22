@@ -21,7 +21,7 @@ const resources = [
   {
     title: "Model Context Protocol",
     description:
-      "Connect to the public Streamable HTTP server and read the product and developer resources it advertises.",
+      "Connect ChatGPT, Claude, Cursor, Codex, and other MCP clients to permission-aware FortyOne tools.",
     href: "/server.json",
     label: "View MCP metadata",
   },
@@ -82,13 +82,11 @@ export default function Page() {
             Authentication boundary
           </Text>
           <Text className="text-text-muted mt-4 leading-relaxed">
-            The current public machine-readable surface is intentionally
-            read-only. FortyOne does not advertise a general-purpose OAuth
-            authorization server or authenticated MCP mutation tools until the
-            required consent, scopes, token audience, revocation, and workspace
-            permission contracts are productized. Existing Google, Microsoft,
-            Slack, GitHub, and Figma authorization flows connect those providers
-            to FortyOne; they are not credentials for third-party API clients.
+            The remote MCP server uses a separate FortyOne OAuth connection with
+            PKCE, audience-bound tokens, refresh-token rotation, revocation, and
+            an explicit consent screen. Every tool runs as the connected user
+            and reuses existing workspace and team permission checks. Create
+            tools also require explicit user confirmation.
           </Text>
         </section>
       </Container>

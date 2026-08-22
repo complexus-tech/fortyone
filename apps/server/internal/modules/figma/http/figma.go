@@ -2,6 +2,7 @@ package figmahttp
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -12,6 +13,14 @@ import (
 )
 
 type Handlers struct{ service *figma.Service }
+
+func providerErrorStatus(err error) int {
+	var apiErr *figma.APIError
+	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusTooManyRequests {
+		return http.StatusTooManyRequests
+	}
+	return http.StatusBadRequest
+}
 
 func New(service *figma.Service) *Handlers { return &Handlers{service: service} }
 
@@ -85,7 +94,7 @@ func (h *Handlers) ResolveLink(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 	artifact, err := h.service.ResolveLink(ctx, workspace.ID, input.URL)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, providerErrorStatus(err))
 	}
 	return web.Respond(ctx, w, artifact, http.StatusOK)
 }
@@ -135,7 +144,7 @@ func (h *Handlers) LinkStory(ctx context.Context, w http.ResponseWriter, r *http
 	}
 	link, err := h.service.LinkStory(ctx, workspace.ID, userID, storyID, workspace.Slug, input.URL)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, providerErrorStatus(err))
 	}
 	return web.Respond(ctx, w, link, http.StatusCreated)
 }

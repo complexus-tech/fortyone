@@ -46,8 +46,15 @@ const artifact: FigmaArtifact = {
 };
 
 describe("useFigmaDescriptionPaste", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("keeps the action toast alive while the design is attached", async () => {
-    const linkFigmaStory = jest.fn().mockResolvedValue({ artifact });
+    const linkFigmaStory = jest.fn().mockResolvedValue({
+      kind: "figma",
+      link: { artifact },
+    });
     (useLinkFigmaStory as jest.Mock).mockReturnValue({
       mutateAsync: linkFigmaStory,
     });
@@ -90,6 +97,44 @@ describe("useFigmaDescriptionPaste", () => {
         expect.objectContaining({ id: "figma-prompt" }),
       );
     });
+
+    editor.destroy();
+  });
+
+  it("confirms when a rate-limited design is saved as a normal link", async () => {
+    const linkFigmaStory = jest.fn().mockResolvedValue({
+      kind: "generic",
+      link: { id: "link-1", storyId: "story-1", url: RAW_URL },
+    });
+    (useLinkFigmaStory as jest.Mock).mockReturnValue({
+      mutateAsync: linkFigmaStory,
+    });
+    const editor = new Editor({
+      content: "<p></p>",
+      extensions: [Document, Paragraph, Text],
+    });
+    const { result } = renderHook(() =>
+      useFigmaDescriptionPaste({ editor, storyId: "story-1" }),
+    );
+
+    act(() => {
+      result.current({
+        clipboardData: { getData: () => RAW_URL },
+      } as unknown as ClipboardEvent<HTMLDivElement>);
+    });
+    const promptOptions = (toast.info as jest.Mock).mock.calls[0][1];
+
+    act(() => {
+      promptOptions.action.onClick({ preventDefault: jest.fn() });
+    });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Figma link saved", {
+        description: "Saved as a normal link without a preview.",
+        id: "figma-prompt",
+      });
+    });
+    expect(editor.getText()).toBe("");
 
     editor.destroy();
   });

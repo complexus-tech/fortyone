@@ -70,22 +70,14 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
 
   const notificationsAction = (
     <Tooltip side="right" title="Notifications">
-      <Box
-        className={cn(isCollapsed && "w-full")}
-        data-sidebar-notifications-button
-      >
+      <Box data-sidebar-notifications-button>
         <Button
           asIcon
-          className={cn("group relative", isCollapsed && "h-[2.3rem] w-full")}
+          className="group relative"
           color="tertiary"
           href={withWorkspace("/notifications")}
           leftIcon={
-            <Notification02Icon
-              className={cn(
-                "transition-transform group-hover:rotate-12",
-                isCollapsed ? "h-6" : "h-[1.4rem]",
-              )}
-            />
+            <Notification02Icon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
           }
           prefetch
           size="sm"
@@ -105,42 +97,62 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
       </Box>
     </Tooltip>
   );
+  const searchAction = (
+    <Tooltip side="right" title={null}>
+      <Button
+        asIcon
+        className="md:h-[2.4rem]"
+        color="tertiary"
+        href={withWorkspace("/search")}
+        leftIcon={<SearchIcon className="h-4" />}
+        prefetch
+        variant="outline"
+      >
+        <span className="sr-only">Search</span>
+      </Button>
+    </Tooltip>
+  );
 
   return (
     <>
       {isCollapsed ? (
-        <>
-          <Flex
-            align="center"
-            className="h-[3.6rem] flex-col pt-2"
-            justify="between"
-          >
-            <WorkspacesMenu isCollapsed />
-            <Divider className="w-8 self-center" />
-          </Flex>
-          <Box className="mt-2 flex justify-center">{notificationsAction}</Box>
-        </>
+        <Flex
+          align="center"
+          className="h-[3.6rem] flex-col pt-2"
+          justify="between"
+        >
+          <WorkspacesMenu isCollapsed />
+          <Divider className="w-8 self-center" />
+        </Flex>
       ) : (
         <Flex align="center" className="h-[3.6rem] pt-2" justify="between">
           <WorkspacesMenu />
           {notificationsAction}
         </Flex>
       )}
-      <Flex className={cn("mt-2 mb-3 gap-1.5", isCollapsed && "flex-col")}>
+      <Flex
+        align={isCollapsed ? "center" : undefined}
+        className={cn("mt-2 mb-3 gap-1.5", isCollapsed && "flex-col")}
+      >
         <Tooltip side="right" title={isCollapsed ? "Create story" : null}>
           <Button
             asIcon={isCollapsed}
-            className={cn("truncate md:h-[2.4rem]", isCollapsed && "w-full")}
+            className={
+              isCollapsed ? "h-11 w-11 px-0 md:h-11" : "truncate md:h-[2.4rem]"
+            }
             color="tertiary"
             data-sidebar-create-story-button
             disabled={userRole === "guest"}
             fullWidth={!isCollapsed}
-            leftIcon={<PlusIcon className="shrink-0" />}
+            leftIcon={
+              <PlusIcon className={cn("shrink-0", isCollapsed && "h-5")} />
+            }
             onClick={() => {
               if (userRole !== "guest") {
                 setIsOpen(!isOpen);
               }
             }}
+            rounded={isCollapsed ? "full" : undefined}
             variant="outline"
           >
             <span className={isCollapsed ? "hidden" : undefined}>
@@ -148,19 +160,7 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
             </span>
           </Button>
         </Tooltip>
-        <Tooltip side="right" title={isCollapsed ? "Search" : null}>
-          <Button
-            asIcon
-            className={cn("md:h-[2.4rem]", isCollapsed && "w-full")}
-            color="tertiary"
-            href={withWorkspace("/search")}
-            leftIcon={<SearchIcon className="h-4" />}
-            prefetch
-            variant="outline"
-          >
-            <span className="sr-only">Search</span>
-          </Button>
-        </Tooltip>
+        {isCollapsed ? null : searchAction}
       </Flex>
 
       {/* Dialogs */}

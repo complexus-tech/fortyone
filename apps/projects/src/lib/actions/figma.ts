@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { post, remove } from "@/lib/http";
-import type { ApiResponse } from "@/types";
+import type { ApiResponse, Link } from "@/types";
 import { getApiError } from "@/utils";
 import type {
   FigmaArtifact,
@@ -57,17 +57,52 @@ export const linkFigmaStoryAction = async (
   workspaceSlug: string,
   storyId: string,
   url: string,
-) => {
+  title?: string,
+): Promise<ApiResponse<LinkFigmaStoryResult>> => {
   try {
-    return await post<{ url: string }, ApiResponse<StoryFigmaLink>>(
+    const requestContext = await context(workspaceSlug);
+    const response = await post<{ url: string }, ApiResponse<StoryFigmaLink>>(
       `stories/${storyId}/figma-links`,
       { url },
-      await context(workspaceSlug),
+      requestContext,
     );
+    const rateLimited =
+      response.error?.code === "rate_limited" ||
+      response.error?.message.startsWith("Figma rate limit reached");
+    if (!rateLimited) {
+      return response.data
+        ? ({
+            data: { kind: "figma", link: response.data },
+          } satisfies ApiResponse<LinkFigmaStoryResult>)
+        : ({ data: null, error: response.error } satisfies ApiResponse<null>);
+    }
+
+    const fallback = await post<
+      { storyId: string; title: string; url: string },
+      ApiResponse<Link>
+    >(
+      "links",
+      {
+        storyId,
+        title: title?.trim() || "Figma design",
+        url,
+      },
+      requestContext,
+    );
+    return fallback.data
+      ? ({
+          data: { kind: "generic", link: fallback.data },
+        } satisfies ApiResponse<LinkFigmaStoryResult>)
+      : ({ data: null, error: fallback.error } satisfies ApiResponse<null>);
   } catch (error) {
-    return getApiError(error);
+    const failure = getApiError(error);
+    return { data: null, error: failure.error };
   }
 };
+
+export type LinkFigmaStoryResult =
+  | { kind: "figma"; link: StoryFigmaLink }
+  | { kind: "generic"; link: Link };
 
 export const deleteFigmaStoryLinkAction = async (
   workspaceSlug: string,

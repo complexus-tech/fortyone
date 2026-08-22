@@ -13,7 +13,6 @@ import {
   Menu,
   Popover,
   Text,
-  Tooltip,
 } from "ui";
 import {
   ArchiveIcon,
@@ -78,16 +77,15 @@ const CollapsedTeamNavigation = ({
           aria-expanded={isOpen}
           aria-label={`${isOpen ? "Close" : "Open"} ${teamName} team navigation`}
           className={cn(
-            "border-border/70 bg-surface/40 focus-visible:ring-primary/40 hover:bg-accent flex h-10 w-10 flex-none items-center justify-center rounded-lg border transition outline-none focus-visible:ring-2",
+            "border-border/70 bg-surface/40 focus-visible:ring-primary/40 hover:bg-accent flex min-h-14 w-full flex-none flex-col items-center justify-center gap-1 rounded-lg border px-1 py-2 text-center transition outline-none focus-visible:ring-2",
             isTeamActive && "bg-accent",
           )}
           type="button"
         >
-          <Tooltip side="right" title={teamName}>
-            <span>
-              <TeamColor className="size-4" color={color} />
-            </span>
-          </Tooltip>
+          <TeamColor className="size-4" color={color} />
+          <span className="line-clamp-2 w-full text-[0.6875rem] leading-3.5 font-semibold">
+            {teamName}
+          </span>
         </button>
       </Popover.Trigger>
       <Popover.Content

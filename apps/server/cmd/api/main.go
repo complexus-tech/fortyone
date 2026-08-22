@@ -67,11 +67,15 @@ type Config struct {
 	}
 	Web struct {
 		APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
+		PublicURL       string        `default:"http://localhost:8000" env:"APP_API_PUBLIC_URL"`
 		ReadTimeout     time.Duration `default:"5m" env:"APP_API_READ_TIMEOUT"`
 		WriteTimeout    time.Duration `default:"5m" env:"APP_API_WRITE_TIMEOUT"`
 		IdleTimeout     time.Duration `default:"30s" env:"APP_API_IDLE_TIMEOUT"`
 		ShutdownTimeout time.Duration `default:"30s" env:"APP_API_SHUTDOWN_TIMEOUT"`
 		DebugHost       string        `default:"localhost:9000" env:"APP_API_DEBUG_HOST"`
+	}
+	MCP struct {
+		LoginURL string `default:"http://localhost:3000" env:"APP_MCP_LOGIN_URL"`
 	}
 	DB struct {
 		Host         string `default:"localhost" env:"APP_DB_HOST"`
@@ -440,6 +444,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 		StripeClient:                stripeClient,
 		WebhookSecret:               cfg.Stripe.WebhookSecret,
 		WebsiteURL:                  cfg.Website.URL,
+		APIPublicURL:                cfg.Web.PublicURL,
+		MCPLoginURL:                 cfg.MCP.LoginURL,
 		GitHubAppID:                 cfg.GitHub.AppID,
 		GitHubAppSlug:               cfg.GitHub.AppSlug,
 		GitHubClientID:              cfg.GitHub.ClientID,

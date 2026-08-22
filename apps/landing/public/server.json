@@ -1,8 +1,8 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "app.fortyone/public",
+  "name": "app.fortyone",
   "title": "FortyOne",
-  "description": "Public FortyOne product and developer resources for AI agents.",
+  "description": "User-authorized FortyOne workspace, planning, creation, and delivery analysis tools for AI clients.",
   "version": "1.0.0",
   "websiteUrl": "https://www.fortyone.app/developers",
   "remotes": [

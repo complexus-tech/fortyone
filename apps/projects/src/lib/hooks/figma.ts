@@ -140,8 +140,21 @@ export const useLinkFigmaStory = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
   return useMutation({
-    mutationFn: async ({ storyId, url }: { storyId: string; url: string }) => {
-      const response = await linkFigmaStoryAction(workspaceSlug, storyId, url);
+    mutationFn: async ({
+      storyId,
+      title,
+      url,
+    }: {
+      storyId: string;
+      title?: string;
+      url: string;
+    }) => {
+      const response = await linkFigmaStoryAction(
+        workspaceSlug,
+        storyId,
+        url,
+        title,
+      );
       if (response.error?.message || !response.data) {
         throw new Error(
           response.error?.message ?? "The Figma design could not be linked.",
