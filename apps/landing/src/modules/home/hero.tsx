@@ -1,7 +1,8 @@
-import { Box, Button, Text } from "ui";
+import Link from "next/link";
+import { Box, Text } from "ui";
 import type { HandwrittenAccentTone } from "@/components/ui/handwritten-accent";
 import { Container, UnderlinedHandwrittenAccent } from "@/components/ui";
-import { GoogleSignupButton } from "@/components/shared/google-signup-button";
+import { SignupProviderButton } from "@/components/shared/signup-provider-button";
 import { SIGNUP_URL } from "@/lib/app-url";
 
 const HERO_TITLE =
@@ -58,17 +59,21 @@ export const Hero = () => {
           </Text>
         </Box>
 
-        <Box className="landing-hero-action flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <Button
-            className="relative z-1 px-3 md:pr-4 md:pl-5"
-            color="invert"
-            href={SIGNUP_URL}
-            rounded="lg"
-            size="lg"
-          >
-            Start for free
-          </Button>
-          <GoogleSignupButton />
+        <Box className="landing-hero-action relative z-1 flex w-full max-w-xl flex-col gap-3">
+          <Box className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+            <SignupProviderButton emphasized provider="google" />
+            <SignupProviderButton emphasized provider="microsoft" />
+          </Box>
+          <Text className="text-center text-[0.95rem]" color="muted">
+            <Link
+              className="text-foreground underline underline-offset-2"
+              href={SIGNUP_URL}
+            >
+              Continue with email
+            </Link>{" "}
+            <span aria-hidden="true">&bull;</span>{" "}
+            <span>No credit card required</span>
+          </Text>
         </Box>
       </Container>
     </Box>
