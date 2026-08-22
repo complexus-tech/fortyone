@@ -76,6 +76,7 @@ jest.mock("icons", () => {
 
   return {
     DashboardIcon: Icon,
+    EnterIcon: Icon,
     HelpIcon: Icon,
     LoadingIcon: Icon,
     LogoutIcon: Icon,

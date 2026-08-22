@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { ObjectiveIcon, SearchIcon, StoryIcon } from "icons";
+import { EnterIcon, ObjectiveIcon, SearchIcon, StoryIcon } from "icons";
 import { Box, Command, Flex, Kbd, Skeleton, Text } from "ui";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useStatuses } from "@/lib/hooks/statuses";
@@ -13,7 +13,7 @@ const RESULT_LIMIT = 5;
 const SKELETON_TITLE_WIDTHS = ["w-3/5", "w-2/5", "w-1/2"] as const;
 const RESULT_ICON_CLASSNAME =
   "flex size-8 shrink-0 items-center justify-center rounded-md border";
-const RESULT_SHORTCUT_CLASSNAME = "relative top-[1.5px] ml-3 shrink-0";
+const RESULT_SHORTCUT_CLASSNAME = "ml-3 shrink-0";
 
 const getStatusStyle = (color?: string): CSSProperties | undefined =>
   color
@@ -66,7 +66,9 @@ const ResultItem = ({
         </Text>
       </Box>
     </Flex>
-    <Kbd className={RESULT_SHORTCUT_CLASSNAME}>↵</Kbd>
+    <Kbd className={RESULT_SHORTCUT_CLASSNAME}>
+      <EnterIcon className="!size-3" />
+    </Kbd>
   </Command.Item>
 );
 
@@ -251,7 +253,9 @@ export const CommandSearchResults = ({
               View all results for “{query}”
             </Text>
           </Flex>
-          <Kbd className={RESULT_SHORTCUT_CLASSNAME}>↵</Kbd>
+          <Kbd className={RESULT_SHORTCUT_CLASSNAME}>
+            <EnterIcon className="!size-3" />
+          </Kbd>
         </Command.Item>
       </Command.Group>
     </>
