@@ -16,6 +16,7 @@ import type { SearchResponse } from "@/modules/search/types";
 import type { ApiResponse, Member, MembersPage, UserSummary } from "@/types";
 import {
   computeTargetKey,
+  patchStories,
   parseGroupQueryKey,
   updateStoryInGroups,
 } from "@/modules/stories/utils/optimistic";
@@ -265,11 +266,12 @@ const updateDetailQuery = (
 ) => {
   const parentStory = queryClient.getQueryData<DetailedStory>(queryKey);
   if (parentStory?.subStories) {
+    const subStories = patchStories(parentStory.subStories, storyId, payload);
+    if (subStories === parentStory.subStories) return;
+
     queryClient.setQueryData<DetailedStory>(queryKey, {
       ...parentStory,
-      subStories: parentStory.subStories.map((subStory) =>
-        subStory.id === storyId ? { ...subStory, ...payload } : subStory,
-      ),
+      subStories,
     });
   }
 };
@@ -284,9 +286,7 @@ const updateListQuery = (
   if (Array.isArray(queryData)) {
     queryClient.setQueryData<Story[]>(queryKey, (data) => {
       if (!Array.isArray(data)) return data;
-      return data.map((story) =>
-        story.id === storyId ? { ...story, ...payload } : story,
-      );
+      return patchStories(data, storyId, payload);
     });
     return;
   }
@@ -302,7 +302,8 @@ const updateListQuery = (
   }
 };
 
-const updateInfiniteQuery = (
+/** @internal Exported for focused cache-identity tests. */
+export const updateInfiniteQuery = (
   queryClient: ReturnType<typeof useQueryClient>,
   queryKey: readonly unknown[],
   storyId: string,
@@ -326,40 +327,64 @@ const updateInfiniteQuery = (
     const target = computeTargetKey(params.groupBy ?? "none", payload);
 
     if (!target || target === groupKey) {
+      if (
+        !data.pages.some(
+          (page) =>
+            Array.isArray(page.stories) &&
+            page.stories.some((story) => story.id === storyId),
+        )
+      ) {
+        return data;
+      }
+
+      const pages = data.pages.map((page) => {
+        if (!Array.isArray(page.stories)) return page;
+
+        const stories = patchStories(page.stories, storyId, payload);
+        if (stories === page.stories) return page;
+
+        movedStory = stories.findLast((story) => story.id === storyId);
+        return { ...page, stories };
+      });
+
       return {
         ...data,
-        pages: data.pages.map((p) => {
-          if (!Array.isArray(p.stories)) return p;
-          return {
-            ...p,
-            stories: p.stories.map((s) => {
-              if (s.id === storyId) {
-                movedStory = { ...s, ...payload };
-                return movedStory;
-              }
-              return s;
-            }),
-          };
-        }),
+        pages,
       };
     }
 
     // moved: filter out and capture
+    if (
+      !data.pages.some(
+        (page) =>
+          Array.isArray(page.stories) &&
+          page.stories.some((story) => story.id === storyId),
+      )
+    ) {
+      return data;
+    }
+
+    const pages = data.pages.map((page) => {
+      if (
+        !Array.isArray(page.stories) ||
+        !page.stories.some((story) => story.id === storyId)
+      ) {
+        return page;
+      }
+
+      const stories = page.stories.filter((story) => {
+        if (story.id !== storyId) return true;
+
+        movedStory = { ...story, ...payload };
+        return false;
+      });
+
+      return { ...page, stories };
+    });
+
     return {
       ...data,
-      pages: data.pages.map((p) => {
-        if (!Array.isArray(p.stories)) return p;
-        return {
-          ...p,
-          stories: p.stories.filter((s) => {
-            if (s.id === storyId) {
-              movedStory = { ...s, ...payload };
-              return false;
-            }
-            return true;
-          }),
-        };
-      }),
+      pages,
     };
   });
 
@@ -433,14 +458,17 @@ const updateGroupedQuery = (
   queryClient.setQueryData<GroupedStoriesResponse>(queryKey, (data) => {
     if (!data || !Array.isArray(data.groups)) return data;
 
+    const groups = updateStoryInGroups(
+      data.groups,
+      storyId,
+      data.meta.groupBy,
+      payload,
+    );
+    if (groups === data.groups) return data;
+
     return {
       ...data,
-      groups: updateStoryInGroups(
-        data.groups,
-        storyId,
-        data.meta.groupBy,
-        payload,
-      ),
+      groups,
     };
   });
 };
@@ -454,11 +482,12 @@ const updateSearchResults = (
     .getQueriesData<SearchResponse>({ queryKey: ["search"] })
     .forEach(([queryKey, data]) => {
       if (Array.isArray(data?.stories)) {
+        const stories = patchStories(data.stories, storyId, payload);
+        if (stories === data.stories) return;
+
         queryClient.setQueryData<SearchResponse>(queryKey, {
           ...data,
-          stories: data.stories.map((story) =>
-            story.id === storyId ? { ...story, ...payload } : story,
-          ),
+          stories,
         });
       }
     });

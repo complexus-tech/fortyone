@@ -1,5 +1,11 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import type { IntersectionObserverHookRootRefCallback } from "react-intersection-observer-hook";
@@ -137,9 +143,14 @@ export const KanbanGroup = ({
     void fetchNextPage();
   }, [entry, fetchNextPage, hasNextPage, isFetchingNextPage, paginationScope]);
 
-  const handleNavigate = (newStoryId: string) => {
+  const handleStoryClick = useCallback((selectedStoryId: string) => {
+    setStoryId(selectedStoryId);
+    setIsDialogOpen(true);
+  }, []);
+
+  const handleNavigate = useCallback((newStoryId: string) => {
     setStoryId(newStoryId);
-  };
+  }, []);
 
   return (
     <List
@@ -150,10 +161,7 @@ export const KanbanGroup = ({
     >
       {allStories.map((story) => (
         <StoryCard
-          handleStoryClick={(storyId) => {
-            setStoryId(storyId);
-            setIsDialogOpen(true);
-          }}
+          handleStoryClick={handleStoryClick}
           key={story.id}
           story={story}
         />

@@ -45,19 +45,12 @@ jest.mock("@/modules/settings/components", () => ({
   ),
 }));
 
-jest.mock("@/components/ui", () => ({
-  MicrosoftIcon: () => <svg aria-label="Microsoft" />,
-}));
-
 jest.mock("icons", () => ({
   CalendarIcon: (props: ComponentPropsWithoutRef<"svg">) => <svg {...props} />,
   CalendarPlusIcon: (props: ComponentPropsWithoutRef<"svg">) => (
     <svg {...props} />
   ),
   ClockIcon: (props: ComponentPropsWithoutRef<"svg">) => <svg {...props} />,
-  GoogleCalendarIcon: (props: ComponentPropsWithoutRef<"svg">) => (
-    <svg {...props} />
-  ),
   MoreHorizontalIcon: (props: ComponentPropsWithoutRef<"svg">) => (
     <svg {...props} />
   ),
@@ -179,11 +172,19 @@ beforeEach(() => {
 
 describe("CalendarIntegrationSettings callback feedback", () => {
   it("offers Google and Outlook calendar connections", () => {
-    render(<CalendarIntegrationSettings />);
+    const { container } = render(<CalendarIntegrationSettings />);
 
     expect(screen.getByText("Google Calendar")).toBeInTheDocument();
     expect(screen.getByText("Outlook Calendar")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Connect" })).toHaveLength(2);
+    expect(
+      Array.from(container.querySelectorAll("img"), (image) =>
+        image.getAttribute("src"),
+      ),
+    ).toEqual([
+      "/integrations/google-calendar-2026.svg",
+      "/integrations/outlook-2025.svg",
+    ]);
   });
 
   it("allows one writable connection to become primary", () => {

@@ -187,6 +187,11 @@ export const StoryProperties = ({
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
   const pendingStatusIdRef = useRef<string | null>(null);
+  const showObjective = isColumnVisible("Objective");
+  const showKeyResult = isColumnVisible("Key Result");
+  const hasVisibleStrategyProperties = Boolean(
+    objectiveId && (showObjective || (showKeyResult && keyResultId)),
+  );
 
   const status =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
@@ -374,17 +379,19 @@ export const StoryProperties = ({
           />
         </TimeNeededMenu>
       ) : null}
-      <StoryStrategyProperties
-        asKanban={asKanban}
-        disabled={isGuest}
-        handleUpdate={handleUpdate}
-        keyResultId={keyResultId}
-        objective={objective}
-        objectiveId={objectiveId}
-        showKeyResult={isColumnVisible("Key Result")}
-        showObjective={isColumnVisible("Objective")}
-        teamId={teamId}
-      />
+      {hasVisibleStrategyProperties ? (
+        <StoryStrategyProperties
+          asKanban={asKanban}
+          disabled={isGuest}
+          handleUpdate={handleUpdate}
+          keyResultId={keyResultId}
+          objective={objective}
+          objectiveId={objectiveId}
+          showKeyResult={showKeyResult}
+          showObjective={showObjective}
+          teamId={teamId}
+        />
+      ) : null}
       {isColumnVisible("Sprint") && selectedSprint ? (
         <SprintsMenu>
           <Tooltip

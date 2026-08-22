@@ -39,7 +39,7 @@ export const ListMyStories = () => {
   }, [searchParams]);
 
   return (
-    <MyWorkProvider layout={layout}>
+    <MyWorkProvider key={layout} layout={layout}>
       <Header
         layout={layout}
         setLayout={(value) => {

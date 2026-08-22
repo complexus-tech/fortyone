@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -9,12 +10,10 @@ import {
   CalendarIcon,
   CalendarPlusIcon,
   ClockIcon,
-  GoogleCalendarIcon,
   MoreHorizontalIcon,
   ReloadIcon,
   UnlinkIcon,
 } from "icons";
-import { MicrosoftIcon } from "@/components/ui";
 import { useWorkspacePath } from "@/hooks";
 import {
   SectionHeader,
@@ -46,12 +45,20 @@ const providers: {
   },
 ];
 
-const ProviderIcon = ({ provider }: { provider: CalendarProvider }) =>
-  provider === "google" ? (
-    <GoogleCalendarIcon aria-hidden="true" className="h-6 w-6" />
-  ) : (
-    <MicrosoftIcon />
-  );
+const ProviderIcon = ({ provider }: { provider: CalendarProvider }) => (
+  <Image
+    alt=""
+    aria-hidden="true"
+    className="size-6 object-contain"
+    height={24}
+    src={
+      provider === "google"
+        ? "/integrations/google-calendar-2026.svg"
+        : "/integrations/outlook-2025.svg"
+    }
+    width={24}
+  />
+);
 
 const getConnectionStatus = (status?: string) => {
   if (status === "failed") {
