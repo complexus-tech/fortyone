@@ -82,7 +82,7 @@ import {
 import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
-import { useTeams } from "@/modules/teams/hooks/teams";
+import { useJoinedTeams } from "@/modules/teams/hooks/teams";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import { useTeamObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useKeyResults } from "@/modules/objectives/hooks";
@@ -232,7 +232,7 @@ export const NewStoryDialog = ({
   const queryClient = useQueryClient();
   const features = useFeatures();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
-  const { data: teams = [] } = useTeams();
+  const { data: teams = [] } = useJoinedTeams();
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
   const { data: allLabels = [] } = useLabels();
