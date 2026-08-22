@@ -57,7 +57,7 @@ export const Navigation = ({
 
     return {
       name: `Active ${sprintTerm.charAt(0).toUpperCase()}${sprintTerm.slice(1)}`,
-      icon: <ActiveSprintIcon className={isCollapsed ? "h-6" : undefined} />,
+      icon: <ActiveSprintIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href:
         runningSprints.length > 1
           ? withWorkspace("/sprints")
@@ -71,42 +71,42 @@ export const Navigation = ({
   const primaryLinks: MenuItem[] = [
     {
       name: "My work",
-      icon: <UserIcon className={isCollapsed ? "h-6" : undefined} />,
+      icon: <UserIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/my-work"),
     },
     {
       name: "Calendar",
-      icon: <CalendarIcon className={isCollapsed ? "h-6" : undefined} />,
+      icon: <CalendarIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/calendar"),
     },
     ...(sprintItem ? [sprintItem] : []),
     {
       name: "Summary",
-      icon: <DashboardIcon className={isCollapsed ? "h-6" : undefined} />,
+      icon: <DashboardIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/summary"),
     },
     {
       name: "AI Agent",
-      icon: <AiIcon className={isCollapsed ? "h-6" : undefined} />,
+      icon: <AiIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/maya"),
     },
   ];
   const workspaceLinks: MenuItem[] = [
     {
       name: "Roadmap",
-      icon: <RoadmapIcon className={isCollapsed ? "h-6" : undefined} />,
+      icon: <RoadmapIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/roadmap"),
       disabled: !features.objectiveEnabled,
     },
     {
       name: "Strategy Map",
-      icon: <StrategyIcon className={isCollapsed ? "h-6" : undefined} />,
+      icon: <StrategyIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/strategy"),
       disabled: !features.objectiveEnabled,
     },
     {
       name: "Documents",
-      icon: <DocsIcon className={isCollapsed ? "h-6" : undefined} />,
+      icon: <DocsIcon className={isCollapsed ? "h-5.5" : undefined} />,
       href: withWorkspace("/docs"),
     },
   ];
@@ -130,7 +130,7 @@ export const Navigation = ({
             isActive && "bg-primary/5 text-primary [&_svg]:text-primary",
             isCollapsed &&
               "relative min-h-14 flex-col justify-center gap-1 px-1 py-2 text-center",
-            isCollapsed && "[&_svg]:!h-6 [&_svg]:!w-auto",
+            isCollapsed && "[&_svg]:!h-5.5 [&_svg]:!w-auto",
             isCollapsed &&
               isActive &&
               "before:bg-primary before:absolute before:top-1/2 before:-left-3 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",

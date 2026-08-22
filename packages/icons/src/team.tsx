@@ -16,25 +16,19 @@ export const TeamIcon = (props: Icon) => {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M13 7C13 9.20914 11.2091 11 9 11C6.79086 11 5 9.20914 5 7C5 4.79086 6.79086 3 9 3C11.2091 3 13 4.79086 13 7Z"
-        stroke="currentColor"
+        d="M16.5 20V16.9852C16.5 16.364 16.2184 15.7658 15.6838 15.4494C14.1574 14.546 12.1714 14 10 14C7.82863 14 5.84261 14.546 4.31618 15.4494C3.78162 15.7658 3.5 16.364 3.5 16.9852V20"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
+      <circle cx="10" cy="7.5" r="3.5" />
       <path
-        d="M15 11C17.2091 11 19 9.20914 19 7C19 4.79086 17.2091 3 15 3"
-        stroke="currentColor"
+        d="M20.5 20.001V16.9862C20.5 16.365 20.2184 15.7667 19.6838 15.4504C19.171 15.1468 18.6062 14.8837 18 14.668"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M11 14H7C4.23858 14 2 16.2386 2 19C2 20.1046 2.89543 21 4 21H14C15.1046 21 16 20.1046 16 19C16 16.2386 13.7614 14 11 14Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M17 14C19.7614 14 22 16.2386 22 19C22 20.1046 21.1046 21 20 21H18.5"
-        stroke="currentColor"
+        d="M15 4.14453C16.4457 4.57481 17.5 5.91408 17.5 7.49959C17.5 9.0851 16.4457 10.4244 15 10.8547"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );

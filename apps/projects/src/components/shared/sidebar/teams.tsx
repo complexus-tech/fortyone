@@ -144,7 +144,7 @@ export const Teams = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
                 fullWidth={isCollapsed}
                 leftIcon={
                   isCollapsed ? (
-                    <TeamIcon className="h-6 w-auto shrink-0" />
+                    <TeamIcon className="h-5.5 w-auto shrink-0" />
                   ) : (
                     <MoreHorizontalIcon />
                   )

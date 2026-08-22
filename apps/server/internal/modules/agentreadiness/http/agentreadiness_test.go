@@ -1,11 +1,13 @@
 package agentreadinesshttp
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -56,14 +59,15 @@ func TestApprovalPageUsesApplicationThemeAndEscapesClientName(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	require.NoError(t, renderApprovalPage(recorder, approvalPageData{
-		ClientName: `<script>alert("xss")</script>`,
-		Approval:   "approval-token",
+		ClientName:  `<script>alert("xss")</script>`,
+		Approval:    "approval-token",
+		RedirectURI: "https://chatgpt.com/connector/oauth/fortyone",
 	}))
 
 	body := recorder.Body.String()
 	require.Contains(t, body, "@media (prefers-color-scheme: dark)")
 	require.Contains(t, body, `--font-body: -apple-system, BlinkMacSystemFont, "Inter", sans-serif`)
-	require.Contains(t, body, "width: min(100%, 448px)")
+	require.Contains(t, body, "width: min(100%, 416px)")
 	require.Contains(t, body, "--color-border: oklch(0.92 0.004 95)")
 	require.Contains(t, body, "--radius-scale: 0.75")
 	require.Contains(t, body, "--radius-scale: 2.5")
@@ -77,7 +81,10 @@ func TestApprovalPageUsesApplicationThemeAndEscapesClientName(t *testing.T) {
 	require.Contains(t, body, `&lt;script&gt;alert(&#34;xss&#34;)&lt;/script&gt;`)
 	require.NotContains(t, body, `<script>alert("xss")</script>`)
 	require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
-	require.Contains(t, recorder.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'")
+	contentSecurityPolicy := recorder.Header().Get("Content-Security-Policy")
+	require.Contains(t, contentSecurityPolicy, "form-action 'self' https://chatgpt.com")
+	require.NotContains(t, contentSecurityPolicy, "connector/oauth/fortyone")
+	require.Contains(t, contentSecurityPolicy, "frame-ancestors 'none'")
 	require.Equal(t, "no-referrer", recorder.Header().Get("Referrer-Policy"))
 }
 
@@ -151,6 +158,7 @@ func TestOAuthDiscoveryDescribesRemoteMCPResource(t *testing.T) {
 	require.NoError(t, handler.AuthorizationServerMetadata(context.Background(), authorization, httptest.NewRequest(http.MethodGet, "/.well-known/oauth-authorization-server", nil)))
 	require.Contains(t, authorization.Body.String(), `"code_challenge_methods_supported":["S256"]`)
 	require.Contains(t, authorization.Body.String(), `"registration_endpoint":"https://api.fortyone.app/oauth/register"`)
+	require.Contains(t, authorization.Body.String(), `"authorization_response_iss_parameter_supported":true`)
 }
 
 func TestMCPRejectsMissingBearerTokenWithDiscoveryHint(t *testing.T) {
@@ -189,6 +197,11 @@ func TestRedirectURIValidation(t *testing.T) {
 	require.NoError(t, validateRedirectURI("http://localhost:8123/callback"))
 	require.Error(t, validateRedirectURI("http://example.com/callback"))
 	require.Error(t, validateRedirectURI("https://example.com/callback#fragment"))
+	require.Error(t, validateRedirectURI("https://user@example.com/callback"))
+
+	origin, err := oauthRedirectOrigin("https://chatgpt.com/connector/oauth/fortyone?state=opaque")
+	require.NoError(t, err)
+	require.Equal(t, "https://chatgpt.com", origin)
 }
 
 func TestOAuthAuthorizationCodeExchangeUsesPKCEAndResourceAudience(t *testing.T) {
@@ -222,6 +235,28 @@ func TestOAuthAuthorizationCodeExchangeUsesPKCEAndResourceAudience(t *testing.T)
 	info, err := handler.verifyToken(context.Background(), response.AccessToken, request)
 	require.NoError(t, err)
 	require.Equal(t, record.UserID, info.UserID)
+}
+
+func TestOAuthTokenRejectionsAreLoggedWithoutCredentialValues(t *testing.T) {
+	t.Parallel()
+	var logs bytes.Buffer
+	handler := New(Config{
+		SecretKey:    "test",
+		APIPublicURL: "https://api.fortyone.app",
+		Cache:        &memoryOAuthStore{items: make(map[string][]byte)},
+		Log:          logger.NewWithJSON(&logs, slog.LevelDebug, "agent-readiness-test"),
+	})
+	request := httptest.NewRequest(http.MethodPost, "/oauth/token", strings.NewReader("grant_type=authorization_code&code=sensitive-code&resource=https%3A%2F%2Fwrong.example%2Fmcp"))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	recorder := httptest.NewRecorder()
+
+	require.NoError(t, handler.Token(context.Background(), recorder, request))
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+	require.Contains(t, recorder.Body.String(), `"error":"invalid_target"`)
+	require.Contains(t, logs.String(), `"msg":"MCP OAuth request rejected"`)
+	require.Contains(t, logs.String(), `"operation":"exchange_code"`)
+	require.Contains(t, logs.String(), `"oauth_error":"invalid_target"`)
+	require.NotContains(t, logs.String(), "sensitive-code")
 }
 
 func TestOAuthUsesDedicatedLoginURLWithoutChangingWebsiteURL(t *testing.T) {
