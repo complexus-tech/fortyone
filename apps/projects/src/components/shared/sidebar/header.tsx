@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Badge, Box, Button, Divider, Flex, Tooltip } from "ui";
+import { Badge, Box, Button, Flex, Tooltip } from "ui";
 import { Notification02Icon, PlusIcon, SearchIcon } from "icons";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -118,7 +118,7 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
       {isCollapsed ? (
         <Flex align="center" className="flex-col pt-3">
           <WorkspacesMenu isCollapsed />
-          <Divider className="mx-auto mt-3 w-4/5 border-t border-dashed" />
+          <Box aria-hidden className="mx-auto mt-3 h-px w-4/5" />
         </Flex>
       ) : (
         <Flex align="center" className="h-[3.6rem] pt-2" justify="between">
