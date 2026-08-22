@@ -32,7 +32,7 @@ export const homeFaqs: HomeFaq[] = [
   {
     question: "Can FortyOne plan around my team's calendar?",
     answer:
-      "Yes. Google Calendar meetings and FortyOne work can appear in one weekly view. Teams can schedule assigned work around existing commitments, protect focus time, and spot conflicts. When Maya auto-assignment is enabled, Maya can choose an owner and place the first work block using workload and calendar availability.",
+      "Yes. Google Calendar and Outlook Calendar meetings can appear beside FortyOne work in one weekly view. Teams can schedule assigned work around existing commitments, protect focus time, and spot conflicts. When Maya auto-assignment is enabled, Maya can choose an owner and place the first work block using workload and calendar availability.",
   },
   {
     question: "How does FortyOne connect strategy to daily work?",
@@ -47,6 +47,6 @@ export const homeFaqs: HomeFaq[] = [
   {
     question: "Which tools does FortyOne work with?",
     answer:
-      "FortyOne currently integrates with Google Calendar, Slack, and GitHub. Google Calendar brings availability into planning, Slack turns conversations into work, and GitHub keeps delivery context attached to tasks.",
+      "FortyOne integrates with Google Calendar, Outlook Calendar, Slack, and GitHub. Its remote MCP server also connects FortyOne to ChatGPT, Claude, Cursor, Codex, and other MCP-compatible clients.",
   },
 ];

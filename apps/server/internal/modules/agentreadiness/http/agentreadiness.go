@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	mcpScope        = "mcp:access"
-	mcpInstructions = "Use FortyOne as the system of record for delivery. Read before writing, preserve scheduling fields, and ask the user before invoking a write tool. Treat task, issue, ticket, and work item as story; project and goal as objective; iteration and cycle as sprint; and KR, outcome, measure, and target as key result. Use the matching update tool to edit stories, objectives, and key results. Sprint editing is not available, so never claim or imply that an existing sprint was changed. Resolve requested story or objective workflow states with the matching status-list tool before updating. For 'my work', set assignedToMe. For work due on a named day such as today, resolve it to YYYY-MM-DD and set dueOn. Respect page boundaries and follow hasMore only when more results are needed."
+	mcpScope         = "mcp:access"
+	mcpServerVersion = "1.1.0"
+	mcpInstructions  = "Use FortyOne as the system of record for delivery. Read before writing, preserve scheduling fields, and ask the user before invoking a write tool. Treat task, issue, ticket, and work item as story; project and goal as objective; iteration and cycle as sprint; and KR, outcome, measure, and target as key result. Use the matching update tool to edit stories, objectives, and key results. Sprint editing is not available, so never claim or imply that an existing sprint was changed. Resolve requested story or objective workflow states with the matching status-list tool before updating. For 'my work', set assignedToMe. For work due on a named day such as today, resolve it to YYYY-MM-DD and set dueOn. Respect page boundaries and follow hasMore only when more results are needed."
 )
 
 //go:embed openapi.json
@@ -81,7 +82,7 @@ func New(cfg Config) *Handler {
 }
 
 func (h *Handler) newMCPServer() *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "app.fortyone", Version: "1.0.0"}, &mcp.ServerOptions{
+	server := mcp.NewServer(&mcp.Implementation{Name: "app.fortyone", Version: mcpServerVersion}, &mcp.ServerOptions{
 		Instructions: mcpInstructions,
 	})
 	h.addTools(server)

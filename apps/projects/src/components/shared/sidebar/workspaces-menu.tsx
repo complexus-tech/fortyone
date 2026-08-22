@@ -81,7 +81,7 @@ export const WorkspacesMenu = ({
           data-workspace-switcher
           leftIcon={
             <Avatar
-              className={cn("h-[1.75rem] text-sm", isCollapsed && "h-10")}
+              className={cn("h-[1.75rem] text-sm", isCollapsed && "h-9")}
               name={workspace?.name}
               rounded="md"
               src={workspace?.avatarUrl}

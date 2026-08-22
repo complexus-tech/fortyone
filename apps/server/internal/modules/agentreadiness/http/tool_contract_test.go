@@ -3,6 +3,7 @@ package agentreadinesshttp
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"strings"
@@ -196,6 +197,18 @@ func TestEveryRegisteredToolDeclaresItsStructuredOutput(t *testing.T) {
 	}
 }
 
+func TestEveryRegisteredToolSerializesItsOutputSchema(t *testing.T) {
+	t.Parallel()
+	for name, definition := range listToolsForTest(t) {
+		wire, err := json.Marshal(definition)
+		require.NoError(t, err)
+
+		var serialized map[string]any
+		require.NoError(t, json.Unmarshal(wire, &serialized))
+		require.Contains(t, serialized, "outputSchema", "tool %q omitted outputSchema from the MCP wire definition", name)
+	}
+}
+
 func TestEveryOutputSchemaAcceptsItsToolResultShape(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -307,6 +320,7 @@ func listToolsForTest(t *testing.T) map[string]*mcp.Tool {
 	clientSession, err := client.Connect(ctx, clientTransport, nil)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = clientSession.Close() })
+	require.Equal(t, mcpServerVersion, clientSession.InitializeResult().ServerInfo.Version)
 
 	result, err := clientSession.ListTools(ctx, nil)
 	require.NoError(t, err)

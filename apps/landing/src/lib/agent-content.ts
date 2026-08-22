@@ -12,7 +12,8 @@ FortyOne is an AI project management platform that connects company strategy and
 - Tasks, sprints, documents, comments, and delivery reporting
 - Calendar-aware planning and workload visibility
 - Maya, an AI project manager that helps teams inspect, plan, and coordinate work
-- Slack, GitHub, Google Calendar, Microsoft Calendar, and Figma integrations
+- Slack, GitHub, Google Calendar, Outlook Calendar, and Figma integrations
+- Remote MCP access from ChatGPT, Claude, Cursor, Codex, and other compatible clients
 
 ## When to use FortyOne
 

@@ -1,60 +1,43 @@
-import type { ReactNode } from "react";
 import Image from "next/image";
 import { cn } from "lib";
-import { GoogleCalendarIcon } from "icons";
 import { Box, Text } from "ui";
 import { Container } from "@/components/ui";
 
-type ImageIntegration = {
-  kind: "image";
+type Integration = {
   logoClassName?: string;
   name: string;
   src: string;
 };
 
-type IconIntegration = {
-  icon: ReactNode;
-  kind: "icon";
-  name: string;
-};
-
-type Integration = IconIntegration | ImageIntegration;
-
 const integrations: readonly Integration[] = [
-  { kind: "image", name: "Slack", src: "/integrations/slack.svg" },
+  { name: "Slack", src: "/integrations/slack.svg" },
+  { name: "Figma", src: "/integrations/figma.svg" },
   {
-    kind: "image",
-    name: "Intercom",
-    src: "/integrations/intercom-icon.svg",
-  },
-  { kind: "image", name: "Figma", src: "/integrations/figma.svg" },
-  {
-    kind: "image",
     logoClassName: "dark:invert",
     name: "GitHub",
-    src: "/integrations/github.svg",
+    src: "/integrations/github-mark.svg",
   },
   {
-    kind: "icon",
     name: "Google Calendar",
-    icon: (
-      <GoogleCalendarIcon
-        aria-hidden="true"
-        className="size-9 opacity-80 grayscale md:size-10"
-      />
-    ),
-  },
-  { kind: "image", name: "GitLab", src: "/integrations/gitlab.svg" },
-  {
-    kind: "image",
-    name: "Microsoft Teams",
-    src: "/integrations/teams.svg",
+    src: "/integrations/google-calendar-2026.svg",
   },
   {
-    kind: "image",
-    logoClassName: "invert dark:invert-0",
-    name: "Zendesk",
-    src: "/integrations/zend.svg",
+    name: "Outlook Calendar",
+    src: "/integrations/outlook-2025.svg",
+  },
+  {
+    logoClassName: "dark:invert",
+    name: "ChatGPT",
+    src: "/integrations/chatgpt-mark.svg",
+  },
+  {
+    name: "Claude",
+    src: "/integrations/claude-color.svg",
+  },
+  {
+    logoClassName: "dark:invert",
+    name: "Cursor",
+    src: "/integrations/cursor.svg",
   },
 ];
 
@@ -71,9 +54,9 @@ export const Integrations = () => {
               Keep project work connected across the tools your team uses.
             </Text>
             <Text className="mt-6 max-w-lg leading-relaxed text-pretty opacity-70">
-              Use Google Calendar for availability and Slack for task intake.
-              GitHub, Figma, and GitLab bring delivery context into the project
-              plan.
+              Plan around Google and Outlook calendars, capture work from Slack,
+              and keep delivery context connected. Use ChatGPT, Claude, Cursor,
+              Codex, and other MCP clients to work with FortyOne.
             </Text>
           </Box>
 
@@ -88,21 +71,17 @@ export const Integrations = () => {
                   className="border-border/80 bg-background/40 flex min-h-28 flex-col items-center justify-center gap-3 border-t-[0.5px] border-l-[0.5px] px-4 py-6"
                   key={integration.name}
                 >
-                  {integration.kind === "icon" ? (
-                    integration.icon
-                  ) : (
-                    <Image
-                      alt=""
-                      aria-hidden="true"
-                      className={cn(
-                        "size-9 object-contain opacity-80 grayscale md:size-10",
-                        integration.logoClassName,
-                      )}
-                      height={40}
-                      src={integration.src}
-                      width={40}
-                    />
-                  )}
+                  <Image
+                    alt=""
+                    aria-hidden="true"
+                    className={cn(
+                      "size-9 object-contain opacity-90 md:size-10",
+                      integration.logoClassName,
+                    )}
+                    height={40}
+                    src={integration.src}
+                    width={40}
+                  />
                   <Text className="text-center text-sm leading-tight opacity-60">
                     {integration.name}
                   </Text>

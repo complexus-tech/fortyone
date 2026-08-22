@@ -76,7 +76,10 @@ export const ProfileMenu = ({
             >
               <Flex align="center" className="gap-2">
                 <Avatar
-                  className="relative h-7 text-sm"
+                  className={cn(
+                    "relative h-7 text-sm",
+                    isCollapsed && "h-9",
+                  )}
                   name={profile?.fullName || profile?.username}
                   src={profile?.avatarUrl}
                   style={{

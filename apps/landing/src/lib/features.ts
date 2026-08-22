@@ -649,10 +649,10 @@ export const features: Feature[] = [
     heroTitle: "FortyOne Integrations",
     metaTitle: "Project Management Integrations | FortyOne",
     metaDescription:
-      "Connect FortyOne with Slack, GitHub, and Google Calendar to turn conversations into work, keep delivery context attached, and plan around availability.",
+      "Connect FortyOne with Slack, GitHub, Google Calendar, Outlook Calendar, and MCP-compatible AI clients to keep project work connected.",
     intro: [
       "Project work rarely starts inside the project management tool. It starts in chat, code, and calendars.",
-      "FortyOne connects Slack, GitHub, and Google Calendar to the plan so teams can keep task intake, delivery context, and availability close to the work.",
+      "FortyOne connects Slack, GitHub, Google Calendar, and Outlook Calendar to the plan. Through MCP, people can also work with FortyOne from ChatGPT, Claude, Cursor, Codex, and other compatible clients.",
       "The goal is not to replace every tool. It is to make the tools your team already uses useful inside the workflow where work is planned and tracked.",
     ],
     benefits: [
@@ -670,7 +670,7 @@ export const features: Feature[] = [
       ],
       [
         "More realistic scheduling",
-        "Google Calendar availability helps teams place work around existing commitments.",
+        "Google and Outlook calendar availability helps teams place work around existing commitments.",
       ],
     ],
     previewCards: [
@@ -706,7 +706,14 @@ export const features: Feature[] = [
             "Requests, decisions, and follow-up work from conversations",
           ],
           ["GitHub", "Issues, implementation details, and delivery context"],
-          ["Google Calendar", "Availability and timing signals for planning"],
+          [
+            "Google and Outlook calendars",
+            "Availability and timing signals for planning",
+          ],
+          [
+            "MCP clients",
+            "Permission-aware access from ChatGPT, Claude, Cursor, and Codex",
+          ],
         ],
         promptTitle: "Context intake",
         prompt:
@@ -716,7 +723,7 @@ export const features: Feature[] = [
         id: "ai",
         title: "Plan around real availability",
         paragraphs: [
-          "Google Calendar meetings and scheduled FortyOne work show the time a team member has already committed.",
+          "Google and Outlook calendar meetings, together with scheduled FortyOne work, show the time a team member has already committed.",
           "Maya can combine that availability with current workload to propose an owner and first work block. The team reviews the proposal before it changes the plan.",
         ],
         cards: [
@@ -749,7 +756,10 @@ export const features: Feature[] = [
         rows: [
           ["Create", "Turn source context into structured work"],
           ["Attach", "Keep links and summaries with the task"],
-          ["Plan", "Use workload and availability for owner and timing proposals"],
+          [
+            "Plan",
+            "Use workload and availability for owner and timing proposals",
+          ],
           ["Review", "Approve changes before they affect the project"],
         ],
       },
@@ -757,7 +767,7 @@ export const features: Feature[] = [
     questions: [
       [
         "Which integrations are available?",
-        "FortyOne currently integrates with Slack, GitHub, and Google Calendar for task intake, delivery context, and availability-aware planning.",
+        "FortyOne integrates with Slack, GitHub, Google Calendar, and Outlook Calendar. Its remote MCP server also supports ChatGPT, Claude, Cursor, Codex, and other MCP-compatible clients.",
       ],
       [
         "Do integrations replace existing tools?",
@@ -765,7 +775,7 @@ export const features: Feature[] = [
       ],
       [
         "Can AI use integration context?",
-        "Maya can use Google Calendar availability and current workload to propose an owner and work window. Teams review the proposal before it changes the plan.",
+        "Maya can use connected calendar availability and current workload to propose an owner and work window. Teams review the proposal before it changes the plan.",
       ],
     ],
   },
