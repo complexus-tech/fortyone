@@ -59,12 +59,22 @@ export const Hero = () => {
           </Text>
         </Box>
 
-        <Box className="landing-hero-action relative z-1 flex w-full max-w-xl flex-col gap-3">
-          <Box className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-            <SignupProviderButton emphasized provider="google" />
-            <SignupProviderButton emphasized provider="microsoft" />
+        <Box className="landing-hero-action relative z-1 flex flex-col items-start gap-3">
+          <Box className="flex flex-col items-start gap-2 sm:flex-row sm:gap-3">
+            <SignupProviderButton
+              className="px-3 md:px-3"
+              emphasized
+              label="Sign up"
+              provider="google"
+            />
+            <SignupProviderButton
+              className="px-3 md:px-3"
+              emphasized
+              label="Sign up"
+              provider="microsoft"
+            />
           </Box>
-          <Text className="text-center text-[0.95rem]" color="muted">
+          <Text className="text-left text-[0.9rem]" color="muted">
             <Link
               className="text-foreground underline underline-offset-2"
               href={SIGNUP_URL}

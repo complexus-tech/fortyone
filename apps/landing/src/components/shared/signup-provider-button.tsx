@@ -24,12 +24,14 @@ const PROVIDERS: Record<
 interface SignupProviderButtonProps
   extends Pick<ComponentPropsWithoutRef<typeof Button>, "className"> {
   emphasized?: boolean;
+  label?: "Continue" | "Sign up";
   provider: SignupProvider;
 }
 
 export const SignupProviderButton = ({
   className,
   emphasized = false,
+  label = "Continue",
   provider,
 }: SignupProviderButtonProps) => {
   const providerConfig = PROVIDERS[provider];
@@ -39,7 +41,6 @@ export const SignupProviderButton = ({
       align="center"
       className={className}
       color={emphasized ? "invert" : "tertiary"}
-      fullWidth={emphasized}
       href={providerConfig.href}
       leftIcon={providerConfig.icon}
       prefetch={false}
@@ -47,7 +48,7 @@ export const SignupProviderButton = ({
       size="lg"
       variant={emphasized ? "solid" : "naked"}
     >
-      Continue with {providerConfig.name}
+      {label} with {providerConfig.name}
     </Button>
   );
 };
