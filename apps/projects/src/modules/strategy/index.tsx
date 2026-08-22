@@ -108,7 +108,7 @@ export const WorkspaceStrategyMapPage = () => {
         </Flex>
       </HeaderContainer>
 
-      <Box className="relative h-[calc(100dvh-4rem)]">
+      <Box className="relative h-[calc(100%-3.6rem)]">
         {isStrategyPending || areObjectivesPending || !strategy ? (
           <StrategyMapSkeleton />
         ) : (

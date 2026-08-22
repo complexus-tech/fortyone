@@ -1,44 +1,53 @@
-# Global feedback profile design QA
+**Comparison Target**
 
-- Source visual truth: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_QcEVWK/Screenshot 2026-08-11 at 11.57.15 PM.png`
-- Implementation screenshot: `/tmp/fortyone-global-profile-normalized.png`
-- Combined comparison: `/tmp/fortyone-profile-comparison.png` (source above, implementation below)
-- Viewport: 1267 x 620 CSS pixels at device scale factor 1
-- Dimensions: source 1900 x 930 pixels normalized to 1267 x 620; implementation 1267 x 620 pixels
-- State: dark theme, desktop, Feedback tab, one feedback contribution
+- Source visual truth: `/Users/joseph/.codex/generated_images/01a02929-e0a5-71a0-9156-054675c9b444/exec-62ad5ca0-4704-407f-a38b-28915d1d1c60.png`
+- Source pixels: `1491 x 1055`
+- Intended implementation: FortyOne Projects desktop app, light theme, My Work, expanded and collapsed sidebar states.
+- Implementation screenshot: unavailable. The local browser opened `/private/tmp/fortyone-design-qa-auth-blocker.png`, which is the sign-in screen rather than the authenticated application shell.
+- Attempted viewport: `1280 x 720` CSS pixels at `devicePixelRatio: 2`.
+- Density normalization: not performed because an authenticated implementation capture was unavailable.
 
-## Full-view comparison evidence
+**State**
 
-The implementation carries over the existing contributor profile composition: identity header, Feedback and Comments tabs, inline contribution totals, border-separated activity rows, status treatment, vote count, and the right-hand contributor card. The global account header remains above the profile so the user retains account navigation; the reference captures only the contributor content area. Cross-portal copy and workspace labels are intentional changes required by the global scope.
+- Source: authenticated desktop My Work shell in light mode.
+- Browser result: unauthenticated sign-in screen at `http://localhost:3000/`.
+- Primary interactions tested: none; the application shell was not reachable without signing in.
+- Console errors checked: no warnings or errors were reported on the sign-in screen.
 
-The normalized comparison shows no actionable P0, P1, or P2 layout, hierarchy, color, typography, or component-style mismatch. A separate focused crop was not needed because the normalized full view keeps the tabs, contribution row, and sidebar text readable at the comparison size.
+**Full-view Comparison Evidence**
 
-## Required fidelity surfaces
+- Blocked. The source visual was opened successfully, but the local browser did not have an authenticated FortyOne session and redirected to sign-in. The source and implementation therefore could not be put into a valid same-state comparison.
 
-- Fonts and typography: uses the same system font stack, weights, sizes, line heights, and muted hierarchy as the existing contributor screen.
-- Spacing and layout rhythm: reuses the same 78rem grid, 19rem sidebar, 2.5rem column gap, tab spacing, row padding, radii, borders, and sticky behavior.
-- Colors and visual tokens: uses the existing background, surface, border, muted text, hover, and semantic feedback-status tokens in dark and light themes.
-- Image quality and asset fidelity: avatars use the existing Avatar component and the live user's stored profile image; the QA fixture intentionally falls back to initials. Icons come from the existing icon package.
-- Copy and content: contributor language is adapted from one named workspace to all FortyOne portals, and each contribution identifies its originating workspace.
+**Focused Region Comparison Evidence**
 
-## Interaction and console checks
+- Not available. Header spacing, search treatment, action alignment, sidebar width, canvas radius, and right/bottom inset require an authenticated shell capture before a focused comparison is meaningful.
 
-- Feedback and Comments tabs switch correctly and preserve the selected tab in the URL.
-- Feedback rows navigate to the originating portal request.
-- Account menu and theme switching work in the rendered page.
-- No browser console warnings or errors were present during the checked states.
+**Findings**
 
-## Comparison history
+- [P1] Authenticated implementation capture unavailable
+  Location: local Projects preview.
+  Evidence: the source shows the My Work app shell; the browser capture shows the FortyOne sign-in screen.
+  Impact: visual fidelity cannot be verified at the selected route and state.
+  Fix: open the local app in an authenticated browser session, capture My Work at the same viewport and light theme, then compare the full shell and focused header/canvas regions against the source visual.
 
-1. Initial capture used the local default light theme, which did not match the dark reference. Switched through the existing Appearance menu and recaptured in dark mode.
-2. The source was a 1900 x 930 high-density capture. Normalized it to 1267 x 620 and recaptured the implementation at the same pixel and CSS dimensions before the final comparison.
+**Open Questions**
 
-## Findings
+- None about implementation intent. The remaining blocker is preview authentication only.
 
-No actionable P0, P1, or P2 findings remain.
+**Implementation Checklist**
 
-## Follow-up polish
+- Capture authenticated My Work in light mode at `1280 x 720`.
+- Capture the collapsed sidebar state at the same viewport.
+- Build a same-canvas source/implementation comparison.
+- Verify typography, header control alignment, sidebar width, search and shortcut-chip colors, wrapper radius, right/bottom 8px inset, icon fidelity, and visible copy.
+- Re-run comparison after any P0/P1/P2 correction.
 
-No P3 follow-up is required for this pass.
+**Comparison History**
 
-final result: passed
+- Pass 1: blocked before visual comparison because the local browser session was unauthenticated. No visual fixes were made from browser evidence.
+
+**Follow-up Polish**
+
+- None classified until an authenticated implementation screenshot is available.
+
+final result: blocked

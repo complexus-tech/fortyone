@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { BreadCrumbs, Flex, Button, Box, Text } from "ui";
 import { ObjectiveIcon, PlusIcon, WarningIcon } from "icons";
-import { HeaderContainer, MobileMenuButton } from "@/components/shared";
+import {
+  HeaderContainer,
+  MobileMenuButton,
+  useAppCommandAction,
+} from "@/components/shared";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLocalStorage, useTerminology, useUserRole } from "@/hooks";
 import { NewObjectiveDialog } from "@/components/ui";
@@ -36,6 +40,15 @@ export const RoadmapPage = () => {
     "objectivesViewOptions",
     DEFAULT_OBJECTIVE_VIEW_OPTIONS,
   );
+
+  useAppCommandAction({
+    disabled: userRole === "guest",
+    id: "roadmap:create-objective",
+    label: `Create ${getTermDisplay("objectiveTerm")}`,
+    onSelect: () => {
+      setIsOpen(true);
+    },
+  });
   const forecastRiskObjectives = objectives.filter(isObjectiveForecastAtRisk);
   const isForecastRiskFilterActive =
     showForecastRisksOnly && forecastRiskObjectives.length > 0;
@@ -59,6 +72,7 @@ export const RoadmapPage = () => {
         </Text>
         <Flex gap={2}>
           <Button
+            className="md:hidden"
             color="primary"
             disabled={userRole === "guest"}
             leftIcon={<PlusIcon className="h-[1.1rem]" />}
@@ -130,6 +144,7 @@ export const RoadmapPage = () => {
             />
           ) : null}
           <Button
+            className="md:hidden"
             color="primary"
             disabled={userRole === "guest"}
             leftIcon={
@@ -147,7 +162,7 @@ export const RoadmapPage = () => {
         </Flex>
       </HeaderContainer>
 
-      <Box className="h-[calc(100dvh-4rem)] min-w-0">
+      <Box className="h-[calc(100%-3.6rem)] min-w-0">
         <ObjectiveViews
           emptyState={emptyState}
           isPending={isPending}

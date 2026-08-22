@@ -1344,9 +1344,7 @@ const CalendarToolbar = ({
 );
 
 const getCalendarProviderName = (connection?: CalendarConnection) =>
-  connection?.provider === "microsoft"
-    ? "Outlook Calendar"
-    : "Google Calendar";
+  connection?.provider === "microsoft" ? "Outlook Calendar" : "Google Calendar";
 
 const CalendarProviderIcon = ({
   connection,
@@ -2342,7 +2340,7 @@ export const PersonalCalendar = ({
   };
 
   return (
-    <Box className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden">
+    <Box className="flex h-[calc(100%-3.6rem)] min-h-0 flex-col overflow-hidden">
       <CalendarNotices
         canReadEventDetails={canReadEventDetails}
         conflictCount={conflictingBlocks.length}

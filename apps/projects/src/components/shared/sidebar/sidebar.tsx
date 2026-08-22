@@ -10,11 +10,8 @@ import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useUserRole, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
-import { Commands } from "../commands";
-import { Header } from "./header";
 import { Navigation } from "./navigation";
 import { Teams } from "./teams";
-import { ProfileMenu } from "./profile-menu";
 import { SidebarAssistantCards } from "./upcoming-meeting-card";
 import { useSidebar } from "./sidebar-context";
 
@@ -157,20 +154,14 @@ export const Sidebar = () => {
   return (
     <Box
       className={cn(
-        "border-border relative flex h-dvh w-(--sidebar-width) shrink-0 flex-col overflow-hidden border-r-[0.5px] transition-[width] duration-200 ease-linear",
+        "relative flex h-full w-(--sidebar-width) shrink-0 flex-col overflow-hidden transition-[width] duration-200 ease-linear",
         isCollapsed && "w-(--sidebar-width-collapsed)",
       )}
       data-sidebar-collapsed={isCollapsed ? "true" : "false"}
     >
       <Box
-        className={cn("relative z-1 shrink-0 px-4", isCollapsed && "px-2")}
-        data-sidebar-header
-      >
-        <Header isCollapsed={isCollapsed} />
-      </Box>
-      <Box
         className={cn(
-          "relative z-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3",
+          "relative z-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-2 pb-3",
           isCollapsed && "px-3",
         )}
         data-sidebar-content
@@ -225,7 +216,6 @@ export const Sidebar = () => {
             />
           )}
         </Box>
-        <ProfileMenu isCollapsed={isCollapsed} />
       </Box>
 
       <KeyboardShortcuts
@@ -236,7 +226,6 @@ export const Sidebar = () => {
         isOpen={isInviteMembersOpen}
         setIsOpen={setIsInviteMembersOpen}
       />
-      <Commands />
     </Box>
   );
 };

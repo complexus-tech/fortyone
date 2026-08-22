@@ -122,7 +122,9 @@ export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
         </Flex>
       ) : (
         <Flex align="center" className="h-[3.6rem] pt-2" justify="between">
-          <WorkspacesMenu />
+          <Box className="min-w-0 flex-1">
+            <WorkspacesMenu />
+          </Box>
           {notificationsAction}
         </Flex>
       )}

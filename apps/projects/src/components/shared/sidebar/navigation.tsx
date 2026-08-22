@@ -1,6 +1,6 @@
 import { usePathname } from "next/navigation";
 import { cn } from "lib";
-import { Box, Collapsible, Divider, Flex } from "ui";
+import { Box, Collapsible, Flex } from "ui";
 import {
   ActiveSprintIcon,
   AiIcon,
@@ -177,10 +177,8 @@ export const Navigation = ({
         onOpenChange={setIsWorkspaceOpen}
         open={isCollapsed || isWorkspaceOpen}
       >
-        <Box className="mt-4">
-          {isCollapsed ? (
-            <Divider className="mx-auto my-3 w-4/5 border-t border-dashed" />
-          ) : (
+        <Box className={cn("mt-4", isCollapsed && "mt-2")}>
+          {!isCollapsed ? (
             <Collapsible.Trigger asChild>
               <button
                 aria-label="Workspace navigation"
@@ -201,11 +199,11 @@ export const Navigation = ({
                 />
               </button>
             </Collapsible.Trigger>
-          )}
+          ) : null}
           <Collapsible.Content>
             <Flex
               aria-label="Workspace navigation"
-              className={cn("mt-1 gap-1.5", isCollapsed && "gap-2")}
+              className={cn("mt-1 gap-1.5", isCollapsed && "mt-0 gap-2")}
               direction="column"
               role="group"
             >

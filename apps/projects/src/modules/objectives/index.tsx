@@ -133,7 +133,7 @@ export const TeamObjectivesList = () => {
         viewOptions={viewOptions}
       />
       <FeatureGuard fallback={<Guard />} feature="objective">
-        <Box className="h-[calc(100dvh-4rem)] min-w-0">
+        <Box className="h-[calc(100%-3.6rem)] min-w-0">
           <ObjectiveViews
             emptyState={emptyState}
             isPending={isPending}

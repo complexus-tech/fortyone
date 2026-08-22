@@ -55,7 +55,7 @@ export const Header = ({
           />
         </form>
       </Flex>
-      <NewStoryButton />
+      <NewStoryButton className="md:hidden" />
     </HeaderContainer>
   );
 };

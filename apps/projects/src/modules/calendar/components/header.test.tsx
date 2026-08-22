@@ -1,8 +1,10 @@
 /* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { CalendarHeader } from "./header";
+
+const mockUseAppCommandAction = jest.fn();
 
 jest.mock("icons", () => ({
   CalendarIcon: () => <span aria-hidden>Calendar icon</span>,
@@ -35,27 +37,28 @@ jest.mock("@/components/shared", () => ({
     <header>{children}</header>
   ),
   MobileMenuButton: () => <button type="button">Open navigation</button>,
+  useAppCommandAction: (action: unknown) => mockUseAppCommandAction(action),
 }));
 
 jest.mock("@/hooks", () => ({
   useTerminology: () => ({
     getTermDisplay: () => "task",
   }),
+  useUserRole: () => ({ userRole: "admin" }),
 }));
 
 describe("CalendarHeader", () => {
-  it("labels the standalone page and opens task scheduling", () => {
+  it("labels the standalone page and registers task scheduling", () => {
     const onSchedule = jest.fn();
 
     render(<CalendarHeader onSchedule={onSchedule} />);
 
     expect(screen.getByText("Calendar")).toBeInTheDocument();
-    const scheduleButton = screen.getByRole("button", {
-      name: "Schedule task",
+    expect(mockUseAppCommandAction).toHaveBeenCalledWith({
+      disabled: false,
+      id: "calendar:schedule-story",
+      label: "Schedule task",
+      onSelect: onSchedule,
     });
-
-    expect(scheduleButton).toHaveAttribute("data-color", "primary");
-    fireEvent.click(scheduleButton);
-    expect(onSchedule).toHaveBeenCalledTimes(1);
   });
 });

@@ -70,7 +70,7 @@ export const buttonVariants = cva(
       {
         variant: "solid",
         color: "primary",
-        className: "text-primary-foreground [&_svg]:!text-current",
+        className: "text-white [&_svg]:!text-current",
       },
       {
         variant: "solid",

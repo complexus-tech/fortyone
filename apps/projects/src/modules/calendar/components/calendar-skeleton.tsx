@@ -101,7 +101,7 @@ export const CalendarContentSkeleton = ({
   <Box
     aria-busy="true"
     aria-label="Loading calendar"
-    className="bg-background flex h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden"
+    className="bg-background flex h-[calc(100%-3.6rem)] min-h-0 flex-col overflow-hidden"
     role="status"
   >
     <CalendarToolbarSkeleton />

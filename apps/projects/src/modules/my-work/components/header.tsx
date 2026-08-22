@@ -1,13 +1,8 @@
 "use client";
-import { Box, BreadCrumbs, Flex } from "ui";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { Box, BreadCrumbs, Flex, Tabs } from "ui";
 import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
-import {
-  StoriesViewOptionsButton,
-  NewStoryButton,
-  StoriesFilterButton,
-} from "@/components/ui";
+import { StoriesViewOptionsButton, StoriesFilterButton } from "@/components/ui";
 import { useTerminology } from "@/hooks";
 import type { MyWorkLayout } from "../types";
 import { MyWorkLayoutSwitcher } from "./my-work-layout-switcher";
@@ -21,21 +16,16 @@ export const Header = ({
   setLayout: (value: MyWorkLayout) => void;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
-    useMyWork();
-  const tabs = [
-    "all",
-    "today",
-    "upcoming",
-    "blocked",
-    "assigned",
-    "collaborating",
-    "created",
-  ] as const;
-  const [tab] = useQueryState(
-    "tab",
-    parseAsStringLiteral(tabs).withDefault("all"),
-  );
+  const {
+    filters,
+    resetFilters,
+    setFilters,
+    setTab,
+    setViewOptions,
+    tab,
+    viewOptions,
+    visibleTabs,
+  } = useMyWork();
   let tabLabel: string = tab;
   if (tab === "all") {
     tabLabel = `All ${getTermDisplay("storyTerm", { variant: "plural" })}`;
@@ -48,6 +38,16 @@ export const Header = ({
   useHotkeys("v+k", () => {
     setLayout("kanban");
   });
+
+  const tabLabels = {
+    all: `All ${getTermDisplay("storyTerm", { variant: "plural" })}`,
+    assigned: "Assigned",
+    blocked: "Blocked",
+    collaborating: "Collaborating",
+    created: "Created",
+    today: "Today",
+    upcoming: "Upcoming",
+  } as const;
 
   return (
     <HeaderContainer className="justify-between">
@@ -76,7 +76,22 @@ export const Header = ({
           />
         </Box>
       </Flex>
-      <Flex align="center" gap={2}>
+      <Flex align="center" className="min-w-0" gap={2}>
+        <Tabs
+          onValueChange={(value) => {
+            setTab(value as typeof tab);
+          }}
+          value={tab}
+        >
+          <Tabs.List className="hide-scrollbar mx-0 max-w-[48vw] flex-nowrap overflow-x-auto md:mx-0">
+            {visibleTabs.map((visibleTab) => (
+              <Tabs.Tab key={visibleTab} value={visibleTab}>
+                {tabLabels[visibleTab]}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+        </Tabs>
+        <span aria-hidden="true" className="bg-border mx-1 h-5 w-px shrink-0" />
         <MyWorkLayoutSwitcher layout={layout} setLayout={setLayout} />
         <StoriesFilterButton
           filters={filters}
@@ -89,10 +104,6 @@ export const Header = ({
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        <span className="text-text-secondary hidden md:inline">|</span>
-        <Box className="hidden md:block">
-          <NewStoryButton data-header-new-story-button />
-        </Box>
       </Flex>
     </HeaderContainer>
   );

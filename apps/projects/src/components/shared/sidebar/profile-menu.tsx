@@ -24,8 +24,10 @@ import { clearAllStorage } from "./utils";
 
 export const ProfileMenu = ({
   isCollapsed = false,
+  variant = "sidebar",
 }: {
   isCollapsed?: boolean;
+  variant?: "sidebar" | "topbar";
 }) => {
   const { data: myInvitations = [] } = useMyInvitations();
   const { data: profile } = useProfile();
@@ -35,6 +37,7 @@ export const ProfileMenu = ({
   const { theme, setTheme } = useTheme();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
   const adminUrl = getPublicEnv().ADMIN_URL;
+  const isTopbar = variant === "topbar";
 
   const rememberCurrentPath = () => {
     setPathBeforeSettings(
@@ -61,8 +64,8 @@ export const ProfileMenu = ({
   return (
     <Box
       className={cn(
-        "border-border border-t-[0.5px] px-3 pt-3",
-        isCollapsed && "flex justify-center px-0",
+        !isTopbar && "border-border border-t-[0.5px] px-3 pt-3",
+        !isTopbar && isCollapsed && "flex justify-center px-0",
       )}
     >
       <Menu>
@@ -72,16 +75,23 @@ export const ProfileMenu = ({
               aria-label="Open profile menu"
               className={cn(
                 "h-9 justify-between px-2",
-                isCollapsed && "h-12 w-12 justify-center px-0 md:h-12",
+                !isTopbar &&
+                  isCollapsed &&
+                  "h-12 w-12 justify-center px-0 md:h-12",
+                isTopbar && "h-11 w-11 justify-center px-0",
               )}
               color="tertiary"
-              fullWidth={!isCollapsed}
+              fullWidth={!isCollapsed && !isTopbar}
               size="sm"
               variant="naked"
             >
               <Flex align="center" className="gap-2">
                 <Avatar
-                  className={cn("relative h-7 text-sm", isCollapsed && "h-9")}
+                  className={cn(
+                    "relative h-7 text-sm",
+                    isCollapsed && "h-9",
+                    isTopbar && "h-9",
+                  )}
                   name={profile?.fullName || profile?.username}
                   src={profile?.avatarUrl}
                   style={{
@@ -91,14 +101,17 @@ export const ProfileMenu = ({
                 <Text
                   className={cn(
                     "line-clamp-1 text-left",
-                    isCollapsed && "hidden",
+                    (isCollapsed || isTopbar) && "hidden",
                   )}
                 >
                   {profile?.fullName || profile?.username}{" "}
                 </Text>
               </Flex>
               <ArrowRight2Icon
-                className={cn("shrink-0", isCollapsed && "hidden")}
+                className={cn(
+                  "shrink-0",
+                  (isCollapsed || isTopbar) && "hidden",
+                )}
               />
             </Button>
             {myInvitations.length > 0 && (
@@ -106,7 +119,7 @@ export const ProfileMenu = ({
             )}
           </Box>
         </Menu.Button>
-        <Menu.Items align="end" className="ml-3 pt-0">
+        <Menu.Items align="end" className={cn("pt-0", !isTopbar && "ml-3")}>
           <Menu.Group className="px-4 pt-2.5 pb-2">
             <Text className="line-clamp-1" color="muted">
               {profile?.email}

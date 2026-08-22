@@ -13,6 +13,7 @@ import {
   Menu,
   Popover,
   Text,
+  Tooltip,
 } from "ui";
 import {
   ArchiveIcon,
@@ -72,23 +73,25 @@ const CollapsedTeamNavigation = ({
 
   return (
     <Popover onOpenChange={setIsOpen} open={isOpen}>
-      <Popover.Trigger asChild>
-        <button
-          aria-expanded={isOpen}
-          aria-label={`${isOpen ? "Close" : "Open"} ${teamName} team navigation`}
-          className={cn(
-            "group border-border/70 bg-surface/40 focus-visible:ring-primary/40 hover:bg-primary/5 hover:text-primary relative flex min-h-14 w-full flex-none flex-col items-center justify-center gap-1 rounded-lg border px-1 py-2 text-center transition outline-none focus-visible:ring-2",
-            isTeamActive &&
-              "bg-accent before:bg-primary before:absolute before:top-1/2 before:-left-3 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",
-          )}
-          type="button"
-        >
-          <TeamColor className="group-hover:!bg-primary size-4" color={color} />
-          <span className="line-clamp-2 w-full text-xs leading-3.5 font-semibold">
-            {teamName}
-          </span>
-        </button>
-      </Popover.Trigger>
+      <Tooltip side="right" title={teamName}>
+        <Popover.Trigger asChild>
+          <button
+            aria-expanded={isOpen}
+            aria-label={`${isOpen ? "Close" : "Open"} ${teamName} team navigation`}
+            className={cn(
+              "group border-border bg-surface/40 focus-visible:ring-primary/40 hover:border-primary/20 hover:bg-primary/5 hover:text-primary relative flex min-h-14 w-full flex-none flex-col items-center justify-center gap-1 rounded-lg border-[0.5px] px-1 py-2 text-center transition outline-none focus-visible:ring-2",
+              isTeamActive &&
+                "bg-accent text-primary before:bg-primary before:absolute before:top-1/2 before:-left-3 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",
+            )}
+            type="button"
+          >
+            <TeamColor className="size-4" color={color} />
+            <span className="line-clamp-1 w-full text-xs leading-3.5 font-semibold">
+              {teamName}
+            </span>
+          </button>
+        </Popover.Trigger>
+      </Tooltip>
       <Popover.Content
         align="start"
         aria-label={`${teamName} team navigation`}

@@ -2,7 +2,11 @@
 import { BreadCrumbs, Button, Flex } from "ui";
 import { PlusIcon } from "icons";
 import { useParams } from "next/navigation";
-import { HeaderContainer, MobileMenuButton } from "@/components/shared";
+import {
+  HeaderContainer,
+  MobileMenuButton,
+  useAppCommandAction,
+} from "@/components/shared";
 import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole, useTerminology, useMediaQuery } from "@/hooks";
@@ -30,6 +34,13 @@ export const TeamObjectivesHeader = ({
   const name = selectedTeam?.name ?? "Team";
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
+
+  useAppCommandAction({
+    disabled: userRole === "guest",
+    id: `team:${teamId}:create-objective`,
+    label: `Create ${getTermDisplay("objectiveTerm")}`,
+    onSelect: onCreateObjective,
+  });
 
   return (
     <HeaderContainer className="justify-between">
@@ -62,6 +73,7 @@ export const TeamObjectivesHeader = ({
           />
         ) : null}
         <Button
+          className="md:hidden"
           color="primary"
           disabled={userRole === "guest"}
           leftIcon={

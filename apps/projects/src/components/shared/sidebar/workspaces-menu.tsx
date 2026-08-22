@@ -69,182 +69,191 @@ export const WorkspacesMenu = ({
   };
 
   return (
-    <Menu>
-      <Menu.Button>
-        <Button
-          aria-label={isCollapsed ? workspaceName : undefined}
-          className={cn(
-            "max-w-full min-w-0 gap-1.5 pl-1",
-            isCollapsed && "bg-state-hover h-12 w-12 justify-center px-0",
-          )}
-          color="tertiary"
-          data-workspace-switcher
-          leftIcon={
-            <Avatar
-              className={cn("h-[1.75rem] text-sm", isCollapsed && "h-9")}
-              name={workspace?.name}
-              rounded="md"
-              src={workspace?.avatarUrl}
-              style={{
-                backgroundColor: workspace?.color,
-                color: getReadableTextColor(workspace?.color),
-              }}
-              suppressHydrationWarning
-            />
-          }
-          rightIcon={
-            isCollapsed ? null : (
-              <ArrowDown2Icon className="text-text-muted relative top-[0.5px] h-4 w-auto" />
-            )
-          }
-          size="sm"
-          suppressHydrationWarning
-          title={isCollapsed ? workspaceName : undefined}
-          variant="naked"
-        >
-          <span className={isCollapsed ? "hidden" : "max-w-[18ch] truncate"}>
-            {workspaceName}
-          </span>
-        </Button>
-      </Menu.Button>
-      <Menu.Items align="start" className="min-w-80 pt-0">
-        <Menu.Group className="space-y-1 pt-1.5">
-          <Menu.Item
-            className="justify-between gap-6"
-            disabled={!workspace}
-            onSelect={() => {
-              if (!workspace) {
-                return;
-              }
-
-              handleChangeWorkspace(workspace.id, workspace.slug);
-            }}
-          >
-            <span className="flex items-center gap-2">
+    <div className={isCollapsed ? undefined : "w-full"}>
+      <Menu>
+        <Menu.Button>
+          <Button
+            aria-label={isCollapsed ? workspaceName : undefined}
+            className={cn(
+              "h-11 max-w-full min-w-0 gap-1.5 pl-1",
+              isCollapsed && "bg-state-hover h-12 w-12 justify-center px-0",
+            )}
+            color="tertiary"
+            data-workspace-switcher
+            fullWidth={!isCollapsed}
+            leftIcon={
               <Avatar
-                className="h-[1.6rem] text-xs font-semibold tracking-wide"
-                name={workspaceName}
+                className={cn("h-8 text-sm", isCollapsed && "h-9")}
+                name={workspace?.name}
                 rounded="md"
                 src={workspace?.avatarUrl}
                 style={{
                   backgroundColor: workspace?.color,
                   color: getReadableTextColor(workspace?.color),
                 }}
+                suppressHydrationWarning
               />
-              <span className="inline-block max-w-[20ch] truncate">
-                {workspaceName}
-              </span>
-              {userRole ? (
-                <Badge
-                  className="bg-surface-elevated h-6 px-1.5 text-[75%] font-medium tracking-wide uppercase"
-                  color="tertiary"
-                >
-                  {userRole}
-                </Badge>
-              ) : null}
+            }
+            rightIcon={
+              isCollapsed ? null : (
+                <ArrowDown2Icon className="text-text-muted relative top-[0.5px] h-4 w-auto shrink-0" />
+              )
+            }
+            size="sm"
+            suppressHydrationWarning
+            title={isCollapsed ? workspaceName : undefined}
+            variant="naked"
+          >
+            <span
+              className={
+                isCollapsed
+                  ? "hidden"
+                  : "min-w-0 flex-1 truncate text-left font-semibold"
+              }
+            >
+              {workspaceName}
             </span>
-            {workspace ? (
-              <CheckIcon className="shrink-0" strokeWidth={2.1} />
-            ) : null}
-          </Menu.Item>
-          {workspaces.length > 1 && (
-            <Menu.SubMenu>
-              <Menu.SubTrigger>
-                <span className="flex w-full items-center justify-between gap-4">
-                  <span className="flex items-center gap-2 pl-0.5">
-                    <WorkspaceIcon className="h-5" />
-                    Switch workspace
-                  </span>
-                  <ChevronRightIcon className="h-4" />
+          </Button>
+        </Menu.Button>
+        <Menu.Items align="start" className="min-w-80 pt-0">
+          <Menu.Group className="space-y-1 pt-1.5">
+            <Menu.Item
+              className="justify-between gap-6"
+              disabled={!workspace}
+              onSelect={() => {
+                if (!workspace) {
+                  return;
+                }
+
+                handleChangeWorkspace(workspace.id, workspace.slug);
+              }}
+            >
+              <span className="flex items-center gap-2">
+                <Avatar
+                  className="h-[1.6rem] text-xs font-semibold tracking-wide"
+                  name={workspaceName}
+                  rounded="md"
+                  src={workspace?.avatarUrl}
+                  style={{
+                    backgroundColor: workspace?.color,
+                    color: getReadableTextColor(workspace?.color),
+                  }}
+                />
+                <span className="inline-block max-w-[20ch] truncate">
+                  {workspaceName}
                 </span>
-              </Menu.SubTrigger>
-              <Menu.SubItems className="min-w-64">
-                <Menu.Group>
-                  {workspaces
-                    .filter((w) => w.id !== workspace?.id)
-                    .map(({ id, name, color, slug, userRole, avatarUrl }) => (
-                      <Menu.Item
-                        className="justify-between gap-6"
-                        key={id}
-                        onSelect={() => handleChangeWorkspace(id, slug)}
-                      >
-                        <span className="flex items-center gap-2">
-                          <Avatar
-                            className={cn(
-                              "h-[1.6rem] text-xs font-semibold tracking-wide",
-                            )}
-                            name={name}
-                            rounded="md"
-                            src={avatarUrl}
-                            style={{
-                              backgroundColor: color,
-                              color: getReadableTextColor(color),
-                            }}
-                          />
-                          <span className="inline-block max-w-[20ch] truncate">
-                            {name}
+                {userRole ? (
+                  <Badge
+                    className="bg-surface-elevated h-6 px-1.5 text-[75%] font-medium tracking-wide uppercase"
+                    color="tertiary"
+                  >
+                    {userRole}
+                  </Badge>
+                ) : null}
+              </span>
+              {workspace ? (
+                <CheckIcon className="shrink-0" strokeWidth={2.1} />
+              ) : null}
+            </Menu.Item>
+            {workspaces.length > 1 && (
+              <Menu.SubMenu>
+                <Menu.SubTrigger>
+                  <span className="flex w-full items-center justify-between gap-4">
+                    <span className="flex items-center gap-2 pl-0.5">
+                      <WorkspaceIcon className="h-5" />
+                      Switch workspace
+                    </span>
+                    <ChevronRightIcon className="h-4" />
+                  </span>
+                </Menu.SubTrigger>
+                <Menu.SubItems className="min-w-64">
+                  <Menu.Group>
+                    {workspaces
+                      .filter((w) => w.id !== workspace?.id)
+                      .map(({ id, name, color, slug, userRole, avatarUrl }) => (
+                        <Menu.Item
+                          className="justify-between gap-6"
+                          key={id}
+                          onSelect={() => handleChangeWorkspace(id, slug)}
+                        >
+                          <span className="flex items-center gap-2">
+                            <Avatar
+                              className={cn(
+                                "h-[1.6rem] text-xs font-semibold tracking-wide",
+                              )}
+                              name={name}
+                              rounded="md"
+                              src={avatarUrl}
+                              style={{
+                                backgroundColor: color,
+                                color: getReadableTextColor(color),
+                              }}
+                            />
+                            <span className="inline-block max-w-[20ch] truncate">
+                              {name}
+                            </span>
+                            <Badge
+                              className="bg-surface-elevated h-6 px-1.5 text-[75%] font-medium tracking-wide uppercase"
+                              color="tertiary"
+                            >
+                              {userRole}
+                            </Badge>
                           </span>
-                          <Badge
-                            className="bg-surface-elevated h-6 px-1.5 text-[75%] font-medium tracking-wide uppercase"
-                            color="tertiary"
-                          >
-                            {userRole}
-                          </Badge>
-                        </span>
-                        {id === workspace?.id ? (
-                          <CheckIcon className="shrink-0" strokeWidth={2.1} />
-                        ) : null}
-                      </Menu.Item>
-                    ))}
-                </Menu.Group>
-              </Menu.SubItems>
-            </Menu.SubMenu>
-          )}
-        </Menu.Group>
-        <Menu.Separator className="my-2" />
-        <Menu.Group>
-          <Menu.Item onSelect={handleCreateWorkspace}>
-            <PlusIcon />
-            Create workspace
-          </Menu.Item>
-          {userRole === "admin" && (
-            <>
-              <Menu.Item>
-                <Link
-                  className="flex w-full items-center gap-2"
-                  href={withWorkspace("/settings")}
-                  onClick={() => {
-                    setPathBeforeSettings(pathname);
-                  }}
-                  prefetch
-                >
-                  <SettingsIcon className="h-[1.15rem]" />
-                  Workspace settings
-                </Link>
-              </Menu.Item>
-              <Menu.Item>
-                <Link
-                  className="flex w-full items-center gap-2"
-                  href={withWorkspace("/settings/workspace/members")}
-                  onClick={() => {
-                    setPathBeforeSettings(pathname);
-                  }}
-                >
-                  <InviteMembersIcon className="h-[1.3rem] w-auto" />
-                  Invite & manage members
-                </Link>
-              </Menu.Item>
-            </>
-          )}
-        </Menu.Group>
-        <Menu.Separator className="my-2" />
-        <Menu.Group>
-          <Menu.Item className="text-danger" onSelect={handleLogout}>
-            <LogoutIcon className="text-danger h-5 w-auto" />
-            Log out
-          </Menu.Item>
-        </Menu.Group>
-      </Menu.Items>
-    </Menu>
+                          {id === workspace?.id ? (
+                            <CheckIcon className="shrink-0" strokeWidth={2.1} />
+                          ) : null}
+                        </Menu.Item>
+                      ))}
+                  </Menu.Group>
+                </Menu.SubItems>
+              </Menu.SubMenu>
+            )}
+          </Menu.Group>
+          <Menu.Separator className="my-2" />
+          <Menu.Group>
+            <Menu.Item onSelect={handleCreateWorkspace}>
+              <PlusIcon />
+              Create workspace
+            </Menu.Item>
+            {userRole === "admin" && (
+              <>
+                <Menu.Item>
+                  <Link
+                    className="flex w-full items-center gap-2"
+                    href={withWorkspace("/settings")}
+                    onClick={() => {
+                      setPathBeforeSettings(pathname);
+                    }}
+                    prefetch
+                  >
+                    <SettingsIcon className="h-[1.15rem]" />
+                    Workspace settings
+                  </Link>
+                </Menu.Item>
+                <Menu.Item>
+                  <Link
+                    className="flex w-full items-center gap-2"
+                    href={withWorkspace("/settings/workspace/members")}
+                    onClick={() => {
+                      setPathBeforeSettings(pathname);
+                    }}
+                  >
+                    <InviteMembersIcon className="h-[1.3rem] w-auto" />
+                    Invite & manage members
+                  </Link>
+                </Menu.Item>
+              </>
+            )}
+          </Menu.Group>
+          <Menu.Separator className="my-2" />
+          <Menu.Group>
+            <Menu.Item className="text-danger" onSelect={handleLogout}>
+              <LogoutIcon className="text-danger h-5 w-auto" />
+              Log out
+            </Menu.Item>
+          </Menu.Group>
+        </Menu.Items>
+      </Menu>
+    </div>
   );
 };

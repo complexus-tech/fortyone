@@ -91,7 +91,6 @@ jest.mock("@/components/shared/keyboard-shortcuts", () => ({
   KeyboardShortcuts: () => null,
 }));
 
-jest.mock("../commands", () => ({ Commands: () => null }));
 jest.mock("./sidebar-context", () => ({
   useSidebar: () => ({
     isCollapsed: mockSidebarCollapsed,
@@ -99,12 +98,8 @@ jest.mock("./sidebar-context", () => ({
     toggleSidebar: jest.fn(),
   }),
 }));
-jest.mock("./header", () => ({ Header: () => <div>Header</div> }));
 jest.mock("./navigation", () => ({ Navigation: () => <div>Navigation</div> }));
 jest.mock("./teams", () => ({ Teams: () => <div>Teams</div> }));
-jest.mock("./profile-menu", () => ({
-  ProfileMenu: () => <div>Profile</div>,
-}));
 jest.mock("./upcoming-meeting-card", () => ({
   SidebarAssistantCards: ({
     fallback,
@@ -127,19 +122,20 @@ describe("Sidebar", () => {
     mockAssistantCollapsed = false;
   });
 
-  it("keeps only the middle region scrollable", () => {
+  it("keeps navigation scrollable and the footer fixed", () => {
     render(<Sidebar />);
 
-    const header = screen.getByText("Header").closest("[data-sidebar-header]");
     const content = screen
       .getByText("Navigation")
       .closest("[data-sidebar-content]");
-    const footer = screen.getByText("Profile").closest("[data-sidebar-footer]");
+    const footer = screen
+      .getByText("Upcoming meeting")
+      .closest("[data-sidebar-footer]");
 
-    expect(header).toHaveClass("shrink-0");
     expect(content).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
     expect(footer).toHaveClass("shrink-0");
-    expect(header?.parentElement).toHaveClass("h-dvh", "overflow-hidden");
+    expect(content?.parentElement).toHaveClass("h-full", "overflow-hidden");
+    expect(content?.parentElement).not.toHaveClass("border-r-[0.5px]");
   });
 
   it("replaces the footer actions with an upcoming meeting", () => {

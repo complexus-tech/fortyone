@@ -1,12 +1,23 @@
 "use client";
 
-import { PlusIcon } from "icons";
-import { Box, BreadCrumbs, Button, Flex } from "ui";
-import { HeaderContainer, MobileMenuButton } from "@/components/shared";
-import { useTerminology } from "@/hooks";
+import { BreadCrumbs, Flex } from "ui";
+import {
+  HeaderContainer,
+  MobileMenuButton,
+  useAppCommandAction,
+} from "@/components/shared";
+import { useTerminology, useUserRole } from "@/hooks";
 
 export const CalendarHeader = ({ onSchedule }: { onSchedule: () => void }) => {
   const { getTermDisplay } = useTerminology();
+  const { userRole } = useUserRole();
+
+  useAppCommandAction({
+    disabled: userRole === "guest",
+    id: "calendar:schedule-story",
+    label: `Schedule ${getTermDisplay("storyTerm")}`,
+    onSelect: onSchedule,
+  });
 
   return (
     <HeaderContainer className="justify-between">
@@ -20,18 +31,6 @@ export const CalendarHeader = ({ onSchedule }: { onSchedule: () => void }) => {
           ]}
         />
       </Flex>
-      <Box className="hidden md:block">
-        <Button
-          className="shrink-0"
-          color="primary"
-          data-header-schedule-story-button
-          leftIcon={<PlusIcon className="text-current dark:text-current" />}
-          onClick={onSchedule}
-          size="sm"
-        >
-          Schedule {getTermDisplay("storyTerm")}
-        </Button>
-      </Box>
     </HeaderContainer>
   );
 };

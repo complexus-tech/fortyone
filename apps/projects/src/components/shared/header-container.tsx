@@ -34,6 +34,7 @@ export const HeaderContainer = ({ children, className }: ContainerProps) => {
         "stick border-border top-0 z-10 flex h-[3.6rem] w-full items-center border-b-[0.5px]",
         className,
       )}
+      data-header-container
     >
       {injectSidebarToggle(children)}
     </Container>

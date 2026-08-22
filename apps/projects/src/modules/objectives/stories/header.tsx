@@ -7,7 +7,6 @@ import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
 import {
   LayoutSwitcher,
-  NewStoryButton,
   StoriesFilterButton,
   StoriesViewOptionsButton,
 } from "@/components/ui";
@@ -31,9 +30,7 @@ export const Header = ({
   const { getTermDisplay } = useTerminology();
   const { data: teams = [] } = useTeams();
   const { data: objective } = useObjective(objectiveId, teamId);
-  const { name: teamName } = teams.find(
-    (team) => team.id === teamId,
-  )!;
+  const { name: teamName } = teams.find((team) => team.id === teamId)!;
   const objectiveName = objective?.name || "";
   const { viewOptions, setViewOptions, filters, setFilters, resetFilters } =
     useObjectiveOptions();
@@ -92,14 +89,8 @@ export const Header = ({
               setViewOptions={setViewOptions}
               viewOptions={viewOptions}
             />
-            <span className="text-text-secondary hidden md:inline">|</span>
           </>
         )}
-        <NewStoryButton
-          className="hidden md:flex"
-          objectiveId={objectiveId}
-          teamId={teamId}
-        />
       </Flex>
     </HeaderContainer>
   );

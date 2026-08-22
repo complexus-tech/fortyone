@@ -16,7 +16,7 @@ export const Header = () => {
           ]}
         />
       </Flex>
-      <NewStoryButton />
+      <NewStoryButton className="md:hidden" />
     </HeaderContainer>
   );
 };
