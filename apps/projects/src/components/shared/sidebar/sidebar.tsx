@@ -154,7 +154,7 @@ export const Sidebar = () => {
   return (
     <Box
       className={cn(
-        "bg-sidebar border-border dark:bg-sidebar/40 relative flex h-dvh w-(--sidebar-width) shrink-0 flex-col overflow-hidden border-r-[0.5px] transition-[width] duration-200 ease-linear",
+        "border-border relative flex h-dvh w-(--sidebar-width) shrink-0 flex-col overflow-hidden border-r-[0.5px] transition-[width] duration-200 ease-linear",
         isCollapsed && "w-(--sidebar-width-collapsed)",
       )}
       data-sidebar-collapsed={isCollapsed ? "true" : "false"}
