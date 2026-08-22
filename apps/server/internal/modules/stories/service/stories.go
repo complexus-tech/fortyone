@@ -1436,6 +1436,12 @@ func (s *Service) GetComments(ctx context.Context, storyID uuid.UUID, page, page
 	return comments, hasMore, nil
 }
 
+// GetComment resolves a single comment so external callers can validate reply
+// ownership before creating a nested comment.
+func (s *Service) GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error) {
+	return s.repo.GetComment(ctx, commentID)
+}
+
 // DuplicateStory creates a copy of an existing story.
 func (s *Service) DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error) {
 	s.log.Info(ctx, "business.core.stories.DuplicateStory")

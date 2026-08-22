@@ -93,18 +93,26 @@ func TestRegisteredToolsCoverNaturalLanguageScenarios(t *testing.T) {
 	}{
 		{question: "Which FortyOne workspaces or organizations can I access?", tool: "list_workspaces", cue: "organizations"},
 		{question: "Which teams or groups do I belong to?", tool: "list_teams", cue: "groups"},
+		{question: "Which statuses can I move this task to?", tool: "list_story_statuses", cue: "mark done"},
 		{question: "Show me my work in the Art Circles team.", tool: "list_stories", cue: "my work"},
 		{question: "Show my tasks and issues due today.", tool: "list_stories", cue: "due today"},
 		{question: "Create a 30-minute task and auto-schedule it.", tool: "create_story", cue: "task"},
 		{question: "Create an issue in the current sprint.", tool: "create_story", cue: "issue"},
+		{question: "Change this task's due date to August 31 and duration to six hours.", tool: "update_story", cue: "duration"},
+		{question: "Show me the comments on this task.", tool: "list_story_comments", cue: "comments"},
+		{question: "Add this comment to the issue.", tool: "add_story_comment", cue: "comment"},
+		{question: "Archive this task so we can restore it later.", tool: "set_story_archived", cue: "recovery"},
 		{question: "Show the team's sprints, iterations, or cycles.", tool: "list_sprints", cue: "cycles"},
 		{question: "Create a two-week iteration for this team.", tool: "create_sprint", cue: "iteration"},
 		{question: "How is this sprint going?", tool: "analyze_sprint", cue: "burndown"},
 		{question: "Show our projects, goals, and objectives.", tool: "list_objectives", cue: "projects"},
+		{question: "Which statuses can this goal use?", tool: "list_objective_statuses", cue: "status"},
 		{question: "Create a project or goal for the launch.", tool: "create_objective", cue: "project"},
+		{question: "Mark this goal as at risk and move its target date.", tool: "update_objective", cue: "updates"},
 		{question: "Is this goal on track?", tool: "analyze_objective", cue: "goal"},
 		{question: "Show the KRs, outcomes, measures, or targets for this goal.", tool: "list_key_results", cue: "targets"},
 		{question: "Create a percentage target for this objective.", tool: "create_key_result", cue: "target"},
+		{question: "Update this KR's current value.", tool: "update_key_result", cue: "updates"},
 		{question: "Analyze our workload, delivery risks, and status this month.", tool: "analyze_work", cue: "risks"},
 	}
 
@@ -118,11 +126,31 @@ func TestRegisteredToolsCoverNaturalLanguageScenarios(t *testing.T) {
 		})
 	}
 
-	require.Len(t, tools, 13)
-	require.Len(t, covered, 13, "every registered tool must have at least one natural-language scenario")
-	requireToolProperties(t, tools["list_stories"], "workspaceId", "teamId", "assignedToMe", "dueOn")
-	requireToolProperties(t, tools["create_story"], "title", "estimatedDurationMinutes", "minimumFocusBlockMinutes", "autoSchedulingEnabled", "confirmed")
+	require.Len(t, tools, 21)
+	require.Len(t, covered, 21, "every registered tool must have at least one natural-language scenario")
+	requireToolProperties(t, tools["list_workspaces"], "page", "pageSize")
+	requireToolProperties(t, tools["list_teams"], "workspaceId", "search", "page", "pageSize")
+	requireToolProperties(t, tools["list_story_statuses"], "workspaceId", "teamId", "page", "pageSize")
+	requireToolProperties(t, tools["list_stories"], "workspaceId", "teamId", "assignedToMe", "dueOn", "search", "page", "pageSize")
+	requireToolProperties(t, tools["create_story"], "title", "estimatedDurationMinutes", "minimumFocusBlockMinutes", "autoSchedulingEnabled", "idempotencyKey", "confirmed")
+	requireToolRequiredProperties(t, tools["create_story"], "workspaceId", "teamId", "title", "idempotencyKey", "confirmed")
+	requireToolProperties(t, tools["update_story"], "id", "expectedUpdatedAt", "endDate", "estimatedDurationMinutes", "confirmed")
+	requireToolProperties(t, tools["list_story_comments"], "workspaceId", "storyId", "page", "pageSize")
+	requireToolProperties(t, tools["add_story_comment"], "workspaceId", "storyId", "comment", "parentId", "confirmed")
+	requireToolProperties(t, tools["set_story_archived"], "workspaceId", "id", "archived", "confirmed")
+	require.NotNil(t, tools["set_story_archived"].Annotations)
+	require.NotNil(t, tools["set_story_archived"].Annotations.DestructiveHint)
+	require.True(t, *tools["set_story_archived"].Annotations.DestructiveHint)
+	requireToolProperties(t, tools["list_sprints"], "workspaceId", "search", "page", "pageSize")
+	requireToolProperties(t, tools["analyze_sprint"], "workspaceId", "id", "page", "pageSize")
+	requireToolProperties(t, tools["list_objectives"], "workspaceId", "search", "page", "pageSize")
+	requireToolProperties(t, tools["list_objective_statuses"], "workspaceId", "page", "pageSize")
+	requireToolProperties(t, tools["analyze_objective"], "workspaceId", "id", "page", "pageSize")
+	requireToolProperties(t, tools["list_key_results"], "workspaceId", "page", "pageSize")
 	requireToolProperties(t, tools["create_objective"], "name", "teamId", "startDate", "endDate", "confirmed")
+	requireToolProperties(t, tools["update_objective"], "id", "expectedUpdatedAt", "health", "endDate", "confirmed")
+	requireToolProperties(t, tools["update_key_result"], "id", "expectedUpdatedAt", "currentValue", "targetValue", "confirmed")
+	requireToolProperties(t, tools["analyze_work"], "workspaceId", "startDate", "endDate", "page", "pageSize")
 }
 
 func listToolsForTest(t *testing.T) map[string]*mcp.Tool {
@@ -156,5 +184,17 @@ func requireToolProperties(t *testing.T, tool *mcp.Tool, names ...string) {
 	require.True(t, ok, "tool %q input schema has no properties", tool.Name)
 	for _, name := range names {
 		require.Contains(t, properties, name, "tool %q is missing %q", tool.Name, name)
+	}
+}
+
+func requireToolRequiredProperties(t *testing.T, tool *mcp.Tool, names ...string) {
+	t.Helper()
+	require.NotNil(t, tool)
+	schema, ok := tool.InputSchema.(map[string]any)
+	require.True(t, ok, "tool %q input schema has unexpected type %T", tool.Name, tool.InputSchema)
+	required, ok := schema["required"].([]any)
+	require.True(t, ok, "tool %q input schema has no required properties", tool.Name)
+	for _, name := range names {
+		require.Contains(t, required, name, "tool %q does not require %q", tool.Name, name)
 	}
 }

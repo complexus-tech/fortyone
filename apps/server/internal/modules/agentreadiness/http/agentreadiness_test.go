@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -77,7 +78,9 @@ func TestApprovalPageUsesApplicationThemeAndEscapesClientName(t *testing.T) {
 	require.Contains(t, body, "would like to connect to FortyOne")
 	require.Contains(t, body, "This connection will be able to:")
 	require.Contains(t, body, "changes require your approval in the connected client")
-	require.Contains(t, body, "Agree &amp; allow access")
+	require.Contains(t, body, "font-size: 14px")
+	require.Contains(t, body, "Agree &amp; allow")
+	require.NotContains(t, body, "Agree &amp; allow access")
 	require.Contains(t, body, `&lt;script&gt;alert(&#34;xss&#34;)&lt;/script&gt;`)
 	require.NotContains(t, body, `<script>alert("xss")</script>`)
 	require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
@@ -106,6 +109,7 @@ func TestStoryListFiltersUseScopedAdvancedQueryContract(t *testing.T) {
 		AssigneeID:   assigneeID.String(),
 		AssignedToMe: true,
 		DueOn:        dueOn,
+		Search:       " launch task ",
 		StatusID:     statusID.String(),
 		KeyResultID:  keyResultID.String(),
 	}, userID)
@@ -119,8 +123,48 @@ func TestStoryListFiltersUseScopedAdvancedQueryContract(t *testing.T) {
 	expectedDueOn := time.Date(2026, time.August, 22, 0, 0, 0, 0, time.UTC)
 	require.Equal(t, expectedDueOn, filters["deadline_after"])
 	require.Equal(t, expectedDueOn, filters["deadline_before"])
+	require.Equal(t, "launch task", filters["title_contains"])
 	require.Equal(t, []uuid.UUID{statusID}, filters["status_ids"])
 	require.Equal(t, keyResultID, filters["key_result_id"])
+}
+
+func TestMCPPaginationIsBoundedAndReportsMoreResults(t *testing.T) {
+	t.Parallel()
+	page, pageSize, offset, limit := normalizePagination(2, 1000)
+	require.Equal(t, 2, page)
+	require.Equal(t, maximumMCPPageSize, pageSize)
+	require.Equal(t, maximumMCPPageSize, offset)
+	require.Equal(t, maximumMCPPageSize+1, limit)
+
+	items := make([]int, 205)
+	pageItems, hasMore := pageSlice(items, offset, limit, pageSize)
+	require.Len(t, pageItems, maximumMCPPageSize)
+	require.True(t, hasMore)
+
+	lastPage, hasMore := pageSlice(items, 200, 101, 100)
+	require.Len(t, lastPage, 5)
+	require.False(t, hasMore)
+
+	shortSection, hasMore := pageSliceWithMore([]int{1, 2}, 0, 101, 100, true)
+	require.Equal(t, []int{1, 2}, shortSection)
+	require.True(t, hasMore, "pagination must preserve hasMore from another analysis section")
+
+	_, _, hugeOffset, hugeLimit := normalizePagination(int(^uint(0)>>1), maximumMCPPageSize)
+	require.GreaterOrEqual(t, hugeOffset, 0)
+	require.LessOrEqual(t, hugeOffset, int(^uint(0)>>1)-hugeLimit)
+}
+
+func TestStoryToolResultDoesNotExposeInternalCreationKey(t *testing.T) {
+	t.Parallel()
+	creationKey := "mcp:user:private-retry-token"
+	result := storyToolResult(stories.CoreSingleStory{ID: uuid.New(), Title: "Public title", CreationKey: &creationKey})
+
+	encoded, err := json.Marshal(result)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), "Public title")
+	require.NotContains(t, string(encoded), creationKey)
+	require.NotContains(t, string(encoded), "CreationKey")
+	require.NotContains(t, string(encoded), "creationKey")
 }
 
 func TestStoryListFiltersRejectInvalidUUID(t *testing.T) {

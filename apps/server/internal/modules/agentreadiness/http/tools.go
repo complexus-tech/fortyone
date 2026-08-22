@@ -17,19 +17,30 @@ import (
 
 func (h *Handler) addTools(server *mcp.Server) {
 	read, write := annotations(true, true), annotations(false, false)
-	addSafeTool(h, server, tool("list_workspaces", "List FortyOne workspaces", "Lists the organizations or workspaces the connected user can access. Use this first when the user has not identified a workspace.", read), h.listWorkspaces)
-	addSafeTool(h, server, tool("list_teams", "List workspace teams", "Lists accessible teams or groups and their codes. Use joinedOnly for teams the connected user belongs to.", read), h.listTeams)
-	addSafeTool(h, server, tool("list_stories", "List stories, tasks, or issues", "Lists stories, tasks, issues, tickets, or work items with scheduling, ownership, sprint, objective, key-result, and status data. For 'my work', set assignedToMe. For work due today or on another day, resolve that day to YYYY-MM-DD and set dueOn.", read), h.listStories)
-	addSafeTool(h, server, tool("create_story", "Create a story, task, or issue", "Creates a user-approved story, task, issue, ticket, or work item. Preserve requested duration, focus block, auto-scheduling, dates, estimate, labels, parent, sprint, objective, and key-result links. Never call until the user approves the final values.", write), h.createStory)
-	addSafeTool(h, server, tool("list_sprints", "List sprints or iterations", "Lists sprints, iterations, or delivery cycles, optionally filtered by team or search text.", read), h.listSprints)
+	archive := annotations(false, true)
+	destructive := true
+	archive.DestructiveHint = &destructive
+	addSafeTool(h, server, tool("list_workspaces", "List FortyOne workspaces", "Lists a page of organizations or workspaces the connected user can access. Use this first when the user has not identified a workspace.", read), h.listWorkspaces)
+	addSafeTool(h, server, tool("list_teams", "List workspace teams", "Lists a page of accessible teams or groups and their codes. Use joinedOnly for teams the connected user belongs to.", read), h.listTeams)
+	addSafeTool(h, server, tool("list_story_statuses", "List story workflow statuses", "Lists a page of statuses for a team's stories, tasks, issues, tickets, or work items. Use this to resolve requests such as mark done, start, cancel, pause, or move to backlog before calling update_story.", read), h.listStoryStatuses)
+	addSafeTool(h, server, tool("list_stories", "List stories, tasks, or issues", "Lists a page of stories, tasks, issues, tickets, or work items with scheduling, ownership, sprint, objective, key-result, status, and updated_at data. Use search to resolve work by title. For 'my work', set assignedToMe. For work due today or on another day, resolve that day to YYYY-MM-DD and set dueOn.", read), h.listStories)
+	addSafeTool(h, server, tool("create_story", "Create a story, task, or issue", "Creates a user-approved story, task, issue, ticket, or work item. Preserve requested duration, focus block, auto-scheduling, dates, estimate, labels, parent, sprint, objective, and key-result links. Generate an opaque idempotencyKey for each approved creation and reuse it only when retrying that same call. Never call until the user approves the final values.", write), h.createStory)
+	addSafeTool(h, server, tool("update_story", "Update a story, task, or issue", "Updates user-approved fields on an existing story, task, issue, ticket, or work item. Read the story first and pass its updated_at as expectedUpdatedAt. Dates may be cleared with an empty string. Duration is expressed in minutes. Never call until the user approves the exact changes.", write), h.updateStory)
+	addSafeTool(h, server, tool("list_story_comments", "List story comments", "Lists a page of comments and replies on a story, task, issue, ticket, or work item.", read), h.listStoryComments)
+	addSafeTool(h, server, tool("add_story_comment", "Add a story comment", "Adds a user-approved comment or reply to a story, task, issue, ticket, or work item. Never call until the user approves the exact comment.", write), h.addStoryComment)
+	addSafeTool(h, server, tool("set_story_archived", "Archive or restore a story", "Archives or restores a user-approved story, task, issue, ticket, or work item. Use archived=true for requests to remove or archive work, preserving it for recovery. Never call until the user approves the action.", archive), h.setStoryArchived)
+	addSafeTool(h, server, tool("list_sprints", "List sprints or iterations", "Lists a page of sprints, iterations, or delivery cycles, optionally filtered by team or search text.", read), h.listSprints)
 	addSafeTool(h, server, tool("create_sprint", "Create a sprint or iteration", "Creates a user-approved sprint, iteration, or delivery cycle with a goal and date range.", write), h.createSprint)
-	addSafeTool(h, server, tool("analyze_sprint", "Analyze a sprint or iteration", "Analyzes a sprint, iteration, or cycle and returns completion, status, burndown, story breakdown, and team allocation.", read), h.analyzeSprint)
-	addSafeTool(h, server, tool("list_objectives", "List objectives, projects, or goals", "Lists objectives, projects, or goals with delivery forecast and linked-work progress, optionally filtered by team or search text.", read), h.listObjectives)
+	addSafeTool(h, server, tool("analyze_sprint", "Analyze a sprint or iteration", "Analyzes a sprint, iteration, or cycle and returns completion, status, story breakdown, and a page of burndown and team-allocation details.", read), h.analyzeSprint)
+	addSafeTool(h, server, tool("list_objectives", "List objectives, projects, or goals", "Lists a page of objectives, projects, or goals with delivery forecast and linked-work progress, optionally filtered by team or search text.", read), h.listObjectives)
+	addSafeTool(h, server, tool("list_objective_statuses", "List objective workflow statuses", "Lists a page of workspace objective statuses. Use this to resolve requested project, goal, or objective status changes before calling update_objective.", read), h.listObjectiveStatuses)
 	addSafeTool(h, server, tool("create_objective", "Create an objective, project, or goal", "Creates a user-approved objective when the user asks for an objective, project, or goal, applying the workspace default status when omitted.", write), h.createObjective)
-	addSafeTool(h, server, tool("analyze_objective", "Analyze an objective, project, or goal", "Analyzes an objective, project, or goal and returns progress, priority, allocation, and chart analytics.", read), h.analyzeObjective)
-	addSafeTool(h, server, tool("list_key_results", "List key results or targets", "Lists measurable key results, KRs, outcomes, measures, or targets for accessible objectives.", read), h.listKeyResults)
+	addSafeTool(h, server, tool("update_objective", "Update an objective, project, or goal", "Updates user-approved fields on an existing objective, project, or goal. Read it first and pass its UpdatedAt as expectedUpdatedAt. Never call until the user approves the exact changes.", write), h.updateObjective)
+	addSafeTool(h, server, tool("analyze_objective", "Analyze an objective, project, or goal", "Analyzes an objective, project, or goal and returns a page of progress, priority, allocation, and chart details.", read), h.analyzeObjective)
+	addSafeTool(h, server, tool("list_key_results", "List key results or targets", "Lists a page of measurable key results, KRs, outcomes, measures, or targets for accessible objectives.", read), h.listKeyResults)
 	addSafeTool(h, server, tool("create_key_result", "Create a key result or target", "Creates a user-approved percentage, number, or boolean key result, KR, outcome, measure, or target for an objective.", write), h.createKeyResult)
-	addSafeTool(h, server, tool("analyze_work", "Analyze work and delivery", "Analyzes workspace work, workload, delivery status, requests, and risks across stories, tasks, issues, sprints, objectives, projects, and goals for a date range.", read), h.analyzeWork)
+	addSafeTool(h, server, tool("update_key_result", "Update a key result or target", "Updates user-approved fields on an existing key result, KR, outcome, measure, or target. Read it first and pass its UpdatedAt as expectedUpdatedAt. Never call until the user approves the exact changes.", write), h.updateKeyResult)
+	addSafeTool(h, server, tool("analyze_work", "Analyze work and delivery", "Analyzes workspace work, workload, delivery status, requests, and risks across stories, tasks, issues, sprints, objectives, projects, and goals for a date range. Member, team, and risk details are paginated.", read), h.analyzeWork)
 }
 
 func tool(name, title, description string, a *mcp.ToolAnnotations) *mcp.Tool {
@@ -40,7 +51,7 @@ func annotations(readOnly, idempotent bool) *mcp.ToolAnnotations {
 	return &mcp.ToolAnnotations{ReadOnlyHint: readOnly, IdempotentHint: idempotent, DestructiveHint: &destructive, OpenWorldHint: &openWorld}
 }
 
-func (h *Handler) listWorkspaces(ctx context.Context, _ *mcp.CallToolRequest, _ emptyInput) (*mcp.CallToolResult, any, error) {
+func (h *Handler) listWorkspaces(ctx context.Context, _ *mcp.CallToolRequest, in workspaceListInput) (*mcp.CallToolResult, any, error) {
 	userID, err := mcpUserID(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -49,11 +60,13 @@ func (h *Handler) listWorkspaces(ctx context.Context, _ *mcp.CallToolRequest, _ 
 	if err != nil {
 		return nil, nil, err
 	}
+	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
+	items, hasMore := pageSlice(items, offset, limit, pageSize)
 	out := make([]map[string]any, 0, len(items))
 	for _, item := range items {
 		out = append(out, map[string]any{"id": item.ID, "slug": item.Slug, "name": item.Name, "role": item.UserRole})
 	}
-	return nil, map[string]any{"workspaces": out}, nil
+	return nil, paginatedResult("workspaces", out, page, pageSize, hasMore), nil
 }
 
 func (h *Handler) listTeams(ctx context.Context, _ *mcp.CallToolRequest, in teamListInput) (*mcp.CallToolResult, any, error) {
@@ -61,15 +74,42 @@ func (h *Handler) listTeams(ctx context.Context, _ *mcp.CallToolRequest, in team
 	if err != nil {
 		return nil, nil, err
 	}
-	items, err := h.cfg.Teams.List(ctx, workspaceID, userID, teams.CoreListTeamsFilter{JoinedOnly: in.JoinedOnly})
+	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
+	items, err := h.cfg.Teams.List(ctx, workspaceID, userID, teams.CoreListTeamsFilter{JoinedOnly: in.JoinedOnly, Search: strings.TrimSpace(in.Search), Limit: limit, Offset: offset})
 	if err != nil {
 		return nil, nil, err
 	}
+	items, hasMore := trimPage(items, pageSize)
 	out := make([]map[string]any, 0, len(items))
 	for _, item := range items {
 		out = append(out, map[string]any{"id": item.ID, "name": item.Name, "code": item.Code, "sprintsEnabled": item.SprintsEnabled})
 	}
-	return nil, map[string]any{"teams": out}, nil
+	return nil, paginatedResult("teams", out, page, pageSize, hasMore), nil
+}
+
+func (h *Handler) listStoryStatuses(ctx context.Context, _ *mcp.CallToolRequest, in storyStatusListInput) (*mcp.CallToolResult, any, error) {
+	workspaceID, userID, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
+	if err != nil {
+		return nil, nil, err
+	}
+	teamID, err := parseRequiredUUID("teamId", in.TeamID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if _, err := h.cfg.Teams.GetByID(ctx, teamID, workspaceID, userID); err != nil {
+		return nil, nil, err
+	}
+	items, err := h.cfg.States.TeamList(ctx, workspaceID, teamID)
+	if err != nil {
+		return nil, nil, err
+	}
+	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
+	items, hasMore := pageSlice(items, offset, limit, pageSize)
+	out := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		out = append(out, map[string]any{"id": item.ID, "name": item.Name, "category": item.Category, "orderIndex": item.OrderIndex, "isDefault": item.IsDefault, "color": item.Color})
+	}
+	return nil, paginatedResult("statuses", out, page, pageSize, hasMore), nil
 }
 
 func (h *Handler) listStories(ctx context.Context, _ *mcp.CallToolRequest, in storyListInput) (*mcp.CallToolResult, any, error) {
@@ -81,11 +121,39 @@ func (h *Handler) listStories(ctx context.Context, _ *mcp.CallToolRequest, in st
 	if err != nil {
 		return nil, nil, err
 	}
+	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
+	filters["limit"] = limit
+	filters["offset"] = offset
 	items, err := h.cfg.Stories.List(ctx, workspaceID, filters)
 	if err != nil {
 		return nil, nil, err
 	}
-	return nil, map[string]any{"stories": items}, nil
+	items, hasMore := trimPage(items, pageSize)
+	return nil, paginatedResult("stories", items, page, pageSize, hasMore), nil
+}
+
+func (h *Handler) listStoryComments(ctx context.Context, _ *mcp.CallToolRequest, in storyCommentListInput) (*mcp.CallToolResult, any, error) {
+	workspaceID, userID, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
+	if err != nil {
+		return nil, nil, err
+	}
+	storyID, err := parseRequiredUUID("storyId", in.StoryID)
+	if err != nil {
+		return nil, nil, err
+	}
+	story, err := h.cfg.Stories.Get(ctx, storyID, workspaceID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if _, err := h.cfg.Teams.GetByID(ctx, story.Team, workspaceID, userID); err != nil {
+		return nil, nil, err
+	}
+	page, pageSize, _, _ := normalizePagination(in.Page, in.PageSize)
+	items, hasMore, err := h.cfg.Stories.GetComments(ctx, storyID, page, pageSize)
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, paginatedResult("comments", items, page, pageSize, hasMore), nil
 }
 
 func (h *Handler) listSprints(ctx context.Context, _ *mcp.CallToolRequest, in objectiveListInput) (*mcp.CallToolResult, any, error) {
@@ -97,11 +165,19 @@ func (h *Handler) listSprints(ctx context.Context, _ *mcp.CallToolRequest, in ob
 	if err != nil {
 		return nil, nil, err
 	}
+	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
+	filters["limit"] = limit
+	filters["offset"] = offset
 	items, err := h.cfg.Sprints.List(ctx, workspaceID, userID, filters)
 	if err != nil {
 		return nil, nil, err
 	}
-	return nil, map[string]any{"sprints": items}, nil
+	items, hasMore := trimPage(items, pageSize)
+	out := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		out = append(out, sprintToolResult(item))
+	}
+	return nil, paginatedResult("sprints", out, page, pageSize, hasMore), nil
 }
 
 func (h *Handler) analyzeSprint(ctx context.Context, _ *mcp.CallToolRequest, in entityInput) (*mcp.CallToolResult, any, error) {
@@ -117,7 +193,11 @@ func (h *Handler) analyzeSprint(ctx context.Context, _ *mcp.CallToolRequest, in 
 	if err != nil {
 		return nil, nil, err
 	}
-	return nil, map[string]any{"analysis": result}, nil
+	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
+	var burndownHasMore, allocationHasMore bool
+	result.Burndown, burndownHasMore = pageSlice(result.Burndown, offset, limit, pageSize)
+	result.TeamAllocation, allocationHasMore = pageSlice(result.TeamAllocation, offset, limit, pageSize)
+	return nil, analysisResult(result, page, pageSize, burndownHasMore || allocationHasMore), nil
 }
 
 func (h *Handler) listObjectives(ctx context.Context, _ *mcp.CallToolRequest, in objectiveListInput) (*mcp.CallToolResult, any, error) {
@@ -129,11 +209,37 @@ func (h *Handler) listObjectives(ctx context.Context, _ *mcp.CallToolRequest, in
 	if err != nil {
 		return nil, nil, err
 	}
+	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
+	filters["limit"] = limit
+	filters["offset"] = offset
 	items, err := h.cfg.Objectives.List(ctx, workspaceID, userID, filters)
 	if err != nil {
 		return nil, nil, err
 	}
-	return nil, map[string]any{"objectives": items}, nil
+	items, hasMore := trimPage(items, pageSize)
+	out := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		out = append(out, objectiveToolResult(item))
+	}
+	return nil, paginatedResult("objectives", out, page, pageSize, hasMore), nil
+}
+
+func (h *Handler) listObjectiveStatuses(ctx context.Context, _ *mcp.CallToolRequest, in objectiveStatusListInput) (*mcp.CallToolResult, any, error) {
+	workspaceID, _, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
+	if err != nil {
+		return nil, nil, err
+	}
+	items, err := h.cfg.ObjectiveStatuses.List(ctx, workspaceID)
+	if err != nil {
+		return nil, nil, err
+	}
+	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
+	items, hasMore := pageSlice(items, offset, limit, pageSize)
+	out := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		out = append(out, map[string]any{"id": item.ID, "name": item.Name, "category": item.Category, "orderIndex": item.OrderIndex, "isDefault": item.IsDefault, "color": item.Color})
+	}
+	return nil, paginatedResult("statuses", out, page, pageSize, hasMore), nil
 }
 
 func (h *Handler) analyzeObjective(ctx context.Context, _ *mcp.CallToolRequest, in entityInput) (*mcp.CallToolResult, any, error) {
@@ -149,7 +255,12 @@ func (h *Handler) analyzeObjective(ctx context.Context, _ *mcp.CallToolRequest, 
 	if err != nil {
 		return nil, nil, err
 	}
-	return nil, map[string]any{"analysis": result}, nil
+	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
+	var priorityHasMore, allocationHasMore, progressHasMore bool
+	result.PriorityBreakdown, priorityHasMore = pageSlice(result.PriorityBreakdown, offset, limit, pageSize)
+	result.TeamAllocation, allocationHasMore = pageSlice(result.TeamAllocation, offset, limit, pageSize)
+	result.ProgressChart, progressHasMore = pageSlice(result.ProgressChart, offset, limit, pageSize)
+	return nil, analysisResult(result, page, pageSize, priorityHasMore || allocationHasMore || progressHasMore), nil
 }
 
 func (h *Handler) listKeyResults(ctx context.Context, _ *mcp.CallToolRequest, in keyResultListInput) (*mcp.CallToolResult, any, error) {
@@ -161,18 +272,16 @@ func (h *Handler) listKeyResults(ctx context.Context, _ *mcp.CallToolRequest, in
 	if err != nil {
 		return nil, nil, err
 	}
-	page, pageSize := in.Page, in.PageSize
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 50
-	}
+	page, pageSize, _, _ := normalizePagination(in.Page, in.PageSize)
 	result, err := h.cfg.KeyResults.ListPaginated(ctx, keyresults.CoreKeyResultFilters{WorkspaceID: workspaceID, CurrentUserID: userID, ObjectiveIDs: objectiveIDs, Page: page, PageSize: pageSize})
 	if err != nil {
 		return nil, nil, err
 	}
-	return nil, map[string]any{"result": result}, nil
+	out := make([]map[string]any, 0, len(result.KeyResults))
+	for _, item := range result.KeyResults {
+		out = append(out, keyResultWithObjectiveToolResult(item))
+	}
+	return nil, map[string]any{"keyResults": out, "totalCount": result.TotalCount, "page": result.Page, "pageSize": result.PageSize, "hasMore": result.HasMore}, nil
 }
 
 func (h *Handler) analyzeWork(ctx context.Context, _ *mcp.CallToolRequest, in analysisInput) (*mcp.CallToolResult, any, error) {
@@ -204,11 +313,23 @@ func (h *Handler) analyzeWork(ctx context.Context, _ *mcp.CallToolRequest, in an
 	if err != nil {
 		return nil, nil, err
 	}
+	if startDate != nil && endDate != nil && endDate.Before(*startDate) {
+		return nil, nil, invalidToolInput("endDate must be on or after startDate")
+	}
 	result, err := h.cfg.Reports.GetPulseReport(ctx, workspaceID, reports.ReportFilters{TeamIDs: teamIDs, AssigneeIDs: assigneeIDs, SprintIDs: sprintIDs, ObjectiveIDs: objectiveIDs, StartDate: startDate, EndDate: endDate})
 	if err != nil {
 		return nil, nil, err
 	}
-	return nil, map[string]any{"analysis": result, "guidance": "Treat counts and risks as current FortyOne data. Ask before changing work, ownership, dates, or scope."}, nil
+	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
+	hasMore := false
+	result.Workload.Members, hasMore = pageSlice(result.Workload.Members, offset, limit, pageSize)
+	result.Workload.Teams, hasMore = pageSliceWithMore(result.Workload.Teams, offset, limit, pageSize, hasMore)
+	result.Workload.Risks.OverloadedMembers, hasMore = pageSliceWithMore(result.Workload.Risks.OverloadedMembers, offset, limit, pageSize, hasMore)
+	result.Workload.Risks.OverdueMembers, hasMore = pageSliceWithMore(result.Workload.Risks.OverdueMembers, offset, limit, pageSize, hasMore)
+	result.Risks, hasMore = pageSliceWithMore(result.Risks, offset, limit, pageSize, hasMore)
+	response := analysisResult(result, page, pageSize, hasMore)
+	response["guidance"] = "Treat counts and risks as current FortyOne data. Ask before changing work, ownership, dates, or scope."
+	return nil, response, nil
 }
 
 func (h *Handler) authorizeWorkspace(ctx context.Context, raw string) (uuid.UUID, uuid.UUID, error) {
@@ -280,6 +401,9 @@ func parseUUIDs(values []string) ([]uuid.UUID, error) {
 }
 func storyListFilters(input storyListInput, userID uuid.UUID) (map[string]any, error) {
 	filters := map[string]any{"current_user_id": userID}
+	if search := strings.TrimSpace(input.Search); search != "" {
+		filters["title_contains"] = search
+	}
 	if input.AssignedToMe {
 		filters["assigned_to_me"] = true
 	}
@@ -322,6 +446,63 @@ func storyListFilters(input storyListInput, userID uuid.UUID) (map[string]any, e
 
 	return filters, nil
 }
+
+const (
+	defaultMCPPageSize = 25
+	maximumMCPPageSize = 100
+)
+
+func normalizePagination(rawPage, rawPageSize int) (page, pageSize, offset, limit int) {
+	page = rawPage
+	if page < 1 {
+		page = 1
+	}
+	pageSize = rawPageSize
+	if pageSize < 1 {
+		pageSize = defaultMCPPageSize
+	}
+	if pageSize > maximumMCPPageSize {
+		pageSize = maximumMCPPageSize
+	}
+	limit = pageSize + 1
+	maximumInt := int(^uint(0) >> 1)
+	maximumPage := ((maximumInt - limit) / pageSize) + 1
+	if page > maximumPage {
+		page = maximumPage
+	}
+	offset = (page - 1) * pageSize
+	return page, pageSize, offset, limit
+}
+
+func trimPage[T any](items []T, pageSize int) ([]T, bool) {
+	hasMore := len(items) > pageSize
+	if hasMore {
+		items = items[:pageSize]
+	}
+	return items, hasMore
+}
+
+func pageSlice[T any](items []T, offset, limit, pageSize int) ([]T, bool) {
+	if offset >= len(items) {
+		return []T{}, false
+	}
+	end := min(offset+limit, len(items))
+	return trimPage(items[offset:end], pageSize)
+}
+
+func pageSliceWithMore[T any](items []T, offset, limit, pageSize int, previousHasMore bool) ([]T, bool) {
+	pageItems, hasMore := pageSlice(items, offset, limit, pageSize)
+	return pageItems, previousHasMore || hasMore
+}
+
+func paginatedResult(name string, items any, page, pageSize int, hasMore bool) map[string]any {
+	return map[string]any{name: items, "page": page, "pageSize": pageSize, "hasMore": hasMore}
+}
+
+func analysisResult(result any, page, pageSize int, hasMore bool) map[string]any {
+	return map[string]any{"analysis": result, "page": page, "pageSize": pageSize, "hasMore": hasMore}
+}
+
 func optionalDate(raw string) (*time.Time, error) {
 	if strings.TrimSpace(raw) == "" {
 		return nil, nil
@@ -341,6 +522,14 @@ func requiredDate(name, raw string) (time.Time, error) {
 		return time.Time{}, invalidToolInputf("%s is required", name)
 	}
 	return *value, nil
+}
+
+func requiredTimestamp(name, raw string) (time.Time, error) {
+	value, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(raw))
+	if err != nil {
+		return time.Time{}, invalidToolInputf("%s must use RFC3339", name)
+	}
+	return value.UTC(), nil
 }
 func optionalString(value string) *string {
 	value = strings.TrimSpace(value)

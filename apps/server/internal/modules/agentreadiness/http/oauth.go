@@ -165,7 +165,7 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
     .description {
       margin: 16px 0 0;
       color: var(--text-secondary);
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.6;
     }
 
@@ -321,7 +321,7 @@ var approvalPage = template.Must(template.New("mcp-approval").Parse(`<!doctype h
       <form method="post" action="/oauth/authorize">
         <input type="hidden" name="approval" value="{{.Approval}}">
         <button class="deny" type="submit" name="decision" value="deny">Cancel</button>
-        <button class="allow" type="submit" name="decision" value="allow">Agree &amp; allow access</button>
+        <button class="allow" type="submit" name="decision" value="allow">Agree &amp; allow</button>
       </form>
     </section>
   </main>

@@ -542,6 +542,15 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 		query += " ORDER BY s.created_at DESC"
 
 		params := r.buildQueryParams(coreFilters)
+		if limit, ok := filters["limit"].(int); ok && limit > 0 {
+			offset, _ := filters["offset"].(int)
+			if offset < 0 {
+				offset = 0
+			}
+			params["result_limit"] = limit
+			params["result_offset"] = offset
+			query += " LIMIT :result_limit OFFSET :result_offset"
+		}
 
 		var stories []dbStory
 		stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -627,12 +636,24 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	var setClauses []string
 
 	for field := range filters {
+		if field == "limit" || field == "offset" {
+			continue
+		}
 		setClauses = append(setClauses, fmt.Sprintf("s.%s = :%s", field, field))
 	}
 
 	filters["workspace_id"] = workspaceId
 	setClauses = append(setClauses, "s.deleted_at IS NULL", "s.workspace_id = :workspace_id", "s.parent_id IS NULL")
-	query += " WHERE " + strings.Join(setClauses, " AND ") + ";"
+	query += " WHERE " + strings.Join(setClauses, " AND ") + " ORDER BY s.created_at DESC"
+	if limit, ok := filters["limit"].(int); ok && limit > 0 {
+		offset, _ := filters["offset"].(int)
+		if offset < 0 {
+			offset = 0
+		}
+		filters["offset"] = offset
+		query += " LIMIT :limit OFFSET :offset"
+	}
+	query += ";"
 
 	var stories []dbStory
 
