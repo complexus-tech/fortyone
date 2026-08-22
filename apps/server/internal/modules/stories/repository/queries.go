@@ -1158,34 +1158,10 @@ func (r *repo) listGroupedStoriesSQL(ctx context.Context, query stories.CoreStor
 	groupColumn := r.getGroupColumn(query.GroupBy)
 	orderByClause := r.buildOrderByClause(query.OrderBy, query.OrderDirection)
 
-	// For simple ordering (created, updated), we can use a more efficient approach
-	var rowNumberOrder string
-	var jsonAggOrder string
-
-	if query.OrderBy == "created" || query.OrderBy == "updated" {
-		// Use simple column ordering for better performance
-		if query.OrderBy == "created" {
-			if query.OrderDirection == "asc" {
-				rowNumberOrder = "s.created_at ASC"
-				jsonAggOrder = "ls.created_at ASC"
-			} else {
-				rowNumberOrder = "s.created_at DESC"
-				jsonAggOrder = "ls.created_at DESC"
-			}
-		} else {
-			if query.OrderDirection == "asc" {
-				rowNumberOrder = "s.updated_at ASC"
-				jsonAggOrder = "ls.updated_at ASC"
-			} else {
-				rowNumberOrder = "s.updated_at DESC"
-				jsonAggOrder = "ls.updated_at DESC"
-			}
-		}
-	} else {
-		// Use complex ordering for priority and deadline
-		rowNumberOrder = orderByClause
-		jsonAggOrder = r.buildOrderByClauseWithAlias(query.OrderBy, query.OrderDirection, "ls")
-	}
+	// Keep the initial group window and JSON aggregation in the exact same stable
+	// order used by subsequent per-group pages.
+	rowNumberOrder := orderByClause
+	jsonAggOrder := r.buildOrderByClauseWithAlias(query.OrderBy, query.OrderDirection, "ls")
 
 	// Build the join clauses for categories filter
 	var joinClauses string
@@ -2090,14 +2066,14 @@ func (r *repo) buildOrderByClauseWithAlias(orderBy, orderDirection, tableAlias s
 			WHEN 'Low' THEN 4
 			WHEN 'No Priority' THEN 5
 			ELSE 6
-		END %s, %s.created_at DESC`, tableAlias, direction, tableAlias)
+		END %s, %s.created_at DESC, %s.id ASC`, tableAlias, direction, tableAlias, tableAlias)
 	case "deadline":
 		// Handle NULL values efficiently - put them last for both ASC and DESC
 		direction := "ASC"
 		if orderDirection == "desc" {
 			direction = "DESC"
 		}
-		return fmt.Sprintf("%s.end_date %s NULLS LAST, %s.created_at DESC", tableAlias, direction, tableAlias)
+		return fmt.Sprintf("%s.end_date %s NULLS LAST, %s.created_at DESC, %s.id ASC", tableAlias, direction, tableAlias, tableAlias)
 	case "completed":
 		// Completed work is ordered by the transition timestamp, not by later edits.
 		// Keep incomplete rows last if an internal caller does not also filter them out.
@@ -2121,7 +2097,7 @@ func (r *repo) buildOrderByClauseWithAlias(orderBy, orderDirection, tableAlias s
 		direction = "ASC"
 	}
 
-	return fmt.Sprintf("%s %s", column, direction)
+	return fmt.Sprintf("%s %s, %s.id ASC", column, direction, tableAlias)
 }
 
 // buildQueryParams builds the parameter map for the SQL query

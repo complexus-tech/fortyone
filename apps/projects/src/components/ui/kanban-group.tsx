@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
+import type { IntersectionObserverHookRootRefCallback } from "react-intersection-observer-hook";
 import { cn } from "lib";
 import { Box, Button, Skeleton } from "ui";
 import { PlusIcon } from "icons";
 import type {
+  Story,
   StoryGroup,
   StoryPriority,
   GroupStoryParams,
@@ -25,10 +27,12 @@ import { groupFilters } from "./group-filters";
 const List = ({
   children,
   id,
+  scrollRootRef,
   totalStories,
 }: {
   children: ReactNode;
   id: string | number;
+  scrollRootRef: IntersectionObserverHookRootRefCallback;
   totalStories: number;
 }) => {
   const { viewOptions } = useBoard();
@@ -36,23 +40,26 @@ const List = ({
   const { isOver, setNodeRef } = useDroppable({
     id,
   });
+
   return (
     <Box
-      className={cn("h-full min-h-0", {
+      className={cn("h-full min-h-0 w-[340px] shrink-0", {
         hidden: totalStories === 0 && !showEmptyGroups,
       })}
     >
       <div
-        className={cn(
-          "flex h-full min-h-0 w-[340px] flex-col gap-3 overflow-y-auto overscroll-contain rounded-md pb-6 transition",
-          {
-            "bg-surface-muted/50": totalStories === 0,
-            "bg-surface-muted": isOver,
-          },
-        )}
+        className={cn("h-full min-h-0 w-[340px] rounded-md transition", {
+          "bg-surface-muted/50": totalStories === 0,
+          "bg-surface-muted": isOver,
+        })}
         ref={setNodeRef}
       >
-        {children}
+        <div
+          className="flex h-full min-h-0 w-full flex-col gap-3 overflow-y-auto overscroll-y-contain rounded-md pb-6"
+          ref={scrollRootRef}
+        >
+          {children}
+        </div>
       </div>
     </Box>
   );
@@ -77,13 +84,6 @@ export const KanbanGroup = ({
   const { newStoryDefaults } = useBoard();
   const [isOpen, setIsOpen] = useState(false);
 
-  const getId = () => {
-    if (groupBy === "status") return status?.id;
-    if (groupBy === "assignee") return member?.id;
-    return priority;
-  };
-
-  const id = getId() || "";
   const [storyId, setStoryId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -92,6 +92,7 @@ export const KanbanGroup = ({
     ...groupFilters(meta),
     groupBy,
   };
+  const paginationScope = JSON.stringify(params);
 
   const {
     data: infiniteData,
@@ -100,32 +101,60 @@ export const KanbanGroup = ({
     isFetchingNextPage,
   } = useGroupStoriesInfinite(params, group);
 
-  const allStories = infiniteData.pages.flatMap((page) => page.stories);
+  const uniqueStories = new Map<string, Story>();
+  for (const page of infiniteData.pages) {
+    for (const story of page.stories) {
+      uniqueStories.set(story.id, story);
+    }
+  }
+  const allStories = Array.from(uniqueStories.values());
 
-  const [triggerRef, { entry }] = useIntersectionObserver({
+  const [triggerRef, { entry, rootRef }] = useIntersectionObserver({
     threshold: 0,
-    rootMargin: "300px",
+    rootMargin: "0px 0px 300px",
   });
+  const lastRequestRef = useRef<{
+    entry: IntersectionObserverEntry;
+    paginationScope: string;
+  } | null>(null);
 
   useEffect(() => {
-    if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    if (!entry?.isIntersecting) {
+      lastRequestRef.current = null;
+      return;
     }
-  }, [entry?.isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+    if (
+      (lastRequestRef.current?.entry === entry &&
+        lastRequestRef.current.paginationScope === paginationScope) ||
+      !hasNextPage ||
+      isFetchingNextPage
+    ) {
+      return;
+    }
+
+    lastRequestRef.current = { entry, paginationScope };
+    void fetchNextPage();
+  }, [entry, fetchNextPage, hasNextPage, isFetchingNextPage, paginationScope]);
 
   const handleNavigate = (newStoryId: string) => {
     setStoryId(newStoryId);
   };
 
   return (
-    <List id={id} key={id} totalStories={allStories.length}>
+    <List
+      id={group.key}
+      key={group.key}
+      scrollRootRef={rootRef}
+      totalStories={allStories.length}
+    >
       {allStories.map((story) => (
         <StoryCard
           handleStoryClick={(storyId) => {
             setStoryId(storyId);
             setIsDialogOpen(true);
           }}
-          key={`${story.id}-${story.title.slice(0, 10)}`}
+          key={story.id}
           story={story}
         />
       ))}

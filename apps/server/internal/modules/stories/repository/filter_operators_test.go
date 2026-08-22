@@ -100,10 +100,16 @@ func TestAssigneeGroupsAreRestrictedToFilteredAssignees(t *testing.T) {
 func TestOrderDirectionIsAppliedToSelectedField(t *testing.T) {
 	repository := &repo{}
 
-	if got := repository.buildOrderByClause("created", "asc"); got != "s.created_at ASC" {
+	if got := repository.buildOrderByClause("created", "asc"); got != "s.created_at ASC, s.id ASC" {
 		t.Fatalf("expected ascending created order, got %q", got)
 	}
-	if got := repository.buildOrderByClause("deadline", "desc"); !strings.Contains(got, "s.end_date DESC") {
+	if got := repository.buildOrderByClause("updated", "desc"); got != "s.updated_at DESC, s.id ASC" {
+		t.Fatalf("expected descending updated order, got %q", got)
+	}
+	if got := repository.buildOrderByClause("priority", "desc"); !strings.HasSuffix(got, "s.created_at DESC, s.id ASC") {
+		t.Fatalf("expected stable descending priority order, got %q", got)
+	}
+	if got := repository.buildOrderByClause("deadline", "desc"); got != "s.end_date DESC NULLS LAST, s.created_at DESC, s.id ASC" {
 		t.Fatalf("expected descending deadline order, got %q", got)
 	}
 	if got := repository.buildOrderByClause("completed", "desc"); got != "s.completed_at DESC NULLS LAST, s.created_at DESC, s.id ASC" {
@@ -111,6 +117,24 @@ func TestOrderDirectionIsAppliedToSelectedField(t *testing.T) {
 	}
 	if got := repository.buildOrderByClauseWithAlias("completed", "asc", "ls"); got != "ls.completed_at ASC NULLS LAST, ls.created_at DESC, ls.id ASC" {
 		t.Fatalf("expected ascending aliased completion order, got %q", got)
+	}
+	if got := repository.buildOrderByClauseWithAlias("created", "desc", "ls"); got != "ls.created_at DESC, ls.id ASC" {
+		t.Fatalf("expected stable aliased created order, got %q", got)
+	}
+}
+
+func TestPaginatedStoryOrderClausesHaveStableIDTieBreaker(t *testing.T) {
+	repository := &repo{}
+
+	for _, alias := range []string{"s", "ls"} {
+		for _, orderBy := range []string{"created", "updated", "priority", "deadline"} {
+			t.Run(alias+"_"+orderBy, func(t *testing.T) {
+				got := repository.buildOrderByClauseWithAlias(orderBy, "desc", alias)
+				if !strings.HasSuffix(got, alias+".id ASC") {
+					t.Fatalf("expected %s order to end with a stable story ID tie-breaker, got %q", orderBy, got)
+				}
+			})
+		}
 	}
 }
 

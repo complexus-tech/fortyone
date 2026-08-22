@@ -18,6 +18,7 @@ export const groupFilters = (meta: GroupedStoriesResponse["meta"]) => {
     // page?: number;
     // pageSize?: number;
     assignedToMe: meta.filters.assignedToMe ?? undefined,
+    collaboratingWithMe: meta.filters.collaboratingWithMe ?? undefined,
     createdByMe: meta.filters.createdByMe ?? undefined,
     reporterIds: meta.filters.reporterIds ?? undefined,
     excludedReporterIds: meta.filters.excludedReporterIds ?? undefined,

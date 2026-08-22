@@ -86,7 +86,7 @@ export const StoriesKanbanHeader = ({
 
   return (
     <Box
-      className={cn({
+      className={cn("w-[340px] shrink-0", {
         hidden: group.loadedCount === 0 && !showEmptyGroups,
       })}
     >

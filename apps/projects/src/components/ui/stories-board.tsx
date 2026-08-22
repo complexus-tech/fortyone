@@ -304,7 +304,7 @@ export const StoriesBoard = ({
   return (
     <BoardContext.Provider value={boardContextValue}>
       <Box
-        className={cn("min-h-0", {
+        className={cn("min-h-0 w-full min-w-0", {
           "h-full overflow-hidden": !isInSearch,
         })}
       >
