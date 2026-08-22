@@ -40,7 +40,7 @@ export const WorkspaceStrategyMapPage = () => {
 
   return (
     <>
-      <HeaderContainer className="bg-surface-muted/20 dark:bg-surface-elevated/20 justify-between backdrop-blur-xl">
+      <HeaderContainer className="justify-between">
         <Flex gap={2}>
           <MobileMenuButton />
           <BreadCrumbs

@@ -9,7 +9,7 @@ import {
 const SKELETON_CANVAS_WIDTH = 1400;
 
 const cardClassName =
-  "border-border-strong/45 bg-white/70 dark:border-border-strong/65 dark:bg-surface-elevated/45 absolute rounded-[14px] border-2 backdrop-blur";
+  "border-border-strong/45 bg-white/70 dark:border-border-strong/65 dark:bg-surface-elevated/45 absolute rounded-xl border-2 backdrop-blur";
 
 const GoalSkeleton = () => (
   <Box
