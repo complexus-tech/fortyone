@@ -114,11 +114,11 @@ export const Overview = () => {
   });
 
   return (
-    <>
-      <Box className="hidden md:block">
+    <Box className="h-full min-h-0 overflow-hidden">
+      <Box className="hidden h-full min-h-0 md:block">
         <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
           <BoardDividedPanel.MainPanel>
-            <Container className="h-[calc(100dvh-7.7rem)] overflow-y-auto pt-6">
+            <Container className="h-full min-h-0 overflow-y-auto pt-6">
               <Box>
                 <Flex align="start" gap={6} justify="between">
                   <TextEditor
@@ -211,16 +211,13 @@ export const Overview = () => {
               <Activity viewport="desktop" />
             </Container>
           </BoardDividedPanel.MainPanel>
-          <BoardDividedPanel.SideBar
-            className="h-[calc(100dvh-7.7rem)]"
-            isExpanded
-          >
-            <Sidebar className="h-[calc(100dvh-7.7rem)] overflow-y-auto" />
+          <BoardDividedPanel.SideBar className="h-full min-h-0" isExpanded>
+            <Sidebar className="h-full min-h-0 overflow-y-auto" />
           </BoardDividedPanel.SideBar>
         </BoardDividedPanel>
       </Box>
-      <Box className="md:hidden">
-        <Container className="h-[calc(100dvh-7.7rem)] overflow-y-auto pt-6">
+      <Box className="h-full min-h-0 md:hidden">
+        <Container className="h-full min-h-0 overflow-y-auto pt-6">
           <Box>
             <Flex align="center" gap={6} justify="between">
               <TextEditor
@@ -300,6 +297,6 @@ export const Overview = () => {
         onConfirm={handleDelete}
         title={`Delete ${getTermDisplay("objectiveTerm")}`}
       />
-    </>
+    </Box>
   );
 };

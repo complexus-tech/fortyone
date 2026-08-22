@@ -16,6 +16,14 @@
 
 :root {
   --nprogress-color: var(--color-primary);
+  --app-shell-header-height: 4.5rem;
+  --app-content-inset: 0.75rem;
+  --app-content-canvas-height: 100dvh;
+  --app-page-header-height: 3.6rem;
+  --app-filter-bar-height: 3.6rem;
+  --app-page-content-height: calc(
+    var(--app-content-canvas-height) - var(--app-page-header-height)
+  );
   --sidebar-width: 16rem;
   --sidebar-width-collapsed: 7rem;
   --story-sidebar-width: 24rem;
@@ -56,8 +64,10 @@ html:has(.onboarding-layout) :is(input, textarea, select) {
 }
 
 @media (min-width: 768px) {
-  [data-app-content-canvas] [data-body-container] {
-    height: calc(100% - 3.6rem) !important;
+  :root {
+    --app-content-canvas-height: calc(
+      100dvh - var(--app-shell-header-height) - var(--app-content-inset)
+    );
   }
 }
 

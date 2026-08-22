@@ -38,8 +38,6 @@ import {
   ArrowDown2Icon,
   CalendarIcon,
   CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   CloseIcon,
   ClockIcon,
   DeleteIcon,
@@ -49,7 +47,7 @@ import {
   TimeScheduleIcon,
   Video02Icon,
 } from "icons";
-import { Box, Button, Dialog, Flex, Input, Menu, Popover, Text } from "ui";
+import { Box, Button, Dialog, Flex, Input, Popover, Text } from "ui";
 import { MicrosoftIcon } from "@/components/ui";
 import { SmartDateTimeRangeInput } from "@/components/ui/smart-datetime-input";
 import { useLocalStorage, useTerminology, useWorkspacePath } from "@/hooks";
@@ -114,6 +112,7 @@ import {
 } from "./calendar-view";
 import type { CalendarView } from "./calendar-view";
 import { CalendarGridSkeleton } from "./calendar-skeleton";
+import { CalendarHeader } from "./header";
 
 const defaultVisibleStartHour = 8;
 const defaultVisibleEndHour = 24;
@@ -124,7 +123,6 @@ const twoLineTitleMinimumHeight = hourHeight * 1.5;
 const timeRailWidth = 8;
 const calendarHistoryDays = 7;
 const calendarLookaheadDays = 90;
-const calendarViews = ["day", "week", "month"] as const;
 const scheduledTaskBackgroundClass =
   "bg-surface-muted dark:bg-surface-prominent/65";
 const scheduledTaskHoverBackgroundClass =
@@ -1232,117 +1230,6 @@ const CalendarDialog = ({
   );
 };
 
-const CalendarToolbar = ({
-  canNavigateNext,
-  canNavigatePrevious,
-  currentView,
-  onFocus,
-  onNext,
-  onPrevious,
-  onToday,
-  onViewChange,
-  title,
-}: {
-  canNavigateNext: boolean;
-  canNavigatePrevious: boolean;
-  currentView: CalendarView;
-  onFocus: () => void;
-  onNext: () => void;
-  onPrevious: () => void;
-  onToday: () => void;
-  onViewChange: (view: CalendarView) => void;
-  title: string;
-}) => (
-  <Flex
-    align="center"
-    className="border-border/70 h-16 shrink-0 gap-5 overflow-x-auto border-b px-5 py-3"
-    justify="between"
-  >
-    <Flex align="center" className="shrink-0" gap={3}>
-      <Flex align="center" gap={1}>
-        <Button
-          aria-label={`Previous ${currentView}`}
-          asIcon
-          className="focus-visible:ring-primary/40 focus-visible:ring-2"
-          color="tertiary"
-          disabled={!canNavigatePrevious}
-          onClick={onPrevious}
-          size="sm"
-          variant="naked"
-        >
-          <ChevronLeftIcon className="h-5" />
-        </Button>
-        <Button
-          aria-label={`Next ${currentView}`}
-          asIcon
-          className="focus-visible:ring-primary/40 focus-visible:ring-2"
-          color="tertiary"
-          disabled={!canNavigateNext}
-          onClick={onNext}
-          size="sm"
-          variant="naked"
-        >
-          <ChevronRightIcon className="h-5" />
-        </Button>
-      </Flex>
-      <Text
-        as="h2"
-        className="whitespace-nowrap"
-        fontSize="xl"
-        fontWeight="medium"
-      >
-        {title}
-      </Text>
-    </Flex>
-    <Flex align="center" className="shrink-0" gap={2}>
-      <Button color="tertiary" onClick={onToday} size="sm">
-        Today
-      </Button>
-      <Menu>
-        <Menu.Button>
-          <Button
-            className="justify-between capitalize"
-            color="tertiary"
-            rightIcon={<ArrowDown2Icon className="h-4" />}
-            size="sm"
-            variant="outline"
-          >
-            {currentView}
-          </Button>
-        </Menu.Button>
-        <Menu.Items align="end" className="w-36">
-          <Menu.Group>
-            {calendarViews.map((view) => (
-              <Menu.Item
-                active={currentView === view}
-                className="py-2.5 text-base capitalize"
-                key={view}
-                onSelect={() => {
-                  onViewChange(view);
-                }}
-              >
-                {view}
-              </Menu.Item>
-            ))}
-          </Menu.Group>
-        </Menu.Items>
-      </Menu>
-      <span className="text-text-secondary mx-1 hidden opacity-40 md:inline">
-        |
-      </span>
-      <Button
-        color="tertiary"
-        leftIcon={<TimeScheduleIcon className="h-[1.1rem]" strokeWidth={2} />}
-        onClick={onFocus}
-        size="sm"
-        variant="outline"
-      >
-        Block focus time
-      </Button>
-    </Flex>
-  </Flex>
-);
-
 const getCalendarProviderName = (connection?: CalendarConnection) =>
   connection?.provider === "microsoft" ? "Outlook Calendar" : "Google Calendar";
 
@@ -2340,142 +2227,145 @@ export const PersonalCalendar = ({
   };
 
   return (
-    <Box className="flex h-[calc(100%-3.6rem)] min-h-0 flex-col overflow-hidden">
-      <CalendarNotices
-        canReadEventDetails={canReadEventDetails}
-        conflictCount={conflictingBlocks.length}
-        connectHref={withWorkspace("/settings/account/calendar")}
-        connection={connection}
-        hasIntegrationError={integrationQuery.isError}
-        isIntegrationPending={integrationQuery.isPending}
-        isReconnectPending={createConnectSession.isPending}
-        isSyncing={syncCalendar.isPending}
-        onReconnect={() => {
-          if (!connection) {
-            return;
-          }
-
-          createConnectSession.mutate(
-            connection.provider === "microsoft" ? "microsoft" : "google",
-          );
+    <Box className="flex h-full min-h-0 flex-col overflow-hidden">
+      <CalendarHeader
+        canNavigateNext={canNavigateNext}
+        canNavigatePrevious={canNavigatePrevious}
+        currentView={calendarView}
+        onFocus={() => {
+          openDialog("focus");
         }}
-        onSync={syncConnection}
+        onNext={() => {
+          if (canNavigateNext) setCursor(nextCursor);
+        }}
+        onPrevious={() => {
+          if (canNavigatePrevious) setCursor(previousCursor);
+        }}
+        onSchedule={() => {
+          onScheduleDialogOpenChange(true);
+        }}
+        onToday={() => {
+          setCursor(new Date());
+        }}
+        onViewChange={setCalendarView}
+        title={getCalendarViewTitle(cursor, calendarView)}
       />
-
       <Box className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <CalendarToolbar
-          canNavigateNext={canNavigateNext}
-          canNavigatePrevious={canNavigatePrevious}
-          currentView={calendarView}
-          onFocus={() => {
-            openDialog("focus");
-          }}
-          onNext={() => {
-            if (canNavigateNext) setCursor(nextCursor);
-          }}
-          onPrevious={() => {
-            if (canNavigatePrevious) setCursor(previousCursor);
-          }}
-          onToday={() => {
-            setCursor(new Date());
-          }}
-          onViewChange={setCalendarView}
-          title={getCalendarViewTitle(cursor, calendarView)}
-        />
+        <CalendarNotices
+          canReadEventDetails={canReadEventDetails}
+          conflictCount={conflictingBlocks.length}
+          connectHref={withWorkspace("/settings/account/calendar")}
+          connection={connection}
+          hasIntegrationError={integrationQuery.isError}
+          isIntegrationPending={integrationQuery.isPending}
+          isReconnectPending={createConnectSession.isPending}
+          isSyncing={syncCalendar.isPending}
+          onReconnect={() => {
+            if (!connection) {
+              return;
+            }
 
-        {hasCalendarLoadError ? (
-          <Box
-            className="flex min-h-0 flex-1 items-center justify-center px-6 py-12 text-center"
-            role="alert"
-          >
-            <Box className="flex flex-col items-center">
-              <Text fontSize="md" fontWeight="semibold">
-                Couldn&apos;t load your calendar
-              </Text>
-              <Text className="mt-1" color="muted" fontSize="md">
-                Your calendar data is still safe. Try loading this view again.
-              </Text>
-              <Button
-                className="mt-4 text-base"
-                color="tertiary"
-                loading={
-                  scheduleQuery.isFetching || integrationQuery.isFetching
-                }
-                onClick={() => {
-                  void Promise.all([
-                    scheduleQuery.refetch(),
-                    integrationQuery.refetch(),
-                  ]);
-                }}
-                variant="outline"
-              >
-                Try again
-              </Button>
+            createConnectSession.mutate(
+              connection.provider === "microsoft" ? "microsoft" : "google",
+            );
+          }}
+          onSync={syncConnection}
+        />
+        <Box className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {hasCalendarLoadError ? (
+            <Box
+              className="flex min-h-0 flex-1 items-center justify-center px-6 py-12 text-center"
+              role="alert"
+            >
+              <Box className="flex flex-col items-center">
+                <Text fontSize="md" fontWeight="semibold">
+                  Couldn&apos;t load your calendar
+                </Text>
+                <Text className="mt-1" color="muted" fontSize="md">
+                  Your calendar data is still safe. Try loading this view again.
+                </Text>
+                <Button
+                  className="mt-4 text-base"
+                  color="tertiary"
+                  loading={
+                    scheduleQuery.isFetching || integrationQuery.isFetching
+                  }
+                  onClick={() => {
+                    void Promise.all([
+                      scheduleQuery.refetch(),
+                      integrationQuery.refetch(),
+                    ]);
+                  }}
+                  variant="outline"
+                >
+                  Try again
+                </Button>
+              </Box>
             </Box>
-          </Box>
-        ) : null}
-        {!hasCalendarLoadError && isCalendarInitialLoading ? (
-          <CalendarGridSkeleton view={calendarView} />
-        ) : null}
-        {!hasCalendarLoadError &&
-        !isCalendarInitialLoading &&
-        calendarView === "month" ? (
-          <CalendarMonthGrid
-            calendarItems={calendarItems}
-            cursor={cursor}
-            days={days}
-            isDaySelectable={isDaySelectable}
-            onEdit={openBlock}
-            onSelectDay={selectDay}
-            onSelectEvent={openEventDetails}
-            today={today}
-          />
-        ) : null}
-        {!hasCalendarLoadError &&
-        !isCalendarInitialLoading &&
-        calendarView !== "month" ? (
-          <CalendarTimeGrid
-            allDayEvents={allDayEvents}
-            days={days}
-            hours={hours}
-            isDaySelectable={isDaySelectable}
-            isManualChangePending={manualReschedule.isPending}
-            onEdit={openBlock}
-            onManualChange={handleManualCalendarChange}
-            onSelectDay={selectDay}
-            onSelectEvent={openEventDetails}
-            timeZoneLabel={timeZoneLabel}
-            timeZoneName={timeZoneName}
-            timedCalendarItems={timedCalendarItems}
-            today={today}
-            visibleEndHour={visibleEndHour}
-            visibleStartHour={visibleStartHour}
-          />
-        ) : null}
-      </Box>
+          ) : null}
+          {!hasCalendarLoadError && isCalendarInitialLoading ? (
+            <CalendarGridSkeleton view={calendarView} />
+          ) : null}
+          {!hasCalendarLoadError &&
+          !isCalendarInitialLoading &&
+          calendarView === "month" ? (
+            <CalendarMonthGrid
+              calendarItems={calendarItems}
+              cursor={cursor}
+              days={days}
+              isDaySelectable={isDaySelectable}
+              onEdit={openBlock}
+              onSelectDay={selectDay}
+              onSelectEvent={openEventDetails}
+              today={today}
+            />
+          ) : null}
+          {!hasCalendarLoadError &&
+          !isCalendarInitialLoading &&
+          calendarView !== "month" ? (
+            <CalendarTimeGrid
+              allDayEvents={allDayEvents}
+              days={days}
+              hours={hours}
+              isDaySelectable={isDaySelectable}
+              isManualChangePending={manualReschedule.isPending}
+              onEdit={openBlock}
+              onManualChange={handleManualCalendarChange}
+              onSelectDay={selectDay}
+              onSelectEvent={openEventDetails}
+              timeZoneLabel={timeZoneLabel}
+              timeZoneName={timeZoneName}
+              timedCalendarItems={timedCalendarItems}
+              today={today}
+              visibleEndHour={visibleEndHour}
+              visibleStartHour={visibleStartHour}
+            />
+          ) : null}
+        </Box>
 
-      {activeDialogMode ? (
-        <CalendarDialog
-          candidateStories={candidateStories}
-          editingBlock={editingBlock}
-          isOpen
-          mode={activeDialogMode}
-          onOpenChange={closeDialog}
+        {activeDialogMode ? (
+          <CalendarDialog
+            candidateStories={candidateStories}
+            editingBlock={editingBlock}
+            isOpen
+            mode={activeDialogMode}
+            onOpenChange={closeDialog}
+          />
+        ) : null}
+        <CalendarEventDetailsDialog
+          event={selectedEvent}
+          onOpenChange={(open) => {
+            if (!open) setSelectedEvent(null);
+          }}
         />
-      ) : null}
-      <CalendarEventDetailsDialog
-        event={selectedEvent}
-        onOpenChange={(open) => {
-          if (!open) setSelectedEvent(null);
-        }}
-      />
-      <CalendarScheduleBlockDetailsDialog
-        block={selectedBlock}
-        onEdit={openEditDialog}
-        onOpenChange={(open) => {
-          if (!open) setSelectedBlock(null);
-        }}
-      />
+        <CalendarScheduleBlockDetailsDialog
+          block={selectedBlock}
+          onEdit={openEditDialog}
+          onOpenChange={(open) => {
+            if (!open) setSelectedBlock(null);
+          }}
+        />
+      </Box>
     </Box>
   );
 };

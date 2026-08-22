@@ -714,8 +714,8 @@ const FeedbackProperties = ({
 };
 
 const FeedbackDetailsSkeleton = () => (
-  <Box className="h-dvh">
-    <Box className="notification-story-container flex h-full">
+  <Box className="h-full min-h-0">
+    <Box className="notification-story-container flex h-full min-h-0 overflow-hidden">
       <Box className="min-w-0 flex-1 px-8 py-7">
         <Skeleton className="mb-8 h-14 w-full rounded-xl" />
         <Skeleton className="mb-7 h-10 w-2/5 rounded" />
@@ -779,7 +779,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
 
   if (isError) {
     return (
-      <Box className="flex h-dvh items-center justify-center px-6">
+      <Box className="flex h-full items-center justify-center px-6">
         <Box>
           <Text align="center" className="mb-2" fontSize="xl">
             Couldn&apos;t load feedback
@@ -857,10 +857,10 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
   };
 
   return (
-    <Box className="h-dvh">
-      <Box className="notification-story-container flex h-full">
-        <Box className="min-w-0 flex-1">
-          <BodyContainer className="h-dvh overflow-y-auto pb-8">
+    <Box className="h-full min-h-0">
+      <Box className="notification-story-container flex h-full min-h-0 overflow-hidden">
+        <Box className="min-h-0 min-w-0 flex-1">
+          <BodyContainer className="h-full min-h-0 overflow-y-auto pb-8">
             <Container className="max-w-7xl pt-7">
               <Button
                 className="mb-4 md:hidden"
@@ -948,7 +948,7 @@ export const TeamFeedbackDetails = ({ feedbackId }: { feedbackId: string }) => {
             </Container>
           </BodyContainer>
         </Box>
-        <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px] bg-linear-to-br md:h-dvh md:overflow-y-auto md:pb-6">
+        <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border h-full min-h-0 w-(--story-sidebar-width) shrink-0 overflow-y-auto border-l-[0.5px] bg-linear-to-br pb-6">
           <FeedbackProperties
             authorProfileHref={authorProfileHref}
             feedback={feedback}

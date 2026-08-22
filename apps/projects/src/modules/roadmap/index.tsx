@@ -21,15 +21,13 @@ import {
   DEFAULT_OBJECTIVE_VIEW_OPTIONS,
   type ObjectiveViewOptions,
 } from "./objective-board-utils";
-import type { RoadmapLayoutType } from "./types";
+import { getRoadmapLayoutLabel } from "./types";
+import { useRoadmapLayout } from "./use-roadmap-layout";
 
 export const RoadmapPage = () => {
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
-  const [layout, setLayout] = useLocalStorage<RoadmapLayoutType>(
-    "objectivesLayout",
-    "gantt",
-  );
+  const { layout, setLayout } = useRoadmapLayout();
   const { data: objectives = [], isPending } = useObjectives();
   const [showForecastRisksOnly, setShowForecastRisksOnly] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -100,6 +98,9 @@ export const RoadmapPage = () => {
             breadCrumbs={[
               {
                 name: "Roadmap",
+              },
+              {
+                name: getRoadmapLayoutLabel(layout),
               },
             ]}
           />

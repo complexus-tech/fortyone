@@ -127,7 +127,7 @@ export const CommentInput = ({
   return (
     <Flex
       className={cn(
-        "border-border/40 bg-surface-muted/40 ml-1 min-h-24 w-full rounded-2xl border px-4 pb-4",
+        "border-border/40 bg-surface-muted/40 ml-1 min-h-24 w-full rounded-xl border px-4 pb-4",
         className,
       )}
       direction="column"

@@ -8,7 +8,7 @@ export const ObjectivesSkeleton = ({ isInTeam }: { isInTeam?: boolean }) => {
   return (
     <>
       <ObjectivesHeader />
-      <BodyContainer className="h-[calc(100dvh-3.7rem)]">
+      <BodyContainer>
         <TableHeader isInTeam={isInTeam} />
         {Array.from({ length: 8 }).map((_, index) => (
           <RowWrapper

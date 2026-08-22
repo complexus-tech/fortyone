@@ -17,7 +17,7 @@ export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
             <Box className="hidden md:block">
               <Sidebar />
             </Box>
-            <Box className="h-dvh min-w-0 flex-1 md:h-full md:pr-[10px] md:pb-[10px] md:pl-2">
+            <Box className="h-dvh min-w-0 flex-1 md:h-full md:pr-(--app-content-inset) md:pb-(--app-content-inset) md:pl-2">
               <Box
                 className="border-border bg-background h-full min-w-0 overflow-hidden md:rounded-xl md:border-[0.5px]"
                 data-app-content-canvas

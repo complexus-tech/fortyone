@@ -155,6 +155,7 @@ export const TeamFeedbackHeader = ({
           </Menu.Items>
         </Menu>
       }
+      className="border-border"
       initialValue={search}
       key={search}
       label="Search feedback"

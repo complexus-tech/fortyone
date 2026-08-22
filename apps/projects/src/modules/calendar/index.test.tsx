@@ -8,13 +8,25 @@ jest.mock("next/dynamic", () => ({
   default: () =>
     function MockPersonalCalendar({
       isScheduleDialogOpen,
+      onScheduleDialogOpenChange,
     }: {
       isScheduleDialogOpen: boolean;
+      onScheduleDialogOpenChange: (open: boolean) => void;
     }) {
       return (
-        <div data-testid="personal-calendar">
-          {isScheduleDialogOpen ? "Schedule open" : "Schedule closed"}
-        </div>
+        <>
+          <div data-testid="personal-calendar">
+            {isScheduleDialogOpen ? "Schedule open" : "Schedule closed"}
+          </div>
+          <button
+            onClick={() => {
+              onScheduleDialogOpenChange(true);
+            }}
+            type="button"
+          >
+            Schedule task
+          </button>
+        </>
       );
     },
 }));
@@ -24,16 +36,8 @@ jest.mock("ui", () => ({
   Skeleton: () => null,
 }));
 
-jest.mock("./components/header", () => ({
-  CalendarHeader: ({ onSchedule }: { onSchedule: () => void }) => (
-    <button onClick={onSchedule} type="button">
-      Schedule task
-    </button>
-  ),
-}));
-
 describe("CalendarPage", () => {
-  it("opens scheduling from the standalone page header", () => {
+  it("passes scheduling state to the calendar", () => {
     render(<CalendarPage />);
 
     expect(screen.getByTestId("personal-calendar")).toHaveTextContent(

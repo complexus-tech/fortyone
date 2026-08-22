@@ -12,7 +12,10 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole, useTerminology, useMediaQuery } from "@/hooks";
 import { ObjectiveViewOptionsButton } from "@/modules/roadmap/components/objective-view-options-button";
 import type { ObjectiveViewOptions } from "@/modules/roadmap/objective-board-utils";
-import type { RoadmapLayoutType } from "@/modules/roadmap/types";
+import {
+  getRoadmapLayoutLabel,
+  type RoadmapLayoutType,
+} from "@/modules/roadmap/types";
 
 export const TeamObjectivesHeader = ({
   layout,
@@ -56,6 +59,9 @@ export const TeamObjectivesHeader = ({
                 variant: "plural",
                 capitalize: true,
               }),
+            },
+            {
+              name: getRoadmapLayoutLabel(layout),
             },
           ]}
         />

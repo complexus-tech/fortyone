@@ -95,15 +95,25 @@ describe("Roadmap objective list selection", () => {
   });
 
   it("reuses roadmap views for team-scoped objectives", () => {
+    const roadmapSource = readSource("src/modules/roadmap/index.tsx");
+    const layoutStateSource = readSource(
+      "src/modules/roadmap/use-roadmap-layout.ts",
+    );
     const teamObjectivesSource = readSource("src/modules/objectives/index.tsx");
     const teamHeaderSource = readSource(
       "src/modules/objectives/components/team-header.tsx",
     );
 
+    expect(roadmapSource).toContain("getRoadmapLayoutLabel(layout)");
+    expect(roadmapSource).toContain("useRoadmapLayout()");
+    expect(layoutStateSource).toContain('useQueryState(\n    "view"');
+    expect(layoutStateSource).toContain('history: "push"');
     expect(teamObjectivesSource).toContain("useTeamObjectives(teamId)");
     expect(teamObjectivesSource).toContain("<ObjectiveViews");
+    expect(teamObjectivesSource).toContain("useRoadmapLayout()");
     expect(teamHeaderSource).toContain("<RoadmapLayoutSwitcher");
     expect(teamHeaderSource).toContain("<ObjectiveViewOptionsButton");
+    expect(teamHeaderSource).toContain("getRoadmapLayoutLabel(layout)");
   });
 
   it("keeps linked work in details rather than the edit dialog", () => {

@@ -126,14 +126,16 @@ export const Navigation = ({
           aria-current={isActive ? "page" : undefined}
           aria-label={name}
           className={cn(
-            "hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary",
-            isActive && "bg-primary/5 text-primary [&_svg]:text-primary",
+            "hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary relative",
+            isActive &&
+              "bg-primary/5 text-primary before:bg-primary [&_svg]:text-primary before:absolute before:top-1/2 before:w-1 before:-translate-y-1/2 before:rounded-r-full",
+            isActive &&
+              (isCollapsed
+                ? "before:-left-3 before:h-10"
+                : "before:-left-4 before:h-[30px]"),
             isCollapsed &&
-              "relative min-h-14 flex-col justify-center gap-1 px-1 py-2 text-center",
+              "min-h-14 flex-col justify-center gap-1 px-1 py-2 text-center",
             isCollapsed && "[&_svg]:!h-5.5 [&_svg]:!w-auto",
-            isCollapsed &&
-              isActive &&
-              "before:bg-primary before:absolute before:top-1/2 before:-left-3 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",
           )}
           data-nav-ai-assistant={
             href === withWorkspace("/maya") ? "" : undefined

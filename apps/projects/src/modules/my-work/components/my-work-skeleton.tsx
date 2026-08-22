@@ -41,7 +41,7 @@ export const MyWorkSkeleton = ({ layout }: { layout: StoriesLayout }) => {
           <Skeleton className="h-8 w-24 rounded-xl" />
         </Flex>
       </HeaderContainer>
-      <Box className="h-[calc(100%-3.6rem)]">
+      <Box className="h-(--app-page-content-height) min-h-0">
         <BoardSkeleton className="h-full" layout={layout} />
       </Box>
     </>

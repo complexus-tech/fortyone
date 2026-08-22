@@ -1,12 +1,10 @@
 "use client";
-import type { ReactNode } from "react";
-import { Box, Button, Flex, Menu, Text, Tooltip } from "ui";
-import { CommandIcon, DocsIcon, EmailIcon, HelpIcon, PlusIcon } from "icons";
+import { Box, Button, Text, Tooltip } from "ui";
+import { PlusIcon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
 import { addHours, differenceInHours } from "date-fns";
 import { InviteMembersDialog } from "@/components/ui";
-import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useUserRole, useWorkspacePath } from "@/hooks";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
@@ -15,78 +13,8 @@ import { Teams } from "./teams";
 import { SidebarAssistantCards } from "./upcoming-meeting-card";
 import { useSidebar } from "./sidebar-context";
 
-const SidebarFooterActions = ({
-  leadingAction,
-  isCollapsed,
-  onOpenKeyboardShortcuts,
-}: {
-  leadingAction: ReactNode;
-  isCollapsed: boolean;
-  onOpenKeyboardShortcuts: () => void;
-}) => (
-  <Flex
-    align="center"
-    className="mt-3"
-    justify={isCollapsed ? "center" : undefined}
-  >
-    <Box className={cn("min-w-0 flex-1", isCollapsed && "hidden")}>
-      {leadingAction}
-    </Box>
-    <Menu>
-      <Menu.Button>
-        <Button
-          asIcon
-          className={cn(
-            "border-[0.5px]",
-            isCollapsed && "h-12 w-12 px-0 md:h-12",
-          )}
-          color="tertiary"
-          data-help-button
-          rounded="full"
-          variant="naked"
-        >
-          <HelpIcon className={cn("h-6", isCollapsed && "h-7")} />
-        </Button>
-      </Menu.Button>
-      <Menu.Items align="end">
-        <Menu.Group>
-          <Menu.Item onSelect={onOpenKeyboardShortcuts}>
-            <CommandIcon />
-            Keyboard shortcuts
-          </Menu.Item>
-          <Menu.Item
-            onSelect={() => {
-              window.open(
-                "mailto:hello@complexus.tech",
-                "_blank",
-                "noopener,noreferrer",
-              );
-            }}
-          >
-            <EmailIcon />
-            Contact support
-          </Menu.Item>
-          <Menu.Item
-            onSelect={() => {
-              window.open(
-                "https://docs.fortyone.app",
-                "_blank",
-                "noopener,noreferrer",
-              );
-            }}
-          >
-            <DocsIcon />
-            Documentation
-          </Menu.Item>
-        </Menu.Group>
-      </Menu.Items>
-    </Menu>
-  </Flex>
-);
-
 export const Sidebar = () => {
   const [isInviteMembersOpen, setIsInviteMembersOpen] = useState(false);
-  const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const { workspace } = useCurrentWorkspace();
   const { withWorkspace } = useWorkspacePath();
   const { isCollapsed } = useSidebar();
@@ -147,10 +75,7 @@ export const Sidebar = () => {
         <span className="line-clamp-1">Invite members</span>
       </button>
     ) : null;
-  const openKeyboardShortcuts = () => {
-    setIsKeyboardShortcutsOpen(true);
-  };
-
+  const sidebarAction = subscriptionAction ?? inviteMembersAction;
   return (
     <Box
       className={cn(
@@ -206,22 +131,15 @@ export const Sidebar = () => {
           ) : (
             <SidebarAssistantCards
               fallback={
-                <SidebarFooterActions
-                  isCollapsed={isCollapsed}
-                  leadingAction={subscriptionAction ?? inviteMembersAction}
-                  onOpenKeyboardShortcuts={openKeyboardShortcuts}
-                />
+                !isCollapsed && sidebarAction ? (
+                  <Box className="mt-3">{sidebarAction}</Box>
+                ) : null
               }
               isCollapsed={isCollapsed}
             />
           )}
         </Box>
       </Box>
-
-      <KeyboardShortcuts
-        isOpen={isKeyboardShortcutsOpen}
-        setIsOpen={setIsKeyboardShortcutsOpen}
-      />
       <InviteMembersDialog
         isOpen={isInviteMembersOpen}
         setIsOpen={setIsInviteMembersOpen}

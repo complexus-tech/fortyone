@@ -101,7 +101,7 @@ export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
   const { filters, resetFilters, setFilters, tab } = useMyWork();
 
   return (
-    <Box className="h-[calc(100%-3.6rem)] overflow-hidden">
+    <Box className="h-(--app-page-content-height) min-h-0 overflow-hidden">
       <Tabs className="flex h-full min-h-0 flex-col" value={tab}>
         <StoriesFilterBar
           filters={filters}

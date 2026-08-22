@@ -91,7 +91,7 @@ export const DocumentsList = () => {
 
   return (
     <Flex
-      className="border-border/70 bg-sidebar/35 h-dvh min-w-0 border-r"
+      className="border-border/70 bg-sidebar/35 h-full min-h-0 min-w-0 overflow-hidden border-r"
       direction="column"
     >
       <ExpandableSearchHeader

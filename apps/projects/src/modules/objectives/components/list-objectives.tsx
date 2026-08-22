@@ -25,7 +25,7 @@ export const ListObjectives = ({
 
   return (
     <BodyContainer
-      className={cn("h-[calc(100dvh-3.7rem)] overflow-x-auto", {
+      className={cn("overflow-x-auto", {
         "h-auto": isInSearch,
       })}
     >

@@ -13,14 +13,14 @@ export const StorySkeleton = ({
 }) => {
   if (bodyOnly) {
     return (
-      <Box>
+      <Box className="h-full min-h-0">
         <MainDetailsSkeleton isDialog={isDialog} />
       </Box>
     );
   }
 
   return (
-    <Box>
+    <Box className="h-full min-h-0">
       <Box
         className={cn("md:hidden", {
           "dark:bg-surface": isDialog,
@@ -28,7 +28,7 @@ export const StorySkeleton = ({
       >
         <MainDetailsSkeleton isDialog={isDialog} />
       </Box>
-      <Box className="hidden md:flex">
+      <Box className="hidden h-full min-h-0 md:flex">
         <Box
           className={cn("min-w-0 flex-1", {
             "dark:bg-surface": isDialog,

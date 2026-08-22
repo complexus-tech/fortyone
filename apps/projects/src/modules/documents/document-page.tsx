@@ -92,7 +92,7 @@ const shouldShowDocumentTextMenu = ({
   !editor.isActive("table");
 
 const DocumentPageSkeleton = () => (
-  <Box className="h-dvh">
+  <Box className="h-full min-h-0">
     <Flex
       align="center"
       className="border-border/70 h-18 border-b px-5"
@@ -254,7 +254,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
 
   if (!document) {
     return (
-      <Flex align="center" className="h-dvh px-8" justify="center">
+      <Flex align="center" className="h-full px-8" justify="center">
         <Box className="max-w-md text-center">
           <Text className="mb-2" fontSize="xl" fontWeight="semibold">
             Document unavailable
@@ -351,7 +351,7 @@ export const DocumentPage = ({ documentId }: { documentId: string }) => {
   };
 
   return (
-    <Flex className="h-dvh min-w-0" direction="column">
+    <Flex className="h-full min-h-0 min-w-0" direction="column">
       <Flex
         align="center"
         className="border-border/70 h-18 shrink-0 border-b px-4 md:px-5"

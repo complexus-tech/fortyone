@@ -67,13 +67,13 @@ export const MayaChat = () => {
   });
 
   return (
-    <>
+    <Box className="flex h-full min-h-0 flex-col overflow-hidden">
       <Header
         currentChatId={currentChatId}
         handleChatSelect={handleChatSelect}
         handleNewChat={handleNewChat}
       />
-      <BodyContainer className="flex flex-col overflow-hidden">
+      <BodyContainer className="flex h-auto min-h-0 flex-1 flex-col overflow-hidden">
         <ChatMessages
           isOnPage
           isVoiceSpeaking={realtimeVoice.isSpeaking}
@@ -129,6 +129,6 @@ export const MayaChat = () => {
         setIsOpen={setIsObjectiveOpen}
       />
       <NewSprintDialog isOpen={isSprintOpen} setIsOpen={setIsSprintOpen} />
-    </>
+    </Box>
   );
 };

@@ -38,13 +38,13 @@ const List = ({
   });
   return (
     <Box
-      className={cn({
+      className={cn("h-full min-h-0", {
         hidden: totalStories === 0 && !showEmptyGroups,
       })}
     >
       <div
         className={cn(
-          "flex h-full w-[340px] flex-col gap-3 overflow-y-auto rounded-md pb-6 transition",
+          "flex h-full min-h-0 w-[340px] flex-col gap-3 overflow-y-auto overscroll-contain rounded-md pb-6 transition",
           {
             "bg-surface-muted/50": totalStories === 0,
             "bg-surface-muted": isOver,

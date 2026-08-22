@@ -4,9 +4,11 @@ import type { FormEvent, ReactNode } from "react";
 import { useState } from "react";
 import { SearchIcon } from "icons";
 import { Button, Flex, Input } from "ui";
+import { cn } from "lib";
 
 type ExpandableSearchHeaderProps = {
   actions?: ReactNode;
+  className?: string;
   initialValue: string;
   label: string;
   leading: ReactNode;
@@ -16,6 +18,7 @@ type ExpandableSearchHeaderProps = {
 
 export const ExpandableSearchHeader = ({
   actions,
+  className,
   initialValue,
   label,
   leading,
@@ -36,7 +39,10 @@ export const ExpandableSearchHeader = ({
   return (
     <Flex
       align="center"
-      className="border-border/60 h-16 min-w-0 gap-2 border-b-[0.5px] px-4"
+      className={cn(
+        "border-border/60 h-16 min-w-0 shrink-0 gap-2 border-b-[0.5px] px-4",
+        className,
+      )}
     >
       {!isExpanded ? <div className="min-w-0 flex-1">{leading}</div> : null}
       <form

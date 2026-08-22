@@ -32,14 +32,14 @@ export const ListNotifications = () => {
 
   if (isPending) return <NotificationsSkeleton />;
   return (
-    <Box className="border-border/60 d h-dvh border-r-[0.5px] pb-6">
+    <Box className="border-border flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-r-[0.5px] pb-6">
       <NotificationsHeader
         onSearchChange={(nextSearch) => {
           void setSearch(nextSearch || null);
         }}
         search={search}
       />
-      <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
+      <Box className="min-h-0 flex-1 overflow-y-auto">
         {notifications.map((notification, idx) => (
           <NotificationCard
             key={notification.id}

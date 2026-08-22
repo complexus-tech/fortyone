@@ -33,7 +33,7 @@ export const Header = ({
 
   return (
     <>
-      <HeaderContainer className="justify-between border-b-0">
+      <HeaderContainer className="h-16 shrink-0 justify-between border-b-0 bg-transparent py-3 dark:bg-transparent">
         <Flex align="center" gap={2}>
           <MobileMenuButton />
           <Button

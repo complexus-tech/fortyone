@@ -143,7 +143,7 @@ export const ListTeamFeedback = () => {
   }
 
   return (
-    <Box className="border-border/60 h-dvh border-r-[0.5px] pb-6">
+    <Box className="border-border flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-r-[0.5px] pb-6">
       <TeamFeedbackHeader
         onSearchChange={(nextSearch) => {
           void setSearch(nextSearch || null);
@@ -154,7 +154,7 @@ export const ListTeamFeedback = () => {
         search={search}
         status={status}
       />
-      <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">{content}</Box>
+      <Box className="min-h-0 flex-1 overflow-y-auto">{content}</Box>
     </Box>
   );
 };

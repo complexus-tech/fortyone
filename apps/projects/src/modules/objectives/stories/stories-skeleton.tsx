@@ -12,8 +12,8 @@ export const StoriesSkeleton = ({
   layout: StoriesLayout;
 }) => {
   return (
-    <Box className={cn("h-[calc(100vh-7.7rem)]", className)}>
-      <BoardSkeleton layout={layout} />
+    <Box className={cn("h-full min-h-0", className)}>
+      <BoardSkeleton className="h-full min-h-0" layout={layout} />
     </Box>
   );
 };

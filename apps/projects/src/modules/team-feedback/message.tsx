@@ -3,7 +3,7 @@
 import { Box, Text } from "ui";
 
 export const SelectTeamFeedbackMessage = () => (
-  <Box className="flex h-dvh items-center justify-center px-6">
+  <Box className="flex h-full items-center justify-center px-6">
     <Box>
       <Text align="center" className="mb-3" fontSize="xl">
         Select feedback

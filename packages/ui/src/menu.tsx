@@ -47,7 +47,7 @@ const SubTrigger = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.SubTrigger
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-1.5 outline-none hover:bg-accent focus:bg-accent data-[state=open]:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-2 outline-none hover:bg-accent focus:bg-accent data-[state=open]:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
       {
         "bg-accent": active,
       },
@@ -105,7 +105,7 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.Item
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-1.5 outline-none hover:bg-accent focus:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-2 outline-none hover:bg-accent focus:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
       {
         "bg-accent": active,
       },
@@ -124,7 +124,7 @@ const CheckboxItem = forwardRef<
 >(({ children, className, checked, ...rest }, ref) => (
   <DropdownMenu.CheckboxItem
     className={cn(
-      "mb-1 flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-1.5 outline-none hover:bg-accent focus:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
+      "mb-1 flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-2 outline-none hover:bg-accent focus:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
       {
         "bg-accent": checked,
       },

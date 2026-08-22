@@ -137,7 +137,7 @@ export const Attachments = ({
         <Box>
           <DropZone>
             <DropZone.Root
-              className={cn("dark:bg-surface/80 mt-2", {
+              className={cn("dark:bg-surface/80 mt-2 rounded-xl", {
                 "dark:bg-surface-muted/80": isDragActive,
               })}
               isDragActive={isDragActive}

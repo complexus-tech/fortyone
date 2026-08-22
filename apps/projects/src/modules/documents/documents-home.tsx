@@ -333,7 +333,7 @@ const TemplateCard = ({
   return (
     <button
       className={cn(
-        "border-border/60 bg-surface/60 hover:border-border-strong focus-visible:border-border-strong focus-visible:ring-border-strong/50 dark:border-border/75 dark:bg-surface/70 dark:hover:border-border-strong dark:focus-visible:border-border-strong flex min-h-20 min-w-[13.5rem] items-center gap-2.5 rounded-2xl border-[0.5px] px-4 py-3 text-left transition-[border-color] outline-none focus-visible:ring-1 disabled:opacity-60",
+        "border-border/80 bg-surface/60 hover:border-border-strong focus-visible:border-border-strong focus-visible:ring-border-strong/50 dark:border-border/80 dark:bg-surface/70 dark:hover:border-border-strong dark:focus-visible:border-border-strong flex min-h-20 min-w-[13.5rem] items-center gap-2.5 rounded-xl border-[0.5px] px-4 py-3 text-left transition-[border-color] outline-none focus-visible:ring-1 disabled:opacity-60",
         isCreating ? "disabled:cursor-progress" : "disabled:cursor-not-allowed",
       )}
       disabled={disabled}
@@ -557,7 +557,7 @@ export const DocumentsHome = () => {
   ]);
 
   return (
-    <Box className="h-dvh min-w-0 overflow-y-auto">
+    <Box className="h-full min-h-0 min-w-0 overflow-y-auto">
       <Box className="md:hidden">
         <ExpandableSearchHeader
           actions={

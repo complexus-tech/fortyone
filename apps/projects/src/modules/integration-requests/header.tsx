@@ -74,6 +74,7 @@ export const IntegrationRequestsHeader = ({
             </Menu.Items>
           </Menu>
         }
+        className="border-border"
         initialValue={search}
         key={search}
         label="Search intake"

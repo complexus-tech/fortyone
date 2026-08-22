@@ -9,7 +9,6 @@ import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
-import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
 import { useObjectiveOptions } from "@/modules/objectives/stories/provider";
 import { useCopyToClipboard, useTerminology, useWorkspacePath } from "@/hooks";
 import { useObjectiveStoriesGrouped } from "@/modules/stories/hooks/use-objective-stories-grouped";
@@ -44,10 +43,6 @@ export const AllStories = ({
 
   const { viewOptions, setViewOptions, filters, resetFilters, setFilters } =
     useObjectiveOptions();
-  const hasAppliedFilters = hasActiveStoriesFilters(filters);
-  const boardHeightClassName = hasAppliedFilters
-    ? "h-[calc(100dvh-11.3rem)]"
-    : "h-[calc(100dvh-7.7rem)]";
   const { data: objective, isPending: isObjectivePending } =
     useObjective(objectiveId);
   const { isPending: isStoriesPending, data: groupedStories } =
@@ -76,10 +71,14 @@ export const AllStories = ({
   }
 
   return (
-    <Box>
+    <Box className="flex h-full min-h-0 flex-col overflow-hidden">
       <Header layout={layout} setLayout={setLayout} />
-      <Tabs onValueChange={(v) => setTab(v as Tab)} value={tab}>
-        <Box className="border-border sticky top-0 z-10 flex h-[3.7rem] w-full items-center justify-between border-b-[0.5px] pr-6 md:pr-12">
+      <Tabs
+        className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        onValueChange={(v) => setTab(v as Tab)}
+        value={tab}
+      >
+        <Box className="border-border sticky top-0 z-10 flex h-[3.7rem] w-full shrink-0 items-center justify-between border-b-[0.5px] pr-6 md:pr-12">
           <Tabs.List className="h-min">
             <Tabs.Tab leftIcon={<ObjectiveIcon />} value="overview">
               Overview
@@ -123,27 +122,34 @@ export const AllStories = ({
             </Button>
           )}
         </Box>
-        <Tabs.Panel value="overview">
+        <Tabs.Panel className="min-h-0 flex-1 overflow-hidden" value="overview">
           <Overview />
         </Tabs.Panel>
-        <Tabs.Panel value="stories">
-          <StoriesFilterBar
-            filters={filters}
-            hiddenFields={["teamIds", "objectiveId"]}
-            resetFilters={resetFilters}
-            setFilters={setFilters}
-          />
-          {isStoriesPending ? (
-            <StoriesSkeleton className={boardHeightClassName} layout={layout} />
-          ) : (
-            <StoriesBoard
-              className={boardHeightClassName}
-              groupedStories={groupedStories}
-              layout={layout}
-              setViewOptions={setViewOptions}
-              viewOptions={viewOptions}
+        <Tabs.Panel
+          className="min-h-0 flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col"
+          value="stories"
+        >
+          <Box className="shrink-0">
+            <StoriesFilterBar
+              filters={filters}
+              hiddenFields={["teamIds", "objectiveId"]}
+              resetFilters={resetFilters}
+              setFilters={setFilters}
             />
-          )}
+          </Box>
+          <Box className="min-h-0 flex-1 overflow-hidden">
+            {isStoriesPending ? (
+              <StoriesSkeleton className="h-full" layout={layout} />
+            ) : (
+              <StoriesBoard
+                className="h-full"
+                groupedStories={groupedStories}
+                layout={layout}
+                setViewOptions={setViewOptions}
+                viewOptions={viewOptions}
+              />
+            )}
+          </Box>
         </Tabs.Panel>
       </Tabs>
     </Box>

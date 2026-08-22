@@ -148,6 +148,7 @@ export const NotificationsHeader = ({
             </Menu>
           </>
         }
+        className="border-border"
         initialValue={search}
         key={search}
         label="Search notifications"

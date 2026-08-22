@@ -43,7 +43,7 @@ export const Header = ({
     setLayout("kanban");
   });
   return (
-    <HeaderContainer className="justify-between">
+    <HeaderContainer className="shrink-0 justify-between">
       <Flex className="mr-2" gap={2}>
         <MobileMenuButton />
         <BreadCrumbs

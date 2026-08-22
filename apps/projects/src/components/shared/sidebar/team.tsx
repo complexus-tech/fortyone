@@ -111,7 +111,7 @@ const CollapsedTeamNavigation = ({
                 active={isActive}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary px-2 py-1.5",
+                  "hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary px-2 py-2",
                   isActive && "bg-primary/5 text-primary [&_svg]:text-primary",
                 )}
                 href={href}
@@ -318,7 +318,7 @@ export const Team = ({
                           disabled={userRole !== "admin"}
                         >
                           <Link
-                            className="flex items-center gap-1.5 py-1.5"
+                            className="flex items-center gap-1.5 py-2"
                             href={withWorkspace(
                               `/settings/workspace/teams/${id}`,
                             )}
@@ -332,7 +332,7 @@ export const Team = ({
                           disabled={userRole !== "admin"}
                         >
                           <Link
-                            className="flex items-center gap-1.5 py-1.5"
+                            className="flex items-center gap-1.5 py-2"
                             href={withWorkspace(`/teams/${id}/archived`)}
                           >
                             <ArchiveIcon />
@@ -345,7 +345,7 @@ export const Team = ({
                           disabled={userRole !== "admin"}
                         >
                           <Link
-                            className="flex items-center gap-1.5 py-1.5"
+                            className="flex items-center gap-1.5 py-2"
                             href={withWorkspace(`/teams/${id}/deleted`)}
                           >
                             <DeleteIcon />
@@ -417,7 +417,7 @@ export const Team = ({
         <ContextMenu.Group>
           <ContextMenu.Item className="py-0" disabled={userRole !== "admin"}>
             <Link
-              className="flex items-center gap-1.5 py-1.5"
+              className="flex items-center gap-1.5 py-2"
               href={withWorkspace(`/settings/workspace/teams/${id}`)}
             >
               <SettingsIcon />
@@ -426,7 +426,7 @@ export const Team = ({
           </ContextMenu.Item>
           <ContextMenu.Item className="py-0" disabled={userRole !== "admin"}>
             <Link
-              className="flex items-center gap-1.5 py-1.5"
+              className="flex items-center gap-1.5 py-2"
               href={withWorkspace(`/teams/${id}/archived`)}
             >
               <ArchiveIcon />
@@ -435,7 +435,7 @@ export const Team = ({
           </ContextMenu.Item>
           <ContextMenu.Item className="py-0" disabled={userRole !== "admin"}>
             <Link
-              className="flex items-center gap-1.5 py-1.5"
+              className="flex items-center gap-1.5 py-2"
               href={withWorkspace(`/teams/${id}/deleted`)}
             >
               <DeleteIcon />

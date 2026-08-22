@@ -243,12 +243,12 @@ export const KanbanBoard = ({
   const { data: teamMembers = [] } = useTeamMembers(teamId);
   const members = teamId ? teamMembers : allMembers;
   const statuses = teamId ? teamStatuses : allStatuses;
-  const hiddenGroupKeys = getHiddenKanbanGroupKeys(viewOptions);
+  const hiddenGroupKeys = new Set(getHiddenKanbanGroupKeys(viewOptions));
   const visibleGroups = groupedStories.groups.filter(
-    (group) => !hiddenGroupKeys.includes(group.key),
+    (group) => !hiddenGroupKeys.has(group.key),
   );
   const hiddenGroups = groupedStories.groups.filter((group) =>
-    hiddenGroupKeys.includes(group.key),
+    hiddenGroupKeys.has(group.key),
   );
   const handleHide = (groupKey: string) => {
     setViewOptions?.(hideKanbanGroup(viewOptions, groupKey));
@@ -259,7 +259,10 @@ export const KanbanBoard = ({
 
   return (
     <BodyContainer
-      className={cn("dark:bg-background overflow-x-auto bg-white", className)}
+      className={cn(
+        "dark:bg-background overflow-x-auto overflow-y-hidden bg-white",
+        className,
+      )}
     >
       <Box className="sticky top-0 z-1 h-14 w-max px-6 backdrop-blur">
         <Flex

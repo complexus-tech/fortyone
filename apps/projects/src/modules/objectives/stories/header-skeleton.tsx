@@ -9,7 +9,7 @@ export const HeaderSkeleton = ({ layout }: { layout: StoriesLayout }) => {
   const [tab] = useQueryState("tab", parseAsString.withDefault("overview"));
 
   return (
-    <HeaderContainer className="justify-between">
+    <HeaderContainer className="shrink-0 justify-between">
       <Flex gap={2}>
         <Flex align="center" gap={2}>
           <Skeleton className="size-6 rounded-full" />

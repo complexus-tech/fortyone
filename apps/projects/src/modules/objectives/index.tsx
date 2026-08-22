@@ -17,7 +17,7 @@ import {
   DEFAULT_OBJECTIVE_VIEW_OPTIONS,
   type ObjectiveViewOptions,
 } from "@/modules/roadmap/objective-board-utils";
-import type { RoadmapLayoutType } from "@/modules/roadmap/types";
+import { useRoadmapLayout } from "@/modules/roadmap/use-roadmap-layout";
 import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { ObjectivesHeader } from "./components/header";
 import { ListObjectives } from "./components/list-objectives";
@@ -84,10 +84,7 @@ export const TeamObjectivesList = () => {
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
   const [isOpen, setIsOpen] = useState(false);
-  const [layout, setLayout] = useLocalStorage<RoadmapLayoutType>(
-    "objectivesLayout",
-    "gantt",
-  );
+  const { layout, setLayout } = useRoadmapLayout();
   const [zoomLevel, setZoomLevel] = useLocalStorage<ZoomLevel>(
     "roadmapZoomLevel",
     "months",

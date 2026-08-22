@@ -7,8 +7,10 @@ import { CalendarHeader } from "./header";
 const mockUseAppCommandAction = jest.fn();
 
 jest.mock("icons", () => ({
-  CalendarIcon: () => <span aria-hidden>Calendar icon</span>,
-  PlusIcon: () => <span aria-hidden>Plus icon</span>,
+  ArrowDown2Icon: () => <span aria-hidden>Open views</span>,
+  ChevronLeftIcon: () => <span aria-hidden>Previous</span>,
+  ChevronRightIcon: () => <span aria-hidden>Next</span>,
+  TimeScheduleIcon: () => <span aria-hidden>Focus time</span>,
 }));
 
 jest.mock("ui", () => ({
@@ -18,18 +20,28 @@ jest.mock("ui", () => ({
   ),
   Button: ({
     children,
-    color,
     onClick,
   }: {
     children: ReactNode;
-    color?: string;
-    onClick: () => void;
+    onClick?: () => void;
   }) => (
-    <button data-color={color} onClick={onClick} type="button">
+    <button onClick={onClick} type="button">
       {children}
     </button>
   ),
   Flex: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  Menu: Object.assign(
+    ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    {
+      Button: ({ children }: { children: ReactNode }) => <>{children}</>,
+      Group: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+      Item: ({ children }: { children: ReactNode }) => (
+        <button type="button">{children}</button>
+      ),
+      Items: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    },
+  ),
+  Text: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
 jest.mock("@/components/shared", () => ({
@@ -51,9 +63,27 @@ describe("CalendarHeader", () => {
   it("labels the standalone page and registers task scheduling", () => {
     const onSchedule = jest.fn();
 
-    render(<CalendarHeader onSchedule={onSchedule} />);
+    render(
+      <CalendarHeader
+        canNavigateNext
+        canNavigatePrevious
+        currentView="week"
+        onFocus={jest.fn()}
+        onNext={jest.fn()}
+        onPrevious={jest.fn()}
+        onSchedule={onSchedule}
+        onToday={jest.fn()}
+        onViewChange={jest.fn()}
+        title="August 2026"
+      />,
+    );
 
-    expect(screen.getByText("Calendar")).toBeInTheDocument();
+    expect(screen.getByText("Calendar / Week")).toBeInTheDocument();
+    expect(screen.getByText("August 2026")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Today" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Block focus time" }),
+    ).toBeInTheDocument();
     expect(mockUseAppCommandAction).toHaveBeenCalledWith({
       disabled: false,
       id: "calendar:schedule-story",

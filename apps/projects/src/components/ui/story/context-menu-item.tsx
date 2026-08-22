@@ -62,7 +62,7 @@ export const ContextMenuItem = ({
                 }) => (
                   <ContextMenu.Item
                     active={subActive}
-                    className="mb-1 justify-between py-1.5"
+                    className="mb-1 justify-between py-2"
                     disabled={subDisabled}
                     key={subLabel}
                     onSelect={subOnSelect}

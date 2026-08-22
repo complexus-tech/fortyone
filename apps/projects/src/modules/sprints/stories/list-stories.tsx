@@ -1,5 +1,6 @@
 "use client";
 
+import { Box } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
@@ -42,26 +43,33 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
 
   return (
     <SprintStoriesProvider layout={layout}>
-      <Header
-        isExpanded={isExpanded}
-        layout={layout}
-        setIsExpanded={setIsExpanded}
-        setLayout={setLayout}
-      />
-      <ActiveStoriesFilterBar />
+      <Box className="flex h-full min-h-0 flex-col">
+        <Header
+          isExpanded={isExpanded}
+          layout={layout}
+          setIsExpanded={setIsExpanded}
+          setLayout={setLayout}
+        />
+        <ActiveStoriesFilterBar />
 
-      {isMobile ? (
-        <AllStories layout={layout} />
-      ) : (
-        <BoardDividedPanel autoSaveId="team:sprints:stories:divided-panel">
-          <BoardDividedPanel.MainPanel>
+        <Box className="min-h-0 flex-1">
+          {isMobile ? (
             <AllStories layout={layout} />
-          </BoardDividedPanel.MainPanel>
-          <BoardDividedPanel.SideBar isExpanded={isExpanded}>
-            <Sidebar />
-          </BoardDividedPanel.SideBar>
-        </BoardDividedPanel>
-      )}
+          ) : (
+            <BoardDividedPanel autoSaveId="team:sprints:stories:divided-panel">
+              <BoardDividedPanel.MainPanel>
+                <AllStories layout={layout} />
+              </BoardDividedPanel.MainPanel>
+              <BoardDividedPanel.SideBar
+                className="h-full"
+                isExpanded={isExpanded}
+              >
+                <Sidebar />
+              </BoardDividedPanel.SideBar>
+            </BoardDividedPanel>
+          )}
+        </Box>
+      </Box>
     </SprintStoriesProvider>
   );
 };

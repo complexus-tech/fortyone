@@ -64,7 +64,7 @@ export const WorkspaceTeam = ({
             <Menu.Group>
               <Menu.Item className="p-0">
                 <Link
-                  className="flex items-center gap-2 px-2 py-1.5"
+                  className="flex items-center gap-2 px-2 py-2"
                   href={withWorkspace(`/settings/workspace/teams/${id}`)}
                   prefetch
                 >

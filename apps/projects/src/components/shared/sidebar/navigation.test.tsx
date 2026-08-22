@@ -142,6 +142,12 @@ describe("Navigation", () => {
     const calendarLink = screen.getByRole("link", { name: "Calendar" });
     expect(calendarLink).toHaveAttribute("href", "/acme/calendar");
     expect(calendarLink).toHaveAttribute("aria-current", "page");
+    expect(calendarLink).toHaveClass(
+      "py-2",
+      "before:w-1",
+      "before:h-[30px]",
+      "before:-left-4",
+    );
 
     expect(screen.getByRole("link", { name: "Active Sprint" })).toHaveAttribute(
       "href",
@@ -186,7 +192,13 @@ describe("Navigation", () => {
     const myWorkLink = screen.getByRole("link", { name: "My work" });
 
     expect(calendarLink).toHaveClass("flex-col", "text-center");
-    expect(calendarLink).toHaveClass("bg-primary/5", "text-primary");
+    expect(calendarLink).toHaveClass(
+      "bg-primary/5",
+      "text-primary",
+      "before:w-1",
+      "before:h-10",
+      "before:-left-3",
+    );
     expect(myWorkLink).toHaveClass(
       "hover:bg-primary/5",
       "hover:text-primary",

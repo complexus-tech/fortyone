@@ -1059,7 +1059,7 @@ export const IntegrationRequestDetails = ({
 
   if (isPending) {
     return (
-      <Box className="h-dvh px-8 py-7">
+      <Box className="h-full px-8 py-7">
         <Box className="bg-surface-muted mb-8 h-8 w-2/5 rounded" />
         <Box className="bg-surface-muted mb-4 h-4 w-4/5 rounded" />
         <Box className="bg-surface-muted h-4 w-3/5 rounded" />
@@ -1069,7 +1069,7 @@ export const IntegrationRequestDetails = ({
 
   if (!request) {
     return (
-      <Box className="flex h-dvh items-center justify-center px-6">
+      <Box className="flex h-full items-center justify-center px-6">
         <Box className="flex flex-col items-center">
           <NotFoundIllustration className="mb-5 w-52" />
           <Text align="center" className="mb-3" fontSize="xl">
@@ -1114,10 +1114,10 @@ export const IntegrationRequestDetails = ({
   };
 
   return (
-    <Box className="h-dvh">
-      <Box className="notification-story-container flex h-full flex-col md:flex-row">
-        <Box className="min-w-0 flex-1">
-          <BodyContainer className="h-dvh overflow-y-auto pb-8">
+    <Box className="h-full min-h-0">
+      <Box className="notification-story-container flex h-full min-h-0 flex-col overflow-hidden md:flex-row">
+        <Box className="min-h-0 min-w-0 flex-1">
+          <BodyContainer className="h-full min-h-0 overflow-y-auto pb-8">
             <Container className="max-w-7xl pt-7">
               <RequestIntegrationBanner
                 canEditRequest={canEditRequest}
@@ -1212,7 +1212,7 @@ export const IntegrationRequestDetails = ({
           </BodyContainer>
         </Box>
 
-        <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border w-full shrink-0 border-t-[0.5px] bg-linear-to-br pb-6 md:h-dvh md:w-(--story-sidebar-width) md:overflow-y-auto md:border-t-0 md:border-l-[0.5px]">
+        <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border w-full shrink-0 overflow-y-auto border-t-[0.5px] bg-linear-to-br pb-6 md:h-full md:min-h-0 md:w-(--story-sidebar-width) md:border-t-0 md:border-l-[0.5px]">
           <RequestProperties
             assignee={assignee}
             canEditRequest={canEditRequest}

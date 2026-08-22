@@ -67,7 +67,7 @@ const ListLayoutSkeleton = () => {
 
 const KanbanLayoutSkeleton = () => {
   return (
-    <Box>
+    <Box className="h-full min-h-0">
       {/* Kanban header */}
       <Box className="sticky top-0 z-1 h-14 w-max px-6 backdrop-blur">
         <Flex align="center" className="h-full shrink-0" gap={6}>
@@ -89,7 +89,7 @@ const KanbanLayoutSkeleton = () => {
       </Box>
 
       {/* Kanban columns */}
-      <Box className="flex w-max gap-x-6 px-7 2xl:h-[calc(100%-3.5rem)]">
+      <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7">
         {Array.from({ length: 4 }).map((_, i) => (
           <Box className="w-[280px]" key={i}>
             {Array.from({ length: 6 - i }).map((_, j) => (
@@ -104,7 +104,7 @@ const KanbanLayoutSkeleton = () => {
 
 const GanttLayoutSkeleton = () => {
   return (
-    <div className="relative left-px h-[calc(100dvh-4rem)] overflow-x-auto overflow-y-hidden">
+    <div className="relative left-px h-full overflow-x-auto overflow-y-hidden">
       <Flex className="min-h-full min-w-max">
         {/* Sidebar */}
         <Box className="border-border dark:border-border/60 sticky left-0 z-20 w-136 shrink-0 border-r-[0.5px]">

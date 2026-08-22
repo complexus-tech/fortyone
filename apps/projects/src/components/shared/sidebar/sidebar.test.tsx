@@ -60,13 +60,6 @@ jest.mock("ui", () => {
   };
 });
 
-jest.mock("@/lib/hooks/subscription-features", () => ({
-  useSubscriptionFeatures: () => ({
-    tier: mockTier,
-    trialDaysRemaining: 14,
-  }),
-}));
-
 jest.mock("@/hooks", () => ({
   useLocalStorage: <T,>(_key: string, initialValue: T) => [
     initialValue,
@@ -82,13 +75,16 @@ jest.mock("@/lib/hooks/workspaces", () => ({
   useCurrentWorkspace: () => ({ workspace: { deletedAt: null } }),
 }));
 
+jest.mock("@/lib/hooks/subscription-features", () => ({
+  useSubscriptionFeatures: () => ({
+    tier: mockTier,
+    trialDaysRemaining: 14,
+  }),
+}));
+
 jest.mock("@/components/ui", () => ({
   InviteMembersDialog: ({ isOpen }: { isOpen: boolean }) =>
     isOpen ? <div>Invite members dialog</div> : null,
-}));
-
-jest.mock("@/components/shared/keyboard-shortcuts", () => ({
-  KeyboardShortcuts: () => null,
 }));
 
 jest.mock("./sidebar-context", () => ({
@@ -157,6 +153,16 @@ describe("Sidebar", () => {
     expect(mockAssistantCollapsed).toBe(true);
   });
 
+  it("keeps labelled workspace actions out of the collapsed sidebar", () => {
+    mockHasMeeting = false;
+    mockSidebarCollapsed = true;
+
+    render(<Sidebar />);
+
+    expect(screen.queryByRole("link", { name: "Upgrade" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Invite members" })).toBeNull();
+  });
+
   it("keeps the Upgrade action non-navigational for members", () => {
     mockHasMeeting = false;
     mockUserRole = "member";
@@ -166,7 +172,7 @@ describe("Sidebar", () => {
     expect(screen.queryByRole("link", { name: "Upgrade" })).toBeNull();
   });
 
-  it("keeps Upgrade in the footer action row when there is no meeting", () => {
+  it("keeps Upgrade in the sidebar when there is no assistant card", () => {
     mockHasMeeting = false;
     render(<Sidebar />);
 

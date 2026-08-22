@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Flex, Tooltip } from "ui";
-import { Notification02Icon, PlusIcon } from "icons";
+import { Badge, Button, Flex, Menu, Tooltip } from "ui";
+import {
+  CommandIcon,
+  DocsIcon,
+  EmailIcon,
+  HelpIcon,
+  Notification02Icon,
+  PlusIcon,
+} from "icons";
 import { useParams, usePathname } from "next/navigation";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { Commands } from "@/components/shared/commands";
+import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { ProfileMenu } from "@/components/shared/sidebar/profile-menu";
 import { SidebarToggleButton } from "@/components/shared/sidebar/sidebar-toggle-button";
 import { WorkspacesMenu } from "@/components/shared/sidebar/workspaces-menu";
@@ -20,6 +28,7 @@ const isTeamObjectivesIndex = (pathname: string) =>
 export const AppCommandBar = () => {
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isObjectiveOpen, setIsObjectiveOpen] = useState(false);
+  const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const { isCollapsed } = useSidebar();
   const action = useCurrentAppCommandAction();
   const pathname = usePathname();
@@ -58,7 +67,7 @@ export const AppCommandBar = () => {
     <>
       <Flex
         align="center"
-        className="hidden h-[60px] shrink-0 py-[10px] md:flex"
+        className="hidden h-(--app-shell-header-height) shrink-0 py-3.5 md:flex"
         data-app-command-bar
       >
         <Flex
@@ -81,6 +90,54 @@ export const AppCommandBar = () => {
           {isCollapsed ? <SidebarToggleButton /> : null}
           <Commands className="max-w-xl flex-1" showTrigger />
           <Flex align="center" className="ml-auto shrink-0 gap-4">
+            <Menu>
+              <Menu.Button>
+                <Button
+                  className="h-11 px-3"
+                  color="tertiary"
+                  leftIcon={<HelpIcon className="h-5" />}
+                  variant="naked"
+                >
+                  Help
+                </Button>
+              </Menu.Button>
+              <Menu.Items align="end">
+                <Menu.Group>
+                  <Menu.Item
+                    onSelect={() => {
+                      setIsKeyboardShortcutsOpen(true);
+                    }}
+                  >
+                    <CommandIcon />
+                    Keyboard shortcuts
+                  </Menu.Item>
+                  <Menu.Item
+                    onSelect={() => {
+                      window.open(
+                        "mailto:hello@complexus.tech",
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                    }}
+                  >
+                    <EmailIcon />
+                    Contact support
+                  </Menu.Item>
+                  <Menu.Item
+                    onSelect={() => {
+                      window.open(
+                        "https://docs.fortyone.app",
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                    }}
+                  >
+                    <DocsIcon />
+                    Documentation
+                  </Menu.Item>
+                </Menu.Group>
+              </Menu.Items>
+            </Menu>
             <Tooltip title="Notifications">
               <Button
                 aria-label="Notifications"
@@ -109,7 +166,7 @@ export const AppCommandBar = () => {
               <Button
                 aria-label={label}
                 asIcon
-                className="size-11 max-w-11 min-w-11 shrink-0"
+                className="!size-9 !max-w-9 !min-w-9 shrink-0"
                 color="primary"
                 data-app-contextual-create-button
                 disabled={isDisabled}
@@ -118,13 +175,6 @@ export const AppCommandBar = () => {
                 }
                 onClick={handleCreate}
                 rounded="full"
-                style={{
-                  flexBasis: "32px",
-                  height: "32px",
-                  maxWidth: "32px",
-                  minWidth: "32px",
-                  width: "32px",
-                }}
                 variant="solid"
               />
             </Tooltip>
@@ -144,6 +194,10 @@ export const AppCommandBar = () => {
         isOpen={isObjectiveOpen}
         setIsOpen={setIsObjectiveOpen}
         teamId={params.teamId}
+      />
+      <KeyboardShortcuts
+        isOpen={isKeyboardShortcutsOpen}
+        setIsOpen={setIsKeyboardShortcutsOpen}
       />
     </>
   );

@@ -72,27 +72,6 @@ export const CalendarGridSkeleton = ({
   );
 };
 
-const CalendarToolbarSkeleton = () => (
-  <Flex
-    align="center"
-    className="border-border/70 h-16 shrink-0 gap-5 overflow-hidden border-b-[0.5px] px-5 py-3"
-    justify="between"
-  >
-    <Flex align="center" className="shrink-0" gap={3}>
-      <Flex align="center" gap={1}>
-        <Skeleton className="h-8 w-8 rounded-lg" />
-        <Skeleton className="h-8 w-8 rounded-lg" />
-      </Flex>
-      <Skeleton className="h-7 w-44" />
-    </Flex>
-    <Flex align="center" className="shrink-0" gap={2}>
-      <Skeleton className="h-8 w-16" />
-      <Skeleton className="h-8 w-20" />
-      <Skeleton className="hidden h-8 w-36 md:block" />
-    </Flex>
-  </Flex>
-);
-
 export const CalendarContentSkeleton = ({
   view = "week",
 }: {
@@ -101,26 +80,34 @@ export const CalendarContentSkeleton = ({
   <Box
     aria-busy="true"
     aria-label="Loading calendar"
-    className="bg-background flex h-[calc(100%-3.6rem)] min-h-0 flex-col overflow-hidden"
+    className="bg-background flex min-h-0 flex-1 flex-col overflow-hidden"
     role="status"
   >
-    <CalendarToolbarSkeleton />
     <CalendarGridSkeleton view={view} />
   </Box>
 );
 
 export const CalendarRouteSkeleton = () => (
-  <Box className="bg-background flex h-dvh flex-col overflow-hidden">
+  <Box className="bg-background flex h-full flex-col overflow-hidden">
     <Flex
       align="center"
       className="border-border h-[3.6rem] w-full shrink-0 border-b-[0.5px] px-5 md:px-12"
       justify="between"
     >
-      <Flex align="center" gap={2}>
+      <Flex align="center" className="shrink-0" gap={2}>
         <Skeleton className="h-6 w-6 rounded-md md:hidden" />
         <Skeleton className="h-5 w-28" />
       </Flex>
-      <Skeleton className="hidden h-8 w-36 md:block" />
+      <Flex align="center" className="shrink-0" gap={2}>
+        <Flex align="center" gap={1}>
+          <Skeleton className="h-8 w-8 rounded-lg" />
+          <Skeleton className="h-8 w-8 rounded-lg" />
+        </Flex>
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-8 w-16" />
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="hidden h-8 w-36 md:block" />
+      </Flex>
     </Flex>
     <CalendarContentSkeleton />
   </Box>

@@ -34,7 +34,7 @@ export const ListIntegrationRequests = () => {
   }, [entry?.isIntersecting, fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <Box className="border-border/60 h-dvh border-r-[0.5px] pb-6">
+    <Box className="border-border flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-r-[0.5px] pb-6">
       <IntegrationRequestsHeader
         onSearchChange={(nextSearch) => {
           void setSearch(nextSearch || null);
@@ -43,7 +43,7 @@ export const ListIntegrationRequests = () => {
         search={search}
         teamId={teamId}
       />
-      <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
+      <Box className="min-h-0 flex-1 overflow-y-auto">
         {isPending ? (
           <Box className="space-y-0">
             {Array.from({ length: 4 }).map((_, index) => (

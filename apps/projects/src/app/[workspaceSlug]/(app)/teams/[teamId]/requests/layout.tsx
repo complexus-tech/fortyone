@@ -27,9 +27,11 @@ export default async function Layout({
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <BodyContainer className="grid h-dvh md:grid-cols-[340px_auto]">
+      <BodyContainer className="grid h-full min-h-0 min-w-0 overflow-hidden md:grid-cols-[340px_minmax(0,1fr)]">
         <ListIntegrationRequests />
-        <Box className="hidden md:block">{children}</Box>
+        <Box className="hidden min-h-0 min-w-0 overflow-hidden md:block">
+          {children}
+        </Box>
       </BodyContainer>
     </HydrationBoundary>
   );

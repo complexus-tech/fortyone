@@ -1908,7 +1908,7 @@ export const StoriesFilterBar = ({
   return (
     <Flex
       align="center"
-      className="border-border bg-background h-[3.6rem] border-b-[0.5px] px-4"
+      className="border-border bg-background h-(--app-filter-bar-height) shrink-0 border-b-[0.5px] px-4"
       gap={3}
       justify="between"
     >

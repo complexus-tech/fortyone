@@ -5,7 +5,6 @@ import {
   DragOverlay,
   useSensor,
   useSensors,
-  MouseSensor,
   PointerSensor,
   TouchSensor,
 } from "@dnd-kit/core";
@@ -258,11 +257,6 @@ export const StoriesBoard = ({
     [mutate, setOptimisticGroupedStories, viewOptions],
   );
 
-  const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint: {
-      distance: 8,
-    },
-  });
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
       distance: 8,
@@ -276,7 +270,7 @@ export const StoriesBoard = ({
     },
   });
 
-  const sensors = useSensors(mouseSensor, pointerSensor, touchSensor);
+  const sensors = useSensors(pointerSensor, touchSensor);
 
   // Memoize the context value to prevent unnecessary re-renders
   const boardContextValue = useMemo(
@@ -309,7 +303,11 @@ export const StoriesBoard = ({
 
   return (
     <BoardContext.Provider value={boardContextValue}>
-      <Box>
+      <Box
+        className={cn("min-h-0", {
+          "h-full overflow-hidden": !isInSearch,
+        })}
+      >
         {!isInSearch && !hasStories && (
           <EmptyState
             getTermDisplay={getTermDisplay}
