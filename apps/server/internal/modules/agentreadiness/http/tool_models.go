@@ -10,13 +10,15 @@ type teamListInput struct {
 	JoinedOnly  bool   `json:"joinedOnly,omitempty"`
 }
 type storyListInput struct {
-	WorkspaceID string `json:"workspaceId"`
-	TeamID      string `json:"teamId,omitempty"`
-	SprintID    string `json:"sprintId,omitempty"`
-	ObjectiveID string `json:"objectiveId,omitempty"`
-	AssigneeID  string `json:"assigneeId,omitempty"`
-	StatusID    string `json:"statusId,omitempty"`
-	KeyResultID string `json:"keyResultId,omitempty"`
+	WorkspaceID  string `json:"workspaceId"`
+	TeamID       string `json:"teamId,omitempty"`
+	SprintID     string `json:"sprintId,omitempty"`
+	ObjectiveID  string `json:"objectiveId,omitempty"`
+	AssigneeID   string `json:"assigneeId,omitempty"`
+	AssignedToMe bool   `json:"assignedToMe,omitempty" jsonschema:"Only stories assigned to the connected user"`
+	DueOn        string `json:"dueOn,omitempty" jsonschema:"Only stories with this end date, formatted as YYYY-MM-DD"`
+	StatusID     string `json:"statusId,omitempty"`
+	KeyResultID  string `json:"keyResultId,omitempty"`
 }
 type createStoryInput struct {
 	WorkspaceID              string   `json:"workspaceId"`

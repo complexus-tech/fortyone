@@ -1,6 +1,6 @@
 "use client";
-import { Box, Flex, Text, Button } from "ui";
-import { MoreHorizontalIcon } from "icons";
+import { Box, Button, Divider, Flex, Text } from "ui";
+import { MoreHorizontalIcon, TeamIcon } from "icons";
 import { cn } from "lib";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -116,31 +116,47 @@ export const Teams = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
   };
 
   return (
-    <Box className="mt-4">
+    <Box className={cn("mt-4", isCollapsed && "mt-3")}>
+      {isCollapsed ? <Divider className="mb-3 border-t border-dashed" /> : null}
       <Flex
         align="center"
         className={cn("mb-2", isCollapsed && "justify-center")}
         justify="between"
       >
-        <Text
-          className={cn("pl-2.5 font-medium", isCollapsed && "hidden")}
-          color="muted"
-          data-teams-heading
-        >
-          Your Teams
-        </Text>
+        {isCollapsed ? null : (
+          <Text className="pl-2.5 font-medium" color="muted" data-teams-heading>
+            Your Teams
+          </Text>
+        )}
         {userRole !== "guest" || overflowTeams.length > 0 ? (
           <TeamsMenu>
             <TeamsMenu.Trigger>
               <Button
-                asIcon
+                asIcon={!isCollapsed}
+                className={cn(
+                  isCollapsed &&
+                    "min-h-14 w-full flex-col justify-center gap-1 px-1 py-2 text-center",
+                )}
                 color="tertiary"
                 data-manage-teams-button
-                leftIcon={<MoreHorizontalIcon />}
-                size="sm"
+                fullWidth={isCollapsed}
+                leftIcon={
+                  isCollapsed ? (
+                    <TeamIcon className="h-6 w-auto shrink-0" />
+                  ) : (
+                    <MoreHorizontalIcon />
+                  )
+                }
+                size={isCollapsed ? undefined : "sm"}
                 variant="naked"
               >
-                <span className="sr-only">Manage Teams</span>
+                {isCollapsed ? (
+                  <span className="line-clamp-2 w-full text-xs leading-3.5 font-semibold">
+                    Your Teams
+                  </span>
+                ) : (
+                  <span className="sr-only">Manage Teams</span>
+                )}
               </Button>
             </TeamsMenu.Trigger>
             <TeamsMenu.Items

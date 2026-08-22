@@ -96,6 +96,7 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Reports:           svcs.reports,
 		Cache:             cfg.Cache,
 		LoginURL:          cfg.MCPLoginURL,
+		Log:               cfg.Log,
 	}, app)
 
 	healthhttp.Routes(healthhttp.Config{

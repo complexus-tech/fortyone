@@ -128,8 +128,11 @@ export const Navigation = ({
           className={cn(
             isActive ? "text-foreground" : undefined,
             isCollapsed &&
-              "min-h-14 flex-col justify-center gap-1 px-1 py-2 text-center",
+              "relative min-h-14 flex-col justify-center gap-1 px-1 py-2 text-center",
             isCollapsed && "[&_svg]:!h-6 [&_svg]:!w-auto",
+            isCollapsed &&
+              isActive &&
+              "before:bg-primary before:absolute before:top-1/2 before:-left-2 before:h-10 before:w-1.5 before:-translate-y-1/2 before:rounded-r-full",
           )}
           data-nav-ai-assistant={
             href === withWorkspace("/maya") ? "" : undefined
@@ -147,7 +150,7 @@ export const Navigation = ({
             className={cn(
               "min-w-0 first-letter:capitalize",
               isCollapsed
-                ? "line-clamp-2 w-full flex-none text-[0.6875rem] leading-3.5 font-semibold"
+                ? "line-clamp-2 w-full flex-none text-xs leading-3.5 font-semibold"
                 : "line-clamp-1 flex-1",
             )}
           >
@@ -175,7 +178,7 @@ export const Navigation = ({
       >
         <Box className="mt-4">
           {isCollapsed ? (
-            <Divider className="my-3" />
+            <Divider className="my-3 border-t border-dashed" />
           ) : (
             <Collapsible.Trigger asChild>
               <button

@@ -17,7 +17,7 @@
 :root {
   --nprogress-color: var(--color-primary);
   --sidebar-width: 17rem;
-  --sidebar-width-collapsed: 6rem;
+  --sidebar-width-collapsed: 7rem;
   --story-sidebar-width: 24rem;
 }
 

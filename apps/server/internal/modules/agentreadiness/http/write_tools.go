@@ -19,7 +19,7 @@ import (
 
 func (h *Handler) createStory(ctx context.Context, _ *mcp.CallToolRequest, in createStoryInput) (*mcp.CallToolResult, any, error) {
 	if !in.Confirmed {
-		return nil, nil, errors.New("confirmed must be true after the user approves story creation")
+		return nil, nil, invalidToolInput("confirmed must be true after the user approves story creation")
 	}
 	workspaceID, userID, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
 	if err != nil {
@@ -33,10 +33,10 @@ func (h *Handler) createStory(ctx context.Context, _ *mcp.CallToolRequest, in cr
 		return nil, nil, err
 	}
 	if strings.TrimSpace(in.Title) == "" {
-		return nil, nil, errors.New("title is required")
+		return nil, nil, invalidToolInput("title is required")
 	}
 	if !slices.Contains([]string{"", "No Priority", "Low", "Medium", "High", "Urgent"}, in.Priority) {
-		return nil, nil, errors.New("priority is invalid")
+		return nil, nil, invalidToolInput("priority is invalid")
 	}
 	statusID, err := optionalUUID(in.StatusID)
 	if err != nil {
@@ -65,7 +65,7 @@ func (h *Handler) createStory(ctx context.Context, _ *mcp.CallToolRequest, in cr
 			return nil, nil, getErr
 		}
 		if status.Team != teamID {
-			return nil, nil, errors.New("statusId does not belong to teamId")
+			return nil, nil, invalidToolInput("statusId does not belong to teamId")
 		}
 	}
 	startDate, err := optionalDate(in.StartDate)
@@ -77,7 +77,7 @@ func (h *Handler) createStory(ctx context.Context, _ *mcp.CallToolRequest, in cr
 		return nil, nil, fmt.Errorf("endDate: %w", err)
 	}
 	if startDate != nil && endDate != nil && endDate.Before(*startDate) {
-		return nil, nil, errors.New("endDate must be on or after startDate")
+		return nil, nil, invalidToolInput("endDate must be on or after startDate")
 	}
 	assignee, err := optionalUUID(in.AssigneeID)
 	if err != nil {
@@ -127,7 +127,7 @@ func (h *Handler) createStory(ctx context.Context, _ *mcp.CallToolRequest, in cr
 
 func (h *Handler) createSprint(ctx context.Context, _ *mcp.CallToolRequest, in createSprintInput) (*mcp.CallToolResult, any, error) {
 	if !in.Confirmed {
-		return nil, nil, errors.New("confirmed must be true after the user approves sprint creation")
+		return nil, nil, invalidToolInput("confirmed must be true after the user approves sprint creation")
 	}
 	workspaceID, userID, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
 	if err != nil {
@@ -141,7 +141,7 @@ func (h *Handler) createSprint(ctx context.Context, _ *mcp.CallToolRequest, in c
 		return nil, nil, err
 	}
 	if strings.TrimSpace(in.Name) == "" {
-		return nil, nil, errors.New("name is required")
+		return nil, nil, invalidToolInput("name is required")
 	}
 	startDate, err := requiredDate("startDate", in.StartDate)
 	if err != nil {
@@ -152,7 +152,7 @@ func (h *Handler) createSprint(ctx context.Context, _ *mcp.CallToolRequest, in c
 		return nil, nil, err
 	}
 	if endDate.Before(startDate) {
-		return nil, nil, errors.New("endDate must be on or after startDate")
+		return nil, nil, invalidToolInput("endDate must be on or after startDate")
 	}
 	objective, err := optionalUUID(in.ObjectiveID)
 	if err != nil {
@@ -167,7 +167,7 @@ func (h *Handler) createSprint(ctx context.Context, _ *mcp.CallToolRequest, in c
 
 func (h *Handler) createObjective(ctx context.Context, _ *mcp.CallToolRequest, in createObjectiveInput) (*mcp.CallToolResult, any, error) {
 	if !in.Confirmed {
-		return nil, nil, errors.New("confirmed must be true after the user approves objective creation")
+		return nil, nil, invalidToolInput("confirmed must be true after the user approves objective creation")
 	}
 	workspaceID, userID, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
 	if err != nil {
@@ -181,7 +181,7 @@ func (h *Handler) createObjective(ctx context.Context, _ *mcp.CallToolRequest, i
 		return nil, nil, err
 	}
 	if strings.TrimSpace(in.Name) == "" {
-		return nil, nil, errors.New("name is required")
+		return nil, nil, invalidToolInput("name is required")
 	}
 	statusID, err := optionalUUID(in.StatusID)
 	if err != nil {
@@ -218,7 +218,7 @@ func (h *Handler) createObjective(ctx context.Context, _ *mcp.CallToolRequest, i
 		return nil, nil, err
 	}
 	if startDate != nil && endDate != nil && endDate.Before(*startDate) {
-		return nil, nil, errors.New("endDate must be on or after startDate")
+		return nil, nil, invalidToolInput("endDate must be on or after startDate")
 	}
 	created, _, err := h.cfg.Objectives.Create(ctx, objectives.CoreNewObjective{Name: strings.TrimSpace(in.Name), Description: optionalString(in.Description), LeadUser: lead, Team: teamID, StartDate: startDate, EndDate: endDate, IsPrivate: in.IsPrivate, Status: *statusID, Priority: optionalString(in.Priority), Color: objectives.DefaultObjectiveColor, CreatedBy: userID}, workspaceID, nil)
 	if err != nil {
@@ -229,7 +229,7 @@ func (h *Handler) createObjective(ctx context.Context, _ *mcp.CallToolRequest, i
 
 func (h *Handler) createKeyResult(ctx context.Context, _ *mcp.CallToolRequest, in createKeyResultInput) (*mcp.CallToolResult, any, error) {
 	if !in.Confirmed {
-		return nil, nil, errors.New("confirmed must be true after the user approves key-result creation")
+		return nil, nil, invalidToolInput("confirmed must be true after the user approves key-result creation")
 	}
 	workspaceID, userID, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
 	if err != nil {
@@ -240,10 +240,10 @@ func (h *Handler) createKeyResult(ctx context.Context, _ *mcp.CallToolRequest, i
 		return nil, nil, err
 	}
 	if strings.TrimSpace(in.Name) == "" {
-		return nil, nil, errors.New("name is required")
+		return nil, nil, invalidToolInput("name is required")
 	}
 	if !slices.Contains([]string{"percentage", "number", "boolean"}, in.MeasurementType) {
-		return nil, nil, errors.New("measurementType must be percentage, number, or boolean")
+		return nil, nil, invalidToolInput("measurementType must be percentage, number, or boolean")
 	}
 	lead, err := optionalUUID(in.LeadUserID)
 	if err != nil {

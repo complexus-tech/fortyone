@@ -17,19 +17,19 @@ import (
 
 func (h *Handler) addTools(server *mcp.Server) {
 	read, write := annotations(true, true), annotations(false, false)
-	mcp.AddTool(server, tool("list_workspaces", "List FortyOne workspaces", "Lists workspaces the connected user can access.", read), h.listWorkspaces)
-	mcp.AddTool(server, tool("list_teams", "List workspace teams", "Lists accessible teams and their codes.", read), h.listTeams)
-	mcp.AddTool(server, tool("list_stories", "List stories", "Lists stories with scheduling, ownership, sprint, objective, key-result, and status data.", read), h.listStories)
-	mcp.AddTool(server, tool("create_story", "Create a story", "Creates a user-approved story, including duration, focus block, auto-scheduling, dates, estimates, labels, parent, sprint, objective, and key-result links.", write), h.createStory)
-	mcp.AddTool(server, tool("list_sprints", "List sprints", "Lists sprints, optionally filtered by team.", read), h.listSprints)
-	mcp.AddTool(server, tool("create_sprint", "Create a sprint", "Creates a user-approved sprint with a goal and date range.", write), h.createSprint)
-	mcp.AddTool(server, tool("analyze_sprint", "Analyze a sprint", "Returns completion, status, burndown, story breakdown, and team allocation.", read), h.analyzeSprint)
-	mcp.AddTool(server, tool("list_objectives", "List objectives", "Lists objectives with delivery forecast and linked-work progress.", read), h.listObjectives)
-	mcp.AddTool(server, tool("create_objective", "Create an objective", "Creates a user-approved objective and applies the workspace default status when omitted.", write), h.createObjective)
-	mcp.AddTool(server, tool("analyze_objective", "Analyze an objective", "Returns progress, priority, allocation, and chart analytics.", read), h.analyzeObjective)
-	mcp.AddTool(server, tool("list_key_results", "List key results", "Lists measurable key results.", read), h.listKeyResults)
-	mcp.AddTool(server, tool("create_key_result", "Create a key result", "Creates a user-approved percentage, number, or boolean key result.", write), h.createKeyResult)
-	mcp.AddTool(server, tool("analyze_work", "Analyze workspace work", "Returns a grounded pulse of stories, sprints, objectives, workload, requests, and delivery risks.", read), h.analyzeWork)
+	addSafeTool(h, server, tool("list_workspaces", "List FortyOne workspaces", "Lists the organizations or workspaces the connected user can access. Use this first when the user has not identified a workspace.", read), h.listWorkspaces)
+	addSafeTool(h, server, tool("list_teams", "List workspace teams", "Lists accessible teams or groups and their codes. Use joinedOnly for teams the connected user belongs to.", read), h.listTeams)
+	addSafeTool(h, server, tool("list_stories", "List stories, tasks, or issues", "Lists stories, tasks, issues, tickets, or work items with scheduling, ownership, sprint, objective, key-result, and status data. For 'my work', set assignedToMe. For work due today or on another day, resolve that day to YYYY-MM-DD and set dueOn.", read), h.listStories)
+	addSafeTool(h, server, tool("create_story", "Create a story, task, or issue", "Creates a user-approved story, task, issue, ticket, or work item. Preserve requested duration, focus block, auto-scheduling, dates, estimate, labels, parent, sprint, objective, and key-result links. Never call until the user approves the final values.", write), h.createStory)
+	addSafeTool(h, server, tool("list_sprints", "List sprints or iterations", "Lists sprints, iterations, or delivery cycles, optionally filtered by team or search text.", read), h.listSprints)
+	addSafeTool(h, server, tool("create_sprint", "Create a sprint or iteration", "Creates a user-approved sprint, iteration, or delivery cycle with a goal and date range.", write), h.createSprint)
+	addSafeTool(h, server, tool("analyze_sprint", "Analyze a sprint or iteration", "Analyzes a sprint, iteration, or cycle and returns completion, status, burndown, story breakdown, and team allocation.", read), h.analyzeSprint)
+	addSafeTool(h, server, tool("list_objectives", "List objectives, projects, or goals", "Lists objectives, projects, or goals with delivery forecast and linked-work progress, optionally filtered by team or search text.", read), h.listObjectives)
+	addSafeTool(h, server, tool("create_objective", "Create an objective, project, or goal", "Creates a user-approved objective when the user asks for an objective, project, or goal, applying the workspace default status when omitted.", write), h.createObjective)
+	addSafeTool(h, server, tool("analyze_objective", "Analyze an objective, project, or goal", "Analyzes an objective, project, or goal and returns progress, priority, allocation, and chart analytics.", read), h.analyzeObjective)
+	addSafeTool(h, server, tool("list_key_results", "List key results or targets", "Lists measurable key results, KRs, outcomes, measures, or targets for accessible objectives.", read), h.listKeyResults)
+	addSafeTool(h, server, tool("create_key_result", "Create a key result or target", "Creates a user-approved percentage, number, or boolean key result, KR, outcome, measure, or target for an objective.", write), h.createKeyResult)
+	addSafeTool(h, server, tool("analyze_work", "Analyze work and delivery", "Analyzes workspace work, workload, delivery status, requests, and risks across stories, tasks, issues, sprints, objectives, projects, and goals for a date range.", read), h.analyzeWork)
 }
 
 func tool(name, title, description string, a *mcp.ToolAnnotations) *mcp.Tool {
@@ -73,11 +73,11 @@ func (h *Handler) listTeams(ctx context.Context, _ *mcp.CallToolRequest, in team
 }
 
 func (h *Handler) listStories(ctx context.Context, _ *mcp.CallToolRequest, in storyListInput) (*mcp.CallToolResult, any, error) {
-	workspaceID, _, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
+	workspaceID, userID, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
 	if err != nil {
 		return nil, nil, err
 	}
-	filters, err := uuidFilters(map[string]string{"team_id": in.TeamID, "sprint_id": in.SprintID, "objective_id": in.ObjectiveID, "assignee_id": in.AssigneeID, "status_id": in.StatusID, "key_result_id": in.KeyResultID})
+	filters, err := storyListFilters(in, userID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -253,7 +253,7 @@ func listFilters(teamID, search string) (map[string]any, error) {
 func parseRequiredUUID(name, raw string) (uuid.UUID, error) {
 	id, err := uuid.Parse(strings.TrimSpace(raw))
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("%s must be a valid UUID", name)
+		return uuid.Nil, invalidToolInputf("%s must be a valid UUID", name)
 	}
 	return id, nil
 }
@@ -263,7 +263,7 @@ func optionalUUID(raw string) (*uuid.UUID, error) {
 	}
 	id, err := uuid.Parse(raw)
 	if err != nil {
-		return nil, errors.New("must be a valid UUID")
+		return nil, invalidToolInput("must be a valid UUID")
 	}
 	return &id, nil
 }
@@ -272,25 +272,55 @@ func parseUUIDs(values []string) ([]uuid.UUID, error) {
 	for _, value := range values {
 		id, err := uuid.Parse(value)
 		if err != nil {
-			return nil, fmt.Errorf("%q is not a valid UUID", value)
+			return nil, invalidToolInputf("%q is not a valid UUID", value)
 		}
 		result = append(result, id)
 	}
 	return result, nil
 }
-func uuidFilters(values map[string]string) (map[string]any, error) {
-	result := map[string]any{}
-	for key, value := range values {
-		if value == "" {
+func storyListFilters(input storyListInput, userID uuid.UUID) (map[string]any, error) {
+	filters := map[string]any{"current_user_id": userID}
+	if input.AssignedToMe {
+		filters["assigned_to_me"] = true
+	}
+	if strings.TrimSpace(input.DueOn) != "" {
+		dueOn, err := optionalDate(input.DueOn)
+		if err != nil {
+			return nil, fmt.Errorf("dueOn: %w", err)
+		}
+		filters["deadline_after"] = *dueOn
+		filters["deadline_before"] = *dueOn
+	}
+	fields := []struct {
+		name     string
+		value    string
+		queryKey string
+		plural   bool
+	}{
+		{name: "teamId", value: input.TeamID, queryKey: "team_ids", plural: true},
+		{name: "sprintId", value: input.SprintID, queryKey: "sprint_ids", plural: true},
+		{name: "objectiveId", value: input.ObjectiveID, queryKey: "objective_id"},
+		{name: "assigneeId", value: input.AssigneeID, queryKey: "assignee_ids", plural: true},
+		{name: "statusId", value: input.StatusID, queryKey: "status_ids", plural: true},
+		{name: "keyResultId", value: input.KeyResultID, queryKey: "key_result_id"},
+	}
+
+	for _, field := range fields {
+		if strings.TrimSpace(field.value) == "" {
 			continue
 		}
-		id, err := uuid.Parse(value)
+		id, err := parseRequiredUUID(field.name, field.value)
 		if err != nil {
-			return nil, fmt.Errorf("%s must be a valid UUID", key)
+			return nil, err
 		}
-		result[key] = id
+		if field.plural {
+			filters[field.queryKey] = []uuid.UUID{id}
+		} else {
+			filters[field.queryKey] = id
+		}
 	}
-	return result, nil
+
+	return filters, nil
 }
 func optionalDate(raw string) (*time.Time, error) {
 	if strings.TrimSpace(raw) == "" {
@@ -298,7 +328,7 @@ func optionalDate(raw string) (*time.Time, error) {
 	}
 	value, err := time.Parse("2006-01-02", raw)
 	if err != nil {
-		return nil, errors.New("date must use YYYY-MM-DD")
+		return nil, invalidToolInput("date must use YYYY-MM-DD")
 	}
 	return &value, nil
 }
@@ -308,7 +338,7 @@ func requiredDate(name, raw string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("%s: %w", name, err)
 	}
 	if value == nil {
-		return time.Time{}, fmt.Errorf("%s is required", name)
+		return time.Time{}, invalidToolInputf("%s is required", name)
 	}
 	return *value, nil
 }

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,6 +49,74 @@ func (s *memoryOAuthStore) Delete(_ context.Context, key string) error {
 	defer s.mu.Unlock()
 	delete(s.items, key)
 	return nil
+}
+
+func TestApprovalPageUsesApplicationThemeAndEscapesClientName(t *testing.T) {
+	t.Parallel()
+	recorder := httptest.NewRecorder()
+
+	require.NoError(t, renderApprovalPage(recorder, approvalPageData{
+		ClientName: `<script>alert("xss")</script>`,
+		Approval:   "approval-token",
+	}))
+
+	body := recorder.Body.String()
+	require.Contains(t, body, "@media (prefers-color-scheme: dark)")
+	require.Contains(t, body, `font-family: -apple-system, BlinkMacSystemFont, "Inter"`)
+	require.Contains(t, body, "corner-shape: squircle")
+	require.Contains(t, body, "oklch(0.6522 0.2135 38)")
+	require.Contains(t, body, `&lt;script&gt;alert(&#34;xss&#34;)&lt;/script&gt;`)
+	require.NotContains(t, body, `<script>alert("xss")</script>`)
+	require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
+	require.Contains(t, recorder.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'")
+	require.Equal(t, "no-referrer", recorder.Header().Get("Referrer-Policy"))
+}
+
+func TestStoryListFiltersUseScopedAdvancedQueryContract(t *testing.T) {
+	t.Parallel()
+	userID := uuid.New()
+	teamID := uuid.New()
+	sprintID := uuid.New()
+	objectiveID := uuid.New()
+	assigneeID := uuid.New()
+	statusID := uuid.New()
+	keyResultID := uuid.New()
+	dueOn := "2026-08-22"
+
+	filters, err := storyListFilters(storyListInput{
+		TeamID:       teamID.String(),
+		SprintID:     sprintID.String(),
+		ObjectiveID:  objectiveID.String(),
+		AssigneeID:   assigneeID.String(),
+		AssignedToMe: true,
+		DueOn:        dueOn,
+		StatusID:     statusID.String(),
+		KeyResultID:  keyResultID.String(),
+	}, userID)
+	require.NoError(t, err)
+	require.Equal(t, userID, filters["current_user_id"])
+	require.Equal(t, []uuid.UUID{teamID}, filters["team_ids"])
+	require.Equal(t, []uuid.UUID{sprintID}, filters["sprint_ids"])
+	require.Equal(t, objectiveID, filters["objective_id"])
+	require.Equal(t, []uuid.UUID{assigneeID}, filters["assignee_ids"])
+	require.Equal(t, true, filters["assigned_to_me"])
+	expectedDueOn := time.Date(2026, time.August, 22, 0, 0, 0, 0, time.UTC)
+	require.Equal(t, expectedDueOn, filters["deadline_after"])
+	require.Equal(t, expectedDueOn, filters["deadline_before"])
+	require.Equal(t, []uuid.UUID{statusID}, filters["status_ids"])
+	require.Equal(t, keyResultID, filters["key_result_id"])
+}
+
+func TestStoryListFiltersRejectInvalidUUID(t *testing.T) {
+	t.Parallel()
+	_, err := storyListFilters(storyListInput{TeamID: "not-a-uuid"}, uuid.New())
+	require.EqualError(t, err, "teamId must be a valid UUID")
+}
+
+func TestStoryListFiltersRejectInvalidDueDate(t *testing.T) {
+	t.Parallel()
+	_, err := storyListFilters(storyListInput{DueOn: "today"}, uuid.New())
+	require.EqualError(t, err, "dueOn: date must use YYYY-MM-DD")
 }
 
 func TestOpenAPIIsValidJSONWithUniqueOperationIDs(t *testing.T) {

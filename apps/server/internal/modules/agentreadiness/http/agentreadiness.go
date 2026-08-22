@@ -19,13 +19,17 @@ import (
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	mcpauth "github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const mcpScope = "mcp:access"
+const (
+	mcpScope        = "mcp:access"
+	mcpInstructions = "Use FortyOne as the system of record for delivery. Read before writing, preserve scheduling fields, and ask the user before invoking a write tool. Treat task, issue, ticket, and work item as story; project and goal as objective; iteration and cycle as sprint; and KR, outcome, measure, and target as key result. For 'my work', set assignedToMe. For work due on a named day such as today, resolve it to YYYY-MM-DD and set dueOn."
+)
 
 //go:embed openapi.json
 var openAPIDescription []byte
@@ -44,6 +48,7 @@ type Config struct {
 	Reports           *reports.Service
 	Cache             oauthStore
 	LoginURL          string
+	Log               *logger.Logger
 }
 
 type oauthStore interface {
@@ -65,17 +70,22 @@ type mcpClaims struct {
 
 func New(cfg Config) *Handler {
 	resource := strings.TrimRight(cfg.APIPublicURL, "/") + "/mcp"
-	server := mcp.NewServer(&mcp.Implementation{Name: "app.fortyone", Version: "1.0.0"}, &mcp.ServerOptions{
-		Instructions: "Use FortyOne as the system of record for delivery. Read before writing, preserve scheduling fields, and ask the user before invoking a write tool.",
-	})
 	h := &Handler{cfg: cfg, resource: resource}
-	h.addTools(server)
+	server := h.newMCPServer()
 	transport := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, &mcp.StreamableHTTPOptions{Stateless: true, JSONResponse: true})
 	h.handler = mcpauth.RequireBearerToken(h.verifyToken, &mcpauth.RequireBearerTokenOptions{
 		ResourceMetadataURL: strings.TrimRight(cfg.APIPublicURL, "/") + "/.well-known/oauth-protected-resource",
 		Scopes:              []string{mcpScope}, ClockSkew: 30 * time.Second,
 	})(transport)
 	return h
+}
+
+func (h *Handler) newMCPServer() *mcp.Server {
+	server := mcp.NewServer(&mcp.Implementation{Name: "app.fortyone", Version: "1.0.0"}, &mcp.ServerOptions{
+		Instructions: mcpInstructions,
+	})
+	h.addTools(server)
+	return server
 }
 
 func (h *Handler) OpenAPI(_ context.Context, w http.ResponseWriter, _ *http.Request) error {

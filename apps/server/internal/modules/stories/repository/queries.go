@@ -627,11 +627,11 @@ func (r *repo) List(ctx context.Context, workspaceId uuid.UUID, filters map[stri
 	var setClauses []string
 
 	for field := range filters {
-		setClauses = append(setClauses, fmt.Sprintf("%s = :%s", field, field))
+		setClauses = append(setClauses, fmt.Sprintf("s.%s = :%s", field, field))
 	}
 
 	filters["workspace_id"] = workspaceId
-	setClauses = append(setClauses, "deleted_at IS NULL", "workspace_id = :workspace_id", "parent_id IS NULL")
+	setClauses = append(setClauses, "s.deleted_at IS NULL", "s.workspace_id = :workspace_id", "s.parent_id IS NULL")
 	query += " WHERE " + strings.Join(setClauses, " AND ") + ";"
 
 	var stories []dbStory

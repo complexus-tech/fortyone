@@ -75,13 +75,13 @@ export const WorkspacesMenu = ({
           aria-label={isCollapsed ? workspaceName : undefined}
           className={cn(
             "max-w-full min-w-0 gap-1.5 pl-1",
-            isCollapsed && "h-10 w-10 justify-center px-0",
+            isCollapsed && "h-11 w-11 justify-center px-0",
           )}
           color="tertiary"
           data-workspace-switcher
           leftIcon={
             <Avatar
-              className={cn("h-[1.75rem] text-sm", isCollapsed && "h-8")}
+              className={cn("h-[1.75rem] text-sm", isCollapsed && "h-9")}
               name={workspace?.name}
               rounded="md"
               src={workspace?.avatarUrl}
