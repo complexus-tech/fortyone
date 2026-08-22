@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { Box, Command, Dialog, Divider } from "ui";
+import { Command, Dialog, Divider } from "ui";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import { useSearch } from "@/modules/search/hooks/use-search";
 import { getStoryPath } from "@/modules/story/utils/story-url";
@@ -9,6 +9,11 @@ import { CommandSearchResults } from "./command-search-results";
 const SEARCH_DEBOUNCE_MS = 250;
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_RESULT_LIMIT = 5;
+
+type CommandSelection = {
+  context: string;
+  value: string;
+};
 
 export const CommandPaletteContent = ({
   children,
@@ -19,6 +24,10 @@ export const CommandPaletteContent = ({
 }) => {
   const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selection, setSelection] = useState<CommandSelection>({
+    context: "",
+    value: "",
+  });
   const { callback: queueSearch, cancel: cancelSearch } =
     useDebouncedCallback<string>(setSearchQuery, SEARCH_DEBOUNCE_MS);
 
@@ -35,6 +44,25 @@ export const CommandPaletteContent = ({
     type: "all",
   });
 
+  const settledSearchResults =
+    hasSettledQuery && !isSearchFetching ? searchResults : undefined;
+  const firstStory = settledSearchResults?.stories.at(0);
+  const firstObjective = settledSearchResults?.objectives.at(0);
+  let firstSearchResultValue = `search ${normalizedInput}`;
+  if (firstObjective) {
+    firstSearchResultValue = `objective ${firstObjective.id}`;
+  }
+  if (firstStory) {
+    firstSearchResultValue = `story ${firstStory.id}`;
+  }
+  const selectionContext = hasSearchQuery
+    ? `${normalizedInput}:${firstSearchResultValue}`
+    : `commands:${normalizedInput}`;
+  let selectedValue = hasSearchQuery ? firstSearchResultValue : "";
+  if (selection.context === selectionContext) {
+    selectedValue = selection.value;
+  }
+
   const handleInputValueChange = (value: string) => {
     setInputValue(value);
 
@@ -50,7 +78,14 @@ export const CommandPaletteContent = ({
 
   return (
     <Dialog.Body className="px-0 pt-2 pb-0">
-      <Command>
+      <Command
+        loop
+        onValueChange={(value: string) => {
+          setSelection({ context: selectionContext, value });
+        }}
+        shouldFilter={!hasSearchQuery}
+        value={selectedValue}
+      >
         <Command.Input
           className="my-2.5 text-2xl antialiased"
           icon={null}
@@ -59,7 +94,7 @@ export const CommandPaletteContent = ({
           value={inputValue}
         />
         <Divider className="my-2.5" />
-        <Box className="max-h-140 overflow-y-auto px-3 pt-2">
+        <Command.List className="mt-0 max-h-140 w-full overflow-y-auto border-0 bg-transparent px-3 pt-2 pb-0 shadow-none backdrop-blur-none dark:bg-transparent">
           {hasSearchQuery ? (
             <CommandSearchResults
               hasSettledQuery={Boolean(hasSettledQuery && !isSearchFetching)}
@@ -81,11 +116,12 @@ export const CommandPaletteContent = ({
                 onNavigate(`/search?${params.toString()}`);
               }}
               query={normalizedInput}
-              results={hasSettledQuery ? searchResults : undefined}
+              results={settledSearchResults}
             />
-          ) : null}
-          {children}
-        </Box>
+          ) : (
+            children
+          )}
+        </Command.List>
       </Command>
     </Dialog.Body>
   );

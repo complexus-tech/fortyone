@@ -123,7 +123,7 @@ const StoryResults = ({
             onSelect={() => {
               onSelect(story);
             }}
-            value={`task ${story.title} ${storyIdentifier}`}
+            value={`story ${story.id}`}
           />
         );
       })}
@@ -159,7 +159,7 @@ const ObjectiveResults = ({
             onSelect={() => {
               onSelect(objective);
             }}
-            value={`objective ${objective.name}`}
+            value={`objective ${objective.id}`}
           />
         );
       })}

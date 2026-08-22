@@ -144,6 +144,7 @@ jest.mock("ui", () => {
         {children}
       </button>
     ),
+    List: Container,
     Loading: Container,
   });
   const Dialog = Object.assign(
