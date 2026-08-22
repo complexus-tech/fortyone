@@ -69,7 +69,7 @@ export const WorkspacesMenu = ({
   };
 
   return (
-    <div className={isCollapsed ? undefined : "w-full"}>
+    <div className={isCollapsed ? undefined : "w-fit max-w-full min-w-0"}>
       <Menu>
         <Menu.Button>
           <Button
@@ -80,7 +80,6 @@ export const WorkspacesMenu = ({
             )}
             color="tertiary"
             data-workspace-switcher
-            fullWidth={!isCollapsed}
             leftIcon={
               <Avatar
                 className={cn("h-8 text-sm", isCollapsed && "h-9")}

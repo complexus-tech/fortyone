@@ -6,6 +6,7 @@ import { useTerminology } from "@/hooks";
 import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import type { DisplayColumn } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
+import { SearchEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { ListObjectives } from "../objectives/components/list-objectives";
 import { Header } from "./components/header";
 import { useSearch } from "./hooks/use-search";
@@ -131,8 +132,9 @@ export const SearchPage = () => {
                 />
                 {results?.objectives.length === 0 &&
                   results.stories.length === 0 && (
-                    <Box className="flex h-[70vh] items-center justify-center">
-                      <Text className="max-w-md text-center">
+                    <Box className="flex h-[70vh] flex-col items-center justify-center">
+                      <SearchEmptyIllustration />
+                      <Text className="mt-6 max-w-md text-center">
                         No results found for your search. Try again with a
                         different query.
                       </Text>
@@ -172,8 +174,9 @@ export const SearchPage = () => {
                   }}
                 />
                 {results?.stories.length === 0 && (
-                  <Box className="flex h-[70vh] items-center justify-center">
-                    <Text>
+                  <Box className="flex h-[70vh] flex-col items-center justify-center">
+                    <SearchEmptyIllustration />
+                    <Text className="mt-6">
                       No{" "}
                       {getTermDisplay("storyTerm", {
                         variant: "plural",
@@ -189,8 +192,9 @@ export const SearchPage = () => {
                   objectives={results?.objectives || []}
                 />
                 {results?.objectives.length === 0 && (
-                  <Box className="flex h-[70vh] items-center justify-center">
-                    <Text>
+                  <Box className="flex h-[70vh] flex-col items-center justify-center">
+                    <SearchEmptyIllustration />
+                    <Text className="mt-6">
                       No{" "}
                       {getTermDisplay("objectiveTerm", {
                         variant: "plural",

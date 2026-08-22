@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { Box, Button, Flex, Text } from "ui";
+import { InboxEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { TeamFeedbackCard } from "./card";
 import { TeamFeedbackHeader } from "./header";
 import { useTeamFeedbackInfinite } from "./hooks/use-team-feedback";
@@ -124,7 +125,8 @@ export const ListTeamFeedback = () => {
         ) : null}
         {feedback.length === 0 ? (
           <Flex align="center" className="h-full px-6" justify="center">
-            <Box>
+            <Box className="flex flex-col items-center">
+              <InboxEmptyIllustration className="mb-5 w-52" />
               <Text align="center" className="mb-3" fontSize="xl">
                 No feedback
               </Text>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { OKRIcon } from "icons";
 import { Box, BreadCrumbs, Button, Flex, Skeleton, Text } from "ui";
 import {
   BodyContainer,
@@ -9,6 +8,7 @@ import {
   MobileMenuButton,
 } from "@/components/shared";
 import { BoardDividedPanel, RowWrapper } from "@/components/ui";
+import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useMediaQuery, useTerminology } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
@@ -171,7 +171,7 @@ export const WorkspaceKeyResultsPage = () => {
         {header}
         <BodyContainer className="flex items-center justify-center">
           <Flex align="center" direction="column">
-            <OKRIcon className="h-12 w-auto" strokeWidth={1.5} />
+            <RoadmapEmptyIllustration />
             <Text className="mt-8 mb-3" fontSize="3xl">
               No {keyResultLabel} yet
             </Text>

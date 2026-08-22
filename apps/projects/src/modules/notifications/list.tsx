@@ -4,6 +4,7 @@ import { parseAsString, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { Box, Flex, Skeleton, Text } from "ui";
 import { NotificationCard } from "@/modules/notifications/card";
+import { NotificationsEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useTerminology } from "@/hooks";
 import { NotificationsHeader } from "./header";
 import { useNotificationsInfinite } from "./hooks/notifications";
@@ -73,7 +74,8 @@ export const ListNotifications = () => {
         ) : null}
         {notifications.length === 0 && (
           <Flex align="center" className="h-full px-6" justify="center">
-            <Box>
+            <Box className="flex flex-col items-center">
+              <NotificationsEmptyIllustration className="mb-5 w-52" />
               <Text align="center" className="mb-3" fontSize="xl">
                 {search ? "No matching notifications" : "No notifications"}
               </Text>

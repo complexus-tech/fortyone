@@ -2,10 +2,11 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpDownIcon, RequestsIcon, SearchIcon } from "icons";
+import { ArrowUpDownIcon, SearchIcon } from "icons";
 import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
 import { toast } from "sonner";
+import { InboxEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { requestFilters, requestStatusMeta } from "./status";
 import { PublicRequestCard } from "./request-card";
 import type {
@@ -146,13 +147,7 @@ export const PublicFeedbackList = ({
         direction="column"
         justify="center"
       >
-        <Flex
-          align="center"
-          className="bg-surface-muted text-text-muted mb-4 size-12 rounded-xl"
-          justify="center"
-        >
-          <RequestsIcon className="h-5 text-current" />
-        </Flex>
+        <InboxEmptyIllustration className="mb-4 w-52" />
         <Text className="text-[1.05rem]" fontWeight="semibold">
           No feedback yet
         </Text>

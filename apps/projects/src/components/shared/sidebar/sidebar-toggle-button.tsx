@@ -1,40 +1,53 @@
 "use client";
 
-import { ChevronsLeftIcon, ChevronsRightIcon } from "icons";
-import { Button, Tooltip } from "ui";
+import { SidebarCollapseIcon, SidebarExpandIcon } from "icons";
+import { cn } from "lib";
+import { Kbd, Tooltip } from "ui";
 import { useSidebar } from "./sidebar-context";
 
 type SidebarToggleButtonProps = {
-  variant?: "default" | "command-bar";
+  placement?: "command-bar" | "workspace-menu";
 };
 
 export const SidebarToggleButton = ({
-  variant = "default",
+  placement = "command-bar",
 }: SidebarToggleButtonProps) => {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const label = isCollapsed ? "Expand sidebar" : "Collapse sidebar";
-  const isCommandBar = variant === "command-bar";
 
   return (
-    <Tooltip side="bottom" title={label}>
-      <Button
+    <Tooltip
+      side="bottom"
+      title={
+        <span className="flex items-center gap-2">
+          <span>{label}</span>
+          <Kbd className="bg-surface-muted h-5 min-w-5 px-1">⌘ B</Kbd>
+        </span>
+      }
+    >
+      <button
         aria-label={label}
-        asIcon
-        className={
-          isCommandBar ? "bg-surface-muted size-8 min-w-8 shrink-0" : "shrink-0"
-        }
-        color="tertiary"
+        className={cn(
+          "text-foreground focus-visible:ring-ring flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 transition-colors focus-visible:ring-2 focus-visible:outline-none",
+          placement === "workspace-menu" ? "rounded-xl" : "rounded-full",
+        )}
+        data-sidebar-toggle-location={placement}
         onClick={toggleSidebar}
-        rounded={isCommandBar ? "full" : undefined}
-        size="sm"
-        variant="naked"
+        style={{
+          flexBasis: "38px",
+          height: "38px",
+          maxWidth: "38px",
+          minWidth: "38px",
+          width: "38px",
+        }}
+        type="button"
       >
         {isCollapsed ? (
-          <ChevronsRightIcon className="text-foreground" />
+          <SidebarExpandIcon className="h-5.5" />
         ) : (
-          <ChevronsLeftIcon className="text-foreground" />
+          <SidebarCollapseIcon className="h-5.5" />
         )}
-      </Button>
+      </button>
     </Tooltip>
   );
 };

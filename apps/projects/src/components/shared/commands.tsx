@@ -101,7 +101,7 @@ export const Commands = ({
         >
           <SearchIcon className="h-4 shrink-0" />
           <span className="min-w-0 flex-1 truncate">Search or jump to...</span>
-          <Kbd className="!bg-surface/10 dark:!bg-surface/15 hidden shrink-0 sm:flex">
+          <Kbd className="!bg-surface/5 dark:!bg-surface/10 hidden shrink-0 sm:flex">
             ⌘ K
           </Kbd>
         </button>

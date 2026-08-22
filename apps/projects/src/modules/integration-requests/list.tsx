@@ -6,6 +6,7 @@ import { parseAsString, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { Box, Flex, Text } from "ui";
 import { useTerminology } from "@/hooks";
+import { InboxEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { IntegrationRequestCard } from "./card";
 import { IntegrationRequestsHeader } from "./header";
 import { useTeamIntegrationRequestsInfinite } from "./hooks/use-team-requests";
@@ -82,7 +83,8 @@ export const ListIntegrationRequests = () => {
             ) : null}
             {requests.length === 0 ? (
               <Flex align="center" className="h-full px-6" justify="center">
-                <Box>
+                <Box className="flex flex-col items-center">
+                  <InboxEmptyIllustration className="mb-5 w-52" />
                   <Text align="center" className="mb-3" fontSize="xl">
                     {search ? "No matching intake" : "No intake items"}
                   </Text>

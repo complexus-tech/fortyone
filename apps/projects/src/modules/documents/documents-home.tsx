@@ -25,6 +25,7 @@ import {
 } from "icons";
 import { cn } from "lib";
 import { ExpandableSearchHeader, MobileMenuButton } from "@/components/shared";
+import { DocumentsEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useUserRole, useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import {
@@ -401,7 +402,7 @@ const EmptyDocuments = ({
     direction="column"
     justify="center"
   >
-    <DocsIcon className="text-text-muted h-16 w-auto" strokeWidth={1.5} />
+    <DocumentsEmptyIllustration className="w-52" />
     <Text className="mt-4" fontWeight="semibold">
       {isFiltered ? "No matching documents" : "No documents here yet"}
     </Text>

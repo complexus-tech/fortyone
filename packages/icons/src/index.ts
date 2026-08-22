@@ -83,8 +83,6 @@ export * from "./notifications-empty";
 export * from "./filter";
 export * from "./sidebar-expand";
 export * from "./sidebar-collapse";
-export * from "./chevrons-left";
-export * from "./chevrons-right";
 export * from "./story";
 export * from "./story-missing";
 export * from "./roadmap";

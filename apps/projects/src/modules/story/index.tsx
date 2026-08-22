@@ -3,8 +3,9 @@ import { Box, Button, Text } from "ui";
 import { cn } from "lib";
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { ArrowLeft2Icon, StoryMissingIcon } from "icons";
 import { useWorkspacePath } from "@/hooks";
+import { NotFoundIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
+import { ResourceNotFoundState } from "@/components/ui/resource-not-found-state";
 import { MainDetailsSkeleton } from "./components/main-details-skeleton";
 import { Options } from "./components/options";
 import { useStoryById } from "./hooks/story";
@@ -46,7 +47,7 @@ export const StoryPage = ({
     return (
       <Box className="flex h-screen items-center justify-center">
         <Box className="flex flex-col items-center">
-          <StoryMissingIcon className="h-20 w-auto rotate-12" />
+          <NotFoundIllustration />
           <Text className="mt-10 mb-6" fontSize="3xl">
             Unable to load this item
           </Text>
@@ -118,25 +119,11 @@ export const StoryPage = ({
           </Box>
         </>
       ) : (
-        <Box className="flex h-screen items-center justify-center">
-          <Box className="flex flex-col items-center">
-            <StoryMissingIcon className="h-20 w-auto rotate-12" />
-            <Text className="mt-10 mb-6" fontSize="3xl">
-              404: Item not found
-            </Text>
-            <Text className="mb-6 max-w-md text-center" color="muted">
-              This item might not exist or you do not have access to it.
-            </Text>
-            <Button
-              className="gap-1 pl-2"
-              color="tertiary"
-              href={withWorkspace("/my-work")}
-              leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
-            >
-              Go to my work
-            </Button>
-          </Box>
-        </Box>
+        <ResourceNotFoundState
+          description="This item might not exist or you do not have access to it."
+          href={withWorkspace("/my-work")}
+          title="404: Item not found"
+        />
       )}
     </Box>
   );

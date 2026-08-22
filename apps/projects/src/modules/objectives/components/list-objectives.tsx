@@ -1,9 +1,10 @@
 import { Box, Button, Flex, Text } from "ui";
-import { ObjectiveIcon, PlusIcon } from "icons";
+import { PlusIcon } from "icons";
 import { useState } from "react";
 import { cn } from "lib";
 import { BodyContainer } from "@/components/shared/body";
 import { NewObjectiveDialog } from "@/components/ui";
+import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useTerminology, useUserRole } from "@/hooks";
 import type { Objective } from "../types";
 import { TableHeader } from "./heading";
@@ -33,7 +34,7 @@ export const ListObjectives = ({
           {isInSearch ? null : (
             <Box className="flex h-full items-center justify-center">
               <Box className="flex flex-col items-center">
-                <ObjectiveIcon className="h-12 w-auto" strokeWidth={1.6} />
+                <RoadmapEmptyIllustration />
                 <Text className="mt-8 mb-6" fontSize="3xl">
                   No {getTermDisplay("objectiveTerm", { variant: "plural" })}{" "}
                   found

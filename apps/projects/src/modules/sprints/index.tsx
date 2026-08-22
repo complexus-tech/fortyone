@@ -1,9 +1,10 @@
 "use client";
 import { Box, Flex, Text, Button } from "ui";
-import { SprintsIcon, GitIcon } from "icons";
+import { GitIcon } from "icons";
 import { useParams } from "next/navigation";
 import { BodyContainer } from "@/components/shared";
 import { NewSprintButton } from "@/components/ui";
+import { SprintsEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { SprintsHeader } from "./components/header";
 import { SprintRow } from "./components/row";
@@ -30,7 +31,7 @@ export const SprintsList = () => {
         {sprints.length === 0 && (
           <Box className="flex h-[70dvh] items-center justify-center">
             <Box className="flex flex-col items-center">
-              <SprintsIcon className="h-20 w-auto" strokeWidth={1.3} />
+              <SprintsEmptyIllustration />
               <Text className="mt-8 mb-6" fontSize="3xl">
                 No {getTermDisplay("sprintTerm", { variant: "plural" })} found
               </Text>

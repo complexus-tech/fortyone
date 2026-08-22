@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { StoryMissingIcon } from "icons";
 import { Box, Button, Flex, Text } from "ui";
+import { UnauthorizedIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { Back } from "./back";
 
 export const metadata: Metadata = {
@@ -11,7 +11,7 @@ export default function Unauthorized() {
   return (
     <Box className="flex h-screen items-center justify-center">
       <Box className="flex flex-col items-center">
-        <StoryMissingIcon className="h-20 w-auto rotate-12" />
+        <UnauthorizedIllustration />
         <Text className="mt-10 mb-6" fontSize="3xl">
           Unauthorized Access
         </Text>

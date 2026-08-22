@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BreadCrumbs, Flex, Button, Box, Text } from "ui";
-import { ObjectiveIcon, PlusIcon, WarningIcon } from "icons";
+import { PlusIcon, WarningIcon } from "icons";
 import {
   HeaderContainer,
   MobileMenuButton,
@@ -12,6 +12,7 @@ import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import { useLocalStorage, useTerminology, useUserRole } from "@/hooks";
 import { NewObjectiveDialog } from "@/components/ui";
 import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
+import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import type { ZoomLevel } from "@/components/ui/base-gantt";
 import { isObjectiveForecastAtRisk } from "@/modules/objectives/components/objective-forecast-risk-utils";
 import { ObjectiveViews } from "./components/objective-views";
@@ -62,7 +63,7 @@ export const RoadmapPage = () => {
   const emptyState = (
     <Box className="flex h-full items-center justify-center">
       <Box className="flex flex-col items-center">
-        <ObjectiveIcon className="h-12 w-auto" strokeWidth={1.3} />
+        <RoadmapEmptyIllustration />
         <Text className="mt-8 mb-6" fontSize="3xl">
           Set your first {getTermDisplay("objectiveTerm", { capitalize: true })}
         </Text>

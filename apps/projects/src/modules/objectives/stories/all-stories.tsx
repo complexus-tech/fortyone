@@ -11,10 +11,11 @@ import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
 import { useObjectiveOptions } from "@/modules/objectives/stories/provider";
-import { useCopyToClipboard, useTerminology } from "@/hooks";
+import { useCopyToClipboard, useTerminology, useWorkspacePath } from "@/hooks";
 import { useObjectiveStoriesGrouped } from "@/modules/stories/hooks/use-objective-stories-grouped";
 import { useObjective } from "@/modules/objectives/hooks";
 import { ObjectivePageSkeleton } from "@/modules/objectives/stories/objective-page-skeleton";
+import { ResourceNotFoundState } from "@/components/ui/resource-not-found-state";
 import { Header } from "@/modules/objectives/stories/header";
 import { StoriesSkeleton } from "@/modules/objectives/stories/stories-skeleton";
 import { Overview } from "./overview";
@@ -33,6 +34,7 @@ export const AllStories = ({
 
   const [_, copyText] = useCopyToClipboard();
   const { getTermDisplay } = useTerminology();
+  const { withWorkspace } = useWorkspacePath();
   const tabs = ["overview", "stories"] as const;
   const [tab, setTab] = useQueryState(
     "tab",
@@ -46,7 +48,8 @@ export const AllStories = ({
   const boardHeightClassName = hasAppliedFilters
     ? "h-[calc(100dvh-11.3rem)]"
     : "h-[calc(100dvh-7.7rem)]";
-  const { isPending: isObjectivePending } = useObjective(objectiveId);
+  const { data: objective, isPending: isObjectivePending } =
+    useObjective(objectiveId);
   const { isPending: isStoriesPending, data: groupedStories } =
     useObjectiveStoriesGrouped(objectiveId, viewOptions.groupBy, {
       orderBy: viewOptions.orderBy,
@@ -59,6 +62,17 @@ export const AllStories = ({
 
   if (isObjectivePending) {
     return <ObjectivePageSkeleton layout={layout} />;
+  }
+
+  if (!objective) {
+    return (
+      <ResourceNotFoundState
+        actionLabel={`Go to ${getTermDisplay("objectiveTerm", { variant: "plural" })}`}
+        description={`This ${getTermDisplay("objectiveTerm")} might not exist or you might not have access to it.`}
+        href={withWorkspace(`/teams/${teamId}/objectives`)}
+        title={`${getTermDisplay("objectiveTerm", { capitalize: true })} not found`}
+      />
+    );
   }
 
   return (

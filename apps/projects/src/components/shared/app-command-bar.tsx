@@ -66,16 +66,19 @@ export const AppCommandBar = () => {
           className={
             isCollapsed
               ? "w-(--sidebar-width-collapsed) px-2"
-              : "w-(--sidebar-width) px-4"
+              : "w-(--sidebar-width) gap-2 pl-4"
           }
           justify={isCollapsed ? "center" : undefined}
         >
           <WorkspacesMenu isCollapsed={isCollapsed} />
+          {isCollapsed ? null : (
+            <div className="ml-auto flex shrink-0">
+              <SidebarToggleButton placement="workspace-menu" />
+            </div>
+          )}
         </Flex>
         <Flex align="center" className="min-w-0 flex-1 gap-4 pr-[16px] pl-2">
-          <Flex align="center" className="h-11 w-11 shrink-0" justify="center">
-            <SidebarToggleButton variant="command-bar" />
-          </Flex>
+          {isCollapsed ? <SidebarToggleButton /> : null}
           <Commands className="max-w-xl flex-1" showTrigger />
           <Flex align="center" className="ml-auto shrink-0 gap-4">
             <Tooltip title="Notifications">

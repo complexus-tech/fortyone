@@ -13,7 +13,7 @@ import { Box, Flex, Text } from "ui";
 import { useState, useMemo, useCallback, useOptimistic } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { PlusIcon, StoryMissingIcon } from "icons";
+import { PlusIcon } from "icons";
 import { useParams } from "next/navigation";
 import { cn } from "lib";
 import type {
@@ -40,6 +40,7 @@ import { GanttBoard } from "./gantt-board";
 import { StoriesToolbar } from "./stories-toolbar";
 import { BoardContext } from "./board-context";
 import { NewStoryButton } from "./new-story-button";
+import { StoriesEmptyIllustration } from "./illustrations/stories-empty-illustration";
 
 export type StoriesLayout = "list" | "kanban" | "gantt" | null;
 
@@ -111,9 +112,7 @@ const EmptyState = ({
 }) => (
   <Box className="flex h-[70dvh] items-center justify-center">
     <Box className="flex flex-col items-center">
-      {illustration ?? (
-        <StoryMissingIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
-      )}
+      {illustration ?? <StoriesEmptyIllustration />}
       <Text className="mt-8 mb-6" fontSize="3xl">
         No {getTermDisplay("storyTerm", { variant: "plural" })} found
       </Text>

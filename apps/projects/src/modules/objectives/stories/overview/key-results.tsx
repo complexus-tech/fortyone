@@ -31,6 +31,7 @@ import { ConfirmDialog, RowWrapper, AssigneesMenu } from "@/components/ui";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useMediaQuery, useTerminology } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
+import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import {
   useCreateKeyResultsMutation,
   useKeyResults,
@@ -649,7 +650,7 @@ export const KeyResults = ({ viewport }: { viewport: KeyResultsViewport }) => {
           gap={4}
           justify="center"
         >
-          <OKRIcon className="h-12" />
+          <RoadmapEmptyIllustration className="w-52" />
           <Text className="max-w-lg text-center" color="muted">
             You haven&apos;t added any{" "}
             {getTermDisplay("keyResultTerm", {

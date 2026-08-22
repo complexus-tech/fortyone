@@ -1,16 +1,10 @@
 import { Box, Flex, Text } from "ui";
-import { DocsIcon } from "icons";
+import { DocumentsEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 
 export const DocumentsEmptyState = () => (
   <Flex align="center" className="h-dvh px-8" justify="center">
     <Box className="max-w-sm text-center">
-      <Flex
-        align="center"
-        className="bg-surface-muted text-text-muted mx-auto mb-5 size-12 rounded-2xl"
-        justify="center"
-      >
-        <DocsIcon className="size-6" />
-      </Flex>
+      <DocumentsEmptyIllustration className="mx-auto mb-5 w-52" />
       <Text className="mb-2" fontSize="xl" fontWeight="semibold">
         Select a document
       </Text>

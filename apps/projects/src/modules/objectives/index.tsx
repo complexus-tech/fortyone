@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { Text, Button, Box } from "ui";
-import { CrownIcon, ObjectiveIcon, PlusIcon } from "icons";
+import { CrownIcon, PlusIcon } from "icons";
 import { FeatureGuard, NewObjectiveDialog } from "@/components/ui";
 import {
   useLocalStorage,
@@ -18,6 +18,7 @@ import {
   type ObjectiveViewOptions,
 } from "@/modules/roadmap/objective-board-utils";
 import type { RoadmapLayoutType } from "@/modules/roadmap/types";
+import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { ObjectivesHeader } from "./components/header";
 import { ListObjectives } from "./components/list-objectives";
 import { TeamObjectivesHeader } from "./components/team-header";
@@ -101,7 +102,7 @@ export const TeamObjectivesList = () => {
   const emptyState = (
     <Box className="flex h-full items-center justify-center">
       <Box className="flex flex-col items-center">
-        <ObjectiveIcon className="h-12 w-auto" strokeWidth={1.6} />
+        <RoadmapEmptyIllustration />
         <Text className="mt-8 mb-6" fontSize="3xl">
           No {getTermDisplay("objectiveTerm", { variant: "plural" })} found
         </Text>

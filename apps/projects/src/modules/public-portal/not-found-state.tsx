@@ -1,5 +1,5 @@
-import { ChatIcon } from "icons";
 import { Flex, Text } from "ui";
+import { NotFoundIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 
 export const PublicPortalNotFoundState = ({
   description,
@@ -14,13 +14,7 @@ export const PublicPortalNotFoundState = ({
     justify="center"
   >
     <Flex align="center" className="max-w-md text-center" direction="column">
-      <Flex
-        align="center"
-        className="bg-surface-muted text-text-muted size-12 rounded-xl"
-        justify="center"
-      >
-        <ChatIcon className="h-5 w-auto" />
-      </Flex>
+      <NotFoundIllustration className="w-52" />
       <Text as="h1" className="mt-5 text-2xl font-semibold">
         {title}
       </Text>

@@ -60,6 +60,7 @@ import {
 } from "@/components/ui";
 import { ObjectiveKeyResultMenu } from "@/components/ui/story/objective-key-result-menu";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
+import { NotFoundIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import {
@@ -1069,7 +1070,8 @@ export const IntegrationRequestDetails = ({
   if (!request) {
     return (
       <Box className="flex h-dvh items-center justify-center px-6">
-        <Box>
+        <Box className="flex flex-col items-center">
+          <NotFoundIllustration className="mb-5 w-52" />
           <Text align="center" className="mb-3" fontSize="xl">
             Intake item not found
           </Text>
