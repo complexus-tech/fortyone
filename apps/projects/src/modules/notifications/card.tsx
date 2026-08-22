@@ -12,7 +12,7 @@ import Link from "next/link";
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
 import { PriorityIcon, StoryStatusIcon } from "@/components/ui";
-import { LIST_ITEM_ATTENTION_BORDER } from "@/components/ui/list-item-attention";
+import { ListItemAttentionDot } from "@/components/ui/list-item-attention-dot";
 import { MayaAvatar } from "@/components/ui/maya-avatar";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import type { AppNotification } from "./types";
@@ -37,6 +37,7 @@ export const NotificationCard = ({
   const pathname = usePathname();
   const { withWorkspace } = useWorkspacePath();
   const mayaActor = actor?.isSystem ? actor : null;
+  const isActive = pathname.includes(id);
   const isUnread = !readAt;
   const { mutate: readNotification } = useReadNotificationMutation();
   const { mutate: unreadNotification } = useMarkUnreadMutation();
@@ -96,20 +97,23 @@ export const NotificationCard = ({
           >
             <Box
               className={cn(
-                "border-border hover:bg-surface-muted block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
+                "border-border block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
                 {
-                  "bg-surface-muted": pathname.includes(id),
-                  [LIST_ITEM_ATTENTION_BORDER]: isUnread,
+                  "bg-primary/5 hover:bg-primary/5": isActive,
+                  "hover:bg-surface-muted": !isActive,
                 },
               )}
             >
               <Flex align="center" className="mb-2" gap={2} justify="between">
-                <Text
-                  className="line-clamp-1 flex-1 font-medium"
-                  color={isUnread ? undefined : "muted"}
-                >
-                  {title}
-                </Text>
+                <Flex align="center" className="min-w-0 flex-1" gap={2}>
+                  {isUnread ? <ListItemAttentionDot /> : null}
+                  <Text
+                    className="line-clamp-1 flex-1 font-medium"
+                    color={isUnread ? undefined : "muted"}
+                  >
+                    {title}
+                  </Text>
+                </Flex>
                 <Text className="shrink-0 text-[0.95rem]" color="muted">
                   <TimeAgo timestamp={createdAt} />
                 </Text>

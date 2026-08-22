@@ -15,7 +15,7 @@ import {
 } from "icons";
 import { Avatar, Box, Button, ContextMenu, Flex, Text, TimeAgo } from "ui";
 import { ConfirmDialog, Dot } from "@/components/ui";
-import { LIST_ITEM_ATTENTION_BORDER } from "@/components/ui/list-item-attention";
+import { ListItemAttentionDot } from "@/components/ui/list-item-attention-dot";
 import { useWorkspacePath } from "@/hooks";
 import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useUserRole } from "@/hooks/role";
@@ -96,20 +96,22 @@ export const TeamFeedbackCard = ({
       className={cn(
         "border-border block border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
         {
-          "bg-surface-muted": isActive,
+          "bg-primary/5 hover:bg-primary/5 cursor-pointer": isActive,
           "cursor-default opacity-80": isTrashed,
-          "hover:bg-surface-muted cursor-pointer": !isTrashed,
-          [LIST_ITEM_ATTENTION_BORDER]: isUnread,
+          "hover:bg-surface-muted cursor-pointer": !isTrashed && !isActive,
         },
       )}
     >
       <Flex align="center" className="mb-2" gap={2} justify="between">
-        <Text
-          className="line-clamp-1 flex-1 font-medium"
-          color={isUnread ? undefined : "muted"}
-        >
-          {feedback.title}
-        </Text>
+        <Flex align="center" className="min-w-0 flex-1" gap={2}>
+          {isUnread ? <ListItemAttentionDot /> : null}
+          <Text
+            className="line-clamp-1 flex-1 font-medium"
+            color={isUnread ? undefined : "muted"}
+          >
+            {feedback.title}
+          </Text>
+        </Flex>
         <Text className="shrink-0 text-[0.95rem]" color="muted">
           {isTrashed && feedback.restoreUntil ? (
             <>

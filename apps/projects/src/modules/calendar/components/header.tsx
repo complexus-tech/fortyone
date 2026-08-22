@@ -2,6 +2,7 @@
 
 import {
   ArrowDown2Icon,
+  CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   TimeScheduleIcon,
@@ -65,6 +66,7 @@ export const CalendarHeader = ({
           breadCrumbs={[
             {
               name: "Calendar",
+              icon: <CalendarIcon />,
             },
             {
               name: calendarViewLabels[currentView],

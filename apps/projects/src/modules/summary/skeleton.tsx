@@ -24,7 +24,7 @@ export const SummarySkeleton = () => {
 
   return (
     <BodyContainer className="h-full">
-      <Container className="@container pt-3 pb-4">
+      <Container className="@container pt-9 pb-4">
         <Flex className="flex flex-col items-start justify-between gap-3 @3xl:flex-row @3xl:items-center">
           <Box>
             <Text

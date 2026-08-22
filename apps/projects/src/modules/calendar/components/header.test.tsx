@@ -8,6 +8,7 @@ const mockUseAppCommandAction = jest.fn();
 
 jest.mock("icons", () => ({
   ArrowDown2Icon: () => <span aria-hidden>Open views</span>,
+  CalendarIcon: () => <span data-testid="calendar-icon" />,
   ChevronLeftIcon: () => <span aria-hidden>Previous</span>,
   ChevronRightIcon: () => <span aria-hidden>Next</span>,
   TimeScheduleIcon: () => <span aria-hidden>Focus time</span>,
@@ -15,8 +16,17 @@ jest.mock("icons", () => ({
 
 jest.mock("ui", () => ({
   Box: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  BreadCrumbs: ({ breadCrumbs }: { breadCrumbs: { name: string }[] }) => (
-    <div>{breadCrumbs.map((item) => item.name).join(" / ")}</div>
+  BreadCrumbs: ({
+    breadCrumbs,
+  }: {
+    breadCrumbs: { icon?: ReactNode; name: string }[];
+  }) => (
+    <div>
+      {breadCrumbs.map((item) => item.name).join(" / ")}
+      {breadCrumbs.map((item) => (
+        <span key={item.name}>{item.icon}</span>
+      ))}
+    </div>
   ),
   Button: ({
     children,
@@ -79,6 +89,7 @@ describe("CalendarHeader", () => {
     );
 
     expect(screen.getByText("Calendar / Week")).toBeInTheDocument();
+    expect(screen.getByTestId("calendar-icon")).toBeInTheDocument();
     expect(screen.getByText("August 2026")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Today" })).toBeInTheDocument();
     expect(

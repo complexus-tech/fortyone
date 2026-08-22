@@ -25,7 +25,7 @@ export const SummaryPage = () => {
 
   return (
     <BodyContainer className="h-full">
-      <Container className="@container pt-3 pb-4">
+      <Container className="@container pt-9 pb-4">
         <Flex className="flex flex-col items-start justify-between gap-3 @3xl:flex-row @3xl:items-center">
           <Box>
             <Text
@@ -40,7 +40,7 @@ export const SummaryPage = () => {
               {getTermDisplay("storyTerm", { variant: "plural" })}.
             </Text>
           </Box>
-          <DateRangeFilter />
+          <DateRangeFilter showLabel={false} />
         </Flex>
         <Overview />
         <Box className="my-4 grid grid-cols-1 gap-4 @3xl:grid-cols-2 @7xl:grid-cols-3">

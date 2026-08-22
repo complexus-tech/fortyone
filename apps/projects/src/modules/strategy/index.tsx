@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Box, BreadCrumbs, Button, Dialog, Flex, Text } from "ui";
-import { MinusIcon, PlusIcon } from "icons";
+import { MinusIcon, PlusIcon, StrategyIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useUserRole } from "@/hooks";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
@@ -47,6 +47,9 @@ export const WorkspaceStrategyMapPage = () => {
             breadCrumbs={[
               {
                 name: "Strategy Map",
+                icon: (
+                  <StrategyIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
+                ),
               },
             ]}
           />

@@ -1,5 +1,6 @@
 "use client";
 import { Box, BreadCrumbs, Flex, Tabs } from "ui";
+import { StoryIcon, UserIcon } from "icons";
 import { useHotkeys } from "react-hotkeys-hook";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { StoriesViewOptionsButton, StoriesFilterButton } from "@/components/ui";
@@ -58,6 +59,7 @@ export const Header = ({
             breadCrumbs={[
               {
                 name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
+                icon: <UserIcon />,
               },
             ]}
           />
@@ -67,9 +69,13 @@ export const Header = ({
             breadCrumbs={[
               {
                 name: `My ${getTermDisplay("storyTerm", { variant: "plural" })}`,
+                icon: <UserIcon />,
               },
               {
                 name: tabLabel,
+                icon: (
+                  <StoryIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
+                ),
                 className: "capitalize",
               },
             ]}

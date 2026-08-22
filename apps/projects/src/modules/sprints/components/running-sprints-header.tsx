@@ -1,5 +1,6 @@
 "use client";
 import { BreadCrumbs, Flex } from "ui";
+import { SprintsIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useTerminology } from "@/hooks";
 
@@ -17,6 +18,7 @@ export const RunningSprintsHeader = () => {
                 variant: "plural",
                 capitalize: true,
               }),
+              icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
             },
           ]}
           className="md:hidden"
@@ -28,6 +30,7 @@ export const RunningSprintsHeader = () => {
                 variant: "plural",
                 capitalize: true,
               })}`,
+              icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
             },
           ]}
           className="hidden md:flex"

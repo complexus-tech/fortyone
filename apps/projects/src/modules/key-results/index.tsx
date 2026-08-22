@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Box, BreadCrumbs, Button, Flex, Skeleton, Text } from "ui";
+import { OKRIcon } from "icons";
 import {
   BodyContainer,
   HeaderContainer,
@@ -44,6 +45,7 @@ const KeyResultsHeader = ({
                 variant: "plural",
                 capitalize: true,
               }),
+              icon: <OKRIcon />,
             },
           ]}
         />

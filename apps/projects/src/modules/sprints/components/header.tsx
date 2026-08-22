@@ -1,8 +1,10 @@
 "use client";
 import { BreadCrumbs, Flex } from "ui";
+import { SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useTeams } from "@/modules/teams/hooks/teams";
+import { TeamColor } from "@/components/ui";
 import { useTerminology } from "@/hooks";
 
 export const SprintsHeader = () => {
@@ -14,6 +16,7 @@ export const SprintsHeader = () => {
 
   const selectedTeam = teams.find((team) => team.id === teamId);
   const name = selectedTeam?.name ?? "Team";
+  const color = selectedTeam?.color;
   return (
     <HeaderContainer className="justify-between">
       <Flex align="center" gap={2}>
@@ -25,6 +28,7 @@ export const SprintsHeader = () => {
                 variant: "plural",
                 capitalize: true,
               }),
+              icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
             },
           ]}
           className="md:hidden"
@@ -33,12 +37,14 @@ export const SprintsHeader = () => {
           breadCrumbs={[
             {
               name,
+              icon: <TeamColor color={color} />,
             },
             {
               name: getTermDisplay("sprintTerm", {
                 variant: "plural",
                 capitalize: true,
               }),
+              icon: <SprintsIcon className="h-[1.1rem] w-auto" />,
             },
           ]}
           className="hidden md:flex"

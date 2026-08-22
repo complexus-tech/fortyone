@@ -1,7 +1,7 @@
 "use client";
 import { BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
-import { PlusIcon } from "icons";
+import { ObjectiveIcon, PlusIcon } from "icons";
 import {
   HeaderContainer,
   MobileMenuButton,
@@ -35,6 +35,7 @@ export const ObjectivesHeader = () => {
                 variant: "plural",
                 capitalize: true,
               }),
+              icon: <ObjectiveIcon strokeWidth={2} />,
             },
           ]}
         />

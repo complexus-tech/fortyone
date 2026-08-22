@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BreadCrumbs, Flex, Button, Box, Text } from "ui";
-import { PlusIcon, WarningIcon } from "icons";
+import { PlusIcon, RoadmapIcon, WarningIcon } from "icons";
 import {
   HeaderContainer,
   MobileMenuButton,
@@ -98,6 +98,9 @@ export const RoadmapPage = () => {
             breadCrumbs={[
               {
                 name: "Roadmap",
+                icon: (
+                  <RoadmapIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
+                ),
               },
               {
                 name: getRoadmapLayoutLabel(layout),

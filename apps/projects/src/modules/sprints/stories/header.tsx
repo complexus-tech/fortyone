@@ -1,6 +1,6 @@
 "use client";
 import { Box, BreadCrumbs, Button, Flex, Tooltip } from "ui";
-import { AiIcon } from "icons";
+import { AiIcon, SprintsIcon, StoryIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -11,6 +11,7 @@ import {
   StoriesViewOptionsButton,
   SideDetailsSwitch,
   StoriesFilterButton,
+  TeamColor,
 } from "@/components/ui";
 import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
 import { useChatContext } from "@/context/chat-context";
@@ -56,6 +57,7 @@ export const Header = ({
 
   const selectedTeam = teams.find((currentTeam) => currentTeam.id === teamId);
   const teamName = selectedTeam?.name ?? "Team";
+  const teamColor = selectedTeam?.color;
   const startDate = format(new Date(sprint.startDate), "MMM d");
   const endDate = format(new Date(sprint.endDate), "MMM d");
   const sprintTerm = getTermDisplay("sprintTerm", { capitalize: true });
@@ -73,10 +75,12 @@ export const Header = ({
           breadCrumbs={[
             {
               name: teamName,
+              icon: <TeamColor color={teamColor} />,
               url: `/teams/${teamId}/stories`,
             },
             {
               name: sprintName,
+              icon: <SprintsIcon className="h-[1.1rem]" />,
               url: `/teams/${teamId}/sprints/${sprint.id}/stories`,
             },
             {
@@ -84,6 +88,7 @@ export const Header = ({
                 variant: "plural",
                 capitalize: true,
               }),
+              icon: <StoryIcon className="h-[1.1rem] w-auto" strokeWidth={2} />,
             },
           ]}
           className="hidden md:flex"
@@ -92,6 +97,7 @@ export const Header = ({
           breadCrumbs={[
             {
               name: sprintName,
+              icon: <SprintsIcon className="h-[1.1rem]" />,
               url: `/teams/${teamId}/sprints/${sprint.id}`,
             },
           ]}

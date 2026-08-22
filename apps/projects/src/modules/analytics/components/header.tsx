@@ -1,5 +1,6 @@
 "use client";
 import { Flex, BreadCrumbs } from "ui";
+import { AnalyticsIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { NewStoryButton } from "@/components/ui";
 
@@ -12,6 +13,7 @@ export const Header = () => {
           breadCrumbs={[
             {
               name: "Analytics",
+              icon: <AnalyticsIcon />,
             },
           ]}
         />

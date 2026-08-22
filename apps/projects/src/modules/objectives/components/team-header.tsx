@@ -1,6 +1,6 @@
 "use client";
 import { BreadCrumbs, Button, Flex } from "ui";
-import { PlusIcon } from "icons";
+import { ObjectiveIcon, PlusIcon } from "icons";
 import { useParams } from "next/navigation";
 import {
   HeaderContainer,
@@ -12,6 +12,7 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import { useUserRole, useTerminology, useMediaQuery } from "@/hooks";
 import { ObjectiveViewOptionsButton } from "@/modules/roadmap/components/objective-view-options-button";
 import type { ObjectiveViewOptions } from "@/modules/roadmap/objective-board-utils";
+import { TeamColor } from "@/components/ui";
 import {
   getRoadmapLayoutLabel,
   type RoadmapLayoutType,
@@ -53,12 +54,14 @@ export const TeamObjectivesHeader = ({
           breadCrumbs={[
             {
               name: isMobile ? "" : name,
+              icon: <TeamColor color={selectedTeam?.color} />,
             },
             {
               name: getTermDisplay("objectiveTerm", {
                 variant: "plural",
                 capitalize: true,
               }),
+              icon: <ObjectiveIcon strokeWidth={2} />,
             },
             {
               name: getRoadmapLayoutLabel(layout),
