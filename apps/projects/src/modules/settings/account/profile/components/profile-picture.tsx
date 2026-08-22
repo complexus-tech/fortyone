@@ -1,13 +1,13 @@
 "use client";
 
-import { Avatar, ProfileUploadDialog, Tooltip } from "ui";
-import { EditIcon } from "icons";
+import { ProfileUploadDialog } from "ui";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { User } from "@/types";
 import { useProfile } from "@/lib/hooks/profile";
 import { useUploadProfileImageMutation } from "@/lib/hooks/user/upload-profile-image-mutation";
 import { useDeleteProfileImageMutation } from "@/lib/hooks/user/delete-profile-image-mutation";
+import { EditableAvatar } from "@/modules/settings/components";
 
 export const ProfilePicture = ({
   initialProfile,
@@ -51,28 +51,14 @@ export const ProfilePicture = ({
 
   return (
     <>
-      <Tooltip title="Change profile picture">
-        <button
-          aria-label="Change profile picture"
-          className="group focus-visible:ring-primary/40 relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-          onClick={() => {
-            setIsDialogOpen(true);
-          }}
-          type="button"
-        >
-          <Avatar
-            className="border-border group-hover:border-primary/50 h-12 border-2 transition-colors"
-            name={profile?.fullName || profile?.username}
-            src={profile?.avatarUrl}
-          />
-          <span
-            aria-hidden="true"
-            className="border-background bg-foreground text-background absolute -right-0.5 -bottom-0.5 flex size-5 items-center justify-center rounded-full border-2 transition-transform group-hover:scale-105"
-          >
-            <EditIcon className="h-2.5 w-auto" strokeWidth={2.5} />
-          </span>
-        </button>
-      </Tooltip>
+      <EditableAvatar
+        label="Change profile picture"
+        name={profile?.fullName || profile?.username}
+        onClick={() => {
+          setIsDialogOpen(true);
+        }}
+        src={profile?.avatarUrl}
+      />
       <ProfileUploadDialog
         currentImage={profile?.avatarUrl}
         isOpen={isDialogOpen}
