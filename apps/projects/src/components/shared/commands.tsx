@@ -89,7 +89,7 @@ export const Commands = ({
     <>
       {showTrigger ? (
         <button
-          aria-label="Search or jump to"
+          aria-label="Search tasks, objectives, or commands"
           className={cn(
             "bg-surface-muted text-text-muted hover:bg-state-hover focus-visible:ring-ring flex h-11 min-w-0 items-center gap-2 rounded-lg px-3 text-left transition-colors outline-none focus-visible:ring-2",
             className,
@@ -100,7 +100,9 @@ export const Commands = ({
           type="button"
         >
           <SearchIcon className="h-4 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">Search or jump to...</span>
+          <span className="min-w-0 flex-1 truncate">
+            Search tasks, objectives, or commands…
+          </span>
           <Kbd className="!bg-surface/5 !text-text-muted dark:!bg-surface/10 hidden shrink-0 sm:flex">
             ⌘ K
           </Kbd>
