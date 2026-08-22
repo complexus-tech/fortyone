@@ -39,13 +39,16 @@ const SidebarFooterActions = ({
       <Menu.Button>
         <Button
           asIcon
-          className="border-[0.5px]"
+          className={cn(
+            "border-[0.5px]",
+            isCollapsed && "h-12 w-12 px-0 md:h-12",
+          )}
           color="tertiary"
           data-help-button
           rounded="full"
           variant="naked"
         >
-          <HelpIcon className="h-6" />
+          <HelpIcon className={cn("h-6", isCollapsed && "h-7")} />
         </Button>
       </Menu.Button>
       <Menu.Items align="end">

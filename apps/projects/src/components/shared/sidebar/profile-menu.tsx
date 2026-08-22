@@ -59,7 +59,12 @@ export const ProfileMenu = ({
   };
 
   return (
-    <Box className="border-border border-t-[0.5px] px-3 pt-3">
+    <Box
+      className={cn(
+        "border-border border-t-[0.5px] px-3 pt-3",
+        isCollapsed && "flex justify-center px-0",
+      )}
+    >
       <Menu>
         <Menu.Button>
           <Box className="relative">
@@ -67,19 +72,16 @@ export const ProfileMenu = ({
               aria-label="Open profile menu"
               className={cn(
                 "h-9 justify-between px-2",
-                isCollapsed && "w-full justify-center px-0",
+                isCollapsed && "h-12 w-12 justify-center px-0 md:h-12",
               )}
               color="tertiary"
-              fullWidth
+              fullWidth={!isCollapsed}
               size="sm"
               variant="naked"
             >
               <Flex align="center" className="gap-2">
                 <Avatar
-                  className={cn(
-                    "relative h-7 text-sm",
-                    isCollapsed && "h-9",
-                  )}
+                  className={cn("relative h-7 text-sm", isCollapsed && "h-9")}
                   name={profile?.fullName || profile?.username}
                   src={profile?.avatarUrl}
                   style={{

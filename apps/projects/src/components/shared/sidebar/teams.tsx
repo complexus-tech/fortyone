@@ -137,7 +137,7 @@ export const Teams = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
                 asIcon={!isCollapsed}
                 className={cn(
                   isCollapsed &&
-                    "min-h-14 w-full flex-col justify-center gap-1 px-1 py-2 text-center",
+                    "hover:text-primary hover:[&_svg]:text-primary min-h-14 w-full flex-col justify-center gap-1 px-1 py-2 text-center",
                 )}
                 color="tertiary"
                 data-manage-teams-button
