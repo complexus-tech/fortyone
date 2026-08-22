@@ -32,9 +32,10 @@ export const buttonVariants = cva(
           "border-border hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
-        white: "text-black dark:text-dark border-white bg-white ring-white",
+        white: "text-primary-foreground border-white bg-white ring-white",
         invert: "text-foreground-inverse bg-background-inverse",
-        black: "text-white border-black bg-black ring-black",
+        black:
+          "text-foreground-inverse border-background-inverse bg-background-inverse ring-background-inverse",
       },
       size: {
         xs: "px-1.5 h-[1.85rem] text-[0.95rem] gap-[2px]",
@@ -73,8 +74,13 @@ export const buttonVariants = cva(
       },
       {
         variant: "solid",
-        color: ["secondary", "danger"],
-        className: "text-white",
+        color: "secondary",
+        className: "text-secondary-foreground",
+      },
+      {
+        variant: "solid",
+        color: "danger",
+        className: "text-danger-foreground",
       },
       {
         variant: "solid",
