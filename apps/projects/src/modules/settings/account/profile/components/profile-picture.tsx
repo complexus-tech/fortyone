@@ -1,6 +1,7 @@
 "use client";
 
-import { Avatar, ProfileUploadDialog } from "ui";
+import { Avatar, ProfileUploadDialog, Tooltip } from "ui";
+import { EditIcon } from "icons";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { User } from "@/types";
@@ -50,19 +51,28 @@ export const ProfilePicture = ({
 
   return (
     <>
-      <button
-        onClick={() => {
-          setIsDialogOpen(true);
-        }}
-        type="button"
-      >
-        <Avatar
-          className="h-10"
-          name={profile?.fullName || profile?.username}
-          src={profile?.avatarUrl}
-        />
-        <span className="sr-only">Change profile picture</span>
-      </button>
+      <Tooltip title="Change profile picture">
+        <button
+          aria-label="Change profile picture"
+          className="group focus-visible:ring-primary/40 relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          onClick={() => {
+            setIsDialogOpen(true);
+          }}
+          type="button"
+        >
+          <Avatar
+            className="border-border group-hover:border-primary/50 h-12 border-2 transition-colors"
+            name={profile?.fullName || profile?.username}
+            src={profile?.avatarUrl}
+          />
+          <span
+            aria-hidden="true"
+            className="border-background bg-foreground text-background absolute -right-0.5 -bottom-0.5 flex size-5 items-center justify-center rounded-full border-2 transition-transform group-hover:scale-105"
+          >
+            <EditIcon className="h-2.5 w-auto" strokeWidth={2.5} />
+          </span>
+        </button>
+      </Tooltip>
       <ProfileUploadDialog
         currentImage={profile?.avatarUrl}
         isOpen={isDialogOpen}
