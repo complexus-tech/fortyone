@@ -62,6 +62,7 @@ const List = ({
       >
         <div
           className="flex h-full min-h-0 w-full flex-col gap-3 overflow-y-auto overscroll-y-contain rounded-md pb-6"
+          data-kanban-column-scroll
           ref={scrollRootRef}
         >
           {children}

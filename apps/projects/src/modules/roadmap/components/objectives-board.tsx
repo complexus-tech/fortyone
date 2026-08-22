@@ -590,7 +590,7 @@ const ObjectivesKanban = ({
   );
 
   return (
-    <BodyContainer className="dark:bg-background h-full overflow-x-auto bg-white">
+    <BodyContainer className="bg-surface-muted/40 dark:bg-surface-muted/20 h-full overflow-x-auto">
       <Box className="sticky top-0 z-1 h-14 w-max px-6 backdrop-blur">
         <Flex align="center" className="h-full" gap={6}>
           {visibleGroups.map((group) => (

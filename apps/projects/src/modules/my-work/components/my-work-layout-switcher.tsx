@@ -28,14 +28,14 @@ export const MyWorkLayoutSwitcher = ({
   layout: MyWorkLayout;
   setLayout: (value: MyWorkLayout) => void;
 }) => (
-  <Flex className="bg-surface-muted h-[2.2rem] items-center gap-1 rounded-xl md:mr-2">
+  <Flex className="bg-surface-prominent/30 dark:bg-surface-muted h-[2.2rem] items-center gap-1 rounded-xl md:mr-2">
     {options.map((option) => (
       <button
         aria-pressed={layout === option.value}
         className={cn(
-          "text-text-secondary hover:text-text-primary flex h-full items-center gap-1.5 rounded-xl px-3 font-medium",
+          "text-text-secondary hover:text-text-primary focus-visible:bg-state-hover flex h-full items-center gap-1.5 rounded-xl px-3 font-medium outline-none [&_svg]:text-current",
           layout === option.value &&
-            "border-border text-text-primary dark:bg-surface border bg-white",
+            "border-border bg-surface-elevated text-text-primary border",
         )}
         key={option.value}
         onClick={() => {

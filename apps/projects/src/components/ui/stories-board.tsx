@@ -1,5 +1,6 @@
 "use client";
 import type {
+  AutoScrollOptions,
   CollisionDetection,
   DragEndEvent,
   DragStartEvent,
@@ -42,8 +43,13 @@ import { BoardContext } from "./board-context";
 import { NewStoryButton } from "./new-story-button";
 import { getStoryDropUpdate } from "./story-drag";
 import { StoriesEmptyIllustration } from "./illustrations/stories-empty-illustration";
+import { canAutoScrollKanbanColumn } from "./kanban-auto-scroll";
 
 export type StoriesLayout = "list" | "kanban" | "gantt" | null;
+
+const KANBAN_COLUMN_AUTO_SCROLL_OPTIONS: AutoScrollOptions = {
+  canScroll: canAutoScrollKanbanColumn,
+};
 
 const storyCollisionDetection: CollisionDetection = (args) => {
   const pointerCollisions = pointerWithin(args);
@@ -305,6 +311,11 @@ export const StoriesBoard = ({
 
         {hasStories ? (
           <DndContext
+            autoScroll={
+              layout === "kanban"
+                ? KANBAN_COLUMN_AUTO_SCROLL_OPTIONS
+                : undefined
+            }
             collisionDetection={storyCollisionDetection}
             onDragCancel={handleDragCancel}
             onDragEnd={handleDragEnd}

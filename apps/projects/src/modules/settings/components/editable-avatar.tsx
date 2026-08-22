@@ -28,9 +28,12 @@ export const EditableAvatar = ({
       />
       <span
         aria-hidden="true"
-        className="border-background bg-foreground text-background absolute right-0 bottom-0 flex size-5 items-center justify-center rounded-full border-2 transition-transform group-hover:scale-105"
+        className="text-foreground absolute right-0 bottom-0 flex transition-transform group-hover:scale-105"
       >
-        <EditIcon className="h-2.5 w-auto" strokeWidth={2.5} />
+        <EditIcon
+          className="!text-foreground !h-4 !w-auto"
+          strokeWidth={2.25}
+        />
       </span>
     </button>
   </Tooltip>

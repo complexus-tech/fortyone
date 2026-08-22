@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Box, Button, Flex, Popover, Text } from "ui";
 import { cn } from "lib";
 import { MoreHorizontalIcon } from "icons";
@@ -24,6 +25,7 @@ import {
   hideKanbanGroup,
   showKanbanGroup,
 } from "./kanban-hidden-groups";
+import { useKanbanAutoScroll } from "./use-kanban-auto-scroll";
 
 const getKanbanGroupIdentity = ({
   group,
@@ -234,6 +236,9 @@ export const KanbanBoard = ({
   groupedStories: GroupedStoriesResponse;
   className?: string;
 }) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  useKanbanAutoScroll(scrollContainerRef);
+
   const { teamId } = useParams<{ teamId: string }>();
   const { viewOptions, setViewOptions } = useBoard();
   const { groupBy } = viewOptions;
@@ -261,10 +266,11 @@ export const KanbanBoard = ({
     <BodyContainer
       aria-label="Kanban board"
       className={cn(
-        "dark:bg-background h-full min-h-0 w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain bg-white",
+        "h-full min-h-0 w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain",
         className,
       )}
       data-kanban-board-scroll
+      ref={scrollContainerRef}
       role="region"
       tabIndex={0}
     >

@@ -11,14 +11,14 @@ import {
 } from "react";
 import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarPlusIcon } from "icons";
+import { CalendarPlusIcon, ChevronLeftIcon, ChevronRightIcon } from "icons";
 import type { DateRange } from "react-day-picker";
 import { useSession } from "@/lib/auth/client";
 import type { Objective, ObjectiveUpdate } from "@/modules/objectives/types";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks/update-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
-import { useWorkspacePath } from "@/hooks";
+import { useLocalStorage, useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
 import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
@@ -34,10 +34,12 @@ import { ObjectiveStatusIcon } from "./objective-status-icon";
 import { BaseGantt, GanttControls, type ZoomLevel } from "./base-gantt";
 
 const ROADMAP_STICKY_COLUMNS_WIDTH = 640;
+const ROADMAP_COLLAPSED_COLUMNS_WIDTH = 320;
 const ROADMAP_ROW_HEIGHT = "3.5rem";
 const ROADMAP_COLUMNS =
   "grid-cols-[2rem_minmax(0,7rem)_2rem_2rem_minmax(0,1fr)_7rem]";
 const DAYS_PER_DISPLAY_MONTH = 30;
+const DAYS_PER_DISPLAY_YEAR = 365;
 
 const formatObjectiveDuration = (days: number) => {
   if (days < DAYS_PER_DISPLAY_MONTH) {
@@ -46,6 +48,36 @@ const formatObjectiveDuration = (days: number) => {
 
   const months = Math.max(1, Math.round(days / DAYS_PER_DISPLAY_MONTH));
   return `${months} month${months === 1 ? "" : "s"}`;
+};
+
+const formatCompactObjectiveDuration = (days: number) => {
+  if (days < DAYS_PER_DISPLAY_MONTH) return `${days}d`;
+  if (days < DAYS_PER_DISPLAY_YEAR) {
+    return `${Math.max(1, Math.round(days / DAYS_PER_DISPLAY_MONTH))}m`;
+  }
+
+  return `${Math.max(1, Math.round(days / DAYS_PER_DISPLAY_YEAR))}y`;
+};
+
+const CompactObjectiveDuration = ({
+  days,
+  fallback,
+}: {
+  days: number | null;
+  fallback: ReactNode;
+}) => {
+  if (days === null) return fallback;
+
+  return (
+    <Tooltip
+      className="pointer-events-none"
+      title={`${days} calendar day${days === 1 ? "" : "s"}`}
+    >
+      <Text className="text-[0.85rem]" color="muted" fontWeight="medium">
+        {formatCompactObjectiveDuration(days)}
+      </Text>
+    </Tooltip>
+  );
 };
 
 type RoadmapGanttItem = {
@@ -85,6 +117,7 @@ const ObjectiveRow = ({
   statusName,
   statusColor,
   isSelected,
+  isSidebarCollapsed,
   onObjectiveSelect,
 }: {
   objective: Objective;
@@ -93,6 +126,7 @@ const ObjectiveRow = ({
   statusName: string;
   statusColor?: string;
   isSelected: boolean;
+  isSidebarCollapsed: boolean;
   onObjectiveSelect: (objective: Objective) => void;
 }) => {
   const canUpdate = useCanUpdateObjective();
@@ -196,7 +230,7 @@ const ObjectiveRow = ({
       <Box
         className={cn(
           "group border-border dark:border-border/70 grid h-14 items-center gap-4 border-b-[0.5px] bg-[var(--objective-row-background)] px-4 transition-colors duration-150 hover:bg-[var(--objective-row-hover-background)] dark:bg-[var(--objective-row-background-dark)] dark:hover:bg-[var(--objective-row-hover-background-dark)]",
-          ROADMAP_COLUMNS,
+          isSidebarCollapsed ? "grid-cols-5 gap-3 px-3" : ROADMAP_COLUMNS,
         )}
         style={rowStyle}
       >
@@ -259,7 +293,11 @@ const ObjectiveRow = ({
                 <ObjectiveStatusesMenu.Trigger>
                   <Button
                     aria-label={`Change status: ${statusName}`}
-                    className="w-max max-w-full min-w-0 gap-1 pr-2"
+                    className={cn(
+                      isSidebarCollapsed
+                        ? "h-[1.85rem] w-[1.85rem] min-w-[1.85rem] justify-center p-0"
+                        : "w-max max-w-full min-w-0 gap-1 pr-2",
+                    )}
                     color="tertiary"
                     disabled={!canUpdate}
                     rounded="md"
@@ -272,7 +310,9 @@ const ObjectiveRow = ({
                     variant="outline"
                   >
                     <ObjectiveStatusIcon statusId={objective.statusId} />
-                    <span className="min-w-0 truncate">{statusName}</span>
+                    {isSidebarCollapsed ? null : (
+                      <span className="min-w-0 truncate">{statusName}</span>
+                    )}
                   </Button>
                 </ObjectiveStatusesMenu.Trigger>
               </span>
@@ -334,30 +374,38 @@ const ObjectiveRow = ({
             />
           </PrioritiesMenu>
         </Flex>
-        <Flex align="center" className="min-w-0 pr-3">
-          <button
-            className="focus-visible:ring-primary min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-1"
-            onClick={() => {
-              onObjectiveSelect(objective);
-            }}
-            type="button"
-          >
-            <Flex align="center" className="min-w-0" gap={2}>
-              <span
-                aria-hidden
-                className="size-2.5 shrink-0 rounded-sm"
-                style={{ backgroundColor: objective.color }}
-              />
-              <Text
-                className="line-clamp-1 hover:opacity-90"
-                fontWeight="medium"
-              >
-                {objective.name}
-              </Text>
-            </Flex>
-          </button>
-        </Flex>
-        <Flex justify="end">{scheduleCell}</Flex>
+        {isSidebarCollapsed ? null : (
+          <Flex align="center" className="min-w-0 pr-3">
+            <button
+              className="focus-visible:ring-primary min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-1"
+              onClick={() => {
+                onObjectiveSelect(objective);
+              }}
+              type="button"
+            >
+              <Flex align="center" className="min-w-0" gap={2}>
+                <span
+                  aria-hidden
+                  className="size-2.5 shrink-0 rounded-sm"
+                  style={{ backgroundColor: objective.color }}
+                />
+                <Text
+                  className="line-clamp-1 hover:opacity-90"
+                  fontWeight="medium"
+                >
+                  {objective.name}
+                </Text>
+              </Flex>
+            </button>
+          </Flex>
+        )}
+        {isSidebarCollapsed ? (
+          <Flex align="center" justify="center">
+            <CompactObjectiveDuration days={duration} fallback={scheduleCell} />
+          </Flex>
+        ) : (
+          <Flex justify="end">{scheduleCell}</Flex>
+        )}
       </Box>
     </Box>
   );
@@ -380,6 +428,10 @@ export const RoadmapGanttBoard = ({
   onObjectiveSelect,
   selectedObjectiveId,
 }: RoadmapGanttBoardProps) => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useLocalStorage(
+    "roadmapTimelineSidebarCollapsed",
+    false,
+  );
   const { mutate } = useUpdateObjectiveMutation();
   const { data: statuses = [] } = useObjectiveStatuses();
   const ganttItems = useMemo<RoadmapGanttItem[]>(
@@ -432,14 +484,39 @@ export const RoadmapGanttBoard = ({
       onZoomChange: (zoom: ZoomLevel) => void,
     ) => {
       return (
-        <Box className="border-border bg-background dark:border-border/60 sticky left-0 z-40 w-screen shrink-0 border-r-[0.5px] md:w-160">
-          <Box className="border-border bg-background sticky top-0 z-10 hidden h-16 items-center border-b-[0.5px] px-4 md:flex">
+        <Box
+          className={cn(
+            "border-border bg-background/80 dark:border-border/60 sticky -left-0.5 z-40 w-screen shrink-0 border-r-[0.5px] backdrop-blur-2xl transition-[width] duration-200",
+            isSidebarCollapsed ? "md:w-80" : "md:w-160",
+          )}
+        >
+          <Box className="border-border bg-background/80 sticky top-0 z-10 hidden h-16 items-center border-b-[0.5px] px-4 backdrop-blur-2xl md:flex">
             <GanttControls
-              className="w-full justify-between"
+              className="min-w-0 flex-1 justify-between"
               onReset={onReset}
               onZoomChange={onZoomChange}
               zoomLevel={sidebarZoomLevel}
             />
+            <Tooltip title={isSidebarCollapsed ? "Expand" : "Collapse"}>
+              <button
+                aria-label={
+                  isSidebarCollapsed
+                    ? "Expand objectives panel"
+                    : "Collapse objectives panel"
+                }
+                className="group focus-visible:ring-ring text-foreground/70 hover:text-foreground ml-2 flex size-8 shrink-0 items-center justify-center border-0 bg-transparent p-0 transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                onClick={() => {
+                  setIsSidebarCollapsed((current) => !current);
+                }}
+                type="button"
+              >
+                {isSidebarCollapsed ? (
+                  <ChevronRightIcon aria-hidden="true" className="size-5" />
+                ) : (
+                  <ChevronLeftIcon aria-hidden="true" className="size-5" />
+                )}
+              </button>
+            </Tooltip>
           </Box>
           {items.map(({ objective }) => {
             const startDate = objective.startDate
@@ -461,6 +538,7 @@ export const RoadmapGanttBoard = ({
                 duration={duration}
                 handleUpdate={handleUpdate}
                 isSelected={selectedObjectiveId === objective.id}
+                isSidebarCollapsed={isSidebarCollapsed}
                 key={objective.id}
                 objective={objective}
                 onObjectiveSelect={onObjectiveSelect}
@@ -472,7 +550,14 @@ export const RoadmapGanttBoard = ({
         </Box>
       );
     },
-    [handleUpdate, onObjectiveSelect, selectedObjectiveId, statuses],
+    [
+      handleUpdate,
+      isSidebarCollapsed,
+      onObjectiveSelect,
+      selectedObjectiveId,
+      setIsSidebarCollapsed,
+      statuses,
+    ],
   );
 
   // Render bar content
@@ -548,7 +633,11 @@ export const RoadmapGanttBoard = ({
       renderBarContent={renderBarContent}
       renderSidebar={renderSidebar}
       rowHeight={ROADMAP_ROW_HEIGHT}
-      stickyColumnsWidth={ROADMAP_STICKY_COLUMNS_WIDTH}
+      stickyColumnsWidth={
+        isSidebarCollapsed
+          ? ROADMAP_COLLAPSED_COLUMNS_WIDTH
+          : ROADMAP_STICKY_COLUMNS_WIDTH
+      }
       storageKey="roadmapZoomLevel"
       zoomLevel="months"
     />
