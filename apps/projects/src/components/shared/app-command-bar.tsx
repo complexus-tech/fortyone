@@ -17,7 +17,6 @@ import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
 import { Commands } from "@/components/shared/commands";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import { ProfileMenu } from "@/components/shared/sidebar/profile-menu";
-import { SidebarToggleButton } from "@/components/shared/sidebar/sidebar-toggle-button";
 import { WorkspacesMenu } from "@/components/shared/sidebar/workspaces-menu";
 import { useSidebar } from "@/components/shared/sidebar/sidebar-context";
 import { useCurrentAppCommandAction } from "./app-command-action-context";
@@ -80,14 +79,8 @@ export const AppCommandBar = () => {
           justify={isCollapsed ? "center" : undefined}
         >
           <WorkspacesMenu isCollapsed={isCollapsed} />
-          {isCollapsed ? null : (
-            <div className="ml-auto flex shrink-0">
-              <SidebarToggleButton placement="workspace-menu" />
-            </div>
-          )}
         </Flex>
         <Flex align="center" className="min-w-0 flex-1 gap-4 pr-[16px] pl-2">
-          {isCollapsed ? <SidebarToggleButton /> : null}
           <Commands className="max-w-xl flex-1" showTrigger />
           <Flex align="center" className="ml-auto shrink-0 gap-4">
             <Menu>

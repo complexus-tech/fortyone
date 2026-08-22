@@ -104,10 +104,6 @@ jest.mock("@/components/shared/sidebar/profile-menu", () => ({
   ProfileMenu: () => <div>Profile</div>,
 }));
 
-jest.mock("@/components/shared/sidebar/sidebar-toggle-button", () => ({
-  SidebarToggleButton: () => <button type="button">Toggle sidebar</button>,
-}));
-
 jest.mock("@/components/shared/sidebar/workspaces-menu", () => ({
   WorkspacesMenu: () => <div>Workspace</div>,
 }));

@@ -13,7 +13,7 @@ export const SidebarEdgeToggleIcon = ({
 }: SidebarEdgeToggleIconProps) => (
   <svg
     {...rest}
-    className={cn("h-7 w-auto text-icon", className)}
+    className={cn("h-8 w-auto text-icon", className)}
     fill="none"
     height="24"
     stroke="currentColor"

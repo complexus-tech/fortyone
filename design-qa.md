@@ -50,6 +50,8 @@
 - Pass 1: blocked before visual comparison because the local browser session was unauthenticated. No visual fixes were made from browser evidence.
 - Pass 2: source implementation was refined from user feedback, but post-fix capture remains blocked by the unauthenticated local browser session.
 - Pass 3: the two-stroke rotation and fade was replaced with a single thinner path that bends into a shallower angle; authenticated post-fix capture remains unavailable.
+- Pass 4: the morph control now uses the semantic primary color and a slightly taller icon.
+- Pass 5: the original command-bar toggle was removed, leaving the edge morph control as the only sidebar toggle; authenticated post-fix capture remains unavailable.
 
 **Follow-up Polish**
 
