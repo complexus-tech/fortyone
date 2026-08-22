@@ -89,6 +89,11 @@ const organization: WithContext<Organization> = {
     contactType: "customer support",
     email: "hello@complexus.tech",
   },
+  address: {
+    "@type": "PostalAddress",
+    addressCountry: "US",
+    addressRegion: "Delaware",
+  },
 };
 
 const product: WithContext<Product> = {

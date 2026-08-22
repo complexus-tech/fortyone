@@ -25,6 +25,8 @@ import (
 
 var ErrNotConnected = errors.New("connect Figma before linking a design")
 
+const storyLinkRefreshInterval = 5 * time.Minute
+
 var oauthScopes = []string{
 	"current_user:read",
 	"file_metadata:read",
@@ -260,12 +262,22 @@ func (s *Service) RefreshStoryLink(ctx context.Context, workspaceID, linkID uuid
 	if err != nil {
 		return StoryLink{}, err
 	}
+	if s.now().UTC().Before(link.LastSyncedAt.Add(storyLinkRefreshInterval)) {
+		return link, nil
+	}
 	artifact, err := s.ResolveLink(ctx, workspaceID, link.Artifact.CanonicalURL)
 	if err != nil {
+		var apiErr *APIError
+		if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusTooManyRequests {
+			return link, nil
+		}
 		now := s.now().UTC()
 		link.UnavailableAt = &now
 		_ = s.repo.UpdateStoryLink(ctx, link)
 		return StoryLink{}, err
+	}
+	if artifact.ThumbnailURL == nil {
+		artifact.ThumbnailURL = link.Artifact.ThumbnailURL
 	}
 	link.Artifact = artifact
 	link.UnavailableAt = nil

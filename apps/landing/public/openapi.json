@@ -1,0 +1,246 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "FortyOne Public API",
+    "version": "1.0.0",
+    "description": "Machine-readable contract for stable public FortyOne discovery, health, feedback, and agent endpoints. Authenticated workspace endpoints are intentionally not advertised as a public integration API until a third-party authorization contract is available.",
+    "contact": {
+      "name": "FortyOne",
+      "email": "hello@complexus.tech",
+      "url": "https://www.fortyone.app/contact"
+    }
+  },
+  "servers": [
+    { "url": "https://api.fortyone.app", "description": "Production" }
+  ],
+  "externalDocs": {
+    "description": "FortyOne developer resources",
+    "url": "https://www.fortyone.app/developers"
+  },
+  "tags": [
+    {
+      "name": "Discovery",
+      "description": "Machine-readable API and agent discovery."
+    },
+    { "name": "Health", "description": "Service health checks." },
+    {
+      "name": "Public feedback",
+      "description": "Read-only public feedback portal data."
+    }
+  ],
+  "paths": {
+    "/openapi.json": {
+      "get": {
+        "operationId": "getOpenAPIDescription",
+        "summary": "Get the API description",
+        "description": "Returns this OpenAPI 3.1 description for automatic client and function schema generation.",
+        "tags": ["Discovery"],
+        "responses": {
+          "200": {
+            "description": "OpenAPI description",
+            "content": {
+              "application/json": { "schema": { "type": "object" } }
+            }
+          }
+        }
+      }
+    },
+    "/liveness": {
+      "get": {
+        "operationId": "getAPILiveness",
+        "summary": "Check API liveness",
+        "description": "Confirms that the FortyOne API process is running. This does not guarantee database readiness.",
+        "tags": ["Health"],
+        "responses": {
+          "200": {
+            "description": "API process is alive",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readiness": {
+      "get": {
+        "operationId": "getAPIReadiness",
+        "summary": "Check API readiness",
+        "description": "Confirms whether the API and its database dependency are ready to serve requests.",
+        "tags": ["Health"],
+        "responses": {
+          "200": {
+            "description": "API is ready",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/portals/{portalSlug}/feedback": {
+      "get": {
+        "operationId": "getPublicFeedbackPortal",
+        "summary": "Get a public feedback portal",
+        "description": "Returns the public configuration and visible content for a FortyOne feedback portal.",
+        "tags": ["Public feedback"],
+        "parameters": [{ "$ref": "#/components/parameters/PortalSlug" }],
+        "responses": {
+          "200": {
+            "description": "Public feedback portal",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/portals/{portalSlug}/feedback/updates": {
+      "get": {
+        "operationId": "listPublicFeedbackUpdates",
+        "summary": "List public product updates",
+        "description": "Lists published updates visible on a public FortyOne feedback portal.",
+        "tags": ["Public feedback"],
+        "parameters": [{ "$ref": "#/components/parameters/PortalSlug" }],
+        "responses": {
+          "200": {
+            "description": "Published portal updates",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/portals/{portalSlug}/feedback/updates/{updateSlug}": {
+      "get": {
+        "operationId": "getPublicFeedbackUpdate",
+        "summary": "Get a public product update",
+        "description": "Returns one published update from a public FortyOne feedback portal.",
+        "tags": ["Public feedback"],
+        "parameters": [
+          { "$ref": "#/components/parameters/PortalSlug" },
+          {
+            "name": "updateSlug",
+            "in": "path",
+            "required": true,
+            "description": "URL slug of the published update.",
+            "schema": { "type": "string", "minLength": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published portal update",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "sendMCPMessage",
+        "summary": "Send an MCP JSON-RPC message",
+        "description": "Streamable HTTP endpoint for MCP initialization, public resources, and read-only discovery tools.",
+        "tags": ["Discovery"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/JSONRPCRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON-RPC response",
+            "content": {
+              "application/json": { "schema": { "type": "object" } }
+            }
+          },
+          "202": { "description": "Notification accepted" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "PortalSlug": {
+        "name": "portalSlug",
+        "in": "path",
+        "required": true,
+        "description": "Unique public feedback portal slug.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
+        }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Structured error response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "SuccessResponse": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": { "description": "Operation-specific response data" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["data", "error"],
+        "properties": {
+          "data": { "type": "null" },
+          "error": { "$ref": "#/components/schemas/ErrorDetail" }
+        }
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "required": ["code", "message", "hint"],
+        "properties": {
+          "code": { "type": "string", "examples": ["not_found"] },
+          "message": { "type": "string", "examples": ["resource not found"] },
+          "hint": {
+            "type": "string",
+            "examples": [
+              "Check the path and consult https://www.fortyone.app/openapi.json."
+            ]
+          }
+        }
+      },
+      "JSONRPCRequest": {
+        "type": "object",
+        "required": ["jsonrpc", "method"],
+        "properties": {
+          "jsonrpc": { "const": "2.0" },
+          "id": { "oneOf": [{ "type": "string" }, { "type": "integer" }] },
+          "method": { "type": "string" },
+          "params": { "type": "object" }
+        }
+      }
+    }
+  }
+}

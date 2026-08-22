@@ -76,7 +76,8 @@ export const useFigmaDescriptionPaste = ({
       const promptId = toast.info("Figma link detected", {
         action: {
           label: "Attach",
-          onClick: () => {
+          onClick: (actionEvent) => {
+            actionEvent.preventDefault();
             void attachFigmaDesign({
               approximatePosition,
               rawURL,

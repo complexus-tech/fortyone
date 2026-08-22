@@ -2,9 +2,12 @@ package api
 
 import (
 	"context"
+	"errors"
+	"net/http"
 
 	activitieshttp "github.com/complexus-tech/projects-api/internal/modules/activities/http"
 	adminhttp "github.com/complexus-tech/projects-api/internal/modules/admin/http"
+	agentreadinesshttp "github.com/complexus-tech/projects-api/internal/modules/agentreadiness/http"
 	calendarhttp "github.com/complexus-tech/projects-api/internal/modules/calendar/http"
 	chatsessionshttp "github.com/complexus-tech/projects-api/internal/modules/chatsessions/http"
 	commentshttp "github.com/complexus-tech/projects-api/internal/modules/comments/http"
@@ -78,6 +81,8 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 	if err := svcs.validate(); err != nil {
 		panic("bootstrap service validation failed: " + err.Error())
 	}
+
+	agentreadinesshttp.Routes(app)
 
 	healthhttp.Routes(healthhttp.Config{
 		DB:  cfg.DB,
@@ -412,5 +417,9 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:     cfg.Cache,
 		Service:   svcs.chatSessions,
 	}, app)
+
+	app.NotFound(func(ctx context.Context, w http.ResponseWriter, _ *http.Request) error {
+		return web.RespondError(ctx, w, errors.New("API route not found"), http.StatusNotFound)
+	})
 
 }

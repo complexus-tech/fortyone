@@ -19,7 +19,7 @@ export const buttonVariants = cva(
         none: "rounded-none",
         sm: "rounded",
         md: "rounded-xl",
-        lg: "rounded-xl",
+        lg: "rounded-2xl",
         xl: "rounded-3xl",
         full: "rounded-full",
       },

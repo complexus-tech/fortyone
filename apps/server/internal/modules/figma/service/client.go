@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,6 +19,30 @@ const figmaAPIBase = "https://api.figma.com"
 type apiClient struct {
 	http   *http.Client
 	config Config
+}
+
+type APIError struct {
+	StatusCode int
+	RetryAfter time.Duration
+	Message    string
+}
+
+func parseRetryAfter(value string) time.Duration {
+	seconds, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil || seconds <= 0 {
+		return 0
+	}
+	return time.Duration(seconds) * time.Second
+}
+
+func (e *APIError) Error() string {
+	if e.StatusCode == http.StatusTooManyRequests {
+		if e.RetryAfter > 0 {
+			return fmt.Sprintf("Figma rate limit reached; try again in %s", e.RetryAfter)
+		}
+		return "Figma rate limit reached; try again later"
+	}
+	return fmt.Sprintf("Figma API returned %d: %s", e.StatusCode, e.Message)
 }
 
 type oauthTokenResponse struct {
@@ -268,7 +293,11 @@ func (c apiClient) do(req *http.Request, target any) error {
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
-		return fmt.Errorf("Figma API returned %s: %s", response.Status, strings.TrimSpace(string(body)))
+		return &APIError{
+			StatusCode: response.StatusCode,
+			RetryAfter: parseRetryAfter(response.Header.Get("Retry-After")),
+			Message:    strings.TrimSpace(string(body)),
+		}
 	}
 	if target == nil || response.StatusCode == http.StatusNoContent {
 		return nil

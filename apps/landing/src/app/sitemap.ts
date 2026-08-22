@@ -30,6 +30,7 @@ const routes: MetadataRoute.Sitemap = [
   { url: getCanonicalUrl("/pricing") },
   { url: getCanonicalUrl("/blog") },
   { url: getCanonicalUrl("/contact") },
+  { url: getCanonicalUrl("/developers") },
   { url: getCanonicalUrl("/terms") },
   { url: getCanonicalUrl("/privacy") },
 ];

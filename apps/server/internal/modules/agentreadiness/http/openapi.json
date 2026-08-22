@@ -1,0 +1,17 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "FortyOne Public API",
+    "version": "1.0.0",
+    "description": "Machine-readable contract for stable public FortyOne discovery, health, feedback, and agent endpoints.",
+    "contact": { "name": "FortyOne", "email": "hello@complexus.tech", "url": "https://www.fortyone.app/contact" }
+  },
+  "servers": [{ "url": "https://api.fortyone.app", "description": "Production" }],
+  "externalDocs": { "description": "FortyOne developer resources", "url": "https://www.fortyone.app/developers" },
+  "paths": {
+    "/openapi.json": { "get": { "operationId": "getOpenAPIDescription", "description": "Returns the OpenAPI 3.1 description for automatic client discovery.", "responses": { "200": { "description": "OpenAPI description" } } } },
+    "/liveness": { "get": { "operationId": "getAPILiveness", "description": "Confirms that the FortyOne API process is running.", "responses": { "200": { "description": "API process is alive" } } } },
+    "/readiness": { "get": { "operationId": "getAPIReadiness", "description": "Confirms whether the API and database are ready.", "responses": { "200": { "description": "API is ready" }, "503": { "description": "API is not ready" } } } },
+    "/mcp": { "post": { "operationId": "sendMCPMessage", "description": "Sends a JSON-RPC message to the public FortyOne Streamable HTTP MCP endpoint.", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } }, "responses": { "200": { "description": "JSON-RPC response" }, "202": { "description": "Notification accepted" } } } }
+  }
+}

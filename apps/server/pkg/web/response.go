@@ -11,7 +11,9 @@ import (
 )
 
 type ErrorDetail struct {
+	Code    string `json:"code"`
 	Message string `json:"message"`
+	Hint    string `json:"hint"`
 }
 
 type Response struct {
@@ -22,10 +24,59 @@ type Response struct {
 func RespondError(ctx context.Context, w http.ResponseWriter, err error, statusCode int) error {
 	errResponse := Response{
 		Error: &ErrorDetail{
+			Code:    errorCode(statusCode),
 			Message: sanitizeErrorMessage(err, statusCode),
+			Hint:    resolutionHint(statusCode),
 		},
 	}
 	return respond(ctx, w, errResponse, statusCode)
+}
+
+func errorCode(statusCode int) string {
+	switch statusCode {
+	case http.StatusBadRequest:
+		return "bad_request"
+	case http.StatusUnauthorized:
+		return "authentication_required"
+	case http.StatusForbidden:
+		return "permission_denied"
+	case http.StatusNotFound:
+		return "not_found"
+	case http.StatusMethodNotAllowed:
+		return "method_not_allowed"
+	case http.StatusConflict:
+		return "conflict"
+	case http.StatusTooManyRequests:
+		return "rate_limited"
+	case http.StatusServiceUnavailable:
+		return "service_unavailable"
+	default:
+		if statusCode >= http.StatusInternalServerError {
+			return "internal_error"
+		}
+		return "request_failed"
+	}
+}
+
+func resolutionHint(statusCode int) string {
+	switch statusCode {
+	case http.StatusBadRequest:
+		return "Check the request parameters and body against https://www.fortyone.app/openapi.json."
+	case http.StatusUnauthorized:
+		return "Authenticate with a FortyOne session that can access the requested workspace."
+	case http.StatusForbidden:
+		return "Use an account with permission for this workspace resource."
+	case http.StatusNotFound:
+		return "Check the path and resource identifier, then consult https://www.fortyone.app/openapi.json."
+	case http.StatusMethodNotAllowed:
+		return "Use one of the methods advertised for this path in https://www.fortyone.app/openapi.json."
+	case http.StatusTooManyRequests:
+		return "Wait before retrying and honor any Retry-After header."
+	case http.StatusServiceUnavailable:
+		return "Retry with backoff after the service reports ready."
+	default:
+		return "Consult https://www.fortyone.app/developers and retry only when it is safe to do so."
+	}
 }
 
 func Respond(ctx context.Context, w http.ResponseWriter, data any, statusCode int) error {

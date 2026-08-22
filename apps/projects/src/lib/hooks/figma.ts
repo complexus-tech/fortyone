@@ -224,7 +224,7 @@ export const useRefreshFigmaStoryLink = () => {
       await queryClient.invalidateQueries({
         queryKey: figmaKeys.storyLinks(workspaceSlug, storyId),
       });
-      toast.success("Figma preview refreshed");
+      toast.success("Figma preview is up to date");
     },
     onError: (error) => toast.error("Figma", { description: error.message }),
   });

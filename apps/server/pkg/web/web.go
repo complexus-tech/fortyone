@@ -100,14 +100,24 @@ func (a *App) Handle(method string, pattern string, handler Handler, mw ...Middl
 
 		if err := handler(ctx, w, r); err != nil {
 			log.Print(err)
-			Respond(ctx, w, err.Error(), http.StatusInternalServerError)
+			_ = RespondError(ctx, w, err, http.StatusInternalServerError)
 			return
 		}
 
 	}
 
 	// Add this handler to the mux router.
-	a.mux.HandleFunc(fmt.Sprintf("%s %s", method, pattern), h)
+	routePattern := pattern
+	if method != "" {
+		routePattern = fmt.Sprintf("%s %s", method, pattern)
+	}
+	a.mux.HandleFunc(routePattern, h)
+}
+
+// NotFound registers a JSON fallback for requests that do not match a more
+// specific route. It should be registered after all application routes.
+func (a *App) NotFound(handler Handler) {
+	a.Handle("", "/", handler)
 }
 
 // Get is a shortcut for app.Handle(http.MethodGet, path, handler, mw...)

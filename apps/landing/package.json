@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack --port 3001",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node --experimental-strip-types --test src/lib/*.test.ts"
   },
   "dependencies": {
     "@calcom/embed-react": "^1.5.3",

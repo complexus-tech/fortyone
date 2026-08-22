@@ -76,6 +76,10 @@ const legal = [
 
 const resources = [
   {
+    title: "Developers",
+    href: "/developers",
+  },
+  {
     title: "AI Project Manager",
     href: "/ai-project-manager",
   },
