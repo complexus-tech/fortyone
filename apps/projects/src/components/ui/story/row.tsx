@@ -125,12 +125,14 @@ export const StoryRow = ({
   isInSearch = false,
   handleStoryClick,
   className,
+  teamCode,
 }: {
   story: StoryProps;
   isSubStory?: boolean;
   isInSearch?: boolean;
   className?: string;
   handleStoryClick: (storyId: string) => void;
+  teamCode?: string;
 }) => {
   const router = useRouter();
   const { data: session } = useSession();
@@ -147,9 +149,9 @@ export const StoryRow = ({
   const { data: preferences } = useAutomationPreferences();
   const openStoryInDialog = preferences?.openStoryInDialog;
 
-  const teamCode = story.team?.code;
-  const storyReference = teamCode
-    ? `${teamCode}-${story.sequenceId}`
+  const resolvedTeamCode = story.team?.code ?? teamCode;
+  const storyReference = resolvedTeamCode
+    ? `${resolvedTeamCode}-${story.sequenceId}`
     : String(story.sequenceId);
   const selectedAssignee = story.assignee;
 
@@ -192,7 +194,7 @@ export const StoryRow = ({
             getStoryPath({
               id: story.id,
               sequenceId: story.sequenceId,
-              teamCode,
+              teamCode: resolvedTeamCode,
             }),
           ),
         );
@@ -272,7 +274,7 @@ export const StoryRow = ({
                   getStoryPath({
                     id: story.id,
                     sequenceId: story.sequenceId,
-                    teamCode,
+                    teamCode: resolvedTeamCode,
                   }),
                 )}
                 onClick={(e) => {
@@ -297,7 +299,7 @@ export const StoryRow = ({
                 handleUpdate={handleUpdate}
                 isExpanded={isExpanded}
                 setIsExpanded={setIsExpanded}
-                teamCode={teamCode}
+                teamCode={resolvedTeamCode}
               />
               {isColumnVisible("Assignee") && (
                 <AssigneesMenu>
@@ -350,6 +352,7 @@ export const StoryRow = ({
               isSubStory
               key={subStory.id}
               story={{ ...subStory, subStories: [], labels: [] }}
+              teamCode={resolvedTeamCode}
             />
           ))}
         </>
