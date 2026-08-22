@@ -75,7 +75,7 @@ export const WorkspacesMenu = ({
           aria-label={isCollapsed ? workspaceName : undefined}
           className={cn(
             "max-w-full min-w-0 gap-1.5 pl-1",
-            isCollapsed && "h-12 w-12 justify-center px-0",
+            isCollapsed && "bg-state-hover h-12 w-12 justify-center px-0",
           )}
           color="tertiary"
           data-workspace-switcher
