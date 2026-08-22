@@ -11,6 +11,7 @@ import {
 } from "@dnd-kit/core";
 import { Box, Flex, Text } from "ui";
 import { useState, useMemo, useCallback, useOptimistic } from "react";
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { PlusIcon, StoryMissingIcon } from "icons";
 import { useParams } from "next/navigation";
@@ -100,15 +101,19 @@ const EmptyState = ({
   sprintId,
   teamId,
   getTermDisplay,
+  illustration,
 }: {
   objectiveId?: string;
   sprintId?: string;
   teamId?: string;
   getTermDisplay: ReturnType<typeof useTerminology>["getTermDisplay"];
+  illustration?: ReactNode;
 }) => (
   <Box className="flex h-[70dvh] items-center justify-center">
     <Box className="flex flex-col items-center">
-      <StoryMissingIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
+      {illustration ?? (
+        <StoryMissingIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
+      )}
       <Text className="mt-8 mb-6" fontSize="3xl">
         No {getTermDisplay("storyTerm", { variant: "plural" })} found
       </Text>
@@ -140,6 +145,7 @@ export const StoriesBoard = ({
   viewOptions,
   setViewOptions,
   rowClassName,
+  emptyStateIllustration,
 }: {
   isInSearch?: boolean;
   layout: StoriesLayout;
@@ -148,6 +154,7 @@ export const StoriesBoard = ({
   viewOptions: StoriesViewOptions;
   setViewOptions?: (value: StoriesViewOptions) => void;
   rowClassName?: string;
+  emptyStateIllustration?: ReactNode;
 }) => {
   const { getTermDisplay } = useTerminology();
   const { objectiveId, sprintId, teamId } = useParams<{
@@ -307,6 +314,7 @@ export const StoriesBoard = ({
         {!isInSearch && !hasStories && (
           <EmptyState
             getTermDisplay={getTermDisplay}
+            illustration={emptyStateIllustration}
             objectiveId={objectiveId}
             sprintId={sprintId}
             teamId={teamId}

@@ -12,6 +12,7 @@ import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
+import { StoriesEmptyIllustration } from "@/components/ui/illustrations/stories-empty-illustration";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
 import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
 import type { StoriesFilter } from "@/components/ui/stories-filter-types";
@@ -188,6 +189,7 @@ const StoriesPanelContent = ({
   ) : (
     <StoriesBoard
       className={boardHeightClassName}
+      emptyStateIllustration={<StoriesEmptyIllustration />}
       groupedStories={groupedStories}
       layout={layout}
       setViewOptions={setViewOptions}
