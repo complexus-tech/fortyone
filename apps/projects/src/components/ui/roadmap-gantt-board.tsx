@@ -486,7 +486,7 @@ export const RoadmapGanttBoard = ({
       return (
         <Box
           className={cn(
-            "border-border bg-background/80 dark:border-border/60 sticky -left-0.5 z-40 w-screen shrink-0 border-r-[0.5px] backdrop-blur-2xl transition-[width] duration-200",
+            "border-border bg-background/80 sticky -left-0.5 z-40 w-screen shrink-0 border-r-[0.5px] backdrop-blur-2xl transition-[width] duration-200",
             isSidebarCollapsed ? "md:w-80" : "md:w-160",
           )}
         >
