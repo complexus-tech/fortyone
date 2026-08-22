@@ -56,7 +56,8 @@ func TestMCPWireResultDoesNotExposeBackendInternals(t *testing.T) {
 	ctx := context.Background()
 	handler := &Handler{}
 	server := mcp.NewServer(&mcp.Implementation{Name: "safe-error-test", Version: "1.0.0"}, nil)
-	addSafeTool(handler, server, tool("failing_tool", "Fail safely", "Test tool.", annotations(true, true)), func(context.Context, *mcp.CallToolRequest, emptyInput) (*mcp.CallToolResult, any, error) {
+	definition := &mcp.Tool{Name: "failing_tool", Title: "Fail safely", Description: "Test tool.", Annotations: annotations(true, true), OutputSchema: objectValueOutput("Test output")}
+	addSafeTool(handler, server, definition, func(context.Context, *mcp.CallToolRequest, emptyInput) (*mcp.CallToolResult, any, error) {
 		return nil, nil, errors.New(`ERROR: relation "private_table" does not exist (SQLSTATE 42P01)`)
 	})
 
@@ -151,6 +152,147 @@ func TestRegisteredToolsCoverNaturalLanguageScenarios(t *testing.T) {
 	requireToolProperties(t, tools["update_objective"], "id", "expectedUpdatedAt", "health", "endDate", "confirmed")
 	requireToolProperties(t, tools["update_key_result"], "id", "expectedUpdatedAt", "currentValue", "targetValue", "confirmed")
 	requireToolProperties(t, tools["analyze_work"], "workspaceId", "startDate", "endDate", "page", "pageSize")
+}
+
+func TestEveryRegisteredToolDeclaresItsStructuredOutput(t *testing.T) {
+	t.Parallel()
+	tools := listToolsForTest(t)
+	expectedRootProperties := map[string][]string{
+		"list_workspaces":         {"workspaces", "page", "pageSize", "hasMore"},
+		"list_teams":              {"teams", "page", "pageSize", "hasMore"},
+		"list_story_statuses":     {"statuses", "page", "pageSize", "hasMore"},
+		"list_stories":            {"stories", "page", "pageSize", "hasMore"},
+		"create_story":            {"id", "sequenceId", "teamCode", "title", "createdNow"},
+		"update_story":            {"story"},
+		"list_story_comments":     {"comments", "page", "pageSize", "hasMore"},
+		"add_story_comment":       {"comment"},
+		"set_story_archived":      {"id", "archived", "changed"},
+		"list_sprints":            {"sprints", "page", "pageSize", "hasMore"},
+		"create_sprint":           {"sprint"},
+		"analyze_sprint":          {"analysis", "page", "pageSize", "hasMore"},
+		"list_objectives":         {"objectives", "page", "pageSize", "hasMore"},
+		"list_objective_statuses": {"statuses", "page", "pageSize", "hasMore"},
+		"create_objective":        {"objective"},
+		"update_objective":        {"objective"},
+		"analyze_objective":       {"analysis", "page", "pageSize", "hasMore"},
+		"list_key_results":        {"keyResults", "totalCount", "page", "pageSize", "hasMore"},
+		"create_key_result":       {"keyResult"},
+		"update_key_result":       {"keyResult"},
+		"analyze_work":            {"analysis", "guidance", "page", "pageSize", "hasMore"},
+	}
+
+	require.Len(t, tools, len(expectedRootProperties))
+	for name, expectedProperties := range expectedRootProperties {
+		definition := tools[name]
+		require.NotNil(t, definition, "tool %q is not registered", name)
+		schema, ok := definition.OutputSchema.(map[string]any)
+		require.True(t, ok, "tool %q output schema has unexpected type %T", name, definition.OutputSchema)
+		require.Equal(t, "object", schema["type"], "tool %q output must be a structured object", name)
+		properties, ok := schema["properties"].(map[string]any)
+		require.True(t, ok, "tool %q output schema has no properties", name)
+		for _, property := range expectedProperties {
+			require.Contains(t, properties, property, "tool %q output schema is missing %q", name, property)
+		}
+	}
+}
+
+func TestEveryOutputSchemaAcceptsItsToolResultShape(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	server := mcp.NewServer(&mcp.Implementation{Name: "output-schema-test", Version: "1.0.0"}, nil)
+	for name, output := range sampleToolOutputs() {
+		definition := tool(name, name, "Output schema contract test.", annotations(true, true))
+		addSafeTool(&Handler{}, server, definition, func(_ context.Context, _ *mcp.CallToolRequest, _ emptyInput) (*mcp.CallToolResult, any, error) {
+			return nil, output, nil
+		})
+	}
+
+	serverTransport, clientTransport := mcp.NewInMemoryTransports()
+	serverSession, err := server.Connect(ctx, serverTransport, nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = serverSession.Close() })
+	client := mcp.NewClient(&mcp.Implementation{Name: "output-schema-client", Version: "1.0.0"}, nil)
+	clientSession, err := client.Connect(ctx, clientTransport, nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = clientSession.Close() })
+
+	for name := range sampleToolOutputs() {
+		t.Run(name, func(t *testing.T) {
+			result, callErr := clientSession.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: map[string]any{}})
+			require.NoError(t, callErr)
+			require.False(t, result.IsError, "output schema rejected %s result: %#v", name, result.Content)
+		})
+	}
+}
+
+func sampleToolOutputs() map[string]map[string]any {
+	pagination := func(collection string, items ...any) map[string]any {
+		return map[string]any{collection: items, "page": 1, "pageSize": 25, "hasMore": false}
+	}
+	analysis := func(guidance bool) map[string]any {
+		result := map[string]any{"analysis": map[string]any{}, "page": 1, "pageSize": 25, "hasMore": false}
+		if guidance {
+			result["guidance"] = "Interpretation guidance"
+		}
+		return result
+	}
+
+	return map[string]map[string]any{
+		"list_workspaces":         pagination("workspaces", map[string]any{"id": "workspace-id", "slug": "workspace", "name": "Workspace", "role": "member"}),
+		"list_teams":              pagination("teams", map[string]any{"id": "team-id", "name": "Engineering", "code": "ENG", "sprintsEnabled": true}),
+		"list_story_statuses":     pagination("statuses", sampleStatusOutput()),
+		"list_stories":            pagination("stories", map[string]any{"id": "story-id", "sequence_id": 1, "title": "Story", "team_id": "team-id", "priority": "High", "created_at": "2026-08-22T00:00:00Z", "updated_at": "2026-08-22T00:00:00Z"}),
+		"create_story":            {"id": "story-id", "sequenceId": 1, "teamCode": "ENG", "title": "Story", "createdNow": true, "estimatedDurationMinutes": nil, "minimumFocusBlockMinutes": nil, "autoSchedulingEnabled": false},
+		"update_story":            {"story": map[string]any{"id": "story-id", "sequenceId": 1, "title": "Story", "teamId": "team-id", "priority": "High", "createdAt": "2026-08-22T00:00:00Z", "updatedAt": "2026-08-22T00:00:00Z"}},
+		"list_story_comments":     pagination("comments", sampleCommentOutput()),
+		"add_story_comment":       {"comment": sampleCommentOutput()},
+		"set_story_archived":      {"id": "story-id", "archived": true, "changed": true},
+		"list_sprints":            pagination("sprints", sampleSprintOutput()),
+		"create_sprint":           {"sprint": sampleSprintOutput()},
+		"analyze_sprint":          analysis(false),
+		"list_objectives":         pagination("objectives", sampleObjectiveOutput()),
+		"list_objective_statuses": pagination("statuses", sampleStatusOutput()),
+		"create_objective":        {"objective": sampleObjectiveOutput()},
+		"update_objective":        {"objective": sampleObjectiveOutput()},
+		"analyze_objective":       analysis(false),
+		"list_key_results":        {"keyResults": []any{sampleKeyResultListOutput()}, "totalCount": 1, "page": 1, "pageSize": 25, "hasMore": false},
+		"create_key_result":       {"keyResult": sampleKeyResultOutput()},
+		"update_key_result":       {"keyResult": sampleKeyResultOutput()},
+		"analyze_work":            analysis(true),
+	}
+}
+
+func sampleStatusOutput() map[string]any {
+	return map[string]any{"id": "status-id", "name": "In progress", "category": "started", "orderIndex": 1, "isDefault": false, "color": "orange"}
+}
+
+func sampleCommentOutput() map[string]any {
+	return map[string]any{"comment_id": "comment-id", "story_id": "story-id", "commenter_id": "user-id", "content": "Comment", "created_at": "2026-08-22T00:00:00Z", "updated_at": "2026-08-22T00:00:00Z"}
+}
+
+func sampleSprintOutput() map[string]any {
+	return map[string]any{"id": "sprint-id", "name": "Sprint", "teamId": "team-id", "startDate": "2026-08-22T00:00:00Z", "endDate": "2026-09-05T00:00:00Z", "createdAt": "2026-08-22T00:00:00Z", "updatedAt": "2026-08-22T00:00:00Z"}
+}
+
+func sampleObjectiveOutput() map[string]any {
+	return map[string]any{"id": "objective-id", "sequenceId": 1, "name": "Objective", "teamId": "team-id", "statusId": "status-id", "isPrivate": false, "createdAt": "2026-08-22T00:00:00Z", "updatedAt": "2026-08-22T00:00:00Z"}
+}
+
+func sampleKeyResultOutput() map[string]any {
+	return map[string]any{
+		"id": "key-result-id", "sequenceId": 1, "objectiveId": "objective-id", "name": "Target",
+		"measurementType": "percentage", "startValue": 0.0, "currentValue": 25.0, "targetValue": 100.0,
+		"createdAt": "2026-08-22T00:00:00Z", "updatedAt": "2026-08-22T00:00:00Z",
+	}
+}
+
+func sampleKeyResultListOutput() map[string]any {
+	result := sampleKeyResultOutput()
+	result["objectiveName"] = "Objective"
+	result["teamId"] = "team-id"
+	result["teamName"] = "Engineering"
+	result["teamCode"] = "ENG"
+	return result
 }
 
 func listToolsForTest(t *testing.T) map[string]*mcp.Tool {

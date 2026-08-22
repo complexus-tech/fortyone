@@ -44,7 +44,7 @@ func (h *Handler) addTools(server *mcp.Server) {
 }
 
 func tool(name, title, description string, a *mcp.ToolAnnotations) *mcp.Tool {
-	return &mcp.Tool{Name: name, Title: title, Description: description, Annotations: a}
+	return &mcp.Tool{Name: name, Title: title, Description: description, Annotations: a, OutputSchema: outputSchemaForTool(name)}
 }
 func annotations(readOnly, idempotent bool) *mcp.ToolAnnotations {
 	destructive, openWorld := false, false
