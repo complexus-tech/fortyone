@@ -55,10 +55,19 @@ describe("Roadmap objective list selection", () => {
     expect(keyResultSource).toContain("KeyResultContextMenu");
     expect(keyResultSource).toContain("RoadmapKeyResultRow");
     expect(keyResultSource).toContain("getKeyResultReference");
+    expect(keyResultSource).toContain("formatKeyResultValue");
     expect(keyResultSource).toContain("<CircleProgressBar");
     expect(keyResultSource).not.toContain("<ProgressBar ");
     expect(keyResultSource).toContain("py-[0.925rem]");
-    expect(keyResultSource).toContain("h-4 w-4 shrink-0");
+    expect(keyResultSource).toContain("h-[1.1rem] w-[1.1rem] shrink-0");
+    expect(keyResultSource).not.toContain("bg-surface-muted/45");
+    expect(keyResultSource).not.toContain("pr-4 text-[0.9375rem]");
+    expect(keyResultSource).toContain('size="sm"');
+    expect(keyResultSource).toContain("keyResult.endDate");
+    expect(keyResultSource).toContain(
+      'keyResult.measurementType === "boolean"',
+    );
+    expect(keyResultSource).not.toContain("w-[104px] truncate");
     expect(keyResultSource).toContain("keyResultProgress");
     expect(cardSource).toContain("onToggleExpanded");
     expect(cardSource).toContain("childCount > 0");

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { OKRIcon } from "icons";
+import { CalendarIcon, OKRIcon } from "icons";
+import { format } from "date-fns";
 import {
   Avatar,
   Box,
@@ -17,6 +18,7 @@ import { useTerminology } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { KeyResultContextMenu } from "@/modules/key-results/components/key-result-context-menu";
 import {
+  formatKeyResultValue,
   getKeyResultProgress,
   getKeyResultReference,
 } from "@/modules/key-results/utils";
@@ -145,6 +147,17 @@ const RoadmapKeyResultRow = ({
     : undefined;
   const progress = getKeyResultProgress(keyResult);
   const reference = getKeyResultReference(teamCode, keyResult.sequenceId);
+  const currentValue = formatKeyResultValue(
+    keyResult.currentValue,
+    keyResult.measurementType,
+  );
+  const measurementValue =
+    keyResult.measurementType === "boolean"
+      ? currentValue
+      : `${currentValue} / ${formatKeyResultValue(
+          keyResult.targetValue,
+          keyResult.measurementType,
+        )}`;
 
   return (
     <KeyResultContextMenu
@@ -153,7 +166,7 @@ const RoadmapKeyResultRow = ({
         onSelect(keyResult);
       }}
     >
-      <RowWrapper className="bg-surface-muted/45 px-5 py-[0.925rem] md:pr-12 md:pl-18">
+      <RowWrapper className="px-5 py-[0.925rem] md:pr-12 md:pl-18">
         <Box className="relative flex min-w-10 flex-1 items-center gap-2 @sm:min-w-20">
           <button
             className="focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-2 rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"
@@ -163,7 +176,7 @@ const RoadmapKeyResultRow = ({
             type="button"
           >
             <OKRIcon
-              className="text-text-muted h-4 w-4 shrink-0"
+              className="text-text-muted h-[1.1rem] w-[1.1rem] shrink-0"
               strokeWidth={2}
             />
             {reference ? (
@@ -171,21 +184,33 @@ const RoadmapKeyResultRow = ({
                 {reference}
               </Text>
             ) : null}
-            <Text className="min-w-0 flex-1 truncate pr-4 text-[0.9375rem]">
+            <Text className="min-w-0 flex-1 truncate pr-4">
               {keyResult.name}
             </Text>
           </button>
         </Box>
-        <Flex align="center" className="ml-4 shrink-0 gap-5">
+        <Flex align="center" className="ml-4 shrink-0 gap-4">
+          <Text
+            className="hidden shrink-0 text-right tabular-nums md:block"
+            color="muted"
+          >
+            {measurementValue}
+          </Text>
           <Flex align="center" className="hidden w-[60px] gap-1.5 sm:flex">
             <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
             <Text className="tabular-nums">{progress}%</Text>
           </Flex>
+          <Flex align="center" className="hidden w-[100px] gap-1.5 lg:flex">
+            <CalendarIcon className="text-text-muted h-4 shrink-0" />
+            <Text className="truncate" color="muted">
+              {format(new Date(keyResult.endDate), "MMM d, yy")}
+            </Text>
+          </Flex>
           <Tooltip title={lead?.fullName || lead?.username || "No lead"}>
-            <span className="flex w-7 shrink-0 justify-end">
+            <span className="flex w-8 shrink-0 justify-end">
               <Avatar
                 name={lead?.fullName || lead?.username}
-                size="xs"
+                size="sm"
                 src={lead?.avatarUrl}
               />
             </span>
