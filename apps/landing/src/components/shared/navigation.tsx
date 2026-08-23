@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { cn } from "lib";
 import { Box, Button, Flex, NavigationMenu, NavLink } from "ui";
 import { Logo, Container } from "@/components/ui";
@@ -45,6 +46,9 @@ const primaryUseCaseMenuLinks: NavigationMenuItem[] = primaryUseCaseLinks.map(
 );
 
 const isExternalLink = (href: string) => href.startsWith("http");
+
+const NAVIGATION_DOCK_ENTER_Y = 16;
+const NAVIGATION_DOCK_EXIT_Y = 4;
 
 const NavigationMenuLink = ({ href, title }: NavigationMenuItem) => (
   <NavigationMenu.Link asChild>
@@ -101,9 +105,53 @@ const DesktopNavItem = ({ href, title }: NavigationMenuItem) => {
 };
 
 export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
+  const [isDocked, setIsDocked] = useState(false);
+
+  useEffect(() => {
+    const updateDockedState = () => {
+      setIsDocked((wasDocked) =>
+        wasDocked
+          ? window.scrollY > NAVIGATION_DOCK_EXIT_Y
+          : window.scrollY > NAVIGATION_DOCK_ENTER_Y,
+      );
+    };
+
+    updateDockedState();
+    window.addEventListener("scroll", updateDockedState, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", updateDockedState);
+    };
+  }, []);
+
   return (
-    <Box className="bg-background/90 fixed left-0 z-15 w-screen py-3.5 backdrop-blur-xl">
-      <Container className="flex items-center justify-between gap-12" full>
+    <Box
+      className="fixed inset-x-0 top-0 z-15"
+      data-docked={isDocked ? "true" : "false"}
+    >
+      <Box
+        aria-hidden="true"
+        className={cn(
+          "bg-background/90 absolute inset-0 backdrop-blur-xl transition-opacity duration-[160ms] motion-reduce:transition-none",
+          isDocked ? "opacity-0" : "opacity-100",
+        )}
+      />
+      <Box
+        aria-hidden="true"
+        className={cn(
+          "border-border/60 bg-background/95 shadow-shadow absolute inset-x-2 top-3 h-full rounded-2xl border shadow-xl backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:inset-x-6 md:rounded-3xl",
+          isDocked
+            ? "translate-y-0 scale-100 opacity-100"
+            : "-translate-y-2 scale-[0.985] opacity-0",
+        )}
+      />
+      <Container
+        className={cn(
+          "relative flex items-center justify-between gap-12 py-3 transition-transform duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none",
+          isDocked ? "translate-y-3" : "translate-y-0",
+        )}
+        full
+      >
         <Logo />
         <NavigationMenu className="hidden md:flex" showViewport={false}>
           <NavigationMenu.List className="gap-4 space-x-0 lg:gap-6">

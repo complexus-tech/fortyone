@@ -55,7 +55,7 @@ export const Logo = ({
 
   return (
     <Link href="/">
-      <Wordmark className={cn("text-foreground h-7.5 w-auto", className)} />
+      <Wordmark className={cn("text-foreground h-7 w-auto", className)} />
     </Link>
   );
 };
