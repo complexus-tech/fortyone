@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { EnterIcon, ObjectiveIcon, SearchIcon, StoryIcon } from "icons";
 import { Box, Command, Flex, Kbd, Skeleton, Text } from "ui";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
@@ -39,7 +39,7 @@ const ResultItem = ({
   onSelect,
   value,
 }: {
-  description: string;
+  description: ReactNode;
   icon: React.ReactNode;
   iconClassName?: string;
   iconStyle?: CSSProperties;
@@ -113,7 +113,19 @@ const StoryResults = ({
 
         return (
           <ResultItem
-            description={`${storyIdentifier}${status ? ` · ${status.name}` : ""} · ${story.priority}`}
+            description={
+              <>
+                <span>{storyIdentifier}</span>
+                {status ? (
+                  <>
+                    <span> · </span>
+                    <span className="font-medium">{status.name}</span>
+                  </>
+                ) : null}
+                <span> · </span>
+                <span className="font-medium">{story.priority}</span>
+              </>
+            }
             icon={
               <StoryIcon className="h-4" style={{ color: status?.color }} />
             }
@@ -149,7 +161,23 @@ const ObjectiveResults = ({
 
         return (
           <ResultItem
-            description={`Objective${status ? ` · ${status.name}` : ""}${objective.health ? ` · ${objective.health}` : ""}`}
+            description={
+              <>
+                <span>Objective</span>
+                {status ? (
+                  <>
+                    <span> · </span>
+                    <span className="font-medium">{status.name}</span>
+                  </>
+                ) : null}
+                {objective.health ? (
+                  <>
+                    <span> · </span>
+                    <span>{objective.health}</span>
+                  </>
+                ) : null}
+              </>
+            }
             icon={
               <ObjectiveIcon className="h-4" style={{ color: status?.color }} />
             }

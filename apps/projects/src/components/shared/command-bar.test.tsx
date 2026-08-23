@@ -233,7 +233,11 @@ describe("CommandBar workspace search", () => {
       query: "activation",
       type: "all",
     });
-    expect(screen.getByText("WEB-29 · In Progress · High")).toBeTruthy();
+    expect(screen.getByText("WEB-29").parentElement?.textContent).toBe(
+      "WEB-29 · In Progress · High",
+    );
+    expect(screen.getByText("In Progress").className).toContain("font-medium");
+    expect(screen.getByText("High").className).toContain("font-medium");
 
     fireEvent.click(
       screen.getByRole("button", { name: /Review activation metrics/ }),
