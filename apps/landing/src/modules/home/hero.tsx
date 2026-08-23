@@ -64,13 +64,13 @@ export const Hero = () => {
             <SignupProviderButton
               className="px-3 md:px-3"
               emphasized
-              label="Sign up"
+              label="Continue"
               provider="google"
             />
             <SignupProviderButton
               className="px-3 md:px-3"
               emphasized
-              label="Sign up"
+              label="Continue"
               provider="microsoft"
             />
           </Box>
