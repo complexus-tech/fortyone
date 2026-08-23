@@ -1,4 +1,4 @@
-type Plan = {
+export type Plan = {
   name: string;
   highlighted?: boolean;
   limits: {
@@ -25,6 +25,8 @@ type Plan = {
     volumeDiscounts?: boolean;
   };
 };
+
+export type PlanFeatureKey = keyof Plan["features"];
 
 export const plans: Plan[] = [
   {
@@ -127,7 +129,7 @@ export const featureLabels = {
   onPremise: "On-premise/Private Cloud Option",
   dedicatedManager: "Dedicated account manager",
   volumeDiscounts: "Volume discounts",
-};
+} satisfies Record<PlanFeatureKey, string>;
 
 // Helper function to generate a list of feature strings from a plan
 export const getPlanFeaturesList = (plan: Plan): string[] => {

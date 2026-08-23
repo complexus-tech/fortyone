@@ -49,8 +49,10 @@ export default function Page() {
   return (
     <>
       <PricingJsonLd />
-      <Box className="pt-16 md:pt-0">
-        <Pricing />
+      <Box>
+        <section className="landing-hero-shell landing-page-frame mt-18 overflow-hidden rounded-[3rem] md:mt-20 md:rounded-[4rem]">
+          <Pricing variant="page" />
+        </section>
         <ComparePlans />
         <CallToAction />
       </Box>

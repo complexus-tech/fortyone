@@ -52,7 +52,7 @@ export default function Page() {
     <>
       <JsonLd />
       <main className="[&_h1]:font-semibold [&_h2]:font-semibold">
-        <section className="landing-hero-shell landing-page-frame mt-18 rounded-[2.25rem] pt-px pb-6 md:mt-20 md:rounded-[3rem] md:pb-10">
+        <section className="landing-hero-shell landing-page-frame mt-18 rounded-[3rem] pt-px pb-6 md:mt-20 md:rounded-[4rem] md:pb-10">
           <Hero />
           <ProductScreenshot
             alt="FortyOne My Work board showing tasks grouped by Backlog, To Do, In Progress, and Done"
