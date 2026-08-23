@@ -225,10 +225,10 @@ const FeatureValue = ({ value }: { value: ComparisonValue }) => {
 
   if (value) {
     return (
-      <span className="bg-background-inverse text-foreground-inverse inline-flex size-5 items-center justify-center rounded-[0.35rem]">
+      <span className="bg-background-inverse text-foreground-inverse inline-flex size-5 items-center justify-center rounded-[0.45rem]">
         <CheckIcon
           aria-label="Included"
-          className="size-2.5"
+          className="h-3.5 w-auto"
           strokeWidth={2.7}
         />
       </span>
@@ -345,7 +345,7 @@ export const ComparePlans = () => {
   }, []);
 
   return (
-    <Container className="max-w-300 py-24 md:py-32">
+    <Container className="max-w-300 pt-24 pb-8 md:pt-32 md:pb-12">
       <Box className="mx-auto mb-14 max-w-2xl text-center md:mb-16">
         <Text
           as="h2"
@@ -359,7 +359,7 @@ export const ComparePlans = () => {
         <Box
           className={cn(
             "border-border/60 bg-background grid grid-cols-[30%_repeat(4,17.5%)] border-b",
-            dockStyle && "z-30 border-b-0",
+            dockStyle && "z-10",
           )}
           style={dockStyle}
         >

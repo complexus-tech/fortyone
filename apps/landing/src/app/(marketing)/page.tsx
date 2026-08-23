@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { CallToAction, JsonLd } from "@/components/shared";
-import { Pricing } from "@/components/ui";
 import { Faqs } from "@/components/ui/faqs";
 import {
   DEFAULT_SOCIAL_IMAGE,
@@ -72,7 +71,6 @@ export default function Page() {
         <MayaWorkflow />
         <Integrations />
         <CalendarWorkflow />
-        <Pricing className="md:pt-0 md:pb-16" />
         <Faqs />
         <CallToAction />
       </main>

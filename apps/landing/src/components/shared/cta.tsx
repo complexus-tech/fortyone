@@ -1,17 +1,29 @@
 import { Box, Button } from "ui";
+import { cn } from "lib";
 import { Container } from "@/components/ui";
 import { SIGNUP_URL } from "@/lib/app-url";
 import { GoogleSignupButton } from "./google-signup-button";
 
-export const CallToAction = () => {
+export const CallToAction = ({
+  className,
+  contentClassName,
+}: {
+  className?: string;
+  contentClassName?: string;
+}) => {
   return (
     <Box
       aria-labelledby="marketing-cta-title"
       as="section"
-      className="border-border border-t"
+      className={cn("border-border border-t", className)}
       id="call-to-action"
     >
-      <Container className="flex items-center justify-center py-24 text-center md:py-32">
+      <Container
+        className={cn(
+          "flex items-center justify-center py-24 text-center md:py-32",
+          contentClassName,
+        )}
+      >
         <Box
           className="flex max-w-2xl flex-col items-center"
           data-landing-reveal

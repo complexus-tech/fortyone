@@ -54,7 +54,10 @@ export default function Page() {
           <Pricing variant="page" />
         </section>
         <ComparePlans />
-        <CallToAction />
+        <CallToAction
+          className="border-t-0"
+          contentClassName="pt-16 md:pt-20"
+        />
       </Box>
     </>
   );
