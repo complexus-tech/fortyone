@@ -24,7 +24,7 @@ export const Container = ({
     className: cn(
       "mx-auto px-5 md:px-12",
       {
-        "mx-auto px-0": full,
+        "mx-auto px-0 max-w-full": full,
       },
       className,
     ),

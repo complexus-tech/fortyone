@@ -52,15 +52,17 @@ export default function Page() {
     <>
       <JsonLd />
       <main className="[&_h1]:font-semibold [&_h2]:font-semibold">
-        <Hero />
-        <ProductScreenshot
-          alt="FortyOne My Work board showing tasks grouped by Backlog, To Do, In Progress, and Done"
-          cropBrowserOnMobile
-          darkImage={myWorkBoardDark}
-          lightImage={myWorkBoardLight}
-          priority
-          url="https://fortyone.app/my-work"
-        />
+        <section className="landing-hero-shell mx-2 mt-18 rounded-[2.25rem] pt-px pb-6 sm:mx-3 md:mx-6 md:mt-20 md:rounded-[3rem] md:pb-10">
+          <Hero />
+          <ProductScreenshot
+            alt="FortyOne My Work board showing tasks grouped by Backlog, To Do, In Progress, and Done"
+            cropBrowserOnMobile
+            darkImage={myWorkBoardDark}
+            lightImage={myWorkBoardLight}
+            priority
+            url="https://fortyone.app/my-work"
+          />
+        </section>
         <SampleClients />
         <HowItWorks />
         <FeedbackWorkflow />

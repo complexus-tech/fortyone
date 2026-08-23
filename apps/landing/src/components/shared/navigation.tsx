@@ -102,8 +102,8 @@ const DesktopNavItem = ({ href, title }: NavigationMenuItem) => {
 
 export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
   return (
-    <Box className="bg-background/90 fixed left-0 z-15 w-screen backdrop-blur-xl">
-      <Container className="flex h-15 items-center justify-between gap-12">
+    <Box className="bg-background/90 fixed left-0 z-15 w-screen py-3.5 backdrop-blur-xl">
+      <Container className="flex items-center justify-between gap-12" full>
         <Logo />
         <NavigationMenu className="hidden md:flex" showViewport={false}>
           <NavigationMenu.List className="gap-4 space-x-0 lg:gap-6">
@@ -137,29 +137,32 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
           {/* <RequestDemo /> */}
           {hasSession ? (
             <Button
-              className="px-5 text-[0.93rem]"
               color="invert"
               href={APP_URL}
               rounded="lg"
+              size="lg"
+              variant="outline"
             >
               Open app
             </Button>
           ) : (
             <>
               <Button
-                className="hidden px-5 text-[0.93rem] md:flex"
+                className="hidden text-[0.93rem] md:flex"
                 color="tertiary"
                 href={APP_URL}
                 rounded="lg"
+                size="lg"
                 variant="naked"
               >
                 Login
               </Button>
               <Button
-                className="px-5 text-[0.93rem]"
+                className="text-[0.93rem]"
                 color="invert"
                 href={SIGNUP_URL}
                 rounded="lg"
+                size="lg"
               >
                 Sign up
               </Button>
