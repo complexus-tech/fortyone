@@ -74,7 +74,7 @@ export const Hero = () => {
               provider="microsoft"
             />
           </Box>
-          <Text className="ml-0.5 text-left text-[0.9rem]" color="muted">
+          <Text className="mt-1 ml-0.5 text-left text-[0.9rem]" color="muted">
             <Link
               className="text-foreground underline underline-offset-2"
               href={SIGNUP_URL}
