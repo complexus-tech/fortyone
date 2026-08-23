@@ -12,6 +12,7 @@ import { useUserRole, useTerminology } from "@/hooks";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";
+import { getCategoryHeaderStyle } from "./category-header-style";
 
 type StoryHeaderProps = {
   status?: State;
@@ -23,6 +24,7 @@ type StoryHeaderProps = {
   setIsCollapsed: (value: boolean) => void;
   assignee?: Member;
 };
+
 export const StoriesHeader = ({
   className,
   group,
@@ -39,6 +41,10 @@ export const StoriesHeader = ({
   const { getTermDisplay } = useTerminology();
 
   const groupedStories = group.stories.map((s) => s.id);
+  const headerStyle = getCategoryHeaderStyle({
+    statusColor: status?.color,
+    priority,
+  });
 
   return (
     <Container
@@ -49,6 +55,7 @@ export const StoriesHeader = ({
         },
         className,
       )}
+      style={headerStyle}
     >
       <Flex align="center" justify="between">
         <Flex align="center" className="relative gap-1.5">

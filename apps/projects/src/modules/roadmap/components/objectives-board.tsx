@@ -40,6 +40,7 @@ import {
 } from "@/components/ui";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
+import { getCategoryHeaderStyle } from "@/components/ui/category-header-style";
 import { useTerminology, useUserRole } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
@@ -663,9 +664,16 @@ const ObjectivesGroupedList = ({
       <Box className="min-w-6xl">
         {groups.map((group) => {
           const isCollapsed = collapsedGroups.has(group.key);
+          const headerStyle = getCategoryHeaderStyle({
+            statusColor: group.status?.color,
+            priority: group.priority,
+          });
           return (
             <Box key={group.key}>
-              <Box className="border-border bg-surface-muted/85 dark:border-border/70 border-b-[0.5px] px-12 py-[0.4rem] backdrop-blur">
+              <Box
+                className="border-border bg-surface-muted/85 dark:border-border/70 border-b-[0.5px] px-12 py-[0.4rem] backdrop-blur"
+                style={headerStyle}
+              >
                 <ObjectiveGroupHeader
                   collapsible
                   group={group}
