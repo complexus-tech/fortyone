@@ -349,7 +349,7 @@ export const Navigation = () => {
       <Box
         aria-hidden="true"
         className={cn(
-          "landing-page-frame dark:bg-background/95 absolute inset-x-0 top-3 h-full rounded-2xl bg-white shadow-[0_16px_44px_-18px_rgba(31,24,18,0.3)] backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:rounded-3xl dark:shadow-[0_16px_44px_-18px_rgba(0,0,0,0.7)]",
+          "landing-page-frame dark:bg-surface-elevated/80 absolute inset-x-0 top-3 h-full rounded-2xl bg-white shadow-[0_16px_44px_-18px_rgba(31,24,18,0.3)] backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:rounded-3xl dark:shadow-[0_16px_44px_-18px_rgba(0,0,0,0.7)]",
           isDocked
             ? "translate-y-0 scale-100 opacity-100"
             : "-translate-y-2 scale-[0.985] opacity-0",
