@@ -1,4 +1,11 @@
-import { Inconsolata, Inter, Kalam, Newsreader } from "next/font/google";
+import { Geist, Inconsolata, Inter, Kalam, Newsreader } from "next/font/google";
+
+export const body = Geist({
+  variable: "--font-geist",
+  subsets: ["latin"],
+  display: "swap",
+  weight: "variable",
+});
 
 export const sans = Inter({
   variable: "--font-inter",

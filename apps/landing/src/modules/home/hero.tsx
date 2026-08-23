@@ -52,7 +52,7 @@ export const Hero = () => {
               );
             })}
           </Text>
-          <Text className="sr-only">
+          <Text className="sr-onlys mt-6 max-w-3xl">
             FortyOne is an AI project management platform that connects company
             strategy and customer feedback to objectives, plans, and daily work,
             so teams can decide what matters and deliver it with context.

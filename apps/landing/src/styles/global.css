@@ -8,7 +8,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-body: -apple-system, BlinkMacSystemFont, var(--font-inter), sans-serif;
+  --font-body: var(--font-geist), -apple-system, BlinkMacSystemFont, sans-serif;
   --font-heading: -apple-system, BlinkMacSystemFont, var(--font-inter),
     sans-serif;
   --font-handwritten: var(--font-kalam), "Comic Sans MS", cursive;

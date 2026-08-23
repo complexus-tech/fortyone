@@ -9,7 +9,7 @@ import {
   HOME_METADATA_DESCRIPTION,
   HOME_METADATA_TITLE,
 } from "@/lib/seo";
-import { handwritten, mono, sans, serif } from "@/styles/fonts";
+import { body, handwritten, mono, sans, serif } from "@/styles/fonts";
 import { Toaster } from "./toaster";
 import Providers from "./providers";
 
@@ -41,6 +41,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       className={cn(
+        body.variable,
         sans.variable,
         mono.variable,
         serif.variable,
