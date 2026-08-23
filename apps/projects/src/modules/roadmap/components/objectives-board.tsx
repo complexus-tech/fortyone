@@ -46,7 +46,6 @@ import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
 import { ObjectiveForecastRiskBadge } from "@/modules/objectives/components/objective-forecast-risk";
-import { TableHeader } from "@/modules/objectives/components/heading";
 import {
   useCanUpdateObjective,
   useUpdateObjectiveMutation,
@@ -662,7 +661,6 @@ const ObjectivesGroupedList = ({
   return (
     <BodyContainer className="h-full overflow-x-auto pb-6">
       <Box className="min-w-6xl">
-        <TableHeader />
         {groups.map((group) => {
           const isCollapsed = collapsedGroups.has(group.key);
           return (

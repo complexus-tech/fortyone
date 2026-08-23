@@ -7,7 +7,6 @@ import { NewObjectiveDialog } from "@/components/ui";
 import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useTerminology, useUserRole } from "@/hooks";
 import type { Objective } from "../types";
-import { TableHeader } from "./heading";
 import { ObjectiveCard } from "./card";
 
 export const ListObjectives = ({
@@ -70,7 +69,6 @@ export const ListObjectives = ({
             "min-w-6xl": !isInTeam,
           })}
         >
-          {!isInSearch && <TableHeader isInTeam={isInTeam} />}
           {objectives.map((objective) => (
             <ObjectiveCard
               key={objective.id}

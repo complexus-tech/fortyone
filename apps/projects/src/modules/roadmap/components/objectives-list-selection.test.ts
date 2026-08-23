@@ -52,9 +52,13 @@ describe("Roadmap objective list selection", () => {
     expect(boardSource).toContain("RoadmapKeyResultSummary");
     expect(properties).toContain("RoadmapKeyResultSummary");
     expect(boardSource).toContain("RoadmapObjectiveListItem");
+    expect(boardSource).not.toContain("TableHeader");
     expect(keyResultSource).toContain("KeyResultContextMenu");
     expect(keyResultSource).toContain("RoadmapKeyResultRow");
     expect(keyResultSource).toContain("getKeyResultReference");
+    expect(keyResultSource).toContain(
+      'className="px-5 py-2.5 md:pr-12 md:pl-18"',
+    );
     expect(keyResultSource).toContain("formatKeyResultValue");
     expect(keyResultSource).toContain("<CircleProgressBar");
     expect(keyResultSource).not.toContain("<ProgressBar ");
@@ -73,6 +77,43 @@ describe("Roadmap objective list selection", () => {
     expect(cardSource).toContain("childCount > 0");
     expect(cardSource).toContain("<CircleProgressBar");
     expect(cardSource).toContain("strokeWidth={2.8}");
+    expect(cardSource).toContain("objectiveReference");
+    expect(cardSource).toContain('className="gap-1 pr-2"');
+    expect(cardSource).toContain('rounded="md"');
+    expect(cardSource).toContain('size="xs"');
+    expect(cardSource).toContain('variant="outline"');
+    expect(cardSource).toContain('className="hidden @6xl:inline"');
+
+    const objectivePropertiesStart = cardSource.indexOf(
+      '<Flex align="center" className="shrink-0 gap-2">',
+    );
+    const objectivePropertiesEnd = cardSource.indexOf(
+      "</Flex>\n    </RowWrapper>",
+      objectivePropertiesStart,
+    );
+    const rowProperties = cardSource.slice(
+      objectivePropertiesStart,
+      objectivePropertiesEnd,
+    );
+
+    expect(rowProperties.indexOf("ObjectiveStatusesMenu")).toBeLessThan(
+      rowProperties.indexOf("ObjectiveHealthEditor"),
+    );
+    expect(rowProperties.indexOf("ObjectiveHealthEditor")).toBeLessThan(
+      rowProperties.indexOf("PrioritiesMenu"),
+    );
+    expect(rowProperties).toContain("border-success/20 bg-success/10");
+    expect(rowProperties).toContain("border-warning/20 bg-warning/10");
+    expect(rowProperties).toContain("border-danger/20 bg-danger/10");
+    expect(rowProperties.indexOf("PrioritiesMenu")).toBeLessThan(
+      rowProperties.indexOf("CircleProgressBar"),
+    );
+    expect(rowProperties.indexOf("CircleProgressBar")).toBeLessThan(
+      rowProperties.indexOf("DatePicker"),
+    );
+    expect(rowProperties.indexOf("DatePicker")).toBeLessThan(
+      rowProperties.indexOf("AssigneesMenu"),
+    );
   });
 
   it("matches the list forecast badge to the objective property controls", () => {

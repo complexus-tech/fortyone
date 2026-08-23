@@ -166,7 +166,7 @@ const RoadmapKeyResultRow = ({
         onSelect(keyResult);
       }}
     >
-      <RowWrapper className="px-5 py-[0.925rem] md:pr-12 md:pl-18">
+      <RowWrapper className="px-5 py-2.5 md:pr-12 md:pl-18">
         <Box className="relative flex min-w-10 flex-1 items-center gap-2 @sm:min-w-20">
           <button
             className="focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-2 rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"

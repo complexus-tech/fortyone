@@ -17,7 +17,6 @@ import { cn } from "lib";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import {
-  TeamColor,
   AssigneesMenu,
   PrioritiesMenu,
   PriorityIcon,
@@ -37,6 +36,7 @@ import { ObjectiveHealthEditor } from "./objective-health-editor";
 
 export const ObjectiveCard = ({
   id,
+  sequenceId,
   name,
   leadUser,
   teamId,
@@ -44,7 +44,6 @@ export const ObjectiveCard = ({
   forecastCauseStory,
   forecastDaysDelta,
   forecastEndDate,
-  isInTeam,
   isInSearch,
   statusId,
   health,
@@ -80,6 +79,12 @@ export const ObjectiveCard = ({
 
   const lead = members.find((member) => member.id === leadUser);
   const team = teams.find((team) => team.id === teamId);
+  let objectiveReference: string | null = null;
+  if (sequenceId > 0) {
+    objectiveReference = team?.code
+      ? `${team.code}-${sequenceId}`
+      : String(sequenceId);
+  }
   const status = statuses.find((s) => s.id === statusId);
   let progress = progressOverride ?? 0;
   if (progressOverride === undefined && rest.stats) {
@@ -158,6 +163,11 @@ export const ObjectiveCard = ({
               <ObjectiveIcon className="h-4" style={{ color }} />
             </ColorPicker>
           )}
+          {objectiveReference ? (
+            <Text className="shrink-0 text-[0.95rem] uppercase" color="muted">
+              {objectiveReference}
+            </Text>
+          ) : null}
           {onSelect ? (
             <button
               className="focus-visible:ring-primary flex min-w-0 flex-1 items-center rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"
@@ -179,71 +189,25 @@ export const ObjectiveCard = ({
           )}
         </Box>
       </Box>
-      <Flex align="center" className="shrink-0 gap-2 md:gap-4">
-        {!isInTeam ? (
-          <Box className="hidden w-[50px] shrink-0 items-center gap-1.5 md:flex">
-            <TeamColor color={team?.color} />
-            <Text className="truncate uppercase" color="muted">
-              {team?.code}
-            </Text>
-          </Box>
-        ) : null}
-        <Box className="hidden w-[40px] shrink-0 items-center md:flex">
-          <AssigneesMenu>
-            <AssigneesMenu.Trigger>
-              <Button
-                className={cn({
-                  "text-text-secondary": !leadUser,
-                })}
-                color="tertiary"
-                disabled={!canUpdate}
-                leftIcon={
-                  <Avatar
-                    className={cn({
-                      "text-foreground/80": !leadUser,
-                    })}
-                    name={lead?.username}
-                    size="xs"
-                    src={lead?.avatarUrl}
-                  />
-                }
-                size="sm"
-                type="button"
-                variant="naked"
-              >
-                <span className="sr-only">{lead?.username}</span>
-              </Button>
-            </AssigneesMenu.Trigger>
-            <AssigneesMenu.Items
-              assigneeId={leadUser}
-              onAssigneeSelected={(leadUser) => {
-                handleUpdate({ leadUser });
-              }}
-              teamId={teamId}
-            />
-          </AssigneesMenu>
-        </Box>
-        {!isInSearch && (
-          <Box className="hidden w-[60px] shrink-0 items-center gap-1.5 pl-0.5 md:flex">
-            <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
-            {progress}%
-          </Box>
-        )}
-        <Box className="shrink-0 md:w-[96px]">
+      <Flex align="center" className="shrink-0 gap-2">
+        <Box className="shrink-0">
           <ObjectiveStatusesMenu>
             <ObjectiveStatusesMenu.Trigger>
               <Button
+                className="gap-1 pr-2"
                 color="tertiary"
                 disabled={!canUpdate}
-                leftIcon={<ObjectiveStatusIcon statusId={statusId} />}
-                size="sm"
+                rounded="md"
+                size="xs"
                 style={{
                   backgroundColor: hexToRgba(status?.color, 0.1),
                   borderColor: hexToRgba(status?.color, 0.2),
                 }}
                 type="button"
+                variant="outline"
               >
-                <span className="hidden max-w-[7ch] truncate md:inline-block">
+                <ObjectiveStatusIcon statusId={statusId} />
+                <span className="max-w-[7ch] truncate">
                   {status?.name ?? "Backlog"}
                 </span>
               </Button>
@@ -256,21 +220,42 @@ export const ObjectiveCard = ({
             />
           </ObjectiveStatusesMenu>
         </Box>
-        <Box className="shrink-0 md:w-[100px]">
+        <Box className="shrink-0">
+          <ObjectiveHealthEditor health={health} objectiveId={id}>
+            <Button
+              className={cn("gap-1 pr-2", {
+                "border-success/20 bg-success/10": health === "On Track",
+                "border-warning/20 bg-warning/10": health === "At Risk",
+                "border-danger/20 bg-danger/10": health === "Off Track",
+              })}
+              color="tertiary"
+              disabled={!canUpdate}
+              rounded="md"
+              size="xs"
+              type="button"
+              variant="outline"
+            >
+              <ObjectiveHealthIcon health={health} />
+              <span className="max-w-[8ch] truncate">
+                {health ?? "No Health"}
+              </span>
+            </Button>
+          </ObjectiveHealthEditor>
+        </Box>
+        <Box className="shrink-0">
           <PrioritiesMenu>
             <PrioritiesMenu.Trigger>
-              <Button
-                color="tertiary"
+              <button
+                aria-label={priority ?? "No Priority"}
+                className="flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!canUpdate}
-                leftIcon={<PriorityIcon priority={priority} />}
-                size="sm"
                 type="button"
-                variant="naked"
               >
-                <span className="hidden md:inline-block">
+                <PriorityIcon priority={priority} />
+                <span className="hidden @6xl:inline">
                   {priority ?? "No Priority"}
                 </span>
-              </Button>
+              </button>
             </PrioritiesMenu.Trigger>
             <PrioritiesMenu.Items
               priority={priority}
@@ -281,27 +266,42 @@ export const ObjectiveCard = ({
           </PrioritiesMenu>
         </Box>
 
-        <Box className="hidden w-[100px] shrink-0 md:block">
+        {!isInSearch ? (
+          <Box className="hidden shrink-0 items-center gap-1.5 px-1 sm:flex">
+            <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
+            <Text className="tabular-nums">{progress}%</Text>
+          </Box>
+        ) : null}
+
+        <Box className="hidden shrink-0 md:block">
           <DatePicker>
             <DatePicker.Trigger>
               <Button
-                className={cn({
+                aria-label={
+                  endDate
+                    ? `Target date: ${format(new Date(endDate), "MMMM d, yyyy")}`
+                    : "Set target date"
+                }
+                className={cn("px-2", {
                   "text-text-muted": !endDate,
                 })}
                 color="tertiary"
                 disabled={!canUpdate}
                 leftIcon={
                   <CalendarIcon
-                    className={cn("h-[1.15rem]", {
+                    className={cn("h-4", {
                       "text-text-muted": !endDate,
                     })}
+                    strokeWidth={3}
                   />
                 }
-                size="sm"
-                variant="naked"
+                rounded="md"
+                size="xs"
+                type="button"
+                variant="outline"
               >
                 {endDate ? (
-                  format(new Date(endDate), "MMM d, yy")
+                  format(new Date(endDate), "MMM d")
                 ) : (
                   <Text color="muted">Target date</Text>
                 )}
@@ -318,21 +318,39 @@ export const ObjectiveCard = ({
           </DatePicker>
         </Box>
 
-        <Box className="shrink-0 md:w-[96px]">
-          <ObjectiveHealthEditor health={health} objectiveId={id}>
-            <Button
-              color="tertiary"
-              disabled={!canUpdate}
-              leftIcon={<ObjectiveHealthIcon health={health} />}
-              size="sm"
-              type="button"
-              variant="naked"
-            >
-              <span className="hidden md:inline-block">
-                {health ?? "No Health"}
-              </span>
-            </Button>
-          </ObjectiveHealthEditor>
+        <Box className="hidden shrink-0 md:flex">
+          <AssigneesMenu>
+            <AssigneesMenu.Trigger>
+              <Button
+                aria-label={lead ? `Lead: ${lead.username}` : "Add lead"}
+                asIcon
+                className={cn({
+                  "text-text-secondary": !leadUser,
+                })}
+                color="tertiary"
+                disabled={!canUpdate}
+                size="sm"
+                type="button"
+                variant="naked"
+              >
+                <Avatar
+                  className={cn({
+                    "text-foreground/80": !leadUser,
+                  })}
+                  name={lead?.fullName || lead?.username}
+                  size="sm"
+                  src={lead?.avatarUrl}
+                />
+              </Button>
+            </AssigneesMenu.Trigger>
+            <AssigneesMenu.Items
+              assigneeId={leadUser}
+              onAssigneeSelected={(leadUser) => {
+                handleUpdate({ leadUser });
+              }}
+              teamId={teamId}
+            />
+          </AssigneesMenu>
         </Box>
       </Flex>
     </RowWrapper>
