@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { cn } from "lib";
 import { Box, Text } from "ui";
+import { NavigationMenuIcon } from "@/components/shared/navigation-menu-icon";
 import { Container } from "@/components/ui";
 
 type Integration = {
@@ -47,6 +48,16 @@ export const Integrations = () => {
       <Container className="py-16 md:py-28">
         <Box className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-start lg:gap-20 xl:gap-28">
           <Box data-landing-reveal>
+            <Box className="mb-5 flex items-center gap-3">
+              <NavigationMenuIcon
+                className="size-11"
+                name="integrations"
+                tone="aqua"
+              />
+              <Text className="text-text-muted text-xs font-medium tracking-[0.11em] uppercase">
+                Integrations
+              </Text>
+            </Box>
             <Text
               as="h2"
               className="max-w-xl pb-1 text-4xl text-balance md:text-5xl"

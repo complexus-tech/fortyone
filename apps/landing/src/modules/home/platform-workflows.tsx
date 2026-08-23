@@ -9,6 +9,9 @@ export const DocumentsWorkflow = () => {
   return (
     <ProductFeatureSection
       description="Write shared project documents where planning happens, then link each document to the stories and objectives it supports."
+      eyebrow="Documents"
+      icon="documents"
+      iconTone="orange"
       id="documents"
       title="Keep the brief connected to the work."
     >
@@ -27,6 +30,9 @@ export const CalendarWorkflow = () => {
   return (
     <ProductFeatureSection
       description="See meetings and scheduled work together, protect focus time, and place assigned work into open windows before the week fills up."
+      eyebrow="Calendar"
+      icon="calendar"
+      iconTone="rose"
       id="calendar"
       title="Plan work around the time your team actually has."
     >
