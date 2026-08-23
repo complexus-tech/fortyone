@@ -129,7 +129,7 @@
   --color-transparent: oklch(0 0 0 / 0);
   --color-current: oklch(0 0 0);
 
-  --color-foreground: var(--brand-ink);
+  --color-foreground: oklch(0.27 0.055 40);
   --color-foreground-inverse: var(--brand-paper);
   --color-background-inverse: var(--color-foreground);
 
