@@ -37,9 +37,8 @@ const ROADMAP_STICKY_COLUMNS_WIDTH = 640;
 const ROADMAP_COLLAPSED_COLUMNS_WIDTH = 320;
 const ROADMAP_ROW_HEIGHT = "3.5rem";
 const ROADMAP_COLUMNS =
-  "grid-cols-[2rem_minmax(0,7rem)_2rem_2rem_minmax(0,1fr)_7rem]";
+  "grid-cols-[2rem_2rem_2rem_minmax(0,7rem)_minmax(0,1fr)_7rem]";
 const DAYS_PER_DISPLAY_MONTH = 30;
-const DAYS_PER_DISPLAY_YEAR = 365;
 
 const formatObjectiveDuration = (days: number) => {
   if (days < DAYS_PER_DISPLAY_MONTH) {
@@ -48,36 +47,6 @@ const formatObjectiveDuration = (days: number) => {
 
   const months = Math.max(1, Math.round(days / DAYS_PER_DISPLAY_MONTH));
   return `${months} month${months === 1 ? "" : "s"}`;
-};
-
-const formatCompactObjectiveDuration = (days: number) => {
-  if (days < DAYS_PER_DISPLAY_MONTH) return `${days}d`;
-  if (days < DAYS_PER_DISPLAY_YEAR) {
-    return `${Math.max(1, Math.round(days / DAYS_PER_DISPLAY_MONTH))}m`;
-  }
-
-  return `${Math.max(1, Math.round(days / DAYS_PER_DISPLAY_YEAR))}y`;
-};
-
-const CompactObjectiveDuration = ({
-  days,
-  fallback,
-}: {
-  days: number | null;
-  fallback: ReactNode;
-}) => {
-  if (days === null) return fallback;
-
-  return (
-    <Tooltip
-      className="pointer-events-none"
-      title={`${days} calendar day${days === 1 ? "" : "s"}`}
-    >
-      <Text className="text-[0.85rem]" color="muted" fontWeight="medium">
-        {formatCompactObjectiveDuration(days)}
-      </Text>
-    </Tooltip>
-  );
 };
 
 type RoadmapGanttItem = {
@@ -174,7 +143,7 @@ const ObjectiveRow = ({
       >
         <Text
           aria-label={`${durationLabel}, ${duration} calendar day${duration === 1 ? "" : "s"}`}
-          className="shrink-0 text-[0.95rem]"
+          className="shrink-0 text-base"
           color="muted"
         >
           {durationLabel}
@@ -230,7 +199,9 @@ const ObjectiveRow = ({
       <Box
         className={cn(
           "group border-border dark:border-border/70 grid h-14 items-center gap-4 border-b-[0.5px] bg-[var(--objective-row-background)] px-4 transition-colors duration-150 hover:bg-[var(--objective-row-hover-background)] dark:bg-[var(--objective-row-background-dark)] dark:hover:bg-[var(--objective-row-hover-background-dark)]",
-          isSidebarCollapsed ? "grid-cols-5 gap-3 px-3" : ROADMAP_COLUMNS,
+          isSidebarCollapsed
+            ? "grid-cols-[2rem_2rem_2rem_2rem_minmax(0,1fr)] gap-3 px-3"
+            : ROADMAP_COLUMNS,
         )}
         style={rowStyle}
       >
@@ -268,7 +239,7 @@ const ObjectiveRow = ({
                       name={
                         selectedAssignee?.fullName || selectedAssignee?.username
                       }
-                      size="xs"
+                      size="sm"
                       src={selectedAssignee?.avatarUrl}
                     />
                   </button>
@@ -285,6 +256,70 @@ const ObjectiveRow = ({
               teamId={objective.teamId}
             />
           </AssigneesMenu>
+        </Flex>
+        <Flex align="center" justify="center">
+          <Tooltip
+            className="pointer-events-none"
+            title={objective.health ?? "No health"}
+          >
+            <span>
+              <ObjectiveHealthEditor
+                health={objective.health}
+                objectiveId={objective.id}
+              >
+                <Button
+                  aria-label={`Change health: ${objective.health ?? "No health"}`}
+                  asIcon
+                  className={cn(
+                    "h-[1.85rem] w-[1.85rem] min-w-[1.85rem] justify-center p-0",
+                    {
+                      "border-success/20 bg-success/10":
+                        objective.health === "On Track",
+                      "border-warning/20 bg-warning/10":
+                        objective.health === "At Risk",
+                      "border-danger/20 bg-danger/10":
+                        objective.health === "Off Track",
+                    },
+                  )}
+                  color="tertiary"
+                  disabled={!canUpdate}
+                  rounded="md"
+                  size="xs"
+                  type="button"
+                  variant="outline"
+                >
+                  <ObjectiveHealthIcon health={objective.health} />
+                </Button>
+              </ObjectiveHealthEditor>
+            </span>
+          </Tooltip>
+        </Flex>
+        <Flex align="center" justify="center">
+          <PrioritiesMenu>
+            <Tooltip
+              className="pointer-events-none"
+              title={objective.priority ?? "No priority"}
+            >
+              <span>
+                <PrioritiesMenu.Trigger>
+                  <button
+                    aria-label={`Change priority: ${objective.priority ?? "No priority"}`}
+                    className="focus-visible:ring-primary flex rounded-sm outline-none select-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={!canUpdate}
+                    type="button"
+                  >
+                    <PriorityIcon priority={objective.priority} />
+                  </button>
+                </PrioritiesMenu.Trigger>
+              </span>
+            </Tooltip>
+            <PrioritiesMenu.Items
+              priority={objective.priority}
+              setPriority={(priority) => {
+                handleUpdate(objective.id, { priority });
+              }}
+            />
+          </PrioritiesMenu>
         </Flex>
         <Flex align="center" className="min-w-0">
           <ObjectiveStatusesMenu>
@@ -325,55 +360,6 @@ const ObjectiveRow = ({
             />
           </ObjectiveStatusesMenu>
         </Flex>
-        <Flex align="center" justify="center">
-          <Tooltip
-            className="pointer-events-none"
-            title={objective.health ?? "No health"}
-          >
-            <span>
-              <ObjectiveHealthEditor
-                health={objective.health}
-                objectiveId={objective.id}
-              >
-                <button
-                  aria-label={`Change health: ${objective.health ?? "No health"}`}
-                  className="focus-visible:ring-primary flex rounded-sm outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={!canUpdate}
-                  type="button"
-                >
-                  <ObjectiveHealthIcon health={objective.health} />
-                </button>
-              </ObjectiveHealthEditor>
-            </span>
-          </Tooltip>
-        </Flex>
-        <Flex align="center" justify="center">
-          <PrioritiesMenu>
-            <Tooltip
-              className="pointer-events-none"
-              title={objective.priority ?? "No priority"}
-            >
-              <span>
-                <PrioritiesMenu.Trigger>
-                  <button
-                    aria-label={`Change priority: ${objective.priority ?? "No priority"}`}
-                    className="focus-visible:ring-primary flex rounded-sm outline-none select-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={!canUpdate}
-                    type="button"
-                  >
-                    <PriorityIcon priority={objective.priority} />
-                  </button>
-                </PrioritiesMenu.Trigger>
-              </span>
-            </Tooltip>
-            <PrioritiesMenu.Items
-              priority={objective.priority}
-              setPriority={(priority) => {
-                handleUpdate(objective.id, { priority });
-              }}
-            />
-          </PrioritiesMenu>
-        </Flex>
         {isSidebarCollapsed ? null : (
           <Flex align="center" className="min-w-0 pr-3">
             <button
@@ -399,13 +385,7 @@ const ObjectiveRow = ({
             </button>
           </Flex>
         )}
-        {isSidebarCollapsed ? (
-          <Flex align="center" justify="center">
-            <CompactObjectiveDuration days={duration} fallback={scheduleCell} />
-          </Flex>
-        ) : (
-          <Flex justify="end">{scheduleCell}</Flex>
-        )}
+        <Flex justify="end">{scheduleCell}</Flex>
       </Box>
     </Box>
   );

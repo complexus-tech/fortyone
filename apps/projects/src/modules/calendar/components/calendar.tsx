@@ -1581,7 +1581,7 @@ const CalendarTimeGrid = ({
       <Box className="min-h-0 flex-1 overflow-auto overscroll-contain">
         <Box
           className={cn(
-            "border-border/70 bg-background sticky top-0 z-30 grid h-18 border-b",
+            "border-border/70 bg-background/70 sticky top-0 z-30 grid h-18 border-b backdrop-blur-xl",
             minimumWidthClass,
           )}
           style={{ gridTemplateColumns }}
