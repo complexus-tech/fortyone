@@ -76,7 +76,6 @@ const NavigationDropdown = ({
   <NavigationMenu.Item className="relative">
     <NavigationMenu.Trigger
       className="hover:bg-state-hover focus-visible:bg-state-hover data-[state=open]:bg-state-hover rounded-md px-3 py-1.5 transition outline-none focus:outline-none focus-visible:outline-none"
-      hideArrow
     >
       {label}
     </NavigationMenu.Trigger>
@@ -126,7 +125,7 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
 
   return (
     <Box
-      className="fixed inset-x-0 top-0 z-15"
+      className="fixed inset-x-0 top-1 z-15"
       data-docked={isDocked ? "true" : "false"}
     >
       <Box
@@ -139,7 +138,7 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
       <Box
         aria-hidden="true"
         className={cn(
-          "border-border/60 bg-background/95 shadow-shadow absolute inset-x-2 top-3 h-full rounded-2xl border shadow-xl backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:inset-x-6 md:rounded-3xl",
+          "landing-page-frame absolute inset-x-0 top-3 h-full rounded-2xl bg-white shadow-[0_16px_44px_-18px_rgba(31,24,18,0.3)] backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:rounded-3xl dark:bg-background/95 dark:shadow-[0_16px_44px_-18px_rgba(0,0,0,0.7)]",
           isDocked
             ? "translate-y-0 scale-100 opacity-100"
             : "-translate-y-2 scale-[0.985] opacity-0",
@@ -147,40 +146,44 @@ export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
       />
       <Container
         className={cn(
-          "relative flex items-center justify-between gap-12 py-3 transition-transform duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none",
+          "landing-page-frame relative flex items-center justify-between gap-8 px-5 py-3 transition-transform duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:px-6",
           isDocked ? "translate-y-3" : "translate-y-0",
         )}
-        full
       >
-        <Logo />
-        <NavigationMenu className="hidden md:flex" showViewport={false}>
-          <NavigationMenu.List className="gap-4 space-x-0 lg:gap-6">
-            <NavigationDropdown
-              contentClassName="min-w-44"
-              items={featureMenuLinks}
-              label="Features"
-            />
-            <NavigationDropdown
-              contentClassName="min-w-44"
-              items={primaryUseCaseMenuLinks}
-              label="Use Cases"
-            />
-            <NavigationMenu.Item>
-              <DesktopNavItem
-                href="/ai-project-manager"
-                title="AI Project Manager"
+        <Flex align="center" className="min-w-0 gap-8">
+          <Logo />
+          <NavigationMenu
+            className="landing-desktop-navigation"
+            showViewport={false}
+          >
+            <NavigationMenu.List className="gap-1 space-x-0">
+              <NavigationDropdown
+                contentClassName="min-w-44"
+                items={featureMenuLinks}
+                label="Features"
               />
-            </NavigationMenu.Item>
-            <NavigationDropdown
-              contentClassName="min-w-40"
-              items={resourceLinks}
-              label="Resources"
-            />
-            <NavigationMenu.Item>
-              <DesktopNavItem href="/pricing" title="Pricing" />
-            </NavigationMenu.Item>
-          </NavigationMenu.List>
-        </NavigationMenu>
+              <NavigationDropdown
+                contentClassName="min-w-44"
+                items={primaryUseCaseMenuLinks}
+                label="Use Cases"
+              />
+              <NavigationMenu.Item>
+                <DesktopNavItem
+                  href="/ai-project-manager"
+                  title="AI Project Manager"
+                />
+              </NavigationMenu.Item>
+              <NavigationDropdown
+                contentClassName="min-w-40"
+                items={resourceLinks}
+                label="Resources"
+              />
+              <NavigationMenu.Item>
+                <DesktopNavItem href="/pricing" title="Pricing" />
+              </NavigationMenu.Item>
+            </NavigationMenu.List>
+          </NavigationMenu>
+        </Flex>
         <Flex align="center" className="ml-4 gap-2">
           {/* <RequestDemo /> */}
           {hasSession ? (

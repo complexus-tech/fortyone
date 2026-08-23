@@ -20,6 +20,42 @@
   --landing-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+.landing-page-frame {
+  margin-inline: auto;
+  width: calc(100% - 1rem);
+  max-width: 88.75rem;
+}
+
+@media (min-width: 40rem) {
+  .landing-page-frame {
+    width: calc(100% - 1.5rem);
+  }
+}
+
+@media (min-width: 48rem) {
+  .landing-page-frame {
+    width: calc(100% - 3rem);
+  }
+}
+
+.landing-desktop-navigation {
+  display: none;
+}
+
+.landing-mobile-navigation {
+  display: block;
+}
+
+@media (min-width: 64rem) {
+  .landing-desktop-navigation {
+    display: flex;
+  }
+
+  .landing-mobile-navigation {
+    display: none;
+  }
+}
+
 @keyframes landing-hero-title-enter {
   from {
     opacity: 0;

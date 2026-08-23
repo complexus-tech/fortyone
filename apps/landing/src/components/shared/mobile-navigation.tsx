@@ -74,7 +74,7 @@ export const MobileNavigation = () => {
 
   return (
     <>
-      <div className="md:hidden">
+      <div className="landing-mobile-navigation">
         <NavMenuButton open={open} setOpen={setOpen} />
       </div>
 

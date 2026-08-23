@@ -7,6 +7,8 @@ import { SIGNUP_URL } from "@/lib/app-url";
 
 const HERO_TITLE =
   "Turn strategy and customer feedback into work your team can deliver.";
+const HERO_DESCRIPTION =
+  "Give your team a clear view of what matters, why it matters, and what to do next—so the right work keeps moving.";
 const HERO_TITLE_WORDS = HERO_TITLE.split(" ");
 const HERO_KEYWORD_TONES: Partial<Record<string, HandwrittenAccentTone>> = {
   strategy: "primary",
@@ -17,8 +19,8 @@ const HERO_KEYWORD_TONES: Partial<Record<string, HandwrittenAccentTone>> = {
 export const Hero = () => {
   return (
     <Box>
-      <Container className="pt-12">
-        <Box className="mt-12 mb-6 md:mt-24">
+      <Container className="pt-8">
+        <Box className="mt-10 mb-6">
           <Text
             as="h1"
             className="relative z-1 text-5xl font-semibold text-balance md:max-w-6xl md:text-6xl"
@@ -52,10 +54,8 @@ export const Hero = () => {
               );
             })}
           </Text>
-          <Text className="sr-onlys mt-6 max-w-3xl">
-            FortyOne is an AI project management platform that connects company
-            strategy and customer feedback to objectives, plans, and daily work,
-            so teams can decide what matters and deliver it with context.
+          <Text className="text-text-muted mt-6 max-w-xl text-pretty">
+            {HERO_DESCRIPTION}
           </Text>
         </Box>
 
@@ -74,7 +74,7 @@ export const Hero = () => {
               provider="microsoft"
             />
           </Box>
-          <Text className="text-left text-[0.9rem]" color="muted">
+          <Text className="ml-0.5 text-left text-[0.9rem]" color="muted">
             <Link
               className="text-foreground underline underline-offset-2"
               href={SIGNUP_URL}
