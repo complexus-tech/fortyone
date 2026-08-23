@@ -955,7 +955,7 @@ const Chart = <T extends GanttItem>({
         className="pointer-events-none absolute inset-y-0 z-20"
         style={{ left: `${todayPosition}px` }}
       >
-        <Box className="bg-primary/80 absolute inset-y-0 w-px -translate-x-1/2" />
+        <Box className="bg-primary/35 absolute inset-y-0 w-px -translate-x-1/2" />
         <Text
           as="span"
           className="bg-primary text-primary-foreground absolute top-7 flex h-6 -translate-x-1/2 items-center rounded-lg px-2 text-[0.85rem] leading-none whitespace-nowrap shadow-sm"
