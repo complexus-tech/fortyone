@@ -461,7 +461,7 @@ export const getEntityResultsModel = (
       model = {
         emptyMessage: "No objectives found.",
         items: toObjectives(value),
-        title: "Objectives",
+        title: asString(value.title) || "Objectives",
       };
       break;
     case "tool-listKeyResultsTool":

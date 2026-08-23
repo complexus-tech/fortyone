@@ -84,12 +84,15 @@ const EntityTrailing = ({ trailing }: { trailing: EntityResultTrailing }) => {
   }
 
   return (
-    <Tooltip title={trailing.label}>
+    <span
+      aria-label={trailing.label}
+      className="border-border/70 bg-surface-muted/55 inline-flex items-center gap-1.5 rounded-xl border px-2 py-0.5 text-sm font-medium"
+    >
       <span
-        aria-label={trailing.label}
         className={`size-2.5 rounded-full ${toneClassNames[trailing.tone]}`}
       />
-    </Tooltip>
+      {trailing.label}
+    </span>
   );
 };
 

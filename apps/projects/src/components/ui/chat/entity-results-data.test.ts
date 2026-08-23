@@ -38,6 +38,16 @@ describe("entity results generative UI", () => {
     });
   });
 
+  it("uses a result-specific objective title when the tool provides one", () => {
+    const model = getEntityResultsModel("tool-listObjectivesTool", {
+      objectives: [],
+      success: true,
+      title: "Delivery risks",
+    });
+
+    expect(model?.title).toBe("Delivery risks");
+  });
+
   it("flattens multi-team integration requests and preserves priority", () => {
     const output = {
       success: true,
