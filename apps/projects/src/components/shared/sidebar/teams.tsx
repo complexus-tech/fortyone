@@ -121,8 +121,9 @@ export const Teams = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
         <Divider className="mx-auto mb-3 w-4/5 border-t border-dashed" />
       ) : null}
       <Flex
-        align="center"
-        className={cn("mb-2", isCollapsed && "justify-center")}
+        align={isCollapsed ? "stretch" : "center"}
+        className={cn("mb-2", isCollapsed && "w-full")}
+        direction={isCollapsed ? "column" : undefined}
         justify="between"
       >
         {isCollapsed ? null : (
@@ -133,33 +134,29 @@ export const Teams = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
         {userRole !== "guest" || overflowTeams.length > 0 ? (
           <TeamsMenu>
             <TeamsMenu.Trigger>
-              <Button
-                asIcon={!isCollapsed}
-                className={cn(
-                  isCollapsed &&
-                    "hover:text-primary hover:[&_svg]:text-primary min-h-14 w-full flex-col justify-center gap-1 px-1 py-2 text-center",
-                )}
-                color="tertiary"
-                data-manage-teams-button
-                fullWidth={isCollapsed}
-                leftIcon={
-                  isCollapsed ? (
-                    <TeamIcon className="h-5.5 w-auto shrink-0" />
-                  ) : (
-                    <MoreHorizontalIcon />
-                  )
-                }
-                size={isCollapsed ? undefined : "sm"}
-                variant="naked"
-              >
-                {isCollapsed ? (
+              {isCollapsed ? (
+                <button
+                  className="focus-visible:ring-primary/40 hover:bg-primary/5 hover:text-primary hover:[&_svg]:text-primary flex min-h-14 w-full flex-none flex-col items-center justify-center gap-1 self-stretch rounded-lg px-1 py-2 text-center transition outline-none focus-visible:ring-2"
+                  data-manage-teams-button
+                  type="button"
+                >
+                  <TeamIcon className="h-5.5 w-auto shrink-0" />
                   <span className="line-clamp-2 w-full text-xs leading-3.5 font-semibold">
                     Your Teams
                   </span>
-                ) : (
+                </button>
+              ) : (
+                <Button
+                  asIcon
+                  color="tertiary"
+                  data-manage-teams-button
+                  leftIcon={<MoreHorizontalIcon />}
+                  size="sm"
+                  variant="naked"
+                >
                   <span className="sr-only">Manage Teams</span>
-                )}
-              </Button>
+                </Button>
+              )}
             </TeamsMenu.Trigger>
             <TeamsMenu.Items
               hideManageTeams={userRole !== "admin"}
