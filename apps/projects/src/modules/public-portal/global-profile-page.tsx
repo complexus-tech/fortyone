@@ -8,7 +8,6 @@ import { Avatar, Box, Flex, Tabs, Text } from "ui";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import type { User } from "@/types";
 import { AccountHeader } from "./account-page";
-import { getPublicAvatarColor } from "./avatar-color";
 import type {
   FeedbackProfileActivity,
   FeedbackProfileActivityPage,
@@ -147,7 +146,6 @@ const ProfileSidebar = ({
             rounded="full"
             size="sm"
             src={profile.avatarUrl}
-            style={{ backgroundColor: getPublicAvatarColor(name) }}
           />
           <Box className="min-w-0">
             <Text className="truncate" fontWeight="semibold">
@@ -203,7 +201,6 @@ const FeedbackItem = ({
               name={name}
               size="sm"
               src={profile.avatarUrl}
-              style={{ backgroundColor: getPublicAvatarColor(name) }}
             />
             <Box className="min-w-0 flex-1">
               <Flex align="center" className="min-w-0 flex-wrap gap-1.5">
@@ -430,7 +427,6 @@ export const GlobalProfilePage = ({
               rounded="full"
               size="lg"
               src={profile.avatarUrl}
-              style={{ backgroundColor: getPublicAvatarColor(name) }}
             />
             <Box className="min-w-0">
               <Text as="h1" className="truncate text-2xl" fontWeight="semibold">

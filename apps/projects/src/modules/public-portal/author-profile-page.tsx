@@ -6,7 +6,6 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { CommentIcon, RequestsIcon } from "icons";
 import { Avatar, Box, Flex, Tabs, Text } from "ui";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
-import { getPublicAvatarColor } from "./avatar-color";
 import { PublicPortalShell } from "./portal-shell";
 import { publicPortalKeys } from "./query-keys";
 import { PublicRequestCard } from "./request-card";
@@ -212,9 +211,6 @@ const ContributorSidebar = ({
             rounded="full"
             size="sm"
             src={contributor.avatarUrl}
-            style={{
-              backgroundColor: getPublicAvatarColor(contributor.name),
-            }}
           />
           <Box className="min-w-0">
             <Text className="truncate" fontWeight="semibold">
@@ -425,9 +421,6 @@ export const PublicPortalAuthorProfilePage = ({
                 rounded="full"
                 size="lg"
                 src={contributor.avatarUrl}
-                style={{
-                  backgroundColor: getPublicAvatarColor(contributor.name),
-                }}
               />
               <Box className="min-w-0">
                 <Text

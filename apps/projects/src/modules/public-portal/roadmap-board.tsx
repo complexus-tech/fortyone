@@ -13,7 +13,6 @@ import { publicPortalKeys } from "./query-keys";
 import { roadmapStatuses } from "./status";
 import type { PublicPortal, PublicRequest } from "./types";
 import { getAuthorPath, getBoard, getRequestPath } from "./utils";
-import { getPublicAvatarColor } from "./avatar-color";
 import { PublicBoardPill } from "./board-pill";
 
 type ApiResponse<T> = {
@@ -145,9 +144,6 @@ const RoadmapAuthorAvatar = ({ request }: { request: PublicRequest }) => (
       rounded="md"
       size="xs"
       src={request.authorAvatar}
-      style={{
-        backgroundColor: getPublicAvatarColor(request.authorName),
-      }}
     />
   </span>
 );

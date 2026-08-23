@@ -11,7 +11,6 @@ import type {
 } from "./types";
 import { getAuthorPath, getBoard, getRequestCallbackUrl } from "./utils";
 import { FeedbackVoteButton } from "./feedback-controls";
-import { getPublicAvatarColor } from "./avatar-color";
 import { FeedbackDiscussion } from "./feedback-comments";
 import { PublicPortalActions } from "./sidebar";
 import { usePublicFeedbackDetail } from "./client-query";
@@ -36,9 +35,6 @@ export const PublicPortalRequestDetailPage = ({
         name={activeRequest.authorName}
         size="md"
         src={activeRequest.authorAvatar}
-        style={{
-          backgroundColor: getPublicAvatarColor(activeRequest.authorName),
-        }}
       />
       <Box className="min-w-0 flex-1">
         <Text className="text-[1.05rem]" fontWeight="semibold">

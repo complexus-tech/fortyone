@@ -41,7 +41,6 @@ import type {
   PublicPortalNotification,
   PublicPortalNotificationsPage,
 } from "./types";
-import { getPublicAvatarColor } from "./avatar-color";
 import { publicPortalKeys } from "./query-keys";
 import { getRequestPathBySlug } from "./utils";
 
@@ -146,9 +145,6 @@ const NotificationItem = ({
           rounded="full"
           size="sm"
           src={notification.actor.avatarUrl}
-          style={{
-            backgroundColor: getPublicAvatarColor(notification.actor.name),
-          }}
         />
         <Box className="min-w-0 flex-1">
           <Flex align="center" gap={2} justify="between">

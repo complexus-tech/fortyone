@@ -9,7 +9,6 @@ import type {
   PublicRequest,
 } from "./types";
 import { getBoard, getRequestPath } from "./utils";
-import { getPublicAvatarColor } from "./avatar-color";
 import { FeedbackVoteButton } from "./feedback-controls";
 
 export const RequestStatusPill = ({
@@ -55,9 +54,6 @@ export const PublicRequestCard = ({
               name={request.authorName}
               size="sm"
               src={request.authorAvatar}
-              style={{
-                backgroundColor: getPublicAvatarColor(request.authorName),
-              }}
             />
             <Box className="min-w-0 flex-1">
               <Flex align="center" className="min-w-0 flex-wrap gap-1.5">

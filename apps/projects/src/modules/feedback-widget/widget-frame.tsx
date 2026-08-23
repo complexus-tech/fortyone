@@ -30,7 +30,6 @@ import type {
   PublicRequestComment,
   PublicRequestStatus,
 } from "@/modules/public-portal/types";
-import { getPublicAvatarColor } from "@/modules/public-portal/avatar-color";
 import {
   requestFilters,
   requestStatusMeta,
@@ -505,7 +504,6 @@ const FeedbackRow = ({
           name={request.authorName || "Anonymous"}
           size="sm"
           src={request.authorAvatar}
-          style={{ backgroundColor: getPublicAvatarColor(request.authorName) }}
         />
         <Box className="min-w-0">
           <Text
@@ -1026,7 +1024,6 @@ const Comment = ({ comment }: { comment: PublicRequestComment }) => (
       name={comment.authorName}
       size="sm"
       src={comment.authorAvatar}
-      style={{ backgroundColor: getPublicAvatarColor(comment.authorName) }}
     />
     <Box className="min-w-0 flex-1">
       <Flex align="center" className="gap-1.5">
@@ -1131,9 +1128,6 @@ const RequestDetail = ({
             name={request.authorName || "Anonymous"}
             size="md"
             src={request.authorAvatar}
-            style={{
-              backgroundColor: getPublicAvatarColor(request.authorName),
-            }}
           />
           <Box>
             <Text className="text-[13px]" fontWeight="semibold">

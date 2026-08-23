@@ -14,7 +14,6 @@ import type {
   PublicRequest,
   PublicRequestComment,
 } from "./types";
-import { getPublicAvatarColor } from "./avatar-color";
 import { getRequestLoginUrl } from "./utils";
 import { useCreatePublicFeedbackComment } from "./feedback-mutations";
 import { FeedbackGuestVerificationDialog } from "./guest-verification";
@@ -302,9 +301,6 @@ const FeedbackComment = ({
             name={comment.authorName}
             size="xs"
             src={comment.authorAvatar}
-            style={{
-              backgroundColor: getPublicAvatarColor(comment.authorName),
-            }}
           />
         </Box>
         <Text className="ml-1">{comment.authorName}</Text>

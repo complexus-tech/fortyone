@@ -41,9 +41,10 @@ export const JoinForm = ({
         <Flex align="center" gap={3} justify="between">
           <Flex align="center" gap={2}>
             <Avatar
+              className="bg-dark dark:text-foreground text-white dark:bg-white"
+              color="naked"
               name={workspaceName}
               rounded="md"
-              className="bg-dark dark:text-foreground text-white dark:bg-white"
             />
             <Box>
               <Text>{workspaceName}</Text>

@@ -47,7 +47,6 @@ import {
 import { NEW_FEEDBACK_QUERY_PARAM } from "./query-params";
 import { getRequestLoginUrl, getRequestPathBySlug } from "./utils";
 import { requestStatusMeta } from "./status";
-import { getPublicAvatarColor } from "./avatar-color";
 import { getAnonymousFeedbackTrackingUrl } from "./anonymous-tracking";
 import {
   FeedbackGuestVerification,
@@ -150,12 +149,7 @@ const SimilarFeedbackRow = ({
           <span className={cn("size-2 rounded-sm", status.dotClassName)} />
           <span className="hidden sm:inline">{status.label}</span>
         </span>
-        <Avatar
-          name={authorName}
-          size="xs"
-          src={item.authorAvatar}
-          style={{ backgroundColor: getPublicAvatarColor(authorName) }}
-        />
+        <Avatar name={authorName} size="xs" src={item.authorAvatar} />
       </div>
     </div>
   );
