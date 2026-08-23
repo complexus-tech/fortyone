@@ -262,6 +262,12 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   border-spacing: 0;
 }
 
+@supports (corner-shape: squircle) {
+  .rich-document-editor .tiptap table {
+    corner-shape: squircle;
+  }
+}
+
 .rich-document-editor .tiptap table td,
 .rich-document-editor .tiptap table th {
   @apply border-border dark:border-border-strong/80 border-0 border-r-[0.5px] border-b-[0.5px] px-3 py-2.5;
