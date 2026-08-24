@@ -61,7 +61,7 @@
 - `Continue with Google` resolves through the existing Google signup flow.
 - `Continue with Microsoft` resolves through the existing Microsoft signup flow.
 - `Book a demo` is absent as requested.
-- Existing feature, use-case, integration, comparison, and AI Project Manager routes retain their original hero and exactly one `h1`.
+- Existing feature, use-case, integration, and comparison routes retain their original hero and exactly one `h1`.
 
 **Implementation checklist**
 
@@ -73,5 +73,75 @@
 - [x] Desktop and mobile captures verified.
 - [x] CTA destinations verified.
 - [x] Unrelated marketing detail pages regression-checked.
+
+final result: passed
+
+---
+
+# Homepage customer stories and integrations design QA
+
+**Source visual truth**
+
+- Customer-story interaction and composition reference: `/var/folders/vf/_ym913kj0gx47jx1c5nlky8w0000gn/T/TemporaryItems/NSIRD_screencaptureui_GaHNrh/Screenshot 2026-08-24 at 11.37.00 AM.png`
+- Customer-story accordion overview reference: `/Users/joseph/Downloads/Screenshot 2026-08-24 at 8.07.24 AM.png`
+- Integrations composition reference: `/Users/joseph/Downloads/Screenshot 2026-08-24 at 10.34.24 AM.png`
+- Live Maisa desktop idle state: `/private/tmp/fortyone-homepage-qa/maisa-stories-idle-1280x720.png`
+- Live Maisa second-card hover state: `/private/tmp/fortyone-homepage-qa/maisa-stories-indigo-hover-1280x720.png`
+- Live Maisa mobile state: `/private/tmp/fortyone-homepage-qa/maisa-stories-mobile-390x844.png`
+- The references establish the image-led accordion, content hierarchy, and centered icon-cloud direction. FortyOne typography, copy, imagery, and controls intentionally remain native to the product.
+
+**Implementation evidence**
+
+- Customer stories, desktop idle: `/private/tmp/fortyone-homepage-qa/fortyone-stories-idle-exact2-1440x900.png`
+- Customer stories, second-card hover: `/private/tmp/fortyone-homepage-qa/fortyone-stories-miningo-hover-1280x720.png`
+- Customer stories, reset after pointer leave: `/private/tmp/fortyone-homepage-qa/fortyone-stories-reset-1280x720.png`
+- Customer stories, mobile: `/private/tmp/fortyone-homepage-qa/fortyone-stories-mobile-390x844.png`
+- Customer stories, desktop dark: `/private/tmp/fortyone-homepage-qa/testimonials-dark-1440x900.png`
+- Integrations, desktop light: `/private/tmp/fortyone-homepage-qa/integrations-final-light-1494x795.png`
+- Integrations, mobile: `/private/tmp/fortyone-homepage-qa/integrations-mobile-390x844.png`
+- Integrations, desktop dark: `/private/tmp/fortyone-homepage-qa/integrations-dark-1440x900.png`
+- Same-viewport comparisons: `/private/tmp/fortyone-homepage-qa/maisa-fortyone-stories-comparison-1280.jpg`, `/private/tmp/fortyone-homepage-qa/maisa-fortyone-stories-hover-comparison-1280.jpg`, and `/private/tmp/fortyone-homepage-qa/integrations-reference-comparison.png`
+- Route: `http://localhost:3001/#customer-stories`
+
+**Viewport and responsive checks**
+
+- Customer stories were compared against the live source at a matching 1280 x 720 desktop viewport and verified at 390 x 844 mobile.
+- Integrations were verified at 1494 x 795 and 1440 x 900 desktop viewports, plus a 390 x 844 mobile viewport.
+- Mobile `scrollWidth` equals `innerWidth` at 390 px; neither section introduces horizontal overflow.
+- Desktop customer stories use a three-card 2:1:1 expanding row with 10 px gutters and 540 px cards. Mobile presents three fully expanded 310 x 416 px stories with 48 px gaps so the content does not depend on hover.
+- The integration tiles wrap from the intended 6 + 3 desktop grouping into a centered two-column mobile layout.
+
+**Focused customer-story checks**
+
+- Live source inspection confirmed the original spring values: stiffness 500, damping 60, mass 1, with the first card selected by default.
+- The desktop cards use FortyOne's `rounded-lg` token, 36 px content insets, a fixed 730 x 788 px image plane, a 350 px copy measure, and a 36 x 36 px glass control with a 24 px icon and `rounded-md` corners.
+- Every shortened desktop quote renders in three lines at the 350 px source measure. Copy remains left-aligned between the logo and bottom attribution.
+- Pointer hover opens the corresponding story, the plus fades away, and leaving the entire row restores the first card. The captured second-card state and reset state confirm both paths.
+- The image plane is fixed while the card reveals more of it. Card widths animate through numeric flex growth instead of transform-based layout projection, so expansion does not zoom, shrink, or stretch customer imagery.
+- Touch and keyboard activation remain available through the collapsed-card control. `MotionConfig` honors the user's reduced-motion preference, and pointer-triggered selection ignores touch input.
+- The approved image-led customer stories now replace the legacy rotating testimonial section.
+
+**Focused integrations checks**
+
+- Nine icon-only tiles are centered with larger cards and consistent icon sizing: six on the first desktop row and three on the second.
+- Labels, eyebrow copy, and the integrations CTA are removed from the visible presentation. Accessible names and native titles retain each integration's identity and purpose.
+- Gmail is described as replying to Maya from the user's inbox, avoiding an unsupported direct Gmail OAuth/API claim.
+- The heading wraps with `team already uses` on the second desktop line, and the body copy uses the standard homepage body scale and normal text color.
+
+**Comparison history**
+
+1. The initial testimonial treatment was progressively tightened to match the supplied image-led reference: reduced radii and height, centered vertical hierarchy, left-aligned constrained copy, hover expansion, delayed fade-and-slide content, stationary imagery, and a smaller glass plus control.
+2. Quote length was reduced after the final copy review. The browser measurement confirms every quote now occupies exactly three desktop lines without changing the approved type scale.
+3. The initial integration treatment was simplified to icon-only cards, then adjusted to larger tiles and spacing with a centered 6 + 3 desktop wrap. The heading measure was narrowed so `team` begins the second line.
+4. The live Maisa HTML and generated Framer bundle were inspected after the user supplied the source URL. The local implementation was updated from an approximation to the exact 2:1:1 spring accordion, 1200 px desktop breakpoint, fixed image canvas, reset-on-leave behavior, and stacked mobile variant.
+5. Same-viewport idle and hover comparisons were reviewed after the final motion pass. A moving image wrapper initially exposed a blank strip in collapsed cards; converting the non-animated image plane to a normal layout element removed the artifact while preserving the source reveal behavior.
+6. Transform-based layout projection made the fixed image appear to compress during hover. The accordion now animates the actual flex-grow values while keeping the image plane outside Motion layout transforms, preserving its pixel scale throughout the transition.
+
+**Findings**
+
+- No actionable P0, P1, or P2 visual or interaction defects remain in the approved scope.
+- The generated customer imagery and the provisional Zimboriginal quote still require final customer approval before publication.
+- The implementation adapts the source interaction using FortyOne-owned copy, customer identities, and local imagery; no Maisa testimonial copy, brand marks, or customer imagery are shipped.
+- Focused ESLint, TypeScript, Prettier, React Doctor, and browser-console checks are recorded after the final validation pass.
 
 final result: passed

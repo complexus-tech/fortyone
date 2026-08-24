@@ -50,3 +50,5 @@ export const homeFaqs: HomeFaq[] = [
       "FortyOne integrates with Google Calendar, Outlook Calendar, Slack, and GitHub. Its remote MCP server also connects FortyOne to ChatGPT, Claude, Cursor, Codex, and other MCP-compatible clients.",
   },
 ];
+
+export const homepageFaqs = homeFaqs.slice(0, 5);

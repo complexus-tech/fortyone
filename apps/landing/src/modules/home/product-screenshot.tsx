@@ -50,7 +50,7 @@ export const ProductScreenshot = ({
             <Flex
               align="center"
               className={cn(
-                "relative mt-0.5 mb-1 min-h-3 justify-start px-1.5 md:mt-1 md:mb-2 md:min-h-4 md:justify-between",
+                "relative mt-0.5 mb-1 min-h-3 justify-start px-2 md:mt-1 md:mb-2 md:min-h-4 md:justify-between",
                 styles.chrome,
               )}
             >
@@ -65,24 +65,24 @@ export const ProductScreenshot = ({
               >
                 <ArrowLeft2Icon
                   aria-hidden="true"
-                  className="text-text-muted hidden h-3.5 opacity-70 sm:block"
+                  className="text-text-muted hidden h-3.5 opacity-80 sm:block"
                   strokeWidth={2.25}
                 />
                 <Text
                   as="span"
-                  className="bg-surface-muted/80 text-text-muted dark:bg-surface-elevated/75 max-w-[calc(100vw-7rem)] truncate rounded-xl px-2 py-0.5 text-[0.625rem] leading-4 font-medium backdrop-blur-sm md:max-w-md md:text-center md:text-xs"
+                  className="bg-surface-muted/80 text-text-muted max-w-[calc(100vw-7rem)] truncate rounded-xl px-2 py-0.5 text-[0.625rem] leading-4 font-medium backdrop-blur-sm md:max-w-md md:text-center md:text-xs dark:bg-white/10"
                 >
                   {url}
                 </Text>
                 <RefreshIcon
                   aria-hidden="true"
-                  className="text-text-muted hidden h-3.5 opacity-70 sm:block"
+                  className="text-text-muted hidden h-3.5 opacity-80 sm:block"
                   strokeWidth={2.25}
                 />
               </Flex>
               <ArrowDown2Icon
                 aria-hidden="true"
-                className="text-text-muted hidden h-3.5 opacity-70 md:block"
+                className="text-text-muted hidden h-3.5 opacity-80 md:block"
                 strokeWidth={2.25}
               />
             </Flex>

@@ -1,0 +1,17 @@
+.featured {
+  background-image: linear-gradient(
+    to bottom right,
+    var(--color-secondary),
+    var(--color-info),
+    var(--color-primary)
+  );
+}
+
+:global(.dark) .featured {
+  background-image: linear-gradient(
+    to bottom right,
+    color-mix(in oklab, var(--color-secondary) 35%, var(--brand-ink)),
+    color-mix(in oklab, var(--color-info) 55%, var(--brand-ink)),
+    color-mix(in oklab, var(--color-primary) 65%, var(--brand-ink))
+  );
+}

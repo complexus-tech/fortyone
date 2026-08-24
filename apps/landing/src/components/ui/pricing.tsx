@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Badge, Box, Button, Divider, Flex, Switch, Text } from "ui";
 import { SIGNUP_URL } from "@/lib/app-url";
 import { Container } from "./container";
+import styles from "./pricing.module.css";
 import {
   PricingAccessIcon,
   PricingAdminIcon,
@@ -468,11 +469,11 @@ const Package = ({
         className={cn(
           "relative h-full",
           recommended &&
-            "from-secondary via-info to-primary -mt-10 h-[calc(100%+2.5rem)] rounded-[2.75rem] bg-linear-to-br p-2 pt-10 md:rounded-[3.5rem]",
+            `${styles.featured} -mt-10 h-[calc(100%+2.5rem)] rounded-[2.75rem] p-2 pt-10 md:rounded-[3.5rem]`,
         )}
       >
         {recommended ? (
-          <Box className="text-secondary-foreground absolute top-3 left-8 text-xs font-semibold tracking-[0.12em] uppercase">
+          <Box className="absolute top-3 left-8 text-xs font-semibold tracking-[0.12em] text-[var(--brand-paper)] uppercase">
             Most popular
           </Box>
         ) : null}

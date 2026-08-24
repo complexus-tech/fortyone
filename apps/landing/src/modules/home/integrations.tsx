@@ -4,37 +4,53 @@ import { Box, Text } from "ui";
 import { Container } from "@/components/ui";
 
 type Integration = {
+  detail: string;
   logoClassName?: string;
   name: string;
   src: string;
 };
 
 const integrations: readonly Integration[] = [
-  { name: "Slack", src: "/integrations/slack.svg" },
-  { name: "Figma", src: "/integrations/figma.svg" },
+  { detail: "Requests", name: "Slack", src: "/integrations/slack.svg" },
   {
+    detail: "Design context",
+    name: "Figma",
+    src: "/integrations/figma.svg",
+  },
+  {
+    detail: "Delivery",
     logoClassName: "dark:invert",
     name: "GitHub",
     src: "/integrations/github-mark.svg",
   },
   {
+    detail: "Availability",
     name: "Google Calendar",
     src: "/integrations/google-calendar-2026.svg",
   },
   {
+    detail: "Availability",
     name: "Outlook Calendar",
     src: "/integrations/outlook-2025.svg",
   },
   {
+    detail: "Reply to Maya",
+    name: "Gmail",
+    src: "/integrations/gmail-2020.png",
+  },
+  {
+    detail: "MCP",
     logoClassName: "dark:invert",
     name: "ChatGPT",
     src: "/integrations/chatgpt-mark.svg",
   },
   {
+    detail: "MCP",
     name: "Claude",
     src: "/integrations/claude-color.svg",
   },
   {
+    detail: "MCP",
     logoClassName: "dark:invert",
     name: "Cursor",
     src: "/integrations/cursor.svg",
@@ -43,52 +59,60 @@ const integrations: readonly Integration[] = [
 
 export const Integrations = () => {
   return (
-    <Box className="scroll-mt-24" id="integrations">
+    <Box
+      aria-labelledby="integrations-title"
+      as="section"
+      className="scroll-mt-24"
+      id="integrations"
+    >
       <Container className="py-16 md:py-28">
-        <Box className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-start lg:gap-20 xl:gap-28">
-          <Box data-landing-reveal>
-            <Text
-              as="h2"
-              className="max-w-xl pb-1 text-4xl text-balance md:text-5xl"
-            >
-              Keep project work connected across the tools your team uses.
-            </Text>
-            <Text className="mt-6 max-w-lg leading-relaxed text-pretty opacity-70">
-              Plan around Google and Outlook calendars, capture work from Slack,
-              and keep delivery context connected. Use ChatGPT, Claude, Cursor,
-              Codex, and other MCP clients to work with FortyOne.
-            </Text>
-          </Box>
+        <Box className="mx-auto max-w-3xl text-center" data-landing-reveal>
+          <Text
+            as="h2"
+            className="text-3xl md:text-5xl"
+            id="integrations-title"
+          >
+            Keep work moving in the tools your team already uses.
+          </Text>
+          <Text className="mx-auto mt-6 max-w-2xl text-pretty">
+            Connect Slack, calendars, GitHub, and Figma—then reply to Maya from
+            the inbox you already use.
+          </Text>
+        </Box>
 
-          <Box data-landing-reveal style={{ transitionDelay: "70ms" }}>
+        <Box
+          as="ul"
+          className="mx-auto mt-14 flex max-w-[54rem] flex-wrap justify-center gap-4 md:mt-16"
+          data-landing-reveal
+          style={{ transitionDelay: "70ms" }}
+        >
+          {integrations.map((integration) => (
             <Box
-              as="ul"
-              className="border-border/80 grid grid-cols-2 border-r-[0.5px] border-b-[0.5px] sm:grid-cols-4"
+              aria-label={`${integration.name} · ${integration.detail}`}
+              as="li"
+              className="w-32 shrink-0"
+              key={integration.name}
             >
-              {integrations.map((integration) => (
+              <Box className="bg-surface-muted/80 dark:bg-surface-elevated/85 flex aspect-square items-center justify-center rounded-[1.5rem] px-5">
                 <Box
-                  as="li"
-                  className="border-border/80 bg-background/40 flex min-h-28 flex-col items-center justify-center gap-3 border-t-[0.5px] border-l-[0.5px] px-4 py-6"
-                  key={integration.name}
+                  className="flex size-full items-center justify-center"
+                  title={`${integration.name} · ${integration.detail}`}
                 >
                   <Image
                     alt=""
                     aria-hidden="true"
                     className={cn(
-                      "size-9 object-contain opacity-90 md:size-10",
+                      "size-12 object-contain md:size-14",
                       integration.logoClassName,
                     )}
-                    height={40}
+                    height={56}
                     src={integration.src}
-                    width={40}
+                    width={56}
                   />
-                  <Text className="text-center text-sm leading-tight opacity-60">
-                    {integration.name}
-                  </Text>
                 </Box>
-              ))}
+              </Box>
             </Box>
-          </Box>
+          ))}
         </Box>
       </Container>
     </Box>

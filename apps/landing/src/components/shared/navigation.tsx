@@ -186,7 +186,7 @@ const NavigationMenuLink = ({
   tone,
 }: NavigationMenuItem) => (
   <Link
-    className="group hover:bg-accent/70 focus:bg-accent/70 focus-visible:bg-accent/70 dark:hover:bg-surface-prominent/75 dark:focus:bg-surface-prominent/75 dark:focus-visible:bg-surface-prominent/75 flex min-w-0 items-start gap-3 rounded-xl px-2.5 py-2.5 transition-colors outline-none select-none focus-visible:outline-none"
+    className="group hover:bg-accent/70 focus:bg-accent/70 focus-visible:bg-accent/70 focus-visible:ring-ring dark:hover:bg-surface-prominent/75 dark:focus:bg-surface-prominent/75 dark:focus-visible:bg-surface-prominent/75 flex min-w-0 items-start gap-3 rounded-xl px-2.5 py-2.5 transition-colors outline-none select-none focus-visible:ring-2 focus-visible:outline-none"
     href={href}
     prefetch={!isExternalLink(href)}
     rel={isExternalLink(href) ? "noreferrer" : undefined}
@@ -240,7 +240,7 @@ const NavigationDropdown = ({
     <button
       aria-controls={`${value}-navigation-menu`}
       aria-expanded={isOpen}
-      className="hover:bg-state-hover focus-visible:bg-state-hover flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-[0.95rem] transition outline-none select-none focus:outline-none focus-visible:outline-none"
+      className="hover:bg-state-hover focus-visible:bg-state-hover focus-visible:ring-ring flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-[0.95rem] transition outline-none select-none focus:outline-none focus-visible:ring-2 focus-visible:outline-none"
       onClick={() => {
         onOpenChange(isOpen ? "" : value);
       }}
@@ -349,7 +349,7 @@ export const Navigation = () => {
       <Box
         aria-hidden="true"
         className={cn(
-          "landing-page-frame dark:bg-surface-elevated/80 absolute inset-x-0 top-3 h-full rounded-2xl bg-white shadow-[0_16px_44px_-18px_rgba(31,24,18,0.3)] backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:rounded-3xl dark:shadow-[0_16px_44px_-18px_rgba(0,0,0,0.7)]",
+          "landing-page-frame dark:bg-surface-prominent/60 absolute inset-x-0 top-3 h-full rounded-2xl bg-white shadow-[0_16px_44px_-18px_rgba(31,24,18,0.3)] backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:rounded-3xl dark:shadow-[0_16px_44px_-18px_rgba(0,0,0,0.7)]",
           isDocked
             ? "translate-y-0 scale-100 opacity-100"
             : "-translate-y-2 scale-[0.985] opacity-0",
@@ -388,12 +388,6 @@ export const Navigation = () => {
                 onOpenChange={setActiveMenu}
                 value="use-cases"
               />
-              <li>
-                <DesktopNavItem
-                  href="/ai-project-manager"
-                  title="AI Project Manager"
-                />
-              </li>
               <NavigationDropdown
                 contentClassName="right-0 left-auto w-[22rem]"
                 gridClassName="grid-cols-1"
@@ -412,10 +406,9 @@ export const Navigation = () => {
         <Flex align="center" className="ml-4 gap-2">
           {/* <RequestDemo /> */}
           <Button
-            className="hidden bg-white/60 px-5 text-[0.93rem] backdrop-blur-sm md:flex dark:bg-transparent"
-            color="invert"
+            className="hidden rounded-md px-5 text-[0.93rem] md:flex"
+            color="gradient"
             href={APP_URL}
-            rounded="md"
             size="lg"
             variant="outline"
           >

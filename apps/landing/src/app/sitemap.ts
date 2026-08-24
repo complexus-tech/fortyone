@@ -26,7 +26,6 @@ const integrationRoutes: MetadataRoute.Sitemap = integrations.map(
 
 const routes: MetadataRoute.Sitemap = [
   { url: getCanonicalUrl("/") },
-  { url: getCanonicalUrl("/ai-project-manager") },
   { url: getCanonicalUrl("/pricing") },
   { url: getCanonicalUrl("/blog") },
   { url: getCanonicalUrl("/contact") },

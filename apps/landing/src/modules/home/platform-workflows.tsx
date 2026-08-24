@@ -26,13 +26,14 @@ export const DocumentsWorkflow = () => {
 export const CalendarWorkflow = () => {
   return (
     <ProductFeatureSection
+      compact
       description="See meetings and scheduled work together, protect focus time, and place assigned work into open windows before the week fills up."
       id="calendar"
       title="Plan work around the time your team actually has."
     >
       <ProductScreenshot
         alt="FortyOne weekly calendar combining team meetings and scheduled project tasks"
-        containerClassName="mt-10 md:mt-16"
+        containerClassName="mt-8 max-w-4xl md:mt-10"
         darkImage={calendarImageDark}
         lightImage={calendarImageLight}
         url="https://fortyone.app/calendar"

@@ -5,7 +5,7 @@ import type {
   Product,
   FAQPage,
 } from "schema-dts";
-import { homeFaqs } from "@/lib/home-faqs";
+import { homepageFaqs } from "@/lib/home-faqs";
 import { getCanonicalUrl } from "@/lib/seo";
 
 const softwareApplication: WithContext<WebApplication> = {
@@ -145,7 +145,7 @@ const product: WithContext<Product> = {
 const faq: WithContext<FAQPage> = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
-  mainEntity: homeFaqs.map(({ question, answer }) => ({
+  mainEntity: homepageFaqs.map(({ question, answer }) => ({
     "@type": "Question",
     name: question,
     acceptedAnswer: {

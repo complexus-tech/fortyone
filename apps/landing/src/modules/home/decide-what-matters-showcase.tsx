@@ -35,7 +35,7 @@ const ShowcaseCard = ({
       data-landing-reveal
       style={{ transitionDelay: `${delay}ms` }}
     >
-      <Box className="relative aspect-[5/6] overflow-hidden rounded-xl">
+      <Box className="relative aspect-[50/57] overflow-hidden rounded-xl">
         <Image
           alt=""
           className="object-cover object-bottom"

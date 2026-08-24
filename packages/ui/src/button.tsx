@@ -34,6 +34,7 @@ export const buttonVariants = cva(
           "text-secondary border-secondary bg-secondary ring-secondary",
         white: "text-primary-foreground border-white bg-white ring-white",
         invert: "text-foreground-inverse bg-background-inverse",
+        gradient: "border-transparent",
         black:
           "text-foreground-inverse border-background-inverse bg-background-inverse ring-background-inverse",
       },
@@ -106,6 +107,16 @@ export const buttonVariants = cva(
         variant: "outline",
         color: "black",
         className: "text-foreground border-border bg-transparent ring-ring",
+      },
+      {
+        variant: "solid",
+        color: "gradient",
+        className: "button-gradient-solid",
+      },
+      {
+        variant: "outline",
+        color: "gradient",
+        className: "button-gradient-outline",
       },
       // Naked variant
       {

@@ -5,7 +5,7 @@ import { MinusIcon, PlusIcon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
 import type { HomeFaq } from "@/lib/home-faqs";
-import { homeFaqs } from "@/lib/home-faqs";
+import { homeFaqs, homepageFaqs } from "@/lib/home-faqs";
 import { Container } from "./container";
 
 const AccordionItem = ({
@@ -104,6 +104,7 @@ export const Faqs = ({
 }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const isPricing = variant === "pricing";
+  const faqItems = isPricing ? homeFaqs : homepageFaqs;
 
   const handleToggle = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -136,7 +137,8 @@ export const Faqs = ({
               "Frequently asked questions"
             ) : (
               <>
-                What teams ask <br /> before getting started.
+                What teams ask <br aria-hidden="true" />
+                before getting started.
               </>
             )}
           </Text>
@@ -149,7 +151,7 @@ export const Faqs = ({
           )}
           direction="column"
         >
-          {homeFaqs.map((item, index) => (
+          {faqItems.map((item, index) => (
             <AccordionItem
               index={index}
               isOpen={openIndex === index}

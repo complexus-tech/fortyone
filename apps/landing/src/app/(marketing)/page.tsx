@@ -10,16 +10,14 @@ import {
 } from "@/lib/seo";
 import {
   CalendarWorkflow,
-  CoreValues,
+  CustomerStories,
   DecideWhatMattersShowcase,
   FeedbackWorkflow,
   Hero,
   Integrations,
   MayaWorkflow,
   ProductScreenshot,
-  SampleClients,
   StrategyWorkflow,
-  Testimonials,
 } from "@/modules/home";
 import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.webp";
 import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
@@ -62,13 +60,11 @@ export default function Page() {
             url="https://fortyone.app/my-work"
           />
         </section>
-        <SampleClients />
         <DecideWhatMattersShowcase />
         <FeedbackWorkflow />
-        <Testimonials />
         <StrategyWorkflow />
-        <CoreValues />
         <MayaWorkflow />
+        <CustomerStories />
         <Integrations />
         <CalendarWorkflow />
         <Faqs />
