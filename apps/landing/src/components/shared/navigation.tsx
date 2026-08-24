@@ -58,20 +58,10 @@ const featureMenuDetails = {
     icon: "ai-planning",
     tone: "lime",
   },
-  calendar: {
-    description: "See meetings and planned focus time",
-    icon: "calendar",
-    tone: "rose",
-  },
   "customer-feedback": {
     description: "Turn customer insight into action",
     icon: "customer-feedback",
     tone: "blue",
-  },
-  documents: {
-    description: "Keep context beside the work",
-    icon: "documents",
-    tone: "orange",
   },
   goals: {
     description: "Set objectives and track key results",
@@ -87,11 +77,6 @@ const featureMenuDetails = {
     description: "Communicate what is coming next",
     icon: "roadmaps",
     tone: "aqua",
-  },
-  "strategy-map": {
-    description: "Connect priorities across your company",
-    icon: "strategy-map",
-    tone: "lilac",
   },
   tasks: {
     description: "Plan and deliver the day-to-day work",

@@ -6,6 +6,9 @@ import { cn } from "lib";
 import styles from "./particle-text.module.css";
 
 type Particle = {
+  driftAmplitude: number;
+  driftPhase: number;
+  driftSpeed: number;
   radius: number;
   targetX: number;
   targetY: number;
@@ -22,13 +25,20 @@ type ParticleTextProps = {
 };
 
 const CANVAS_PADDING = 10;
+const DRIFT_AMPLITUDE_MAX = 1.1;
+const DRIFT_AMPLITUDE_MIN = 0.45;
+const DRIFT_SPEED_MAX = 0.001;
+const DRIFT_SPEED_MIN = 0.00055;
 const MAX_PIXEL_RATIO = 2;
+const MIN_PARTICLE_RADIUS = 0.85;
 const PARTICLE_ALPHA_THRESHOLD = 96;
+const PARTICLE_OFFSET_X = -2;
+const PARTICLE_OFFSET_Y = 2;
 const POINTER_RADIUS_MULTIPLIER = 0.82;
 
 const getParticleRadius = (x: number, y: number, sampleStep: number) => {
   const variation = ((x * 17 + y * 29) % 11) / 10;
-  return sampleStep * (0.24 + variation * 0.2);
+  return Math.max(MIN_PARTICLE_RADIUS, sampleStep * (0.22 + variation * 0.12));
 };
 
 export const ParticleText = ({
@@ -63,13 +73,22 @@ export const ParticleText = ({
     let pointerY = Number.POSITIVE_INFINITY;
     let pointerRadius = 48;
 
-    const drawParticles = (interactive: boolean) => {
+    const drawParticles = (interactive: boolean, elapsedTime = 0) => {
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.fillStyle = color;
+      context.globalAlpha = 1;
       context.beginPath();
 
       particles.forEach((particle) => {
         if (interactive) {
+          const driftX =
+            Math.sin(elapsedTime * particle.driftSpeed + particle.driftPhase) *
+            particle.driftAmplitude;
+          const driftY =
+            Math.cos(
+              elapsedTime * particle.driftSpeed * 0.82 +
+                particle.driftPhase * 1.37,
+            ) * particle.driftAmplitude;
           const deltaX = particle.x - pointerX;
           const deltaY = particle.y - pointerY;
           const distance = Math.hypot(deltaX, deltaY);
@@ -81,8 +100,10 @@ export const ParticleText = ({
             particle.velocityY += (deltaY / safeDistance) * force;
           }
 
-          particle.velocityX += (particle.targetX - particle.x) * 0.075;
-          particle.velocityY += (particle.targetY - particle.y) * 0.075;
+          particle.velocityX +=
+            (particle.targetX + driftX - particle.x) * 0.075;
+          particle.velocityY +=
+            (particle.targetY + driftY - particle.y) * 0.075;
           particle.velocityX *= 0.84;
           particle.velocityY *= 0.84;
           particle.x += particle.velocityX;
@@ -97,10 +118,11 @@ export const ParticleText = ({
       });
 
       context.fill();
+      context.fill();
     };
 
-    const animate = () => {
-      drawParticles(!reducedMotionQuery.matches);
+    const animate = (elapsedTime: number) => {
+      drawParticles(!reducedMotionQuery.matches, elapsedTime);
       animationFrame = window.requestAnimationFrame(animate);
     };
 
@@ -150,6 +172,7 @@ export const ParticleText = ({
       canvas.style.top = `${-CANVAS_PADDING}px`;
       canvas.style.width = `${canvasWidth}px`;
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      context.imageSmoothingEnabled = true;
 
       const samplingCanvas = document.createElement("canvas");
       const samplingContext = samplingCanvas.getContext("2d", {
@@ -204,14 +227,23 @@ export const ParticleText = ({
 
           if (alpha < PARTICLE_ALPHA_THRESHOLD) continue;
 
+          const driftVariation = ((x * 31 + y * 19) % 101) / 100;
+
           nextParticles.push({
+            driftAmplitude:
+              DRIFT_AMPLITUDE_MIN +
+              driftVariation * (DRIFT_AMPLITUDE_MAX - DRIFT_AMPLITUDE_MIN),
+            driftPhase: ((x * 13 + y * 7) % 360) * (Math.PI / 180),
+            driftSpeed:
+              DRIFT_SPEED_MIN +
+              driftVariation * (DRIFT_SPEED_MAX - DRIFT_SPEED_MIN),
             radius: getParticleRadius(x, y, sampleStep),
-            targetX: x,
-            targetY: y,
+            targetX: x + PARTICLE_OFFSET_X,
+            targetY: y + PARTICLE_OFFSET_Y,
             velocityX: 0,
             velocityY: 0,
-            x,
-            y,
+            x: x + PARTICLE_OFFSET_X,
+            y: y + PARTICLE_OFFSET_Y,
           });
         }
       }

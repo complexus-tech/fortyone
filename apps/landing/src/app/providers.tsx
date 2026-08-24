@@ -3,7 +3,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { ThemeProvider } from "next-themes";
-import { CursorProvider } from "@/context";
 import { PostHogProvider } from "@/app/posthog";
 import PostHogPageView from "@/app/posthog-page-view";
 import { getQueryClient } from "@/app/get-query-client";
@@ -14,9 +13,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={getQueryClient()}>
-        <PostHogProvider>
-          <CursorProvider>{children}</CursorProvider>
-        </PostHogProvider>
+        <PostHogProvider>{children}</PostHogProvider>
         <Suspense>{isProduction ? <PostHogPageView /> : null}</Suspense>
       </QueryClientProvider>
     </ThemeProvider>

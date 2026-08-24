@@ -73,8 +73,8 @@ export const FeatureOverview = () => {
           Explore each workflow.
         </Text>
         <Text className="text-text-muted mt-6 max-w-2xl text-pretty">
-          Start with the overview, then open a feature for the complete
-          workflow and product details.
+          Start with the overview, then open a feature for the complete workflow
+          and product details.
         </Text>
       </Box>
 
@@ -102,7 +102,7 @@ export const FeatureOverview = () => {
                 className="bg-surface-muted/65 hover:bg-surface-muted focus-visible:outline-primary dark:bg-surface-elevated/70 dark:hover:bg-surface-elevated group flex h-full min-h-52 flex-col rounded-xl p-6 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 md:p-7"
                 href={feature.href}
               >
-                <Box className="bg-background/75 text-primary flex size-10 items-center justify-center rounded-lg shadow-sm shadow-black/5 dark:bg-surface-prominent/70">
+                <Box className="bg-background/75 text-primary dark:bg-surface-prominent/70 flex size-10 items-center justify-center rounded-lg shadow-sm shadow-black/5">
                   <Icon aria-hidden="true" className="size-5" />
                 </Box>
 

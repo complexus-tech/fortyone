@@ -1,34 +1,26 @@
 .root {
   position: relative;
   display: inline-block;
+  color: #000;
   touch-action: pan-y;
 }
 
+:global(.dark) .root {
+  color: #fff;
+}
+
 .source {
+  position: relative;
+  top: 2px;
+  left: -2px;
   color: transparent;
   background-image: radial-gradient(
-      circle at 38% 34%,
-      var(--color-foreground) 0 30%,
-      transparent 38%
-    ),
-    radial-gradient(
-      circle at 64% 58%,
-      var(--color-foreground) 0 22%,
-      transparent 31%
-    ),
-    radial-gradient(
-      circle at 48% 72%,
-      var(--color-foreground) 0 16%,
-      transparent 25%
-    );
-  background-position:
-    0 0,
-    0.035em 0.025em,
-    0.075em 0.055em;
-  background-size:
-    0.072em 0.085em,
-    0.11em 0.1em,
-    0.15em 0.13em;
+    circle,
+    currentColor 0 34%,
+    transparent 35%
+  );
+  background-position: 0.01em 0.03em;
+  background-size: 0.06em 0.06em;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -41,6 +33,7 @@
 .canvas {
   position: absolute;
   z-index: 1;
+  opacity: 1;
   pointer-events: none;
 }
 

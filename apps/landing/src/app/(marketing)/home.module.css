@@ -35,37 +35,72 @@
 .progressBand {
   position: relative;
   isolation: isolate;
+  overflow: clip;
   padding-top: clamp(3rem, 6vw, 6rem);
+  border-radius: 0 0 3rem 3rem;
   background: radial-gradient(
-      76% 42% at 94% 42%,
-      color-mix(in oklab, var(--color-primary) 12%, transparent),
-      transparent 72%
-    ),
-    radial-gradient(
-      64% 38% at 4% 66%,
-      color-mix(in oklab, var(--color-info) 10%, transparent),
-      transparent 76%
-    ),
-    radial-gradient(
-      58% 34% at 88% 92%,
-      color-mix(in oklab, var(--color-danger) 7%, transparent),
+      72% 44% at 94% 30%,
+      color-mix(in oklab, var(--color-info) 42%, transparent),
       transparent 74%
+    ),
+    radial-gradient(
+      68% 42% at 4% 78%,
+      color-mix(in oklab, var(--color-primary) 12%, transparent),
+      transparent 78%
+    ),
+    radial-gradient(
+      62% 38% at 92% 74%,
+      color-mix(in oklab, var(--color-danger) 10%, transparent),
+      transparent 76%
     ),
     linear-gradient(
       180deg,
+      color-mix(in oklab, var(--color-info) 44%, var(--color-surface-muted)) 0%,
+      color-mix(in oklab, var(--color-primary) 14%, var(--color-surface-muted))
+        36%,
+      color-mix(in oklab, var(--color-danger) 8%, var(--color-surface-muted))
+        60%,
       color-mix(
           in oklab,
-          var(--color-surface-muted) 84%,
+          var(--color-surface-muted) 30%,
           var(--color-background)
         )
-        0%,
-      color-mix(
-          in oklab,
-          var(--color-surface-muted) 64%,
-          var(--color-background)
-        )
-        58%,
+        84%,
       var(--color-background) 100%
+    );
+}
+
+:global(.dark) .progressBand {
+  background: radial-gradient(
+      72% 44% at 94% 30%,
+      color-mix(in oklab, var(--color-success) 16%, transparent),
+      transparent 74%
+    ),
+    radial-gradient(
+      68% 42% at 4% 78%,
+      color-mix(in oklab, var(--color-primary) 8%, transparent),
+      transparent 78%
+    ),
+    radial-gradient(
+      62% 38% at 92% 74%,
+      color-mix(in oklab, var(--color-danger) 5%, transparent),
+      transparent 76%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--color-success) 14%, var(--color-surface-muted))
+        0%,
+      color-mix(in oklab, var(--color-primary) 8%, var(--color-surface-muted))
+        34%,
+      color-mix(in oklab, var(--color-danger) 4%, var(--color-surface-muted))
+        60%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 20%,
+          var(--color-background)
+        )
+        78%,
+      var(--color-background) 94%
     );
 }
 
@@ -83,6 +118,7 @@
 }
 
 @media (min-width: 48rem) {
+  .progressBand,
   .progressBand::before {
     border-radius: 0 0 4rem 4rem;
   }
