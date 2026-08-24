@@ -65,8 +65,13 @@
           var(--color-surface-muted) 30%,
           var(--color-background)
         )
-        84%,
-      var(--color-background) 100%
+        90%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 18%,
+          var(--color-background)
+        )
+        100%
     );
 }
 
@@ -99,8 +104,13 @@
           var(--color-surface-muted) 20%,
           var(--color-background)
         )
-        78%,
-      var(--color-background) 94%
+        88%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 12%,
+          var(--color-background)
+        )
+        100%
     );
 }
 

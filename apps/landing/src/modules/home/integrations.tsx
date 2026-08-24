@@ -66,7 +66,7 @@ export const Integrations = () => {
       id="integrations"
     >
       <Container className="py-16 md:py-28">
-        <Box className="mx-auto max-w-3xl text-center" data-landing-reveal>
+        <Box className="mx-auto max-w-2xl text-center" data-landing-reveal>
           <Text
             as="h2"
             className="text-3xl md:text-5xl"

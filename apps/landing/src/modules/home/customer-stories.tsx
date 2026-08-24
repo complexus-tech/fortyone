@@ -301,7 +301,10 @@ export const CustomerStories = () => {
       className="scroll-mt-24 py-16 md:py-28"
       id="customer-stories"
     >
-      <Box className="mb-16 max-w-2xl text-left md:mb-20" data-landing-reveal>
+      <Box
+        className="mb-16 grid gap-5 text-left md:mb-20 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)] md:items-end md:gap-12"
+        data-landing-reveal
+      >
         <Text
           as="h2"
           className="text-3xl md:text-5xl"
@@ -310,9 +313,8 @@ export const CustomerStories = () => {
           How teams turn plans <br aria-hidden="true" />
           into progress.
         </Text>
-        <Text className="text-text-description mt-5 max-w-xl text-base text-pretty">
-          Hear from teams using FortyOne to turn priorities into steady
-          progress.
+        <Text className="text-text-description max-w-xl text-base text-pretty">
+          Hear how teams turn clear priorities into steady progress.
         </Text>
       </Box>
 

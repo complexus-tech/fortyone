@@ -3,7 +3,7 @@
 import type { FocusEvent, KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "lib";
-import { Box } from "ui";
+import { Box, Text } from "ui";
 import { Container } from "@/components/ui";
 import feedbackPortalDark from "../../../public/images/product/feedback-portal-dark.webp";
 import feedbackPortalLight from "../../../public/images/product/feedback-portal-light.webp";
@@ -11,8 +11,8 @@ import mayaDeliveryBriefDark from "../../../public/images/product/maya-delivery-
 import mayaDeliveryBriefLight from "../../../public/images/product/maya-delivery-brief-light.webp";
 import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.webp";
 import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
-import roadmapTimelineDark from "../../../public/images/product/roadmap-timeline-dark.webp";
-import roadmapTimelineLight from "../../../public/images/product/roadmap-timeline-light.webp";
+import publicFeedbackRoadmapDark from "../../../public/images/product/public-feedback-roadmap-dark.webp";
+import publicFeedbackRoadmapLight from "../../../public/images/product/public-feedback-roadmap-light.webp";
 import strategyMapDark from "../../../public/images/product/strategy-map-dark.webp";
 import strategyMapLight from "../../../public/images/product/strategy-map-light.webp";
 import { ProductScreenshot } from "./product-screenshot";
@@ -22,44 +22,59 @@ const AUTO_ADVANCE_DELAY_MS = 7000;
 
 const PRODUCT_WORKFLOWS = [
   {
-    alt: "FortyOne feedback portal showing customer requests, votes, and product feedback",
-    darkImage: feedbackPortalDark,
-    label: "Customer feedback",
-    lightImage: feedbackPortalLight,
-    value: "customer-feedback",
-    url: "https://fortyone.app/feedback",
-  },
-  {
     alt: "FortyOne Strategy Map connecting company goals to strategic pillars and objectives",
     darkImage: strategyMapDark,
-    label: "Goals",
+    description:
+      "Connect company goals to the outcomes every team is responsible for.",
+    label: "Set direction",
     lightImage: strategyMapLight,
-    value: "goals",
+    title: "Turn strategy into a shared direction.",
+    value: "set-direction",
     url: "https://fortyone.app/strategy-map",
   },
   {
-    alt: "FortyOne My Work board showing owned tasks moving through delivery",
+    alt: "FortyOne feedback portal showing customer requests, votes, and product feedback",
+    darkImage: feedbackPortalDark,
+    description:
+      "Bring requests, votes, and context together before deciding what moves next.",
+    label: "Listen to customers",
+    lightImage: feedbackPortalLight,
+    title: "Hear what customers need.",
+    value: "listen-to-customers",
+    url: "https://fortyone.app/feedback",
+  },
+  {
+    alt: "FortyOne My Work board showing prioritized customer needs moving through delivery",
     darkImage: myWorkBoardDark,
-    label: "Tasks",
+    description:
+      "Turn the strongest signals into owned work with a clear place in the plan.",
+    label: "Prioritize",
     lightImage: myWorkBoardLight,
-    value: "tasks",
+    title: "Move the right ideas into delivery.",
+    value: "prioritize",
     url: "https://fortyone.app/my-work",
   },
   {
     alt: "FortyOne Maya AI delivery brief showing objective counts, completion metrics, and delivery trends",
     darkImage: mayaDeliveryBriefDark,
-    label: "AI planning",
+    description:
+      "Let Maya summarize progress, surface delivery risks, and prepare the next decision.",
+    label: "Plan with Maya",
     lightImage: mayaDeliveryBriefLight,
-    value: "ai-planning",
+    title: "See risks before they slow the plan.",
+    value: "plan-with-maya",
     url: "https://fortyone.app/maya",
   },
   {
-    alt: "FortyOne Roadmap timeline showing coordinated initiatives, milestones, owners, and forecasts",
-    darkImage: roadmapTimelineDark,
-    label: "Roadmaps",
-    lightImage: roadmapTimelineLight,
-    value: "roadmaps",
-    url: "https://fortyone.app/roadmap",
+    alt: "FortyOne public roadmap showing planned, in progress, and completed customer priorities",
+    darkImage: publicFeedbackRoadmapDark,
+    description:
+      "Publish a clear roadmap so customers can follow planned, active, and completed work.",
+    label: "Share progress",
+    lightImage: publicFeedbackRoadmapLight,
+    title: "Show customers what is moving.",
+    value: "share-progress",
+    url: "https://fortyone.app/feedback/roadmap",
   },
 ] as const;
 
@@ -184,7 +199,7 @@ export const ProductWorkflowShowcase = () => {
 
   return (
     <section
-      aria-label="Explore FortyOne product workflows"
+      aria-labelledby="product-workflow-title"
       className="scroll-mt-24 pt-4 pb-16 md:pt-8 md:pb-28"
       onBlur={handleBlur}
       onFocus={() => {
@@ -199,6 +214,23 @@ export const ProductWorkflowShowcase = () => {
       ref={sectionRef}
     >
       <Container>
+        <Box
+          className="mb-7 grid gap-5 md:mb-10 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)] md:items-end md:gap-12"
+          data-landing-reveal
+        >
+          <Text
+            as="h2"
+            className="text-3xl md:text-5xl"
+            id="product-workflow-title"
+          >
+            Follow the path from signal to progress.
+          </Text>
+          <Text className="text-text-description max-w-xl text-base text-pretty">
+            One connected story for deciding what matters, acting on it, and
+            showing customers what changed.
+          </Text>
+        </Box>
+
         <Box className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <Box
             aria-label="Explore FortyOne product views"
@@ -279,6 +311,19 @@ export const ProductWorkflowShowcase = () => {
               role="tabpanel"
               tabIndex={isActive ? 0 : -1}
             >
+              <Container>
+                <Box className="mt-8 grid gap-4 md:mt-10 md:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)] md:items-end md:gap-12">
+                  <Text
+                    as="h3"
+                    className="max-w-[18rem] text-left text-2xl text-pretty md:text-4xl"
+                  >
+                    {workflow.title}
+                  </Text>
+                  <Text className="text-text-description max-w-md text-left text-base leading-relaxed text-pretty md:justify-self-start">
+                    {workflow.description}
+                  </Text>
+                </Box>
+              </Container>
               <ProductScreenshot
                 alt={workflow.alt}
                 containerClassName="mt-8 md:mt-9"

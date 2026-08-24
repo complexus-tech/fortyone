@@ -64,7 +64,7 @@ export default function Page() {
           <ProductWorkflowShowcase />
           <Integrations />
         </div>
-        <CallToAction />
+        <CallToAction className="border-t-0" />
       </main>
     </>
   );

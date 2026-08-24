@@ -77,7 +77,7 @@ export const DecideWhatMattersShowcase = () => {
       id="ai-planning"
     >
       <Box>
-        <Box className="max-w-4xl" data-landing-reveal>
+        <Box className="max-w-3xl" data-landing-reveal>
           <Text as="h2" className="text-3xl md:text-5xl" id="ai-planning-title">
             Choose the right work. Build a plan your team can deliver.
           </Text>

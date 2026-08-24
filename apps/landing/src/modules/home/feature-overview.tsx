@@ -8,10 +8,10 @@ import { cn } from "lib";
 import { Box, Button, Text } from "ui";
 import { Container } from "@/components/ui";
 import { PricingArrowIcon } from "@/components/ui/pricing-icons";
-import aiPlanningImage from "../../../public/images/workflows/ai-planning.webp";
+import constructionImage from "../../../public/images/workflows/construction.jpg";
 import customerFeedbackImage from "../../../public/images/workflows/customer-feedback.webp";
+import customerSupportImage from "../../../public/images/workflows/customer-support.jpg";
 import goalsImage from "../../../public/images/workflows/goals.webp";
-import roadmapsImage from "../../../public/images/workflows/roadmaps.webp";
 import tasksImage from "../../../public/images/workflows/tasks.webp";
 import styles from "./feature-overview.module.css";
 
@@ -30,59 +30,59 @@ const AUTO_ADVANCE_DELAY_MS = 7000;
 
 const FEATURES: readonly FeatureOverviewItem[] = [
   {
-    alt: "A product researcher listening closely during a customer feedback interview",
-    ctaLabel: "Explore feedback",
+    alt: "Product leaders aligning priorities around a shared plan",
+    ctaLabel: "Explore product teams",
     description:
-      "Collect requests, votes, and context in one place, then connect the strongest signals to planned work.",
-    href: "/features/customer-feedback",
-    image: customerFeedbackImage,
-    label: "Customer feedback",
-    title: "Hear what customers need.",
-    value: "customer-feedback",
-  },
-  {
-    alt: "Three leaders aligning company priorities around a planning table",
-    ctaLabel: "Explore goals",
-    description:
-      "Turn company goals into clear priorities, then connect them to the objectives and work that move progress forward.",
-    href: "/features/goals",
+      "Bring discovery, customer feedback, priorities, and delivery into one plan the whole product team can follow.",
+    href: "/use-cases/product",
     image: goalsImage,
-    label: "Goals",
-    title: "Make strategy visible.",
-    value: "goals",
+    label: "Product",
+    title: "Turn customer signals into a product direction.",
+    value: "product",
   },
   {
-    alt: "Two teammates arranging the next pieces of work at a studio table",
-    ctaLabel: "Explore tasks",
+    alt: "Operations leaders coordinating cross-functional work around a shared plan",
+    ctaLabel: "Explore operations",
     description:
-      "Turn ideas and requests into owned, trackable work with the context your team needs to keep moving.",
-    href: "/features/tasks",
+      "Coordinate recurring work, owners, deadlines, and handoffs without losing the context behind each decision.",
+    href: "/use-cases/operations",
     image: tasksImage,
-    label: "Tasks",
-    title: "Give every task a clear path.",
-    value: "tasks",
+    label: "Operations",
+    title: "Keep complex operations moving as one system.",
+    value: "operations",
   },
   {
-    alt: "A product lead reviewing an AI-assisted delivery plan at a desk",
-    ctaLabel: "Explore AI",
+    alt: "A marketing lead listening closely during a customer conversation",
+    ctaLabel: "Explore marketing",
     description:
-      "Maya checks priorities, ownership, workload, and timing, then brings you a delivery brief to review.",
-    href: "/features/ai-planning",
-    image: aiPlanningImage,
-    label: "AI planning",
-    title: "Let Maya prepare the plan.",
-    value: "ai-planning",
+      "Turn customer conversations and campaign goals into coordinated work across content, design, sales, and launch.",
+    href: "/use-cases/marketing",
+    image: customerFeedbackImage,
+    label: "Marketing & sales",
+    title: "Move from market signal to campaign action.",
+    value: "marketing-sales",
   },
   {
-    alt: "A cross-functional team tracing a delivery roadmap on a planning wall",
-    ctaLabel: "Explore roadmaps",
+    alt: "A customer support lead and product teammate reviewing a customer issue together",
+    ctaLabel: "Explore support teams",
     description:
-      "Bring priorities, owners, timing, and delivery risk into one roadmap that stays connected to the work.",
-    href: "/features/roadmaps",
-    image: roadmapsImage,
-    label: "Roadmaps",
-    title: "Keep the plan clear as work changes.",
-    value: "roadmaps",
+      "Turn escalations and repeated requests into accountable follow-up, then close the loop with every customer.",
+    href: "/use-cases/customer-support",
+    image: customerSupportImage,
+    label: "Customer support",
+    title: "Carry every customer need through to resolution.",
+    value: "customer-support",
+  },
+  {
+    alt: "A construction project team coordinating site work around printed plans",
+    ctaLabel: "Explore field teams",
+    description:
+      "Keep site updates, approvals, owners, and handoffs connected before a missed detail affects the schedule.",
+    href: "/use-cases/field-crews",
+    image: constructionImage,
+    label: "Construction",
+    title: "Keep every crew aligned from site to office.",
+    value: "construction",
   },
 ] as const;
 
@@ -200,25 +200,28 @@ export const FeatureOverview = () => {
       ref={sectionRef}
     >
       <Container>
-        <Box className="max-w-3xl" data-landing-reveal>
+        <Box
+          className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)] md:items-end md:gap-12"
+          data-landing-reveal
+        >
           <Text
             as="h2"
             className="text-3xl md:text-5xl"
             id="feature-overview-title"
           >
-            See how work moves from idea to outcome.
+            See how every team moves work forward.
           </Text>
-          <Text className="text-text-description mt-6 max-w-2xl text-base text-pretty">
-            Explore the connected workflows that help your team listen, decide,
-            plan, and deliver.
+          <Text className="text-text-description max-w-xl text-base text-pretty">
+            Keep each team&apos;s decisions, handoffs, and customer context
+            connected from plan to progress.
           </Text>
         </Box>
 
-        <Box className="mt-20 md:mt-24">
+        <Box className="mt-10 md:mt-12">
           <Box>
             <Box className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <Box
-                aria-label="Explore FortyOne workflows"
+                aria-label="Explore team use cases"
                 className="mx-0 flex w-full min-w-[50rem] flex-nowrap gap-5 rounded-none bg-transparent p-0 md:grid md:min-w-0 md:grid-cols-5 dark:bg-transparent"
                 role="tablist"
               >
@@ -281,7 +284,7 @@ export const FeatureOverview = () => {
               role="tabpanel"
               tabIndex={0}
             >
-              <Box className="bg-surface-muted/45 dark:bg-surface-elevated/45 grid overflow-hidden rounded p-3 md:min-h-[30rem] md:grid-cols-2 md:gap-5">
+              <Box className="bg-surface-muted/85 dark:bg-surface-elevated/45 grid overflow-hidden rounded p-3 md:min-h-[30rem] md:grid-cols-2 md:gap-5">
                 <Box className="flex items-center px-6 py-10 sm:px-8 md:px-6 md:py-12 md:pr-12">
                   <Box className="max-w-md">
                     <Text as="h3" className="text-2xl md:text-3xl">
