@@ -7,8 +7,8 @@ export const features: Feature[] = [
   {
     slug: "customer-feedback",
     label: featureLabels["customer-feedback"],
-    heroTitle: "FortyOne Customer Feedback",
-    metaTitle: "Customer Feedback Management and Roadmaps | FortyOne",
+    heroTitle: "Turn customer feedback into visible progress",
+    metaTitle: "Customer Feedback Management Software | FortyOne",
     metaDescription:
       "Collect customer requests, prioritize feedback, publish roadmap progress, and turn accepted ideas into project work without losing the original request.",
     intro: [
@@ -126,15 +126,27 @@ export const features: Feature[] = [
         "Can customers see what the team is working on?",
         "Yes. Teams can publish roadmap progress while keeping internal project details private.",
       ],
+      [
+        "Does the original request stay connected to delivery?",
+        "Yes. Accepted feedback can stay linked to the task, owner, goal, and delivery status so the team can trace the customer need behind the work.",
+      ],
+      [
+        "Is the public roadmap the same as the internal project plan?",
+        "No. Teams can share customer-facing progress without exposing internal estimates, planning discussions, or private project details.",
+      ],
+      [
+        "Can different teams manage separate feedback boards?",
+        "Yes. Feedback boards can route requests to the team responsible for reviewing and deciding what happens next.",
+      ],
     ],
   },
   {
     slug: "goals",
     label: featureLabels.goals,
-    heroTitle: "FortyOne Goals",
-    metaTitle: "Goals | Connect Work to Outcomes | FortyOne",
+    heroTitle: "Turn company goals into work teams can follow",
+    metaTitle: "OKR and Goal Management Software | FortyOne",
     metaDescription:
-      "See how FortyOne keeps goals, tasks, owners, progress, and AI planning connected in one project management workflow.",
+      "Connect goals and OKRs to tasks, owners, progress, risks, and AI planning in one strategy execution workflow.",
     intro: [
       "Goals are where the work gets its reason. Without them, tasks become a queue of activity that is hard to prioritize, explain, or defend when capacity gets tight.",
       "FortyOne keeps goals close to execution. Teams can connect tasks, projects, owners, decisions, and progress to the outcome they support, then use AI to prepare the next move with that context in view.",
@@ -250,15 +262,27 @@ export const features: Feature[] = [
         "Is this only for OKRs?",
         "No. Goals can represent OKRs, launch outcomes, operational priorities, or any measurable team objective.",
       ],
+      [
+        "Can goals connect directly to project tasks?",
+        "Yes. Teams can link work to the outcome it supports so ownership, status, and delivery decisions retain the reason behind the task.",
+      ],
+      [
+        "Can leaders see which goals are at risk?",
+        "Yes. Goal health can be reviewed alongside connected work, blockers, owners, and the decisions that need attention.",
+      ],
+      [
+        "Does FortyOne support strategy beyond individual objectives?",
+        "Yes. Teams can organize company direction into strategic pillars and connect measurable objectives and delivery work beneath them.",
+      ],
     ],
   },
   {
     slug: "tasks",
     label: featureLabels.tasks,
-    heroTitle: "FortyOne Tasks",
-    metaTitle: "Tasks | AI-Assisted Task Management | FortyOne",
+    heroTitle: "Keep every task connected to the plan",
+    metaTitle: "Task Management Software for Connected Work | FortyOne",
     metaDescription:
-      "See how FortyOne turns requests, context, owners, estimates, and status into task management that stays connected to goals.",
+      "Turn requests into tasks with owners, estimates, source context, goals, schedules, and AI-assisted planning in FortyOne.",
     intro: [
       "Tasks are the execution layer of FortyOne. They hold the work, the owner, the status, the estimate, the source context, and the goal the work supports.",
       "FortyOne is designed for teams that need tasks to be more than a checklist. A task can start from Slack, planning notes, GitHub context, or a manager request, then become assigned work with review controls.",
@@ -379,6 +403,18 @@ export const features: Feature[] = [
       [
         "Can tasks connect to goals?",
         "Yes. Tasks can be connected to goals so teams understand why the work exists.",
+      ],
+      [
+        "Which task views are available?",
+        "Teams can work with task lists, boards, and scheduled work in the calendar, depending on the planning view they need.",
+      ],
+      [
+        "Can source context stay attached to a task?",
+        "Yes. Documents, Slack conversations, GitHub context, goals, and related work can stay connected so the next owner does not have to rebuild the brief.",
+      ],
+      [
+        "Can managers review AI-prepared task changes?",
+        "Yes. Suggested owners, estimates, timing, and other important changes can remain reviewable before they are applied to the project plan.",
       ],
     ],
   },
@@ -531,10 +567,10 @@ export const features: Feature[] = [
   {
     slug: "roadmaps",
     label: featureLabels.roadmaps,
-    heroTitle: "FortyOne Roadmaps",
-    metaTitle: "Roadmaps | Connect Priorities to Execution | FortyOne",
+    heroTitle: "Build roadmaps your team can actually deliver",
+    metaTitle: "Product Roadmap Software Connected to Delivery | FortyOne",
     metaDescription:
-      "See how FortyOne helps teams turn priorities, launches, capacity, tasks, and status into execution-ready roadmaps.",
+      "Connect roadmap priorities to goals, tasks, owners, capacity, launches, and customer-facing progress in FortyOne.",
     intro: [
       "A roadmap is only useful if it stays connected to the work required to deliver it. Otherwise, it becomes a promise that drifts away from capacity, blockers, and actual progress.",
       "FortyOne helps teams connect roadmap priorities to goals, tasks, owners, estimates, launch work, and AI-prepared planning decisions.",
@@ -653,13 +689,25 @@ export const features: Feature[] = [
         "Can roadmap items connect to goals?",
         "Yes. Roadmap priorities can be connected to goals so teams understand the outcome behind the work.",
       ],
+      [
+        "Can teams publish a customer-facing roadmap?",
+        "Yes. Teams can share planned, active, and completed progress while keeping internal project details private.",
+      ],
+      [
+        "Can roadmaps account for team capacity?",
+        "Yes. Teams can review workload, estimates, timing, and priorities before adding another commitment to the roadmap.",
+      ],
+      [
+        "Can one roadmap coordinate work across multiple teams?",
+        "Yes. Product, engineering, marketing, support, and operations work can stay visible around the same roadmap priority and launch.",
+      ],
     ],
   },
   {
     slug: "integrations",
     label: featureLabels.integrations,
-    heroTitle: "FortyOne Integrations",
-    metaTitle: "Project Management Integrations | FortyOne",
+    heroTitle: "Keep project context connected across every tool",
+    metaTitle: "Project Management Integrations and MCP | FortyOne",
     metaDescription:
       "Connect FortyOne with Slack, GitHub, Google Calendar, Outlook Calendar, and MCP-compatible AI clients to keep project work connected.",
     intro: [
@@ -788,6 +836,18 @@ export const features: Feature[] = [
       [
         "Can AI use integration context?",
         "Maya can use connected calendar availability and current workload to propose an owner and work window. Teams review the proposal before it changes the plan.",
+      ],
+      [
+        "How do Google Calendar and Outlook Calendar work with FortyOne?",
+        "Connected calendar commitments can appear alongside scheduled FortyOne work so teams can find realistic work windows and spot conflicts.",
+      ],
+      [
+        "What can I do with the FortyOne MCP server?",
+        "The remote MCP server lets compatible clients such as ChatGPT, Claude, Cursor, and Codex work with permitted FortyOne project context.",
+      ],
+      [
+        "Does connected source context stay attached to the task?",
+        "Yes. The workflow is designed to keep source links and relevant context with the structured work they create instead of copying everything into a separate status update.",
       ],
     ],
   },

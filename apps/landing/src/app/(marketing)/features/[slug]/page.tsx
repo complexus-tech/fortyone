@@ -8,6 +8,18 @@ import {
   getCanonicalUrl,
 } from "@/lib/seo";
 import { AiPlanningPage } from "@/modules/features/ai-planning-page";
+import { FeatureLandingPage } from "@/modules/features/feature-landing-page";
+import { getFeaturePageConfig } from "@/modules/features/feature-page-config";
+
+const AI_PLANNING_KEYWORDS = [
+  "AI project planning",
+  "AI planning software",
+  "AI capacity planning",
+  "project planning assistant",
+  "AI project management",
+  "project risk detection",
+  "team workload planning",
+];
 
 export function generateStaticParams() {
   return features.map((feature) => ({ slug: feature.slug }));
@@ -26,22 +38,14 @@ export async function generateMetadata({
   }
 
   const canonicalUrl = getCanonicalUrl(`/features/${feature.slug}`);
+  const featurePageConfig = getFeaturePageConfig(feature.slug);
 
   return {
     title: feature.metaTitle,
     description: feature.metaDescription,
     keywords:
-      feature.slug === "ai-planning"
-        ? [
-            "AI project planning",
-            "AI planning software",
-            "AI capacity planning",
-            "project planning assistant",
-            "AI project management",
-            "project risk detection",
-            "team workload planning",
-          ]
-        : undefined,
+      featurePageConfig?.keywords ??
+      (feature.slug === "ai-planning" ? AI_PLANNING_KEYWORDS : undefined),
     alternates: {
       canonical: canonicalUrl,
     },
@@ -76,6 +80,12 @@ export default async function FeaturePage({
 
   if (feature.slug === "ai-planning") {
     return <AiPlanningPage detail={feature} />;
+  }
+
+  const featurePageConfig = getFeaturePageConfig(feature.slug);
+
+  if (featurePageConfig) {
+    return <FeatureLandingPage config={featurePageConfig} detail={feature} />;
   }
 
   return (
