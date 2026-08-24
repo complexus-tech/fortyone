@@ -291,7 +291,7 @@ describe("UpcomingMeetingCard", () => {
     );
 
     expect(screen.getByText("Weekly planning")).toHaveClass("line-clamp-1");
-    expect(screen.getByText("Starts in 10 min")).toBeInTheDocument();
+    expect(screen.getByText("In 10 min")).toBeInTheDocument();
     expect(screen.queryByText("Upgrade plan")).toBeNull();
     expect(screen.getByRole("link", { name: /join meeting/i })).toHaveAttribute(
       "href",
@@ -299,6 +299,24 @@ describe("UpcomingMeetingCard", () => {
     );
 
     unmount();
+  });
+
+  it("uses a concise status while a meeting is in progress", () => {
+    const schedule = createSchedule();
+    useCalendarSchedule.mockReturnValue({
+      data: {
+        ...schedule,
+        events: schedule.events.map((event) => ({
+          ...event,
+          startAt: "2026-08-08T09:55:00.000Z",
+        })),
+      },
+    });
+
+    render(<UpcomingMeetingCard fallback={<div>Upgrade plan</div>} />);
+
+    expect(screen.getByText("Now")).toBeInTheDocument();
+    expect(screen.queryByText("Happening now")).not.toBeInTheDocument();
   });
 
   it("returns the fallback when there is no relevant meeting", () => {
@@ -324,7 +342,7 @@ describe("UpcomingMeetingCard", () => {
     );
 
     expect(screen.getByText("Weekly planning")).toBeInTheDocument();
-    expect(screen.getByText("Starts in 10 min")).toBeInTheDocument();
+    expect(screen.getByText("In 10 min")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /join meeting/i })).toHaveAttribute(
       "href",
       "https://meet.google.com/abc-defg-hij",
@@ -372,7 +390,7 @@ describe("UpcomingMeetingCard", () => {
       "text-primary",
       "dark:text-primary",
     );
-    expect(screen.getByText("Maya needs your help")).toBeInTheDocument();
+    expect(screen.getByText("Maya needs help")).toBeInTheDocument();
     const storyLink = screen.getByText("Prepare the launch brief").closest("a");
     expect(storyLink).toHaveAttribute("data-next-link", "true");
     expect(storyLink).toHaveClass("line-clamp-1");
@@ -433,11 +451,11 @@ describe("UpcomingMeetingCard", () => {
     render(<UpcomingMeetingCard fallback={<div>Normal footer</div>} />);
 
     const description = screen.getByText(
-      "1h remains. Choose a time or let Maya try again.",
+      "1h remains. Choose a time or let Maya retry.",
     );
     expect(description).toHaveAttribute(
       "title",
-      "1h remains. Choose a time or let Maya try again.",
+      "1h remains. Choose a time or let Maya retry.",
     );
     expect(screen.queryByText("1h left to schedule.")).not.toBeInTheDocument();
   });
@@ -467,9 +485,7 @@ describe("UpcomingMeetingCard", () => {
       "title",
       "Launch the new workspace experience",
     );
-    const description = screen.getByText(
-      /Linked work is forecast for Aug 29, 2026/,
-    );
+    const description = screen.getByText("Forecast is 8 days past target");
     expect(description).toHaveClass("line-clamp-2");
     expect(description).toHaveAttribute("title", description.textContent);
     const reviewLink = screen.getByRole("link", {
@@ -477,6 +493,7 @@ describe("UpcomingMeetingCard", () => {
     });
     expect(reviewLink).toHaveAttribute("data-next-link", "true");
     expect(reviewLink).toHaveClass("justify-center", "text-center");
+    expect(screen.getByText("Review")).toBe(reviewLink);
 
     fireEvent.click(
       screen.getByRole("button", {

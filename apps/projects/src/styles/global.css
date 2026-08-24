@@ -24,7 +24,7 @@
   --app-page-content-height: calc(
     var(--app-content-canvas-height) - var(--app-page-header-height)
   );
-  --sidebar-width: 16rem;
+  --sidebar-width: 16.5rem;
   --sidebar-width-collapsed: 7rem;
   --story-sidebar-width: 24rem;
 }

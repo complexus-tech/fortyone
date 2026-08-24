@@ -152,8 +152,8 @@ const MeetingContent = ({ meeting }: { meeting: UpcomingMeeting }) => {
   const endAt = new Date(meeting.event.endAt);
   const statusLabel =
     meeting.status === "in-progress"
-      ? "Happening now"
-      : `Starts in ${meeting.minutesUntilStart} min`;
+      ? "Now"
+      : `In ${meeting.minutesUntilStart} min`;
 
   return (
     <>
@@ -228,8 +228,8 @@ const ScheduleIssueContent = ({
   let description = schedulingReason;
   if (!description || isProgressOnlyReason) {
     description = remainingDuration
-      ? `${remainingDuration} remains. Choose a time or let Maya try again.`
-      : "Choose a time or let Maya try again.";
+      ? `${remainingDuration} remains. Choose a time or let Maya retry.`
+      : "Choose a time or let Maya retry.";
   }
   const descriptionTitle =
     schedulingReason && !isProgressOnlyReason && progress
@@ -245,7 +245,7 @@ const ScheduleIssueContent = ({
           color="muted"
           fontWeight="semibold"
         >
-          Maya needs your help
+          Maya needs help
         </Text>
       </Flex>
 
@@ -320,16 +320,16 @@ const ObjectiveRiskContent = ({ objective }: { objective: Objective }) => {
         className="mt-1.5 line-clamp-2 leading-snug"
         color="muted"
         fontSize="sm"
-        title={copy.description}
+        title={copy.headline}
       >
-        {copy.description}
+        {copy.headline}
       </Text>
       <Link
         aria-label={`Review objective: ${objective.name}`}
         className="bg-background-inverse text-foreground-inverse focus-visible:ring-ring mt-3 flex h-[2.1rem] w-full items-center justify-center rounded-xl px-2 text-center font-medium transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
         href={objectiveHref}
       >
-        Review objective
+        Review
       </Link>
     </>
   );
