@@ -1,26 +1,28 @@
 .root {
   position: relative;
   display: inline-block;
-  color: #000;
+  color: var(--color-primary);
   touch-action: pan-y;
 }
 
-:global(.dark) .root {
-  color: #fff;
+.root[data-tone="danger"] {
+  color: var(--color-danger);
+}
+
+.root[data-tone="success"] {
+  color: var(--color-success);
 }
 
 .source {
   position: relative;
-  top: 2px;
-  left: -2px;
   color: transparent;
   background-image: radial-gradient(
     circle,
-    currentColor 0 34%,
-    transparent 35%
+    currentColor 0 40%,
+    transparent 41%
   );
   background-position: 0.01em 0.03em;
-  background-size: 0.06em 0.06em;
+  background-size: 0.05em 0.05em;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

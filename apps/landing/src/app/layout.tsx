@@ -9,7 +9,7 @@ import {
   HOME_METADATA_DESCRIPTION,
   HOME_METADATA_TITLE,
 } from "@/lib/seo";
-import { body, handwritten, mono, sans, serif } from "@/styles/fonts";
+import { body, mono, sans, serif } from "@/styles/fonts";
 import { Toaster } from "./toaster";
 import Providers from "./providers";
 
@@ -45,7 +45,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         sans.variable,
         mono.variable,
         serif.variable,
-        handwritten.variable,
       )}
       lang="en"
       suppressHydrationWarning

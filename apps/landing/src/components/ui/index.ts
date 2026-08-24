@@ -7,4 +7,3 @@ export * from "./google-icon";
 export * from "./microsoft-icon";
 export * from "./dot";
 export * from "./otp-input";
-export * from "./handwritten-accent";

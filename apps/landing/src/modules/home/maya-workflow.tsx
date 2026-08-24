@@ -1,4 +1,3 @@
-import { UnderlinedHandwrittenAccent } from "@/components/ui";
 import mayaImageDark from "../../../public/images/product/maya-delivery-brief-dark.webp";
 import mayaImageLight from "../../../public/images/product/maya-delivery-brief-light.webp";
 import { ProductFeatureSection } from "./product-feature-section";
@@ -11,11 +10,8 @@ export const MayaWorkflow = () => {
       id="maya"
       title={
         <>
-          Use{" "}
-          <UnderlinedHandwrittenAccent tone="primary">
-            AI
-          </UnderlinedHandwrittenAccent>{" "}
-          to spot delivery risk before work goes off track.
+          Use <span className="text-primary">AI</span> to spot delivery risk
+          before work goes off track.
         </>
       }
     >

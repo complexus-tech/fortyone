@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Box, Text } from "ui";
-import type { HandwrittenAccentTone } from "@/components/ui/handwritten-accent";
-import { Container, UnderlinedHandwrittenAccent } from "@/components/ui";
+import { Container } from "@/components/ui";
 import { SignupProviderButton } from "@/components/shared/signup-provider-button";
 import { SIGNUP_URL } from "@/lib/app-url";
 import { ParticleText } from "./particle-text";
@@ -11,11 +10,16 @@ const HERO_TITLE =
 const HERO_DESCRIPTION =
   "Give your team a clear view of what matters, why it matters, and what to do next—so the right work keeps moving.";
 const HERO_TITLE_WORDS = HERO_TITLE.split(" ");
-const HERO_KEYWORD_TONES: Partial<Record<string, HandwrittenAccentTone>> = {
-  feedback: "danger",
-  work: "success",
+type HeroParticleConfig = {
+  offsetX?: number;
+  offsetY?: number;
+  tone: "danger" | "primary" | "success";
 };
-const HERO_PARTICLE_KEYWORD = "strategy";
+const HERO_PARTICLE_KEYWORDS: Partial<Record<string, HeroParticleConfig>> = {
+  feedback: { tone: "danger" },
+  strategy: { offsetX: -2, offsetY: 2, tone: "primary" },
+  work: { tone: "success" },
+};
 
 export const Hero = () => {
   return (
@@ -27,30 +31,23 @@ export const Hero = () => {
             className="relative z-1 text-5xl font-semibold text-balance md:max-w-6xl md:text-6xl"
           >
             {HERO_TITLE_WORDS.map((word, index) => {
-              const keywordTone = HERO_KEYWORD_TONES[word];
+              const particleConfig = HERO_PARTICLE_KEYWORDS[word];
               const animationStyle = {
                 animationDelay: `${60 + index * 45}ms`,
               };
               let titleWord;
 
-              if (word === HERO_PARTICLE_KEYWORD) {
+              if (particleConfig) {
                 titleWord = (
                   <ParticleText
                     className="landing-hero-title-word"
+                    offsetX={particleConfig.offsetX}
+                    offsetY={particleConfig.offsetY}
                     style={animationStyle}
+                    tone={particleConfig.tone}
                   >
                     {word}
                   </ParticleText>
-                );
-              } else if (keywordTone) {
-                titleWord = (
-                  <UnderlinedHandwrittenAccent
-                    className="landing-hero-title-word"
-                    style={animationStyle}
-                    tone={keywordTone}
-                  >
-                    {word}
-                  </UnderlinedHandwrittenAccent>
                 );
               } else {
                 titleWord = (

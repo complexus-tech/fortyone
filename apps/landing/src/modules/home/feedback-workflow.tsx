@@ -1,4 +1,3 @@
-import { UnderlinedHandwrittenAccent } from "@/components/ui";
 import { FeedbackRoadmapSwitcher } from "./feedback-roadmap-switcher";
 import { ProductFeatureSection } from "./product-feature-section";
 
@@ -9,11 +8,8 @@ export const FeedbackWorkflow = () => {
       id="feedback"
       title={
         <>
-          Collect{" "}
-          <UnderlinedHandwrittenAccent tone="danger">
-            feedback
-          </UnderlinedHandwrittenAccent>{" "}
-          and show customers what happens next.
+          Collect <span className="text-danger">feedback</span> and show
+          customers what happens next.
         </>
       }
     >

@@ -1,4 +1,4 @@
-import { Geist, Inconsolata, Inter, Kalam, Newsreader } from "next/font/google";
+import { Geist, Inconsolata, Inter, Newsreader } from "next/font/google";
 
 export const body = Geist({
   variable: "--font-geist",
@@ -18,13 +18,6 @@ export const mono = Inconsolata({
   variable: "--font-mono",
   display: "swap",
   subsets: ["latin"],
-});
-
-export const handwritten = Kalam({
-  variable: "--font-kalam",
-  subsets: ["latin"],
-  display: "swap",
-  weight: "700",
 });
 
 export const serif = Newsreader({

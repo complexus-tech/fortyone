@@ -1,4 +1,3 @@
-import { UnderlinedHandwrittenAccent } from "@/components/ui";
 import { ProductFeatureSection } from "./product-feature-section";
 import { StrategyRoadmapSwitcher } from "./strategy-roadmap-switcher";
 
@@ -9,15 +8,8 @@ export const StrategyWorkflow = () => {
       id="strategy"
       title={
         <>
-          Connect{" "}
-          <UnderlinedHandwrittenAccent tone="primary">
-            strategy
-          </UnderlinedHandwrittenAccent>{" "}
-          to objectives, roadmaps, and{" "}
-          <UnderlinedHandwrittenAccent tone="success">
-            daily work
-          </UnderlinedHandwrittenAccent>
-          .
+          Connect <span className="text-primary">strategy</span> to objectives,
+          roadmaps, and <span className="text-success">daily work</span>.
         </>
       }
     >

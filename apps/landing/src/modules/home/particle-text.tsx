@@ -21,7 +21,10 @@ type Particle = {
 type ParticleTextProps = {
   children: string;
   className?: string;
+  offsetX?: number;
+  offsetY?: number;
   style?: CSSProperties;
+  tone?: "danger" | "primary" | "success";
 };
 
 const CANVAS_PADDING = 10;
@@ -30,10 +33,8 @@ const DRIFT_AMPLITUDE_MIN = 0.45;
 const DRIFT_SPEED_MAX = 0.001;
 const DRIFT_SPEED_MIN = 0.00055;
 const MAX_PIXEL_RATIO = 2;
-const MIN_PARTICLE_RADIUS = 0.85;
+const MIN_PARTICLE_RADIUS = 0.9;
 const PARTICLE_ALPHA_THRESHOLD = 96;
-const PARTICLE_OFFSET_X = -2;
-const PARTICLE_OFFSET_Y = 2;
 const POINTER_RADIUS_MULTIPLIER = 0.82;
 
 const getParticleRadius = (x: number, y: number, sampleStep: number) => {
@@ -44,7 +45,10 @@ const getParticleRadius = (x: number, y: number, sampleStep: number) => {
 export const ParticleText = ({
   children,
   className,
+  offsetX = 0,
+  offsetY = 0,
   style,
+  tone = "primary",
 }: ParticleTextProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rootRef = useRef<HTMLSpanElement>(null);
@@ -210,7 +214,7 @@ export const ParticleText = ({
         canvasHeight,
       ).data;
       const fontSize = Number.parseFloat(computedStyle.fontSize);
-      const sampleStep = Math.max(2, Math.round(fontSize / 22));
+      const sampleStep = Math.max(2, Math.round(fontSize / 26));
       const nextParticles: Particle[] = [];
 
       for (
@@ -238,12 +242,12 @@ export const ParticleText = ({
               DRIFT_SPEED_MIN +
               driftVariation * (DRIFT_SPEED_MAX - DRIFT_SPEED_MIN),
             radius: getParticleRadius(x, y, sampleStep),
-            targetX: x + PARTICLE_OFFSET_X,
-            targetY: y + PARTICLE_OFFSET_Y,
+            targetX: x + offsetX,
+            targetY: y + offsetY,
             velocityX: 0,
             velocityY: 0,
-            x: x + PARTICLE_OFFSET_X,
-            y: y + PARTICLE_OFFSET_Y,
+            x: x + offsetX,
+            y: y + offsetY,
           });
         }
       }
@@ -313,11 +317,20 @@ export const ParticleText = ({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       reducedMotionQuery.removeEventListener("change", buildParticles);
     };
-  }, [children]);
+  }, [children, offsetX, offsetY]);
 
   return (
-    <span className={cn(styles.root, className)} ref={rootRef} style={style}>
-      <span className={styles.source} ref={sourceRef}>
+    <span
+      className={cn(styles.root, className)}
+      data-tone={tone}
+      ref={rootRef}
+      style={style}
+    >
+      <span
+        className={styles.source}
+        ref={sourceRef}
+        style={{ left: offsetX, top: offsetY }}
+      >
         {children}
       </span>
       <canvas aria-hidden="true" className={styles.canvas} ref={canvasRef} />
