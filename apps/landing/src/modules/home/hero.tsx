@@ -86,7 +86,7 @@ export const Hero = () => {
               );
             })}
           </Text>
-          <Text className="text-text-muted mt-6 max-w-xl text-pretty">
+          <Text className="text-text-description mt-6 max-w-xl text-base text-pretty">
             {HERO_DESCRIPTION}
           </Text>
         </Box>

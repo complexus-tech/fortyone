@@ -310,7 +310,7 @@ export const CustomerStories = () => {
           How teams turn plans <br aria-hidden="true" />
           into progress.
         </Text>
-        <Text className="text-text-muted mt-5 max-w-xl text-base text-pretty">
+        <Text className="text-text-description mt-5 max-w-xl text-base text-pretty">
           Hear from teams using FortyOne to turn priorities into steady
           progress.
         </Text>

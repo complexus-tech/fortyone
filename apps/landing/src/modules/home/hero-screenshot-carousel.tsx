@@ -1,7 +1,7 @@
 "use client";
 
 import type { FocusEvent } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "lib";
 import mayaDeliveryBriefDark from "../../../public/images/product/maya-delivery-brief-dark.webp";
 import mayaDeliveryBriefLight from "../../../public/images/product/maya-delivery-brief-light.webp";
@@ -9,8 +9,6 @@ import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.w
 import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
 import myWorkListDark from "../../../public/images/product/my-work-list-dark.webp";
 import myWorkListLight from "../../../public/images/product/my-work-list-light.webp";
-import roadmapTimelineDark from "../../../public/images/product/roadmap-timeline-dark.webp";
-import roadmapTimelineLight from "../../../public/images/product/roadmap-timeline-light.webp";
 import { HeroCarouselIndicator } from "./hero-carousel-indicator";
 import { ProductScreenshot } from "./product-screenshot";
 import styles from "./hero-screenshot-carousel.module.css";
@@ -31,14 +29,6 @@ const HERO_SLIDES = [
     label: "List",
     lightImage: myWorkListLight,
     url: "https://fortyone.app/my-work",
-  },
-  {
-    alt: "FortyOne Roadmap timeline showing coordinated initiatives, milestones, owners, and delivery forecasts",
-    darkImage: roadmapTimelineDark,
-    id: "roadmap",
-    label: "Roadmap timeline",
-    lightImage: roadmapTimelineLight,
-    url: "https://fortyone.app/roadmap",
   },
   {
     alt: "FortyOne Maya AI delivery brief showing objective counts, completion metrics, and delivery trends",
@@ -82,12 +72,12 @@ export const HeroScreenshotCarousel = () => {
     };
   }, []);
 
-  const handleAdvance = useCallback(() => {
+  const handleAdvance = () => {
     if (prefersReducedMotion || isInteractionPaused || isPageHidden) return;
 
     setPreviousIndex(activeIndex);
     setActiveIndex((activeIndex + 1) % HERO_SLIDES.length);
-  }, [activeIndex, isInteractionPaused, isPageHidden, prefersReducedMotion]);
+  };
 
   const handleSelect = (nextIndex: number) => {
     if (nextIndex === activeIndex) return;

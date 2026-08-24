@@ -15,6 +15,7 @@ import {
   Hero,
   HeroScreenshotCarousel,
   Integrations,
+  ProductWorkflowShowcase,
 } from "@/modules/home";
 import styles from "./home.module.css";
 
@@ -60,6 +61,7 @@ export default function Page() {
         <FeatureOverview />
         <div className={styles.progressBand}>
           <CustomerStories />
+          <ProductWorkflowShowcase />
           <Integrations />
         </div>
         <CallToAction />

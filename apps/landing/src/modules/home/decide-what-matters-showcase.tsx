@@ -60,7 +60,9 @@ const ShowcaseCard = ({
         <Text as="h3" className="text-foreground mb-2 text-lg font-semibold">
           {title}
         </Text>
-        <Text className="text-text-muted leading-relaxed">{description}</Text>
+        <Text className="text-text-description text-base leading-relaxed">
+          {description}
+        </Text>
       </Box>
     </Box>
   );
@@ -79,7 +81,7 @@ export const DecideWhatMattersShowcase = () => {
           <Text as="h2" className="text-3xl md:text-5xl" id="ai-planning-title">
             Choose the right work. Build a plan your team can deliver.
           </Text>
-          <Text className="text-text-muted mt-6 max-w-2xl text-pretty">
+          <Text className="text-text-description mt-6 max-w-2xl text-base text-pretty">
             Bring goals, customer feedback, capacity, and delivery context into
             one place, then let Maya turn the right priorities into a realistic
             plan.

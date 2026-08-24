@@ -2,6 +2,7 @@ export * from "./hero";
 export * from "./hero-carousel-indicator";
 export * from "./hero-screenshot-carousel";
 export * from "./product-screenshot";
+export * from "./product-workflow-showcase";
 export * from "./feedback-workflow";
 export * from "./maya-workflow";
 export * from "./platform-workflows";

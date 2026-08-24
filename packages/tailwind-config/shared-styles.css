@@ -177,7 +177,7 @@
   --color-text-primary: var(--color-foreground);
   --color-text-description: color-mix(
     in oklab,
-    var(--color-foreground) 78%,
+    var(--color-foreground) 85%,
     transparent
   );
   --color-text-secondary: oklch(0.38 0.022 42);
@@ -249,7 +249,7 @@
   --color-text-primary: var(--color-foreground);
   --color-text-description: color-mix(
     in oklab,
-    var(--color-foreground) 78%,
+    var(--color-foreground) 85%,
     transparent
   );
   --color-text-secondary: oklch(0.94 0.014 55 / 64%);

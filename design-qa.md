@@ -249,7 +249,7 @@ final result: passed
 
 - Route: `/`.
 - Theme: dark for the retained implementation captures.
-- UI state: board, list, roadmap, and Maya delivery-brief slides; the current slide expands into a compact timed progress pill while the others remain dots.
+- UI state: board, list, and Maya delivery-brief slides; the current slide expands into a compact timed progress pill while the others remain dots.
 - Primary interactions tested: six-second automatic board/list advance, manual slide selection, pause while an indicator retains focus, resume after interaction, and theme-aware image switching.
 - Console errors checked: no warnings or errors.
 
@@ -284,10 +284,36 @@ final result: passed
 - Pass 7: shortened the active track to `56 x 8`, replaced horizontal screenshot travel with an `8px` upward entrance and opacity crossfade, gave the outgoing view a `4px` upward fade, and moved the active treatment into one shared layout capsule so the control morphs between slides without a visible jump.
 - Pass 8: removed the Strategy Map and Maya slides, leaving Board, List, and Roadmap; shortened the active track to `48 x 8`; and slowed the screenshot fade/settle to `420/560ms` while keeping the compact controller at the `300ms` UI boundary.
 - Pass 9: restored Maya with the populated delivery-brief asset showing objective counts, completion metrics, and trend charts; the blank Maya home asset remains excluded.
+- Pass 10: removed Roadmap from the hero carousel and moved that product view into the dedicated workflow screenshot tabs after customer stories.
 
 **Follow-up Polish**
 
 - Revisit the six-second interval only if the focused four-slide sequence feels too slow during real-page use.
+
+final result: passed
+
+---
+
+# Landing Product Workflow Screenshot Tabs
+
+**Implementation Evidence**
+
+- Desktop Roadmaps state: `/tmp/fortyone-product-workflow-roadmaps.png` (`1280 x 720` viewport).
+- Mobile Tasks state: `/tmp/fortyone-product-workflow-mobile.png` (`390 x 844` viewport).
+- Route: `/`, directly after “How teams turn plans into progress.” and before Integrations.
+
+**State and Interaction**
+
+- Five tabs mirror the existing feature overview: Customer feedback, Goals, Tasks, AI planning, and Roadmaps.
+- Every tab renders a real light/dark product asset inside the shared `ProductScreenshot` browser frame.
+- The selected tab advances every seven seconds while visible, pauses on hover/focus or when the document is hidden, resets after manual selection, and supports arrow, Home, and End keys.
+- Product panels use the approved vertical rise and opacity crossfade; reduced-motion users receive a short opacity-only transition.
+- Roadmap is absent from the hero carousel and present in this contextual workflow showcase.
+
+**Responsive Evidence**
+
+- Desktop preserves the five equal tab columns and full-width browser frame.
+- Mobile keeps the tabs horizontally scrollable and uses the established right-cropped browser frame without compressing the product UI.
 
 final result: passed
 
