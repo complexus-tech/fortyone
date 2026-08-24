@@ -7,6 +7,7 @@ import Image from "next/image";
 import { cn } from "lib";
 import { Box, Button, Text } from "ui";
 import { Container } from "@/components/ui";
+import { PricingArrowIcon } from "@/components/ui/pricing-icons";
 import aiPlanningImage from "../../../public/images/workflows/ai-planning.webp";
 import customerFeedbackImage from "../../../public/images/workflows/customer-feedback.webp";
 import goalsImage from "../../../public/images/workflows/goals.webp";
@@ -207,7 +208,7 @@ export const FeatureOverview = () => {
           >
             See how work moves from idea to outcome.
           </Text>
-          <Text className="text-text-muted mt-6 max-w-2xl text-base text-pretty">
+          <Text className="text-text-description mt-6 max-w-2xl text-base text-pretty">
             Explore the connected workflows that help your team listen, decide,
             plan, and deliver.
           </Text>
@@ -286,7 +287,7 @@ export const FeatureOverview = () => {
                     <Text as="h3" className="text-2xl md:text-3xl">
                       {activeFeature.title}
                     </Text>
-                    <Text className="text-text-muted mt-4 text-base leading-relaxed text-pretty">
+                    <Text className="text-text-description mt-4 text-base leading-relaxed text-pretty">
                       {activeFeature.description}
                     </Text>
                     <Button
@@ -294,6 +295,13 @@ export const FeatureOverview = () => {
                       color="gradient"
                       href={activeFeature.href}
                       prefetch
+                      rightIcon={
+                        <PricingArrowIcon
+                          aria-hidden="true"
+                          className="h-4.5 w-auto"
+                          strokeWidth={2}
+                        />
+                      }
                       rounded="lg"
                       size="lg"
                       variant="outline"

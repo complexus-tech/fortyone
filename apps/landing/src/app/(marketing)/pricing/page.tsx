@@ -59,6 +59,8 @@ export default function Page() {
         <CallToAction
           className="border-t-0"
           contentClassName="pt-24 md:pt-32"
+          description="Start free with one team. No card and no trial clock."
+          title="Bring your first project into FortyOne."
         />
       </Box>
     </>
