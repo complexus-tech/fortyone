@@ -18,6 +18,7 @@ import { Tooltip } from "ui";
 import { comparisons } from "@/lib/comparisons";
 import { featureLinks } from "@/lib/feature-links";
 import { useCaseLinks } from "@/lib/use-case-links";
+import { ParticleVector } from "@/modules/home/particle-text";
 import { Logo } from "../ui/logo";
 
 const COPYRIGHT_YEAR = 2026;
@@ -182,7 +183,13 @@ export const Footer = () => {
               <p className="font-heading max-w-md text-[2.6rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-5xl lg:text-[3.4rem]">
                 Keep what matters moving.
               </p>
-              <Logo className="text-foreground -left-1 h-7 sm:h-8" />
+              <ParticleVector
+                className="-left-1"
+                entranceDelay={120}
+                sourceKey="footer-wordmark"
+              >
+                <Logo className="h-8 text-current sm:h-9" />
+              </ParticleVector>
             </div>
 
             <div className="space-y-10">

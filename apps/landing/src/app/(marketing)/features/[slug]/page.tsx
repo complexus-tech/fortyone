@@ -30,6 +30,18 @@ export async function generateMetadata({
   return {
     title: feature.metaTitle,
     description: feature.metaDescription,
+    keywords:
+      feature.slug === "ai-planning"
+        ? [
+            "AI project planning",
+            "AI planning software",
+            "AI capacity planning",
+            "project planning assistant",
+            "AI project management",
+            "project risk detection",
+            "team workload planning",
+          ]
+        : undefined,
     alternates: {
       canonical: canonicalUrl,
     },

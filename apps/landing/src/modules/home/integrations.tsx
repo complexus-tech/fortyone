@@ -75,8 +75,9 @@ export const Integrations = () => {
             Keep work moving in the tools your team already uses.
           </Text>
           <Text className="text-text-description mx-auto mt-6 max-w-2xl text-base text-pretty">
-            Connect Slack, calendars, GitHub, and Figma—then reply to Maya from
-            the inbox you already use.
+            Bring requests from Slack, availability from Google and Outlook,
+            delivery context from GitHub, and designs from Figma into the same
+            plan. Reply to Maya from Gmail.
           </Text>
         </Box>
 

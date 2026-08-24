@@ -1,202 +1,256 @@
+import type { FAQPage, WebPage, WithContext } from "schema-dts";
 import { Box, Text } from "ui";
 import { CallToAction } from "@/components/shared/cta";
 import { FeatureDetailHero } from "@/components/shared/feature-detail-hero";
 import type { MarketingDetail } from "@/components/shared/marketing-detail-page";
 import { Container } from "@/components/ui";
-import { ProductScreenshot } from "@/modules/home/product-screenshot";
+import { Faqs } from "@/components/ui/faqs";
+import {
+  FEATURE_STORY_META_TEXT_CLASS,
+  FEATURE_STORY_SURFACE_CLASS,
+  FEATURE_STORY_TEXT_CLASS,
+} from "@/modules/home/feature-story-section";
+import { ShowcaseCard } from "@/modules/home/decide-what-matters-showcase";
+import { MayaWorkPlanCard } from "@/modules/home/how-it-works";
 import mayaDeliveryBriefDark from "../../../public/images/product/maya-delivery-brief-dark.webp";
 import mayaDeliveryBriefLight from "../../../public/images/product/maya-delivery-brief-light.webp";
-import mayaHomeDark from "../../../public/images/product/maya-home-dark.webp";
-import mayaHomeLight from "../../../public/images/product/maya-home-light.webp";
-import mayaObjectiveRisksDark from "../../../public/images/product/maya-objective-risks-dark.webp";
-import mayaObjectiveRisksLight from "../../../public/images/product/maya-objective-risks-light.webp";
+import { AiPlanningWorkflow } from "./ai-planning-workflow";
 
-const PLANNING_STEPS = [
-  [
-    "Bring the right context",
-    "Ask Maya from the work already in FortyOne, with goals, tasks, workload, and connected project context close at hand.",
-  ],
-  [
-    "Prepare a grounded next move",
-    "Turn that context into a proposed owner, effort, start window, and the risks the team should consider.",
-  ],
-  [
-    "Review before anything changes",
-    "Keep managers in control of the decision. Adjust, approve, or reject the recommendation before it touches the plan.",
-  ],
-] as const;
+const PLANNING_CARD_TEXTURE = "/images/textures/decide-risograph.webp";
 
-function PlanningOverview() {
+function DeliveryRiskCard() {
   return (
-    <section
-      aria-labelledby="planning-overview-title"
-      className="pt-16 md:pt-36"
-    >
-      <Container>
-        <Box className="max-w-4xl" data-landing-reveal>
-          <Text
-            as="h2"
-            className="text-3xl md:text-5xl"
-            id="planning-overview-title"
-          >
-            Give Maya the context. Get a plan your team can stand behind.
-          </Text>
-          <Text className="text-text-muted mt-6 max-w-2xl text-pretty">
-            Start with a question in plain language. Maya brings the work around
-            it into view, then helps the team move from context to a decision.
-          </Text>
-        </Box>
-      </Container>
-
-      <ProductScreenshot
-        alt="Maya AI project agent ready to answer questions about the team, assigned work, notifications, and priorities"
-        containerClassName="mt-10 md:mt-16"
-        darkImage={mayaHomeDark}
-        lightImage={mayaHomeLight}
-        url="https://fortyone.app/maya"
-      />
-
-      <Container>
-        <Box className="mt-12 grid gap-10 md:grid-cols-3 md:gap-8">
-          {PLANNING_STEPS.map(([title, description], index) => (
-            <Box
-              className="border-border border-t pt-5"
-              data-landing-reveal
-              key={title}
-              style={{ transitionDelay: `${index * 70}ms` }}
+    <Box aria-hidden="true" className="flex h-full flex-col gap-3">
+      <Box className={`${FEATURE_STORY_SURFACE_CLASS} px-4 py-3`}>
+        <Box className="flex items-center justify-between gap-3">
+          <Box>
+            <Text
+              className={`${FEATURE_STORY_META_TEXT_CLASS} text-text-muted`}
             >
-              <Text className="text-primary mb-7 text-sm font-semibold">
-                0{index + 1}
-              </Text>
-              <Text as="h3" className="text-foreground text-lg font-semibold">
-                {title}
-              </Text>
-              <Text className="text-text-muted mt-3 leading-relaxed">
-                {description}
-              </Text>
-            </Box>
-          ))}
-        </Box>
-      </Container>
-    </section>
-  );
-}
-
-function RiskStory() {
-  return (
-    <section aria-labelledby="planning-risk-title" className="py-16 md:py-36">
-      <Container>
-        <Box className="max-w-4xl" data-landing-reveal>
-          <Text className="text-primary mb-5 text-sm font-semibold tracking-wide uppercase">
-            Protect delivery
-          </Text>
-          <Text
-            as="h2"
-            className="text-3xl md:text-5xl"
-            id="planning-risk-title"
-          >
-            Ask what needs attention before the deadline does.
-          </Text>
-          <Text className="text-text-muted mt-6 max-w-2xl leading-relaxed text-pretty">
-            Maya can bring live work and goal health into the conversation,
-            highlight the objectives that need a decision, and explain the
-            tradeoff before the team commits to more work.
-          </Text>
-        </Box>
-      </Container>
-
-      <ProductScreenshot
-        alt="FortyOne summary with Maya highlighting two at-risk objectives and the delivery decision the team should make"
-        containerClassName="mt-10 md:mt-16"
-        darkImage={mayaObjectiveRisksDark}
-        lightImage={mayaObjectiveRisksLight}
-        url="https://fortyone.app/summary"
-      />
-    </section>
-  );
-}
-
-function Benefits({ benefits }: { benefits: MarketingDetail["benefits"] }) {
-  return (
-    <Container as="section" className="py-16 md:py-28">
-      <Box className="landing-hero-shell overflow-hidden rounded-[2.5rem] px-6 py-12 sm:px-10 md:rounded-[3.5rem] md:px-14 md:py-18 xl:px-20">
-        <Box className="max-w-3xl" data-landing-reveal>
-          <Text as="h2" className="text-3xl md:text-5xl">
-            Move faster without losing control of the plan.
-          </Text>
-        </Box>
-        <Box className="border-border bg-border mt-12 grid gap-px overflow-hidden rounded-2xl border sm:grid-cols-2 xl:grid-cols-4">
-          {benefits.map(([title, description], index) => (
-            <Box
-              className="bg-background min-h-52 p-6 sm:p-7"
-              data-landing-reveal
-              key={title}
-              style={{ transitionDelay: `${index * 60}ms` }}
+              Delivery brief
+            </Text>
+            <Text
+              className={`${FEATURE_STORY_TEXT_CLASS} text-foreground font-semibold`}
             >
-              <Text className="text-primary mb-8 text-sm font-semibold">
-                0{index + 1}
-              </Text>
-              <Text as="h3" className="text-foreground text-lg font-semibold">
-                {title}
-              </Text>
-              <Text className="text-text-muted mt-3 text-sm leading-relaxed">
-                {description}
-              </Text>
-            </Box>
-          ))}
+              Objectives needing attention
+            </Text>
+          </Box>
+          <Text
+            className={`${FEATURE_STORY_META_TEXT_CLASS} bg-danger/10 text-danger shrink-0 rounded-lg px-2.5 py-1 font-semibold`}
+          >
+            2 risks
+          </Text>
         </Box>
       </Box>
-    </Container>
+
+      <Box className={`${FEATURE_STORY_SURFACE_CLASS} grid gap-2.5 p-4`}>
+        <Box className="bg-surface-muted rounded-lg px-3 py-2.5">
+          <Box className="flex items-center gap-2">
+            <Box className="bg-danger size-2 shrink-0 rounded-full" />
+            <Text
+              className={`${FEATURE_STORY_TEXT_CLASS} text-foreground font-semibold`}
+            >
+              Improve product reliability
+            </Text>
+          </Box>
+          <Text
+            className={`${FEATURE_STORY_META_TEXT_CLASS} text-text-muted mt-1 ml-4`}
+          >
+            API review is blocking delivery
+          </Text>
+        </Box>
+        <Box className="bg-surface-muted rounded-lg px-3 py-2.5">
+          <Box className="flex items-center gap-2">
+            <Box className="bg-warning size-2 shrink-0 rounded-full" />
+            <Text
+              className={`${FEATURE_STORY_TEXT_CLASS} text-foreground font-semibold`}
+            >
+              Improve customer adoption
+            </Text>
+          </Box>
+          <Text
+            className={`${FEATURE_STORY_META_TEXT_CLASS} text-text-muted mt-1 ml-4`}
+          >
+            Owner capacity needs a decision
+          </Text>
+        </Box>
+      </Box>
+
+      <Box className={`${FEATURE_STORY_SURFACE_CLASS} mt-auto px-4 py-3`}>
+        <Text className={`${FEATURE_STORY_META_TEXT_CLASS} text-text-muted`}>
+          Protect reliability capacity before adding more work.
+        </Text>
+      </Box>
+    </Box>
   );
 }
 
-function Questions({ questions }: { questions: MarketingDetail["questions"] }) {
+function ReviewControlCard() {
   return (
-    <Container as="section" className="py-16 md:py-28">
-      <Box className="grid gap-10 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:gap-16 xl:gap-24">
+    <Box aria-hidden="true" className="flex h-full flex-col gap-3">
+      <Box className={`${FEATURE_STORY_SURFACE_CLASS} px-4 py-3`}>
+        <Box className="flex items-center justify-between gap-3">
+          <Box className="min-w-0">
+            <Text
+              className={`${FEATURE_STORY_META_TEXT_CLASS} text-text-muted`}
+            >
+              Maya&apos;s recommendation
+            </Text>
+            <Text
+              className={`${FEATURE_STORY_TEXT_CLASS} text-foreground truncate font-semibold`}
+            >
+              Plan onboarding research
+            </Text>
+          </Box>
+          <Text
+            className={`${FEATURE_STORY_META_TEXT_CLASS} bg-warning/10 text-warning shrink-0 rounded-lg px-2.5 py-1 font-semibold`}
+          >
+            Review
+          </Text>
+        </Box>
+      </Box>
+
+      <Box className={`${FEATURE_STORY_SURFACE_CLASS} grid gap-3 p-4`}>
+        <Box className="border-border flex items-center justify-between border-b pb-3">
+          <Text className={`${FEATURE_STORY_META_TEXT_CLASS} text-text-muted`}>
+            Suggested owner
+          </Text>
+          <Text
+            className={`${FEATURE_STORY_TEXT_CLASS} text-foreground font-semibold`}
+          >
+            Product team
+          </Text>
+        </Box>
+        <Box className="border-border flex items-center justify-between border-b pb-3">
+          <Text className={`${FEATURE_STORY_META_TEXT_CLASS} text-text-muted`}>
+            Effort
+          </Text>
+          <Text
+            className={`${FEATURE_STORY_TEXT_CLASS} text-foreground font-semibold`}
+          >
+            3 days
+          </Text>
+        </Box>
+        <Box className="flex items-center justify-between gap-4">
+          <Text className={`${FEATURE_STORY_META_TEXT_CLASS} text-text-muted`}>
+            Risk to resolve
+          </Text>
+          <Text
+            className={`${FEATURE_STORY_META_TEXT_CLASS} text-foreground text-right font-semibold`}
+          >
+            Research access
+          </Text>
+        </Box>
+      </Box>
+
+      <Box className="mt-auto grid grid-cols-2 gap-2">
+        <Text
+          as="span"
+          className={`${FEATURE_STORY_SURFACE_CLASS} ${FEATURE_STORY_META_TEXT_CLASS} text-foreground px-3 py-2.5 text-center font-semibold`}
+        >
+          Edit
+        </Text>
+        <Text
+          as="span"
+          className={`${FEATURE_STORY_META_TEXT_CLASS} bg-background-inverse text-foreground-inverse rounded-xl px-3 py-2.5 text-center font-semibold`}
+        >
+          Approve
+        </Text>
+      </Box>
+    </Box>
+  );
+}
+
+function PlanningDecisions() {
+  return (
+    <Container
+      aria-labelledby="planning-decisions-title"
+      as="section"
+      className="scroll-mt-24 py-16 md:py-36"
+    >
+      <Box className="max-w-3xl" data-landing-reveal>
         <Text
           as="h2"
-          className="max-w-md text-3xl md:text-5xl"
-          data-landing-reveal
+          className="text-3xl md:text-5xl"
+          id="planning-decisions-title"
         >
-          Questions about planning with Maya.
+          Ask what needs attention before the deadline does.
         </Text>
-        <Box className="border-border border-t">
-          {questions.map(([question, answer], index) => (
-            <Box
-              className="border-border border-b py-7"
-              data-landing-reveal
-              key={question}
-              style={{ transitionDelay: `${index * 60}ms` }}
-            >
-              <Text as="h3" className="text-foreground text-lg font-semibold">
-                {question}
-              </Text>
-              <Text className="text-text-muted mt-3 max-w-2xl leading-relaxed">
-                {answer}
-              </Text>
-            </Box>
-          ))}
-        </Box>
+        <Text className="text-text-description mt-6 max-w-xl text-base text-pretty">
+          Maya brings delivery risk, team capacity, and the proposed change into
+          one reviewable planning decision.
+        </Text>
+      </Box>
+
+      <Box className="mt-14 grid grid-cols-1 gap-x-6 gap-y-14 md:grid-cols-2 xl:grid-cols-3">
+        <ShowcaseCard
+          description="Bring at-risk objectives, blocked dependencies, and missing decisions forward while there is still time to act."
+          illustrationClassName="max-w-[22rem]"
+          imageSrc={PLANNING_CARD_TEXTURE}
+          title="Surface delivery risk early."
+        >
+          <DeliveryRiskCard />
+        </ShowcaseCard>
+        <ShowcaseCard
+          delay={70}
+          description="Let Maya consider workload and availability before proposing an owner, effort, and first work window."
+          illustrationClassName="max-w-[22rem]"
+          imageSrc={PLANNING_CARD_TEXTURE}
+          title="Plan around real capacity."
+        >
+          <MayaWorkPlanCard />
+        </ShowcaseCard>
+        <ShowcaseCard
+          className="md:col-span-2 md:w-full md:max-w-[26rem] md:justify-self-center xl:col-span-1 xl:max-w-none"
+          delay={140}
+          description="Edit, approve, or reject important recommendations before they change ownership, timing, or scope."
+          illustrationClassName="max-w-[22rem]"
+          imageSrc={PLANNING_CARD_TEXTURE}
+          title="Keep people in control."
+        >
+          <ReviewControlCard />
+        </ShowcaseCard>
       </Box>
     </Container>
   );
 }
 
 export function AiPlanningPage({ detail }: { detail: MarketingDetail }) {
+  const planningFaqs = detail.questions.map(([question, answer]) => ({
+    answer,
+    question,
+  }));
+  const pageJsonLd: WithContext<WebPage> = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: detail.heroTitle,
+    description: detail.metaDescription,
+    url: "https://www.fortyone.app/features/ai-planning",
+    publisher: { "@type": "Organization", name: "FortyOne" },
+  };
+  const faqJsonLd: WithContext<FAQPage> = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: planningFaqs.map(({ question, answer }) => ({
+      "@type": "Question",
+      name: question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: answer,
+      },
+    })),
+  };
+
   return (
     <>
       <script
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebPage",
-            name: detail.heroTitle,
-            description: detail.metaDescription,
-            url: "https://www.fortyone.app/features/ai-planning",
-            publisher: { "@type": "Organization", name: "FortyOne" },
-          }),
+          __html: JSON.stringify(pageJsonLd),
         }}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         type="application/ld+json"
       />
       <main className="bg-background text-foreground [&_h1]:font-semibold [&_h2]:font-semibold">
@@ -208,12 +262,21 @@ export function AiPlanningPage({ detail }: { detail: MarketingDetail }) {
           title="Plan your team’s next move with Maya."
           url="https://fortyone.app/my-work"
         />
-        <PlanningOverview />
-        <RiskStory />
-        <Benefits benefits={detail.benefits} />
-        <Questions questions={detail.questions} />
+        <AiPlanningWorkflow />
+        <PlanningDecisions />
+        <Faqs
+          heading="Frequently asked questions about planning with Maya"
+          headingClassName="mx-auto max-w-2xl text-balance"
+          items={planningFaqs}
+          variant="pricing"
+        />
       </main>
-      <CallToAction />
+      <CallToAction
+        className="border-t-0"
+        contentClassName="pt-24 md:pt-32"
+        description="Start free and ask Maya about the work already in your plan. No card and no trial clock."
+        title="Make the next planning decision with context."
+      />
     </>
   );
 }

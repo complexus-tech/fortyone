@@ -6,6 +6,7 @@ import { Kbd } from "ui";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useRouter, usePathname } from "next/navigation";
+import { useQueryState } from "nuqs";
 import { useUserRole, useWorkspacePath } from "@/hooks";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import {
@@ -33,6 +34,8 @@ export const Commands = ({
   const pathname = usePathname();
   const { withWorkspace } = useWorkspacePath();
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
+  const [query, setQuery] = useQueryState("query", { defaultValue: "" });
+  const isSearchPage = pathname === withWorkspace("/search");
 
   useHotkeys("mod+k", (e) => {
     e.preventDefault();
@@ -87,7 +90,47 @@ export const Commands = ({
 
   return (
     <>
-      {showTrigger ? (
+      {showTrigger && isSearchPage ? (
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-2",
+            className,
+            "max-w-none",
+          )}
+        >
+          <search
+            className="bg-surface-muted focus-within:ring-ring flex h-11 w-full max-w-xl min-w-0 items-center gap-2 rounded-lg px-3 focus-within:ring-2"
+            key={query}
+          >
+            <SearchIcon className="text-text-muted h-4 shrink-0" />
+            <input
+              aria-label="Search tasks and objectives"
+              className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent outline-none"
+              defaultValue={query}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  void setQuery(event.currentTarget.value.trim());
+                }
+              }}
+              placeholder="Search tasks and objectives…"
+              type="search"
+            />
+          </search>
+          <button
+            aria-label="Open command menu"
+            className="border-border bg-surface-muted text-text-muted hover:bg-state-hover focus-visible:ring-ring ml-auto flex h-[2rem] shrink-0 items-center rounded-lg border-[0.5px] px-2.5 transition-colors outline-none focus-visible:ring-2"
+            onClick={() => {
+              setOpen(true);
+            }}
+            type="button"
+          >
+            <span className="text-[0.95rem] font-medium tracking-tight">
+              ⌘ K
+            </span>
+          </button>
+        </div>
+      ) : null}
+      {showTrigger && !isSearchPage ? (
         <button
           aria-label="Search tasks, objectives, or commands"
           className={cn(

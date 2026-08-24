@@ -39,8 +39,30 @@
   -webkit-text-fill-color: transparent;
 }
 
-.root[data-ready="true"] .source {
+.vectorSource {
+  display: inline-flex;
+  color: var(--particle-render-color);
   background: none;
+  -webkit-text-fill-color: currentColor;
+  -webkit-mask-image: radial-gradient(circle, black 0 46%, transparent 50%);
+  mask-image: radial-gradient(circle, black 0 46%, transparent 50%);
+  -webkit-mask-size: 0.14rem 0.14rem;
+  mask-size: 0.14rem 0.14rem;
+}
+
+.vectorSource > * {
+  display: inline-flex;
+  color: inherit;
+}
+
+@media (min-width: 48rem) {
+  .root[data-ready="true"] .source {
+    background: none;
+  }
+
+  .root[data-ready="true"] .vectorSource {
+    opacity: 0;
+  }
 }
 
 .canvas {
@@ -50,6 +72,34 @@
   pointer-events: none;
 }
 
+@media (max-width: 47.999rem) {
+  .source {
+    background-image: radial-gradient(
+      circle,
+      var(--particle-render-color) 0 54%,
+      transparent 56%
+    );
+    background-size: 0.045em 0.045em;
+  }
+
+  .vectorSource {
+    background: none;
+    -webkit-mask-size: 0.13rem 0.13rem;
+    mask-size: 0.13rem 0.13rem;
+  }
+
+  .canvas {
+    display: none;
+  }
+}
+
+@supports not (mask-image: radial-gradient(circle, black, transparent)) {
+  .vectorSource {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
 @supports not (background-clip: text) {
   .source {
     color: inherit;
@@ -57,8 +107,10 @@
     -webkit-text-fill-color: currentColor;
   }
 
-  .root[data-ready="true"] .source {
-    color: transparent;
-    -webkit-text-fill-color: transparent;
+  @media (min-width: 48rem) {
+    .root[data-ready="true"] .source {
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+    }
   }
 }

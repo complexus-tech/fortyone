@@ -33,10 +33,15 @@
 }
 
 .progressBand {
+  --progress-band-shell-depth: clamp(3rem, 6vw, 6rem);
+  --progress-band-content-gap: clamp(5rem, 8vw, 8rem);
+
   position: relative;
   isolation: isolate;
   overflow: clip;
-  padding-top: clamp(3rem, 6vw, 6rem);
+  padding-top: calc(
+    var(--progress-band-shell-depth) + var(--progress-band-content-gap)
+  );
   border-radius: 0 0 3rem 3rem;
   background: radial-gradient(
       72% 44% at 94% 30%,
@@ -120,7 +125,7 @@
   top: 0;
   right: 0;
   left: 0;
-  height: clamp(3rem, 6vw, 6rem);
+  height: var(--progress-band-shell-depth);
   border-radius: 0 0 3rem 3rem;
   background: var(--color-background);
   content: "";

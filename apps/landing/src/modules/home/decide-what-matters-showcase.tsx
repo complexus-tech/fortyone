@@ -19,7 +19,7 @@ type ShowcaseCardProps = {
   title: string;
 };
 
-const ShowcaseCard = ({
+export const ShowcaseCard = ({
   children,
   className,
   delay = 0,
@@ -79,12 +79,11 @@ export const DecideWhatMattersShowcase = () => {
       <Box>
         <Box className="max-w-3xl" data-landing-reveal>
           <Text as="h2" className="text-3xl md:text-5xl" id="ai-planning-title">
-            Choose the right work. Build a plan your team can deliver.
+            Decide with evidence. Plan around real capacity.
           </Text>
-          <Text className="text-text-description mt-6 max-w-2xl text-base text-pretty">
-            Bring goals, customer feedback, capacity, and delivery context into
-            one place, then let Maya turn the right priorities into a realistic
-            plan.
+          <Text className="text-text-description mt-6 max-w-lg text-base text-pretty">
+            Connect goals to customer demand, then let Maya recommend ownership
+            and a delivery window before the team commits.
           </Text>
         </Box>
 
@@ -92,8 +91,8 @@ export const DecideWhatMattersShowcase = () => {
           <ShowcaseCard
             description="Connect goals to customer feedback so the work with the strongest case rises to the top."
             illustrationClassName="max-w-[22rem]"
-            imageSrc="/images/textures/decide-risograph.png"
-            title="Prioritise with evidence."
+            imageSrc="/images/textures/decide-risograph.webp"
+            title="Prioritize with evidence."
           >
             <RequestToWorkCard />
           </ShowcaseCard>
@@ -102,7 +101,7 @@ export const DecideWhatMattersShowcase = () => {
             delay={70}
             description="Maya checks workload and calendars to suggest an owner and delivery window the team can actually commit to."
             illustrationClassName="max-w-[22rem]"
-            imageSrc="/images/textures/decide-risograph.png"
+            imageSrc="/images/textures/decide-risograph.webp"
             title="Plan around real capacity."
           >
             <MayaWorkPlanCard />
@@ -113,7 +112,7 @@ export const DecideWhatMattersShowcase = () => {
             delay={140}
             description="Goals, requests, documents, conversations, and delivery links stay attached from decision to done."
             illustrationClassName="max-w-[22rem]"
-            imageSrc="/images/textures/decide-risograph.png"
+            imageSrc="/images/textures/decide-risograph.webp"
             title="Keep context with the work."
           >
             <IntegrationCard />

@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import { cn } from "lib";
 import styles from "./particle-text.module.css";
@@ -31,7 +31,20 @@ type ParticleTextProps = {
   tone?: "danger" | "primary" | "success";
 };
 
+type ParticleVectorProps = Omit<ParticleTextProps, "children"> & {
+  children: ReactNode;
+  sourceKey: string;
+};
+
+type ParticleEffectProps = Omit<ParticleTextProps, "children"> & {
+  children: ReactNode;
+  sourceKey: string;
+  sourceText?: string;
+  sourceType: "text" | "vector";
+};
+
 const CANVAS_PADDING = 40;
+const COMPACT_VIEWPORT_MEDIA_QUERY = "(max-width: 47.999rem)";
 const DRIFT_BLEND_DURATION = 280;
 const DRIFT_AMPLITUDE_MAX = 1.1;
 const DRIFT_AMPLITUDE_MIN = 0.45;
@@ -91,15 +104,18 @@ const getParticleRadius = (x: number, y: number, sampleStep: number) => {
   return Math.max(MIN_PARTICLE_RADIUS, sampleStep * (0.22 + variation * 0.12));
 };
 
-export const ParticleText = ({
+const ParticleEffect = ({
   children,
   className,
   entranceDelay = 0,
   offsetX = 0,
   offsetY = 0,
+  sourceKey,
+  sourceText,
+  sourceType,
   style,
   tone = "primary",
-}: ParticleTextProps) => {
+}: ParticleEffectProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rootRef = useRef<HTMLSpanElement>(null);
   const sourceRef = useRef<HTMLSpanElement>(null);
@@ -115,6 +131,9 @@ export const ParticleText = ({
 
     if (!context) return;
 
+    const compactViewportQuery = window.matchMedia(
+      COMPACT_VIEWPORT_MEDIA_QUERY,
+    );
     const reducedMotionQuery = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     );
@@ -126,9 +145,10 @@ export const ParticleText = ({
     let color = "currentColor";
     let entranceEndsAt = 0;
     let entranceStartsAt = 0;
+    let entranceIsPending = false;
     let hasPlayedEntrance = false;
     let isDisposed = false;
-    let isVisible = true;
+    let isVisible = false;
     let lastHeight = 0;
     let lastWidth = 0;
     let particles: Particle[] = [];
@@ -226,7 +246,9 @@ export const ParticleText = ({
     const startAnimation = () => {
       if (
         animationFrame !== undefined ||
+        compactViewportQuery.matches ||
         !isVisible ||
+        particles.length === 0 ||
         document.visibilityState === "hidden"
       ) {
         return;
@@ -237,11 +259,44 @@ export const ParticleText = ({
         return;
       }
 
+      if (entranceIsPending) {
+        entranceStartsAt = performance.now() + entranceDelay;
+        entranceEndsAt =
+          entranceStartsAt +
+          PARTICLE_ASSEMBLY_DURATION +
+          PARTICLE_ASSEMBLY_STAGGER +
+          18;
+        entranceIsPending = false;
+        hasPlayedEntrance = true;
+
+        particles.forEach((particle) => {
+          particle.x = particle.originX;
+          particle.y = particle.originY;
+          particle.velocityX = 0;
+          particle.velocityY = 0;
+        });
+      }
+
       animationFrame = window.requestAnimationFrame(animate);
+    };
+
+    const resetParticles = () => {
+      stopAnimation();
+      particles = [];
+      entranceIsPending = false;
+      lastHeight = 0;
+      lastWidth = 0;
+      canvas.height = 0;
+      canvas.width = 0;
+      delete root.dataset.ready;
     };
 
     const buildParticles = (force = false) => {
       if (!canBuildParticles) return;
+      if (compactViewportQuery.matches) {
+        resetParticles();
+        return;
+      }
 
       const bounds = source.getBoundingClientRect();
       const computedStyle = window.getComputedStyle(source);
@@ -280,25 +335,54 @@ export const ParticleText = ({
 
       samplingCanvas.height = canvasHeight;
       samplingCanvas.width = canvasWidth;
-      samplingContext.font = [
-        computedStyle.fontStyle,
-        computedStyle.fontVariant,
-        computedStyle.fontWeight,
-        computedStyle.fontSize,
-        computedStyle.fontFamily,
-      ].join(" ");
       samplingContext.fillStyle = "#000";
-      samplingContext.textBaseline = "alphabetic";
 
-      const metrics = samplingContext.measureText(children);
-      const glyphHeight =
-        metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-      const baseline =
-        CANVAS_PADDING +
-        (height - glyphHeight) / 2 +
-        metrics.actualBoundingBoxAscent;
+      if (sourceType === "text" && sourceText !== undefined) {
+        samplingContext.font = [
+          computedStyle.fontStyle,
+          computedStyle.fontVariant,
+          computedStyle.fontWeight,
+          computedStyle.fontSize,
+          computedStyle.fontFamily,
+        ].join(" ");
+        samplingContext.textBaseline = "alphabetic";
 
-      samplingContext.fillText(children, CANVAS_PADDING, baseline);
+        const metrics = samplingContext.measureText(sourceText);
+        const glyphHeight =
+          metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+        const baseline =
+          CANVAS_PADDING +
+          (height - glyphHeight) / 2 +
+          metrics.actualBoundingBoxAscent;
+
+        samplingContext.fillText(sourceText, CANVAS_PADDING, baseline);
+      } else {
+        const svg = source.querySelector("svg");
+        const viewBox = svg?.viewBox.baseVal;
+
+        if (!svg || !viewBox || viewBox.width === 0 || viewBox.height === 0) {
+          return;
+        }
+
+        const scale = Math.min(width / viewBox.width, height / viewBox.height);
+        const renderedWidth = viewBox.width * scale;
+        const renderedHeight = viewBox.height * scale;
+
+        samplingContext.save();
+        samplingContext.translate(
+          CANVAS_PADDING + (width - renderedWidth) / 2,
+          CANVAS_PADDING + (height - renderedHeight) / 2,
+        );
+        samplingContext.scale(scale, scale);
+        samplingContext.translate(-viewBox.x, -viewBox.y);
+
+        svg.querySelectorAll("path").forEach((path) => {
+          const pathData = path.getAttribute("d");
+
+          if (pathData) samplingContext.fill(new Path2D(pathData));
+        });
+        samplingContext.restore();
+      }
 
       const pixels = samplingContext.getImageData(
         0,
@@ -306,11 +390,14 @@ export const ParticleText = ({
         canvasWidth,
         canvasHeight,
       ).data;
-      const fontSize = Number.parseFloat(computedStyle.fontSize);
+      const sourceSize =
+        sourceType === "text"
+          ? Number.parseFloat(computedStyle.fontSize)
+          : height;
       const radiusScale = document.documentElement.classList.contains("dark")
         ? 1
         : LIGHT_MODE_RADIUS_SCALE;
-      const sampleStep = Math.max(2, Math.round(fontSize / 26));
+      const sampleStep = Math.max(2, Math.round(sourceSize / 26));
       const nextParticles: Particle[] = [];
       const shouldAnimateEntrance =
         !hasPlayedEntrance && !reducedMotionQuery.matches;
@@ -336,11 +423,13 @@ export const ParticleText = ({
             (x - CANVAS_PADDING) / width,
           );
           const flowPhase = ((x * 11 + y * 17) % 360) * (Math.PI / 180);
-          const flowDistance = fontSize * (0.3 + driftVariation * 0.12);
+          const flowDistance = sourceSize * (0.3 + driftVariation * 0.12);
           const originX =
-            targetX - flowDistance + Math.cos(flowPhase) * fontSize * 0.08;
+            targetX - flowDistance + Math.cos(flowPhase) * sourceSize * 0.08;
           const originY =
-            targetY + fontSize * 0.12 + Math.sin(flowPhase) * fontSize * 0.18;
+            targetY +
+            sourceSize * 0.12 +
+            Math.sin(flowPhase) * sourceSize * 0.18;
 
           nextParticles.push({
             driftAmplitude:
@@ -367,20 +456,20 @@ export const ParticleText = ({
       }
 
       particles = nextParticles;
-      entranceStartsAt = shouldAnimateEntrance
-        ? performance.now() + entranceDelay
-        : 0;
-      entranceEndsAt = shouldAnimateEntrance
-        ? entranceStartsAt +
-          PARTICLE_ASSEMBLY_DURATION +
-          PARTICLE_ASSEMBLY_STAGGER +
-          18
-        : 0;
-      hasPlayedEntrance = true;
-      pointerRadius = fontSize * POINTER_RADIUS_MULTIPLIER;
+      entranceStartsAt = 0;
+      entranceEndsAt = 0;
+      entranceIsPending = shouldAnimateEntrance;
+
+      if (!shouldAnimateEntrance) hasPlayedEntrance = true;
+
+      pointerRadius = sourceSize * POINTER_RADIUS_MULTIPLIER;
       color = rootStyle.color;
       root.dataset.ready = "true";
-      drawParticles(shouldAnimateEntrance, performance.now());
+
+      if (!shouldAnimateEntrance || isVisible) {
+        drawParticles(false);
+      }
+
       startAnimation();
     };
 
@@ -404,6 +493,9 @@ export const ParticleText = ({
     };
 
     const handleReducedMotionChange = () => {
+      buildParticles(true);
+    };
+    const handleCompactViewportChange = () => {
       buildParticles(true);
     };
 
@@ -431,6 +523,10 @@ export const ParticleText = ({
     root.addEventListener("pointermove", handlePointerMove);
     root.addEventListener("pointerleave", handlePointerLeave);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    compactViewportQuery.addEventListener(
+      "change",
+      handleCompactViewportChange,
+    );
     reducedMotionQuery.addEventListener("change", handleReducedMotionChange);
 
     void document.fonts.ready.then(() => {
@@ -450,12 +546,16 @@ export const ParticleText = ({
       root.removeEventListener("pointermove", handlePointerMove);
       root.removeEventListener("pointerleave", handlePointerLeave);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      compactViewportQuery.removeEventListener(
+        "change",
+        handleCompactViewportChange,
+      );
       reducedMotionQuery.removeEventListener(
         "change",
         handleReducedMotionChange,
       );
     };
-  }, [children, entranceDelay, offsetX, offsetY]);
+  }, [entranceDelay, offsetX, offsetY, sourceKey, sourceText, sourceType]);
 
   return (
     <span
@@ -465,7 +565,9 @@ export const ParticleText = ({
       style={style}
     >
       <span
-        className={styles.source}
+        className={cn(styles.source, {
+          [styles.vectorSource]: sourceType === "vector",
+        })}
         ref={sourceRef}
         style={{ left: offsetX, top: offsetY }}
       >
@@ -475,3 +577,24 @@ export const ParticleText = ({
     </span>
   );
 };
+
+export const ParticleText = ({ children, ...props }: ParticleTextProps) => (
+  <ParticleEffect
+    {...props}
+    sourceKey={children}
+    sourceText={children}
+    sourceType="text"
+  >
+    {children}
+  </ParticleEffect>
+);
+
+export const ParticleVector = ({
+  children,
+  sourceKey,
+  ...props
+}: ParticleVectorProps) => (
+  <ParticleEffect {...props} sourceKey={sourceKey} sourceType="vector">
+    {children}
+  </ParticleEffect>
+);

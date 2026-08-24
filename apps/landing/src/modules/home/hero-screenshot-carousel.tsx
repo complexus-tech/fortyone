@@ -3,32 +3,32 @@
 import type { FocusEvent } from "react";
 import { useEffect, useState } from "react";
 import { cn } from "lib";
+import feedbackPortalDark from "../../../public/images/product/feedback-portal-dark.webp";
+import feedbackPortalLight from "../../../public/images/product/feedback-portal-light.webp";
 import mayaDeliveryBriefDark from "../../../public/images/product/maya-delivery-brief-dark.webp";
 import mayaDeliveryBriefLight from "../../../public/images/product/maya-delivery-brief-light.webp";
-import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.webp";
-import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
-import myWorkListDark from "../../../public/images/product/my-work-list-dark.webp";
-import myWorkListLight from "../../../public/images/product/my-work-list-light.webp";
+import strategyMapDark from "../../../public/images/product/strategy-map-dark.webp";
+import strategyMapLight from "../../../public/images/product/strategy-map-light.webp";
 import { HeroCarouselIndicator } from "./hero-carousel-indicator";
 import { ProductScreenshot } from "./product-screenshot";
 import styles from "./hero-screenshot-carousel.module.css";
 
 const HERO_SLIDES = [
   {
-    alt: "FortyOne My Work board showing tasks grouped by Backlog, To Do, In Progress, and Done",
-    darkImage: myWorkBoardDark,
-    id: "board",
-    label: "Board",
-    lightImage: myWorkBoardLight,
-    url: "https://fortyone.app/my-work",
+    alt: "FortyOne Strategy Map connecting company goals to strategic pillars and objectives",
+    darkImage: strategyMapDark,
+    id: "strategy",
+    label: "Strategy map",
+    lightImage: strategyMapLight,
+    url: "https://fortyone.app/strategy-map",
   },
   {
-    alt: "FortyOne My Work list showing tasks with status, priority, owners, and delivery details",
-    darkImage: myWorkListDark,
-    id: "list",
-    label: "List",
-    lightImage: myWorkListLight,
-    url: "https://fortyone.app/my-work",
+    alt: "FortyOne feedback portal showing customer requests, votes, and product feedback",
+    darkImage: feedbackPortalDark,
+    id: "feedback",
+    label: "Customer feedback",
+    lightImage: feedbackPortalLight,
+    url: "https://fortyone.app/feedback",
   },
   {
     alt: "FortyOne Maya AI delivery brief showing objective counts, completion metrics, and delivery trends",

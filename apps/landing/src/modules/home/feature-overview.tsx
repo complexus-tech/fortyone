@@ -8,9 +8,9 @@ import { cn } from "lib";
 import { Box, Button, Text } from "ui";
 import { Container } from "@/components/ui";
 import { PricingArrowIcon } from "@/components/ui/pricing-icons";
-import constructionImage from "../../../public/images/workflows/construction.jpg";
+import constructionImage from "../../../public/images/workflows/construction.webp";
 import customerFeedbackImage from "../../../public/images/workflows/customer-feedback.webp";
-import customerSupportImage from "../../../public/images/workflows/customer-support.jpg";
+import customerSupportImage from "../../../public/images/workflows/customer-support.webp";
 import goalsImage from "../../../public/images/workflows/goals.webp";
 import tasksImage from "../../../public/images/workflows/tasks.webp";
 import styles from "./feature-overview.module.css";
@@ -41,24 +41,13 @@ const FEATURES: readonly FeatureOverviewItem[] = [
     value: "product",
   },
   {
-    alt: "Operations leaders coordinating cross-functional work around a shared plan",
-    ctaLabel: "Explore operations",
-    description:
-      "Coordinate recurring work, owners, deadlines, and handoffs without losing the context behind each decision.",
-    href: "/use-cases/operations",
-    image: tasksImage,
-    label: "Operations",
-    title: "Keep complex operations moving as one system.",
-    value: "operations",
-  },
-  {
     alt: "A marketing lead listening closely during a customer conversation",
     ctaLabel: "Explore marketing",
     description:
       "Turn customer conversations and campaign goals into coordinated work across content, design, sales, and launch.",
     href: "/use-cases/marketing",
     image: customerFeedbackImage,
-    label: "Marketing & sales",
+    label: "Marketing",
     title: "Move from market signal to campaign action.",
     value: "marketing-sales",
   },
@@ -74,13 +63,24 @@ const FEATURES: readonly FeatureOverviewItem[] = [
     value: "customer-support",
   },
   {
+    alt: "Operations leaders coordinating cross-functional work around a shared plan",
+    ctaLabel: "Explore operations",
+    description:
+      "Coordinate recurring work, owners, deadlines, and handoffs without losing the context behind each decision.",
+    href: "/use-cases/operations",
+    image: tasksImage,
+    label: "Operations",
+    title: "Keep complex operations moving as one system.",
+    value: "operations",
+  },
+  {
     alt: "A construction project team coordinating site work around printed plans",
     ctaLabel: "Explore field teams",
     description:
       "Keep site updates, approvals, owners, and handoffs connected before a missed detail affects the schedule.",
     href: "/use-cases/field-crews",
     image: constructionImage,
-    label: "Construction",
+    label: "Field teams",
     title: "Keep every crew aligned from site to office.",
     value: "construction",
   },
@@ -200,20 +200,18 @@ export const FeatureOverview = () => {
       ref={sectionRef}
     >
       <Container>
-        <Box
-          className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)] md:items-end md:gap-12"
-          data-landing-reveal
-        >
+        <Box className="max-w-3xl" data-landing-reveal>
           <Text
             as="h2"
             className="text-3xl md:text-5xl"
             id="feature-overview-title"
           >
-            See how every team moves work forward.
+            Made for the way
+            <span className="block">your team works.</span>
           </Text>
-          <Text className="text-text-description max-w-xl text-base text-pretty">
-            Keep each team&apos;s decisions, handoffs, and customer context
-            connected from plan to progress.
+          <Text className="text-text-description mt-6 max-w-lg text-base text-pretty">
+            Explore connected workflows for product, operations, marketing,
+            support, and field teams.
           </Text>
         </Box>
 
@@ -284,7 +282,7 @@ export const FeatureOverview = () => {
               role="tabpanel"
               tabIndex={0}
             >
-              <Box className="bg-surface-muted/85 dark:bg-surface-elevated/45 grid overflow-hidden rounded p-3 md:min-h-[30rem] md:grid-cols-2 md:gap-5">
+              <Box className="bg-surface-muted/85 dark:bg-surface-prominent/60 grid overflow-hidden rounded p-3 md:min-h-[30rem] md:grid-cols-2 md:gap-5 dark:backdrop-blur-xl">
                 <Box className="flex items-center px-6 py-10 sm:px-8 md:px-6 md:py-12 md:pr-12">
                   <Box className="max-w-md">
                     <Text as="h3" className="text-2xl md:text-3xl">

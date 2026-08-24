@@ -34,7 +34,7 @@ export const CallToAction = ({
           data-landing-reveal
         >
           <h2
-            className="text-balances text-4xl leading-[1.02] font-semibold tracking-tight md:text-6xl"
+            className="text-4xl leading-[1.02] font-semibold tracking-tight text-balance md:text-6xl"
             id="marketing-cta-title"
           >
             {title}

@@ -1,9 +1,10 @@
 "use client";
 
-import { Box, Flex, Text } from "ui";
+import type { ReactNode } from "react";
+import { useId, useState } from "react";
 import { MinusIcon, PlusIcon } from "icons";
 import { cn } from "lib";
-import { useState } from "react";
+import { Box, Flex, Text } from "ui";
 import type { HomeFaq } from "@/lib/home-faqs";
 import { pricingFaqs } from "@/lib/home-faqs";
 import { Container } from "./container";
@@ -14,16 +15,18 @@ const AccordionItem = ({
   isOpen,
   onToggle,
   index,
+  idPrefix,
   pricingStyle = false,
 }: {
   item: HomeFaq;
   isOpen: boolean;
   onToggle: () => void;
   index: number;
+  idPrefix: string;
   pricingStyle?: boolean;
 }) => {
-  const buttonId = `faq-trigger-${index}`;
-  const panelId = `faq-panel-${index}`;
+  const buttonId = `${idPrefix}-trigger-${index}`;
+  const panelId = `${idPrefix}-panel-${index}`;
   return (
     <Box
       className="border-border border-b last:border-b-0"
@@ -98,13 +101,25 @@ const AccordionItem = ({
   );
 };
 
-export const Faqs = ({
-  variant = "default",
-}: {
+type FaqsProps = {
+  className?: string;
+  heading?: ReactNode;
+  headingClassName?: string;
+  items?: HomeFaq[];
   variant?: "default" | "pricing";
-}) => {
+};
+
+export const Faqs = ({
+  className,
+  heading,
+  headingClassName,
+  items = pricingFaqs,
+  variant = "default",
+}: FaqsProps) => {
+  const instanceId = useId().replaceAll(":", "");
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const isPricing = variant === "pricing";
+  const headingId = `${instanceId}-heading`;
 
   const handleToggle = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -112,11 +127,14 @@ export const Faqs = ({
 
   return (
     <Box
+      aria-labelledby={headingId}
+      as="section"
       className={cn(
         "py-16 md:pt-24",
         isPricing &&
           "landing-hero-shell landing-page-frame mt-16 overflow-hidden rounded-[2.25rem] py-20 md:mt-20 md:rounded-[3rem] md:py-28",
         isPricing && styles.pricingShell,
+        className,
       )}
     >
       <Container
@@ -132,16 +150,19 @@ export const Faqs = ({
               "mb-2 text-4xl md:mb-12 md:text-5xl",
               isPricing &&
                 "font-serif leading-tight font-medium tracking-[-0.035em] md:mb-0",
+              headingClassName,
             )}
+            id={headingId}
           >
-            {isPricing ? (
-              "Frequently asked questions"
-            ) : (
-              <>
-                What teams ask <br aria-hidden="true" />
-                before getting started.
-              </>
-            )}
+            {heading ??
+              (isPricing ? (
+                "Frequently asked questions"
+              ) : (
+                <>
+                  What teams ask <br aria-hidden="true" />
+                  before getting started.
+                </>
+              ))}
           </Text>
         </Box>
 
@@ -152,8 +173,9 @@ export const Faqs = ({
           )}
           direction="column"
         >
-          {pricingFaqs.map((item, index) => (
+          {items.map((item, index) => (
             <AccordionItem
+              idPrefix={instanceId}
               index={index}
               isOpen={openIndex === index}
               item={item}

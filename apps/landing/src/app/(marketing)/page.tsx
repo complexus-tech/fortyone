@@ -58,10 +58,10 @@ export default function Page() {
           </section>
           <DecideWhatMattersShowcase />
         </div>
-        <FeatureOverview />
         <div className={styles.progressBand}>
-          <CustomerStories />
           <ProductWorkflowShowcase />
+          <CustomerStories />
+          <FeatureOverview />
           <Integrations />
         </div>
         <CallToAction className="border-t-0" />

@@ -8,7 +8,7 @@ import { ParticleText } from "./particle-text";
 const HERO_TITLE =
   "Turn strategy and customer feedback into work your team can deliver.";
 const HERO_DESCRIPTION =
-  "Give your team a clear view of what matters, why it matters, and what to do next—so the right work keeps moving.";
+  "Connect company goals, customer requests, and real team capacity in one workspace. Maya helps turn the strongest priorities into an owned, realistic plan.";
 const HERO_TITLE_WORDS = HERO_TITLE.split(" ");
 const HERO_WORD_BASE_DELAY = 60;
 const HERO_WORD_STAGGER = 45;
@@ -39,6 +39,9 @@ export const Hero = () => {
     <Box>
       <Container className="pt-8">
         <Box className="mt-10 mb-6">
+          <Text className="text-primary mb-4 text-[0.6875rem] font-medium tracking-[0.14em] uppercase">
+            Agentic planning
+          </Text>
           <Text
             as="h1"
             className="relative z-1 text-5xl font-semibold text-balance md:max-w-6xl md:text-6xl"

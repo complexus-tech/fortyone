@@ -59,7 +59,7 @@ const customerStories: readonly CustomerStory[] = [
     logo: finLogo,
     logoClassName: "h-9 w-auto max-w-24",
     quote:
-      "Everyone sees what matters, who owns it, and what’s blocked—so we ship faster.",
+      "Planning feels much lighter now. I can see what the team is working on, where we’re stuck, and what needs my attention.",
     role: "Head of Engineering & CTO",
   },
   {
@@ -71,7 +71,7 @@ const customerStories: readonly CustomerStory[] = [
     logo: miningoLogo,
     logoClassName: "h-11 w-auto max-w-32",
     quote:
-      "Feedback, priorities, and roadmap updates now live together—without endless follow-ups.",
+      "Our feedback and priorities finally live in one place. I can see what customers need and what the team should focus on next.",
     role: "Founder & Spatial Data Scientist",
   },
   {
@@ -83,7 +83,7 @@ const customerStories: readonly CustomerStory[] = [
     logo: zimboriginalLogo,
     logoClassName: "h-7 w-auto max-w-40",
     quote:
-      "We organise ideas, choose what matters next, and keep work moving with context.",
+      "I can capture an idea while it’s still rough, shape it clearly, and keep it moving without losing anything important.",
     role: "Founder, Writer & Teacher",
   },
 ];
@@ -298,11 +298,15 @@ export const CustomerStories = () => {
     <Container
       aria-labelledby="customer-stories-title"
       as="section"
-      className="scroll-mt-24 py-16 md:py-28"
+      className="scroll-mt-24 pb-16 md:pb-28"
       id="customer-stories"
     >
       <Box
-        className="mb-16 grid gap-5 text-left md:mb-20 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)] md:items-end md:gap-12"
+        aria-hidden="true"
+        className="border-border/40 mx-auto w-4/5 border-t"
+      />
+      <Box
+        className="mt-16 mb-10 max-w-3xl text-left md:mt-28 md:mb-12"
         data-landing-reveal
       >
         <Text
@@ -310,11 +314,12 @@ export const CustomerStories = () => {
           className="text-3xl md:text-5xl"
           id="customer-stories-title"
         >
-          How teams turn plans <br aria-hidden="true" />
-          into progress.
+          What our customers
+          <span className="block">say.</span>
         </Text>
-        <Text className="text-text-description max-w-xl text-base text-pretty">
-          Hear how teams turn clear priorities into steady progress.
+        <Text className="text-text-description mt-6 max-w-lg text-base leading-relaxed text-pretty">
+          We love building FortyOne with our customers. Here’s some of the love
+          they’ve shared with us.
         </Text>
       </Box>
 

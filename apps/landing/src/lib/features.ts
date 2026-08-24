@@ -385,10 +385,10 @@ export const features: Feature[] = [
   {
     slug: "ai-planning",
     label: featureLabels["ai-planning"],
-    heroTitle: "FortyOne AI Planning",
-    metaTitle: "AI Planning | Owner, Estimate, and Schedule Support | FortyOne",
+    heroTitle: "AI project planning with Maya",
+    metaTitle: "AI Project Planning Software with Maya | FortyOne",
     metaDescription:
-      "See how FortyOne uses AI to prepare owners, estimates, timing, risks, and review-ready project changes.",
+      "Plan projects with AI using goals, tasks, capacity, calendars, and delivery risk. Maya prepares review-ready recommendations while your team stays in control.",
     intro: [
       "AI planning in FortyOne is not a black box that silently moves work around. It is a planning layer that prepares recommendations and keeps managers in control.",
       "AI can read the goal, task context, team workload, estimates, calendar availability, and connected tools before suggesting the next owner, start window, and risk notes.",
@@ -503,16 +503,28 @@ export const features: Feature[] = [
     ],
     questions: [
       [
-        "Does AI change the plan automatically?",
-        "AI can prepare recommendations. Teams can keep important changes staged for review before they are applied.",
+        "How does AI planning work in FortyOne?",
+        "Maya uses the context already connected to your work to prepare recommendations for ownership, effort, timing, and delivery risk. Your team can review the reasoning and decide what changes before the plan is updated.",
       ],
       [
-        "What context can AI use?",
-        "AI can use goals, tasks, estimates, workload, calendar availability, and connected tool context when available.",
+        "Does Maya change the project plan automatically?",
+        "Maya can prepare planning recommendations. Teams can keep important changes staged so a manager can edit, approve, or reject them before they are applied.",
       ],
       [
-        "Can managers edit AI recommendations?",
-        "Yes. Recommendations are meant to be reviewed, edited, approved, or rejected by the team.",
+        "What project context can Maya use?",
+        "Maya can work with goals, tasks, estimates, workload, calendar availability, project documents, and connected tool context when that information is available in FortyOne.",
+      ],
+      [
+        "How does AI capacity planning work in FortyOne?",
+        "Maya can consider current workload and calendar availability when preparing an owner and work-window recommendation. The team can then review whether that proposal reflects real priorities and commitments.",
+      ],
+      [
+        "Can AI identify project delivery risks?",
+        "Maya can bring signals such as missing owners, unclear estimates, blocked dependencies, overloaded teams, and at-risk objectives into a planning conversation while there is still time to act.",
+      ],
+      [
+        "Does AI planning replace project managers?",
+        "No. Maya helps gather context, prepare a recommendation, and explain the tradeoffs. Project managers and team leads keep responsibility for the decision and can change or reject the proposed plan.",
       ],
     ],
   },
