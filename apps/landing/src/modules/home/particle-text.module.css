@@ -1,16 +1,22 @@
 .root {
+  --particle-color: var(--color-primary);
+
   position: relative;
   display: inline-block;
-  color: var(--color-primary);
+  color: color-mix(in oklab, var(--particle-color) 84%, black);
   touch-action: pan-y;
 }
 
 .root[data-tone="danger"] {
-  color: var(--color-danger);
+  --particle-color: var(--color-danger);
 }
 
 .root[data-tone="success"] {
-  color: var(--color-success);
+  --particle-color: var(--color-success);
+}
+
+:global(.dark) .root {
+  color: var(--particle-color);
 }
 
 .source {
