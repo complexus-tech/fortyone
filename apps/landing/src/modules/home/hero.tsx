@@ -16,9 +16,9 @@ type HeroParticleConfig = {
   tone: "danger" | "primary" | "success";
 };
 const HERO_PARTICLE_KEYWORDS: Partial<Record<string, HeroParticleConfig>> = {
-  feedback: { tone: "danger" },
+  feedback: { offsetY: -2, tone: "danger" },
   strategy: { offsetX: -2, offsetY: 2, tone: "primary" },
-  work: { tone: "success" },
+  work: { offsetY: -2, tone: "success" },
 };
 
 export const Hero = () => {
