@@ -13,7 +13,7 @@ import {
   DecideWhatMattersShowcase,
   FeatureOverview,
   Hero,
-  HeroScreenshotCarousel,
+  HeroProductScreenshot,
   Integrations,
   ProductWorkflowShowcase,
 } from "@/modules/home";
@@ -54,7 +54,7 @@ export default function Page() {
         >
           <section className="pt-px pb-6 md:pb-10">
             <Hero />
-            <HeroScreenshotCarousel />
+            <HeroProductScreenshot />
           </section>
           <DecideWhatMattersShowcase />
         </div>

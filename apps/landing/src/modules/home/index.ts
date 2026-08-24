@@ -1,5 +1,6 @@
 export * from "./hero";
 export * from "./hero-carousel-indicator";
+export * from "./hero-product-screenshot";
 export * from "./hero-screenshot-carousel";
 export * from "./product-screenshot";
 export * from "./product-workflow-showcase";

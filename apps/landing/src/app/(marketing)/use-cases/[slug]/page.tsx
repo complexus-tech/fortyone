@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { MarketingDetailPage } from "@/components/shared/marketing-detail-page";
 import { getUseCaseBySlug, useCases } from "@/lib/use-cases";
+import { UseCaseLandingPage } from "@/modules/use-cases/use-case-landing-page";
+import { getUseCasePageConfig } from "@/modules/use-cases/use-case-page-config";
 import {
   DEFAULT_SOCIAL_IMAGE,
   DEFAULT_TWITTER_IMAGE,
@@ -25,10 +26,12 @@ export async function generateMetadata({
   }
 
   const canonicalUrl = getCanonicalUrl(`/use-cases/${useCase.slug}`);
+  const pageConfig = getUseCasePageConfig(useCase.slug);
 
   return {
     title: useCase.metaTitle,
     description: useCase.metaDescription,
+    keywords: pageConfig?.keywords,
     alternates: {
       canonical: canonicalUrl,
     },
@@ -56,17 +59,11 @@ export default async function UseCasePage({
 }) {
   const { slug } = await params;
   const useCase = getUseCaseBySlug(slug);
+  const pageConfig = getUseCasePageConfig(slug);
 
-  if (!useCase) {
+  if (!useCase || !pageConfig) {
     return notFound();
   }
 
-  return (
-    <MarketingDetailPage
-      basePath="use-cases"
-      breadcrumbLabel="Use cases"
-      detail={useCase}
-      questionHeading={`Questions from ${useCase.label.toLowerCase()}`}
-    />
-  );
+  return <UseCaseLandingPage config={pageConfig} detail={useCase} />;
 }
