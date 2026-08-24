@@ -145,6 +145,154 @@ final result: passed
 
 ---
 
+# Landing Feature Overview — Maisa Regulated Industries Reference
+
+**Comparison Target**
+
+- Source visual truth: `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/03-maisa-regulated-industries-content.png` (`1280 x 720` pixels).
+- Implementation screenshots:
+  - `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/07-fortyone-feature-showcase-final.png` (`1280 x 720` pixels).
+  - `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/09-fortyone-feature-showcase-mobile-revised.png` (`390 x 844` pixels).
+  - `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/11-fortyone-feature-showcase-stage-aligned.png` (`1280 x 720` pixels).
+  - `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/13-fortyone-feature-showcase-editorial.png` (`1280 x 720` pixels).
+  - `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/14-fortyone-feature-showcase-editorial-mobile.png` (`390 x 844` pixels).
+  - `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/15-fortyone-feature-showcase-editorial-aligned.png` (`1280 x 720` pixels).
+  - `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/18-fortyone-feature-showcase-gradient.png` (`1280 x 720` pixels).
+  - `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/19-fortyone-feature-showcase-gradient-mobile.png` (`390 x 844` pixels).
+  - `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/21-fortyone-feature-showcase-outline.png` (`1280 x 720` pixels).
+  - `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/22-fortyone-feature-showcase-outline-mobile.png` (`390 x 844` pixels).
+- Focused comparison artifact: `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/20-gradient-reference-comparison.png` (`2560 x 764` pixels).
+- Viewports: desktop `1280 x 720`; mobile `390 x 844` CSS pixels at device scale factor `1`.
+- Density normalization: source and desktop implementation were both captured at `1280 x 720` and placed at native size in one side-by-side comparison.
+
+**State**
+
+- Route: `/#feature-overview`.
+- Theme: dark implementation; light Maisa source. Palette differences are intentional brand adaptation.
+- UI state: first tab active with the seven-second timed progress indicator visible.
+- Browser console: no runtime errors observed.
+- Interaction test gap: the in-app browser did not dispatch React state changes for either this component or existing landing client controls. Tab click and timed progression were therefore verified in source and through focused TypeScript, ESLint, and React Doctor checks, but not observed as a rendered state transition in this browser session.
+
+**Full-view Comparison Evidence**
+
+- The section keeps the source hierarchy: editorial intro, large vertical pause, equal-width workflow tabs with a thin active timer, then a wide split content-and-image stage.
+- The desktop stage retains the source's near-even text/image proportion, inset frame padding, left-aligned CTA, and shallow visual depth while using FortyOne surfaces, typography, and editorial workflow photography.
+- Mobile keeps the content readable, moves the image beneath the copy, and makes the tab row horizontally scrollable without wrapping labels or causing page-level overflow.
+
+**Focused Region Comparison Evidence**
+
+- The tabs and stage were aligned at the same viewport and reviewed together in `20-gradient-reference-comparison.png`.
+- Both designs use one active tab line, a compact gap between tabs and panel, a roughly 50/50 desktop split, vertically centered copy, and one primary CTA.
+- FortyOne now follows the source's natural editorial-photography treatment. Five purpose-made workflow images share warm daylight, muted earth tones, believable work moments, and a consistent centered crop.
+- The optimized project assets were reviewed together in `/Users/joseph/.codex/visualizations/2026/08/24/01a0347c-5c6b-79d0-aa29-f6ff979cf949/17-workflow-editorial-image-set.png`; all five remain sharp and visually coherent after WebP conversion.
+
+**Required Fidelity Surfaces**
+
+- Fonts and typography: FortyOne's established display and body styles replace the source fonts while preserving the same hierarchy, compact tab labels, and readable line lengths.
+- Spacing and layout rhythm: the `96px` desktop intro-to-tabs gap, equal tab columns, `32–36px` tabs-to-stage gap, inset stage padding, and near-even split match the measured source composition.
+- Colors and tokens: the border was removed; the panel uses a low-opacity semantic surface, the progress indicator uses the primary token, and the single CTA uses the established FortyOne gradient treatment.
+- Image quality and asset fidelity: all five states use newly generated, consistently art-directed WebP photographs optimized to `68–92 KB`; no placeholders or code-drawn artwork are present.
+- Copy and content: the source industry copy is replaced with concise FortyOne-specific workflow copy. Feature eyebrows were removed, including the extra `Goals` subheading the user rejected.
+
+**Findings**
+
+- [P3] Palette intentionally differs from the reference
+  Location: complete feature stage.
+  Evidence: Maisa uses a light cream surface and deep green CTA; FortyOne uses its dark semantic surface and orange primary CTA.
+  Impact: the brand treatment differs while the image-led anatomy, subtle contrast, and content hierarchy remain aligned.
+  Resolution: explicitly requested brand adaptation.
+
+- [P3] Desktop navigation remains visible in the focused implementation capture
+  Location: top of the `11-fortyone-feature-showcase-stage-aligned.png` capture.
+  Evidence: FortyOne has a persistent docked navigation while the cropped source state does not show its header.
+  Impact: the top crop differs, but the tab and stage regions are aligned and unaffected.
+  Resolution: accepted application-shell difference.
+
+**Comparison History**
+
+- Pass 1: replaced the former card grid with the measured intro, timed tabs, and split stage; used FortyOne product imagery and shared semantic components.
+- Pass 2: removed all feature eyebrows, switched the CTA from primary orange to the hero's inverted button treatment, and expanded the tabs to the full content width.
+- Pass 3: compared the desktop tab/stage regions together, retained the source proportions, and found no actionable P0/P1/P2 visual mismatch.
+- Pass 4: checked the `390 x 844` mobile state, widened the scrollable tab track, and prevented the long customer-feedback label from wrapping.
+- Pass 5: removed the stage border, reduced the outer radius to `4px`, lowered the semantic surface opacity, returned descriptions to the normal body size, and switched the CTA to FortyOne primary.
+- Pass 6: generated five workflow-specific editorial photographs based on the source art direction, optimized them to WebP, replaced the product screenshots, and rechecked desktop and mobile crops.
+- Pass 7: aligned the final desktop state with the source at `1280 x 720` in `16-editorial-reference-comparison.png`; no actionable P0/P1/P2 visual mismatch remained.
+- Pass 8: increased the image and stage height by `28–32px`, set both descriptions explicitly to `text-base`, removed the CTA icon, and switched the button to the shared gradient variant.
+- Pass 9: replaced the remounted panel entrance with persistent stacked image layers and an interruptible `650ms` opacity crossfade; reduced-motion users receive a shorter `160ms` fade.
+- Pass 10: slowed the automatic progression from five to seven seconds and kept the progress indicator duration synchronized with the timer.
+- Pass 11: checked the latest desktop and mobile states, then compared the aligned desktop state with the source in `20-gradient-reference-comparison.png`; no actionable P0/P1/P2 visual mismatch remained.
+- Pass 12: shortened the feedback and AI CTA labels, increased the image height by another `16–24px`, and switched the shared gradient button from solid to outline; desktop and mobile captures showed no clipping or layout regression.
+
+**Follow-up Polish**
+
+- Re-run the click and auto-advance state capture in a browser session that executes local React client transitions normally.
+
+final result: passed
+
+---
+
+# Landing Hero — Static Carousel Controller
+
+**Comparison Target**
+
+- Source visual truth: `/Users/joseph/Downloads/Screenshot 2026-08-24 at 6.10.59 PM.png` (`466 x 108` pixels).
+- Implementation screenshots:
+  - `/tmp/fortyone-hero-carousel-control-gradient.png` (`1280 x 720` pixels).
+  - `/tmp/fortyone-hero-carousel-control-refined-mobile.png` (`390 x 844` pixels).
+  - `/tmp/fortyone-hero-carousel-list-desktop.png` (`1280 x 720` pixels).
+  - `/tmp/fortyone-hero-carousel-list-mobile.png` (`390 x 844` pixels).
+- Focused comparison artifact: `/tmp/fortyone-carousel-reference-comparison.png` (`932 x 128` pixels).
+- Viewports: desktop `1280 x 720`; mobile `390 x 844` CSS pixels.
+- Density normalization: the implementation controller was cropped from the desktop capture and normalized beside the source at the source's `466 x 108` region size.
+
+**State**
+
+- Route: `/`.
+- Theme: dark for the retained implementation captures.
+- UI state: board, list, roadmap, and Maya delivery-brief slides; the current slide expands into a compact timed progress pill while the others remain dots.
+- Primary interactions tested: six-second automatic board/list advance, manual slide selection, pause while an indicator retains focus, resume after interaction, and theme-aware image switching.
+- Console errors checked: no warnings or errors.
+
+**Full-view Comparison Evidence**
+
+- The controller is aligned with the left edge of the existing hero product screenshot and remains within the hero container at desktop and mobile widths.
+- The image frame spacing was tightened beneath the new control so the indicator reads as belonging to the screenshot rather than the CTA group.
+- No horizontal overflow appears at the `390 x 844` mobile viewport.
+
+**Focused Region Comparison Evidence**
+
+- The source and implementation controls were reviewed together in `/tmp/fortyone-carousel-reference-comparison.png`.
+- The implementation intentionally scales the reference anatomy down to a `48 x 8` fully rounded track, three `8 x 8` dots, and `6px` gaps.
+- The active fill uses a blue-to-green info/success gradient, the existing product-frame noise texture, a softly tinted base track, and theme-aware elevation.
+
+**Findings**
+
+- [P3] Scale, placement, and color intentionally differ from the source
+  Location: complete carousel controller.
+  Evidence: the source is larger, centered, and blue; the refined implementation is smaller, left-aligned, and uses a neutral prominent-surface gradient with texture.
+  Impact: the controller is quieter and better integrated with the FortyOne hero while preserving the source's progress-plus-dots anatomy.
+  Resolution: explicitly requested in the refinement pass.
+
+**Comparison History**
+
+- Pass 1: added the centered controller above the hero screenshot and reduced the screenshot's top margin.
+- Pass 2: compared the source and implementation controls together, confirmed matching dimensions and spacing, checked the mobile fit, and found no actionable P0/P1/P2 mismatch.
+- Pass 3: reduced the track and dots, changed every shape to fully rounded, moved the controller to the screenshot's left edge, replaced the flat primary fill with a textured prominent-surface gradient, and reverified desktop/mobile placement with no console errors.
+- Pass 4: matched the product screenshot's secondary-to-info-to-primary progression so the active pill now resolves into the brand orange while retaining its prominent-surface base and texture.
+- Pass 5: connected the real board and list assets, added a six-second linear progress cycle, clickable slide indicators, hover/focus and page-visibility pausing, reduced-motion behavior, and an interruptible screenshot transition. Autoplay, manual selection, focused pause, both themes, mobile crop, zero mobile overflow, and an empty browser console were verified.
+- Pass 6: expanded the story to Board, List, Roadmap Timeline, Strategy Map, and Maya; reduced the controller to `72 x 8`; replaced the orange progression with a blue-to-green fill; and added transform-based spring layout motion plus directional screenshot entrances with a gentler settle.
+- Pass 7: shortened the active track to `56 x 8`, replaced horizontal screenshot travel with an `8px` upward entrance and opacity crossfade, gave the outgoing view a `4px` upward fade, and moved the active treatment into one shared layout capsule so the control morphs between slides without a visible jump.
+- Pass 8: removed the Strategy Map and Maya slides, leaving Board, List, and Roadmap; shortened the active track to `48 x 8`; and slowed the screenshot fade/settle to `420/560ms` while keeping the compact controller at the `300ms` UI boundary.
+- Pass 9: restored Maya with the populated delivery-brief asset showing objective counts, completion metrics, and trend charts; the blank Maya home asset remains excluded.
+
+**Follow-up Polish**
+
+- Revisit the six-second interval only if the focused four-slide sequence feels too slow during real-page use.
+
+final result: passed
+
+---
+
 # Landing Footer — Calendly Layout Reference
 
 **Comparison Target**

@@ -13,6 +13,7 @@ export type ProductScreenshotProps = {
   darkImage: ImageProps["src"];
   lightImage: ImageProps["src"];
   priority?: boolean;
+  reveal?: boolean;
   url: string;
 };
 
@@ -23,10 +24,11 @@ export const ProductScreenshot = ({
   darkImage,
   lightImage,
   priority = false,
+  reveal = true,
   url,
 }: ProductScreenshotProps) => {
   return (
-    <Box data-landing-reveal>
+    <Box data-landing-reveal={reveal ? "" : undefined}>
       <Container
         className={cn("relative mt-12 overflow-visible", containerClassName)}
       >

@@ -96,6 +96,7 @@
   --color-info-foreground: var(--color-info-foreground);
 
   --color-text-primary: var(--color-text-primary);
+  --color-text-description: var(--color-text-description);
   --color-text-secondary: var(--color-text-secondary);
   --color-text-muted: var(--color-text-muted);
   --color-text-disabled: var(--color-text-disabled);
@@ -174,6 +175,11 @@
   --color-info-foreground: var(--brand-ink);
 
   --color-text-primary: var(--color-foreground);
+  --color-text-description: color-mix(
+    in oklab,
+    var(--color-foreground) 78%,
+    transparent
+  );
   --color-text-secondary: oklch(0.38 0.022 42);
   --color-text-muted: oklch(0.5 0.017 45);
   --color-text-disabled: oklch(0.62 0.011 48);
@@ -241,6 +247,11 @@
   --color-info-foreground: var(--brand-ink);
 
   --color-text-primary: var(--color-foreground);
+  --color-text-description: color-mix(
+    in oklab,
+    var(--color-foreground) 78%,
+    transparent
+  );
   --color-text-secondary: oklch(0.94 0.014 55 / 64%);
   --color-text-muted: oklch(0.94 0.014 55 / 60%);
   --color-text-disabled: oklch(0.94 0.014 55 / 40%);

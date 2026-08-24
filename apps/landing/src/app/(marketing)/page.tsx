@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { cn } from "lib";
 import { CallToAction, JsonLd } from "@/components/shared";
-import { Faqs } from "@/components/ui/faqs";
 import {
   DEFAULT_SOCIAL_IMAGE,
   DEFAULT_TWITTER_IMAGE,
@@ -14,11 +13,9 @@ import {
   DecideWhatMattersShowcase,
   FeatureOverview,
   Hero,
+  HeroScreenshotCarousel,
   Integrations,
-  ProductScreenshot,
 } from "@/modules/home";
-import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.webp";
-import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
 import styles from "./home.module.css";
 
 export const metadata: Metadata = {
@@ -56,14 +53,7 @@ export default function Page() {
         >
           <section className="pt-px pb-6 md:pb-10">
             <Hero />
-            <ProductScreenshot
-              alt="FortyOne My Work board showing tasks grouped by Backlog, To Do, In Progress, and Done"
-              cropBrowserOnMobile
-              darkImage={myWorkBoardDark}
-              lightImage={myWorkBoardLight}
-              priority
-              url="https://fortyone.app/my-work"
-            />
+            <HeroScreenshotCarousel />
           </section>
           <DecideWhatMattersShowcase />
         </div>
@@ -72,7 +62,6 @@ export default function Page() {
           <CustomerStories />
           <Integrations />
         </div>
-        <Faqs />
         <CallToAction />
       </main>
     </>

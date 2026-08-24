@@ -1,0 +1,33 @@
+.pricingShell {
+  background: radial-gradient(
+      70% 55% at 92% 2%,
+      color-mix(in oklab, var(--color-primary) 7%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      55% 48% at 2% 28%,
+      color-mix(in oklab, var(--color-info) 4%, transparent),
+      transparent 76%
+    ),
+    radial-gradient(
+      70% 55% at 8% 100%,
+      color-mix(in oklab, var(--color-primary) 7%, transparent),
+      transparent 72%
+    ),
+    linear-gradient(
+      180deg,
+      var(--color-surface-muted) 0%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 82%,
+          var(--color-background)
+        )
+        66%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 68%,
+          var(--color-background)
+        )
+        100%
+    );
+}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Box } from "ui";
 import { Pricing } from "@/components/ui";
 import { ComparePlans } from "@/components/ui/compare";
+import { Faqs } from "@/components/ui/faqs";
 import { CallToAction } from "@/components/shared";
 import {
   DEFAULT_SOCIAL_IMAGE,
@@ -54,9 +55,10 @@ export default function Page() {
           <Pricing variant="page" />
         </section>
         <ComparePlans />
+        <Faqs variant="pricing" />
         <CallToAction
           className="border-t-0"
-          contentClassName="pt-16 md:pt-20"
+          contentClassName="pt-24 md:pt-32"
         />
       </Box>
     </>

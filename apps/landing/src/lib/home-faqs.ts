@@ -51,4 +51,4 @@ export const homeFaqs: HomeFaq[] = [
   },
 ];
 
-export const homepageFaqs = homeFaqs.slice(0, 5);
+export const pricingFaqs = homeFaqs.slice(0, 5);

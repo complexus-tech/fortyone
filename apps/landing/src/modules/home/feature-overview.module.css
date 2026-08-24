@@ -1,0 +1,32 @@
+.progress {
+  animation: feature-overview-progress 7s linear forwards;
+}
+
+.image {
+  opacity: 0;
+  transition: opacity 650ms var(--landing-ease-out);
+}
+
+.imageActive {
+  opacity: 1;
+}
+
+@keyframes feature-overview-progress {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress {
+    animation: none;
+  }
+
+  .image {
+    transition-duration: 160ms;
+  }
+}

@@ -10,15 +10,28 @@ const HERO_TITLE =
 const HERO_DESCRIPTION =
   "Give your team a clear view of what matters, why it matters, and what to do next—so the right work keeps moving.";
 const HERO_TITLE_WORDS = HERO_TITLE.split(" ");
+const HERO_WORD_BASE_DELAY = 60;
+const HERO_WORD_STAGGER = 45;
+const PARTICLE_ASSEMBLY_DELAY_OFFSET = 120;
 type HeroParticleConfig = {
   offsetX?: number;
   offsetY?: number;
   tone: "danger" | "primary" | "success";
 };
 const HERO_PARTICLE_KEYWORDS: Partial<Record<string, HeroParticleConfig>> = {
-  feedback: { offsetY: -2, tone: "danger" },
-  strategy: { offsetX: -2, offsetY: 2, tone: "primary" },
-  work: { offsetY: -2, tone: "success" },
+  feedback: {
+    offsetY: -2,
+    tone: "danger",
+  },
+  strategy: {
+    offsetX: -2,
+    offsetY: 2,
+    tone: "primary",
+  },
+  work: {
+    offsetY: -2,
+    tone: "success",
+  },
 };
 
 export const Hero = () => {
@@ -32,8 +45,10 @@ export const Hero = () => {
           >
             {HERO_TITLE_WORDS.map((word, index) => {
               const particleConfig = HERO_PARTICLE_KEYWORDS[word];
+              const wordAnimationDelay =
+                HERO_WORD_BASE_DELAY + index * HERO_WORD_STAGGER;
               const animationStyle = {
-                animationDelay: `${60 + index * 45}ms`,
+                animationDelay: `${wordAnimationDelay}ms`,
               };
               let titleWord;
 
@@ -41,6 +56,9 @@ export const Hero = () => {
                 titleWord = (
                   <ParticleText
                     className="landing-hero-title-word"
+                    entranceDelay={
+                      wordAnimationDelay + PARTICLE_ASSEMBLY_DELAY_OFFSET
+                    }
                     offsetX={particleConfig.offsetX}
                     offsetY={particleConfig.offsetY}
                     style={animationStyle}

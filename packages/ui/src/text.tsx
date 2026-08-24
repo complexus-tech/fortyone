@@ -12,6 +12,7 @@ const text = cva("text-foreground", {
     },
     color: {
       primary: "text-primary dark:text-primary",
+      description: "text-text-description",
       muted: "text-text-muted",
       danger: "text-danger dark:text-danger",
       gradient:

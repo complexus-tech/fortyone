@@ -9,6 +9,9 @@ type Particle = {
   driftAmplitude: number;
   driftPhase: number;
   driftSpeed: number;
+  entranceOffset: number;
+  originX: number;
+  originY: number;
   radius: number;
   targetX: number;
   targetY: number;
@@ -21,13 +24,15 @@ type Particle = {
 type ParticleTextProps = {
   children: string;
   className?: string;
+  entranceDelay?: number;
   offsetX?: number;
   offsetY?: number;
   style?: CSSProperties;
   tone?: "danger" | "primary" | "success";
 };
 
-const CANVAS_PADDING = 10;
+const CANVAS_PADDING = 40;
+const DRIFT_BLEND_DURATION = 280;
 const DRIFT_AMPLITUDE_MAX = 1.1;
 const DRIFT_AMPLITUDE_MIN = 0.45;
 const DRIFT_SPEED_MAX = 0.001;
@@ -37,6 +42,49 @@ const MAX_PIXEL_RATIO = 2;
 const MIN_PARTICLE_RADIUS = 0.9;
 const PARTICLE_ALPHA_THRESHOLD = 96;
 const POINTER_RADIUS_MULTIPLIER = 0.82;
+const PARTICLE_ASSEMBLY_DURATION = 880;
+const PARTICLE_ASSEMBLY_STAGGER = 140;
+
+const clampProgress = (value: number) => Math.min(Math.max(value, 0), 1);
+
+const sampleCubicBezier = (time: number, point1: number, point2: number) => {
+  const inverseTime = 1 - time;
+
+  return (
+    3 * inverseTime * inverseTime * time * point1 +
+    3 * inverseTime * time * time * point2 +
+    time * time * time
+  );
+};
+
+const sampleCubicBezierDerivative = (
+  time: number,
+  point1: number,
+  point2: number,
+) => {
+  const inverseTime = 1 - time;
+
+  return (
+    3 * inverseTime * inverseTime * point1 +
+    6 * inverseTime * time * (point2 - point1) +
+    3 * time * time * (1 - point2)
+  );
+};
+
+const easeParticleAssembly = (progress: number) => {
+  const clampedProgress = clampProgress(progress);
+  let time = clampedProgress;
+
+  for (let iteration = 0; iteration < 5; iteration += 1) {
+    const error = sampleCubicBezier(time, 0.23, 0.32) - clampedProgress;
+    const derivative = sampleCubicBezierDerivative(time, 0.23, 0.32);
+
+    if (Math.abs(derivative) < 0.0001) break;
+    time = clampProgress(time - error / derivative);
+  }
+
+  return sampleCubicBezier(time, 1, 1);
+};
 
 const getParticleRadius = (x: number, y: number, sampleStep: number) => {
   const variation = ((x * 17 + y * 29) % 11) / 10;
@@ -46,6 +94,7 @@ const getParticleRadius = (x: number, y: number, sampleStep: number) => {
 export const ParticleText = ({
   children,
   className,
+  entranceDelay = 0,
   offsetX = 0,
   offsetY = 0,
   style,
@@ -69,10 +118,19 @@ export const ParticleText = ({
     const reducedMotionQuery = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     );
+    const finePointerQuery = window.matchMedia(
+      "(hover: hover) and (pointer: fine)",
+    );
     let animationFrame: number | undefined;
+    let canBuildParticles = false;
     let color = "currentColor";
+    let entranceEndsAt = 0;
+    let entranceStartsAt = 0;
+    let hasPlayedEntrance = false;
     let isDisposed = false;
     let isVisible = true;
+    let lastHeight = 0;
+    let lastWidth = 0;
     let particles: Particle[] = [];
     let pointerX = Number.POSITIVE_INFINITY;
     let pointerY = Number.POSITIVE_INFINITY;
@@ -86,33 +144,62 @@ export const ParticleText = ({
 
       particles.forEach((particle) => {
         if (interactive) {
-          const driftX =
-            Math.sin(elapsedTime * particle.driftSpeed + particle.driftPhase) *
-            particle.driftAmplitude;
-          const driftY =
-            Math.cos(
-              elapsedTime * particle.driftSpeed * 0.82 +
-                particle.driftPhase * 1.37,
-            ) * particle.driftAmplitude;
-          const deltaX = particle.x - pointerX;
-          const deltaY = particle.y - pointerY;
-          const distance = Math.hypot(deltaX, deltaY);
+          const entranceIsActive = elapsedTime < entranceEndsAt;
 
-          if (distance < pointerRadius) {
-            const safeDistance = Math.max(distance, 0.1);
-            const force = (1 - safeDistance / pointerRadius) * 2.1;
-            particle.velocityX += (deltaX / safeDistance) * force;
-            particle.velocityY += (deltaY / safeDistance) * force;
+          if (entranceIsActive) {
+            const entranceProgress =
+              (elapsedTime - entranceStartsAt - particle.entranceOffset) /
+              PARTICLE_ASSEMBLY_DURATION;
+            const easedProgress = easeParticleAssembly(entranceProgress);
+
+            particle.x =
+              particle.originX +
+              (particle.targetX - particle.originX) * easedProgress;
+            particle.y =
+              particle.originY +
+              (particle.targetY - particle.originY) * easedProgress;
+            particle.velocityX = 0;
+            particle.velocityY = 0;
+          } else {
+            const driftBlend = clampProgress(
+              (elapsedTime - entranceEndsAt) / DRIFT_BLEND_DURATION,
+            );
+            const driftX =
+              Math.sin(
+                elapsedTime * particle.driftSpeed + particle.driftPhase,
+              ) *
+              particle.driftAmplitude *
+              driftBlend;
+            const driftY =
+              Math.cos(
+                elapsedTime * particle.driftSpeed * 0.82 +
+                  particle.driftPhase * 1.37,
+              ) *
+              particle.driftAmplitude *
+              driftBlend;
+
+            if (finePointerQuery.matches) {
+              const deltaX = particle.x - pointerX;
+              const deltaY = particle.y - pointerY;
+              const distance = Math.hypot(deltaX, deltaY);
+
+              if (distance < pointerRadius) {
+                const safeDistance = Math.max(distance, 0.1);
+                const force = (1 - safeDistance / pointerRadius) * 2.1;
+                particle.velocityX += (deltaX / safeDistance) * force;
+                particle.velocityY += (deltaY / safeDistance) * force;
+              }
+            }
+
+            particle.velocityX +=
+              (particle.targetX + driftX - particle.x) * 0.075;
+            particle.velocityY +=
+              (particle.targetY + driftY - particle.y) * 0.075;
+            particle.velocityX *= 0.84;
+            particle.velocityY *= 0.84;
+            particle.x += particle.velocityX;
+            particle.y += particle.velocityY;
           }
-
-          particle.velocityX +=
-            (particle.targetX + driftX - particle.x) * 0.075;
-          particle.velocityY +=
-            (particle.targetY + driftY - particle.y) * 0.075;
-          particle.velocityX *= 0.84;
-          particle.velocityY *= 0.84;
-          particle.x += particle.velocityX;
-          particle.y += particle.velocityY;
         } else {
           particle.x = particle.targetX;
           particle.y = particle.targetY;
@@ -122,7 +209,6 @@ export const ParticleText = ({
         context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
       });
 
-      context.fill();
       context.fill();
     };
 
@@ -154,7 +240,9 @@ export const ParticleText = ({
       animationFrame = window.requestAnimationFrame(animate);
     };
 
-    const buildParticles = () => {
+    const buildParticles = (force = false) => {
+      if (!canBuildParticles) return;
+
       const bounds = source.getBoundingClientRect();
       const computedStyle = window.getComputedStyle(source);
       const rootStyle = window.getComputedStyle(root);
@@ -162,6 +250,10 @@ export const ParticleText = ({
       const width = Math.ceil(bounds.width);
 
       if (height === 0 || width === 0) return;
+      if (!force && height === lastHeight && width === lastWidth) return;
+
+      lastHeight = height;
+      lastWidth = width;
 
       const pixelRatio = Math.min(
         window.devicePixelRatio || 1,
@@ -220,6 +312,8 @@ export const ParticleText = ({
         : LIGHT_MODE_RADIUS_SCALE;
       const sampleStep = Math.max(2, Math.round(fontSize / 26));
       const nextParticles: Particle[] = [];
+      const shouldAnimateEntrance =
+        !hasPlayedEntrance && !reducedMotionQuery.matches;
 
       for (
         let y = Math.floor(sampleStep / 2);
@@ -236,6 +330,17 @@ export const ParticleText = ({
           if (alpha < PARTICLE_ALPHA_THRESHOLD) continue;
 
           const driftVariation = ((x * 31 + y * 19) % 101) / 100;
+          const targetX = x + offsetX;
+          const targetY = y + offsetY;
+          const horizontalProgress = clampProgress(
+            (x - CANVAS_PADDING) / width,
+          );
+          const flowPhase = ((x * 11 + y * 17) % 360) * (Math.PI / 180);
+          const flowDistance = fontSize * (0.3 + driftVariation * 0.12);
+          const originX =
+            targetX - flowDistance + Math.cos(flowPhase) * fontSize * 0.08;
+          const originY =
+            targetY + fontSize * 0.12 + Math.sin(flowPhase) * fontSize * 0.18;
 
           nextParticles.push({
             driftAmplitude:
@@ -245,22 +350,37 @@ export const ParticleText = ({
             driftSpeed:
               DRIFT_SPEED_MIN +
               driftVariation * (DRIFT_SPEED_MAX - DRIFT_SPEED_MIN),
+            entranceOffset:
+              horizontalProgress * PARTICLE_ASSEMBLY_STAGGER +
+              driftVariation * 18,
+            originX: shouldAnimateEntrance ? originX : targetX,
+            originY: shouldAnimateEntrance ? originY : targetY,
             radius: getParticleRadius(x, y, sampleStep) * radiusScale,
-            targetX: x + offsetX,
-            targetY: y + offsetY,
+            targetX,
+            targetY,
             velocityX: 0,
             velocityY: 0,
-            x: x + offsetX,
-            y: y + offsetY,
+            x: shouldAnimateEntrance ? originX : targetX,
+            y: shouldAnimateEntrance ? originY : targetY,
           });
         }
       }
 
       particles = nextParticles;
+      entranceStartsAt = shouldAnimateEntrance
+        ? performance.now() + entranceDelay
+        : 0;
+      entranceEndsAt = shouldAnimateEntrance
+        ? entranceStartsAt +
+          PARTICLE_ASSEMBLY_DURATION +
+          PARTICLE_ASSEMBLY_STAGGER +
+          18
+        : 0;
+      hasPlayedEntrance = true;
       pointerRadius = fontSize * POINTER_RADIUS_MULTIPLIER;
       color = rootStyle.color;
       root.dataset.ready = "true";
-      drawParticles(false);
+      drawParticles(shouldAnimateEntrance, performance.now());
       startAnimation();
     };
 
@@ -283,8 +403,16 @@ export const ParticleText = ({
       }
     };
 
-    const resizeObserver = new ResizeObserver(buildParticles);
-    const themeObserver = new MutationObserver(buildParticles);
+    const handleReducedMotionChange = () => {
+      buildParticles(true);
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      buildParticles();
+    });
+    const themeObserver = new MutationObserver(() => {
+      buildParticles(true);
+    });
     const intersectionObserver = new IntersectionObserver(([entry]) => {
       isVisible = entry?.isIntersecting ?? false;
 
@@ -295,7 +423,6 @@ export const ParticleText = ({
       }
     });
 
-    resizeObserver.observe(source);
     themeObserver.observe(document.documentElement, {
       attributeFilter: ["class"],
       attributes: true,
@@ -304,10 +431,14 @@ export const ParticleText = ({
     root.addEventListener("pointermove", handlePointerMove);
     root.addEventListener("pointerleave", handlePointerLeave);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    reducedMotionQuery.addEventListener("change", buildParticles);
+    reducedMotionQuery.addEventListener("change", handleReducedMotionChange);
 
     void document.fonts.ready.then(() => {
-      if (!isDisposed) buildParticles();
+      if (isDisposed) return;
+
+      canBuildParticles = true;
+      buildParticles(true);
+      resizeObserver.observe(source);
     });
 
     return () => {
@@ -319,9 +450,12 @@ export const ParticleText = ({
       root.removeEventListener("pointermove", handlePointerMove);
       root.removeEventListener("pointerleave", handlePointerLeave);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      reducedMotionQuery.removeEventListener("change", buildParticles);
+      reducedMotionQuery.removeEventListener(
+        "change",
+        handleReducedMotionChange,
+      );
     };
-  }, [children, offsetX, offsetY]);
+  }, [children, entranceDelay, offsetX, offsetY]);
 
   return (
     <span

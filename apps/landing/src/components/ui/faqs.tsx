@@ -5,8 +5,9 @@ import { MinusIcon, PlusIcon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
 import type { HomeFaq } from "@/lib/home-faqs";
-import { homeFaqs, homepageFaqs } from "@/lib/home-faqs";
+import { pricingFaqs } from "@/lib/home-faqs";
 import { Container } from "./container";
+import styles from "./faqs.module.css";
 
 const AccordionItem = ({
   item,
@@ -104,7 +105,6 @@ export const Faqs = ({
 }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const isPricing = variant === "pricing";
-  const faqItems = isPricing ? homeFaqs : homepageFaqs;
 
   const handleToggle = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -115,7 +115,8 @@ export const Faqs = ({
       className={cn(
         "py-16 md:pt-24",
         isPricing &&
-          "landing-hero-shell landing-page-frame overflow-hidden rounded-[2.25rem] py-20 md:rounded-[3rem] md:py-28",
+          "landing-hero-shell landing-page-frame mt-16 overflow-hidden rounded-[2.25rem] py-20 md:mt-20 md:rounded-[3rem] md:py-28",
+        isPricing && styles.pricingShell,
       )}
     >
       <Container
@@ -147,11 +148,11 @@ export const Faqs = ({
         <Flex
           className={cn(
             "w-full max-w-2xl justify-self-end pb-4",
-            isPricing && "mx-auto max-w-3xl justify-self-auto",
+            isPricing && "mx-auto justify-self-auto",
           )}
           direction="column"
         >
-          {faqItems.map((item, index) => (
+          {pricingFaqs.map((item, index) => (
             <AccordionItem
               index={index}
               isOpen={openIndex === index}

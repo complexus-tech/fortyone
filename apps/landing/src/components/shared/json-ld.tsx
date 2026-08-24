@@ -3,9 +3,7 @@ import type {
   WithContext,
   Organization,
   Product,
-  FAQPage,
 } from "schema-dts";
-import { homepageFaqs } from "@/lib/home-faqs";
 import { getCanonicalUrl } from "@/lib/seo";
 
 const softwareApplication: WithContext<WebApplication> = {
@@ -142,19 +140,6 @@ const product: WithContext<Product> = {
   },
 };
 
-const faq: WithContext<FAQPage> = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: homepageFaqs.map(({ question, answer }) => ({
-    "@type": "Question",
-    name: question,
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: answer,
-    },
-  })),
-};
-
 export const JsonLd = () => {
   return (
     <>
@@ -170,10 +155,6 @@ export const JsonLd = () => {
       />
       <script
         dangerouslySetInnerHTML={{ __html: JSON.stringify(product) }}
-        type="application/ld+json"
-      />
-      <script
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faq) }}
         type="application/ld+json"
       />
     </>

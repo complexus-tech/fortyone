@@ -1,9 +1,14 @@
 .root {
   --particle-color: var(--color-primary);
+  --particle-render-color: color-mix(
+    in oklab,
+    var(--particle-color) 84%,
+    black
+  );
 
   position: relative;
   display: inline-block;
-  color: color-mix(in oklab, var(--particle-color) 84%, black);
+  color: var(--particle-render-color);
   touch-action: pan-y;
 }
 
@@ -16,7 +21,7 @@
 }
 
 :global(.dark) .root {
-  color: var(--particle-color);
+  --particle-render-color: var(--particle-color);
 }
 
 .source {
@@ -24,7 +29,7 @@
   color: transparent;
   background-image: radial-gradient(
     circle,
-    currentColor 0 40%,
+    var(--particle-render-color) 0 40%,
     transparent 41%
   );
   background-position: 0.01em 0.03em;

@@ -1,4 +1,5 @@
-import type { WithContext, Product } from "schema-dts";
+import type { FAQPage, Product, WithContext } from "schema-dts";
+import { pricingFaqs } from "@/lib/home-faqs";
 
 const pricingPage: WithContext<Product> = {
   "@context": "https://schema.org",
@@ -79,11 +80,30 @@ const pricingPage: WithContext<Product> = {
   },
 };
 
+const pricingFaqSchema: WithContext<FAQPage> = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: pricingFaqs.map(({ question, answer }) => ({
+    "@type": "Question",
+    name: question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: answer,
+    },
+  })),
+};
+
 export const PricingJsonLd = () => {
   return (
-    <script
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingPage) }}
-      type="application/ld+json"
-    />
+    <>
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingPage) }}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingFaqSchema) }}
+        type="application/ld+json"
+      />
+    </>
   );
 };

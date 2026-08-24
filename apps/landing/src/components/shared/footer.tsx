@@ -251,9 +251,17 @@ export const Footer = () => {
 
             <div className="border-border text-text-muted mt-8 flex flex-wrap items-center justify-between gap-4 border-t pt-6 text-sm">
               <p>
-                Product of{" "}
+                Built with heart in{" "}
+                <span
+                  aria-label="Zimbabwe"
+                  className="text-foreground opacity-100"
+                  role="img"
+                >
+                  🇿🇼
+                </span>{" "}
+                by{" "}
                 <a
-                  className="text-foreground decoration-border-strong hover:text-primary underline underline-offset-4 transition-colors"
+                  className="decoration-border-strong hover:text-primary underline decoration-dotted underline-offset-4 transition-colors"
                   href="https://complexus.tech"
                   rel="noreferrer"
                   target="_blank"
