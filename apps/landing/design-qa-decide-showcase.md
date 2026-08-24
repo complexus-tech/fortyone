@@ -4,7 +4,7 @@ Date: 2026-08-24
 
 ## Scope
 
-- New comparison section above the existing `HowItWorks` section.
+- Replacement for the previous `HowItWorks` section.
 - Reference: `Screenshot 2026-08-24 at 7.08.32 AM.png`.
 - Desktop comparison viewport: 1502 x 894.
 - Mobile verification viewport: 390 x 844.
@@ -25,7 +25,7 @@ section.
 - Used the texture tool's built-in Risograph image consistently across all three
   cards, with no CSS blur.
 - Standardized all three product mockups to the first mockup's width.
-- Kept the existing `HowItWorks` section directly below for visual comparison.
+- Retired the previous `HowItWorks` section after the replacement was approved.
 
 ## Responsive and accessibility checks
 

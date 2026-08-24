@@ -69,18 +69,14 @@ const ShowcaseCard = ({
 export const DecideWhatMattersShowcase = () => {
   return (
     <Container
-      aria-labelledby="decide-what-matters-showcase-title"
+      aria-labelledby="ai-planning-title"
       as="section"
       className="scroll-mt-24 pt-16 pb-8 md:pt-36"
-      id="ai-planning-preview"
+      id="ai-planning"
     >
       <Box>
         <Box className="max-w-4xl" data-landing-reveal>
-          <Text
-            as="h2"
-            className="text-3xl md:text-5xl"
-            id="decide-what-matters-showcase-title"
-          >
+          <Text as="h2" className="text-3xl md:text-5xl" id="ai-planning-title">
             Choose the right work. Build a plan your team can deliver.
           </Text>
           <Text className="text-text-muted mt-6 max-w-2xl text-pretty">

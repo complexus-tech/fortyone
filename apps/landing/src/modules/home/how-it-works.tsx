@@ -8,13 +8,10 @@ import {
   GoogleCalendarIcon,
   SettingsIcon,
 } from "icons";
-import { UnderlinedHandwrittenAccent } from "@/components/ui";
 import {
   FEATURE_STORY_META_TEXT_CLASS as CARD_META_TEXT_CLASS,
   FEATURE_STORY_SURFACE_CLASS as CARD_SURFACE_CLASS,
   FEATURE_STORY_TEXT_CLASS as CARD_TEXT_CLASS,
-  FeatureStoryCard,
-  FeatureStorySection,
 } from "./feature-story-section";
 
 function SlackIcon({ className }: { className?: string }) {
@@ -400,46 +397,3 @@ export function MayaWorkPlanCard({
     </Box>
   );
 }
-
-/* ─── Main Section ─────────────────────────────────────────── */
-export const HowItWorks = () => {
-  return (
-    <FeatureStorySection
-      heading={
-        <>
-          Decide what matters, plan the work with{" "}
-          <UnderlinedHandwrittenAccent tone="danger">
-            AI
-          </UnderlinedHandwrittenAccent>
-          , and deliver it{" "}
-          <UnderlinedHandwrittenAccent tone="success">
-            together
-          </UnderlinedHandwrittenAccent>
-          .
-        </>
-      }
-      id="ai-planning"
-    >
-      <FeatureStoryCard
-        description="Bring company goals and customer feedback together, then turn the right decisions into planned work."
-        title="Choose the right work."
-      >
-        <RequestToWorkCard />
-      </FeatureStoryCard>
-      <FeatureStoryCard
-        delay={0.1}
-        description="Maya uses workload and calendar availability to suggest an owner and a workable delivery window."
-        title="Build a realistic plan."
-      >
-        <MayaWorkPlanCard />
-      </FeatureStoryCard>
-      <FeatureStoryCard
-        delay={0.2}
-        description="Keep the goal, customer request, documents, conversations, and delivery links beside the task so the team can act with full context."
-        title="Keep execution connected."
-      >
-        <IntegrationCard />
-      </FeatureStoryCard>
-    </FeatureStorySection>
-  );
-};

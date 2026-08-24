@@ -14,7 +14,6 @@ import {
   DecideWhatMattersShowcase,
   FeedbackWorkflow,
   Hero,
-  HowItWorks,
   Integrations,
   MayaWorkflow,
   ProductScreenshot,
@@ -65,7 +64,6 @@ export default function Page() {
         </section>
         <SampleClients />
         <DecideWhatMattersShowcase />
-        <HowItWorks />
         <FeedbackWorkflow />
         <Testimonials />
         <StrategyWorkflow />
