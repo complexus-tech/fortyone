@@ -1,39 +1,58 @@
 .frame {
-  isolation: isolate;
-}
-
-:global(.dark) .frame {
   background-image: linear-gradient(
       to right,
-      color-mix(in oklab, var(--color-secondary) 14%, var(--color-surface)),
-      color-mix(in oklab, var(--color-info) 11%, var(--color-surface)),
-      color-mix(in oklab, var(--color-primary) 16%, var(--color-surface))
+      color-mix(in oklab, var(--color-secondary) 9%, var(--color-surface)),
+      color-mix(in oklab, var(--color-info) 7%, var(--color-surface)),
+      color-mix(in oklab, var(--color-primary) 10%, var(--color-surface))
     ),
     linear-gradient(
       to right,
-      color-mix(in oklab, var(--color-secondary) 36%, var(--color-surface)),
-      color-mix(in oklab, var(--color-info) 38%, var(--color-surface)),
-      color-mix(in oklab, var(--color-primary) 42%, var(--color-surface))
+      color-mix(in oklab, var(--color-secondary) 26%, var(--color-surface)),
+      color-mix(in oklab, var(--color-info) 24%, var(--color-surface)),
+      color-mix(in oklab, var(--color-primary) 30%, var(--color-surface))
     );
   background-repeat: no-repeat;
   background-clip: padding-box, border-box;
   background-origin: padding-box, border-box;
 }
 
-:global(.dark) .frame::before {
+:global(.dark) .frame {
+  background-image: linear-gradient(
+      to right,
+      color-mix(in oklab, var(--color-secondary) 16%, var(--color-surface)),
+      color-mix(in oklab, var(--color-info) 13%, var(--color-surface)),
+      color-mix(in oklab, var(--color-primary) 18%, var(--color-surface))
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--color-secondary) 42%, var(--color-surface)),
+      color-mix(in oklab, var(--color-info) 44%, var(--color-surface)),
+      color-mix(in oklab, var(--color-primary) 48%, var(--color-surface))
+    );
+}
+
+.chrome {
+  position: relative;
+  isolation: isolate;
+}
+
+.chrome::before {
   position: absolute;
-  z-index: 0;
-  inset: 1px;
-  border-radius: inherit;
+  z-index: -1;
+  inset: -0.125rem 0 -0.25rem;
   background-image: url("/noise.png");
   background-repeat: repeat;
   content: "";
-  mix-blend-mode: soft-light;
-  opacity: 0.08;
+  opacity: 0.24;
   pointer-events: none;
 }
 
-:global(.dark) .frame > * {
-  position: relative;
-  z-index: 1;
+:global(.dark) .chrome::before {
+  opacity: 0.3;
+}
+
+@media (min-width: 48rem) {
+  .chrome::before {
+    inset-block: -0.25rem -0.5rem;
+  }
 }

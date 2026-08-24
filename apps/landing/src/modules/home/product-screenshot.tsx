@@ -40,7 +40,7 @@ export const ProductScreenshot = ({
         >
           <Box
             className={cn(
-              "border-border/50 bg-surface/90 dark:bg-surface shadow-border/70 relative border p-0.5 shadow-2xl backdrop-blur-md md:rounded-2xl md:border-r md:p-[0.35rem] dark:border-transparent dark:shadow-none",
+              "bg-surface/90 dark:bg-surface shadow-border/70 relative border border-transparent p-0.5 shadow-2xl backdrop-blur-md md:rounded-2xl md:border-r md:p-[0.35rem] dark:shadow-none",
               styles.frame,
               cropBrowserOnMobile
                 ? "rounded-l-xl rounded-r-none border-r-0 pr-0"
@@ -49,7 +49,10 @@ export const ProductScreenshot = ({
           >
             <Flex
               align="center"
-              className="relative mt-0.5 mb-1 min-h-3 justify-start px-1.5 md:mt-1 md:mb-2 md:min-h-4 md:justify-between"
+              className={cn(
+                "relative mt-0.5 mb-1 min-h-3 justify-start px-1.5 md:mt-1 md:mb-2 md:min-h-4 md:justify-between",
+                styles.chrome,
+              )}
             >
               <Flex aria-hidden="true" className="gap-1.5">
                 <Dot className="text-primary size-2.5" />
@@ -67,7 +70,7 @@ export const ProductScreenshot = ({
                 />
                 <Text
                   as="span"
-                  className="bg-surface-muted text-text-muted dark:bg-surface-elevated max-w-[calc(100vw-7rem)] truncate rounded-xl px-2 py-0.5 text-[0.625rem] leading-4 font-medium md:max-w-md md:text-center md:text-xs"
+                  className="bg-surface-muted/80 text-text-muted dark:bg-surface-elevated/75 max-w-[calc(100vw-7rem)] truncate rounded-xl px-2 py-0.5 text-[0.625rem] leading-4 font-medium backdrop-blur-sm md:max-w-md md:text-center md:text-xs"
                 >
                   {url}
                 </Text>
