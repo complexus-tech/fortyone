@@ -31,3 +31,59 @@
     --hero-gradient-end: 90%;
   }
 }
+
+.progressBand {
+  position: relative;
+  isolation: isolate;
+  padding-top: clamp(3rem, 6vw, 6rem);
+  background: radial-gradient(
+      76% 42% at 94% 42%,
+      color-mix(in oklab, var(--color-primary) 12%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      64% 38% at 4% 66%,
+      color-mix(in oklab, var(--color-info) 10%, transparent),
+      transparent 76%
+    ),
+    radial-gradient(
+      58% 34% at 88% 92%,
+      color-mix(in oklab, var(--color-danger) 7%, transparent),
+      transparent 74%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 84%,
+          var(--color-background)
+        )
+        0%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 64%,
+          var(--color-background)
+        )
+        58%,
+      var(--color-background) 100%
+    );
+}
+
+.progressBand::before {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: clamp(3rem, 6vw, 6rem);
+  border-radius: 0 0 3rem 3rem;
+  background: var(--color-background);
+  content: "";
+  pointer-events: none;
+}
+
+@media (min-width: 48rem) {
+  .progressBand::before {
+    border-radius: 0 0 4rem 4rem;
+  }
+}

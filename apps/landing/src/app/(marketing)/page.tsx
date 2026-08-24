@@ -10,15 +10,12 @@ import {
   HOME_METADATA_TITLE,
 } from "@/lib/seo";
 import {
-  CalendarWorkflow,
   CustomerStories,
   DecideWhatMattersShowcase,
-  FeedbackWorkflow,
+  FeatureOverview,
   Hero,
   Integrations,
-  MayaWorkflow,
   ProductScreenshot,
-  StrategyWorkflow,
 } from "@/modules/home";
 import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.webp";
 import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
@@ -70,12 +67,11 @@ export default function Page() {
           </section>
           <DecideWhatMattersShowcase />
         </div>
-        <FeedbackWorkflow />
-        <StrategyWorkflow />
-        <MayaWorkflow />
-        <CustomerStories />
-        <Integrations />
-        <CalendarWorkflow />
+        <FeatureOverview />
+        <div className={styles.progressBand}>
+          <CustomerStories />
+          <Integrations />
+        </div>
         <Faqs />
         <CallToAction />
       </main>

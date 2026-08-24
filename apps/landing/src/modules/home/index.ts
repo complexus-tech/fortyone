@@ -5,5 +5,6 @@ export * from "./maya-workflow";
 export * from "./platform-workflows";
 export * from "./strategy-workflow";
 export * from "./customer-stories";
+export * from "./feature-overview";
 export * from "./integrations";
 export * from "./decide-what-matters-showcase";

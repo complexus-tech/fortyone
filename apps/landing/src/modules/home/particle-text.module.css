@@ -1,0 +1,58 @@
+.root {
+  position: relative;
+  display: inline-block;
+  touch-action: pan-y;
+}
+
+.source {
+  color: transparent;
+  background-image: radial-gradient(
+      circle at 38% 34%,
+      var(--color-foreground) 0 30%,
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 64% 58%,
+      var(--color-foreground) 0 22%,
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 48% 72%,
+      var(--color-foreground) 0 16%,
+      transparent 25%
+    );
+  background-position:
+    0 0,
+    0.035em 0.025em,
+    0.075em 0.055em;
+  background-size:
+    0.072em 0.085em,
+    0.11em 0.1em,
+    0.15em 0.13em;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.root[data-ready="true"] .source {
+  background: none;
+}
+
+.canvas {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@supports not (background-clip: text) {
+  .source {
+    color: inherit;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .root[data-ready="true"] .source {
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+}

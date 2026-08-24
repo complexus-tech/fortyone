@@ -4,6 +4,7 @@ import type { HandwrittenAccentTone } from "@/components/ui/handwritten-accent";
 import { Container, UnderlinedHandwrittenAccent } from "@/components/ui";
 import { SignupProviderButton } from "@/components/shared/signup-provider-button";
 import { SIGNUP_URL } from "@/lib/app-url";
+import { ParticleText } from "./particle-text";
 
 const HERO_TITLE =
   "Turn strategy and customer feedback into work your team can deliver.";
@@ -11,10 +12,10 @@ const HERO_DESCRIPTION =
   "Give your team a clear view of what matters, why it matters, and what to do next—so the right work keeps moving.";
 const HERO_TITLE_WORDS = HERO_TITLE.split(" ");
 const HERO_KEYWORD_TONES: Partial<Record<string, HandwrittenAccentTone>> = {
-  strategy: "primary",
   feedback: "danger",
   work: "success",
 };
+const HERO_PARTICLE_KEYWORD = "strategy";
 
 export const Hero = () => {
   return (
@@ -30,25 +31,41 @@ export const Hero = () => {
               const animationStyle = {
                 animationDelay: `${60 + index * 45}ms`,
               };
+              let titleWord;
+
+              if (word === HERO_PARTICLE_KEYWORD) {
+                titleWord = (
+                  <ParticleText
+                    className="landing-hero-title-word"
+                    style={animationStyle}
+                  >
+                    {word}
+                  </ParticleText>
+                );
+              } else if (keywordTone) {
+                titleWord = (
+                  <UnderlinedHandwrittenAccent
+                    className="landing-hero-title-word"
+                    style={animationStyle}
+                    tone={keywordTone}
+                  >
+                    {word}
+                  </UnderlinedHandwrittenAccent>
+                );
+              } else {
+                titleWord = (
+                  <span
+                    className="landing-hero-title-word inline-block"
+                    style={animationStyle}
+                  >
+                    {word}
+                  </span>
+                );
+              }
 
               return (
                 <span key={word}>
-                  {keywordTone ? (
-                    <UnderlinedHandwrittenAccent
-                      className="landing-hero-title-word"
-                      style={animationStyle}
-                      tone={keywordTone}
-                    >
-                      {word}
-                    </UnderlinedHandwrittenAccent>
-                  ) : (
-                    <span
-                      className="landing-hero-title-word inline-block"
-                      style={animationStyle}
-                    >
-                      {word}
-                    </span>
-                  )}
+                  {titleWord}
                   {index < HERO_TITLE_WORDS.length - 1 ? " " : null}
                 </span>
               );
