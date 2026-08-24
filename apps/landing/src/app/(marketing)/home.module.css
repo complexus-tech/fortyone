@@ -1,0 +1,33 @@
+.heroShell {
+  --hero-gradient-midpoint: 54%;
+  --hero-gradient-end: 82%;
+
+  background: radial-gradient(
+      70% 30% at 92% 2%,
+      color-mix(in oklab, var(--color-primary) 7%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      55% 26% at 2% 15%,
+      color-mix(in oklab, var(--color-info) 4%, transparent),
+      transparent 76%
+    ),
+    linear-gradient(
+      180deg,
+      var(--color-surface-muted) 0%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 58%,
+          var(--color-background)
+        )
+        var(--hero-gradient-midpoint),
+      var(--color-background) var(--hero-gradient-end)
+    );
+}
+
+@media (min-width: 48rem) {
+  .heroShell {
+    --hero-gradient-midpoint: 64%;
+    --hero-gradient-end: 90%;
+  }
+}

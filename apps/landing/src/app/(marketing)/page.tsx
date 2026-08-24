@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cn } from "lib";
 import { CallToAction, JsonLd } from "@/components/shared";
 import { Faqs } from "@/components/ui/faqs";
 import {
@@ -21,6 +22,7 @@ import {
 } from "@/modules/home";
 import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.webp";
 import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
+import styles from "./home.module.css";
 
 export const metadata: Metadata = {
   title: HOME_METADATA_TITLE,
@@ -49,18 +51,25 @@ export default function Page() {
     <>
       <JsonLd />
       <main className="[&_h1]:font-semibold [&_h2]:font-semibold">
-        <section className="landing-hero-shell landing-page-frame mt-18 rounded-[3rem] pt-px pb-6 md:mt-20 md:rounded-[4rem] md:pb-10">
-          <Hero />
-          <ProductScreenshot
-            alt="FortyOne My Work board showing tasks grouped by Backlog, To Do, In Progress, and Done"
-            cropBrowserOnMobile
-            darkImage={myWorkBoardDark}
-            lightImage={myWorkBoardLight}
-            priority
-            url="https://fortyone.app/my-work"
-          />
-        </section>
-        <DecideWhatMattersShowcase />
+        <div
+          className={cn(
+            "landing-page-frame mt-18 rounded-[3rem] md:mt-20 md:rounded-[4rem]",
+            styles.heroShell,
+          )}
+        >
+          <section className="pt-px pb-6 md:pb-10">
+            <Hero />
+            <ProductScreenshot
+              alt="FortyOne My Work board showing tasks grouped by Backlog, To Do, In Progress, and Done"
+              cropBrowserOnMobile
+              darkImage={myWorkBoardDark}
+              lightImage={myWorkBoardLight}
+              priority
+              url="https://fortyone.app/my-work"
+            />
+          </section>
+          <DecideWhatMattersShowcase />
+        </div>
         <FeedbackWorkflow />
         <StrategyWorkflow />
         <MayaWorkflow />

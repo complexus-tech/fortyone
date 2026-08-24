@@ -35,7 +35,7 @@ const ShowcaseCard = ({
       data-landing-reveal
       style={{ transitionDelay: `${delay}ms` }}
     >
-      <Box className="relative aspect-[50/57] overflow-hidden rounded-xl">
+      <Box className="relative aspect-square overflow-hidden rounded-xl">
         <Image
           alt=""
           className="object-cover object-bottom"
@@ -43,7 +43,7 @@ const ShowcaseCard = ({
           sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
           src={imageSrc}
         />
-        <Box className="relative z-10 flex h-full items-center justify-center p-5 sm:p-8 md:p-6 xl:p-8">
+        <Box className="relative z-10 flex h-full items-center justify-center p-3 sm:p-8 md:p-6 xl:p-8">
           <Box
             aria-hidden="true"
             className={cn(
@@ -93,7 +93,7 @@ export const DecideWhatMattersShowcase = () => {
             imageSrc="/images/textures/decide-risograph.png"
             title="Prioritise with evidence."
           >
-            <RequestToWorkCard density="comfortable" />
+            <RequestToWorkCard />
           </ShowcaseCard>
 
           <ShowcaseCard
@@ -103,7 +103,7 @@ export const DecideWhatMattersShowcase = () => {
             imageSrc="/images/textures/decide-risograph.png"
             title="Plan around real capacity."
           >
-            <MayaWorkPlanCard density="comfortable" />
+            <MayaWorkPlanCard />
           </ShowcaseCard>
 
           <ShowcaseCard
@@ -114,7 +114,7 @@ export const DecideWhatMattersShowcase = () => {
             imageSrc="/images/textures/decide-risograph.png"
             title="Keep context with the work."
           >
-            <IntegrationCard density="comfortable" />
+            <IntegrationCard />
           </ShowcaseCard>
         </Box>
       </Box>
