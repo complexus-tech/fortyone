@@ -11,6 +11,7 @@ import {
 import {
   CalendarWorkflow,
   CoreValues,
+  DecideWhatMattersShowcase,
   FeedbackWorkflow,
   Hero,
   HowItWorks,
@@ -63,6 +64,7 @@ export default function Page() {
           />
         </section>
         <SampleClients />
+        <DecideWhatMattersShowcase />
         <HowItWorks />
         <FeedbackWorkflow />
         <Testimonials />

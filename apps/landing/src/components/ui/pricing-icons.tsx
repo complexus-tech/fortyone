@@ -30,13 +30,40 @@ export const PricingArrowIcon = (props: PricingIconProps) => (
   </PricingIcon>
 );
 
+export const PricingAiIcon = (props: PricingIconProps) => (
+  <PricingIcon {...props}>
+    <path d="M12 3c.55 4.85 3.15 7.45 8 8-4.85.55-7.45 3.15-8 8-.55-4.85-3.15-7.45-8-8 4.85-.55 7.45-3.15 8-8Z" />
+    <path d="M19 3v4" />
+    <path d="M17 5h4" />
+  </PricingIcon>
+);
+
+export const PricingFeedbackIcon = (props: PricingIconProps) => (
+  <PricingIcon {...props}>
+    <path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8l-6 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+    <path d="M8 9h8" />
+    <path d="M8 13h5" />
+  </PricingIcon>
+);
+
+export const PricingIntegrationIcon = (props: PricingIconProps) => (
+  <PricingIcon {...props}>
+    <path d="M8.5 3v4.5" />
+    <path d="M15.5 3v4.5" />
+    <path d="M6 7.5h12v2A6 6 0 0 1 12 15.5v0A6 6 0 0 1 6 9.5v-2Z" />
+    <path d="M12 15.5V21" />
+    <path d="M9 21h6" />
+  </PricingIcon>
+);
+
 export const PricingWorkIcon = (props: PricingIconProps) => (
   <PricingIcon {...props}>
-    <rect height="16" rx="3" width="16" x="4" y="4" />
-    <path d="m8 9 1.4 1.4L12 7.8" />
-    <path d="M14 9h2" />
-    <path d="m8 15 1.4 1.4L12 13.8" />
-    <path d="M14 15h2" />
+    <circle cx="6" cy="6" r="2" />
+    <circle cx="18" cy="6" r="2" />
+    <circle cx="12" cy="18" r="2" />
+    <path d="M8 6h8" />
+    <path d="m7.2 7.8 3.6 8.4" />
+    <path d="m16.8 7.8-3.6 8.4" />
   </PricingIcon>
 );
 
@@ -105,9 +132,14 @@ export const PricingDeploymentIcon = (props: PricingIconProps) => (
 
 export const PricingScaleIcon = (props: PricingIconProps) => (
   <PricingIcon {...props}>
-    <path d="M5 20v-5h4v5" />
-    <path d="M10 20v-9h4v9" />
-    <path d="M15 20V7h4v13" />
-    <path d="m5 10 5-4 4 2 5-4" />
+    <circle cx="12" cy="12" r="2.5" />
+    <path d="m9 9-5-5" />
+    <path d="M4 8V4h4" />
+    <path d="m15 9 5-5" />
+    <path d="M16 4h4v4" />
+    <path d="m9 15-5 5" />
+    <path d="M4 16v4h4" />
+    <path d="m15 15 5 5" />
+    <path d="M16 20h4v-4" />
   </PricingIcon>
 );

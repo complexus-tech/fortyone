@@ -1,73 +1,77 @@
-**Comparison Target**
+# AI Planning hero design QA
 
-- Source visual truth: `/Users/joseph/.codex/generated_images/01a02e36-76af-7d43-97de-3d9534966b35/exec-6e86a79c-d58e-4b10-b3f0-5ea206770c90.png`
-- Navigation reference: `/Users/joseph/.codex/visualizations/2026/08/23/01a02e36-76af-7d43-97de-3d9534966b35/calendly-style-audit/01-hero.png`
-- Rendered implementation: `/Users/joseph/.codex/visualizations/2026/08/23/01a02e36-76af-7d43-97de-3d9534966b35/fortyone-redesign/implementation-desktop.png`
-- Navigation implementation: `/Users/joseph/.codex/visualizations/2026/08/23/01a02e36-76af-7d43-97de-3d9534966b35/fortyone-redesign/implementation-navigation.png`
-- Responsive capture: `/Users/joseph/.codex/visualizations/2026/08/23/01a02e36-76af-7d43-97de-3d9534966b35/fortyone-redesign/implementation-mobile.png`
-- Combined comparison: `/Users/joseph/.codex/visualizations/2026/08/23/01a02e36-76af-7d43-97de-3d9534966b35/fortyone-redesign/design-qa-comparison.png`
-- Combined navigation comparison: `/Users/joseph/.codex/visualizations/2026/08/23/01a02e36-76af-7d43-97de-3d9534966b35/fortyone-redesign/navigation-qa-comparison.png`
-- Viewport: 1487 x 1058 CSS px for the matched desktop comparison; 390 x 844 CSS px for the responsive check.
-- Pixels and density: source 1487 x 1058 px; desktop implementation 1487 x 1058 px; mobile implementation 390 x 844 px. Captures were compared at device scale factor 1, so no density normalization was required.
-- State: light theme, public home route, settled entrance animations, page at the top. The docked-navigation tokens were also checked after scrolling.
+**Source visual truth**
 
-**Full-view Comparison Evidence**
+- Current homepage hero at the matching desktop viewport: `/private/tmp/fortyone-ai-planning-hero/source-homepage-desktop.png`
+- Earlier selected layout: `/Users/joseph/.codex/generated_images/01a030ae-fde1-7120-b472-1656078a49c6/exec-d0f2f33d-5f11-4447-9b48-471024018ace.png`
+- Product media: `public/images/product/maya-delivery-brief-light.webp` and `public/images/product/maya-delivery-brief-dark.webp`
 
-- The selected left-aligned hierarchy, two-line headline, compact supporting copy, dual provider actions, email continuation, warm rounded hero shell, and product board stage are present.
-- The existing hero gradient and handwritten accent colors were preserved exactly, per the selected direction and the explicit color constraint.
-- The implementation uses the current real FortyOne product screenshot rather than the generated concept's illustrative board content. This is an intentional asset-fidelity constraint, not design drift.
-- The real screenshot is taller than the concept illustration, so the following section starts below the matched viewport. This is acceptable P3 composition drift because preserving accurate product imagery is more valuable than cropping it to an invented aspect ratio.
-- At 1280 px, the desktop navigation follows the Calendly reference structure: logo and primary items form a left cluster, while account actions remain isolated on the right. Dropdown items carry visible chevrons.
+**Implementation evidence**
 
-**Focused Region Comparison Evidence**
+- Desktop: `/private/tmp/fortyone-ai-planning-hero/implementation-desktop-concise.png`
+- Mobile: `/private/tmp/fortyone-ai-planning-hero/implementation-mobile-concise.png`
+- Route: `http://localhost:3001/features/ai-planning`
+- State: light theme, page top, hero loaded, no menus open.
 
-- The hero was inspected at its native 1487 x 1058 size to verify headline wrapping, accent marks, description measure, provider button alignment, email line, browser-frame radius, and product-image sharpness.
-- The 390 x 844 capture was inspected separately. The headline remains readable, actions stack without overflow, the email line remains visible, and the document width stays at 390 px with no horizontal overflow.
-- The navigation was compared at 1280 x 720. The desktop menu starts 31 px after the logo, matching the reference's compact left cluster, and the 900 px breakpoint correctly falls back to the mobile menu without overflow.
-- The shared full-width container retains 19.4 px mobile and 46.5 px desktop horizontal padding. The mobile logo is therefore inset instead of touching the viewport edge.
-- The docked navigation resolves to a pure-white light-mode surface, a 0 px border, and `0 16px 44px -18px rgba(31, 24, 18, 0.3)` shadow. Dark-mode styling remains token-based.
+**Viewport and normalization**
 
-**Required Fidelity Surfaces**
+- Homepage style anchor: 1440 x 1051 px capture from a 1440 x 1100 CSS viewport at 1x density.
+- Desktop implementation: 1440 x 1051 px capture from the same 1440 x 1100 CSS viewport at 1x density.
+- Mobile implementation: 390 x 844 px capture from a 390 x 844 CSS viewport at 1x density.
+- The homepage anchor and implementation were viewed together at the same desktop viewport. The earlier generated concept was used only for the already-approved image-led composition; the implementation intentionally preserves the supplied 2998 x 1788 media aspect ratio.
 
-- Fonts and typography: the existing display type, Geist body type, handwritten accents, weights, line height, and two-line headline hierarchy are retained. The description is deliberately muted and uses the requested product-value copy.
-- Spacing and layout rhythm: hero content was moved upward while the established 350-unit content maximum was restored to keep large displays comfortably inset. Desktop and mobile actions retain compact, consistent gaps.
-- Colors and visual tokens: no hero colors were changed. The description uses `text-text-muted`; the scrolled light navigation uses pure white with no border and a stronger shadow.
-- Image quality and asset fidelity: the checked-in, high-resolution FortyOne board screenshot remains sharp and correctly top-aligned. Existing provider and brand assets are reused.
-- Copy and content: the description now reads, “Give your team a clear view of what matters, why it matters, and what to do next—so the right work keeps moving.” It does not repeat the product name or category.
+**Full-view comparison evidence**
+
+- The heading, description, and two provider signup actions sit above the full-width Maya visual, matching the current homepage hero's vertical composition.
+- The feature headline intentionally departs from the homepage's colored handwritten accents: it uses the normal heading font and wraps across exactly two desktop lines, as requested.
+- The shell, typefaces, colors, radii, shadows, and browser framing come from the existing homepage and pricing-page primitives rather than approximated styles.
+- Only the approved hero slice was implemented. The existing detail content remains below it until the supporting card layouts are supplied.
+
+**Focused-region comparison evidence**
+
+- Desktop heading: 651 x 116.25 CSS px, exactly two lines at 58.125 px line height. It contains no accent or handwritten child elements.
+- Desktop actions: `Continue with Google` and `Continue with Microsoft` reuse the homepage signup controls and share one row above the unchanged full-width product media.
+- Mobile hero: one-column flow with stacked actions, a readable headline, a cropped product view, and no horizontal overflow (`scrollWidth` and `innerWidth` are both 390 px).
+- Focused browser checks confirmed one `h1`, the exact approved headline, both destinations, and that no `Book a demo` control remains.
+
+**Required fidelity surfaces**
+
+- Fonts and typography: passed. The heading uses the normal site heading stack with no handwritten or colored spans, and its 651 px desktop measure produces exactly two lines.
+- Spacing and layout rhythm: passed. Existing landing frame gutters, hero offsets, shell radii, and responsive container spacing are reused.
+- Colors and visual tokens: passed. The live `landing-hero-shell` surface and existing button treatments are reused; no words in the feature headline are highlighted.
+- Image quality and asset fidelity: passed. The current light/dark Maya captures and shared browser frame are used at their natural aspect ratio; no placeholder or reconstructed product art is present.
+- Copy and content: passed. The concise planning-specific headline, brief description, and two familiar provider actions are present with one semantic page heading.
+
+**Comparison history**
+
+1. Initial mobile capture exposed a P2 min-content overflow: the cropped product media widened its grid track and clipped the headline. The media grid item received `min-w-0`; the next capture measured 390 px content width in a 390 px viewport with no clipping.
+2. Initial desktop capture exposed a P2 proportion mismatch: inherited nested container padding reduced the product visual to 663 px wide. Desktop padding was removed at the nested screenshot container; the next capture measured the product media at 756 px wide with the original aspect ratio intact.
+3. The user rejected the side-by-side composition as a P1 direction mismatch. The grid was removed, the heading and description were moved above the media using the exact homepage hero structure, and `Book a demo` was removed. The final desktop capture shows the full-width 1250 px product visual below the copy; the final mobile capture has no overflow and no demo CTA.
+4. The user requested normal hero typography, a title of at least two lines, and two contextual actions. All handwritten accent markup was removed, the heading was replaced with a longer planning-specific sentence constrained to an 868 px measure, and `Plan with Maya` plus `See AI planning in action` were added. The post-fix desktop capture measures the heading at exactly two lines; the mobile capture remains overflow-free with both actions stacked above the unchanged media.
+5. The user found the heading and button copy too long, then requested the homepage provider buttons. The title was shortened to `Plan your team’s next move with Maya.` and constrained to 651 px, producing exactly two desktop lines and three compact mobile lines. The custom actions were replaced with the existing Google and Microsoft continuation buttons; the post-fix mobile capture remains 390 px wide with no overflow.
 
 **Findings**
 
-- No actionable P0, P1, or P2 differences remain.
-- [P3] The real product screenshot extends farther below the fold than the generated concept. This is accepted to avoid replacing accurate product UI with fabricated content or an artificial crop.
+- No actionable P0, P1, or P2 differences remain in the approved hero scope.
+- The real Maya screenshot remains landscape, matching the homepage treatment and preserving current product UI without distortion.
+- The browser console had no application errors. It retains existing Next Image quality/LCP warnings from the legacy mesh media below the hero; the updated hero does not use that asset.
 
-**Comparison History**
+**Primary interactions tested**
 
-- Initial P2: the hero content sat too low. Fix: reduced the hero's top spacing. Post-fix evidence: the matched desktop comparison aligns the headline and actions with the selected composition.
-- Follow-up P2: the first large-screen pass brought the content too close to the viewport edge. Fix: restored the established 350-unit content maximum for the hero and product stage. Post-fix evidence: the 1487 px capture has a 111.9 px content inset and no horizontal overflow.
-- Follow-up P2: `full` containers removed their horizontal padding, leaving the mobile logo against the viewport edge. Fix: `full` now removes only the maximum-width constraint, while the landing wrapper conditionally omits its local maximum. Post-fix evidence: the mobile logo begins 19.4 px from the viewport edge.
-- Initial P2: the description's muted color was removed by utility-class merging. Fix: moved `text-text-muted` into the final class list. Post-fix evidence: the browser-computed color resolves to the shared muted-text token and the latest desktop/mobile captures show the lower-emphasis treatment.
-- Initial P2: the docked light navigation retained an off-white translucent surface and visible border. Fix: changed the docked surface to pure white, removed the border, and strengthened the shadow. Post-fix evidence: computed light-mode background is pure white, border width is 0 px, and the new shadow token is active.
-- Follow-up P2: desktop navigation items were centered too far from the logo and dropdown affordances were hidden. Fix: grouped the logo and menu, tightened the list gaps, exposed the shared chevrons, and retained the compact menu through the tablet breakpoint. Post-fix evidence: the 1280 px navigation comparison and 900 px responsive check show the intended alignment without overflow.
+- `Continue with Google` resolves through the existing Google signup flow.
+- `Continue with Microsoft` resolves through the existing Microsoft signup flow.
+- `Book a demo` is absent as requested.
+- Existing feature, use-case, integration, comparison, and AI Project Manager routes retain their original hero and exactly one `h1`.
 
-**Primary Interactions and Runtime Checks**
+**Implementation checklist**
 
-- Public home route loaded successfully at desktop and mobile viewports.
-- Provider and email signup actions remained rendered with their existing destinations.
-- Responsive stacking and horizontal overflow were checked at 390 px.
-- The Features popover trigger was exercised and exposes its active state and rotating chevron without changing the existing destinations.
-- Browser console contained no errors.
-
-**Implementation Checklist**
-
-- [x] Preserve existing hero colors.
-- [x] Replace category-led description with value-led copy.
-- [x] Mute the description.
-- [x] Match the selected hero spacing and width.
-- [x] Make the docked light navigation pure white, borderless, and more elevated.
-- [x] Align desktop navigation items beside the logo and expose dropdown chevrons.
-- [x] Restore a more restrained large-screen content width.
-- [x] Preserve responsive horizontal padding on full-width containers.
-- [x] Verify desktop and mobile rendering.
-- [x] Run focused ESLint and React Doctor checks.
+- [x] Approved hero composition implemented.
+- [x] Existing landing/pricing visual system reused.
+- [x] Plain two-line feature heading verified.
+- [x] Existing Google and Microsoft signup actions verified.
+- [x] Current light and dark Maya assets wired.
+- [x] Desktop and mobile captures verified.
+- [x] CTA destinations verified.
+- [x] Unrelated marketing detail pages regression-checked.
 
 final result: passed

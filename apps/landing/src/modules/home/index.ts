@@ -9,3 +9,4 @@ export * from "./clients";
 export * from "./integrations";
 export * from "./core-values";
 export * from "./how-it-works";
+export * from "./decide-what-matters-showcase";

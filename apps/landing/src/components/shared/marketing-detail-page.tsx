@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CheckIcon, CloseIcon } from "icons";
+import { cn } from "lib";
 import meshImage from "../../../public/images/meshing.webp";
 import { CallToAction } from "./cta";
 
@@ -303,12 +304,14 @@ export function MarketingDetailPage({
   breadcrumbLabel,
   canonicalPath,
   detail,
+  hero,
   questionHeading,
 }: {
   basePath: string;
   breadcrumbLabel: string;
   canonicalPath?: string;
   detail: MarketingDetail;
+  hero?: React.ReactNode;
   questionHeading?: string;
 }) {
   return (
@@ -319,39 +322,49 @@ export function MarketingDetailPage({
         detail={detail}
       />
       <main className="bg-background text-foreground">
-        <div className="mx-auto max-w-[760px] px-5 pt-20 pb-16 md:px-8 md:pt-28">
+        {hero}
+        <div
+          className={cn(
+            "mx-auto max-w-[760px] px-5 pb-16 md:px-8",
+            hero ? "pt-0" : "pt-20 md:pt-28",
+          )}
+        >
           <article>
-            <nav className="text-text-muted mb-6 flex justify-center gap-2 text-sm">
-              <Link className="hover:text-foreground" href="/">
-                Home
-              </Link>
-              <span>/</span>
-              <span>{breadcrumbLabel}</span>
-            </nav>
+            {!hero ? (
+              <>
+                <nav className="text-text-muted mb-6 flex justify-center gap-2 text-sm">
+                  <Link className="hover:text-foreground" href="/">
+                    Home
+                  </Link>
+                  <span>/</span>
+                  <span>{breadcrumbLabel}</span>
+                </nav>
 
-            <header className="text-center">
-              <div className="shadow-shadow relative mx-auto max-w-[720px] overflow-hidden rounded-2xl shadow-2xl">
-                <Image
-                  alt=""
-                  className="h-[240px] w-full object-cover grayscale-100 md:h-[320px]"
-                  placeholder="blur"
-                  priority
-                  src={meshImage}
-                />
-                <div className="absolute inset-0 bg-black/20 dark:bg-black/35" />
-                <div className="absolute inset-0 flex items-center justify-center px-6">
-                  <h1 className="font-heading text-4xl font-semibold tracking-normal text-white md:text-5xl">
-                    {detail.heroTitle}
-                  </h1>
-                </div>
-              </div>
-              <time
-                className="text-text-muted mt-5 block text-sm font-medium"
-                dateTime={detail.updatedDate ?? UPDATED_DATE}
-              >
-                {detail.updatedLabel ?? UPDATED_LABEL}
-              </time>
-            </header>
+                <header className="text-center">
+                  <div className="shadow-shadow relative mx-auto max-w-[720px] overflow-hidden rounded-2xl shadow-2xl">
+                    <Image
+                      alt=""
+                      className="h-[240px] w-full object-cover grayscale-100 md:h-[320px]"
+                      placeholder="blur"
+                      priority
+                      src={meshImage}
+                    />
+                    <div className="absolute inset-0 bg-black/20 dark:bg-black/35" />
+                    <div className="absolute inset-0 flex items-center justify-center px-6">
+                      <h1 className="font-heading text-4xl font-semibold tracking-normal text-white md:text-5xl">
+                        {detail.heroTitle}
+                      </h1>
+                    </div>
+                  </div>
+                  <time
+                    className="text-text-muted mt-5 block text-sm font-medium"
+                    dateTime={detail.updatedDate ?? UPDATED_DATE}
+                  >
+                    {detail.updatedLabel ?? UPDATED_LABEL}
+                  </time>
+                </header>
+              </>
+            ) : null}
 
             <div className="text-text-muted mt-18 text-[1.05rem] leading-8">
               {detail.intro.map((paragraph) => (

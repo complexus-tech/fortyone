@@ -9,8 +9,11 @@ import { Container } from "./container";
 import {
   PricingAccessIcon,
   PricingAdminIcon,
+  PricingAiIcon,
   PricingArrowIcon,
   PricingDeploymentIcon,
+  PricingFeedbackIcon,
+  PricingIntegrationIcon,
   PricingOrganizationIcon,
   PricingPlanningIcon,
   PricingScaleIcon,
@@ -52,6 +55,9 @@ const packages = [
       "1 team",
       "Up to 5 members",
       "Up to 200 tasks",
+      "1 objective with OKR tracking",
+      "Customer feedback & public roadmap",
+      "15 Maya AI agent messages per month",
       "Single Sign-On (SSO)",
       "Kanban & list views",
       "Email support",
@@ -67,6 +73,40 @@ const packages = [
           "Up to 5 members",
           "Up to 200 tasks",
           "Kanban & list views",
+          "Sprints, My Work & summaries",
+          "Shared project documents",
+        ],
+      },
+      {
+        title: "Strategy & feedback",
+        icon: PricingFeedbackIcon,
+        iconClassName: "text-primary",
+        iconSurfaceClassName: "bg-primary/12",
+        features: [
+          "1 objective with OKR tracking",
+          "Customer feedback boards & voting",
+          "Public feedback portal & roadmap",
+        ],
+      },
+      {
+        title: "Maya AI agent",
+        icon: PricingAiIcon,
+        iconClassName: "text-success",
+        iconSurfaceClassName: "bg-success/15",
+        features: [
+          "15 AI agent messages per month",
+          "Calendar and focus planning",
+        ],
+      },
+      {
+        title: "Integrations",
+        icon: PricingIntegrationIcon,
+        iconClassName: "text-secondary",
+        iconSurfaceClassName: "bg-secondary/15",
+        features: [
+          "Slack work intake & Maya",
+          "GitHub issue sync",
+          "Figma & Google Calendar context",
         ],
       },
       {
@@ -93,6 +133,8 @@ const packages = [
       "Unlimited tasks",
       "Unlimited guests",
       "Custom workflows",
+      "100 Maya AI agent messages per month",
+      "AI work planning",
     ],
     featureGroups: [
       {
@@ -108,6 +150,17 @@ const packages = [
         iconClassName: "text-primary",
         iconSurfaceClassName: "bg-primary/12",
         features: ["Up to 20 objectives", "OKR tracking", "Custom workflows"],
+      },
+      {
+        title: "Maya AI agent",
+        icon: PricingAiIcon,
+        iconClassName: "text-success",
+        iconSurfaceClassName: "bg-success/15",
+        features: [
+          "100 AI agent messages per month",
+          "AI owner & work-window suggestions",
+          "Calendar-aware task scheduling",
+        ],
       },
     ] satisfies FeatureGroupData[],
   },
@@ -126,6 +179,7 @@ const packages = [
       "Custom terminology",
       "Private teams",
       "Priority support",
+      "500 Maya AI agent messages per month",
     ],
     featureGroups: [
       {
@@ -147,6 +201,17 @@ const packages = [
         features: ["Custom terminology", "Private teams"],
       },
       {
+        title: "AI agent at scale",
+        icon: PricingAiIcon,
+        iconClassName: "text-primary",
+        iconSurfaceClassName: "bg-primary/12",
+        features: [
+          "500 AI agent messages per month",
+          "AI work planning across unlimited teams",
+          "Automated planning actions",
+        ],
+      },
+      {
         title: "Support",
         icon: PricingSupportIcon,
         iconClassName: "text-success",
@@ -163,10 +228,12 @@ const packages = [
     overview:
       "For organizations with security, compliance, deployment, or integration requirements.",
     features: [
+      "Everything in Business",
       "Custom onboarding & integrations",
       "On-premise/Private Cloud Option",
       "Dedicated account manager",
       "Volume discounts",
+      "Unlimited Maya AI agent messages",
     ],
     featureGroups: [
       {
@@ -186,6 +253,13 @@ const packages = [
           "Dedicated account manager",
           "Volume discounts",
         ],
+      },
+      {
+        title: "AI agent & planning",
+        icon: PricingAiIcon,
+        iconClassName: "text-primary",
+        iconSurfaceClassName: "bg-primary/12",
+        features: ["Unlimited AI agent messages", "AI work planning at scale"],
       },
     ] satisfies FeatureGroupData[],
   },
@@ -402,7 +476,7 @@ const Package = ({
             Most popular
           </Box>
         ) : null}
-        <Box className="border-border/60 bg-surface-muted dark:bg-surface-elevated shadow-shadow relative z-1 flex h-full flex-col gap-7 rounded-[2.5rem] border p-2 pb-7 shadow-xl md:min-h-[57rem] md:rounded-[3rem]">
+        <Box className="border-border/60 bg-surface-muted dark:bg-surface-elevated shadow-shadow relative z-1 flex h-full flex-col gap-7 rounded-[2.5rem] border p-2 pb-7 shadow-xl md:min-h-[68rem] md:rounded-[3rem]">
           <Box className="border-border/60 bg-surface shadow-shadow dark:bg-surface flex min-h-[18rem] flex-col rounded-[2rem] border p-7 shadow-lg md:min-h-[19rem] md:rounded-[2.5rem] md:p-8">
             <Text className="text-3xl font-semibold tracking-[-0.035em] md:text-[2rem]">
               {name}
@@ -425,7 +499,7 @@ const Package = ({
             </Text>
             <Button
               align="between"
-              className="mt-8 px-4 font-semibold whitespace-nowrap"
+              className="mt-4 px-4 whitespace-nowrap"
               color="invert"
               fullWidth
               href={href}
@@ -554,8 +628,8 @@ export const Pricing = ({
             {!hideDescription && isPage ? (
               <Text className="text-text-muted mt-4 hidden max-w-2xl text-base leading-6 font-normal md:block">
                 No card and no trial clock. Run a real project on the free plan,
-                then add teams, goals, integrations, and AI capacity as your
-                organization grows.
+                then add teams, goals, integrations, and AI agent capacity as
+                your organization grows.
               </Text>
             ) : null}
             {isPage ? (
@@ -573,8 +647,8 @@ export const Pricing = ({
             <Box data-landing-reveal style={{ transitionDelay: "70ms" }}>
               <Text className="w-full max-w-xl opacity-70 md:mt-4">
                 No card and no trial clock. Run a real project on the free plan,
-                then add teams, goals, integrations, and AI capacity as your
-                organization grows.
+                then add teams, goals, integrations, and AI agent capacity as
+                your organization grows.
               </Text>
             </Box>
           ) : null}

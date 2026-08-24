@@ -16,6 +16,9 @@ import { Container } from "./container";
 import {
   PricingAccessIcon,
   PricingAdminIcon,
+  PricingAiIcon,
+  PricingFeedbackIcon,
+  PricingIntegrationIcon,
   PricingPlanningIcon,
   PricingSupportIcon,
   PricingTeamIcon,
@@ -79,11 +82,16 @@ const comparisonSections: ComparisonSection[] = [
   },
   {
     id: "planning",
-    title: "Planning",
+    title: "Strategy & roadmaps",
     icon: PricingPlanningIcon,
     iconClassName: "text-primary",
     iconSurfaceClassName: "bg-primary/12",
     rows: [
+      featureRow(
+        "strategyMap",
+        "Strategy map",
+        "Connect the ultimate goal, strategic pillars, objectives, and key results.",
+      ),
       featureRow(
         "objectives",
         "Objectives",
@@ -95,9 +103,125 @@ const comparisonSections: ComparisonSection[] = [
         "Track outcomes, progress, and confidence from one place.",
       ),
       featureRow(
+        "roadmaps",
+        "Roadmaps",
+        "Sequence objectives and communicate ownership, health, progress, and dates.",
+      ),
+      featureRow(
         "unlimitedEverything",
         "Unlimited planning",
         "Remove limits across the core planning experience.",
+      ),
+    ],
+  },
+  {
+    id: "feedback",
+    title: "Customer feedback",
+    icon: PricingFeedbackIcon,
+    iconClassName: "text-info",
+    iconSurfaceClassName: "bg-info/15",
+    rows: [
+      featureRow(
+        "customerFeedback",
+        "Feedback boards",
+        "Capture and organize customer requests in focused feedback boards.",
+      ),
+      featureRow(
+        "feedbackVoting",
+        "Voting and comments",
+        "Let customers vote, comment, and follow the requests that matter to them.",
+      ),
+      featureRow(
+        "publicRoadmap",
+        "Public feedback portal and roadmap",
+        "Keep customers informed as feedback moves from request to planned work and delivery.",
+      ),
+    ],
+  },
+  {
+    id: "ai-planning",
+    title: "Maya AI agent",
+    icon: PricingAiIcon,
+    iconClassName: "text-success",
+    iconSurfaceClassName: "bg-success/15",
+    rows: [
+      featureRow(
+        "mayaMessages",
+        "AI agent messages",
+        "Ask the Maya AI agent about workspace context, delivery risk, priorities, and next steps.",
+      ),
+      featureRow(
+        "aiWorkPlanning",
+        "AI work planning",
+        "Let Maya suggest an owner and realistic delivery window from workload and availability.",
+      ),
+      featureRow(
+        "calendarPlanning",
+        "Calendar and focus planning",
+        "See meetings and planned focus time together while scheduling project work.",
+      ),
+    ],
+  },
+  {
+    id: "work-management",
+    title: "Work management",
+    icon: PricingWorkIcon,
+    iconClassName: "text-secondary",
+    iconSurfaceClassName: "bg-secondary/15",
+    rows: [
+      featureRow(
+        "myWork",
+        "My Work",
+        "Bring assigned, created, and followed work into one personal view.",
+      ),
+      featureRow(
+        "kanbanAndList",
+        "Kanban and list views",
+        "Move between visual workflow boards and structured task lists.",
+      ),
+      featureRow(
+        "sprints",
+        "Sprints",
+        "Plan time-boxed delivery cycles and keep active sprint work visible.",
+      ),
+      featureRow(
+        "summaryAnalytics",
+        "Summary and analytics",
+        "Monitor workspace activity, workload, progress, and delivery signals.",
+      ),
+      featureRow(
+        "documents",
+        "Shared project documents",
+        "Keep project context beside the stories and objectives it supports.",
+      ),
+    ],
+  },
+  {
+    id: "integrations",
+    title: "Integrations",
+    icon: PricingIntegrationIcon,
+    iconClassName: "text-primary",
+    iconSurfaceClassName: "bg-primary/12",
+    rows: [
+      featureRow(
+        "slackIntegration",
+        "Slack",
+        "Create structured work from conversations and ask Maya from Slack.",
+      ),
+      featureRow(
+        "githubIntegration",
+        "GitHub",
+        "Sync issues and keep engineering delivery connected to project work.",
+      ),
+      featureRow(
+        "figmaIntegration",
+        "Figma",
+        "Bring design context into stories without recreating it by hand.",
+      ),
+      featureRow(
+        "googleCalendarIntegration",
+        "Google Calendar",
+        "Plan project work around meetings and real personal availability.",
       ),
     ],
   },
