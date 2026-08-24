@@ -23,6 +23,13 @@ const PricingIcon = ({
   </svg>
 );
 
+export const PricingArrowIcon = (props: PricingIconProps) => (
+  <PricingIcon {...props}>
+    <path d="M18.5 12H5" />
+    <path d="M13 18s6-4.419 6-6-6-6-6-6" />
+  </PricingIcon>
+);
+
 export const PricingWorkIcon = (props: PricingIconProps) => (
   <PricingIcon {...props}>
     <rect height="16" rx="3" width="16" x="4" y="4" />

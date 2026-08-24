@@ -1,6 +1,6 @@
 "use client";
 import type { ComponentPropsWithoutRef, ComponentType } from "react";
-import { CheckIcon, ChevronRightIcon } from "icons";
+import { CheckIcon } from "icons";
 import { cn } from "lib";
 import { useState } from "react";
 import { Badge, Box, Button, Divider, Flex, Switch, Text } from "ui";
@@ -9,6 +9,7 @@ import { Container } from "./container";
 import {
   PricingAccessIcon,
   PricingAdminIcon,
+  PricingArrowIcon,
   PricingDeploymentIcon,
   PricingOrganizationIcon,
   PricingPlanningIcon,
@@ -428,7 +429,13 @@ const Package = ({
               color="invert"
               fullWidth
               href={href}
-              rightIcon={<ChevronRightIcon aria-hidden="true" />}
+              rightIcon={
+                <PricingArrowIcon
+                  aria-hidden="true"
+                  className="h-5 w-auto"
+                  strokeWidth={2}
+                />
+              }
               rounded="lg"
               size="lg"
               variant={recommended ? "solid" : "outline"}
