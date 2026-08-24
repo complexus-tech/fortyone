@@ -32,6 +32,7 @@ const DRIFT_AMPLITUDE_MAX = 1.1;
 const DRIFT_AMPLITUDE_MIN = 0.45;
 const DRIFT_SPEED_MAX = 0.001;
 const DRIFT_SPEED_MIN = 0.00055;
+const LIGHT_MODE_RADIUS_SCALE = 1.12;
 const MAX_PIXEL_RATIO = 2;
 const MIN_PARTICLE_RADIUS = 0.9;
 const PARTICLE_ALPHA_THRESHOLD = 96;
@@ -214,6 +215,9 @@ export const ParticleText = ({
         canvasHeight,
       ).data;
       const fontSize = Number.parseFloat(computedStyle.fontSize);
+      const radiusScale = document.documentElement.classList.contains("dark")
+        ? 1
+        : LIGHT_MODE_RADIUS_SCALE;
       const sampleStep = Math.max(2, Math.round(fontSize / 26));
       const nextParticles: Particle[] = [];
 
@@ -241,7 +245,7 @@ export const ParticleText = ({
             driftSpeed:
               DRIFT_SPEED_MIN +
               driftVariation * (DRIFT_SPEED_MAX - DRIFT_SPEED_MIN),
-            radius: getParticleRadius(x, y, sampleStep),
+            radius: getParticleRadius(x, y, sampleStep) * radiusScale,
             targetX: x + offsetX,
             targetY: y + offsetY,
             velocityX: 0,
