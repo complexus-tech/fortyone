@@ -11,7 +11,7 @@ const isProduction = process.env.NODE_ENV === "production";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={getQueryClient()}>
         <PostHogProvider>{children}</PostHogProvider>
         <Suspense>{isProduction ? <PostHogPageView /> : null}</Suspense>
