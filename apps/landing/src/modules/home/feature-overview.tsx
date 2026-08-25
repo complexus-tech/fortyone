@@ -217,7 +217,7 @@ export const FeatureOverview = () => {
 
         <Box className="mt-10 md:mt-12">
           <Box>
-            <Box className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Box className="snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <Box
                 aria-label="Explore team use cases"
                 className="mx-0 flex w-full min-w-[50rem] flex-nowrap gap-5 rounded-none bg-transparent p-0 md:grid md:min-w-0 md:grid-cols-5 dark:bg-transparent"
@@ -237,7 +237,7 @@ export const FeatureOverview = () => {
                     <button
                       aria-controls={`feature-overview-panel-${feature.value}`}
                       aria-selected={isActive}
-                      className="text-text-muted hover:text-foreground focus-visible:outline-foreground data-[state=active]:text-foreground relative h-14 w-full min-w-0 justify-start rounded-none border-0 bg-transparent px-0 py-4 text-left text-base font-normal whitespace-nowrap transition-colors hover:bg-transparent focus-visible:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 data-[state=active]:border-0 data-[state=active]:bg-transparent"
+                      className="text-text-muted hover:text-foreground focus-visible:outline-foreground data-[state=active]:text-foreground relative h-14 w-full min-w-0 snap-start justify-start rounded-none border-0 bg-transparent px-0 py-4 text-left text-base font-normal whitespace-nowrap transition-colors hover:bg-transparent focus-visible:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 data-[state=active]:border-0 data-[state=active]:bg-transparent"
                       data-state={isActive ? "active" : "inactive"}
                       id={`feature-overview-tab-${feature.value}`}
                       key={feature.value}

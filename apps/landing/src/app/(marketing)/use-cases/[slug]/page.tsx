@@ -31,7 +31,7 @@ export async function generateMetadata({
   return {
     title: useCase.metaTitle,
     description: useCase.metaDescription,
-    keywords: pageConfig?.keywords,
+    keywords: pageConfig ? [...pageConfig.keywords] : undefined,
     alternates: {
       canonical: canonicalUrl,
     },

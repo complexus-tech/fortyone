@@ -83,7 +83,7 @@ export const Integrations = () => {
 
         <Box
           as="ul"
-          className="mx-auto mt-14 flex max-w-[54rem] flex-wrap justify-center gap-4 md:mt-16"
+          className="mx-auto mt-10 flex max-w-[54rem] flex-wrap justify-center gap-3 sm:mt-14 sm:gap-4 md:mt-16"
           data-landing-reveal
           style={{ transitionDelay: "70ms" }}
         >
@@ -91,10 +91,10 @@ export const Integrations = () => {
             <Box
               aria-label={`${integration.name} · ${integration.detail}`}
               as="li"
-              className="w-32 shrink-0"
+              className="w-[6.5rem] shrink-0 sm:w-28 md:w-32"
               key={integration.name}
             >
-              <Box className="bg-surface-muted/80 dark:bg-surface-elevated/85 flex aspect-square items-center justify-center rounded-[1.5rem] px-5">
+              <Box className="bg-surface-muted/80 dark:bg-surface-elevated/85 flex aspect-square items-center justify-center rounded-lg px-4 md:rounded-[1.5rem] md:px-5">
                 <Box
                   className="flex size-full items-center justify-center"
                   title={`${integration.name} · ${integration.detail}`}
@@ -103,7 +103,7 @@ export const Integrations = () => {
                     alt=""
                     aria-hidden="true"
                     className={cn(
-                      "size-12 object-contain md:size-14",
+                      "size-10 object-contain sm:size-11 md:size-14",
                       integration.logoClassName,
                     )}
                     height={56}

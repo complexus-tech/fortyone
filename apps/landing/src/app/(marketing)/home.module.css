@@ -42,7 +42,7 @@
   padding-top: calc(
     var(--progress-band-shell-depth) + var(--progress-band-content-gap)
   );
-  border-radius: 0 0 3rem 3rem;
+  border-radius: 0 0 2rem 2rem;
   background: radial-gradient(
       72% 44% at 94% 30%,
       color-mix(in oklab, var(--color-info) 42%, transparent),
@@ -126,7 +126,7 @@
   right: 0;
   left: 0;
   height: var(--progress-band-shell-depth);
-  border-radius: 0 0 3rem 3rem;
+  border-radius: 0 0 2rem 2rem;
   background: var(--color-background);
   content: "";
   pointer-events: none;

@@ -25,7 +25,7 @@ export const CallToAction = ({
     >
       <Container
         className={cn(
-          "flex items-center justify-center py-24 text-center md:py-32",
+          "flex items-center justify-center py-16 text-center sm:py-24 md:py-32",
           contentClassName,
         )}
       >
@@ -34,7 +34,7 @@ export const CallToAction = ({
           data-landing-reveal
         >
           <h2
-            className="text-4xl leading-[1.02] font-semibold tracking-tight text-balance md:text-6xl"
+            className="text-3xl leading-[1.02] font-semibold tracking-tight text-balance sm:text-4xl md:text-6xl"
             id="marketing-cta-title"
           >
             {title}
@@ -46,12 +46,12 @@ export const CallToAction = ({
           ) : null}
           <Box
             className={cn(
-              "flex flex-col items-center gap-2 sm:flex-row sm:gap-3",
+              "flex w-full max-w-[18rem] flex-col items-stretch gap-2 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-3 [&>a]:w-full [&>a]:justify-center sm:[&>a]:w-max",
               description ? "mt-8" : "mt-12",
             )}
           >
             <Button
-              className="relative z-1 px-3 md:pr-4 md:pl-5"
+              className="relative z-1 w-full justify-center px-3 sm:w-max md:pr-4 md:pl-5"
               color="invert"
               href={SIGNUP_URL}
               rounded="lg"

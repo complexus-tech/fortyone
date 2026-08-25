@@ -154,7 +154,7 @@ const SocialLink = ({
   <Tooltip title={label}>
     <Link
       aria-label={label}
-      className="border-border bg-state-hover text-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-primary focus-visible:outline-primary grid size-11 place-items-center rounded-xl border transition-[border-color,background-color,color,transform] duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="border-border bg-state-hover text-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-primary focus-visible:outline-primary grid size-10 place-items-center rounded-lg border transition-[border-color,background-color,color,transform] duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 sm:size-11 sm:rounded-xl"
       href={href}
       rel="noreferrer"
       target="_blank"
@@ -176,11 +176,11 @@ export const Footer = () => {
 
   return (
     <footer className="bg-background py-2 sm:py-3 md:py-6">
-      <div className="landing-hero-shell landing-page-frame overflow-hidden rounded-[3rem] md:rounded-[4rem]">
-        <div className="px-6 py-10 sm:px-10 sm:py-12 lg:px-14 lg:py-16 xl:px-20 xl:py-20">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-14 lg:grid-cols-[minmax(18rem,1.45fr)_repeat(3,minmax(0,1fr))] lg:gap-x-10 xl:gap-x-16">
+      <div className="landing-hero-shell landing-page-frame overflow-hidden rounded-2xl sm:rounded-[3rem] md:rounded-[4rem]">
+        <div className="px-5 py-8 sm:px-10 sm:py-12 lg:px-14 lg:py-16 xl:px-20 xl:py-20">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:gap-y-14 lg:grid-cols-[minmax(18rem,1.45fr)_repeat(3,minmax(0,1fr))] lg:gap-x-10 xl:gap-x-16">
             <div className="col-span-2 flex flex-col justify-between gap-10 lg:col-span-1 lg:min-h-[34rem]">
-              <p className="font-heading max-w-md text-[2.6rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-5xl lg:text-[3.4rem]">
+              <p className="font-heading max-w-md text-[2.25rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-5xl lg:text-[3.4rem]">
                 Keep what matters moving.
               </p>
               <ParticleVector

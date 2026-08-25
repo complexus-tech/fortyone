@@ -334,7 +334,7 @@ export const Navigation = () => {
       <Box
         aria-hidden="true"
         className={cn(
-          "landing-page-frame dark:bg-surface-prominent/60 absolute inset-x-0 top-3 h-full rounded-2xl bg-white shadow-[0_16px_44px_-18px_rgba(31,24,18,0.3)] backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:rounded-3xl dark:shadow-[0_16px_44px_-18px_rgba(0,0,0,0.7)]",
+          "landing-page-frame dark:bg-surface-prominent/60 absolute inset-x-0 top-2 h-full rounded-xl bg-white shadow-[0_16px_44px_-18px_rgba(31,24,18,0.3)] backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:top-3 md:rounded-3xl dark:shadow-[0_16px_44px_-18px_rgba(0,0,0,0.7)]",
           isDocked
             ? "translate-y-0 scale-100 opacity-100"
             : "-translate-y-2 scale-[0.985] opacity-0",
@@ -342,12 +342,12 @@ export const Navigation = () => {
       />
       <Container
         className={cn(
-          "landing-page-frame relative flex items-center justify-between gap-8 px-5 py-3 transition-transform duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:px-6",
-          isDocked ? "translate-y-3" : "translate-y-0",
+          "landing-page-frame relative flex items-center justify-between gap-3 px-4 py-2.5 transition-transform duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:gap-8 md:px-6 md:py-3",
+          isDocked ? "translate-y-2 md:translate-y-3" : "translate-y-0",
         )}
       >
         <Flex align="center" className="min-w-0 gap-8">
-          <Logo />
+          <Logo className="h-6 sm:h-7" />
           <nav
             aria-label="Main"
             className="landing-desktop-navigation relative z-10"
@@ -388,7 +388,7 @@ export const Navigation = () => {
             </ul>
           </nav>
         </Flex>
-        <Flex align="center" className="ml-4 gap-2">
+        <Flex align="center" className="ml-2 gap-1 sm:ml-4 sm:gap-2">
           {/* <RequestDemo /> */}
           <Button
             className="hidden rounded-md px-5 text-[0.93rem] md:flex"
@@ -400,7 +400,7 @@ export const Navigation = () => {
             Log in
           </Button>
           <Button
-            className="px-5 text-[0.93rem]"
+            className="h-10 rounded-lg px-4 text-[0.875rem] sm:h-11.5 sm:rounded-xl sm:px-5 sm:text-[0.93rem]"
             color="invert"
             href={SIGNUP_URL}
             rounded="md"

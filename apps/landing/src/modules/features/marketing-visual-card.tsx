@@ -6,11 +6,7 @@ import {
   FEATURE_STORY_TEXT_CLASS,
 } from "@/modules/home/feature-story-section";
 
-export function MarketingVisualCard({
-  visual,
-}: {
-  visual: MarketingVisual;
-}) {
+export function MarketingVisualCard({ visual }: { visual: MarketingVisual }) {
   return (
     <Box aria-hidden="true" className="flex h-full flex-col gap-3">
       <Box className={`${FEATURE_STORY_SURFACE_CLASS} px-4 py-3`}>

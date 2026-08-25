@@ -4,10 +4,15 @@
 
 .viewport {
   display: grid;
+  min-width: 0;
+  width: 100%;
 }
 
 .slide {
   grid-area: 1 / 1;
+  min-width: 0;
+  width: 100%;
+  overflow: clip;
   opacity: 0;
   pointer-events: none;
   transition:

@@ -57,7 +57,8 @@ const USE_CASE_PAGE_CONFIGS = {
     ctaTitle: "Keep operations moving without rebuilding the plan.",
     decisionDescription:
       "Give operations teams the live context they need to prioritize requests, balance ownership, and act before work stalls.",
-    decisionHeading: "Make the next operational decision with the work in view.",
+    decisionHeading:
+      "Make the next operational decision with the work in view.",
     hero: {
       alt: "Maya preparing an operations delivery brief from live FortyOne project work",
       darkImage: mayaDeliveryBriefDark,
@@ -76,7 +77,8 @@ const USE_CASE_PAGE_CONFIGS = {
     workflow: {
       description:
         "Carry the request from intake into ownership, timing, and the review that keeps execution moving.",
-      heading: "Follow the work from operational request to accountable delivery.",
+      heading:
+        "Follow the work from operational request to accountable delivery.",
       visuals: [
         {
           alt: "Maya summarizing operational priorities and blocked work",
@@ -165,7 +167,8 @@ const USE_CASE_PAGE_CONFIGS = {
     ctaTitle: "Keep engineering context close to the work.",
     decisionDescription:
       "Give engineering teams enough source context, priority, ownership, and capacity information to make a realistic commitment.",
-    decisionHeading: "Move engineering work without losing the reason behind it.",
+    decisionHeading:
+      "Move engineering work without losing the reason behind it.",
     hero: {
       alt: "FortyOne My Work board showing engineering priorities moving through delivery",
       darkImage: myWorkBoardDark,
@@ -219,7 +222,8 @@ const USE_CASE_PAGE_CONFIGS = {
     ctaTitle: "Close the loop between support and delivery.",
     decisionDescription:
       "Help support teams connect recurring issues to product work, owners, and customer-facing progress.",
-    decisionHeading: "Turn support patterns into decisions the product team can act on.",
+    decisionHeading:
+      "Turn support patterns into decisions the product team can act on.",
     hero: {
       alt: "FortyOne feedback portal organizing customer needs for review",
       darkImage: feedbackPortalDark,
@@ -327,7 +331,8 @@ const USE_CASE_PAGE_CONFIGS = {
     ctaTitle: "Connect public priorities to accountable delivery.",
     decisionDescription:
       "Give leaders and delivery teams a traceable view of program outcomes, ownership, risk, and the work behind each update.",
-    decisionHeading: "Keep public programs connected to the work that delivers them.",
+    decisionHeading:
+      "Keep public programs connected to the work that delivers them.",
     hero: {
       alt: "FortyOne Strategy Map connecting government priorities to programs and measurable outcomes",
       darkImage: strategyMapDark,
@@ -435,7 +440,8 @@ const USE_CASE_PAGE_CONFIGS = {
     ctaTitle: "See where strategy needs leadership attention.",
     decisionDescription:
       "Give leaders a current view of priority, progress, ownership, capacity, and risk without another status reconstruction exercise.",
-    decisionHeading: "Make leadership decisions from live strategy and execution.",
+    decisionHeading:
+      "Make leadership decisions from live strategy and execution.",
     hero: {
       alt: "Maya highlighting at-risk objectives and leadership decisions in FortyOne",
       darkImage: mayaObjectiveRisksDark,

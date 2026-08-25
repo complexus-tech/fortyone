@@ -35,7 +35,7 @@ export const ShowcaseCard = ({
       data-landing-reveal
       style={{ transitionDelay: `${delay}ms` }}
     >
-      <Box className="relative aspect-square overflow-hidden rounded-xl">
+      <Box className="relative aspect-square overflow-hidden rounded-lg md:rounded-xl">
         <Image
           alt=""
           className="object-cover object-bottom"

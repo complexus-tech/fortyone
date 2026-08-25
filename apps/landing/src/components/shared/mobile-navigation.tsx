@@ -79,7 +79,7 @@ export const MobileNavigation = () => {
 
       <Dialog onOpenChange={setOpen} open={open}>
         <Dialog.Content
-          className="bg-background dark:bg-background m-0 mt-14 w-full rounded-none border-0 outline-none dark:border-0"
+          className="bg-background dark:bg-background m-0 mt-12 w-full rounded-none border-0 outline-none sm:mt-14 dark:border-0"
           hideClose
           overlayClassName="bg-transparent dark:bg-transparent"
         >
@@ -89,18 +89,23 @@ export const MobileNavigation = () => {
           <Dialog.Description className="sr-only">
             Menu dialog
           </Dialog.Description>
-          <Dialog.Body className="flex h-[calc(100vh-4rem)] max-h-screen flex-col justify-between px-4 pt-5 pb-8">
+          <Dialog.Body className="flex h-[calc(100dvh-3rem)] max-h-screen flex-col justify-between overflow-y-auto overscroll-contain px-4 pt-4 pb-8 sm:h-[calc(100dvh-4rem)] sm:pt-5">
             <Box>
-              <Flex className="pl-2" direction="column" gap={6}>
+              <Flex className="gap-4 pl-2 sm:gap-6" direction="column">
                 {navItems.map(({ label, href, items }) => {
                   if (items) {
                     return (
                       <div key={label}>
-                        <div className="mb-3 text-lg font-medium">{label}</div>
-                        <Flex className="pl-4" direction="column" gap={3}>
+                        <div className="mb-2 text-base font-medium sm:mb-3 sm:text-lg">
+                          {label}
+                        </div>
+                        <Flex
+                          className="gap-1 pl-3 sm:gap-3 sm:pl-4"
+                          direction="column"
+                        >
                           {items.map(({ label: itemLabel, href: itemHref }) => (
                             <Link
-                              className="hover:bg-accent dark:hover:bg-surface-prominent -mx-2 rounded-md px-2 py-1.5 text-base opacity-80 transition-colors hover:opacity-100"
+                              className="hover:bg-accent dark:hover:bg-surface-prominent -mx-2 flex min-h-10 items-center rounded px-2 py-1 text-[0.9375rem] opacity-80 transition-colors hover:opacity-100 sm:min-h-0 sm:rounded-md sm:py-1.5 sm:text-base"
                               href={itemHref}
                               key={itemLabel}
                               onClick={() => {
@@ -117,7 +122,7 @@ export const MobileNavigation = () => {
 
                   return href ? (
                     <Link
-                      className="hover:bg-accent dark:hover:bg-surface-prominent -mx-2 rounded-md px-2 py-1.5 text-lg font-medium transition-colors"
+                      className="hover:bg-accent dark:hover:bg-surface-prominent -mx-2 flex min-h-10 items-center rounded px-2 py-1 text-base font-medium transition-colors sm:min-h-0 sm:rounded-md sm:py-1.5 sm:text-lg"
                       href={href}
                       key={label}
                       onClick={() => {

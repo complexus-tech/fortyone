@@ -45,7 +45,7 @@ export const ProductScreenshot = ({
               "bg-surface/90 dark:bg-surface shadow-border/70 relative border border-transparent p-0.5 shadow-2xl backdrop-blur-md md:rounded-2xl md:border-r md:p-[0.35rem] dark:shadow-none",
               styles.frame,
               cropBrowserOnMobile
-                ? "rounded-l-xl rounded-r-none border-r-0 pr-0"
+                ? "rounded-l-md rounded-r-none border-r-0 pr-0 md:rounded-l-2xl"
                 : "rounded-xl",
             )}
           >
@@ -93,7 +93,7 @@ export const ProductScreenshot = ({
               className={cn(
                 "relative overflow-hidden md:rounded-xl",
                 cropBrowserOnMobile
-                  ? "rounded-l-lg rounded-r-none"
+                  ? "rounded-l-sm rounded-r-none md:rounded-l-xl"
                   : "rounded-lg",
               )}
             >
@@ -102,7 +102,7 @@ export const ProductScreenshot = ({
                 className={cn(
                   "border-border/50 dark:border-border/30 relative hidden border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:block",
                   cropBrowserOnMobile
-                    ? "h-96 w-auto max-w-none rounded-l-lg rounded-r-none border-r-0 md:border-r"
+                    ? "h-96 w-auto max-w-none rounded-l-sm rounded-r-none border-r-0 md:rounded-l-xl md:border-r"
                     : "h-auto w-full max-w-full rounded-lg",
                 )}
                 priority={priority}
@@ -118,7 +118,7 @@ export const ProductScreenshot = ({
                 className={cn(
                   "border-border/40 relative border md:h-auto md:w-full md:max-w-full md:rounded-xl dark:hidden",
                   cropBrowserOnMobile
-                    ? "h-96 w-auto max-w-none rounded-l-lg rounded-r-none border-r-0 md:border-r"
+                    ? "h-96 w-auto max-w-none rounded-l-sm rounded-r-none border-r-0 md:rounded-l-xl md:border-r"
                     : "h-auto w-full max-w-full rounded-lg",
                 )}
                 priority={priority}

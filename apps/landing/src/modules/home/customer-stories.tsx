@@ -5,7 +5,7 @@ import type { ComponentPropsWithoutRef, ComponentType } from "react";
 import type { MotionProps } from "framer-motion";
 import { useState } from "react";
 import Image from "next/image";
-import { MotionConfig, motion } from "framer-motion";
+import { domAnimation, LazyMotion, m, MotionConfig } from "framer-motion";
 import { PlusIcon } from "icons";
 import { cn } from "lib";
 import { Box, Text } from "ui";
@@ -39,13 +39,13 @@ const STORY_TRANSITION = {
 // Framer Motion 11 resolves intrinsic element props as `unknown` under the
 // landing app's React 19 types. Keep the compatibility casts local until the
 // animation dependency is upgraded.
-const MotionButton = motion.button as ComponentType<
+const MotionButton = m.button as ComponentType<
   ComponentPropsWithoutRef<"button"> & MotionProps
 >;
-const MotionDiv = motion.div as ComponentType<
+const MotionDiv = m.div as ComponentType<
   ComponentPropsWithoutRef<"div"> & MotionProps
 >;
-const MotionFooter = motion.footer as ComponentType<
+const MotionFooter = m.footer as ComponentType<
   ComponentPropsWithoutRef<"footer"> & MotionProps
 >;
 
@@ -106,7 +106,8 @@ const CustomerStoryCard = ({
     "bottom-[-60px] left-[36px] h-[360px] w-[350px] gap-[230px] overflow-hidden";
 
   if (mobile) {
-    contentPositionClassName = "inset-[28px] w-auto justify-between";
+    contentPositionClassName =
+      "inset-[24px] w-auto justify-between sm:inset-[28px]";
   } else if (showStory) {
     contentPositionClassName =
       "top-[36px] bottom-[36px] left-[36px] w-[350px] justify-between overflow-visible";
@@ -120,7 +121,7 @@ const CustomerStoryCard = ({
       aria-label={`${story.company} customer story`}
       className={cn(
         "bg-surface-elevated focus-visible:outline-primary relative isolate w-full overflow-hidden rounded-lg text-white shadow-lg shadow-black/10 focus-visible:outline-2 focus-visible:outline-offset-4",
-        mobile ? "h-[416px]" : "h-[540px]",
+        mobile ? "h-[430px] rounded-md sm:h-[460px]" : "h-[540px]",
       )}
       onPointerEnter={
         mobile
@@ -149,7 +150,7 @@ const CustomerStoryCard = ({
             fill
             sizes={
               mobile
-                ? "(max-width: 809px) 19.375rem, (max-width: 1199px) 41.25rem, 1px"
+                ? "(max-width: 809px) calc(100vw - 2.5rem), (max-width: 1199px) 41.25rem, 1px"
                 : "(min-width: 1200px) 45.625rem, 1px"
             }
             src={story.image}
@@ -180,7 +181,9 @@ const CustomerStoryCard = ({
       <MotionDiv
         className={cn(
           "absolute z-10",
-          mobile ? "top-[28px] left-[28px]" : "top-[38px] left-[36px]",
+          mobile
+            ? "top-[24px] left-[24px] sm:top-[28px] sm:left-[28px]"
+            : "top-[38px] left-[36px]",
         )}
       >
         <Image
@@ -214,7 +217,7 @@ const CustomerStoryCard = ({
             className="m-0 w-full"
             id={`customer-story-${story.id}-quote`}
           >
-            <Text className="font-serif text-[24px] leading-[1.2] tracking-[-0.02em] text-pretty">
+            <Text className="font-serif text-[21px] leading-[1.2] tracking-[-0.02em] text-pretty sm:text-[24px]">
               “{story.quote}”
             </Text>
           </blockquote>
@@ -295,78 +298,87 @@ export const CustomerStories = () => {
   const [activeStoryId, setActiveStoryId] = useState("fin");
 
   return (
-    <Container
-      aria-labelledby="customer-stories-title"
-      as="section"
-      className="scroll-mt-24 pb-16 md:pb-28"
-      id="customer-stories"
-    >
-      <Box
-        aria-hidden="true"
-        className="border-border/40 mx-auto w-4/5 border-t"
-      />
-      <Box
-        className="mt-16 mb-10 max-w-3xl text-left md:mt-28 md:mb-12"
-        data-landing-reveal
+    <LazyMotion features={domAnimation} strict>
+      <Container
+        aria-labelledby="customer-stories-title"
+        as="section"
+        className="scroll-mt-24 pb-16 md:pb-28"
+        id="customer-stories"
       >
-        <Text
-          as="h2"
-          className="text-3xl md:text-5xl"
-          id="customer-stories-title"
-        >
-          What our customers
-          <span className="block">say.</span>
-        </Text>
-        <Text className="text-text-description mt-6 max-w-lg text-base leading-relaxed text-pretty">
-          We love building FortyOne with our customers. Here’s some of the love
-          they’ve shared with us.
-        </Text>
-      </Box>
-
-      <Box className="grid gap-[48px] min-[1200px]:hidden" data-landing-reveal>
-        {customerStories.map((story) => (
-          <Box
-            className="mx-auto w-full max-w-[310px] min-[810px]:max-w-[660px]"
-            key={story.id}
-          >
-            <CustomerStoryCard mobile story={story} />
-          </Box>
-        ))}
-      </Box>
-
-      <MotionConfig reducedMotion="user" transition={STORY_TRANSITION}>
-        <MotionDiv
-          className="hidden items-stretch gap-[10px] min-[1200px]:flex"
+        <Box
+          aria-hidden="true"
+          className="border-border/40 mx-auto w-4/5 border-t"
+        />
+        <Box
+          className="mt-16 mb-10 max-w-3xl text-left md:mt-28 md:mb-12"
           data-landing-reveal
-          onMouseLeave={() => {
-            setActiveStoryId("fin");
-          }}
-          style={{ transitionDelay: "70ms" }}
         >
-          {customerStories.map((story) => {
-            const isActive = story.id === activeStoryId;
+          <Text
+            as="h2"
+            className="text-3xl md:text-5xl"
+            id="customer-stories-title"
+          >
+            What our customers
+            <span className="block">say.</span>
+          </Text>
+          <Text className="text-text-description mt-6 max-w-lg text-base leading-relaxed text-pretty">
+            We love building FortyOne with our customers. Here’s some of the
+            love they’ve shared with us.
+          </Text>
+        </Box>
 
-            return (
-              <MotionDiv
-                animate={{ flexGrow: isActive ? 2 : 1 }}
-                className="min-w-0"
-                initial={false}
-                key={story.id}
-                style={{ flexBasis: 0, flexShrink: 0 }}
-                transition={STORY_TRANSITION}
-              >
-                <CustomerStoryCard
-                  active={isActive}
-                  onSelect={() => {
-                    setActiveStoryId(story.id);
-                  }}
-                  story={story}
-                />
-              </MotionDiv>
-            );
-          })}
-        </MotionDiv>
-      </MotionConfig>
-    </Container>
+        <Box
+          aria-label="Customer testimonials"
+          aria-roledescription="carousel"
+          className="focus-visible:outline-primary -mx-5 flex snap-x snap-mandatory [scroll-padding-inline:1.25rem] gap-3 overflow-x-auto overscroll-x-contain px-5 pb-4 [scrollbar-width:none] focus-visible:outline-2 focus-visible:outline-offset-4 min-[810px]:mx-0 min-[810px]:grid min-[810px]:grid-cols-1 min-[810px]:gap-8 min-[810px]:overflow-visible min-[810px]:px-0 min-[1200px]:hidden [&::-webkit-scrollbar]:hidden"
+          data-landing-reveal
+          role="region"
+          tabIndex={0}
+        >
+          {customerStories.map((story) => (
+            <Box
+              className="w-[calc(100vw-2.5rem)] max-w-[22rem] shrink-0 snap-start min-[810px]:mx-auto min-[810px]:w-full min-[810px]:max-w-[660px]"
+              key={story.id}
+            >
+              <CustomerStoryCard mobile story={story} />
+            </Box>
+          ))}
+        </Box>
+
+        <MotionConfig reducedMotion="user" transition={STORY_TRANSITION}>
+          <MotionDiv
+            className="hidden items-stretch gap-[10px] min-[1200px]:flex"
+            data-landing-reveal
+            onMouseLeave={() => {
+              setActiveStoryId("fin");
+            }}
+            style={{ transitionDelay: "70ms" }}
+          >
+            {customerStories.map((story) => {
+              const isActive = story.id === activeStoryId;
+
+              return (
+                <MotionDiv
+                  animate={{ flexGrow: isActive ? 2 : 1 }}
+                  className="min-w-0"
+                  initial={false}
+                  key={story.id}
+                  style={{ flexBasis: 0, flexShrink: 0 }}
+                  transition={STORY_TRANSITION}
+                >
+                  <CustomerStoryCard
+                    active={isActive}
+                    onSelect={() => {
+                      setActiveStoryId(story.id);
+                    }}
+                    story={story}
+                  />
+                </MotionDiv>
+              );
+            })}
+          </MotionDiv>
+        </MotionConfig>
+      </Container>
+    </LazyMotion>
   );
 };
