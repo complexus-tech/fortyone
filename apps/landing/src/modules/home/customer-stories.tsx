@@ -10,12 +10,12 @@ import { PlusIcon } from "icons";
 import { cn } from "lib";
 import { Box, Text } from "ui";
 import { Container } from "@/components/ui";
+import artCirclesLogo from "../../../public/images/brands/artcircles.png";
 import finLogo from "../../../public/images/brands/fin.png";
 import miningoLogo from "../../../public/images/brands/miningo.svg";
-import zimboriginalLogo from "../../../public/images/brands/zimboriginal.png";
+import artCirclesImage from "../../../public/images/testimonials/art-circles-studio.webp";
 import finImage from "../../../public/images/testimonials/fin-city.webp";
 import miningoImage from "../../../public/images/testimonials/miningo-geospatial.webp";
-import zimboriginalImage from "../../../public/images/testimonials/zimboriginal-studio.webp";
 
 type CustomerStory = {
   author: string;
@@ -75,16 +75,16 @@ const customerStories: readonly CustomerStory[] = [
     role: "Founder & Spatial Data Scientist",
   },
   {
-    author: "Shungu C. Chidovi",
-    company: "Zimboriginal",
-    id: "zimboriginal",
-    image: zimboriginalImage,
+    author: "Hector Vidal",
+    company: "Art Circles",
+    id: "art-circles",
+    image: artCirclesImage,
     imageClassName: "object-center",
-    logo: zimboriginalLogo,
+    logo: artCirclesLogo,
     logoClassName: "h-7 w-auto max-w-40",
     quote:
-      "I can capture an idea while it’s still rough, shape it clearly, and keep it moving without losing anything important.",
-    role: "Founder, Writer & Teacher",
+      "As we build tools for galleries, artists, and collectors, FortyOne turns their feedback into clear priorities and keeps our team aligned on what the art world needs next.",
+    role: "Founder",
   },
 ];
 
