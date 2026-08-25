@@ -257,12 +257,12 @@ export const FeatureOverview = () => {
                       <span>{feature.label}</span>
                       <span
                         aria-hidden="true"
-                        className="bg-danger/25 dark:bg-border absolute inset-x-0 bottom-0 h-px overflow-hidden"
+                        className="bg-primary/20 dark:bg-border absolute inset-x-0 bottom-0 h-[1.5px] overflow-hidden dark:h-px"
                       >
                         {isActive ? (
                           <span
                             className={cn(
-                              "bg-danger dark:bg-primary block h-0.5 w-full origin-left",
+                              "bg-primary block h-full w-full origin-left",
                               progressClassName,
                             )}
                             key={`${feature.value}-${cycleVersion}`}
