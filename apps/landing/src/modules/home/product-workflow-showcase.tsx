@@ -9,8 +9,8 @@ import feedbackPortalDark from "../../../public/images/product/feedback-portal-d
 import feedbackPortalLight from "../../../public/images/product/feedback-portal-light.webp";
 import mayaDeliveryBriefDark from "../../../public/images/product/maya-delivery-brief-dark.webp";
 import mayaDeliveryBriefLight from "../../../public/images/product/maya-delivery-brief-light.webp";
-import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.webp";
-import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
+import myWorkListDark from "../../../public/images/product/my-work-list-dark.webp";
+import myWorkListLight from "../../../public/images/product/my-work-list-light.webp";
 import publicFeedbackRoadmapDark from "../../../public/images/product/public-feedback-roadmap-dark.webp";
 import publicFeedbackRoadmapLight from "../../../public/images/product/public-feedback-roadmap-light.webp";
 import roadmapTimelineDark from "../../../public/images/product/roadmap-timeline-dark.webp";
@@ -57,12 +57,12 @@ const PRODUCT_WORKFLOWS = [
     url: "https://fortyone.app/feedback",
   },
   {
-    alt: "FortyOne My Work board showing prioritized customer needs moving through delivery",
-    darkImage: myWorkBoardDark,
+    alt: "FortyOne Stories list showing prioritized customer needs moving through delivery",
+    darkImage: myWorkListDark,
     description:
       "Turn the strongest signals into owned work with a clear place in the plan.",
     label: "Prioritize",
-    lightImage: myWorkBoardLight,
+    lightImage: myWorkListLight,
     title: "Move the right ideas into delivery.",
     value: "prioritize",
     url: "https://fortyone.app/my-work",
