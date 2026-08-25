@@ -51,7 +51,7 @@ export default function Page() {
     <>
       <PricingJsonLd />
       <Box>
-        <section className="landing-hero-shell landing-page-frame mt-18 overflow-hidden rounded-[3rem] md:mt-20 md:rounded-[4rem]">
+        <section className="landing-hero-shell landing-page-frame mt-18 overflow-hidden rounded-2xl sm:rounded-[3rem] md:mt-20 md:rounded-[4rem]">
           <Pricing variant="page" />
         </section>
         <ComparePlans />

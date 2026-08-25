@@ -132,7 +132,7 @@ export const Faqs = ({
       className={cn(
         "py-16 md:pt-24",
         isPricing &&
-          "landing-hero-shell landing-page-frame mt-16 overflow-hidden rounded-[2.25rem] py-20 md:mt-20 md:rounded-[3rem] md:py-28",
+          "landing-hero-shell landing-page-frame mt-16 overflow-hidden rounded-2xl py-20 sm:rounded-[3rem] md:mt-20 md:rounded-[4rem] md:py-28",
         isPricing && styles.pricingShell,
         className,
       )}

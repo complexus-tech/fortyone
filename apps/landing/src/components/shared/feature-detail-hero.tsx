@@ -24,7 +24,7 @@ export function FeatureDetailHero({
   return (
     <section
       aria-labelledby="feature-detail-hero-title"
-      className="landing-hero-shell landing-page-frame mt-18 rounded-[3rem] pt-px pb-6 md:mt-20 md:rounded-[4rem] md:pb-10"
+      className="landing-hero-shell landing-page-frame mt-18 rounded-2xl pt-px pb-6 sm:rounded-[3rem] md:mt-20 md:rounded-[4rem] md:pb-10"
     >
       <header>
         <Container className="pt-8">
