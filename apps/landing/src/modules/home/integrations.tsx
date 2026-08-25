@@ -94,7 +94,7 @@ export const Integrations = () => {
               className="w-[6.5rem] shrink-0 sm:w-28 md:w-32"
               key={integration.name}
             >
-              <Box className="bg-surface-muted/80 dark:bg-surface-elevated/85 flex aspect-square items-center justify-center rounded-lg px-4 md:rounded-[1.5rem] md:px-5">
+              <Box className="bg-danger/[0.08] dark:bg-surface-elevated/85 flex aspect-square items-center justify-center rounded-lg px-4 md:rounded-[1.5rem] md:px-5">
                 <Box
                   className="flex size-full items-center justify-center"
                   title={`${integration.name} · ${integration.detail}`}

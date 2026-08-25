@@ -9,8 +9,8 @@ import feedbackPortalDark from "../../../public/images/product/feedback-portal-d
 import feedbackPortalLight from "../../../public/images/product/feedback-portal-light.webp";
 import mayaDeliveryBriefDark from "../../../public/images/product/maya-delivery-brief-dark.webp";
 import mayaDeliveryBriefLight from "../../../public/images/product/maya-delivery-brief-light.webp";
-import myWorkListDark from "../../../public/images/product/my-work-list-dark.webp";
-import myWorkListLight from "../../../public/images/product/my-work-list-light.webp";
+import myWorkBoardDark from "../../../public/images/product/my-work-board-dark.webp";
+import myWorkBoardLight from "../../../public/images/product/my-work-board-light.webp";
 import publicFeedbackRoadmapDark from "../../../public/images/product/public-feedback-roadmap-dark.webp";
 import publicFeedbackRoadmapLight from "../../../public/images/product/public-feedback-roadmap-light.webp";
 import roadmapTimelineDark from "../../../public/images/product/roadmap-timeline-dark.webp";
@@ -57,12 +57,12 @@ const PRODUCT_WORKFLOWS = [
     url: "https://fortyone.app/feedback",
   },
   {
-    alt: "FortyOne Stories list showing prioritized customer needs moving through delivery",
-    darkImage: myWorkListDark,
+    alt: "FortyOne My Work Kanban board showing prioritized customer needs moving through delivery",
+    darkImage: myWorkBoardDark,
     description:
       "Turn the strongest signals into owned work with a clear place in the plan.",
     label: "Prioritize",
-    lightImage: myWorkListLight,
+    lightImage: myWorkBoardLight,
     title: "Move the right ideas into delivery.",
     value: "prioritize",
     url: "https://fortyone.app/my-work",
@@ -260,12 +260,12 @@ export const ProductWorkflowShowcase = () => {
                   <span>{workflow.label}</span>
                   <span
                     aria-hidden="true"
-                    className="bg-border absolute inset-x-0 bottom-0 h-px overflow-hidden"
+                    className="bg-info/30 dark:bg-border absolute inset-x-0 bottom-0 h-px overflow-hidden"
                   >
                     {isActive ? (
                       <span
                         className={cn(
-                          "bg-primary block h-0.5 w-full origin-left",
+                          "bg-info dark:bg-primary block h-0.5 w-full origin-left",
                           progressClassName,
                         )}
                         key={`${workflow.value}-${cycleVersion}`}
