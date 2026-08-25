@@ -1,6 +1,7 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import {
+  getMutationMessage,
   isRenderableToolPart,
   isSupportingToolType,
   type ToolMessagePart,
@@ -47,5 +48,37 @@ describe("tool output policy", () => {
 
     expect(isSupportingToolType(type)).toBe(true);
     expect(isRenderableToolPart(part)).toBe(false);
+  });
+
+  it("renders mutation results directly without another model response", () => {
+    const part = {
+      output: { message: "Team updated successfully.", success: true },
+      state: "output-available",
+      type: "tool-updateTeam",
+    } as unknown as ToolMessagePart;
+
+    expect(getMutationMessage(part.output)).toBe("Team updated successfully.");
+    expect(isRenderableToolPart(part)).toBe(true);
+  });
+
+  it("distinguishes mutating and read actions on a shared tool", () => {
+    const mutationPart = {
+      input: { action: "create-label" },
+      output: { label: { name: "Customer" }, success: true },
+      state: "output-available",
+      type: "tool-labels",
+    } as unknown as ToolMessagePart;
+    const readPart = {
+      input: { action: "list-labels" },
+      output: { labels: [], success: true },
+      state: "output-available",
+      type: "tool-labels",
+    } as unknown as ToolMessagePart;
+
+    expect(getMutationMessage(mutationPart.output)).toBe(
+      "Change completed successfully.",
+    );
+    expect(isRenderableToolPart(mutationPart)).toBe(true);
+    expect(isRenderableToolPart(readPart)).toBe(true);
   });
 });

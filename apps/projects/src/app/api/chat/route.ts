@@ -12,8 +12,12 @@ import {
 } from "ai";
 import type { NextRequest } from "next/server";
 import { withTracing } from "@posthog/ai";
-import { OPENAI_TEXT_MODEL } from "@/lib/ai/models";
+import {
+  OPENAI_DEFAULT_REASONING_EFFORT,
+  OPENAI_TEXT_MODEL,
+} from "@/lib/ai/models";
 import { tools } from "@/lib/ai/tools";
+import { withCompactModelOutputs } from "@/lib/ai/model-tools";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
 import { systemPrompt } from "./system";
@@ -23,18 +27,19 @@ import { normalizeInlineFileData } from "./normalize-file-data";
 import { resolveJoinedTeams } from "./resolve-joined-teams";
 import { selectActiveTools } from "./active-tools";
 import {
+  compactChatToolOutputs,
   pruneChatModelMessages,
   selectRecentChatMessages,
 } from "./chat-context";
 import { getChatStreamErrorMessage } from "./chat-errors";
-import { hasTerminalStoryCreationResult } from "./stop-conditions";
+import { hasTerminalMutationResult } from "./stop-conditions";
 
 export const maxDuration = 120;
 
-const MAX_OUTPUT_TOKENS = 4000;
+const MAX_OUTPUT_TOKENS = 3000;
 const MAX_TOOL_STEPS = 12;
-const MAYA_PROMPT_CACHE_NAMESPACE = "maya-projects-v1";
-const MAYA_REASONING_EFFORT = "low";
+const MAYA_PROMPT_CACHE_NAMESPACE = "maya-projects-v2";
+const modelTools = withCompactModelOutputs(tools);
 
 export async function POST(req: NextRequest) {
   const {
@@ -54,12 +59,13 @@ export async function POST(req: NextRequest) {
 
   const uiMessages = messagesFromRequest as UIMessage[];
   const recentMessages = selectRecentChatMessages(uiMessages);
+  const compactMessages = compactChatToolOutputs(recentMessages);
   const activeTools = selectActiveTools({
     currentPath,
     messages: recentMessages,
   });
   const [convertedMessages, session] = await Promise.all([
-    convertToModelMessages(recentMessages),
+    convertToModelMessages(compactMessages),
     auth(),
   ]);
   const modelMessages = pruneChatModelMessages(
@@ -122,9 +128,9 @@ export async function POST(req: NextRequest) {
       messages: modelMessages,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       activeTools,
-      stopWhen: [hasTerminalStoryCreationResult, stepCountIs(MAX_TOOL_STEPS)],
+      stopWhen: [hasTerminalMutationResult, stepCountIs(MAX_TOOL_STEPS)],
       tools: {
-        ...tools,
+        ...modelTools,
         // ...(webSearchEnabled
         //   ? {
         //       google_search: google.tools.googleSearch({}) as Tool,
@@ -138,7 +144,7 @@ export async function POST(req: NextRequest) {
       providerOptions: {
         openai: {
           promptCacheKey: `${MAYA_PROMPT_CACHE_NAMESPACE}:${workspace?.id ?? "unknown"}`,
-          reasoningEffort: MAYA_REASONING_EFFORT,
+          reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
           textVerbosity: "low",
         } satisfies OpenAIResponsesProviderOptions,
         google: {

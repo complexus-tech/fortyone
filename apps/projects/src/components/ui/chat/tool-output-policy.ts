@@ -1,4 +1,5 @@
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
+import { isMutationToolCall } from "@/lib/ai/tool-policy";
 import {
   ENTITY_RESULT_TOOL_TYPES,
   getEntityResultsModel,
@@ -33,50 +34,6 @@ const STORY_CREATION_TOOL_TYPES = new Set([
   "tool-bulkCreateStories",
 ]);
 
-const MUTATION_TOOL_TYPES = new Set([
-  "tool-createStory",
-  "tool-updateStory",
-  "tool-deleteStory",
-  "tool-bulkCreateStories",
-  "tool-bulkUpdateStories",
-  "tool-bulkDeleteStories",
-  "tool-assignStoriesToUser",
-  "tool-duplicateStory",
-  "tool-restoreStory",
-  "tool-addStoryAssociation",
-  "tool-removeStoryAssociation",
-  "tool-createTeamTool",
-  "tool-updateTeam",
-  "tool-joinTeam",
-  "tool-leaveTeam",
-  "tool-deleteTeam",
-  "tool-createObjectiveTool",
-  "tool-updateObjectiveTool",
-  "tool-deleteObjectiveTool",
-  "tool-createKeyResultTool",
-  "tool-updateKeyResultTool",
-  "tool-deleteKeyResultTool",
-  "tool-updateSprintSettings",
-  "tool-createMemory",
-  "tool-updateMemory",
-  "tool-deleteMemory",
-  "tool-createGitHubInstallSessionTool",
-  "tool-resyncGitHubRepositoriesTool",
-  "tool-createGitHubIssueSyncLinkTool",
-  "tool-deleteGitHubIssueSyncLinkTool",
-  "tool-updateGitHubWorkspaceSettingsTool",
-  "tool-updateGitHubTeamSettingsTool",
-  "tool-postStoryGitHubCommentTool",
-  "tool-deleteStoryGitHubLinkTool",
-  "tool-updateIntegrationRequestTool",
-  "tool-acceptIntegrationRequestTool",
-  "tool-declineIntegrationRequestTool",
-  "tool-acceptAllIntegrationRequestsTool",
-  "tool-declineAllIntegrationRequestsTool",
-  "tool-postRequestGitHubCommentTool",
-  "tool-deleteAttachment",
-]);
-
 const isToolPart = (type: string): boolean => type.startsWith("tool-");
 
 export const isToolMessagePart = (
@@ -92,8 +49,11 @@ export const isStoryResultToolType = (type: string) =>
 export const isEntityResultToolType = (type: string) =>
   ENTITY_RESULT_TOOL_TYPES.has(type);
 
-export const isMutationToolType = (type: string) =>
-  MUTATION_TOOL_TYPES.has(type);
+export const isMutationToolPart = (part: ToolMessagePart) =>
+  isMutationToolCall(
+    part.type.slice("tool-".length),
+    "input" in part ? part.input : undefined,
+  );
 
 export const isStoryCreationToolType = (type: string) =>
   STORY_CREATION_TOOL_TYPES.has(type);
@@ -122,7 +82,7 @@ export const isMemberResolverToolPart = (part: ToolMessagePart) => {
   return false;
 };
 
-export const getStoryCreationMessage = (output: unknown) => {
+export const getMutationMessage = (output: unknown) => {
   const outputRecord = asToolOutputRecord(output);
   const message = outputRecord.message;
   if (typeof message === "string" && message.trim()) return message.trim();
@@ -132,8 +92,12 @@ export const getStoryCreationMessage = (output: unknown) => {
     if (typeof error === "string" && error.trim()) return error.trim();
   }
 
+  if (outputRecord.success === true) return "Change completed successfully.";
+
   return undefined;
 };
+
+export const getStoryCreationMessage = getMutationMessage;
 
 export const isAnalyticsReportOutput = (
   output: unknown,
@@ -164,6 +128,10 @@ export const isRenderableToolPart = (part: ToolMessagePart) => {
 
   if (isStoryCreationToolType(part.type)) {
     return getStoryCreationMessage(part.output) !== undefined;
+  }
+
+  if (isMutationToolPart(part)) {
+    return getMutationMessage(part.output) !== undefined;
   }
 
   if (isEntityResultToolType(part.type)) {

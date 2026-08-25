@@ -1,27 +1,20 @@
 import type { UIMessage } from "ai";
-import type { tools } from "@/lib/ai/tools";
+import {
+  isMutationCapableToolName,
+  type MayaToolName,
+} from "@/lib/ai/tool-policy";
 
-export type MayaToolName = keyof typeof tools;
+const BASE_TOOLS = ["suggestions"] as const satisfies readonly MayaToolName[];
 
-const CORE_TOOLS = [
-  "navigation",
-  "theme",
-  "suggestions",
-  "search",
-] as const satisfies readonly MayaToolName[];
-
-const STORY_CREATION_TOOLS = [
-  "createStory",
-  "bulkCreateStories",
+const STORY_READ_TOOLS = [
   "listTeamStories",
   "searchStories",
+  "getStoryDetails",
+  "statuses",
   "listTeams",
-  "listPublicTeams",
   "getTeamDetails",
   "listTeamMembers",
-  "members",
   "resolveMember",
-  "statuses",
   "listSprints",
   "listRunningSprints",
   "listTeamObjectivesTool",
@@ -29,202 +22,167 @@ const STORY_CREATION_TOOLS = [
   "labels",
 ] as const satisfies readonly MayaToolName[];
 
-const STORY_TOOLS = [
-  ...STORY_CREATION_TOOLS,
-  "getStoryDetails",
-  "updateStory",
-  "deleteStory",
-  "bulkUpdateStories",
-  "bulkDeleteStories",
-  "assignStoriesToUser",
-  "duplicateStory",
-  "restoreStory",
-  "addStoryAssociation",
-  "removeStoryAssociation",
-  "comments",
-  "storyActivities",
-  "storyLabels",
-  "links",
-  "listAttachments",
-  "deleteAttachment",
+const STORY_CREATE_TOOLS = [
+  "createStory",
+  "bulkCreateStories",
 ] as const satisfies readonly MayaToolName[];
 
-const TEAM_TOOLS = [
+const STORY_UPDATE_TOOLS = [
+  "updateStory",
+  "bulkUpdateStories",
+  "assignStoriesToUser",
+] as const satisfies readonly MayaToolName[];
+
+const STORY_DELETE_TOOLS = [
+  "deleteStory",
+  "bulkDeleteStories",
+] as const satisfies readonly MayaToolName[];
+
+const TEAM_READ_TOOLS = [
   "members",
   "resolveMember",
   "listTeams",
   "listPublicTeams",
   "getTeamDetails",
   "listTeamMembers",
-  "createTeamTool",
-  "updateTeam",
-  "joinTeam",
-  "deleteTeam",
-  "leaveTeam",
   "getTeamSettingsTool",
 ] as const satisfies readonly MayaToolName[];
 
-const SPRINT_TOOLS = [
+const SPRINT_READ_TOOLS = [
   "listSprints",
   "listRunningSprints",
   "getSprintDetailsTool",
   "getSprintAnalyticsTool",
-  "updateSprintSettings",
-  "listTeamStories",
 ] as const satisfies readonly MayaToolName[];
 
-const OBJECTIVE_TOOLS = [
+const OBJECTIVE_READ_TOOLS = [
   "listObjectivesTool",
   "listTeamObjectivesTool",
-  "createObjectiveTool",
-  "updateObjectiveTool",
-  "deleteObjectiveTool",
-  "objectiveAnalyticsTool",
   "getObjectiveDetailsTool",
   "getObjectiveActivitiesTool",
+  "objectiveAnalyticsTool",
   "objectiveStatuses",
   "listKeyResultsTool",
-  "createKeyResultTool",
-  "updateKeyResultTool",
-  "deleteKeyResultTool",
   "getKeyResultActivitiesTool",
 ] as const satisfies readonly MayaToolName[];
 
-const ANALYTICS_TOOLS = [
-  "workspacePerformanceReportTool",
-  "workspaceCommandCenterReportTool",
-  "pulseReportTool",
-  "storyPerformanceReportTool",
-  "objectiveProgressReportTool",
-  "teamPerformanceReportTool",
-  "sprintPerformanceReportTool",
-  "timelineTrendsReportTool",
-  "workloadPlanningTool",
-  "focusBrief",
-  "activitySummaryTool",
+const OBJECTIVE_WRITE_TOOLS = [
+  "createObjectiveTool",
+  "updateObjectiveTool",
+  "deleteObjectiveTool",
+  "createKeyResultTool",
+  "updateKeyResultTool",
+  "deleteKeyResultTool",
+] as const satisfies readonly MayaToolName[];
+
+const ANALYTICS_SUPPORT_TOOLS = [
+  "listTeams",
+  "listTeamMembers",
+  "resolveMember",
+  "listSprints",
   "listTeamStories",
   "listTeamObjectivesTool",
-  "listSprints",
-  "listTeamMembers",
 ] as const satisfies readonly MayaToolName[];
 
-const PLANNING_TOOLS = [
-  "mayaWorkPlanTool",
-  "workloadPlanningTool",
-  "focusBrief",
-  "listTeamStories",
-  "searchStories",
-  "listTeamMembers",
-  "members",
-  "resolveMember",
-] as const satisfies readonly MayaToolName[];
-
-const GITHUB_TOOLS = [
+const GITHUB_READ_TOOLS = [
   "getGitHubIntegrationTool",
+  "getGitHubTeamSettingsTool",
+  "getStoryGitHubLinksTool",
+  "getStoryGitHubCommentsTool",
+] as const satisfies readonly MayaToolName[];
+
+const GITHUB_WRITE_TOOLS = [
   "createGitHubInstallSessionTool",
   "resyncGitHubRepositoriesTool",
   "createGitHubIssueSyncLinkTool",
   "deleteGitHubIssueSyncLinkTool",
   "updateGitHubWorkspaceSettingsTool",
-  "getGitHubTeamSettingsTool",
   "updateGitHubTeamSettingsTool",
-  "getStoryGitHubLinksTool",
-  "getStoryGitHubCommentsTool",
   "postStoryGitHubCommentTool",
   "deleteStoryGitHubLinkTool",
 ] as const satisfies readonly MayaToolName[];
 
-const INTEGRATION_REQUEST_TOOLS = [
+const INTEGRATION_REQUEST_READ_TOOLS = [
   "listIntegrationRequestsTool",
   "getIntegrationRequestTool",
+  "getRequestGitHubCommentsTool",
+] as const satisfies readonly MayaToolName[];
+
+const INTEGRATION_REQUEST_WRITE_TOOLS = [
   "updateIntegrationRequestTool",
   "acceptIntegrationRequestTool",
   "declineIntegrationRequestTool",
   "acceptAllIntegrationRequestsTool",
   "declineAllIntegrationRequestsTool",
-  "getRequestGitHubCommentsTool",
   "postRequestGitHubCommentTool",
 ] as const satisfies readonly MayaToolName[];
 
-const FEEDBACK_TOOLS = [
-  "listCustomerFeedbackTool",
-  "getCustomerFeedbackTool",
-] as const satisfies readonly MayaToolName[];
-
-const DOCUMENT_TOOLS = [
-  "listDocumentsTool",
-  "getDocumentDetailsTool",
-] as const satisfies readonly MayaToolName[];
-
-const MEMORY_TOOLS = [
-  "listMemories",
-  "createMemory",
-  "updateMemory",
-  "deleteMemory",
-] as const satisfies readonly MayaToolName[];
-
-const NOTIFICATION_TOOLS = [
-  "notifications",
-] as const satisfies readonly MayaToolName[];
-
 const DEFAULT_DISCOVERY_TOOLS = [
+  "focusBrief",
   "listTeamStories",
   "listTeams",
   "listObjectivesTool",
   "listSprints",
   "notifications",
-  "focusBrief",
 ] as const satisfies readonly MayaToolName[];
 
-const RECENT_ROUTING_MESSAGES = 8;
+const ANALYTICS_PATH_TOOLS = [
+  ...ANALYTICS_SUPPORT_TOOLS,
+  "workspaceCommandCenterReportTool",
+] as const satisfies readonly MayaToolName[];
 
-const STORY_CREATION_PATTERNS = [
-  /\b(?:create|add|draft|make|new|bulk)\b[^\n]{0,60}\b(?:story|stories|task|tasks)\b/,
-  /\b(?:story|stories|task|tasks)\b[^\n]{0,60}\b(?:create|add|draft|make|new|bulk)\b/,
+const RECENT_TOOL_MESSAGES = 8;
+
+const STORY_PATTERN =
+  /\b(?:story|stories|task|tasks|backlog|assignee|priority|estimate)\b/;
+const STORY_CREATE_PATTERN =
+  /\b(?:create|add|draft|make|new|bulk create)\b[^\n]{0,80}\b(?:story|stories|task|tasks)\b|\b(?:story|stories|task|tasks)\b[^\n]{0,80}\b(?:create|add|draft|make|new)\b/;
+const TEAM_PATTERN = /\b(?:team|teams|member|members|people)\b/;
+const SPRINT_PATTERN = /\b(?:sprint|sprints|cycle|iteration)\b/;
+const OBJECTIVE_PATTERN =
+  /\b(?:objective|objectives|okr|okrs|key result|key results|goal|goals)\b/;
+const ANALYTICS_PATTERN =
+  /\b(?:analytics|report|reports|performance|trend|trends|pulse|workload|capacity|dashboard|command center)\b/;
+const FOCUS_PATTERN =
+  /\b(?:focus|prioritize|priorities|needs? attention|work on today|work on next)\b/;
+const PLANNING_PATTERN =
+  /\b(?:calendar|schedule|scheduling|focus block|time block|plan my work)\b/;
+const GITHUB_PATTERN =
+  /\b(?:github|repository|repositories|pull request|pull requests)\b/;
+const INTEGRATION_REQUEST_PATTERN =
+  /\b(?:integration request|integration requests)\b/;
+const FEEDBACK_PATTERN = /\b(?:customer feedback|feedback)\b/;
+const DOCUMENT_PATTERN = /\b(?:document|documents)\b/;
+const MEMORY_PATTERN = /\b(?:memory|memories|remember|forget)\b/;
+const NOTIFICATION_PATTERN = /\b(?:notification|notifications)\b/;
+const ACTIVITY_PATTERN =
+  /\b(?:activity|activities|what changed|recent changes|change history)\b/;
+const COMMENT_PATTERN = /\b(?:comment|comments|reply|replies)\b/;
+const LABEL_PATTERN = /\b(?:label|labels|tag|tags)\b/;
+const LINK_PATTERN = /\b(?:link|links|url|urls)\b/;
+const ATTACHMENT_PATTERN = /\b(?:attachment|attachments|file|files)\b/;
+const NAVIGATION_PATTERN = /\b(?:navigate|open|take me|go to|show me where)\b/;
+const THEME_PATTERN = /\b(?:theme|dark mode|light mode)\b/;
+const SEARCH_PATTERN =
+  /\b(?:search|find|look up|compare|comparison|duplicate check|review)\b/;
+const CREATE_PATTERN = /\b(?:create|add|new|join|install|connect)\b/;
+const UPDATE_PATTERN =
+  /\b(?:update|edit|change|rename|move|assign|set|configure|resync)\b/;
+const DELETE_PATTERN = /\b(?:delete|remove|decline|leave|disconnect|unlink)\b/;
+const MUTATION_PATTERN =
+  /\b(?:create|add|update|edit|change|rename|move|assign|set|delete|remove|restore|duplicate|join|leave|accept|decline|post|resync|install|connect|unlink|forget)\b/;
+
+const PATH_DOMAINS = [
+  { pattern: /\/stories(?:\/|$)|\/my-work(?:\/|$)/, tools: STORY_READ_TOOLS },
+  { pattern: /\/sprints(?:\/|$)/, tools: SPRINT_READ_TOOLS },
+  { pattern: /\/objectives(?:\/|$)/, tools: OBJECTIVE_READ_TOOLS },
+  { pattern: /\/requests(?:\/|$)/, tools: INTEGRATION_REQUEST_READ_TOOLS },
+  { pattern: /\/feedback(?:\/|$)/, tools: ["listCustomerFeedbackTool"] },
+  { pattern: /\/(?:docs|documents)(?:\/|$)/, tools: ["listDocumentsTool"] },
+  { pattern: /\/analytics(?:\/|$)/, tools: ANALYTICS_PATH_TOOLS },
+  { pattern: /\/notifications(?:\/|$)/, tools: ["notifications"] },
+  { pattern: /\/teams(?:\/|$)/, tools: TEAM_READ_TOOLS },
 ] as const;
-const STORY_PATTERNS = [
-  /\b(?:story|stories|task|tasks|backlog|assignee|priority|estimate)\b/,
-  /\/stories(?:\/|$)/,
-  /\/my-work(?:\/|$)/,
-] as const;
-const TEAM_PATTERNS = [
-  /\b(?:team|teams|member|members|people|workspace)\b/,
-  /\/settings\/teams(?:\/|$)/,
-] as const;
-const SPRINT_PATTERNS = [
-  /\b(?:sprint|sprints|cycle|iteration)\b/,
-  /\/sprints(?:\/|$)/,
-] as const;
-const OBJECTIVE_PATTERNS = [
-  /\b(?:objective|objectives|okr|okrs|key result|key results|goal|goals)\b/,
-  /\/objectives(?:\/|$)/,
-] as const;
-const ANALYTICS_PATTERNS = [
-  /\b(?:analytics|report|reports|performance|trend|trends|pulse|workload|summary|brief|attention|priorities)\b/,
-  /\/analytics(?:\/|$)/,
-] as const;
-const PLANNING_PATTERNS = [
-  /\b(?:calendar|schedule|scheduling|focus block|time block|plan my work)\b/,
-  /\/calendar(?:\/|$)/,
-] as const;
-const GITHUB_PATTERNS = [
-  /\b(?:github|repository|repositories|pull request|pull requests)\b/,
-  /\/github(?:\/|$)/,
-] as const;
-const INTEGRATION_REQUEST_PATTERNS = [
-  /\b(?:integration request|integration requests)\b/,
-  /\/requests(?:\/|$)/,
-] as const;
-const FEEDBACK_PATTERNS = [
-  /\b(?:customer feedback|feedback)\b/,
-  /\/feedback(?:\/|$)/,
-] as const;
-const DOCUMENT_PATTERNS = [
-  /\b(?:document|documents)\b/,
-  /\/documents(?:\/|$)/,
-] as const;
-const MEMORY_PATTERNS = [/\b(?:memory|memories|remember|forget)\b/] as const;
-const NOTIFICATION_PATTERNS = [/\b(?:notification|notifications)\b/] as const;
 
 const addTools = (
   selectedTools: Set<MayaToolName>,
@@ -233,93 +191,238 @@ const addTools = (
   toolNames.forEach((toolName) => selectedTools.add(toolName));
 };
 
-const getRoutingContext = (messages: UIMessage[], currentPath: string) => {
-  const values = [currentPath];
+const getLatestUserText = (messages: UIMessage[]) => {
+  const message = messages.findLast((candidate) => candidate.role === "user");
+  if (!message) return "";
 
-  for (const message of messages.slice(-RECENT_ROUTING_MESSAGES)) {
+  return message.parts
+    .flatMap((part) => (part.type === "text" ? [part.text] : []))
+    .join(" ")
+    .toLowerCase();
+};
+
+const getPendingMutationTools = (messages: UIMessage[]) => {
+  const pendingTools = new Set<MayaToolName>();
+
+  for (const message of messages.slice(-RECENT_TOOL_MESSAGES)) {
     for (const part of message.parts) {
-      values.push(part.type);
-      if (part.type === "text") values.push(part.text);
+      if (!part.type.startsWith("tool-") || !("output" in part)) continue;
+
+      const output = part.output;
+      const needsConfirmation =
+        output &&
+        typeof output === "object" &&
+        "needsConfirmation" in output &&
+        output.needsConfirmation === true;
+      const toolName = part.type.slice("tool-".length);
+
+      if (needsConfirmation && isMutationCapableToolName(toolName)) {
+        pendingTools.add(toolName as MayaToolName);
+      }
     }
   }
 
-  return values.join(" ").toLowerCase();
+  return pendingTools;
 };
 
-const includesAny = (context: string, patterns: readonly RegExp[]) =>
-  patterns.some((pattern) => pattern.test(context));
+const addAnalyticsTools = (
+  selectedTools: Set<MayaToolName>,
+  intent: string,
+) => {
+  addTools(selectedTools, ANALYTICS_SUPPORT_TOOLS);
+
+  if (/\bcommand center|dashboard\b/.test(intent)) {
+    selectedTools.add("workspaceCommandCenterReportTool");
+  } else if (/\bpulse\b/.test(intent)) {
+    selectedTools.add("pulseReportTool");
+  } else if (/\bsprint|cycle|iteration\b/.test(intent)) {
+    selectedTools.add("sprintPerformanceReportTool");
+  } else if (/\bobjective|okr|key result|goal\b/.test(intent)) {
+    selectedTools.add("objectiveProgressReportTool");
+  } else if (/\bteam|member|person|people\b/.test(intent)) {
+    selectedTools.add("teamPerformanceReportTool");
+  } else if (/\bstory|stories|task|tasks|backlog\b/.test(intent)) {
+    selectedTools.add("storyPerformanceReportTool");
+  } else if (/\btrend|trends|timeline\b/.test(intent)) {
+    selectedTools.add("timelineTrendsReportTool");
+  } else if (/\bworkload|capacity\b/.test(intent)) {
+    selectedTools.add("workloadPlanningTool");
+  } else if (/\bworkspace\b/.test(intent)) {
+    selectedTools.add("workspacePerformanceReportTool");
+  } else {
+    selectedTools.add("workspaceCommandCenterReportTool");
+  }
+};
 
 export const selectActiveTools = ({
-  currentPath,
+  currentPath = "",
   messages,
 }: {
-  currentPath: string;
+  currentPath?: string;
   messages: UIMessage[];
 }): MayaToolName[] => {
-  const context = getRoutingContext(messages, currentPath);
-  const selectedTools = new Set<MayaToolName>(CORE_TOOLS);
+  const intent = getLatestUserText(messages);
+  const selectedTools = new Set<MayaToolName>(BASE_TOOLS);
+  const pendingTools = getPendingMutationTools(messages);
+  addTools(selectedTools, Array.from(pendingTools));
 
-  const addDomain = (toolNames: readonly MayaToolName[]) => {
-    addTools(selectedTools, toolNames);
-  };
+  let matchedDomain = pendingTools.size > 0;
+  const isStoryIntent = STORY_PATTERN.test(intent);
+  const isStoryAction = isStoryIntent && MUTATION_PATTERN.test(intent);
 
-  const isStoryCreation =
-    context.includes("tool-bulkcreatestories") ||
-    context.includes("tool-createstory") ||
-    includesAny(context, STORY_CREATION_PATTERNS);
+  if (isStoryIntent) {
+    matchedDomain = true;
+    addTools(selectedTools, STORY_READ_TOOLS);
 
-  if (isStoryCreation) {
-    addDomain(STORY_CREATION_TOOLS);
-  } else if (includesAny(context, STORY_PATTERNS)) {
-    addDomain(STORY_TOOLS);
+    if (STORY_CREATE_PATTERN.test(intent))
+      addTools(selectedTools, STORY_CREATE_TOOLS);
+    if (UPDATE_PATTERN.test(intent))
+      addTools(selectedTools, STORY_UPDATE_TOOLS);
+    if (DELETE_PATTERN.test(intent))
+      addTools(selectedTools, STORY_DELETE_TOOLS);
+    if (/\bduplicate\b/.test(intent)) selectedTools.add("duplicateStory");
+    if (/\brestore\b/.test(intent)) selectedTools.add("restoreStory");
+    if (/\bassociation|associate\b/.test(intent)) {
+      selectedTools.add("addStoryAssociation");
+      selectedTools.add("removeStoryAssociation");
+    }
+    if (/\bcomment|reply\b/.test(intent)) selectedTools.add("comments");
+    if (/\blabel|tag\b/.test(intent)) selectedTools.add("storyLabels");
+    if (/\blink|url\b/.test(intent)) selectedTools.add("links");
+    if (/\battachment|file\b/.test(intent)) {
+      selectedTools.add("listAttachments");
+      if (DELETE_PATTERN.test(intent)) selectedTools.add("deleteAttachment");
+    }
   }
 
-  if (!isStoryCreation && includesAny(context, TEAM_PATTERNS)) {
-    addDomain(TEAM_TOOLS);
+  if (!isStoryAction && TEAM_PATTERN.test(intent)) {
+    matchedDomain = true;
+    addTools(selectedTools, TEAM_READ_TOOLS);
+    if (CREATE_PATTERN.test(intent)) {
+      selectedTools.add("createTeamTool");
+      selectedTools.add("joinTeam");
+    }
+    if (UPDATE_PATTERN.test(intent)) selectedTools.add("updateTeam");
+    if (DELETE_PATTERN.test(intent)) {
+      selectedTools.add("deleteTeam");
+      selectedTools.add("leaveTeam");
+    }
   }
 
-  if (!isStoryCreation && includesAny(context, SPRINT_PATTERNS)) {
-    addDomain(SPRINT_TOOLS);
+  if (!isStoryAction && SPRINT_PATTERN.test(intent)) {
+    matchedDomain = true;
+    addTools(selectedTools, SPRINT_READ_TOOLS);
+    if (MUTATION_PATTERN.test(intent))
+      selectedTools.add("updateSprintSettings");
   }
 
-  if (!isStoryCreation && includesAny(context, OBJECTIVE_PATTERNS)) {
-    addDomain(OBJECTIVE_TOOLS);
+  if (!isStoryAction && OBJECTIVE_PATTERN.test(intent)) {
+    matchedDomain = true;
+    addTools(selectedTools, OBJECTIVE_READ_TOOLS);
+    if (MUTATION_PATTERN.test(intent))
+      addTools(selectedTools, OBJECTIVE_WRITE_TOOLS);
   }
 
-  if (includesAny(context, ANALYTICS_PATTERNS)) {
-    addDomain(ANALYTICS_TOOLS);
+  if (FOCUS_PATTERN.test(intent)) {
+    matchedDomain = true;
+    selectedTools.add("focusBrief");
+    selectedTools.add("resolveMember");
+  } else if (ANALYTICS_PATTERN.test(intent)) {
+    matchedDomain = true;
+    addAnalyticsTools(selectedTools, intent);
   }
 
-  if (includesAny(context, PLANNING_PATTERNS)) {
-    addDomain(PLANNING_TOOLS);
+  if (PLANNING_PATTERN.test(intent)) {
+    matchedDomain = true;
+    addTools(selectedTools, [
+      "mayaWorkPlanTool",
+      "workloadPlanningTool",
+      "focusBrief",
+      "listTeamStories",
+      "listTeamMembers",
+      "resolveMember",
+    ]);
   }
 
-  if (includesAny(context, GITHUB_PATTERNS)) {
-    addDomain(GITHUB_TOOLS);
+  if (GITHUB_PATTERN.test(intent)) {
+    matchedDomain = true;
+    addTools(selectedTools, GITHUB_READ_TOOLS);
+    if (MUTATION_PATTERN.test(intent))
+      addTools(selectedTools, GITHUB_WRITE_TOOLS);
   }
 
-  if (includesAny(context, INTEGRATION_REQUEST_PATTERNS)) {
-    addDomain(INTEGRATION_REQUEST_TOOLS);
+  if (INTEGRATION_REQUEST_PATTERN.test(intent)) {
+    matchedDomain = true;
+    addTools(selectedTools, INTEGRATION_REQUEST_READ_TOOLS);
+    if (MUTATION_PATTERN.test(intent)) {
+      addTools(selectedTools, INTEGRATION_REQUEST_WRITE_TOOLS);
+    }
   }
 
-  if (includesAny(context, FEEDBACK_PATTERNS)) {
-    addDomain(FEEDBACK_TOOLS);
+  if (FEEDBACK_PATTERN.test(intent)) {
+    matchedDomain = true;
+    addTools(selectedTools, [
+      "listCustomerFeedbackTool",
+      "getCustomerFeedbackTool",
+    ]);
   }
 
-  if (includesAny(context, DOCUMENT_PATTERNS)) {
-    addDomain(DOCUMENT_TOOLS);
+  if (DOCUMENT_PATTERN.test(intent)) {
+    matchedDomain = true;
+    addTools(selectedTools, ["listDocumentsTool", "getDocumentDetailsTool"]);
   }
 
-  if (includesAny(context, MEMORY_PATTERNS)) {
-    addDomain(MEMORY_TOOLS);
+  if (MEMORY_PATTERN.test(intent)) {
+    matchedDomain = true;
+    selectedTools.add("listMemories");
+    if (/\bremember|create|save|add\b/.test(intent))
+      selectedTools.add("createMemory");
+    if (/\bupdate|edit|change\b/.test(intent))
+      selectedTools.add("updateMemory");
+    if (/\bforget|delete|remove\b/.test(intent))
+      selectedTools.add("deleteMemory");
   }
 
-  if (includesAny(context, NOTIFICATION_PATTERNS)) {
-    addDomain(NOTIFICATION_TOOLS);
+  if (NOTIFICATION_PATTERN.test(intent)) {
+    matchedDomain = true;
+    selectedTools.add("notifications");
   }
 
-  if (selectedTools.size === CORE_TOOLS.length) {
-    addTools(selectedTools, DEFAULT_DISCOVERY_TOOLS);
+  if (ACTIVITY_PATTERN.test(intent)) {
+    matchedDomain = true;
+    selectedTools.add("activitySummaryTool");
+  }
+
+  if (!isStoryIntent && COMMENT_PATTERN.test(intent)) {
+    matchedDomain = true;
+    selectedTools.add("comments");
+  }
+
+  if (!isStoryIntent && LABEL_PATTERN.test(intent)) {
+    matchedDomain = true;
+    selectedTools.add("labels");
+  }
+
+  if (!isStoryIntent && LINK_PATTERN.test(intent)) {
+    matchedDomain = true;
+    selectedTools.add("links");
+  }
+
+  if (!isStoryIntent && ATTACHMENT_PATTERN.test(intent)) {
+    matchedDomain = true;
+    selectedTools.add("listAttachments");
+    if (DELETE_PATTERN.test(intent)) selectedTools.add("deleteAttachment");
+  }
+
+  if (NAVIGATION_PATTERN.test(intent)) selectedTools.add("navigation");
+  if (THEME_PATTERN.test(intent)) selectedTools.add("theme");
+  if (SEARCH_PATTERN.test(intent)) selectedTools.add("search");
+
+  if (!matchedDomain) {
+    const path = currentPath.toLowerCase();
+    const pathDomain = PATH_DOMAINS.find(({ pattern }) => pattern.test(path));
+    if (pathDomain) addTools(selectedTools, pathDomain.tools);
+    else addTools(selectedTools, DEFAULT_DISCOVERY_TOOLS);
   }
 
   return Array.from(selectedTools);

@@ -2,28 +2,34 @@
 
 import type { StepResult } from "ai";
 import type { tools } from "@/lib/ai/tools";
-import { hasTerminalStoryCreationResult } from "./stop-conditions";
+import { hasTerminalMutationResult } from "./stop-conditions";
 
-const stepWithToolResult = (toolName: string, output: unknown) =>
+const stepWithToolResult = (
+  toolName: string,
+  output: unknown,
+  input: unknown = {},
+) =>
   ({
-    toolResults: [{ output, toolName }],
+    toolResults: [{ input, output, toolName }],
   }) as unknown as StepResult<typeof tools>;
 
-describe("hasTerminalStoryCreationResult", () => {
-  it.each(["createStory", "bulkCreateStories"])(
-    "stops after a successful %s result",
-    (toolName) => {
-      expect(
-        hasTerminalStoryCreationResult({
-          steps: [stepWithToolResult(toolName, { success: true })],
-        }),
-      ).toBe(true);
-    },
-  );
+describe("hasTerminalMutationResult", () => {
+  it.each([
+    "createStory",
+    "bulkCreateStories",
+    "updateTeam",
+    "deleteObjectiveTool",
+  ])("stops after a successful %s result", (toolName) => {
+    expect(
+      hasTerminalMutationResult({
+        steps: [stepWithToolResult(toolName, { success: true })],
+      }),
+    ).toBe(true);
+  });
 
   it("stops when story creation needs confirmation", () => {
     expect(
-      hasTerminalStoryCreationResult({
+      hasTerminalMutationResult({
         steps: [
           stepWithToolResult("bulkCreateStories", {
             needsConfirmation: true,
@@ -36,12 +42,12 @@ describe("hasTerminalStoryCreationResult", () => {
 
   it("stops after a failed story result but not a read-only result", () => {
     expect(
-      hasTerminalStoryCreationResult({
+      hasTerminalMutationResult({
         steps: [stepWithToolResult("listTeamStories", { success: true })],
       }),
     ).toBe(false);
     expect(
-      hasTerminalStoryCreationResult({
+      hasTerminalMutationResult({
         steps: [
           stepWithToolResult("bulkCreateStories", {
             error: "Story creation failed.",
@@ -50,5 +56,47 @@ describe("hasTerminalStoryCreationResult", () => {
         ],
       }),
     ).toBe(true);
+  });
+
+  it("stops only for mutating actions on multi-action tools", () => {
+    expect(
+      hasTerminalMutationResult({
+        steps: [
+          stepWithToolResult(
+            "labels",
+            { success: true },
+            {
+              action: "create-label",
+            },
+          ),
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      hasTerminalMutationResult({
+        steps: [
+          stepWithToolResult(
+            "labels",
+            { success: true },
+            {
+              action: "list-labels",
+            },
+          ),
+        ],
+      }),
+    ).toBe(false);
+  });
+
+  it("allows a follow-up when a mutation returns an actionable install URL", () => {
+    expect(
+      hasTerminalMutationResult({
+        steps: [
+          stepWithToolResult("createGitHubInstallSessionTool", {
+            installUrl: "https://github.com/apps/fortyone/installations/new",
+            success: true,
+          }),
+        ],
+      }),
+    ).toBe(false);
   });
 });

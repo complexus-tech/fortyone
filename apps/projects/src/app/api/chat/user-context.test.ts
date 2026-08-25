@@ -133,4 +133,27 @@ describe("getUserContext", () => {
     expect(context).toContain("User: Maya [user-1]");
     expect(context).not.toContain("@undefined");
   });
+
+  it("bounds dynamic memories and omits billing metadata from model context", () => {
+    const context = getUserContext({
+      ...contextInput,
+      memories: Array.from({ length: 20 }, (_, index) => ({
+        id: `memory-${index}`,
+        content: `Memory ${index} ${"x".repeat(1000)}`,
+        workspaceId: workspace.id,
+        userId: "user-1",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      })),
+      user: {
+        id: "user-1",
+        name: "Maya",
+      },
+    });
+
+    expect(context).toContain("+8 more memories omitted");
+    expect(context).not.toContain("memory-12");
+    expect(context).not.toContain("Billing interval");
+    expect(context).not.toContain("Message usage");
+  });
 });

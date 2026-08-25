@@ -9,10 +9,12 @@ import { MayaWorkPlanResult } from "./maya-work-plan-result";
 import type { ToolMessagePart } from "./tool-output-policy";
 import {
   asToolOutputRecord,
+  getMutationMessage,
   getStoryCreationMessage,
   getToolSuggestions,
   isAnalyticsReportOutput,
   isEntityResultToolType,
+  isMutationToolPart,
   isRenderableToolPart,
   isStoryCreationToolType,
   isStoryResultToolType,
@@ -49,18 +51,28 @@ export const ToolOutputRenderer = ({
     );
   }
 
-  if (isEntityResultToolType(part.type)) {
-    return (
-      <GenerativeOutputFrame>
-        <EntityResults output={part.output} toolType={part.type} />
-      </GenerativeOutputFrame>
-    );
-  }
-
   if (part.type === "tool-mayaWorkPlanTool") {
     return (
       <GenerativeOutputFrame>
         <MayaWorkPlanResult output={part.output} />
+      </GenerativeOutputFrame>
+    );
+  }
+
+  if (isMutationToolPart(part)) {
+    return (
+      <GenerativeOutputFrame>
+        <p className="text-text-muted text-base">
+          {getMutationMessage(part.output)}
+        </p>
+      </GenerativeOutputFrame>
+    );
+  }
+
+  if (isEntityResultToolType(part.type)) {
+    return (
+      <GenerativeOutputFrame>
+        <EntityResults output={part.output} toolType={part.type} />
       </GenerativeOutputFrame>
     );
   }

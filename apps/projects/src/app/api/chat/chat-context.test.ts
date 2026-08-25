@@ -3,6 +3,7 @@
 
 import type { ModelMessage, UIMessage } from "ai";
 import {
+  compactChatToolOutputs,
   MAX_CHAT_CONTEXT_MESSAGES,
   pruneChatModelMessages,
   selectRecentChatMessages,
@@ -63,5 +64,33 @@ describe("chat context", () => {
 
     expect(JSON.stringify(prunedMessages)).not.toContain("large");
     expect(JSON.stringify(prunedMessages)).toContain("Recent message 8");
+  });
+
+  it("compacts recent tool outputs before converting chat history", () => {
+    const messages = [
+      {
+        id: "assistant-message",
+        parts: [
+          {
+            input: {},
+            output: {
+              content: "x".repeat(2000),
+              contentHTML: `<p>${"x".repeat(2000)}</p>`,
+              success: true,
+            },
+            state: "output-available",
+            type: "tool-getDocumentDetailsTool",
+          },
+        ],
+        role: "assistant",
+      },
+    ] as unknown as UIMessage[];
+
+    const compacted = compactChatToolOutputs(messages);
+    const serialized = JSON.stringify(compacted);
+
+    expect(serialized).not.toContain("contentHTML");
+    expect(serialized.length).toBeLessThan(1500);
+    expect(messages[0]?.parts[0]).toHaveProperty("output.contentHTML");
   });
 });

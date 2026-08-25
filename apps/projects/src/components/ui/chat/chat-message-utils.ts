@@ -3,7 +3,7 @@ import type { ToolMessagePart } from "./tool-output-policy";
 import {
   isAnalyticsReportOutput,
   isMemberResolverToolPart,
-  isMutationToolType,
+  isMutationToolPart,
   isRenderableToolPart,
   isSupportingToolType,
   isToolMessagePart,
@@ -111,7 +111,7 @@ export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
   const mutationPartIndexes = message.parts.flatMap((part, index) =>
     isToolMessagePart(part) &&
     part.state === "output-available" &&
-    isMutationToolType(part.type)
+    isMutationToolPart(part)
       ? [index]
       : [],
   );
@@ -143,13 +143,13 @@ export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
         laterInvokedToolParts.some(
           ({ part: laterPart }) =>
             MEMBER_SCOPED_RESULT_TYPES.has(laterPart.type) ||
-            isMutationToolType(laterPart.type),
+            isMutationToolPart(laterPart),
         );
       const hasLaterResultOfSameType = laterToolParts.some(
         ({ part: laterPart }) => laterPart.type === part.type,
       );
       const feedsLaterMutation =
-        !isMutationToolType(part.type) &&
+        !isMutationToolPart(part) &&
         mutationPartIndexes.some(
           (mutationPartIndex) => mutationPartIndex > index,
         );

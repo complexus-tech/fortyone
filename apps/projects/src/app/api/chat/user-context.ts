@@ -7,18 +7,25 @@ type UserContextIdentity = {
   name?: string | null;
 };
 
+const MAX_CONTEXT_MEMORIES = 12;
+const MAX_MEMORY_CHARACTERS = 500;
+const MAX_CONTEXT_TEAMS = 20;
+
+const truncateMemory = (content: string) =>
+  content.length <= MAX_MEMORY_CHARACTERS
+    ? content
+    : `${content.slice(0, MAX_MEMORY_CHARACTERS).trimEnd()}…`;
+
 export function getUserContext({
   user,
   currentPath,
   currentTheme,
   resolvedTheme,
-  subscription,
   joinedTeams,
   username,
   terminology,
   workspace,
   memories,
-  totalMessages,
 }: {
   user?: UserContextIdentity;
   currentPath: string;
@@ -65,14 +72,24 @@ export function getUserContext({
     joinedTeamsSummary =
       joinedTeams.length > 0
         ? joinedTeams
+            .slice(0, MAX_CONTEXT_TEAMS)
             .map((team) => `${team.name} (${team.code}) [${team.id}]`)
-            .join(", ")
+            .join(", ") +
+          (joinedTeams.length > MAX_CONTEXT_TEAMS
+            ? `, +${joinedTeams.length - MAX_CONTEXT_TEAMS} more`
+            : "")
         : "None";
   }
 
   const memoriesSummary =
     memories.length > 0
-      ? memories.map((memory) => `- ${memory.id}: ${memory.content}`).join("\n")
+      ? memories
+          .slice(0, MAX_CONTEXT_MEMORIES)
+          .map((memory) => `- ${memory.id}: ${truncateMemory(memory.content)}`)
+          .join("\n") +
+        (memories.length > MAX_CONTEXT_MEMORIES
+          ? `\n- +${memories.length - MAX_CONTEXT_MEMORIES} more memories omitted`
+          : "")
       : "- None";
 
   let teamSelectionGuidance =
@@ -91,44 +108,19 @@ export function getUserContext({
 Runtime context:
 - User: ${displayName}${usernameLabel} [${user.id}]
 - Workspace: ${workspace.name} (${workspace.slug}) [${workspace.id}]
-- Workspace role: ${workspace.userRole}
-- Current path: ${currentPath}
-- Today: ${currentDate}
-- Current time: ${currentTime}
-- Timezone: ${timezone}
-- Theme preference: ${currentTheme}
-- Resolved theme: ${resolvedTheme}
-
-Terminology:
-- Stories => ${terminology.stories}
-- Sprints => ${terminology.sprints}
-- Objectives => ${terminology.objectives}
-- Key Results => ${terminology.keyResults}
+- Role: ${workspace.userRole}; path: ${currentPath}
+- Local time: ${currentDate} ${currentTime} (${timezone})
+- Theme: ${currentTheme} (resolved ${resolvedTheme})
+- Terms: stories=${terminology.stories}; sprints=${terminology.sprints}; objectives=${terminology.objectives}; key results=${terminology.keyResults}
 
 Joined teams:
 - ${joinedTeamsSummary}
 - ${teamSelectionGuidance}
-- Public teams the user has not joined are not included here. Never treat a discoverable public team as one of the user's teams.
-
-Subscription:
-- Tier: ${subscription?.tier ?? "unknown"}
-- Status: ${subscription?.status ?? "unknown"}
-- Billing interval: ${subscription?.billingInterval ?? "unknown"}
-- Billing ends at: ${subscription?.billingEndsAt ?? "unknown"}
-
-Message usage:
-- Current: ${totalMessages.current}
-- Limit: ${totalMessages.limit}
+- Never treat a discoverable public team as one of the user's teams.
 
 Memories:
 ${memoriesSummary}
 
-"Me" resolution:
-- When the user says "me", "my", or "assign to me", resolve to ${displayName} [${user.id}].
-
-Date handling:
-- Server dates are UTC.
-- Present dates/times in ${timezone}.
-- Do not show seconds.
+Resolution: "me"/"my"/"assign to me" resolve to ${displayName} [${user.id}]. Server dates are UTC; present them in ${timezone} without seconds.
 `;
 }

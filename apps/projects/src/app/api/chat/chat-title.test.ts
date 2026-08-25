@@ -1,7 +1,11 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import type { UIMessage } from "ai";
-import { getChatTitle } from "./chat-title";
+import {
+  getChatTitle,
+  getChatTitleSource,
+  normalizeGeneratedChatTitle,
+} from "./chat-title";
 
 const userMessage = (text: string): UIMessage => ({
   id: "message-1",
@@ -41,5 +45,17 @@ describe("getChatTitle", () => {
         },
       ]),
     ).toBe("New conversation");
+  });
+
+  it("bounds the text sent to the title model", () => {
+    expect(getChatTitleSource([userMessage("x".repeat(2000))])).toHaveLength(
+      500,
+    );
+  });
+
+  it("normalizes a generated title without trusting verbose output", () => {
+    expect(
+      normalizeGeneratedChatTitle('Title: "Plan Product Launch"\nNotes'),
+    ).toBe("Plan Product Launch");
   });
 });

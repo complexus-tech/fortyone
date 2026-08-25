@@ -13,6 +13,7 @@ describe("ChatMessage", () => {
     expect(promptSource).toContain(
       "You are Maya, FortyOne's AI agent for project management.",
     );
+    expect(promptSource.length).toBeLessThan(10_000);
   });
 
   it("uses story-list surface colors for user prompts instead of inverse colors", () => {
