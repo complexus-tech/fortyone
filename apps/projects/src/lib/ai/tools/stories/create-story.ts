@@ -13,6 +13,7 @@ import {
 } from "./normalize-story-input";
 import { createSprintEndDateResolver } from "./resolve-sprint-end-date";
 import { createStoryStatusResolver } from "./resolve-story-status";
+import { toStoryToolSummary } from "./story-tool-summary";
 
 export const createStory = tool({
   description:
@@ -229,7 +230,7 @@ export const createStory = tool({
 
       return {
         success: true,
-        story: result.data,
+        story: toStoryToolSummary(result.data),
         message: `Story "${title}" created successfully.`,
       };
     } catch (error) {

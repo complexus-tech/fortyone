@@ -1,17 +1,7 @@
-import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-import { createOpenAI } from "@ai-sdk/openai";
 import type { UIMessage } from "ai";
-import { generateObject } from "ai";
-import { z } from "zod";
-import { withTracing } from "@posthog/ai";
-import {
-  OPENAI_DEFAULT_REASONING_EFFORT,
-  OPENAI_TEXT_MODEL,
-} from "@/lib/ai/models";
 import { saveAiChatMessagesAction } from "@/modules/ai-chats/actions/save-ai-chat-messages";
 import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
-import { auth } from "@/auth";
-import posthogServer from "@/app/posthog-server";
+import { getChatTitle } from "./chat-title";
 
 export const saveChat = async ({
   id,
@@ -22,48 +12,7 @@ export const saveChat = async ({
   messages: UIMessage[];
   workspaceSlug: string;
 }) => {
-  const session = await auth();
-  let title = "";
-  // if its a new chat generate the title
-  const phClient = posthogServer();
-
-  const openaiClient = createOpenAI({
-    // eslint-disable-next-line turbo/no-undeclared-env-vars -- this is ok
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-
-  const model = withTracing(openaiClient(OPENAI_TEXT_MODEL), phClient, {
-    posthogDistinctId: session?.user.email ?? undefined,
-    posthogProperties: {
-      conversation_id: id,
-    },
-  });
-  if (messages.length <= 3) {
-    const firstMessage = messages[0];
-    let messageContent = "";
-    firstMessage.parts.forEach((part) => {
-      if (part.type === "text") {
-        messageContent = part.text;
-      }
-    });
-
-    const result = await generateObject({
-      model,
-      schema: z.object({
-        title: z.string(),
-      }),
-      providerOptions: {
-        openai: {
-          reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
-          textVerbosity: "low",
-        } satisfies OpenAIResponsesProviderOptions,
-      },
-      prompt: `You're generating a short title for a conversation in FortyOne, a project management platform. Use the first user message to infer what the chat is about. Keep the title short, clear, and relevant to project work (e.g. planning, tasks, bugs, OKRs).
-    
-      User message: "${messageContent}"`,
-    });
-    title = result.object.title;
-  }
+  const title = messages.length <= 3 ? getChatTitle(messages) : "";
 
   try {
     if (title) {

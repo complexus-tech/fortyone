@@ -59,7 +59,7 @@ const customerStories: readonly CustomerStory[] = [
     logo: finLogo,
     logoClassName: "h-9 w-auto max-w-24",
     quote:
-      "Planning feels much lighter now. I can see what the team is working on, where we’re stuck, and what needs my attention.",
+      "FortyOne is easily the best platform we’ve used to keep work clear and moving. Everyone knows what needs attention, and we spend far less time chasing updates or wondering what comes next.",
     role: "Head of Engineering & CTO",
   },
   {
@@ -71,7 +71,7 @@ const customerStories: readonly CustomerStory[] = [
     logo: miningoLogo,
     logoClassName: "h-11 w-auto max-w-32",
     quote:
-      "Our feedback and priorities finally live in one place. I can see what customers need and what the team should focus on next.",
+      "Every project brings a different set of challenges, and there is always a lot to coordinate. FortyOne helps us stay organised, keep everyone aligned, and deliver with confidence.",
     role: "Founder & Spatial Data Scientist",
   },
   {

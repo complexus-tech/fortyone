@@ -7,15 +7,15 @@ export const HOME_METADATA_DESCRIPTION =
 
 export const DEFAULT_SOCIAL_IMAGE = {
   url: "/opengraph-image.png",
-  width: 1682,
-  height: 1006,
+  width: 1200,
+  height: 630,
   alt: "FortyOne AI project management platform for strategy, feedback, and delivery",
 };
 
 export const DEFAULT_TWITTER_IMAGE = {
   url: "/twitter-image.png",
-  width: 1682,
-  height: 1006,
+  width: 1200,
+  height: 630,
   alt: "FortyOne AI project management platform for strategy, feedback, and delivery",
 };
 

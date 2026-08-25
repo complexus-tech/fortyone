@@ -12,10 +12,7 @@ import {
 } from "ai";
 import type { NextRequest } from "next/server";
 import { withTracing } from "@posthog/ai";
-import {
-  OPENAI_DEFAULT_REASONING_EFFORT,
-  OPENAI_TEXT_MODEL,
-} from "@/lib/ai/models";
+import { OPENAI_TEXT_MODEL } from "@/lib/ai/models";
 import { tools } from "@/lib/ai/tools";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
@@ -24,12 +21,20 @@ import { getUserContext } from "./user-context";
 import { saveChat } from "./save-chat";
 import { normalizeInlineFileData } from "./normalize-file-data";
 import { resolveJoinedTeams } from "./resolve-joined-teams";
+import { selectActiveTools } from "./active-tools";
+import {
+  pruneChatModelMessages,
+  selectRecentChatMessages,
+} from "./chat-context";
+import { getChatStreamErrorMessage } from "./chat-errors";
+import { hasTerminalStoryCreationResult } from "./stop-conditions";
 
 export const maxDuration = 120;
 
 const MAX_OUTPUT_TOKENS = 4000;
 const MAX_TOOL_STEPS = 12;
 const MAYA_PROMPT_CACHE_NAMESPACE = "maya-projects-v1";
+const MAYA_REASONING_EFFORT = "low";
 
 export async function POST(req: NextRequest) {
   const {
@@ -47,11 +52,19 @@ export async function POST(req: NextRequest) {
     totalMessages,
   } = await req.json();
 
+  const uiMessages = messagesFromRequest as UIMessage[];
+  const recentMessages = selectRecentChatMessages(uiMessages);
+  const activeTools = selectActiveTools({
+    currentPath,
+    messages: recentMessages,
+  });
   const [convertedMessages, session] = await Promise.all([
-    convertToModelMessages(messagesFromRequest as UIMessage[]),
+    convertToModelMessages(recentMessages),
     auth(),
   ]);
-  const modelMessages = normalizeInlineFileData(convertedMessages);
+  const modelMessages = pruneChatModelMessages(
+    normalizeInlineFileData(convertedMessages),
+  );
   const joinedTeams = await resolveJoinedTeams({
     session,
     workspaceSlug: workspace?.slug,
@@ -96,6 +109,8 @@ export async function POST(req: NextRequest) {
   const model = withTracing(client, phClient, {
     posthogDistinctId: session?.user.email ?? undefined,
     posthogProperties: {
+      active_tool_count: activeTools.length,
+      chat_context_message_count: recentMessages.length,
       conversation_id: id,
       paid: subscription?.status === "active",
     },
@@ -106,7 +121,8 @@ export async function POST(req: NextRequest) {
       model,
       messages: modelMessages,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
-      stopWhen: [stepCountIs(MAX_TOOL_STEPS)],
+      activeTools,
+      stopWhen: [hasTerminalStoryCreationResult, stepCountIs(MAX_TOOL_STEPS)],
       tools: {
         ...tools,
         // ...(webSearchEnabled
@@ -122,7 +138,7 @@ export async function POST(req: NextRequest) {
       providerOptions: {
         openai: {
           promptCacheKey: `${MAYA_PROMPT_CACHE_NAMESPACE}:${workspace?.id ?? "unknown"}`,
-          reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
+          reasoningEffort: MAYA_REASONING_EFFORT,
           textVerbosity: "low",
         } satisfies OpenAIResponsesProviderOptions,
         google: {
@@ -132,6 +148,10 @@ export async function POST(req: NextRequest) {
           },
         },
       },
+      onError: ({ error }) => {
+        // eslint-disable-next-line no-console -- Keep upstream details server-side while the client receives a safe message.
+        console.error("[chat/route] Stream error:", error);
+      },
     });
     return result.toUIMessageStreamResponse({
       sendReasoning: false,
@@ -140,6 +160,7 @@ export async function POST(req: NextRequest) {
       onFinish: async ({ messages }) => {
         await saveChat({ id, messages, workspaceSlug: workspace?.slug || "" });
       },
+      onError: getChatStreamErrorMessage,
     });
   } catch (error) {
     // eslint-disable-next-line no-console -- Preserve server-side diagnostics.

@@ -14,6 +14,7 @@ import {
 } from "./normalize-story-input";
 import { createSprintEndDateResolver } from "./resolve-sprint-end-date";
 import { createStoryStatusResolver } from "./resolve-story-status";
+import { toStoryToolSummary } from "./story-tool-summary";
 
 const MAX_STORIES_PER_REQUEST = 50;
 const CREATION_BATCH_SIZE = 10;
@@ -301,7 +302,7 @@ export const bulkCreateStories = tool({
           success: false,
           createdCount: successCount,
           errorCount,
-          stories: createdStories,
+          stories: createdStories.map(toStoryToolSummary),
           failedStories,
           error: failedStories
             .map((failure) => `${failure.title}: ${failure.error}`)
@@ -314,7 +315,7 @@ export const bulkCreateStories = tool({
         success: true,
         createdCount: successCount,
         errorCount,
-        stories: createdStories,
+        stories: createdStories.map(toStoryToolSummary),
         message: `Successfully created ${successCount} stories.`,
       };
     } catch (error) {
