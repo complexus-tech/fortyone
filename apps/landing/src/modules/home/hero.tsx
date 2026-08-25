@@ -39,12 +39,9 @@ export const Hero = () => {
     <Box>
       <Container className="pt-8">
         <Box className="mt-10 mb-6">
-          <Text className="text-primary mb-4 text-[0.6875rem] font-medium tracking-[0.14em] uppercase">
-            Agentic planning
-          </Text>
           <Text
             as="h1"
-            className="relative z-1 text-[2.75rem] font-semibold text-balance sm:text-5xl md:max-w-6xl md:text-6xl"
+            className="relative z-1 text-[2.75rem] leading-[0.98] font-semibold tracking-tight text-balance sm:text-5xl sm:leading-none md:max-w-6xl md:text-6xl"
           >
             {HERO_TITLE_WORDS.map((word, index) => {
               const particleConfig = HERO_PARTICLE_KEYWORDS[word];

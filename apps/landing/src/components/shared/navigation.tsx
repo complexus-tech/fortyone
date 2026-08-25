@@ -391,7 +391,7 @@ export const Navigation = () => {
         <Flex align="center" className="ml-2 gap-1 sm:ml-4 sm:gap-2">
           {/* <RequestDemo /> */}
           <Button
-            className="hidden rounded-md px-5 text-[0.93rem] md:flex"
+            className="hidden px-5 text-[0.93rem] md:flex"
             color="gradient"
             href={APP_URL}
             size="lg"
@@ -400,7 +400,7 @@ export const Navigation = () => {
             Log in
           </Button>
           <Button
-            className="h-10 rounded-lg px-4 text-[0.875rem] sm:h-11.5 sm:rounded-xl sm:px-5 sm:text-[0.93rem]"
+            className="h-10 px-4 text-[0.875rem] sm:h-11.5 sm:px-5 sm:text-[0.93rem]"
             color="invert"
             href={SIGNUP_URL}
             rounded="md"

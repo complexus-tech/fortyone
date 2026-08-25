@@ -303,7 +303,7 @@ export const FeatureOverview = () => {
                           strokeWidth={2}
                         />
                       }
-                      rounded="lg"
+                      rounded="md"
                       size="lg"
                       variant="outline"
                     >

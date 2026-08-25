@@ -19,13 +19,13 @@ export default function NotFound() {
             sitemap to find the resource you need.
           </Text>
           <Box className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button color="invert" href="/" rounded="lg">
+            <Button color="invert" href="/" rounded="md">
               Go home
             </Button>
             <Button
               color="tertiary"
               href="https://docs.fortyone.app"
-              rounded="lg"
+              rounded="md"
             >
               Read the docs
             </Button>

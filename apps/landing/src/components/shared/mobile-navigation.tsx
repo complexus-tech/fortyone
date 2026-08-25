@@ -79,7 +79,7 @@ export const MobileNavigation = () => {
 
       <Dialog onOpenChange={setOpen} open={open}>
         <Dialog.Content
-          className="bg-background dark:bg-background m-0 mt-12 w-full rounded-none border-0 outline-none sm:mt-14 dark:border-0"
+          className="bg-background dark:bg-background m-0 mt-16 w-full rounded-none border-0 outline-none sm:mt-18 dark:border-0"
           hideClose
           overlayClassName="bg-transparent dark:bg-transparent"
         >
@@ -89,7 +89,7 @@ export const MobileNavigation = () => {
           <Dialog.Description className="sr-only">
             Menu dialog
           </Dialog.Description>
-          <Dialog.Body className="flex h-[calc(100dvh-3rem)] max-h-screen flex-col justify-between overflow-y-auto overscroll-contain px-4 pt-4 pb-8 sm:h-[calc(100dvh-4rem)] sm:pt-5">
+          <Dialog.Body className="flex h-[calc(100dvh-4rem)] max-h-screen flex-col justify-between overflow-y-auto overscroll-contain px-4 pt-4 pb-8 sm:h-[calc(100dvh-4.5rem)] sm:pt-5">
             <Box>
               <Flex className="gap-4 pl-2 sm:gap-6" direction="column">
                 {navItems.map(({ label, href, items }) => {

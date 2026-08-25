@@ -58,7 +58,12 @@ export default function Page() {
           </section>
           <DecideWhatMattersShowcase />
         </div>
-        <div className={styles.progressBand}>
+        <div
+          className={cn(
+            "rounded-b-2xl sm:rounded-b-[3rem] md:rounded-b-[4rem]",
+            styles.progressBand,
+          )}
+        >
           <ProductWorkflowShowcase />
           <CustomerStories />
           <FeatureOverview />

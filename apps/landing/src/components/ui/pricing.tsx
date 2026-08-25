@@ -511,7 +511,7 @@ const Package = ({
                   strokeWidth={2}
                 />
               }
-              rounded="lg"
+              rounded="md"
               size="lg"
               variant={recommended ? "solid" : "outline"}
             >

@@ -44,7 +44,7 @@ export const SignupProviderButton = ({
       href={providerConfig.href}
       leftIcon={providerConfig.icon}
       prefetch={false}
-      rounded="lg"
+      rounded="md"
       size="lg"
       variant={emphasized ? "solid" : "naked"}
     >

@@ -54,7 +54,7 @@ export const CallToAction = ({
               className="relative z-1 w-full justify-center px-3 sm:w-max md:pr-4 md:pl-5"
               color="invert"
               href={SIGNUP_URL}
-              rounded="lg"
+              rounded="md"
               size="lg"
             >
               Get started free
