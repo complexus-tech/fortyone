@@ -76,6 +76,7 @@ const scheduleEventUpsertIsCurrentQuery = `
 			AND block.workspace_id = $2
 			AND block.user_id = $3
 			AND block.source = 'maya'
+			AND block.completed_at IS NULL
 			AND block.external_provider = $4
 			AND block.external_calendar_id = $5
 			AND block.external_event_id = $6
@@ -105,6 +106,7 @@ const markScheduleBlockMirroredQuery = `
 		external_sync_hash = $2,
 		external_synced_at = CURRENT_TIMESTAMP
 	WHERE block_id = $1
+		AND completed_at IS NULL
 `
 
 const mayaScheduleEligibilityQuery = `
@@ -210,6 +212,7 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 			AND user_id = $2
 			AND story_id = $3
 			AND source = 'maya'
+			AND completed_at IS NULL
 		FOR UPDATE
 	`
 	current := []reconciliationBlock{}
@@ -242,6 +245,7 @@ func (r *Repo) ReconcileMayaScheduleBlocks(ctx context.Context, input calendar.M
 			SELECT 1
 			FROM calendar_schedule_blocks block
 			WHERE block.user_id = $1
+				AND block.completed_at IS NULL
 				AND block.start_at < $3
 				AND block.end_at > $2
 				AND NOT (block.block_id = ANY(CAST($4 AS uuid[])))

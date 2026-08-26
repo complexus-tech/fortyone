@@ -199,6 +199,7 @@ func (r *Repo) ApplyCalendarChanges(ctx context.Context, connection calendar.Cor
 			WHERE user_id = $1
 				AND external_provider = $2
 				AND external_event_id = $3
+				AND completed_at IS NULL
 			FOR UPDATE
 		`, connection.UserID, string(connection.Provider), change.EventID); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {

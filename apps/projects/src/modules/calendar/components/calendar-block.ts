@@ -42,7 +42,19 @@ export const getCalendarStoryBlockStyle = (
 };
 
 export const isCalendarScheduleBlockEditable = (block: CalendarScheduleBlock) =>
-  !block.isCrossWorkspace && block.source !== "maya";
+  !block.completedAt && !block.isCrossWorkspace && block.source !== "maya";
+
+export const isCalendarScheduleBlockCompleted = (
+  block: CalendarScheduleBlock,
+) => Boolean(block.completedAt);
+
+export const getVisibleCalendarScheduleBlocks = (
+  blocks: CalendarScheduleBlock[],
+  showCompletedWork: boolean,
+) =>
+  showCompletedWork
+    ? blocks
+    : blocks.filter((block) => !isCalendarScheduleBlockCompleted(block));
 
 export const getCalendarScheduleBlockSecondaryLabel = (
   block: CalendarScheduleBlock,

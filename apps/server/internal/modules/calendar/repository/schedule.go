@@ -37,7 +37,8 @@ const scheduleBlockSelect = `
 		END AS title,
 		csb.start_at,
 		csb.end_at,
-		EXISTS (
+		csb.completed_at,
+		csb.completed_at IS NULL AND EXISTS (
 			SELECT 1
 			FROM calendar_busy_windows conflict_window
 			INNER JOIN calendar_connections conflict_connection ON
@@ -150,6 +151,7 @@ func (r *Repo) ListScheduleIssues(ctx context.Context, workspaceID, userID uuid.
 				AND block.user_id = story.assignee_id
 				AND block.story_id = story.id
 				AND block.source = 'maya'
+				AND block.completed_at IS NULL
 		) scheduled ON TRUE
 		WHERE story.workspace_id = $1
 			AND story.assignee_id = $2
@@ -173,6 +175,7 @@ func (r *Repo) ListSchedulingBlocksForUser(ctx context.Context, workspaceID, use
 		WHERE csb.user_id = $1
 			AND csb.start_at < $3
 			AND csb.end_at > $2
+			AND csb.completed_at IS NULL
 			AND EXISTS (
 				SELECT 1 FROM workspace_members owner_membership
 				WHERE owner_membership.workspace_id = csb.workspace_id
@@ -249,6 +252,7 @@ func (r *Repo) ListMayaScheduleBlocksForStory(ctx context.Context, workspaceID, 
 			AND csb.user_id = $2
 			AND csb.story_id = $3
 			AND csb.source = 'maya'
+			AND csb.completed_at IS NULL
 		ORDER BY csb.segment_index, csb.start_at
 	`
 	rows := []dbScheduleBlock{}
@@ -457,6 +461,7 @@ func (r *Repo) ManuallyRescheduleScheduleBlock(ctx context.Context, input calend
 		       external_provider, external_calendar_id, external_event_id, updated_at
 		FROM calendar_schedule_blocks
 		WHERE workspace_id = $1 AND user_id = $2 AND block_id = $3
+			AND completed_at IS NULL
 		FOR UPDATE
 	`, input.WorkspaceID, input.UserID, input.BlockID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -624,6 +629,7 @@ func scheduleBlockConflicts(
 			SELECT 1
 			FROM calendar_schedule_blocks csb
 			WHERE csb.user_id = $1
+				AND csb.completed_at IS NULL
 				AND csb.start_at < $3
 				AND csb.end_at > $2
 				AND ($4 = CAST('00000000-0000-0000-0000-000000000000' AS uuid) OR csb.block_id <> $4)

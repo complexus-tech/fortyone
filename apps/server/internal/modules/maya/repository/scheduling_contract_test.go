@@ -31,6 +31,9 @@ func TestScheduleRecoveryClaimIsBoundedFairAndConcurrencySafe(t *testing.T) {
 		"current_timestamp - interval '1 hour'",
 		"from calendar_schedule_blocks retry_block",
 		"story.auto_scheduling_status in ('scheduled', 'locked')",
+		"retry_block.completed_at is null",
+		"elapsed_block.completed_at is null",
+		"future_block.completed_at is null",
 	} {
 		if !strings.Contains(query, fragment) {
 			t.Fatalf("recovery claim must contain %q: %s", fragment, query)

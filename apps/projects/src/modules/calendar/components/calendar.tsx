@@ -77,8 +77,10 @@ import {
   RESERVED_TIME_BLOCK_CLASS,
   getCalendarScheduleBlockSecondaryLabel,
   getCalendarStoryBlockStyle,
+  getVisibleCalendarScheduleBlocks,
   getMayaCalendarBlockLabel,
   getMayaCalendarBlockReason,
+  isCalendarScheduleBlockCompleted,
   isCalendarScheduleBlockEditable,
 } from "./calendar-block";
 import type { CalendarDragKind } from "./calendar-drag";
@@ -392,6 +394,7 @@ const CalendarTimedBlock = ({
 }) => {
   const draggableBlock =
     item.kind === "block" &&
+    !isCalendarScheduleBlockCompleted(item.block) &&
     !item.block.isCrossWorkspace &&
     item.block.blockType === "work" &&
     item.block.storyId
@@ -428,7 +431,7 @@ const CalendarTimedBlock = ({
     | ((event: ReactTouchEvent<HTMLButtonElement>) => void)
     | undefined;
   const laneWidth = 100 / layout.laneCount;
-  const isCompleted = new Date(item.endAt).getTime() <= today.getTime();
+  const isPast = new Date(item.endAt).getTime() <= today.getTime();
   const resizeDeltaMinutes = isResizeDragging
     ? snapCalendarDeltaMinutes(resizeTransform?.y ?? 0, hourHeight, "resize")
     : 0;
@@ -464,15 +467,15 @@ const CalendarTimedBlock = ({
 
   if (item.kind === "event") {
     const EventIcon = item.event.meetingUrl ? Video02Icon : CalendarIcon;
-    const eventTextClass = isCompleted ? "text-text-muted" : "text-[#3c90ff]";
-    const eventAccentClass = isCompleted ? "bg-border-strong" : "bg-[#3c90ff]";
+    const eventTextClass = isPast ? "text-text-muted" : "text-[#3c90ff]";
+    const eventAccentClass = isPast ? "bg-border-strong" : "bg-[#3c90ff]";
 
     return (
       <button
         aria-label={`Open ${getCalendarEventTitle(item.event)} details, ${getCalendarEventTimeLabel(item.event)}`}
         className={cn(
           "absolute overflow-hidden rounded-md border text-left backdrop-blur-sm transition-colors focus-visible:ring-2 focus-visible:outline-none",
-          isCompleted
+          isPast
             ? "border-border-strong/40 bg-surface-muted/55 dark:bg-surface-elevated/55 hover:bg-surface-muted/65 dark:hover:bg-surface-elevated/65 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]"
             : "border-[#3c90ff]/20 bg-[#3c90ff]/20 hover:bg-[#3c90ff]/25 focus-visible:ring-[#3c90ff]/50",
           blockPaddingClass,
@@ -537,7 +540,7 @@ const CalendarTimedBlock = ({
       <Box
         className={cn(
           "absolute overflow-hidden rounded-md border border-dashed backdrop-blur-sm",
-          isCompleted
+          isPast
             ? "border-border-strong/40 bg-surface-muted/55 dark:bg-surface-elevated/55 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(100,116,139,0.12)_5px,rgba(100,116,139,0.12)_8px)]"
             : "border-border-strong/40 bg-surface-muted/35 bg-[repeating-linear-gradient(135deg,transparent_0,transparent_5px,rgba(148,163,184,0.08)_5px,rgba(148,163,184,0.08)_8px)]",
           blockPaddingClass,
@@ -550,7 +553,7 @@ const CalendarTimedBlock = ({
         />
         <Text
           className={cn(
-            isCompleted ? "text-text-muted" : "text-foreground",
+            isPast ? "text-text-muted" : "text-foreground",
             titleLineClass,
           )}
           fontSize="md"
@@ -563,7 +566,7 @@ const CalendarTimedBlock = ({
             className={cn(
               "truncate text-[0.9375rem]",
               secondaryLineClass,
-              isCompleted ? "text-text-muted" : "text-foreground",
+              isPast ? "text-text-muted" : "text-foreground",
             )}
           >
             {toTimeLabel(item.startAt, item.endAt)}
@@ -574,6 +577,7 @@ const CalendarTimedBlock = ({
   }
 
   const { block } = item;
+  const isCompleted = isCalendarScheduleBlockCompleted(block);
   const isCrossWorkspace = Boolean(block.isCrossWorkspace);
   const isMayaManaged = block.source === "maya";
   const isEditable = isCalendarScheduleBlockEditable(block);
@@ -617,7 +621,7 @@ const CalendarTimedBlock = ({
   const isScheduledStory = block.blockType === "work";
   const isStandardHeightBlock =
     layout.height >= hourHeight && layout.height < twoLineTitleMinimumHeight;
-  const hasLeadingIcon = isCrossWorkspace || !isScheduledStory;
+  const hasLeadingIcon = isCompleted || isCrossWorkspace || !isScheduledStory;
   const timeLabel = toTimeLabel(block.startAt, block.endAt);
   const resizeStartAt = resizePreview?.startAt ?? new Date(block.startAt);
   const resizeEndAt = resizePreview?.endAt ?? new Date(block.endAt);
@@ -650,6 +654,8 @@ const CalendarTimedBlock = ({
   }
   if (isCrossWorkspace) {
     blockActionLabel = CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP;
+  } else if (isCompleted) {
+    blockActionLabel = `Open completed ${blockTitle} details`;
   }
   let blockTooltip = block.storyId ? undefined : mayaReason ?? undefined;
   if (isCrossWorkspace) {
@@ -745,7 +751,18 @@ const CalendarTimedBlock = ({
             : null,
         )}
       >
-        {hasLeadingIcon ? (
+        {hasLeadingIcon && isCompleted ? (
+          <CheckIcon
+            aria-hidden="true"
+            className={cn(
+              "h-4 w-4 shrink-0",
+              showSecondaryLine && "mt-0.5",
+              blockIconClass,
+            )}
+            strokeWidth={2.2}
+          />
+        ) : null}
+        {hasLeadingIcon && !isCompleted ? (
           <TimeScheduleIcon
             aria-hidden="true"
             className={cn(
@@ -767,6 +784,7 @@ const CalendarTimedBlock = ({
               "min-w-0",
               titleLineClass,
               isStandardHeightBlock && "leading-4",
+              isCompleted && "line-through decoration-current/70",
               blockTitleColorClass,
             )}
             fontSize="md"
@@ -1807,12 +1825,13 @@ const CalendarMonthItem = ({
   }
 
   const { block } = item;
+  const isCompleted = isCalendarScheduleBlockCompleted(block);
   const isCrossWorkspace = Boolean(block.isCrossWorkspace);
   const isMayaManaged = block.source === "maya";
   const isEditable = isCalendarScheduleBlockEditable(block);
   const mayaLabel = getMayaCalendarBlockLabel(block);
   const mayaReason = getMayaCalendarBlockReason(block);
-  let displayTitle = mayaLabel ? `${mayaLabel} · ${title}` : title;
+  let displayTitle = mayaLabel && !isCompleted ? `${mayaLabel} · ${title}` : title;
   if (isCrossWorkspace) {
     displayTitle = CROSS_WORKSPACE_CALENDAR_BLOCK_TITLE;
   }
@@ -1827,8 +1846,14 @@ const CalendarMonthItem = ({
         "text-text-muted",
       )
     : RESERVED_TIME_BLOCK_CLASS;
-  if (block.hasConflict) {
+  if (block.hasConflict && !isCompleted) {
     toneClass = "border-danger/60 bg-danger/20 text-danger";
+  }
+  if (isCompleted && isScheduledStory) {
+    toneClass = cn(
+      "border-border-strong/40 text-text-muted",
+      storyStyle ? scheduledStoryStatusClass : scheduledTaskBackgroundClass,
+    );
   }
   if (isCrossWorkspace) {
     toneClass = RESERVED_TIME_BLOCK_CLASS;
@@ -1853,6 +1878,8 @@ const CalendarMonthItem = ({
   }
   if (isCrossWorkspace) {
     blockActionLabel = CROSS_WORKSPACE_CALENDAR_BLOCK_TOOLTIP;
+  } else if (isCompleted) {
+    blockActionLabel = `Open completed ${title} details`;
   }
   let blockTooltip = block.storyId ? undefined : mayaReason ?? undefined;
   if (isCrossWorkspace) {
@@ -1866,7 +1893,12 @@ const CalendarMonthItem = ({
         toneClass,
         storyStyle && !isMayaManaged ? scheduledStoryStatusHoverClass : null,
       )}
-      style={storyStyle}
+      style={{
+        ...storyStyle,
+        ...(isCompleted
+          ? { backgroundImage: completedCalendarBlockPattern }
+          : null),
+      }}
       title={blockTooltip}
     >
       <button
@@ -1880,12 +1912,20 @@ const CalendarMonthItem = ({
         }}
         type="button"
       />
-      {isCrossWorkspace ? (
+      {isCompleted ? (
+        <CheckIcon
+          aria-hidden="true"
+          className="pointer-events-none size-4 shrink-0"
+          strokeWidth={2.2}
+        />
+      ) : null}
+      {!isCompleted && isCrossWorkspace ? (
         <TimeScheduleIcon
           aria-hidden="true"
           className="pointer-events-none size-4 shrink-0"
         />
-      ) : (
+      ) : null}
+      {!isCompleted && !isCrossWorkspace ? (
         <span
           aria-hidden="true"
           className="pointer-events-none size-2 shrink-0 rounded-full bg-current"
@@ -1893,11 +1933,16 @@ const CalendarMonthItem = ({
             storyStyle ? { backgroundColor: block.storyStatusColor } : undefined
           }
         />
-      )}
+      ) : null}
       <span className="pointer-events-none relative z-10 shrink-0 tabular-nums">
         {time}
       </span>
-      <span className="pointer-events-none relative z-10 min-w-0 flex-1 truncate">
+      <span
+        className={cn(
+          "pointer-events-none relative z-10 min-w-0 flex-1 truncate",
+          isCompleted && "line-through decoration-current/70",
+        )}
+      >
         {displayTitle}
       </span>
     </Box>
@@ -2049,6 +2094,10 @@ export const PersonalCalendar = ({
     "calendarView",
     "week",
   );
+  const [showCompletedWork, setShowCompletedWork] = useLocalStorage<boolean>(
+    "calendarShowCompletedWork",
+    false,
+  );
   const calendarView = normalizeCalendarView(storedCalendarView);
   const [cursor, setCursor] = useState(() => new Date());
   const [dialogMode, setDialogMode] = useState<"work" | "focus" | null>(null);
@@ -2108,6 +2157,10 @@ export const PersonalCalendar = ({
     busyWindows: schedule?.busyWindows ?? [],
     events: schedule?.events ?? [],
   });
+  const visibleScheduleBlocks = getVisibleCalendarScheduleBlocks(
+    schedule?.blocks ?? [],
+    showCompletedWork,
+  );
   const calendarItems: CalendarItem[] = [
     ...(schedule?.events ?? []).map((event) => ({
       kind: "event" as const,
@@ -2123,7 +2176,7 @@ export const PersonalCalendar = ({
       endAt: window.endAt,
       window,
     })),
-    ...(schedule?.blocks ?? []).map((block) => ({
+    ...visibleScheduleBlocks.map((block) => ({
       kind: "block" as const,
       id: block.id,
       startAt: block.startAt,
@@ -2140,7 +2193,7 @@ export const PersonalCalendar = ({
   const allDayEvents = (schedule?.events ?? []).filter(
     (event) => event.isAllDay,
   );
-  const conflictingBlocks = (schedule?.blocks ?? []).filter(
+  const conflictingBlocks = visibleScheduleBlocks.filter(
     (block) => block.hasConflict,
   );
   const { visibleEndHour, visibleStartHour } = deriveCalendarVisibleHours({
@@ -2244,10 +2297,12 @@ export const PersonalCalendar = ({
         onSchedule={() => {
           onScheduleDialogOpenChange(true);
         }}
+        onShowCompletedWorkChange={setShowCompletedWork}
         onToday={() => {
           setCursor(new Date());
         }}
         onViewChange={setCalendarView}
+        showCompletedWork={showCompletedWork}
         title={getCalendarViewTitle(cursor, calendarView)}
       />
       <Box className="flex min-h-0 flex-1 flex-col overflow-hidden">

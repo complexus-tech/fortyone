@@ -71,6 +71,7 @@ var claimScheduleRecoveryStoryRefsQuery = `
 								WHERE retry_block.workspace_id = ownership.workspace_id
 									AND retry_block.story_id = ownership.story_id
 									AND retry_block.source = 'maya'
+									AND retry_block.completed_at IS NULL
 									AND retry_block.end_at > CURRENT_TIMESTAMP
 							)
 						)
@@ -82,6 +83,7 @@ var claimScheduleRecoveryStoryRefsQuery = `
 								WHERE elapsed_block.workspace_id = ownership.workspace_id
 									AND elapsed_block.story_id = ownership.story_id
 									AND elapsed_block.source = 'maya'
+									AND elapsed_block.completed_at IS NULL
 							)
 							AND NOT EXISTS (
 								SELECT 1
@@ -89,6 +91,7 @@ var claimScheduleRecoveryStoryRefsQuery = `
 								WHERE future_block.workspace_id = ownership.workspace_id
 									AND future_block.story_id = ownership.story_id
 									AND future_block.source = 'maya'
+									AND future_block.completed_at IS NULL
 									AND future_block.end_at > CURRENT_TIMESTAMP
 							)
 						)
@@ -100,6 +103,7 @@ var claimScheduleRecoveryStoryRefsQuery = `
 					WHERE block.workspace_id = ownership.workspace_id
 						AND block.story_id = ownership.story_id
 						AND block.source = 'maya'
+						AND block.completed_at IS NULL
 						AND (
 							block.user_id <> ownership.user_id
 							OR (story.assignee_id IS NOT NULL AND block.user_id <> story.assignee_id)
@@ -137,7 +141,10 @@ const listScheduleStoryRefsForUserQuery = `
 		UNION
 		SELECT workspace_id, story_id
 		FROM calendar_schedule_blocks
-		WHERE user_id = $1 AND source = 'maya' AND story_id IS NOT NULL
+		WHERE user_id = $1
+			AND source = 'maya'
+			AND story_id IS NOT NULL
+			AND completed_at IS NULL
 		UNION
 		SELECT workspace_id, id AS story_id
 		FROM stories
@@ -301,7 +308,10 @@ func (r *Repo) ListMayaScheduleOwners(ctx context.Context, workspaceID, storyID 
 		UNION
 		SELECT user_id
 		FROM calendar_schedule_blocks
-		WHERE workspace_id = $1 AND story_id = $2 AND source = 'maya'
+		WHERE workspace_id = $1
+			AND story_id = $2
+			AND source = 'maya'
+			AND completed_at IS NULL
 		ORDER BY user_id
 	`
 	owners := []uuid.UUID{}

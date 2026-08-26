@@ -132,6 +132,7 @@ type AppScheduleBlock struct {
 	Title                string     `json:"title"`
 	StartAt              time.Time  `json:"startAt"`
 	EndAt                time.Time  `json:"endAt"`
+	CompletedAt          *time.Time `json:"completedAt,omitempty"`
 	HasConflict          bool       `json:"hasConflict"`
 	IsLocked             bool       `json:"isLocked"`
 	IsCrossWorkspace     bool       `json:"isCrossWorkspace,omitempty"`
@@ -368,6 +369,7 @@ func toAppScheduleBlock(block calendar.CoreScheduleBlock) AppScheduleBlock {
 		Title:                block.Title,
 		StartAt:              block.StartAt,
 		EndAt:                block.EndAt,
+		CompletedAt:          block.CompletedAt,
 		HasConflict:          block.HasConflict,
 		IsLocked:             block.IsLocked,
 		IsCrossWorkspace:     block.IsCrossWorkspace,

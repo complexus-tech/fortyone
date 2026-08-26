@@ -11,6 +11,7 @@ jest.mock("icons", () => ({
   CalendarIcon: () => <span data-testid="calendar-icon" />,
   ChevronLeftIcon: () => <span aria-hidden>Previous</span>,
   ChevronRightIcon: () => <span aria-hidden>Next</span>,
+  SettingsIcon: () => <span aria-hidden>Display</span>,
   TimeScheduleIcon: () => <span aria-hidden>Focus time</span>,
 }));
 
@@ -45,6 +46,9 @@ jest.mock("ui", () => ({
     {
       Button: ({ children }: { children: ReactNode }) => <>{children}</>,
       Group: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+      CheckboxItem: ({ children }: { children: ReactNode }) => (
+        <button type="button">{children}</button>
+      ),
       Item: ({ children }: { children: ReactNode }) => (
         <button type="button">{children}</button>
       ),
@@ -82,8 +86,10 @@ describe("CalendarHeader", () => {
         onNext={jest.fn()}
         onPrevious={jest.fn()}
         onSchedule={onSchedule}
+        onShowCompletedWorkChange={jest.fn()}
         onToday={jest.fn()}
         onViewChange={jest.fn()}
+        showCompletedWork={false}
         title="August 2026"
       />,
     );
@@ -94,6 +100,9 @@ describe("CalendarHeader", () => {
     expect(screen.getByRole("button", { name: "Today" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Block focus time" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Show completed work" }),
     ).toBeInTheDocument();
     expect(mockUseAppCommandAction).toHaveBeenCalledWith({
       disabled: false,

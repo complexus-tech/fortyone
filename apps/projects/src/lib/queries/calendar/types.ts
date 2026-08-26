@@ -60,6 +60,7 @@ export type CalendarScheduleBlock = {
   title: string;
   startAt: string;
   endAt: string;
+  completedAt?: string;
   hasConflict: boolean;
   isLocked: boolean;
   isCrossWorkspace?: boolean;

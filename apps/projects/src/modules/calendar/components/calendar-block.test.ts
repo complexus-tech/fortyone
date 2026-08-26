@@ -7,8 +7,10 @@ import {
   RESERVED_TIME_BLOCK_CLASS,
   getCalendarScheduleBlockSecondaryLabel,
   getCalendarStoryBlockStyle,
+  getVisibleCalendarScheduleBlocks,
   getMayaCalendarBlockLabel,
   getMayaCalendarBlockReason,
+  isCalendarScheduleBlockCompleted,
   isCalendarScheduleBlockEditable,
 } from "./calendar-block";
 
@@ -73,6 +75,36 @@ describe("calendar block presentation", () => {
         createBlock({ isCrossWorkspace: true, source: "other_workspace" }),
       ),
     ).toBe(false);
+    expect(
+      isCalendarScheduleBlockEditable(
+        createBlock({
+          completedAt: "2026-08-15T09:30:00Z",
+          source: "user",
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it("hides completed work by default and reveals it on request", () => {
+    const activeBlock = createBlock({ id: "active" });
+    const completedBlock = createBlock({
+      completedAt: "2026-08-15T09:30:00Z",
+      id: "completed",
+    });
+
+    expect(isCalendarScheduleBlockCompleted(activeBlock)).toBe(false);
+    expect(isCalendarScheduleBlockCompleted(completedBlock)).toBe(true);
+    expect(
+      getVisibleCalendarScheduleBlocks(
+        [activeBlock, completedBlock],
+        false,
+      ).map((block) => block.id),
+    ).toEqual(["active"]);
+    expect(
+      getVisibleCalendarScheduleBlocks([activeBlock, completedBlock], true).map(
+        (block) => block.id,
+      ),
+    ).toEqual(["active", "completed"]);
   });
 
   it("does not expose Maya provenance for another workspace", () => {

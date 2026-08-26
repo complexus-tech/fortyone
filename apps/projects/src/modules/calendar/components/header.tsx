@@ -5,6 +5,7 @@ import {
   CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  SettingsIcon,
   TimeScheduleIcon,
 } from "icons";
 import { BreadCrumbs, Button, Flex, Menu, Text } from "ui";
@@ -31,8 +32,10 @@ type CalendarHeaderProps = {
   onNext: () => void;
   onPrevious: () => void;
   onSchedule: () => void;
+  onShowCompletedWorkChange: (show: boolean) => void;
   onToday: () => void;
   onViewChange: (view: CalendarView) => void;
+  showCompletedWork: boolean;
   title: string;
 };
 
@@ -44,8 +47,10 @@ export const CalendarHeader = ({
   onNext,
   onPrevious,
   onSchedule,
+  onShowCompletedWorkChange,
   onToday,
   onViewChange,
+  showCompletedWork,
   title,
 }: CalendarHeaderProps) => {
   const { getTermDisplay } = useTerminology();
@@ -133,6 +138,31 @@ export const CalendarHeader = ({
                   {view}
                 </Menu.Item>
               ))}
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
+        <Menu>
+          <Menu.Button>
+            <Button
+              aria-label="Calendar display options"
+              asIcon
+              color="tertiary"
+              size="sm"
+              variant="outline"
+            >
+              <SettingsIcon className="h-[1.1rem]" />
+            </Button>
+          </Menu.Button>
+          <Menu.Items align="end" className="w-56">
+            <Menu.Group>
+              <Menu.CheckboxItem
+                checked={showCompletedWork}
+                onCheckedChange={(checked) => {
+                  onShowCompletedWorkChange(checked);
+                }}
+              >
+                <span className="pl-6">Show completed work</span>
+              </Menu.CheckboxItem>
             </Menu.Group>
           </Menu.Items>
         </Menu>

@@ -963,6 +963,7 @@ func (r *repo) MayaScheduleBlocksExist(ctx context.Context, storyID, workspaceID
 			WHERE story_id = $1
 				AND workspace_id = $2
 				AND source = 'maya'
+				AND completed_at IS NULL
 		)
 	`
 	var exists bool

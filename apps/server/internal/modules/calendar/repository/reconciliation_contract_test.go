@@ -130,6 +130,7 @@ func TestProviderUpsertRequiresCurrentCanonicalStoryState(t *testing.T) {
 		"ownership.user_id = block.user_id",
 		"story.assignee_id = block.user_id",
 		"story.auto_scheduling_enabled = true",
+		"block.completed_at is null",
 		"ownership.updated_at >= story.updated_at",
 		"ownership.updated_at >= team_settings.updated_at",
 		"ownership.updated_at >= sprint.updated_at",

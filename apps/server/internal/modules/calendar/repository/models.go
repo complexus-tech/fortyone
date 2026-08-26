@@ -118,6 +118,7 @@ type dbScheduleBlock struct {
 	Title                string     `db:"title"`
 	StartAt              time.Time  `db:"start_at"`
 	EndAt                time.Time  `db:"end_at"`
+	CompletedAt          *time.Time `db:"completed_at"`
 	HasConflict          bool       `db:"has_conflict"`
 	IsLocked             bool       `db:"is_locked"`
 	AutoSchedulingStatus *string    `db:"auto_scheduling_status"`
@@ -301,6 +302,7 @@ func toCoreScheduleBlock(row dbScheduleBlock) calendar.CoreScheduleBlock {
 		Title:                row.Title,
 		StartAt:              row.StartAt,
 		EndAt:                row.EndAt,
+		CompletedAt:          row.CompletedAt,
 		HasConflict:          row.HasConflict,
 		IsLocked:             row.IsLocked,
 		AutoSchedulingStatus: row.AutoSchedulingStatus,

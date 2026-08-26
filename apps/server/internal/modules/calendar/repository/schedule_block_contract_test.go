@@ -68,6 +68,17 @@ func TestToCoreScheduleBlockPropagatesStoryStatusColor(t *testing.T) {
 	}
 }
 
+func TestToCoreScheduleBlockPropagatesCompletion(t *testing.T) {
+	t.Parallel()
+
+	completedAt := time.Date(2026, 8, 26, 8, 30, 0, 0, time.UTC)
+	block := toCoreScheduleBlock(dbScheduleBlock{CompletedAt: &completedAt})
+
+	if block.CompletedAt == nil || !block.CompletedAt.Equal(completedAt) {
+		t.Fatalf("completed at = %v, want %v", block.CompletedAt, completedAt)
+	}
+}
+
 func TestRedactCrossWorkspaceScheduleBlocksHidesTaskDetails(t *testing.T) {
 	t.Parallel()
 
@@ -147,6 +158,7 @@ func TestListSchedulingBlocksForUserUsesContiguousQueryParameters(t *testing.T) 
 		"WHERE csb.user_id = $1",
 		"AND csb.start_at < $3",
 		"AND csb.end_at > $2",
+		"AND csb.completed_at IS NULL",
 		"SelectContext(ctx, &rows, query, userID, startAt, endAt)",
 	} {
 		if !strings.Contains(functionSource, contract) {
@@ -175,6 +187,7 @@ func TestScheduleBlockConflictsUsesContiguousQueryParameters(t *testing.T) {
 
 	for _, contract := range []string{
 		"WHERE csb.user_id = $1",
+		"AND csb.completed_at IS NULL",
 		"AND csb.start_at < $3",
 		"AND csb.end_at > $2",
 		"AND ($4 = CAST('00000000-0000-0000-0000-000000000000' AS uuid) OR csb.block_id <> $4)",

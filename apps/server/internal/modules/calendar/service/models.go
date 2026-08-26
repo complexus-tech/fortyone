@@ -188,6 +188,7 @@ type CoreScheduleBlock struct {
 	Title                string              `json:"title"`
 	StartAt              time.Time           `json:"startAt"`
 	EndAt                time.Time           `json:"endAt"`
+	CompletedAt          *time.Time          `json:"completedAt,omitempty"`
 	HasConflict          bool                `json:"hasConflict"`
 	IsLocked             bool                `json:"isLocked"`
 	IsCrossWorkspace     bool                `json:"isCrossWorkspace,omitempty"`
