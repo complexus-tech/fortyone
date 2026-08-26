@@ -1,11 +1,15 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { useChat } from "@ai-sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FileUIPart } from "ai";
-import { generateId } from "ai";
+import {
+  DefaultChatTransport,
+  generateId,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+} from "ai";
 import { useSession } from "@/lib/auth/client";
 import {
   githubKeys,
@@ -33,6 +37,19 @@ import type { MayaChatConfig } from "../types";
 import { canSendMayaMessage } from "../utils/message-limit";
 import { mergeRealtimeVoiceMessages } from "../utils/realtime-voice-messages";
 import { useMayaRealtimeVoice } from "./use-maya-realtime-voice";
+
+class MayaChatTransport extends DefaultChatTransport<MayaUIMessage> {
+  private requestBody: Record<string, unknown> = {};
+
+  constructor() {
+    super();
+    this.body = () => this.requestBody;
+  }
+
+  setRequestBody(requestBody: Record<string, unknown>) {
+    this.requestBody = requestBody;
+  }
+}
 
 export const useMayaChat = (config: MayaChatConfig) => {
   const router = useRouter();
@@ -63,6 +80,29 @@ export const useMayaChat = (config: MayaChatConfig) => {
     objectives: getTermDisplay("objectiveTerm", { variant: "plural" }),
     keyResults: getTermDisplay("keyResultTerm", { variant: "plural" }),
   };
+  const requestBody = {
+    currentPath: pathname,
+    currentTheme: theme,
+    resolvedTheme,
+    subscription: {
+      tier: subscription?.tier,
+      billingInterval: subscription?.billingInterval,
+      billingEndsAt: subscription?.billingEndsAt,
+      status: subscription?.status,
+      username: profile?.username,
+    },
+    workspace,
+    memories,
+    terminology,
+    totalMessages: {
+      current: totalMessages,
+      limit: getLimit("maxAiMessages"),
+    },
+  };
+  const transport = useMemo(() => new MayaChatTransport(), []);
+  useEffect(() => {
+    transport.setRequestBody(requestBody);
+  });
 
   const handleNewChat = () => {
     const newChatId = generateId();
@@ -165,8 +205,11 @@ export const useMayaChat = (config: MayaChatConfig) => {
     regenerate,
     error,
     setMessages,
+    addToolApprovalResponse,
   } = useChat<MayaUIMessage>({
     id: currentChatId,
+    transport,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onFinish: ({ message }) => {
       message.parts.forEach((part) => {
         // Handle side effects for navigation and theme
@@ -252,29 +295,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   );
 
   const handleRegenerate = (messageId?: string) => {
-    regenerate({
-      messageId,
-      body: {
-        currentPath: pathname,
-        currentTheme: theme,
-        resolvedTheme,
-        subscription: {
-          tier: subscription?.tier,
-          billingInterval: subscription?.billingInterval,
-          billingEndsAt: subscription?.billingEndsAt,
-          status: subscription?.status,
-          username: profile?.username,
-        },
-        memories,
-        totalMessages: {
-          current: totalMessages,
-          limit: getLimit("maxAiMessages"),
-        },
-        workspace,
-        terminology,
-        id: currentChatId,
-      },
-    });
+    regenerate({ messageId });
   };
 
   const handleSendMessage = async (content: string) => {
@@ -311,34 +332,10 @@ export const useMayaChat = (config: MayaChatConfig) => {
       })),
     );
 
-    sendMessage(
-      {
-        text: content,
-        files: attachmentData,
-      },
-      {
-        body: {
-          currentPath: pathname,
-          currentTheme: theme,
-          resolvedTheme,
-          subscription: {
-            tier: subscription?.tier,
-            billingInterval: subscription?.billingInterval,
-            billingEndsAt: subscription?.billingEndsAt,
-            status: subscription?.status,
-            username: profile?.username,
-          },
-          workspace,
-          memories,
-          terminology,
-          totalMessages: {
-            current: totalMessages,
-            limit: getLimit("maxAiMessages"),
-          },
-          id: currentChatId,
-        },
-      },
-    );
+    sendMessage({
+      text: content,
+      files: attachmentData,
+    });
 
     setInput("");
     setAttachments([]);
@@ -372,6 +369,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     handleNewChat,
     handleChatSelect,
     handleSuggestedPrompt,
+    addToolApprovalResponse,
     setAttachments,
 
     // Dialog states

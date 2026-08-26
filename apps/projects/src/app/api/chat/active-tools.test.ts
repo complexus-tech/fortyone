@@ -142,6 +142,50 @@ describe("selectActiveTools", () => {
     expect(activeTools).toEqual(["suggestions", "updateTeam"]);
   });
 
+  it("does not revive an older confirmation after the mutation completes", () => {
+    const pendingToolMessage = {
+      id: "assistant-pending",
+      parts: [
+        {
+          input: { teamId: "team-1" },
+          output: {
+            message: "Please confirm the team update.",
+            needsConfirmation: true,
+            success: false,
+          },
+          state: "output-available",
+          type: "tool-updateTeam",
+        },
+      ],
+      role: "assistant",
+    } as unknown as UIMessage;
+    const completedToolMessage = {
+      id: "assistant-completed",
+      parts: [
+        {
+          input: { confirmed: true, teamId: "team-1" },
+          output: { message: "Team updated.", success: true },
+          state: "output-available",
+          type: "tool-updateTeam",
+        },
+      ],
+      role: "assistant",
+    } as unknown as UIMessage;
+
+    const activeTools = selectActiveTools({
+      currentPath: "/acme/inbox",
+      messages: [
+        pendingToolMessage,
+        userMessage("Approved.", "approval"),
+        completedToolMessage,
+        userMessage("What needs attention now?", "follow-up"),
+      ],
+    });
+
+    expect(activeTools).toContain("focusBrief");
+    expect(activeTools).not.toContain("updateTeam");
+  });
+
   it("keeps a pending multi-action tool available for confirmation", () => {
     const pendingToolMessage = {
       id: "assistant-message",

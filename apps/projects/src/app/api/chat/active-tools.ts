@@ -131,8 +131,6 @@ const ANALYTICS_PATH_TOOLS = [
   "workspaceCommandCenterReportTool",
 ] as const satisfies readonly MayaToolName[];
 
-const RECENT_TOOL_MESSAGES = 8;
-
 const STORY_PATTERN =
   /\b(?:story|stories|task|tasks|backlog|assignee|priority|estimate)\b/;
 const STORY_CREATE_PATTERN =
@@ -203,22 +201,24 @@ const getLatestUserText = (messages: UIMessage[]) => {
 
 const getPendingMutationTools = (messages: UIMessage[]) => {
   const pendingTools = new Set<MayaToolName>();
+  const latestAssistantMessage = messages.findLast(
+    (message) => message.role === "assistant",
+  );
+  if (!latestAssistantMessage) return pendingTools;
 
-  for (const message of messages.slice(-RECENT_TOOL_MESSAGES)) {
-    for (const part of message.parts) {
-      if (!part.type.startsWith("tool-") || !("output" in part)) continue;
+  for (const part of latestAssistantMessage.parts) {
+    if (!part.type.startsWith("tool-") || !("output" in part)) continue;
 
-      const output = part.output;
-      const needsConfirmation =
-        output &&
-        typeof output === "object" &&
-        "needsConfirmation" in output &&
-        output.needsConfirmation === true;
-      const toolName = part.type.slice("tool-".length);
+    const output = part.output;
+    const needsConfirmation =
+      output &&
+      typeof output === "object" &&
+      "needsConfirmation" in output &&
+      output.needsConfirmation === true;
+    const toolName = part.type.slice("tool-".length);
 
-      if (needsConfirmation && isMutationCapableToolName(toolName)) {
-        pendingTools.add(toolName as MayaToolName);
-      }
+    if (needsConfirmation && isMutationCapableToolName(toolName)) {
+      pendingTools.add(toolName as MayaToolName);
     }
   }
 

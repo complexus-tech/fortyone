@@ -6,7 +6,6 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { isEstimateValue } from "@/lib/estimate";
 import { MAX_TIME_NEEDED_MINUTES } from "@/lib/time-needed";
 import type { DetailedStory } from "@/modules/story/types";
-import { requireToolConfirmation } from "../tool-helpers";
 import {
   normalizeOptionalStoryId,
   normalizeRequiredStoryId,
@@ -50,138 +49,131 @@ const inBatchesOf = <Item>(items: Item[], size: number) => {
   return batches;
 };
 
+export const bulkCreateStoriesInputSchema = z.object({
+  storiesData: z
+    .array(
+      z.object({
+        title: z.string().describe("Story title (required)"),
+        description: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Story description"),
+        descriptionHTML: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Story description HTML"),
+        teamId: z.string().describe("Team ID where story belongs (required)"),
+        statusId: z
+          .string()
+          .nullable()
+          .optional()
+          .describe(
+            "Initial status ID. Omit it to use the team's default status.",
+          ),
+        assigneeId: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Assignee user ID"),
+        priority: z
+          .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
+          .default("No Priority")
+          .describe("Story priority (required)"),
+        estimateValue: z
+          .number()
+          .int()
+          .refine((value) => value === 0 || isEstimateValue(value), {
+            message: "Complexity must be 1, 2, 3, 5, or 8.",
+          })
+          .nullable()
+          .optional()
+          .describe(
+            "Relative complexity value using the team's scale. Use 1, 2, 3, 5, or 8. This is not a time duration; use 0, null, or omit when unset.",
+          ),
+        estimatedDurationMinutes: z
+          .number()
+          .int()
+          .positive()
+          .max(MAX_TIME_NEEDED_MINUTES)
+          .nullable()
+          .optional()
+          .describe(
+            "Total time needed in minutes for calendar scheduling. Omit or set null when unknown.",
+          ),
+        minimumFocusBlockMinutes: z
+          .number()
+          .int()
+          .positive()
+          .max(MAX_TIME_NEEDED_MINUTES)
+          .nullable()
+          .optional()
+          .describe(
+            "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes.",
+          ),
+        autoSchedulingEnabled: z
+          .boolean()
+          .optional()
+          .describe(
+            "Whether Maya should continuously schedule this story. Defaults to false for human assignees; set true when requested or when assigning to Maya.",
+          ),
+        labelIds: z
+          .array(z.string())
+          .nullable()
+          .optional()
+          .describe("Label IDs to attach to the story."),
+        sprintId: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Sprint ID to assign story"),
+        objectiveId: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Objective ID to assign story"),
+        keyResultId: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Key result ID to assign story"),
+        parentId: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Parent story ID for sub-stories"),
+        startDate: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Story start date (ISO  date string e.g 2005-06-13)"),
+        endDate: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Story end date (ISO  date string e.g 2005-06-13)"),
+      }),
+    )
+    .min(1, "Provide at least one story to create.")
+    .max(
+      MAX_STORIES_PER_REQUEST,
+      `Create at most ${MAX_STORIES_PER_REQUEST} stories in one request.`,
+    )
+    .describe("Array of story data for bulk creation (required)"),
+});
+
 export const bulkCreateStories = tool({
   description:
-    "Bulk create multiple stories at once. Only admins and members can perform bulk operations. Create up to 50 confirmed stories in one request; the tool processes them safely in batches of 10 and reports every success or failure.",
-  inputSchema: z.object({
-    confirmed: z
-      .boolean()
-      .optional()
-      .describe(
-        "Must be true after the user explicitly confirms the bulk creation.",
-      ),
-    storiesData: z
-      .array(
-        z.object({
-          title: z.string().describe("Story title (required)"),
-          description: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Story description"),
-          descriptionHTML: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Story description HTML"),
-          teamId: z.string().describe("Team ID where story belongs (required)"),
-          statusId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe(
-              "Initial status ID. Omit it to use the team's default status.",
-            ),
-          assigneeId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Assignee user ID"),
-          priority: z
-            .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
-            .default("No Priority")
-            .describe("Story priority (required)"),
-          estimateValue: z
-            .number()
-            .int()
-            .refine((value) => value === 0 || isEstimateValue(value), {
-              message: "Complexity must be 1, 2, 3, 5, or 8.",
-            })
-            .nullable()
-            .optional()
-            .describe(
-              "Relative complexity value using the team's scale. Use 1, 2, 3, 5, or 8. This is not a time duration; use 0, null, or omit when unset.",
-            ),
-          estimatedDurationMinutes: z
-            .number()
-            .int()
-            .positive()
-            .max(MAX_TIME_NEEDED_MINUTES)
-            .nullable()
-            .optional()
-            .describe(
-              "Total time needed in minutes for calendar scheduling. Omit or set null when unknown.",
-            ),
-          minimumFocusBlockMinutes: z
-            .number()
-            .int()
-            .positive()
-            .max(MAX_TIME_NEEDED_MINUTES)
-            .nullable()
-            .optional()
-            .describe(
-              "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes.",
-            ),
-          autoSchedulingEnabled: z
-            .boolean()
-            .optional()
-            .describe(
-              "Whether Maya should continuously schedule this story. Defaults to false for human assignees; set true when requested or when assigning to Maya.",
-            ),
-          labelIds: z
-            .array(z.string())
-            .nullable()
-            .optional()
-            .describe("Label IDs to attach to the story."),
-          sprintId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Sprint ID to assign story"),
-          objectiveId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Objective ID to assign story"),
-          keyResultId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Key result ID to assign story"),
-          parentId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Parent story ID for sub-stories"),
-          startDate: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Story start date (ISO  date string e.g 2005-06-13)"),
-          endDate: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Story end date (ISO  date string e.g 2005-06-13)"),
-        }),
-      )
-      .min(1, "Provide at least one story to create.")
-      .max(
-        MAX_STORIES_PER_REQUEST,
-        `Create at most ${MAX_STORIES_PER_REQUEST} stories in one request.`,
-      )
-      .describe("Array of story data for bulk creation (required)"),
-  }),
+    "Bulk create multiple stories at once. Only admins and members can perform bulk operations. Prepare up to 50 stories in one request; execution pauses for user approval, then processes them safely in batches of 10 and reports every success or failure.",
+  inputSchema: bulkCreateStoriesInputSchema,
+  needsApproval: true,
 
   execute: async (
-    { confirmed, storiesData },
+    { storiesData },
     { experimental_context: experimentalContext },
   ) => {
     try {
-      if (!confirmed) {
-        return requireToolConfirmation("create these stories");
-      }
-
       const session = await auth();
 
       if (!session) {

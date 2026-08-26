@@ -2,7 +2,7 @@
 import { useRef, useEffect, useState } from "react";
 import { Box, Flex } from "ui";
 import { cn } from "lib";
-import type { ChatStatus } from "ai";
+import type { ChatAddToolApproveResponseFunction, ChatStatus } from "ai";
 import { useProfile } from "@/lib/hooks/profile";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { useTerminology } from "@/hooks";
@@ -21,6 +21,7 @@ type ChatMessagesProps = {
   status: ChatStatus;
   value: string;
   regenerate: (messageId?: string) => void;
+  onToolApproval: ChatAddToolApproveResponseFunction;
   onPromptSelect: (prompt: string) => void;
 };
 
@@ -32,6 +33,7 @@ export const ChatMessages = ({
   status,
   value,
   regenerate,
+  onToolApproval,
   onPromptSelect,
 }: ChatMessagesProps) => {
   const { getTermDisplay } = useTerminology();
@@ -114,6 +116,7 @@ export const ChatMessages = ({
               key={message.id}
               message={message}
               onPromptSelect={onPromptSelect}
+              onToolApproval={onToolApproval}
               profile={profile}
               regenerate={regenerate}
               status={status}

@@ -43,15 +43,20 @@ const generateChatTitle = async (messages: UIMessage[]) => {
 };
 
 export const saveChat = async ({
+  generateTitle = true,
   id,
   messages,
   workspaceSlug,
 }: {
+  generateTitle?: boolean;
   id: string;
   messages: UIMessage[];
   workspaceSlug: string;
 }) => {
-  const title = messages.length <= 3 ? await generateChatTitle(messages) : "";
+  const title =
+    generateTitle && messages.length <= 3
+      ? await generateChatTitle(messages)
+      : "";
 
   try {
     if (title) {

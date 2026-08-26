@@ -1,6 +1,6 @@
 import { Avatar, Box, Flex, Button, Tooltip } from "ui";
 import { cn } from "lib";
-import type { ChatStatus } from "ai";
+import type { ChatAddToolApproveResponseFunction, ChatStatus } from "ai";
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import {
   ArrowDown2Icon,
@@ -30,6 +30,7 @@ type ChatMessageProps = {
   profile: User | undefined;
   status: ChatStatus;
   regenerate: (messageId?: string) => void;
+  onToolApproval: ChatAddToolApproveResponseFunction;
   onPromptSelect: (prompt: string) => void;
 };
 
@@ -140,10 +141,12 @@ const UserPrompt = ({ text }: { text: string }) => {
 const RenderMessage = ({
   isAnimating,
   message,
+  onToolApproval,
   onPromptSelect,
 }: {
   isAnimating: boolean;
   message: MayaUIMessage;
+  onToolApproval: ChatAddToolApproveResponseFunction;
   onPromptSelect: (prompt: string) => void;
 }) => {
   if (message.role === "user") {
@@ -185,6 +188,7 @@ const RenderMessage = ({
             <ToolOutputRenderer
               key={`${message.id}-${part.type}-${index}`}
               onPromptSelect={onPromptSelect}
+              onToolApproval={onToolApproval}
               part={part}
             />
           );
@@ -200,6 +204,7 @@ export const ChatMessage = ({
   isAnimating = false,
   isLast,
   message,
+  onToolApproval,
   profile,
   status,
   regenerate,
@@ -243,6 +248,7 @@ export const ChatMessage = ({
               isAnimating={isAnimating}
               message={message}
               onPromptSelect={onPromptSelect}
+              onToolApproval={onToolApproval}
             />
           </Box>
           <AttachmentsDisplay message={message} />

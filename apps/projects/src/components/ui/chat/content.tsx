@@ -73,6 +73,7 @@ export const ChatContent = ({ isPopup = false }: { isPopup?: boolean }) => {
               isVoiceSpeaking={chat.realtimeVoice.isSpeaking}
               messages={chat.displayMessages}
               onPromptSelect={chat.handleSuggestedPrompt}
+              onToolApproval={chat.addToolApprovalResponse}
               regenerate={chat.regenerate}
               status={chat.status}
               value={chat.input}

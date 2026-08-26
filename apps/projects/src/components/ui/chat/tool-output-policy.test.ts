@@ -2,6 +2,7 @@
 
 import {
   getMutationMessage,
+  getStoryCreationApproval,
   isRenderableToolPart,
   isSupportingToolType,
   type ToolMessagePart,
@@ -58,6 +59,42 @@ describe("tool output policy", () => {
     } as unknown as ToolMessagePart;
 
     expect(getMutationMessage(part.output)).toBe("Team updated successfully.");
+    expect(isRenderableToolPart(part)).toBe(true);
+  });
+
+  it("renders a bounded approval model for prepared story creation", () => {
+    const part = {
+      approval: { id: "approval-1" },
+      input: {
+        storiesData: [
+          { title: "Add onboarding checklist" },
+          { title: "Track activation milestone" },
+        ],
+      },
+      state: "approval-requested",
+      toolCallId: "call-1",
+      type: "tool-bulkCreateStories",
+    } as unknown as ToolMessagePart;
+
+    expect(getStoryCreationApproval(part)).toEqual({
+      approved: undefined,
+      count: 2,
+      id: "approval-1",
+      title: undefined,
+    });
+    expect(isRenderableToolPart(part)).toBe(true);
+  });
+
+  it("keeps a denied story approval visible as a cancellation", () => {
+    const part = {
+      approval: { approved: false, id: "approval-1" },
+      input: { title: "Add onboarding checklist" },
+      state: "output-denied",
+      toolCallId: "call-1",
+      type: "tool-createStory",
+    } as unknown as ToolMessagePart;
+
+    expect(getStoryCreationApproval(part)?.approved).toBe(false);
     expect(isRenderableToolPart(part)).toBe(true);
   });
 

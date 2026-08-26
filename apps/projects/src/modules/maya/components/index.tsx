@@ -45,6 +45,7 @@ export const MayaChat = () => {
     handleNewChat,
     handleChatSelect,
     handleSuggestedPrompt,
+    addToolApprovalResponse,
     setAttachments,
 
     // Dialog states
@@ -79,6 +80,7 @@ export const MayaChat = () => {
           isVoiceSpeaking={realtimeVoice.isSpeaking}
           messages={displayMessages}
           onPromptSelect={handleSuggestedPrompt}
+          onToolApproval={addToolApprovalResponse}
           regenerate={regenerate}
           status={status}
           value={input}

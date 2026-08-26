@@ -58,6 +58,37 @@ export const isMutationToolPart = (part: ToolMessagePart) =>
 export const isStoryCreationToolType = (type: string) =>
   STORY_CREATION_TOOL_TYPES.has(type);
 
+export const getStoryCreationApproval = (part: ToolMessagePart) => {
+  if (!isStoryCreationToolType(part.type)) return undefined;
+  if (
+    part.state !== "approval-requested" &&
+    part.state !== "approval-responded" &&
+    part.state !== "output-denied"
+  ) {
+    return undefined;
+  }
+  if (!("approval" in part)) return undefined;
+
+  const input = "input" in part ? asToolOutputRecord(part.input) : {};
+  const storiesData = Array.isArray(input.storiesData)
+    ? input.storiesData
+    : [input];
+  const titles = storiesData.flatMap((story) => {
+    const title = asToolOutputRecord(story).title;
+    return typeof title === "string" && title.trim() ? [title.trim()] : [];
+  });
+
+  return {
+    approved:
+      "approved" in part.approval && typeof part.approval.approved === "boolean"
+        ? part.approval.approved
+        : undefined,
+    count: Math.max(storiesData.length, 1),
+    id: part.approval.id,
+    title: titles.length === 1 ? titles[0] : undefined,
+  };
+};
+
 export const asToolOutputRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -120,6 +151,7 @@ export const getToolSuggestions = (output: unknown) => {
 };
 
 export const isRenderableToolPart = (part: ToolMessagePart) => {
+  if (getStoryCreationApproval(part)) return true;
   if (part.state !== "output-available") return false;
 
   if (isStoryResultToolType(part.type)) {

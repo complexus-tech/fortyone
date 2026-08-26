@@ -3,7 +3,6 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { devToolsMiddleware } from "@ai-sdk/devtools";
-import type { UIMessage } from "ai";
 import {
   convertToModelMessages,
   stepCountIs,
@@ -18,6 +17,7 @@ import {
 } from "@/lib/ai/models";
 import { tools } from "@/lib/ai/tools";
 import { withCompactModelOutputs } from "@/lib/ai/model-tools";
+import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
 import { systemPrompt } from "./system";
@@ -33,6 +33,7 @@ import {
 } from "./chat-context";
 import { getChatStreamErrorMessage } from "./chat-errors";
 import { hasTerminalMutationResult } from "./stop-conditions";
+import { createStoryToolApprovalResponse } from "./story-tool-approval";
 
 export const maxDuration = 120;
 
@@ -57,7 +58,15 @@ export async function POST(req: NextRequest) {
     totalMessages,
   } = await req.json();
 
-  const uiMessages = messagesFromRequest as UIMessage[];
+  const uiMessages = messagesFromRequest as MayaUIMessage[];
+  const storyApprovalResponse = createStoryToolApprovalResponse({
+    abortSignal: req.signal,
+    chatId: id,
+    messages: uiMessages,
+    workspaceSlug: workspace?.slug ?? "",
+  });
+  if (storyApprovalResponse) return storyApprovalResponse;
+
   const recentMessages = selectRecentChatMessages(uiMessages);
   const compactMessages = compactChatToolOutputs(recentMessages);
   const activeTools = selectActiveTools({
