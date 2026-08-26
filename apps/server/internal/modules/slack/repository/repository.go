@@ -86,6 +86,8 @@ type SlackUserLinkUpsert struct {
 type SlackUserLinkRecord struct {
 	SlackUserID string    `db:"slack_user_id"`
 	UserID      uuid.UUID `db:"user_id"`
+	LinkedVia   string    `db:"linked_via"`
+	LinkedAt    time.Time `db:"linked_at"`
 }
 
 type SlackWorkspaceRecord struct {
@@ -1351,7 +1353,7 @@ func (r *Repo) FindLinkedUserIDBySlackUser(ctx context.Context, workspaceID uuid
 func (r *Repo) FindSlackUserLinkByUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID string, userID uuid.UUID) (*SlackUserLinkRecord, error) {
 	var row SlackUserLinkRecord
 	err := r.db.GetContext(ctx, &row, `
-		SELECT sul.slack_user_id, sul.user_id
+		SELECT sul.slack_user_id, sul.user_id, sul.linked_via, sul.linked_at
 		FROM slack_user_links sul
 		JOIN users u ON u.user_id = sul.user_id
 		JOIN workspace_members wm ON wm.workspace_id = sul.workspace_id AND wm.user_id = sul.user_id
@@ -1368,6 +1370,29 @@ func (r *Repo) FindSlackUserLinkByUser(ctx context.Context, workspaceID uuid.UUI
 		return nil, err
 	}
 	return &row, nil
+}
+
+func (r *Repo) DeleteSlackUserLink(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	slackTeamID, slackUserID string,
+	userID uuid.UUID,
+) (bool, error) {
+	result, err := r.db.ExecContext(ctx, `
+		DELETE FROM slack_user_links
+		WHERE workspace_id = $1
+		  AND slack_team_id = $2
+		  AND slack_user_id = $3
+		  AND user_id = $4
+	`, workspaceID, strings.TrimSpace(slackTeamID), strings.TrimSpace(slackUserID), userID)
+	if err != nil {
+		return false, err
+	}
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return deleted > 0, nil
 }
 
 func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {

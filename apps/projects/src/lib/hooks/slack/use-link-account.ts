@@ -17,7 +17,15 @@ export const useLinkSlackAccount = () => {
         toast.error("Slack", { description: res.error.message });
         return;
       }
-      toast.success("Slack account connected");
+      if (res.data?.status === "already_connected") {
+        toast.info("Your account is already connected with Slack", {
+          description: res.data.slackUserId
+            ? `Connected as Slack member ${res.data.slackUserId}.`
+            : undefined,
+        });
+      } else {
+        toast.success("Slack account connected");
+      }
       queryClient.invalidateQueries({ queryKey });
     },
   });

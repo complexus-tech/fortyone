@@ -712,12 +712,12 @@ func (s *Service) planAssignedStory(ctx context.Context, story stories.CoreSingl
 	}
 	blocks := make([]calendar.CoreScheduleBlock, 0, len(schedule.Blocks))
 	var activeBlock *calendar.CoreScheduleBlock
-	elapsedMinutes := 0
+	consumedOrCommittedMinutes := 0
 	hasUnfinishedScheduledTime := false
 	now := time.Now().UTC()
 	for _, block := range schedule.Blocks {
 		if block.WorkspaceID == story.Workspace && block.StoryID != nil && *block.StoryID == story.ID && block.Source == calendar.ScheduleBlockSourceMaya {
-			elapsedMinutes += elapsedScheduleMinutes(block, now)
+			consumedOrCommittedMinutes += consumedOrCommittedScheduleMinutes(block, now)
 			hasUnfinishedScheduledTime = hasUnfinishedScheduledTime || block.EndAt.After(now)
 			if !block.IsLocked && block.StartAt.Before(now) && block.EndAt.After(now) {
 				current := block
@@ -744,9 +744,20 @@ func (s *Service) planAssignedStory(ctx context.Context, story stories.CoreSingl
 	if !hasUnfinishedScheduledTime {
 		// A fully elapsed unlocked schedule is treated as unfinished work by
 		// the existing recovery contract; reserve the full estimate again.
-		elapsedMinutes = 0
+		consumedOrCommittedMinutes = 0
 	}
-	durationMinutes := effectiveRemainingDurationMinutes(story, elapsedMinutes)
+	durationMinutes := effectiveRemainingDurationMinutes(story, consumedOrCommittedMinutes)
+	if durationMinutes == 0 {
+		result := PlanResult{
+			Summary:        "Maya retained the work already in progress without reserving more time.",
+			SelectedUserID: &userID,
+		}
+		if activeBlock != nil {
+			result = retainActiveScheduleBlock(result, story, userID, *activeBlock)
+		}
+		result.Timezone = schedule.Timezone
+		return result, nil
+	}
 	candidate := CandidateSchedule{
 		Member: reports.CoreMemberWorkload{UserID: userID}, Timezone: schedule.Timezone,
 		WorkingDays: workSchedule.WorkingDays, WorkingStartMinute: workSchedule.StartMinute, WorkingEndMinute: workSchedule.EndMinute,
@@ -775,14 +786,17 @@ func (s *Service) planAssignedStory(ctx context.Context, story stories.CoreSingl
 	return result, err
 }
 
-func elapsedScheduleMinutes(block calendar.CoreScheduleBlock, now time.Time) int {
+func consumedOrCommittedScheduleMinutes(block calendar.CoreScheduleBlock, now time.Time) int {
 	if !block.StartAt.Before(now) {
 		return 0
 	}
-	endAt := block.EndAt
-	if endAt.After(now) {
-		endAt = now
+	if block.EndAt.After(now) {
+		// Reconciliation retains an in-progress block in full. Count the full
+		// reservation before planning replacement segments so its remaining
+		// time cannot be allocated a second time.
+		return max(0, int(block.EndAt.Sub(block.StartAt)/time.Minute))
 	}
+	endAt := block.EndAt
 	return max(0, int(endAt.Sub(block.StartAt)/time.Minute))
 }
 
@@ -798,6 +812,12 @@ func effectiveRemainingDurationMinutes(story stories.CoreSingleStory, elapsedMin
 }
 
 func retainActiveScheduleBlock(result PlanResult, story stories.CoreSingleStory, userID uuid.UUID, block calendar.CoreScheduleBlock) PlanResult {
+	if story.EstimatedDurationMinutes != nil && *story.EstimatedDurationMinutes > 0 {
+		maximumEndAt := block.StartAt.Add(time.Duration(*story.EstimatedDurationMinutes) * time.Minute)
+		if block.EndAt.After(maximumEndAt) {
+			block.EndAt = maximumEndAt
+		}
+	}
 	activeAction := CoreAction{
 		WorkspaceID: story.Workspace,
 		StoryID:     story.ID,

@@ -15,17 +15,26 @@ import (
 func TestSyncChannelsRefreshesEntirePaginatedSnapshot(t *testing.T) {
 	workspaceID := uuid.New()
 	installationID := uuid.New()
+	scopes := slackBotOAuthScopeValue()
 	repo := &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
 		ID:             installationID,
 		WorkspaceID:    workspaceID,
 		SlackTeamID:    "T123",
 		BotAccessToken: "xoxb-current",
+		Scope:          &scopes,
 		IsActive:       true,
 	}}
 	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
 
 	requestNumber := 0
+	userRequestCount := 0
 	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		if request.URL.Path == "/users.list" {
+			userRequestCount++
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"ok":true,"members":[],"response_metadata":{"next_cursor":""}}`))
+			return
+		}
 		require.Equal(t, "/conversations.list", request.URL.Path)
 		require.Equal(t, "Bearer xoxb-current", request.Header.Get("Authorization"))
 		require.Equal(t, "200", request.URL.Query().Get("limit"))
@@ -123,6 +132,7 @@ func TestSyncChannelsRefreshesEntirePaginatedSnapshot(t *testing.T) {
 		},
 	}, repo.lastChannels)
 	require.Equal(t, 3, requestNumber)
+	require.Equal(t, 2, userRequestCount)
 }
 
 func TestSyncChannelsDoesNotPersistAPartialSnapshot(t *testing.T) {

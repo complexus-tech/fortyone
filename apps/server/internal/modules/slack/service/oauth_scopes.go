@@ -14,6 +14,8 @@ var slackRequiredBotOAuthScopes = [...]string{
 	"im:history",
 	"links:read",
 	"links:write",
+	"users:read",
+	"users:read.email",
 }
 
 // slackBotOAuthScopeValue is the canonical scope value shared by the runtime

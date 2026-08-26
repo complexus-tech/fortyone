@@ -718,6 +718,80 @@ func TestStoryUpdateRequiresConfirmationRejectsStaleWritesAndIsRetrySafe(t *test
 	require.Len(t, storyService.updateCalls, 1, "a write-time version conflict must not update")
 }
 
+func TestStoryUpdateNullOptionalFieldsRemainUnchanged(t *testing.T) {
+	t.Parallel()
+
+	scope := testToolScope()
+	scope.AllowMutations = true
+	team := mutationTestTeam(scope.WorkspaceID)
+	scope.AllowedTeamIDs = []uuid.UUID{team.ID}
+	storyService := newMutationStoriesStub()
+	storyID := uuid.MustParse("baaaaaaa-0000-0000-0000-000000000099")
+	currentStatusID := uuid.MustParse("daaaaaaa-0000-0000-0000-000000000010")
+	completedStatusID := uuid.MustParse("daaaaaaa-0000-0000-0000-000000000011")
+	sprintID := uuid.MustParse("eaaaaaaa-0000-0000-0000-000000000001")
+	objectiveID := uuid.MustParse("faaaaaaa-0000-0000-0000-000000000001")
+	startDate := time.Date(2026, time.August, 24, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(2026, time.August, 28, 0, 0, 0, 0, time.UTC)
+	storyService.persisted[storyID] = stories.CoreSingleStory{
+		ID:         storyID,
+		SequenceID: 99,
+		Title:      "Keep every unrelated field",
+		Priority:   "Low",
+		Status:     &currentStatusID,
+		Sprint:     &sprintID,
+		Objective:  &objectiveID,
+		StartDate:  &startDate,
+		EndDate:    &endDate,
+		Team:       team.ID,
+		Workspace:  scope.WorkspaceID,
+		UpdatedAt:  time.Date(2026, time.August, 26, 8, 0, 0, 0, time.UTC),
+	}
+	executor := newMutationToolExecutorForTest(
+		t,
+		&teamsServiceStub{joined: []teams.CoreTeam{team}},
+		storyService,
+		testStoryMutationSecret,
+	)
+
+	arguments, err := json.Marshal(map[string]any{
+		"story_id":                    storyID.String(),
+		"story_reference":             nil,
+		"title":                       nil,
+		"priority":                    nil,
+		"assignee":                    assigneeActionUnchanged,
+		"status_id":                   completedStatusID.String(),
+		"sprint_id":                   nil,
+		"objective_id":                nil,
+		"key_result_id":               nil,
+		"start_date":                  nil,
+		"end_date":                    nil,
+		"label_ids":                   nil,
+		"estimated_duration_action":   storyTimeActionUnchanged,
+		"estimated_duration_minutes":  nil,
+		"minimum_focus_block_action":  storyTimeActionUnchanged,
+		"minimum_focus_block_minutes": nil,
+		"auto_scheduling_enabled":     nil,
+		"auto_scheduling_locked":      nil,
+	})
+	require.NoError(t, err)
+	output, err := executor.Execute(context.Background(), scope, ToolCall{
+		Name:      toolUpdateStory,
+		Arguments: arguments,
+	})
+	require.NoError(t, err)
+	confirmation, proposed, err := mutationConfirmationFromToolResult(output)
+	require.NoError(t, err)
+	require.True(t, proposed)
+	require.Equal(t, []string{"status_id"}, confirmation.Story.ChangedFields)
+
+	_, err = executor.ConfirmStoryMutation(context.Background(), scope, confirmation.Token)
+	require.NoError(t, err)
+	require.Len(t, storyService.updateCalls, 1)
+	require.Equal(t, map[string]any{"status_id": completedStatusID}, storyService.updateCalls[0].updates)
+	require.Equal(t, "Low", storyService.persisted[storyID].Priority)
+}
+
 func TestStoryUpdateTimeActionsSetClearAndPreserveUnchanged(t *testing.T) {
 	t.Parallel()
 

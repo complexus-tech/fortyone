@@ -687,6 +687,18 @@ func (m *mockRepo) FindSlackUserLinkByUser(ctx context.Context, workspaceID uuid
 	return nil, nil
 }
 
+func (m *mockRepo) DeleteSlackUserLink(_ context.Context, _ uuid.UUID, slackTeamID, slackUserID string, userID uuid.UUID) (bool, error) {
+	if m.err != nil {
+		return false, m.err
+	}
+	key := strings.TrimSpace(slackTeamID) + ":" + strings.TrimSpace(slackUserID)
+	if m.slackUserLinks == nil || m.slackUserLinks[key] != userID {
+		return false, nil
+	}
+	delete(m.slackUserLinks, key)
+	return true, nil
+}
+
 func (m *mockRepo) InsertRequestLog(ctx context.Context, entry slackrepository.SlackRequestLogInsert) error {
 	m.lastRequestLog = entry
 	return m.err
@@ -3671,14 +3683,93 @@ func TestLinkSlackAccountCreatesManualMapping(t *testing.T) {
 	storeKey := nonceStoreKey(slackProviderMessaging, slackNoncePurposeAccount, digest[:])
 	store := service.nonces.(*mockNonceStore)
 
-	err = service.LinkSlackAccount(context.Background(), workspaceID, userID, token)
+	result, err := service.LinkSlackAccount(context.Background(), workspaceID, userID, token)
 	require.NoError(t, err)
+	require.False(t, result.AlreadyLinked)
 
 	require.NotNil(t, repo.slackUserLinks)
 	require.Equal(t, userID, repo.slackUserLinks["T123:U999"])
 	require.NotNil(t, store.records[storeKey].UserID)
 	require.Equal(t, userID, *store.records[storeKey].UserID)
-	require.Error(t, service.LinkSlackAccount(context.Background(), workspaceID, userID, token))
+	result, err = service.LinkSlackAccount(context.Background(), workspaceID, userID, token)
+	require.NoError(t, err)
+	require.True(t, result.AlreadyLinked)
+	require.Equal(t, "U999", result.SlackUserID)
+}
+
+func TestAutoLinkWorkspaceMembersMatchesExactNormalizedEmail(t *testing.T) {
+	workspaceID := uuid.New()
+	matchedUserID := uuid.New()
+	unmatchedUserID := uuid.New()
+	scopes := slackBotOAuthScopeValue()
+	repo := &mockRepo{
+		workspaceMembers: []slackrepository.WorkspaceMemberRecord{
+			{UserID: matchedUserID, Email: " Person@Example.com "},
+			{UserID: unmatchedUserID, Email: "other@example.com"},
+		},
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			ID:             uuid.New(),
+			WorkspaceID:    workspaceID,
+			SlackTeamID:    "T123",
+			BotAccessToken: "xoxb-current",
+			Scope:          &scopes,
+			IsActive:       true,
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		require.Equal(t, "/users.list", request.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"ok": true,
+			"members": [
+				{"id":"U-MATCH","name":"person","real_name":"Different Display Name","profile":{"email":"person@example.com"}},
+				{"id":"U-NO-MATCH","name":"other-person","real_name":"Other Person","profile":{"email":"different@example.com"}},
+				{"id":"U-BOT","is_bot":true,"profile":{"email":"other@example.com"}}
+			],
+			"response_metadata":{"next_cursor":""}
+		}`))
+	}))
+	defer provider.Close()
+	service.client = provider.Client()
+	service.webClient = newSlackWebClient(service.client)
+	service.webClient.baseURL = provider.URL
+
+	require.NoError(t, service.autoLinkWorkspaceMembers(context.Background(), repo.slackWorkspace))
+	require.Equal(t, matchedUserID, repo.slackUserLinks["T123:U-MATCH"])
+	require.NotContains(t, repo.slackUserLinks, "T123:U-NO-MATCH")
+	require.NotContains(t, repo.slackUserLinks, "T123:U-BOT")
+}
+
+func TestSlackDisconnectCommandRemovesOnlyCallingUsersAccountLink(t *testing.T) {
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	repo := &mockRepo{
+		slackWorkspace: slackrepository.SlackWorkspaceRecord{
+			ID:          uuid.New(),
+			WorkspaceID: workspaceID,
+			SlackTeamID: "T123",
+			IsActive:    true,
+		},
+		slackUserLinks: map[string]uuid.UUID{
+			"T123:U123": userID,
+			"T123:U999": uuid.New(),
+		},
+	}
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
+	body := []byte(url.Values{
+		"team_id":    {"T123"},
+		"user_id":    {"U123"},
+		"trigger_id": {"trigger-1"},
+		"text":       {"disconnect"},
+	}.Encode())
+
+	response, err := service.HandleCommand(context.Background(), body)
+	require.NoError(t, err)
+	require.Equal(t, "ephemeral", response.ResponseType)
+	require.Equal(t, "Your Slack account has been disconnected from FortyOne.", response.Text)
+	require.NotContains(t, repo.slackUserLinks, "T123:U123")
+	require.Contains(t, repo.slackUserLinks, "T123:U999")
 }
 
 func TestParseCommandTitleSupportsCreateTaskPrefix(t *testing.T) {

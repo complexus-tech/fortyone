@@ -49,6 +49,8 @@ oauth_config:
       - im:history
       - links:read
       - links:write
+      - users:read
+      - users:read.email
   pkce_enabled: false
 settings:
   event_subscriptions:

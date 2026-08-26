@@ -37,6 +37,7 @@ type Repository interface {
 	UpsertSlackUserLinks(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, slackTeamID string, links []slackrepository.SlackUserLinkUpsert) error
 	FindLinkedUserIDBySlackUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string) (*uuid.UUID, error)
 	FindSlackUserLinkByUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID string, userID uuid.UUID) (*slackrepository.SlackUserLinkRecord, error)
+	DeleteSlackUserLink(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string, userID uuid.UUID) (bool, error)
 	GetWorkspaceBySlackTeamID(ctx context.Context, slackTeamID string) (slackrepository.WorkspaceRecord, error)
 	UpsertSlackWorkspace(ctx context.Context, workspaceID, installedByUserID uuid.UUID, payload slackrepository.OAuthInstallPayload) (slackrepository.SlackWorkspaceRecord, error)
 	GetSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) (slackrepository.SlackWorkspaceRecord, error)
@@ -127,7 +128,14 @@ type CoreSlackChannel struct {
 
 type CoreIntegration struct {
 	SlackWorkspace *CoreSlackWorkspace
+	AccountLink    *CoreSlackAccountLink
 	Channels       []CoreSlackChannel
+}
+
+type CoreSlackAccountLink struct {
+	SlackUserID string
+	LinkedVia   string
+	LinkedAt    time.Time
 }
 
 type CoreRequestLog struct {
@@ -156,6 +164,11 @@ type CoreCreateAccountLinkSession struct {
 	Linked     bool
 	CanLink    bool
 	InstallURL string
+}
+
+type CoreLinkSlackAccountResult struct {
+	AlreadyLinked bool
+	SlackUserID   string
 }
 
 type CommandResponse struct {

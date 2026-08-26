@@ -276,7 +276,7 @@ func TestLinkSlackAccountClaimsFirstUseGuideAsFallback(t *testing.T) {
 	parsedLink, err := url.Parse(link)
 	require.NoError(t, err)
 
-	err = service.LinkSlackAccount(
+	_, err = service.LinkSlackAccount(
 		context.Background(),
 		workspaceID,
 		userID,

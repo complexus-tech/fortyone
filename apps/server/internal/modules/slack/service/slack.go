@@ -43,6 +43,7 @@ var (
 	ErrSlackInteractionActorMismatch   = errors.New("slack interaction actor does not match the modal source")
 	ErrSlackEventRuntimeNotConfigured  = errors.New("slack event runtime is not configured")
 	ErrSlackInvalidEventPayload        = errors.New("invalid slack event payload")
+	ErrSlackMemberLinkingScopesMissing = errors.New("Slack member linking requires users:read and users:read.email; update the Slack connection")
 	slackMrkdwnTextEscaper             = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
 )
 
@@ -180,7 +181,7 @@ func New(log *logger.Logger, repo Repository, requests RequestStore, stories Sto
 	return service
 }
 
-func (s *Service) GetIntegration(ctx context.Context, workspaceID uuid.UUID) (CoreIntegration, error) {
+func (s *Service) GetIntegration(ctx context.Context, workspaceID, userID uuid.UUID) (CoreIntegration, error) {
 	integration := CoreIntegration{
 		Channels: make([]CoreSlackChannel, 0),
 	}
@@ -194,6 +195,19 @@ func (s *Service) GetIntegration(ctx context.Context, workspaceID uuid.UUID) (Co
 	}
 	coreWorkspace := toCoreSlackWorkspace(slackWorkspace)
 	integration.SlackWorkspace = &coreWorkspace
+	if userID != uuid.Nil {
+		link, linkErr := s.repo.FindSlackUserLinkByUser(ctx, workspaceID, slackWorkspace.SlackTeamID, userID)
+		if linkErr != nil {
+			return CoreIntegration{}, linkErr
+		}
+		if link != nil {
+			integration.AccountLink = &CoreSlackAccountLink{
+				SlackUserID: link.SlackUserID,
+				LinkedVia:   link.LinkedVia,
+				LinkedAt:    link.LinkedAt,
+			}
+		}
+	}
 
 	channels, err := s.repo.ListChannels(ctx, workspaceID)
 	if err != nil && !slackrepository.IsNotFound(err) {
@@ -412,6 +426,15 @@ func (s *Service) handleInstallSetup(ctx context.Context, code, state, slackErro
 			"slack_team_id", strings.TrimSpace(oauthResp.Team.ID),
 		)
 	}
+	if linkErr := s.autoLinkWorkspaceMembers(ctx, slackWorkspace); linkErr != nil && s.log != nil {
+		s.log.Warn(
+			ctx,
+			"Slack connect succeeded but automatic member linking failed",
+			"error", linkErr,
+			"workspace_id", nonce.WorkspaceID,
+			"slack_team_id", strings.TrimSpace(oauthResp.Team.ID),
+		)
+	}
 
 	return s.buildWorkspaceIntegrationURL(noncePayload.WorkspaceSlug), nil
 }
@@ -528,7 +551,10 @@ func (s *Service) SyncChannels(ctx context.Context, workspaceID uuid.UUID) error
 	if err != nil {
 		return err
 	}
-	return s.syncChannelsWithToken(ctx, workspaceID, slackWorkspace.ID, botToken)
+	if err := s.syncChannelsWithToken(ctx, workspaceID, slackWorkspace.ID, botToken); err != nil {
+		return err
+	}
+	return s.autoLinkWorkspaceMembers(ctx, slackWorkspace)
 }
 
 func (s *Service) syncChannelsWithToken(
@@ -629,36 +655,50 @@ func (s *Service) botToken(ctx context.Context, installation slackrepository.Sla
 	return credential.AccessToken, nil
 }
 
-func (s *Service) LinkSlackAccount(ctx context.Context, workspaceID, userID uuid.UUID, token string) error {
+func (s *Service) LinkSlackAccount(ctx context.Context, workspaceID, userID uuid.UUID, token string) (CoreLinkSlackAccountResult, error) {
 	if workspaceID == uuid.Nil {
-		return errors.New("workspace id is required")
+		return CoreLinkSlackAccountResult{}, errors.New("workspace id is required")
 	}
 	if userID == uuid.Nil {
-		return errors.New("user id is required")
+		return CoreLinkSlackAccountResult{}, errors.New("user id is required")
+	}
+	installation, err := s.repo.GetSlackWorkspace(ctx, workspaceID)
+	if err != nil {
+		return CoreLinkSlackAccountResult{}, err
+	}
+	existing, err := s.repo.FindSlackUserLinkByUser(ctx, workspaceID, installation.SlackTeamID, userID)
+	if err != nil {
+		return CoreLinkSlackAccountResult{}, err
+	}
+	if existing != nil {
+		return CoreLinkSlackAccountResult{
+			AlreadyLinked: true,
+			SlackUserID:   existing.SlackUserID,
+		}, nil
 	}
 	nonce, err := s.consumeNonce(ctx, slackNoncePurposeAccount, token, &workspaceID, &userID)
 	if err != nil {
-		return fmt.Errorf("invalid or expired Slack link token: %w", err)
+		return CoreLinkSlackAccountResult{}, fmt.Errorf("invalid or expired Slack link token: %w", err)
 	}
 	if nonce.WorkspaceID != workspaceID {
-		return errors.New("slack link token workspace mismatch")
+		return CoreLinkSlackAccountResult{}, errors.New("slack link token workspace mismatch")
 	}
 	if nonce.UserID != nil && *nonce.UserID != userID {
-		return errors.New("slack link token user mismatch")
+		return CoreLinkSlackAccountResult{}, errors.New("slack link token user mismatch")
 	}
 
 	slackTeamID := strings.TrimSpace(valueOrEmpty(nonce.ExternalWorkspaceID))
 	slackUserID := strings.TrimSpace(valueOrEmpty(nonce.ExternalUserID))
 	if slackTeamID == "" || slackUserID == "" {
-		return errors.New("invalid slack link token")
+		return CoreLinkSlackAccountResult{}, errors.New("invalid slack link token")
 	}
 
 	slackWorkspace, err := s.repo.GetSlackWorkspaceByTeamID(ctx, slackTeamID)
 	if err != nil {
-		return err
+		return CoreLinkSlackAccountResult{}, err
 	}
 	if slackWorkspace.WorkspaceID != workspaceID {
-		return errors.New("slack workspace does not belong to this workspace")
+		return CoreLinkSlackAccountResult{}, errors.New("slack workspace does not belong to this workspace")
 	}
 
 	if err := s.repo.UpsertSlackUserLinks(ctx, workspaceID, slackWorkspace.ID, slackTeamID, []slackrepository.SlackUserLinkUpsert{
@@ -668,10 +708,25 @@ func (s *Service) LinkSlackAccount(ctx context.Context, workspaceID, userID uuid
 			LinkedVia:   "manual_link",
 		},
 	}); err != nil {
-		return err
+		return CoreLinkSlackAccountResult{}, err
 	}
 	s.dispatchFirstInteractionGuide(ctx, slackWorkspace, slackUserID)
-	return nil
+	return CoreLinkSlackAccountResult{SlackUserID: slackUserID}, nil
+}
+
+func (s *Service) DisconnectSlackAccount(ctx context.Context, workspaceID, userID uuid.UUID) (bool, error) {
+	if workspaceID == uuid.Nil || userID == uuid.Nil {
+		return false, errors.New("workspace and user are required")
+	}
+	installation, err := s.repo.GetSlackWorkspace(ctx, workspaceID)
+	if err != nil {
+		return false, err
+	}
+	link, err := s.repo.FindSlackUserLinkByUser(ctx, workspaceID, installation.SlackTeamID, userID)
+	if err != nil || link == nil {
+		return false, err
+	}
+	return s.repo.DeleteSlackUserLink(ctx, workspaceID, installation.SlackTeamID, link.SlackUserID, userID)
 }
 
 func IsNotFound(err error) bool {
@@ -908,6 +963,17 @@ func (s *Service) HandleCommand(ctx context.Context, rawBody []byte) (CommandRes
 		SlackText:       strings.TrimSpace(values.Get("text")),
 		ResponseURL:     strings.TrimSpace(values.Get("response_url")),
 	}
+	if strings.EqualFold(strings.TrimSpace(source.SlackText), "disconnect") {
+		disconnected, disconnectErr := s.disconnectSlackAccountBySource(ctx, source)
+		if disconnectErr != nil {
+			return CommandResponse{}, disconnectErr
+		}
+		message := "Your Slack account is already disconnected from FortyOne."
+		if disconnected {
+			message = "Your Slack account has been disconnected from FortyOne."
+		}
+		return CommandResponse{ResponseType: "ephemeral", Text: message}, nil
+	}
 	title := parseCommandTitle(values.Get("text"))
 	s.dispatchCommand(ctx, triggerID, title, source)
 	s.dispatchFirstInteractionGuideByTeam(ctx, source.SlackTeamID, source.SlackUserID)
@@ -916,6 +982,32 @@ func (s *Service) HandleCommand(ctx context.Context, rawBody []byte) (CommandRes
 	// acknowledgement. Returning an empty response prevents Slack from adding a
 	// noisy ephemeral "Opening..." message to the channel.
 	return CommandResponse{}, nil
+}
+
+func (s *Service) disconnectSlackAccountBySource(ctx context.Context, source requestSourceContext) (bool, error) {
+	installation, err := s.repo.GetSlackWorkspaceByTeamID(ctx, strings.TrimSpace(source.SlackTeamID))
+	if err != nil {
+		if slackrepository.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	userID, err := s.repo.FindLinkedUserIDBySlackUser(
+		ctx,
+		installation.WorkspaceID,
+		installation.SlackTeamID,
+		strings.TrimSpace(source.SlackUserID),
+	)
+	if err != nil || userID == nil {
+		return false, err
+	}
+	return s.repo.DeleteSlackUserLink(
+		ctx,
+		installation.WorkspaceID,
+		installation.SlackTeamID,
+		strings.TrimSpace(source.SlackUserID),
+		*userID,
+	)
 }
 
 func (s *Service) HandleInteractivity(ctx context.Context, rawBody []byte) (InteractionResponse, error) {
@@ -3390,6 +3482,9 @@ func (s *Service) fetchChannels(ctx context.Context, botToken string) ([]slackre
 }
 
 func (s *Service) autoLinkWorkspaceMembers(ctx context.Context, slackWorkspace slackrepository.SlackWorkspaceRecord) error {
+	if !slackInstallationHasScopes(slackWorkspace, "users:read", "users:read.email") {
+		return ErrSlackMemberLinkingScopesMissing
+	}
 	botToken, err := s.botToken(ctx, slackWorkspace)
 	if err != nil {
 		return err
@@ -3443,6 +3538,26 @@ func (s *Service) autoLinkWorkspaceMembers(ctx context.Context, slackWorkspace s
 	}
 
 	return s.repo.UpsertSlackUserLinks(ctx, slackWorkspace.WorkspaceID, slackWorkspace.ID, slackWorkspace.SlackTeamID, links)
+}
+
+func slackInstallationHasScopes(slackWorkspace slackrepository.SlackWorkspaceRecord, required ...string) bool {
+	if slackWorkspace.Scope == nil {
+		return false
+	}
+	available := make(map[string]struct{})
+	for _, scope := range strings.FieldsFunc(*slackWorkspace.Scope, func(r rune) bool {
+		return r == ',' || r == ' '
+	}) {
+		if scope = strings.TrimSpace(scope); scope != "" {
+			available[scope] = struct{}{}
+		}
+	}
+	for _, scope := range required {
+		if _, ok := available[scope]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Service) fetchWorkspaceUsers(ctx context.Context, botToken string) ([]slackWorkspaceUser, error) {

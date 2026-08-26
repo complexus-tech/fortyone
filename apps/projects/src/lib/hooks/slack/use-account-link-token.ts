@@ -2,7 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLinkSlackAccount } from "./use-link-account";
 
-export type SlackAccountLinkStatus = "idle" | "linking" | "success" | "error";
+export type SlackAccountLinkStatus =
+  | "idle"
+  | "linking"
+  | "success"
+  | "already_connected"
+  | "error";
 
 const slackLinkTokenParameter = "slack_link_token";
 
@@ -35,7 +40,11 @@ export const useSlackAccountLinkToken = () => {
             setErrorMessage(result.error.message);
             return;
           }
-          setStatus("success");
+          setStatus(
+            result.data?.status === "already_connected"
+              ? "already_connected"
+              : "success",
+          );
           clearTokenFromURL(linkToken);
         },
         onError: (error) => {

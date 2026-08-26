@@ -40,7 +40,11 @@ func (h *Handlers) GetIntegration(ctx context.Context, w http.ResponseWriter, r 
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	integration, err := h.service.GetIntegration(ctx, workspace.ID)
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	integration, err := h.service.GetIntegration(ctx, workspace.ID, userID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -122,10 +126,36 @@ func (h *Handlers) LinkAccount(ctx context.Context, w http.ResponseWriter, r *ht
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	if err := h.service.LinkSlackAccount(ctx, workspace.ID, userID, input.Token); err != nil {
+	result, err := h.service.LinkSlackAccount(ctx, workspace.ID, userID, input.Token)
+	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	return web.Respond(ctx, w, nil, http.StatusOK)
+	status := "connected"
+	if result.AlreadyLinked {
+		status = "already_connected"
+	}
+	return web.Respond(ctx, w, AppLinkSlackAccountResult{
+		Status:      status,
+		SlackUserID: result.SlackUserID,
+	}, http.StatusOK)
+}
+
+func (h *Handlers) DisconnectAccount(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	if _, err := h.service.DisconnectSlackAccount(ctx, workspace.ID, userID); err != nil {
+		if slack.IsNotFound(err) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
 func (h *Handlers) DisconnectWorkspace(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

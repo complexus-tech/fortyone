@@ -1680,9 +1680,26 @@ func desiredStoryUpdates(
 			updates["assignee_id"] = nil
 		}
 	}
-	for field, value := range map[string]any{"status_id": statusID, "sprint_id": sprintID, "objective_id": objectiveID, "key_result_id": keyResultID, "start_date": startDate, "end_date": endDate} {
+	// Keep optional pointer values typed until after the nil check. Boxing a nil
+	// *uuid.UUID or *time.Time in any produces a non-nil interface, which would
+	// otherwise turn the tool's "leave unchanged" null into a destructive SQL
+	// NULL update.
+	for field, value := range map[string]*uuid.UUID{
+		"status_id":     statusID,
+		"sprint_id":     sprintID,
+		"objective_id":  objectiveID,
+		"key_result_id": keyResultID,
+	} {
 		if value != nil && !storyFieldMatches(story, field, value) {
-			updates[field] = value
+			updates[field] = *value
+		}
+	}
+	for field, value := range map[string]*time.Time{
+		"start_date": startDate,
+		"end_date":   endDate,
+	} {
+		if value != nil && !storyFieldMatches(story, field, value) {
+			updates[field] = *value
 		}
 	}
 	timeUpdates, err := desiredStoryTimeUpdates(story, timeMutation)
@@ -1942,6 +1959,11 @@ func storyMutationToolDefinitions() []ToolDefinition {
 		"description": "A FortyOne priority, or null as described by this tool.",
 		"enum":        []any{"No Priority", "Low", "Medium", "High", "Urgent", nil},
 	}
+	nullableUpdatePriority := map[string]any{
+		"type":        []string{"string", "null"},
+		"description": "The replacement priority only when the user explicitly asked to change priority; otherwise null to leave the current priority unchanged. Never default an update to No Priority.",
+		"enum":        []any{"No Priority", "Low", "Medium", "High", "Urgent", nil},
+	}
 	return []ToolDefinition{
 		{
 			Type:        "function",
@@ -2032,7 +2054,7 @@ func storyMutationToolDefinitions() []ToolDefinition {
 					"description": "The replacement title, or null to leave it unchanged.",
 					"maxLength":   maximumStoryTitleRunes,
 				},
-				"priority": nullablePriority,
+				"priority": nullableUpdatePriority,
 				"assignee": map[string]any{
 					"type":        "string",
 					"description": "Whether to leave the assignee unchanged, assign the current user, or unassign the story.",

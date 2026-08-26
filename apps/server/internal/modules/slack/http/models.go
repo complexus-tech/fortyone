@@ -1,6 +1,8 @@
 package slackhttp
 
 import (
+	"time"
+
 	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 )
 
@@ -31,8 +33,15 @@ type AppSlackChannel struct {
 }
 
 type AppIntegration struct {
-	SlackWorkspace *AppSlackWorkspace `json:"slackWorkspace,omitempty"`
-	Channels       []AppSlackChannel  `json:"channels"`
+	SlackWorkspace *AppSlackWorkspace   `json:"slackWorkspace,omitempty"`
+	AccountLink    *AppSlackAccountLink `json:"accountLink,omitempty"`
+	Channels       []AppSlackChannel    `json:"channels"`
+}
+
+type AppSlackAccountLink struct {
+	SlackUserID string `json:"slackUserId"`
+	LinkedVia   string `json:"linkedVia"`
+	LinkedAt    string `json:"linkedAt"`
 }
 
 type AppCreateInstallSession struct {
@@ -51,6 +60,11 @@ type AppCreateAccountLinkSession struct {
 
 type AppLinkSlackAccountRequest struct {
 	Token string `json:"token" validate:"required"`
+}
+
+type AppLinkSlackAccountResult struct {
+	Status      string `json:"status"`
+	SlackUserID string `json:"slackUserId"`
 }
 
 type AppRequestLog struct {
@@ -78,6 +92,13 @@ func toAppIntegration(input slack.CoreIntegration) AppIntegration {
 	if input.SlackWorkspace != nil {
 		workspace := toAppSlackWorkspace(*input.SlackWorkspace)
 		out.SlackWorkspace = &workspace
+	}
+	if input.AccountLink != nil {
+		out.AccountLink = &AppSlackAccountLink{
+			SlackUserID: input.AccountLink.SlackUserID,
+			LinkedVia:   input.AccountLink.LinkedVia,
+			LinkedAt:    input.AccountLink.LinkedAt.UTC().Format(time.RFC3339),
+		}
 	}
 	for _, channel := range input.Channels {
 		out.Channels = append(out.Channels, toAppChannel(channel))

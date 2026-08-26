@@ -26,6 +26,11 @@ export type SlackChannel = {
 
 export type SlackIntegration = {
   slackWorkspace?: SlackWorkspace | null;
+  accountLink?: {
+    slackUserId: string;
+    linkedVia: string;
+    linkedAt: string;
+  } | null;
   channels: SlackChannel[];
 };
 

@@ -326,6 +326,52 @@ func TestReconcileScheduleMovesElapsedUnlockedWorkIntoFuture(t *testing.T) {
 	}
 }
 
+func TestReconcileScheduleDoesNotDoubleAllocateInProgressWork(t *testing.T) {
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	ownerID := uuid.New()
+	duration := 4 * 60
+	activeStart := time.Now().UTC().Add(-30 * time.Minute)
+	storyIDCopy := storyID
+	activeBlock := calendar.CoreScheduleBlock{
+		ID: uuid.New(), WorkspaceID: workspaceID, UserID: ownerID, StoryID: &storyIDCopy,
+		Title: "Integration check", StartAt: activeStart, EndAt: activeStart.Add(4 * time.Hour),
+		Source: calendar.ScheduleBlockSourceMaya, SegmentIndex: 0,
+	}
+	repo := &fakeMayaRepository{scheduleOwners: []uuid.UUID{ownerID}, schedulable: true}
+	storiesService := &fakeMayaStories{story: stories.CoreSingleStory{
+		ID: storyID, Workspace: workspaceID, Team: uuid.New(), Title: activeBlock.Title,
+		Assignee: &ownerID, EstimatedDurationMinutes: &duration, AutoSchedulingEnabled: true,
+		AutoSchedulingStatus: stories.AutoSchedulingStatusScheduled,
+	}}
+	calendarService := &fakeMayaCalendar{
+		ownerRepo: repo,
+		schedulingView: calendar.CoreSchedule{
+			Timezone: "UTC",
+			Blocks:   []calendar.CoreScheduleBlock{activeBlock},
+		},
+	}
+	service := New(Dependencies{
+		Repository: repo, Stories: storiesService, Reports: &fakeMayaReports{}, Calendar: calendarService,
+		Users: &fakeMayaUsers{}, Planner: NewPlanner(), MayaActorID: uuid.New(),
+	})
+
+	if err := service.ReconcileSchedule(context.Background(), ReconcileScheduleInput{WorkspaceID: &workspaceID, StoryID: &storyID}); err != nil {
+		t.Fatalf("ReconcileSchedule returned error: %v", err)
+	}
+	if len(calendarService.reconciliations) != 1 {
+		t.Fatalf("expected one reconciliation, got %#v", calendarService.reconciliations)
+	}
+
+	totalMinutes := 0
+	for _, segment := range calendarService.reconciliations[0].Segments {
+		totalMinutes += int(segment.EndAt.Sub(segment.StartAt) / time.Minute)
+	}
+	if totalMinutes != duration {
+		t.Fatalf("in-progress work must count toward the %d-minute estimate, got %d scheduled minutes: %#v", duration, totalMinutes, calendarService.reconciliations[0].Segments)
+	}
+}
+
 func TestReconcileScheduleKeepsElapsedLockedWorkAndMarksAtRisk(t *testing.T) {
 	workspaceID := uuid.New()
 	storyID := uuid.New()
