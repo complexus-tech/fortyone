@@ -1638,6 +1638,7 @@ func TestEventProcessorSendsPrivateAccountLinkForUnlinkedMention(t *testing.T) {
 	access := &accessCheckerStub{allowed: true}
 	sender := &messageSenderStub{externalMessageID: "10.2"}
 	processor := newTestEventProcessor(t, repo, store, assistant, access, sender)
+	processor.website = "https://fortyone.app"
 
 	err := processor.Process(context.Background(), []byte(mentionEvent("Ev-link", "<@B1> show my work")))
 	if err != nil {
@@ -1664,7 +1665,7 @@ func TestEventProcessorSendsPrivateAccountLinkForUnlinkedMention(t *testing.T) {
 	if len(store.outboundInputs) != 1 || store.outboundInputs[0].ExternalWorkspaceID != "T1" || store.outboundInputs[0].ExternalChannelID != "U1" || store.outboundInputs[0].ExternalThreadID != "" {
 		t.Fatalf("persisted account-link routing = %+v, want private user destination", store.outboundInputs)
 	}
-	if !strings.Contains(message.Text, "https://app.fortyone.com/acme/settings/integrations/slack?slack_link_token=") {
+	if !strings.Contains(message.Text, "https://acme.fortyone.app/settings/integrations/slack?slack_link_token=") {
 		t.Fatalf("account-link message = %q", message.Text)
 	}
 	if strings.Contains(message.Text, testSlackBotAccessToken) {

@@ -1522,7 +1522,10 @@ func (p *EventProcessor) accountLinkURL(ctx context.Context, workspace slackrepo
 	}); err != nil {
 		return "", err
 	}
-	link := p.website + "/" + url.PathEscape(workspace.Slug) + "/settings/integrations/slack"
+	link := buildWorkspaceURL(p.website, workspace.Slug, "settings", "integrations", "slack")
+	if link == "" {
+		return "", errors.New("build Slack account-link URL")
+	}
 	link += "?slack_link_token=" + url.QueryEscape(base64.RawURLEncoding.EncodeToString(nonce))
 	return link, nil
 }
