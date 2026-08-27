@@ -16,6 +16,9 @@ var ErrTeamMemberExists = errors.New("user is already a member of this team")
 // ErrTeamNotFound is returned when a team does not exist or the user cannot access it.
 var ErrTeamNotFound = errors.New("team not found")
 
+// ErrTeamMemberNotFound is returned when a scoped team membership does not exist.
+var ErrTeamMemberNotFound = errors.New("team member not found")
+
 type CoreTeam struct {
 	ID             uuid.UUID
 	Name           string
@@ -39,6 +42,20 @@ type CoreListTeamsFilter struct {
 type CoreTeamMemberAIContext struct {
 	RoleTitle       string
 	RoleDescription string
+}
+
+// CorePublicTeamJoin binds a self-join to the authenticated actor and workspace.
+type CorePublicTeamJoin struct {
+	TeamID      uuid.UUID
+	ActorID     uuid.UUID
+	WorkspaceID uuid.UUID
+}
+
+// CoreTeamSelfLeave binds a team leave to the authenticated actor and workspace.
+type CoreTeamSelfLeave struct {
+	TeamID      uuid.UUID
+	ActorID     uuid.UUID
+	WorkspaceID uuid.UUID
 }
 
 type DefaultStatus struct {

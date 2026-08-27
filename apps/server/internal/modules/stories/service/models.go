@@ -6,6 +6,39 @@ import (
 	"github.com/google/uuid"
 )
 
+// BulkDeleteAuthorization carries the actor information required to enforce
+// the same delete policy for every story in a bulk mutation.
+type BulkDeleteAuthorization struct {
+	ActorID uuid.UUID
+	IsAdmin bool
+}
+
+// HardBulkDeleteResult separates the deleted-story receipt from orphaned media
+// that the HTTP layer must remove from object storage after the transaction.
+type HardBulkDeleteResult struct {
+	StoryIDs              []uuid.UUID
+	OrphanedAttachmentIDs []uuid.UUID
+}
+
+// BulkUpdateItemResult records the outcome for one requested story while
+// preserving input order in a bulk-update receipt.
+type BulkUpdateItemResult struct {
+	StoryID uuid.UUID
+	Success bool
+	Error   string
+}
+
+// BulkUpdateResult describes a completed bulk-update attempt. Item failures
+// are data, not a top-level error, because other stories may already be
+// durably updated.
+type BulkUpdateResult struct {
+	TotalCount     int
+	SucceededCount int
+	FailedCount    int
+	Partial        bool
+	Items          []BulkUpdateItemResult
+}
+
 type CoreLabel struct {
 	LabelID     uuid.UUID  `json:"id"`
 	Name        string     `json:"name"`

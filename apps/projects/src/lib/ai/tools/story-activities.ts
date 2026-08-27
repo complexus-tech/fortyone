@@ -2,11 +2,15 @@ import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { getStoryActivities } from "@/modules/story/queries/get-activities";
-import { filterActivityTimeline, paginateRecords } from "./tool-helpers";
+import {
+  describeBackendPage,
+  filterActivityTimeline,
+  resolvePaginationInput,
+} from "./tool-helpers";
 
 export const storyActivitiesTool = tool({
   description:
-    "View story activity timeline and changes: track who made what changes, when they happened, and provide detailed history of story modifications. Perfect for understanding story evolution and accountability.",
+    "View paginated story activity and changes: track who made what changes and when, with explicit metadata when more history is available.",
   inputSchema: z.object({
     action: z
       .enum(["list-activities", "get-story-timeline", "get-recent-changes"])
@@ -119,24 +123,37 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const response = await getStoryActivities(storyId, ctx);
+          const requestedPage = resolvePaginationInput({
+            page,
+            pageSize: pageSize ?? limit,
+          });
+          const response = await getStoryActivities(
+            storyId,
+            ctx,
+            requestedPage.page,
+            requestedPage.pageSize,
+          );
           const activities = filterActivityTimeline(response.activities, {
             userId,
             fields: fields ?? (field ? [field] : undefined),
             since,
             until,
           });
-          const result = paginateRecords(activities, {
-            page,
-            pageSize: pageSize ?? limit,
-          });
+          const pagination = describeBackendPage(
+            response.pagination,
+            response.activities.length,
+          );
 
           return {
             success: true,
-            activities: result.records,
-            count: result.records.length,
-            pagination: result.pagination,
-            message: `Found ${result.records.length} activity${result.records.length !== 1 ? "s" : ""} for this story.`,
+            activities,
+            count: activities.length,
+            pagination: {
+              ...pagination,
+              matchingCount: activities.length,
+              filtersAppliedTo: "current-page",
+            },
+            message: `Returned ${activities.length} matching activit${activities.length === 1 ? "y" : "ies"} from story activity page ${pagination.page}${pagination.hasMore ? "; more pages are available" : ""}.`,
           };
         }
 
@@ -148,7 +165,16 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const response = await getStoryActivities(storyId, ctx);
+          const requestedPage = resolvePaginationInput({
+            page,
+            pageSize: pageSize ?? limit,
+          });
+          const response = await getStoryActivities(
+            storyId,
+            ctx,
+            requestedPage.page,
+            requestedPage.pageSize,
+          );
           const activities = filterActivityTimeline(response.activities, {
             userId,
             fields: fields ?? (field ? [field] : undefined),
@@ -170,13 +196,22 @@ export const storyActivitiesTool = tool({
             createdAt: activity.createdAt,
             userId: activity.userId,
           }));
+          const pagination = describeBackendPage(
+            response.pagination,
+            response.activities.length,
+          );
 
           return {
             success: true,
             timeline,
             count: timeline.length,
+            pagination: {
+              ...pagination,
+              matchingCount: timeline.length,
+              filtersAppliedTo: "current-page",
+            },
             summary: {
-              totalChanges: timeline.length,
+              changesReturned: timeline.length,
               uniqueUsers: new Set(timeline.map((t) => t.userId)).size,
               dateRange: {
                 start: timeline.length > 0 ? timeline[0].createdAt : null,
@@ -186,7 +221,7 @@ export const storyActivitiesTool = tool({
                     : null,
               },
             },
-            message: `Story timeline shows ${timeline.length} change${timeline.length !== 1 ? "s" : ""} over time.`,
+            message: `Returned ${timeline.length} matching timeline change${timeline.length === 1 ? "" : "s"} from story activity page ${pagination.page}${pagination.hasMore ? "; more pages are available" : ""}.`,
           };
         }
 
@@ -198,7 +233,7 @@ export const storyActivitiesTool = tool({
             };
           }
 
-          const response = await getStoryActivities(storyId, ctx);
+          const response = await getStoryActivities(storyId, ctx, 1, limit);
           const activities = filterActivityTimeline(response.activities, {
             userId,
             fields: fields ?? (field ? [field] : undefined),
@@ -212,7 +247,6 @@ export const storyActivitiesTool = tool({
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           );
 
-          // Get recent activities (last 10 by default)
           const recentActivities = activities.slice(0, limit);
 
           const recentChanges = recentActivities.map((activity) => ({
@@ -223,12 +257,22 @@ export const storyActivitiesTool = tool({
             createdAt: activity.createdAt,
             userId: activity.userId,
           }));
+          const pagination = describeBackendPage(
+            response.pagination,
+            response.activities.length,
+          );
 
           return {
             success: true,
             recentChanges,
             count: recentChanges.length,
-            message: `Found ${recentChanges.length} recent change${recentChanges.length !== 1 ? "s" : ""} to this story.`,
+            limit,
+            pagination: {
+              ...pagination,
+              matchingCount: recentChanges.length,
+              filtersAppliedTo: "current-page",
+            },
+            message: `Returned ${recentChanges.length} recent matching change${recentChanges.length === 1 ? "" : "s"} from the latest ${limit}-activity page${pagination.hasMore ? "; older activity is available on later pages" : ""}.`,
           };
         }
 

@@ -736,7 +736,7 @@ func (s *storyServiceStub) Get(ctx context.Context, id uuid.UUID, workspaceID uu
 	return story, nil
 }
 
-func (s *storyServiceStub) Delete(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) error {
+func (s *storyServiceStub) Delete(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID, authorization stories.BulkDeleteAuthorization) error {
 	s.deleted = append(s.deleted, id)
 	delete(s.stories, id)
 	return nil

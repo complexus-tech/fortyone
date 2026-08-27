@@ -125,11 +125,11 @@ func (emailVerificationRateLimitRepo) AddUserMemory(ctx context.Context, memory 
 	return users.CoreUserMemoryItem{}, nil
 }
 
-func (emailVerificationRateLimitRepo) UpdateUserMemory(ctx context.Context, id uuid.UUID, update users.UpdateUserMemoryItem) error {
+func (emailVerificationRateLimitRepo) UpdateUserMemory(ctx context.Context, id uuid.UUID, scope users.UserMemoryScope, update users.UpdateUserMemoryItem) error {
 	return nil
 }
 
-func (emailVerificationRateLimitRepo) DeleteUserMemory(ctx context.Context, id uuid.UUID) error {
+func (emailVerificationRateLimitRepo) DeleteUserMemory(ctx context.Context, id uuid.UUID, scope users.UserMemoryScope) error {
 	return nil
 }
 

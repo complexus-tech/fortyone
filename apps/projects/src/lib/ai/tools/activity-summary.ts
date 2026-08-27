@@ -4,6 +4,9 @@ import { auth } from "@/auth";
 import { getActivities } from "@/lib/queries/activities/get-activities";
 import { filterActivityTimeline, paginateRecords } from "./tool-helpers";
 
+const ACTIVITY_SOURCE_LIMIT = 100;
+const ACTIVITY_SOURCE_PROBE_LIMIT = ACTIVITY_SOURCE_LIMIT + 1;
+
 export const activitySummaryTool = tool({
   description:
     "List recent workspace story activities. Use this for questions like what changed this week, who changed priority or complexity, and recent status changes.",
@@ -53,8 +56,14 @@ export const activitySummaryTool = tool({
       }
 
       const ctx = { session, workspaceSlug };
-      const activities = await getActivities(ctx, { startDate, endDate });
-      const filtered = filterActivityTimeline(activities, {
+      const activities = await getActivities(ctx, {
+        startDate,
+        endDate,
+        limit: ACTIVITY_SOURCE_PROBE_LIMIT,
+      });
+      const sourceTruncated = activities.length > ACTIVITY_SOURCE_LIMIT;
+      const sourceActivities = activities.slice(0, ACTIVITY_SOURCE_LIMIT);
+      const filtered = filterActivityTimeline(sourceActivities, {
         userId,
         fields,
         since: startDate,
@@ -66,9 +75,25 @@ export const activitySummaryTool = tool({
         success: true,
         activities: result.records,
         count: result.records.length,
-        pagination: result.pagination,
+        pagination: {
+          ...result.pagination,
+          totalsScope: "loaded-source-window",
+          completeForRequestedWindow: !sourceTruncated,
+        },
+        source: {
+          limit: ACTIVITY_SOURCE_LIMIT,
+          returnedCount: sourceActivities.length,
+          truncated: sourceTruncated,
+          completeForRequestedWindow: !sourceTruncated,
+          dateWindow: {
+            startDate: startDate ?? null,
+            endDate: endDate ?? null,
+            usesBackendDefault: !startDate && !endDate,
+          },
+          filtersAppliedTo: "loaded-source-window",
+        },
         filters: { startDate, endDate, userId, fields },
-        message: `Found ${result.records.length} recent activit${result.records.length === 1 ? "y" : "ies"}.`,
+        message: `Returned ${result.records.length} recent activit${result.records.length === 1 ? "y" : "ies"} from a source window capped at ${ACTIVITY_SOURCE_LIMIT}${sourceTruncated ? "; older activity may exist beyond this limit" : ""}.`,
       };
     } catch (error) {
       return {

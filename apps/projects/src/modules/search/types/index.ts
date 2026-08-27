@@ -1,5 +1,6 @@
 import type { Objective } from "@/modules/objectives/types";
 import type { Story, StoryPriority } from "@/modules/stories/types";
+import type { StateCategory } from "@/types/states";
 
 export type SearchQueryParams = {
   type?: "all" | "stories" | "objectives";
@@ -14,9 +15,27 @@ export type SearchQueryParams = {
   pageSize?: number;
 };
 
+export type SearchStory = Story & {
+  statusName?: string | null;
+  statusColor?: string | null;
+  statusCategory?: StateCategory | null;
+  teamName: string;
+  teamCode: string;
+  assigneeFullName?: string | null;
+  assigneeUsername?: string | null;
+};
+
+export type SearchObjective = Objective & {
+  leadUser: string | null;
+  leadFullName?: string | null;
+  leadUsername?: string | null;
+  teamName: string;
+  teamCode: string;
+};
+
 export type SearchResponse = {
-  stories: Story[];
-  objectives: Objective[];
+  stories: SearchStory[];
+  objectives: SearchObjective[];
   totalStories: number;
   totalObjectives: number;
   totalPages: number;

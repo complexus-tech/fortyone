@@ -79,7 +79,7 @@ func TestToCoreSingleStoryDefaultsAutoSchedulingStatus(t *testing.T) {
 	}
 }
 
-func TestPrepareAutoSchedulingCreateForMayaEnablesDurableIntent(t *testing.T) {
+func TestPrepareAutoSchedulingCreateForMayaPreservesDisabledIntent(t *testing.T) {
 	mayaActorID := uuid.New()
 	service := &Service{mayaAssignment: &mayaAssignmentPolicy{assigneeID: mayaActorID}}
 	story := CoreSingleStory{Assignee: &mayaActorID}
@@ -87,11 +87,11 @@ func TestPrepareAutoSchedulingCreateForMayaEnablesDurableIntent(t *testing.T) {
 	if err := service.prepareAutoSchedulingCreate(&story); err != nil {
 		t.Fatalf("prepareAutoSchedulingCreate returned error: %v", err)
 	}
-	if !story.AutoSchedulingEnabled || story.AutoSchedulingLocked || story.AutoSchedulingStatus != AutoSchedulingStatusNeedsOwner {
-		t.Fatalf("Maya assignment must enable intake without creating a lock: %#v", story)
+	if story.AutoSchedulingEnabled || story.AutoSchedulingLocked || story.AutoSchedulingStatus != AutoSchedulingStatusOff {
+		t.Fatalf("Maya assignment must not enable scheduling beyond the submitted intent: %#v", story)
 	}
-	if story.AutoSchedulingReason == nil || *story.AutoSchedulingReason != autoSchedulingSelectingReason {
-		t.Fatalf("unexpected Maya intake reason: %v", story.AutoSchedulingReason)
+	if story.AutoSchedulingReason != nil {
+		t.Fatalf("disabled Maya scheduling must not have a scheduling reason: %v", story.AutoSchedulingReason)
 	}
 }
 

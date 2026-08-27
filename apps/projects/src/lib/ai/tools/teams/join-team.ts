@@ -1,16 +1,19 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
-import { addTeamMemberAction } from "@/modules/teams/actions/add-team-member";
+import { joinPublicTeamAction } from "@/modules/teams/actions/join-public-team";
 
 export const joinTeam = tool({
   description:
-    "Join a public team using its team UUID. Only works for public teams.",
+    "Join the authenticated user to a public team in the current workspace.",
   inputSchema: z.object({
-    teamId: z.string().describe("Team ID to join (required)"),
+    teamId: z.uuid().describe("Public team ID to join (required)"),
   }),
 
-  execute: async ({ teamId }, { experimental_context }) => {
+  execute: async (
+    { teamId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
 
@@ -21,12 +24,10 @@ export const joinTeam = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
-      const userId = session.user!.id!;
-
-      const result = await addTeamMemberAction(teamId, userId, workspaceSlug);
+      const result = await joinPublicTeamAction(teamId, workspaceSlug);
 
       if (result.error) {
         return {

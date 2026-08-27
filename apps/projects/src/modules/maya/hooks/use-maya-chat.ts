@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -11,16 +11,6 @@ import {
   lastAssistantMessageIsCompleteWithApprovalResponses,
 } from "ai";
 import { useSession } from "@/lib/auth/client";
-import {
-  githubKeys,
-  integrationRequestKeys,
-  labelKeys,
-  notificationKeys,
-  teamKeys,
-  calendarKeys,
-} from "@/constants/keys";
-import { storyKeys } from "@/modules/stories/constants";
-import { objectiveKeys } from "@/modules/objectives/constants";
 import { useSubscription } from "@/lib/hooks/subscriptions/subscription";
 import { fileToBase64 } from "@/lib/utils/files";
 import { useAiChatMessages } from "@/modules/ai-chats/hooks/use-ai-chat-messages";
@@ -34,6 +24,12 @@ import { useTotalMessages } from "@/modules/ai-chats/hooks/use-total-messages";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import type { MayaChatConfig } from "../types";
+import { getMayaToolInvalidationKeys } from "../utils/tool-query-invalidation";
+import {
+  isChatResponseInProgress,
+  runWithChatSendGuard,
+} from "../utils/chat-send-policy";
+import { prepareMayaChatSendRequest } from "../utils/chat-request-payload";
 import { canSendMayaMessage } from "../utils/message-limit";
 import { mergeRealtimeVoiceMessages } from "../utils/realtime-voice-messages";
 import { useMayaRealtimeVoice } from "./use-maya-realtime-voice";
@@ -42,7 +38,7 @@ class MayaChatTransport extends DefaultChatTransport<MayaUIMessage> {
   private requestBody: Record<string, unknown> = {};
 
   constructor() {
-    super();
+    super({ prepareSendMessagesRequest: prepareMayaChatSendRequest });
     this.body = () => this.requestBody;
   }
 
@@ -73,6 +69,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const currentChatId = config.currentChatId;
   const { data: aiChatMessages = [] } = useAiChatMessages(currentChatId);
   const [input, setInput] = useState("");
+  const isSendingRef = useRef(false);
 
   const terminology = {
     stories: getTermDisplay("storyTerm", { variant: "plural" }),
@@ -129,74 +126,6 @@ export const useMayaChat = (config: MayaChatConfig) => {
     config.updateChatRef(chatId);
   };
 
-  // Map tool types to the query keys they should invalidate
-  const toolInvalidationMap: Partial<Record<string, () => readonly unknown[]>> =
-    {
-      // Teams
-      "tool-createTeamTool": () => teamKeys.all(workspaceSlug),
-      "tool-updateTeam": () => teamKeys.all(workspaceSlug),
-      "tool-joinTeam": () => teamKeys.all(workspaceSlug),
-      "tool-leaveTeam": () => teamKeys.all(workspaceSlug),
-      "tool-deleteTeam": () => teamKeys.all(workspaceSlug),
-      // Stories
-      "tool-createStory": () => storyKeys.all(workspaceSlug),
-      "tool-updateStory": () => storyKeys.all(workspaceSlug),
-      "tool-deleteStory": () => storyKeys.all(workspaceSlug),
-      "tool-bulkUpdateStories": () => storyKeys.all(workspaceSlug),
-      "tool-bulkDeleteStories": () => storyKeys.all(workspaceSlug),
-      "tool-bulkCreateStories": () => storyKeys.all(workspaceSlug),
-      "tool-assignStoriesToUser": () => storyKeys.all(workspaceSlug),
-      "tool-duplicateStory": () => storyKeys.all(workspaceSlug),
-      "tool-restoreStory": () => storyKeys.all(workspaceSlug),
-      "tool-addStoryAssociation": () => storyKeys.all(workspaceSlug),
-      "tool-removeStoryAssociation": () => storyKeys.all(workspaceSlug),
-      "tool-comments": () => storyKeys.all(workspaceSlug),
-      "tool-storyLabels": () => storyKeys.all(workspaceSlug),
-      "tool-links": () => storyKeys.all(workspaceSlug),
-      "tool-labels": () => labelKeys.all(workspaceSlug),
-      // Integration requests
-      "tool-updateIntegrationRequestTool": () =>
-        integrationRequestKeys.all(workspaceSlug),
-      "tool-acceptIntegrationRequestTool": () =>
-        integrationRequestKeys.all(workspaceSlug),
-      "tool-declineIntegrationRequestTool": () =>
-        integrationRequestKeys.all(workspaceSlug),
-      "tool-acceptAllIntegrationRequestsTool": () =>
-        integrationRequestKeys.all(workspaceSlug),
-      "tool-declineAllIntegrationRequestsTool": () =>
-        integrationRequestKeys.all(workspaceSlug),
-      "tool-postRequestGitHubCommentTool": () =>
-        integrationRequestKeys.all(workspaceSlug),
-      // Objectives & Key Results
-      "tool-createKeyResultTool": () => objectiveKeys.all(workspaceSlug),
-      "tool-updateKeyResultTool": () => objectiveKeys.all(workspaceSlug),
-      "tool-deleteKeyResultTool": () => objectiveKeys.all(workspaceSlug),
-      "tool-createObjectiveTool": () => objectiveKeys.all(workspaceSlug),
-      "tool-updateObjectiveTool": () => objectiveKeys.all(workspaceSlug),
-      "tool-deleteObjectiveTool": () => objectiveKeys.all(workspaceSlug),
-      // Notifications
-      "tool-notifications": () => notificationKeys.all(workspaceSlug),
-      // GitHub
-      "tool-resyncGitHubRepositoriesTool": () =>
-        githubKeys.integration(workspaceSlug),
-      "tool-createGitHubIssueSyncLinkTool": () =>
-        githubKeys.integration(workspaceSlug),
-      "tool-deleteGitHubIssueSyncLinkTool": () =>
-        githubKeys.integration(workspaceSlug),
-      "tool-updateGitHubWorkspaceSettingsTool": () =>
-        githubKeys.integration(workspaceSlug),
-      "tool-updateGitHubTeamSettingsTool": () =>
-        githubKeys.integration(workspaceSlug),
-      "tool-postStoryGitHubCommentTool": () => storyKeys.all(workspaceSlug),
-      "tool-deleteStoryGitHubLinkTool": () => storyKeys.all(workspaceSlug),
-      // Memory
-      "tool-deleteMemory": () => aiChatKeys.memories(),
-      "tool-updateMemory": () => aiChatKeys.memories(),
-      "tool-createMemory": () => aiChatKeys.memories(),
-      // Objective statuses
-      "tool-objectiveStatuses": () => objectiveKeys.statuses(workspaceSlug),
-    };
-
   const {
     messages,
     status,
@@ -232,19 +161,6 @@ export const useMayaChat = (config: MayaChatConfig) => {
           return;
         }
 
-        if (
-          part.type === "tool-mayaWorkPlanTool" &&
-          part.state === "output-available"
-        ) {
-          queryClient.invalidateQueries({
-            queryKey: calendarKeys.all(workspaceSlug),
-          });
-          queryClient.invalidateQueries({
-            queryKey: storyKeys.all(workspaceSlug),
-          });
-          return;
-        }
-
         // Refresh chat list on any text response
         if (part.type === "text") {
           queryClient.invalidateQueries({ queryKey: aiChatKeys.lists() });
@@ -254,14 +170,20 @@ export const useMayaChat = (config: MayaChatConfig) => {
           return;
         }
 
-        // Invalidate queries for tool completions via the map
-        const getQueryKey = toolInvalidationMap[part.type];
         if (
-          getQueryKey &&
+          part.type.startsWith("tool-") &&
           "state" in part &&
           part.state === "output-available"
         ) {
-          queryClient.invalidateQueries({ queryKey: getQueryKey() });
+          const toolName = part.type.slice("tool-".length);
+          const input = "input" in part ? part.input : undefined;
+          for (const queryKey of getMayaToolInvalidationKeys({
+            input,
+            toolName,
+            workspaceSlug,
+          })) {
+            queryClient.invalidateQueries({ queryKey });
+          }
         }
       });
     },
@@ -294,12 +216,20 @@ export const useMayaChat = (config: MayaChatConfig) => {
     [messages, realtimeVoice.messages],
   );
 
-  const handleRegenerate = (messageId?: string) => {
-    regenerate({ messageId });
+  const handleRegenerate = async (messageId?: string) => {
+    await runWithChatSendGuard({
+      sendGuard: isSendingRef,
+      status,
+      task: async () => {
+        await regenerate({ messageId });
+      },
+    });
   };
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim() && attachments.length === 0) return;
+    if (isSendingRef.current) return;
+    if (isChatResponseInProgress(status)) return;
 
     const limit = getLimit("maxAiMessages");
     if (
@@ -322,32 +252,46 @@ export const useMayaChat = (config: MayaChatConfig) => {
       return;
     }
 
-    // Convert attachments to base64 for AI SDK
-    const attachmentData: FileUIPart[] = await Promise.all(
-      attachments.map(async (file) => ({
-        type: "file",
-        mediaType: file.type,
-        filename: file.name,
-        url: await fileToBase64(file),
-      })),
-    );
+    const pendingAttachments = attachments;
+    await runWithChatSendGuard({
+      sendGuard: isSendingRef,
+      status,
+      task: async () => {
+        // Convert attachments to base64 for AI SDK
+        const attachmentData: FileUIPart[] = await Promise.all(
+          pendingAttachments.map(async (file) => ({
+            type: "file",
+            mediaType: file.type,
+            filename: file.name,
+            url: await fileToBase64(file),
+          })),
+        );
 
-    sendMessage({
-      text: content,
-      files: attachmentData,
+        setInput((currentInput) =>
+          currentInput === content ? "" : currentInput,
+        );
+        const pendingAttachmentSet = new Set(pendingAttachments);
+        setAttachments((currentAttachments) =>
+          currentAttachments.filter(
+            (attachment) => !pendingAttachmentSet.has(attachment),
+          ),
+        );
+
+        await sendMessage({
+          text: content,
+          files: attachmentData,
+        });
+      },
     });
-
-    setInput("");
-    setAttachments([]);
   };
 
   const handleSuggestedPrompt = (prompt: string) => {
-    handleSendMessage(prompt);
+    void handleSendMessage(prompt);
   };
 
   const handleSend = () => {
     if (!input.trim() && attachments.length === 0) return;
-    handleSendMessage(input);
+    void handleSendMessage(input);
   };
 
   return {

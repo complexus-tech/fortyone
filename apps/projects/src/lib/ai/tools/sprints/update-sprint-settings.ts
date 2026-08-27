@@ -7,41 +7,54 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 export const updateSprintSettings = tool({
   description:
     "Update sprint automation settings for a team. Only admins can update sprint settings for teams they belong to.",
-  inputSchema: z.object({
-    teamId: z
-      .string()
-      .describe("Team ID to update sprint settings for (required)"),
-    autoCreateSprints: z
-      .boolean()
-      .optional()
-      .describe("Enable/disable automatic sprint creation"),
-    upcomingSprintsCount: z
-      .number()
-      .min(1)
-      .max(4)
-      .optional()
-      .describe("Number of upcoming sprints to create (1-4)"),
-    sprintDurationWeeks: z
-      .number()
-      .min(1)
-      .max(4)
-      .optional()
-      .describe("Duration of each sprint in weeks (1-4)"),
-    sprintStartDay: z
-      .enum(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
-      .optional()
-      .describe("Day of the week when sprints start"),
-    moveIncompleteStoriesEnabled: z
-      .boolean()
-      .optional()
-      .describe("Automatically move incomplete stories to the next sprint"),
-    nextAutoSprintNumber: z
-      .number()
-      .min(1)
-      .max(10000)
-      .optional()
-      .describe("Number to use for the next automatically created sprint"),
-  }),
+  inputSchema: z
+    .object({
+      teamId: z
+        .string()
+        .describe("Team ID to update sprint settings for (required)"),
+      autoCreateSprints: z
+        .boolean()
+        .optional()
+        .describe("Enable/disable automatic sprint creation"),
+      upcomingSprintsCount: z
+        .number()
+        .min(1)
+        .max(4)
+        .optional()
+        .describe("Number of upcoming sprints to create (1-4)"),
+      sprintDurationWeeks: z
+        .number()
+        .min(1)
+        .max(4)
+        .optional()
+        .describe("Duration of each sprint in weeks (1-4)"),
+      sprintStartDay: z
+        .enum(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+        .optional()
+        .describe("Day of the week when sprints start"),
+      moveIncompleteStoriesEnabled: z
+        .boolean()
+        .optional()
+        .describe("Automatically move incomplete stories to the next sprint"),
+      nextAutoSprintNumber: z
+        .number()
+        .min(1)
+        .max(10000)
+        .optional()
+        .describe("Number to use for the next automatically created sprint"),
+    })
+    .refine(
+      (input) =>
+        [
+          input.autoCreateSprints,
+          input.upcomingSprintsCount,
+          input.sprintDurationWeeks,
+          input.sprintStartDay,
+          input.moveIncompleteStoriesEnabled,
+          input.nextAutoSprintNumber,
+        ].some((value) => value !== undefined),
+      { message: "Provide at least one sprint setting to update." },
+    ),
 
   execute: async (
     {

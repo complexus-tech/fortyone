@@ -416,7 +416,7 @@ func (h *Handler) addStoryComment(ctx context.Context, _ *mcp.CallToolRequest, i
 		return nil, nil, fmt.Errorf("parentId: %w", err)
 	}
 	if parentID != nil {
-		parent, getErr := h.cfg.Stories.GetComment(ctx, *parentID)
+		parent, getErr := h.cfg.Stories.GetComment(ctx, *parentID, storyID, workspaceID)
 		if getErr != nil {
 			return nil, nil, getErr
 		}

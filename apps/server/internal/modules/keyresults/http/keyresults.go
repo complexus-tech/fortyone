@@ -352,12 +352,22 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		web.RespondError(ctx, w, ErrInvalidKeyResultID, http.StatusBadRequest)
 		return nil
 	}
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	if _, err := h.keyResults.Get(ctx, id, workspace.ID); err != nil {
+		if errors.Is(err, keyresults.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
 
 	// Use your existing pagination helper functions
 	page := getIntParam(r.URL.Query(), "page", 1)
 	pageSize := getIntParam(r.URL.Query(), "pageSize", 20)
 
-	activities, hasMore, err := h.okrActivities.GetKeyResultActivities(ctx, id, page, pageSize)
+	activities, hasMore, err := h.okrActivities.GetKeyResultActivities(ctx, id, workspace.ID, page, pageSize)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil

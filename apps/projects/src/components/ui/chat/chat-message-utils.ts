@@ -37,6 +37,7 @@ const MEMBER_SCOPED_RESULT_TYPES = new Set([
   "tool-timelineTrendsReportTool",
   "tool-workloadPlanningTool",
   "tool-mayaWorkPlanTool",
+  "tool-applyMayaWorkPlanTool",
   "tool-activitySummaryTool",
 ]);
 
@@ -148,7 +149,15 @@ export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
       const hasLaterResultOfSameType = laterToolParts.some(
         ({ part: laterPart }) => laterPart.type === part.type,
       );
+      const hasLaterAppliedWorkPlan =
+        part.type === "tool-mayaWorkPlanTool" &&
+        laterToolParts.some(
+          ({ part: laterPart }) =>
+            laterPart.type === "tool-applyMayaWorkPlanTool" &&
+            laterPart.state === "output-available",
+        );
       const feedsLaterMutation =
+        part.type !== "tool-mayaWorkPlanTool" &&
         !isMutationToolPart(part) &&
         mutationPartIndexes.some(
           (mutationPartIndex) => mutationPartIndex > index,
@@ -158,6 +167,7 @@ export const getVisibleToolPartIndexes = (message: MayaUIMessage) => {
         feedsLaterTeamResult ||
         feedsLaterMemberResult ||
         hasLaterResultOfSameType ||
+        hasLaterAppliedWorkPlan ||
         feedsLaterMutation
         ? []
         : [index];
@@ -231,6 +241,7 @@ const TOOL_THINKING_LABELS: Record<string, string> = {
   "tool-workloadPlanningTool": "Analyzing workload",
   "tool-focusBrief": "Reviewing priorities",
   "tool-mayaWorkPlanTool": "Planning work",
+  "tool-applyMayaWorkPlanTool": "Applying work plan",
   "tool-getGitHubIntegrationTool": "Checking GitHub integration",
   "tool-createGitHubInstallSessionTool": "Creating GitHub install link",
   "tool-resyncGitHubRepositoriesTool": "Resyncing GitHub repositories",
@@ -307,4 +318,35 @@ export const hasVisibleMessageContent = (message: MayaUIMessage) => {
   return message.parts.some(
     (part) => isToolMessagePart(part) && isRenderableToolPart(part),
   );
+};
+
+export const getVisibleMessageRenderEntries = (messages: MayaUIMessage[]) => {
+  const usedKeys = new Set<string>();
+
+  return messages.flatMap((message, messageIndex) => {
+    if (!hasVisibleMessageContent(message)) return [];
+
+    const messageId =
+      typeof message.id === "string" ? message.id.trim() : "";
+    const baseKey = messageId || `maya-message-${message.role}-${messageIndex}`;
+    let renderKey = baseKey;
+
+    if (usedKeys.has(renderKey)) {
+      renderKey = `${baseKey}-${messageIndex}`;
+      let collisionIndex = 1;
+      while (usedKeys.has(renderKey)) {
+        renderKey = `${baseKey}-${messageIndex}-${collisionIndex}`;
+        collisionIndex += 1;
+      }
+    }
+    usedKeys.add(renderKey);
+
+    return [
+      {
+        isLast: messageIndex === messages.length - 1,
+        message,
+        renderKey,
+      },
+    ];
+  });
 };

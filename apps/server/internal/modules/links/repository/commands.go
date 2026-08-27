@@ -2,6 +2,8 @@ package linksrepository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	links "github.com/complexus-tech/projects-api/internal/modules/links/service"
@@ -22,10 +24,11 @@ func (r *repo) CreateLink(ctx context.Context, cnl links.CoreNewLink) (links.Cor
 
 	var link DbLink
 	query := `
-		INSERT INTO
-			story_links (title, url, story_id)
-		VALUES
-			(:title,:url,:story_id)
+		INSERT INTO story_links (title, url, story_id)
+		SELECT :title, :url, s.id
+		FROM stories s
+		WHERE s.id = :story_id
+			AND s.workspace_id = :workspace_id
 		RETURNING
 			link_id,
 			title,
@@ -42,6 +45,9 @@ func (r *repo) CreateLink(ctx context.Context, cnl links.CoreNewLink) (links.Cor
 	}
 
 	if err := stmt.GetContext(ctx, &link, toDbNewLink(cnl)); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return links.CoreLink{}, links.ErrNotFound
+		}
 		r.log.Error(ctx, "error getting link", err)
 		return links.CoreLink{}, err
 	}
@@ -49,7 +55,7 @@ func (r *repo) CreateLink(ctx context.Context, cnl links.CoreNewLink) (links.Cor
 	return toCoreLink(link), nil
 }
 
-func (r *repo) UpdateLink(ctx context.Context, linkID uuid.UUID, cul links.CoreUpdateLink) error {
+func (r *repo) UpdateLink(ctx context.Context, linkID, workspaceID uuid.UUID, cul links.CoreUpdateLink) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.links.UpdateLink")
 	defer span.End()
 
@@ -62,6 +68,12 @@ func (r *repo) UpdateLink(ctx context.Context, linkID uuid.UUID, cul links.CoreU
 			url = COALESCE(:url, url),
 			updated_at = NOW()
 		WHERE link_id = :link_id
+			AND EXISTS (
+				SELECT 1
+				FROM stories s
+				WHERE s.id = story_links.story_id
+					AND s.workspace_id = :workspace_id
+			)
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -71,9 +83,23 @@ func (r *repo) UpdateLink(ctx context.Context, linkID uuid.UUID, cul links.CoreU
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.ExecContext(ctx, toDbUpdateLink(cul, linkID)); err != nil {
+	params := map[string]any{
+		"link_id":      linkID,
+		"workspace_id": workspaceID,
+		"title":        cul.Title,
+		"url":          cul.URL,
+	}
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
 		r.log.Error(ctx, "error updating link", err)
 		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read updated link rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return links.ErrNotFound
 	}
 
 	r.log.Info(ctx, "link updated successfully", "linkId", linkID)
@@ -81,18 +107,22 @@ func (r *repo) UpdateLink(ctx context.Context, linkID uuid.UUID, cul links.CoreU
 	return nil
 }
 
-func (r *repo) DeleteLink(ctx context.Context, linkID uuid.UUID) error {
+func (r *repo) DeleteLink(ctx context.Context, linkID, workspaceID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.links.DeleteLink")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("linkId", linkID.String()))
 
 	query := `
-		DELETE FROM story_links
-		WHERE link_id = :link_id
+		DELETE FROM story_links sl
+		USING stories s
+		WHERE sl.link_id = :link_id
+			AND s.id = sl.story_id
+			AND s.workspace_id = :workspace_id
 	`
-	params := map[string]interface{}{
-		"link_id": linkID,
+	params := map[string]any{
+		"link_id":      linkID,
+		"workspace_id": workspaceID,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -103,9 +133,17 @@ func (r *repo) DeleteLink(ctx context.Context, linkID uuid.UUID) error {
 	defer stmt.Close()
 
 	r.log.Info(ctx, fmt.Sprintf("Deleting link #%s", linkID), "linkId", linkID)
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
 		r.log.Error(ctx, fmt.Sprintf("failed to delete link: %s", err), "linkId", linkID)
 		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read deleted link rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return links.ErrNotFound
 	}
 
 	r.log.Info(ctx, fmt.Sprintf("Link #%s deleted successfully", linkID), "linkId", linkID)

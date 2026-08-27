@@ -52,6 +52,7 @@ export const getMayaWorkPlanModel = (
   const run = isRecord(plan.run) ? plan.run : {};
   const rawActions: unknown[] = Array.isArray(plan.actions) ? plan.actions : [];
   const message = asString(output.message);
+  const phase = asString(output.phase);
   const actions = rawActions.flatMap((rawAction, index) => {
     if (!isRecord(rawAction)) return [];
 
@@ -87,10 +88,20 @@ export const getMayaWorkPlanModel = (
     ];
   });
 
+  const runStatus = (() => {
+    if (phase === "preview") return "proposed";
+    if (phase === "applied") {
+      return actions.some((action) => action.status === "failed")
+        ? "failed"
+        : "applied";
+    }
+    return asString(run.status) || "proposed";
+  })();
+
   return {
     actions,
     message,
-    runStatus: asString(run.status) || "proposed",
+    runStatus,
     summary:
       asString(run.summary) ||
       message ||

@@ -258,15 +258,32 @@ func (s *Service) AcceptAllPendingByTeam(ctx context.Context, workspaceID, teamI
 	}
 
 	result := CoreBulkRequestResult{
+		TotalCount: len(requests),
 		RequestIDs: make([]uuid.UUID, 0, len(requests)),
+		Items:      make([]CoreBulkRequestItemResult, 0, len(requests)),
 	}
 	for _, request := range requests {
-		if _, err := s.Accept(ctx, workspaceID, request.ID, actorID); err != nil {
-			return CoreBulkRequestResult{}, err
+		accepted, err := s.Accept(ctx, workspaceID, request.ID, actorID)
+		if err != nil {
+			result.FailedCount++
+			result.Items = append(result.Items, CoreBulkRequestItemResult{
+				RequestID: request.ID,
+				Status:    "failed",
+				Error:     err.Error(),
+			})
+			continue
 		}
+		result.SucceededCount++
 		result.RequestIDs = append(result.RequestIDs, request.ID)
+		result.Items = append(result.Items, CoreBulkRequestItemResult{
+			RequestID:       request.ID,
+			Success:         true,
+			Status:          StatusAccepted,
+			AcceptedStoryID: accepted.AcceptedStoryID,
+		})
 	}
-	result.Count = len(result.RequestIDs)
+	result.Count = result.SucceededCount
+	result.Partial = result.SucceededCount > 0 && result.FailedCount > 0
 	return result, nil
 }
 
@@ -288,15 +305,30 @@ func (s *Service) DeclineAllPendingByTeam(ctx context.Context, workspaceID, team
 	}
 
 	result := CoreBulkRequestResult{
+		TotalCount: len(requests),
 		RequestIDs: make([]uuid.UUID, 0, len(requests)),
+		Items:      make([]CoreBulkRequestItemResult, 0, len(requests)),
 	}
 	for _, request := range requests {
 		if _, err := s.Decline(ctx, workspaceID, request.ID, actorID); err != nil {
-			return CoreBulkRequestResult{}, err
+			result.FailedCount++
+			result.Items = append(result.Items, CoreBulkRequestItemResult{
+				RequestID: request.ID,
+				Status:    "failed",
+				Error:     err.Error(),
+			})
+			continue
 		}
+		result.SucceededCount++
 		result.RequestIDs = append(result.RequestIDs, request.ID)
+		result.Items = append(result.Items, CoreBulkRequestItemResult{
+			RequestID: request.ID,
+			Success:   true,
+			Status:    StatusDeclined,
+		})
 	}
-	result.Count = len(result.RequestIDs)
+	result.Count = result.SucceededCount
+	result.Partial = result.SucceededCount > 0 && result.FailedCount > 0
 	return result, nil
 }
 

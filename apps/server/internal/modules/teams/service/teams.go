@@ -20,7 +20,9 @@ type Repository interface {
 	CreateTx(ctx context.Context, tx *sqlx.Tx, team CoreTeam) (CoreTeam, error)
 	Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error)
 	Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID) error
-	AddMember(ctx context.Context, teamID, userID uuid.UUID) error
+	AddMember(ctx context.Context, teamID, userID, workspaceID uuid.UUID) error
+	JoinPublicTeam(ctx context.Context, input CorePublicTeamJoin) error
+	LeaveTeam(ctx context.Context, input CoreTeamSelfLeave) error
 	AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID) error
 	RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error
 	UpdateMemberAIContext(ctx context.Context, teamID, userID, workspaceID uuid.UUID, input CoreTeamMemberAIContext) error
@@ -176,12 +178,12 @@ func (s *Service) Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid
 	return nil
 }
 
-func (s *Service) AddMember(ctx context.Context, teamID, userID uuid.UUID) error {
+func (s *Service) AddMember(ctx context.Context, teamID, userID, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "business.core.teams.addMember")
 	ctx, span := web.AddSpan(ctx, "business.core.teams.AddMember")
 	defer span.End()
 
-	if err := s.repo.AddMember(ctx, teamID, userID); err != nil {
+	if err := s.repo.AddMember(ctx, teamID, userID, workspaceID); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -189,6 +191,45 @@ func (s *Service) AddMember(ctx context.Context, teamID, userID uuid.UUID) error
 	span.AddEvent("team member added.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
 		attribute.String("user_id", userID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
+	))
+	return nil
+}
+
+// LeaveTeam removes only the authenticated actor's membership from a scoped team.
+func (s *Service) LeaveTeam(ctx context.Context, input CoreTeamSelfLeave) error {
+	s.log.Info(ctx, "business.core.teams.leaveTeam")
+	ctx, span := web.AddSpan(ctx, "business.core.teams.LeaveTeam")
+	defer span.End()
+
+	if err := s.repo.LeaveTeam(ctx, input); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("team left.", trace.WithAttributes(
+		attribute.String("team_id", input.TeamID.String()),
+		attribute.String("workspace_id", input.WorkspaceID.String()),
+		attribute.String("actor_id", input.ActorID.String()),
+	))
+	return nil
+}
+
+// JoinPublicTeam lets an authenticated workspace member join a public team.
+func (s *Service) JoinPublicTeam(ctx context.Context, input CorePublicTeamJoin) error {
+	s.log.Info(ctx, "business.core.teams.joinPublicTeam")
+	ctx, span := web.AddSpan(ctx, "business.core.teams.JoinPublicTeam")
+	defer span.End()
+
+	if err := s.repo.JoinPublicTeam(ctx, input); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("public team joined.", trace.WithAttributes(
+		attribute.String("team_id", input.TeamID.String()),
+		attribute.String("workspace_id", input.WorkspaceID.String()),
+		attribute.String("actor_id", input.ActorID.String()),
 	))
 	return nil
 }

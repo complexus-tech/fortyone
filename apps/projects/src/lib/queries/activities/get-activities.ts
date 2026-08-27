@@ -7,7 +7,7 @@ import type { ApiResponse } from "@/types";
 
 export const getActivities = async (
   ctx: WorkspaceCtx,
-  filters?: SummaryFilters,
+  filters?: SummaryFilters & { limit?: number },
 ) => {
   const query = filters
     ? stringify(filters, {

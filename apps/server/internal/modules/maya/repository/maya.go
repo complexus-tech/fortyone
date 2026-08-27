@@ -2,7 +2,9 @@ package mayarepository
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
@@ -146,6 +148,70 @@ func (r *Repo) CreateActions(ctx context.Context, actions []maya.CoreAction) ([]
 		return nil, fmt.Errorf("commit maya actions transaction: %w", err)
 	}
 	return created, nil
+}
+
+func (r *Repo) GetWorkPlan(ctx context.Context, runID, workspaceID, triggeredBy uuid.UUID) (maya.WorkPlan, error) {
+	const runQuery = `
+		SELECT
+			run_id,
+			workspace_id,
+			story_id,
+			triggered_by_user_id,
+			trigger_type,
+			status,
+			summary,
+			context,
+			error_message,
+			started_at,
+			completed_at,
+			created_at,
+			updated_at
+		FROM maya_agent_runs
+		WHERE run_id = $1
+			AND workspace_id = $2
+			AND triggered_by_user_id = $3
+	`
+	var runRow dbRun
+	if err := r.db.GetContext(ctx, &runRow, runQuery, runID, workspaceID, triggeredBy); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return maya.WorkPlan{}, maya.ErrPlanNotFound
+		}
+		return maya.WorkPlan{}, fmt.Errorf("get Maya work plan run: %w", err)
+	}
+
+	const actionsQuery = `
+		SELECT
+			action_id,
+			run_id,
+			workspace_id,
+			story_id,
+			action_type,
+			status,
+			reason,
+			payload,
+			error_message,
+			applied_at,
+			created_at,
+			updated_at
+		FROM maya_agent_actions
+		WHERE run_id = $1
+			AND workspace_id = $2
+			AND story_id = $3
+		ORDER BY created_at ASC, action_id ASC
+	`
+	actionRows := []dbAction{}
+	if err := r.db.SelectContext(ctx, &actionRows, actionsQuery, runID, workspaceID, runRow.StoryID); err != nil {
+		return maya.WorkPlan{}, fmt.Errorf("get Maya work plan actions: %w", err)
+	}
+	actions := make([]maya.CoreAction, 0, len(actionRows))
+	for _, actionRow := range actionRows {
+		action, err := toCoreAction(actionRow)
+		if err != nil {
+			return maya.WorkPlan{}, fmt.Errorf("decode Maya work plan action: %w", err)
+		}
+		actions = append(actions, action)
+	}
+	return maya.WorkPlan{Run: toCoreRun(runRow), Actions: actions}, nil
 }
 
 func (r *Repo) MarkActionApplied(ctx context.Context, actionID uuid.UUID) error {

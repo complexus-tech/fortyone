@@ -15,7 +15,12 @@ type AppSearchStory struct {
 	Parent                   *uuid.UUID  `json:"parentId"`
 	Objective                *uuid.UUID  `json:"objectiveId"`
 	Status                   *uuid.UUID  `json:"statusId"`
+	StatusName               *string     `json:"statusName"`
+	StatusColor              *string     `json:"statusColor"`
+	StatusCategory           *string     `json:"statusCategory"`
 	Assignee                 *uuid.UUID  `json:"assigneeId"`
+	AssigneeFullName         *string     `json:"assigneeFullName"`
+	AssigneeUsername         *string     `json:"assigneeUsername"`
 	Reporter                 *uuid.UUID  `json:"reporterId"`
 	Priority                 string      `json:"priority"`
 	EstimateLabel            *string     `json:"estimateLabel"`
@@ -23,6 +28,8 @@ type AppSearchStory struct {
 	EstimateScheme           string      `json:"estimateScheme"`
 	Sprint                   *uuid.UUID  `json:"sprintId"`
 	Team                     uuid.UUID   `json:"teamId"`
+	TeamName                 string      `json:"teamName"`
+	TeamCode                 string      `json:"teamCode"`
 	Workspace                uuid.UUID   `json:"workspaceId"`
 	StartDate                *time.Time  `json:"startDate"`
 	EndDate                  *time.Time  `json:"endDate"`
@@ -58,7 +65,11 @@ type AppSearchObjective struct {
 	Description  *string    `json:"description"`
 	ShortSummary *string    `json:"shortSummary"`
 	LeadUser     *uuid.UUID `json:"leadUser"`
+	LeadFullName *string    `json:"leadFullName"`
+	LeadUsername *string    `json:"leadUsername"`
 	Team         uuid.UUID  `json:"teamId"`
+	TeamName     string     `json:"teamName"`
+	TeamCode     string     `json:"teamCode"`
 	Workspace    uuid.UUID  `json:"workspaceId"`
 	StartDate    *time.Time `json:"startDate"`
 	EndDate      *time.Time `json:"endDate"`
@@ -113,7 +124,12 @@ func toAppSearchStory(story search.CoreSearchStory) AppSearchStory {
 		Parent:                   story.Parent,
 		Objective:                story.Objective,
 		Status:                   story.Status,
+		StatusName:               story.StatusName,
+		StatusColor:              story.StatusColor,
+		StatusCategory:           story.StatusCategory,
 		Assignee:                 story.Assignee,
+		AssigneeFullName:         story.AssigneeFullName,
+		AssigneeUsername:         story.AssigneeUsername,
 		Reporter:                 story.Reporter,
 		Priority:                 story.Priority,
 		EstimateLabel:            story.EstimateLabel,
@@ -121,6 +137,8 @@ func toAppSearchStory(story search.CoreSearchStory) AppSearchStory {
 		EstimateScheme:           story.EstimateScheme,
 		Sprint:                   story.Sprint,
 		Team:                     story.Team,
+		TeamName:                 story.TeamName,
+		TeamCode:                 story.TeamCode,
 		Workspace:                story.Workspace,
 		StartDate:                story.StartDate,
 		EndDate:                  story.EndDate,
@@ -155,7 +173,11 @@ func toAppSearchObjective(objective search.CoreSearchObjective) AppSearchObjecti
 		Description:  objective.Description,
 		ShortSummary: objective.ShortSummary,
 		LeadUser:     objective.LeadUser,
+		LeadFullName: objective.LeadFullName,
+		LeadUsername: objective.LeadUsername,
 		Team:         objective.Team,
+		TeamName:     objective.TeamName,
+		TeamCode:     objective.TeamCode,
 		Workspace:    objective.Workspace,
 		StartDate:    objective.StartDate,
 		EndDate:      objective.EndDate,

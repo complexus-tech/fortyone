@@ -1180,7 +1180,12 @@ func (s *Service) CreateStoryFromItem(ctx context.Context, workspaceID, itemID, 
 		CreatedByUserID: actorID,
 	})
 	if err != nil {
-		if deleteErr := s.stories.Delete(context.WithoutCancel(ctx), story.ID, workspaceID); deleteErr != nil {
+		if deleteErr := s.stories.Delete(
+			context.WithoutCancel(ctx),
+			story.ID,
+			workspaceID,
+			stories.BulkDeleteAuthorization{ActorID: actorID},
+		); deleteErr != nil {
 			return CoreCreateStoryResult{}, errors.Join(err, fmt.Errorf("compensating story delete: %w", deleteErr))
 		}
 		if errors.Is(err, ErrAlreadyPlanned) {

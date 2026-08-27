@@ -30,8 +30,40 @@ func TestStoryMediaUsesStableResolverURL(t *testing.T) {
 	}
 }
 
+func TestAppBulkDeleteRequestValidate(t *testing.T) {
+	validStoryIDs := make([]uuid.UUID, 50)
+	for index := range validStoryIDs {
+		validStoryIDs[index] = uuid.New()
+	}
+
+	tests := []struct {
+		name      string
+		storyIDs  []uuid.UUID
+		wantError bool
+	}{
+		{name: "allows the 50 story workflow", storyIDs: validStoryIDs},
+		{name: "rejects an empty request", wantError: true},
+		{name: "rejects more than 50 stories", storyIDs: append(append([]uuid.UUID{}, validStoryIDs...), uuid.New()), wantError: true},
+		{name: "rejects a nil story ID", storyIDs: []uuid.UUID{uuid.Nil}, wantError: true},
+		{name: "rejects duplicate story IDs", storyIDs: []uuid.UUID{validStoryIDs[0], validStoryIDs[0]}, wantError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := (AppBulkDeleteRequest{StoryIDs: tt.storyIDs}).Validate()
+			if tt.wantError && err == nil {
+				t.Fatal("expected validation error")
+			}
+			if !tt.wantError && err != nil {
+				t.Fatalf("expected request to validate, got %v", err)
+			}
+		})
+	}
+}
+
 func TestToCoreNewStoryMapsLabelIDs(t *testing.T) {
 	userID := uuid.New()
+	idempotencyKey := "maya:tool-call-1"
 	labelIDs := []uuid.UUID{uuid.New(), uuid.New()}
 	estimatedDurationMinutes := 180
 	minimumFocusBlockMinutes := 45
@@ -46,6 +78,7 @@ func TestToCoreNewStoryMapsLabelIDs(t *testing.T) {
 		EstimatedDurationMinutes: &estimatedDurationMinutes,
 		MinimumFocusBlockMinutes: &minimumFocusBlockMinutes,
 		AutoSchedulingEnabled:    true,
+		IdempotencyKey:           &idempotencyKey,
 	}, userID)
 
 	if len(coreStory.LabelIDs) != len(labelIDs) {
@@ -65,6 +98,9 @@ func TestToCoreNewStoryMapsLabelIDs(t *testing.T) {
 	}
 	if !coreStory.AutoSchedulingEnabled || coreStory.AutoSchedulingLocked {
 		t.Fatalf("expected auto-scheduling preferences to be preserved, got enabled=%t locked=%t", coreStory.AutoSchedulingEnabled, coreStory.AutoSchedulingLocked)
+	}
+	if coreStory.CreationKey == nil || *coreStory.CreationKey != "app:"+userID.String()+":"+idempotencyKey {
+		t.Fatalf("expected a user-scoped idempotency key, got %v", coreStory.CreationKey)
 	}
 
 	appStory := toAppStory(stories.CoreSingleStory{

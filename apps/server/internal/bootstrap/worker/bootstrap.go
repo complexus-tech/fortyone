@@ -281,6 +281,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		messagingRepo,
 		emailReplyIngress,
 		emailThreads,
+		systemUserID,
 	)
 	if err != nil {
 		_ = db.Close()
@@ -289,6 +290,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	slackEvents, err := buildSlackEventProcessor(log, db, redisClient, cfg, slackEventProcessorDependencies{
 		EventPublisher: eventPublisher,
 		Tasks:          tasksService,
+		MayaActorID:    systemUserID,
 	})
 	if err != nil {
 		_ = db.Close()

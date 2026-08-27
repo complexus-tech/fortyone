@@ -149,16 +149,17 @@ export const analyticsKeys = {
 };
 
 export const githubKeys = {
+  all: (workspaceSlug: string) => ["github", workspaceSlug] as const,
   integration: (workspaceSlug: string) =>
-    ["github", workspaceSlug, "integration"] as const,
+    [...githubKeys.all(workspaceSlug), "integration"] as const,
   teamSettings: (workspaceSlug: string, teamId: string) =>
-    ["github", workspaceSlug, "team-settings", teamId] as const,
+    [...githubKeys.all(workspaceSlug), "team-settings", teamId] as const,
   storyLinks: (workspaceSlug: string, storyId: string) =>
-    ["github", workspaceSlug, "story-links", storyId] as const,
+    [...githubKeys.all(workspaceSlug), "story-links", storyId] as const,
   storyComments: (workspaceSlug: string, storyId: string) =>
-    ["github", workspaceSlug, "story-comments", storyId] as const,
+    [...githubKeys.all(workspaceSlug), "story-comments", storyId] as const,
   requestComments: (workspaceSlug: string, requestId: string) =>
-    ["github", workspaceSlug, "request-comments", requestId] as const,
+    [...githubKeys.all(workspaceSlug), "request-comments", requestId] as const,
 };
 
 export const figmaKeys = {

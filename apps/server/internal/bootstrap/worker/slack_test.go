@@ -6,6 +6,7 @@ import (
 
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +19,8 @@ func TestBuildSlackEventProcessorRequiresStoryMutationSideEffects(t *testing.T) 
 		{
 			name: "event publisher",
 			dependencies: slackEventProcessorDependencies{
-				Tasks: new(tasks.Service),
+				Tasks:       new(tasks.Service),
+				MayaActorID: uuid.New(),
 			},
 			errorMessage: "event publisher is required",
 		},
@@ -26,8 +28,17 @@ func TestBuildSlackEventProcessorRequiresStoryMutationSideEffects(t *testing.T) 
 			name: "tasks service",
 			dependencies: slackEventProcessorDependencies{
 				EventPublisher: new(publisher.Publisher),
+				MayaActorID:    uuid.New(),
 			},
 			errorMessage: "tasks service is required",
+		},
+		{
+			name: "Maya actor",
+			dependencies: slackEventProcessorDependencies{
+				EventPublisher: new(publisher.Publisher),
+				Tasks:          new(tasks.Service),
+			},
+			errorMessage: "Maya actor ID is required",
 		},
 	}
 

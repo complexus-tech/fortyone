@@ -19,6 +19,7 @@ import type { ChatStatus } from "ai";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
 import { RealtimeVoiceControl } from "@/modules/maya/components/realtime-voice-control";
 import type { useMayaRealtimeVoice } from "@/modules/maya/hooks/use-maya-realtime-voice";
+import { isChatResponseInProgress } from "@/modules/maya/utils/chat-send-policy";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 import { useTerminology } from "@/hooks";
 
@@ -39,6 +40,7 @@ type ChatInputProps = {
 
 const MAX_ATTACHMENT_COUNT = 5;
 const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_TOTAL_ATTACHMENT_SIZE_BYTES = 8 * 1024 * 1024;
 
 const SendIcon = () => {
   return (
@@ -195,10 +197,23 @@ export const ChatInput = ({
         0,
         MAX_ATTACHMENT_COUNT - attachments.length,
       );
-      const filesToAdd = acceptedFiles.slice(0, remainingSlots);
+      let remainingBytes = Math.max(
+        0,
+        MAX_TOTAL_ATTACHMENT_SIZE_BYTES -
+          attachments.reduce((total, attachment) => total + attachment.size, 0),
+      );
+      const filesToAdd = acceptedFiles
+        .slice(0, remainingSlots)
+        .filter((file) => {
+          if (file.size > remainingBytes) return false;
+          remainingBytes -= file.size;
+          return true;
+        });
 
       if (filesToAdd.length < acceptedFiles.length) {
-        toast.error(`You can attach up to ${MAX_ATTACHMENT_COUNT} files`);
+        toast.error("Some files could not be attached", {
+          description: `Attach up to ${MAX_ATTACHMENT_COUNT} files with a combined size of 8 MB.`,
+        });
       }
 
       if (filesToAdd.length > 0) {
@@ -234,7 +249,7 @@ export const ChatInput = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (isLiveVoiceActive) {
+      if (isLiveVoiceActive || isChatResponseInProgress(status)) {
         return;
       }
       onSend();

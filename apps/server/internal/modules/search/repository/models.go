@@ -18,7 +18,12 @@ type dbStory struct {
 	Parent                   *uuid.UUID       `db:"parent_id"`
 	Objective                *uuid.UUID       `db:"objective_id"`
 	Status                   *uuid.UUID       `db:"status_id"`
+	StatusName               *string          `db:"status_name"`
+	StatusColor              *string          `db:"status_color"`
+	StatusCategory           *string          `db:"status_category"`
 	Assignee                 *uuid.UUID       `db:"assignee_id"`
+	AssigneeFullName         *string          `db:"assignee_full_name"`
+	AssigneeUsername         *string          `db:"assignee_username"`
 	Reporter                 *uuid.UUID       `db:"reporter_id"`
 	Priority                 string           `db:"priority"`
 	EstimateValue            *int16           `db:"estimate_unit"`
@@ -26,6 +31,8 @@ type dbStory struct {
 	Sprint                   *uuid.UUID       `db:"sprint_id"`
 	KeyResult                *uuid.UUID       `db:"key_result_id"`
 	Team                     uuid.UUID        `db:"team_id"`
+	TeamName                 string           `db:"team_name"`
+	TeamCode                 string           `db:"team_code"`
 	Workspace                uuid.UUID        `db:"workspace_id"`
 	StartDate                *time.Time       `db:"start_date"`
 	EndDate                  *time.Time       `db:"end_date"`
@@ -48,7 +55,11 @@ type dbObjective struct {
 	Description  *string    `db:"description"`
 	ShortSummary *string    `db:"short_summary"`
 	LeadUser     *uuid.UUID `db:"lead_user_id"`
+	LeadFullName *string    `db:"lead_full_name"`
+	LeadUsername *string    `db:"lead_username"`
 	Team         uuid.UUID  `db:"team_id"`
+	TeamName     string     `db:"team_name"`
+	TeamCode     string     `db:"team_code"`
 	Workspace    uuid.UUID  `db:"workspace_id"`
 	StartDate    *time.Time `db:"start_date"`
 	EndDate      *time.Time `db:"end_date"`
@@ -85,7 +96,12 @@ func toCoreSearchStory(story dbStory) search.CoreSearchStory {
 		Parent:                   story.Parent,
 		Objective:                story.Objective,
 		Status:                   story.Status,
+		StatusName:               story.StatusName,
+		StatusColor:              story.StatusColor,
+		StatusCategory:           story.StatusCategory,
 		Assignee:                 story.Assignee,
+		AssigneeFullName:         story.AssigneeFullName,
+		AssigneeUsername:         story.AssigneeUsername,
 		Reporter:                 story.Reporter,
 		Priority:                 story.Priority,
 		EstimateLabel:            searchEstimateLabel(story.EstimateScheme, story.EstimateValue),
@@ -94,6 +110,8 @@ func toCoreSearchStory(story dbStory) search.CoreSearchStory {
 		Sprint:                   story.Sprint,
 		KeyResult:                story.KeyResult,
 		Team:                     story.Team,
+		TeamName:                 story.TeamName,
+		TeamCode:                 story.TeamCode,
 		Workspace:                story.Workspace,
 		StartDate:                story.StartDate,
 		EndDate:                  story.EndDate,
@@ -144,7 +162,11 @@ func toCoreSearchObjective(objective dbObjective) search.CoreSearchObjective {
 		Description:  objective.Description,
 		ShortSummary: objective.ShortSummary,
 		LeadUser:     objective.LeadUser,
+		LeadFullName: objective.LeadFullName,
+		LeadUsername: objective.LeadUsername,
 		Team:         objective.Team,
+		TeamName:     objective.TeamName,
+		TeamCode:     objective.TeamCode,
 		Workspace:    objective.Workspace,
 		StartDate:    objective.StartDate,
 		EndDate:      objective.EndDate,

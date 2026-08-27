@@ -814,51 +814,90 @@ func (r *repo) AddUserMemory(ctx context.Context, memory users.NewUserMemoryItem
 	return toCoreUserMemoryItem(dbItem), nil
 }
 
-// UpdateUserMemory updates a memory item.
-func (r *repo) UpdateUserMemory(ctx context.Context, id uuid.UUID, update users.UpdateUserMemoryItem) error {
+const updateUserMemoryQuery = `
+	UPDATE user_memories
+	SET content = :content, updated_at = NOW()
+	WHERE id = :id
+		AND user_id = :user_id
+		AND workspace_id = :workspace_id
+`
+
+// UpdateUserMemory updates an authenticated user's memory in one workspace.
+func (r *repo) UpdateUserMemory(ctx context.Context, id uuid.UUID, scope users.UserMemoryScope, update users.UpdateUserMemoryItem) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.UpdateUserMemory")
 	defer span.End()
 
-	q := `
-		UPDATE user_memories
-		SET content = :content, updated_at = NOW()
-		WHERE id = :id
-	`
-
 	params := map[string]any{
-		"id":      id,
-		"content": *update.Content,
+		"id":           id,
+		"user_id":      scope.UserID,
+		"workspace_id": scope.WorkspaceID,
+		"content":      *update.Content,
 	}
 
-	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	stmt, err := r.db.PrepareNamedContext(ctx, updateUserMemoryQuery)
 	if err != nil {
 		return fmt.Errorf("preparing update statement: %w", err)
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
 		return fmt.Errorf("updating user memory: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("checking updated user memory: %w", err)
+	}
+	if err := validateUserMemoryMutation(rowsAffected); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// DeleteUserMemory deletes a memory item.
-func (r *repo) DeleteUserMemory(ctx context.Context, id uuid.UUID) error {
+const deleteUserMemoryQuery = `
+	DELETE FROM user_memories
+	WHERE id = :id
+		AND user_id = :user_id
+		AND workspace_id = :workspace_id
+`
+
+// DeleteUserMemory deletes an authenticated user's memory in one workspace.
+func (r *repo) DeleteUserMemory(ctx context.Context, id uuid.UUID, scope users.UserMemoryScope) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.users.DeleteUserMemory")
 	defer span.End()
 
-	q := `DELETE FROM user_memories WHERE id = :id`
-
-	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	stmt, err := r.db.PrepareNamedContext(ctx, deleteUserMemoryQuery)
 	if err != nil {
 		return fmt.Errorf("preparing delete statement: %w", err)
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.ExecContext(ctx, map[string]any{"id": id}); err != nil {
+	params := map[string]any{
+		"id":           id,
+		"user_id":      scope.UserID,
+		"workspace_id": scope.WorkspaceID,
+	}
+	result, err := stmt.ExecContext(ctx, params)
+	if err != nil {
 		return fmt.Errorf("deleting user memory: %w", err)
 	}
 
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("checking deleted user memory: %w", err)
+	}
+	if err := validateUserMemoryMutation(rowsAffected); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateUserMemoryMutation(rowsAffected int64) error {
+	if rowsAffected == 0 {
+		return users.ErrMemoryNotFound
+	}
 	return nil
 }

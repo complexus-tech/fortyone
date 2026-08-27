@@ -124,7 +124,7 @@ func (r *repo) ResolveKeyResult(ctx context.Context, keyResultID, workspaceID uu
 	}, nil
 }
 
-func (r *repo) GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error) {
+func (r *repo) GetStoryLinks(ctx context.Context, storyID, workspaceID uuid.UUID) ([]links.CoreLink, error) {
 	r.log.Info(ctx, "business.repository.stories.GetStoryLinks")
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetStoryLinks")
 	defer span.End()
@@ -133,19 +133,22 @@ func (r *repo) GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.Co
 
 	var dbLinks []linksrepository.DbLink
 	query := `
-		SELECT 
-			link_id,
-			title,
-			url,
-			story_id,
-			created_at,
-			updated_at
-		FROM story_links
-		WHERE story_id = :story_id
+		SELECT
+			sl.link_id,
+			sl.title,
+			sl.url,
+			sl.story_id,
+			sl.created_at,
+			sl.updated_at
+		FROM story_links sl
+		INNER JOIN stories s ON s.id = sl.story_id
+		WHERE sl.story_id = :story_id
+			AND s.workspace_id = :workspace_id
 	`
 
 	params := map[string]any{
-		"story_id": storyID,
+		"story_id":     storyID,
+		"workspace_id": workspaceID,
 	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, query)
@@ -905,7 +908,7 @@ func (r *repo) getSubStories(ctx context.Context, parentId uuid.UUID, workspaceI
 	return subStories, nil
 }
 
-func (r *repo) GetActivitiesWithUser(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]stories.CoreActivityWithUser, bool, error) {
+func (r *repo) GetActivitiesWithUser(ctx context.Context, storyID, workspaceID uuid.UUID, page, pageSize int) ([]stories.CoreActivityWithUser, bool, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetActivitiesWithUser")
 	defer span.End()
 
@@ -914,9 +917,10 @@ func (r *repo) GetActivitiesWithUser(ctx context.Context, storyID uuid.UUID, pag
 	limit := pageSize + 1
 
 	params := map[string]any{
-		"story_id": storyID,
-		"limit":    limit,
-		"offset":   offset,
+		"story_id":     storyID,
+		"workspace_id": workspaceID,
+		"limit":        limit,
+		"offset":       offset,
 	}
 
 	q := `
@@ -938,8 +942,11 @@ SELECT
 		u.is_active,
 		u.is_system
 		FROM story_activities sa
+		INNER JOIN stories s ON s.id = sa.story_id
 		INNER JOIN users u ON sa.user_id = u.user_id
 		WHERE sa.story_id = :story_id
+			AND sa.workspace_id = :workspace_id
+			AND s.workspace_id = :workspace_id
 		ORDER BY sa.created_at DESC
 		LIMIT :limit OFFSET :offset
 	`
@@ -979,7 +986,7 @@ SELECT
 	return toCoreActivitiesWithUser(activities), hasMore, nil
 }
 
-func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error) {
+func (r *repo) GetComments(ctx context.Context, storyID, workspaceID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetComments")
 	defer span.End()
 
@@ -988,9 +995,10 @@ func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID, page, pageSiz
 	limit := pageSize + 1
 
 	params := map[string]any{
-		"story_id": storyID,
-		"limit":    limit,
-		"offset":   offset,
+		"story_id":     storyID,
+		"workspace_id": workspaceID,
+		"limit":        limit,
+		"offset":       offset,
 	}
 
 	q := `
@@ -1009,11 +1017,15 @@ func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID, page, pageSiz
 					FROM
 						story_comments sub
 					WHERE
-						sub.parent_id = sc.comment_id			
+						sub.parent_id = sc.comment_id
+						AND sub.story_id = sc.story_id
 				), '[]'
 			) AS sub_comments
-		FROM story_comments sc 
-		WHERE sc.story_id = :story_id AND sc.parent_id IS NULL 
+		FROM story_comments sc
+		INNER JOIN stories s ON s.id = sc.story_id
+		WHERE sc.story_id = :story_id
+			AND s.workspace_id = :workspace_id
+			AND sc.parent_id IS NULL
 		ORDER BY sc.created_at DESC
 		LIMIT :limit OFFSET :offset
 	`
@@ -1048,17 +1060,24 @@ func (r *repo) GetComments(ctx context.Context, storyID uuid.UUID, page, pageSiz
 	return toCoreComments(comments), hasMore, nil
 }
 
-func (r *repo) GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error) {
+func (r *repo) GetComment(ctx context.Context, commentID, storyID, workspaceID uuid.UUID) (comments.CoreComment, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.GetComment")
 	defer span.End()
 
 	q := `
-		SELECT comment_id, story_id, commenter_id, content, parent_id, created_at, updated_at
-		FROM story_comments 
-		WHERE comment_id = :comment_id
+		SELECT sc.comment_id, sc.story_id, sc.commenter_id, sc.content, sc.parent_id, sc.created_at, sc.updated_at
+		FROM story_comments sc
+		INNER JOIN stories s ON s.id = sc.story_id
+		WHERE sc.comment_id = :comment_id
+			AND sc.story_id = :story_id
+			AND s.workspace_id = :workspace_id
 	`
 
-	params := map[string]any{"comment_id": commentID}
+	params := map[string]any{
+		"comment_id":   commentID,
+		"story_id":     storyID,
+		"workspace_id": workspaceID,
+	}
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
 	if err != nil {
@@ -1069,6 +1088,9 @@ func (r *repo) GetComment(ctx context.Context, commentID uuid.UUID) (comments.Co
 
 	var comment commentsrepository.DbComment
 	if err := stmt.GetContext(ctx, &comment, params); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return comments.CoreComment{}, stories.ErrNotFound
+		}
 		r.log.Error(ctx, fmt.Sprintf("failed to get comment: %s", err))
 		return comments.CoreComment{}, fmt.Errorf("failed to get comment: %w", err)
 	}

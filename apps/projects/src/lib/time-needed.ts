@@ -1,5 +1,6 @@
 export type TimeNeededUnit = "minutes" | "hours";
 
+export const DEFAULT_TIME_NEEDED_MINUTES = 60;
 export const TIME_NEEDED_PRESETS = [15, 30, 60, 120, 240, 480] as const;
 export const MAX_TIME_NEEDED_MINUTES = 40 * 60;
 

@@ -11,29 +11,44 @@ import {
 export const updateKeyResultTool = tool({
   description:
     "Update existing key results. Can update name, measurement type, and values.",
-  inputSchema: z.object({
-    keyResultId: z.string().describe("Key result ID to update"),
-    name: z.string().optional().describe("Updated key result name"),
-    startValue: z.number().optional().describe("Updated starting value"),
-    currentValue: z
-      .number()
-      .optional()
-      .describe("Updated current progress value"),
-    targetValue: z.number().optional().describe("Updated target value"),
-    startDate: z
-      .string()
-      .optional()
-      .describe("Updated start date (ISO date string e.g 2005-06-13)"),
-    endDate: z
-      .string()
-      .optional()
-      .describe("Updated end date (ISO date string e.g 2005-06-13)"),
-    lead: z.string().optional().describe("Updated lead user ID (optional)"),
-    contributors: z
-      .array(z.string())
-      .optional()
-      .describe("Updated contributors user IDs (optional)"),
-  }),
+  inputSchema: z
+    .object({
+      keyResultId: z.string().describe("Key result ID to update"),
+      name: z.string().optional().describe("Updated key result name"),
+      startValue: z.number().optional().describe("Updated starting value"),
+      currentValue: z
+        .number()
+        .optional()
+        .describe("Updated current progress value"),
+      targetValue: z.number().optional().describe("Updated target value"),
+      startDate: z
+        .string()
+        .optional()
+        .describe("Updated start date (ISO date string e.g 2005-06-13)"),
+      endDate: z
+        .string()
+        .optional()
+        .describe("Updated end date (ISO date string e.g 2005-06-13)"),
+      lead: z.string().optional().describe("Updated lead user ID (optional)"),
+      contributors: z
+        .array(z.string())
+        .optional()
+        .describe("Updated contributors user IDs (optional)"),
+    })
+    .refine(
+      (input) =>
+        [
+          input.name,
+          input.startValue,
+          input.currentValue,
+          input.targetValue,
+          input.startDate,
+          input.endDate,
+          input.lead,
+          input.contributors,
+        ].some((value) => value !== undefined),
+      { message: "Provide at least one key-result field to update." },
+    ),
 
   execute: async (
     {
@@ -47,7 +62,7 @@ export const updateKeyResultTool = tool({
       lead,
       contributors,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     const session = await auth();
 
@@ -58,7 +73,7 @@ export const updateKeyResultTool = tool({
       };
     }
 
-    const workspaceSlug = (experimental_context as { workspaceSlug: string })
+    const workspaceSlug = (experimentalContext as { workspaceSlug: string })
       .workspaceSlug;
 
     const ctx = { session, workspaceSlug };

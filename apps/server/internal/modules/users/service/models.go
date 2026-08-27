@@ -135,6 +135,12 @@ type NewUserMemoryItem struct {
 	Content     string
 }
 
+// UserMemoryScope identifies the authenticated owner and workspace of a memory.
+type UserMemoryScope struct {
+	UserID      uuid.UUID
+	WorkspaceID uuid.UUID
+}
+
 type UpdateUserMemoryItem struct {
 	Content *string
 }

@@ -1154,6 +1154,16 @@ func (h *Handlers) UpdateUserMemory(ctx context.Context, w http.ResponseWriter, 
 	ctx, span := web.AddSpan(ctx, "handlers.users.UpdateUserMemory")
 	defer span.End()
 
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
 	idParam := web.Params(r, "id")
 	memoryID, err := uuid.Parse(idParam)
 	if err != nil {
@@ -1168,8 +1178,15 @@ func (h *Handlers) UpdateUserMemory(ctx context.Context, w http.ResponseWriter, 
 	update := users.UpdateUserMemoryItem{
 		Content: &req.Content,
 	}
+	scope := users.UserMemoryScope{
+		UserID:      userID,
+		WorkspaceID: workspace.ID,
+	}
 
-	if err := h.users.UpdateUserMemory(ctx, memoryID, update); err != nil {
+	if err := h.users.UpdateUserMemory(ctx, memoryID, scope, update); err != nil {
+		if errors.Is(err, users.ErrMemoryNotFound) {
+			return web.RespondError(ctx, w, users.ErrMemoryNotFound, http.StatusNotFound)
+		}
 		return web.RespondError(ctx, w, fmt.Errorf("updating user memory: %w", err), http.StatusInternalServerError)
 	}
 
@@ -1181,13 +1198,30 @@ func (h *Handlers) DeleteUserMemory(ctx context.Context, w http.ResponseWriter, 
 	ctx, span := web.AddSpan(ctx, "handlers.users.DeleteUserMemory")
 	defer span.End()
 
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
 	idParam := web.Params(r, "id")
 	memoryID, err := uuid.Parse(idParam)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	if err := h.users.DeleteUserMemory(ctx, memoryID); err != nil {
+	scope := users.UserMemoryScope{
+		UserID:      userID,
+		WorkspaceID: workspace.ID,
+	}
+	if err := h.users.DeleteUserMemory(ctx, memoryID, scope); err != nil {
+		if errors.Is(err, users.ErrMemoryNotFound) {
+			return web.RespondError(ctx, w, users.ErrMemoryNotFound, http.StatusNotFound)
+		}
 		return web.RespondError(ctx, w, fmt.Errorf("deleting user memory: %w", err), http.StatusInternalServerError)
 	}
 

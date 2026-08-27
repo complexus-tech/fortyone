@@ -313,6 +313,11 @@ func TestAcceptAllPendingByTeamAcceptsEveryPendingRequest(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 2, result.Count)
+	require.Equal(t, 2, result.TotalCount)
+	require.Equal(t, 2, result.SucceededCount)
+	require.Zero(t, result.FailedCount)
+	require.False(t, result.Partial)
+	require.Len(t, result.Items, 2)
 	require.ElementsMatch(t, []uuid.UUID{firstID, secondID}, result.RequestIDs)
 	require.ElementsMatch(t, []uuid.UUID{firstID, secondID}, repo.markedAccepted)
 	require.Len(t, repo.createdStories, 2)
@@ -322,6 +327,45 @@ func TestAcceptAllPendingByTeamAcceptsEveryPendingRequest(t *testing.T) {
 		require.NotNil(t, created.CreationKey, "story %d has no idempotency key", index)
 		require.Contains(t, *created.CreationKey, workspaceID.String())
 	}
+}
+
+func TestAcceptAllPendingByTeamContinuesAndReportsPerItemFailures(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	actorID := uuid.New()
+	firstID := uuid.New()
+	failedID := uuid.New()
+	thirdID := uuid.New()
+	repo := &requestRepoStub{
+		statusID: uuid.New(),
+		requests: []CoreIntegrationRequest{
+			{ID: firstID, WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "1", Title: "First", Status: StatusPending},
+			{ID: failedID, WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderIntercom, SourceType: SourceTypeIssue, SourceExternalID: "2", Title: "Unsupported", Status: StatusPending},
+			{ID: thirdID, WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderSlack, SourceType: SourceTypeIssue, SourceExternalID: "3", Title: "Third", Status: StatusPending},
+		},
+	}
+	service := New(nil, repo, storyServiceStub{repo: repo}, map[string]ProviderAccepter{
+		ProviderGitHub: providerAccepterStub{},
+		ProviderSlack:  providerAccepterStub{},
+	})
+
+	result, err := service.AcceptAllPendingByTeam(context.Background(), workspaceID, teamID, actorID)
+
+	require.NoError(t, err)
+	require.Equal(t, 3, result.TotalCount)
+	require.Equal(t, 2, result.SucceededCount)
+	require.Equal(t, 1, result.FailedCount)
+	require.True(t, result.Partial)
+	require.Equal(t, []uuid.UUID{firstID, thirdID}, result.RequestIDs)
+	require.Len(t, result.Items, 3)
+	require.Equal(t, firstID, result.Items[0].RequestID)
+	require.True(t, result.Items[0].Success)
+	require.NotNil(t, result.Items[0].AcceptedStoryID)
+	require.Equal(t, failedID, result.Items[1].RequestID)
+	require.False(t, result.Items[1].Success)
+	require.ErrorContains(t, errors.New(result.Items[1].Error), ErrUnsupportedProvider.Error())
+	require.Equal(t, thirdID, result.Items[2].RequestID)
+	require.True(t, result.Items[2].Success)
 }
 
 func TestAcceptPreservesValidatedSlackRequestLabels(t *testing.T) {
@@ -589,8 +633,50 @@ func TestDeclineAllPendingByTeamDeclinesEveryPendingRequest(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 2, result.Count)
+	require.Equal(t, 2, result.TotalCount)
+	require.Equal(t, 2, result.SucceededCount)
+	require.Zero(t, result.FailedCount)
+	require.False(t, result.Partial)
+	require.Len(t, result.Items, 2)
 	require.ElementsMatch(t, []uuid.UUID{firstID, secondID}, result.RequestIDs)
 	require.ElementsMatch(t, []uuid.UUID{firstID, secondID}, repo.markedDeclined)
+}
+
+func TestDeclineAllPendingByTeamContinuesAndReportsPerItemFailures(t *testing.T) {
+	workspaceID := uuid.New()
+	teamID := uuid.New()
+	actorID := uuid.New()
+	firstID := uuid.New()
+	failedID := uuid.New()
+	thirdID := uuid.New()
+	repo := &requestRepoStub{
+		requests: []CoreIntegrationRequest{
+			{ID: firstID, WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderGitHub, SourceType: SourceTypeIssue, SourceExternalID: "1", Title: "First", Status: StatusPending},
+			{ID: failedID, WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderSlack, SourceType: SourceTypeIssue, SourceExternalID: "2", Title: "Reserved", Status: StatusPending, AcceptanceState: AcceptanceStateReserved},
+			{ID: thirdID, WorkspaceID: workspaceID, TeamID: teamID, Provider: ProviderSlack, SourceType: SourceTypeIssue, SourceExternalID: "3", Title: "Third", Status: StatusPending},
+		},
+	}
+	service := New(nil, repo, storyServiceStub{repo: repo}, map[string]ProviderAccepter{
+		ProviderGitHub: providerAccepterStub{},
+		ProviderSlack:  providerAccepterStub{},
+	})
+
+	result, err := service.DeclineAllPendingByTeam(context.Background(), workspaceID, teamID, actorID)
+
+	require.NoError(t, err)
+	require.Equal(t, 3, result.TotalCount)
+	require.Equal(t, 2, result.SucceededCount)
+	require.Equal(t, 1, result.FailedCount)
+	require.True(t, result.Partial)
+	require.Equal(t, []uuid.UUID{firstID, thirdID}, result.RequestIDs)
+	require.Len(t, result.Items, 3)
+	require.Equal(t, firstID, result.Items[0].RequestID)
+	require.True(t, result.Items[0].Success)
+	require.Equal(t, failedID, result.Items[1].RequestID)
+	require.False(t, result.Items[1].Success)
+	require.Equal(t, ErrRequestNotPending.Error(), result.Items[1].Error)
+	require.Equal(t, thirdID, result.Items[2].RequestID)
+	require.True(t, result.Items[2].Success)
 }
 
 func TestUserFacingOperationsRejectActorsWithoutTeamAccess(t *testing.T) {

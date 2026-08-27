@@ -162,6 +162,36 @@ func (h *Handlers) CreateWorkPlan(ctx context.Context, w http.ResponseWriter, r 
 	return web.Respond(ctx, w, toAppWorkPlan(plan), http.StatusCreated)
 }
 
+func (h *Handlers) ApplyWorkPlan(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	if ok, err := h.workspaceCanUseMaya(ctx, workspace.ID); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	} else if !ok {
+		return web.RespondError(ctx, w, ErrMayaAccessRequired, http.StatusPaymentRequired)
+	}
+	runID, err := uuid.Parse(web.Params(r, "runId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	plan, err := h.service.ApplyWorkPlan(ctx, maya.ApplyWorkPlanInput{
+		WorkspaceID: workspace.ID,
+		RunID:       runID,
+		TriggeredBy: userID,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, h.statusCode(err))
+	}
+	return web.Respond(ctx, w, toAppWorkPlan(plan), http.StatusOK)
+}
+
 func (h *Handlers) CreateRealtimeSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
@@ -394,6 +424,12 @@ func (h *Handlers) statusCode(err error) int {
 		return http.StatusServiceUnavailable
 	case errors.Is(err, maya.ErrMayaAccessDenied), errors.Is(err, ErrMayaAccessRequired):
 		return http.StatusPaymentRequired
+	case errors.Is(err, stories.ErrAutoSchedulingUnavailable):
+		return http.StatusPaymentRequired
+	case errors.Is(err, stories.ErrAutoSchedulingAccessCheckFailed):
+		return http.StatusServiceUnavailable
+	case errors.Is(err, maya.ErrPlanNotFound):
+		return http.StatusNotFound
 	case errors.Is(err, stories.ErrAutoSchedulingOwnerLocked),
 		errors.Is(err, stories.ErrAutoSchedulingLockEmpty),
 		errors.Is(err, stories.ErrStoryChanged),
@@ -401,6 +437,10 @@ func (h *Handlers) statusCode(err error) int {
 		errors.Is(err, calendar.ErrCalendarScheduleConflict):
 		return http.StatusConflict
 	case errors.Is(err, maya.ErrInvalidPlanInput):
+		return http.StatusBadRequest
+	case errors.Is(err, stories.ErrMayaAssignmentRequiresScheduling),
+		errors.Is(err, stories.ErrMayaAssignmentRequiresDuration),
+		errors.Is(err, stories.ErrMayaAssignmentRequiresDeliveryDate):
 		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError
@@ -1128,7 +1168,6 @@ func newRealtimeSessionConfig(terminology AppRealtimeTerminology, workspaceTeams
 		Type:             "realtime",
 		Model:            defaultRealtimeModel,
 		Instructions:     realtimeInstructions(terminology, workspaceTeams, currentUser, sessionRequest),
-		MaxOutputTokens:  500,
 		OutputModalities: []string{"audio"},
 		Tools:            realtimeTools(),
 		ToolChoice:       "auto",

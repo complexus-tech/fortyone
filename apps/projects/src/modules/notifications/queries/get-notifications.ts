@@ -15,6 +15,25 @@ const emptyNotificationsPage = (
   },
 });
 
+export const getNotificationsPageStrict = async (
+  ctx: WorkspaceCtx,
+  page = 1,
+  pageSize = 25,
+  search = "",
+) => {
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  if (search.trim()) params.set("search", search.trim());
+  const res = await get<ApiResponse<NotificationsPage>>(
+    `notifications?${params.toString()}`,
+    ctx,
+  );
+  if (res.error?.message) throw new Error(res.error.message);
+  return res.data ?? emptyNotificationsPage(page, pageSize);
+};
+
 export const getNotificationsPage = async (
   ctx: WorkspaceCtx,
   page = 1,
@@ -22,22 +41,17 @@ export const getNotificationsPage = async (
   search = "",
 ) => {
   try {
-    const params = new URLSearchParams({
-      page: String(page),
-      pageSize: String(pageSize),
-    });
-    if (search.trim()) params.set("search", search.trim());
-    const res = await get<ApiResponse<NotificationsPage>>(
-      `notifications?${params.toString()}`,
-      ctx,
-    );
-    return res.data ?? emptyNotificationsPage(page, pageSize);
-  } catch (error) {
+    return await getNotificationsPageStrict(ctx, page, pageSize, search);
+  } catch {
     return emptyNotificationsPage(page, pageSize);
   }
 };
 
-export const getNotifications = async (ctx: WorkspaceCtx, search = "") => {
-  const page = await getNotificationsPage(ctx, 1, 25, search);
+export const getNotifications = async (
+  ctx: WorkspaceCtx,
+  search = "",
+  pageSize = 25,
+) => {
+  const page = await getNotificationsPage(ctx, 1, pageSize, search);
   return page.notifications;
 };

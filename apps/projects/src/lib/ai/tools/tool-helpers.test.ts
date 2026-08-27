@@ -1,6 +1,7 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import {
+  describeBackendPage,
   filterActivityTimeline,
   paginateRecords,
   requireToolConfirmation,
@@ -59,6 +60,36 @@ describe("AI tool helpers", () => {
       success: false,
       needsConfirmation: true,
       message: "Please confirm before I delete all pending requests.",
+    });
+  });
+
+  it("describes backend pagination without claiming later pages are complete", () => {
+    expect(
+      describeBackendPage(
+        { page: 2, pageSize: 20, hasMore: true, nextPage: 3 },
+        20,
+      ),
+    ).toEqual({
+      page: 2,
+      pageSize: 20,
+      returnedCount: 20,
+      hasMore: true,
+      nextPage: 3,
+      completeHistory: false,
+    });
+
+    expect(
+      describeBackendPage(
+        { page: 1, pageSize: 20, hasMore: false, nextPage: 0 },
+        7,
+      ),
+    ).toEqual({
+      page: 1,
+      pageSize: 20,
+      returnedCount: 7,
+      hasMore: false,
+      nextPage: null,
+      completeHistory: true,
     });
   });
 

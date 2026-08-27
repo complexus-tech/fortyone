@@ -112,6 +112,13 @@ func TestNewRealtimeSessionConfigMatchesPortfolioVoice(t *testing.T) {
 	if len(config.OutputModalities) != 1 || config.OutputModalities[0] != "audio" {
 		t.Fatalf("Output modalities = %v, want [audio]", config.OutputModalities)
 	}
+	payload, err := json.Marshal(config)
+	if err != nil {
+		t.Fatalf("marshal realtime session config: %v", err)
+	}
+	if strings.Contains(string(payload), "max_output_tokens") {
+		t.Fatalf("realtime session config must not cap model output: %s", payload)
+	}
 	if !strings.Contains(config.Audio.Input.Transcription.Prompt, "Platform") {
 		t.Fatalf("Transcription prompt %q does not contain team name", config.Audio.Input.Transcription.Prompt)
 	}

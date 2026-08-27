@@ -30,6 +30,8 @@ func buildMayaService(
 ) *maya.Service {
 	mentionsRepo := mentionsrepository.New(log, db)
 	storiesService := stories.New(log, storiesrepository.New(log, db), mentionsRepo, eventPublisher, nil)
+	storiesService.ConfigureMayaActor(mayaActorID)
+	storiesService.ConfigureAutoSchedulingEligibility(workspaceAssistantAccess{db: db}.CanUseAssistant)
 	reportsService := reports.New(log, reportsrepository.New(log, db))
 	usersService := users.New(log, usersrepository.New(log, db), nil)
 

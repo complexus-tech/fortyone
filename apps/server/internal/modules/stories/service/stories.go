@@ -24,6 +24,7 @@ import (
 
 var (
 	ErrNotFound                   = errors.New("story not found")
+	ErrDeleteForbidden            = errors.New("story deletion is not permitted")
 	ErrInvalidStoryReference      = errors.New("invalid story reference")
 	ErrInvalidStoryMediaReference = errors.New("invalid story media reference")
 	ErrObjectiveKeyResultMismatch = errors.New("key result does not belong to objective")
@@ -34,9 +35,9 @@ var (
 // Repository provides access to the story storage.
 type Repository interface {
 	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (CoreSingleStory, error)
-	Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
-	BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
-	HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) ([]uuid.UUID, error)
+	Delete(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID, authorization BulkDeleteAuthorization) error
+	BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceID uuid.UUID, authorization BulkDeleteAuthorization) ([]uuid.UUID, error)
+	HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceID uuid.UUID, authorization BulkDeleteAuthorization) (HardBulkDeleteResult, error)
 	Restore(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error
 	BulkRestore(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
 	BulkArchive(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error
@@ -44,16 +45,16 @@ type Repository interface {
 	Update(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any) error
 	UpdateWithMediaReconciliation(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, updates map[string]any, referencedAttachmentIDs []uuid.UUID) ([]uuid.UUID, error)
 	UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error
-	GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error)
+	GetStoryLinks(ctx context.Context, storyID, workspaceID uuid.UUID) ([]links.CoreLink, error)
 	Create(ctx context.Context, story *CoreSingleStory) (CoreSingleStory, error)
 	GetNextSequenceID(ctx context.Context, teamId uuid.UUID, workspaceId uuid.UUID) (int, func() error, func() error, error)
 	MyStories(ctx context.Context, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	GetSubStories(ctx context.Context, parentId uuid.UUID, workspaceId uuid.UUID) ([]CoreStoryList, error)
 	RecordActivities(ctx context.Context, activities []CoreActivity) ([]CoreActivity, error)
-	GetActivitiesWithUser(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivityWithUser, bool, error)
+	GetActivitiesWithUser(ctx context.Context, storyID, workspaceID uuid.UUID, page, pageSize int) ([]CoreActivityWithUser, bool, error)
 	CreateComment(ctx context.Context, comment CoreNewComment) (comments.CoreComment, error)
-	GetComments(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error)
-	GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error)
+	GetComments(ctx context.Context, storyID, workspaceID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error)
+	GetComment(ctx context.Context, commentID, storyID, workspaceID uuid.UUID) (comments.CoreComment, error)
 	DuplicateStory(ctx context.Context, originalStoryID uuid.UUID, workspaceId uuid.UUID, userID uuid.UUID) (CoreSingleStory, error)
 	CountStoriesInWorkspace(ctx context.Context, workspaceId uuid.UUID) (int, error)
 	List(ctx context.Context, workspaceId uuid.UUID, filters map[string]any) ([]CoreStoryList, error)
@@ -112,12 +113,14 @@ type CoreSingleStoryWithSubs struct {
 
 // Service provides story-related operations.
 type Service struct {
-	repo           Repository
-	mentionsRepo   MentionsRepository
-	log            *logger.Logger
-	publisher      eventPublisher
-	tasksService   *tasks.Service
-	mayaAssignment *mayaAssignmentPolicy
+	repo                      Repository
+	mentionsRepo              MentionsRepository
+	log                       *logger.Logger
+	publisher                 eventPublisher
+	tasksService              *tasks.Service
+	mayaActorID               uuid.UUID
+	mayaAssignment            *mayaAssignmentPolicy
+	autoSchedulingEligibility AutoSchedulingEligibilityChecker
 }
 
 type eventPublisher interface {
@@ -253,6 +256,16 @@ func (s *Service) createWithOptions(ctx context.Context, ns CoreNewStory, worksp
 	if err := s.prepareAutoSchedulingCreate(&story); err != nil {
 		span.RecordError(err)
 		return CoreSingleStory{}, err
+	}
+	if err := s.validateMayaSchedulingCreate(story); err != nil {
+		span.RecordError(err)
+		return CoreSingleStory{}, err
+	}
+	if story.AutoSchedulingEnabled {
+		if err := s.validateAutoSchedulingEligibility(ctx, workspaceId); err != nil {
+			span.RecordError(err)
+			return CoreSingleStory{}, err
+		}
 	}
 	if err := s.validateMayaAssignment(ctx, story, nil, actorID); err != nil {
 		span.RecordError(err)
@@ -454,12 +467,17 @@ func (s *Service) GetNotificationAudience(ctx context.Context, storyID, workspac
 }
 
 // GetStoryLinks returns the links for a story.
-func (s *Service) GetStoryLinks(ctx context.Context, storyID uuid.UUID) ([]links.CoreLink, error) {
+func (s *Service) GetStoryLinks(ctx context.Context, storyID, workspaceID uuid.UUID) ([]links.CoreLink, error) {
 	s.log.Info(ctx, "business.core.stories.GetStoryLinks")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.GetStoryLinks")
 	defer span.End()
 
-	links, err := s.repo.GetStoryLinks(ctx, storyID)
+	if _, err := s.repo.Get(ctx, storyID, workspaceID); err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+
+	links, err := s.repo.GetStoryLinks(ctx, storyID, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -551,12 +569,12 @@ func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, filters map[s
 }
 
 // Delete deletes the story with the specified ID.
-func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
+func (s *Service) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, authorization BulkDeleteAuthorization) error {
 	s.log.Info(ctx, "business.core.stories.Delete")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.Delete")
 	defer span.End()
 
-	if err := s.repo.Delete(ctx, id, workspaceId); err != nil {
+	if err := s.repo.Delete(ctx, id, workspaceId, authorization); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -789,18 +807,6 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 		return err
 	}
 
-	if assigneeID, ok := mayaAssignmentUpdateAssignee(updates); ok {
-		updatedStory, err := storyWithAssignee(story, assigneeID)
-		if err != nil {
-			s.log.Error(ctx, "failed to prepare story for Maya assignment automation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
-			return err
-		}
-		if err := s.validateMayaAssignment(ctx, updatedStory, story.Assignee, actorID); err != nil {
-			span.RecordError(err)
-			return err
-		}
-	}
-
 	// Handle auto-completion logic if status is being updated
 	if newStatusID, hasStatusUpdate := updates["status_id"]; hasStatusUpdate {
 		if err := s.handleCompletionStatusChange(ctx, story, newStatusID, updates); err != nil {
@@ -813,6 +819,32 @@ func (s *Service) updateWithOptions(ctx context.Context, storyID, workspaceID, a
 	if err != nil {
 		span.RecordError(err)
 		return err
+	}
+	if err := s.validateMayaSchedulingUpdate(story, updates); err != nil {
+		span.RecordError(err)
+		return err
+	}
+	enableRequested, err := autoSchedulingEnableRequested(story, updates)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+	if enableRequested {
+		if err := s.validateAutoSchedulingEligibility(ctx, workspaceID); err != nil {
+			span.RecordError(err)
+			return err
+		}
+	}
+	if assigneeID, ok := mayaAssignmentUpdateAssignee(updates); ok {
+		updatedStory, err := storyWithAssignee(story, assigneeID)
+		if err != nil {
+			s.log.Error(ctx, "failed to prepare story for Maya assignment automation", "story_id", storyID, "workspace_id", workspaceID, "error", err)
+			return err
+		}
+		if err := s.validateMayaAssignment(ctx, updatedStory, story.Assignee, actorID); err != nil {
+			span.RecordError(err)
+			return err
+		}
 	}
 	for field, value := range updates {
 		if s.valuesEqual(s.getOldValue(story, field), value) {
@@ -1080,89 +1112,119 @@ func (s *Service) handleCompletionStatusChange(ctx context.Context, story CoreSi
 	return nil
 }
 
-// BulkUpdate updates multiple stories with the same updates in parallel.
-func (s *Service) BulkUpdate(ctx context.Context, storyIDs []uuid.UUID, workspaceID uuid.UUID, updates map[string]any) error {
+// BulkUpdate updates multiple stories with the same updates in parallel and
+// returns an ordered receipt for every requested story.
+func (s *Service) BulkUpdate(ctx context.Context, storyIDs []uuid.UUID, workspaceID uuid.UUID, updates map[string]any) (BulkUpdateResult, error) {
 	s.log.Info(ctx, "business.core.stories.BulkUpdate")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.BulkUpdate")
 	defer span.End()
 
 	if len(storyIDs) == 0 {
-		return fmt.Errorf("no story IDs provided")
+		return BulkUpdateResult{}, fmt.Errorf("no story IDs provided")
 	}
 
 	span.AddEvent("bulk update started", trace.WithAttributes(
 		attribute.Int("story.count", len(storyIDs)),
 		attribute.String("workspace.id", workspaceID.String()),
 	))
+	result := executeBulkStoryUpdates(ctx, storyIDs, func(updateCtx context.Context, storyID uuid.UUID) error {
+		return s.Update(updateCtx, storyID, workspaceID, updates)
+	})
+
+	span.AddEvent("bulk update completed", trace.WithAttributes(
+		attribute.Int("stories.updated", result.SucceededCount),
+		attribute.Int("stories.failed", result.FailedCount),
+	))
+	if result.FailedCount > 0 {
+		span.RecordError(fmt.Errorf("bulk update completed with %d item failures", result.FailedCount))
+	}
+
+	return result, nil
+}
+
+type bulkUpdateJob struct {
+	index   int
+	storyID uuid.UUID
+}
+
+func executeBulkStoryUpdates(
+	ctx context.Context,
+	storyIDs []uuid.UUID,
+	update func(context.Context, uuid.UUID) error,
+) BulkUpdateResult {
+	const maxConcurrentUpdates = 10
+	result := BulkUpdateResult{
+		TotalCount: len(storyIDs),
+		Items:      make([]BulkUpdateItemResult, len(storyIDs)),
+	}
+	jobs := make(chan bulkUpdateJob)
+	workerCount := min(len(storyIDs), maxConcurrentUpdates)
 	var wg sync.WaitGroup
 
-	// Channel to collect errors from goroutines
-	errChan := make(chan error, len(storyIDs))
-	for _, storyID := range storyIDs {
+	for range workerCount {
 		wg.Add(1)
-		go func(id uuid.UUID) {
+		go func() {
 			defer wg.Done()
-			if err := s.Update(ctx, id, workspaceID, updates); err != nil {
-				errChan <- fmt.Errorf("failed to update story %s: %w", id, err)
+			for job := range jobs {
+				item := BulkUpdateItemResult{StoryID: job.storyID, Success: true}
+				if err := ctx.Err(); err != nil {
+					item.Success = false
+					item.Error = err.Error()
+				} else if err := update(ctx, job.storyID); err != nil {
+					item.Success = false
+					item.Error = err.Error()
+				}
+				result.Items[job.index] = item
 			}
-		}(storyID)
+		}()
 	}
 
-	// Wait for all goroutines to complete
+	for index, storyID := range storyIDs {
+		jobs <- bulkUpdateJob{index: index, storyID: storyID}
+	}
+	close(jobs)
 	wg.Wait()
-	close(errChan)
 
-	// Collect all errors
-	var errors []error
-	for err := range errChan {
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		span.RecordError(fmt.Errorf("bulk update completed with %d errors", len(errors)))
-
-		var errorMessages []string
-		for _, err := range errors {
-			errorMessages = append(errorMessages, err.Error())
+	for _, item := range result.Items {
+		if item.Success {
+			result.SucceededCount++
+		} else {
+			result.FailedCount++
 		}
-		return fmt.Errorf("bulk update errors: %s", strings.Join(errorMessages, "; "))
 	}
-
-	span.AddEvent("bulk update completed successfully", trace.WithAttributes(
-		attribute.Int("stories.updated", len(storyIDs)),
-	))
-
-	return nil
+	result.Partial = result.SucceededCount > 0 && result.FailedCount > 0
+	return result
 }
 
 // BulkDelete deletes the stories with the specified IDs.
-func (s *Service) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
+func (s *Service) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID, authorization BulkDeleteAuthorization) ([]uuid.UUID, error) {
 	s.log.Info(ctx, "business.core.stories.BulkDelete")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.BulkDelete")
 	defer span.End()
 
-	if err := s.repo.BulkDelete(ctx, ids, workspaceId); err != nil {
+	deletedIDs, err := s.repo.BulkDelete(ctx, ids, workspaceId, authorization)
+	if err != nil {
 		span.RecordError(err)
-		return err
+		return nil, err
 	}
-	for _, storyID := range ids {
+	for _, storyID := range deletedIDs {
 		s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceId)
 	}
-	return nil
+	return deletedIDs, nil
 }
 
 // HardBulkDelete performs permanent removal of the stories with the specified IDs.
-func (s *Service) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) ([]uuid.UUID, error) {
+func (s *Service) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID, authorization BulkDeleteAuthorization) (HardBulkDeleteResult, error) {
 	s.log.Info(ctx, fmt.Sprintf("Hard bulk deleting stories: %v", ids), "story_ids", ids)
 	ctx, span := web.AddSpan(ctx, "business.core.stories.HardBulkDelete")
 	defer span.End()
 
-	orphanedAttachmentIDs, err := s.repo.HardBulkDelete(ctx, ids, workspaceId)
+	result, err := s.repo.HardBulkDelete(ctx, ids, workspaceId, authorization)
 	if err != nil {
 		s.log.Error(ctx, fmt.Sprintf("Failed to hard bulk delete stories: %s", err),
 			"story_ids", ids, "error", err)
 		span.RecordError(err)
-		return nil, err
+		return HardBulkDeleteResult{}, err
 	}
 
 	s.log.Info(ctx, fmt.Sprintf("Successfully hard bulk deleted stories: %v", ids),
@@ -1170,7 +1232,7 @@ func (s *Service) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspace
 	span.AddEvent("Stories hard bulk deleted.", trace.WithAttributes(
 		attribute.Int("stories.count", len(ids))))
 
-	return orphanedAttachmentIDs, nil
+	return result, nil
 }
 
 // Restore restores the story with the specified ID.
@@ -1261,12 +1323,17 @@ func (s *Service) enqueueRestoredAutoScheduling(ctx context.Context, storyIDs []
 }
 
 // GetActivitiesWithUser returns the activities for a story with user details and pagination.
-func (s *Service) GetActivitiesWithUser(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]CoreActivityWithUser, bool, error) {
+func (s *Service) GetActivitiesWithUser(ctx context.Context, storyID, workspaceID uuid.UUID, page, pageSize int) ([]CoreActivityWithUser, bool, error) {
 	s.log.Info(ctx, "business.core.activities.GetActivitiesWithUser")
 	ctx, span := web.AddSpan(ctx, "business.core.activities.GetActivitiesWithUser")
 	defer span.End()
 
-	activities, hasMore, err := s.repo.GetActivitiesWithUser(ctx, storyID, page, pageSize)
+	if _, err := s.repo.Get(ctx, storyID, workspaceID); err != nil {
+		span.RecordError(err)
+		return nil, false, err
+	}
+
+	activities, hasMore, err := s.repo.GetActivitiesWithUser(ctx, storyID, workspaceID, page, pageSize)
 	if err != nil {
 		span.RecordError(err)
 		return nil, false, err
@@ -1304,6 +1371,16 @@ func (s *Service) createCommentWithOptions(ctx context.Context, workspaceID uuid
 		return comments.CoreComment{}, err
 	}
 
+	var parentComment *comments.CoreComment
+	if cnc.Parent != nil {
+		parent, err := s.repo.GetComment(ctx, *cnc.Parent, cnc.StoryID, workspaceID)
+		if err != nil {
+			span.RecordError(err)
+			return comments.CoreComment{}, err
+		}
+		parentComment = &parent
+	}
+
 	comment, err := s.repo.CreateComment(ctx, cnc)
 	if err != nil {
 		span.RecordError(err)
@@ -1326,11 +1403,8 @@ func (s *Service) createCommentWithOptions(ctx context.Context, workspaceID uuid
 
 	// Publish events based on comment type
 	if cnc.Parent != nil {
-		// This is a reply - get parent comment details
-		parentComment, err := s.repo.GetComment(ctx, *cnc.Parent)
-		if err != nil {
-			s.log.Error(ctx, "failed to get parent comment for notification", "error", err, "parent_id", *cnc.Parent)
-		} else {
+		// Parent membership was validated before the comment was inserted.
+		if parentComment != nil {
 			// Publish comment reply event
 			payload := events.CommentRepliedPayload{
 				CommentID:        comment.ID,
@@ -1414,12 +1488,17 @@ func (s *Service) createCommentWithOptions(ctx context.Context, workspaceID uuid
 }
 
 // GetComments returns the comments for a story with pagination.
-func (s *Service) GetComments(ctx context.Context, storyID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error) {
+func (s *Service) GetComments(ctx context.Context, storyID, workspaceID uuid.UUID, page, pageSize int) ([]comments.CoreComment, bool, error) {
 	s.log.Info(ctx, "business.core.stories.GetComments")
 	ctx, span := web.AddSpan(ctx, "business.core.stories.GetComments")
 	defer span.End()
 
-	comments, hasMore, err := s.repo.GetComments(ctx, storyID, page, pageSize)
+	if _, err := s.repo.Get(ctx, storyID, workspaceID); err != nil {
+		span.RecordError(err)
+		return nil, false, err
+	}
+
+	comments, hasMore, err := s.repo.GetComments(ctx, storyID, workspaceID, page, pageSize)
 	if err != nil {
 		s.log.Error(ctx, fmt.Sprintf("failed to get comments: %s", err))
 		span.RecordError(err)
@@ -1438,8 +1517,8 @@ func (s *Service) GetComments(ctx context.Context, storyID uuid.UUID, page, page
 
 // GetComment resolves a single comment so external callers can validate reply
 // ownership before creating a nested comment.
-func (s *Service) GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error) {
-	return s.repo.GetComment(ctx, commentID)
+func (s *Service) GetComment(ctx context.Context, commentID, storyID, workspaceID uuid.UUID) (comments.CoreComment, error) {
+	return s.repo.GetComment(ctx, commentID, storyID, workspaceID)
 }
 
 // DuplicateStory creates a copy of an existing story.

@@ -71,19 +71,23 @@ func (r *Repository) GetAttachmentByBlobName(ctx context.Context, blobName strin
 }
 
 // GetAttachmentsByStoryID gets all attachments for a story
-func (r *Repository) GetAttachmentsByStoryID(ctx context.Context, storyID uuid.UUID) ([]attachments.CoreAttachment, error) {
+func (r *Repository) GetAttachmentsByStoryID(ctx context.Context, storyID, workspaceID uuid.UUID) ([]attachments.CoreAttachment, error) {
 	r.log.Info(ctx, "repo.attachments.getByStoryID")
 
 	const query = `
 		SELECT a.attachment_id, a.filename, a.blob_name, a.size, a.mime_type, a.uploaded_by, a.workspace_id, a.created_at
-		FROM attachments a
-		JOIN story_attachments sa ON a.attachment_id = sa.attachment_id
-		WHERE sa.story_id = :story_id
+			FROM attachments a
+			JOIN story_attachments sa ON a.attachment_id = sa.attachment_id
+			JOIN stories s ON s.id = sa.story_id
+			WHERE sa.story_id = :story_id
+				AND s.workspace_id = :workspace_id
+				AND a.workspace_id = :workspace_id
 		ORDER BY a.created_at DESC
 	`
 
 	params := map[string]any{
-		"story_id": storyID,
+		"story_id":     storyID,
+		"workspace_id": workspaceID,
 	}
 
 	rows, err := r.db.NamedQueryContext(ctx, query, params)

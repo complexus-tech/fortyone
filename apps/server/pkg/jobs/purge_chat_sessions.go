@@ -11,18 +11,27 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// PurgeDeletedChatSessions permanently deletes chat sessions that have been marked as deleted for 30+ days
+const purgeDeletedChatSessionsQuery = `
+	DELETE FROM chat_sessions AS session
+	WHERE session.deleted_at IS NOT NULL
+		AND session.deleted_at < NOW() - INTERVAL '30 days'
+		AND NOT EXISTS (
+			SELECT 1
+			FROM chat_mutation_approval_executions AS execution
+			WHERE execution.session_id = session.id
+				AND execution.status IN ('ready', 'retry_ready', 'executing', 'failed_uncertain')
+		)
+`
+
+// PurgeDeletedChatSessions permanently deletes chat sessions marked as deleted
+// for 30+ days while retaining any session that still anchors an unresolved
+// mutation approval quarantine.
 func PurgeDeletedChatSessions(ctx context.Context, db *sqlx.DB, log *logger.Logger) error {
 	ctx, span := web.AddSpan(ctx, "jobs.PurgeDeletedChatSessions")
 	defer span.End()
 	log.Info(ctx, "Purging chat sessions deleted for more than 30 days")
 
-	deleteQuery := `
-		DELETE FROM chat_sessions
-		WHERE deleted_at IS NOT NULL
-		AND deleted_at < NOW() - INTERVAL '30 days'
-	`
-	result, err := db.ExecContext(ctx, deleteQuery)
+	result, err := db.ExecContext(ctx, purgeDeletedChatSessionsQuery)
 	if err != nil {
 		span.RecordError(err)
 		return fmt.Errorf("failed to delete chat sessions: %w", err)

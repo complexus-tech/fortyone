@@ -1,6 +1,7 @@
 import type { Memory } from "@/modules/ai-chats/types";
 import type { Team } from "@/modules/teams/types";
 import type { Workspace } from "@/types";
+import type { StoryCreationDefaults } from "./story-creation-defaults";
 
 type UserContextIdentity = {
   id: string;
@@ -26,6 +27,7 @@ export function getUserContext({
   terminology,
   workspace,
   memories,
+  storyCreationDefaults,
 }: {
   user?: UserContextIdentity;
   currentPath: string;
@@ -47,6 +49,7 @@ export function getUserContext({
     keyResults: string;
   };
   workspace: Workspace;
+  storyCreationDefaults?: StoryCreationDefaults | null;
   totalMessages: {
     current: number;
     limit: number;
@@ -104,6 +107,10 @@ export function getUserContext({
       'If the user says "my team" and belongs to multiple teams, infer from conversation or the current path only when that team appears in this joined list; otherwise ask which joined team they mean.';
   }
 
+  const storyCreationDefaultsSummary = storyCreationDefaults
+    ? `single-story suggestions: time needed=${storyCreationDefaults.singleStory.estimatedDurationMinutes} minutes, calendar scheduling=${storyCreationDefaults.singleStory.autoSchedulingEnabled ? "on" : "off"}; multiple-story default: no shared time estimate, calendar scheduling=off; calendar scheduling availability=${storyCreationDefaults.autoSchedulingAvailable ? "available" : "not available on the current plan"}`
+    : "single-story suggestions unavailable; multiple-story default: no shared time estimate, calendar scheduling=off";
+
   return `
 Runtime context:
 - User: ${displayName}${usernameLabel} [${user.id}]
@@ -112,6 +119,8 @@ Runtime context:
 - Local time: ${currentDate} ${currentTime} (${timezone})
 - Theme: ${currentTheme} (resolved ${resolvedTheme})
 - Terms: stories=${terminology.stories}; sprints=${terminology.sprints}; objectives=${terminology.objectives}; key results=${terminology.keyResults}
+- Account story-creation defaults: ${storyCreationDefaultsSummary}
+- Single-story defaults are suggestions, not consent. Never apply or mention them as batch-wide defaults. A date or future-work phrase is not consent to reserve calendar time.
 
 Joined teams:
 - ${joinedTeamsSummary}

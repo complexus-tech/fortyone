@@ -37,7 +37,7 @@ export const GenerativeList = ({
         {visibleItems}
         {hasAdditionalItems ? (
           <button
-            className="border-border/70 text-foreground focus-visible:ring-foreground/50 min-h-12 w-full border-b px-px py-3 text-left text-base font-medium transition-opacity outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-white/[0.09]"
+            className="border-border/70 text-foreground focus-visible:ring-foreground/50 min-h-11 w-full border-b px-px py-2 text-left text-base font-medium transition-opacity outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-white/[0.09]"
             onClick={() => {
               setShowAll((current) => !current);
             }}
@@ -52,7 +52,7 @@ export const GenerativeList = ({
 };
 
 const itemClassName =
-  "border-border/70 text-foreground focus-visible:ring-foreground/50 flex min-h-[52px] w-full max-w-full min-w-0 items-center gap-3 overflow-hidden border-b px-px py-3 text-base leading-6 no-underline transition-[opacity,transform] duration-150 outline-none dark:border-white/[0.09]";
+  "border-border/70 text-foreground focus-visible:ring-foreground/50 flex min-h-11 w-full max-w-full min-w-0 items-center gap-3 overflow-hidden border-b px-px py-2 text-base leading-6 no-underline transition-[opacity,transform] duration-150 outline-none dark:border-white/[0.09]";
 
 export const GenerativeListItem = ({
   ariaLabel,

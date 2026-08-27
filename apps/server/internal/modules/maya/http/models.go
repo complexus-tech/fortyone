@@ -456,7 +456,6 @@ type openAIRealtimeSessionConfig struct {
 	Type             string                    `json:"type"`
 	Model            string                    `json:"model"`
 	Instructions     string                    `json:"instructions"`
-	MaxOutputTokens  int                       `json:"max_output_tokens,omitempty"`
 	OutputModalities []string                  `json:"output_modalities,omitempty"`
 	Audio            openAIRealtimeAudioConfig `json:"audio"`
 	Tools            []openAIRealtimeTool      `json:"tools,omitempty"`

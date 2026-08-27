@@ -91,13 +91,20 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, userID 
 			s.parent_id,
 			s.objective_id,
 			s.status_id,
+			search_status.name AS status_name,
+			search_status.color AS status_color,
+			search_status.category AS status_category,
 			s.assignee_id,
+			search_assignee.full_name AS assignee_full_name,
+			search_assignee.username AS assignee_username,
 			s.reporter_id,
 			s.priority,
 			s.estimate_unit,
 			COALESCE(estimation.scheme, 'tshirt') AS estimate_scheme,
 			s.sprint_id,
 			s.team_id,
+			search_team.name AS team_name,
+			search_team.code AS team_code,
 			s.workspace_id,
 			s.start_date,
 			s.end_date,
@@ -124,6 +131,23 @@ func (r *repo) SearchStories(ctx context.Context, workspaceID uuid.UUID, userID 
 		FROM
 			stories s
 			INNER JOIN team_members tm ON tm.team_id = s.team_id AND tm.user_id = :user_id
+			INNER JOIN teams search_team
+				ON search_team.team_id = s.team_id
+				AND search_team.workspace_id = s.workspace_id
+			LEFT JOIN statuses search_status
+				ON search_status.status_id = s.status_id
+				AND search_status.team_id = s.team_id
+				AND search_status.workspace_id = s.workspace_id
+			LEFT JOIN users search_assignee
+				ON search_assignee.user_id = s.assignee_id
+				AND search_assignee.is_active = TRUE
+				AND search_assignee.is_system = FALSE
+				AND EXISTS (
+					SELECT 1
+					FROM workspace_members search_assignee_membership
+					WHERE search_assignee_membership.workspace_id = s.workspace_id
+						AND search_assignee_membership.user_id = search_assignee.user_id
+				)
 			LEFT JOIN team_estimation_settings estimation ON estimation.team_id = s.team_id
 		WHERE
 			s.workspace_id = :workspace_id
@@ -338,7 +362,11 @@ func (r *repo) SearchObjectives(ctx context.Context, workspaceID uuid.UUID, user
 			o.description,
 			o.short_summary,
 			o.lead_user_id,
+			search_lead.full_name AS lead_full_name,
+			search_lead.username AS lead_username,
 			o.team_id,
+			search_team.name AS team_name,
+			search_team.code AS team_code,
 			o.workspace_id,
 			o.start_date,
 			o.end_date,
@@ -350,6 +378,19 @@ func (r *repo) SearchObjectives(ctx context.Context, workspaceID uuid.UUID, user
 		FROM
 			objectives o
 			INNER JOIN team_members tm ON tm.team_id = o.team_id AND tm.user_id = :user_id
+			INNER JOIN teams search_team
+				ON search_team.team_id = o.team_id
+				AND search_team.workspace_id = o.workspace_id
+			LEFT JOIN users search_lead
+				ON search_lead.user_id = o.lead_user_id
+				AND search_lead.is_active = TRUE
+				AND search_lead.is_system = FALSE
+				AND EXISTS (
+					SELECT 1
+					FROM workspace_members search_lead_membership
+					WHERE search_lead_membership.workspace_id = o.workspace_id
+						AND search_lead_membership.user_id = search_lead.user_id
+				)
 		WHERE
 			o.workspace_id = :workspace_id
 	`)

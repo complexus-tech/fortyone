@@ -11,7 +11,14 @@ export const updateMemoryAction = async (
 ) => {
   try {
     const session = await auth();
-    const ctx = { session: session!, workspaceSlug };
+    if (!session) {
+      return {
+        data: null,
+        error: { message: "Authentication required" },
+      } satisfies ApiResponse<null>;
+    }
+
+    const ctx = { session, workspaceSlug };
     const result = await put<UpdateMemoryPayload, ApiResponse<null>>(
       `users/memory/${id}`,
       payload,

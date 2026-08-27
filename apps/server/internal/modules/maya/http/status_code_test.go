@@ -23,6 +23,10 @@ func TestStatusCodeMapsAutoSchedulingContractErrors(t *testing.T) {
 		{name: "stale calendar plan", err: calendar.ErrCalendarScheduleStalePlan, status: http.StatusConflict},
 		{name: "calendar conflict", err: calendar.ErrCalendarScheduleConflict, status: http.StatusConflict},
 		{name: "lost entitlement", err: maya.ErrMayaAccessDenied, status: http.StatusPaymentRequired},
+		{name: "story scheduling entitlement", err: stories.ErrAutoSchedulingUnavailable, status: http.StatusPaymentRequired},
+		{name: "story scheduling access unavailable", err: stories.ErrAutoSchedulingAccessCheckFailed, status: http.StatusServiceUnavailable},
+		{name: "incomplete Maya scheduling intent", err: stories.ErrMayaAssignmentRequiresDeliveryDate, status: http.StatusBadRequest},
+		{name: "missing scoped plan", err: maya.ErrPlanNotFound, status: http.StatusNotFound},
 		{name: "invalid plan", err: maya.ErrInvalidPlanInput, status: http.StatusBadRequest},
 	}
 

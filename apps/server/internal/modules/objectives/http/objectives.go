@@ -468,6 +468,16 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		web.RespondError(ctx, w, ErrInvalidObjectiveID, http.StatusBadRequest)
 		return nil
 	}
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	if _, err := h.objectives.Get(ctx, objID, workspace.ID); err != nil {
+		if errors.Is(err, objectives.ErrNotFound) {
+			return web.RespondError(ctx, w, err, http.StatusNotFound)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	}
 
 	// Use web.GetFilters like your existing List method
 	var af AppFilters
@@ -488,7 +498,7 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		pageSize = 20
 	}
 
-	activities, hasMore, err := h.okrActivities.GetObjectiveActivities(ctx, objID, page, pageSize)
+	activities, hasMore, err := h.okrActivities.GetObjectiveActivities(ctx, objID, workspace.ID, page, pageSize)
 	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil

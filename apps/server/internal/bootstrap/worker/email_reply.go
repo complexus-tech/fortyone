@@ -23,6 +23,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 )
@@ -37,6 +38,7 @@ func buildEmailReplyProcessor(
 	messagingRepo *messagingrepository.Repository,
 	inbound *emailreply.Service,
 	threads *emailthread.Service,
+	mayaActorID uuid.UUID,
 ) (*emailreply.Processor, error) {
 	eventPublisher := publisher.New(redisClient, log)
 	storyService := stories.New(
@@ -46,6 +48,8 @@ func buildEmailReplyProcessor(
 		eventPublisher,
 		tasksService,
 	)
+	storyService.ConfigureMayaActor(mayaActorID)
+	storyService.ConfigureAutoSchedulingEligibility(workspaceAssistantAccess{db: db}.CanUseAssistant)
 	okrActivityService := okractivities.New(log, okractivitiesrepository.New(log, db))
 	objectiveService := objectives.New(
 		log,

@@ -14,14 +14,14 @@ import (
 )
 
 // GetSession returns the chat session with the specified ID.
-func (r *repo) GetSession(ctx context.Context, id string, workspaceID uuid.UUID) (chatsessions.CoreChatSession, error) {
+func (r *repo) GetSession(ctx context.Context, id string, userID, workspaceID uuid.UUID) (chatsessions.CoreChatSession, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.chatsessions.GetSession")
 	defer span.End()
 
 	q := `
 		SELECT id, user_id, workspace_id, title, created_at, updated_at, deleted_at
 		FROM chat_sessions
-		WHERE id = :id AND workspace_id = :workspace_id AND deleted_at IS NULL
+		WHERE id = :id AND user_id = :user_id AND workspace_id = :workspace_id AND deleted_at IS NULL
 	`
 
 	var cs dbChatSession
@@ -33,6 +33,7 @@ func (r *repo) GetSession(ctx context.Context, id string, workspaceID uuid.UUID)
 
 	if err := stmt.GetContext(ctx, &cs, map[string]any{
 		"id":           id,
+		"user_id":      userID,
 		"workspace_id": workspaceID,
 	}); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -74,14 +75,18 @@ func (r *repo) ListSessions(ctx context.Context, userID, workspaceID uuid.UUID) 
 }
 
 // GetMessages returns the messages for a chat session.
-func (r *repo) GetMessages(ctx context.Context, sessionID string) ([]any, error) {
+func (r *repo) GetMessages(ctx context.Context, sessionID string, userID, workspaceID uuid.UUID) ([]any, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.chatsessions.GetMessages")
 	defer span.End()
 
 	q := `
-		SELECT messages
-		FROM chat_messages
-		WHERE session_id = :session_id
+		SELECT COALESCE(messages.messages, CAST('[]' AS jsonb))
+		FROM chat_sessions sessions
+		LEFT JOIN chat_messages messages ON messages.session_id = sessions.id
+		WHERE sessions.id = :session_id
+			AND sessions.user_id = :user_id
+			AND sessions.workspace_id = :workspace_id
+			AND sessions.deleted_at IS NULL
 	`
 
 	var messagesJSON json.RawMessage
@@ -92,10 +97,12 @@ func (r *repo) GetMessages(ctx context.Context, sessionID string) ([]any, error)
 	defer stmt.Close()
 
 	if err := stmt.GetContext(ctx, &messagesJSON, map[string]any{
-		"session_id": sessionID,
+		"session_id":   sessionID,
+		"user_id":      userID,
+		"workspace_id": workspaceID,
 	}); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return []any{}, nil // Return empty array if no messages found
+			return nil, chatsessions.ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get messages: %w", err)
 	}
@@ -106,6 +113,58 @@ func (r *repo) GetMessages(ctx context.Context, sessionID string) ([]any, error)
 	}
 
 	return messages, nil
+}
+
+// GetLatestAssistantMessage returns the newest assistant message without transferring the full chat payload.
+func (r *repo) GetLatestAssistantMessage(ctx context.Context, sessionID string, userID, workspaceID uuid.UUID) (json.RawMessage, error) {
+	ctx, span := web.AddSpan(ctx, "business.repository.chatsessions.GetLatestAssistantMessage")
+	defer span.End()
+
+	const q = `
+		SELECT (
+			SELECT messages.messages -> message_index
+			FROM generate_series(
+				jsonb_array_length(COALESCE(messages.messages, CAST('[]' AS jsonb))) - 1,
+				0,
+				-1
+			) AS indexes(message_index)
+			WHERE (messages.messages -> message_index) ->> 'role' = 'assistant'
+			LIMIT 1
+		)
+		FROM chat_sessions AS sessions
+		LEFT JOIN chat_messages AS messages ON messages.session_id = sessions.id
+		WHERE sessions.id = :session_id
+			AND sessions.user_id = :user_id
+			AND sessions.workspace_id = :workspace_id
+			AND sessions.deleted_at IS NULL
+	`
+
+	stmt, err := r.db.PrepareNamedContext(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("prepare latest assistant message query: %w", err)
+	}
+	defer stmt.Close()
+
+	var message sql.NullString
+	if err := stmt.GetContext(ctx, &message, map[string]any{
+		"session_id":   sessionID,
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+	}); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, chatsessions.ErrNotFound
+		}
+		return nil, fmt.Errorf("get latest assistant message: %w", err)
+	}
+	if !message.Valid {
+		return nil, nil
+	}
+	messageJSON := json.RawMessage(message.String)
+	if !json.Valid(messageJSON) {
+		return nil, errors.New("latest assistant message is not valid JSON")
+	}
+
+	return messageJSON, nil
 }
 
 // CountUserMessages counts the number of user messages for a user in a given time range.

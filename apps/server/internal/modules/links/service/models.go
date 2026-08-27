@@ -16,9 +16,10 @@ type CoreLink struct {
 }
 
 type CoreNewLink struct {
-	Title   *string
-	URL     string
-	StoryID uuid.UUID
+	Title       *string
+	URL         string
+	StoryID     uuid.UUID
+	WorkspaceID uuid.UUID
 }
 
 type CoreUpdateLink struct {

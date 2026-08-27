@@ -71,6 +71,17 @@ describe("getUserContext", () => {
         name: "Maya",
       },
       username: "maya",
+      storyCreationDefaults: {
+        autoSchedulingAvailable: true,
+        bulkStories: {
+          autoSchedulingEnabled: false,
+          estimatedDurationMinutes: null,
+        },
+        singleStory: {
+          autoSchedulingEnabled: true,
+          estimatedDurationMinutes: 60,
+        },
+      },
     });
 
     expect(context).toContain("User: Maya (@maya) [user-1]");
@@ -83,6 +94,15 @@ describe("getUserContext", () => {
     expect(context).not.toContain("Growth");
     expect(context).toContain(
       "Never treat a discoverable public team as one of the user's teams.",
+    );
+    expect(context).toContain(
+      "Account story-creation defaults: single-story suggestions: time needed=60 minutes, calendar scheduling=on; multiple-story default: no shared time estimate, calendar scheduling=off",
+    );
+    expect(context).toContain(
+      "Single-story defaults are suggestions, not consent.",
+    );
+    expect(context).toContain(
+      "Never apply or mention them as batch-wide defaults.",
     );
   });
 
@@ -132,6 +152,9 @@ describe("getUserContext", () => {
 
     expect(context).toContain("User: Maya [user-1]");
     expect(context).not.toContain("@undefined");
+    expect(context).toContain(
+      "Account story-creation defaults: single-story suggestions unavailable; multiple-story default: no shared time estimate, calendar scheduling=off",
+    );
   });
 
   it("bounds dynamic memories and omits billing metadata from model context", () => {

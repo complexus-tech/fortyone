@@ -149,7 +149,7 @@ func (h *Handler) listStoryComments(ctx context.Context, _ *mcp.CallToolRequest,
 		return nil, nil, err
 	}
 	page, pageSize, _, _ := normalizePagination(in.Page, in.PageSize)
-	items, hasMore, err := h.cfg.Stories.GetComments(ctx, storyID, page, pageSize)
+	items, hasMore, err := h.cfg.Stories.GetComments(ctx, storyID, workspaceID, page, pageSize)
 	if err != nil {
 		return nil, nil, err
 	}

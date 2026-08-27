@@ -7,9 +7,11 @@ export const suggestions = tool({
   inputSchema: z.object({
     suggestions: z
       .array(z.string())
-      .describe("The suggestions to show the user max 3"),
+      .min(2)
+      .max(3)
+      .describe("Two or three concise suggestions to show the user"),
   }),
-  execute: async ({ suggestions }, { experimental_context }) => {
+  execute: ({ suggestions }) => {
     return {
       suggestions,
       message:

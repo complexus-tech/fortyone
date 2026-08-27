@@ -2,6 +2,7 @@ package maya
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -99,6 +100,156 @@ func TestCreateWorkPlanPersistsAndAppliesActions(t *testing.T) {
 		if reason == "" {
 			t.Fatal("expected Maya story update reason to be recorded")
 		}
+	}
+}
+
+func TestPreviewThenApplyStoredWorkPlanExactlyOnce(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	requestedBy := uuid.New()
+	mayaActorID := uuid.New()
+	teamID := uuid.New()
+	userID := uuid.New()
+	storyUpdatedAt := time.Date(2026, 8, 27, 8, 0, 0, 0, time.UTC)
+	windowStart := time.Date(2026, 8, 28, 7, 0, 0, 0, time.UTC)
+	windowEnd := windowStart.Add(8 * time.Hour)
+	duration := 60
+
+	repo := &fakeMayaRepository{}
+	storiesService := &fakeMayaStories{story: stories.CoreSingleStory{
+		ID:        storyID,
+		Workspace: workspaceID,
+		Team:      teamID,
+		Title:     "Prepare launch brief",
+		UpdatedAt: storyUpdatedAt,
+	}}
+	calendarService := &fakeMayaCalendar{schedulingView: calendar.CoreSchedule{Timezone: "Africa/Harare"}}
+	service := New(Dependencies{
+		Repository: repo,
+		Stories:    storiesService,
+		Reports: &fakeMayaReports{analysis: reports.CoreWorkloadAnalysis{
+			Members: []reports.CoreMemberWorkload{{UserID: userID, FullName: "Ada"}},
+		}},
+		Calendar: calendarService,
+		Users:    &fakeMayaUsers{members: []users.CoreUser{{ID: userID, FullName: "Ada"}}},
+		Planner:  NewPlanner(), MayaActorID: mayaActorID,
+	})
+
+	preview, err := service.CreateWorkPlan(ctx, CreateWorkPlanInput{
+		WorkspaceID: workspaceID, StoryID: storyID, TriggeredBy: requestedBy,
+		Trigger: RunTriggerManual, WindowStart: windowStart, WindowEnd: windowEnd,
+		DurationMinutes: duration, AutoApply: false,
+	})
+	if err != nil {
+		t.Fatalf("CreateWorkPlan preview returned error: %v", err)
+	}
+	if len(preview.Actions) != 2 {
+		t.Fatalf("expected assignment and schedule previews, got %#v", preview.Actions)
+	}
+	for _, action := range preview.Actions {
+		if action.Status != ActionStatusProposed {
+			t.Fatalf("preview action %s was mutated: %q", action.ID, action.Status)
+		}
+	}
+	if storiesService.updatedAssignee != nil || storiesService.story.AutoSchedulingEnabled {
+		t.Fatalf("preview changed the story: %#v", storiesService.story)
+	}
+	if len(repo.appliedActionIDs) != 0 {
+		t.Fatalf("preview applied actions: %v", repo.appliedActionIDs)
+	}
+
+	applied, err := service.ApplyWorkPlan(ctx, ApplyWorkPlanInput{
+		WorkspaceID: workspaceID,
+		RunID:       preview.Run.ID,
+		TriggeredBy: requestedBy,
+	})
+	if err != nil {
+		t.Fatalf("ApplyWorkPlan returned error: %v", err)
+	}
+	for _, action := range applied.Actions {
+		if action.Status != ActionStatusApplied {
+			t.Fatalf("expected applied action %s, got %q", action.ID, action.Status)
+		}
+	}
+	if repo.createRunCalls != 1 {
+		t.Fatalf("apply recomputed the plan and created %d runs", repo.createRunCalls)
+	}
+	if storiesService.updatedAssignee == nil || *storiesService.updatedAssignee != userID {
+		t.Fatalf("expected stored assignee %s, got %v", userID, storiesService.updatedAssignee)
+	}
+	if !storiesService.story.AutoSchedulingEnabled || storiesService.story.EstimatedDurationMinutes == nil || *storiesService.story.EstimatedDurationMinutes != duration {
+		t.Fatalf("approved scheduling preferences were not saved: %#v", storiesService.story)
+	}
+	if len(repo.appliedActionIDs) != 2 {
+		t.Fatalf("expected two durable applied actions, got %v", repo.appliedActionIDs)
+	}
+
+	if _, err := service.ApplyWorkPlan(ctx, ApplyWorkPlanInput{
+		WorkspaceID: workspaceID,
+		RunID:       preview.Run.ID,
+		TriggeredBy: requestedBy,
+	}); err != nil {
+		t.Fatalf("idempotent ApplyWorkPlan retry returned error: %v", err)
+	}
+	if len(repo.appliedActionIDs) != 2 {
+		t.Fatalf("idempotent retry reapplied actions: %v", repo.appliedActionIDs)
+	}
+	if _, err := service.ApplyWorkPlan(ctx, ApplyWorkPlanInput{
+		WorkspaceID: workspaceID,
+		RunID:       preview.Run.ID,
+		TriggeredBy: uuid.New(),
+	}); !errors.Is(err, ErrPlanNotFound) {
+		t.Fatalf("expected user-scoped plan lookup to fail, got %v", err)
+	}
+}
+
+func TestApplyStoredWorkPlanRefreshesScheduleAfterSavingPreferences(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	requestedBy := uuid.New()
+	userID := uuid.New()
+	updatedAt := time.Date(2026, 8, 27, 9, 0, 0, 0, time.UTC)
+	windowStart := time.Date(2026, 8, 28, 7, 0, 0, 0, time.UTC)
+	repo := &fakeMayaRepository{}
+	storiesService := &fakeMayaStories{story: stories.CoreSingleStory{
+		ID: storyID, Workspace: workspaceID, Team: uuid.New(), Title: "Review launch",
+		Assignee: &userID, UpdatedAt: updatedAt,
+	}}
+	calendarService := &fakeMayaCalendar{schedulingView: calendar.CoreSchedule{Timezone: "Africa/Harare"}}
+	service := New(Dependencies{
+		Repository: repo, Stories: storiesService,
+		Reports:  &fakeMayaReports{analysis: reports.CoreWorkloadAnalysis{Members: []reports.CoreMemberWorkload{{UserID: userID}}}},
+		Calendar: calendarService, Users: &fakeMayaUsers{members: []users.CoreUser{{ID: userID}}},
+		Planner: NewPlanner(), MayaActorID: uuid.New(),
+	})
+
+	preview, err := service.CreateWorkPlan(context.Background(), CreateWorkPlanInput{
+		WorkspaceID: workspaceID, StoryID: storyID, TriggeredBy: requestedBy,
+		WindowStart: windowStart, WindowEnd: windowStart.Add(8 * time.Hour),
+		DurationMinutes: 60,
+	})
+	if err != nil {
+		t.Fatalf("CreateWorkPlan preview returned error: %v", err)
+	}
+	if len(preview.Actions) != 1 || preview.Actions[0].Type != ActionTypeScheduleWorkBlock {
+		t.Fatalf("expected an exact schedule-only preview, got %#v", preview.Actions)
+	}
+	if _, err := service.ApplyWorkPlan(context.Background(), ApplyWorkPlanInput{
+		WorkspaceID: workspaceID, RunID: preview.Run.ID, TriggeredBy: requestedBy,
+	}); err != nil {
+		t.Fatalf("ApplyWorkPlan returned error: %v", err)
+	}
+	if len(calendarService.reconciliations) < 2 {
+		t.Fatalf("expected schedule commit and ownership refresh, got %#v", calendarService.reconciliations)
+	}
+	refreshed := calendarService.reconciliations[len(calendarService.reconciliations)-1]
+	if refreshed.ExpectedStoryUpdatedAt == nil || !refreshed.ExpectedStoryUpdatedAt.Equal(storiesService.story.UpdatedAt) {
+		t.Fatalf("schedule ownership was not refreshed to story version %s: %#v", storiesService.story.UpdatedAt, refreshed)
 	}
 }
 
@@ -333,6 +484,7 @@ func TestShouldIncludeCandidateExcludesMayaActor(t *testing.T) {
 
 type fakeMayaRepository struct {
 	actions                      []CoreAction
+	run                          CoreRun
 	createRunCalls               int
 	appliedActionIDs             []uuid.UUID
 	storyRefs                    []ScheduleStoryRef
@@ -353,7 +505,7 @@ type fakeMayaRepository struct {
 
 func (f *fakeMayaRepository) CreateRun(_ context.Context, input CreateRunInput) (CoreRun, error) {
 	f.createRunCalls++
-	return CoreRun{
+	f.run = CoreRun{
 		ID:          uuid.New(),
 		WorkspaceID: input.WorkspaceID,
 		StoryID:     input.StoryID,
@@ -363,17 +515,20 @@ func (f *fakeMayaRepository) CreateRun(_ context.Context, input CreateRunInput) 
 		StartedAt:   time.Now(),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-	}, nil
+		Context:     input.Context,
+	}
+	return f.run, nil
 }
 
 func (f *fakeMayaRepository) CompleteRun(_ context.Context, runID uuid.UUID, status RunStatus, summary string, message *string) (CoreRun, error) {
-	return CoreRun{
-		ID:        runID,
-		Status:    status,
-		Summary:   summary,
-		Error:     message,
-		UpdatedAt: time.Now(),
-	}, nil
+	f.run.ID = runID
+	f.run.Status = status
+	f.run.Summary = summary
+	f.run.Error = message
+	f.run.UpdatedAt = time.Now()
+	completedAt := time.Now()
+	f.run.CompletedAt = &completedAt
+	return f.run, nil
 }
 
 func (f *fakeMayaRepository) CreateActions(_ context.Context, actions []CoreAction) ([]CoreAction, error) {
@@ -384,12 +539,30 @@ func (f *fakeMayaRepository) CreateActions(_ context.Context, actions []CoreActi
 	return actions, nil
 }
 
+func (f *fakeMayaRepository) GetWorkPlan(_ context.Context, runID, workspaceID, triggeredBy uuid.UUID) (WorkPlan, error) {
+	if f.run.ID != runID || f.run.WorkspaceID != workspaceID || f.run.TriggeredBy != triggeredBy {
+		return WorkPlan{}, ErrPlanNotFound
+	}
+	return WorkPlan{Run: f.run, Actions: append([]CoreAction(nil), f.actions...)}, nil
+}
+
 func (f *fakeMayaRepository) MarkActionApplied(_ context.Context, actionID uuid.UUID) error {
 	f.appliedActionIDs = append(f.appliedActionIDs, actionID)
+	for index := range f.actions {
+		if f.actions[index].ID == actionID && f.actions[index].Status == ActionStatusProposed {
+			f.actions[index].Status = ActionStatusApplied
+		}
+	}
 	return nil
 }
 
-func (f *fakeMayaRepository) MarkActionFailed(_ context.Context, _ uuid.UUID, _ string) error {
+func (f *fakeMayaRepository) MarkActionFailed(_ context.Context, actionID uuid.UUID, message string) error {
+	for index := range f.actions {
+		if f.actions[index].ID == actionID && f.actions[index].Status == ActionStatusProposed {
+			f.actions[index].Status = ActionStatusFailed
+			f.actions[index].Error = &message
+		}
+	}
 	return nil
 }
 

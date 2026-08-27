@@ -4,16 +4,26 @@ import { Tooltip } from "ui";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { getStoryPath } from "@/modules/story/utils/story-url";
+import type { State } from "@/types/states";
 import { PriorityIcon } from "../priority-icon";
 import { Dot } from "../dot";
 import { GenerativeList, GenerativeListItem } from "./generative-list";
 import { getStoryResults } from "./story-results-data";
 
-export const StoryResults = ({ output }: { output: unknown }) => {
+export type StoryResultStatus = Pick<State, "color" | "id" | "name">;
+
+export const StoryResults = ({
+  output,
+  statusOverrides,
+}: {
+  output: unknown;
+  statusOverrides?: StoryResultStatus[];
+}) => {
   const stories = getStoryResults(output);
   const { getTermDisplay } = useTerminology();
   const { withWorkspace } = useWorkspacePath();
-  const { data: statuses = [] } = useStatuses();
+  const { data: workspaceStatuses = [] } = useStatuses();
+  const statuses = statusOverrides ?? workspaceStatuses;
   const statusesById = new Map(statuses.map((status) => [status.id, status]));
   const storyLabel = getTermDisplay("storyTerm", {
     capitalize: true,
@@ -47,7 +57,7 @@ export const StoryResults = ({ output }: { output: unknown }) => {
             trailing={
               <Tooltip title={`Status: ${status?.name ?? "Unknown"}`}>
                 <span className="flex size-5 shrink-0 items-center justify-center">
-                  <Dot className="size-3" color={status?.color} />
+                  <Dot className="size-3 rounded-[2px]" color={status?.color} />
                 </span>
               </Tooltip>
             }

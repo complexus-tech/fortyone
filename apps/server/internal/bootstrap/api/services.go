@@ -139,6 +139,9 @@ func buildServices(cfg mux.Config) services {
 		cfg.TasksService,
 	)
 	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher, cfg.TasksService)
+	storiesService.ConfigureAutoSchedulingEligibility(func(ctx context.Context, workspaceID uuid.UUID) (bool, error) {
+		return billing.WorkspaceCanUseMaya(ctx, cfg.DB, workspaceID)
+	})
 	integrationRequestsRepo := integrationrequestsrepository.New(cfg.Log, cfg.DB)
 	messagingRepo := messagingrepository.New(cfg.DB)
 	emailReplyService, err := emailreply.New(cfg.SecretKey, messagingRepo, cfg.TasksService)
@@ -349,10 +352,10 @@ func buildServices(cfg mux.Config) services {
 func ensureBackgroundMayaEnabled(ctx context.Context, db *sqlx.DB, workspaceID uuid.UUID) error {
 	hasAccess, err := billing.WorkspaceCanUseMaya(ctx, db, workspaceID)
 	if err != nil {
-		return fmt.Errorf("check background Maya access: %w", err)
+		return fmt.Errorf("%w: check background Maya access: %v", stories.ErrAutoSchedulingAccessCheckFailed, err)
 	}
 	if !hasAccess {
-		return fmt.Errorf("background Maya assignment requires a paid plan")
+		return stories.ErrAutoSchedulingUnavailable
 	}
 	return nil
 }

@@ -98,4 +98,15 @@ export type IntegrationRequestThreadActivity = {
 export type BulkIntegrationRequestResult = {
   count: number;
   requestIds: string[];
+  totalCount: number;
+  succeededCount: number;
+  failedCount: number;
+  partial: boolean;
+  items: {
+    requestId: string;
+    success: boolean;
+    status: "accepted" | "declined" | "failed";
+    acceptedStoryId?: string;
+    error?: string;
+  }[];
 };

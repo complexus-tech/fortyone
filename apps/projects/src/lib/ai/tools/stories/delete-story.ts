@@ -2,15 +2,24 @@ import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { deleteStoryAction } from "@/modules/story/actions/delete-story";
-import { getStory } from "@/modules/story/queries/get-story";
-import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { isStoryDeletionOutcomeUncertainError } from "@/modules/story/actions/story-deletion-error";
 import { requireToolConfirmation } from "../tool-helpers";
 
 export const deleteStory = tool({
   description:
-    "Delete a story. Only admins or story creators can delete stories.",
+    "Delete one exact story. Resolve its current ID and human-readable title first; both are required so the approval screen can show a verifiable target. Only admins or story creators can delete stories.",
   inputSchema: z.object({
-    storyId: z.string().describe("Story ID to delete (required)"),
+    storyId: z
+      .string()
+      .uuid("Story ID must be a valid UUID.")
+      .describe("Exact story ID to delete."),
+    storyTitle: z
+      .string()
+      .trim()
+      .min(1, "Story title is required for approval.")
+      .describe(
+        "Current human-readable title of storyId. This is shown to the user before deletion alongside the exact ID.",
+      ),
     confirmed: z
       .boolean()
       .optional()
@@ -18,7 +27,7 @@ export const deleteStory = tool({
   }),
 
   execute: async (
-    { storyId, confirmed },
+    { storyId, storyTitle, confirmed },
     { experimental_context: experimentalContext },
   ) => {
     try {
@@ -37,32 +46,6 @@ export const deleteStory = tool({
 
       const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
-
-      const ctx = { session, workspaceSlug };
-
-      const workspace = await getWorkspace(ctx);
-      const userRole = workspace.userRole;
-      const userId = session.user.id;
-
-      // Check if user can delete this story
-      const story = await getStory(storyId, ctx);
-      if (!story) {
-        return {
-          success: false,
-          error: "Story not found",
-        };
-      }
-
-      const canDelete = userRole === "admin" || story.reporterId === userId;
-
-      if (!canDelete) {
-        return {
-          success: false,
-          error:
-            "You can only delete stories you created or if you're an admin",
-        };
-      }
-
       const result = await deleteStoryAction(storyId, workspaceSlug);
 
       if (result.error?.message) {
@@ -74,9 +57,11 @@ export const deleteStory = tool({
 
       return {
         success: true,
-        message: `Story "${story.title}" deleted successfully.`,
+        message: `Story "${storyTitle}" deleted successfully.`,
       };
     } catch (error) {
+      if (isStoryDeletionOutcomeUncertainError(error)) throw error;
+
       return {
         success: false,
         error:

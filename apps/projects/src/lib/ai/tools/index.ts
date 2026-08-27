@@ -1,3 +1,4 @@
+import type { MayaToolName } from "@/lib/ai/tool-names";
 import { listAttachments, deleteAttachment } from "@/lib/ai/tools/attachments";
 import {
   createObjectiveTool,
@@ -82,7 +83,7 @@ import {
 } from "./analytics";
 import { workloadPlanningTool } from "./workload";
 import { focusBriefTool } from "./focus-brief";
-import { mayaWorkPlanTool } from "./maya";
+import { applyMayaWorkPlanTool, mayaWorkPlanTool } from "./maya";
 import { activitySummaryTool } from "./activity-summary";
 import {
   createGitHubInstallSessionTool,
@@ -142,7 +143,7 @@ export {
 } from "./analytics";
 export { workloadPlanningTool } from "./workload";
 export { focusBriefTool } from "./focus-brief";
-export { mayaWorkPlanTool } from "./maya";
+export { applyMayaWorkPlanTool, mayaWorkPlanTool } from "./maya";
 export { activitySummaryTool } from "./activity-summary";
 export {
   createGitHubInstallSessionTool,
@@ -192,6 +193,7 @@ export const tools = {
   workloadPlanningTool,
   focusBrief: focusBriefTool,
   mayaWorkPlanTool,
+  applyMayaWorkPlanTool,
   activitySummaryTool,
   // GitHub
   getGitHubIntegrationTool,
@@ -284,4 +286,4 @@ export const tools = {
   createMemory,
   updateMemory,
   deleteMemory,
-};
+} satisfies Record<MayaToolName, unknown>;

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
@@ -143,12 +144,20 @@ func TestCreateValidatesMayaAssignmentBeforePersistence(t *testing.T) {
 	service.ConfigureMayaAssignment(mayaID, func(context.Context, MayaAssignmentInput) error {
 		return wantErr
 	})
+	service.ConfigureAutoSchedulingEligibility(func(context.Context, uuid.UUID) (bool, error) {
+		return true, nil
+	})
+	durationMinutes := 60
+	deliveryDate := time.Now().UTC().Add(24 * time.Hour)
 
 	_, err := service.createWithOptions(context.Background(), CoreNewStory{
-		Title:    "Create for Maya",
-		Team:     teamID,
-		Reporter: &actorID,
-		Assignee: &mayaID,
+		Title:                    "Create for Maya",
+		Team:                     teamID,
+		Reporter:                 &actorID,
+		Assignee:                 &mayaID,
+		AutoSchedulingEnabled:    true,
+		EstimatedDurationMinutes: &durationMinutes,
+		EndDate:                  &deliveryDate,
 	}, workspaceID, actorID, createOptions{})
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("create error = %v, want %v", err, wantErr)

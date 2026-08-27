@@ -53,6 +53,7 @@ func (a workspaceAssistantAccess) CanUseAssistant(ctx context.Context, workspace
 type slackEventProcessorDependencies struct {
 	EventPublisher *publisher.Publisher
 	Tasks          *tasks.Service
+	MayaActorID    uuid.UUID
 }
 
 func (d slackEventProcessorDependencies) validate() error {
@@ -61,6 +62,9 @@ func (d slackEventProcessorDependencies) validate() error {
 	}
 	if d.Tasks == nil {
 		return errors.New("slack event processor: tasks service is required")
+	}
+	if d.MayaActorID == uuid.Nil {
+		return errors.New("slack event processor: Maya actor ID is required")
 	}
 	return nil
 }
@@ -81,6 +85,8 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 		dependencies.EventPublisher,
 		dependencies.Tasks,
 	)
+	storiesService.ConfigureMayaActor(dependencies.MayaActorID)
+	storiesService.ConfigureAutoSchedulingEligibility(workspaceAssistantAccess{db: db}.CanUseAssistant)
 	searchService := search.New(log, searchrepository.New(log, db))
 	okrActivitiesService := okractivities.New(log, okractivitiesrepository.New(log, db))
 	objectivesService := objectives.New(

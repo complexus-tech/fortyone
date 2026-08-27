@@ -7,17 +7,13 @@ import { editLabelAction } from "@/lib/actions/labels/edit-label";
 import { deleteLabelAction } from "@/lib/actions/labels/delete-label";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
+import { MAYA_TOOL_ACTIONS } from "@/lib/ai/tool-actions";
 import { resolvePaginationInput } from "./tool-helpers";
 
 export const labelsTool = tool({
   description: "Manage workspace/team labels: list, create, edit, delete.",
   inputSchema: z.object({
-    action: z.enum([
-      "list-labels",
-      "create-label",
-      "edit-label",
-      "delete-label",
-    ]),
+    action: z.enum(MAYA_TOOL_ACTIONS.labels),
     labelId: z.string().optional(),
     name: z.string().optional(),
     color: z.string().optional(),

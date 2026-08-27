@@ -11,7 +11,7 @@ import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 export const listMemories = tool({
   description: "List all memories about the user.",
   inputSchema: z.object({}),
-  execute: async ({}, { experimental_context }) => {
+  execute: async (_input, { experimental_context: experimentalContext }) => {
     try {
       const session = await auth();
       if (!session) {
@@ -21,7 +21,7 @@ export const listMemories = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -51,7 +51,10 @@ export const createMemory = tool({
         "The content of the memory to save (e.g., 'The user is a senior frontend engineer') max length 200 words",
       ),
   }),
-  execute: async ({ content }, { experimental_context }) => {
+  execute: async (
+    { content },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
       if (!session) {
@@ -61,7 +64,7 @@ export const createMemory = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -106,14 +109,25 @@ export const createMemory = tool({
 export const updateMemory = tool({
   description: "Update an existing memory about the user.",
   inputSchema: z.object({
-    id: z.string().describe("The ID of the memory to update"),
+    id: z.uuid().describe("The ID of the memory to update"),
     content: z
       .string()
       .describe("The new content of the memory. max length 200 words"),
   }),
-  execute: async ({ id, content }, { experimental_context }) => {
+  execute: async (
+    { id, content },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const session = await auth();
+      if (!session) {
+        return {
+          success: false,
+          error: "Authentication required",
+        };
+      }
+
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const result = await updateMemoryAction(id, { content }, workspaceSlug);
@@ -140,11 +154,19 @@ export const updateMemory = tool({
 export const deleteMemory = tool({
   description: "Delete a memory about the user.",
   inputSchema: z.object({
-    id: z.string().describe("The ID of the memory to delete"),
+    id: z.uuid().describe("The ID of the memory to delete"),
   }),
-  execute: async ({ id }, { experimental_context }) => {
+  execute: async ({ id }, { experimental_context: experimentalContext }) => {
     try {
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const session = await auth();
+      if (!session) {
+        return {
+          success: false,
+          error: "Authentication required",
+        };
+      }
+
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const result = await deleteMemoryAction(id, workspaceSlug);

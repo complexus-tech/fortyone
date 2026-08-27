@@ -2,7 +2,9 @@ package chatsessionsrepository
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	chatsessions "github.com/complexus-tech/projects-api/internal/modules/chatsessions/service"
@@ -12,7 +14,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// CreateSessionWithMessages creates a new chat session with initial messages in a transaction.
+// CreateSessionWithMessages idempotently creates a chat session and its initial
+// transcript. Existing transcripts are never replaced by this legacy endpoint;
+// subsequent writes must use the reservation protocol.
 func (r *repo) CreateSessionWithMessages(ctx context.Context, session *chatsessions.CoreChatSession, messages []any) (chatsessions.CoreChatSession, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.chatsessions.CreateSessionWithMessages")
 	defer span.End()
@@ -24,10 +28,14 @@ func (r *repo) CreateSessionWithMessages(ctx context.Context, session *chatsessi
 	}
 	defer tx.Rollback()
 
-	// Create session
 	sessionQuery := `
 		INSERT INTO chat_sessions (id, user_id, workspace_id, title)
 		VALUES (:id, :user_id, :workspace_id, :title)
+		ON CONFLICT (id) DO UPDATE
+		SET updated_at = CURRENT_TIMESTAMP
+		WHERE chat_sessions.user_id = EXCLUDED.user_id
+			AND chat_sessions.workspace_id = EXCLUDED.workspace_id
+			AND chat_sessions.deleted_at IS NULL
 		RETURNING id, user_id, workspace_id, title, created_at, updated_at
 	`
 
@@ -44,6 +52,9 @@ func (r *repo) CreateSessionWithMessages(ctx context.Context, session *chatsessi
 		"workspace_id": session.WorkspaceID,
 		"title":        session.Title,
 	}); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return chatsessions.CoreChatSession{}, chatsessions.ErrNotFound
+		}
 		return chatsessions.CoreChatSession{}, fmt.Errorf("failed to create chat session: %w", err)
 	}
 
@@ -57,6 +68,7 @@ func (r *repo) CreateSessionWithMessages(ctx context.Context, session *chatsessi
 		messagesQuery := `
 			INSERT INTO chat_messages (session_id, messages)
 			VALUES (:session_id, :messages)
+			ON CONFLICT (session_id) DO NOTHING
 		`
 
 		messagesStmt, err := tx.PrepareNamedContext(ctx, messagesQuery)
@@ -78,8 +90,8 @@ func (r *repo) CreateSessionWithMessages(ctx context.Context, session *chatsessi
 		return chatsessions.CoreChatSession{}, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	r.log.Info(ctx, "Chat session created successfully", "session_id", cs.ID)
-	span.AddEvent("Chat session created with messages", trace.WithAttributes(
+	r.log.Info(ctx, "Chat session persisted successfully", "session_id", cs.ID)
+	span.AddEvent("Chat session persisted with messages", trace.WithAttributes(
 		attribute.String("session.id", cs.ID),
 		attribute.String("session.title", cs.Title),
 		attribute.Int("message.count", len(messages)),
@@ -89,14 +101,17 @@ func (r *repo) CreateSessionWithMessages(ctx context.Context, session *chatsessi
 }
 
 // UpdateSession updates the title of a chat session.
-func (r *repo) UpdateSession(ctx context.Context, id string, workspaceID uuid.UUID, title string) error {
+func (r *repo) UpdateSession(ctx context.Context, id string, userID, workspaceID uuid.UUID, title string) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.chatsessions.UpdateSession")
 	defer span.End()
 
 	q := `
 		UPDATE chat_sessions
 		SET title = :title, updated_at = NOW()
-		WHERE id = :id AND workspace_id = :workspace_id
+		WHERE id = :id
+			AND user_id = :user_id
+			AND workspace_id = :workspace_id
+			AND deleted_at IS NULL
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
@@ -107,6 +122,7 @@ func (r *repo) UpdateSession(ctx context.Context, id string, workspaceID uuid.UU
 
 	result, err := stmt.ExecContext(ctx, map[string]any{
 		"id":           id,
+		"user_id":      userID,
 		"workspace_id": workspaceID,
 		"title":        title,
 	})
@@ -127,14 +143,14 @@ func (r *repo) UpdateSession(ctx context.Context, id string, workspaceID uuid.UU
 }
 
 // DeleteSession performs soft delete of the chat session with the specified ID.
-func (r *repo) DeleteSession(ctx context.Context, id string, workspaceID uuid.UUID) error {
+func (r *repo) DeleteSession(ctx context.Context, id string, userID, workspaceID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.chatsessions.DeleteSession")
 	defer span.End()
 
 	q := `
 		UPDATE chat_sessions
 		SET deleted_at = NOW(), updated_at = NOW()
-		WHERE id = :id AND workspace_id = :workspace_id AND deleted_at IS NULL
+		WHERE id = :id AND user_id = :user_id AND workspace_id = :workspace_id AND deleted_at IS NULL
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
@@ -146,6 +162,7 @@ func (r *repo) DeleteSession(ctx context.Context, id string, workspaceID uuid.UU
 	r.log.Info(ctx, fmt.Sprintf("Soft deleting chat session #%s", id), "id", id)
 	result, err := stmt.ExecContext(ctx, map[string]any{
 		"id":           id,
+		"user_id":      userID,
 		"workspace_id": workspaceID,
 	})
 	if err != nil {
@@ -168,8 +185,10 @@ func (r *repo) DeleteSession(ctx context.Context, id string, workspaceID uuid.UU
 	return nil
 }
 
-// SaveMessages saves messages for a chat session.
-func (r *repo) SaveMessages(ctx context.Context, sessionID string, messages []any) error {
+// SaveMessages only initializes a missing legacy transcript. Replacing an
+// existing whole array is intentionally rejected because it cannot prove that
+// the caller observed the latest generation.
+func (r *repo) SaveMessages(ctx context.Context, sessionID string, userID, workspaceID uuid.UUID, messages []any) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.chatsessions.SaveMessages")
 	defer span.End()
 
@@ -180,11 +199,13 @@ func (r *repo) SaveMessages(ctx context.Context, sessionID string, messages []an
 
 	q := `
 		INSERT INTO chat_messages (session_id, messages)
-		VALUES (:session_id, :messages)
-		ON CONFLICT (session_id) 
-		DO UPDATE SET 
-			messages = :messages,
-			updated_at = NOW()
+		SELECT id, :messages
+		FROM chat_sessions
+		WHERE id = :session_id
+			AND user_id = :user_id
+			AND workspace_id = :workspace_id
+			AND deleted_at IS NULL
+		ON CONFLICT (session_id) DO NOTHING
 	`
 
 	stmt, err := r.db.PrepareNamedContext(ctx, q)
@@ -193,11 +214,38 @@ func (r *repo) SaveMessages(ctx context.Context, sessionID string, messages []an
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.ExecContext(ctx, map[string]any{
-		"session_id": sessionID,
-		"messages":   messagesJSON,
-	}); err != nil {
+	result, err := stmt.ExecContext(ctx, map[string]any{
+		"session_id":   sessionID,
+		"user_id":      userID,
+		"workspace_id": workspaceID,
+		"messages":     messagesJSON,
+	})
+	if err != nil {
 		return fmt.Errorf("failed to save messages: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get saved message rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		var exists bool
+		if err := r.db.GetContext(ctx, &exists, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM chat_sessions
+				WHERE id = $1
+					AND user_id = $2
+					AND workspace_id = $3
+					AND deleted_at IS NULL
+			)
+		`, sessionID, userID, workspaceID); err != nil {
+			return fmt.Errorf("check chat session after rejected legacy save: %w", err)
+		}
+		if !exists {
+			return chatsessions.ErrNotFound
+		}
+		return chatsessions.ErrMessageWriteConflict
 	}
 
 	return nil

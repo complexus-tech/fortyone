@@ -23,11 +23,11 @@ func TestTerminalStoryLifecycleEnqueuesImmediateScheduleReconciliation(t *testin
 	}{
 		{
 			name: "single delete", start: "func (s *Service) Delete(", end: "// Update updates a story.",
-			repoCall: "s.repo.Delete(ctx, id, workspaceId)", enqueue: "s.enqueueStoryScheduleReconcile(ctx, id, workspaceId)",
+			repoCall: "s.repo.Delete(ctx, id, workspaceId, authorization)", enqueue: "s.enqueueStoryScheduleReconcile(ctx, id, workspaceId)",
 		},
 		{
 			name: "bulk delete", start: "func (s *Service) BulkDelete(", end: "// HardBulkDelete",
-			repoCall: "s.repo.BulkDelete(ctx, ids, workspaceId)", enqueue: "s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceId)",
+			repoCall: "s.repo.BulkDelete(ctx, ids, workspaceId, authorization)", enqueue: "s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceId)",
 		},
 		{
 			name: "bulk archive", start: "func (s *Service) BulkArchive(", end: "// BulkUnarchive",

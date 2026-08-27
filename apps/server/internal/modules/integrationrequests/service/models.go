@@ -100,8 +100,23 @@ type CoreListRequestsFilter struct {
 }
 
 type CoreBulkRequestResult struct {
-	Count      int
-	RequestIDs []uuid.UUID
+	// Count and RequestIDs are retained for existing callers and contain only
+	// successful mutations.
+	Count          int
+	RequestIDs     []uuid.UUID
+	TotalCount     int
+	SucceededCount int
+	FailedCount    int
+	Partial        bool
+	Items          []CoreBulkRequestItemResult
+}
+
+type CoreBulkRequestItemResult struct {
+	RequestID       uuid.UUID
+	Success         bool
+	Status          string
+	AcceptedStoryID *uuid.UUID
+	Error           string
 }
 
 // OptionalValue distinguishes an omitted patch field from an explicitly null

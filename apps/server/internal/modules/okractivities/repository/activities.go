@@ -12,8 +12,8 @@ import (
 // Repository provides access to the OKR activities storage.
 type Repository interface {
 	Create(ctx context.Context, na okractivities.CoreNewActivity) error
-	GetObjectiveActivities(ctx context.Context, objectiveID uuid.UUID, page, pageSize int) ([]okractivities.CoreActivity, bool, error)
-	GetKeyResultActivities(ctx context.Context, keyResultID uuid.UUID, page, pageSize int) ([]okractivities.CoreActivity, bool, error)
+	GetObjectiveActivities(ctx context.Context, objectiveID, workspaceID uuid.UUID, page, pageSize int) ([]okractivities.CoreActivity, bool, error)
+	GetKeyResultActivities(ctx context.Context, keyResultID, workspaceID uuid.UUID, page, pageSize int) ([]okractivities.CoreActivity, bool, error)
 }
 
 type repo struct {

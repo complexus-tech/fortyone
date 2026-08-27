@@ -505,29 +505,22 @@ func (r *repo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.
 
 // MyStories returns a list of stories.
 
-func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) error {
+func (r *repo) Delete(
+	ctx context.Context,
+	id uuid.UUID,
+	workspaceID uuid.UUID,
+	authorization stories.BulkDeleteAuthorization,
+) error {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.Delete")
 	defer span.End()
-	params := map[string]any{"id": id, "workspace_id": workspaceId}
 
-	stmt, err := r.db.PrepareNamedContext(ctx, `
-		UPDATE stories 
-		SET deleted_at = NOW(),
-				updated_at = NOW() 
-		WHERE id = :id
-		AND workspace_id = :workspace_id;
-	`)
-
+	deletedIDs, err := r.BulkDelete(ctx, []uuid.UUID{id}, workspaceID, authorization)
 	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("failed to prepare named statement: %s", err), "id", id)
-		return err
-	}
-	defer stmt.Close()
-
-	r.log.Info(ctx, fmt.Sprintf("Deleting story #%s", id), "id", id)
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
 		r.log.Error(ctx, fmt.Sprintf("failed to delete story: %s", err), "id", id)
 		return err
+	}
+	if len(deletedIDs) != 1 || deletedIDs[0] != id {
+		return stories.ErrNotFound
 	}
 
 	r.log.Info(ctx, fmt.Sprintf("Story #%s deleted successfully", id), "id", id)
@@ -538,44 +531,121 @@ func (r *repo) Delete(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) 
 
 // List returns a list of stories for a workspace with additional filters.
 
-func (r *repo) BulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) error {
+func (r *repo) BulkDelete(
+	ctx context.Context,
+	ids []uuid.UUID,
+	workspaceID uuid.UUID,
+	authorization stories.BulkDeleteAuthorization,
+) ([]uuid.UUID, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.BulkDelete")
 	defer span.End()
 
-	params := map[string]any{"ids": ids, "workspace_id": workspaceId}
-
-	query := `
-        UPDATE stories
-        SET deleted_at = NOW(), updated_at = NOW()
-        WHERE id = ANY(:ids) AND workspace_id = :workspace_id;
-    `
-
-	r.log.Info(ctx, fmt.Sprintf("Deleting stories: %v", ids), "ids", ids)
-	_, err := r.db.NamedExecContext(ctx, query, params)
-	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("failed to delete stories: %s", err), "ids", ids)
-		return err
+	targetIDs := uniqueUUIDs(ids)
+	if len(targetIDs) == 0 {
+		return nil, stories.ErrNotFound
 	}
 
-	r.log.Info(ctx, fmt.Sprintf("Stories: %v deleted successfully", ids), "ids", ids)
-	span.AddEvent("Stories deleted.", trace.WithAttributes(attribute.Int("stories.length", len(ids))))
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin bulk story deletion: %w", err)
+	}
+	defer tx.Rollback()
 
-	return nil
+	if err := authorizeBulkStoryDeletion(ctx, tx, targetIDs, workspaceID, authorization); err != nil {
+		return nil, err
+	}
+
+	params := map[string]any{"ids": targetIDs, "workspace_id": workspaceID}
+
+	query := `
+		UPDATE stories
+		SET deleted_at = NOW(), updated_at = NOW()
+		WHERE id = ANY(:ids)
+			AND workspace_id = :workspace_id
+			AND deleted_at IS NULL
+		RETURNING id;
+	`
+
+	r.log.Info(ctx, fmt.Sprintf("Deleting stories: %v", targetIDs), "ids", targetIDs)
+	deleteStmt, err := tx.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("prepare bulk story deletion: %w", err)
+	}
+	defer deleteStmt.Close()
+	rows, err := deleteStmt.QueryxContext(ctx, params)
+	if err != nil {
+		r.log.Error(ctx, fmt.Sprintf("failed to delete stories: %s", err), "ids", targetIDs)
+		return nil, err
+	}
+	defer rows.Close()
+
+	newlyDeletedIDs := make([]uuid.UUID, 0, len(targetIDs))
+	for rows.Next() {
+		var deletedID uuid.UUID
+		if err := rows.Scan(&deletedID); err != nil {
+			return nil, fmt.Errorf("scan deleted story id: %w", err)
+		}
+		newlyDeletedIDs = append(newlyDeletedIDs, deletedID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate deleted story ids: %w", err)
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("close deleted story rows: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit bulk story deletion: %w", err)
+	}
+
+	newlyDeletedIDs = orderUUIDSubset(targetIDs, newlyDeletedIDs)
+	r.log.Info(
+		ctx,
+		fmt.Sprintf("Stories: %v now deleted; newly deleted: %v", targetIDs, newlyDeletedIDs),
+		"ids", targetIDs,
+		"newly_deleted_ids", newlyDeletedIDs,
+	)
+	span.AddEvent(
+		"Stories deleted.",
+		trace.WithAttributes(
+			attribute.Int("stories.length", len(targetIDs)),
+			attribute.Int("stories.newly_deleted.length", len(newlyDeletedIDs)),
+		),
+	)
+
+	// Authorization above proves every target belongs to this workspace and is
+	// deletable by the caller, including targets already soft-deleted by an
+	// earlier identical request. Return the complete desired-state receipt so a
+	// retry after response loss cannot be mistaken for a partial deletion.
+	return append([]uuid.UUID(nil), targetIDs...), nil
 }
 
 // HardBulkDelete permanently removes the stories and returns inline-media
 // attachments that no feature references after the deletion.
-func (r *repo) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId uuid.UUID) ([]uuid.UUID, error) {
+func (r *repo) HardBulkDelete(
+	ctx context.Context,
+	ids []uuid.UUID,
+	workspaceID uuid.UUID,
+	authorization stories.BulkDeleteAuthorization,
+) (stories.HardBulkDeleteResult, error) {
 	ctx, span := web.AddSpan(ctx, "business.repository.stories.HardBulkDelete")
 	defer span.End()
+	targetIDs := uniqueUUIDs(ids)
+	if len(targetIDs) == 0 {
+		return stories.HardBulkDeleteResult{}, stories.ErrNotFound
+	}
 
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("begin hard story deletion: %w", err)
+		return stories.HardBulkDeleteResult{}, fmt.Errorf("begin hard story deletion: %w", err)
 	}
 	defer tx.Rollback()
 
-	params := map[string]any{"ids": ids, "workspace_id": workspaceId}
+	if err := authorizeBulkStoryDeletion(ctx, tx, targetIDs, workspaceID, authorization); err != nil {
+		return stories.HardBulkDeleteResult{}, err
+	}
+
+	params := map[string]any{"ids": targetIDs, "workspace_id": workspaceID}
 	orphanedAttachmentIDs := []uuid.UUID{}
 	orphanQuery := `
 		SELECT DISTINCT inline_media.attachment_id
@@ -612,49 +682,140 @@ func (r *repo) HardBulkDelete(ctx context.Context, ids []uuid.UUID, workspaceId 
 			)`
 	orphanStmt, err := tx.PrepareNamedContext(ctx, orphanQuery)
 	if err != nil {
-		return nil, fmt.Errorf("prepare orphaned story media query: %w", err)
+		return stories.HardBulkDeleteResult{}, fmt.Errorf("prepare orphaned story media query: %w", err)
 	}
 	defer orphanStmt.Close()
 	if err := orphanStmt.SelectContext(ctx, &orphanedAttachmentIDs, params); err != nil {
-		return nil, fmt.Errorf("select orphaned story media: %w", err)
+		return stories.HardBulkDeleteResult{}, fmt.Errorf("select orphaned story media: %w", err)
 	}
 
 	deleteQuery := `
-			DELETE FROM stories
-			WHERE id = ANY(:ids)
-				AND workspace_id = :workspace_id;
-		`
+		DELETE FROM stories
+		WHERE id = ANY(:ids)
+			AND workspace_id = :workspace_id
+		RETURNING id;
+	`
 
-	r.log.Info(ctx, fmt.Sprintf("Hard deleting stories: %v", ids), "ids", ids)
+	r.log.Info(ctx, fmt.Sprintf("Hard deleting stories: %v", targetIDs), "ids", targetIDs)
 
-	result, err := tx.NamedExecContext(ctx, deleteQuery, params)
+	deleteStmt, err := tx.PrepareNamedContext(ctx, deleteQuery)
+	if err != nil {
+		return stories.HardBulkDeleteResult{}, fmt.Errorf("prepare hard story deletion: %w", err)
+	}
+	defer deleteStmt.Close()
+	rows, err := deleteStmt.QueryxContext(ctx, params)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to hard delete stories: %s", err)
-		r.log.Error(ctx, errMsg, "ids", ids)
-		return nil, err
+		r.log.Error(ctx, errMsg, "ids", targetIDs)
+		return stories.HardBulkDeleteResult{}, err
 	}
+	defer rows.Close()
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		r.log.Error(ctx, fmt.Sprintf("Failed to get rows affected: %s", err), "ids", ids)
-		return nil, err
+	deletedIDs := make([]uuid.UUID, 0, len(targetIDs))
+	for rows.Next() {
+		var deletedID uuid.UUID
+		if err := rows.Scan(&deletedID); err != nil {
+			return stories.HardBulkDeleteResult{}, fmt.Errorf("scan hard-deleted story id: %w", err)
+		}
+		deletedIDs = append(deletedIDs, deletedID)
 	}
-	if rowsAffected == 0 {
-		r.log.Warn(ctx, "No stories found to hard delete", "ids", ids)
-		return nil, fmt.Errorf("no stories found to delete")
+	if err := rows.Err(); err != nil {
+		return stories.HardBulkDeleteResult{}, fmt.Errorf("iterate hard-deleted story ids: %w", err)
+	}
+	if len(deletedIDs) != len(targetIDs) {
+		return stories.HardBulkDeleteResult{}, stories.ErrNotFound
+	}
+	if err := rows.Close(); err != nil {
+		return stories.HardBulkDeleteResult{}, fmt.Errorf("close hard-deleted story rows: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("commit hard story deletion: %w", err)
+		return stories.HardBulkDeleteResult{}, fmt.Errorf("commit hard story deletion: %w", err)
 	}
 
-	r.log.Info(ctx, fmt.Sprintf("Stories hard deleted successfully: %v (%d rows)", ids, rowsAffected),
-		"ids", ids, "rows_affected", rowsAffected)
+	deletedIDs = orderUUIDSubset(targetIDs, deletedIDs)
+	r.log.Info(ctx, fmt.Sprintf("Stories hard deleted successfully: %v (%d rows)", deletedIDs, len(deletedIDs)),
+		"ids", deletedIDs, "rows_affected", len(deletedIDs))
 	span.AddEvent("Stories hard deleted.", trace.WithAttributes(
-		attribute.Int("stories.length", len(ids)),
-		attribute.Int64("rows.affected", rowsAffected)))
+		attribute.Int("stories.length", len(deletedIDs))))
 
-	return orphanedAttachmentIDs, nil
+	return stories.HardBulkDeleteResult{
+		StoryIDs:              deletedIDs,
+		OrphanedAttachmentIDs: orphanedAttachmentIDs,
+	}, nil
+}
+
+type bulkDeleteTarget struct {
+	ID         uuid.UUID  `db:"id"`
+	ReporterID *uuid.UUID `db:"reporter_id"`
+}
+
+func authorizeBulkStoryDeletion(
+	ctx context.Context,
+	tx *sqlx.Tx,
+	storyIDs []uuid.UUID,
+	workspaceID uuid.UUID,
+	authorization stories.BulkDeleteAuthorization,
+) error {
+	const query = `
+		SELECT id, reporter_id
+		FROM stories
+		WHERE id = ANY(:ids)
+			AND workspace_id = :workspace_id
+		FOR UPDATE
+	`
+	params := map[string]any{
+		"ids":          storyIDs,
+		"workspace_id": workspaceID,
+	}
+	var targets []bulkDeleteTarget
+	stmt, err := tx.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("prepare bulk story authorization: %w", err)
+	}
+	defer stmt.Close()
+	if err := stmt.SelectContext(ctx, &targets, params); err != nil {
+		return fmt.Errorf("load bulk story authorization: %w", err)
+	}
+	if len(targets) != len(storyIDs) {
+		return stories.ErrNotFound
+	}
+	if authorization.IsAdmin {
+		return nil
+	}
+	for _, target := range targets {
+		if target.ReporterID == nil || *target.ReporterID != authorization.ActorID {
+			return stories.ErrDeleteForbidden
+		}
+	}
+	return nil
+}
+
+func uniqueUUIDs(ids []uuid.UUID) []uuid.UUID {
+	seen := make(map[uuid.UUID]struct{}, len(ids))
+	unique := make([]uuid.UUID, 0, len(ids))
+	for _, id := range ids {
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		unique = append(unique, id)
+	}
+	return unique
+}
+
+func orderUUIDSubset(order, values []uuid.UUID) []uuid.UUID {
+	valueSet := make(map[uuid.UUID]struct{}, len(values))
+	for _, value := range values {
+		valueSet[value] = struct{}{}
+	}
+	ordered := make([]uuid.UUID, 0, len(values))
+	for _, value := range order {
+		if _, exists := valueSet[value]; exists {
+			ordered = append(ordered, value)
+		}
+	}
+	return ordered
 }
 
 // Restore restores a story with the specified ID.

@@ -104,6 +104,18 @@ type CreateWorkPlanInput struct {
 	AssignmentReason string      `json:"-"`
 }
 
+type ApplyWorkPlanInput struct {
+	WorkspaceID uuid.UUID `json:"workspaceId"`
+	RunID       uuid.UUID `json:"runId"`
+	TriggeredBy uuid.UUID `json:"triggeredBy"`
+}
+
+type persistedWorkPlanContext struct {
+	DurationMinutes    int               `json:"durationMinutes"`
+	StoryUpdatedAt     time.Time         `json:"storyUpdatedAt"`
+	CandidateTimezones map[string]string `json:"candidateTimezones"`
+}
+
 type WorkPlan struct {
 	Run     CoreRun      `json:"run"`
 	Actions []CoreAction `json:"actions"`
@@ -161,6 +173,232 @@ func (s *Service) CreateWorkPlan(ctx context.Context, input CreateWorkPlanInput)
 		return planErr
 	})
 	return plan, err
+}
+
+func (s *Service) ApplyWorkPlan(ctx context.Context, input ApplyWorkPlanInput) (WorkPlan, error) {
+	ctx, span := web.AddSpan(ctx, "business.core.maya.ApplyWorkPlan")
+	defer span.End()
+
+	if err := s.validate(); err != nil {
+		return WorkPlan{}, err
+	}
+	if input.WorkspaceID == uuid.Nil || input.RunID == uuid.Nil || input.TriggeredBy == uuid.Nil {
+		return WorkPlan{}, fmt.Errorf("%w: work plan, workspace, and user are required", ErrInvalidPlanInput)
+	}
+
+	plan, err := s.repo.GetWorkPlan(ctx, input.RunID, input.WorkspaceID, input.TriggeredBy)
+	if err != nil {
+		return WorkPlan{}, err
+	}
+	scheduleRepo, err := s.scheduleRepository()
+	if err != nil {
+		return WorkPlan{}, err
+	}
+
+	var appliedPlan WorkPlan
+	err = scheduleRepo.WithScheduleStoryLock(ctx, input.WorkspaceID, plan.Run.StoryID, func() error {
+		currentPlan, err := s.repo.GetWorkPlan(ctx, input.RunID, input.WorkspaceID, input.TriggeredBy)
+		if err != nil {
+			return err
+		}
+		appliedPlan = currentPlan
+		if currentPlan.Run.Status != RunStatusSucceeded {
+			return fmt.Errorf("%w: only a completed work-plan preview can be applied", ErrInvalidPlanInput)
+		}
+		if workPlanHasActionStatus(currentPlan.Actions, ActionStatusFailed) || !workPlanHasActionStatus(currentPlan.Actions, ActionStatusProposed) {
+			return nil
+		}
+
+		story, err := s.stories.Get(ctx, currentPlan.Run.StoryID, input.WorkspaceID)
+		if err != nil {
+			return fmt.Errorf("get story for stored Maya plan: %w", err)
+		}
+		hasAccess, err := scheduleRepo.WorkspaceCanUseMaya(ctx, input.WorkspaceID)
+		if err != nil {
+			return err
+		}
+		if !hasAccess {
+			return ErrMayaAccessDenied
+		}
+		active, err := scheduleRepo.StoryIsActiveForAutoScheduling(ctx, input.WorkspaceID, story.ID)
+		if err != nil {
+			return err
+		}
+		if !active {
+			return fmt.Errorf("%w: story is not active for auto-scheduling", ErrInvalidPlanInput)
+		}
+		if story.AutoSchedulingLocked {
+			return stories.ErrAutoSchedulingOwnerLocked
+		}
+
+		planContext, err := decodePersistedWorkPlanContext(currentPlan.Run.Context)
+		if err != nil {
+			return err
+		}
+		if planContext.StoryUpdatedAt.IsZero() || !story.UpdatedAt.Equal(planContext.StoryUpdatedAt) {
+			return stories.ErrStoryChanged
+		}
+
+		result := storedPlanResult(currentPlan, story, planContext)
+		previousBlocks, err := s.listPreviousWorkPlanBlocks(ctx, story, result.SelectedUserID)
+		if err != nil {
+			return err
+		}
+		proposedActions := actionsWithStatus(currentPlan.Actions, ActionStatusProposed)
+		updatedActions, err := s.applyActionsWithOptions(ctx, proposedActions, actionApplicationOptions{
+			ExpectedStoryUpdatedAt: planContext.StoryUpdatedAt,
+			StoryUpdates:           storedPlanStoryUpdates(story, planContext.DurationMinutes),
+			StoryID:                story.ID,
+			WorkspaceID:            story.Workspace,
+		})
+		if err != nil {
+			return err
+		}
+		appliedPlan.Actions = mergeWorkPlanActions(currentPlan.Actions, updatedActions)
+		if workPlanHasActionStatus(appliedPlan.Actions, ActionStatusFailed) {
+			return nil
+		}
+		if err := s.finalizeAppliedWorkPlan(ctx, story, result, previousBlocks); err != nil {
+			return fmt.Errorf("finalize stored Maya work plan: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		span.RecordError(err)
+		return appliedPlan, err
+	}
+	return appliedPlan, nil
+}
+
+func decodePersistedWorkPlanContext(payload json.RawMessage) (persistedWorkPlanContext, error) {
+	var planContext persistedWorkPlanContext
+	if len(payload) == 0 {
+		return planContext, fmt.Errorf("%w: work-plan preview context is missing", ErrInvalidPlanInput)
+	}
+	if err := json.Unmarshal(payload, &planContext); err != nil {
+		return planContext, fmt.Errorf("%w: decode work-plan preview context: %v", ErrInvalidPlanInput, err)
+	}
+	return planContext, nil
+}
+
+func workPlanHasActionStatus(actions []CoreAction, status ActionStatus) bool {
+	for _, action := range actions {
+		if action.Status == status {
+			return true
+		}
+	}
+	return false
+}
+
+func actionsWithStatus(actions []CoreAction, status ActionStatus) []CoreAction {
+	filtered := make([]CoreAction, 0, len(actions))
+	for _, action := range actions {
+		if action.Status == status {
+			filtered = append(filtered, action)
+		}
+	}
+	return filtered
+}
+
+func mergeWorkPlanActions(existing, updated []CoreAction) []CoreAction {
+	updatedByID := make(map[uuid.UUID]CoreAction, len(updated))
+	for _, action := range updated {
+		updatedByID[action.ID] = action
+	}
+	merged := make([]CoreAction, len(existing))
+	for index, action := range existing {
+		if updatedAction, ok := updatedByID[action.ID]; ok {
+			merged[index] = updatedAction
+			continue
+		}
+		merged[index] = action
+	}
+	return merged
+}
+
+func storedPlanStoryUpdates(story stories.CoreSingleStory, durationMinutes int) map[string]any {
+	updates := make(map[string]any)
+	if !story.AutoSchedulingEnabled {
+		updates["auto_scheduling_enabled"] = true
+		updates["auto_scheduling_locked"] = false
+	}
+	if durationMinutes > 0 && (story.EstimatedDurationMinutes == nil || *story.EstimatedDurationMinutes != durationMinutes) {
+		updates["estimated_duration_minutes"] = durationMinutes
+		if story.MinimumFocusBlockMinutes != nil && *story.MinimumFocusBlockMinutes > durationMinutes {
+			updates["minimum_focus_block_minutes"] = durationMinutes
+		}
+	}
+	return updates
+}
+
+func storedPlanResult(plan WorkPlan, story stories.CoreSingleStory, planContext persistedWorkPlanContext) PlanResult {
+	result := PlanResult{Summary: plan.Run.Summary, DurationMinutes: planContext.DurationMinutes}
+	preemptedIDs := make(map[uuid.UUID]struct{})
+	for _, action := range plan.Actions {
+		if payload := action.Payload.AssignStory; payload != nil {
+			selectedUserID := payload.AssigneeID
+			result.SelectedUserID = &selectedUserID
+		}
+		if payload := action.Payload.ScheduleBlock; payload != nil {
+			selectedUserID := payload.UserID
+			result.SelectedUserID = &selectedUserID
+			if result.Timezone == "" {
+				result.Timezone = planContext.CandidateTimezones[payload.UserID.String()]
+			}
+			if payload.Operation == "" || payload.Operation == ScheduleBlockOperationUpsert {
+				result.ScheduledMinutes += int(payload.EndAt.Sub(payload.StartAt).Minutes())
+			}
+			for _, blockID := range payload.PreemptBlockIDs {
+				preemptedIDs[blockID] = struct{}{}
+			}
+		}
+		if payload := action.Payload.Risk; payload != nil && payload.RemainingMinutes > result.RemainingMinutes {
+			result.RemainingMinutes = payload.RemainingMinutes
+		}
+	}
+	if result.SelectedUserID == nil && story.Assignee != nil {
+		selectedUserID := *story.Assignee
+		result.SelectedUserID = &selectedUserID
+		result.Timezone = planContext.CandidateTimezones[selectedUserID.String()]
+	}
+	if result.DurationMinutes == 0 {
+		result.DurationMinutes = result.ScheduledMinutes + result.RemainingMinutes
+	}
+	result.PreemptedBlockIDs = make([]uuid.UUID, 0, len(preemptedIDs))
+	for blockID := range preemptedIDs {
+		result.PreemptedBlockIDs = append(result.PreemptedBlockIDs, blockID)
+	}
+	return result
+}
+
+func (s *Service) listPreviousWorkPlanBlocks(ctx context.Context, story stories.CoreSingleStory, selectedUserID *uuid.UUID) ([]calendar.CoreScheduleBlock, error) {
+	if selectedUserID == nil || *selectedUserID == uuid.Nil {
+		return nil, nil
+	}
+	scheduleRepo, err := s.scheduleRepository()
+	if err != nil {
+		return nil, err
+	}
+	ownerIDs, err := scheduleRepo.ListMayaScheduleOwners(ctx, story.Workspace, story.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !slices.Contains(ownerIDs, *selectedUserID) {
+		ownerIDs = append(ownerIDs, *selectedUserID)
+	}
+	scheduleCalendar, err := s.scheduleCalendarService()
+	if err != nil {
+		return nil, err
+	}
+	blocks := make([]calendar.CoreScheduleBlock, 0)
+	for _, ownerID := range ownerIDs {
+		ownerBlocks, err := scheduleCalendar.ListMayaScheduleBlocksForStory(ctx, story.Workspace, ownerID, story.ID)
+		if err != nil {
+			return nil, err
+		}
+		blocks = append(blocks, ownerBlocks...)
+	}
+	return blocks, nil
 }
 
 func (s *Service) createWorkPlan(ctx context.Context, input CreateWorkPlanInput) (WorkPlan, error) {
@@ -695,14 +933,20 @@ func (s *Service) buildCandidates(ctx context.Context, input CreateWorkPlanInput
 		candidates = append(candidates, candidate)
 	}
 
+	candidateTimezones := make(map[string]string, len(candidates))
+	for _, candidate := range candidates {
+		candidateTimezones[candidate.Member.UserID.String()] = candidate.Timezone
+	}
 	contextPayload, err := json.Marshal(map[string]any{
-		"storyId":          story.ID,
-		"teamId":           story.Team,
-		"windowStart":      input.WindowStart,
-		"windowEnd":        input.WindowEnd,
-		"durationMinutes":  input.DurationMinutes,
-		"candidateCount":   len(candidates),
-		"candidateUserIds": input.CandidateUserIDs,
+		"storyId":            story.ID,
+		"storyUpdatedAt":     story.UpdatedAt,
+		"teamId":             story.Team,
+		"windowStart":        input.WindowStart,
+		"windowEnd":          input.WindowEnd,
+		"durationMinutes":    input.DurationMinutes,
+		"candidateCount":     len(candidates),
+		"candidateUserIds":   input.CandidateUserIDs,
+		"candidateTimezones": candidateTimezones,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("marshal maya plan context: %w", err)
@@ -720,13 +964,29 @@ func shouldIncludeCandidate(userID uuid.UUID, candidateUserIDs []uuid.UUID, maya
 	return slices.Contains(candidateUserIDs, userID)
 }
 
+type actionApplicationOptions struct {
+	ExpectedStoryUpdatedAt time.Time
+	StoryUpdates           map[string]any
+	StoryID                uuid.UUID
+	WorkspaceID            uuid.UUID
+}
+
 func (s *Service) applyActions(ctx context.Context, actions []CoreAction) []CoreAction {
+	applied, _ := s.applyActionsWithOptions(ctx, actions, actionApplicationOptions{})
+	return applied
+}
+
+func (s *Service) applyActionsWithOptions(ctx context.Context, actions []CoreAction, options actionApplicationOptions) ([]CoreAction, error) {
 	applied := make([]CoreAction, len(actions))
 	copy(applied, actions)
 	scheduleIndexes := make([]int, 0, len(applied))
+	hasAssignmentAction := false
 	for index := range applied {
 		if applied[index].Type == ActionTypeScheduleWorkBlock {
 			scheduleIndexes = append(scheduleIndexes, index)
+		}
+		if applied[index].Type == ActionTypeAssignStory {
+			hasAssignmentAction = true
 		}
 	}
 	scheduleApplied := len(scheduleIndexes) == 0
@@ -746,6 +1006,37 @@ func (s *Service) applyActions(ctx context.Context, actions []CoreAction) []Core
 			scheduleState = &state
 		}
 	}
+	if len(options.StoryUpdates) > 0 && !hasAssignmentAction {
+		if len(scheduleIndexes) == 0 {
+			if err := s.applyStoredPlanStoryUpdates(ctx, actions, options); err != nil {
+				return applied, err
+			}
+		} else if scheduleApplied {
+			if err := s.applyStoredPlanStoryUpdates(ctx, actions, options); err != nil {
+				scheduleApplied = false
+				message := "schedule was restored because the scheduling preferences could not be saved"
+				if scheduleState != nil {
+					if restoreErr := s.restoreScheduleState(ctx, *scheduleState); restoreErr != nil {
+						message = errors.Join(errors.New(message), restoreErr).Error()
+					}
+				}
+				for _, index := range scheduleIndexes {
+					s.markActionFailed(ctx, &applied[index], message+": "+err.Error())
+				}
+			} else if scheduleState != nil {
+				if err := s.refreshAppliedScheduleAfterAssignment(ctx, *scheduleState); err != nil {
+					scheduleApplied = false
+					message := "schedule was restored because its story-version ownership could not be refreshed"
+					if restoreErr := s.restoreScheduleState(ctx, *scheduleState); restoreErr != nil {
+						message = errors.Join(errors.New(message), restoreErr).Error()
+					}
+					for _, index := range scheduleIndexes {
+						s.markActionFailed(ctx, &applied[index], message+": "+err.Error())
+					}
+				}
+			}
+		}
+	}
 	dispatchSchedule := false
 	for i, action := range applied {
 		if action.Type == ActionTypeScheduleWorkBlock {
@@ -755,7 +1046,11 @@ func (s *Service) applyActions(ctx context.Context, actions []CoreAction) []Core
 			s.markActionFailed(ctx, &applied[i], "assignment was not applied because the schedule could not be committed")
 			continue
 		}
-		if err := s.applyAction(ctx, action); err != nil {
+		additionalUpdates := map[string]any(nil)
+		if action.Type == ActionTypeAssignStory {
+			additionalUpdates = options.StoryUpdates
+		}
+		if err := s.applyActionWithUpdates(ctx, action, additionalUpdates); err != nil {
 			s.markActionFailed(ctx, &applied[i], err.Error())
 			if action.Type == ActionTypeAssignStory && scheduleState != nil {
 				rollbackErr := s.restoreScheduleState(ctx, *scheduleState)
@@ -799,7 +1094,31 @@ func (s *Service) applyActions(ctx context.Context, actions []CoreAction) []Core
 		// failure must not change the result of the durable local mutation.
 		_ = scheduleState.calendar.DispatchScheduleEventOutbox(ctx, scheduleState.userID)
 	}
-	return applied
+	return applied, nil
+}
+
+func (s *Service) applyStoredPlanStoryUpdates(ctx context.Context, actions []CoreAction, options actionApplicationOptions) error {
+	if len(options.StoryUpdates) == 0 {
+		return nil
+	}
+	storyID := options.StoryID
+	workspaceID := options.WorkspaceID
+	if len(actions) > 0 {
+		storyID = actions[0].StoryID
+		workspaceID = actions[0].WorkspaceID
+	}
+	if storyID == uuid.Nil || workspaceID == uuid.Nil {
+		return fmt.Errorf("%w: stored work plan has no story identity", ErrInvalidPlanInput)
+	}
+	return s.stories.UpdateAutomationIfUnchanged(
+		ctx,
+		s.mayaActorID,
+		storyID,
+		workspaceID,
+		options.ExpectedStoryUpdatedAt,
+		options.StoryUpdates,
+		"Maya saved the approved scheduling preferences for this work plan.",
+	)
 }
 
 type appliedScheduleState struct {
@@ -984,14 +1303,21 @@ func (s *Service) markActionFailed(ctx context.Context, action *CoreAction, mess
 }
 
 func (s *Service) applyAction(ctx context.Context, action CoreAction) error {
+	return s.applyActionWithUpdates(ctx, action, nil)
+}
+
+func (s *Service) applyActionWithUpdates(ctx context.Context, action CoreAction, additionalUpdates map[string]any) error {
 	switch action.Type {
 	case ActionTypeAssignStory:
 		if action.Payload.AssignStory == nil {
 			return fmt.Errorf("missing assign story payload")
 		}
-		return s.stories.UpdateAutomationIfUnchanged(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, action.Payload.AssignStory.ExpectedUpdatedAt, map[string]any{
-			"assignee_id": action.Payload.AssignStory.AssigneeID,
-		}, action.Reason)
+		updates := make(map[string]any, len(additionalUpdates)+1)
+		for key, value := range additionalUpdates {
+			updates[key] = value
+		}
+		updates["assignee_id"] = action.Payload.AssignStory.AssigneeID
+		return s.stories.UpdateAutomationIfUnchanged(ctx, s.mayaActorID, action.StoryID, action.WorkspaceID, action.Payload.AssignStory.ExpectedUpdatedAt, updates, action.Reason)
 	case ActionTypeScheduleWorkBlock:
 		return fmt.Errorf("schedule work blocks must be applied as one atomic set")
 	case ActionTypeFlagScheduleRisk:

@@ -14,75 +14,101 @@ import { requireToolConfirmation } from "../tool-helpers";
 export const updateStory = tool({
   description:
     "Update an existing story. Only admins and members can update stories.",
-  inputSchema: z.object({
-    storyId: z.string().describe("Story ID to update (required)"),
-    confirmed: z
-      .boolean()
-      .optional()
-      .describe(
-        "Must be true after the user explicitly confirms the story update.",
-      ),
-    title: z.string().optional().describe("Updated title"),
-    description: z.string().optional().describe("Updated description"),
-    descriptionHTML: z.string().optional().describe("Updated description HTML"),
-    statusId: z.string().optional().describe("Updated status ID"),
-    assigneeId: z.string().optional().describe("Updated assignee ID"),
-    priority: z
-      .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
-      .optional()
-      .describe("Updated priority"),
-    estimateValue: z
-      .number()
-      .int()
-      .refine(isEstimateValue, {
-        message: "Complexity must be 1, 2, 3, 5, or 8.",
-      })
-      .nullable()
-      .optional()
-      .describe(
-        "Updated relative complexity value for the team's scale. This is not a time duration. Set null to clear complexity.",
-      ),
-    estimatedDurationMinutes: z
-      .number()
-      .int()
-      .positive()
-      .max(MAX_TIME_NEEDED_MINUTES)
-      .nullable()
-      .optional()
-      .describe(
-        "Updated total time needed in minutes for scheduling. Set null to clear both the duration and its minimum focus block.",
-      ),
-    minimumFocusBlockMinutes: z
-      .number()
-      .int()
-      .positive()
-      .max(MAX_TIME_NEEDED_MINUTES)
-      .nullable()
-      .optional()
-      .describe(
-        "Updated minimum schedulable focus block in minutes. Set null to let Maya automatically fill available calendar time.",
-      ),
-    autoSchedulingEnabled: z
-      .boolean()
-      .optional()
-      .describe(
-        "Enable or pause continuous Maya calendar scheduling for this story.",
-      ),
-    autoSchedulingLocked: z
-      .boolean()
-      .optional()
-      .describe(
-        "Lock or unlock the current Maya calendar blocks. Lock only after blocks have been scheduled.",
-      ),
-    labelIds: z
-      .array(z.string())
-      .optional()
-      .describe("Replace story labels with these label IDs."),
-    sprintId: z.string().optional().describe("Updated sprint ID"),
-    objectiveId: z.string().optional().describe("Updated objective ID"),
-    startDate: z.string().optional().describe("Updated start date"),
-    endDate: z.string().optional().describe("Updated end date"),
-  }),
+  inputSchema: z
+    .object({
+      storyId: z.string().describe("Story ID to update (required)"),
+      confirmed: z
+        .boolean()
+        .optional()
+        .describe(
+          "Must be true after the user explicitly confirms the story update.",
+        ),
+      title: z.string().optional().describe("Updated title"),
+      description: z.string().optional().describe("Updated description"),
+      descriptionHTML: z
+        .string()
+        .optional()
+        .describe("Updated description HTML"),
+      statusId: z.string().optional().describe("Updated status ID"),
+      assigneeId: z.string().optional().describe("Updated assignee ID"),
+      priority: z
+        .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
+        .optional()
+        .describe("Updated priority"),
+      estimateValue: z
+        .number()
+        .int()
+        .refine(isEstimateValue, {
+          message: "Complexity must be 1, 2, 3, 5, or 8.",
+        })
+        .nullable()
+        .optional()
+        .describe(
+          "Updated relative complexity value for the team's scale. This is not a time duration. Set null to clear complexity.",
+        ),
+      estimatedDurationMinutes: z
+        .number()
+        .int()
+        .positive()
+        .max(MAX_TIME_NEEDED_MINUTES)
+        .nullable()
+        .optional()
+        .describe(
+          "Updated total time needed in minutes for scheduling. Set null to clear both the duration and its minimum focus block.",
+        ),
+      minimumFocusBlockMinutes: z
+        .number()
+        .int()
+        .positive()
+        .max(MAX_TIME_NEEDED_MINUTES)
+        .nullable()
+        .optional()
+        .describe(
+          "Updated minimum schedulable focus block in minutes. Set null to let Maya automatically fill available calendar time.",
+        ),
+      autoSchedulingEnabled: z
+        .boolean()
+        .optional()
+        .describe(
+          "Enable or pause continuous Maya calendar scheduling for this story.",
+        ),
+      autoSchedulingLocked: z
+        .boolean()
+        .optional()
+        .describe(
+          "Lock or unlock the current Maya calendar blocks. Lock only after blocks have been scheduled.",
+        ),
+      labelIds: z
+        .array(z.string())
+        .optional()
+        .describe("Replace story labels with these label IDs."),
+      sprintId: z.string().optional().describe("Updated sprint ID"),
+      objectiveId: z.string().optional().describe("Updated objective ID"),
+      startDate: z.string().optional().describe("Updated start date"),
+      endDate: z.string().optional().describe("Updated end date"),
+    })
+    .refine(
+      (input) =>
+        [
+          input.title,
+          input.description,
+          input.descriptionHTML,
+          input.statusId,
+          input.assigneeId,
+          input.priority,
+          input.estimateValue,
+          input.estimatedDurationMinutes,
+          input.minimumFocusBlockMinutes,
+          input.autoSchedulingEnabled,
+          input.autoSchedulingLocked,
+          input.labelIds,
+          input.sprintId,
+          input.objectiveId,
+          input.startDate,
+          input.endDate,
+        ].some((value) => value !== undefined),
+      { message: "Provide at least one story field to update." },
+    ),
 
   execute: async (
     {

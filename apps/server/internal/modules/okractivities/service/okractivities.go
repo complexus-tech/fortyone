@@ -12,8 +12,8 @@ import (
 // Repository provides access to the OKR activities storage.
 type Repository interface {
 	Create(ctx context.Context, na CoreNewActivity) error
-	GetObjectiveActivities(ctx context.Context, objectiveID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error)
-	GetKeyResultActivities(ctx context.Context, keyResultID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error)
+	GetObjectiveActivities(ctx context.Context, objectiveID, workspaceID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error)
+	GetKeyResultActivities(ctx context.Context, keyResultID, workspaceID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error)
 }
 
 // Service manages the OKR activities operations.
@@ -61,12 +61,12 @@ func (s *Service) CreateBatch(ctx context.Context, activities []CoreNewActivity)
 }
 
 // GetObjectiveActivities retrieves activities for a specific objective.
-func (s *Service) GetObjectiveActivities(ctx context.Context, objectiveID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error) {
+func (s *Service) GetObjectiveActivities(ctx context.Context, objectiveID, workspaceID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error) {
 	s.log.Info(ctx, "getting objective activities", "objectiveID", objectiveID, "page", page, "pageSize", pageSize)
 	ctx, span := web.AddSpan(ctx, "business.core.okractivities.GetObjectiveActivities")
 	defer span.End()
 
-	activities, hasMore, err := s.repo.GetObjectiveActivities(ctx, objectiveID, page, pageSize)
+	activities, hasMore, err := s.repo.GetObjectiveActivities(ctx, objectiveID, workspaceID, page, pageSize)
 	if err != nil {
 		span.RecordError(err)
 		return nil, false, fmt.Errorf("getting objective activities: %w", err)
@@ -76,12 +76,12 @@ func (s *Service) GetObjectiveActivities(ctx context.Context, objectiveID uuid.U
 }
 
 // GetKeyResultActivities retrieves activities for a specific key result.
-func (s *Service) GetKeyResultActivities(ctx context.Context, keyResultID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error) {
+func (s *Service) GetKeyResultActivities(ctx context.Context, keyResultID, workspaceID uuid.UUID, page, pageSize int) ([]CoreActivity, bool, error) {
 	s.log.Info(ctx, "getting key result activities", "keyResultID", keyResultID, "page", page, "pageSize", pageSize)
 	ctx, span := web.AddSpan(ctx, "business.core.okractivities.GetKeyResultActivities")
 	defer span.End()
 
-	activities, hasMore, err := s.repo.GetKeyResultActivities(ctx, keyResultID, page, pageSize)
+	activities, hasMore, err := s.repo.GetKeyResultActivities(ctx, keyResultID, workspaceID, page, pageSize)
 	if err != nil {
 		span.RecordError(err)
 		return nil, false, fmt.Errorf("getting key result activities: %w", err)

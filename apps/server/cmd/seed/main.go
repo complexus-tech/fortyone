@@ -28,12 +28,14 @@ import (
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
+	"github.com/complexus-tech/projects-api/internal/platform/billing"
 	"github.com/complexus-tech/projects-api/internal/seeding"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
+	"github.com/google/uuid"
 	"github.com/josemukorivo/config"
 	"github.com/redis/go-redis/v9"
 	"github.com/stripe/stripe-go/v82/client"
@@ -134,6 +136,9 @@ func main() {
 	mentionsRepo := mentionsrepository.New(log, db)
 	storiesRepo := storiesrepository.New(log, db)
 	storiesService := stories.New(log, storiesRepo, mentionsRepo, publisher, tasksService)
+	storiesService.ConfigureAutoSchedulingEligibility(func(ctx context.Context, workspaceID uuid.UUID) (bool, error) {
+		return billing.WorkspaceCanUseMaya(ctx, db, workspaceID)
+	})
 
 	okrActivitiesRepo := okractivitiesrepository.New(log, db)
 	okrActivitiesService := okractivities.New(log, okrActivitiesRepo)

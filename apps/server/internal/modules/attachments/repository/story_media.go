@@ -109,6 +109,39 @@ func (r *Repository) AuthorizeStoryMedia(ctx context.Context, storyID, attachmen
 	return toCoreAttachment(row), nil
 }
 
+// AuthorizeStoryAttachment resolves a regular story attachment only when its
+// story relation and attachment record both belong to the requested workspace.
+func (r *Repository) AuthorizeStoryAttachment(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) (attachments.CoreAttachment, error) {
+	const query = `
+		SELECT
+			a.attachment_id,
+			a.filename,
+			a.blob_name,
+			a.size,
+			a.mime_type,
+			a.uploaded_by,
+			a.workspace_id,
+			a.created_at
+		FROM attachments a
+		INNER JOIN story_attachments sa ON sa.attachment_id = a.attachment_id
+		INNER JOIN stories s ON s.id = sa.story_id
+		WHERE sa.story_id = $1
+			AND a.attachment_id = $2
+			AND s.workspace_id = $3
+			AND a.workspace_id = s.workspace_id
+	`
+
+	var record dbAttachment
+	if err := r.db.GetContext(ctx, &record, query, storyID, attachmentID, workspaceID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return attachments.CoreAttachment{}, attachments.ErrNotFound
+		}
+		return attachments.CoreAttachment{}, fmt.Errorf("authorize story attachment: %w", err)
+	}
+
+	return toCoreAttachment(record), nil
+}
+
 // UnlinkStoryMedia removes only the exact authorized story-media relation and
 // reports whether no feature still references the attachment.
 func (r *Repository) UnlinkStoryMedia(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) (bool, error) {

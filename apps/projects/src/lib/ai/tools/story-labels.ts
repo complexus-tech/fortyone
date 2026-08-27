@@ -4,27 +4,23 @@ import { auth } from "@/auth";
 import { updateLabelsAction } from "@/modules/story/actions/update-labels";
 import { getStory } from "@/modules/story/queries/get-story";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { MAYA_TOOL_ACTIONS } from "@/lib/ai/tool-actions";
 
 export const storyLabelsTool = tool({
   description: "Manage story labels: get, add, remove, set labels on stories.",
   inputSchema: z.object({
-    action: z.enum([
-      "get-story-labels",
-      "set-story-labels",
-      "add-labels-to-story",
-      "remove-labels-from-story",
-    ]),
+    action: z.enum(MAYA_TOOL_ACTIONS.storyLabels),
     storyId: z.string(),
     labelIds: z.array(z.string()).optional(),
   }),
   execute: async (
     { action, storyId, labelIds = [] },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
       if (!session) return { success: false, error: "Authentication required" };
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

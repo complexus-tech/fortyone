@@ -29,7 +29,7 @@ const EntityIcon = ({ icon }: { icon: EntityResultIcon }) => {
   if (icon.kind === "color") {
     return (
       <span
-        className="size-3 rounded-sm"
+        className="size-3 rounded-[2px]"
         style={{ backgroundColor: icon.color }}
       />
     );
@@ -86,12 +86,13 @@ const EntityTrailing = ({ trailing }: { trailing: EntityResultTrailing }) => {
   return (
     <span
       aria-label={trailing.label}
-      className="border-border/70 bg-surface-muted/55 inline-flex items-center gap-1.5 rounded-xl border px-2 py-0.5 text-sm font-medium"
+      className="text-text-muted inline-flex max-w-[16ch] min-w-0 items-center gap-1.5 text-base font-medium"
+      title={trailing.label}
     >
       <span
-        className={`size-2.5 rounded-full ${toneClassNames[trailing.tone]}`}
+        className={`size-2.5 shrink-0 rounded-[2px] ${toneClassNames[trailing.tone]}`}
       />
-      {trailing.label}
+      <span className="truncate">{trailing.label}</span>
     </span>
   );
 };

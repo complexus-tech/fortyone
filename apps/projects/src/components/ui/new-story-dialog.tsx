@@ -68,7 +68,10 @@ import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-descri
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useLabels } from "@/lib/hooks/labels";
 import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
-import { formatTimeNeeded } from "@/lib/time-needed";
+import {
+  DEFAULT_TIME_NEEDED_MINUTES,
+  formatTimeNeeded,
+} from "@/lib/time-needed";
 import {
   getNewStoryAutoSchedulingEnabled,
   isMayaAssigneeSelection,
@@ -299,7 +302,7 @@ export const NewStoryDialog = ({
       keyResultId: null,
       sprintId: sprintId || null,
       estimateValue: null,
-      estimatedDurationMinutes: 60,
+      estimatedDurationMinutes: DEFAULT_TIME_NEEDED_MINUTES,
       minimumFocusBlockMinutes: null,
       autoSchedulingEnabled: autoSchedulingDefaultEnabled,
       autoSchedulingLocked: false,

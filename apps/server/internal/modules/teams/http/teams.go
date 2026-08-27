@@ -193,7 +193,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	if err := h.teams.AddMember(ctx, result.ID, userID); err != nil {
+	if err := h.teams.AddMember(ctx, result.ID, userID, workspace.ID); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
@@ -241,7 +241,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		if err == teams.ErrTeamCodeExists {
 			return web.RespondError(ctx, w, err, http.StatusConflict)
 		}
-		if err.Error() == "team not found" {
+		if errors.Is(err, teams.ErrTeamNotFound) {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -271,7 +271,7 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	if err := h.teams.Delete(ctx, teamID, workspace.ID); err != nil {
-		if err.Error() == "team not found" {
+		if errors.Is(err, teams.ErrTeamNotFound) {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -305,9 +305,12 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
 	}
 
-	if err := h.teams.AddMember(ctx, teamID, input.UserID); err != nil {
-		if err == teams.ErrTeamMemberExists {
+	if err := h.teams.AddMember(ctx, teamID, input.UserID, workspace.ID); err != nil {
+		if errors.Is(err, teams.ErrTeamMemberExists) {
 			return web.RespondError(ctx, w, err, http.StatusConflict)
+		}
+		if errors.Is(err, teams.ErrTeamNotFound) {
+			return web.RespondError(ctx, w, teams.ErrTeamNotFound, http.StatusNotFound)
 		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
@@ -332,6 +335,58 @@ func (h *Handlers) AddMember(ctx context.Context, w http.ResponseWriter, r *http
 	return web.Respond(ctx, w, team, http.StatusOK)
 }
 
+// JoinPublicTeam adds only the authenticated actor to an eligible public team.
+func (h *Handlers) JoinPublicTeam(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.JoinPublicTeam")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	teamID, err := uuid.Parse(web.Params(r, "id"))
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
+	}
+
+	input := teams.CorePublicTeamJoin{
+		TeamID:      teamID,
+		ActorID:     actorID,
+		WorkspaceID: workspace.ID,
+	}
+	if err := h.teams.JoinPublicTeam(ctx, input); err != nil {
+		switch {
+		case errors.Is(err, teams.ErrTeamNotFound):
+			return web.RespondError(ctx, w, teams.ErrTeamNotFound, http.StatusNotFound)
+		case errors.Is(err, teams.ErrTeamMemberExists):
+			return web.RespondError(ctx, w, teams.ErrTeamMemberExists, http.StatusConflict)
+		default:
+			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		}
+	}
+
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
+	if err := h.cache.DeleteByPattern(ctx, myStoriesCachePattern); err != nil {
+		span.RecordError(fmt.Errorf("failed to invalidate my-stories cache: %w", err))
+	}
+
+	span.AddEvent("public team joined.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
+		attribute.String("actor_id", actorID.String()),
+	))
+
+	return web.Respond(ctx, w, struct {
+		ID uuid.UUID `json:"teamId"`
+	}{ID: teamID}, http.StatusOK)
+}
+
 func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx, span := web.AddSpan(ctx, "handlers.teams.RemoveMember")
 	defer span.End()
@@ -354,10 +409,7 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 	}
 
 	if err := h.teams.RemoveMember(ctx, teamID, userID, workspace.ID); err != nil {
-		if err.Error() == "member not found" {
-			return web.RespondError(ctx, w, err, http.StatusNotFound)
-		}
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, teamMembershipMutationStatus(err))
 	}
 	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	if err := h.cache.DeleteByPattern(ctx, myStoriesCachePattern); err != nil {
@@ -371,6 +423,56 @@ func (h *Handlers) RemoveMember(ctx context.Context, w http.ResponseWriter, r *h
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+// LeaveTeam removes the authenticated actor from a team without accepting a caller-selected user ID.
+func (h *Handlers) LeaveTeam(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, span := web.AddSpan(ctx, "handlers.teams.LeaveTeam")
+	defer span.End()
+
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	teamID, err := uuid.Parse(web.Params(r, "id"))
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidTeamID, http.StatusBadRequest)
+	}
+
+	input := teams.CoreTeamSelfLeave{
+		TeamID:      teamID,
+		ActorID:     actorID,
+		WorkspaceID: workspace.ID,
+	}
+	if err := h.teams.LeaveTeam(ctx, input); err != nil {
+		return web.RespondError(ctx, w, err, teamMembershipMutationStatus(err))
+	}
+
+	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
+	if err := h.cache.DeleteByPattern(ctx, myStoriesCachePattern); err != nil {
+		span.RecordError(fmt.Errorf("failed to invalidate my-stories cache: %w", err))
+	}
+
+	span.AddEvent("team left.", trace.WithAttributes(
+		attribute.String("team_id", teamID.String()),
+		attribute.String("workspace_id", workspace.ID.String()),
+		attribute.String("actor_id", actorID.String()),
+	))
+
+	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func teamMembershipMutationStatus(err error) int {
+	if errors.Is(err, teams.ErrTeamNotFound) || errors.Is(err, teams.ErrTeamMemberNotFound) {
+		return http.StatusNotFound
+	}
+	return http.StatusInternalServerError
 }
 
 func (h *Handlers) UpdateMemberAIContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

@@ -16,7 +16,9 @@ export const bulkUpdateStories = tool({
     "Bulk update multiple stories at once. Only admins and members can perform bulk operations.",
   inputSchema: z.object({
     storyIds: z
-      .array(z.string())
+      .array(z.string().uuid("Each story ID must be a valid UUID."))
+      .min(1, "Provide at least one story to update.")
+      .max(50, "Update at most 50 stories in one request.")
       .describe("Array of story IDs to update (required)"),
     confirmed: z
       .boolean()
@@ -102,6 +104,10 @@ export const bulkUpdateStories = tool({
             "Replace labels for all selected stories with these label IDs.",
           ),
       })
+      .refine(
+        (updateData) => Object.keys(updateData).length > 0,
+        "Provide at least one field to update.",
+      )
       .describe("Update data to apply to all stories (required)"),
   }),
 
@@ -171,9 +177,23 @@ export const bulkUpdateStories = tool({
         };
       }
 
+      if (!result.data) {
+        return {
+          success: false,
+          error: "The bulk update completed without an itemized result",
+        };
+      }
+
+      const completedSuccessfully = result.data.failedCount === 0;
+      const message = completedSuccessfully
+        ? `Updated ${result.data.succeededCount} of ${result.data.totalCount} stories.`
+        : `Updated ${result.data.succeededCount} of ${result.data.totalCount} stories; ${result.data.failedCount} failed.`;
+
       return {
-        success: true,
-        message: `Successfully updated ${storyIds.length} stories.`,
+        success: completedSuccessfully,
+        partial: result.data.partial,
+        result: result.data,
+        message,
       };
     } catch (error) {
       return {

@@ -247,7 +247,7 @@ func (h *Handlers) executeStoryComments(ctx context.Context, workspaceID, userID
 	reference := storyReference(story.TeamCode, story.SequenceID)
 	switch strings.ToLower(strings.TrimSpace(args.Action)) {
 	case "list":
-		commentList, _, err := h.stories.GetComments(ctx, story.ID, 1, clampLimit(args.Limit, 10))
+		commentList, _, err := h.stories.GetComments(ctx, story.ID, workspaceID, 1, clampLimit(args.Limit, 10))
 		if err != nil {
 			return AppRealtimeToolResponse{}, fmt.Errorf("list story comments: %w", err)
 		}

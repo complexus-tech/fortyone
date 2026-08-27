@@ -14,7 +14,12 @@ type CoreSearchStory struct {
 	Parent                   *uuid.UUID
 	Objective                *uuid.UUID
 	Status                   *uuid.UUID
+	StatusName               *string
+	StatusColor              *string
+	StatusCategory           *string
 	Assignee                 *uuid.UUID
+	AssigneeFullName         *string
+	AssigneeUsername         *string
 	Reporter                 *uuid.UUID
 	Priority                 string
 	EstimateLabel            *string
@@ -23,6 +28,8 @@ type CoreSearchStory struct {
 	Sprint                   *uuid.UUID
 	KeyResult                *uuid.UUID
 	Team                     uuid.UUID
+	TeamName                 string
+	TeamCode                 string
 	Workspace                uuid.UUID
 	StartDate                *time.Time
 	EndDate                  *time.Time
@@ -45,7 +52,11 @@ type CoreSearchObjective struct {
 	Description  *string
 	ShortSummary *string
 	LeadUser     *uuid.UUID
+	LeadFullName *string
+	LeadUsername *string
 	Team         uuid.UUID
+	TeamName     string
+	TeamCode     string
 	Workspace    uuid.UUID
 	StartDate    *time.Time
 	EndDate      *time.Time

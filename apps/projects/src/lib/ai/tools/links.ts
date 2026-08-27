@@ -6,13 +6,14 @@ import { createLinkAction } from "@/lib/actions/links/create-link";
 import { updateLinkAction } from "@/lib/actions/links/update-link";
 import { deleteLinkAction } from "@/lib/actions/links/delete-link";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { MAYA_TOOL_ACTIONS } from "@/lib/ai/tool-actions";
 
 export const linksTool = tool({
   description:
     "Manage story links: list, add, update, delete URLs associated with stories. Supports metadata extraction and link organization.",
   inputSchema: z.object({
     action: z
-      .enum(["list-links", "add-link", "update-link", "delete-link"])
+      .enum(MAYA_TOOL_ACTIONS.links)
       .describe("The link operation to perform"),
 
     storyId: z.string().describe("Story ID for link operations"),
@@ -36,7 +37,7 @@ export const linksTool = tool({
 
   execute: async (
     { action, storyId, linkId, url, title, limit = 20 },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -48,7 +49,7 @@ export const linksTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

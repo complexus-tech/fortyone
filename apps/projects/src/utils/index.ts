@@ -2,6 +2,7 @@ import { ApiError } from "api-client";
 import type { ApiResponse, Workspace } from "@/types";
 import type { Invitation } from "@/modules/invitations/types";
 import { getSafeCallbackUrl } from "./callback-url";
+import { reportApiErrorOutcome } from "./api-error-outcome";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
@@ -72,8 +73,14 @@ export const slugify = (text = "") => {
 
 export const getApiError = (error: unknown): ApiResponse<null> => {
   if (error instanceof ApiError) {
+    reportApiErrorOutcome({
+      certainty:
+        error.status >= 400 && error.status < 500 ? "definite" : "uncertain",
+      status: error.status,
+    });
     return error.data as ApiResponse<null>;
   }
+  reportApiErrorOutcome({ certainty: "uncertain" });
   return {
     data: null,
     error: {

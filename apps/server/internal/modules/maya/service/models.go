@@ -216,6 +216,7 @@ type Repository interface {
 	CreateRun(ctx context.Context, input CreateRunInput) (CoreRun, error)
 	CompleteRun(ctx context.Context, runID uuid.UUID, status RunStatus, summary string, message *string) (CoreRun, error)
 	CreateActions(ctx context.Context, actions []CoreAction) ([]CoreAction, error)
+	GetWorkPlan(ctx context.Context, runID, workspaceID, triggeredBy uuid.UUID) (WorkPlan, error)
 	MarkActionApplied(ctx context.Context, actionID uuid.UUID) error
 	MarkActionFailed(ctx context.Context, actionID uuid.UUID, message string) error
 }

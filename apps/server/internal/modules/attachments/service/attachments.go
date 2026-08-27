@@ -27,8 +27,9 @@ type Repository interface {
 	CreateAttachment(ctx context.Context, attachment CoreAttachment) (CoreAttachment, error)
 	GetAttachmentByID(ctx context.Context, id uuid.UUID) (CoreAttachment, error)
 	GetAttachmentByBlobName(ctx context.Context, blobName string) (CoreAttachment, error)
-	GetAttachmentsByStoryID(ctx context.Context, storyID uuid.UUID) ([]CoreAttachment, error)
+	GetAttachmentsByStoryID(ctx context.Context, storyID, workspaceID uuid.UUID) ([]CoreAttachment, error)
 	StoryExistsInWorkspace(ctx context.Context, storyID, workspaceID uuid.UUID) (bool, error)
+	AuthorizeStoryAttachment(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) (CoreAttachment, error)
 	LinkStoryMedia(ctx context.Context, storyID, attachmentID, createdBy, workspaceID uuid.UUID) error
 	AuthorizeStoryMedia(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) (CoreAttachment, error)
 	UnlinkStoryMedia(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) (bool, error)
@@ -269,13 +270,25 @@ func (s *Service) maybeEnqueueImageOptimization(ctx context.Context, blobName, c
 }
 
 // GetAttachmentsForStory gets all attachments for a story
-func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID uuid.UUID) ([]FileInfo, error) {
+func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID, workspaceID uuid.UUID) ([]FileInfo, error) {
 	s.log.Info(ctx, "core.attachments.getForStory")
 	ctx, span := web.AddSpan(ctx, "core.attachments.GetAttachmentsForStory")
 	defer span.End()
 
+	if storyID == uuid.Nil || workspaceID == uuid.Nil {
+		return nil, ErrInvalidFile
+	}
+	exists, err := s.repo.StoryExistsInWorkspace(ctx, storyID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return nil, fmt.Errorf("check attachment story workspace: %w", err)
+	}
+	if !exists {
+		return nil, ErrNotFound
+	}
+
 	// Get attachments from database
-	attachments, err := s.repo.GetAttachmentsByStoryID(ctx, storyID)
+	attachments, err := s.repo.GetAttachmentsByStoryID(ctx, storyID, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -409,6 +422,35 @@ func (s *Service) DeleteAttachment(ctx context.Context, id uuid.UUID, userID uui
 	// Verify ownership - allow the uploader or workspace admin to delete
 	if attachment.UploadedBy != userID {
 		// TODO: check if user is workspace admin
+		span.RecordError(ErrUnauthorized)
+		return ErrUnauthorized
+	}
+
+	return s.deleteStoredAttachment(ctx, span, attachment)
+}
+
+// DeleteStoryAttachment removes an attachment only after authorizing the exact
+// story, attachment, and workspace relation. Workspace admins may remove any
+// attachment in their workspace; other users may remove only their uploads.
+func (s *Service) DeleteStoryAttachment(
+	ctx context.Context,
+	storyID, attachmentID, workspaceID, userID uuid.UUID,
+	isAdmin bool,
+) error {
+	s.log.Info(ctx, "core.attachments.deleteStoryAttachment")
+	ctx, span := web.AddSpan(ctx, "core.attachments.DeleteStoryAttachment")
+	defer span.End()
+
+	if storyID == uuid.Nil || attachmentID == uuid.Nil || workspaceID == uuid.Nil || userID == uuid.Nil {
+		return ErrInvalidFile
+	}
+
+	attachment, err := s.repo.AuthorizeStoryAttachment(ctx, storyID, attachmentID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+	if attachment.UploadedBy != userID && !isAdmin {
 		span.RecordError(ErrUnauthorized)
 		return ErrUnauthorized
 	}

@@ -3,17 +3,16 @@ import { tool } from "ai";
 import { auth } from "@/auth";
 import { getStoryComments } from "@/modules/story/queries/get-comments";
 import { commentStoryAction } from "@/modules/story/actions/comment-story";
-import { getMembers } from "@/lib/queries/members/get-members";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
-import { paginateRecords } from "./tool-helpers";
+import { MAYA_TOOL_ACTIONS } from "@/lib/ai/tool-actions";
 
 export const commentsTool = tool({
   description:
     "Manage story comments: read comments, add comments, and add threaded replies with user mentions.",
   inputSchema: z.object({
     action: z
-      .enum(["list-comments", "add-comment", "reply-to-comment"])
+      .enum(MAYA_TOOL_ACTIONS.comments)
       .describe("The comment operation to perform"),
 
     storyId: z.string().describe("Story ID for comment operations"),
@@ -89,10 +88,6 @@ export const commentsTool = tool({
       const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
 
-      // Get members for mention resolution and commenter info
-      const members = await getMembers(ctx);
-      const memberMap = new Map(members.map((m) => [m.id, m]));
-
       switch (action) {
         case "list-comments": {
           if (!storyId) {
@@ -102,30 +97,28 @@ export const commentsTool = tool({
             };
           }
 
-          const response = await getStoryComments(storyId, ctx);
+          const response = await getStoryComments(
+            storyId,
+            ctx,
+            page ?? 1,
+            pageSize ?? limit,
+          );
           const comments = response.comments;
 
-          const pagedComments = paginateRecords(comments, {
-            page,
-            pageSize: pageSize ?? limit,
-          });
-
-          const formattedComments = pagedComments.records.map((comment) => {
-            const commenter = memberMap.get(comment.userId);
+          const formattedComments = comments.map((comment) => {
+            const commenter = comment.user;
             const replies = includeReplies
               ? comment.subComments.map((reply) => {
-                  const replyCommenter = memberMap.get(reply.userId);
+                  const replyCommenter = reply.user;
                   return {
                     id: reply.id,
                     content: reply.comment,
-                    commenter: replyCommenter
-                      ? {
-                          id: replyCommenter.id,
-                          name: replyCommenter.fullName,
-                          username: replyCommenter.username,
-                          avatarUrl: replyCommenter.avatarUrl,
-                        }
-                      : null,
+                    commenter: {
+                      id: replyCommenter.id,
+                      name: replyCommenter.fullName,
+                      username: replyCommenter.username,
+                      avatarUrl: replyCommenter.avatarUrl,
+                    },
                     createdAt: reply.createdAt,
                     updatedAt: reply.updatedAt,
                     parentId: reply.parentId,
@@ -136,14 +129,12 @@ export const commentsTool = tool({
             return {
               id: comment.id,
               content: comment.comment,
-              commenter: commenter
-                ? {
-                    id: commenter.id,
-                    name: commenter.fullName,
-                    username: commenter.username,
-                    avatarUrl: commenter.avatarUrl,
-                  }
-                : null,
+              commenter: {
+                id: commenter.id,
+                name: commenter.fullName,
+                username: commenter.username,
+                avatarUrl: commenter.avatarUrl,
+              },
               createdAt: comment.createdAt,
               updatedAt: comment.updatedAt,
               parentId: comment.parentId,
@@ -156,8 +147,7 @@ export const commentsTool = tool({
             success: true,
             comments: formattedComments,
             count: formattedComments.length,
-            totalCount: comments.length,
-            pagination: pagedComments.pagination,
+            pagination: response.pagination,
             message: `Found ${formattedComments.length} comment${formattedComments.length !== 1 ? "s" : ""} on this story.`,
           };
         }
@@ -195,21 +185,19 @@ export const commentsTool = tool({
           }
 
           const newComment = result.data!;
-          const commenter = memberMap.get(newComment.userId);
+          const commenter = newComment.user;
 
           return {
             success: true,
             comment: {
               id: newComment.id,
               content: newComment.comment,
-              commenter: commenter
-                ? {
-                    id: commenter.id,
-                    name: commenter.fullName,
-                    username: commenter.username,
-                    avatarUrl: commenter.avatarUrl,
-                  }
-                : null,
+              commenter: {
+                id: commenter.id,
+                name: commenter.fullName,
+                username: commenter.username,
+                avatarUrl: commenter.avatarUrl,
+              },
               createdAt: newComment.createdAt,
               updatedAt: newComment.updatedAt,
               parentId: newComment.parentId,
@@ -254,21 +242,19 @@ export const commentsTool = tool({
           }
 
           const newReply = result.data!;
-          const commenter = memberMap.get(newReply.userId);
+          const commenter = newReply.user;
 
           return {
             success: true,
             reply: {
               id: newReply.id,
               content: newReply.comment,
-              commenter: commenter
-                ? {
-                    id: commenter.id,
-                    name: commenter.fullName,
-                    username: commenter.username,
-                    avatarUrl: commenter.avatarUrl,
-                  }
-                : null,
+              commenter: {
+                id: commenter.id,
+                name: commenter.fullName,
+                username: commenter.username,
+                avatarUrl: commenter.avatarUrl,
+              },
               createdAt: newReply.createdAt,
               updatedAt: newReply.updatedAt,
               parentId: newReply.parentId,

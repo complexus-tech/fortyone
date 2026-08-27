@@ -52,7 +52,68 @@ func storyReadStatus(err error) int {
 	switch {
 	case errors.Is(err, stories.ErrNotFound):
 		return http.StatusNotFound
+	case errors.Is(err, stories.ErrDeleteForbidden):
+		return http.StatusForbidden
 	case errors.Is(err, stories.ErrInvalidStoryReference):
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+func storyAttachmentStatus(err error) int {
+	switch {
+	case errors.Is(err, attachments.ErrNotFound):
+		return http.StatusNotFound
+	case errors.Is(err, attachments.ErrUnauthorized):
+		return http.StatusForbidden
+	case errors.Is(err, attachments.ErrInvalidFile):
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+func bulkDeleteStatus(err error) int {
+	switch {
+	case errors.Is(err, stories.ErrDeleteForbidden):
+		return http.StatusForbidden
+	case errors.Is(err, stories.ErrNotFound):
+		return http.StatusNotFound
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+func storyMutationStatus(err error) int {
+	switch {
+	case errors.Is(err, stories.ErrAutoSchedulingUnavailable):
+		return http.StatusPaymentRequired
+	case errors.Is(err, stories.ErrAutoSchedulingAccessCheckFailed):
+		return http.StatusServiceUnavailable
+	case errors.Is(err, stories.ErrNotFound):
+		return http.StatusNotFound
+	case errors.Is(err, stories.ErrDeleteForbidden):
+		return http.StatusForbidden
+	case errors.Is(err, stories.ErrStoryChanged),
+		errors.Is(err, stories.ErrAutoSchedulingOwnerLocked),
+		errors.Is(err, stories.ErrAutoSchedulingLockEmpty):
+		return http.StatusConflict
+	case errors.Is(err, stories.ErrMayaAssignmentRequiresScheduling),
+		errors.Is(err, stories.ErrMayaAssignmentRequiresDuration),
+		errors.Is(err, stories.ErrMayaAssignmentRequiresDeliveryDate),
+		errors.Is(err, stories.ErrInvalidStoryReference),
+		errors.Is(err, stories.ErrInvalidStoryMediaReference),
+		errors.Is(err, stories.ErrObjectiveKeyResultMismatch),
+		errors.Is(err, stories.ErrInvalidStoryLabels),
+		errors.Is(err, stories.ErrInvalidEstimatedDuration),
+		errors.Is(err, stories.ErrInvalidMinimumFocusBlock),
+		errors.Is(err, stories.ErrEstimatedDurationTooLarge),
+		errors.Is(err, stories.ErrMinimumFocusBlockTooLarge),
+		errors.Is(err, stories.ErrFocusBlockRequiresDuration),
+		errors.Is(err, stories.ErrFocusBlockExceedsDuration),
+		errors.Is(err, stories.ErrInvalidAutoSchedulingStatus),
+		errors.Is(err, stories.ErrLockedAutoSchedulingOff):
 		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError
@@ -62,13 +123,17 @@ func storyReadStatus(err error) int {
 // Handlers provides HTTP handlers for story operations.
 type Handlers struct {
 	stories     *stories.Service
-	users       *users.Service
+	users       storyUserReader
 	comments    *comments.Service
 	links       *links.Service
 	attachments *attachments.Service
 	storyMedia  storyMediaService
 	cache       *cache.Service
 	log         *logger.Logger
+}
+
+type storyUserReader interface {
+	GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]users.CoreUser, error)
 }
 
 // New creates a new Handlers instance with the required dependencies.
@@ -199,6 +264,24 @@ func (h *Handlers) respondStory(ctx context.Context, w http.ResponseWriter, stor
 	return web.Respond(ctx, w, toAppStory(story, usersByID), statusCode)
 }
 
+func (h *Handlers) respondCreatedStory(ctx context.Context, w http.ResponseWriter, story stories.CoreSingleStory) error {
+	usersByID, err := h.buildStoryUsersByID(ctx, story)
+	if err != nil {
+		if h.log != nil {
+			h.log.Error(
+				ctx,
+				"created story response user enrichment failed",
+				"story_id", story.ID,
+				"workspace_id", story.Workspace,
+				"error_type", fmt.Sprintf("%T", err),
+			)
+		}
+		usersByID = map[uuid.UUID]AppUserSummary{}
+	}
+
+	return web.Respond(ctx, w, toAppStory(story, usersByID), http.StatusCreated)
+}
+
 func (h *Handlers) respondStories(ctx context.Context, w http.ResponseWriter, storyList []stories.CoreStoryList, statusCode int) error {
 	usersByID, err := h.buildStoriesUsersByID(ctx, storyList)
 	if err != nil {
@@ -259,7 +342,6 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
-
 	story, err := h.stories.Get(ctx, storyId, workspace.ID)
 	if err != nil {
 		web.RespondError(ctx, w, err, storyReadStatus(err))
@@ -354,6 +436,14 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		web.RespondError(ctx, w, err, http.StatusUnauthorized)
 		return nil
 	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	authorization := stories.BulkDeleteAuthorization{
+		ActorID: userID,
+		IsAdmin: workspace.UserRole == string(mid.RoleAdmin),
+	}
 
 	cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
 	for _, key := range cacheKeys {
@@ -367,8 +457,8 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
-	if err := h.stories.Delete(ctx, storyId, workspace.ID); err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
+	if err := h.stories.Delete(ctx, storyId, workspace.ID, authorization); err != nil {
+		web.RespondError(ctx, w, err, storyMutationStatus(err))
 		return nil
 	}
 	web.Respond(ctx, w, nil, http.StatusNoContent)
@@ -389,9 +479,40 @@ func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *htt
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	authorization := stories.BulkDeleteAuthorization{
+		ActorID: userID,
+		IsAdmin: workspace.UserRole == string(mid.RoleAdmin),
+	}
 
-	for _, storyId := range req.StoryIDs {
-		cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
+	isHardDelete := req.HardDelete != nil && *req.HardDelete
+	var deletedStoryIDs []uuid.UUID
+
+	if isHardDelete {
+		result, err := h.stories.HardBulkDelete(ctx, req.StoryIDs, workspace.ID, authorization)
+		if err != nil {
+			web.RespondError(ctx, w, err, bulkDeleteStatus(err))
+			return nil
+		}
+		deletedStoryIDs = result.StoryIDs
+		for _, attachmentID := range result.OrphanedAttachmentIDs {
+			if err := h.attachments.DeleteOrphanedMedia(ctx, attachmentID, workspace.ID); err != nil && h.log != nil {
+				h.log.Error(ctx, "failed to clean up permanently deleted story media", "error", err, "attachment_id", attachmentID)
+			}
+		}
+	} else {
+		deletedStoryIDs, err = h.stories.BulkDelete(ctx, req.StoryIDs, workspace.ID, authorization)
+		if err != nil {
+			web.RespondError(ctx, w, err, bulkDeleteStatus(err))
+			return nil
+		}
+	}
+
+	for _, storyID := range deletedStoryIDs {
+		cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyID)
 		for _, key := range cacheKeys {
 			if strings.Contains(key, "*") {
 				h.cache.DeleteByPattern(ctx, key)
@@ -400,33 +521,13 @@ func (h *Handlers) BulkDelete(ctx context.Context, w http.ResponseWriter, r *htt
 			}
 		}
 	}
+	h.cache.DeleteByPattern(ctx, fmt.Sprintf(cache.StoryListKey+"*", workspace.ID.String()))
+	h.cache.DeleteByPattern(ctx, fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String()))
 
-	listCachePattern := fmt.Sprintf(cache.StoryListKey+"*", workspace.ID.String())
-	h.cache.DeleteByPattern(ctx, listCachePattern)
-
-	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
-	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
-
-	isHardDelete := req.HardDelete != nil && *req.HardDelete
-
-	if isHardDelete {
-		orphanedAttachmentIDs, err := h.stories.HardBulkDelete(ctx, req.StoryIDs, workspace.ID)
-		if err != nil {
-			web.RespondError(ctx, w, err, http.StatusBadRequest)
-			return nil
-		}
-		for _, attachmentID := range orphanedAttachmentIDs {
-			if err := h.attachments.DeleteOrphanedMedia(ctx, attachmentID, workspace.ID); err != nil && h.log != nil {
-				h.log.Error(ctx, "failed to clean up permanently deleted story media", "error", err, "attachment_id", attachmentID)
-			}
-		}
-	} else {
-		if err := h.stories.BulkDelete(ctx, req.StoryIDs, workspace.ID); err != nil {
-			web.RespondError(ctx, w, err, http.StatusBadRequest)
-			return nil
-		}
+	data := map[string]any{
+		"deletedCount": len(deletedStoryIDs),
+		"storyIds":     deletedStoryIDs,
 	}
-	data := map[string][]uuid.UUID{"storyIds": req.StoryIDs}
 	web.Respond(ctx, w, data, http.StatusOK)
 	return nil
 }
@@ -638,6 +739,10 @@ func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *htt
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
+	if len(updates) == 0 {
+		web.RespondError(ctx, w, errors.New("updates cannot be empty"), http.StatusBadRequest)
+		return nil
+	}
 
 	for _, storyId := range storyIDs {
 		cacheKeys := cache.InvalidateStoryKeys(workspace.ID, storyId)
@@ -656,12 +761,13 @@ func (h *Handlers) BulkUpdate(ctx context.Context, w http.ResponseWriter, r *htt
 	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
-	if err := h.stories.BulkUpdate(ctx, storyIDs, workspace.ID, updates); err != nil {
+	result, err := h.stories.BulkUpdate(ctx, storyIDs, workspace.ID, updates)
+	if err != nil {
 		web.RespondError(ctx, w, err, http.StatusBadRequest)
 		return nil
 	}
 
-	web.Respond(ctx, w, nil, http.StatusNoContent)
+	web.Respond(ctx, w, toAppBulkUpdateResult(result), http.StatusOK)
 	return nil
 }
 
@@ -688,7 +794,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	story, err := h.stories.Create(ctx, toCoreNewStory(ns, userID), workspace.ID)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, storyMutationStatus(err))
 		return nil
 	}
 
@@ -709,7 +815,7 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	myStoriesCachePattern := fmt.Sprintf(cache.MyStoriesKey+"*", workspace.ID.String())
 	h.cache.DeleteByPattern(ctx, myStoriesCachePattern)
 
-	return h.respondStory(ctx, w, story, http.StatusCreated)
+	return h.respondCreatedStory(ctx, w, story)
 }
 
 func (h *Handlers) UpdateLabels(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -767,9 +873,14 @@ func (h *Handlers) GetStoryLinks(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	links, err := h.stories.GetStoryLinks(ctx, storyID)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	links, err := h.stories.GetStoryLinks(ctx, storyID, workspace.ID)
+	if err != nil {
+		web.RespondError(ctx, w, err, storyReadStatus(err))
 		return nil
 	}
 
@@ -861,7 +972,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 			referencedMediaIDs,
 		)
 		if err != nil {
-			web.RespondError(ctx, w, err, http.StatusBadRequest)
+			web.RespondError(ctx, w, err, storyMutationStatus(err))
 			return nil
 		}
 		for _, attachmentID := range orphanedMediaIDs {
@@ -880,7 +991,7 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 			}
 		}
 	} else if err := h.stories.Update(ctx, storyId, workspace.ID, updates); err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, storyMutationStatus(err))
 		return nil
 	}
 
@@ -981,6 +1092,10 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
 		return nil
 	}
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	// Parse pagination parameters
 	page := getIntParam(r, "page", 1)
@@ -997,9 +1112,9 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 	// Note: Cache is disabled for paginated requests since we need different cache keys per page
 	// TODO: Consider implementing page-specific caching if needed
 
-	activitiesList, hasMore, err := h.stories.GetActivitiesWithUser(ctx, storyId, page, pageSize)
+	activitiesList, hasMore, err := h.stories.GetActivitiesWithUser(ctx, storyId, workspace.ID, page, pageSize)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, storyReadStatus(err))
 		return nil
 	}
 
@@ -1085,6 +1200,10 @@ func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *ht
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
 		return nil
 	}
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	// Parse pagination parameters
 	page := getIntParam(r, "page", 1)
@@ -1098,9 +1217,9 @@ func (h *Handlers) GetComments(ctx context.Context, w http.ResponseWriter, r *ht
 		pageSize = 20
 	}
 
-	commentsList, hasMore, err := h.stories.GetComments(ctx, storyId, page, pageSize)
+	commentsList, hasMore, err := h.stories.GetComments(ctx, storyId, workspace.ID, page, pageSize)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		web.RespondError(ctx, w, err, storyReadStatus(err))
 		return nil
 	}
 
@@ -1170,10 +1289,14 @@ func (h *Handlers) GetAttachmentsForStory(ctx context.Context, w http.ResponseWr
 		web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
 		return nil
 	}
-
-	fileInfos, err := h.attachments.GetAttachmentsForStory(ctx, storyId)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting attachments for story: %w", err)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	fileInfos, err := h.attachments.GetAttachmentsForStory(ctx, storyId, workspace.ID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, storyAttachmentStatus(err))
 	}
 
 	return web.Respond(ctx, w, fileInfos, http.StatusOK)
@@ -1183,7 +1306,19 @@ func (h *Handlers) DeleteAttachment(ctx context.Context, w http.ResponseWriter, 
 	ctx, span := web.AddSpan(ctx, "storieshttp.handlers.DeleteAttachment")
 	defer span.End()
 
-	userID, _ := mid.GetUserID(ctx)
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	storyID, err := uuid.Parse(web.Params(r, "id"))
+	if err != nil {
+		return web.RespondError(ctx, w, ErrInvalidStoryID, http.StatusBadRequest)
+	}
 
 	attachmentIDStr := web.Params(r, "attachmentId")
 	attachmentID, err := uuid.Parse(attachmentIDStr)
@@ -1191,9 +1326,16 @@ func (h *Handlers) DeleteAttachment(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, errors.New("invalid attachment ID"), http.StatusBadRequest)
 	}
 
-	err = h.attachments.DeleteAttachment(ctx, attachmentID, userID)
+	err = h.attachments.DeleteStoryAttachment(
+		ctx,
+		storyID,
+		attachmentID,
+		workspace.ID,
+		userID,
+		workspace.UserRole == string(mid.RoleAdmin),
+	)
 	if err != nil {
-		return web.RespondError(ctx, w, fmt.Errorf("error deleting attachment: %w", err), http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, storyAttachmentStatus(err))
 	}
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)

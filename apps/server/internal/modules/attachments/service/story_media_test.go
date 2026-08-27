@@ -171,6 +171,66 @@ func TestResolveStoryMediaRequiresExactStoryWorkspaceAndLink(t *testing.T) {
 	}
 }
 
+func TestGetAttachmentsForStoryRejectsCrossWorkspaceBeforeSigning(t *testing.T) {
+	storyID := uuid.New()
+	repo := &attachmentRepositoryStub{
+		storyExists:                true,
+		storyAttachmentStoryID:     storyID,
+		storyAttachmentWorkspaceID: uuid.New(),
+	}
+	storageStub := &attachmentStorageStub{}
+	service := newStoryMediaTestService(repo, storageStub)
+
+	_, err := service.GetAttachmentsForStory(context.Background(), storyID, uuid.New())
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected cross-workspace story to be hidden, got %v", err)
+	}
+	if storageStub.generateCount != 0 {
+		t.Fatalf("generated %d signed URLs for an unauthorized story", storageStub.generateCount)
+	}
+}
+
+func TestDeleteStoryAttachmentEnforcesExactRelationAndOwnership(t *testing.T) {
+	storyID := uuid.New()
+	workspaceID := uuid.New()
+	uploaderID := uuid.New()
+	attachmentID := uuid.New()
+	repo := &attachmentRepositoryStub{
+		storyAttachmentStoryID:     storyID,
+		storyAttachmentWorkspaceID: workspaceID,
+		storyAttachment: CoreAttachment{
+			ID:          attachmentID,
+			UploadedBy:  uploaderID,
+			WorkspaceID: workspaceID,
+			BlobName:    "story-attachment.pdf",
+		},
+	}
+	storageStub := &attachmentStorageStub{}
+	service := newStoryMediaTestService(repo, storageStub)
+
+	if err := service.DeleteStoryAttachment(context.Background(), storyID, attachmentID, workspaceID, uuid.New(), false); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("expected non-owner deletion to be forbidden, got %v", err)
+	}
+	if repo.deletedAttachmentID != uuid.Nil {
+		t.Fatal("unauthorized deletion reached persistence")
+	}
+
+	if err := service.DeleteStoryAttachment(context.Background(), storyID, attachmentID, workspaceID, uuid.New(), true); err != nil {
+		t.Fatalf("workspace admin delete: %v", err)
+	}
+	if repo.deletedAttachmentID != attachmentID {
+		t.Fatalf("deleted attachment = %s, want %s", repo.deletedAttachmentID, attachmentID)
+	}
+
+	repo.deletedAttachmentID = uuid.Nil
+	if err := service.DeleteStoryAttachment(context.Background(), storyID, attachmentID, uuid.New(), uploaderID, false); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected cross-workspace attachment to be hidden, got %v", err)
+	}
+	if repo.deletedAttachmentID != uuid.Nil {
+		t.Fatal("cross-workspace deletion reached persistence")
+	}
+}
+
 func TestDeleteStoryMediaRequiresExactLinkBeforeCleanup(t *testing.T) {
 	storyID := uuid.New()
 	workspaceID := uuid.New()

@@ -40,9 +40,6 @@ func (s *Service) prepareAutoSchedulingCreate(story *CoreSingleStory) error {
 	if story.AutoSchedulingLocked {
 		return ErrAutoSchedulingLockEmpty
 	}
-	if s.isMayaActor(story.Assignee) {
-		story.AutoSchedulingEnabled = true
-	}
 	story.AutoSchedulingLocked = false
 	if !story.AutoSchedulingEnabled {
 		story.AutoSchedulingStatus = AutoSchedulingStatusOff
@@ -92,10 +89,6 @@ func (s *Service) prepareAutoSchedulingUpdate(ctx context.Context, story CoreSin
 	enabled, err := updatedBool(story.AutoSchedulingEnabled, updates, "auto_scheduling_enabled")
 	if err != nil {
 		return false, err
-	}
-	if assigneeWasUpdated && s.isMayaActor(assigneeID) {
-		enabled = true
-		updates["auto_scheduling_enabled"] = true
 	}
 	locked, err := updatedBool(story.AutoSchedulingLocked, updates, "auto_scheduling_locked")
 	if err != nil {
@@ -271,7 +264,16 @@ func updatedDuration(current *int, updates map[string]any) (*int, error) {
 }
 
 func (s *Service) isMayaActor(userID *uuid.UUID) bool {
-	return userID != nil && s.mayaAssignment != nil && *userID == s.mayaAssignment.assigneeID
+	if userID == nil {
+		return false
+	}
+	mayaActorID := s.mayaActorID
+	// Preserve compatibility for services and focused tests that configure the
+	// established assignment policy directly.
+	if mayaActorID == uuid.Nil && s.mayaAssignment != nil {
+		mayaActorID = s.mayaAssignment.assigneeID
+	}
+	return mayaActorID != uuid.Nil && *userID == mayaActorID
 }
 
 func stringPointer(value string) *string {

@@ -48,9 +48,10 @@ func Routes(cfg Config, app *web.App) {
 	h := New(cfg)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
-	admin := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
+	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
-	app.Post("/workspaces/{workspaceSlug}/maya/work-plans", h.CreateWorkPlan, auth, workspace, admin)
+	app.Post("/workspaces/{workspaceSlug}/maya/work-plans", h.CreateWorkPlan, auth, workspace, memberAndAdmin)
+	app.Post("/workspaces/{workspaceSlug}/maya/work-plans/{runId}/apply", h.ApplyWorkPlan, auth, workspace, memberAndAdmin)
 	app.Post("/workspaces/{workspaceSlug}/maya/schedule-issues/{storyId}/retry", h.RetryScheduleIssue, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/maya/schedule-issues/{storyId}/override", h.OverrideScheduleIssue, auth, workspace)
 	app.Post("/workspaces/{workspaceSlug}/maya/realtime-session", h.CreateRealtimeSession, auth, workspace)

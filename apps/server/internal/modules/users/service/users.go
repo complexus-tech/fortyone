@@ -39,6 +39,7 @@ var (
 	ErrUsernameAlreadyExists = errors.New("username already exists")
 	ErrTokenNotFound         = errors.New("token not found")
 	ErrWorkspaceNotFound     = errors.New("workspace not found")
+	ErrMemoryNotFound        = errors.New("memory not found")
 	ErrIdentityStoreMissing  = errors.New("external identity storage is not configured")
 )
 
@@ -70,8 +71,8 @@ type Repository interface {
 	UpdateAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID, updates CoreUpdateAutomationPreferences) error
 	// User Memory methods
 	AddUserMemory(ctx context.Context, memory NewUserMemoryItem) (CoreUserMemoryItem, error)
-	UpdateUserMemory(ctx context.Context, id uuid.UUID, update UpdateUserMemoryItem) error
-	DeleteUserMemory(ctx context.Context, id uuid.UUID) error
+	UpdateUserMemory(ctx context.Context, id uuid.UUID, scope UserMemoryScope, update UpdateUserMemoryItem) error
+	DeleteUserMemory(ctx context.Context, id uuid.UUID, scope UserMemoryScope) error
 	ListUserMemories(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) ([]CoreUserMemoryItem, error)
 }
 
@@ -618,12 +619,12 @@ func (s *Service) AddUserMemory(ctx context.Context, memory NewUserMemoryItem) (
 }
 
 // UpdateUserMemory updates a memory item.
-func (s *Service) UpdateUserMemory(ctx context.Context, id uuid.UUID, update UpdateUserMemoryItem) error {
+func (s *Service) UpdateUserMemory(ctx context.Context, id uuid.UUID, scope UserMemoryScope, update UpdateUserMemoryItem) error {
 	s.log.Info(ctx, "business.core.users.UpdateUserMemory")
 	ctx, span := web.AddSpan(ctx, "business.core.users.UpdateUserMemory")
 	defer span.End()
 
-	if err := s.repo.UpdateUserMemory(ctx, id, update); err != nil {
+	if err := s.repo.UpdateUserMemory(ctx, id, scope, update); err != nil {
 		return fmt.Errorf("updating user memory: %w", err)
 	}
 
@@ -631,12 +632,12 @@ func (s *Service) UpdateUserMemory(ctx context.Context, id uuid.UUID, update Upd
 }
 
 // DeleteUserMemory deletes a memory item.
-func (s *Service) DeleteUserMemory(ctx context.Context, id uuid.UUID) error {
+func (s *Service) DeleteUserMemory(ctx context.Context, id uuid.UUID, scope UserMemoryScope) error {
 	s.log.Info(ctx, "business.core.users.DeleteUserMemory")
 	ctx, span := web.AddSpan(ctx, "business.core.users.DeleteUserMemory")
 	defer span.End()
 
-	if err := s.repo.DeleteUserMemory(ctx, id); err != nil {
+	if err := s.repo.DeleteUserMemory(ctx, id, scope); err != nil {
 		return fmt.Errorf("deleting user memory: %w", err)
 	}
 

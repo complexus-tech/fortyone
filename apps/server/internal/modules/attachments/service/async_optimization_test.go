@@ -27,16 +27,19 @@ func (testMultipartFile) Close() error {
 }
 
 type attachmentRepositoryStub struct {
-	attachment            CoreAttachment
-	deletedAttachmentID   uuid.UUID
-	storyExists           bool
-	storyMediaAttachment  CoreAttachment
-	storyMediaStoryID     uuid.UUID
-	storyMediaWorkspaceID uuid.UUID
-	linkedStoryMediaID    uuid.UUID
-	linkedStoryMediaUser  uuid.UUID
-	storyMediaUnlinkCount int
-	storyMediaOrphaned    bool
+	attachment                 CoreAttachment
+	deletedAttachmentID        uuid.UUID
+	storyExists                bool
+	storyAttachment            CoreAttachment
+	storyAttachmentStoryID     uuid.UUID
+	storyAttachmentWorkspaceID uuid.UUID
+	storyMediaAttachment       CoreAttachment
+	storyMediaStoryID          uuid.UUID
+	storyMediaWorkspaceID      uuid.UUID
+	linkedStoryMediaID         uuid.UUID
+	linkedStoryMediaUser       uuid.UUID
+	storyMediaUnlinkCount      int
+	storyMediaOrphaned         bool
 }
 
 func (r *attachmentRepositoryStub) CreateAttachment(_ context.Context, attachment CoreAttachment) (CoreAttachment, error) {
@@ -57,12 +60,20 @@ func (r *attachmentRepositoryStub) GetAttachmentByBlobName(_ context.Context, bl
 	return r.attachment, nil
 }
 
-func (r *attachmentRepositoryStub) GetAttachmentsByStoryID(_ context.Context, _ uuid.UUID) ([]CoreAttachment, error) {
-	return nil, nil
+func (r *attachmentRepositoryStub) GetAttachmentsByStoryID(_ context.Context, storyID, workspaceID uuid.UUID) ([]CoreAttachment, error) {
+	if storyID != r.storyAttachmentStoryID || workspaceID != r.storyAttachmentWorkspaceID {
+		return nil, ErrNotFound
+	}
+	if r.storyAttachment.ID == uuid.Nil {
+		return nil, nil
+	}
+	return []CoreAttachment{r.storyAttachment}, nil
 }
 
 func (r *attachmentRepositoryStub) StoryExistsInWorkspace(_ context.Context, storyID, workspaceID uuid.UUID) (bool, error) {
-	return r.storyExists && storyID == r.storyMediaStoryID && workspaceID == r.storyMediaWorkspaceID, nil
+	mediaMatch := storyID == r.storyMediaStoryID && workspaceID == r.storyMediaWorkspaceID
+	attachmentMatch := storyID == r.storyAttachmentStoryID && workspaceID == r.storyAttachmentWorkspaceID
+	return r.storyExists && (mediaMatch || attachmentMatch), nil
 }
 
 func (r *attachmentRepositoryStub) LinkStoryMedia(_ context.Context, storyID, attachmentID, createdBy, workspaceID uuid.UUID) error {
@@ -81,6 +92,15 @@ func (r *attachmentRepositoryStub) AuthorizeStoryMedia(_ context.Context, storyI
 		return CoreAttachment{}, ErrNotFound
 	}
 	return r.storyMediaAttachment, nil
+}
+
+func (r *attachmentRepositoryStub) AuthorizeStoryAttachment(_ context.Context, storyID, attachmentID, workspaceID uuid.UUID) (CoreAttachment, error) {
+	if storyID != r.storyAttachmentStoryID ||
+		workspaceID != r.storyAttachmentWorkspaceID ||
+		attachmentID != r.storyAttachment.ID {
+		return CoreAttachment{}, ErrNotFound
+	}
+	return r.storyAttachment, nil
 }
 
 func (r *attachmentRepositoryStub) UnlinkStoryMedia(_ context.Context, storyID, attachmentID, workspaceID uuid.UUID) (bool, error) {

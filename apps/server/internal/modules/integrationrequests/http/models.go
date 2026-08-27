@@ -131,8 +131,21 @@ type AppCreateIntegrationRequestComment struct {
 }
 
 type AppBulkRequestResult struct {
-	Count      int         `json:"count"`
-	RequestIDs []uuid.UUID `json:"requestIds"`
+	Count          int                        `json:"count"`
+	RequestIDs     []uuid.UUID                `json:"requestIds"`
+	TotalCount     int                        `json:"totalCount"`
+	SucceededCount int                        `json:"succeededCount"`
+	FailedCount    int                        `json:"failedCount"`
+	Partial        bool                       `json:"partial"`
+	Items          []AppBulkRequestItemResult `json:"items"`
+}
+
+type AppBulkRequestItemResult struct {
+	RequestID       uuid.UUID  `json:"requestId"`
+	Success         bool       `json:"success"`
+	Status          string     `json:"status"`
+	AcceptedStoryID *uuid.UUID `json:"acceptedStoryId,omitempty"`
+	Error           string     `json:"error,omitempty"`
 }
 
 type AppPagination struct {
@@ -208,9 +221,25 @@ func toAppThreadActivity(core integrationrequests.CoreThreadActivity) AppThreadA
 }
 
 func toAppBulkRequestResult(core integrationrequests.CoreBulkRequestResult) AppBulkRequestResult {
+	items := make([]AppBulkRequestItemResult, 0, len(core.Items))
+	for _, item := range core.Items {
+		items = append(items, AppBulkRequestItemResult{
+			RequestID:       item.RequestID,
+			Success:         item.Success,
+			Status:          item.Status,
+			AcceptedStoryID: item.AcceptedStoryID,
+			Error:           item.Error,
+		})
+	}
+
 	return AppBulkRequestResult{
-		Count:      core.Count,
-		RequestIDs: core.RequestIDs,
+		Count:          core.Count,
+		RequestIDs:     core.RequestIDs,
+		TotalCount:     core.TotalCount,
+		SucceededCount: core.SucceededCount,
+		FailedCount:    core.FailedCount,
+		Partial:        core.Partial,
+		Items:          items,
 	}
 }
 

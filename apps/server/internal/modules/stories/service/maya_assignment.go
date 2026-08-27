@@ -19,12 +19,20 @@ type mayaAssignmentPolicy struct {
 	validate   MayaAssignmentValidator
 }
 
+// ConfigureMayaActor identifies Maya for story scheduling invariants without
+// requiring an assignment side-effect callback. Worker-owned story services use
+// this when they can mutate stories but do not initiate background assignment.
+func (s *Service) ConfigureMayaActor(assigneeID uuid.UUID) {
+	s.mayaActorID = assigneeID
+}
+
 func (s *Service) ConfigureMayaAssignment(assigneeID uuid.UUID, validator MayaAssignmentValidator) {
 	if assigneeID == uuid.Nil || validator == nil {
 		s.mayaAssignment = nil
 		return
 	}
 
+	s.ConfigureMayaActor(assigneeID)
 	s.mayaAssignment = &mayaAssignmentPolicy{
 		assigneeID: assigneeID,
 		validate:   validator,

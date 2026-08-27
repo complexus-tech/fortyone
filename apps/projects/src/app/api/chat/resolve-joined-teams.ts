@@ -1,6 +1,7 @@
 import type { Session } from "@/auth";
 import type { Team } from "@/modules/teams/types";
 import { getJoinedTeams } from "@/modules/teams/queries/get-teams";
+import { getChatErrorDiagnostic } from "./chat-errors";
 
 export async function resolveJoinedTeams({
   session,
@@ -16,8 +17,11 @@ export async function resolveJoinedTeams({
   try {
     return await getJoinedTeams({ session, workspaceSlug });
   } catch (error) {
-    // eslint-disable-next-line no-console -- Preserve diagnostics while Maya falls back to a tool lookup.
-    console.error("Failed to resolve joined teams for Maya", error);
+    // eslint-disable-next-line no-console -- Diagnostics intentionally omit backend payloads and user content.
+    console.error(
+      "Failed to resolve joined teams for Maya",
+      getChatErrorDiagnostic(error),
+    );
     return null;
   }
 }

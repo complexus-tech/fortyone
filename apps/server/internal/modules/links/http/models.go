@@ -46,11 +46,12 @@ func ToLinks(cls []links.CoreLink) []Link {
 	return links
 }
 
-func toCoreNewLink(nl NewLink) links.CoreNewLink {
+func toCoreNewLink(nl NewLink, workspaceID uuid.UUID) links.CoreNewLink {
 	return links.CoreNewLink{
-		Title:   nl.Title,
-		URL:     nl.URL,
-		StoryID: nl.StoryID,
+		Title:       nl.Title,
+		URL:         nl.URL,
+		StoryID:     nl.StoryID,
+		WorkspaceID: workspaceID,
 	}
 }
 

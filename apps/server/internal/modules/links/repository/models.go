@@ -17,9 +17,10 @@ type DbLink struct {
 }
 
 type dbNewLink struct {
-	Title   *string   `db:"title"`
-	URL     string    `db:"url"`
-	StoryID uuid.UUID `db:"story_id"`
+	Title       *string   `db:"title"`
+	URL         string    `db:"url"`
+	StoryID     uuid.UUID `db:"story_id"`
+	WorkspaceID uuid.UUID `db:"workspace_id"`
 }
 
 type dbUpdateLink struct {
@@ -49,9 +50,10 @@ func ToCoreLinks(lnks []DbLink) []links.CoreLink {
 
 func toDbNewLink(cnl links.CoreNewLink) dbNewLink {
 	return dbNewLink{
-		Title:   cnl.Title,
-		URL:     cnl.URL,
-		StoryID: cnl.StoryID,
+		Title:       cnl.Title,
+		URL:         cnl.URL,
+		StoryID:     cnl.StoryID,
+		WorkspaceID: cnl.WorkspaceID,
 	}
 }
 

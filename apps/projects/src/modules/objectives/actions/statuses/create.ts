@@ -9,6 +9,7 @@ export type NewObjectiveStatus = {
   name: string;
   category: StateCategory;
   color: string;
+  isDefault?: boolean;
 };
 
 export const createObjectiveStatusAction = async (

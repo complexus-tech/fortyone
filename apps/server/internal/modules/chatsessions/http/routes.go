@@ -38,5 +38,15 @@ func Routes(cfg Config, app *web.App) {
 
 	// Chat messages
 	app.Post("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/messages", h.SaveMessages, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/message-writes/begin", h.BeginMessageWrite, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/message-writes/finalize", h.FinalizeMessageWrite, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/messages", h.GetMessages, auth, workspace, gzip)
+	app.Get("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/messages/latest-assistant", h.GetLatestAssistantMessage, auth, workspace, gzip)
+
+	// Durable Maya mutation approval execution
+	app.Post("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/mutation-approvals/{toolCallId}/claim", h.ClaimMutationApproval, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/mutation-approvals/{toolCallId}/start", h.StartMutationApproval, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/mutation-approvals/{toolCallId}/complete", h.CompleteMutationApproval, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/mutation-approvals/{toolCallId}/fail", h.FailMutationApproval, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/chat-sessions/{sessionId}/mutation-approvals/{toolCallId}/recover-output", h.RecoverMutationApprovalOutput, auth, workspace)
 }

@@ -162,6 +162,28 @@ type AppBulkDeleteRequest struct {
 	HardDelete *bool       `json:"hardDelete,omitempty"`
 }
 
+func (a AppBulkDeleteRequest) Validate() error {
+	if len(a.StoryIDs) == 0 {
+		return fmt.Errorf("storyIds must contain at least one story")
+	}
+	if len(a.StoryIDs) > 50 {
+		return fmt.Errorf("storyIds cannot contain more than 50 stories")
+	}
+
+	seen := make(map[uuid.UUID]struct{}, len(a.StoryIDs))
+	for index, storyID := range a.StoryIDs {
+		if storyID == uuid.Nil {
+			return fmt.Errorf("storyIds[%d] must be a valid story ID", index)
+		}
+		if _, exists := seen[storyID]; exists {
+			return fmt.Errorf("storyIds cannot contain duplicate story IDs")
+		}
+		seen[storyID] = struct{}{}
+	}
+
+	return nil
+}
+
 // AppBulkRestoreRequest represents a request to restore multiple stories.
 type AppBulkRestoreRequest struct {
 	StoryIDs []uuid.UUID `json:"storyIds"`
@@ -181,6 +203,39 @@ type AppBulkArchiveRequest struct {
 type AppBulkUpdateRequest struct {
 	StoryIDs []uuid.UUID    `json:"storyIds" validate:"required,min=1"`
 	Updates  AppUpdateStory `json:"updates" validate:"required"`
+}
+
+type AppBulkUpdateItemResult struct {
+	StoryID uuid.UUID `json:"storyId"`
+	Success bool      `json:"success"`
+	Error   string    `json:"error,omitempty"`
+}
+
+type AppBulkUpdateResult struct {
+	TotalCount     int                       `json:"totalCount"`
+	SucceededCount int                       `json:"succeededCount"`
+	FailedCount    int                       `json:"failedCount"`
+	Partial        bool                      `json:"partial"`
+	Items          []AppBulkUpdateItemResult `json:"items"`
+}
+
+func toAppBulkUpdateResult(core stories.BulkUpdateResult) AppBulkUpdateResult {
+	items := make([]AppBulkUpdateItemResult, 0, len(core.Items))
+	for _, item := range core.Items {
+		items = append(items, AppBulkUpdateItemResult{
+			StoryID: item.StoryID,
+			Success: item.Success,
+			Error:   item.Error,
+		})
+	}
+
+	return AppBulkUpdateResult{
+		TotalCount:     core.TotalCount,
+		SucceededCount: core.SucceededCount,
+		FailedCount:    core.FailedCount,
+		Partial:        core.Partial,
+		Items:          items,
+	}
 }
 
 type AppLabel struct {
@@ -528,6 +583,7 @@ type AppNewStory struct {
 	Team                     uuid.UUID   `json:"teamId" validate:"required"`
 	StartDate                *date.Date  `json:"startDate"`
 	EndDate                  *date.Date  `json:"endDate"`
+	IdempotencyKey           *string     `json:"idempotencyKey" validate:"omitempty,max=128"`
 }
 
 type AppNewComment struct {
@@ -725,6 +781,15 @@ func toAppComments(i []comments.CoreComment, usersByID map[uuid.UUID]AppUserSumm
 }
 
 func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
+	var creationKey *string
+	if a.IdempotencyKey != nil {
+		trimmedKey := strings.TrimSpace(*a.IdempotencyKey)
+		if trimmedKey != "" {
+			key := fmt.Sprintf("app:%s:%s", userID, trimmedKey)
+			creationKey = &key
+		}
+	}
+
 	return stories.CoreNewStory{
 		Title:                    a.Title,
 		EstimateValue:            a.EstimateValue,
@@ -745,6 +810,7 @@ func toCoreNewStory(a AppNewStory, userID uuid.UUID) stories.CoreNewStory {
 		StartDate:                a.StartDate.TimePtr(),
 		EndDate:                  a.EndDate.TimePtr(),
 		Team:                     a.Team,
+		CreationKey:              creationKey,
 	}
 }
 

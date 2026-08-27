@@ -9,7 +9,7 @@ import (
 )
 
 // GetObjectiveActivities returns activities for a specific objective with pagination.
-func (r *repo) GetObjectiveActivities(ctx context.Context, objectiveID uuid.UUID, page, pageSize int) ([]okractivities.CoreActivity, bool, error) {
+func (r *repo) GetObjectiveActivities(ctx context.Context, objectiveID, workspaceID uuid.UUID, page, pageSize int) ([]okractivities.CoreActivity, bool, error) {
 	offset := (page - 1) * pageSize
 	limit := pageSize + 1
 
@@ -18,15 +18,19 @@ func (r *repo) GetObjectiveActivities(ctx context.Context, objectiveID uuid.UUID
             oa.activity_id, oa.objective_id, oa.key_result_id, oa.user_id, oa.activity_type, oa.update_type,
             oa.field_changed, oa.current_value, oa.comment, oa.created_at, oa.workspace_id,
             u.username, u.full_name, u.avatar_url, u.is_active
-        FROM okr_activities oa
-        JOIN users u ON oa.user_id = u.user_id
-        WHERE oa.objective_id = :objective_id
-            AND u.is_active = true
+		FROM okr_activities oa
+		JOIN objectives o ON o.objective_id = oa.objective_id
+		JOIN users u ON oa.user_id = u.user_id
+		WHERE oa.objective_id = :objective_id
+			AND oa.workspace_id = :workspace_id
+			AND o.workspace_id = :workspace_id
+			AND u.is_active = true
         ORDER BY oa.created_at DESC
         LIMIT :limit OFFSET :offset`
 
 	params := map[string]any{
 		"objective_id": objectiveID,
+		"workspace_id": workspaceID,
 		"limit":        limit,
 		"offset":       offset,
 	}
@@ -53,7 +57,7 @@ func (r *repo) GetObjectiveActivities(ctx context.Context, objectiveID uuid.UUID
 }
 
 // GetKeyResultActivities returns activities for a specific key result with pagination.
-func (r *repo) GetKeyResultActivities(ctx context.Context, keyResultID uuid.UUID, page, pageSize int) ([]okractivities.CoreActivity, bool, error) {
+func (r *repo) GetKeyResultActivities(ctx context.Context, keyResultID, workspaceID uuid.UUID, page, pageSize int) ([]okractivities.CoreActivity, bool, error) {
 	offset := (page - 1) * pageSize
 	limit := pageSize + 1
 
@@ -62,15 +66,20 @@ func (r *repo) GetKeyResultActivities(ctx context.Context, keyResultID uuid.UUID
             oa.activity_id, oa.objective_id, oa.key_result_id, oa.user_id, oa.activity_type, oa.update_type,
             oa.field_changed, oa.current_value, oa.comment, oa.created_at, oa.workspace_id,
             u.username, u.full_name, u.avatar_url, u.is_active
-        FROM okr_activities oa
-        JOIN users u ON oa.user_id = u.user_id
-        WHERE oa.key_result_id = :key_result_id
-            AND u.is_active = true
+		FROM okr_activities oa
+		JOIN key_results kr ON kr.id = oa.key_result_id
+		JOIN objectives o ON o.objective_id = kr.objective_id
+		JOIN users u ON oa.user_id = u.user_id
+		WHERE oa.key_result_id = :key_result_id
+			AND oa.workspace_id = :workspace_id
+			AND o.workspace_id = :workspace_id
+			AND u.is_active = true
         ORDER BY oa.created_at DESC
         LIMIT :limit OFFSET :offset`
 
 	params := map[string]any{
 		"key_result_id": keyResultID,
+		"workspace_id":  workspaceID,
 		"limit":         limit,
 		"offset":        offset,
 	}

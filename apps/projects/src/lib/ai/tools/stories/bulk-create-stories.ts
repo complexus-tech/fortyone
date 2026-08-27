@@ -1,10 +1,8 @@
-import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
+import { isStoryCreationOutcomeUncertainError } from "@/modules/story/actions/story-creation-error";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
-import { isEstimateValue } from "@/lib/estimate";
-import { MAX_TIME_NEEDED_MINUTES } from "@/lib/time-needed";
 import type { DetailedStory } from "@/modules/story/types";
 import {
   normalizeOptionalStoryId,
@@ -13,9 +11,14 @@ import {
 } from "./normalize-story-input";
 import { createSprintEndDateResolver } from "./resolve-sprint-end-date";
 import { createStoryStatusResolver } from "./resolve-story-status";
+import { getStoryCreationIdempotencyKey } from "./story-creation-idempotency";
+import {
+  applyBulkStorySharedValues,
+  bulkCreateStoriesInputSchema,
+} from "./story-creation-schema";
+import { getBulkStoryCalendarImpact } from "./story-calendar-impact";
 import { toStoryToolSummary } from "./story-tool-summary";
 
-const MAX_STORIES_PER_REQUEST = 50;
 const CREATION_BATCH_SIZE = 10;
 
 type FailedStory = {
@@ -25,6 +28,7 @@ type FailedStory = {
 };
 
 type PreparedStory = {
+  index: number;
   kind: "prepared";
   story: ReturnType<typeof normalizeStoryInput>;
 };
@@ -49,129 +53,17 @@ const inBatchesOf = <Item>(items: Item[], size: number) => {
   return batches;
 };
 
-export const bulkCreateStoriesInputSchema = z.object({
-  storiesData: z
-    .array(
-      z.object({
-        title: z.string().describe("Story title (required)"),
-        description: z
-          .string()
-          .nullable()
-          .optional()
-          .describe("Story description"),
-        descriptionHTML: z
-          .string()
-          .nullable()
-          .optional()
-          .describe("Story description HTML"),
-        teamId: z.string().describe("Team ID where story belongs (required)"),
-        statusId: z
-          .string()
-          .nullable()
-          .optional()
-          .describe(
-            "Initial status ID. Omit it to use the team's default status.",
-          ),
-        assigneeId: z
-          .string()
-          .nullable()
-          .optional()
-          .describe("Assignee user ID"),
-        priority: z
-          .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
-          .default("No Priority")
-          .describe("Story priority (required)"),
-        estimateValue: z
-          .number()
-          .int()
-          .refine((value) => value === 0 || isEstimateValue(value), {
-            message: "Complexity must be 1, 2, 3, 5, or 8.",
-          })
-          .nullable()
-          .optional()
-          .describe(
-            "Relative complexity value using the team's scale. Use 1, 2, 3, 5, or 8. This is not a time duration; use 0, null, or omit when unset.",
-          ),
-        estimatedDurationMinutes: z
-          .number()
-          .int()
-          .positive()
-          .max(MAX_TIME_NEEDED_MINUTES)
-          .nullable()
-          .optional()
-          .describe(
-            "Total time needed in minutes for calendar scheduling. Omit or set null when unknown.",
-          ),
-        minimumFocusBlockMinutes: z
-          .number()
-          .int()
-          .positive()
-          .max(MAX_TIME_NEEDED_MINUTES)
-          .nullable()
-          .optional()
-          .describe(
-            "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes.",
-          ),
-        autoSchedulingEnabled: z
-          .boolean()
-          .optional()
-          .describe(
-            "Whether Maya should continuously schedule this story. Defaults to false for human assignees; set true when requested or when assigning to Maya.",
-          ),
-        labelIds: z
-          .array(z.string())
-          .nullable()
-          .optional()
-          .describe("Label IDs to attach to the story."),
-        sprintId: z
-          .string()
-          .nullable()
-          .optional()
-          .describe("Sprint ID to assign story"),
-        objectiveId: z
-          .string()
-          .nullable()
-          .optional()
-          .describe("Objective ID to assign story"),
-        keyResultId: z
-          .string()
-          .nullable()
-          .optional()
-          .describe("Key result ID to assign story"),
-        parentId: z
-          .string()
-          .nullable()
-          .optional()
-          .describe("Parent story ID for sub-stories"),
-        startDate: z
-          .string()
-          .nullable()
-          .optional()
-          .describe("Story start date (ISO  date string e.g 2005-06-13)"),
-        endDate: z
-          .string()
-          .nullable()
-          .optional()
-          .describe("Story end date (ISO  date string e.g 2005-06-13)"),
-      }),
-    )
-    .min(1, "Provide at least one story to create.")
-    .max(
-      MAX_STORIES_PER_REQUEST,
-      `Create at most ${MAX_STORIES_PER_REQUEST} stories in one request.`,
-    )
-    .describe("Array of story data for bulk creation (required)"),
-});
+export { bulkCreateStoriesInputSchema } from "./story-creation-schema";
 
 export const bulkCreateStories = tool({
   description:
-    "Bulk create multiple stories at once. Only admins and members can perform bulk operations. Prepare up to 50 stories in one request; execution pauses for user approval, then processes them safely in batches of 10 and reports every success or failure.",
+    "Bulk create up to 50 stories. Default every story to no time estimate and calendar scheduling off; do not ask for or apply one batch-wide duration. Put team, assignee, status, or other genuinely common metadata in sharedValues. Include shared planning values only when the user explicitly says they apply to every story; otherwise use only supplied per-story planning values. Execution pauses for approval, processes in batches of 10, and reports every result.",
   inputSchema: bulkCreateStoriesInputSchema,
   needsApproval: true,
 
   execute: async (
-    { storiesData },
-    { experimental_context: experimentalContext },
+    { sharedValues, storiesData },
+    { experimental_context: experimentalContext, toolCallId },
   ) => {
     try {
       const session = await auth();
@@ -202,11 +94,18 @@ export const bulkCreateStories = tool({
       const resolveStatusId = createStoryStatusResolver(ctx);
       const resolveSprintEndDate = createSprintEndDateResolver(ctx);
       const preparedResults: PreparationResult[] = await Promise.all(
-        storiesData.map(async (storyData, index) => {
+        storiesData.map(async (storyInput, index) => {
+          const storyData = applyBulkStorySharedValues(
+            sharedValues,
+            storyInput,
+          );
           const title = storyData.title.trim() || `Story ${index + 1}`;
 
           try {
-            const teamId = normalizeRequiredStoryId(storyData.teamId, "teamId");
+            const teamId = normalizeRequiredStoryId(
+              storyData.teamId ?? "",
+              "teamId",
+            );
             const statusId = await resolveStatusId(teamId, storyData.statusId);
             const sprintId = normalizeOptionalStoryId(
               storyData.sprintId,
@@ -218,6 +117,7 @@ export const bulkCreateStories = tool({
             );
 
             return {
+              index,
               kind: "prepared",
               story: normalizeStoryInput({
                 ...storyData,
@@ -250,8 +150,18 @@ export const bulkCreateStories = tool({
       for (const batch of inBatchesOf(preparedStories, CREATION_BATCH_SIZE)) {
         // eslint-disable-next-line no-await-in-loop -- Limits concurrent creation mutations to a safe batch.
         const results: CreationResult[] = await Promise.all(
-          batch.map(async ({ story }) => {
-            const result = await createStoryAction(story, workspaceSlug);
+          batch.map(async ({ index, story }) => {
+            const result = await createStoryAction(
+              {
+                ...story,
+                idempotencyKey: getStoryCreationIdempotencyKey({
+                  context: experimentalContext,
+                  index,
+                  toolCallId,
+                }),
+              },
+              workspaceSlug,
+            );
 
             if (result.error?.message) {
               return {
@@ -289,6 +199,8 @@ export const bulkCreateStories = tool({
       const successCount = createdStories.length;
       const errorCount = failedStories.length;
 
+      const calendarImpact = getBulkStoryCalendarImpact(createdStories);
+
       if (errorCount > 0) {
         return {
           success: false,
@@ -296,10 +208,11 @@ export const bulkCreateStories = tool({
           errorCount,
           stories: createdStories.map(toStoryToolSummary),
           failedStories,
+          calendarImpact,
           error: failedStories
             .map((failure) => `${failure.title}: ${failure.error}`)
             .join("; "),
-          message: `Created ${successCount} stories. ${errorCount} stories failed to create.`,
+          message: `Created ${successCount} stories. ${errorCount} stories failed to create. ${calendarImpact}`,
         };
       }
 
@@ -308,9 +221,12 @@ export const bulkCreateStories = tool({
         createdCount: successCount,
         errorCount,
         stories: createdStories.map(toStoryToolSummary),
-        message: `Successfully created ${successCount} stories.`,
+        calendarImpact,
+        message: `Successfully created ${successCount} stories. ${calendarImpact}`,
       };
     } catch (error) {
+      if (isStoryCreationOutcomeUncertainError(error)) throw error;
+
       return {
         success: false,
         error:

@@ -9,7 +9,7 @@ import { useTerminology } from "@/hooks";
 import { ChatMessage } from "./chat-message";
 import {
   getMessageProgressLabel,
-  hasVisibleMessageContent,
+  getVisibleMessageRenderEntries,
 } from "./chat-message-utils";
 import { Thinking } from "./thinking";
 
@@ -46,12 +46,11 @@ export const ChatMessages = ({
     (message) =>
       message.role === "assistant" && message.metadata?.source !== "voice",
   );
-  const latestAssistantMessageId = latestAssistantMessage?.id;
-  const latestVoiceAssistantMessageId = messages.findLast(
+  const latestVoiceAssistantMessage = messages.findLast(
     (message) =>
       message.role === "assistant" && message.metadata?.source === "voice",
-  )?.id;
-  const visibleMessages = messages.filter(hasVisibleMessageContent);
+  );
+  const visibleMessageEntries = getVisibleMessageRenderEntries(messages);
   let rawProgressLabel: string | undefined;
   if (isWorking) {
     rawProgressLabel = latestAssistantMessage
@@ -103,17 +102,16 @@ export const ChatMessages = ({
         direction="column"
         gap={6}
       >
-        {visibleMessages.map((message) => {
+        {visibleMessageEntries.map(({ isLast, message, renderKey }) => {
           return (
             <ChatMessage
               isAnimating={
                 (status === "streaming" &&
-                  message.id === latestAssistantMessageId) ||
-                (isVoiceSpeaking &&
-                  message.id === latestVoiceAssistantMessageId)
+                  message === latestAssistantMessage) ||
+                (isVoiceSpeaking && message === latestVoiceAssistantMessage)
               }
-              isLast={message.id === messages.at(-1)?.id}
-              key={message.id}
+              isLast={isLast}
+              key={renderKey}
               message={message}
               onPromptSelect={onPromptSelect}
               onToolApproval={onToolApproval}

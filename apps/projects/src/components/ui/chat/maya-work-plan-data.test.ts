@@ -74,4 +74,26 @@ describe("Maya work plan output", () => {
       summary: "Maya prepared a work plan for this story.",
     });
   });
+
+  it("derives preview and application phases independently from planner status", () => {
+    expect(
+      getMayaWorkPlanModel({
+        kind: "maya-work-plan",
+        phase: "preview",
+        plan: { actions: [], run: { status: "succeeded" } },
+      })?.runStatus,
+    ).toBe("proposed");
+    expect(
+      getMayaWorkPlanModel({
+        kind: "maya-work-plan",
+        phase: "applied",
+        plan: {
+          actions: [
+            { id: "action-1", status: "applied", type: "assign_story" },
+          ],
+          run: { status: "succeeded" },
+        },
+      })?.runStatus,
+    ).toBe("applied");
+  });
 });

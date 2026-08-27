@@ -22,8 +22,9 @@ func Routes(cfg Config, app *web.App) {
 	h := New(cfg.Log, linksService)
 	auth := mid.Auth(cfg.Log, cfg.SecretKey)
 	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
-	app.Post("/workspaces/{workspaceSlug}/links", h.CreateLink, auth, workspace)
-	app.Put("/workspaces/{workspaceSlug}/links/{id}", h.UpdateLink, auth, workspace)
-	app.Delete("/workspaces/{workspaceSlug}/links/{id}", h.DeleteLink, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/links", h.CreateLink, auth, workspace, memberAndAdmin)
+	app.Put("/workspaces/{workspaceSlug}/links/{id}", h.UpdateLink, auth, workspace, memberAndAdmin)
+	app.Delete("/workspaces/{workspaceSlug}/links/{id}", h.DeleteLink, auth, workspace, memberAndAdmin)
 }

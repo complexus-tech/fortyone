@@ -8,10 +8,16 @@ export const duplicateStory = tool({
   description:
     "Duplicate an existing story. Only admins and members can duplicate stories.",
   inputSchema: z.object({
-    storyId: z.string().describe("Story ID to duplicate (required)"),
+    storyId: z
+      .string()
+      .uuid("The story ID must be a valid UUID.")
+      .describe("Story ID to duplicate (required)"),
   }),
 
-  execute: async ({ storyId }, { experimental_context }) => {
+  execute: async (
+    { storyId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
 
@@ -22,7 +28,7 @@ export const duplicateStory = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

@@ -494,7 +494,7 @@ type CoreContributorCommentsPage struct {
 type StoryService interface {
 	CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
 	Get(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
-	Delete(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID, authorization stories.BulkDeleteAuthorization) error
 }
 
 type EventPublisher interface {
