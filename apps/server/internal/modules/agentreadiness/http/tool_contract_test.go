@@ -34,8 +34,10 @@ func TestToolErrorsDoNotExposeBackendInternals(t *testing.T) {
 	logOutput := logs.String()
 	require.Contains(t, logOutput, `"msg":"MCP tool failed"`)
 	require.Contains(t, logOutput, `"tool":"list_stories"`)
-	require.Contains(t, logOutput, "workspace_id")
-	require.Contains(t, logOutput, "SQLSTATE 42702")
+	require.Contains(t, logOutput, `"error":"*errors.errorString"`)
+	for _, internalDetail := range []string{"workspace_id", "ambiguous", "SQLSTATE", "42702", "column reference"} {
+		require.NotContains(t, logOutput, internalDetail)
+	}
 }
 
 func TestToolInputErrorsRemainActionableAndAreLogged(t *testing.T) {

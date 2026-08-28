@@ -2,6 +2,7 @@ package workerbootstrap
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/hibiken/asynq"
@@ -13,6 +14,27 @@ type scheduleRegistrar interface {
 
 func registerSchedules(scheduler scheduleRegistrar) error {
 	_, err := scheduler.Register(
+		"@every 5s",
+		asynq.NewTask(tasks.TypeOutboundWebhookDispatch, nil),
+		asynq.Queue("integrations"),
+		asynq.MaxRetry(2),
+		asynq.Timeout(45*time.Second),
+		asynq.Unique(4*time.Second),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register outbound webhook dispatch task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"*/1 * * * *",
+		asynq.NewTask(tasks.TypeInvitationOutboxDispatch, nil),
+		asynq.Queue("notifications"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register invitation outbox dispatch task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"*/1 * * * *",
 		asynq.NewTask(tasks.TypeFeedbackOutboxDispatch, nil),
 		asynq.Queue("notifications"),
@@ -76,6 +98,18 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 	}
 
 	_, err = scheduler.Register(
+		"*/1 * * * *",
+		asynq.NewTask(tasks.TypeAttachmentObjectDeletions, nil),
+		asynq.Queue("cleanup"),
+		asynq.MaxRetry(3),
+		asynq.Timeout(4*time.Minute),
+		asynq.Unique(55*time.Second),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register attachment object deletion task: %w", err)
+	}
+
+	_, err = scheduler.Register(
 		"30 0 * * *",
 		asynq.NewTask(tasks.TypeDeleteFeedback, nil),
 		asynq.Queue("cleanup"),
@@ -91,6 +125,18 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 	)
 	if err != nil {
 		return fmt.Errorf("failed to register token cleanup task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"7 * * * *", // Hourly, away from minute-zero integration work.
+		asynq.NewTask(tasks.TypeAPIIdempotencyCleanup, nil),
+		asynq.Queue("cleanup"),
+		asynq.MaxRetry(5),
+		asynq.Timeout(10*time.Minute),
+		asynq.Unique(55*time.Minute),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register API idempotency receipt cleanup task: %w", err)
 	}
 
 	_, err = scheduler.Register(
@@ -167,7 +213,7 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 
 	_, err = scheduler.Register(
 		"0 9 * * *", // Daily at 9:00 AM
-		asynq.NewTask("overdue:stories:email", nil),
+		asynq.NewTask(tasks.TypeOverdueStoriesEmail, nil),
 		asynq.Queue("automation"),
 	)
 	if err != nil {
@@ -176,7 +222,7 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 
 	_, err = scheduler.Register(
 		"0 10 * * 1", // Monday at 10:00 AM
-		asynq.NewTask("overdue:objectives:email", nil),
+		asynq.NewTask(tasks.TypeObjectiveOverdueEmail, nil),
 		asynq.Queue("automation"),
 	)
 	if err != nil {
@@ -280,6 +326,24 @@ func registerSchedules(scheduler scheduleRegistrar) error {
 	)
 	if err != nil {
 		return fmt.Errorf("failed to register Slack credential backfill task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"*/1 * * * *", // Every minute
+		asynq.NewTask(tasks.TypeGitHubWebhookRecovery, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register GitHub inbox recovery task: %w", err)
+	}
+
+	_, err = scheduler.Register(
+		"*/1 * * * *", // Every minute
+		asynq.NewTask(tasks.TypeFigmaWebhookRecovery, nil),
+		asynq.Queue("cleanup"),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to register Figma inbox recovery task: %w", err)
 	}
 
 	_, err = scheduler.Register(

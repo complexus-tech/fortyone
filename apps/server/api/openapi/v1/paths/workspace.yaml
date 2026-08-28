@@ -1,0 +1,25 @@
+get:
+  operationId: getWorkspace
+  tags: [Workspaces]
+  summary: Get the credential's workspace
+  description: Personal access tokens are supported. Service-account workspace reads remain disabled until the workspace read model supports non-human principals.
+  x-fortyone-scope: workspaces:read
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+  responses:
+    '200':
+      description: Workspace visible to the actor.
+      headers:
+        X-Request-ID: {$ref: ../openapi.yaml#/components/headers/RequestId}
+        RateLimit: {$ref: ../openapi.yaml#/components/headers/RateLimit}
+        RateLimit-Policy: {$ref: ../openapi.yaml#/components/headers/RateLimitPolicy}
+      content:
+        application/json:
+          schema: {$ref: ../openapi.yaml#/components/schemas/WorkspaceResponse}
+    '400': {$ref: ../openapi.yaml#/components/responses/BadRequest}
+    '401': {$ref: ../openapi.yaml#/components/responses/Unauthorized}
+    '403': {$ref: ../openapi.yaml#/components/responses/Forbidden}
+    '404': {$ref: ../openapi.yaml#/components/responses/NotFound}
+    '429': {$ref: ../openapi.yaml#/components/responses/RateLimited}
+    '500': {$ref: ../openapi.yaml#/components/responses/InternalError}
+    '503': {$ref: ../openapi.yaml#/components/responses/ServiceUnavailable}

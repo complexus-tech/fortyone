@@ -9,26 +9,26 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 )
 
 type Config struct {
-	DB           *sqlx.DB
-	Log          *logger.Logger
-	Redis        *redis.Client
-	SecretKey    string
-	TasksService *tasks.Service
-	Cache        *cache.Service
-	Service      *notifications.Service
-	Users        *users.Service
-	Attachments  *attachments.Service
+	Log               *logger.Logger
+	Redis             *redis.Client
+	SecretKey         string
+	TasksService      *tasks.Service
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	Service           *notifications.Service
+	Users             *users.Service
+	Attachments       *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	notificationsService := cfg.Service
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 
 	h := New(notificationsService, cfg.Users, cfg.Attachments, cfg.Log)
 

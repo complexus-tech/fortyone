@@ -1,17 +1,17 @@
 package integrationrequestshttp
 
 import (
-	"database/sql"
 	"net/http"
 	"testing"
 
+	integrationrequestdomain "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/domain"
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 )
 
 func TestRequestErrorStatusMasksInaccessibleRequestsAsNotFound(t *testing.T) {
 	t.Parallel()
 
-	if status := requestErrorStatus(sql.ErrNoRows); status != http.StatusNotFound {
+	if status := requestErrorStatus(integrationrequestdomain.ErrNotFound); status != http.StatusNotFound {
 		t.Fatalf("inaccessible request status = %d, want %d", status, http.StatusNotFound)
 	}
 }

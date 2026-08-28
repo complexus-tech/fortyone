@@ -6,96 +6,56 @@ import (
 	"fmt"
 	"time"
 
-	emailagent "github.com/complexus-tech/projects-api/internal/modules/emailagent/service"
-	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
-	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
-	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	"github.com/google/uuid"
+	feedbackdomain "github.com/complexus-tech/projects-api/internal/modules/feedback/domain"
+	keyresultsdomain "github.com/complexus-tech/projects-api/internal/modules/keyresults/domain"
+	objectivesdomain "github.com/complexus-tech/projects-api/internal/modules/objectives/domain"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 )
-
-type objectiveMutationService interface {
-	UpdateExternalUserActionIfUnchanged(
-		ctx context.Context,
-		id, workspaceID, userID uuid.UUID,
-		expectedUpdatedAt time.Time,
-		comment string,
-		updates map[string]any,
-	) error
-}
-
-type keyResultMutationService interface {
-	UpdateExternalUserActionIfUnchanged(
-		ctx context.Context,
-		id, workspaceID, userID uuid.UUID,
-		expectedUpdatedAt time.Time,
-		updates map[string]any,
-		comment string,
-	) error
-}
-
-type storyMutationService interface {
-	UpdateExternalUserActionIfUnchanged(
-		ctx context.Context,
-		actorID, storyID, workspaceID uuid.UUID,
-		expectedUpdatedAt time.Time,
-		updates map[string]any,
-	) error
-}
-
-type feedbackMutationService interface {
-	UpdateItemStatusIfUnchanged(
-		ctx context.Context,
-		workspaceID, itemID uuid.UUID,
-		expectedUpdatedAt time.Time,
-		input feedback.CoreUpdateItemStatusInput,
-	) (feedback.CoreItem, error)
-}
 
 // ProposalVersionReader re-reads the current entity version immediately
 // before the domain compare-and-swap call. This distinguishes a user-facing
 // stale preview from transient database/service failures without weakening the
 // domain service's atomic CAS.
 type ProposalVersionReader interface {
-	CurrentVersion(ctx context.Context, proposal emailagent.ActionProposal) (time.Time, error)
+	CurrentVersion(ctx context.Context, proposal ActionProposal) (time.Time, error)
 }
 
 // DomainMutationApplier maps confirmed inert proposals onto the existing
 // domain-service CAS methods. No repository write bypasses domain side effects.
 type DomainMutationApplier struct {
-	objectives objectiveMutationService
-	keyResults keyResultMutationService
-	stories    storyMutationService
-	feedback   feedbackMutationService
+	objectives objectiveMutationPort
+	keyResults keyResultMutationPort
+	stories    storyMutationPort
+	feedback   feedbackMutationPort
 	versions   ProposalVersionReader
 }
 
 func NewDomainMutationApplier(
-	objectiveService objectiveMutationService,
-	keyResultService keyResultMutationService,
-	storyService storyMutationService,
-	feedbackService feedbackMutationService,
+	objectiveService objectiveMutationBackend,
+	keyResultService keyResultMutationBackend,
+	storyService storyMutationBackend,
+	feedbackService feedbackMutationBackend,
 	versionReader ProposalVersionReader,
 ) (*DomainMutationApplier, error) {
 	if objectiveService == nil || keyResultService == nil || storyService == nil || feedbackService == nil || versionReader == nil {
 		return nil, errors.New("all email reply mutation services are required")
 	}
 	return &DomainMutationApplier{
-		objectives: objectiveService,
-		keyResults: keyResultService,
-		stories:    storyService,
-		feedback:   feedbackService,
+		objectives: objectiveMutationAdapter{backend: objectiveService},
+		keyResults: keyResultMutationAdapter{backend: keyResultService},
+		stories:    storyMutationAdapter{backend: storyService},
+		feedback:   feedbackMutationAdapter{backend: feedbackService},
 		versions:   versionReader,
 	}, nil
 }
 
-func (applier *DomainMutationApplier) Apply(ctx context.Context, proposal emailagent.ActionProposal) error {
+func (applier *DomainMutationApplier) Apply(ctx context.Context, proposal ActionProposal) error {
 	if applier == nil {
 		return errors.New("email reply mutation applier is not configured")
 	}
 	currentVersion, err := applier.versions.CurrentVersion(ctx, proposal)
 	if err != nil {
-		return normalizeMutationError(err)
+		return normalizeMutationBackendError(err)
 	}
 	// A version mismatch is still passed to the domain CAS method so its
 	// desired-state retry check can recognize a write that committed before a
@@ -105,123 +65,94 @@ func (applier *DomainMutationApplier) Apply(ctx context.Context, proposal emaila
 	_ = currentVersion
 	err = nil
 	switch proposal.Kind {
-	case emailagent.ActionObjectiveUpdate:
+	case ActionObjectiveUpdate:
 		if proposal.Objective == nil || proposal.Objective.Health == nil {
 			return errors.New("objective proposal is incomplete")
 		}
 		comment := optionalText(proposal.Objective.CheckIn)
-		err = applier.objectives.UpdateExternalUserActionIfUnchanged(
-			ctx,
-			proposal.Objective.Target.ID,
-			proposal.WorkspaceID,
-			proposal.ActorID,
-			proposal.Objective.Target.ExpectedUpdatedAt,
-			comment,
-			map[string]any{"health": string(*proposal.Objective.Health)},
-		)
-	case emailagent.ActionKeyResultUpdate:
+		err = applier.objectives.ApplyObjectiveHealth(ctx, objectiveHealthCommand{
+			ObjectiveID: proposal.Objective.Target.ID, WorkspaceID: proposal.WorkspaceID,
+			ActorID: proposal.ActorID, ExpectedUpdatedAt: proposal.Objective.Target.ExpectedUpdatedAt,
+			Health: string(*proposal.Objective.Health), CheckIn: comment,
+		})
+	case ActionKeyResultUpdate:
 		if proposal.KeyResult == nil || proposal.KeyResult.CurrentValue == nil {
 			return errors.New("key result proposal is incomplete")
 		}
-		err = applier.keyResults.UpdateExternalUserActionIfUnchanged(
-			ctx,
-			proposal.KeyResult.Target.ID,
-			proposal.WorkspaceID,
-			proposal.ActorID,
-			proposal.KeyResult.Target.ExpectedUpdatedAt,
-			map[string]any{"current_value": *proposal.KeyResult.CurrentValue},
-			optionalText(proposal.KeyResult.CheckIn),
-		)
-	case emailagent.ActionStoryUpdate:
+		err = applier.keyResults.ApplyKeyResultValue(ctx, keyResultValueCommand{
+			KeyResultID: proposal.KeyResult.Target.ID, WorkspaceID: proposal.WorkspaceID,
+			ActorID: proposal.ActorID, ExpectedUpdatedAt: proposal.KeyResult.Target.ExpectedUpdatedAt,
+			CurrentValue: *proposal.KeyResult.CurrentValue, CheckIn: optionalText(proposal.KeyResult.CheckIn),
+		})
+	case ActionStoryUpdate:
 		if proposal.Story == nil {
 			return errors.New("story proposal is incomplete")
 		}
-		updates, updateErr := storyProposalUpdates(*proposal.Story)
+		changes, updateErr := storyProposalChanges(*proposal.Story)
 		if updateErr != nil {
 			return updateErr
 		}
-		err = applier.stories.UpdateExternalUserActionIfUnchanged(
-			ctx,
-			proposal.ActorID,
-			proposal.Story.Target.ID,
-			proposal.WorkspaceID,
-			proposal.Story.Target.ExpectedUpdatedAt,
-			updates,
-		)
-	case emailagent.ActionFeedbackStatus:
+		err = applier.stories.ApplyStoryMutation(ctx, storyMutationCommand{
+			StoryID: proposal.Story.Target.ID, WorkspaceID: proposal.WorkspaceID,
+			ActorID: proposal.ActorID, ExpectedUpdatedAt: proposal.Story.Target.ExpectedUpdatedAt,
+			Changes: changes,
+		})
+	case ActionFeedbackStatus:
 		if proposal.Feedback == nil {
 			return errors.New("feedback proposal is incomplete")
 		}
-		_, err = applier.feedback.UpdateItemStatusIfUnchanged(
-			ctx,
-			proposal.WorkspaceID,
-			proposal.Feedback.Target.ID,
-			proposal.Feedback.Target.ExpectedUpdatedAt,
-			feedback.CoreUpdateItemStatusInput{
-				Status: string(proposal.Feedback.Status), ActorID: proposal.ActorID,
-			},
-		)
+		err = applier.feedback.ApplyFeedbackStatus(ctx, feedbackStatusCommand{
+			ItemID: proposal.Feedback.Target.ID, WorkspaceID: proposal.WorkspaceID,
+			ActorID: proposal.ActorID, ExpectedUpdatedAt: proposal.Feedback.Target.ExpectedUpdatedAt,
+			Status: string(proposal.Feedback.Status),
+		})
 	default:
 		return fmt.Errorf("unsupported email action kind %q", proposal.Kind)
 	}
-	return normalizeMutationError(err)
+	return err
 }
 
-func storyProposalUpdates(action emailagent.StoryAction) (map[string]any, error) {
-	updates := make(map[string]any, 3)
+func storyProposalChanges(action StoryAction) (storyMutationChanges, error) {
+	changes := storyMutationChanges{}
 	if action.DueDate != nil {
+		changes.DueDateSet = true
 		switch action.DueDate.Operation {
-		case emailagent.DateClear:
-			updates["end_date"] = nil
-		case emailagent.DateSet:
+		case DateClear:
+			changes.DueDate = nil
+		case DateSet:
 			value, err := time.Parse("2006-01-02", action.DueDate.Date)
 			if err != nil {
-				return nil, fmt.Errorf("parse confirmed story due date: %w", err)
+				return storyMutationChanges{}, fmt.Errorf("parse confirmed story due date: %w", err)
 			}
-			updates["end_date"] = value.UTC()
+			value = value.UTC()
+			changes.DueDate = &value
 		default:
-			return nil, errors.New("unsupported story due-date operation")
+			return storyMutationChanges{}, errors.New("unsupported story due-date operation")
 		}
 	}
 	if action.Status != nil {
-		updates["status_id"] = action.Status.StatusID
+		changes.StatusSet = true
+		changes.StatusID = action.Status.StatusID
 	}
 	if action.Assignee != nil {
+		changes.AssigneeSet = true
 		switch action.Assignee.Operation {
-		case emailagent.AssigneeUnassign:
-			updates["assignee_id"] = nil
-		case emailagent.AssigneeAssign:
+		case AssigneeUnassign:
+			changes.AssigneeID = nil
+		case AssigneeAssign:
 			if action.Assignee.AssigneeID == nil {
-				return nil, errors.New("confirmed story assignee is missing")
+				return storyMutationChanges{}, errors.New("confirmed story assignee is missing")
 			}
-			updates["assignee_id"] = *action.Assignee.AssigneeID
+			assigneeID := *action.Assignee.AssigneeID
+			changes.AssigneeID = &assigneeID
 		default:
-			return nil, errors.New("unsupported story assignee operation")
+			return storyMutationChanges{}, errors.New("unsupported story assignee operation")
 		}
 	}
-	if len(updates) == 0 {
-		return nil, errors.New("confirmed story proposal has no changes")
+	if changes.empty() {
+		return storyMutationChanges{}, errors.New("confirmed story proposal has no changes")
 	}
-	return updates, nil
-}
-
-func normalizeMutationError(err error) error {
-	if err == nil {
-		return nil
-	}
-	if errors.Is(err, objectives.ErrVersionConflict) ||
-		errors.Is(err, keyresults.ErrVersionConflict) ||
-		errors.Is(err, stories.ErrStoryChanged) ||
-		errors.Is(err, feedback.ErrVersionConflict) {
-		return fmt.Errorf("%w: %v", ErrActionConflict, err)
-	}
-	if errors.Is(err, objectives.ErrNotFound) ||
-		errors.Is(err, keyresults.ErrNotFound) ||
-		errors.Is(err, stories.ErrNotFound) ||
-		errors.Is(err, feedback.ErrNotFound) {
-		return fmt.Errorf("%w: %v", ErrActionUnauthorized, err)
-	}
-	return err
+	return changes, nil
 }
 
 func optionalText(value *string) string {
@@ -229,4 +160,23 @@ func optionalText(value *string) string {
 		return ""
 	}
 	return *value
+}
+
+func normalizeMutationBackendError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, objectivesdomain.ErrVersionConflict) ||
+		errors.Is(err, keyresultsdomain.ErrVersionConflict) ||
+		errors.Is(err, storydomain.ErrStoryChanged) ||
+		errors.Is(err, feedbackdomain.ErrVersionConflict) {
+		return errors.Join(ErrActionConflict, err)
+	}
+	if errors.Is(err, objectivesdomain.ErrNotFound) ||
+		errors.Is(err, keyresultsdomain.ErrNotFound) ||
+		errors.Is(err, storydomain.ErrNotFound) ||
+		errors.Is(err, feedbackdomain.ErrNotFound) {
+		return errors.Join(ErrActionUnauthorized, err)
+	}
+	return err
 }

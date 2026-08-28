@@ -1,15 +1,11 @@
 package keyresultshttp
 
 import (
-	"fmt"
-	"reflect"
-	"strings"
 	"time"
 
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	"github.com/complexus-tech/projects-api/pkg/date"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
@@ -87,6 +83,7 @@ type AppKeyResultFilters struct {
 	TeamIDs          []uuid.UUID `json:"teamIds"`
 	MeasurementTypes []string    `json:"measurementTypes"`
 	LeadIDs          []uuid.UUID `json:"leadIds"`
+	CreatedBy        []uuid.UUID `json:"createdBy"`
 	CreatedAfter     *time.Time  `json:"createdAfter"`
 	CreatedBefore    *time.Time  `json:"createdBefore"`
 	EndDateAfter     *time.Time  `json:"endDateAfter"`
@@ -97,88 +94,6 @@ type AppKeyResultFilters struct {
 	PageSize         int         `json:"pageSize"`
 	OrderBy          string      `json:"orderBy"`
 	OrderDirection   string      `json:"orderDirection"`
-}
-
-// Validate validates the AppNewKeyResult struct
-func (a AppNewKeyResult) Validate() error {
-	validate := validator.New(validator.WithRequiredStructEnabled())
-
-	err := validate.Struct(a)
-	if err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			var errorMessages []string
-			for _, e := range validationErrors {
-				fieldName := getJSONTagName(reflect.TypeOf(a), e.Field())
-				switch e.Tag() {
-				case "required":
-					errorMessages = append(errorMessages, fmt.Sprintf("%s is required", fieldName))
-				case "oneof":
-					options := strings.Split(e.Param(), " ")
-					formattedOptions := formatOptions(options)
-					errorMessages = append(errorMessages, fmt.Sprintf("%s should be one of: %s", fieldName, formattedOptions))
-				default:
-					errorMessages = append(errorMessages, fmt.Sprintf("%s failed validation: %s", fieldName, e.Tag()))
-				}
-			}
-			return fmt.Errorf("%s", strings.Join(errorMessages, "; "))
-		}
-	}
-
-	return nil
-}
-
-// formatOptions formats the options for error messages
-func formatOptions(options []string) string {
-	if len(options) == 0 {
-		return ""
-	}
-	if len(options) == 1 {
-		return options[0]
-	}
-	return fmt.Sprintf("%s or %s", strings.Join(options[:len(options)-1], ", "), options[len(options)-1])
-}
-
-// getJSONTagName gets the JSON tag name for a field
-func getJSONTagName(t reflect.Type, fieldName string) string {
-	field, found := t.FieldByName(fieldName)
-	if !found {
-		return fieldName
-	}
-
-	tag := field.Tag.Get("json")
-	name := strings.Split(tag, ",")[0]
-	if name == "" {
-		return fieldName
-	}
-	return name
-}
-
-// Validate validates the AppUpdateKeyResult struct
-func (a AppUpdateKeyResult) Validate() error {
-	validate := validator.New(validator.WithRequiredStructEnabled())
-
-	err := validate.Struct(a)
-	if err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			var errorMessages []string
-			for _, e := range validationErrors {
-				fieldName := getJSONTagName(reflect.TypeOf(a), e.Field())
-				switch e.Tag() {
-				case "required":
-					errorMessages = append(errorMessages, fmt.Sprintf("%s is required", fieldName))
-				case "oneof":
-					options := strings.Split(e.Param(), " ")
-					formattedOptions := formatOptions(options)
-					errorMessages = append(errorMessages, fmt.Sprintf("%s should be one of: %s", fieldName, formattedOptions))
-				default:
-					errorMessages = append(errorMessages, fmt.Sprintf("%s failed validation: %s", fieldName, e.Tag()))
-				}
-			}
-			return fmt.Errorf("%s", strings.Join(errorMessages, "; "))
-		}
-	}
-
-	return nil
 }
 
 // toAppKeyResult converts a CoreKeyResult to an AppKeyResult
@@ -227,6 +142,17 @@ type AppKeyResultActivity struct {
 
 	// User details
 	User AppUserDetails `json:"user"`
+}
+
+type AppKeyResultActivityPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+}
+
+type AppKeyResultActivitiesResponse struct {
+	Activities []AppKeyResultActivity         `json:"activities"`
+	Pagination AppKeyResultActivityPagination `json:"pagination"`
 }
 
 // AppUserDetails represents basic user information for activities

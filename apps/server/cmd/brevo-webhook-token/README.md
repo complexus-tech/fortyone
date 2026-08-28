@@ -1,9 +1,8 @@
 # Brevo inbound webhook token
 
-This command derives the Brevo inbound webhook header value from the existing
-`APP_AUTH_SECRET_KEY`. It never prints the application secret itself and does
-not require a separate environment variable. It refuses the development
-default and secrets shorter than 32 bytes.
+This command derives the Brevo inbound webhook header value from the dedicated
+`APP_EMAIL_REPLY_SECURITY_KEY`. It never prints the key itself. It refuses the
+development default and keys shorter than 32 bytes.
 
 From `apps/server`, with the same environment used by the API process:
 
@@ -20,5 +19,6 @@ X-FortyOne-Webhook-Token: <derived value>
 Configure the webhook URL as
 `https://<api-host>/webhooks/brevo/inbound-email-processed`, with type
 `inbound`, event `inboundEmailProcessed`, and the delegated inbound reply
-domain. Rotating `APP_AUTH_SECRET_KEY` also rotates this header, so update the
-Brevo webhook as part of the same deployment.
+domain. Rotating `APP_EMAIL_REPLY_SECURITY_KEY` also rotates this header and
+the durable payload-encryption key, so drain pending email-reply work and
+update the Brevo webhook as part of the same controlled deployment.

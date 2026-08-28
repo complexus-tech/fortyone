@@ -1,0 +1,61 @@
+---
+title: Versioning and changelog
+description: Track the supported FortyOne developer API surface and its compatibility policy.
+---
+
+Only operations under `/api/v1` that appear in the published OpenAPI contract
+are part of the developer API. Product routes used by the FortyOne web or
+mobile applications are internal even when they are reachable over HTTP.
+
+## Compatibility policy
+
+Within `v1`, FortyOne may add endpoints, optional request fields, optional
+response fields, enum values whose schema is explicitly extensible, and new
+documented error codes. Clients must ignore response fields they do not use and
+branch on documented stable error codes rather than human-readable messages.
+
+Removing or renaming a field, making an optional input required, narrowing an
+accepted value, changing existing meaning, or changing a documented status and
+error contract is breaking. It requires a new API version or a measured,
+announced deprecation window. Security fixes may shorten that window when the
+risk and migration path are published. Every pull request compares the split
+OpenAPI source with its base revision so an incompatible change cannot merge
+silently.
+
+The Go and TypeScript packages are repository previews. Their generated
+operations follow the OpenAPI contract, but package publication and semantic
+version support begin only when a tagged SDK release is announced here.
+
+## 2026-08-28 — v1 developer preview
+
+- Added PAT-authenticated workspace, team, story, comment, label, workflow
+  state, sprint, objective, and key-result reads with typed cursors and stable
+  error envelopes.
+- Added idempotent story creation for PAT and service-account actors. Exact
+  request bytes and a retained `Idempotency-Key` define one logical operation.
+- Added scoped, expiring personal tokens and service-account keys with rotation,
+  revocation, team restrictions, last-used tracking, and immutable audit.
+- Added signed, versioned outbound webhooks with durable delivery, redelivery,
+  secret rotation, and verification helpers.
+- Added generated Go and TypeScript SDK previews plus the runnable external
+  integration sample.
+- Added contract lint, generated-drift, and breaking-change CI gates.
+- Added user-authorized OAuth access to the exact
+  `https://api.fortyone.app/api/v1` resource, with S256 PKCE, audience-specific
+  scopes, rotating refresh tokens, and strict separation from the MCP
+  audience.
+- Added managed confidential OAuth applications with show-once, expiring,
+  digest-only client secrets; bounded-overlap rotation and revocation; and
+  administrator-approved workspace installations with explicit scopes.
+- Added `client_credentials` for the exact public-API resource. Application
+  tokens use a dedicated, immutable `oauth_application` principal and the
+  stable installation identity for rate limits and idempotency. They currently
+  support only idempotent story creation with `stories:write`.
+
+Authorization-code OAuth continues to act as the consenting user. Dynamic
+public registration still creates client metadata only; it does not create an
+application principal. A confidential application becomes an actor only after
+a current workspace administrator installs it. Service accounts and installed
+OAuth applications remain limited to operations with an explicit non-human
+authorization model, beginning with idempotent story creation. These
+limitations are explicit preview boundaries, not implied support.

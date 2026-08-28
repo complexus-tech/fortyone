@@ -7,24 +7,20 @@ import (
 	"sort"
 	"time"
 
+	mayadomain "github.com/complexus-tech/projects-api/internal/modules/maya/domain"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
-	"github.com/complexus-tech/projects-api/internal/platform/billing"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
 
-const mayaAssignmentBatchPageSize = 25
+const (
+	mayaAssignmentBatchPageSize      = 25
+	mayaScheduleRecoveryBatchSize    = 100
+	mayaWorkspaceSchedulePageSize    = 100
+	mayaWorkspaceAssignmentBatchSize = 25
+)
 
-const mayaScheduleRecoveryBatchSize = 100
-
-const mayaWorkspaceAssignmentBatchSize = 25
-
-type mayaAssignmentCandidateStory struct {
-	ID          uuid.UUID `db:"id"`
-	WorkspaceID uuid.UUID `db:"workspace_id"`
-	TeamID      uuid.UUID `db:"team_id"`
-	AssigneeID  uuid.UUID `db:"assignee_id"`
-}
+type mayaAssignmentCandidateStory = mayadomain.AssignmentCandidateStory
 
 type mayaAssignmentGroupKey struct {
 	WorkspaceID uuid.UUID
@@ -32,53 +28,74 @@ type mayaAssignmentGroupKey struct {
 }
 
 func (h *handlers) processWorkspaceScheduleBatch(ctx context.Context, workspaceID uuid.UUID) error {
-	stories, err := h.listWorkspaceScheduleCandidates(ctx, workspaceID)
-	if err != nil {
-		return err
+	if h.mayaAssignments == nil {
+		return fmt.Errorf("maya assignment store is not configured")
 	}
 
 	humanOwnerIDs := make(map[uuid.UUID]struct{})
-	mayaAssigned := make([]mayaAssignmentCandidateStory, 0, len(stories))
-	for _, story := range stories {
-		if story.AssigneeID == h.systemUserID {
-			mayaAssigned = append(mayaAssigned, story)
-			continue
-		}
-		humanOwnerIDs[story.AssigneeID] = struct{}{}
-	}
-
-	ownerIDs := make([]uuid.UUID, 0, len(humanOwnerIDs))
-	for ownerID := range humanOwnerIDs {
-		ownerIDs = append(ownerIDs, ownerID)
-	}
-	sort.Slice(ownerIDs, func(i, j int) bool { return ownerIDs[i].String() < ownerIDs[j].String() })
-
 	var batchErr error
-	for _, ownerID := range ownerIDs {
-		ownerID := ownerID
-		if err := h.mayaService.ReconcileSchedule(ctx, maya.ReconcileScheduleInput{
-			WorkspaceID: &workspaceID,
-			UserID:      &ownerID,
-		}); err != nil {
-			batchErr = errors.Join(batchErr, fmt.Errorf("reconcile owner %s: %w", ownerID, err))
-		}
-	}
-
 	windowStart := time.Now().UTC()
-	for key, storyIDs := range groupMayaAssignmentCandidates(mayaAssigned) {
-		for start := 0; start < len(storyIDs); start += mayaWorkspaceAssignmentBatchSize {
-			end := min(start+mayaWorkspaceAssignmentBatchSize, len(storyIDs))
-			if _, err := h.mayaService.ProcessAssignmentBatch(ctx, maya.ProcessAssignmentBatchInput{
-				WorkspaceID: key.WorkspaceID,
-				TeamID:      key.TeamID,
-				StoryIDs:    storyIDs[start:end],
-				TriggeredBy: h.systemUserID,
-				WindowStart: windowStart,
-				WindowEnd:   windowStart.Add(14 * 24 * time.Hour),
-				AutoApply:   true,
-			}); err != nil {
-				batchErr = errors.Join(batchErr, fmt.Errorf("process Maya team %s assignment batch: %w", key.TeamID, err))
+	var cursor uuid.UUID
+	for {
+		stories, err := h.listWorkspaceScheduleCandidates(
+			ctx,
+			workspaceID,
+			cursor,
+			mayaWorkspaceSchedulePageSize,
+		)
+		if err != nil {
+			return err
+		}
+		if len(stories) == 0 {
+			break
+		}
+
+		nextCursor := stories[len(stories)-1].ID
+		if nextCursor == uuid.Nil || nextCursor == cursor {
+			return fmt.Errorf("list workspace schedule candidates: cursor did not advance")
+		}
+
+		mayaAssigned := make([]mayaAssignmentCandidateStory, 0, len(stories))
+		for _, story := range stories {
+			if story.AssigneeID == h.systemUserID {
+				mayaAssigned = append(mayaAssigned, story)
+				continue
 			}
+			if _, alreadyReconciled := humanOwnerIDs[story.AssigneeID]; alreadyReconciled {
+				continue
+			}
+			humanOwnerIDs[story.AssigneeID] = struct{}{}
+			ownerID := story.AssigneeID
+			if err := h.mayaService.ReconcileSchedule(ctx, maya.ReconcileScheduleInput{
+				WorkspaceID: &workspaceID,
+				UserID:      &ownerID,
+			}); err != nil {
+				batchErr = errors.Join(batchErr, fmt.Errorf("reconcile owner %s: %w", ownerID, err))
+			}
+		}
+
+		groups := groupMayaAssignmentCandidates(mayaAssigned)
+		for _, key := range sortedMayaAssignmentGroupKeys(groups) {
+			storyIDs := groups[key]
+			for start := 0; start < len(storyIDs); start += mayaWorkspaceAssignmentBatchSize {
+				end := min(start+mayaWorkspaceAssignmentBatchSize, len(storyIDs))
+				if _, err := h.mayaService.ProcessAssignmentBatch(ctx, maya.ProcessAssignmentBatchInput{
+					WorkspaceID: key.WorkspaceID,
+					TeamID:      key.TeamID,
+					StoryIDs:    storyIDs[start:end],
+					TriggeredBy: h.systemUserID,
+					WindowStart: windowStart,
+					WindowEnd:   windowStart.Add(14 * 24 * time.Hour),
+					AutoApply:   true,
+				}); err != nil {
+					batchErr = errors.Join(batchErr, fmt.Errorf("process Maya team %s assignment batch: %w", key.TeamID, err))
+				}
+			}
+		}
+
+		cursor = nextCursor
+		if len(stories) < mayaWorkspaceSchedulePageSize {
+			break
 		}
 	}
 
@@ -91,8 +108,8 @@ func (h *handlers) processWorkspaceScheduleBatch(ctx context.Context, workspaceI
 func (h *handlers) HandleMayaBatchAssignment(ctx context.Context, t *asynq.Task) error {
 	h.log.Info(ctx, "HANDLER: Processing MayaBatchAssignment task", "task_id", t.ResultWriter().TaskID())
 
-	if h.mayaService == nil || h.systemUserID == uuid.Nil {
-		return fmt.Errorf("Maya batch assignment worker is not configured")
+	if h.mayaService == nil || h.mayaAssignments == nil || h.systemUserID == uuid.Nil {
+		return fmt.Errorf("maya batch assignment worker is not configured")
 	}
 
 	var cursor uuid.UUID
@@ -106,7 +123,11 @@ func (h *handlers) HandleMayaBatchAssignment(ctx context.Context, t *asynq.Task)
 		if len(stories) == 0 {
 			break
 		}
-		cursor = stories[len(stories)-1].ID
+		nextCursor := stories[len(stories)-1].ID
+		if nextCursor == uuid.Nil || nextCursor == cursor {
+			return fmt.Errorf("list Maya assignment candidates: cursor did not advance")
+		}
+		cursor = nextCursor
 
 		mayaAssigned := make([]mayaAssignmentCandidateStory, 0, len(stories))
 		for _, story := range stories {
@@ -129,7 +150,8 @@ func (h *handlers) HandleMayaBatchAssignment(ctx context.Context, t *asynq.Task)
 
 		groups := groupMayaAssignmentCandidates(mayaAssigned)
 		windowStart := time.Now().UTC()
-		for key, storyIDs := range groups {
+		for _, key := range sortedMayaAssignmentGroupKeys(groups) {
+			storyIDs := groups[key]
 			result, err := h.mayaService.ProcessAssignmentBatch(ctx, maya.ProcessAssignmentBatchInput{
 				WorkspaceID: key.WorkspaceID,
 				TeamID:      key.TeamID,
@@ -158,7 +180,7 @@ func (h *handlers) HandleMayaBatchAssignment(ctx context.Context, t *asynq.Task)
 
 func (h *handlers) HandleMayaScheduleRecovery(ctx context.Context, t *asynq.Task) error {
 	if h.mayaService == nil {
-		return fmt.Errorf("Maya schedule recovery worker is not configured")
+		return fmt.Errorf("maya schedule recovery worker is not configured")
 	}
 	processed, err := h.mayaService.RecoverScheduleOwnerships(ctx, mayaScheduleRecoveryBatchSize)
 	if err != nil {
@@ -171,74 +193,27 @@ func (h *handlers) HandleMayaScheduleRecovery(ctx context.Context, t *asynq.Task
 }
 
 func (h *handlers) listMayaAssignmentCandidates(ctx context.Context, cursor uuid.UUID, limit int) ([]mayaAssignmentCandidateStory, error) {
-	query := `
-			SELECT
-				s.id,
-				s.workspace_id,
-				s.team_id,
-				s.assignee_id
-			FROM stories s
-			INNER JOIN workspaces w ON w.workspace_id = s.workspace_id
-			WHERE s.auto_scheduling_enabled = TRUE
-				AND s.assignee_id IS NOT NULL
-				AND (
-					s.assignee_id = $1
-					OR NOT EXISTS (
-						SELECT 1
-						FROM calendar_maya_schedule_ownerships ownership
-						WHERE ownership.workspace_id = s.workspace_id
-							AND ownership.story_id = s.id
-					)
-				)
-				AND s.id > $2
-			AND s.deleted_at IS NULL
-			AND s.archived_at IS NULL
-			AND s.is_draft = FALSE
-			AND ` + billing.WorkspaceMayaAccessSQL("w") + `
-			AND NOT EXISTS (
-				SELECT 1
-				FROM statuses stat
-				WHERE stat.status_id = s.status_id
-					AND stat.category IN ('completed', 'cancelled')
-			)
-		ORDER BY s.id
-		LIMIT $3
-	`
-
-	var stories []mayaAssignmentCandidateStory
-	if err := h.db.SelectContext(ctx, &stories, query, h.systemUserID, cursor, limit); err != nil {
+	if h.mayaAssignments == nil {
+		return nil, fmt.Errorf("list Maya assignment candidates: assignment store is not configured")
+	}
+	stories, err := h.mayaAssignments.ListMayaAssignmentCandidates(ctx, h.systemUserID, cursor, limit)
+	if err != nil {
 		return nil, fmt.Errorf("list Maya assignment candidates: %w", err)
 	}
 	return stories, nil
 }
 
-func (h *handlers) listWorkspaceScheduleCandidates(ctx context.Context, workspaceID uuid.UUID) ([]mayaAssignmentCandidateStory, error) {
-	query := `
-		SELECT
-			s.id,
-			s.workspace_id,
-			s.team_id,
-			s.assignee_id
-		FROM stories s
-		INNER JOIN workspaces w ON w.workspace_id = s.workspace_id
-		WHERE s.workspace_id = $1
-			AND s.auto_scheduling_enabled = TRUE
-			AND s.assignee_id IS NOT NULL
-			AND s.deleted_at IS NULL
-			AND s.archived_at IS NULL
-			AND s.is_draft = FALSE
-			AND ` + billing.WorkspaceMayaAccessSQL("w") + `
-			AND NOT EXISTS (
-				SELECT 1
-				FROM statuses stat
-				WHERE stat.status_id = s.status_id
-					AND stat.category IN ('completed', 'cancelled')
-			)
-		ORDER BY s.team_id, s.id
-	`
-
-	var stories []mayaAssignmentCandidateStory
-	if err := h.db.SelectContext(ctx, &stories, query, workspaceID); err != nil {
+func (h *handlers) listWorkspaceScheduleCandidates(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	cursor uuid.UUID,
+	limit int,
+) ([]mayaAssignmentCandidateStory, error) {
+	if h.mayaAssignments == nil {
+		return nil, fmt.Errorf("list workspace schedule candidates: assignment store is not configured")
+	}
+	stories, err := h.mayaAssignments.ListWorkspaceScheduleCandidates(ctx, workspaceID, cursor, limit)
+	if err != nil {
 		return nil, fmt.Errorf("list workspace schedule candidates: %w", err)
 	}
 	return stories, nil
@@ -254,4 +229,18 @@ func groupMayaAssignmentCandidates(stories []mayaAssignmentCandidateStory) map[m
 		groups[key] = append(groups[key], story.ID)
 	}
 	return groups
+}
+
+func sortedMayaAssignmentGroupKeys(groups map[mayaAssignmentGroupKey][]uuid.UUID) []mayaAssignmentGroupKey {
+	keys := make([]mayaAssignmentGroupKey, 0, len(groups))
+	for key := range groups {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].WorkspaceID != keys[j].WorkspaceID {
+			return keys[i].WorkspaceID.String() < keys[j].WorkspaceID.String()
+		}
+		return keys[i].TeamID.String() < keys[j].TeamID.String()
+	})
+	return keys
 }

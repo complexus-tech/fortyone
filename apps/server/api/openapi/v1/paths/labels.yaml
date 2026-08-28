@@ -1,0 +1,31 @@
+get:
+  operationId: listLabels
+  tags: [Labels]
+  summary: List labels visible in one team context
+  description: Returns team and workspace-wide labels after current team membership is verified. A personal access token or user-authorized OAuth token and an explicit team are required in this preview.
+  x-fortyone-scope: labels:read
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+    - name: teamId
+      in: query
+      required: true
+      description: Team whose labels are requested. Workspace-wide labels are included.
+      schema: {type: string, format: uuid}
+    - $ref: ../openapi.yaml#/components/parameters/Cursor
+    - $ref: ../openapi.yaml#/components/parameters/PageLimit
+  responses:
+    '200':
+      description: A deterministic page of visible labels.
+      headers:
+        X-Request-ID: {$ref: ../openapi.yaml#/components/headers/RequestId}
+        RateLimit: {$ref: ../openapi.yaml#/components/headers/RateLimit}
+        RateLimit-Policy: {$ref: ../openapi.yaml#/components/headers/RateLimitPolicy}
+      content:
+        application/json:
+          schema: {$ref: ../openapi.yaml#/components/schemas/LabelPageResponse}
+    '400': {$ref: ../openapi.yaml#/components/responses/BadRequest}
+    '401': {$ref: ../openapi.yaml#/components/responses/Unauthorized}
+    '403': {$ref: ../openapi.yaml#/components/responses/Forbidden}
+    '429': {$ref: ../openapi.yaml#/components/responses/RateLimited}
+    '500': {$ref: ../openapi.yaml#/components/responses/InternalError}
+    '503': {$ref: ../openapi.yaml#/components/responses/ServiceUnavailable}

@@ -125,7 +125,7 @@ func TestParseStoryQueryMapsEstimateValues(t *testing.T) {
 		nil,
 	)
 
-	query, err := parseStoryQuery(request, uuid.New(), uuid.New())
+	query, err := parseStoryQuery(request)
 	if err != nil {
 		t.Fatalf("expected query to parse, got error: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestParseStoryQueryMapsNegatedFilters(t *testing.T) {
 		nil,
 	)
 
-	query, err := parseStoryQuery(request, uuid.New(), uuid.New())
+	query, err := parseStoryQuery(request)
 	if err != nil {
 		t.Fatalf("expected query to parse, got error: %v", err)
 	}
@@ -188,7 +188,7 @@ func TestParseStoryQueryMapsCollaborationFilters(t *testing.T) {
 		nil,
 	)
 
-	query, err := parseStoryQuery(request, uuid.New(), uuid.New())
+	query, err := parseStoryQuery(request)
 	if err != nil {
 		t.Fatalf("expected query to parse, got error: %v", err)
 	}

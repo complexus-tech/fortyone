@@ -5,81 +5,66 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"time"
 
+	platformhealth "github.com/complexus-tech/projects-api/internal/platform/health"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 )
 
-type healthCheck struct {
-	log *logger.Logger
-	db  *sqlx.DB
+type readinessReporter interface {
+	Report(context.Context) platformhealth.Report
 }
 
-// NewHealthHandlers returns a new profHandlers instance.
-func New(log *logger.Logger, db *sqlx.DB) *healthCheck {
+type healthCheck struct {
+	log       *logger.Logger
+	readiness readinessReporter
+}
+
+// New returns the API process health handlers.
+func New(log *logger.Logger, readiness readinessReporter) *healthCheck {
 	return &healthCheck{
-		log: log,
-		db:  db,
+		log:       log,
+		readiness: readiness,
 	}
 }
 
-// Readiness checks if the db is ready and service is ready to handle requests.
+// Readiness reports whether the supervisor is accepting traffic and every
+// required dependency is reachable.
 func (h *healthCheck) Readiness(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
-	defer cancel()
+	report := platformhealth.Report{
+		Status: "not_ready",
+		Phase:  platformhealth.PhaseFailed,
+		Checks: map[string]string{},
+	}
+	if h.readiness != nil {
+		report = h.readiness.Report(ctx)
+	}
 
 	statusCode := http.StatusOK
 	status := "ok"
-
-	if err := h.db.PingContext(ctx); err != nil {
+	if report.Status != "ready" {
 		statusCode = http.StatusServiceUnavailable
-		status = "db not ready"
-		h.log.Error(ctx, "db: not ready.", "status", status)
+		status = report.Status
+		if h.log != nil {
+			h.log.Warn(ctx, "API is not ready", "phase", report.Phase, "checks", report.Checks)
+		}
 	}
 
-	data := struct {
-		Status string `json:"status"`
+	response := struct {
+		Status string               `json:"status"`
+		Phase  platformhealth.Phase `json:"phase"`
+		Checks map[string]string    `json:"checks"`
 	}{
 		Status: status,
+		Phase:  report.Phase,
+		Checks: report.Checks,
 	}
-	// h.brevoService.SendTemplatedEmail(ctx, brevo.SendTemplatedEmailRequest{
-
-	// 	To: []brevo.EmailRecipient{{Email: "josemukorivo@gmail.com", Name: "Test"}},
-
-	// 	TemplateID: 3,
-	// 	Params: map[string]any{
-	// 		"USER_NAME":            "Joseph",
-	// 		"USER_EMAIL":           "joseph@complexus.app",
-	// 		"WORKSPACE_NAME":       "Test",
-	// 		"WORKSPACE_URL":        "https://test.com",
-	// 		"APP_URL":              "https://test.com",
-	// 		"NOTIFICATION_TITLE":   "Test",
-	// 		"NOTIFICATION_MESSAGE": "Test",
-	// 	},
-	// })
-
-	// res, err := h.brevoService.CreateOrUpdateContact(context.Background(), brevo.CreateOrUpdateContactRequest{
-	// 	Email: "joseph@complexus.app",
-	// 	Attributes: map[string]any{
-	// 		"NAME": "Joseph Mukorivo",
-	// 	},
-	// 	ListIDs: []int64{6},
-	// })
-	// if err != nil {
-	// 	h.log.Error(ctx, "Failed to create or update contact", "error", err)
-	// 	return nil
-	// }
-
-	// fmt.Println("Brevo contact response", res)
-
-	return web.Respond(context.Background(), w, data, statusCode)
+	return web.Respond(ctx, w, response, statusCode)
 }
 
-// liveness checks if the service is alive and ready to handle requests.
+// Liveness reports process metadata used by the existing infrastructure probe
+// and diagnostics contract.
 func (h *healthCheck) Liveness(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-
 	host, err := os.Hostname()
 	if err != nil {
 		host = "unknown"

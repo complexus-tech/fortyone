@@ -3,7 +3,7 @@
   "info": {
     "title": "FortyOne Agent API",
     "version": "1.0.0",
-    "description": "Machine-readable contract for FortyOne discovery, health, and the user-authorized remote MCP endpoint.",
+    "description": "Machine-readable contract for FortyOne discovery, health, and OAuth-protected MCP and developer API audiences.",
     "contact": { "name": "FortyOne", "email": "hello@complexus.tech", "url": "https://www.fortyone.app/contact" }
   },
   "servers": [{ "url": "https://api.fortyone.app", "description": "Production" }],
@@ -11,10 +11,12 @@
   "paths": {
     "/openapi.json": { "get": { "operationId": "getOpenAPIDescription", "description": "Returns the OpenAPI 3.1 description for automatic client discovery.", "responses": { "200": { "description": "OpenAPI description" } } } },
     "/liveness": { "get": { "operationId": "getAPILiveness", "description": "Confirms that the FortyOne API process is running.", "responses": { "200": { "description": "API process is alive" } } } },
-    "/readiness": { "get": { "operationId": "getAPIReadiness", "description": "Confirms whether the API and database are ready.", "responses": { "200": { "description": "API is ready" }, "503": { "description": "API is not ready" } } } },
+    "/readiness": { "get": { "operationId": "getAPIReadiness", "description": "Confirms whether the API supervisor and required PostgreSQL and Redis dependencies are ready and not draining.", "responses": { "200": { "description": "API is ready" }, "503": { "description": "API is starting, draining, failed, or a required dependency is unavailable" } } } },
     "/mcp": { "post": { "operationId": "sendMCPMessage", "description": "Sends an authenticated JSON-RPC message to the stateless FortyOne Streamable HTTP MCP endpoint.", "security": [{ "oauth2": ["mcp:access"] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } }, "responses": { "200": { "description": "JSON-RPC response" }, "401": { "description": "OAuth bearer token required" } } } },
     "/.well-known/oauth-protected-resource": { "get": { "operationId": "getOAuthProtectedResourceMetadata", "description": "Returns RFC 9728 authorization metadata for the FortyOne MCP resource.", "responses": { "200": { "description": "Protected resource metadata" } } } },
-    "/.well-known/oauth-authorization-server": { "get": { "operationId": "getOAuthAuthorizationServerMetadata", "description": "Returns OAuth authorization-server metadata for MCP clients.", "responses": { "200": { "description": "Authorization server metadata" } } } }
+    "/.well-known/oauth-protected-resource/mcp": { "get": { "operationId": "getMCPOAuthProtectedResourceMetadata", "description": "Returns RFC 9728 authorization metadata for the exact FortyOne MCP audience.", "responses": { "200": { "description": "MCP protected resource metadata" } } } },
+    "/.well-known/oauth-protected-resource/api/v1": { "get": { "operationId": "getDeveloperAPIOAuthProtectedResourceMetadata", "description": "Returns RFC 9728 authorization metadata and supported scopes for the exact FortyOne /api/v1 audience.", "responses": { "200": { "description": "Developer API protected resource metadata" } } } },
+    "/.well-known/oauth-authorization-server": { "get": { "operationId": "getOAuthAuthorizationServerMetadata", "description": "Returns OAuth authorization-server metadata for supported FortyOne resource audiences.", "responses": { "200": { "description": "Authorization server metadata" } } } }
   },
   "components": { "securitySchemes": { "oauth2": { "type": "oauth2", "flows": { "authorizationCode": { "authorizationUrl": "https://api.fortyone.app/oauth/authorize", "tokenUrl": "https://api.fortyone.app/oauth/token", "scopes": { "mcp:access": "Use the FortyOne MCP tools as the connected user" } } } } } }
 }

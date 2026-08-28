@@ -5,8 +5,13 @@ import {
   Inter,
   Bricolage_Grotesque as BricolageGrotesque,
 } from "next/font/google";
-import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import Script from "next/script";
+import type { ReactNode } from "react";
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://docs.fortyone.app"),
+};
 
 const inter = Inter({
   subsets: ["latin"],

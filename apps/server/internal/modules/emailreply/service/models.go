@@ -13,12 +13,14 @@ import (
 )
 
 const (
-	Provider                = "brevo_email"
-	InboundProcessedEvent   = "inboundEmailProcessed"
-	maxInboundItemsPerBatch = 100
-	maxReplyTokenLength     = 256
-	minReplyTokenLength     = 16
-	replyAddressPrefix      = "maya+"
+	Provider                   = "brevo_email"
+	InboundProcessedEvent      = "inboundEmailProcessed"
+	MaximumInboundWebhookBytes = 5 << 20
+	maxInboundItemsPerBatch    = 100
+	maxInboundMailboxes        = 100
+	maxReplyTokenLength        = 256
+	minReplyTokenLength        = 16
+	replyAddressPrefix         = "maya+"
 )
 
 var (
@@ -100,6 +102,9 @@ func (m *Mailboxes) UnmarshalJSON(data []byte) error {
 }
 
 func decodeInboundWebhook(raw []byte) (InboundWebhook, error) {
+	if len(raw) == 0 || len(raw) > MaximumInboundWebhookBytes {
+		return InboundWebhook{}, fmt.Errorf("%w: body must be between 1 and %d bytes", ErrInvalidPayload, MaximumInboundWebhookBytes)
+	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	var payload InboundWebhook
 	if err := decoder.Decode(&payload); err != nil {
@@ -131,6 +136,9 @@ func decodeInboundEmail(raw json.RawMessage) (InboundEmail, error) {
 	}
 	if len(email.To) == 0 && len(email.Recipients) == 0 {
 		return InboundEmail{}, fmt.Errorf("%w: item recipient is required", ErrInvalidPayload)
+	}
+	if len(email.To)+len(email.Recipients)+len(email.Cc) > maxInboundMailboxes {
+		return InboundEmail{}, fmt.Errorf("%w: item mailbox count exceeds limit of %d", ErrInvalidPayload, maxInboundMailboxes)
 	}
 	return email, nil
 }

@@ -7,17 +7,17 @@ import (
 	"testing"
 	"time"
 
-	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/domain"
 	"github.com/google/uuid"
 )
 
 func TestScheduleBlockSelectScopesAutoSchedulingMetadataToMayaBlocks(t *testing.T) {
 	t.Parallel()
 
-	query := strings.Join(strings.Fields(strings.ToLower(scheduleBlockSelect)), " ")
+	query := normalizedNamedQuery(t, "queries/schedule_reads.sql", "ListCalendarScheduleBlocks")
 	for _, contract := range []string{
-		"case when csb.source = 'maya' then s.auto_scheduling_status else null end as auto_scheduling_status",
-		"case when csb.source = 'maya' then s.auto_scheduling_reason else null end as auto_scheduling_reason",
+		"coalesce(case when block.source = 'maya' then story.auto_scheduling_status end, '') as text) as auto_scheduling_status",
+		"coalesce(case when block.source = 'maya' then story.auto_scheduling_reason end, '') as text) as auto_scheduling_reason",
 	} {
 		if !strings.Contains(query, contract) {
 			t.Errorf("schedule block query is missing Maya metadata contract %q", contract)
@@ -28,10 +28,10 @@ func TestScheduleBlockSelectScopesAutoSchedulingMetadataToMayaBlocks(t *testing.
 func TestScheduleBlockSelectIncludesStoryStatusColor(t *testing.T) {
 	t.Parallel()
 
-	query := strings.Join(strings.Fields(strings.ToLower(scheduleBlockSelect)), " ")
+	query := normalizedNamedQuery(t, "queries/schedule_reads.sql", "ListCalendarScheduleBlocks")
 	for _, contract := range []string{
 		"status.color as story_status_color",
-		"left join statuses status on status.status_id = s.status_id and status.team_id = s.team_id",
+		"left join statuses status on status.status_id = story.status_id and status.team_id = story.team_id",
 	} {
 		if !strings.Contains(query, contract) {
 			t.Errorf("schedule block query is missing story status contract %q", contract)
@@ -44,9 +44,9 @@ func TestToCoreScheduleBlockPropagatesAutoSchedulingMetadata(t *testing.T) {
 
 	status := "at_risk"
 	reason := "A new calendar conflict displaced this work."
-	block := toCoreScheduleBlock(dbScheduleBlock{
-		AutoSchedulingStatus: &status,
-		AutoSchedulingReason: &reason,
+	block := toCoreScheduleBlock(scheduleBlockRecord{
+		AutoSchedulingStatus: status,
+		AutoSchedulingReason: reason,
 	})
 
 	if block.AutoSchedulingStatus == nil || *block.AutoSchedulingStatus != status {
@@ -61,7 +61,7 @@ func TestToCoreScheduleBlockPropagatesStoryStatusColor(t *testing.T) {
 	t.Parallel()
 
 	color := "#3c90ff"
-	block := toCoreScheduleBlock(dbScheduleBlock{StoryStatusColor: &color})
+	block := toCoreScheduleBlock(scheduleBlockRecord{StoryStatusColor: &color})
 
 	if block.StoryStatusColor == nil || *block.StoryStatusColor != color {
 		t.Fatalf("story status color = %v, want %q", block.StoryStatusColor, color)
@@ -72,7 +72,7 @@ func TestToCoreScheduleBlockPropagatesCompletion(t *testing.T) {
 	t.Parallel()
 
 	completedAt := time.Date(2026, 8, 26, 8, 30, 0, 0, time.UTC)
-	block := toCoreScheduleBlock(dbScheduleBlock{CompletedAt: &completedAt})
+	block := toCoreScheduleBlock(scheduleBlockRecord{CompletedAt: &completedAt})
 
 	if block.CompletedAt == nil || !block.CompletedAt.Equal(completedAt) {
 		t.Fatalf("completed at = %v, want %v", block.CompletedAt, completedAt)
@@ -142,30 +142,19 @@ func TestRedactCrossWorkspaceScheduleBlocksHidesTaskDetails(t *testing.T) {
 func TestListSchedulingBlocksForUserUsesContiguousQueryParameters(t *testing.T) {
 	t.Parallel()
 
-	data, err := os.ReadFile("schedule.go")
-	if err != nil {
-		t.Fatalf("read schedule repository: %v", err)
-	}
-	source := strings.Join(strings.Fields(string(data)), " ")
-	functionStart := strings.Index(source, "func (r *Repo) ListSchedulingBlocksForUser")
-	functionEnd := strings.Index(source[functionStart+1:], "func (r *Repo)")
-	if functionStart < 0 || functionEnd < 0 {
-		t.Fatal("could not locate ListSchedulingBlocksForUser implementation")
-	}
-	functionSource := source[functionStart : functionStart+1+functionEnd]
+	query := normalizedNamedQuery(t, "queries/schedule_reads.sql", "ListSchedulingBlocksForUser")
 
 	for _, contract := range []string{
-		"WHERE csb.user_id = $1",
-		"AND csb.start_at < $3",
-		"AND csb.end_at > $2",
-		"AND csb.completed_at IS NULL",
-		"SelectContext(ctx, &rows, query, userID, startAt, endAt)",
+		"where block.user_id = sqlc.arg(user_id)",
+		"and block.start_at < sqlc.arg(end_at)",
+		"and block.end_at > sqlc.arg(start_at)",
+		"and block.completed_at is null",
 	} {
-		if !strings.Contains(functionSource, contract) {
+		if !strings.Contains(query, contract) {
 			t.Errorf("account-wide schedule query is missing parameter contract %q", contract)
 		}
 	}
-	if strings.Contains(functionSource, "$4") || strings.Contains(functionSource, "query, workspaceID, userID, startAt, endAt") {
+	if strings.Contains(query, "sqlc.arg(workspace_id)") {
 		t.Fatal("workspace ID must remain a redaction input and must not be passed as an unused SQL parameter")
 	}
 }
@@ -173,32 +162,21 @@ func TestListSchedulingBlocksForUserUsesContiguousQueryParameters(t *testing.T) 
 func TestScheduleBlockConflictsUsesContiguousQueryParameters(t *testing.T) {
 	t.Parallel()
 
-	data, err := os.ReadFile("schedule.go")
-	if err != nil {
-		t.Fatalf("read schedule repository: %v", err)
-	}
-	source := strings.Join(strings.Fields(string(data)), " ")
-	functionStart := strings.Index(source, "func scheduleBlockConflicts")
-	functionEnd := strings.Index(source[functionStart+1:], "func ")
-	if functionStart < 0 || functionEnd < 0 {
-		t.Fatal("could not locate scheduleBlockConflicts implementation")
-	}
-	functionSource := source[functionStart : functionStart+1+functionEnd]
+	query := normalizedNamedQuery(t, "queries/schedule_reads.sql", "CalendarScheduleBlockConflicts")
 
 	for _, contract := range []string{
-		"WHERE csb.user_id = $1",
-		"AND csb.completed_at IS NULL",
-		"AND csb.start_at < $3",
-		"AND csb.end_at > $2",
-		"AND ($4 = CAST('00000000-0000-0000-0000-000000000000' AS uuid) OR csb.block_id <> $4)",
-		"WHERE cbw.user_id = $1",
-		"input.UserID, input.StartAt, input.EndAt, excludeBlockID,",
+		"where schedule_block.user_id = sqlc.arg(user_id)",
+		"and schedule_block.completed_at is null",
+		"and schedule_block.start_at < sqlc.arg(end_at)",
+		"and schedule_block.end_at > sqlc.arg(start_at)",
+		"cast(sqlc.arg(exclude_block_id) as uuid)",
+		"where busy.user_id = sqlc.arg(user_id)",
 	} {
-		if !strings.Contains(functionSource, contract) {
+		if !strings.Contains(query, contract) {
 			t.Errorf("schedule conflict query is missing parameter contract %q", contract)
 		}
 	}
-	if strings.Contains(functionSource, "$5") || strings.Contains(functionSource, "input.WorkspaceID") {
+	if strings.Contains(query, "sqlc.arg(workspace_id)") {
 		t.Fatal("schedule conflict query must not include an unused workspace parameter")
 	}
 }
@@ -344,14 +322,15 @@ func TestManualResizePersistsEstimateBlockAuditAndOutboxAtomically(t *testing.T)
 	functionSource := source[functionStart : functionStart+1+functionEnd]
 
 	contracts := []string{
-		"WHERE client_mutation_id = $1",
+		"r.withinTransaction(ctx",
+		"GetManualScheduleRescheduleBlockID",
 		"if input.Change == calendar.ManualScheduleBlockChangeResize && current.StoryID != nil",
-		"SELECT estimated_duration_minutes, minimum_focus_block_minutes, auto_scheduling_enabled FROM stories WHERE workspace_id = $1 AND id = $2 AND deleted_at IS NULL FOR UPDATE",
-		"UPDATE stories SET estimated_duration_minutes = $3, updated_at = CURRENT_TIMESTAMP",
+		"LockScheduleStoryTime",
+		"UpdateScheduleStoryEstimate",
 		"if storyTime.AutoSchedulingEnabled",
-		"UPDATE calendar_schedule_blocks SET start_at = $4",
-		"INSERT INTO calendar_schedule_reschedule_events",
-		"enqueueScheduleEventOutbox(ctx, tx",
+		"ManuallyRescheduleCalendarBlock",
+		"RecordManualCalendarReschedule",
+		"enqueueScheduleEventOutbox(ctx, queries",
 	}
 	positions := make([]int, 0, len(contracts))
 	for _, contract := range contracts {
@@ -366,10 +345,25 @@ func TestManualResizePersistsEstimateBlockAuditAndOutboxAtomically(t *testing.T)
 			t.Fatalf("manual resize transaction contract %q occurs out of order", contracts[index])
 		}
 	}
-	if commitPosition := strings.LastIndex(functionSource, "tx.Commit()"); commitPosition <= positions[len(positions)-1] {
-		t.Fatal("manual resize must commit only after the provider outbox write")
-	}
-	if idempotentReturn := strings.Index(functionSource, "return calendar.ManualScheduleBlockResult{Block: block}, nil"); idempotentReturn < 0 || idempotentReturn >= positions[2] {
+	if idempotentReturn := strings.Index(functionSource, "result = calendar.ManualScheduleBlockResult{Block: block}"); idempotentReturn < 0 || idempotentReturn >= positions[2] {
 		t.Fatal("idempotent retries must return before locking or updating the story")
 	}
+}
+
+func normalizedNamedQuery(t *testing.T, path, name string) string {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	marker := "-- name: " + name + " "
+	start := strings.Index(string(data), marker)
+	if start < 0 {
+		t.Fatalf("query %s is missing from %s", name, path)
+	}
+	remainder := string(data)[start+len(marker):]
+	if end := strings.Index(remainder, "-- name: "); end >= 0 {
+		remainder = remainder[:end]
+	}
+	return strings.Join(strings.Fields(strings.ToLower(remainder)), " ")
 }

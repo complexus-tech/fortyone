@@ -27,6 +27,11 @@ func TestStoryReadStatus(t *testing.T) {
 			want: http.StatusBadRequest,
 		},
 		{
+			name: "invalid typed query",
+			err:  fmt.Errorf("filter story: %w", stories.ErrInvalidStoryReadQuery),
+			want: http.StatusBadRequest,
+		},
+		{
 			name: "unexpected failure",
 			err:  errors.New("database unavailable"),
 			want: http.StatusInternalServerError,

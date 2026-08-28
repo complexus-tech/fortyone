@@ -9,9 +9,9 @@ import (
 func TestSearchEnrichmentIsPartOfTheBoundedPageQueries(t *testing.T) {
 	t.Parallel()
 
-	data, err := os.ReadFile("queries.go")
+	data, err := os.ReadFile("queries/search.sql")
 	if err != nil {
-		t.Fatalf("read queries.go: %v", err)
+		t.Fatalf("read typed search queries: %v", err)
 	}
 	source := strings.ToLower(string(data))
 
@@ -22,15 +22,21 @@ func TestSearchEnrichmentIsPartOfTheBoundedPageQueries(t *testing.T) {
 		"search_lead.full_name as lead_full_name",
 		"search_assignee.is_active = true",
 		"search_lead.is_active = true",
-		"search_assignee_membership.workspace_id = s.workspace_id",
-		"search_lead_membership.workspace_id = o.workspace_id",
+		"search_assignee_membership.workspace_id = story.workspace_id",
+		"search_lead_membership.workspace_id = objective.workspace_id",
+		"actor.is_active = true",
+		"actor.is_system = false",
+		"count(*) over () as total_count",
 	} {
 		if !strings.Contains(source, required) {
 			t.Fatalf("page-local search enrichment must include %q", required)
 		}
 	}
 
-	if count := strings.Count(source, "limit :page_size offset :offset"); count != 2 {
+	if count := strings.Count(source, "limit sqlc.arg(page_limit)"); count != 2 {
 		t.Fatalf("story and objective enrichment must remain page-bounded; got %d page limits", count)
+	}
+	if count := strings.Count(source, "offset sqlc.arg(page_offset)"); count != 2 {
+		t.Fatalf("story and objective queries must use typed page offsets; got %d", count)
 	}
 }

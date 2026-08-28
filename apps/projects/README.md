@@ -115,7 +115,7 @@ src/
 - **File Storage**: Azure Blob Storage
 - **Error Tracking**: Sentry
 - **Testing**: Jest + React Testing Library
-- **Deployment**: Vercel or Docker
+- **Deployment**: Internally managed hosting
 
 ### Key Features
 
@@ -168,23 +168,9 @@ pnpm test         # Run Jest tests
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
-
-1. **Connect Repository**:
-
-   - Import your GitHub repository to Vercel
-   - Configure build settings:
-     - Build Command: `cd apps/projects && pnpm build`
-     - Output Directory: `apps/projects/.next`
-     - Install Command: `pnpm install`
-
-2. **Environment Variables**:
-
-   - Add all environment variables to Vercel project settings
-
-3. **Custom Domains**:
-
-   - Configure your production domain and SSL certificates
+The Projects app is deployed through its internally managed hosting project.
+Environment variables, domains, and release access are controlled in the
+deployment platform. Do not publish a standalone build or container image.
 
 ## 🔧 Configuration
 
@@ -204,29 +190,9 @@ Azure Blob Storage is used for file uploads:
 - **Organization**: Files organized by workspace and user
 - **Optimization**: Automatic image resizing and optimization
 
-## 🤝 Contributing
+## Internal development workflow
 
-See the main [Contributing Guide](../../CONTRIBUTING.md) for details.
-
-### Development Workflow
-
-1. **Pick an issue** from the GitHub issues
-2. **Create a feature branch**: `git checkout -b feature/issue-number`
-3. **Write tests** for new functionality
-4. **Implement the feature**
-5. **Run tests**: `pnpm test`
-6. **Submit PR** with description and screenshots
-
-## 📄 License
-
-This project is licensed under the [FortyOne License](../../LICENSE).
-
-## 📞 Support
-
-- **Documentation**: [docs.fortyone.app](https://docs.fortyone.app)
-- **Issues**: [GitHub Issues](https://github.com/complexus/fortyone/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/complexus/fortyone/discussions)
-
-```
-
-```
+1. Work from an approved internal task and a narrowly scoped branch.
+2. Add or update tests for changed behavior.
+3. Run `pnpm test`, `pnpm lint`, and `pnpm type-check` as applicable.
+4. Request internal review with the relevant screenshots or validation evidence.

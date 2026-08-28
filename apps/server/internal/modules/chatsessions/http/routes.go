@@ -6,25 +6,23 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/go-playground/validator/v10"
-	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB        *sqlx.DB
-	Log       *logger.Logger
-	SecretKey string
-	Validate  *validator.Validate
-	Cache     *cache.Service
-	Service   *chatsessions.Service
+	Log               *logger.Logger
+	SecretKey         string
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	Service           *chatsessions.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	chatsessionsService := cfg.Service
 
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	gzip := mid.Gzip(cfg.Log)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 
 	h := New(chatsessionsService, cfg.Log)
 

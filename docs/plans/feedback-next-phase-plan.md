@@ -390,14 +390,14 @@ protection.
 
 ### Variables required by the current anonymous-feedback release
 
-| Variable                            | Runtime              | Requirement                                                 | Purpose                                                                                                                                     |
-| ----------------------------------- | -------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FEEDBACK_INGRESS_SECRET`           | Projects web and API | Required; same value in both; at least 32 characters        | Signs trusted anonymous ingress fingerprints. `setup.sh` generates and preserves it for self-hosted installations.                          |
-| `FEEDBACK_TRUSTED_CLIENT_IP_HEADER` | Projects web         | Required only for self-hosted production anonymous feedback | Names a header that a trusted reverse proxy always overwrites with the real client address. Leave blank on Vercel and in local development. |
+| Variable                            | Runtime              | Requirement                                                   | Purpose                                                                                                                 |
+| ----------------------------------- | -------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `FEEDBACK_INGRESS_SECRET`           | Projects web and API | Required; same managed secret in both; at least 32 characters | Signs trusted anonymous ingress fingerprints. Generate and rotate it through the internal secret-management process.    |
+| `FEEDBACK_TRUSTED_CLIENT_IP_HEADER` | Projects web         | Unsupported in the managed production deployment              | Legacy reverse-proxy compatibility only. Keep it unset; production client identity comes from the managed hosting edge. |
 
-Do not configure `FEEDBACK_TRUSTED_CLIENT_IP_HEADER` unless a sanitizing reverse
-proxy owns and overwrites that header. A directly exposed web container must not
-trust a client-supplied forwarding header.
+The supported production deployment uses the hosting provider's authenticated
+request metadata. Do not enable a custom trusted-client header in production or
+trust a forwarding header supplied directly by a public client.
 
 ### Next-phase decision
 

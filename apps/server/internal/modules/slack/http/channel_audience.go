@@ -31,9 +31,13 @@ func (h *Handlers) ListChannelAudiences(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	audiences, err := h.service.ListChannelAudiences(ctx, workspace.ID)
+	actorID, err := mid.GetUserID(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	audiences, err := h.service.ListChannelAudiences(ctx, workspace.ID, actorID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusInternalServerError))
 	}
 	return web.Respond(ctx, w, toAppChannelAudiences(audiences), http.StatusOK)
 }
@@ -49,7 +53,7 @@ func (h *Handlers) UpdateChannelAudience(ctx context.Context, w http.ResponseWri
 	}
 	channelID := strings.TrimSpace(web.Params(r, "channelId"))
 	if channelID == "" {
-		return web.RespondError(ctx, w, errors.New("Slack channel is required"), http.StatusBadRequest)
+		return web.RespondError(ctx, w, errors.New("slack channel is required"), http.StatusBadRequest)
 	}
 	var input AppUpdateSlackChannelAudience
 	if err := web.Decode(r, &input); err != nil {
@@ -71,7 +75,7 @@ func (h *Handlers) UpdateChannelAudience(ctx context.Context, w http.ResponseWri
 		assistantConfiguredOrDefault(input.IsConfigured),
 		teamIDs,
 	); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusBadRequest))
 	}
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }

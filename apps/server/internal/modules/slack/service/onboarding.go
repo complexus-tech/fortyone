@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
 	"github.com/google/uuid"
 )
 
@@ -23,12 +22,12 @@ const (
 )
 
 type preparedSlackFirstInteractionGuide struct {
-	installation   slackrepository.SlackWorkspaceRecord
+	installation   slackdomain.Installation
 	slackUserID    string
 	text           string
 	idempotencyKey string
 	providerKey    string
-	delivery       messagingrepository.OutboundDeliveryRecord
+	delivery       OutboundDeliveryRecord
 }
 
 func slackEventCountsAsFirstInteraction(kind slackEventKind) bool {
@@ -46,7 +45,7 @@ func slackEventCountsAsFirstInteraction(kind slackEventKind) bool {
 
 func (s *Service) dispatchFirstInteractionGuide(
 	parent context.Context,
-	installation slackrepository.SlackWorkspaceRecord,
+	installation slackdomain.Installation,
 	slackUserID string,
 ) {
 	if !s.slackFirstInteractionGuideConfigured() || installation.WorkspaceID == uuid.Nil || strings.TrimSpace(slackUserID) == "" {
@@ -74,7 +73,7 @@ func (s *Service) dispatchFirstInteractionGuideByTeam(parent context.Context, sl
 	installation, err := s.repo.GetSlackWorkspaceByTeamID(prepareCtx, strings.TrimSpace(slackTeamID))
 	if err != nil {
 		cancel()
-		if !slackrepository.IsNotFound(err) {
+		if !isSlackRepositoryNotFound(err) {
 			baseCtx := context.WithoutCancel(parent)
 			s.logFirstInteractionGuideError(baseCtx, installation, slackUserID, err)
 			s.retryFirstInteractionGuideByTeamAsync(baseCtx, slackTeamID, slackUserID)
@@ -100,7 +99,7 @@ func (s *Service) dispatchFirstInteractionGuideByTeam(parent context.Context, sl
 // makes an ambiguous first attempt safe to retry.
 func (s *Service) retryFirstInteractionGuideAsync(
 	parent context.Context,
-	installation slackrepository.SlackWorkspaceRecord,
+	installation slackdomain.Installation,
 	slackUserID string,
 ) {
 	go func() {
@@ -125,7 +124,7 @@ func (s *Service) retryFirstInteractionGuideByTeamAsync(parent context.Context, 
 		defer cancel()
 		installation, err := s.repo.GetSlackWorkspaceByTeamID(ctx, strings.TrimSpace(slackTeamID))
 		if err != nil {
-			if !slackrepository.IsNotFound(err) {
+			if !isSlackRepositoryNotFound(err) {
 				s.logFirstInteractionGuideError(parent, installation, slackUserID, err)
 			}
 			return
@@ -149,7 +148,7 @@ func (s *Service) slackFirstInteractionGuideConfigured() bool {
 
 func (s *Service) prepareFirstInteractionGuide(
 	ctx context.Context,
-	installation slackrepository.SlackWorkspaceRecord,
+	installation slackdomain.Installation,
 	slackUserID string,
 ) (preparedSlackFirstInteractionGuide, bool, error) {
 	if s.outbound == nil {
@@ -174,7 +173,7 @@ func (s *Service) prepareFirstInteractionGuide(
 		identityKey,
 	)
 	providerKey := slackFirstInteractionGuideProviderKey(installation.WorkspaceID, slackTeamID, slackUserID)
-	delivery, shouldSend, err := s.outbound.StartOutboundDelivery(ctx, messagingrepository.OutboundDeliveryInput{
+	delivery, shouldSend, err := s.outbound.StartOutboundDelivery(ctx, OutboundDeliveryInput{
 		Provider:                slackProviderMessaging,
 		WorkspaceID:             installation.WorkspaceID,
 		InstallGeneration:       &installation.InstallGeneration,
@@ -185,7 +184,7 @@ func (s *Service) prepareFirstInteractionGuide(
 		Content:                 text,
 		Purpose:                 slackOnboardingPurpose,
 	})
-	if errors.Is(err, messagingrepository.ErrLeaseBusy) {
+	if errors.Is(err, ErrOutboundDeliveryBusy) {
 		return preparedSlackFirstInteractionGuide{}, false, nil
 	}
 	if err != nil || !shouldSend {
@@ -273,7 +272,7 @@ func (s *Service) sendPreparedFirstInteractionGuide(ctx context.Context, prepare
 
 func (s *Service) logFirstInteractionGuideError(
 	ctx context.Context,
-	installation slackrepository.SlackWorkspaceRecord,
+	installation slackdomain.Installation,
 	slackUserID string,
 	err error,
 ) {

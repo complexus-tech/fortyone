@@ -1,65 +1,100 @@
 package attachments
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
+	attachmentdomain "github.com/complexus-tech/projects-api/internal/modules/attachments/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/safehttp"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/validate"
-	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
+var serviceTracer = otel.Tracer("github.com/complexus-tech/projects-api/internal/modules/attachments/service")
+
 // Repository defines the storage interface for attachments
 type Repository interface {
 	CreateAttachment(ctx context.Context, attachment CoreAttachment) (CoreAttachment, error)
-	GetAttachmentByID(ctx context.Context, id uuid.UUID) (CoreAttachment, error)
-	GetAttachmentByBlobName(ctx context.Context, blobName string) (CoreAttachment, error)
+	GetAttachmentByID(ctx context.Context, id, workspaceID uuid.UUID) (CoreAttachment, error)
 	GetAttachmentsByStoryID(ctx context.Context, storyID, workspaceID uuid.UUID) ([]CoreAttachment, error)
 	StoryExistsInWorkspace(ctx context.Context, storyID, workspaceID uuid.UUID) (bool, error)
 	AuthorizeStoryAttachment(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) (CoreAttachment, error)
 	LinkStoryMedia(ctx context.Context, storyID, attachmentID, createdBy, workspaceID uuid.UUID) error
 	AuthorizeStoryMedia(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) (CoreAttachment, error)
 	UnlinkStoryMedia(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) (bool, error)
-	UpdateAttachmentStorageMetadata(ctx context.Context, blobName string, size int64, mimeType string) error
-	DeleteAttachment(ctx context.Context, id uuid.UUID) error
-	LinkAttachmentToStory(ctx context.Context, storyID, attachmentID uuid.UUID) error
+	DeleteAttachment(ctx context.Context, id, workspaceID uuid.UUID) error
+	DeleteAttachmentIfUnreferenced(ctx context.Context, id, workspaceID uuid.UUID) (bool, error)
+	LinkAttachmentToStory(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) error
+	StartAttachmentOptimization(ctx context.Context, attachmentID, workspaceID uuid.UUID, lease time.Duration) (CoreAttachment, error)
+	CompleteAttachmentOptimization(ctx context.Context, attachmentID, workspaceID uuid.UUID, size int64, mimeType string, status attachmentdomain.OptimizationStatus) error
+	FailAttachmentOptimization(ctx context.Context, attachmentID, workspaceID uuid.UUID, reason string, queued bool) error
 }
 
 type ImageOptimizationEnqueuer interface {
 	EnqueueAttachmentImageOptimization(payload tasks.AttachmentImageOptimizationPayload) error
 }
 
+type RemoteImageDownloader interface {
+	Download(ctx context.Context, rawURL string) (safehttp.Download, error)
+}
+
+type Option func(*Service)
+
+func WithRemoteImageDownloader(downloader RemoteImageDownloader) Option {
+	return func(service *Service) {
+		service.remoteImages = downloader
+	}
+}
+
 // Service manages attachment operations
 type Service struct {
-	log       *logger.Logger
-	repo      Repository
-	storage   storage.StorageService
-	config    storage.Config
-	optimizer ImageOptimizationEnqueuer
+	log          *logger.Logger
+	repo         Repository
+	storage      storage.StorageService
+	config       storage.Config
+	optimizer    ImageOptimizationEnqueuer
+	remoteImages RemoteImageDownloader
 }
 
 // New creates a new attachment service
-func New(log *logger.Logger, repo Repository, storageService storage.StorageService, config storage.Config, optimizer ImageOptimizationEnqueuer) *Service {
-	return &Service{
-		log:       log,
-		repo:      repo,
-		storage:   storageService,
-		config:    config,
-		optimizer: optimizer,
+func New(log *logger.Logger, repo Repository, storageService storage.StorageService, config storage.Config, optimizer ImageOptimizationEnqueuer, options ...Option) *Service {
+	service := &Service{
+		log:          log,
+		repo:         repo,
+		storage:      storageService,
+		config:       config,
+		optimizer:    optimizer,
+		remoteImages: newDefaultRemoteImageDownloader(),
 	}
+	for _, option := range options {
+		if option != nil {
+			option(service)
+		}
+	}
+	return service
+}
+
+func newDefaultRemoteImageDownloader() RemoteImageDownloader {
+	downloader, err := safehttp.NewDownloader(safehttp.Config{
+		MaxResponseBytes: validate.MaxProfileImageSize,
+		Timeout:          10 * time.Second,
+	})
+	if err != nil {
+		panic("invalid built-in remote image downloader configuration: " + err.Error())
+	}
+	return downloader
 }
 
 // UploadAttachment uploads a file and creates an attachment record
@@ -107,7 +142,7 @@ func (s *Service) UploadStoryMedia(
 	}
 
 	if err := s.repo.LinkStoryMedia(ctx, storyID, fileInfo.ID, userID, workspaceID); err != nil {
-		if cleanupErr := s.DeleteAttachment(ctx, fileInfo.ID, userID); cleanupErr != nil {
+		if cleanupErr := s.DeleteAttachment(ctx, fileInfo.ID, workspaceID, userID); cleanupErr != nil {
 			s.log.Error(ctx, "failed to clean up unlinked story media", "error", cleanupErr, "attachment_id", fileInfo.ID)
 		}
 		return FileInfo{}, fmt.Errorf("link story media: %w", err)
@@ -136,7 +171,7 @@ func (s *Service) uploadAttachment(
 	validateContentType func(string) error,
 ) (FileInfo, error) {
 	s.log.Info(ctx, "core.attachments.upload")
-	ctx, span := web.AddSpan(ctx, "core.attachments.UploadAttachment")
+	ctx, span := serviceTracer.Start(ctx, "core.attachments.UploadAttachment")
 	defer span.End()
 
 	// Validate file
@@ -174,12 +209,14 @@ func (s *Service) uploadAttachment(
 
 	// Create attachment record in database
 	attachment, err := s.repo.CreateAttachment(ctx, CoreAttachment{
-		Filename:    fileHeader.Filename,
-		BlobName:    blobName,
-		Size:        fileHeader.Size,
-		MimeType:    contentType,
-		UploadedBy:  userID,
-		WorkspaceID: workspaceID,
+		Filename:           fileHeader.Filename,
+		BlobName:           blobName,
+		Size:               fileHeader.Size,
+		MimeType:           contentType,
+		UploadedBy:         userID,
+		WorkspaceID:        workspaceID,
+		ScanStatus:         attachmentdomain.ScanStatusUnscanned,
+		OptimizationStatus: optimizationStatus(contentType, s.optimizer != nil),
 	})
 	if err != nil {
 		span.RecordError(err)
@@ -197,13 +234,13 @@ func (s *Service) uploadAttachment(
 	)
 	if err != nil {
 		span.RecordError(err)
-		if cleanupErr := s.DeleteAttachment(ctx, attachment.ID, userID); cleanupErr != nil {
+		if cleanupErr := s.DeleteAttachment(ctx, attachment.ID, workspaceID, userID); cleanupErr != nil {
 			s.log.Error(ctx, "failed to clean up attachment after access URL failure", "error", cleanupErr, "attachment_id", attachment.ID)
 		}
 		return FileInfo{}, fmt.Errorf("failed to generate access URL: %w", err)
 	}
 
-	s.maybeEnqueueImageOptimization(ctx, blobName, contentType)
+	s.maybeEnqueueImageOptimization(ctx, attachment)
 
 	span.AddEvent("attachment created", trace.WithAttributes(
 		attribute.String("attachment_id", attachment.ID.String()),
@@ -257,22 +294,39 @@ func detectFileContentType(file multipart.File, fileHeader *multipart.FileHeader
 	return strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0])), nil
 }
 
-func (s *Service) maybeEnqueueImageOptimization(ctx context.Context, blobName, contentType string) {
-	if s.optimizer == nil || !isOptimizableImageType(contentType) {
+func optimizationStatus(contentType string, optimizerConfigured bool) attachmentdomain.OptimizationStatus {
+	if !optimizerConfigured || !isOptimizableImageType(contentType) {
+		return attachmentdomain.OptimizationNotRequested
+	}
+	return attachmentdomain.OptimizationQueued
+}
+
+func (s *Service) maybeEnqueueImageOptimization(ctx context.Context, attachment CoreAttachment) {
+	if s.optimizer == nil || attachment.OptimizationStatus != attachmentdomain.OptimizationQueued {
 		return
 	}
 
 	if err := s.optimizer.EnqueueAttachmentImageOptimization(tasks.AttachmentImageOptimizationPayload{
-		BlobName: blobName,
+		AttachmentID: attachment.ID,
+		WorkspaceID:  attachment.WorkspaceID,
 	}); err != nil {
-		s.log.Error(ctx, "failed to enqueue attachment image optimization", "error", err, "blob_name", blobName)
+		s.log.Error(ctx, "failed to enqueue attachment image optimization", "error", err, "attachment_id", attachment.ID)
+		if stateErr := s.repo.FailAttachmentOptimization(
+			ctx,
+			attachment.ID,
+			attachment.WorkspaceID,
+			"failed to enqueue image optimization",
+			true,
+		); stateErr != nil && !errors.Is(stateErr, attachmentdomain.ErrStateConflict) {
+			s.log.Error(ctx, "failed to record attachment optimization enqueue failure", "error", stateErr, "attachment_id", attachment.ID)
+		}
 	}
 }
 
 // GetAttachmentsForStory gets all attachments for a story
 func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID, workspaceID uuid.UUID) ([]FileInfo, error) {
 	s.log.Info(ctx, "core.attachments.getForStory")
-	ctx, span := web.AddSpan(ctx, "core.attachments.GetAttachmentsForStory")
+	ctx, span := serviceTracer.Start(ctx, "core.attachments.GetAttachmentsForStory")
 	defer span.End()
 
 	if storyID == uuid.Nil || workspaceID == uuid.Nil {
@@ -296,6 +350,9 @@ func (s *Service) GetAttachmentsForStory(ctx context.Context, storyID, workspace
 
 	fileInfos := make([]FileInfo, 0, len(attachments))
 	for _, attachment := range attachments {
+		if !attachment.AvailableForDownload() {
+			continue
+		}
 		// Use the stored blob name instead of generating a new one
 		blobName := attachment.BlobName
 
@@ -335,11 +392,11 @@ func (s *Service) ResolveAttachmentAccessURL(ctx context.Context, id, workspaceI
 		return FileInfo{}, ErrInvalidFile
 	}
 
-	attachment, err := s.repo.GetAttachmentByID(ctx, id)
+	attachment, err := s.repo.GetAttachmentByID(ctx, id, workspaceID)
 	if err != nil {
 		return FileInfo{}, err
 	}
-	if attachment.WorkspaceID != workspaceID {
+	if !attachment.AvailableForDownload() {
 		return FileInfo{}, ErrNotFound
 	}
 
@@ -380,7 +437,7 @@ func (s *Service) ResolveStoryMediaAccessURL(
 	if err != nil {
 		return FileInfo{}, err
 	}
-	if !isInlineMediaContentType(attachment.MimeType) {
+	if !attachment.AvailableForDownload() || !isInlineMediaContentType(attachment.MimeType) {
 		return FileInfo{}, ErrNotFound
 	}
 
@@ -407,13 +464,16 @@ func (s *Service) ResolveStoryMediaAccessURL(
 }
 
 // DeleteAttachment deletes an attachment
-func (s *Service) DeleteAttachment(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+func (s *Service) DeleteAttachment(ctx context.Context, id, workspaceID, userID uuid.UUID) error {
 	s.log.Info(ctx, "core.attachments.delete")
-	ctx, span := web.AddSpan(ctx, "core.attachments.DeleteAttachment")
+	ctx, span := serviceTracer.Start(ctx, "core.attachments.DeleteAttachment")
 	defer span.End()
 
 	// Get attachment to check ownership and get the filename
-	attachment, err := s.repo.GetAttachmentByID(ctx, id)
+	if id == uuid.Nil || workspaceID == uuid.Nil || userID == uuid.Nil {
+		return ErrInvalidFile
+	}
+	attachment, err := s.repo.GetAttachmentByID(ctx, id, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return err
@@ -438,7 +498,7 @@ func (s *Service) DeleteStoryAttachment(
 	isAdmin bool,
 ) error {
 	s.log.Info(ctx, "core.attachments.deleteStoryAttachment")
-	ctx, span := web.AddSpan(ctx, "core.attachments.DeleteStoryAttachment")
+	ctx, span := serviceTracer.Start(ctx, "core.attachments.DeleteStoryAttachment")
 	defer span.End()
 
 	if storyID == uuid.Nil || attachmentID == uuid.Nil || workspaceID == uuid.Nil || userID == uuid.Nil {
@@ -462,7 +522,7 @@ func (s *Service) DeleteStoryAttachment(
 // authorized the editor and confirms the attachment belongs to the workspace.
 func (s *Service) DeleteDocumentMedia(ctx context.Context, id, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "core.attachments.deleteDocumentMedia")
-	ctx, span := web.AddSpan(ctx, "core.attachments.DeleteDocumentMedia")
+	ctx, span := serviceTracer.Start(ctx, "core.attachments.DeleteDocumentMedia")
 	defer span.End()
 	return s.deleteOrphanedMedia(ctx, span, id, workspaceID)
 }
@@ -472,23 +532,26 @@ func (s *Service) DeleteDocumentMedia(ctx context.Context, id, workspaceID uuid.
 // the same transaction that removes that relation.
 func (s *Service) DeleteOrphanedMedia(ctx context.Context, id, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "core.attachments.deleteOrphanedMedia")
-	ctx, span := web.AddSpan(ctx, "core.attachments.DeleteOrphanedMedia")
+	ctx, span := serviceTracer.Start(ctx, "core.attachments.DeleteOrphanedMedia")
 	defer span.End()
 	return s.deleteOrphanedMedia(ctx, span, id, workspaceID)
 }
 
 func (s *Service) deleteOrphanedMedia(ctx context.Context, span trace.Span, id, workspaceID uuid.UUID) error {
-	attachment, err := s.repo.GetAttachmentByID(ctx, id)
+	attachment, err := s.repo.GetAttachmentByID(ctx, id, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return err
 	}
-	if attachment.WorkspaceID != workspaceID {
-		span.RecordError(ErrNotFound)
-		return ErrNotFound
+	deleted, err := s.repo.DeleteAttachmentIfUnreferenced(ctx, attachment.ID, workspaceID)
+	if err != nil {
+		span.RecordError(err)
+		return err
 	}
-
-	return s.deleteStoredAttachment(ctx, span, attachment)
+	if !deleted {
+		return nil
+	}
+	return s.deleteStoredObject(ctx, span, attachment)
 }
 
 // DeleteStoryMedia unlinks only the exact story-media relation. Dedicated
@@ -496,7 +559,7 @@ func (s *Service) deleteOrphanedMedia(ctx context.Context, span trace.Span, id, 
 // inline story still references the attachment.
 func (s *Service) DeleteStoryMedia(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "core.attachments.deleteStoryMedia")
-	ctx, span := web.AddSpan(ctx, "core.attachments.DeleteStoryMedia")
+	ctx, span := serviceTracer.Start(ctx, "core.attachments.DeleteStoryMedia")
 	defer span.End()
 
 	if storyID == uuid.Nil || attachmentID == uuid.Nil || workspaceID == uuid.Nil {
@@ -522,14 +585,14 @@ func (s *Service) DeleteStoryMedia(ctx context.Context, storyID, attachmentID, w
 		return nil
 	}
 
-	return s.deleteStoredAttachment(ctx, span, attachment)
+	return s.deleteStoredObject(ctx, span, attachment)
 }
 
 func (s *Service) deleteStoredAttachment(ctx context.Context, span trace.Span, attachment CoreAttachment) error {
 	// Use the stored blob name if available, otherwise generate it
 	blobName := attachment.BlobName
 	// Delete from database first
-	err := s.repo.DeleteAttachment(ctx, attachment.ID)
+	err := s.repo.DeleteAttachment(ctx, attachment.ID, attachment.WorkspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return err
@@ -550,14 +613,25 @@ func (s *Service) deleteStoredAttachment(ctx context.Context, span trace.Span, a
 	return nil
 }
 
+func (s *Service) deleteStoredObject(ctx context.Context, span trace.Span, attachment CoreAttachment) error {
+	if err := s.storage.DeleteFile(ctx, s.config.AttachmentsBucket, attachment.BlobName); err != nil {
+		span.RecordError(err)
+		s.log.Error(ctx, "failed to delete orphaned blob from storage", "error", err, "attachment_id", attachment.ID)
+	}
+	span.AddEvent("attachment deleted", trace.WithAttributes(
+		attribute.String("attachment_id", attachment.ID.String()),
+	))
+	return nil
+}
+
 // LinkAttachmentToStory links an attachment to a story
-func (s *Service) LinkAttachmentToStory(ctx context.Context, storyID, attachmentID uuid.UUID) error {
+func (s *Service) LinkAttachmentToStory(ctx context.Context, storyID, attachmentID, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "core.attachments.linkToStory")
-	ctx, span := web.AddSpan(ctx, "core.attachments.LinkAttachmentToStory")
+	ctx, span := serviceTracer.Start(ctx, "core.attachments.LinkAttachmentToStory")
 	defer span.End()
 
 	// Link attachment to story
-	err := s.repo.LinkAttachmentToStory(ctx, storyID, attachmentID)
+	err := s.repo.LinkAttachmentToStory(ctx, storyID, attachmentID, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		return err
@@ -574,7 +648,7 @@ func (s *Service) LinkAttachmentToStory(ctx context.Context, storyID, attachment
 // UploadAndLinkToStory uploads a file and links it to a story in a single operation
 func (s *Service) UploadAndLinkToStory(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID, storyID uuid.UUID, workspaceID uuid.UUID) (FileInfo, error) {
 	s.log.Info(ctx, "core.attachments.uploadAndLinkToStory")
-	ctx, span := web.AddSpan(ctx, "core.attachments.UploadAndLinkToStory")
+	ctx, span := serviceTracer.Start(ctx, "core.attachments.UploadAndLinkToStory")
 	defer span.End()
 
 	// First upload the attachment
@@ -585,11 +659,11 @@ func (s *Service) UploadAndLinkToStory(ctx context.Context, file multipart.File,
 	}
 
 	// Then link it to the story
-	err = s.LinkAttachmentToStory(ctx, storyID, fileInfo.ID)
+	err = s.LinkAttachmentToStory(ctx, storyID, fileInfo.ID, workspaceID)
 	if err != nil {
 		span.RecordError(err)
 		// Try to clean up the attachment since linking failed
-		_ = s.DeleteAttachment(ctx, fileInfo.ID, userID)
+		_ = s.DeleteAttachment(ctx, fileInfo.ID, workspaceID, userID)
 		return FileInfo{}, fmt.Errorf("failed to link attachment to story: %w", err)
 	}
 
@@ -603,298 +677,3 @@ func (s *Service) UploadAndLinkToStory(ctx context.Context, file multipart.File,
 }
 
 // UploadProfileImage uploads a profile image and returns the blob name.
-func (s *Service) UploadProfileImage(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, userID uuid.UUID) (string, error) {
-	s.log.Info(ctx, "core.attachments.UploadProfileImage")
-	ctx, span := web.AddSpan(ctx, "core.attachments.UploadProfileImage")
-	defer span.End()
-
-	// Validate file using your existing validator
-	if err := validate.ProfileImage(file, fileHeader); err != nil {
-		span.RecordError(err)
-		return "", fmt.Errorf("invalid profile image: %w", err)
-	}
-
-	// Generate a unique filename for profile images
-	blobName := validate.GenerateFileName(fileHeader.Filename)
-	upload, err := prepareUploadFile(file, fileHeader, avatarImagePolicy)
-	if err != nil {
-		span.RecordError(err)
-		return "", fmt.Errorf("failed to prepare profile image upload: %w", err)
-	}
-
-	// Upload to storage profile images container
-	_, err = s.storage.UploadFile(
-		ctx,
-		s.config.ProfilesBucket,
-		blobName,
-		bytes.NewReader(upload.Data),
-		upload.ContentType,
-	)
-	if err != nil {
-		span.RecordError(err)
-		return "", fmt.Errorf("failed to upload profile image to storage: %w", err)
-	}
-
-	span.AddEvent("profile image uploaded", trace.WithAttributes(
-		attribute.String("user_id", userID.String()),
-		attribute.String("filename", fileHeader.Filename),
-		attribute.String("blob_name", blobName),
-	))
-
-	return blobName, nil
-}
-
-func (s *Service) UploadProfileImageFromURL(ctx context.Context, imageURL string, userID uuid.UUID) (string, error) {
-	if strings.TrimSpace(imageURL) == "" {
-		return "", fmt.Errorf("image url is required")
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, imageURL, nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to build image request: %w", err)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to download image: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return "", fmt.Errorf("failed to download image: status %d", resp.StatusCode)
-	}
-
-	if resp.ContentLength > 0 && resp.ContentLength > validate.MaxProfileImageSize {
-		return "", validate.ErrFileTooLarge
-	}
-
-	data, err := io.ReadAll(io.LimitReader(resp.Body, validate.MaxProfileImageSize+1))
-	if err != nil {
-		return "", fmt.Errorf("failed to read image: %w", err)
-	}
-	if int64(len(data)) > validate.MaxProfileImageSize {
-		return "", validate.ErrFileTooLarge
-	}
-
-	mimeType := http.DetectContentType(data)
-	if !isAllowedImageType(mimeType) {
-		return "", validate.ErrInvalidFileType
-	}
-
-	ext := imageExtensionForContentType(mimeType)
-	if ext == "" {
-		return "", validate.ErrInvalidFileType
-	}
-
-	filename := "image" + ext
-	blobName := validate.GenerateFileName(filename)
-
-	if optimized, ok := optimizeImageBytes(data, mimeType, avatarImagePolicy); ok {
-		data = optimized.Data
-		mimeType = optimized.ContentType
-	}
-
-	if _, err := s.storage.UploadFile(ctx, s.config.ProfilesBucket, blobName, bytes.NewReader(data), mimeType); err != nil {
-		return "", fmt.Errorf("failed to upload profile image to storage: %w", err)
-	}
-
-	return blobName, nil
-}
-
-// DeleteProfileImage deletes a profile image from storage
-func (s *Service) DeleteProfileImage(ctx context.Context, avatarURL string) error {
-	s.log.Info(ctx, "core.attachments.DeleteProfileImage")
-	ctx, span := web.AddSpan(ctx, "core.attachments.DeleteProfileImage")
-	defer span.End()
-
-	if avatarURL == "" {
-		return nil // Nothing to delete
-	}
-
-	blobName, err := s.getObjectNameFromURL(avatarURL, s.config.ProfilesBucket)
-	if err != nil {
-		span.RecordError(err)
-		return err
-	}
-
-	// Delete from storage
-	err = s.storage.DeleteFile(ctx, s.config.ProfilesBucket, blobName)
-	if err != nil {
-		span.RecordError(err)
-		s.log.Error(ctx, "failed to delete profile image from storage", "error", err)
-		// Don't return error as this is not critical
-	}
-
-	span.AddEvent("profile image deleted", trace.WithAttributes(
-		attribute.String("avatar_url", avatarURL),
-		attribute.String("blob_name", blobName),
-	))
-
-	return nil
-}
-
-// UploadWorkspaceLogo uploads a workspace logo and returns the blob name.
-func (s *Service) UploadWorkspaceLogo(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, workspaceID uuid.UUID) (string, error) {
-	s.log.Info(ctx, "business.core.attachments.UploadWorkspaceLogo")
-	ctx, span := web.AddSpan(ctx, "business.core.attachments.UploadWorkspaceLogo")
-	defer span.End()
-
-	if err := validate.WorkspaceLogo(file, fileHeader); err != nil {
-		return "", fmt.Errorf("workspace logo validation failed: %w", err)
-	}
-
-	blobName := validate.GenerateFileName(fileHeader.Filename)
-	upload, err := prepareUploadFile(file, fileHeader, avatarImagePolicy)
-	if err != nil {
-		span.RecordError(err)
-		return "", fmt.Errorf("failed to prepare workspace logo upload: %w", err)
-	}
-
-	if _, err := s.storage.UploadFile(ctx, s.config.LogosBucket, blobName, bytes.NewReader(upload.Data), upload.ContentType); err != nil {
-		span.RecordError(err)
-		return "", fmt.Errorf("failed to upload workspace logo: %w", err)
-	}
-
-	span.AddEvent("workspace logo uploaded.", trace.WithAttributes(
-		attribute.String("workspace_id", workspaceID.String()),
-		attribute.String("blob_name", blobName),
-	))
-
-	return blobName, nil
-}
-
-func (s *Service) DeleteWorkspaceLogo(ctx context.Context, logoURL string) error {
-	s.log.Info(ctx, "business.core.attachments.DeleteWorkspaceLogo")
-	ctx, span := web.AddSpan(ctx, "business.core.attachments.DeleteWorkspaceLogo")
-	defer span.End()
-
-	if logoURL == "" {
-		return nil // Nothing to delete
-	}
-
-	blobName, err := s.getObjectNameFromURL(logoURL, s.config.LogosBucket)
-	if err != nil {
-		span.RecordError(err)
-		return err
-	}
-
-	if err := s.storage.DeleteFile(ctx, s.config.LogosBucket, blobName); err != nil {
-		span.RecordError(err)
-		return fmt.Errorf("failed to delete workspace logo: %w", err)
-	}
-
-	span.AddEvent("workspace logo deleted.", trace.WithAttributes(
-		attribute.String("blob_name", blobName),
-	))
-
-	return nil
-}
-
-func (s *Service) ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error) {
-	if strings.TrimSpace(avatar) == "" {
-		return "", nil
-	}
-	if isHTTPURL(avatar) {
-		return avatar, nil
-	}
-	return s.storage.GenerateAccessURL(ctx, s.config.ProfilesBucket, avatar, expiry)
-}
-
-func (s *Service) ResolveWorkspaceLogoURL(ctx context.Context, logo string, expiry time.Duration) (string, error) {
-	if strings.TrimSpace(logo) == "" {
-		return "", nil
-	}
-	if isHTTPURL(logo) {
-		return logo, nil
-	}
-	return s.storage.GenerateAccessURL(ctx, s.config.LogosBucket, logo, expiry)
-}
-
-func (s *Service) getObjectNameFromURL(fileURL, container string) (string, error) {
-	parsed, err := url.Parse(fileURL)
-	if err != nil {
-		return "", fmt.Errorf("invalid file URL: %w", err)
-	}
-
-	if parsed.Scheme == "" && parsed.Host == "" {
-		path := strings.TrimPrefix(fileURL, "/")
-		if path == "" {
-			return "", fmt.Errorf("invalid file URL format")
-		}
-		return path, nil
-	}
-
-	path := strings.TrimPrefix(parsed.Path, "/")
-	if path == "" {
-		return "", fmt.Errorf("invalid file URL format")
-	}
-
-	if s.config.Provider == "azure" {
-		prefix := container + "/"
-		if !strings.HasPrefix(path, prefix) {
-			return "", fmt.Errorf("invalid file URL format")
-		}
-		return strings.TrimPrefix(path, prefix), nil
-	}
-
-	return path, nil
-}
-
-func isAllowedImageType(mimeType string) bool {
-	switch mimeType {
-	case "image/jpeg", "image/png", "image/gif", "image/webp":
-		return true
-	default:
-		return false
-	}
-}
-
-type preparedUpload struct {
-	Data        []byte
-	ContentType string
-}
-
-func prepareUploadFile(file multipart.File, fileHeader *multipart.FileHeader, policy imageOptimizationPolicy) (preparedUpload, error) {
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return preparedUpload{}, err
-	}
-
-	contentType := fileHeader.Header.Get("Content-Type")
-	detectedContentType := http.DetectContentType(data)
-	if isAllowedImageType(detectedContentType) {
-		contentType = detectedContentType
-	}
-	if contentType == "" {
-		contentType = detectedContentType
-	}
-
-	if optimized, ok := optimizeImageBytes(data, contentType, policy); ok {
-		data = optimized.Data
-		contentType = optimized.ContentType
-	}
-
-	return preparedUpload{
-		Data:        data,
-		ContentType: contentType,
-	}, nil
-}
-
-func imageExtensionForContentType(mimeType string) string {
-	switch mimeType {
-	case "image/jpeg":
-		return ".jpg"
-	case "image/png":
-		return ".png"
-	case "image/gif":
-		return ".gif"
-	case "image/webp":
-		return ".webp"
-	default:
-		return ""
-	}
-}
-
-func isHTTPURL(value string) bool {
-	return strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://")
-}

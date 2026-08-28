@@ -1,31 +1,38 @@
 package workerbootstrap
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
 
-	"github.com/complexus-tech/projects-api/pkg/database"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/hibiken/asynq"
-	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 )
 
-func openDB(cfg Config) (*sqlx.DB, error) {
-	db, err := database.Open(database.Config{
+func openDB(ctx context.Context, cfg Config) (*platformdatabase.Connections, error) {
+	connections, err := platformdatabase.Open(ctx, platformdatabase.Config{
 		Host:         cfg.DB.Host,
 		Port:         cfg.DB.Port,
 		User:         cfg.DB.User,
 		Password:     cfg.DB.Password,
 		Name:         cfg.DB.Name,
-		MaxIdleConns: cfg.DB.MaxIdleConns,
 		MaxOpenConns: cfg.DB.MaxOpenConns,
-		DisableTLS:   cfg.DB.DisableTLS,
+		MinConns:     cfg.DB.MinConns,
+
+		ConnectTimeout:    cfg.DB.ConnectTimeout,
+		MaxConnIdleTime:   cfg.DB.MaxConnIdleTime,
+		MaxConnLifetime:   cfg.DB.MaxConnLifetime,
+		HealthCheckPeriod: cfg.DB.HealthCheckPeriod,
+		SSLMode:           cfg.DB.SSLMode,
+		SSLRootCert:       cfg.DB.SSLRootCert,
+		DisableTLS:        cfg.DB.DisableTLS,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to database: %w", err)
 	}
-	return db, nil
+	return connections, nil
 }
 
 func redisClientOpt(cfg Config) asynq.RedisClientOpt {
@@ -51,7 +58,8 @@ func redisOptions(cfg Config) *redis.Options {
 	var tlsConfig *tls.Config
 	if !cfg.Redis.DisableTLS {
 		tlsConfig = &tls.Config{
-			InsecureSkipVerify: cfg.Redis.InsecureSkipVerify,
+			MinVersion: tls.VersionTLS12,
+			ServerName: cfg.Redis.Host,
 		}
 	}
 

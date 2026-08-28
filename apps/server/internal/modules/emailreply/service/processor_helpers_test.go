@@ -10,39 +10,35 @@ import (
 	"testing"
 	"time"
 
-	emailagent "github.com/complexus-tech/projects-api/internal/modules/emailagent/service"
-	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
-	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
-	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
 type summarizerStub struct {
-	requests []emailagent.SummaryRequest
+	requests []SummaryRequest
 	err      error
 }
 
-func (stub *summarizerStub) Summarize(_ context.Context, request emailagent.SummaryRequest) (emailagent.SummaryGeneration, error) {
+func (stub *summarizerStub) Summarize(_ context.Context, request SummaryRequest) (SummaryGeneration, error) {
 	stub.requests = append(stub.requests, request)
 	if stub.err != nil {
-		return emailagent.SummaryGeneration{}, stub.err
+		return SummaryGeneration{}, stub.err
 	}
-	return emailagent.SummaryGeneration{Summary: "durable summary"}, nil
+	return SummaryGeneration{Summary: "durable summary"}, nil
 }
 
 type summaryStoreStub struct {
 	ProcessorStore
-	updates []messaging.EmailThreadSummaryUpdate
+	updates []ThreadSummaryUpdate
 }
 
-func (stub *summaryStoreStub) UpdateEmailThreadSummary(
+func (stub *summaryStoreStub) UpdateThreadSummary(
 	_ context.Context,
-	input messaging.EmailThreadSummaryUpdate,
-) (messaging.EmailThreadRecord, error) {
+	input ThreadSummaryUpdate,
+) (Thread, error) {
 	stub.updates = append(stub.updates, input)
-	return messaging.EmailThreadRecord{
+	return Thread{
 		ID: input.ThreadID, WorkspaceID: input.WorkspaceID, UserID: input.UserID,
 		Summary: input.Summary, SummaryThroughSequence: input.ThroughSequence,
 		NextMessageSequence: input.ThroughSequence + 20,
@@ -66,17 +62,17 @@ func TestPlainInboundReplyUsesCurrentExtractedBodyAndRemovesFormatting(t *testin
 func TestRefreshSummaryStartsAtFirstNewlyOmittedTurn(t *testing.T) {
 	t.Parallel()
 
-	thread := messaging.EmailThreadRecord{
+	thread := Thread{
 		ID: uuid.New(), WorkspaceID: uuid.New(), UserID: uuid.New(),
 		Summary: "earlier summary", SummaryThroughSequence: 10, NextMessageSequence: 25,
 	}
-	messages := make([]messaging.EmailMessageRecord, 0, 14)
+	messages := make([]Message, 0, 14)
 	for sequence := int64(11); sequence <= 24; sequence++ {
-		role := messaging.EmailMessageRoleUser
+		role := MessageRoleUser
 		if sequence%2 == 0 {
-			role = messaging.EmailMessageRoleAssistant
+			role = MessageRoleAssistant
 		}
-		messages = append(messages, messaging.EmailMessageRecord{
+		messages = append(messages, Message{
 			ID: uuid.New(), Sequence: sequence, Role: role, Content: "turn",
 		})
 	}
@@ -96,14 +92,14 @@ func TestRefreshSummaryStartsAtFirstNewlyOmittedTurn(t *testing.T) {
 func TestControlReplySkipsUnavailableSummarizer(t *testing.T) {
 	t.Parallel()
 
-	thread := messaging.EmailThreadRecord{
+	thread := Thread{
 		ID: uuid.New(), WorkspaceID: uuid.New(), UserID: uuid.New(),
 		SummaryThroughSequence: 1, NextMessageSequence: 20,
 	}
-	messages := make([]messaging.EmailMessageRecord, 0, 18)
+	messages := make([]Message, 0, 18)
 	for sequence := int64(2); sequence < 20; sequence++ {
-		messages = append(messages, messaging.EmailMessageRecord{
-			ID: uuid.New(), Sequence: sequence, Role: messaging.EmailMessageRoleUser, Content: "turn",
+		messages = append(messages, Message{
+			ID: uuid.New(), Sequence: sequence, Role: MessageRoleUser, Content: "turn",
 		})
 	}
 	summarizer := &summarizerStub{err: errors.New("provider unavailable")}
@@ -121,19 +117,19 @@ func TestConversationHistoryExcludesSummarizedAndCurrentInbound(t *testing.T) {
 
 	currentID := uuid.New()
 	now := time.Now()
-	history := conversationHistory([]messaging.EmailMessageRecord{
-		{ID: uuid.New(), Sequence: 4, Role: messaging.EmailMessageRoleAssistant, Content: "summarized", CreatedAt: now},
-		{ID: uuid.New(), Sequence: 5, Role: messaging.EmailMessageRoleAssistant, Content: "latest Maya", CreatedAt: now},
-		{ID: currentID, Sequence: 6, Role: messaging.EmailMessageRoleUser, Content: "current reply", CreatedAt: now},
+	history := conversationHistory([]Message{
+		{ID: uuid.New(), Sequence: 4, Role: MessageRoleAssistant, Content: "summarized", CreatedAt: now},
+		{ID: uuid.New(), Sequence: 5, Role: MessageRoleAssistant, Content: "latest Maya", CreatedAt: now},
+		{ID: currentID, Sequence: 6, Role: MessageRoleUser, Content: "current reply", CreatedAt: now},
 	}, 4, currentID)
 
-	require.Equal(t, []emailagent.HistoryTurn{{Role: emailagent.RoleAssistant, Text: "latest Maya", SentAt: now}}, history)
+	require.Equal(t, []HistoryTurn{{Role: ConversationRoleAssistant, Text: "latest Maya", SentAt: now}}, history)
 }
 
 func TestDeterministicReplyThreadHeadersUseCurrentInboundMessage(t *testing.T) {
 	t.Parallel()
 
-	thread := messaging.EmailThreadRecord{
+	thread := Thread{
 		RootInternetMessageID:   "<root@fortyone.app>",
 		LatestInternetMessageID: "<current-user@example.com>",
 	}
@@ -156,7 +152,7 @@ func TestBoundedProviderMessageIDHashesOversizedValues(t *testing.T) {
 }
 
 func TestConversationReplyCopyPreservesInboundThreadSubject(t *testing.T) {
-	copy := emailagent.EmailCopy{Subject: "A newly generated subject"}
+	copy := EmailCopy{Subject: "A newly generated subject"}
 
 	threaded := conversationReplyCopy(copy, "3 overdue tasks need a decision")
 
@@ -198,17 +194,23 @@ func (*deliveryStoreStub) FailOutboundDelivery(context.Context, uuid.UUID, strin
 
 type replyThreadStub struct {
 	newTokenCalls int
-	input         emailthread.ReplyInput
+	input         ReplyPreparation
 }
 
-func (stub *replyThreadStub) NewReplyToken(context.Context, messaging.EmailThreadRecord) (string, error) {
+func (stub *replyThreadStub) NewReplyToken(context.Context, Thread) (string, error) {
 	stub.newTokenCalls++
 	return "abcdefghijklmnop", nil
 }
 
-func (stub *replyThreadStub) PrepareReply(_ context.Context, input emailthread.ReplyInput) (emailthread.PreparedReply, error) {
+func (stub *replyThreadStub) PrepareReply(_ context.Context, input ReplyPreparation) (string, error) {
 	stub.input = input
-	return emailthread.PreparedReply{ReplyTo: "maya+abcdefghijklmnop@reply.fortyone.app"}, nil
+	return "maya+abcdefghijklmnop@reply.fortyone.app", nil
+}
+
+type copyRendererStub struct{}
+
+func (copyRendererStub) RenderHTML(EmailCopy) (string, error) {
+	return "<p>Done.</p>", nil
 }
 
 type mailerStub struct {
@@ -232,14 +234,15 @@ func TestDeliverReplyUsesCurrentInboundThreadHeadersAndFrozenToken(t *testing.T)
 	threads := &replyThreadStub{}
 	mail := &mailerStub{}
 	processor := &Processor{
-		store: store, inbound: processorStateStub{}, threads: threads, mailer: mail, now: func() time.Time { return now },
+		store: store, inbound: processorStateStub{}, renderer: copyRendererStub{}, threads: threads, mailer: mail,
+		now: func() time.Time { return now },
 	}
-	thread := messaging.EmailThreadRecord{
+	thread := Thread{
 		ID: uuid.New(), WorkspaceID: uuid.New(), UserID: uuid.New(), RecipientEmail: "joseph@example.com",
 		RootInternetMessageID: "<root@fortyone.app>", LatestInternetMessageID: "<current-inbound@example.com>",
 	}
 	expiresAt := now.Add(time.Hour)
-	delivery := messagingrepository.OutboundDeliveryRecord{
+	delivery := OutboundDelivery{
 		ID: uuid.New(), IdempotencyKey: "email-reply:event-1", ExpiresAt: &expiresAt,
 	}
 	teamID := uuid.New()
@@ -272,7 +275,7 @@ func TestFrozenDeliveryAuthorizationRejectsLostTeam(t *testing.T) {
 	requiredTeamID := uuid.New()
 	payload, err := json.Marshal(emailDeliveryPayload{
 		To: []string{"joseph@example.com"}, Subject: "Update", HTML: "<p>Update</p>", PlainText: "Update",
-		ReplyToken: "abcdefghijklmnop", MessageID: "<message@fortyone.app>", Kind: messaging.EmailMessageKindAnswer,
+		ReplyToken: "abcdefghijklmnop", MessageID: "<message@fortyone.app>", Kind: MessageKindAnswer,
 		HistoryIdempotencyKey: "outbound:event", AuthorizationVersion: 1, AuthorizedTeamIDs: []uuid.UUID{requiredTeamID},
 	})
 	require.NoError(t, err)

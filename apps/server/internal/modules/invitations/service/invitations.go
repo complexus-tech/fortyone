@@ -2,374 +2,90 @@ package invitations
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
-	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
-	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
-	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
-	"github.com/complexus-tech/projects-api/pkg/events"
-	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/complexus-tech/projects-api/pkg/publisher"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	usersdomain "github.com/complexus-tech/projects-api/internal/modules/users/domain"
+	workspacedomain "github.com/complexus-tech/projects-api/internal/modules/workspaces/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/authorization"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
-// Repository provides access to the invitations storage
+const (
+	invitationLifetime        = 7 * 24 * time.Hour
+	maximumBulkInvitations    = 50
+	invitationOutboxBatchSize = 50
+	invitationOutboxMaxTries  = 8
+	invitationOutboxStaleFor  = 10 * time.Minute
+)
+
+// Repository owns invitation persistence and the cohesive acceptance unit of
+// work. Raw transactions and sqlc types never cross this consumer-owned port.
 type Repository interface {
-	// Transaction support
-	BeginTx(ctx context.Context) (*sqlx.Tx, error)
-	CreateBulkInvitations(ctx context.Context, tx *sqlx.Tx, invitations []CoreWorkspaceInvitation) ([]CoreWorkspaceInvitation, error)
-	GetInvitation(ctx context.Context, token string) (CoreWorkspaceInvitation, error)
-	ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]CoreWorkspaceInvitation, error)
-	RevokeInvitation(ctx context.Context, invitationID uuid.UUID) error
-	MarkInvitationUsed(ctx context.Context, invitationID uuid.UUID) error
-	MarkInvitationUsedTx(ctx context.Context, tx *sqlx.Tx, invitationID uuid.UUID) error
-	ListInvitationsByEmail(ctx context.Context, email string) ([]CoreWorkspaceInvitation, error)
+	CreateBulkInvitations(context.Context, uuid.UUID, []NewWorkspaceInvitation) ([]CoreWorkspaceInvitation, error)
+	GetInvitation(context.Context, InvitationTokenLookup) (CoreWorkspaceInvitation, error)
+	ListInvitations(context.Context, uuid.UUID, uuid.UUID, time.Time) ([]CoreWorkspaceInvitation, error)
+	RevokeInvitation(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time) error
+	ListInvitationsByEmail(context.Context, string, time.Time) ([]CoreWorkspaceInvitation, error)
+	AcceptInvitation(context.Context, AcceptInvitationCommand) (CoreWorkspaceInvitation, error)
 }
 
-// Service provides business logic for workspace invitation operations.
-// It coordinates between the repository layer and other domain services
-// to handle invitation creation, validation, acceptance, and revocation.
+type InvitationOutboxRepository interface {
+	ClaimInvitationOutboxEvents(context.Context, int, time.Time, time.Time) ([]CoreInvitationOutboxEvent, error)
+	CompleteInvitationOutboxEvent(context.Context, uuid.UUID, uuid.UUID, time.Time) error
+	RetryInvitationOutboxEvent(context.Context, uuid.UUID, uuid.UUID, string, time.Time, time.Time, bool) error
+}
+
+// UserService is the read-only user boundary needed to snapshot inviter data.
+type UserService interface {
+	GetUser(context.Context, uuid.UUID) (usersdomain.User, error)
+}
+
+// WorkspaceService is the read-only workspace and authorization boundary.
+type WorkspaceService interface {
+	Get(context.Context, uuid.UUID, uuid.UUID) (workspacedomain.Workspace, error)
+}
+
+// Service provides invitation business use cases. The clock and token manager
+// are explicit dependencies so expiry and security behavior are deterministic.
 type Service struct {
 	repo       Repository
-	logger     *logger.Logger
-	publisher  *publisher.Publisher
-	users      *users.Service
-	workspaces *workspaces.Service
-	teams      *teams.Service
+	tokens     *InvitationTokenManager
+	users      UserService
+	workspaces WorkspaceService
+	now        func() time.Time
 }
 
-// New creates a new invitations Service with the provided dependencies.
-// All dependencies are required and must not be nil.
-func New(repo Repository, logger *logger.Logger, publisher *publisher.Publisher, users *users.Service, workspaces *workspaces.Service, teams *teams.Service) *Service {
+func New(
+	repo Repository,
+	tokens *InvitationTokenManager,
+	users UserService,
+	workspaces WorkspaceService,
+) *Service {
 	return &Service{
 		repo:       repo,
-		logger:     logger,
-		publisher:  publisher,
+		tokens:     tokens,
 		users:      users,
 		workspaces: workspaces,
-		teams:      teams,
+		now:        time.Now,
 	}
 }
 
-// generateToken creates a cryptographically secure token
-func generateToken() (string, error) {
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
+func (s *Service) requireWorkspaceAdmin(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	actorID uuid.UUID,
+) (workspacedomain.Workspace, error) {
+	workspace, err := s.workspaces.Get(ctx, workspaceID, actorID)
 	if err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(b), nil
-}
-
-// CreateBulkInvitations creates multiple workspace invitations in a single transaction.
-// It generates secure tokens for each invitation, revokes any existing pending invitations
-// for the same emails, and publishes invitation email events.
-// Returns the created invitations with their generated IDs and tokens.
-func (s *Service) CreateBulkInvitations(ctx context.Context, workspaceID, inviterID uuid.UUID, requests []InvitationRequest) ([]CoreWorkspaceInvitation, error) {
-	s.logger.Info(ctx, "creating bulk invitations",
-		"workspace_id", workspaceID.String(),
-		"inviter_id", inviterID.String(),
-		"invitation_count", len(requests))
-
-	// Get inviter details
-	inviter, err := s.users.GetUser(ctx, inviterID)
-	if err != nil {
-		s.logger.Error(ctx, "failed to get inviter details", "err", err)
-		return nil, fmt.Errorf("failed to get inviter details: %w", err)
-	}
-
-	// Get workspace details
-	workspace, err := s.workspaces.Get(ctx, workspaceID, inviterID)
-	if err != nil {
-		s.logger.Error(ctx, "failed to get workspace details", "err", err)
-		return nil, fmt.Errorf("failed to get workspace details: %w", err)
-	}
-
-	// Start a transaction
-	tx, err := s.repo.BeginTx(ctx)
-	if err != nil {
-		s.logger.Error(ctx, "failed to begin transaction", "err", err)
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	// Create invitations
-	invitations := make([]CoreWorkspaceInvitation, len(requests))
-	for i, req := range requests {
-		token, err := generateToken()
-		if err != nil {
-			s.logger.Error(ctx, "failed to generate token", "err", err)
-			return nil, err
+		if errors.Is(err, workspacedomain.ErrNotFound) {
+			return workspacedomain.Workspace{}, authorization.ErrWorkspaceAdminRequired
 		}
-
-		invitations[i] = CoreWorkspaceInvitation{
-			WorkspaceID: workspaceID,
-			InviterID:   inviterID,
-			Email:       req.Email,
-			Role:        req.Role,
-			TeamIDs:     req.TeamIDs,
-			Token:       token,
-			ExpiresAt:   time.Now().Add(7 * 24 * time.Hour),
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		}
+		return workspacedomain.Workspace{}, fmt.Errorf("authorize workspace administrator: %w", err)
 	}
-
-	// Save invitations
-	results, err := s.repo.CreateBulkInvitations(ctx, tx, invitations)
-	if err != nil {
-		s.logger.Error(ctx, "failed to create bulk invitations", "err", err)
-		return nil, err
+	if err := authorization.RequireWorkspaceAdmin(authorization.WorkspaceRole(workspace.UserRole)); err != nil {
+		return workspacedomain.Workspace{}, err
 	}
-
-	// Publish invitation email events
-	for _, invitation := range results {
-		event := events.Event{
-			Type: events.InvitationEmail,
-			Payload: events.InvitationEmailPayload{
-				InviterName:   inviter.FullName,
-				Email:         invitation.Email,
-				Token:         invitation.Token,
-				Role:          invitation.Role,
-				ExpiresAt:     invitation.ExpiresAt,
-				WorkspaceID:   invitation.WorkspaceID,
-				WorkspaceName: workspace.Name,
-			},
-			Timestamp: time.Now(),
-			ActorID:   inviterID,
-		}
-
-		if err := s.publisher.Publish(ctx, event); err != nil {
-			s.logger.Error(ctx, "failed to publish invitation email event",
-				"error", err,
-				"email", invitation.Email)
-			return nil, fmt.Errorf("failed to publish invitation email event: %w", err)
-		}
-	}
-
-	// Commit transaction
-	if err := tx.Commit(); err != nil {
-		s.logger.Error(ctx, "failed to commit transaction", "err", err)
-		return nil, err
-	}
-
-	s.logger.Info(ctx, "bulk invitations created successfully")
-	return results, nil
-}
-
-// GetInvitation retrieves a workspace invitation by its unique token.
-// It validates that the invitation exists, has not expired, and has not been used.
-// Returns ErrInvitationNotFound, ErrInvitationExpired, or ErrInvitationUsed if validation fails.
-func (s *Service) GetInvitation(ctx context.Context, token string) (CoreWorkspaceInvitation, error) {
-	s.logger.Info(ctx, "business.core.invitations.GetInvitation")
-	ctx, span := web.AddSpan(ctx, "business.core.invitations.GetInvitation")
-	defer span.End()
-
-	invitation, err := s.repo.GetInvitation(ctx, token)
-	if err != nil {
-		span.RecordError(err)
-		return CoreWorkspaceInvitation{}, err
-	}
-
-	// Check if invitation has expired
-	if time.Now().After(invitation.ExpiresAt) {
-		return CoreWorkspaceInvitation{}, ErrInvitationExpired
-	}
-
-	// Check if invitation has been used
-	if invitation.UsedAt != nil {
-		return CoreWorkspaceInvitation{}, ErrInvitationUsed
-	}
-
-	return invitation, nil
-}
-
-// ListInvitations returns all pending (non-expired, non-used) invitations for a workspace.
-// Results are ordered by creation date in descending order (newest first).
-func (s *Service) ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]CoreWorkspaceInvitation, error) {
-	s.logger.Info(ctx, "business.core.invitations.ListInvitations")
-	ctx, span := web.AddSpan(ctx, "business.core.invitations.ListInvitations")
-	defer span.End()
-
-	invitations, err := s.repo.ListInvitations(ctx, workspaceID)
-	if err != nil {
-		span.RecordError(err)
-		return nil, err
-	}
-
-	return invitations, nil
-}
-
-// RevokeInvitation marks an invitation as used, effectively revoking it.
-// Returns ErrInvitationNotFound if the invitation does not exist or has already been used.
-func (s *Service) RevokeInvitation(ctx context.Context, invitationID uuid.UUID) error {
-	s.logger.Info(ctx, "business.core.invitations.RevokeInvitation")
-	ctx, span := web.AddSpan(ctx, "business.core.invitations.RevokeInvitation")
-	defer span.End()
-
-	if err := s.repo.RevokeInvitation(ctx, invitationID); err != nil {
-		span.RecordError(err)
-		return err
-	}
-
-	span.AddEvent("invitation revoked", trace.WithAttributes(
-		attribute.String("invitation_id", invitationID.String()),
-	))
-
-	return nil
-}
-
-// ListUserInvitations returns all pending invitations for a specific email address.
-// This is typically used to show a user all workspaces they have been invited to.
-// Results are ordered by creation date in descending order (newest first).
-func (s *Service) ListUserInvitations(ctx context.Context, email string) ([]CoreWorkspaceInvitation, error) {
-	s.logger.Info(ctx, "listing user invitations", "email", email)
-
-	invitations, err := s.repo.ListInvitationsByEmail(ctx, email)
-	if err != nil {
-		s.logger.Error(ctx, "failed to list user invitations", "err", err)
-		return nil, fmt.Errorf("failed to list user invitations: %w", err)
-	}
-
-	return invitations, nil
-}
-
-// AcceptInvitation accepts an invitation and adds the user to the workspace and specified teams.
-// It validates the invitation token, verifies the user's email matches the invitation,
-// and performs all operations within a transaction. If the user is already a workspace member,
-// it marks the invitation as used and returns ErrAlreadyWorkspaceMember.
-// On success, it publishes an InvitationAccepted event for notifications.
-func (s *Service) AcceptInvitation(ctx context.Context, token string, userID uuid.UUID) error {
-	s.logger.Info(ctx, "accepting invitation", "token", token, "user_id", userID)
-
-	// Get user details to verify email
-	user, err := s.users.GetUser(ctx, userID)
-	if err != nil {
-		s.logger.Error(ctx, "failed to get user details", "err", err)
-		return fmt.Errorf("failed to get user details: %w", err)
-	}
-
-	// Get and validate invitation
-	invitation, err := s.GetInvitation(ctx, token)
-	if err != nil {
-		s.logger.Error(ctx, "failed to get invitation", "err", err)
-		return err
-	}
-
-	// Verify user email matches invitation email
-	if user.Email != invitation.Email {
-		s.logger.Error(ctx, "user email does not match invitation email",
-			"user_email", user.Email,
-			"invitation_email", invitation.Email)
-		return ErrInvalidInvitee
-	}
-
-	// Start transaction
-	tx, err := s.repo.BeginTx(ctx)
-	if err != nil {
-		s.logger.Error(ctx, "failed to begin transaction", "err", err)
-		return err
-	}
-	defer tx.Rollback()
-
-	// Add member to workspace with specified role.
-	if err := s.workspaces.AddMemberTx(ctx, tx, invitation.WorkspaceID, userID, invitation.Role); err != nil {
-		s.logger.Error(ctx, "failed to add member to workspace", "err", err)
-		if err == workspaces.ErrAlreadyWorkspaceMember {
-			// Mark invitation as used if the user is already a member.
-			if markErr := s.repo.MarkInvitationUsedTx(ctx, tx, invitation.ID); markErr != nil {
-				s.logger.Error(ctx, "failed to mark invitation as used", "err", markErr)
-				return fmt.Errorf("failed to mark invitation as used: %w", markErr)
-			}
-			if commitErr := tx.Commit(); commitErr != nil {
-				s.logger.Error(ctx, "failed to commit transaction", "err", commitErr)
-				return commitErr
-			}
-			return ErrAlreadyWorkspaceMember
-		}
-		return fmt.Errorf("failed to add member to workspace: %w", err)
-	}
-
-	// Add member to teams
-	for _, teamID := range invitation.TeamIDs {
-		if err := s.teams.AddMemberTx(ctx, tx, teamID, userID); err != nil {
-			s.logger.Error(ctx, "failed to add member to team", "err", err)
-			return fmt.Errorf("failed to add member to team: %w", err)
-		}
-	}
-
-	// Update user's last used workspace
-	if err := s.users.UpdateUserWorkspaceWithTx(ctx, tx, userID, invitation.WorkspaceID); err != nil {
-		s.logger.Error(ctx, "failed to update user's last used workspace", "err", err)
-		return fmt.Errorf("failed to update user workspace: %w", err)
-	}
-
-	// Mark invitation as used
-	if err := s.repo.MarkInvitationUsedTx(ctx, tx, invitation.ID); err != nil {
-		s.logger.Error(ctx, "failed to mark invitation as used", "err", err)
-		return fmt.Errorf("failed to mark invitation as used: %w", err)
-	}
-
-	// Commit transaction
-	if err := tx.Commit(); err != nil {
-		s.logger.Error(ctx, "failed to commit transaction", "err", err)
-		return err
-	}
-
-	// Get inviter details
-	inviter, err := s.users.GetUser(ctx, invitation.InviterID)
-	if err != nil {
-		s.logger.Error(ctx, "failed to get inviter details", "err", err)
-		// Don't return error here, as the invitation was successfully accepted
-	} else {
-		// Get workspace details
-		workspace, err := s.workspaces.Get(ctx, invitation.WorkspaceID, invitation.InviterID)
-		if err != nil {
-			s.logger.Error(ctx, "failed to get workspace details", "err", err)
-			// Don't return error here, as the invitation was successfully accepted
-		} else {
-			// Use username as fallback if full name is empty
-			inviterName := inviter.FullName
-			if inviterName == "" {
-				inviterName = inviter.Username
-			}
-
-			inviteeName := user.FullName
-			if inviteeName == "" {
-				inviteeName = user.Username
-			}
-
-			// Publish invitation accepted event
-			event := events.Event{
-				Type: events.InvitationAccepted,
-				Payload: events.InvitationAcceptedPayload{
-					InviterEmail:  inviter.Email,
-					InviterName:   inviterName,
-					InviteeName:   inviteeName,
-					InviteeEmail:  user.Email,
-					Role:          invitation.Role,
-					WorkspaceID:   invitation.WorkspaceID,
-					WorkspaceName: workspace.Name,
-					WorkspaceSlug: workspace.Slug,
-				},
-				Timestamp: time.Now(),
-				ActorID:   userID,
-			}
-
-			if err := s.publisher.Publish(ctx, event); err != nil {
-				s.logger.Error(ctx, "failed to publish invitation accepted event", "err", err)
-				// Don't return error here, as the invitation was successfully accepted
-			}
-		}
-	}
-
-	s.logger.Info(ctx, "invitation accepted successfully")
-	return nil
+	return workspace, nil
 }

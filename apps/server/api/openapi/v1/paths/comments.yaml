@@ -1,0 +1,29 @@
+get:
+  operationId: listStoryComments
+  tags: [Comments]
+  summary: List comments on one visible story
+  description: Returns comments only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+  x-fortyone-scope: comments:read
+  x-fortyone-scopes: [comments:read, stories:read]
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+    - $ref: ../openapi.yaml#/components/parameters/StoryId
+    - $ref: ../openapi.yaml#/components/parameters/Cursor
+    - $ref: ../openapi.yaml#/components/parameters/PageLimit
+  responses:
+    '200':
+      description: A deterministic page of visible comment threads.
+      headers:
+        X-Request-ID: {$ref: ../openapi.yaml#/components/headers/RequestId}
+        RateLimit: {$ref: ../openapi.yaml#/components/headers/RateLimit}
+        RateLimit-Policy: {$ref: ../openapi.yaml#/components/headers/RateLimitPolicy}
+      content:
+        application/json:
+          schema: {$ref: ../openapi.yaml#/components/schemas/CommentPageResponse}
+    '400': {$ref: ../openapi.yaml#/components/responses/BadRequest}
+    '401': {$ref: ../openapi.yaml#/components/responses/Unauthorized}
+    '403': {$ref: ../openapi.yaml#/components/responses/Forbidden}
+    '404': {$ref: ../openapi.yaml#/components/responses/NotFound}
+    '429': {$ref: ../openapi.yaml#/components/responses/RateLimited}
+    '500': {$ref: ../openapi.yaml#/components/responses/InternalError}
+    '503': {$ref: ../openapi.yaml#/components/responses/ServiceUnavailable}

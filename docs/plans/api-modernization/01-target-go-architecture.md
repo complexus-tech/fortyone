@@ -1,9 +1,10 @@
 # FortyOne API Modernization: Target Go Architecture
 
-**Status:** Proposed implementation plan  
+**Status:** Active source of truth
 **Scope:** `apps/server` only  
 **Audience:** API maintainers, reviewers, new Go engineers, integration authors  
 **Companion plans:** [typed data, security, and integrations](./02-typed-data-security-and-integration-platform.md) and [delivery, testing, and documentation](./03-delivery-testing-and-documentation-roadmap.md)
+**Implementation status:** [evidence and crash-recovery ledger](./00-implementation-status.md)
 
 ## 1. Executive decision
 

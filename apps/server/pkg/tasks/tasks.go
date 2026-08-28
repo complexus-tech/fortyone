@@ -13,7 +13,11 @@ type Service struct {
 	log         *logger.Logger
 }
 
-// New creates a new tasks Service instance.
+// New creates a task-enqueueing service that borrows existingRdb.
+//
+// The caller retains ownership of the Redis client and must close it after the
+// service is no longer used. Asynq deliberately prevents closing clients
+// created from a shared Redis connection.
 func New(existingRdb redis.UniversalClient, log *logger.Logger) (*Service, error) {
 	if existingRdb == nil {
 		return nil, fmt.Errorf("tasks: existing Redis client (redis.UniversalClient) cannot be nil")
@@ -33,12 +37,4 @@ func New(existingRdb redis.UniversalClient, log *logger.Logger) (*Service, error
 		log:         log,
 	}
 	return s, nil
-}
-
-// Close allows the application to close the underlying Asynq client during shutdown.
-func (s *Service) Close() error {
-	if s.asynqClient != nil {
-		return s.asynqClient.Close()
-	}
-	return nil
 }

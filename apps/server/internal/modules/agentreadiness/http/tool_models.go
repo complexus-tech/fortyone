@@ -7,9 +7,6 @@ type workspaceListInput struct {
 	PageSize int `json:"pageSize,omitempty" jsonschema:"Results per page, from 1 to 100"`
 }
 
-type workspaceInput struct {
-	WorkspaceID string `json:"workspaceId"`
-}
 type teamListInput struct {
 	WorkspaceID string `json:"workspaceId"`
 	JoinedOnly  bool   `json:"joinedOnly,omitempty"`
@@ -195,8 +192,8 @@ type updateKeyResultInput struct {
 	CurrentValue      *float64 `json:"currentValue,omitempty"`
 	TargetValue       *float64 `json:"targetValue,omitempty"`
 	LeadUserID        *string  `json:"leadUserId,omitempty" jsonschema:"User UUID, or an empty string to clear"`
-	StartDate         *string  `json:"startDate,omitempty" jsonschema:"YYYY-MM-DD, or an empty string to clear"`
-	EndDate           *string  `json:"endDate,omitempty" jsonschema:"YYYY-MM-DD, or an empty string to clear"`
+	StartDate         *string  `json:"startDate,omitempty" jsonschema:"YYYY-MM-DD; key-result dates cannot be cleared"`
+	EndDate           *string  `json:"endDate,omitempty" jsonschema:"YYYY-MM-DD; key-result dates cannot be cleared"`
 	Comment           string   `json:"comment,omitempty"`
 	Confirmed         bool     `json:"confirmed"`
 }

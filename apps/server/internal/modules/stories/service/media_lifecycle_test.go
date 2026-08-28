@@ -36,7 +36,7 @@ func TestHardBulkDeleteReturnsOrphanedStoryMedia(t *testing.T) {
 		StoryIDs:              storyIDs,
 		OrphanedAttachmentIDs: orphanedAttachmentIDs,
 	}}
-	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil, nil)
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
 
 	authorization := BulkDeleteAuthorization{ActorID: actorID}
 	got, err := service.HardBulkDelete(context.Background(), storyIDs, workspaceID, authorization)
@@ -57,6 +57,9 @@ func TestHardBulkDeleteReturnsOrphanedStoryMedia(t *testing.T) {
 	if repo.receivedAuthorization != authorization {
 		t.Fatalf("repository authorization = %#v, want %#v", repo.receivedAuthorization, authorization)
 	}
+	if got.AttachmentObjectDeletionDeferred {
+		t.Fatal("legacy hard-delete path unexpectedly claimed durable attachment cleanup")
+	}
 }
 
 func TestHardBulkDeleteDoesNotReturnMediaWhenDeletionFails(t *testing.T) {
@@ -65,7 +68,7 @@ func TestHardBulkDeleteDoesNotReturnMediaWhenDeletionFails(t *testing.T) {
 		hardDeleteResult: HardBulkDeleteResult{OrphanedAttachmentIDs: []uuid.UUID{uuid.New()}},
 		err:              wantErr,
 	}
-	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil, nil)
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
 
 	got, err := service.HardBulkDelete(context.Background(), []uuid.UUID{uuid.New()}, uuid.New(), BulkDeleteAuthorization{ActorID: uuid.New()})
 	if !errors.Is(err, wantErr) {

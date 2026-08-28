@@ -1,29 +1,38 @@
 package jobs
 
 import (
-	"strings"
+	"context"
 	"testing"
+	"time"
 
-	"github.com/google/uuid"
+	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	"github.com/stretchr/testify/require"
 )
 
-func TestFeedbackContributorsToPurgeQueryLocksItemRowsWithoutDistinct(t *testing.T) {
-	query := feedbackContributorsToPurgeQuery()
+func TestPurgeDeletedFeedbackDelegatesRetentionToFeedbackStore(t *testing.T) {
+	store := &recordingFeedbackMaintenanceStore{
+		deletedResult: feedback.CoreDeletedFeedbackPurgeResult{ItemsDeleted: 3, ContributorsDeleted: 2},
+	}
 
-	require.Contains(t, query, "SELECT contributor_id")
-	require.Contains(t, query, "FOR UPDATE")
-	require.NotContains(t, strings.ToUpper(query), "DISTINCT")
+	err := PurgeDeletedFeedback(context.Background(), store, newTestJobLogger())
+
+	require.NoError(t, err)
+	require.WithinDuration(t, time.Now().UTC().Add(-30*24*time.Hour), store.deletedBefore, time.Second)
 }
 
-func TestUniqueUUIDsPreservesFirstOccurrence(t *testing.T) {
-	first := uuid.New()
-	second := uuid.New()
+type recordingFeedbackMaintenanceStore struct {
+	cutoffs        feedback.CoreContributorArtifactCutoffs
+	artifactResult feedback.CoreContributorArtifactPurgeResult
+	deletedBefore  time.Time
+	deletedResult  feedback.CoreDeletedFeedbackPurgeResult
+}
 
-	require.Equal(t, []uuid.UUID{first, second}, uniqueUUIDs([]uuid.UUID{
-		first,
-		first,
-		second,
-		first,
-	}))
+func (s *recordingFeedbackMaintenanceStore) PurgeExpiredContributorArtifacts(_ context.Context, cutoffs feedback.CoreContributorArtifactCutoffs) (feedback.CoreContributorArtifactPurgeResult, error) {
+	s.cutoffs = cutoffs
+	return s.artifactResult, nil
+}
+
+func (s *recordingFeedbackMaintenanceStore) PurgeDeletedFeedback(_ context.Context, deletedBefore time.Time) (feedback.CoreDeletedFeedbackPurgeResult, error) {
+	s.deletedBefore = deletedBefore
+	return s.deletedResult, nil
 }

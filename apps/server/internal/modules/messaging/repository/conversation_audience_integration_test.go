@@ -6,8 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,32 +18,33 @@ func TestConversationAudiencePostgresContract(t *testing.T) {
 	if databaseURL == "" {
 		t.Skip("MESSAGING_AUDIENCE_TEST_DATABASE_URL is not configured")
 	}
-	db, err := sqlx.Connect("postgres", databaseURL)
+	pool, err := pgxpool.New(context.Background(), databaseURL)
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, db.Close()) })
+	require.NoError(t, pool.Ping(context.Background()))
+	t.Cleanup(pool.Close)
 
 	ctx := context.Background()
 	userID := uuid.New()
 	workspaceID := uuid.New()
 	suffix := uuid.NewString()
-	_, err = db.ExecContext(ctx, `
+	_, err = pool.Exec(ctx, `
 		INSERT INTO users (user_id, username, email)
 		VALUES ($1, $2, $3)
 	`, userID, "audience-"+suffix, "audience-"+suffix+"@example.test")
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `
+	_, err = pool.Exec(ctx, `
 		INSERT INTO workspaces (workspace_id, name, slug, created_by)
 		VALUES ($1, 'Audience Test', $2, $3)
 	`, workspaceID, "audience-"+suffix, userID)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		_, cleanupErr := db.ExecContext(context.Background(), "DELETE FROM workspaces WHERE workspace_id = $1", workspaceID)
+		_, cleanupErr := pool.Exec(context.Background(), "DELETE FROM workspaces WHERE workspace_id = $1", workspaceID)
 		require.NoError(t, cleanupErr)
-		_, cleanupErr = db.ExecContext(context.Background(), "DELETE FROM users WHERE user_id = $1", userID)
+		_, cleanupErr = pool.Exec(context.Background(), "DELETE FROM users WHERE user_id = $1", userID)
 		require.NoError(t, cleanupErr)
 	})
 
-	repo := New(db)
+	repo := New(pool)
 	base := ConversationInput{
 		Provider:            "slack",
 		WorkspaceID:         workspaceID,

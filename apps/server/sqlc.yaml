@@ -1,0 +1,1543 @@
+version: "2"
+
+overrides:
+  go:
+    overrides:
+      - db_type: "uuid"
+        engine: "postgresql"
+        go_type:
+          import: "github.com/google/uuid"
+          type: "UUID"
+      - db_type: "uuid"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          import: "github.com/google/uuid"
+          type: "UUID"
+          pointer: true
+      - db_type: "pg_catalog.timestamptz"
+        engine: "postgresql"
+        go_type: "time.Time"
+      - db_type: "pg_catalog.timestamptz"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          type: "time.Time"
+          pointer: true
+      - db_type: "timestamptz"
+        engine: "postgresql"
+        go_type: "time.Time"
+      - db_type: "timestamptz"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          type: "time.Time"
+          pointer: true
+      - db_type: "pg_catalog.timestamp"
+        engine: "postgresql"
+        go_type: "time.Time"
+      - db_type: "pg_catalog.timestamp"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          type: "time.Time"
+          pointer: true
+      - db_type: "timestamp"
+        engine: "postgresql"
+        go_type: "time.Time"
+      - db_type: "timestamp"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          type: "time.Time"
+          pointer: true
+      - db_type: "pg_catalog.date"
+        engine: "postgresql"
+        go_type: "time.Time"
+      - db_type: "pg_catalog.date"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          type: "time.Time"
+          pointer: true
+      - db_type: "date"
+        engine: "postgresql"
+        go_type: "time.Time"
+      - db_type: "date"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          type: "time.Time"
+          pointer: true
+
+sql:
+  - name: "documents"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/documents/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "documentssql"
+        out: "internal/modules/documents/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "attachments"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/attachments/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "attachmentssql"
+        out: "internal/modules/attachments/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "github"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/github/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "githubsql"
+        out: "internal/modules/github/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "figma"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/figma/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "figmasql"
+        out: "internal/modules/figma/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "outbound_webhooks"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/outboundwebhooks/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "outboundwebhookssql"
+        out: "internal/modules/outboundwebhooks/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "developer_oauth"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/developeroauth/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "developeroauthsql"
+        out: "internal/modules/developeroauth/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "developer_credentials"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/developercredentials/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "developercredentialssql"
+        out: "internal/modules/developercredentials/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "mentions"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/mentions/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "mentionssql"
+        out: "internal/modules/mentions/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "reports"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/reports/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "reportssql"
+        out: "internal/modules/reports/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "search"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/search/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "searchsql"
+        out: "internal/modules/search/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "stories_read"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/stories/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "storyreadsql"
+        out: "internal/modules/stories/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "webhooks"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/platform/webhooks/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "webhooksql"
+        out: "internal/platform/webhooks/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "idempotency"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/platform/idempotency/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "idempotencysql"
+        out: "internal/platform/idempotency/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "invitations"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/invitations/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "invitationsql"
+        out: "internal/modules/invitations/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "comments"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/comments/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "commentsql"
+        out: "internal/modules/comments/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "links"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/links/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "linksql"
+        out: "internal/modules/links/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "teams"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/teams/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "teamsql"
+        out: "internal/modules/teams/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "teamsettings"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/teamsettings/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "teamsettingssql"
+        out: "internal/modules/teamsettings/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "users"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/users/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "usersql"
+        out: "internal/modules/users/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "workspaces"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/workspaces/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "workspacesql"
+        out: "internal/modules/workspaces/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "subscriptions"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/subscriptions/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "subscriptionssql"
+        out: "internal/modules/subscriptions/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "objectives"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/objectives/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "objectivessql"
+        out: "internal/modules/objectives/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "states"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/states/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "statessql"
+        out: "internal/modules/states/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "objective-statuses"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/objectivestatus/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "objectivestatussql"
+        out: "internal/modules/objectivestatus/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "labels"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/labels/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "labelssql"
+        out: "internal/modules/labels/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "activities"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/activities/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "activitiessql"
+        out: "internal/modules/activities/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "key-results"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/keyresults/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "keyresultssql"
+        out: "internal/modules/keyresults/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "okr-activities"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/okractivities/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "okractivitiessql"
+        out: "internal/modules/okractivities/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "maya"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/maya/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "mayasql"
+        out: "internal/modules/maya/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "sprints"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/sprints/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "sprintssql"
+        out: "internal/modules/sprints/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "actors"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/platform/actors/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "actorssql"
+        out: "internal/platform/actors/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "notifications"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/notifications/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "notificationssql"
+        out: "internal/modules/notifications/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "admin"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/admin/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "adminsql"
+        out: "internal/modules/admin/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "feedback"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/feedback/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "feedbacksql"
+        out: "internal/modules/feedback/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "type-contract"
+    engine: "postgresql"
+    schema: "internal/tools/sqlccontract/schema"
+    queries: "internal/tools/sqlccontract/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    gen:
+      go:
+        package: "contractsql"
+        out: "internal/tools/sqlccontract/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "slack"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/slack/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "slacksql"
+        out: "internal/modules/slack/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "messaging"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/messaging/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "messagingsql"
+        out: "internal/modules/messaging/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "chatsessions"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/chatsessions/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "chatsessionssql"
+        out: "internal/modules/chatsessions/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "emailreply"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/emailreply/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "emailreplysql"
+        out: "internal/modules/emailreply/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "integrationrequests"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/integrationrequests/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "integrationrequestssql"
+        out: "internal/modules/integrationrequests/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"
+
+  - name: "calendar"
+    engine: "postgresql"
+    schema: "internal/migrations"
+    queries: "internal/modules/calendar/repository/queries"
+    strict_function_checks: true
+    strict_order_by: true
+    analyzer:
+      database: false
+    database:
+      uri: "${SQLC_DATABASE_URL}"
+      managed: false
+    rules:
+      - "sqlc/db-prepare"
+    gen:
+      go:
+        package: "calendarsql"
+        out: "internal/modules/calendar/repository/sqlc"
+        sql_package: "pgx/v5"
+        sql_driver: "github.com/jackc/pgx/v5"
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        emit_pointers_for_null_enum_types: true
+        emit_json_tags: false
+        emit_db_tags: false
+        emit_enum_valid_method: true
+        omit_unused_structs: true
+        query_parameter_limit: 0
+        initialisms:
+          - "id"
+          - "api"
+          - "url"
+          - "uri"

@@ -20,18 +20,18 @@ func TestPrepareIntegrationRequestCommentFreezesSelectedTeamActorAndDMRecipient(
 	actorID := uuid.New()
 	generation := uuid.New()
 	service := &Service{}
-	request := integrationrequests.CoreIntegrationRequest{
+	request := integrationRequest{
 		ID: requestID, WorkspaceID: workspaceID, TeamID: teamID,
-		Provider: integrationrequests.ProviderSlack,
+		Provider: providerSlack,
 		Metadata: map[string]any{"slack_user_id": "U-requester"},
 	}
-	thread := integrationrequests.CoreProviderThread{
+	thread := ProviderThread{
 		ID: uuid.New(), WorkspaceID: workspaceID, IntegrationRequestID: requestID,
-		TeamID: teamID, Provider: integrationrequests.ProviderSlack,
+		TeamID: teamID, Provider: providerSlack,
 		ExternalWorkspaceID: "T1", InstallationGeneration: &generation,
 		ExternalChannelID: "D-requester", ExternalThreadID: "1710000000.001",
 	}
-	input := integrationrequests.CoreCreateCommentInput{AuthorID: actorID}
+	input := CreateIntegrationRequestCommentInput{AuthorID: actorID}
 
 	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, input)
 
@@ -53,18 +53,18 @@ func TestPrepareIntegrationRequestCommentCarriesLinkedSlackAuthor(t *testing.T) 
 	generation := uuid.New()
 	repo := &mockRepo{slackUserLinks: map[string]uuid.UUID{"T1:UAUTHOR": actorID}}
 	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
-	request := integrationrequests.CoreIntegrationRequest{
+	request := integrationRequest{
 		ID: requestID, WorkspaceID: workspaceID, TeamID: teamID,
-		Provider: integrationrequests.ProviderSlack,
+		Provider: providerSlack,
 	}
-	thread := integrationrequests.CoreProviderThread{
+	thread := ProviderThread{
 		ID: uuid.New(), WorkspaceID: workspaceID, IntegrationRequestID: requestID,
-		TeamID: teamID, Provider: integrationrequests.ProviderSlack,
+		TeamID: teamID, Provider: providerSlack,
 		ExternalWorkspaceID: "T1", InstallationGeneration: &generation,
 		ExternalChannelID: "C1", ExternalThreadID: "1710000000.001",
 	}
 
-	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, integrationrequests.CoreCreateCommentInput{AuthorID: actorID})
+	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, CreateIntegrationRequestCommentInput{AuthorID: actorID})
 
 	require.NoError(t, err)
 	payload, err := DecodeSlackProviderPayload(prepared.ProviderPayload)
@@ -108,18 +108,18 @@ func TestDeliverIntegrationRequestCommentSendsToBoundPublicThreadWithoutChannelA
 	requestID := uuid.New()
 	actorID := uuid.New()
 	generation := uuid.New()
-	request := integrationrequests.CoreIntegrationRequest{
+	request := integrationRequest{
 		ID: requestID, WorkspaceID: workspaceID, TeamID: teamID,
-		Provider: integrationrequests.ProviderSlack,
+		Provider: providerSlack,
 	}
-	thread := integrationrequests.CoreProviderThread{
+	thread := ProviderThread{
 		ID: uuid.New(), WorkspaceID: workspaceID, IntegrationRequestID: requestID,
-		TeamID: teamID, Provider: integrationrequests.ProviderSlack,
+		TeamID: teamID, Provider: providerSlack,
 		ExternalWorkspaceID: "T1", InstallationGeneration: &generation,
 		ExternalChannelID: "C1", ExternalThreadID: "1710000000.001",
 	}
 	idempotencyKey := "integration-request-comment:" + uuid.NewString()
-	comment := integrationrequests.CoreIntegrationRequestComment{
+	comment := IntegrationRequestComment{
 		ID: uuid.New(), WorkspaceID: workspaceID, ThreadID: thread.ID,
 		Direction:    integrationrequests.CommentDirectionOutbound,
 		AuthorUserID: &actorID, OutboundIdempotencyKey: &idempotencyKey,
@@ -154,7 +154,7 @@ func TestDeliverIntegrationRequestCommentSendsToBoundPublicThreadWithoutChannelA
 	service.client = provider.Client()
 	service.webClient = newSlackWebClient(service.client)
 	service.webClient.baseURL = provider.URL
-	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, integrationrequests.CoreCreateCommentInput{AuthorID: actorID})
+	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, CreateIntegrationRequestCommentInput{AuthorID: actorID})
 	require.NoError(t, err)
 
 	err = service.DeliverIntegrationRequestComment(context.Background(), request, thread, comment, prepared)
@@ -178,18 +178,18 @@ func TestDeliverIntegrationRequestCommentCancelsWhenAuthorLosesRequestTeamAccess
 	requestID := uuid.New()
 	actorID := uuid.New()
 	generation := uuid.New()
-	request := integrationrequests.CoreIntegrationRequest{
+	request := integrationRequest{
 		ID: requestID, WorkspaceID: workspaceID, TeamID: teamID,
-		Provider: integrationrequests.ProviderSlack,
+		Provider: providerSlack,
 	}
-	thread := integrationrequests.CoreProviderThread{
+	thread := ProviderThread{
 		ID: uuid.New(), WorkspaceID: workspaceID, IntegrationRequestID: requestID,
-		TeamID: teamID, Provider: integrationrequests.ProviderSlack,
+		TeamID: teamID, Provider: providerSlack,
 		ExternalWorkspaceID: "T1", InstallationGeneration: &generation,
 		ExternalChannelID: "C1", ExternalThreadID: "1710000000.001",
 	}
 	idempotencyKey := "integration-request-comment:" + uuid.NewString()
-	comment := integrationrequests.CoreIntegrationRequestComment{
+	comment := IntegrationRequestComment{
 		ID: uuid.New(), WorkspaceID: workspaceID, ThreadID: thread.ID,
 		Direction:    integrationrequests.CommentDirectionOutbound,
 		AuthorUserID: &actorID, OutboundIdempotencyKey: &idempotencyKey,
@@ -208,7 +208,7 @@ func TestDeliverIntegrationRequestCommentCancelsWhenAuthorLosesRequestTeamAccess
 	store.deliveryContent = stringPointer(comment.Body)
 	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
 	service.outbound = store
-	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, integrationrequests.CoreCreateCommentInput{AuthorID: actorID})
+	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, CreateIntegrationRequestCommentInput{AuthorID: actorID})
 	require.NoError(t, err)
 
 	err = service.DeliverIntegrationRequestComment(context.Background(), request, thread, comment, prepared)
@@ -226,19 +226,19 @@ func TestDeliverIntegrationRequestCommentRevalidatesDMRecipientBeforeFirstSend(t
 	actorID := uuid.New()
 	recipientID := uuid.New()
 	generation := uuid.New()
-	request := integrationrequests.CoreIntegrationRequest{
+	request := integrationRequest{
 		ID: requestID, WorkspaceID: workspaceID, TeamID: teamID,
-		Provider: integrationrequests.ProviderSlack,
+		Provider: providerSlack,
 		Metadata: map[string]any{"slack_user_id": "U-requester"},
 	}
-	thread := integrationrequests.CoreProviderThread{
+	thread := ProviderThread{
 		ID: uuid.New(), WorkspaceID: workspaceID, IntegrationRequestID: requestID,
-		TeamID: teamID, Provider: integrationrequests.ProviderSlack,
+		TeamID: teamID, Provider: providerSlack,
 		ExternalWorkspaceID: "T1", InstallationGeneration: &generation,
 		ExternalChannelID: "D-requester", ExternalThreadID: "1710000000.001",
 	}
 	idempotencyKey := "integration-request-comment:" + uuid.NewString()
-	comment := integrationrequests.CoreIntegrationRequestComment{
+	comment := IntegrationRequestComment{
 		ID: uuid.New(), WorkspaceID: workspaceID, ThreadID: thread.ID,
 		Direction:    integrationrequests.CommentDirectionOutbound,
 		AuthorUserID: &actorID, OutboundIdempotencyKey: &idempotencyKey,
@@ -257,7 +257,7 @@ func TestDeliverIntegrationRequestCommentRevalidatesDMRecipientBeforeFirstSend(t
 	store.deliveryContent = stringPointer(comment.Body)
 	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
 	service.outbound = store
-	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, integrationrequests.CoreCreateCommentInput{AuthorID: actorID})
+	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, CreateIntegrationRequestCommentInput{AuthorID: actorID})
 	require.NoError(t, err)
 
 	err = service.DeliverIntegrationRequestComment(context.Background(), request, thread, comment, prepared)
@@ -275,18 +275,18 @@ func TestDeliverIntegrationRequestCommentSendsOnceFromDurableAuthorizedDelivery(
 	requestID := uuid.New()
 	actorID := uuid.New()
 	generation := uuid.New()
-	request := integrationrequests.CoreIntegrationRequest{
+	request := integrationRequest{
 		ID: requestID, WorkspaceID: workspaceID, TeamID: teamID,
-		Provider: integrationrequests.ProviderSlack,
+		Provider: providerSlack,
 	}
-	thread := integrationrequests.CoreProviderThread{
+	thread := ProviderThread{
 		ID: uuid.New(), WorkspaceID: workspaceID, IntegrationRequestID: requestID,
-		TeamID: teamID, Provider: integrationrequests.ProviderSlack,
+		TeamID: teamID, Provider: providerSlack,
 		ExternalWorkspaceID: "T1", InstallationGeneration: &generation,
 		ExternalChannelID: "C-current", ExternalThreadID: "1710000000.009",
 	}
 	idempotencyKey := "integration-request-comment:" + uuid.NewString()
-	comment := integrationrequests.CoreIntegrationRequestComment{
+	comment := IntegrationRequestComment{
 		ID: uuid.New(), WorkspaceID: workspaceID, ThreadID: thread.ID,
 		Direction:    integrationrequests.CommentDirectionOutbound,
 		AuthorUserID: &actorID, OutboundIdempotencyKey: &idempotencyKey,
@@ -322,7 +322,7 @@ func TestDeliverIntegrationRequestCommentSendsOnceFromDurableAuthorizedDelivery(
 	service.client = provider.Client()
 	service.webClient = newSlackWebClient(service.client)
 	service.webClient.baseURL = provider.URL
-	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, integrationrequests.CoreCreateCommentInput{AuthorID: actorID})
+	prepared, err := service.PrepareIntegrationRequestComment(context.Background(), request, thread, CreateIntegrationRequestCommentInput{AuthorID: actorID})
 	require.NoError(t, err)
 
 	require.NoError(t, service.DeliverIntegrationRequestComment(context.Background(), request, thread, comment, prepared))

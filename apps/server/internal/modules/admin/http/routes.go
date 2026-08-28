@@ -3,19 +3,22 @@ package adminhttp
 import (
 	admin "github.com/complexus-tech/projects-api/internal/modules/admin/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 )
 
 type Config struct {
-	Log       *logger.Logger
-	SecretKey string
-	Service   *admin.Service
+	Log             *logger.Logger
+	SecretKey       string
+	Cache           *cache.Service
+	BrowserSessions mid.SessionResolver
+	Service         *admin.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	h := New(cfg.Log, cfg.Service)
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 
 	app.Get("/admin/me", h.GetCurrentAdmin, auth)
 	app.Get("/admin/summary", h.GetDashboardSummary, auth)

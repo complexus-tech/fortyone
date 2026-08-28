@@ -31,15 +31,19 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	var req NewObjectiveStatus
 	if err := web.Decode(r, &req); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	status, err := h.objectiveStatus.Create(ctx, workspace.ID, toCoreNewObjectiveStatus(req))
+	status, err := h.objectiveStatus.Create(ctx, actorID, workspace.ID, toCoreNewObjectiveStatus(req))
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, objectiveStatusErrorStatus(err))
 	}
 
 	return web.Respond(ctx, w, toAppObjectiveStatus(status), http.StatusCreated)
@@ -47,6 +51,10 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	actorID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
@@ -62,9 +70,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	status, err := h.objectiveStatus.Update(ctx, workspace.ID, statusId, toCoreUpdateObjectiveStatus(req))
+	status, err := h.objectiveStatus.Update(ctx, actorID, workspace.ID, statusId, toCoreUpdateObjectiveStatus(req))
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, objectiveStatusErrorStatus(err))
 	}
 
 	return web.Respond(ctx, w, toAppObjectiveStatus(status), http.StatusOK)
@@ -75,6 +83,10 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	statusIdParam := web.Params(r, "statusId")
 	statusId, err := uuid.Parse(statusIdParam)
@@ -82,8 +94,8 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, ErrInvalidStatusID, http.StatusBadRequest)
 	}
 
-	if err := h.objectiveStatus.Delete(ctx, workspace.ID, statusId); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	if err := h.objectiveStatus.Delete(ctx, actorID, workspace.ID, statusId); err != nil {
+		return web.RespondError(ctx, w, err, objectiveStatusErrorStatus(err))
 	}
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
@@ -94,11 +106,28 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
-	statuses, err := h.objectiveStatus.List(ctx, workspace.ID)
+	statuses, err := h.objectiveStatus.ListForMember(ctx, actorID, workspace.ID)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	return web.Respond(ctx, w, toAppObjectiveStatuses(statuses), http.StatusOK)
+}
+
+func objectiveStatusErrorStatus(err error) int {
+	switch {
+	case errors.Is(err, objectivestatus.ErrNotFound):
+		return http.StatusNotFound
+	case errors.Is(err, objectivestatus.ErrNoFields), errors.Is(err, objectivestatus.ErrInvalidOrder):
+		return http.StatusBadRequest
+	case errors.Is(err, objectivestatus.ErrStatusHasObjectives), errors.Is(err, objectivestatus.ErrLastInCategory):
+		return http.StatusConflict
+	default:
+		return http.StatusInternalServerError
+	}
 }

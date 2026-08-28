@@ -6,19 +6,15 @@ import (
 	"fmt"
 	"strings"
 
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
 	"github.com/google/uuid"
 )
 
 type channelAudienceRepository interface {
-	ListAssistantChannelTeamAccess(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.ChannelTeamAccessRecord, error)
+	ListAssistantChannelTeamAccessForAdmin(ctx context.Context, query slackdomain.WorkspaceActorQuery) ([]slackdomain.ChannelTeamAccess, error)
 	ReplaceAssistantChannelTeamAccess(
 		ctx context.Context,
-		workspaceID, slackWorkspaceID uuid.UUID,
-		slackChannelID string,
-		isConfigured bool,
-		teamIDs []uuid.UUID,
-		actorID uuid.UUID,
+		command slackdomain.ReplaceChannelAudienceCommand,
 	) error
 	ListAuthorizedChannelTeamIDs(
 		ctx context.Context,
@@ -43,7 +39,7 @@ type authorizedAssistantChannelAudienceRepository interface {
 		workspaceID, slackWorkspaceID uuid.UUID,
 		slackChannelID string,
 		userID uuid.UUID,
-	) (slackrepository.AssistantChannelTeamScope, error)
+	) (slackdomain.AssistantChannelTeamScope, error)
 }
 
 type CoreSlackChannelAudience struct {
@@ -52,16 +48,20 @@ type CoreSlackChannelAudience struct {
 	TeamIDs      []uuid.UUID
 }
 
-func (s *Service) ListChannelAudiences(ctx context.Context, workspaceID uuid.UUID) ([]CoreSlackChannelAudience, error) {
+func (s *Service) ListChannelAudiences(ctx context.Context, workspaceID, actorID uuid.UUID) ([]CoreSlackChannelAudience, error) {
+	if err := s.requireWorkspaceAdmin(ctx, workspaceID, actorID); err != nil {
+		return nil, err
+	}
 	repository, ok := s.repo.(channelAudienceRepository)
 	if !ok {
-		return nil, errors.New("Slack channel audience repository is not configured")
+		return nil, errors.New("slack channel audience repository is not configured")
 	}
-	channels, err := s.repo.ListChannels(ctx, workspaceID)
+	query := slackdomain.WorkspaceActorQuery{WorkspaceID: workspaceID, ActorID: actorID}
+	channels, err := s.repo.ListChannelsForMember(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	access, err := repository.ListAssistantChannelTeamAccess(ctx, workspaceID)
+	access, err := repository.ListAssistantChannelTeamAccessForAdmin(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -94,28 +94,28 @@ func (s *Service) UpdateChannelAudience(
 ) error {
 	repository, ok := s.repo.(channelAudienceRepository)
 	if !ok {
-		return errors.New("Slack channel audience repository is not configured")
+		return errors.New("slack channel audience repository is not configured")
 	}
 	if workspaceID == uuid.Nil || actorID == uuid.Nil {
 		return errors.New("workspace and actor are required")
 	}
+	if err := s.requireWorkspaceAdmin(ctx, workspaceID, actorID); err != nil {
+		return err
+	}
 	slackChannelID = strings.TrimSpace(slackChannelID)
 	if slackChannelID == "" {
-		return errors.New("Slack channel is required")
+		return errors.New("slack channel is required")
 	}
 	installation, err := s.repo.GetSlackWorkspace(ctx, workspaceID)
 	if err != nil {
 		return err
 	}
-	if err := repository.ReplaceAssistantChannelTeamAccess(
-		ctx,
-		workspaceID,
-		installation.ID,
-		slackChannelID,
-		isConfigured,
-		teamIDs,
-		actorID,
-	); err != nil {
+	if err := repository.ReplaceAssistantChannelTeamAccess(ctx, slackdomain.ReplaceChannelAudienceCommand{
+		WorkspaceID: workspaceID, ActorID: actorID,
+		InstallationID: installation.ID, InstallationGeneration: installation.InstallGeneration,
+		SlackChannelID: slackChannelID, Configured: isConfigured,
+		TeamIDs: teamIDs, Now: s.clock.Now().UTC(),
+	}); err != nil {
 		return fmt.Errorf("update Slack channel audience: %w", err)
 	}
 	return nil
@@ -129,7 +129,7 @@ func (s *Service) authorizedChannelTeamIDs(
 ) ([]uuid.UUID, error) {
 	repository, ok := s.repo.(authorizedChannelAudienceRepository)
 	if !ok {
-		return nil, errors.New("Slack channel audience repository is not configured")
+		return nil, errors.New("slack channel audience repository is not configured")
 	}
 	return repository.ListAuthorizedChannelTeamIDs(
 		ctx,
@@ -145,10 +145,10 @@ func (s *Service) authorizedAssistantChannelTeamScope(
 	workspaceID, slackWorkspaceID uuid.UUID,
 	slackChannelID string,
 	userID uuid.UUID,
-) (slackrepository.AssistantChannelTeamScope, error) {
+) (slackdomain.AssistantChannelTeamScope, error) {
 	repository, ok := s.repo.(authorizedAssistantChannelAudienceRepository)
 	if !ok {
-		return slackrepository.AssistantChannelTeamScope{}, errors.New("Slack assistant channel audience repository is not configured")
+		return slackdomain.AssistantChannelTeamScope{}, errors.New("slack assistant channel audience repository is not configured")
 	}
 	return repository.GetAuthorizedAssistantChannelTeamScope(
 		ctx,
@@ -163,7 +163,7 @@ func (s *Service) availableTeamsForSlackSource(
 	ctx context.Context,
 	workspaceID, userID uuid.UUID,
 	source requestSourceContext,
-) ([]slackrepository.TeamRecord, error) {
+) ([]slackdomain.Team, error) {
 	teams, err := s.repo.ListWorkspaceTeamsForUser(ctx, workspaceID, userID)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (s *Service) availableTeamsForSlackSource(
 			allowed[teamID] = struct{}{}
 		}
 	}
-	filtered := make([]slackrepository.TeamRecord, 0, len(teams))
+	filtered := make([]slackdomain.Team, 0, len(teams))
 	for _, team := range teams {
 		if _, ok := allowed[team.ID]; ok {
 			filtered = append(filtered, team)
@@ -205,7 +205,7 @@ func (s *Service) availableTeamsForSlackSource(
 func (s *Service) availableTeamsForSlackCreation(
 	ctx context.Context,
 	workspaceID, userID uuid.UUID,
-) ([]slackrepository.TeamRecord, error) {
+) ([]slackdomain.Team, error) {
 	return s.repo.ListWorkspaceTeamsForUser(ctx, workspaceID, userID)
 }
 
@@ -297,7 +297,7 @@ func (s *Service) slackDeliveryAuthorizationCurrent(
 	return uuidSubset(authorization.AllowedTeamIDs, teamIDs), nil
 }
 
-func slackTeamRecordIDs(teams []slackrepository.TeamRecord) []uuid.UUID {
+func slackTeamRecordIDs(teams []slackdomain.Team) []uuid.UUID {
 	ids := make([]uuid.UUID, 0, len(teams))
 	for _, team := range teams {
 		if team.ID != uuid.Nil {
@@ -307,7 +307,7 @@ func slackTeamRecordIDs(teams []slackrepository.TeamRecord) []uuid.UUID {
 	return ids
 }
 
-func toCoreChannel(record slackrepository.SlackChannelRecord) CoreSlackChannel {
+func toCoreChannel(record slackdomain.Channel) CoreSlackChannel {
 	return CoreSlackChannel{
 		ID:             record.ID,
 		SlackChannelID: record.SlackChannelID,

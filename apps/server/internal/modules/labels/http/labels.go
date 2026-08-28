@@ -34,22 +34,23 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-
-	var af AppFilters
-	filters, err := web.GetFilters(r.URL.Query(), &af)
+	actorID, err := mid.GetUserID(ctx)
 	if err != nil {
-		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	if paginationRequested(r) {
-		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
-		filters["limit"] = pageSize + 1
-		filters["offset"] = (page - 1) * pageSize
+	query, err := parseLabelListQuery(r.URL.Query())
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
 
-		labels, err := h.labels.GetLabels(ctx, workspace.ID, filters)
+	if query.Page != nil {
+		params := *query.Page
+		page, pageSize := params.Page, params.PageSize
+
+		labels, err := h.labels.GetLabels(ctx, actorID, workspace.ID, query.Filters)
 		if err != nil {
-			web.RespondError(ctx, w, err, http.StatusInternalServerError)
+			web.RespondError(ctx, w, err, labelErrorStatus(err))
 			return nil
 		}
 
@@ -61,9 +62,9 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.Respond(ctx, w, toAppLabelsResponse(labels, page, pageSize, hasMore), http.StatusOK)
 	}
 
-	labels, err := h.labels.GetLabels(ctx, workspace.ID, filters)
+	labels, err := h.labels.GetLabels(ctx, actorID, workspace.ID, query.Filters)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		web.RespondError(ctx, w, err, labelErrorStatus(err))
 		return nil
 	}
 
@@ -75,6 +76,10 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	labelIdParam := web.Params(r, "id")
 	labelId, err := uuid.Parse(labelIdParam)
@@ -83,9 +88,9 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 		return nil
 	}
 
-	label, err := h.labels.GetLabel(ctx, labelId, workspace.ID)
+	label, err := h.labels.GetLabel(ctx, actorID, labelId, workspace.ID)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		web.RespondError(ctx, w, err, labelErrorStatus(err))
 		return nil
 	}
 
@@ -94,6 +99,10 @@ func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 
 func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	actorID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
@@ -111,9 +120,9 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 		Color:       req.Color,
 	}
 
-	label, err := h.labels.CreateLabel(ctx, input)
+	label, err := h.labels.CreateLabel(ctx, actorID, input)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		web.RespondError(ctx, w, err, labelErrorStatus(err))
 		return nil
 	}
 
@@ -122,6 +131,10 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	actorID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
@@ -139,9 +152,9 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	label, err := h.labels.UpdateLabel(ctx, labelId, workspace.ID, req.Name, req.Color)
+	label, err := h.labels.UpdateLabel(ctx, actorID, labelId, workspace.ID, req.Name, req.Color)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		web.RespondError(ctx, w, err, labelErrorStatus(err))
 		return nil
 	}
 
@@ -153,6 +166,10 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	labelIdParam := web.Params(r, "id")
 	labelId, err := uuid.Parse(labelIdParam)
@@ -161,10 +178,20 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	if err := h.labels.DeleteLabel(ctx, labelId, workspace.ID); err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	if err := h.labels.DeleteLabel(ctx, actorID, labelId, workspace.ID); err != nil {
+		web.RespondError(ctx, w, err, labelErrorStatus(err))
 		return nil
 	}
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func labelErrorStatus(err error) int {
+	if errors.Is(err, labels.ErrNotFound) {
+		return http.StatusNotFound
+	}
+	if errors.Is(err, labels.ErrInvalidPagination) {
+		return http.StatusBadRequest
+	}
+	return http.StatusInternalServerError
 }

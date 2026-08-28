@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -30,40 +31,42 @@ func (r *channelAudienceRepoStub) GetAgentSettings(context.Context, uuid.UUID) (
 	return r.agent, nil
 }
 
-func (r *channelAudienceRepoStub) UpsertAgentSettings(
+func (r *channelAudienceRepoStub) GetAgentSettingsForAdmin(
 	_ context.Context,
-	workspaceID uuid.UUID,
-	input slackrepository.AgentSettingsInput,
+	_ slackdomain.WorkspaceActorQuery,
+) (slackrepository.AgentSettingsRecord, error) {
+	return r.agent, nil
+}
+
+func (r *channelAudienceRepoStub) UpsertAgentSettingsForAdmin(
+	_ context.Context,
+	command slackdomain.UpdateAgentSettingsCommand,
 ) (slackrepository.AgentSettingsRecord, error) {
 	r.agent = slackrepository.AgentSettingsRecord{
-		WorkspaceID: workspaceID,
-		Guidance:    input.Guidance,
+		WorkspaceID: command.WorkspaceID,
+		Guidance:    command.Guidance,
 	}
 	return r.agent, nil
 }
 
-func (r *channelAudienceRepoStub) ListChannels(context.Context, uuid.UUID) ([]slackrepository.SlackChannelRecord, error) {
+func (r *channelAudienceRepoStub) ListChannelsForMember(context.Context, slackdomain.WorkspaceActorQuery) ([]slackrepository.SlackChannelRecord, error) {
 	return append([]slackrepository.SlackChannelRecord(nil), r.channels...), nil
 }
 
-func (r *channelAudienceRepoStub) ListAssistantChannelTeamAccess(context.Context, uuid.UUID) ([]slackrepository.ChannelTeamAccessRecord, error) {
+func (r *channelAudienceRepoStub) ListAssistantChannelTeamAccessForAdmin(context.Context, slackdomain.WorkspaceActorQuery) ([]slackrepository.ChannelTeamAccessRecord, error) {
 	return append([]slackrepository.ChannelTeamAccessRecord(nil), r.access...), nil
 }
 
 func (r *channelAudienceRepoStub) ReplaceAssistantChannelTeamAccess(
 	_ context.Context,
-	workspaceID, slackWorkspaceID uuid.UUID,
-	slackChannelID string,
-	isConfigured bool,
-	teamIDs []uuid.UUID,
-	actorID uuid.UUID,
+	command slackdomain.ReplaceChannelAudienceCommand,
 ) error {
-	r.replaced.workspaceID = workspaceID
-	r.replaced.slackWorkspaceID = slackWorkspaceID
-	r.replaced.slackChannelID = slackChannelID
-	r.replaced.isConfigured = isConfigured
-	r.replaced.teamIDs = append([]uuid.UUID(nil), teamIDs...)
-	r.replaced.actorID = actorID
+	r.replaced.workspaceID = command.WorkspaceID
+	r.replaced.slackWorkspaceID = command.InstallationID
+	r.replaced.slackChannelID = command.SlackChannelID
+	r.replaced.isConfigured = command.Configured
+	r.replaced.teamIDs = append([]uuid.UUID(nil), command.TeamIDs...)
+	r.replaced.actorID = command.ActorID
 	return nil
 }
 
@@ -119,7 +122,7 @@ func TestListChannelAudiencesIncludesConfiguredAndUnconfiguredChannels(t *testin
 	}
 	service := New(nil, repo, nil, nil, Config{})
 
-	audiences, err := service.ListChannelAudiences(context.Background(), workspaceID)
+	audiences, err := service.ListChannelAudiences(context.Background(), workspaceID, uuid.New())
 
 	require.NoError(t, err)
 	require.Len(t, audiences, 2)
@@ -320,16 +323,17 @@ func TestUpdateAgentSettingsRoundTripsProviderNeutralConfiguration(t *testing.T)
 	t.Parallel()
 
 	workspaceID := uuid.New()
+	actorID := uuid.New()
 	repo := &channelAudienceRepoStub{mockRepo: &mockRepo{}}
 	service := New(nil, repo, nil, nil, Config{})
 	input := CoreSlackAgentSettings{Guidance: "Use customer-facing language."}
 	want := CoreSlackAgentSettings{Guidance: input.Guidance}
 
-	updated, err := service.UpdateAgentSettings(context.Background(), workspaceID, input)
+	updated, err := service.UpdateAgentSettings(context.Background(), workspaceID, actorID, input)
 
 	require.NoError(t, err)
 	require.Equal(t, want, updated)
-	loaded, err := service.GetAgentSettings(context.Background(), workspaceID)
+	loaded, err := service.GetAgentSettings(context.Background(), workspaceID, actorID)
 	require.NoError(t, err)
 	require.Equal(t, want, loaded)
 }
@@ -338,6 +342,7 @@ func TestGetAgentSettingsReturnsGuidance(t *testing.T) {
 	t.Parallel()
 
 	workspaceID := uuid.New()
+	actorID := uuid.New()
 	repo := &channelAudienceRepoStub{
 		mockRepo: &mockRepo{},
 		agent: slackrepository.AgentSettingsRecord{
@@ -347,7 +352,7 @@ func TestGetAgentSettingsReturnsGuidance(t *testing.T) {
 	}
 	service := New(nil, repo, nil, nil, Config{})
 
-	settings, err := service.GetAgentSettings(context.Background(), workspaceID)
+	settings, err := service.GetAgentSettings(context.Background(), workspaceID, actorID)
 
 	require.NoError(t, err)
 	require.Equal(t, "Keep responses concise.", settings.Guidance)

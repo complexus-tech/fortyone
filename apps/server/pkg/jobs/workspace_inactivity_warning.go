@@ -2,195 +2,211 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
+	workspacedomain "github.com/complexus-tech/projects-api/internal/modules/workspaces/domain"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// ProcessWorkspaceInactivityWarning sends warning emails to workspace admins for workspaces inactive for 6+ months
-func ProcessWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service) error {
+const (
+	workspaceInactivityWarningBatchSize  = 100
+	workspaceInactivityWarningBatchDelay = 100 * time.Millisecond
+)
+
+// WorkspaceInactivityWarningStore is the worker-owned persistence capability
+// for keyset-paged inactivity warnings.
+type WorkspaceInactivityWarningStore interface {
+	ListWorkspaceInactivityWarningCandidates(
+		context.Context,
+		workspacedomain.InactivityWarningQuery,
+	) ([]workspacedomain.InactivityWarningCandidate, error)
+	RecordWorkspaceInactivityWarning(context.Context, workspacedomain.InactivityWarningReceipt) error
+}
+
+// ProcessWorkspaceInactivityWarning sends one warning to every active admin of
+// a workspace after six calendar months without access.
+func ProcessWorkspaceInactivityWarning(
+	ctx context.Context,
+	store WorkspaceInactivityWarningStore,
+	log *logger.Logger,
+	mailerService mailer.Service,
+) error {
+	return processWorkspaceInactivityWarningAt(ctx, store, log, mailerService, time.Now().UTC())
+}
+
+func processWorkspaceInactivityWarningAt(
+	ctx context.Context,
+	store WorkspaceInactivityWarningStore,
+	log *logger.Logger,
+	mailerService mailer.Service,
+	now time.Time,
+) error {
+	if ctx == nil {
+		return errors.New("workspace inactivity warning context is required")
+	}
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessWorkspaceInactivityWarning")
 	defer span.End()
+	if store == nil {
+		return errors.New("workspace inactivity warning store is required")
+	}
+	if log == nil {
+		return errors.New("workspace inactivity warning logger is required")
+	}
+	if mailerService == nil {
+		return errors.New("workspace inactivity warning mailer is required")
+	}
+	if now.IsZero() {
+		return errors.New("workspace inactivity warning clock is required")
+	}
 
-	log.Info(ctx, "Processing workspace inactivity warnings for workspaces inactive for 6+ months")
-	startTime := time.Now()
-
-	const workspaceBatchSize = 100 // Process 100 admin-workspace pairs at a time
+	now = now.UTC()
+	inactiveBefore := now.AddDate(0, -6, 0)
+	startedAt := time.Now()
+	var cursor workspacedomain.InactivityCursor
 	totalProcessed := 0
 	totalEmailsSent := 0
 	batchCount := 0
 
+	log.Info(ctx, "Processing workspace inactivity warnings for workspaces inactive for 6+ months")
 	for {
-		batchCount++
-		log.Info(ctx, fmt.Sprintf("Processing workspace batch %d", batchCount))
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("process workspace inactivity warnings after %d candidates: %w", totalProcessed, err)
+		}
 
-		// Get next batch of inactive workspaces with their admins
-		workspaces, err := getInactiveWorkspacesBatch(ctx, db, workspaceBatchSize, batchCount-1)
+		candidates, err := store.ListWorkspaceInactivityWarningCandidates(
+			ctx,
+			workspacedomain.InactivityWarningQuery{
+				InactiveBefore: inactiveBefore,
+				Cursor:         cursor,
+				BatchSize:      workspaceInactivityWarningBatchSize,
+			},
+		)
 		if err != nil {
 			span.RecordError(err)
-			return fmt.Errorf("failed to get workspaces batch %d: %w", batchCount, err)
+			return fmt.Errorf("list workspace inactivity warning candidates: %w", err)
+		}
+		if len(candidates) == 0 {
+			break
+		}
+		if len(candidates) > workspaceInactivityWarningBatchSize {
+			return fmt.Errorf(
+				"list workspace inactivity warning candidates: got %d rows, want at most %d",
+				len(candidates),
+				workspaceInactivityWarningBatchSize,
+			)
 		}
 
-		if len(workspaces) == 0 {
-			break // No more workspaces
-		}
-
-		// Process each workspace in this batch
-		for _, ws := range workspaces {
-			if err := sendWorkspaceInactivityWarning(ctx, db, mailerService, ws); err != nil {
-				log.Error(ctx, "Failed to send workspace inactivity warning", "error", err, "workspace_id", ws.WorkspaceID, "workspace_name", ws.Name)
+		batchCount++
+		for _, candidate := range candidates {
+			if err := sendWorkspaceInactivityWarning(
+				ctx,
+				store,
+				mailerService,
+				candidate,
+				inactiveBefore,
+				now,
+			); err != nil {
+				log.Error(
+					ctx,
+					"Failed to send workspace inactivity warning",
+					"error", err,
+					"workspace_id", candidate.WorkspaceID,
+					"workspace_name", candidate.Name,
+				)
 				continue
 			}
 			totalEmailsSent++
 		}
-		totalProcessed += len(workspaces)
+		totalProcessed += len(candidates)
 
-		log.Info(ctx, fmt.Sprintf("Workspace batch %d completed: %d workspaces processed", batchCount, len(workspaces)))
-
-		// Small delay to avoid overwhelming the email service
-		time.Sleep(100 * time.Millisecond)
+		lastCandidate := candidates[len(candidates)-1]
+		cursor = workspacedomain.InactivityCursor{
+			LastAccessedAt: lastCandidate.LastAccessedAt,
+			WorkspaceID:    lastCandidate.WorkspaceID,
+			Valid:          true,
+		}
+		span.AddEvent("workspace inactivity warning batch processed", trace.WithAttributes(
+			attribute.Int("batch", batchCount),
+			attribute.Int("workspaces.processed", len(candidates)),
+		))
+		if len(candidates) < workspaceInactivityWarningBatchSize {
+			break
+		}
+		if err := waitForWorkspaceWarningBatch(ctx); err != nil {
+			return fmt.Errorf("pace workspace inactivity warning batches: %w", err)
+		}
 	}
 
-	duration := time.Since(startTime)
-
+	duration := time.Since(startedAt)
 	span.AddEvent("workspace inactivity warnings completed", trace.WithAttributes(
 		attribute.Int("workspaces.processed", totalProcessed),
 		attribute.Int("emails.sent", totalEmailsSent),
 		attribute.Int("batches.processed", batchCount),
 		attribute.String("duration", duration.String()),
 	))
-
-	log.Info(ctx, fmt.Sprintf("Workspace inactivity warning job completed: %d emails sent to %d workspaces in %d batches over %v", totalEmailsSent, totalProcessed, batchCount, duration))
+	log.Info(
+		ctx,
+		"Workspace inactivity warning job completed",
+		"emails_sent", totalEmailsSent,
+		"workspaces_processed", totalProcessed,
+		"batches_processed", batchCount,
+		"duration", duration,
+	)
 	return nil
 }
 
-// InactiveWorkspace represents a workspace that hasn't been active for 6+ months with its admin emails
-type InactiveWorkspace struct {
-	WorkspaceID    uuid.UUID       `db:"workspace_id"`
-	Name           string          `db:"name"`
-	Slug           string          `db:"slug"`
-	LastAccessedAt time.Time       `db:"last_accessed_at"`
-	AdminEmails    json.RawMessage `db:"admin_emails"`
-}
-
-// getInactiveWorkspacesBatch gets a batch of workspaces that haven't been active for 6+ months with their admin emails
-func getInactiveWorkspacesBatch(ctx context.Context, db *sqlx.DB, batchSize int, offset int) ([]InactiveWorkspace, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.getInactiveWorkspacesBatch")
-	defer span.End()
-
-	query := `
-		SELECT 
-			w.workspace_id,
-			w.name,
-			w.slug,
-			w.last_accessed_at,
-			COALESCE(
-				(
-					SELECT json_agg(u.email)
-					FROM workspace_members wm
-					INNER JOIN users u ON wm.user_id = u.user_id
-					WHERE wm.workspace_id = w.workspace_id
-					AND wm.role = 'admin'
-					AND u.is_active = true
-				), '[]'
-			) AS admin_emails
-		FROM workspaces w
-		WHERE w.last_accessed_at < NOW() - INTERVAL '6 months'
-		AND w.deleted_at IS NULL
-		AND w.inactivity_warning_sent_at IS NULL
-		ORDER BY w.last_accessed_at ASC
-		LIMIT :batch_size OFFSET :offset_value
-	`
-
-	params := map[string]any{
-		"batch_size":   batchSize,
-		"offset_value": offset * batchSize,
-	}
-
-	stmt, err := db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to prepare inactive workspaces query: %w", err)
-	}
-	defer stmt.Close()
-
-	var workspaces []InactiveWorkspace
-	if err := stmt.SelectContext(ctx, &workspaces, params); err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to query inactive workspaces batch: %w", err)
-	}
-
-	span.AddEvent("inactive workspaces batch retrieved", trace.WithAttributes(
-		attribute.Int("workspaces.count", len(workspaces)),
-		attribute.Int("batch_size", batchSize),
-		attribute.Int("offset", offset),
-	))
-
-	return workspaces, nil
-}
-
-// sendWorkspaceInactivityWarning sends a warning email to all workspace admins
-func sendWorkspaceInactivityWarning(ctx context.Context, db *sqlx.DB, mailerService mailer.Service, ws InactiveWorkspace) error {
-	// Parse admin emails from JSON
-	var adminEmails []string
-	if err := json.Unmarshal(ws.AdminEmails, &adminEmails); err != nil {
-		return fmt.Errorf("failed to unmarshal admin emails: %w", err)
-	}
-
-	// Skip if no admin emails
-	if len(adminEmails) == 0 {
-		return fmt.Errorf("no admin emails found for workspace %s", ws.Name)
+func sendWorkspaceInactivityWarning(
+	ctx context.Context,
+	store WorkspaceInactivityWarningStore,
+	mailerService mailer.Service,
+	candidate workspacedomain.InactivityWarningCandidate,
+	inactiveBefore time.Time,
+	warningSentAt time.Time,
+) error {
+	if len(candidate.AdminEmails) == 0 {
+		return fmt.Errorf("no admin emails found for workspace %s", candidate.Name)
 	}
 
 	data := map[string]any{
-		"WorkspaceName": ws.Name,
-		"WorkspaceURL":  fmt.Sprintf("https://%s.fortyone.app", ws.Slug),
+		"WorkspaceName": candidate.Name,
+		"WorkspaceURL":  fmt.Sprintf("https://%s.fortyone.app", candidate.Slug),
 	}
-
-	subject := fmt.Sprintf("%s workspace scheduled for deletion", ws.Name)
+	subject := fmt.Sprintf("%s workspace scheduled for deletion", candidate.Name)
 	if err := mailerService.SendTemplated(ctx, mailer.TemplatedEmail{
-		To:       adminEmails,
+		To:       append([]string(nil), candidate.AdminEmails...),
 		Template: "workspaces/inactivity_warning",
 		Subject:  subject,
 		Data:     data,
 	}); err != nil {
-		return fmt.Errorf("failed to send workspace inactivity warning email: %w", err)
+		return fmt.Errorf("send workspace inactivity warning email: %w", err)
 	}
 
-	// Mark warning as sent to prevent duplicate emails
-	if err := markWorkspaceWarningSent(ctx, db, ws.WorkspaceID); err != nil {
-		return fmt.Errorf("failed to mark workspace warning as sent: %w", err)
+	if err := store.RecordWorkspaceInactivityWarning(
+		ctx,
+		workspacedomain.InactivityWarningReceipt{
+			WorkspaceID:    candidate.WorkspaceID,
+			InactiveBefore: inactiveBefore,
+			WarningSentAt:  warningSentAt,
+		},
+	); err != nil {
+		return fmt.Errorf("record workspace inactivity warning: %w", err)
 	}
-
 	return nil
 }
 
-// markWorkspaceWarningSent marks that an inactivity warning has been sent to workspace admins
-func markWorkspaceWarningSent(ctx context.Context, db *sqlx.DB, workspaceID uuid.UUID) error {
-	query := `UPDATE workspaces SET inactivity_warning_sent_at = NOW() WHERE workspace_id = :workspace_id`
-
-	params := map[string]any{
-		"workspace_id": workspaceID,
+func waitForWorkspaceWarningBatch(ctx context.Context) error {
+	timer := time.NewTimer(workspaceInactivityWarningBatchDelay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
-
-	stmt, err := db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		return fmt.Errorf("failed to prepare mark workspace warning query: %w", err)
-	}
-	defer stmt.Close()
-
-	_, err = stmt.ExecContext(ctx, params)
-	if err != nil {
-		return fmt.Errorf("failed to mark workspace warning as sent: %w", err)
-	}
-
-	return nil
 }

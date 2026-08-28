@@ -2,159 +2,261 @@ package sprints
 
 import (
 	"context"
+	"fmt"
+	"math"
+	"time"
 
+	sprintdomain "github.com/complexus-tech/projects-api/internal/modules/sprints/domain"
+	platformclock "github.com/complexus-tech/projects-api/internal/platform/clock"
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Repository provides access to the sprints storage.
+// Repository is the persistence capability consumed by the sprint service.
 type Repository interface {
-	List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]CoreSprint, error)
-	Running(ctx context.Context, workspaceId, userID uuid.UUID) ([]CoreSprint, error)
-	GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprint, error)
-	Create(ctx context.Context, sprint CoreNewSprint, actorID *uuid.UUID) (CoreSprint, error)
-	Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates CoreUpdateSprint, actorID *uuid.UUID) (CoreSprint, error)
-	Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, actorID *uuid.UUID) error
-	GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprintAnalytics, error)
+	List(ctx context.Context, query sprintdomain.ListQuery) ([]sprintdomain.Sprint, error)
+	Running(ctx context.Context, workspaceID, actorID uuid.UUID, today time.Time) ([]sprintdomain.Sprint, error)
+	GetByID(ctx context.Context, sprintID, workspaceID, actorID uuid.UUID) (sprintdomain.Sprint, error)
+	Create(ctx context.Context, command sprintdomain.CreateCommand) (sprintdomain.Sprint, error)
+	Update(ctx context.Context, command sprintdomain.UpdateCommand) (sprintdomain.Sprint, error)
+	Delete(ctx context.Context, command sprintdomain.DeleteCommand) error
+	GetAnalytics(ctx context.Context, sprintID, workspaceID, actorID uuid.UUID, now time.Time) (sprintdomain.Analytics, error)
 }
 
-// Service provides story-related operations.
+// Service coordinates sprint policy and persistence.
 type Service struct {
-	repo Repository
-	log  *logger.Logger
+	repo  Repository
+	log   *logger.Logger
+	clock platformclock.Clock
 }
 
-// New constructs a new stories service instance with the provided repository.
+// New constructs a sprint service using wall-clock decision time.
 func New(log *logger.Logger, repo Repository) *Service {
-	return &Service{
-		repo: repo,
-		log:  log,
-	}
+	return NewWithClock(log, repo, platformclock.System{})
 }
 
-// List returns a list of sprints.
-func (s *Service) List(ctx context.Context, workspaceId uuid.UUID, userID uuid.UUID, filters map[string]any) ([]CoreSprint, error) {
+// NewWithClock constructs a sprint service with deterministic decision time.
+func NewWithClock(log *logger.Logger, repo Repository, clock platformclock.Clock) *Service {
+	if clock == nil {
+		clock = platformclock.System{}
+	}
+	return &Service{repo: repo, log: log, clock: clock}
+}
+
+// List retains the established in-process map boundary while immediately
+// converting it to the module's finite typed filter. Unknown filters fail
+// closed instead of becoming dynamic SQL identifiers.
+func (s *Service) List(ctx context.Context, workspaceID, actorID uuid.UUID, filters map[string]any) ([]CoreSprint, error) {
+	filter, err := listFilterFromCompatibilityMap(filters)
+	if err != nil {
+		return nil, err
+	}
+	return s.ListQuery(ctx, sprintdomain.ListQuery{WorkspaceID: workspaceID, ActorID: actorID, Filter: filter})
+}
+
+// ListQuery is the strongly typed sprint-list entry point.
+func (s *Service) ListQuery(ctx context.Context, query sprintdomain.ListQuery) ([]CoreSprint, error) {
+	query, err := query.Normalize()
+	if err != nil {
+		return nil, err
+	}
+
 	s.log.Info(ctx, "business.core.sprints.list")
-	ctx, span := web.AddSpan(ctx, "business.core.sprints.List")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.sprints.List")
 	defer span.End()
 
-	sprints, err := s.repo.List(ctx, workspaceId, userID, filters)
+	items, err := s.repo.List(ctx, query)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
 	}
-	span.AddEvent("sprints retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(sprints)),
-	))
-	return sprints, nil
+	span.AddEvent("sprints retrieved", trace.WithAttributes(attribute.Int("sprint.count", len(items))))
+	return items, nil
 }
 
-// Running returns a list of running sprints.
-func (s *Service) Running(ctx context.Context, workspaceId, userID uuid.UUID) ([]CoreSprint, error) {
+func (s *Service) Running(ctx context.Context, workspaceID, actorID uuid.UUID) ([]CoreSprint, error) {
+	if workspaceID == uuid.Nil || actorID == uuid.Nil {
+		return nil, fmt.Errorf("%w: workspace and actor are required", sprintdomain.ErrInvalid)
+	}
+
 	s.log.Info(ctx, "business.core.sprints.running")
-	ctx, span := web.AddSpan(ctx, "business.core.sprints.Running")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.sprints.Running")
 	defer span.End()
 
-	sprints, err := s.repo.Running(ctx, workspaceId, userID)
+	items, err := s.repo.Running(ctx, workspaceID, actorID, s.clock.Now())
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
 	}
-	span.AddEvent("running sprints retrieved.", trace.WithAttributes(
-		attribute.Int("story.count", len(sprints)),
-	))
-	return sprints, nil
+	span.AddEvent("running sprints retrieved", trace.WithAttributes(attribute.Int("sprint.count", len(items))))
+	return items, nil
 }
 
-// GetByID returns a single sprint by ID.
-func (s *Service) GetByID(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprint, error) {
-	s.log.Info(ctx, "business.core.sprints.getByID")
-	ctx, span := web.AddSpan(ctx, "business.core.sprints.GetByID")
-	defer span.End()
+func (s *Service) GetByID(ctx context.Context, sprintID, workspaceID, actorID uuid.UUID) (CoreSprint, error) {
+	if sprintID == uuid.Nil || workspaceID == uuid.Nil || actorID == uuid.Nil {
+		return CoreSprint{}, fmt.Errorf("%w: sprint, workspace, and actor are required", sprintdomain.ErrInvalid)
+	}
 
-	sprint, err := s.repo.GetByID(ctx, sprintID, workspaceID)
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.sprints.GetByID")
+	defer span.End()
+	item, err := s.repo.GetByID(ctx, sprintID, workspaceID, actorID)
 	if err != nil {
 		span.RecordError(err)
 		return CoreSprint{}, err
 	}
-	span.AddEvent("sprint retrieved.", trace.WithAttributes(
-		attribute.String("sprint.id", sprint.ID.String()),
-	))
-	return sprint, nil
+	return item, nil
 }
 
-// Create creates a new sprint.
 func (s *Service) Create(ctx context.Context, sprint CoreNewSprint, actorID *uuid.UUID) (CoreSprint, error) {
-	s.log.Info(ctx, "business.core.sprints.create")
-	ctx, span := web.AddSpan(ctx, "business.core.sprints.Create")
-	defer span.End()
+	if actorID == nil {
+		return CoreSprint{}, fmt.Errorf("%w: actor is required", sprintdomain.ErrInvalid)
+	}
+	command, err := (sprintdomain.CreateCommand{Sprint: sprint, ActorID: *actorID}).Normalize()
+	if err != nil {
+		return CoreSprint{}, err
+	}
 
-	result, err := s.repo.Create(ctx, sprint, actorID)
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.sprints.Create")
+	defer span.End()
+	created, err := s.repo.Create(ctx, command)
 	if err != nil {
 		span.RecordError(err)
 		return CoreSprint{}, err
 	}
-
-	span.AddEvent("sprint created.", trace.WithAttributes(
-		attribute.String("sprint.id", result.ID.String()),
-		attribute.String("workspace.id", result.Workspace.String()),
-	))
-	return result, nil
+	return created, nil
 }
 
-// Update updates an existing sprint.
-func (s *Service) Update(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, updates CoreUpdateSprint, actorID *uuid.UUID) (CoreSprint, error) {
-	s.log.Info(ctx, "business.core.sprints.update")
-	ctx, span := web.AddSpan(ctx, "business.core.sprints.Update")
-	defer span.End()
+// UpdatePatch applies a finite typed patch and optional compare-and-swap token.
+func (s *Service) UpdatePatch(
+	ctx context.Context,
+	sprintID, workspaceID, actorID uuid.UUID,
+	patch SprintPatch,
+	expectedUpdatedAt *time.Time,
+) (CoreSprint, error) {
+	command, err := (sprintdomain.UpdateCommand{
+		SprintID: sprintID, WorkspaceID: workspaceID, ActorID: actorID,
+		Patch: patch, ExpectedUpdatedAt: expectedUpdatedAt,
+	}).Normalize()
+	if err != nil {
+		return CoreSprint{}, err
+	}
 
-	result, err := s.repo.Update(ctx, sprintID, workspaceID, updates, actorID)
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.sprints.Update")
+	defer span.End()
+	updated, err := s.repo.Update(ctx, command)
 	if err != nil {
 		span.RecordError(err)
 		return CoreSprint{}, err
 	}
-
-	span.AddEvent("sprint updated.", trace.WithAttributes(
-		attribute.String("sprint.id", result.ID.String()),
-		attribute.String("workspace.id", result.Workspace.String()),
-	))
-	return result, nil
+	return updated, nil
 }
 
-// Delete removes a sprint.
-func (s *Service) Delete(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, actorID *uuid.UUID) error {
-	s.log.Info(ctx, "business.core.sprints.delete")
-	ctx, span := web.AddSpan(ctx, "business.core.sprints.Delete")
-	defer span.End()
-
-	if err := s.repo.Delete(ctx, sprintID, workspaceID, actorID); err != nil {
-		span.RecordError(err)
+func (s *Service) Delete(ctx context.Context, sprintID, workspaceID uuid.UUID, actorID *uuid.UUID) error {
+	if actorID == nil {
+		return fmt.Errorf("%w: actor is required", sprintdomain.ErrInvalid)
+	}
+	command := sprintdomain.DeleteCommand{SprintID: sprintID, WorkspaceID: workspaceID, ActorID: *actorID}
+	if err := command.Validate(); err != nil {
 		return err
 	}
 
-	span.AddEvent("sprint deleted.", trace.WithAttributes(
-		attribute.String("sprint.id", sprintID.String()),
-		attribute.String("workspace.id", workspaceID.String()),
-	))
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.sprints.Delete")
+	defer span.End()
+	if err := s.repo.Delete(ctx, command); err != nil {
+		span.RecordError(err)
+		return err
+	}
 	return nil
 }
 
-// GetAnalytics returns analytics data for a sprint.
-func (s *Service) GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (CoreSprintAnalytics, error) {
-	s.log.Info(ctx, "business.core.sprints.getAnalytics")
-	ctx, span := web.AddSpan(ctx, "business.core.sprints.GetAnalytics")
-	defer span.End()
+func (s *Service) GetAnalytics(
+	ctx context.Context,
+	sprintID, workspaceID, actorID uuid.UUID,
+) (CoreSprintAnalytics, error) {
+	if sprintID == uuid.Nil || workspaceID == uuid.Nil || actorID == uuid.Nil {
+		return CoreSprintAnalytics{}, fmt.Errorf("%w: sprint, workspace, and actor are required", sprintdomain.ErrInvalid)
+	}
 
-	analytics, err := s.repo.GetAnalytics(ctx, sprintID, workspaceID)
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.sprints.GetAnalytics")
+	defer span.End()
+	analytics, err := s.repo.GetAnalytics(ctx, sprintID, workspaceID, actorID, s.clock.Now())
 	if err != nil {
 		span.RecordError(err)
 		return CoreSprintAnalytics{}, err
 	}
-	span.AddEvent("sprint analytics retrieved.", trace.WithAttributes(
-		attribute.String("sprint.id", analytics.SprintID.String()),
-	))
 	return analytics, nil
+}
+
+func listFilterFromCompatibilityMap(filters map[string]any) (sprintdomain.ListFilter, error) {
+	var result sprintdomain.ListFilter
+	for name, value := range filters {
+		var err error
+		switch name {
+		case "sprint_id":
+			result.SprintID, err = optionalUUIDFilter(name, value)
+		case "objective_id":
+			result.ObjectiveID, err = optionalUUIDFilter(name, value)
+		case "team_id":
+			result.TeamID, err = optionalUUIDFilter(name, value)
+		case "search":
+			result.Search, err = stringFilter(name, value)
+		case "limit":
+			result.Limit, err = integerFilter(name, value)
+		case "offset":
+			result.Offset, err = integerFilter(name, value)
+		case "page", "pageSize":
+			// HTTP pagination metadata is converted to limit/offset by the handler.
+		default:
+			return sprintdomain.ListFilter{}, fmt.Errorf("%w: unsupported sprint filter %q", sprintdomain.ErrInvalid, name)
+		}
+		if err != nil {
+			return sprintdomain.ListFilter{}, err
+		}
+	}
+	return result.Normalize()
+}
+
+func optionalUUIDFilter(name string, value any) (*uuid.UUID, error) {
+	switch typed := value.(type) {
+	case uuid.UUID:
+		return &typed, nil
+	case *uuid.UUID:
+		return typed, nil
+	case nil:
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("%w: filter %s must be a UUID", sprintdomain.ErrInvalid, name)
+	}
+}
+
+func stringFilter(name string, value any) (string, error) {
+	if value == nil {
+		return "", nil
+	}
+	result, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("%w: filter %s must be a string", sprintdomain.ErrInvalid, name)
+	}
+	return result, nil
+}
+
+func integerFilter(name string, value any) (int, error) {
+	switch typed := value.(type) {
+	case int:
+		return typed, nil
+	case int32:
+		return int(typed), nil
+	case int64:
+		if typed > int64(math.MaxInt) || typed < int64(math.MinInt) {
+			return 0, fmt.Errorf("%w: filter %s is outside integer range", sprintdomain.ErrInvalid, name)
+		}
+		return int(typed), nil
+	case nil:
+		return 0, nil
+	default:
+		return 0, fmt.Errorf("%w: filter %s must be an integer", sprintdomain.ErrInvalid, name)
+	}
 }

@@ -1,12 +1,9 @@
 package emailreplyhttp
 
-import (
-	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
-	"github.com/complexus-tech/projects-api/pkg/web"
-)
+import "github.com/complexus-tech/projects-api/pkg/web"
 
 type Config struct {
-	Service *emailreply.Service
+	Service Ingress
 }
 
 func Routes(cfg Config, app *web.App) {

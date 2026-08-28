@@ -13,6 +13,7 @@ coverage
 out/
 build
 apps/server/keys
+apps/server/.tools/
 
 # misc
 .DS_Store

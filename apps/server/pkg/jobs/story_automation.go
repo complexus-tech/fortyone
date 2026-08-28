@@ -2,595 +2,349 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// ProcessStoryAutoArchive archives completed and cancelled stories that have been in those statuses
-// for longer than each team's configured auto_archive_months setting
-func ProcessStoryAutoArchive(ctx context.Context, db *sqlx.DB, log *logger.Logger) error {
+const (
+	storyAutoArchiveBatchSize     = 1000
+	storyAutoCloseBatchSize       = 1000
+	sprintStoryMigrationBatchSize = 500
+	storyAutomationMaxBatches     = 100
+)
+
+var errStoryAutomationBacklogRemaining = errors.New("story automation backlog remains")
+
+// StoryAutoArchiveStore is the single persistence capability needed by the
+// auto-archive job.
+type StoryAutoArchiveStore interface {
+	ArchiveEligibleStoriesBatch(
+		context.Context,
+		storydomain.StoryAutoArchiveBatch,
+	) (storydomain.StoryAutoArchiveResult, error)
+}
+
+// StoryAutoCloseStore is the single atomic transition-and-activity capability
+// needed by the auto-close job.
+type StoryAutoCloseStore interface {
+	CloseEligibleStoriesBatch(
+		context.Context,
+		storydomain.StoryAutoCloseBatch,
+	) (storydomain.StoryAutoCloseResult, error)
+}
+
+// SprintStoryMigrationStore atomically owns the sprint transition, activity,
+// and audit writes used by the migration job.
+type SprintStoryMigrationStore interface {
+	MigrateEligibleSprintStoriesBatch(
+		context.Context,
+		storydomain.SprintStoryMigrationBatch,
+	) (storydomain.SprintStoryMigrationResult, error)
+}
+
+// StoryAutomationStore is the composition-root convenience contract. Each job
+// still accepts only the narrower capability it actually uses.
+type StoryAutomationStore interface {
+	StoryAutoArchiveStore
+	StoryAutoCloseStore
+	SprintStoryMigrationStore
+}
+
+// ProcessStoryAutoArchive archives eligible completed and cancelled stories in
+// bounded transactions evaluated against one application-owned UTC clock.
+func ProcessStoryAutoArchive(ctx context.Context, store StoryAutoArchiveStore, log *logger.Logger) error {
+	return processStoryAutoArchiveAt(ctx, store, log, time.Now().UTC())
+}
+
+func processStoryAutoArchiveAt(
+	ctx context.Context,
+	store StoryAutoArchiveStore,
+	log *logger.Logger,
+	asOf time.Time,
+) error {
+	if err := validateStoryAutomationDependencies(ctx, store, log, asOf, "auto-archive"); err != nil {
+		return err
+	}
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessStoryAutoArchive")
 	defer span.End()
+	asOf = asOf.UTC()
 
-	log.Info(ctx, "Processing auto-archive for completed and cancelled stories")
-
-	startTime := time.Now()
-
-	// Use a single set-based SQL operation to archive all eligible stories across all teams
-	query := `
-		UPDATE stories 
-		SET 
-			archived_at = CURRENT_TIMESTAMP
-		FROM statuses st
-		JOIN team_story_automation_settings tsas ON st.team_id = tsas.team_id
-		WHERE stories.status_id = st.status_id
-			AND st.category IN ('completed', 'cancelled')
-			AND stories.updated_at < (CURRENT_DATE - INTERVAL '1 month' * tsas.auto_archive_months)
-			AND stories.deleted_at IS NULL
-			AND stories.archived_at IS NULL
-			AND tsas.auto_archive_enabled = true`
-
-	result, err := db.ExecContext(ctx, query)
+	log.Info(ctx, "Processing story auto-archive", "as_of", asOf)
+	summary, err := runStoryAutomationBatches(
+		ctx,
+		"story auto-archive",
+		storyAutoArchiveBatchSize,
+		storyAutomationSideEffectsNone,
+		func(batchCtx context.Context, batchSize int) (storyAutomationBatchResult, error) {
+			result, batchErr := store.ArchiveEligibleStoriesBatch(batchCtx, storydomain.StoryAutoArchiveBatch{
+				AsOf: asOf, BatchSize: batchSize,
+			})
+			return storyAutomationBatchResult{Stories: result.Archived}, batchErr
+		},
+	)
 	if err != nil {
 		span.RecordError(err)
-		log.Error(ctx, "Failed to auto-archive completed and cancelled stories", "error", err)
-		return fmt.Errorf("failed to auto-archive completed and cancelled stories: %w", err)
+		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		log.Warn(ctx, "Could not get rows affected count", "error", err)
-		rowsAffected = -1
-	}
-
-	duration := time.Since(startTime)
-
-	span.AddEvent("story auto-archive completed", trace.WithAttributes(
-		attribute.Int64("stories.archived", rowsAffected),
-		attribute.String("duration", duration.String()),
-	))
-
-	log.Info(ctx, fmt.Sprintf("Auto-archive completed and cancelled stories job finished: %d stories archived in %v",
-		rowsAffected, duration))
-
+	recordStoryAutomationCompletion(ctx, span, log, "story auto-archive", summary)
 	return nil
 }
 
-// ProcessStoryAutoClose closes inactive unstarted and started stories by moving them to 'cancelled' status
-// for longer than each team's configured auto_close_inactive_months setting
-func ProcessStoryAutoClose(ctx context.Context, db *sqlx.DB, log *logger.Logger, systemUserID uuid.UUID) error {
+// ProcessStoryAutoClose moves eligible inactive stories to a cancelled status
+// and records their activities atomically.
+func ProcessStoryAutoClose(
+	ctx context.Context,
+	store StoryAutoCloseStore,
+	log *logger.Logger,
+	systemUserID uuid.UUID,
+) error {
+	return processStoryAutoCloseAt(ctx, store, log, systemUserID, time.Now().UTC())
+}
+
+func processStoryAutoCloseAt(
+	ctx context.Context,
+	store StoryAutoCloseStore,
+	log *logger.Logger,
+	systemUserID uuid.UUID,
+	asOf time.Time,
+) error {
+	if err := validateStoryAutomationDependencies(ctx, store, log, asOf, "auto-close"); err != nil {
+		return err
+	}
+	if systemUserID == uuid.Nil {
+		return errors.New("story auto-close system user is required")
+	}
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessStoryAutoClose")
 	defer span.End()
+	asOf = asOf.UTC()
 
-	log.Info(ctx, "Processing auto-close for inactive unstarted and started stories")
-	startTime := time.Now()
-
-	const batchSize = 1000 // Process 1000 stories at a time
-	totalProcessed := 0
-	totalActivitiesRecorded := 0
-	batchCount := 0
-
-	for {
-		batchCount++
-		log.Info(ctx, fmt.Sprintf("Processing batch %d", batchCount))
-
-		// Process one batch
-		processed, activitiesRecorded, err := processAutoCloseBatch(ctx, db, log, systemUserID, batchSize)
-		if err != nil {
-			span.RecordError(err)
-			return fmt.Errorf("failed to process batch %d: %w", batchCount, err)
-		}
-
-		totalProcessed += processed
-		totalActivitiesRecorded += activitiesRecorded
-
-		log.Info(ctx, fmt.Sprintf("Batch %d completed: %d stories closed, %d activities recorded",
-			batchCount, processed, activitiesRecorded))
-
-		// If we processed fewer than batch size, we're done
-		if processed < batchSize {
-			break
-		}
-
-		// Small delay to avoid overwhelming the database
-		time.Sleep(100 * time.Millisecond)
+	log.Info(ctx, "Processing story auto-close", "as_of", asOf)
+	summary, err := runStoryAutomationBatches(
+		ctx,
+		"story auto-close",
+		storyAutoCloseBatchSize,
+		storyAutomationSideEffectsActivity,
+		func(batchCtx context.Context, batchSize int) (storyAutomationBatchResult, error) {
+			result, batchErr := store.CloseEligibleStoriesBatch(batchCtx, storydomain.StoryAutoCloseBatch{
+				AsOf: asOf, SystemUserID: systemUserID, BatchSize: batchSize,
+			})
+			return storyAutomationBatchResult{
+				Stories: result.Closed, Activities: result.ActivitiesRecorded,
+			}, batchErr
+		},
+	)
+	if err != nil {
+		span.RecordError(err)
+		return err
 	}
 
-	duration := time.Since(startTime)
-
-	span.AddEvent("story auto-close completed", trace.WithAttributes(
-		attribute.Int64("stories.closed", int64(totalProcessed)),
-		attribute.Int64("activities.recorded", int64(totalActivitiesRecorded)),
-		attribute.Int("batches.processed", batchCount),
-		attribute.String("duration", duration.String()),
-	))
-
-	log.Info(ctx, fmt.Sprintf("Auto-close job completed: %d stories closed, %d activities recorded in %d batches over %v",
-		totalProcessed, totalActivitiesRecorded, batchCount, duration))
-
+	recordStoryAutomationCompletion(ctx, span, log, "story auto-close", summary)
 	return nil
 }
 
-// ClosedStory represents a story that was closed by the auto-close process
-type ClosedStory struct {
-	ID          uuid.UUID `db:"id"`
-	WorkspaceID uuid.UUID `db:"workspace_id"`
-	TeamID      uuid.UUID `db:"team_id"`
-	StatusID    uuid.UUID `db:"status_id"`
+// ProcessSprintStoryMigration moves incomplete stories from yesterday's ended
+// sprints into the next scoped sprint and records activity plus audit evidence.
+func ProcessSprintStoryMigration(
+	ctx context.Context,
+	store SprintStoryMigrationStore,
+	log *logger.Logger,
+	systemUserID uuid.UUID,
+) error {
+	return processSprintStoryMigrationAt(ctx, store, log, systemUserID, time.Now().UTC())
 }
 
-// processAutoCloseBatch processes a single batch of stories for auto-close
-func processAutoCloseBatch(ctx context.Context, db *sqlx.DB, log *logger.Logger, systemUserID uuid.UUID, batchSize int) (int, int, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.processAutoCloseBatch")
-	defer span.End()
-
-	// Use UPDATE ... RETURNING to get closed stories and update in one query
-	selectAndUpdateQuery := `
-		WITH stories_to_close AS (
-			SELECT 
-				stories.id,
-				stories.workspace_id,
-				stories.team_id,
-				stories.status_id
-			FROM stories
-			JOIN statuses st ON stories.status_id = st.status_id
-			JOIN team_story_automation_settings tsas ON st.team_id = tsas.team_id
-			WHERE st.category IN ('unstarted', 'started')
-				AND stories.updated_at < (CURRENT_DATE - INTERVAL '1 month' * tsas.auto_close_inactive_months)
-				AND stories.deleted_at IS NULL
-				AND stories.archived_at IS NULL
-				AND tsas.auto_close_inactive_enabled = true
-			LIMIT :batch_size
-		)
-		UPDATE stories 
-		SET 
-			status_id = (
-				SELECT status_id 
-				FROM statuses 
-				WHERE category = 'cancelled' 
-				AND team_id = stories.team_id 
-				LIMIT 1
-			),
-			updated_at = CURRENT_TIMESTAMP
-		FROM stories_to_close
-		WHERE stories.id = stories_to_close.id
-		RETURNING stories.id, stories.workspace_id, stories.team_id, stories.status_id`
-
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		span.RecordError(err)
-		return 0, 0, fmt.Errorf("failed to begin transaction: %w", err)
+func processSprintStoryMigrationAt(
+	ctx context.Context,
+	store SprintStoryMigrationStore,
+	log *logger.Logger,
+	systemUserID uuid.UUID,
+	asOf time.Time,
+) error {
+	if err := validateStoryAutomationDependencies(ctx, store, log, asOf, "sprint story migration"); err != nil {
+		return err
 	}
-	defer tx.Rollback()
-
-	// Prepare the named statement for selecting and updating stories
-	stmt, err := tx.PrepareNamedContext(ctx, selectAndUpdateQuery)
-	if err != nil {
-		span.RecordError(err)
-		return 0, 0, fmt.Errorf("failed to prepare select and update statement: %w", err)
+	if systemUserID == uuid.Nil {
+		return errors.New("sprint story migration system user is required")
 	}
-	defer stmt.Close()
-
-	// Execute the query to close stories and get the closed story details
-	var closedStories []ClosedStory
-	params := map[string]any{
-		"batch_size": batchSize,
-	}
-
-	if err := stmt.SelectContext(ctx, &closedStories, params); err != nil {
-		span.RecordError(err)
-		return 0, 0, fmt.Errorf("failed to close stories batch: %w", err)
-	}
-
-	activitiesRecorded := 0
-	if len(closedStories) > 0 {
-		if err := recordActivitiesBatch(ctx, tx, closedStories, systemUserID, log); err != nil {
-			log.Error(ctx, "Failed to record activities for batch", "error", err, "stories_count", len(closedStories))
-			// Continue without failing the job - story closing is more important than activity recording
-		} else {
-			activitiesRecorded = len(closedStories)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		span.RecordError(err)
-		return 0, 0, fmt.Errorf("failed to commit batch transaction: %w", err)
-	}
-
-	span.AddEvent("batch processed", trace.WithAttributes(
-		attribute.Int("stories.closed", len(closedStories)),
-		attribute.Int("activities.recorded", activitiesRecorded),
-	))
-
-	return len(closedStories), activitiesRecorded, nil
-}
-
-// ActivityRecord represents a story activity for bulk insertion
-type ActivityRecord struct {
-	StoryID      uuid.UUID `db:"story_id"`
-	UserID       uuid.UUID `db:"user_id"`
-	ActivityType string    `db:"activity_type"`
-	FieldChanged string    `db:"field_changed"`
-	CurrentValue uuid.UUID `db:"current_value"`
-	Reason       string    `db:"reason"`
-	WorkspaceID  uuid.UUID `db:"workspace_id"`
-}
-
-const storyAutoCloseActivityReason = "Story automation moved this story to a closed state after it was inactive for the configured period."
-
-func buildAutoCloseActivityRecords(stories []ClosedStory, systemUserID uuid.UUID) []ActivityRecord {
-	activities := make([]ActivityRecord, len(stories))
-	for i, story := range stories {
-		activities[i] = ActivityRecord{
-			StoryID:      story.ID,
-			UserID:       systemUserID,
-			ActivityType: "update",
-			FieldChanged: "status_id",
-			CurrentValue: story.StatusID,
-			Reason:       storyAutoCloseActivityReason,
-			WorkspaceID:  story.WorkspaceID,
-		}
-	}
-	return activities
-}
-
-// recordActivitiesBatch bulk inserts activity records for closed stories using VALUES clause
-func recordActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []ClosedStory, systemUserID uuid.UUID, log *logger.Logger) error {
-	ctx, span := web.AddSpan(ctx, "jobs.recordActivitiesBatch")
-	defer span.End()
-
-	if len(stories) == 0 {
-		return nil
-	}
-
-	// Build structured activity records (much more efficient than maps)
-	activities := buildAutoCloseActivityRecords(stories, systemUserID)
-
-	// Use VALUES clause for true bulk insert (single database round-trip)
-	activityQuery := `
-		INSERT INTO story_activities (
-			story_id, 
-			user_id, 
-			activity_type, 
-			field_changed, 
-			current_value, 
-			reason,
-			workspace_id
-		) VALUES (:story_id, :user_id, :activity_type, :field_changed, :current_value, :reason, :workspace_id)`
-
-	// Execute single bulk insert with all records
-	result, err := tx.NamedExecContext(ctx, activityQuery, activities)
-	if err != nil {
-		span.RecordError(err)
-		log.Error(ctx, "Failed to bulk insert activity records", "error", err, "count", len(activities))
-		return fmt.Errorf("failed to bulk insert %d activities: %w", len(activities), err)
-	}
-
-	// Verify all records were inserted
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		log.Warn(ctx, "Could not verify activity insert count", "error", err)
-	} else if int(rowsAffected) != len(activities) {
-		log.Warn(ctx, "Activity insert count mismatch", "expected", len(activities), "actual", rowsAffected)
-	}
-
-	span.AddEvent("activities recorded", trace.WithAttributes(
-		attribute.Int("activities.count", len(activities)),
-		attribute.Int64("rows.affected", rowsAffected),
-	))
-
-	log.Info(ctx, fmt.Sprintf("Successfully bulk inserted %d auto-close activities", len(activities)))
-	return nil
-}
-
-// ProcessSprintStoryMigration moves incomplete stories from ended sprints to next available sprints
-// for teams with MoveIncompleteStoriesEnabled = true
-func ProcessSprintStoryMigration(ctx context.Context, db *sqlx.DB, log *logger.Logger, systemUserID uuid.UUID) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessSprintStoryMigration")
 	defer span.End()
+	asOf = asOf.UTC()
 
-	log.Info(ctx, "Processing sprint story migration for ended sprints")
-	startTime := time.Now()
+	log.Info(ctx, "Processing sprint story migration", "as_of", asOf)
+	summary, err := runStoryAutomationBatches(
+		ctx,
+		"sprint story migration",
+		sprintStoryMigrationBatchSize,
+		storyAutomationSideEffectsActivityAndAudit,
+		func(batchCtx context.Context, batchSize int) (storyAutomationBatchResult, error) {
+			result, batchErr := store.MigrateEligibleSprintStoriesBatch(
+				batchCtx,
+				storydomain.SprintStoryMigrationBatch{
+					AsOf: asOf, SystemUserID: systemUserID, BatchSize: batchSize,
+				},
+			)
+			return storyAutomationBatchResult{
+				Stories:     result.Migrated,
+				Activities:  result.ActivitiesRecorded,
+				AuditEvents: result.AuditEventsRecorded,
+			}, batchErr
+		},
+	)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
 
-	const batchSize = 500 // Process 500 sprints at a time
-	totalProcessed := 0
-	totalActivitiesRecorded := 0
-	batchCount := 0
+	recordStoryAutomationCompletion(ctx, span, log, "sprint story migration", summary)
+	return nil
+}
 
-	for {
-		batchCount++
-		log.Info(ctx, fmt.Sprintf("Processing migration batch %d", batchCount))
+type storyAutomationSideEffects uint8
 
-		// Process one batch
-		processed, activitiesRecorded, err := processSprintMigrationBatch(ctx, db, log, systemUserID, batchSize)
+const (
+	storyAutomationSideEffectsNone storyAutomationSideEffects = iota
+	storyAutomationSideEffectsActivity
+	storyAutomationSideEffectsActivityAndAudit
+)
+
+type storyAutomationBatchResult struct {
+	Stories     int
+	Activities  int
+	AuditEvents int
+}
+
+type storyAutomationRunSummary struct {
+	Stories     int64
+	Activities  int64
+	AuditEvents int64
+	Batches     int
+}
+
+type storyAutomationBatchProcessor func(context.Context, int) (storyAutomationBatchResult, error)
+
+func runStoryAutomationBatches(
+	ctx context.Context,
+	operation string,
+	batchSize int,
+	sideEffects storyAutomationSideEffects,
+	process storyAutomationBatchProcessor,
+) (storyAutomationRunSummary, error) {
+	var summary storyAutomationRunSummary
+	for batchIndex := 0; batchIndex < storyAutomationMaxBatches; batchIndex++ {
+		if err := ctx.Err(); err != nil {
+			return storyAutomationRunSummary{}, fmt.Errorf(
+				"%s cancelled after %d stories: %w", operation, summary.Stories, err,
+			)
+		}
+
+		result, err := process(ctx, batchSize)
 		if err != nil {
-			span.RecordError(err)
-			return fmt.Errorf("failed to process migration batch %d: %w", batchCount, err)
+			return storyAutomationRunSummary{}, fmt.Errorf("%s batch %d: %w", operation, batchIndex+1, err)
+		}
+		if err := validateStoryAutomationBatchResult(result, batchSize, sideEffects); err != nil {
+			return storyAutomationRunSummary{}, fmt.Errorf("%s batch %d: %w", operation, batchIndex+1, err)
 		}
 
-		totalProcessed += processed
-		totalActivitiesRecorded += activitiesRecorded
-
-		log.Info(ctx, fmt.Sprintf("Migration batch %d completed: %d stories migrated, %d activities recorded",
-			batchCount, processed, activitiesRecorded))
-
-		// If we processed fewer than batch size, we're done
-		if processed < batchSize {
-			break
+		summary.Stories += int64(result.Stories)
+		summary.Activities += int64(result.Activities)
+		summary.AuditEvents += int64(result.AuditEvents)
+		if result.Stories > 0 {
+			summary.Batches++
 		}
-
-		// Small delay to avoid overwhelming the database
-		time.Sleep(100 * time.Millisecond)
+		if result.Stories < batchSize {
+			return summary, nil
+		}
 	}
 
-	duration := time.Since(startTime)
-
-	span.AddEvent("sprint story migration completed", trace.WithAttributes(
-		attribute.Int64("stories.migrated", int64(totalProcessed)),
-		attribute.Int64("activities.recorded", int64(totalActivitiesRecorded)),
-		attribute.Int("batches.processed", batchCount),
-		attribute.String("duration", duration.String()),
-	))
-
-	log.Info(ctx, fmt.Sprintf("Sprint migration job completed: %d stories migrated, %d activities recorded in %d batches over %v",
-		totalProcessed, totalActivitiesRecorded, batchCount, duration))
-
-	return nil
+	return storyAutomationRunSummary{}, fmt.Errorf(
+		"%s after %d stories: %w", operation, summary.Stories, errStoryAutomationBacklogRemaining,
+	)
 }
 
-// MigratedStory represents a story that was migrated between sprints
-type MigratedStory struct {
-	ID               uuid.UUID `db:"id"`
-	WorkspaceID      uuid.UUID `db:"workspace_id"`
-	TeamID           uuid.UUID `db:"team_id"`
-	PreviousSprintID uuid.UUID `db:"previous_sprint_id"`
-	NewSprintID      uuid.UUID `db:"new_sprint_id"`
-}
-
-// processSprintMigrationBatch processes a single batch of ended sprints for story migration
-func processSprintMigrationBatch(ctx context.Context, db *sqlx.DB, log *logger.Logger, systemUserID uuid.UUID, batchSize int) (int, int, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.processSprintMigrationBatch")
-	defer span.End()
-
-	// Find ended sprints with incomplete stories and migrate them to the chronologically next sprint
-	migrationQuery := `
-		WITH ended_sprints AS (
-			SELECT DISTINCT
-				s.sprint_id,
-				s.team_id,
-				s.workspace_id,
-				s.end_date
-			FROM sprints s
-			JOIN team_sprint_settings tss ON s.team_id = tss.team_id
-			WHERE s.end_date >= CURRENT_DATE - INTERVAL '1 day' -- Allow up to 1 day in the past
-        AND s.end_date < CURRENT_DATE
-				AND tss.move_incomplete_stories_enabled = true
-				AND EXISTS (
-					SELECT 1
-					FROM stories st
-					JOIN statuses stat ON st.status_id = stat.status_id
-					WHERE st.sprint_id = s.sprint_id
-						AND stat.category IN ('backlog', 'unstarted', 'started')
-					LIMIT 1
-				)
-			ORDER BY s.end_date ASC
-			LIMIT :batch_size
-		),
-		next_sprints AS (
-			SELECT DISTINCT ON (es.sprint_id)
-				es.sprint_id as ended_sprint_id,
-				es.team_id,
-				es.workspace_id,
-				ns.sprint_id as next_sprint_id,
-				ns.name as next_sprint_name,
-				ns.start_date as next_sprint_start_date
-			FROM ended_sprints es
-			LEFT JOIN sprints ns ON es.team_id = ns.team_id
-				AND ns.start_date > es.end_date  -- Next sprint must start after the ended sprint
-				AND ns.start_date <= CURRENT_DATE + INTERVAL '30 days' -- Allow up to 30 days in the future
-			WHERE ns.sprint_id IS NOT NULL
-			ORDER BY es.sprint_id, ns.start_date ASC -- Get the chronologically next sprint
+func validateStoryAutomationBatchResult(
+	result storyAutomationBatchResult,
+	batchSize int,
+	sideEffects storyAutomationSideEffects,
+) error {
+	if result.Stories < 0 || result.Stories > batchSize {
+		return fmt.Errorf("invalid story count %d, want 0..%d", result.Stories, batchSize)
+	}
+	if result.Activities < 0 || result.AuditEvents < 0 {
+		return fmt.Errorf(
+			"invalid side-effect counts activities=%d audit_events=%d",
+			result.Activities,
+			result.AuditEvents,
 		)
-		UPDATE stories
-		SET
-			sprint_id = ns.next_sprint_id
-		FROM next_sprints ns, statuses stat
-		WHERE stories.sprint_id = ns.ended_sprint_id
-			AND stories.status_id = stat.status_id
-			AND stat.team_id = ns.team_id
-			AND stat.category IN ('backlog', 'unstarted', 'started')
-			AND stories.deleted_at IS NULL
-			AND stories.archived_at IS NULL
-		RETURNING
-			stories.id,
-			stories.workspace_id,
-			stories.team_id,
-			ns.ended_sprint_id as previous_sprint_id,
-			stories.sprint_id as new_sprint_id`
-
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		span.RecordError(err)
-		return 0, 0, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	// Prepare the named statement for migration
-	stmt, err := tx.PrepareNamedContext(ctx, migrationQuery)
-	if err != nil {
-		span.RecordError(err)
-		return 0, 0, fmt.Errorf("failed to prepare migration statement: %w", err)
-	}
-	defer stmt.Close()
-
-	// Execute the query to migrate stories and get the migrated story details
-	var migratedStories []MigratedStory
-	params := map[string]any{
-		"batch_size": batchSize,
 	}
 
-	if err := stmt.SelectContext(ctx, &migratedStories, params); err != nil {
-		span.RecordError(err)
-		log.Error(ctx, "Failed to migrate stories batch", "error", err, "batch_size", batchSize)
-		return 0, 0, fmt.Errorf("failed to migrate stories batch: %w", err)
+	wantActivities, wantAuditEvents := 0, 0
+	if sideEffects >= storyAutomationSideEffectsActivity {
+		wantActivities = result.Stories
 	}
-
-	// Log detailed migration results for debugging
-	if len(migratedStories) > 0 {
-		log.Info(ctx, "Sprint migration batch details", "stories_migrated", len(migratedStories))
-		for _, story := range migratedStories {
-			log.Info(ctx, "Story migrated",
-				"story_id", story.ID,
-				"from_sprint", story.PreviousSprintID,
-				"to_sprint", story.NewSprintID,
-				"team_id", story.TeamID)
-		}
-	} else {
-		log.Info(ctx, "No stories were migrated in this batch - this could indicate no ended sprints with incomplete stories, or no available next sprints")
+	if sideEffects == storyAutomationSideEffectsActivityAndAudit {
+		wantAuditEvents = result.Stories
 	}
-
-	activitiesRecorded := 0
-	if len(migratedStories) > 0 {
-		if err := recordMigrationActivitiesBatch(ctx, tx, migratedStories, systemUserID, log); err != nil {
-			log.Error(ctx, "Failed to record migration activities for batch", "error", err, "stories_count", len(migratedStories))
-			// Continue without failing the job - story migration is more important than activity recording
-		} else {
-			activitiesRecorded = len(migratedStories)
-		}
-
-		for _, story := range migratedStories {
-			metadata, err := auditMetadata(map[string]any{
-				"previous_sprint_id": story.PreviousSprintID,
-				"new_sprint_id":      story.NewSprintID,
-			})
-			if err != nil {
-				log.Error(ctx, "Failed to marshal sprint migration audit metadata", "error", err, "story_id", story.ID)
-				continue
-			}
-
-			if err := recordAuditEvent(ctx, tx, auditEvent{
-				WorkspaceID: story.WorkspaceID,
-				TeamID:      &story.TeamID,
-				ActorType:   "automation",
-				ActorID:     &systemUserID,
-				EntityType:  "story",
-				EntityID:    &story.ID,
-				EventType:   "story.auto_moved_to_sprint",
-				Metadata:    metadata,
-			}); err != nil {
-				log.Error(ctx, "Failed to record sprint migration audit event", "error", err, "story_id", story.ID)
-			}
-		}
+	if result.Activities != wantActivities || result.AuditEvents != wantAuditEvents {
+		return fmt.Errorf(
+			"incomplete side effects stories=%d activities=%d audit_events=%d",
+			result.Stories,
+			result.Activities,
+			result.AuditEvents,
+		)
 	}
-
-	// Commit the transaction
-	if err := tx.Commit(); err != nil {
-		span.RecordError(err)
-		return 0, 0, fmt.Errorf("failed to commit migration transaction: %w", err)
-	}
-
-	span.AddEvent("batch processed", trace.WithAttributes(
-		attribute.Int("stories.migrated", len(migratedStories)),
-		attribute.Int("activities.recorded", activitiesRecorded),
-	))
-
-	return len(migratedStories), activitiesRecorded, nil
-}
-
-// MigrationActivityRecord represents a story activity for sprint migration bulk insertion
-type MigrationActivityRecord struct {
-	StoryID      uuid.UUID        `db:"story_id"`
-	UserID       uuid.UUID        `db:"user_id"`
-	ActivityType string           `db:"activity_type"`
-	FieldChanged string           `db:"field_changed"`
-	CurrentValue string           `db:"current_value"`
-	OldValue     *json.RawMessage `db:"old_value"`
-	NewValue     *json.RawMessage `db:"new_value"`
-	Reason       string           `db:"reason"`
-	WorkspaceID  uuid.UUID        `db:"workspace_id"`
-}
-
-const sprintMigrationActivityReason = "Sprint automation moved this story into the next sprint because incomplete work migration is enabled."
-
-func buildSprintMigrationActivityRecords(stories []MigratedStory, systemUserID uuid.UUID) []MigrationActivityRecord {
-	activities := make([]MigrationActivityRecord, len(stories))
-	for i, story := range stories {
-		oldSprintJSON, _ := json.Marshal(story.PreviousSprintID)
-		newSprintJSON, _ := json.Marshal(story.NewSprintID)
-
-		oldRaw := json.RawMessage(oldSprintJSON)
-		newRaw := json.RawMessage(newSprintJSON)
-
-		activities[i] = MigrationActivityRecord{
-			StoryID:      story.ID,
-			UserID:       systemUserID,
-			ActivityType: "update",
-			FieldChanged: "sprint_id",
-			CurrentValue: story.NewSprintID.String(),
-			OldValue:     &oldRaw,
-			NewValue:     &newRaw,
-			Reason:       sprintMigrationActivityReason,
-			WorkspaceID:  story.WorkspaceID,
-		}
-	}
-	return activities
-}
-
-// recordMigrationActivitiesBatch bulk inserts activity records for migrated stories using VALUES clause
-func recordMigrationActivitiesBatch(ctx context.Context, tx *sqlx.Tx, stories []MigratedStory, systemUserID uuid.UUID, log *logger.Logger) error {
-	ctx, span := web.AddSpan(ctx, "jobs.recordMigrationActivitiesBatch")
-	defer span.End()
-
-	if len(stories) == 0 {
-		return nil
-	}
-
-	// Build structured activity records
-	activities := buildSprintMigrationActivityRecords(stories, systemUserID)
-
-	// Use VALUES clause for true bulk insert (single database round-trip)
-	activityQuery := `
-		INSERT INTO story_activities (
-			story_id, 
-			user_id, 
-			activity_type, 
-			field_changed, 
-			current_value, 
-			old_value,
-			new_value,
-			reason,
-			workspace_id
-		) VALUES (:story_id, :user_id, :activity_type, :field_changed, :current_value, :old_value, :new_value, :reason, :workspace_id)`
-
-	// Execute single bulk insert with all records
-	result, err := tx.NamedExecContext(ctx, activityQuery, activities)
-	if err != nil {
-		span.RecordError(err)
-		log.Error(ctx, "Failed to bulk insert migration activity records", "error", err, "count", len(activities))
-		return fmt.Errorf("failed to bulk insert %d migration activities: %w", len(activities), err)
-	}
-
-	// Verify all records were inserted
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		log.Warn(ctx, "Could not verify migration activity insert count", "error", err)
-	} else if int(rowsAffected) != len(activities) {
-		log.Warn(ctx, "Migration activity insert count mismatch", "expected", len(activities), "actual", rowsAffected)
-	}
-
-	span.AddEvent("migration activities recorded", trace.WithAttributes(
-		attribute.Int("activities.count", len(activities)),
-		attribute.Int64("rows.affected", rowsAffected),
-	))
-
-	log.Info(ctx, fmt.Sprintf("Successfully bulk inserted %d sprint migration activities", len(activities)))
 	return nil
+}
+
+func validateStoryAutomationDependencies(
+	ctx context.Context,
+	store any,
+	log *logger.Logger,
+	asOf time.Time,
+	operation string,
+) error {
+	if ctx == nil {
+		return fmt.Errorf("story %s context is required", operation)
+	}
+	if store == nil {
+		return fmt.Errorf("story %s store is required", operation)
+	}
+	if log == nil {
+		return fmt.Errorf("story %s logger is required", operation)
+	}
+	if asOf.IsZero() {
+		return fmt.Errorf("story %s as-of time is required", operation)
+	}
+	return nil
+}
+
+func recordStoryAutomationCompletion(
+	ctx context.Context,
+	span trace.Span,
+	log *logger.Logger,
+	operation string,
+	summary storyAutomationRunSummary,
+) {
+	span.AddEvent(operation+" completed", trace.WithAttributes(
+		attribute.Int64("stories.processed", summary.Stories),
+		attribute.Int64("activities.recorded", summary.Activities),
+		attribute.Int64("audit_events.recorded", summary.AuditEvents),
+		attribute.Int("batches.processed", summary.Batches),
+	))
+	log.Info(
+		ctx,
+		operation+" completed",
+		"stories_processed", summary.Stories,
+		"activities_recorded", summary.Activities,
+		"audit_events_recorded", summary.AuditEvents,
+		"batches_processed", summary.Batches,
+	)
 }

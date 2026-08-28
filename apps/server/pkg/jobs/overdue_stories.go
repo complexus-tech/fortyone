@@ -2,53 +2,81 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"html"
 	"strings"
 	"time"
 
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// ProcessOverdueStoriesEmail processes overdue stories and sends emails directly
-func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer) error {
+const overdueStoryAssigneeBatchSize = 100
+
+// OverdueStoryStore is the worker-owned persistence capability needed to page
+// eligible recipients and load their current story deadline signals.
+type OverdueStoryStore interface {
+	ListOverdueStoryGuidanceRecipients(context.Context, time.Time, *storydomain.OverdueGuidanceCursor, int) ([]storydomain.OverdueGuidanceRecipient, error)
+	ListOverdueStoryGuidanceItems(context.Context, time.Time, uuid.UUID, uuid.UUID) ([]storydomain.OverdueGuidanceStory, error)
+}
+
+// ProcessOverdueStoriesEmail processes overdue stories and sends emails directly.
+func ProcessOverdueStoriesEmail(ctx context.Context, store OverdueStoryStore, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer) error {
+	return processOverdueStoriesEmailAt(ctx, store, log, mailerService, copyGenerator, threader, time.Now().UTC())
+}
+
+func processOverdueStoriesEmailAt(ctx context.Context, store OverdueStoryStore, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer, asOf time.Time) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessOverdueStoriesEmail")
 	defer span.End()
+	if store == nil {
+		return errors.New("overdue story store is required")
+	}
+	if log == nil {
+		return errors.New("overdue story logger is required")
+	}
+	if mailerService == nil {
+		return errors.New("overdue story mailer is required")
+	}
+	asOf, err := overdueGuidanceUTCDate(asOf)
+	if err != nil {
+		return err
+	}
 
 	log.Info(ctx, "Processing overdue stories email notifications")
 	startTime := time.Now()
 
-	const assigneeBatchSize = 100 // Process 100 assignees at a time
 	totalProcessed := 0
 	totalEmailsCreated := 0
 	batchCount := 0
+	var cursor *storydomain.OverdueGuidanceCursor
 
 	for {
-		batchCount++
-		log.Info(ctx, fmt.Sprintf("Processing assignee batch %d", batchCount))
+		nextBatch := batchCount + 1
+		log.Info(ctx, fmt.Sprintf("Processing assignee batch %d", nextBatch))
 
 		// Get next batch of assignees with overdue stories (filtered by email preferences)
-		assignees, err := getAssigneesWithOverdueStories(ctx, db, assigneeBatchSize, batchCount-1)
+		assignees, err := store.ListOverdueStoryGuidanceRecipients(ctx, asOf, cursor, overdueStoryAssigneeBatchSize)
 		if err != nil {
 			span.RecordError(err)
-			return fmt.Errorf("failed to get assignees batch %d: %w", batchCount, err)
+			return fmt.Errorf("failed to get assignees batch %d: %w", nextBatch, err)
 		}
 
 		if len(assignees) == 0 {
 			break // No more assignees
 		}
+		batchCount = nextBatch
 
-		results, batchErr := processGuidanceEmailBatch(ctx, assignees, func(batchCtx context.Context, assignee OverdueStory) guidanceEmailBatchResult {
+		results, batchErr := processGuidanceEmailBatch(ctx, assignees, func(batchCtx context.Context, assignee storydomain.OverdueGuidanceRecipient) guidanceEmailBatchResult {
 			return processGuidanceEmailRecipient(batchCtx, func(attemptCtx context.Context) guidanceEmailBatchResult {
-				stories, storiesErr := getOverdueStoriesForAssignee(attemptCtx, db, assignee.AssigneeID, assignee.WorkspaceID)
+				stories, storiesErr := store.ListOverdueStoryGuidanceItems(attemptCtx, asOf, assignee.AssigneeID, assignee.WorkspaceID)
 				if storiesErr != nil {
 					log.Error(attemptCtx, "Failed to get stories for assignee", "assignee_id", assignee.AssigneeID, "workspace_id", assignee.WorkspaceID, "error", storiesErr)
 					return guidanceEmailBatchResult{Err: storiesErr, Retryable: true}
@@ -82,8 +110,18 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 
 		log.Info(ctx, fmt.Sprintf("Assignee batch %d completed: %d assignees processed", batchCount, len(assignees)))
 
-		// Small delay to avoid overwhelming the database
-		time.Sleep(100 * time.Millisecond)
+		lastAssignee := assignees[len(assignees)-1]
+		cursor = &storydomain.OverdueGuidanceCursor{
+			AssigneeID:  lastAssignee.AssigneeID,
+			WorkspaceID: lastAssignee.WorkspaceID,
+		}
+		if len(assignees) < overdueStoryAssigneeBatchSize {
+			break
+		}
+		if err := waitForNextOverdueGuidanceBatch(ctx); err != nil {
+			span.RecordError(err)
+			return fmt.Errorf("wait before overdue story assignee batch %d: %w", batchCount+1, err)
+		}
 	}
 
 	duration := time.Since(startTime)
@@ -101,201 +139,7 @@ func ProcessOverdueStoriesEmail(ctx context.Context, db *sqlx.DB, log *logger.Lo
 	return nil
 }
 
-// OverdueStory represents a story that needs attention
-type OverdueStory struct {
-	ID             uuid.UUID `db:"id"`
-	Title          string    `db:"title"`
-	EndDate        time.Time `db:"end_date"`
-	AssigneeID     uuid.UUID `db:"assignee_id"`
-	AssigneeEmail  string    `db:"assignee_email"`
-	AssigneeName   string    `db:"assignee_name"`
-	WorkspaceID    uuid.UUID `db:"workspace_id"`
-	WorkspaceName  string    `db:"workspace_name"`
-	WorkspaceSlug  string    `db:"workspace_slug"`
-	TeamID         uuid.UUID `db:"team_id"`
-	TeamName       string    `db:"team_name"`
-	TeamCode       string    `db:"team_code"`
-	SequenceID     int       `db:"sequence_id"`
-	StatusName     string    `db:"status_name"`
-	StatusCategory string    `db:"status_category"`
-	DeadlineStatus string    `db:"deadline_status"`
-	DaysDifference int       `db:"days_difference"`
-	EmailEnabled   bool      `db:"email_enabled"`
-}
-
-// getAssigneesWithOverdueStories gets a batch of assignees who have stories needing attention and email enabled
-func getAssigneesWithOverdueStories(ctx context.Context, db *sqlx.DB, batchSize int, offset int) ([]OverdueStory, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.getAssigneesWithOverdueStories")
-	defer span.End()
-
-	query := overdueStoryRecipientsQuery()
-
-	params := map[string]any{
-		"batch_size": batchSize,
-		"offset":     offset * batchSize,
-	}
-
-	stmt, err := db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to prepare assignees query: %w", err)
-	}
-	defer stmt.Close()
-
-	var assignees []OverdueStory
-	if err := stmt.SelectContext(ctx, &assignees, params); err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to execute assignees query: %w", err)
-	}
-
-	span.AddEvent("assignees retrieved", trace.WithAttributes(
-		attribute.Int("assignees.count", len(assignees)),
-		attribute.Int("batch_size", batchSize),
-		attribute.Int("offset", offset),
-	))
-
-	return assignees, nil
-}
-
-func overdueStoryRecipientsQuery() string {
-	return `
-		SELECT DISTINCT
-			s.assignee_id,
-			u.email as assignee_email,
-			COALESCE(NULLIF(u.full_name, ''), u.username) as assignee_name,
-			w.workspace_id,
-			w.name as workspace_name,
-			w.slug as workspace_slug,
-			CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) AS email_enabled
-		FROM stories s
-		JOIN users u ON s.assignee_id = u.user_id
-		JOIN workspaces w ON s.workspace_id = w.workspace_id
-		JOIN workspace_members wm
-			ON wm.workspace_id = s.workspace_id
-			AND wm.user_id = s.assignee_id
-			AND wm.role IN ('admin', 'member', 'guest')
-		JOIN statuses st ON s.status_id = st.status_id
-		LEFT JOIN notification_preferences np ON s.assignee_id = np.user_id AND s.workspace_id = np.workspace_id
-		WHERE s.end_date IS NOT NULL
-			AND st.category NOT IN ('completed', 'cancelled', 'paused')
-			AND w.deleted_at IS NULL
-			AND (
-				wm.role = 'admin'
-				OR EXISTS (
-					SELECT 1
-					FROM team_members tm
-					WHERE tm.team_id = s.team_id
-						AND tm.user_id = s.assignee_id
-				)
-			)
-			AND s.deleted_at IS NULL
-			AND s.archived_at IS NULL
-			AND s.completed_at IS NULL
-			AND s.assignee_id IS NOT NULL
-			AND s.end_date BETWEEN CURRENT_DATE - INTERVAL '3 days' AND CURRENT_DATE + INTERVAL '3 days'
-			AND u.is_active = true
-			AND u.is_system = false
-			AND NULLIF(TRIM(u.email), '') IS NOT NULL
-			AND CAST(COALESCE(np.preferences -> 'reminders' ->> 'email', 'true') AS BOOLEAN) = true
-		ORDER BY s.assignee_id, w.workspace_id
-		LIMIT :batch_size OFFSET :offset`
-}
-
-func overdueStoriesForAssigneeQuery() string {
-	return `
-		WITH story_deadlines AS (
-    SELECT 
-        s.id, s.sequence_id, s.title, s.end_date, s.assignee_id, s.workspace_id, s.team_id,
-        u.email as assignee_email, 
-        COALESCE(NULLIF(u.full_name, ''), u.username) as assignee_name,
-        w.name as workspace_name, w.slug as workspace_slug,
-        t.name as team_name, t.code as team_code,
-        st.name as status_name, st.category as status_category,
-        CASE 
-            WHEN s.end_date = CURRENT_DATE THEN 'due_today'
-            WHEN s.end_date = CURRENT_DATE + INTERVAL '1 day' THEN 'due_tomorrow'
-            WHEN s.end_date = CURRENT_DATE + INTERVAL '3 days' THEN 'due_in_3_days'
-            WHEN s.end_date < CURRENT_DATE THEN 'overdue'
-            ELSE 'future'
-        END as deadline_status,
-        CASE 
-            WHEN s.end_date < CURRENT_DATE THEN CAST(CURRENT_DATE - s.end_date AS int)
-            ELSE CAST(s.end_date - CURRENT_DATE AS int)
-        END as days_difference
-    FROM stories s
-    JOIN users u ON s.assignee_id = u.user_id
-    JOIN workspaces w ON s.workspace_id = w.workspace_id
-	JOIN workspace_members wm
-		ON wm.workspace_id = s.workspace_id
-		AND wm.user_id = s.assignee_id
-		AND wm.role IN ('admin', 'member', 'guest')
-    JOIN teams t ON s.team_id = t.team_id
-    JOIN statuses st ON s.status_id = st.status_id
-    WHERE s.assignee_id = :assignee_id
-        AND s.workspace_id = :workspace_id
-		AND w.deleted_at IS NULL
-		AND (
-			wm.role = 'admin'
-			OR EXISTS (
-				SELECT 1
-				FROM team_members tm
-				WHERE tm.team_id = s.team_id
-					AND tm.user_id = s.assignee_id
-			)
-		)
-        AND s.end_date IS NOT NULL
-        AND st.category NOT IN ('completed', 'cancelled', 'paused')
-        AND s.deleted_at IS NULL
-        AND s.archived_at IS NULL
-        AND s.completed_at IS NULL
-        AND s.end_date BETWEEN CURRENT_DATE - INTERVAL '3 days' AND CURRENT_DATE + INTERVAL '3 days'
-        AND u.is_active = true
-        AND u.is_system = false
-        AND NULLIF(TRIM(u.email), '') IS NOT NULL
-		)
-		SELECT * 
-		FROM story_deadlines 
-		WHERE deadline_status IN ('due_today', 'due_tomorrow', 'due_in_3_days', 'overdue')
-		ORDER BY deadline_status, end_date;
-`
-}
-
-func overdueStoriesForAssigneeParams(assigneeID, workspaceID uuid.UUID) map[string]any {
-	return map[string]any{
-		"assignee_id":  assigneeID,
-		"workspace_id": workspaceID,
-	}
-}
-
-// getOverdueStoriesForAssignee gets all stories needing attention for a specific assignee in one workspace.
-func getOverdueStoriesForAssignee(ctx context.Context, db *sqlx.DB, assigneeID, workspaceID uuid.UUID) ([]OverdueStory, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.getOverdueStoriesForAssignee")
-	defer span.End()
-
-	query := overdueStoriesForAssigneeQuery()
-	params := overdueStoriesForAssigneeParams(assigneeID, workspaceID)
-
-	stmt, err := db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to prepare stories query: %w", err)
-	}
-	defer stmt.Close()
-
-	var stories []OverdueStory
-	if err := stmt.SelectContext(ctx, &stories, params); err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to execute stories query: %w", err)
-	}
-
-	span.AddEvent("stories retrieved", trace.WithAttributes(
-		attribute.String("assignee_id", assigneeID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
-		attribute.Int("stories.count", len(stories)),
-	))
-
-	return stories, nil
-}
+type OverdueStory = storydomain.OverdueGuidanceStory
 
 // sendOverdueStoriesEmailForAssignee sends email directly for a specific assignee
 func sendOverdueStoriesEmailForAssignee(ctx context.Context, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer, stories []OverdueStory) error {

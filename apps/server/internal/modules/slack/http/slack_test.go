@@ -53,6 +53,39 @@ func TestAssistantConfiguredOrDefaultPreservesPreviousPutSemantics(t *testing.T)
 	require.False(t, assistantConfiguredOrDefault(&unconfigured))
 }
 
+func TestRequestLogLimitIsBoundedAndUnambiguous(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		query   string
+		want    int
+		wantErr bool
+	}{
+		{name: "default", want: 50},
+		{name: "custom", query: "?limit=125", want: 125},
+		{name: "zero", query: "?limit=0", wantErr: true},
+		{name: "above maximum", query: "?limit=201", wantErr: true},
+		{name: "malformed", query: "?limit=many", wantErr: true},
+		{name: "repeated", query: "?limit=20&limit=30", wantErr: true},
+		{name: "overflow", query: "?limit=999999999999999999999999", wantErr: true},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			request := httptest.NewRequest("GET", "/request-logs"+test.query, nil)
+			got, err := requestLogLimit(request)
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, test.want, got)
+		})
+	}
+}
+
 func TestToAppChannelAudiencesIncludesExplicitConfigurationState(t *testing.T) {
 	t.Parallel()
 

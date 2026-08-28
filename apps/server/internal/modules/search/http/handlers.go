@@ -4,18 +4,13 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 
 	search "github.com/complexus-tech/projects-api/internal/modules/search/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/google/uuid"
 )
 
-var (
-	ErrInvalidWorkspaceID = errors.New("invalid workspace ID")
-	ErrInvalidSearchType  = errors.New("invalid search type")
-)
+var ErrInvalidWorkspaceID = errors.New("invalid workspace ID")
 
 type Handlers struct {
 	searchService *search.Service
@@ -32,113 +27,25 @@ func (h *Handlers) Search(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	userID, _ := mid.GetUserID(ctx)
-
-	var params AppSearchParams
-
-	params.Type = r.URL.Query().Get("type")
-	if params.Type == "" {
-		params.Type = "all"
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	params.Query = r.URL.Query().Get("query")
-
-	if teamIDStr := r.URL.Query().Get("teamId"); teamIDStr != "" {
-		teamID, err := uuid.Parse(teamIDStr)
-		if err != nil {
-			return web.RespondError(ctx, w, errors.New("invalid team ID"), http.StatusBadRequest)
-		}
-		params.TeamID = &teamID
-	}
-
-	if assigneeIDStr := r.URL.Query().Get("assigneeId"); assigneeIDStr != "" {
-		assigneeID, err := uuid.Parse(assigneeIDStr)
-		if err != nil {
-			return web.RespondError(ctx, w, errors.New("invalid assignee ID"), http.StatusBadRequest)
-		}
-		params.AssigneeID = &assigneeID
-	}
-
-	if labelIDStr := r.URL.Query().Get("labelId"); labelIDStr != "" {
-		labelID, err := uuid.Parse(labelIDStr)
-		if err != nil {
-			return web.RespondError(ctx, w, errors.New("invalid label ID"), http.StatusBadRequest)
-		}
-		params.LabelID = &labelID
-	}
-
-	if statusIDStr := r.URL.Query().Get("statusId"); statusIDStr != "" {
-		statusID, err := uuid.Parse(statusIDStr)
-		if err != nil {
-			return web.RespondError(ctx, w, errors.New("invalid status ID"), http.StatusBadRequest)
-		}
-		params.StatusID = &statusID
-	}
-
-	if priority := r.URL.Query().Get("priority"); priority != "" {
-		params.Priority = &priority
-	}
-
-	params.SortBy = r.URL.Query().Get("sortBy")
-	if params.SortBy == "" {
-		params.SortBy = "relevance"
-	}
-
-	params.Page = 1
-	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
-		if page, err := strconv.Atoi(pageStr); err == nil && page > 0 {
-			params.Page = page
-		}
-	}
-
-	params.PageSize = 20
-	if pageSizeStr := r.URL.Query().Get("pageSize"); pageSizeStr != "" {
-		if pageSize, err := strconv.Atoi(pageSizeStr); err == nil && pageSize > 0 {
-			params.PageSize = pageSize
-		}
-	}
-
-	searchType := search.SearchTypeAll
-	switch params.Type {
-	case "stories":
-		searchType = search.SearchTypeStories
-	case "objectives":
-		searchType = search.SearchTypeObjectives
-	case "all":
-		searchType = search.SearchTypeAll
-	default:
-		return web.RespondError(ctx, w, ErrInvalidSearchType, http.StatusBadRequest)
-	}
-
-	sortOption := search.SortByRelevance
-	switch params.SortBy {
-	case "updated":
-		sortOption = search.SortByUpdated
-	case "created":
-		sortOption = search.SortByCreated
-	case "relevance":
-		sortOption = search.SortByRelevance
-	}
-
-	searchParams := search.SearchParams{
-		Type:       searchType,
-		Query:      params.Query,
-		TeamID:     params.TeamID,
-		AssigneeID: params.AssigneeID,
-		LabelID:    params.LabelID,
-		StatusID:   params.StatusID,
-		Priority:   params.Priority,
-		SortBy:     sortOption,
-		Page:       params.Page,
-		PageSize:   params.PageSize,
+	searchParams, err := parseSearchParams(r.URL.Query())
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
 	result, err := h.searchService.Search(ctx, workspace.ID, userID, searchParams)
 	if err != nil {
+		if errors.Is(err, search.ErrInvalidSearchParams) {
+			return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
-	response := toAppSearchResponse(result, params.Page, params.PageSize)
+	response := toAppSearchResponse(result, searchParams.Page, searchParams.PageSize)
 
 	return web.Respond(ctx, w, response, http.StatusOK)
 }
@@ -148,27 +55,28 @@ func (h *Handlers) FindSimilarStories(ctx context.Context, w http.ResponseWriter
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	userID, _ := mid.GetUserID(ctx)
-
-	var teamID *uuid.UUID
-	if teamIDString := r.URL.Query().Get("teamId"); teamIDString != "" {
-		parsedTeamID, err := uuid.Parse(teamIDString)
-		if err != nil {
-			return web.RespondError(ctx, w, errors.New("invalid team ID"), http.StatusBadRequest)
-		}
-		teamID = &parsedTeamID
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	query, err := parseSimilarStoriesQuery(r.URL.Query())
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
 	stories, err := h.searchService.FindSimilarStories(
 		ctx,
 		workspace.ID,
 		userID,
-		r.URL.Query().Get("title"),
-		teamID,
-		limit,
+		query.Title,
+		query.TeamID,
+		query.Limit,
 	)
 	if err != nil {
+		if errors.Is(err, search.ErrInvalidSearchParams) {
+			return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		}
 		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 

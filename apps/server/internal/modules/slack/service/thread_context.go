@@ -9,8 +9,7 @@ import (
 	"strings"
 	"unicode"
 
-	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
 )
 
 const (
@@ -28,10 +27,10 @@ const (
 	assistantThreadContextUnavailableReply   = "I couldn't read the earlier messages in this Slack thread, so I haven't created or changed any FortyOne work. Make sure Maya is a member of the channel and can read its history, then try again."
 )
 
-var errSlackThreadContextIncomplete = errors.New("Slack thread context is incomplete")
+var errSlackThreadContextIncomplete = errors.New("slack thread context is incomplete")
 
 type slackThreadReference struct {
-	Turn      messaging.ConversationTurn
+	Turn      AssistantConversationTurn
 	SourceURL string
 }
 
@@ -103,7 +102,7 @@ func slackEventCanHydrateThread(event normalizedSlackEvent) bool {
 	return threadTS != "" && messageTS != "" && threadTS != messageTS
 }
 
-func slackThreadSourceURL(installation slackrepository.SlackWorkspaceRecord, event normalizedSlackEvent) string {
+func slackThreadSourceURL(installation slackdomain.Installation, event normalizedSlackEvent) string {
 	if !slackEventCanHydrateThread(event) {
 		return ""
 	}
@@ -117,17 +116,17 @@ func slackThreadSourceURL(installation slackrepository.SlackWorkspaceRecord, eve
 func (p *EventProcessor) loadSlackThreadReference(
 	ctx context.Context,
 	botToken string,
-	installation slackrepository.SlackWorkspaceRecord,
+	installation slackdomain.Installation,
 	event normalizedSlackEvent,
 	excludedMessageIDs map[string]struct{},
 ) (slackThreadReference, error) {
 	if p == nil || p.webClient == nil {
-		return slackThreadReference{}, errors.New("Slack thread reader is not configured")
+		return slackThreadReference{}, errors.New("slack thread reader is not configured")
 	}
 	channelID := strings.TrimSpace(event.ChannelID)
 	threadTS := strings.TrimSpace(event.ThreadTS)
 	if channelID == "" || threadTS == "" || !slackEventCanHydrateThread(event) {
-		return slackThreadReference{}, errors.New("Slack thread channel and root timestamp are required")
+		return slackThreadReference{}, errors.New("slack thread channel and root timestamp are required")
 	}
 
 	botUserID := ""
@@ -218,9 +217,9 @@ func buildSlackThreadReferenceTurn(
 	messages []slackThreadMessage,
 	sourceURL string,
 	filteredCount int,
-) (messaging.ConversationTurn, error) {
+) (AssistantConversationTurn, error) {
 	if len(messages) > slackThreadReferenceMaxMessages {
-		return messaging.ConversationTurn{}, fmt.Errorf(
+		return AssistantConversationTurn{}, fmt.Errorf(
 			"%w: supported message count %d exceeds limit %d",
 			errSlackThreadContextIncomplete,
 			len(messages),
@@ -231,7 +230,7 @@ func buildSlackThreadReferenceTurn(
 	for index, message := range messages {
 		text := strings.TrimSpace(message.Text)
 		if len(text) > slackThreadMessageTextMaxBytes {
-			return messaging.ConversationTurn{}, fmt.Errorf(
+			return AssistantConversationTurn{}, fmt.Errorf(
 				"%w: message %s exceeds the per-message context limit",
 				errSlackThreadContextIncomplete,
 				strings.TrimSpace(message.TS),
@@ -243,7 +242,7 @@ func buildSlackThreadReferenceTurn(
 			Text:      text,
 		})
 		if err != nil {
-			return messaging.ConversationTurn{}, fmt.Errorf("encode Slack thread message: %w", err)
+			return AssistantConversationTurn{}, fmt.Errorf("encode Slack thread message: %w", err)
 		}
 		lines[index] = line
 	}
@@ -272,12 +271,12 @@ func buildSlackThreadReferenceTurn(
 		}
 	}
 	if content.Len() > slackThreadReferenceMaxBytes {
-		return messaging.ConversationTurn{}, fmt.Errorf(
+		return AssistantConversationTurn{}, fmt.Errorf(
 			"%w: encoded thread reference exceeds the context byte limit",
 			errSlackThreadContextIncomplete,
 		)
 	}
-	return messaging.ConversationTurn{Role: messaging.RoleUser, Text: content.String()}, nil
+	return AssistantConversationTurn{Role: AssistantRoleUser, Text: content.String()}, nil
 }
 
 func slackTimestampLess(left, right string) bool {

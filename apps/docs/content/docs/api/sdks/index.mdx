@@ -1,0 +1,37 @@
+---
+title: SDK previews
+description: Use contract-generated FortyOne clients without guessing at public API behavior.
+---
+
+FortyOne maintains TypeScript and Go client previews from the same committed
+OpenAPI v1 contract used by the server. The generated operation and model types
+are the contract; the small handwritten layer adds secure defaults for bearer
+authentication, base URLs, safe-read retries, structured errors, pagination,
+and outbound webhook verification.
+
+The packages are currently repository previews. They are not published to npm
+or the Go module proxy, and their preview version does not yet promise the
+compatibility or release support of a generally available SDK. You can inspect,
+test, and use them from a FortyOne repository checkout.
+
+Choose [TypeScript](./typescript) or [Go](./go). Both clients:
+
+- send the token only as one `Authorization: Bearer` header;
+- require HTTPS, with an explicit loopback-only escape hatch for tests;
+- retry only `GET` and `HEAD` after network failures, `429`, or `503`;
+- generate and validate contract-safe `Idempotency-Key` values while leaving
+  write retry state under caller control;
+- keep cursor values opaque and detect a broken pagination sequence;
+- expose stable error codes and request IDs without retaining raw error bodies;
+- verify webhook HMAC signatures over the exact bytes before JSON decoding.
+
+The committed preview exposes workspace, team, story and collaboration reads,
+idempotent story creation, and outbound-webhook management. User-backed
+operations accept a PAT or a user-authorized OAuth token for the exact
+`https://api.fortyone.app/api/v1` resource. Story creation additionally accepts
+a service-account key with `stories:write`. SDK transports treat each bearer as
+an opaque string and never retry the write automatically because only the
+caller can durably retain the key, exact request, and retry budget. See
+[OAuth applications](../oauth-apps) for PKCE, audience separation, and refresh
+rotation; the current OAuth actor is the consenting user, not the registered
+application.

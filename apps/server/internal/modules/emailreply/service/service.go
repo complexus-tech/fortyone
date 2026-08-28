@@ -3,15 +3,13 @@ package emailreply
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
-	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
+	messagingdomain "github.com/complexus-tech/projects-api/internal/modules/messaging/domain"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 )
@@ -21,13 +19,18 @@ var (
 	ErrWebhookRetry       = errors.New("email reply webhook must be retried")
 )
 
+const (
+	maximumCanonicalInboundPayloadBytes = 256 << 10
+	maximumProcessorStateBytes          = 256 << 10
+)
+
 // Store is intentionally narrow so the email thread repository can adapt to
 // ingress without coupling this package to thread persistence details.
 type Store interface {
-	FindEmailThreadByReplyToken(ctx context.Context, input messaging.EmailReplyTokenLookup) (messaging.EmailThreadLookup, error)
-	RegisterInboundEvent(ctx context.Context, input messagingrepository.InboundEventInput) (messagingrepository.InboundEventRecord, bool, error)
+	FindEmailThreadByReplyToken(ctx context.Context, input messagingdomain.EmailReplyTokenLookup) (messagingdomain.EmailThreadLookup, error)
+	RegisterInboundEvent(ctx context.Context, input messagingdomain.InboundEventInput) (messagingdomain.InboundEventRecord, bool, error)
 	MarkInboundEventQueued(ctx context.Context, id uuid.UUID) error
-	ClaimRecoverableInboundEvents(ctx context.Context, provider string, limit int) ([]messagingrepository.InboundEventRecord, error)
+	ClaimRecoverableInboundEvents(ctx context.Context, provider string, limit int) ([]messagingdomain.InboundEventRecord, error)
 	ReleaseInboundEventRecovery(ctx context.Context, id uuid.UUID, generation int) error
 }
 
@@ -96,6 +99,9 @@ func (s *Service) OpenStoredInboundEmail(sealed string) (StoredInboundEmail, err
 	if err != nil {
 		return StoredInboundEmail{}, err
 	}
+	if len(plaintext) > maximumCanonicalInboundPayloadBytes {
+		return StoredInboundEmail{}, errors.New("stored email reply payload exceeds the configured limit")
+	}
 	var stored storedInboundEmail
 	if err := json.Unmarshal(plaintext, &stored); err != nil {
 		return StoredInboundEmail{}, fmt.Errorf("decode stored Brevo email reply: %w", err)
@@ -119,6 +125,9 @@ func (s *Service) SealProcessorState(payload []byte) (string, error) {
 	if s == nil || s.codec == nil {
 		return "", errors.New("email reply service is not configured")
 	}
+	if len(payload) > maximumProcessorStateBytes {
+		return "", errors.New("email reply processor state exceeds the configured limit")
+	}
 	return s.codec.Seal(payload)
 }
 
@@ -128,7 +137,14 @@ func (s *Service) OpenProcessorState(sealed string) ([]byte, error) {
 	if s == nil || s.codec == nil {
 		return nil, errors.New("email reply service is not configured")
 	}
-	return s.codec.Open(sealed)
+	opened, err := s.codec.Open(sealed)
+	if err != nil {
+		return nil, err
+	}
+	if len(opened) > maximumProcessorStateBytes {
+		return nil, errors.New("email reply processor state exceeds the configured limit")
+	}
+	return opened, nil
 }
 
 // ReplyTokenHash resolves the opaque plus-address token without retaining the
@@ -155,6 +171,9 @@ func (s *Service) Ingest(ctx context.Context, rawBody []byte) (IngestResult, err
 	if s == nil || s.store == nil || s.queue == nil || s.codec == nil {
 		return IngestResult{}, fmt.Errorf("%w: email reply service is not configured", ErrWebhookRetry)
 	}
+	if err := ctx.Err(); err != nil {
+		return IngestResult{}, fmt.Errorf("%w: ingress context ended: %v", ErrWebhookRetry, err)
+	}
 	payload, err := decodeInboundWebhook(rawBody)
 	if err != nil {
 		return IngestResult{}, err
@@ -162,6 +181,9 @@ func (s *Service) Ingest(ctx context.Context, rawBody []byte) (IngestResult, err
 
 	result := IngestResult{}
 	for index, rawItem := range payload.Items {
+		if err := ctx.Err(); err != nil {
+			return result, fmt.Errorf("%w: ingress context ended before item %d: %v", ErrWebhookRetry, index, err)
+		}
 		created, err := s.ingestItem(ctx, rawItem)
 		if err != nil {
 			if isPermanentItemError(err) {
@@ -195,6 +217,10 @@ func (s *Service) RecoverPendingEvents(ctx context.Context) (int, error) {
 	recovered := 0
 	var recoveryErrors []error
 	for _, record := range records {
+		if err := ctx.Err(); err != nil {
+			recoveryErrors = append(recoveryErrors, err)
+			break
+		}
 		err := s.queue.EnqueueBrevoEmailReply(ctx, tasks.BrevoEmailReplyPayload{
 			ExternalWorkspaceID: record.ExternalWorkspaceID,
 			EventID:             record.ExternalEventID,
@@ -235,13 +261,13 @@ func (s *Service) ingestItem(ctx context.Context, rawItem json.RawMessage) (bool
 		return false, ErrReplyNotAuthorized
 	}
 	tokenHash := sha256.Sum256([]byte(token))
-	lookup, err := s.store.FindEmailThreadByReplyToken(ctx, messaging.EmailReplyTokenLookup{
+	lookup, err := s.store.FindEmailThreadByReplyToken(ctx, messagingdomain.EmailReplyTokenLookup{
 		Provider:  Provider,
 		TokenHash: tokenHash[:],
 		Now:       s.now().UTC(),
 	})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, messaging.ErrInvalidEmailReplyToken) || errors.Is(err, ErrReplyNotAuthorized) {
+		if errors.Is(err, messagingdomain.ErrInvalidEmailReplyToken) || errors.Is(err, ErrReplyNotAuthorized) {
 			return false, ErrReplyNotAuthorized
 		}
 		return false, fmt.Errorf("%w: resolve email reply thread: %v", ErrWebhookRetry, err)
@@ -251,9 +277,10 @@ func (s *Service) ingestItem(ctx context.Context, rawItem json.RawMessage) (bool
 		return false, ErrReplyNotAuthorized
 	}
 
-	canonicalEmail, err := processorEmailPayload(email)
+	eventID := externalEventID(email, rawItem)
+	canonicalEmail, err := processorEmailPayload(email, eventID)
 	if err != nil {
-		return false, fmt.Errorf("%w: minimize durable email reply payload: %v", ErrWebhookRetry, err)
+		return false, err
 	}
 	storedPayload, err := json.Marshal(storedInboundEmail{
 		ThreadID:    thread.ID,
@@ -269,10 +296,9 @@ func (s *Service) ingestItem(ctx context.Context, rawItem json.RawMessage) (bool
 		return false, fmt.Errorf("%w: %v", ErrWebhookRetry, err)
 	}
 
-	eventID := externalEventID(email, rawItem)
 	workspaceID := thread.WorkspaceID
 	eventScope := workspaceID.String() + ":" + thread.ID.String()
-	receipt, created, err := s.store.RegisterInboundEvent(ctx, messagingrepository.InboundEventInput{
+	receipt, created, err := s.store.RegisterInboundEvent(ctx, messagingdomain.InboundEventInput{
 		Provider:            Provider,
 		WorkspaceID:         &workspaceID,
 		ExternalWorkspaceID: eventScope,
@@ -301,23 +327,40 @@ func (s *Service) ingestItem(ctx context.Context, rawItem json.RawMessage) (bool
 // processorEmailPayload keeps only fields needed to authenticate, thread, and
 // interpret the current reply. Raw HTML, parsed signatures, CC lists, and
 // attachment download capabilities never enter durable conversation storage.
-func processorEmailPayload(email InboundEmail) (json.RawMessage, error) {
-	email.RawHTMLBody = nil
-	email.ExtractedMarkdownSignature = nil
-	email.Cc = nil
-	email.ReplyTo = nil
-	email.Attachments = nil
-	if strings.TrimSpace(email.ExtractedMarkdownMessage) != "" {
-		email.RawTextBody = nil
+func processorEmailPayload(email InboundEmail, eventID string) (json.RawMessage, error) {
+	reply := plainInboundReply(email)
+	if reply == "" {
+		return nil, fmt.Errorf("%w: item reply body is empty", ErrInvalidPayload)
 	}
-	encoded, err := json.Marshal(email)
+	token, err := extractReplyToken(email)
 	if err != nil {
 		return nil, err
+	}
+	sender, err := normalizedEmailAddress(email.From.Address)
+	if err != nil {
+		return nil, fmt.Errorf("%w: item sender is invalid", ErrInvalidPayload)
+	}
+	canonical := InboundEmail{
+		MessageID:                boundedProviderMessageID(email.MessageID, eventID),
+		From:                     Mailbox{Address: sender},
+		To:                       Mailboxes{{Address: replyAddressPrefix + token + "@reply.invalid"}},
+		Subject:                  sanitizeEmailSubject(email.Subject),
+		ExtractedMarkdownMessage: reply,
+	}
+	if inReplyTo := safeOptionalInternetMessageID(email.InReplyTo); inReplyTo != "" {
+		canonical.InReplyTo = &inReplyTo
+	}
+	encoded, err := json.Marshal(canonical)
+	if err != nil {
+		return nil, err
+	}
+	if len(encoded) > maximumCanonicalInboundPayloadBytes {
+		return nil, fmt.Errorf("%w: canonical item exceeds %d bytes", ErrInvalidPayload, maximumCanonicalInboundPayloadBytes)
 	}
 	return encoded, nil
 }
 
-func validReplyThread(thread messaging.EmailThreadRecord, senderEmail string) bool {
+func validReplyThread(thread messagingdomain.EmailThreadRecord, senderEmail string) bool {
 	if thread.ID == uuid.Nil || thread.WorkspaceID == uuid.Nil || thread.UserID == uuid.Nil {
 		return false
 	}

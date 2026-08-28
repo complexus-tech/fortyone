@@ -107,14 +107,6 @@ func toAppDocument(document documents.CoreDocument, canMutate bool) AppDocument 
 	}
 }
 
-func toAppDocuments(coreDocuments []documents.CoreDocument, canMutate bool) []AppDocument {
-	result := make([]AppDocument, len(coreDocuments))
-	for i, document := range coreDocuments {
-		result[i] = toAppDocument(document, canMutate)
-	}
-	return result
-}
-
 func toAppDocumentSummaries(coreDocuments []documents.CoreDocumentSummary, canMutate bool) []AppDocumentSummary {
 	result := make([]AppDocumentSummary, len(coreDocuments))
 	for i, document := range coreDocuments {

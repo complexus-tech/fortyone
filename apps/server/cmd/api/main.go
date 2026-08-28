@@ -2,30 +2,31 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"log/slog"
-	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
-	"time"
 
 	bootstrapapi "github.com/complexus-tech/projects-api/internal/bootstrap/api"
+	"github.com/complexus-tech/projects-api/internal/bootstrap/providers"
 	"github.com/complexus-tech/projects-api/internal/migrations"
-	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
+	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
+	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
+	actorsrepository "github.com/complexus-tech/projects-api/internal/platform/actors/repository"
+	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
+	"github.com/complexus-tech/projects-api/internal/platform/deployment"
+	platformhealth "github.com/complexus-tech/projects-api/internal/platform/health"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/pkg/aws"
 	"github.com/complexus-tech/projects-api/pkg/azure"
 	"github.com/complexus-tech/projects-api/pkg/brevo"
 	"github.com/complexus-tech/projects-api/pkg/cache"
-	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
@@ -34,7 +35,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/tracing"
-	"github.com/go-playground/validator/v10"
+	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/josemukorivo/config"
 	"github.com/redis/go-redis/v9"
 	"github.com/stripe/stripe-go/v82/client"
@@ -42,153 +43,16 @@ import (
 
 var (
 	service = "projects-api"
-	version = "0.0.1"
-	environ = "development"
+	version = "development"
 )
-
-type Config struct {
-	Auth struct {
-		SecretKey                    string `default:"secret" env:"APP_AUTH_SECRET_KEY"`
-		CookieDomain                 string `env:"APP_AUTH_COOKIE_DOMAIN"`
-		GoogleClientIDs              string `env:"APP_AUTH_GOOGLE_CLIENT_IDS"`
-		GoogleClientSecret           string `env:"APP_AUTH_GOOGLE_CLIENT_SECRET"`
-		GoogleRedirectURL            string `env:"APP_AUTH_GOOGLE_REDIRECT_URL"`
-		GoogleCalendarRedirectURL    string `env:"APP_AUTH_GOOGLE_CALENDAR_REDIRECT_URL"`
-		GoogleCalendarWebhookURL     string `env:"APP_AUTH_GOOGLE_CALENDAR_WEBHOOK_URL"`
-		MicrosoftClientID            string `env:"APP_AUTH_MICROSOFT_CLIENT_ID"`
-		MicrosoftClientSecret        string `env:"APP_AUTH_MICROSOFT_CLIENT_SECRET"`
-		MicrosoftTenant              string `default:"common" env:"APP_AUTH_MICROSOFT_TENANT"`
-		MicrosoftRedirectURL         string `env:"APP_AUTH_MICROSOFT_REDIRECT_URL"`
-		MicrosoftCalendarRedirectURL string `env:"APP_AUTH_MICROSOFT_CALENDAR_REDIRECT_URL"`
-		MicrosoftCalendarWebhookURL  string `env:"APP_AUTH_MICROSOFT_CALENDAR_WEBHOOK_URL"`
-	}
-	Feedback struct {
-		IngressSecret string `env:"FEEDBACK_INGRESS_SECRET"`
-	}
-	Web struct {
-		APIHost         string        `default:"localhost:8000" env:"APP_API_HOST"`
-		PublicURL       string        `default:"http://localhost:8000" env:"APP_API_PUBLIC_URL"`
-		ReadTimeout     time.Duration `default:"5m" env:"APP_API_READ_TIMEOUT"`
-		WriteTimeout    time.Duration `default:"5m" env:"APP_API_WRITE_TIMEOUT"`
-		IdleTimeout     time.Duration `default:"30s" env:"APP_API_IDLE_TIMEOUT"`
-		ShutdownTimeout time.Duration `default:"30s" env:"APP_API_SHUTDOWN_TIMEOUT"`
-		DebugHost       string        `default:"localhost:9000" env:"APP_API_DEBUG_HOST"`
-	}
-	MCP struct {
-		LoginURL string `default:"http://localhost:3000" env:"APP_MCP_LOGIN_URL"`
-	}
-	DB struct {
-		Host         string `default:"localhost" env:"APP_DB_HOST"`
-		Port         string `default:"5432" env:"APP_DB_PORT"`
-		User         string `default:"postgres" env:"APP_DB_USER"`
-		Password     string `default:"password" env:"APP_DB_PASSWORD"`
-		Name         string `default:"complexus" env:"APP_DB_NAME"`
-		MaxIdleConns int    `default:"25" env:"APP_DB_MAX_IDLE_CONNS"`
-		MaxOpenConns int    `default:"25" env:"APP_DB_MAX_OPEN_CONNS"`
-		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
-	}
-	Cache struct {
-		Host               string        `default:"localhost" env:"APP_REDIS_HOST"`
-		Port               string        `default:"6379" env:"APP_REDIS_PORT"`
-		Password           string        `default:"" env:"APP_REDIS_PASSWORD"`
-		Name               int           `default:"0" env:"APP_REDIS_DB"`
-		DisableTLS         bool          `default:"false" env:"APP_REDIS_DISABLE_TLS"`
-		InsecureSkipVerify bool          `default:"false" env:"APP_REDIS_INSECURE_SKIP_VERIFY"`
-		DialTimeout        time.Duration `default:"10s" env:"APP_REDIS_DIAL_TIMEOUT"`
-		ReadTimeout        time.Duration `default:"30s" env:"APP_REDIS_READ_TIMEOUT"`
-		WriteTimeout       time.Duration `default:"30s" env:"APP_REDIS_WRITE_TIMEOUT"`
-		PoolSize           int           `default:"100" env:"APP_REDIS_POOL_SIZE"`
-	}
-	Email struct {
-		Host        string `default:"smtp.gmail.com" env:"APP_EMAIL_HOST"`
-		Port        int    `default:"587" env:"APP_EMAIL_PORT"`
-		Username    string `env:"APP_EMAIL_USERNAME"`
-		Password    string `env:"APP_EMAIL_PASSWORD"`
-		FromAddress string `env:"APP_EMAIL_FROM_ADDRESS"`
-		FromName    string `default:"Complexus" env:"APP_EMAIL_FROM_NAME"`
-		MayaAddress string `default:"maya@fortyone.app" env:"APP_EMAIL_MAYA_FROM_ADDRESS"`
-		MayaName    string `default:"Maya, AI Agent" env:"APP_EMAIL_MAYA_FROM_NAME"`
-		Environment string `default:"development" env:"APP_EMAIL_ENVIRONMENT"`
-		BaseDir     string `default:"." env:"APP_EMAIL_BASE_DIR"`
-	}
-	Brevo struct {
-		APIKey string `env:"APP_BREVO_API_KEY"`
-	}
-	Tracing struct {
-		Endpoint string            `default:"localhost:4318" env:"APP_TRACING_ENDPOINT"`
-		Headers  map[string]string `env:"APP_TRACING_HEADERS"`
-	}
-	Google struct {
-		ClientID string `env:"GOOGLE_CLIENT_ID"`
-	}
-	Website struct {
-		URL string `default:"http://localhost:3000" env:"APP_WEBSITE_URL"`
-	}
-	Storage struct {
-		Provider          string `env:"APP_STORAGE_PROVIDER" default:"aws"`
-		ProfilesBucket    string `env:"STORAGE_PROFILE_IMAGES_NAME" default:"profiles"`
-		LogosBucket       string `env:"STORAGE_WORKSPACE_LOGOS_NAME" default:"logos"`
-		AttachmentsBucket string `env:"STORAGE_ATTACHMENTS_NAME" default:"attachments"`
-	}
-	Azure struct {
-		StorageConnectionString string `env:"APP_AZURE_STORAGE_CONNECTION_STRING"`
-		StorageAccountName      string `env:"APP_AZURE_STORAGE_ACCOUNT_NAME"`
-		StorageAccountKey       string `env:"APP_AZURE_STORAGE_ACCOUNT_KEY"`
-	}
-	AWS struct {
-		AccessKeyID     string `env:"APP_AWS_ACCESS_KEY_ID"`
-		SecretAccessKey string `env:"APP_AWS_SECRET_ACCESS_KEY"`
-		Region          string `env:"APP_AWS_REGION" default:"us-east-1"`
-		Endpoint        string `env:"APP_AWS_ENDPOINT"`
-		PublicURL       string `env:"APP_AWS_PUBLIC_URL"`
-		ForcePathStyle  bool   `default:"false" env:"APP_AWS_FORCE_PATH_STYLE"`
-		Bucket          string `env:"APP_AWS_BUCKET" default:"fortyone"`
-	}
-	Stripe struct {
-		SecretKey     string `env:"STRIPE_SECRET_KEY"`
-		WebhookSecret string `env:"STRIPE_WEBHOOK_SECRET"`
-	}
-	GitHub struct {
-		AppID            int64  `env:"APP_GITHUB_APP_ID"`
-		AppSlug          string `env:"GITHUB_APP_SLUG"`
-		ClientID         string `env:"GITHUB_CLIENT_ID"`
-		ClientSecret     string `env:"GITHUB_CLIENT_SECRET"`
-		PrivateKeyBase64 string `env:"GITHUB_PRIVATE_KEY_BASE64"`
-		RedirectURL      string `env:"GITHUB_REDIRECT_URL"`
-		WebhookURL       string `env:"GITHUB_WEBHOOK_URL"`
-		WebhookSecret    string `env:"GITHUB_WEBHOOK_SECRET"`
-	}
-	Slack struct {
-		ClientID      string `env:"SLACK_CLIENT_ID"`
-		ClientSecret  string `env:"SLACK_CLIENT_SECRET"`
-		SigningSecret string `env:"SLACK_SIGNING_SECRET"`
-		RedirectURL   string `default:"https://api.fortyone.app/integrations/slack/setup" env:"SLACK_REDIRECT_URL"`
-	}
-	Figma struct {
-		ClientID     string `env:"FIGMA_CLIENT_ID"`
-		ClientSecret string `env:"FIGMA_CLIENT_SECRET"`
-		RedirectURL  string `default:"https://api.fortyone.app/integrations/figma/callback" env:"FIGMA_REDIRECT_URL"`
-		WebhookURL   string `default:"https://api.fortyone.app/webhooks/figma" env:"FIGMA_WEBHOOK_URL"`
-	}
-}
 
 func main() {
 	migrateOnly := flag.Bool("migrate", false, "Run database migrations and exit")
 	flag.Parse()
 
-	var logLevel slog.Level
-
-	switch environ {
-	case "development":
-		logLevel = slog.LevelDebug
-	case "production":
-		logLevel = slog.LevelInfo
-	default:
-		logLevel = slog.LevelInfo
-	}
-
-	log := logger.NewWithJSON(os.Stdout, logLevel, service)
-	ctx := context.Background()
+	log := logger.NewWithJSON(os.Stdout, configuredLogLevel(), service)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	if *migrateOnly {
 		if err := runMigrations(ctx, log); err != nil {
@@ -213,61 +77,103 @@ func run(ctx context.Context, log *logger.Logger) error {
 	if err != nil {
 		return fmt.Errorf("error parsing config: %s", err)
 	}
-	if err := emailreply.ValidateRuntimeSecret(cfg.Auth.SecretKey, cfg.Email.Environment); err != nil {
-		return fmt.Errorf("validate email reply security: %w", err)
-	}
 	cfg.Feedback.IngressSecret = strings.TrimSpace(cfg.Feedback.IngressSecret)
+	cfg.Feedback.SecurityKey = strings.TrimSpace(cfg.Feedback.SecurityKey)
 	if len(cfg.Feedback.IngressSecret) < 32 {
 		return fmt.Errorf("FEEDBACK_INGRESS_SECRET must contain at least 32 characters")
 	}
+	mode, err := validateRuntimeConfig(cfg)
+	if err != nil {
+		return err
+	}
+	if _, err := providers.BuiltInRegistry(); err != nil {
+		return fmt.Errorf("validate built-in integration providers: %w", err)
+	}
+	if err := validateAPIHTTPConfig(cfg); err != nil {
+		return fmt.Errorf("validate API HTTP configuration: %w", err)
+	}
+	originPolicy, err := web.NewOriginPolicy(cfg.Web.CORSAllowedOrigins)
+	if err != nil {
+		return fmt.Errorf("initialize CORS origin policy: %w", err)
+	}
+	log.Info(ctx, "starting API process", "version", version, "environment", mode.String())
+	verificationTokens, err := users.NewVerificationTokenManager(verificationTokenConfig(cfg))
+	if err != nil {
+		return fmt.Errorf("initialize verification token security: %w", err)
+	}
+	invitationTokenConfig, err := invitationTokenConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("initialize invitation token security: %w", err)
+	}
+	invitationTokens, err := invitations.NewInvitationTokenManager(invitationTokenConfig)
+	if err != nil {
+		return fmt.Errorf("initialize invitation token security: %w", err)
+	}
+	credentialVault, err := credentialvault.NewFromEncodedKeyring(
+		cfg.CredentialVault.ActiveKeyID,
+		cfg.CredentialVault.ActiveKeyVersion.Uint32(),
+		cfg.CredentialVault.Keys,
+	)
+	if err != nil {
+		return fmt.Errorf("initialize provider credential vault: %w", err)
+	}
+	developerCredentialTokens, err := newDeveloperCredentialTokenManager(cfg)
+	if err != nil {
+		return fmt.Errorf("initialize developer credential security: %w", err)
+	}
+	lifecycleOwnsResources := false
 
 	// Connect to postgres database
-	db, err := database.Open(database.Config{
+	connections, err := platformdatabase.Open(ctx, platformdatabase.Config{
 		Host:         cfg.DB.Host,
 		Port:         cfg.DB.Port,
 		User:         cfg.DB.User,
 		Password:     cfg.DB.Password,
 		Name:         cfg.DB.Name,
-		MaxIdleConns: cfg.DB.MaxIdleConns,
 		MaxOpenConns: cfg.DB.MaxOpenConns,
-		DisableTLS:   cfg.DB.DisableTLS,
+		MinConns:     cfg.DB.MinConns,
+
+		ConnectTimeout:    cfg.DB.ConnectTimeout,
+		MaxConnIdleTime:   cfg.DB.MaxConnIdleTime,
+		MaxConnLifetime:   cfg.DB.MaxConnLifetime,
+		HealthCheckPeriod: cfg.DB.HealthCheckPeriod,
+		SSLMode:           cfg.DB.SSLMode,
+		SSLRootCert:       cfg.DB.SSLRootCert,
+		DisableTLS:        cfg.DB.DisableTLS,
 	})
 
 	if err != nil {
 		return fmt.Errorf("error connecting to db: %w", err)
 	}
 
-	if err := db.Ping(); err != nil {
-		return fmt.Errorf("error pinging database: %w", err)
+	defer func() {
+		if lifecycleOwnsResources {
+			return
+		}
+		log.Info(ctx, "closing the database connection")
+		if err := connections.Close(); err != nil {
+			log.Error(ctx, "error closing the database connection", "error", err)
+		}
+	}()
+
+	developerOAuthServices, err := newDeveloperOAuthServices(cfg, connections.Pool)
+	if err != nil {
+		return fmt.Errorf("initialize developer OAuth security: %w", err)
 	}
 
 	log.Info(ctx, fmt.Sprintf("connected to database `%s`", cfg.DB.Name))
 
-	defer func() {
-		log.Info(ctx, "closing the database connection")
-		db.Close()
-	}()
-
 	// Connect to redis client
-	var tlsConfig *tls.Config
-	if !cfg.Cache.DisableTLS {
-		tlsConfig = &tls.Config{
-			InsecureSkipVerify: cfg.Cache.InsecureSkipVerify,
-		}
-	}
-	rdb := redis.NewClient(&redis.Options{
-		Addr:         net.JoinHostPort(cfg.Cache.Host, cfg.Cache.Port),
-		Password:     cfg.Cache.Password,
-		DB:           cfg.Cache.Name,
-		TLSConfig:    tlsConfig,
-		DialTimeout:  cfg.Cache.DialTimeout,
-		ReadTimeout:  cfg.Cache.ReadTimeout,
-		WriteTimeout: cfg.Cache.WriteTimeout,
-		PoolSize:     cfg.Cache.PoolSize,
-	})
+	rdb := redis.NewClient(redisOptions(cfg))
 
-	// Close the redis connection when the main function returns
-	defer rdb.Close()
+	defer func() {
+		if lifecycleOwnsResources {
+			return
+		}
+		if err := rdb.Close(); err != nil {
+			log.Error(ctx, "error closing Redis client", "error", err)
+		}
+	}()
 
 	if _, err := rdb.Ping(ctx).Result(); err != nil {
 		return fmt.Errorf("error pinging redis: %w", err)
@@ -277,9 +183,6 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Initialize cache service
 	cacheService := cache.New(rdb, log)
 	log.Info(ctx, "initialized cache service")
-
-	// Initialize validator
-	validate := validator.New()
 
 	// Initialize Azure configuration
 	azureConfig := azure.Config{
@@ -349,19 +252,12 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 	log.Info(ctx, "tasks service initialized")
 
-	defer func() {
-		log.Info(ctx, "closing tasks service Asynq client")
-		if err := tasksService.Close(); err != nil {
-			log.Error(ctx, "error closing tasks service Asynq client", "error", err)
-		}
-	}()
+	actorResolver := actors.NewResolver(actorsrepository.New(connections.Pool))
 
-	actorResolver := actors.NewResolver(log, db, cacheService)
-
-	shutdown := make(chan os.Signal, 1)
+	legacyShutdown := make(chan os.Signal, 1)
 
 	// Start Tracing
-	t := tracing.New(service, version, environ, cfg.Tracing.Endpoint, cfg.Tracing.Headers)
+	t := tracing.New(service, version, mode.String(), cfg.Tracing.Endpoint, cfg.Tracing.Headers)
 	tp, err := t.StartTracing()
 	if err != nil {
 		return fmt.Errorf("error starting tracing: %w", err)
@@ -370,7 +266,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// Graceful shutdown of tracing if server is stopped
 	defer func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if lifecycleOwnsResources {
+			return
+		}
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Web.TelemetryShutdownTimeout)
 		defer cancel()
 		if err := tp.Shutdown(shutdownCtx); err != nil {
 			log.Error(ctx, "error shutting down tracer provider", "error", err)
@@ -414,21 +313,39 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("resolve github actor: %w", err)
 	}
 
-	// Initialize SSE Hub
-	sseHub := sse.NewHub(ctx, log, rdb)
-	go sseHub.Run()
-	log.Info(ctx, "SSE Hub initialized and started")
+	readiness, err := platformhealth.NewReadiness(
+		cfg.Web.ReadinessCheckTimeout,
+		platformhealth.Dependency{
+			Name:  "postgres",
+			Check: connections.Pool.Ping,
+		},
+		platformhealth.Dependency{
+			Name: "redis",
+			Check: func(checkCtx context.Context) error {
+				return rdb.Ping(checkCtx).Err()
+			},
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("initialize API readiness: %w", err)
+	}
+
+	sseHub := sse.NewHub(log, rdb)
 
 	// Update mux configuration
 	muxConfig := mux.Config{
-		DB:                          db,
 		Redis:                       rdb,
 		Publisher:                   publisher,
-		Shutdown:                    shutdown,
+		Shutdown:                    legacyShutdown,
 		Log:                         log,
 		Tracer:                      tracer,
+		DeploymentMode:              mode,
+		Readiness:                   readiness,
 		SecretKey:                   cfg.Auth.SecretKey,
 		FeedbackIngressSecret:       cfg.Feedback.IngressSecret,
+		FeedbackSecurityKey:         cfg.Feedback.SecurityKey,
+		EmailReplySecurityKey:       cfg.EmailReply.SecurityKey,
+		MessagingMutationHMACKey:    cfg.Messaging.MutationHMACKey,
 		CookieDomain:                cfg.Auth.CookieDomain,
 		EmailService:                mailerService,
 		BrevoService:                brevoService,
@@ -436,7 +353,6 @@ func run(ctx context.Context, log *logger.Logger) error {
 		MicrosoftService:            microsoftService,
 		GoogleCalendarWebhookURL:    cfg.Auth.GoogleCalendarWebhookURL,
 		MicrosoftCalendarWebhookURL: cfg.Auth.MicrosoftCalendarWebhookURL,
-		Validate:                    validate,
 		StorageConfig:               storageConfig,
 		StorageService:              storageService,
 		Cache:                       cacheService,
@@ -454,94 +370,71 @@ func run(ctx context.Context, log *logger.Logger) error {
 		GitHubKeyBase64:             cfg.GitHub.PrivateKeyBase64,
 		GitHubRedirect:              cfg.GitHub.RedirectURL,
 		GitHubWebhook:               cfg.GitHub.WebhookSecret,
+		GitHubWebhookPayloadSecret:  cfg.GitHub.WebhookPayloadSecret,
 		SlackSigningSecret:          cfg.Slack.SigningSecret,
 		SlackClientID:               cfg.Slack.ClientID,
 		SlackClientSecret:           cfg.Slack.ClientSecret,
 		SlackRedirectURL:            cfg.Slack.RedirectURL,
+		SlackWebhookPayloadSecret:   cfg.Slack.WebhookPayloadSecret,
 		FigmaClientID:               cfg.Figma.ClientID,
 		FigmaClientSecret:           cfg.Figma.ClientSecret,
 		FigmaRedirectURL:            cfg.Figma.RedirectURL,
 		FigmaWebhookURL:             cfg.Figma.WebhookURL,
+		FigmaWebhookPayloadSecret:   cfg.Figma.WebhookPayloadSecret,
 		AIAPIKey:                    strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
 		SSEHub:                      sseHub,
-		CorsOrigin:                  "*",
+		AllowedOrigins:              originPolicy,
 	}
 
-	runtime, err := bootstrapapi.BuildRuntime(muxConfig, cfg.Website.URL, mailerService)
+	runtime, err := bootstrapapi.BuildRuntime(
+		muxConfig,
+		bootstrapapi.Dependencies{
+			DatabasePool:               connections.Pool,
+			VerificationTokens:         verificationTokens,
+			InvitationTokens:           invitationTokens,
+			CredentialVault:            credentialVault,
+			DeveloperCredentialTokens:  developerCredentialTokens,
+			DeveloperOAuthPlatform:     developerOAuthServices.Platform,
+			DeveloperAPIOAuth:          developerOAuthServices.PublicAPI,
+			DeveloperOAuthApplications: developerOAuthServices.Applications,
+		},
+		cfg.Website.URL,
+		mailerService,
+	)
 	if err != nil {
 		return fmt.Errorf("error building bootstrap runtime: %w", err)
 	}
 
-	go func() {
-		log.Info(ctx, "starting redis stream consumer")
-		if err := runtime.Consumer.Start(ctx); err != nil {
-			log.Error(ctx, "failed to start consumer", "error", err)
-		}
-	}()
-
-	// Create the mux
-	routeAdder := runtime.RouteAdder
-	handler := mux.New(muxConfig, routeAdder)
-
-	server := http.Server{
-		Addr:         cfg.Web.APIHost,
-		Handler:      handler,
-		ReadTimeout:  cfg.Web.ReadTimeout,
-		WriteTimeout: cfg.Web.WriteTimeout,
-		IdleTimeout:  cfg.Web.IdleTimeout,
+	handler := mux.New(muxConfig, runtime.RouteAdder)
+	process, err := bootstrapapi.NewProcess(bootstrapapi.ProcessOptions{
+		Config: bootstrapapi.ProcessConfig{
+			Address:                  cfg.Web.APIHost,
+			ReadHeaderTimeout:        cfg.Web.ReadHeaderTimeout,
+			ReadTimeout:              cfg.Web.ReadTimeout,
+			WriteTimeout:             cfg.Web.WriteTimeout,
+			IdleTimeout:              cfg.Web.IdleTimeout,
+			ShutdownTimeout:          cfg.Web.ShutdownTimeout,
+			TelemetryShutdownTimeout: cfg.Web.TelemetryShutdownTimeout,
+		},
+		Handler:   handler,
+		Log:       log,
+		Readiness: readiness,
+		Telemetry: tp,
+		Components: []bootstrapapi.Component{
+			{Name: "redis_stream_consumer", Runtime: runtime.Consumer},
+			{Name: "sse_hub", Runtime: sseHub},
+		},
+		Resources: []bootstrapapi.Resource{
+			{Name: "redis", Close: rdb.Close},
+			{Name: "database", Close: connections.Close},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("initialize API process lifecycle: %w", err)
 	}
 
-	serverErrors := make(chan error, 1)
-	go func() {
-		log.Info(ctx, "starting main API server", "address", server.Addr)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Error(ctx, "main API server ListenAndServe error", "error", err)
-			serverErrors <- fmt.Errorf("main API server error: %w", err)
-		}
-	}()
-
-	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
-
-	select {
-	case err := <-serverErrors:
-		log.Error(ctx, "server error reported, initiating shutdown sequence", "errorDetail", err)
-		return err
-
-	case sig := <-shutdown:
-		log.Info(ctx, "shutdown signal received", "signal", sig)
-
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Web.ShutdownTimeout)
-		defer cancel()
-
-		var wg sync.WaitGroup
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-			log.Info(shutdownCtx, "attempting to shut down main API server")
-			if err := server.Shutdown(shutdownCtx); err != nil {
-				log.Warn(shutdownCtx, "main API server shutdown error", "error", err)
-				if errClose := server.Close(); errClose != nil {
-					log.Error(shutdownCtx, "main API server close error", "error", errClose)
-				}
-			} else {
-				log.Info(shutdownCtx, "main API server shut down successfully")
-			}
-		}()
-
-		shutdownComplete := make(chan struct{})
-		go func() {
-			wg.Wait()
-			close(shutdownComplete)
-		}()
-		select {
-		case <-shutdownComplete:
-			log.Info(ctx, "all servers shut down gracefully")
-		case <-shutdownCtx.Done():
-			log.Warn(ctx, "shutdown timed out, some servers may not have closed gracefully")
-		}
-	}
-	return nil
+	lifecycleOwnsResources = true
+	return process.Run(ctx)
 }
 
 func runMigrations(ctx context.Context, log *logger.Logger) error {
@@ -550,29 +443,51 @@ func runMigrations(ctx context.Context, log *logger.Logger) error {
 	if err := config.Parse("app", &cfg); err != nil {
 		return fmt.Errorf("error parsing config: %s", err)
 	}
+	mode, err := deployment.Parse(cfg.Environment)
+	if err != nil {
+		return fmt.Errorf("validate migration configuration: %w", err)
+	}
+	sslMode, err := platformdatabase.EffectiveSSLMode(platformdatabase.Config{
+		SSLMode:     cfg.DB.SSLMode,
+		SSLRootCert: cfg.DB.SSLRootCert,
+		DisableTLS:  cfg.DB.DisableTLS,
+	})
+	if err != nil {
+		return fmt.Errorf("validate migration database transport: %w", err)
+	}
+	if err := deployment.ValidateProductionTransports(mode, deployment.TransportSecurity{
+		PostgreSQLSSLMode: sslMode,
+	}); err != nil {
+		return fmt.Errorf("validate migration database transport: %w", err)
+	}
 
 	log.Info(ctx, "running database migrations")
-	return migrations.Run(database.Config{
-		Host:         cfg.DB.Host,
-		Port:         cfg.DB.Port,
-		User:         cfg.DB.User,
-		Password:     cfg.DB.Password,
-		Name:         cfg.DB.Name,
-		MaxIdleConns: cfg.DB.MaxIdleConns,
-		MaxOpenConns: cfg.DB.MaxOpenConns,
-		DisableTLS:   cfg.DB.DisableTLS,
+	return migrations.Run(ctx, platformdatabase.MigrationConfig{
+		Config: platformdatabase.Config{
+			Host:           cfg.DB.Host,
+			Port:           cfg.DB.Port,
+			User:           cfg.DB.User,
+			Password:       cfg.DB.Password,
+			Name:           cfg.DB.Name,
+			MaxOpenConns:   cfg.DB.MaxOpenConns,
+			ConnectTimeout: cfg.DB.ConnectTimeout,
+			SSLMode:        cfg.DB.SSLMode,
+			SSLRootCert:    cfg.DB.SSLRootCert,
+			DisableTLS:     cfg.DB.DisableTLS,
+		},
+		MaxIdleConns:     cfg.DB.MigrationMaxIdleConns,
+		StatementTimeout: cfg.DB.MigrationStatementTimeout,
 	})
 }
 
-func parseCommaSeparated(input string) []string {
-	parts := strings.Split(input, ",")
-	values := make([]string, 0, len(parts))
-	for _, part := range parts {
-		value := strings.TrimSpace(part)
-		if value == "" {
-			continue
-		}
-		values = append(values, value)
+func configuredLogLevel() slog.Level {
+	value := strings.TrimSpace(os.Getenv("APP_ENVIRONMENT"))
+	if value == "" {
+		value = deployment.Development.String()
 	}
-	return values
+	mode, err := deployment.Parse(value)
+	if err == nil && mode == deployment.Development {
+		return slog.LevelDebug
+	}
+	return slog.LevelInfo
 }

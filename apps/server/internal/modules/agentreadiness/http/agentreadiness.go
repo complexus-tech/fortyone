@@ -2,14 +2,14 @@ package agentreadinesshttp
 
 import (
 	"context"
-	"crypto/sha256"
 	_ "embed"
 	"fmt"
 	"net/http"
-	"slices"
 	"strings"
 	"time"
 
+	developeroauthdomain "github.com/complexus-tech/projects-api/internal/modules/developeroauth/domain"
+	developeroauth "github.com/complexus-tech/projects-api/internal/modules/developeroauth/service"
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
 	objectivestatus "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/service"
@@ -19,9 +19,8 @@ import (
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
+	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	mcpauth "github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -36,7 +35,6 @@ const (
 var openAPIDescription []byte
 
 type Config struct {
-	SecretKey         string
 	APIPublicURL      string
 	Workspaces        *workspaces.Service
 	Teams             *teams.Service
@@ -47,37 +45,59 @@ type Config struct {
 	ObjectiveStatuses *objectivestatus.Service
 	KeyResults        *keyresults.Service
 	Reports           *reports.Service
+	OAuth             oauthPlatform
 	Cache             oauthStore
+	BrowserSessions   mid.SessionResolver
 	LoginURL          string
 	Log               *logger.Logger
+}
+
+type oauthPlatform interface {
+	Resource() string
+	RegisterPublicApplication(context.Context, string, []string) (developeroauthdomain.Application, error)
+	PrepareAuthorization(context.Context, developeroauth.AuthorizationRequest) (developeroauthdomain.Application, []string, error)
+	AuthorizeUser(context.Context, developeroauth.AuthorizationRequest) (developeroauthdomain.PlaintextSecret, error)
+	ExchangeAuthorizationCode(context.Context, developeroauth.AuthorizationCodeExchange) (developeroauthdomain.TokenPair, error)
+	ExchangeRefreshToken(context.Context, developeroauth.RefreshExchange) (developeroauthdomain.TokenPair, error)
+	ExchangeClientCredentials(context.Context, developeroauth.ClientCredentialsExchange) (developeroauthdomain.ApplicationAccessToken, error)
+	RevokeRefreshToken(context.Context, string) error
+	VerifyAccessToken(context.Context, string) (developeroauthdomain.AccessIdentity, error)
+}
+
+type oauthResourceCatalog interface {
+	Resources() []string
+	SupportedScopes(string) []string
 }
 
 type oauthStore interface {
 	Set(ctx context.Context, key string, value any, ttl time.Duration) error
 	Get(ctx context.Context, key string, dest any) error
-	Delete(ctx context.Context, key string) error
+	Take(ctx context.Context, key string, dest any) error
+	IncrementWithTTL(ctx context.Context, key string, ttl time.Duration) (int64, error)
 }
 
 type Handler struct {
-	cfg      Config
-	resource string
-	handler  http.Handler
-}
-
-type mcpClaims struct {
-	jwt.RegisteredClaims
-	Scope string `json:"scope"`
+	cfg         Config
+	resource    string
+	apiResource string
+	handler     http.Handler
 }
 
 func New(cfg Config) *Handler {
 	resource := strings.TrimRight(cfg.APIPublicURL, "/") + "/mcp"
-	h := &Handler{cfg: cfg, resource: resource}
+	if cfg.OAuth != nil {
+		resource = cfg.OAuth.Resource()
+	}
+	h := &Handler{
+		cfg: cfg, resource: resource,
+		apiResource: strings.TrimRight(cfg.APIPublicURL, "/") + "/api/v1",
+	}
 	server := h.newMCPServer()
 	transport := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, &mcp.StreamableHTTPOptions{Stateless: true, JSONResponse: true})
 	h.handler = mcpauth.RequireBearerToken(h.verifyToken, &mcpauth.RequireBearerTokenOptions{
 		ResourceMetadataURL: strings.TrimRight(cfg.APIPublicURL, "/") + "/.well-known/oauth-protected-resource",
 		Scopes:              []string{mcpScope}, ClockSkew: 30 * time.Second,
-	})(transport)
+	})(h.mcpGrantRateLimit(transport, mcpGrantRequestLimit, mcpGrantRequestWindow))
 	return h
 }
 
@@ -102,27 +122,16 @@ func (h *Handler) MCP(ctx context.Context, w http.ResponseWriter, r *http.Reques
 	return nil
 }
 
-func (h *Handler) verifyToken(_ context.Context, raw string, _ *http.Request) (*mcpauth.TokenInfo, error) {
-	claims := &mcpClaims{}
-	token, err := jwt.ParseWithClaims(raw, claims, func(token *jwt.Token) (any, error) {
-		if token.Method != jwt.SigningMethodHS256 {
-			return nil, mcpauth.ErrInvalidToken
-		}
-		return h.signingKey(), nil
-	}, jwt.WithAudience(h.resource), jwt.WithExpirationRequired())
-	if err != nil || !token.Valid || claims.Subject == "" || claims.ExpiresAt == nil {
+func (h *Handler) verifyToken(ctx context.Context, raw string, _ *http.Request) (*mcpauth.TokenInfo, error) {
+	if h.cfg.OAuth == nil {
+		return nil, fmt.Errorf("%w: OAuth service is unavailable", mcpauth.ErrInvalidToken)
+	}
+	identity, err := h.cfg.OAuth.VerifyAccessToken(ctx, raw)
+	if err != nil {
 		return nil, fmt.Errorf("%w: bearer token is invalid or expired", mcpauth.ErrInvalidToken)
 	}
-	if !slices.Contains(strings.Fields(claims.Scope), mcpScope) {
-		return nil, fmt.Errorf("%w: bearer token does not grant MCP access", mcpauth.ErrInvalidToken)
-	}
-	if _, err := uuid.Parse(claims.Subject); err != nil {
-		return nil, fmt.Errorf("%w: bearer token subject is invalid", mcpauth.ErrInvalidToken)
-	}
-	return &mcpauth.TokenInfo{Scopes: strings.Fields(claims.Scope), Expiration: claims.ExpiresAt.Time, UserID: claims.Subject}, nil
-}
-
-func (h *Handler) signingKey() []byte {
-	digest := sha256.Sum256([]byte("fortyone:mcp:access-token:v1\x00" + h.cfg.SecretKey))
-	return digest[:]
+	return &mcpauth.TokenInfo{
+		Scopes: identity.Scopes, Expiration: identity.ExpiresAt, UserID: identity.UserID.String(),
+		Extra: map[string]any{"grant_id": identity.GrantID.String()},
+	}, nil
 }

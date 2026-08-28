@@ -1,12 +1,20 @@
 # FortyOne SQLC Migration Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Archived implementation reference (2026-08-27): DO NOT EXECUTE THIS PLAN
+> VERBATIM.** This document preserves the original long-form migration sequence
+> for decision history. Its unchecked tasks, code samples, and commit commands
+> are not current instructions. The implemented foundation refined several early
+> assumptions: generated packages are module-local, sqlc is pinned and
+> checksum-verified, database TLS is authenticated, each process owns one native
+> pgx pool shared by its SQLC repositories, and the Go toolchain is 1.25.0. Follow
+> [`docs/database/sqlc.md`](../../database/sqlc.md), `sqlc.yaml`, and the current
+> architecture tests when this historical sequence differs from the repository.
 
 **Goal:** Move FortyOne's server database layer from handwritten `sqlx` SQL toward generated, type-safe `sqlc` queries while preserving the existing domain-first architecture and improving the boundaries around auth, workspace access, repositories, jobs, and AI assistant data tools.
 
-**Architecture:** FortyOne already has the right high-level shape: `internal/bootstrap`, `internal/platform`, and `internal/modules/<domain>/{http,service,repository}`. This plan keeps that structure, adds generated `internal/repository` code from module-local `.sql` files, migrates modules one at a time, and removes raw SQL from middleware and repositories after each module is verified.
+**Architecture:** FortyOne already has the right high-level shape: `internal/bootstrap`, `internal/platform`, and `internal/modules/<domain>/{http,service,repository}`. The implemented design keeps generated code below each owning repository at `internal/modules/<domain>/repository/sqlc`, migrates modules one complete persistence slice at a time, and removes raw SQL from middleware and repositories after each slice is verified.
 
-**Tech Stack:** Go 1.23, PostgreSQL, `pgx/v5`, `sqlc`, existing `sqlx` bridge during migration, Redis cache, `golang-migrate`, OpenTelemetry tracing, existing `pkg/web` HTTP stack, existing `internal/bootstrap/architecture` guard tests.
+**Tech Stack:** Go 1.25.0, PostgreSQL, `pgx/v5`, sqlc 1.31.1, an existing `sqlx` compatibility view during migration, Redis cache, `golang-migrate`, OpenTelemetry tracing, the existing `pkg/web` HTTP stack, and `internal/bootstrap/architecture` guard tests.
 
 ---
 
@@ -55,8 +63,8 @@ The server currently uses:
 The migration target is:
 
 - `pgxpool.Pool` as the primary DB pool.
-- `internal/repository` as the generated `sqlc` package.
-- Module-local SQL files such as `internal/modules/stories/repository/queries.sql`.
+- Module-local generated packages such as `internal/modules/stories/repository/sqlc`.
+- Module-local SQL files such as `internal/modules/stories/repository/queries/stories.sql`.
 - Thin module repository wrappers that call generated query methods and map generated rows into existing domain models.
 - No SQL inside HTTP middleware.
 - No repository package reading auth/user/workspace values from context.
@@ -68,7 +76,7 @@ The migration target is:
 
 1. **No big-bang rewrite.** Add `sqlc` beside `sqlx`, then migrate one module at a time.
 2. **Preserve public behavior.** API response contracts should not change unless a task explicitly says so.
-3. **Keep module boundaries.** Generated query files live near the module that owns the behavior; generated Go lives centrally.
+3. **Keep module boundaries.** SQL and generated Go live below the repository that owns the behavior; generated packages never escape that repository boundary.
 4. **Do not move business logic into SQL.** SQL returns data; services keep workflow decisions.
 5. **Do not let repositories read auth context.** Repositories receive IDs as arguments.
 6. **Prefer explicit typed filters over generic dynamic SQL.** Where dynamic filters are unavoidable, isolate them behind small reviewed query builders.
@@ -82,37 +90,44 @@ The migration target is:
 ### New Files
 
 - `apps/server/sqlc.yaml`
-  - Configures `sqlc` generation.
+
+  - Configures one explicit generation block per migrated repository.
   - Reads schema from `internal/migrations`.
-  - Reads query files from `internal/modules/*/repository/*.sql` and selected `internal/platform/*/repository/*.sql`.
-  - Generates Go into `internal/repository`.
+  - Reads query files from each module's `repository/queries` directory.
+  - Generates Go into that module's `repository/sqlc` directory.
 
-- `apps/server/internal/repository/`
-  - Generated code only.
-  - No manual edits.
-  - Package name: `repository`.
+- `apps/server/internal/modules/<module>/repository/sqlc/`
 
-- `apps/server/internal/platform/database/pool.go`
-  - Opens `*pgxpool.Pool`.
+  - Generated code only; never edit it manually.
+  - Imported only by the owning handwritten repository adapter.
+
+- `apps/server/internal/platform/database/database.go`
+
+  - Opens and verifies `*pgxpool.Pool`.
   - Uses the existing DB config values.
-  - Does not remove `pkg/database.Open` until migration completion.
+  - Exposes the same physical pool through a temporary SQLx compatibility view.
 
 - `apps/server/internal/platform/database/tx.go`
+
   - Contains small transaction helpers for generated query usage.
   - Centralizes rollback/commit behavior.
 
 - `apps/server/internal/platform/workspace/repository/queries.sql`
+
   - Generated SQL for resolving workspace access, last-login updates, and last-accessed updates.
 
 - `apps/server/internal/platform/workspace/repository/repository.go`
+
   - Wraps generated workspace queries.
   - Gives middleware a service/repository interface instead of raw SQL access.
 
 - `apps/server/internal/platform/workspace/service.go`
+
   - Resolves workspace context and cache interaction.
   - Keeps HTTP middleware thin.
 
-- `apps/server/internal/modules/<module>/repository/queries.sql`
+- `apps/server/internal/modules/<module>/repository/queries/*.sql`
+
   - Module-owned query definitions.
 
 - `apps/server/docs/database/sqlc.md`
@@ -121,28 +136,33 @@ The migration target is:
 ### Existing Files To Modify
 
 - `apps/server/Makefile`
-  - Add `sqlc-generate`.
-  - Add `sqlc-verify`.
-  - Optionally add `test`.
+
+  - Provides pinned bootstrap, generation, offline drift checking, and
+    database-backed vet targets.
 
 - `apps/server/go.mod`
+
   - Add `github.com/sqlc-dev/pqtype` only if needed for JSON/nullable types.
   - Add no runtime `sqlc` dependency unless generated code requires one.
   - Keep `github.com/jackc/pgx/v5`.
 
 - `apps/server/pkg/database/database.go`
+
   - Keep existing `sqlx` opener during migration.
   - Move new pgx pool opener into `internal/platform/database` to avoid mixing old and new concerns.
 
 - `apps/server/internal/bootstrap/api/*.go`
-  - Wire `pgxpool.Pool` and `repository.Queries`.
+
+  - Wire `pgxpool.Pool` into migrated module adapters.
   - Keep `sqlx.DB` until migrated modules no longer need it.
 
 - `apps/server/internal/bootstrap/worker/*.go`
+
   - Same bridge as API bootstrap.
   - Jobs should migrate after module repositories are stable.
 
 - `apps/server/internal/platform/http/middleware/workspace.go`
+
   - Remove raw SQL.
   - Depend on workspace service interface.
 
@@ -435,6 +455,12 @@ Expected:
 ---
 
 ## Phase 2: Add PGX Pool Bridge
+
+> **Superseded:** The code in this phase predates the implemented shared-pool and
+> TLS contracts. In particular, do not map `MaxIdleConns` to pgx `MinConns` and
+> do not use unauthenticated `sslmode=require`. The authoritative implementation
+> is `internal/platform/database`, `pkg/database`, and
+> [`docs/database/sqlc.md`](../../database/sqlc.md#runtime-connection-ownership).
 
 ### Task 2.1: Add New Pool Opener
 
@@ -760,6 +786,7 @@ make sqlc-generate
 Expected:
 
 - Generated methods:
+
   - `GetWorkspaceForUserBySlug`
   - `UpdateUserLastLoginAt`
   - `UpdateWorkspaceLastAccessedAt`
@@ -1318,81 +1345,61 @@ Expected:
 
 - Commit succeeds.
 
-### Task 5.2: Migrate Objectives And Key Results Together
+### Task 5.2: Migrate Objectives, Key Results, And OKR Activities Together
 
-**Files:**
+Status: persistence implementation and focused verification completed on
+2026-08-28. The reviewed runtime contract is documented in
+[`docs/database/objectives.md`](../../database/objectives.md) and
+[`docs/database/key-results.md`](../../database/key-results.md).
 
-- Create: `apps/server/internal/modules/objectives/repository/queries.sql`
-- Create: `apps/server/internal/modules/keyresults/repository/queries.sql`
-- Modify: `apps/server/internal/modules/objectives/repository/*.go`
-- Modify: `apps/server/internal/modules/keyresults/repository/*.go`
-- Test: `apps/server/internal/modules/objectives/service/objectives_test.go`
-- Test: `apps/server/internal/modules/keyresults/service/keyresults_test.go`
+**Owned files:**
 
-- [ ] **Step 1: Write failing tests for UI-created objectives and key results**
+- `apps/server/internal/modules/objectives/{domain,service,repository}`
+- `apps/server/internal/modules/objectives/repository/queries/*.sql`
+- `apps/server/internal/modules/keyresults/{domain,service,repository,http}`
+- `apps/server/internal/modules/keyresults/repository/queries/*.sql`
+- `apps/server/internal/modules/okractivities/{domain,service,repository}`
+- `apps/server/internal/modules/okractivities/repository/queries/*.sql`
 
-Add service-level tests for:
+- [x] **Step 1: Establish typed domains and caller-owned ports**
 
-- create objective from UI payload
-- create key result from UI payload
-- update objective progress
-- update key result progress
-- reject cross-workspace status/owner references
+Objective and key-result services consume narrow repository interfaces. Key
+result ordinary CRUD uses typed create commands and presence-aware patches, not
+generic update maps. OKR activities use typed enums, bounded create batches,
+and normalized list queries. Generated SQLC values remain repository-private.
 
-Use skipped DB tests only if no harness exists yet.
+- [x] **Step 2: Replace SQLx and dynamic SQL with module-owned SQLC**
 
-- [ ] **Step 2: Replace dynamic pagination builders**
+All three production persistence paths now use native pgx and explicit SQLC
+projections. Key-result sorting uses a finite typed allowlist implemented with
+static `CASE` branches and stable ID tie-breakers. Every workspace resource
+query repeats active actor, current workspace membership, team membership, and
+resource-to-workspace scope in SQL. Credential team sets can only narrow key
+result access; the legacy activity API fails restricted credentials closed.
 
-Where key results use dynamic query builders, prefer explicit generated queries:
+- [x] **Step 3: Make aggregate transactions explicit**
 
-```sql
--- name: ListKeyResultsByObjective :many
-SELECT *
-FROM key_results
-WHERE workspace_id = $1
-  AND objective_id = $2
-  AND deleted_at IS NULL
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4;
+Key-result create atomically validates references, allocates per-team sequence
+ranges, inserts contributors, and records create activities. Update locks the
+row, supports an optional compare-and-swap timestamp, replaces contributors,
+and records field activities atomically. Delete and its activity also share one
+transaction. Standalone OKR activity batches roll back on any scope failure.
 
--- name: CountKeyResultsByObjective :one
-SELECT COUNT(*)::bigint
-FROM key_results
-WHERE workspace_id = $1
-  AND objective_id = $2
-  AND deleted_at IS NULL;
-```
+- [x] **Step 4: Verify behavior and negative security cases**
 
-For optional filters, create separate named queries instead of a generic builder when there are only a few valid combinations.
+Focused domain, service, repository-contract, and HTTP tests cover typed
+zero/null/empty intent, actor binding, credential team restrictions, strict
+filter parsing, error mapping, and post-commit publication. PostgreSQL 18 race
+tests cover cross-tenant/member/team/inactive denial, relationship mismatch,
+stable pagination, rollback, concurrent sequences, and optimistic concurrency.
 
-- [ ] **Step 3: Generate and replace repository internals**
+- [x] **Step 5: Generate, compile, and document**
 
-Run:
-
-```bash
-cd /Users/joseph/development/complexus/fortyone/apps/server
-make sqlc-generate
-go test ./internal/modules/objectives/... ./internal/modules/keyresults/...
-```
-
-Expected:
-
-- Objective and key result packages compile.
-- UI creation bugs caused by wrong column names are caught at generation time.
-
-- [ ] **Step 4: Commit objectives and key results migration**
-
-Run:
-
-```bash
-cd /Users/joseph/development/complexus/fortyone
-git add apps/server/internal/modules/objectives apps/server/internal/modules/keyresults apps/server/internal/repository
-git commit -m "refactor(server): migrate okr repositories to sqlc"
-```
-
-Expected:
-
-- Commit succeeds.
+The canonical repository-wide `make sqlc-generate && make sqlc-check` completed
+against the converged configuration. The database guides explain directory
+ownership, query rules, transaction behavior, tests, and the current
+best-effort internal event publisher. Durable external delivery remains an
+explicit future outbox requirement rather than an undocumented guarantee.
 
 ### Task 5.3: Migrate Sprints And Sprint Analytics
 
@@ -1743,7 +1750,7 @@ Expected:
 
 Create `apps/server/docs/database/sqlc.md`:
 
-```markdown
+````markdown
 # SQLC Repository Guide
 
 ## Query Ownership
@@ -1784,6 +1791,7 @@ err := database.WithTx(ctx, r.pool, func(tx pgx.Tx) error {
 	return qtx.SomeWrite(ctx, params)
 })
 ```
+````
 
 ## Verification
 
@@ -1799,7 +1807,8 @@ Before committing generated changes, verify:
 ```bash
 git diff -- internal/repository
 ```
-```
+
+````
 
 - [ ] **Step 2: Commit docs**
 
@@ -1809,7 +1818,7 @@ Run:
 cd /Users/joseph/development/complexus/fortyone
 git add apps/server/docs/database/sqlc.md
 git commit -m "docs(server): add sqlc repository guide"
-```
+````
 
 Expected:
 
@@ -1855,16 +1864,16 @@ Expected:
 
 ## Risk Register
 
-| Risk | Why It Matters | Mitigation |
-| --- | --- | --- |
-| Migration parsing fails in `sqlc` | Some migrations may contain SQL that runtime Postgres accepts but `sqlc` cannot parse | Fix migrations only when necessary; prefer adding minimal `sqlc`-friendly schema files if needed |
-| Dual DB pools during migration | `sqlx.DB` and `pgxpool.Pool` could have different pool behavior | Use same config values; keep bridge short; remove `sqlx` after module migration |
-| Nullable generated types differ from existing models | Generated rows may use pointers or pgtype wrappers | Map rows explicitly in repositories; do not leak generated rows into services |
-| Dynamic filters become awkward | `sqlc` prefers static queries | Use explicit query variants; reserve tiny query builders for truly combinatorial filters |
-| Transaction semantics change | Existing `BeginTxx` behavior may differ from pgx transaction behavior | Centralize `WithTx`; test rollback on create/update paths |
-| Workspace scoping regressions | Unsafe queries could leak cross-workspace data | Every query for workspace-owned data includes `workspace_id`; add tests for cross-workspace rejection |
-| Jobs bypass services | Jobs may duplicate business rules | Route state-changing jobs through services; allow direct generated queries only for purge jobs |
-| Assistant tools bypass permissions | AI tools can expose sensitive workspace data | Assistant tools call services with authenticated user and workspace context only |
+| Risk                                                 | Why It Matters                                                                          | Mitigation                                                                                                                             |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Migration parsing fails in `sqlc`                    | Some migrations may contain SQL that runtime Postgres accepts but `sqlc` cannot parse   | Fix migrations only when necessary; prefer adding minimal `sqlc`-friendly schema files if needed                                       |
+| Duplicate DB pools during migration                  | A separately opened `sqlx.DB` and `pgxpool.Pool` could double the API connection budget | Derive the API's SQLx compatibility view from one pgx pool; keep the lifecycle integration test and remove SQLx after module migration |
+| Nullable generated types differ from existing models | Generated rows may use pointers or pgtype wrappers                                      | Map rows explicitly in repositories; do not leak generated rows into services                                                          |
+| Dynamic filters become awkward                       | `sqlc` prefers static queries                                                           | Use explicit query variants; reserve tiny query builders for truly combinatorial filters                                               |
+| Transaction semantics change                         | Existing `BeginTxx` behavior may differ from pgx transaction behavior                   | Centralize `WithTx`; test rollback on create/update paths                                                                              |
+| Workspace scoping regressions                        | Unsafe queries could leak cross-workspace data                                          | Every query for workspace-owned data includes `workspace_id`; add tests for cross-workspace rejection                                  |
+| Jobs bypass services                                 | Jobs may duplicate business rules                                                       | Route state-changing jobs through services; allow direct generated queries only for purge jobs                                         |
+| Assistant tools bypass permissions                   | AI tools can expose sensitive workspace data                                            | Assistant tools call services with authenticated user and workspace context only                                                       |
 
 ---
 
@@ -1873,8 +1882,10 @@ Expected:
 The migration is complete when:
 
 - `apps/server/sqlc.yaml` exists and is used in local and CI checks.
-- Generated query code lives in `apps/server/internal/repository`.
-- Runtime data access uses `pgxpool.Pool`.
+- Generated query code lives below each owning
+  `internal/modules/<module>/repository/sqlc` package.
+- Runtime data access uses one `pgxpool.Pool`; legacy API repositories use its
+  temporary SQLx compatibility view rather than a second physical pool.
 - `github.com/jmoiron/sqlx` is removed from `apps/server/go.mod`.
 - No repository imports `internal/platform/auth`.
 - No HTTP middleware owns raw SQL.

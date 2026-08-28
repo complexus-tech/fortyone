@@ -6,4 +6,3 @@ import (
 )
 
 var _ emailreply.Store = (*messagingrepository.Repository)(nil)
-var _ emailreply.ProcessorStore = (*messagingrepository.Repository)(nil)

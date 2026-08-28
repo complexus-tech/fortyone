@@ -6,11 +6,16 @@ import (
 	"strings"
 
 	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
+	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 )
 
 func main() {
-	secret := strings.TrimSpace(os.Getenv("APP_AUTH_SECRET_KEY"))
-	if err := emailreply.ValidateRuntimeSecret(secret, "production"); err != nil {
+	secret := strings.TrimSpace(os.Getenv("APP_EMAIL_REPLY_SECURITY_KEY"))
+	if err := deployment.ValidateProductionSecrets(deployment.Production, deployment.SecretRequirement{
+		Name:            "APP_EMAIL_REPLY_SECURITY_KEY",
+		Value:           secret,
+		ForbiddenValues: []string{"development-only-email-reply-security-key"},
+	}); err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "brevo-webhook-token:", err)
 		os.Exit(1)
 	}

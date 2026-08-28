@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -61,18 +62,28 @@ func TestRefreshStoryLinkFallsBackToCachedArtifactWhenFigmaIsRateLimited(t *test
 	t.Parallel()
 
 	now := time.Date(2026, time.August, 22, 1, 0, 0, 0, time.UTC)
-	const secret = "test-secret"
-	tokenPayload, err := encryptToken(secret, Token{
+	workspaceID := uuid.New()
+	connectionID := uuid.New()
+	generation := uuid.New()
+	vault := newFigmaTestCredentialVault(t)
+	service := &Service{secrets: vault, now: func() time.Time { return now }}
+	tokenPayload, err := service.sealToken(workspaceID, connectionID, generation, Token{
 		AccessToken: "access-token",
 		ExpiresAt:   now.Add(time.Hour),
 	})
 	require.NoError(t, err)
 
 	repo := &refreshRepository{
-		connection: Connection{TokenPayload: tokenPayload},
+		connection: Connection{
+			ID:                     connectionID,
+			WorkspaceID:            workspaceID,
+			CredentialPayload:      tokenPayload,
+			CredentialVersion:      int16(credentialvault.CurrentVersion),
+			InstallationGeneration: generation,
+		},
 		link: StoryLink{
 			ID:           uuid.New(),
-			WorkspaceID:  uuid.New(),
+			WorkspaceID:  workspaceID,
 			LastSyncedAt: now.Add(-storyLinkRefreshInterval - time.Minute),
 			Artifact: Artifact{
 				CanonicalURL: "https://www.figma.com/design/file-key/file-name",
@@ -81,7 +92,7 @@ func TestRefreshStoryLinkFallsBackToCachedArtifactWhenFigmaIsRateLimited(t *test
 		},
 	}
 	requestCount := 0
-	service := &Service{
+	service = &Service{
 		client: apiClient{http: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
 			requestCount++
 			return &http.Response{
@@ -90,9 +101,9 @@ func TestRefreshStoryLinkFallsBackToCachedArtifactWhenFigmaIsRateLimited(t *test
 				Body:       io.NopCloser(strings.NewReader(`{"message":"rate limited"}`)),
 			}, nil
 		})}},
-		config: Config{SecretKey: secret},
-		now:    func() time.Time { return now },
-		repo:   repo,
+		secrets: vault,
+		now:     func() time.Time { return now },
+		repo:    repo,
 	}
 
 	link, err := service.RefreshStoryLink(context.Background(), repo.link.WorkspaceID, repo.link.ID)
@@ -101,4 +112,18 @@ func TestRefreshStoryLinkFallsBackToCachedArtifactWhenFigmaIsRateLimited(t *test
 	require.Equal(t, repo.link, link)
 	require.Equal(t, 1, requestCount)
 	require.Empty(t, repo.updates)
+}
+
+func newFigmaTestCredentialVault(t testing.TB) *credentialvault.Vault {
+	t.Helper()
+	key := credentialvault.Key{
+		Ref:      credentialvault.KeyRef{ID: "figma-test", Version: 1},
+		Material: []byte("0123456789abcdef0123456789abcdef"),
+	}
+	vault, err := credentialvault.New(credentialvault.Config{
+		Active: key.Ref,
+		Keys:   []credentialvault.Key{key},
+	})
+	require.NoError(t, err)
+	return vault
 }

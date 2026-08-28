@@ -5,60 +5,43 @@ import (
 	"encoding/json"
 	"fmt"
 
-	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
+	reportdomain "github.com/complexus-tech/projects-api/internal/modules/reports/domain"
+	reportssql "github.com/complexus-tech/projects-api/internal/modules/reports/repository/sqlc"
 )
 
-func (r *repo) CreateWorkspaceAnalyticsEvent(ctx context.Context, input reports.CoreWorkspaceAnalyticsEventInput) error {
+const maxAnalyticsEventPropertiesBytes = 64 << 10
+
+func (r *repo) CreateWorkspaceAnalyticsEvent(ctx context.Context, input reportdomain.CoreWorkspaceAnalyticsEventInput) error {
+	if err := r.authorize(ctx, input.UserID, input.WorkspaceID); err != nil {
+		return err
+	}
+
 	properties, err := json.Marshal(input.Properties)
 	if err != nil {
-		return fmt.Errorf("marshaling analytics event properties: %w", err)
+		return fmt.Errorf("marshaling analytics event properties: %w", reportdomain.ErrInvalidWorkspaceAnalyticsEvent)
+	}
+	if len(properties) > maxAnalyticsEventPropertiesBytes {
+		return reportdomain.ErrInvalidWorkspaceAnalyticsEvent
 	}
 
-	const query = `
-		INSERT INTO workspace_analytics_events (
-			workspace_id,
-			user_id,
-			team_id,
-			story_id,
-			objective_id,
-			sprint_id,
-			key_result_id,
-			event_name,
-			surface,
-			properties,
-			occurred_at
-		)
-		VALUES (
-			:workspace_id,
-			:user_id,
-			:team_id,
-			:story_id,
-			:objective_id,
-			:sprint_id,
-			:key_result_id,
-			:event_name,
-			:surface,
-			:properties,
-			:occurred_at
-		)
-	`
-
-	params := map[string]any{
-		"workspace_id":  input.WorkspaceID,
-		"user_id":       input.UserID,
-		"team_id":       input.TeamID,
-		"story_id":      input.StoryID,
-		"objective_id":  input.ObjectiveID,
-		"sprint_id":     input.SprintID,
-		"key_result_id": input.KeyResultID,
-		"event_name":    input.EventName,
-		"surface":       input.Surface,
-		"properties":    properties,
-		"occurred_at":   input.OccurredAt,
-	}
-
-	if _, err := r.db.NamedExecContext(ctx, query, params); err != nil {
+	rows, err := r.queries.CreateWorkspaceAnalyticsEvent(ctx, reportssql.CreateWorkspaceAnalyticsEventParams{
+		WorkspaceID: input.WorkspaceID,
+		ActorID:     input.UserID,
+		TeamID:      input.TeamID,
+		StoryID:     input.StoryID,
+		ObjectiveID: input.ObjectiveID,
+		SprintID:    input.SprintID,
+		KeyResultID: input.KeyResultID,
+		EventName:   input.EventName,
+		Surface:     input.Surface,
+		Properties:  properties,
+		OccurredAt:  input.OccurredAt,
+	})
+	if err != nil {
 		return fmt.Errorf("inserting workspace analytics event: %w", err)
+	}
+	if rows != 1 {
+		return reportdomain.ErrReportsAccessDenied
 	}
 
 	return nil

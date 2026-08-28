@@ -2,16 +2,13 @@ package reports
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/complexus-tech/projects-api/pkg/web"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
 )
-
-var ErrInvalidWorkspaceAnalyticsEvent = errors.New("invalid workspace analytics event")
 
 const (
 	maxAnalyticsEventNameLength = 120
@@ -19,8 +16,14 @@ const (
 )
 
 func (s *Service) TrackWorkspaceAnalyticsEvent(ctx context.Context, input CoreWorkspaceAnalyticsEventInput) (CoreWorkspaceAnalyticsEventInput, error) {
-	ctx, span := web.AddSpan(ctx, "business.core.reports.TrackWorkspaceAnalyticsEvent")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.TrackWorkspaceAnalyticsEvent")
 	defer span.End()
+
+	actorID, err := reportActorID(ctx, input.WorkspaceID)
+	if err != nil || actorID != input.UserID {
+		span.RecordError(ErrReportsAccessDenied)
+		return CoreWorkspaceAnalyticsEventInput{}, ErrReportsAccessDenied
+	}
 
 	normalized, err := normalizeWorkspaceAnalyticsEventInput(input)
 	if err != nil {

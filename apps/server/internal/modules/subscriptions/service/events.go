@@ -6,305 +6,247 @@ import (
 	"fmt"
 	"time"
 
+	subscriptionsdomain "github.com/complexus-tech/projects-api/internal/modules/subscriptions/domain"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
-	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	"github.com/stripe/stripe-go/v82"
+	"go.opentelemetry.io/otel"
 )
 
-// handleCheckoutSessionCompleted handles the checkout.session.completed event triggered by the customer
-// when they complete the checkout process.
-func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stripe.Event) error {
-	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleCheckoutSessionCompleted")
+const stripeWebhookTaskRetention = 7 * 24 * time.Hour
+
+func (s *Service) handleCheckoutSessionCompleted(ctx context.Context, event stripe.Event) (WebhookOutcome, error) {
+	ctx, span := otel.Tracer("subscriptions.service").Start(ctx, "subscriptions.CheckoutCompleted")
 	defer span.End()
 
 	var session stripe.CheckoutSession
 	if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
-		return fmt.Errorf("failed to unmarshal checkout session: %w", err)
+		return WebhookOutcome{}, fmt.Errorf("decode checkout session: %w", err)
+	}
+	if session.Subscription == nil || session.Subscription.ID == "" {
+		return WebhookOutcome{}, fmt.Errorf("checkout session %s has no subscription", session.ID)
 	}
 
-	// Get subscription details
-	if session.Subscription == nil {
-		s.log.Error(ctx, "Checkout session completed but no subscription ID found", "session_id", session.ID)
-		return fmt.Errorf("checkout session completed but no subscription ID found")
-	}
-
-	// Fetch full subscription to get item ID
-	subParams := &stripe.SubscriptionParams{
-		Expand: []*string{
-			stripe.String("items.data.price"),
-			stripe.String("customer"),
-		},
-	}
-	stripeSub, err := s.stripeClient.Subscriptions.Get(session.Subscription.ID, subParams)
+	stripeSubscription, err := s.stripeClient.Subscriptions.Get(session.Subscription.ID, expandedSubscriptionParams(ctx))
 	if err != nil {
-		return fmt.Errorf("failed to fetch subscription: %w", err)
+		return WebhookOutcome{}, fmt.Errorf("fetch checkout subscription: %w", err)
 	}
-	if stripeSub == nil {
-		return fmt.Errorf("fetched subscription is nil for session %s", session.ID)
+	snapshot, err := subscriptionSnapshot(stripeSubscription)
+	if err != nil {
+		return WebhookOutcome{}, err
 	}
+	mutation, err := s.repo.ApplyStripeSubscriptionSnapshot(ctx, snapshot, stripeEventCursor(event, subscriptionsdomain.StripeEventPrioritySnapshot))
+	if err != nil {
+		return WebhookOutcome{}, fmt.Errorf("apply checkout subscription: %w", err)
+	}
+	return mutationOutcome(mutation), nil
+}
 
-	// Get subscription item details
-	var subItemID string
-	var seatCount int
-	var tier SubscriptionTier = TierFree
-	var billingEndsAt *time.Time
-	var billingInterval *BillingInterval
+func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Event) (WebhookOutcome, error) {
+	ctx, span := otel.Tracer("subscriptions.service").Start(ctx, "subscriptions.SubscriptionUpdated")
+	defer span.End()
 
-	if len(stripeSub.Items.Data) > 0 {
-		item := stripeSub.Items.Data[0]
-		subItemID = item.ID
-		seatCount = int(item.Quantity)
-		tier = s.mapPriceToTier(ctx, item.Price)
-		if item.Price != nil && item.Price.Recurring != nil {
-			intervalStr := BillingInterval(item.Price.Recurring.Interval)
-			billingInterval = &intervalStr
-		}
-		if int64(int64(item.CurrentPeriodEnd)) > 0 {
-			tempBillingEndsAt := time.Unix(int64(item.CurrentPeriodEnd), 0)
-			billingEndsAt = &tempBillingEndsAt
-		}
-	} else {
-		return fmt.Errorf("subscription %s created with no items", stripeSub.ID)
+	var delivered stripe.Subscription
+	if err := json.Unmarshal(event.Data.Raw, &delivered); err != nil {
+		return WebhookOutcome{}, fmt.Errorf("decode subscription update: %w", err)
+	}
+	if delivered.ID == "" {
+		return WebhookOutcome{}, ErrInvalidSubscription
 	}
 
-	status := SubscriptionStatus(stripeSub.Status)
-	var trialEnd *time.Time
-	if stripeSub.TrialEnd > 0 {
-		t := time.Unix(stripeSub.TrialEnd, 0)
-		trialEnd = &t
+	// Stripe does not guarantee delivery ordering. Read the current provider
+	// snapshot instead of trusting an older event body, then fence the write by
+	// the durable event cursor.
+	current, err := s.stripeClient.Subscriptions.Get(delivered.ID, expandedSubscriptionParams(ctx))
+	if err != nil {
+		return WebhookOutcome{}, fmt.Errorf("fetch current Stripe subscription: %w", err)
 	}
+	snapshot, err := subscriptionSnapshot(current)
+	if err != nil {
+		return WebhookOutcome{}, err
+	}
+	mutation, err := s.repo.ApplyStripeSubscriptionSnapshot(ctx, snapshot, stripeEventCursor(event, subscriptionsdomain.StripeEventPrioritySnapshot))
+	if err != nil {
+		return WebhookOutcome{}, fmt.Errorf("apply Stripe subscription update: %w", err)
+	}
+	return mutationOutcome(mutation), nil
+}
 
-	// Update database
-	err = s.repo.UpdateSubscriptionDetails(
-		ctx, stripeSub.ID, stripeSub.Customer.ID, subItemID, status,
-		seatCount, trialEnd, tier, billingInterval, billingEndsAt,
+func (s *Service) handleSubscriptionDeleted(ctx context.Context, event stripe.Event) (WebhookOutcome, error) {
+	var deleted stripe.Subscription
+	if err := json.Unmarshal(event.Data.Raw, &deleted); err != nil {
+		return WebhookOutcome{}, fmt.Errorf("decode subscription deletion: %w", err)
+	}
+	if deleted.ID == "" {
+		return WebhookOutcome{}, ErrInvalidSubscription
+	}
+	mutation, err := s.repo.ApplyStripeSubscriptionDeletion(
+		ctx,
+		deleted.ID,
+		stripeEventCursor(event, subscriptionsdomain.StripeEventPriorityDeleted),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to update subscription details: %w", err)
+		return WebhookOutcome{}, fmt.Errorf("apply Stripe subscription deletion: %w", err)
 	}
-
-	s.log.Info(ctx, "Subscription details updated from event", "event_type", event.Type,
-		"subscription_id", stripeSub.ID)
-	return nil
+	return mutationOutcome(mutation), nil
 }
 
-// handleSubscriptionUpdated handles the subscription.updated event triggered by Stripe when the subscription
-// is updated. This includes changes to the status, items, or other subscription details.
-func (s *Service) handleSubscriptionUpdated(ctx context.Context, event stripe.Event) error {
-	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleSubscriptionUpdated")
-	defer span.End()
-
-	var stripeSub *stripe.Subscription
-	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
-		return fmt.Errorf("failed to unmarshal subscription: %w", err)
+func (s *Service) handleSubscriptionCreated(ctx context.Context, event stripe.Event) (WebhookOutcome, error) {
+	var delivered stripe.Subscription
+	if err := json.Unmarshal(event.Data.Raw, &delivered); err != nil {
+		return WebhookOutcome{}, fmt.Errorf("decode subscription creation: %w", err)
+	}
+	if delivered.ID == "" {
+		return WebhookOutcome{}, ErrInvalidSubscription
 	}
 
-	if stripeSub == nil {
-		return fmt.Errorf("unmarshalled subscription is nil")
-	}
-
-	// Extract relevant data
-	var subItemID string
-	var seatCount int
-	var tier SubscriptionTier = TierFree
-	var billingEndsAt *time.Time
-	var billingInterval *BillingInterval
-
-	if len(stripeSub.Items.Data) > 0 {
-		item := stripeSub.Items.Data[0]
-		subItemID = item.ID
-		seatCount = int(item.Quantity)
-		tier = s.mapPriceToTier(ctx, item.Price)
-		if item.Price != nil && item.Price.Recurring != nil {
-			intervalStr := BillingInterval(item.Price.Recurring.Interval)
-			billingInterval = &intervalStr
-		}
-		if int64(int64(item.CurrentPeriodEnd)) > 0 {
-			tempBillingEndsAt := time.Unix(int64(item.CurrentPeriodEnd), 0)
-			billingEndsAt = &tempBillingEndsAt
-		}
-	} else {
-		s.log.Error(ctx, "Subscription update event received with no items", "subscription_id", stripeSub.ID)
-		seatCount = 0
-	}
-
-	status := SubscriptionStatus(stripeSub.Status)
-	var trialEnd *time.Time
-	if stripeSub.TrialEnd > 0 {
-		t := time.Unix(stripeSub.TrialEnd, 0)
-		trialEnd = &t
-	}
-
-	// Update database
-	if err := s.repo.UpdateSubscriptionDetails(
-		ctx, stripeSub.ID, stripeSub.Customer.ID, subItemID, status,
-		seatCount, trialEnd, tier, billingInterval, billingEndsAt,
-	); err != nil {
-		return fmt.Errorf("failed to update subscription details: %w", err)
-	}
-
-	s.log.Info(ctx, "Subscription details updated from subscription event",
-		"subscription_id", stripeSub.ID,
-		"status", status, "seat_count", seatCount)
-	return nil
-}
-
-func (s *Service) handleSubscriptionDeleted(ctx context.Context, event stripe.Event) error {
-	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleSubscriptionDeleted")
-	defer span.End()
-
-	var stripeSub stripe.Subscription
-	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
-		return fmt.Errorf("failed to unmarshal subscription deletion: %w", err)
-	}
-	// Update status in DB to 'canceled'
-	err := s.repo.UpdateSubscriptionStatus(ctx, stripeSub.ID, StatusCanceled)
+	// A creation delivery can arrive after an update from the same Stripe
+	// timestamp second. Reconcile from current provider state so the lower
+	// creation priority can never restore the older delivered snapshot.
+	current, err := s.stripeClient.Subscriptions.Get(delivered.ID, expandedSubscriptionParams(ctx))
 	if err != nil {
-		s.log.Error(ctx, "Failed to update subscription status to canceled in DB", "error", err,
-			"subscription_id", stripeSub.ID)
+		return WebhookOutcome{}, fmt.Errorf("fetch current Stripe subscription after creation: %w", err)
+	}
+	if current == nil || current.Customer == nil || current.Customer.ID == "" {
+		return WebhookOutcome{}, ErrInvalidSubscription
 	}
 
-	s.log.Info(ctx, "Subscription marked as canceled", "subscription_id", stripeSub.ID)
-	return nil
+	customerParams := &stripe.CustomerParams{}
+	customerParams.Context = ctx
+	customer, err := s.stripeClient.Customers.Get(current.Customer.ID, customerParams)
+	if err != nil {
+		return WebhookOutcome{}, fmt.Errorf("fetch Stripe customer: %w", err)
+	}
+	workspaceID, err := workspaceIDFromCustomer(customer)
+	if err != nil {
+		return WebhookOutcome{}, err
+	}
+	snapshot, err := subscriptionSnapshot(current)
+	if err != nil {
+		return WebhookOutcome{}, err
+	}
+	mutation, err := s.repo.UpsertStripeSubscription(ctx, workspaceID, snapshot, stripeEventCursor(event, subscriptionsdomain.StripeEventPriorityCreated))
+	if err != nil {
+		return WebhookOutcome{}, fmt.Errorf("upsert Stripe subscription: %w", err)
+	}
+
+	if mutation.Applied {
+		s.enqueueTrialEndNotice(ctx, mutation.WorkspaceID, snapshot.StripeSubscriptionID)
+	}
+	return mutationOutcome(mutation), nil
 }
 
-// handleSubscriptionCreated handles the customer.subscription.created event triggered by Stripe
-// when a subscription is first created, either through checkout or directly via the API.
-func (s *Service) handleSubscriptionCreated(ctx context.Context, event stripe.Event) error {
-	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleSubscriptionCreated")
-	defer span.End()
-
-	var stripeSub *stripe.Subscription
-	if err := json.Unmarshal(event.Data.Raw, &stripeSub); err != nil {
-		return fmt.Errorf("failed to unmarshal subscription: %w", err)
-	}
-
-	if stripeSub == nil {
-		return fmt.Errorf("unmarshalled subscription is nil")
-	}
-
-	// Get customer details to retrieve workspace_id
-	cust, err := s.stripeClient.Customers.Get(stripeSub.Customer.ID, nil)
-	if err != nil || cust.Metadata["workspace_id"] == "" {
-		return fmt.Errorf("missing workspace_id metadata for subscription %s", stripeSub.ID)
-	}
-
-	workspaceIDStr := cust.Metadata["workspace_id"]
-	workspaceID, err := uuid.Parse(workspaceIDStr)
-	if err != nil {
-		return fmt.Errorf("invalid workspace_id format in metadata: %w", err)
-	}
-
-	// Extract relevant data
-	var subItemID string
-	var seatCount int
-	var tier SubscriptionTier = TierFree
-	var billingEndsAt *time.Time
-	var billingInterval *BillingInterval
-
-	if len(stripeSub.Items.Data) > 0 {
-		item := stripeSub.Items.Data[0]
-		subItemID = item.ID
-		seatCount = int(item.Quantity)
-		tier = s.mapPriceToTier(ctx, item.Price)
-		if item.Price != nil && item.Price.Recurring != nil {
-			intervalStr := BillingInterval(item.Price.Recurring.Interval)
-			billingInterval = &intervalStr
-		}
-		if int64(int64(item.CurrentPeriodEnd)) > 0 {
-			tempBillingEndsAt := time.Unix(int64(item.CurrentPeriodEnd), 0)
-			billingEndsAt = &tempBillingEndsAt
-		}
-	} else {
-		s.log.Error(ctx, "Subscription creation event received with no items", "subscription_id", stripeSub.ID)
-		seatCount = 0
-	}
-
-	status := SubscriptionStatus(stripeSub.Status)
-	var trialEnd *time.Time
-	if stripeSub.TrialEnd > 0 {
-		t := time.Unix(stripeSub.TrialEnd, 0)
-		trialEnd = &t
-	}
-
-	// Create subscription in database
-	if err := s.repo.CreateSubscription(ctx, workspaceID, cust.ID, stripeSub.ID, subItemID, status, seatCount, trialEnd, tier, billingInterval, billingEndsAt); err != nil {
-		return ErrFailedToCreateSubscription
-	}
-
-	creatorEmail, err := s.repo.GetWorkspaceCreatorEmail(ctx, workspaceID)
-	if err != nil {
-		s.log.Error(ctx, "Failed to get workspace creator email", "error", err, "workspace_id", workspaceID)
-		// no need to return error this is not a critical operation
-	}
-
-	// enqueue workspace trial end task here
-	if creatorEmail != "" {
-		_, err = s.tasksService.EnqueueWorkspaceTrialEnd(tasks.WorkspaceTrialEndPayload{
-			Email: creatorEmail,
-		})
-		if err != nil {
-			s.log.Error(ctx, "Failed to enqueue workspace trial end task", "error", err, "workspace_id", workspaceID)
-			// no need to return error this is not a critical operation
-		}
-	}
-
-	s.log.Info(ctx, "New subscription created in database",
-		"subscription_id", stripeSub.ID,
-		"workspace_id", workspaceID,
-		"status", status,
-		"seat_count", seatCount)
-	return nil
-}
-
-func (s *Service) handleInvoicePaid(ctx context.Context, event stripe.Event) error {
-	ctx, span := web.AddSpan(ctx, "business.subscriptions.handleInvoicePaid")
-	defer span.End()
-
+func (s *Service) handleInvoicePaid(ctx context.Context, event stripe.Event) (WebhookOutcome, error) {
 	var invoice stripe.Invoice
 	if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
-		return fmt.Errorf("failed to unmarshal invoice: %w", err)
+		return WebhookOutcome{}, fmt.Errorf("decode paid invoice: %w", err)
 	}
-
-	cust, err := s.stripeClient.Customers.Get(invoice.Customer.ID, nil)
-	if err != nil || cust.Metadata["workspace_id"] == "" {
-		return fmt.Errorf("missing workspace_id metadata for invoice %s", invoice.ID)
+	if invoice.ID == "" || invoice.Customer == nil || invoice.Customer.ID == "" {
+		return WebhookOutcome{}, ErrInvalidInvoice
 	}
-
-	workspaceIDStr := cust.Metadata["workspace_id"]
-	workspaceID, err := uuid.Parse(workspaceIDStr)
+	customerParams := &stripe.CustomerParams{}
+	customerParams.Context = ctx
+	customer, err := s.stripeClient.Customers.Get(invoice.Customer.ID, customerParams)
 	if err != nil {
-		return fmt.Errorf("invalid workspace_id format in metadata: %w", err)
+		return WebhookOutcome{}, fmt.Errorf("fetch invoice customer: %w", err)
 	}
-	// Extract invoice details
-	amountPaid := float64(invoice.AmountPaid) / 100.0
-	invoiceDate := time.Unix(invoice.Created, 0)
-	if invoice.StatusTransitions.PaidAt > 0 {
-		invoiceDate = time.Unix(invoice.StatusTransitions.PaidAt, 0)
+	workspaceID, err := workspaceIDFromCustomer(customer)
+	if err != nil {
+		return WebhookOutcome{}, err
 	}
 
+	invoiceDate := time.Unix(invoice.Created, 0).UTC()
+	if invoice.StatusTransitions != nil && invoice.StatusTransitions.PaidAt > 0 {
+		invoiceDate = time.Unix(invoice.StatusTransitions.PaidAt, 0).UTC()
+	}
 	seatCount := 0
-	if len(invoice.Lines.Data) > 0 && invoice.Lines.Data[0].Quantity > 0 {
+	if invoice.Lines != nil && len(invoice.Lines.Data) > 0 && invoice.Lines.Data[0].Quantity > 0 {
 		seatCount = int(invoice.Lines.Data[0].Quantity)
 	}
-
-	coreInvoice := CoreSubscriptionInvoice{
-		WorkspaceID:     workspaceID,
-		StripeInvoiceID: invoice.ID,
-		AmountPaid:      amountPaid,
-		InvoiceDate:     invoiceDate,
-		Status:          string(invoice.Status),
-		SeatsCount:      seatCount,
-		CreatedAt:       time.Now(),
-		HostedURL:       &invoice.HostedInvoiceURL,
-		CustomerName:    &cust.Name,
+	paid := CoreSubscriptionInvoice{
+		WorkspaceID: workspaceID, StripeInvoiceID: invoice.ID,
+		AmountPaid: float64(invoice.AmountPaid) / 100, InvoiceDate: invoiceDate,
+		Status: string(invoice.Status), SeatsCount: seatCount,
+		HostedURL: &invoice.HostedInvoiceURL, CustomerName: &customer.Name,
 	}
+	if err := s.repo.UpsertStripeInvoice(ctx, customer.ID, paid); err != nil {
+		return WebhookOutcome{}, fmt.Errorf("upsert paid Stripe invoice: %w", err)
+	}
+	return WebhookOutcome{Result: WebhookResultHandled, WorkspaceID: &workspaceID}, nil
+}
 
-	err = s.repo.CreateInvoice(ctx, coreInvoice)
+func subscriptionSnapshot(subscription *stripe.Subscription) (subscriptionsdomain.SubscriptionSnapshot, error) {
+	if subscription == nil || subscription.ID == "" || subscription.Customer == nil || subscription.Customer.ID == "" {
+		return subscriptionsdomain.SubscriptionSnapshot{}, ErrInvalidSubscription
+	}
+	itemID, seats, tier, interval, billingEndsAt, err := stripeSubscriptionDetails(subscription)
 	if err != nil {
-		return fmt.Errorf("failed to save invoice record: %w", err)
+		return subscriptionsdomain.SubscriptionSnapshot{}, err
 	}
-	s.log.Info(ctx, "Paid invoice record saved", "invoice_id", invoice.ID)
-	return nil
+	var trialEnd *time.Time
+	if subscription.TrialEnd > 0 {
+		value := time.Unix(subscription.TrialEnd, 0).UTC()
+		trialEnd = &value
+	}
+	return subscriptionsdomain.SubscriptionSnapshot{
+		StripeCustomerID: subscription.Customer.ID, StripeSubscriptionID: subscription.ID,
+		StripeSubscriptionItemID: &itemID, Status: SubscriptionStatus(subscription.Status),
+		Tier: tier, SeatCount: seats, TrialEnd: trialEnd,
+		BillingInterval: interval, BillingEndsAt: billingEndsAt,
+	}, nil
+}
+
+func (s *Service) enqueueTrialEndNotice(ctx context.Context, workspaceID uuid.UUID, subscriptionID string) {
+	if s.tasksService == nil {
+		return
+	}
+	email, err := s.repo.GetWorkspaceCreatorEmail(ctx, workspaceID)
+	if err != nil || email == "" {
+		return
+	}
+	if _, err := s.tasksService.EnqueueWorkspaceTrialEnd(
+		tasks.WorkspaceTrialEndPayload{Email: email},
+		asynq.TaskID("stripe-subscription-trial-end:"+subscriptionID),
+		asynq.Retention(stripeWebhookTaskRetention),
+	); err != nil {
+		s.log.Error(ctx, "Failed to enqueue workspace trial end notice", "workspace_id", workspaceID, "error", err)
+	}
+}
+
+func workspaceIDFromCustomer(customer *stripe.Customer) (uuid.UUID, error) {
+	if customer == nil {
+		return uuid.Nil, errorsInvalidCustomerMetadata("")
+	}
+	workspaceID, err := uuid.Parse(customer.Metadata["workspace_id"])
+	if err != nil {
+		return uuid.Nil, errorsInvalidCustomerMetadata(customer.ID)
+	}
+	return workspaceID, nil
+}
+
+func errorsInvalidCustomerMetadata(customerID string) error {
+	return fmt.Errorf("stripe customer %s has invalid workspace metadata", customerID)
+}
+
+func expandedSubscriptionParams(ctx context.Context) *stripe.SubscriptionParams {
+	return &stripe.SubscriptionParams{
+		Params: stripe.Params{Context: ctx},
+		Expand: []*string{stripe.String("items.data.price"), stripe.String("customer")},
+	}
+}
+
+func stripeEventCursor(event stripe.Event, priority int16) subscriptionsdomain.StripeEventCursor {
+	return subscriptionsdomain.StripeEventCursor{
+		CreatedAt: time.Unix(event.Created, 0).UTC(), Priority: priority, EventID: event.ID,
+	}
+}
+
+func mutationOutcome(mutation subscriptionsdomain.SubscriptionMutation) WebhookOutcome {
+	result := WebhookResultHandled
+	if !mutation.Applied {
+		result = WebhookResultIgnored
+	}
+	workspaceID := mutation.WorkspaceID
+	return WebhookOutcome{Result: result, WorkspaceID: &workspaceID}
 }

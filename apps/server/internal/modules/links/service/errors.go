@@ -1,5 +1,5 @@
 package links
 
-import "errors"
+import linksdomain "github.com/complexus-tech/projects-api/internal/modules/links/domain"
 
-var ErrNotFound = errors.New("link not found")
+var ErrNotFound = linksdomain.ErrNotFound

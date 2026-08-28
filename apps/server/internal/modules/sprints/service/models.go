@@ -1,86 +1,33 @@
 package sprints
 
 import (
-	"time"
-
-	"github.com/google/uuid"
+	sprintdomain "github.com/complexus-tech/projects-api/internal/modules/sprints/domain"
+	platformpatch "github.com/complexus-tech/projects-api/internal/platform/patch"
 )
 
-type CoreSprint struct {
-	ID                          uuid.UUID
-	Name                        string
-	Goal                        *string
-	Objective                   *uuid.UUID
-	Team                        uuid.UUID
-	Workspace                   uuid.UUID
-	StartDate                   time.Time
-	EndDate                     time.Time
-	CreatedAt                   time.Time
-	UpdatedAt                   time.Time
-	ScheduleManagedByAutomation bool
-	TotalStories                int
-	CancelledStories            int
-	CompletedStories            int
-	StartedStories              int
-	UnstartedStories            int
-	BacklogStories              int
+// Compatibility aliases keep established in-process consumers source-level
+// names while the sprint domain package owns the underlying concepts.
+type CoreSprint = sprintdomain.Sprint
+type CoreNewSprint = sprintdomain.NewSprint
+type CoreSprintAnalytics = sprintdomain.Analytics
+type CoreSprintOverview = sprintdomain.Overview
+type CoreStoryBreakdown = sprintdomain.StoryBreakdown
+type CoreBurndownDataPoint = sprintdomain.BurndownDataPoint
+type CoreTeamMemberAllocation = sprintdomain.TeamMemberAllocation
+type SprintPatch = sprintdomain.Patch
+
+var (
+	ErrInvalid          = sprintdomain.ErrInvalid
+	ErrForbidden        = sprintdomain.ErrForbidden
+	ErrNotFound         = sprintdomain.ErrNotFound
+	ErrVersionConflict  = sprintdomain.ErrVersionConflict
+	ErrInvalidReference = sprintdomain.ErrInvalidReference
+)
+
+func SetField[T any](value T) platformpatch.Field[T] {
+	return platformpatch.Set(value)
 }
 
-type CoreNewSprint struct {
-	Name      string
-	Goal      *string
-	Objective *uuid.UUID
-	Team      uuid.UUID
-	Workspace uuid.UUID
-	StartDate time.Time
-	EndDate   time.Time
-}
-
-type CoreUpdateSprint struct {
-	Name      *string
-	Goal      *string
-	Objective *uuid.UUID
-	StartDate *time.Time
-	EndDate   *time.Time
-}
-
-// Sprint Analytics Models
-
-type CoreSprintAnalytics struct {
-	SprintID       uuid.UUID
-	WorkingDays    []int
-	Overview       CoreSprintOverview
-	StoryBreakdown CoreStoryBreakdown
-	Burndown       []CoreBurndownDataPoint
-	TeamAllocation []CoreTeamMemberAllocation
-}
-
-type CoreSprintOverview struct {
-	CompletionPercentage int
-	DaysElapsed          int
-	DaysRemaining        int
-	Status               string // "not_started", "on_track", "at_risk", "behind", "completed"
-}
-
-type CoreStoryBreakdown struct {
-	Total      int `db:"total"`
-	Completed  int `db:"completed"`
-	InProgress int `db:"in_progress"`
-	Todo       int `db:"todo"`
-	Blocked    int `db:"blocked"`
-	Cancelled  int `db:"cancelled"`
-}
-
-type CoreBurndownDataPoint struct {
-	Date      time.Time `db:"date"`
-	Remaining int       `db:"remaining"`
-	Ideal     int       `db:"ideal"`
-}
-
-type CoreTeamMemberAllocation struct {
-	MemberID  uuid.UUID `db:"user_id"`
-	Username  string    `db:"username"`
-	AvatarURL string    `db:"avatar_url"`
-	Assigned  int       `db:"assigned"`
-	Completed int       `db:"completed"`
+func ClearField[T any]() platformpatch.Field[T] {
+	return platformpatch.Clear[T]()
 }

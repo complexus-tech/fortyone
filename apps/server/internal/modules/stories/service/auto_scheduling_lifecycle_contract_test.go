@@ -8,33 +8,34 @@ import (
 
 func TestTerminalStoryLifecycleEnqueuesImmediateScheduleReconciliation(t *testing.T) {
 	t.Parallel()
-	data, err := os.ReadFile("stories.go")
-	if err != nil {
-		t.Fatalf("read stories.go: %v", err)
-	}
-	source := string(data)
 
 	for _, contract := range []struct {
 		name     string
+		file     string
 		start    string
 		end      string
 		repoCall string
 		enqueue  string
 	}{
 		{
-			name: "single delete", start: "func (s *Service) Delete(", end: "// Update updates a story.",
-			repoCall: "s.repo.Delete(ctx, id, workspaceId, authorization)", enqueue: "s.enqueueStoryScheduleReconcile(ctx, id, workspaceId)",
+			name: "single delete", file: "story_delete.go", start: "func (s *Service) Delete(",
+			repoCall: "mutationRepo.DeleteStoryMutation", enqueue: "s.enqueueStoryScheduleReconcile(ctx, id, workspaceId)",
 		},
 		{
-			name: "bulk delete", start: "func (s *Service) BulkDelete(", end: "// HardBulkDelete",
-			repoCall: "s.repo.BulkDelete(ctx, ids, workspaceId, authorization)", enqueue: "s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceId)",
+			name: "bulk delete", file: "story_secondary_lifecycle.go", start: "func (s *Service) BulkDelete(", end: "// HardBulkDelete",
+			repoCall: "s.applySecondaryLifecycle(", enqueue: "s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceID)",
 		},
 		{
-			name: "bulk archive", start: "func (s *Service) BulkArchive(", end: "// BulkUnarchive",
-			repoCall: "s.repo.BulkArchive(ctx, ids, workspaceId)", enqueue: "s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceId)",
+			name: "bulk archive", file: "story_secondary_lifecycle.go", start: "func (s *Service) BulkArchive(", end: "// BulkUnarchive",
+			repoCall: "s.applySecondaryLifecycle(", enqueue: "s.enqueueStoryScheduleReconcile(ctx, storyID, workspaceID)",
 		},
 	} {
 		t.Run(contract.name, func(t *testing.T) {
+			data, err := os.ReadFile(contract.file)
+			if err != nil {
+				t.Fatalf("read %s: %v", contract.file, err)
+			}
+			source := string(data)
 			body := sourceBetween(t, source, contract.start, contract.end)
 			repoIndex := strings.Index(body, contract.repoCall)
 			enqueueIndex := strings.Index(body, contract.enqueue)
@@ -50,6 +51,9 @@ func sourceBetween(t *testing.T, source, start, end string) string {
 	startIndex := strings.Index(source, start)
 	if startIndex < 0 {
 		t.Fatalf("source is missing %q", start)
+	}
+	if end == "" {
+		return source[startIndex:]
 	}
 	endOffset := strings.Index(source[startIndex+len(start):], end)
 	if endOffset < 0 {

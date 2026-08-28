@@ -83,7 +83,6 @@ func newIntegrationStatusEventService(repo *integrationStatusEventRepository, ev
 		repo,
 		nil,
 		nil,
-		nil,
 	)
 	service.publisher = eventPublisher
 	return service

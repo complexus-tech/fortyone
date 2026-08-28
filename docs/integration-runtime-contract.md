@@ -68,6 +68,12 @@ provider payload, store it encrypted in the inbox; queue only the scoped inbox
 identity. Provider payloads and normalized conversation/outbox content expire
 after 30 days, while request logs retain no raw payload.
 
+The concrete Go and SQLC implementation is documented in the API
+[`inbound webhook gateway`](../apps/server/docs/integrations/webhook-gateway.md)
+runbook. Queue envelopes contain only the stable provider key and inbox UUID;
+workers load and lease the canonical receipt from PostgreSQL before decrypting
+provider content.
+
 ## Outbound Delivery Contract
 
 Domain events and assistant results create durable outbox entries. A worker

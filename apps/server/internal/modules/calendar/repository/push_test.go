@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/domain"
 	"github.com/google/uuid"
 )
 

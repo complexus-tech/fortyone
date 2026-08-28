@@ -86,13 +86,31 @@ func PublicFeedbackRateLimit(log *logger.Logger, store RateLimitStore, config Pu
 				}
 				identity = "anonymous:" + fingerprint
 				globalKey := fmt.Sprintf("rate-limit:%s:anonymous:%s", config.Scope, fingerprint)
-				allowed, err := incrementPublicFeedbackRateLimit(ctx, w, log, store, config, globalKey, config.AnonymousGlobalLimit)
+				allowed, err := incrementPublicFeedbackRateLimit(
+					ctx,
+					w,
+					log,
+					store,
+					config,
+					globalKey,
+					config.Scope+"-global",
+					config.AnonymousGlobalLimit,
+				)
 				if err != nil || !allowed {
 					return err
 				}
 			}
 			key := fmt.Sprintf("rate-limit:%s:portal:%s:%s", config.Scope, portalSlug, identity)
-			allowed, err := incrementPublicFeedbackRateLimit(ctx, w, log, store, config, key, limit)
+			allowed, err := incrementPublicFeedbackRateLimit(
+				ctx,
+				w,
+				log,
+				store,
+				config,
+				key,
+				config.Scope+"-portal",
+				limit,
+			)
 			if err != nil || !allowed {
 				return err
 			}
@@ -113,6 +131,7 @@ func incrementPublicFeedbackRateLimit(
 	store RateLimitStore,
 	config PublicFeedbackRateLimitConfig,
 	key string,
+	policy string,
 	limit int64,
 ) (bool, error) {
 	count, err := store.IncrementWithTTL(ctx, key, config.Window)
@@ -122,6 +141,7 @@ func incrementPublicFeedbackRateLimit(
 		}
 		return false, web.RespondError(ctx, w, errors.New("rate limit unavailable"), http.StatusServiceUnavailable)
 	}
+	web.SetRateLimitHeaders(w, policy, limit, limit-count, config.Window)
 	if count > limit {
 		retryAfterSeconds := max(int64(config.Window/time.Second), 1)
 		w.Header().Set("Retry-After", strconv.FormatInt(retryAfterSeconds, 10))
@@ -213,6 +233,7 @@ func AuthenticatedUserRateLimit(
 				}
 				return web.RespondError(ctx, w, errors.New("rate limit unavailable"), http.StatusServiceUnavailable)
 			}
+			web.SetRateLimitHeaders(w, config.Scope, config.Limit, config.Limit-count, config.Window)
 			if count > config.Limit {
 				retryAfterSeconds := int64(config.Window / time.Second)
 				if retryAfterSeconds < 1 {

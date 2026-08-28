@@ -51,7 +51,7 @@ func TestGetWorkloadAnalysisDelegatesToRepository(t *testing.T) {
 	repo := &workloadRepoStub{result: expected}
 	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
 
-	got, err := service.GetWorkloadAnalysis(context.Background(), workspaceID, ReportFilters{
+	got, err := service.GetWorkloadAnalysis(reportTestContext(workspaceID), workspaceID, ReportFilters{
 		TeamIDs:   []uuid.UUID{teamID},
 		StartDate: &startDate,
 		EndDate:   &endDate,
@@ -102,7 +102,7 @@ func TestGetWorkloadAnalysisDerivesRiskSections(t *testing.T) {
 	}
 	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
 
-	got, err := service.GetWorkloadAnalysis(context.Background(), workspaceID, ReportFilters{})
+	got, err := service.GetWorkloadAnalysis(reportTestContext(workspaceID), workspaceID, ReportFilters{})
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)

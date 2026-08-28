@@ -6,37 +6,34 @@ import (
 	"fmt"
 	"strings"
 
-	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
-	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
 	"github.com/google/uuid"
 )
 
 func (s *Service) PrepareIntegrationRequestComment(
 	ctx context.Context,
-	request integrationrequests.CoreIntegrationRequest,
-	thread integrationrequests.CoreProviderThread,
-	input integrationrequests.CoreCreateCommentInput,
-) (integrationrequests.CorePreparedProviderComment, error) {
-	if thread.Provider != integrationrequests.ProviderSlack || request.Provider != integrationrequests.ProviderSlack {
-		return integrationrequests.CorePreparedProviderComment{}, fmt.Errorf("unsupported Slack comment provider binding")
+	request IntegrationRequest,
+	thread ProviderThread,
+	input CreateIntegrationRequestCommentInput,
+) (PreparedProviderComment, error) {
+	if thread.Provider != ProviderSlack || request.Provider != ProviderSlack {
+		return PreparedProviderComment{}, fmt.Errorf("unsupported Slack comment provider binding")
 	}
 	if request.WorkspaceID != thread.WorkspaceID || request.ID != thread.IntegrationRequestID || request.TeamID != thread.TeamID {
-		return integrationrequests.CorePreparedProviderComment{}, errors.New("Slack comment request and thread binding do not match")
+		return PreparedProviderComment{}, errors.New("slack comment request and thread binding do not match")
 	}
 	if input.AuthorID == uuid.Nil {
-		return integrationrequests.CorePreparedProviderComment{}, errors.New("Slack comment author is required")
+		return PreparedProviderComment{}, errors.New("slack comment author is required")
 	}
 	authorSlackUserID, err := s.findSlackCommentAuthorID(ctx, request.WorkspaceID, thread.ExternalWorkspaceID, input.AuthorID)
 	if err != nil {
-		return integrationrequests.CorePreparedProviderComment{}, fmt.Errorf("resolve Slack comment author: %w", err)
+		return PreparedProviderComment{}, fmt.Errorf("resolve Slack comment author: %w", err)
 	}
 
 	externalRecipientUserID := ""
 	if strings.HasPrefix(strings.ToUpper(strings.TrimSpace(thread.ExternalChannelID)), "D") {
 		externalRecipientUserID = metadataString(request.Metadata, "slack_user_id")
 		if externalRecipientUserID == "" {
-			return integrationrequests.CorePreparedProviderComment{}, errors.New("Slack direct-message request has no bound recipient")
+			return PreparedProviderComment{}, errors.New("slack direct-message request has no bound recipient")
 		}
 	}
 	payload, err := EncodeSlackProviderPayload(SlackProviderPayload{
@@ -48,9 +45,9 @@ func (s *Service) PrepareIntegrationRequestComment(
 		},
 	})
 	if err != nil {
-		return integrationrequests.CorePreparedProviderComment{}, err
+		return PreparedProviderComment{}, err
 	}
-	return integrationrequests.CorePreparedProviderComment{
+	return PreparedProviderComment{
 		ExternalRecipientUserID: externalRecipientUserID,
 		ProviderPayload:         payload,
 	}, nil
@@ -58,22 +55,22 @@ func (s *Service) PrepareIntegrationRequestComment(
 
 func (s *Service) DeliverIntegrationRequestComment(
 	ctx context.Context,
-	request integrationrequests.CoreIntegrationRequest,
-	thread integrationrequests.CoreProviderThread,
-	comment integrationrequests.CoreIntegrationRequestComment,
-	prepared integrationrequests.CorePreparedProviderComment,
+	request IntegrationRequest,
+	thread ProviderThread,
+	comment IntegrationRequestComment,
+	prepared PreparedProviderComment,
 ) error {
-	if thread.Provider != integrationrequests.ProviderSlack || request.Provider != integrationrequests.ProviderSlack {
+	if thread.Provider != ProviderSlack || request.Provider != ProviderSlack {
 		return nil
 	}
 	if s.outbound == nil {
-		return errors.New("Slack outbound delivery store is not configured")
+		return errors.New("slack outbound delivery store is not configured")
 	}
 	if comment.OutboundIdempotencyKey == nil || strings.TrimSpace(*comment.OutboundIdempotencyKey) == "" {
-		return errors.New("Slack integration request comment has no idempotency key")
+		return errors.New("slack integration request comment has no idempotency key")
 	}
 	if comment.AuthorUserID == nil || *comment.AuthorUserID == uuid.Nil {
-		return errors.New("Slack integration request comment has no internal author")
+		return errors.New("slack integration request comment has no internal author")
 	}
 	providerPayload, err := DecodeSlackProviderPayload(prepared.ProviderPayload)
 	if err != nil {
@@ -84,8 +81,8 @@ func (s *Service) DeliverIntegrationRequestComment(
 	}
 	installation, err := s.repo.GetSlackWorkspaceByTeamID(ctx, thread.ExternalWorkspaceID)
 	if err != nil {
-		if slackrepository.IsNotFound(err) {
-			return errors.New("Slack installation is no longer active")
+		if isSlackRepositoryNotFound(err) {
+			return errors.New("slack installation is no longer active")
 		}
 		return err
 	}
@@ -97,8 +94,8 @@ func (s *Service) DeliverIntegrationRequestComment(
 		return err
 	}
 	idempotencyKey := strings.TrimSpace(*comment.OutboundIdempotencyKey)
-	delivery, shouldSend, err := s.outbound.StartOutboundDelivery(ctx, messagingrepository.OutboundDeliveryInput{
-		Provider:                integrationrequests.ProviderSlack,
+	delivery, shouldSend, err := s.outbound.StartOutboundDelivery(ctx, OutboundDeliveryInput{
+		Provider:                ProviderSlack,
 		WorkspaceID:             request.WorkspaceID,
 		UserID:                  comment.AuthorUserID,
 		InstallGeneration:       &installation.InstallGeneration,
@@ -147,7 +144,7 @@ func (s *Service) DeliverIntegrationRequestComment(
 	deliveryThreadID := strings.TrimSpace(valueOrEmpty(delivery.ExternalThreadID))
 	deliveryRecipientUserID := strings.TrimSpace(valueOrEmpty(delivery.ExternalRecipientUserID))
 	if deliveryChannelID == "" || deliveryContent == "" {
-		err := errors.New("Slack comment delivery is missing its durable destination or content")
+		err := errors.New("slack comment delivery is missing its durable destination or content")
 		if cancelErr := cancelOutboundDeliveryDetached(ctx, s.outbound, delivery.ID, err.Error()); cancelErr != nil {
 			return errors.Join(err, cancelErr)
 		}
@@ -202,7 +199,7 @@ func (s *Service) DeliverIntegrationRequestComment(
 func validateIntegrationRequestCommentAuthorization(payload SlackProviderPayload, teamID, authorID uuid.UUID) error {
 	authorization := payload.Authorization
 	if authorization == nil || authorization.ActorUserID == nil || *authorization.ActorUserID != authorID || len(authorization.AllowedTeamIDs) != 1 || authorization.AllowedTeamIDs[0] != teamID {
-		return errors.New("Slack integration request comment authorization does not match its request")
+		return errors.New("slack integration request comment authorization does not match its request")
 	}
 	return nil
 }
@@ -250,5 +247,3 @@ func validSlackUserID(value string) bool {
 	}
 	return true
 }
-
-var _ integrationrequests.ProviderCommenter = (*Service)(nil)

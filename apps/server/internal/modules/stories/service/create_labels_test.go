@@ -69,7 +69,7 @@ func TestCreateWithExistingIdempotencyKeySkipsDuplicateSideEffects(t *testing.T)
 		Workspace:  workspaceID,
 	}
 	repo := &atomicCreateRepo{idempotentStory: existing}
-	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil, nil)
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
 
 	created, err := service.createWithOptions(context.Background(), CoreNewStory{
 		Title:       "Existing story",
@@ -98,7 +98,7 @@ func (r *atomicCreateRepo) RecordActivities(_ context.Context, activities []Core
 
 func TestCreatePassesLabelsThroughSingleRepositoryCreate(t *testing.T) {
 	repo := &atomicCreateRepo{}
-	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil, nil)
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
 	workspaceID := uuid.New()
 	teamID := uuid.New()
 	actorID := uuid.New()
@@ -135,7 +135,7 @@ func TestCreatePassesLabelsThroughSingleRepositoryCreate(t *testing.T) {
 
 func TestCreateValidatesMayaAssignmentBeforePersistence(t *testing.T) {
 	repo := &atomicCreateRepo{}
-	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil, nil)
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
 	workspaceID := uuid.New()
 	teamID := uuid.New()
 	actorID := uuid.New()

@@ -1,0 +1,70 @@
+---
+title: Scopes and access
+description: Learn how API scopes narrow current FortyOne workspace and team permissions.
+---
+
+Scopes grant a credential permission to request an operation; they do not grant
+workspace membership, workspace role, team membership, or ownership. FortyOne
+checks all of those conditions again against current data.
+
+The `/api/v1` OAuth audience can currently issue:
+
+```text
+offline_access
+workspaces:read
+teams:read
+stories:read
+stories:write
+comments:read
+labels:read
+sprints:read
+objectives:read
+webhooks:manage
+```
+
+`offline_access` is included in every API OAuth grant. The client must also ask
+for at least one API capability. Comment reads require both `comments:read` and
+`stories:read`; workflow-state reads use `stories:read`; and key-result reads
+use `objectives:read`. The MCP audience has a separate catalog:
+`mcp:access offline_access`. A token cannot mix or cross those audiences.
+
+That catalog describes delegated-user authorization. An installed application
+has an administrator-approved scope set for exactly one workspace and the
+`/api/v1` resource. The current application-actor release accepts only
+`stories:write`, issues no `offline_access` or refresh token, and authorizes only
+idempotent story creation. Every other API operation rejects the application
+principal even if a similarly named scope exists elsewhere in the catalog.
+
+PAT and service-account management supports a wider credential scope catalog
+for future and first-party-administration use:
+
+```text
+workspaces:read
+teams:read
+stories:read
+stories:write
+comments:read
+comments:write
+labels:read
+labels:write
+sprints:read
+objectives:read
+objectives:write
+webhooks:manage
+integrations:manage
+service_accounts:manage
+```
+
+Being present in that catalog does not mean `/api/v1` publishes a route that
+uses the scope or that every principal kind is accepted. Follow each resource's
+operation table. Choose the smallest set required by the integration and use
+separate credentials for unrelated systems so either can be revoked without
+disrupting the other. Optional PAT/service-account team restrictions narrow a
+credential to listed teams; normal product authorization still applies inside
+those teams.
+
+`first_party:*` is reserved for FortyOne's browser application and can never be
+issued to a developer credential. Service-account keys also cannot receive
+`service_accounts:manage`. OAuth cannot issue `comments:write`, `labels:write`,
+`objectives:write`, `integrations:manage`, or `service_accounts:manage` for the
+current API audience.

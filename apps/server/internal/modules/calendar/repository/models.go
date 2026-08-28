@@ -5,140 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/domain"
+	calendarsql "github.com/complexus-tech/projects-api/internal/modules/calendar/repository/sqlc"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
-type dbConnection struct {
-	ID                     uuid.UUID      `db:"connection_id"`
-	WorkspaceID            uuid.UUID      `db:"workspace_id"`
-	UserID                 uuid.UUID      `db:"user_id"`
-	CredentialGeneration   uuid.UUID      `db:"credential_generation"`
-	ProviderAccountID      string         `db:"provider_account_id"`
-	Provider               string         `db:"provider"`
-	IsPrimary              bool           `db:"is_primary"`
-	ConnectedEmail         string         `db:"connected_email"`
-	Timezone               string         `db:"timezone"`
-	TokenPayload           string         `db:"token_payload"`
-	Scopes                 pq.StringArray `db:"scopes"`
-	SyncStatus             string         `db:"sync_status"`
-	SyncError              *string        `db:"sync_error"`
-	LastSyncedAt           *time.Time     `db:"last_synced_at"`
-	SyncToken              *string        `db:"sync_token"`
-	NotificationChannelID  *string        `db:"notification_channel_id"`
-	NotificationResourceID *string        `db:"notification_resource_id"`
-	NotificationExpiresAt  *time.Time     `db:"notification_expires_at"`
-	RevokedAt              *time.Time     `db:"revoked_at"`
-	CreatedAt              time.Time      `db:"created_at"`
-	UpdatedAt              time.Time      `db:"updated_at"`
-}
-
-type dbBusyWindow struct {
-	ID              uuid.UUID `db:"window_id"`
-	ConnectionID    uuid.UUID `db:"connection_id"`
-	WorkspaceID     uuid.UUID `db:"workspace_id"`
-	UserID          uuid.UUID `db:"user_id"`
-	Provider        string    `db:"provider"`
-	ProviderEventID string    `db:"provider_event_id"`
-	CalendarID      *string   `db:"calendar_id"`
-	Title           *string   `db:"title"`
-	StartAt         time.Time `db:"start_at"`
-	EndAt           time.Time `db:"end_at"`
-	Status          string    `db:"status"`
-	Transparency    string    `db:"transparency"`
-	IsPrivate       bool      `db:"is_private"`
-	SourceHash      string    `db:"source_hash"`
-	CreatedAt       time.Time `db:"created_at"`
-	UpdatedAt       time.Time `db:"updated_at"`
-}
-
-type dbCalendarEvent struct {
-	ID               uuid.UUID  `db:"event_id"`
-	ConnectionID     uuid.UUID  `db:"connection_id"`
-	WorkspaceID      uuid.UUID  `db:"workspace_id"`
-	UserID           uuid.UUID  `db:"user_id"`
-	Provider         string     `db:"provider"`
-	CalendarID       string     `db:"calendar_id"`
-	ProviderEventID  string     `db:"provider_event_id"`
-	Title            *string    `db:"title"`
-	Description      *string    `db:"description"`
-	Location         *string    `db:"location"`
-	MeetingURL       *string    `db:"meeting_url"`
-	HTMLLink         *string    `db:"html_link"`
-	Organizer        []byte     `db:"organizer"`
-	Attendees        []byte     `db:"attendees"`
-	AttendeesOmitted bool       `db:"attendees_omitted"`
-	IsAllDay         bool       `db:"is_all_day"`
-	StartDate        *time.Time `db:"start_date"`
-	EndDate          *time.Time `db:"end_date"`
-	StartAt          time.Time  `db:"start_at"`
-	EndAt            time.Time  `db:"end_at"`
-	Visibility       string     `db:"visibility"`
-	IsPrivate        bool       `db:"is_private"`
-	SourceHash       string     `db:"source_hash"`
-	CreatedAt        time.Time  `db:"created_at"`
-	UpdatedAt        time.Time  `db:"updated_at"`
-}
-
-type dbCalendarEventSummary struct {
-	ID              uuid.UUID  `db:"event_id"`
-	ConnectionID    uuid.UUID  `db:"connection_id"`
-	Provider        string     `db:"provider"`
-	CalendarID      string     `db:"calendar_id"`
-	ProviderEventID string     `db:"provider_event_id"`
-	Title           *string    `db:"title"`
-	Location        *string    `db:"location"`
-	MeetingURL      *string    `db:"meeting_url"`
-	HTMLLink        *string    `db:"html_link"`
-	StartAt         time.Time  `db:"start_at"`
-	EndAt           time.Time  `db:"end_at"`
-	IsAllDay        bool       `db:"is_all_day"`
-	StartDate       *time.Time `db:"start_date"`
-	EndDate         *time.Time `db:"end_date"`
-	IsPrivate       bool       `db:"is_private"`
-	CreatedAt       time.Time  `db:"created_at"`
-	UpdatedAt       time.Time  `db:"updated_at"`
-}
-
-type dbScheduleBlock struct {
-	ID                   uuid.UUID  `db:"block_id"`
-	WorkspaceID          uuid.UUID  `db:"workspace_id"`
-	UserID               uuid.UUID  `db:"user_id"`
-	StoryID              *uuid.UUID `db:"story_id"`
-	StoryTitle           *string    `db:"story_title"`
-	StoryCode            *string    `db:"story_code"`
-	StoryStatusColor     *string    `db:"story_status_color"`
-	StoryPriority        string     `db:"story_priority"`
-	StoryEndDate         *time.Time `db:"story_end_date"`
-	TeamID               *uuid.UUID `db:"team_id"`
-	TeamName             *string    `db:"team_name"`
-	TeamCode             *string    `db:"team_code"`
-	BlockType            string     `db:"block_type"`
-	Title                string     `db:"title"`
-	StartAt              time.Time  `db:"start_at"`
-	EndAt                time.Time  `db:"end_at"`
-	CompletedAt          *time.Time `db:"completed_at"`
-	HasConflict          bool       `db:"has_conflict"`
-	IsLocked             bool       `db:"is_locked"`
-	AutoSchedulingStatus *string    `db:"auto_scheduling_status"`
-	AutoSchedulingReason *string    `db:"auto_scheduling_reason"`
-	Source               string     `db:"source"`
-	SegmentIndex         int        `db:"segment_index"`
-	ExternalProvider     *string    `db:"external_provider"`
-	ExternalCalendarID   *string    `db:"external_calendar_id"`
-	ExternalEventID      *string    `db:"external_event_id"`
-	ExternalSyncHash     *string    `db:"external_sync_hash"`
-	ExternalSyncedAt     *time.Time `db:"external_synced_at"`
-	CreatedAt            time.Time  `db:"created_at"`
-	UpdatedAt            time.Time  `db:"updated_at"`
-	ManualOverrideAt     *time.Time `db:"manual_override_at"`
-	ManualOverrideBy     *uuid.UUID `db:"manual_override_by"`
-}
-
-func toCoreConnection(row dbConnection) calendar.CoreConnection {
+func toCoreConnection(row calendarsql.CalendarConnection) calendar.CoreConnection {
 	return calendar.CoreConnection{
-		ID:                     row.ID,
+		ID:                     row.ConnectionID,
 		WorkspaceID:            row.WorkspaceID,
 		UserID:                 row.UserID,
 		CredentialGeneration:   row.CredentialGeneration,
@@ -148,7 +22,7 @@ func toCoreConnection(row dbConnection) calendar.CoreConnection {
 		ConnectedEmail:         row.ConnectedEmail,
 		Timezone:               row.Timezone,
 		TokenPayload:           row.TokenPayload,
-		Scopes:                 []string(row.Scopes),
+		Scopes:                 row.Scopes,
 		SyncStatus:             calendar.SyncStatus(row.SyncStatus),
 		SyncError:              row.SyncError,
 		LastSyncedAt:           row.LastSyncedAt,
@@ -169,17 +43,17 @@ func valueOrEmpty(value *string) string {
 	return *value
 }
 
-func toCoreConnections(rows []dbConnection) []calendar.CoreConnection {
+func toCoreConnections(rows []calendarsql.CalendarConnection) []calendar.CoreConnection {
 	connections := make([]calendar.CoreConnection, len(rows))
-	for i, row := range rows {
-		connections[i] = toCoreConnection(row)
+	for index, row := range rows {
+		connections[index] = toCoreConnection(row)
 	}
 	return connections
 }
 
-func toCoreBusyWindow(row dbBusyWindow) calendar.CoreBusyWindow {
+func toCoreBusyWindow(row calendarsql.CalendarBusyWindow) calendar.CoreBusyWindow {
 	return calendar.CoreBusyWindow{
-		ID:              row.ID,
+		ID:              row.WindowID,
 		ConnectionID:    row.ConnectionID,
 		WorkspaceID:     row.WorkspaceID,
 		UserID:          row.UserID,
@@ -198,15 +72,15 @@ func toCoreBusyWindow(row dbBusyWindow) calendar.CoreBusyWindow {
 	}
 }
 
-func toCoreBusyWindows(rows []dbBusyWindow) []calendar.CoreBusyWindow {
+func toCoreBusyWindows(rows []calendarsql.CalendarBusyWindow) []calendar.CoreBusyWindow {
 	windows := make([]calendar.CoreBusyWindow, len(rows))
-	for i, row := range rows {
-		windows[i] = toCoreBusyWindow(row)
+	for index, row := range rows {
+		windows[index] = toCoreBusyWindow(row)
 	}
 	return windows
 }
 
-func toCoreCalendarEvent(row dbCalendarEvent) (calendar.CoreCalendarEvent, error) {
+func toCoreCalendarEvent(row calendarsql.CalendarEvent) (calendar.CoreCalendarEvent, error) {
 	attendees := []calendar.CoreCalendarParticipant{}
 	if len(row.Attendees) > 0 {
 		if err := json.Unmarshal(row.Attendees, &attendees); err != nil {
@@ -222,7 +96,7 @@ func toCoreCalendarEvent(row dbCalendarEvent) (calendar.CoreCalendarEvent, error
 		organizer = &value
 	}
 	return calendar.CoreCalendarEvent{
-		ID:               row.ID,
+		ID:               row.EventID,
 		ConnectionID:     row.ConnectionID,
 		WorkspaceID:      row.WorkspaceID,
 		UserID:           row.UserID,
@@ -233,7 +107,7 @@ func toCoreCalendarEvent(row dbCalendarEvent) (calendar.CoreCalendarEvent, error
 		Description:      row.Description,
 		Location:         row.Location,
 		MeetingURL:       row.MeetingURL,
-		HTMLLink:         row.HTMLLink,
+		HTMLLink:         row.HtmlLink,
 		Organizer:        organizer,
 		Attendees:        attendees,
 		AttendeesOmitted: row.AttendeesOmitted,
@@ -250,27 +124,16 @@ func toCoreCalendarEvent(row dbCalendarEvent) (calendar.CoreCalendarEvent, error
 	}, nil
 }
 
-func toCoreCalendarEventSummaries(rows []dbCalendarEventSummary) []calendar.CoreCalendarEventSummary {
+func toCoreCalendarEventSummaries(rows []calendarsql.ListCalendarEventsRow) []calendar.CoreCalendarEventSummary {
 	events := make([]calendar.CoreCalendarEventSummary, len(rows))
-	for i, row := range rows {
-		events[i] = calendar.CoreCalendarEventSummary{
-			ID:              row.ID,
-			ConnectionID:    row.ConnectionID,
-			Provider:        calendar.Provider(row.Provider),
-			CalendarID:      row.CalendarID,
-			ProviderEventID: row.ProviderEventID,
-			Title:           row.Title,
-			Location:        row.Location,
-			MeetingURL:      row.MeetingURL,
-			HTMLLink:        row.HTMLLink,
-			StartAt:         row.StartAt,
-			EndAt:           row.EndAt,
-			IsAllDay:        row.IsAllDay,
-			StartDate:       calendarDateString(row.StartDate),
-			EndDate:         calendarDateString(row.EndDate),
-			IsPrivate:       row.IsPrivate,
-			CreatedAt:       row.CreatedAt,
-			UpdatedAt:       row.UpdatedAt,
+	for index, row := range rows {
+		events[index] = calendar.CoreCalendarEventSummary{
+			ID: row.EventID, ConnectionID: row.ConnectionID, Provider: calendar.Provider(row.Provider),
+			CalendarID: row.CalendarID, ProviderEventID: row.ProviderEventID, Title: row.Title,
+			Location: row.Location, MeetingURL: row.MeetingURL, HTMLLink: row.HtmlLink,
+			StartAt: row.StartAt, EndAt: row.EndAt, IsAllDay: row.IsAllDay,
+			StartDate: calendarDateString(row.StartDate), EndDate: calendarDateString(row.EndDate),
+			IsPrivate: row.IsPrivate, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 		}
 	}
 	return events
@@ -280,43 +143,62 @@ func calendarDateString(value *time.Time) *string {
 	if value == nil {
 		return nil
 	}
-	formatted := value.Format("2006-01-02")
+	formatted := value.Format(time.DateOnly)
 	return &formatted
 }
 
-func toCoreScheduleBlock(row dbScheduleBlock) calendar.CoreScheduleBlock {
+type scheduleBlockRecord struct {
+	ID                   uuid.UUID
+	WorkspaceID          uuid.UUID
+	UserID               uuid.UUID
+	StoryID              *uuid.UUID
+	StoryTitle           *string
+	StoryCode            string
+	StoryStatusColor     *string
+	StoryPriority        string
+	StoryEndDate         *time.Time
+	TeamID               *uuid.UUID
+	TeamName             *string
+	TeamCode             *string
+	BlockType            string
+	Title                string
+	StartAt              time.Time
+	EndAt                time.Time
+	CompletedAt          *time.Time
+	HasConflict          bool
+	IsLocked             bool
+	AutoSchedulingStatus string
+	AutoSchedulingReason string
+	Source               string
+	SegmentIndex         int32
+	ExternalProvider     *string
+	ExternalCalendarID   *string
+	ExternalEventID      *string
+	ExternalSyncHash     *string
+	ExternalSyncedAt     *time.Time
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	ManualOverrideAt     *time.Time
+	ManualOverrideBy     *uuid.UUID
+}
+
+func toCoreScheduleBlock(row scheduleBlockRecord) calendar.CoreScheduleBlock {
 	block := calendar.CoreScheduleBlock{
-		ID:                   row.ID,
-		WorkspaceID:          row.WorkspaceID,
-		UserID:               row.UserID,
-		StoryID:              row.StoryID,
-		StoryTitle:           row.StoryTitle,
-		StoryCode:            row.StoryCode,
-		StoryStatusColor:     row.StoryStatusColor,
-		StoryPriority:        row.StoryPriority,
-		StoryEndDate:         row.StoryEndDate,
-		TeamID:               row.TeamID,
-		TeamName:             row.TeamName,
-		TeamCode:             row.TeamCode,
-		BlockType:            calendar.ScheduleBlockType(row.BlockType),
-		Title:                row.Title,
-		StartAt:              row.StartAt,
-		EndAt:                row.EndAt,
-		CompletedAt:          row.CompletedAt,
-		HasConflict:          row.HasConflict,
-		IsLocked:             row.IsLocked,
-		AutoSchedulingStatus: row.AutoSchedulingStatus,
-		AutoSchedulingReason: row.AutoSchedulingReason,
-		Source:               calendar.ScheduleBlockSource(row.Source),
-		SegmentIndex:         row.SegmentIndex,
-		ExternalCalendarID:   row.ExternalCalendarID,
-		ExternalEventID:      row.ExternalEventID,
-		ExternalSyncHash:     row.ExternalSyncHash,
-		ExternalSyncedAt:     row.ExternalSyncedAt,
-		CreatedAt:            row.CreatedAt,
-		UpdatedAt:            row.UpdatedAt,
-		ManualOverrideAt:     row.ManualOverrideAt,
-		ManualOverrideBy:     row.ManualOverrideBy,
+		ID: row.ID, WorkspaceID: row.WorkspaceID, UserID: row.UserID,
+		StoryID: row.StoryID, StoryTitle: row.StoryTitle,
+		StoryCode: stringPointerUnlessEmpty(row.StoryCode), StoryStatusColor: row.StoryStatusColor,
+		StoryPriority: row.StoryPriority, StoryEndDate: row.StoryEndDate,
+		TeamID: row.TeamID, TeamName: row.TeamName, TeamCode: row.TeamCode,
+		BlockType: calendar.ScheduleBlockType(row.BlockType), Title: row.Title,
+		StartAt: row.StartAt, EndAt: row.EndAt, CompletedAt: row.CompletedAt,
+		HasConflict: row.HasConflict, IsLocked: row.IsLocked,
+		AutoSchedulingStatus: stringPointerUnlessEmpty(row.AutoSchedulingStatus),
+		AutoSchedulingReason: stringPointerUnlessEmpty(row.AutoSchedulingReason),
+		Source:               calendar.ScheduleBlockSource(row.Source), SegmentIndex: int(row.SegmentIndex),
+		ExternalCalendarID: row.ExternalCalendarID, ExternalEventID: row.ExternalEventID,
+		ExternalSyncHash: row.ExternalSyncHash, ExternalSyncedAt: row.ExternalSyncedAt,
+		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+		ManualOverrideAt: row.ManualOverrideAt, ManualOverrideBy: row.ManualOverrideBy,
 	}
 	if row.ExternalProvider != nil {
 		provider := calendar.Provider(*row.ExternalProvider)
@@ -325,10 +207,85 @@ func toCoreScheduleBlock(row dbScheduleBlock) calendar.CoreScheduleBlock {
 	return block
 }
 
-func toCoreScheduleBlocks(rows []dbScheduleBlock) []calendar.CoreScheduleBlock {
+func stringPointerUnlessEmpty(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func scheduleBlockFromGet(row calendarsql.GetCalendarScheduleBlockRow) scheduleBlockRecord {
+	return scheduleBlockRecord{
+		ID: row.BlockID, WorkspaceID: row.WorkspaceID, UserID: row.UserID, StoryID: row.StoryID,
+		StoryTitle: row.StoryTitle, StoryCode: row.StoryCode, StoryStatusColor: row.StoryStatusColor,
+		StoryPriority: row.StoryPriority, StoryEndDate: row.StoryEndDate, TeamID: row.TeamID,
+		TeamName: row.TeamName, TeamCode: row.TeamCode, BlockType: row.BlockType, Title: row.Title,
+		StartAt: row.StartAt, EndAt: row.EndAt, CompletedAt: row.CompletedAt, HasConflict: row.HasConflict,
+		IsLocked: row.IsLocked, AutoSchedulingStatus: row.AutoSchedulingStatus,
+		AutoSchedulingReason: row.AutoSchedulingReason, Source: row.Source, SegmentIndex: row.SegmentIndex,
+		ExternalProvider: row.ExternalProvider, ExternalCalendarID: row.ExternalCalendarID,
+		ExternalEventID: row.ExternalEventID, ExternalSyncHash: row.ExternalSyncHash,
+		ExternalSyncedAt: row.ExternalSyncedAt, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+		ManualOverrideAt: row.ManualOverrideAt, ManualOverrideBy: row.ManualOverrideBy,
+	}
+}
+
+func scheduleBlocksFromList(rows []calendarsql.ListCalendarScheduleBlocksRow) []calendar.CoreScheduleBlock {
 	blocks := make([]calendar.CoreScheduleBlock, len(rows))
-	for i, row := range rows {
-		blocks[i] = toCoreScheduleBlock(row)
+	for index, row := range rows {
+		blocks[index] = toCoreScheduleBlock(scheduleBlockRecord{
+			ID: row.BlockID, WorkspaceID: row.WorkspaceID, UserID: row.UserID, StoryID: row.StoryID,
+			StoryTitle: row.StoryTitle, StoryCode: row.StoryCode, StoryStatusColor: row.StoryStatusColor,
+			StoryPriority: row.StoryPriority, StoryEndDate: row.StoryEndDate, TeamID: row.TeamID,
+			TeamName: row.TeamName, TeamCode: row.TeamCode, BlockType: row.BlockType, Title: row.Title,
+			StartAt: row.StartAt, EndAt: row.EndAt, CompletedAt: row.CompletedAt, HasConflict: row.HasConflict,
+			IsLocked: row.IsLocked, AutoSchedulingStatus: row.AutoSchedulingStatus,
+			AutoSchedulingReason: row.AutoSchedulingReason, Source: row.Source, SegmentIndex: row.SegmentIndex,
+			ExternalProvider: row.ExternalProvider, ExternalCalendarID: row.ExternalCalendarID,
+			ExternalEventID: row.ExternalEventID, ExternalSyncHash: row.ExternalSyncHash,
+			ExternalSyncedAt: row.ExternalSyncedAt, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+			ManualOverrideAt: row.ManualOverrideAt, ManualOverrideBy: row.ManualOverrideBy,
+		})
+	}
+	return blocks
+}
+
+func scheduleBlocksFromSchedulingList(rows []calendarsql.ListSchedulingBlocksForUserRow) []calendar.CoreScheduleBlock {
+	blocks := make([]calendar.CoreScheduleBlock, len(rows))
+	for index, row := range rows {
+		blocks[index] = toCoreScheduleBlock(scheduleBlockRecord{
+			ID: row.BlockID, WorkspaceID: row.WorkspaceID, UserID: row.UserID, StoryID: row.StoryID,
+			StoryTitle: row.StoryTitle, StoryCode: row.StoryCode, StoryStatusColor: row.StoryStatusColor,
+			StoryPriority: row.StoryPriority, StoryEndDate: row.StoryEndDate, TeamID: row.TeamID,
+			TeamName: row.TeamName, TeamCode: row.TeamCode, BlockType: row.BlockType, Title: row.Title,
+			StartAt: row.StartAt, EndAt: row.EndAt, CompletedAt: row.CompletedAt, HasConflict: row.HasConflict,
+			IsLocked: row.IsLocked, AutoSchedulingStatus: row.AutoSchedulingStatus,
+			AutoSchedulingReason: row.AutoSchedulingReason, Source: row.Source, SegmentIndex: row.SegmentIndex,
+			ExternalProvider: row.ExternalProvider, ExternalCalendarID: row.ExternalCalendarID,
+			ExternalEventID: row.ExternalEventID, ExternalSyncHash: row.ExternalSyncHash,
+			ExternalSyncedAt: row.ExternalSyncedAt, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+			ManualOverrideAt: row.ManualOverrideAt, ManualOverrideBy: row.ManualOverrideBy,
+		})
+	}
+	return blocks
+}
+
+func scheduleBlocksFromMayaList(rows []calendarsql.ListMayaScheduleBlocksForStoryRow) []calendar.CoreScheduleBlock {
+	blocks := make([]calendar.CoreScheduleBlock, len(rows))
+	for index, row := range rows {
+		blocks[index] = toCoreScheduleBlock(scheduleBlockRecord{
+			ID: row.BlockID, WorkspaceID: row.WorkspaceID, UserID: row.UserID, StoryID: row.StoryID,
+			StoryTitle: row.StoryTitle, StoryCode: row.StoryCode, StoryStatusColor: row.StoryStatusColor,
+			StoryPriority: row.StoryPriority, StoryEndDate: row.StoryEndDate, TeamID: row.TeamID,
+			TeamName: row.TeamName, TeamCode: row.TeamCode, BlockType: row.BlockType, Title: row.Title,
+			StartAt: row.StartAt, EndAt: row.EndAt, CompletedAt: row.CompletedAt, HasConflict: row.HasConflict,
+			IsLocked: row.IsLocked, AutoSchedulingStatus: row.AutoSchedulingStatus,
+			AutoSchedulingReason: row.AutoSchedulingReason, Source: row.Source, SegmentIndex: row.SegmentIndex,
+			ExternalProvider: row.ExternalProvider, ExternalCalendarID: row.ExternalCalendarID,
+			ExternalEventID: row.ExternalEventID, ExternalSyncHash: row.ExternalSyncHash,
+			ExternalSyncedAt: row.ExternalSyncedAt, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+			ManualOverrideAt: row.ManualOverrideAt, ManualOverrideBy: row.ManualOverrideBy,
+		})
 	}
 	return blocks
 }

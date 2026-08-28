@@ -2,224 +2,160 @@ package calendarrepository
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/domain"
+	calendarsql "github.com/complexus-tech/projects-api/internal/modules/calendar/repository/sqlc"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
-const connectionColumns = `
-	connection_id, workspace_id, user_id, credential_generation, provider_account_id,
-	provider, is_primary, connected_email, timezone, token_payload, scopes, sync_status, sync_error,
-	last_synced_at, sync_token, notification_channel_id, notification_resource_id,
-	notification_expires_at, revoked_at, created_at, updated_at`
-
 type managedScheduleBlockState struct {
-	ID          uuid.UUID  `db:"block_id"`
-	WorkspaceID uuid.UUID  `db:"workspace_id"`
-	StoryID     *uuid.UUID `db:"story_id"`
-	Title       string     `db:"title"`
-	StartAt     time.Time  `db:"start_at"`
-	EndAt       time.Time  `db:"end_at"`
-}
-
-// calendar_schedule_blocks.updated_at is the concurrency token for user-visible
-// schedule content. Provider mirror bookkeeping must preserve it.
-const invalidateDeletedManagedScheduleEventQuery = `
-	UPDATE calendar_schedule_blocks
-	SET external_sync_hash = NULL, external_synced_at = NULL
-	WHERE user_id = $1 AND external_provider = $2 AND external_event_id = $3
-`
-
-const invalidateChangedManagedScheduleEventQuery = `
-	UPDATE calendar_schedule_blocks
-	SET external_sync_hash = NULL, external_synced_at = NULL
-	WHERE block_id = $1
-`
-
-func (r *Repo) GetConnection(ctx context.Context, connectionID uuid.UUID) (calendar.CoreConnection, error) {
-	var row dbConnection
-	query := `SELECT ` + connectionColumns + ` FROM calendar_connections WHERE connection_id = $1 AND revoked_at IS NULL AND cleanup_pending_at IS NULL`
-	if err := r.db.GetContext(ctx, &row, query, connectionID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return calendar.CoreConnection{}, calendar.ErrCalendarNotFound
-		}
-		return calendar.CoreConnection{}, fmt.Errorf("get calendar connection: %w", err)
-	}
-	return toCoreConnection(row), nil
-}
-
-func (r *Repo) ListConnectionsNeedingWatch(ctx context.Context, renewBefore time.Time) ([]calendar.CoreConnection, error) {
-	rows := []dbConnection{}
-	query := `SELECT ` + connectionColumns + `
-		FROM calendar_connections
-		WHERE revoked_at IS NULL
-		  AND cleanup_pending_at IS NULL
-		  AND (notification_channel_id IS NULL OR notification_expires_at IS NULL OR notification_expires_at <= $1)
-		ORDER BY notification_expires_at NULLS FIRST, connection_id`
-	if err := r.db.SelectContext(ctx, &rows, query, renewBefore); err != nil {
-		return nil, fmt.Errorf("list calendar connections needing watch: %w", err)
-	}
-	return toCoreConnections(rows), nil
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	StoryID     *uuid.UUID
+	Title       string
+	StartAt     time.Time
+	EndAt       time.Time
 }
 
 func (r *Repo) SetNotificationChannel(ctx context.Context, connection calendar.CoreConnection, channel calendar.CalendarWatchChannel) error {
-	result, err := r.db.ExecContext(ctx, `
-		UPDATE calendar_connections
-		SET notification_channel_id = $4,
-			notification_resource_id = $5,
-			notification_expires_at = $6,
-			updated_at = NOW()
-		WHERE connection_id = $1 AND workspace_id = $2 AND credential_generation = $3 AND revoked_at IS NULL AND cleanup_pending_at IS NULL`,
-		connection.ID, connection.WorkspaceID, connection.CredentialGeneration,
-		channel.ChannelID, channel.ResourceID, channel.ExpiresAt,
-	)
+	if err := r.configured(); err != nil {
+		return err
+	}
+	rows, err := r.queries.SetCalendarNotificationChannel(ctx, calendarsql.SetCalendarNotificationChannelParams{
+		ChannelID:            &channel.ChannelID,
+		ResourceID:           &channel.ResourceID,
+		ExpiresAt:            &channel.ExpiresAt,
+		ConnectionID:         connection.ID,
+		WorkspaceID:          connection.WorkspaceID,
+		CredentialGeneration: connection.CredentialGeneration,
+	})
 	if err != nil {
 		return fmt.Errorf("store calendar notification channel: %w", err)
 	}
-	count, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("read calendar notification channel update: %w", err)
-	}
-	if count == 0 {
+	if rows == 0 {
 		return calendar.ErrCalendarSyncSuperseded
 	}
 	return nil
 }
 
 func (r *Repo) ClearNotificationChannel(ctx context.Context, connectionID uuid.UUID) error {
-	_, err := r.db.ExecContext(ctx, `
-		UPDATE calendar_connections
-		SET notification_channel_id = NULL, notification_resource_id = NULL,
-			notification_expires_at = NULL, updated_at = NOW()
-		WHERE connection_id = $1`, connectionID)
-	if err != nil {
+	if err := r.configured(); err != nil {
+		return err
+	}
+	if err := r.queries.ClearCalendarNotificationChannel(ctx, calendarsql.ClearCalendarNotificationChannelParams{ConnectionID: connectionID}); err != nil {
 		return fmt.Errorf("clear calendar notification channel: %w", err)
 	}
 	return nil
 }
 
 func (r *Repo) ApplyCalendarChanges(ctx context.Context, connection calendar.CoreConnection, delta calendar.CalendarSyncDelta) error {
-	tx, err := r.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("begin apply calendar changes: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }()
-	if err := lockCalendarUser(ctx, tx, connection.WorkspaceID, connection.UserID); err != nil {
+	if err := r.configured(); err != nil {
 		return err
 	}
-
-	var locked uuid.UUID
-	if err := tx.GetContext(ctx, &locked, `
-		SELECT connection_id FROM calendar_connections
-			WHERE connection_id = $1 AND workspace_id = $2 AND credential_generation = $3 AND revoked_at IS NULL AND cleanup_pending_at IS NULL
-		FOR UPDATE`, connection.ID, connection.WorkspaceID, connection.CredentialGeneration); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return calendar.ErrCalendarSyncSuperseded
-		}
-		return fmt.Errorf("lock calendar connection for incremental sync: %w", err)
-	}
-
-	changedIDs := append([]string{}, delta.DeletedEventIDs...)
-	for _, event := range delta.Events {
-		changedIDs = append(changedIDs, event.ProviderEventID)
-	}
-	for _, eventID := range changedIDs {
-		eventID = strings.TrimSpace(eventID)
-		if eventID == "" {
-			continue
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM calendar_events WHERE connection_id = $1 AND calendar_id = 'primary' AND provider_event_id = $2`, connection.ID, eventID); err != nil {
-			return fmt.Errorf("delete changed calendar event: %w", err)
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM calendar_busy_windows WHERE connection_id = $1 AND provider_event_id = $2`, connection.ID, eventID); err != nil {
-			return fmt.Errorf("delete changed calendar busy window: %w", err)
-		}
-	}
-
-	for _, event := range delta.Events {
-		organizer, err := marshalOptionalCalendarParticipant(event.Organizer)
-		if err != nil {
+	if err := r.withinTransaction(ctx, func(queries calendarsql.Querier) error {
+		if err := lockCalendarUser(ctx, queries, connection.UserID); err != nil {
 			return err
 		}
-		attendees, err := json.Marshal(event.Attendees)
-		if err != nil {
-			return fmt.Errorf("encode incremental calendar attendees: %w", err)
+		_, err := queries.LockCalendarConnectionForIncrementalSync(ctx, calendarsql.LockCalendarConnectionForIncrementalSyncParams{
+			ConnectionID:         connection.ID,
+			WorkspaceID:          connection.WorkspaceID,
+			CredentialGeneration: connection.CredentialGeneration,
+		})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return calendar.ErrCalendarSyncSuperseded
 		}
-		_, err = tx.ExecContext(ctx, `
-			INSERT INTO calendar_events (
-				connection_id, workspace_id, user_id, provider, calendar_id, provider_event_id,
-				title, description, location, meeting_url, html_link, organizer, attendees,
-				attendees_omitted, is_all_day, start_date, end_date, start_at, end_at,
-				visibility, is_private, source_hash, sync_generation, updated_at
-			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CAST($12 AS jsonb),CAST($13 AS jsonb),$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,NOW())`,
-			connection.ID, connection.WorkspaceID, connection.UserID, string(connection.Provider), event.CalendarID,
-			event.ProviderEventID, event.Title, event.Description, event.Location, event.MeetingURL, event.HTMLLink,
-			organizer, string(attendees), event.AttendeesOmitted, event.IsAllDay, event.StartDate, event.EndDate,
-			event.StartAt, event.EndAt, event.Visibility, event.IsPrivate, event.SourceHash, uuid.New(),
-		)
 		if err != nil {
-			return fmt.Errorf("insert incremental calendar event: %w", err)
+			return fmt.Errorf("lock calendar connection for incremental sync: %w", err)
 		}
-	}
 
-	for _, window := range delta.BusyWindows {
-		_, err := tx.ExecContext(ctx, `
-			INSERT INTO calendar_busy_windows (
-				connection_id, workspace_id, user_id, provider, provider_event_id, calendar_id,
-				title, start_at, end_at, status, transparency, is_private, source_hash, updated_at
-			) VALUES ($1,$2,$3,$4,$5,$6,NULL,$7,$8,$9,$10,$11,$12,NOW())`,
-			connection.ID, connection.WorkspaceID, connection.UserID, string(connection.Provider), window.ProviderEventID,
-			window.CalendarID, window.StartAt, window.EndAt, string(window.Status), string(window.Transparency), window.IsPrivate, window.SourceHash,
-		)
-		if err != nil {
-			return fmt.Errorf("insert incremental calendar busy window: %w", err)
+		changedIDs := append([]string{}, delta.DeletedEventIDs...)
+		for _, event := range delta.Events {
+			changedIDs = append(changedIDs, event.ProviderEventID)
 		}
-	}
-
-	for _, change := range delta.ManagedScheduleEventChanges {
-		if strings.TrimSpace(change.EventID) == "" {
-			continue
-		}
-		if change.Deleted {
-			if _, err := tx.ExecContext(ctx, invalidateDeletedManagedScheduleEventQuery, connection.UserID, string(connection.Provider), change.EventID); err != nil {
-				return fmt.Errorf("invalidate deleted managed calendar event: %w", err)
-			}
-			continue
-		}
-		var block managedScheduleBlockState
-		if err := tx.GetContext(ctx, &block, `
-			SELECT block_id, workspace_id, story_id, title, start_at, end_at
-			FROM calendar_schedule_blocks
-			WHERE user_id = $1
-				AND external_provider = $2
-				AND external_event_id = $3
-				AND completed_at IS NULL
-			FOR UPDATE
-		`, connection.UserID, string(connection.Provider), change.EventID); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
+		for _, eventID := range changedIDs {
+			eventID = strings.TrimSpace(eventID)
+			if eventID == "" {
 				continue
 			}
-			return fmt.Errorf("lock changed managed calendar event: %w", err)
+			if err := queries.DeleteChangedCalendarEvent(ctx, calendarsql.DeleteChangedCalendarEventParams{
+				ConnectionID:    connection.ID,
+				ProviderEventID: eventID,
+			}); err != nil {
+				return fmt.Errorf("delete changed calendar event: %w", err)
+			}
+			if err := queries.DeleteChangedCalendarBusyWindow(ctx, calendarsql.DeleteChangedCalendarBusyWindowParams{
+				ConnectionID:    connection.ID,
+				ProviderEventID: eventID,
+			}); err != nil {
+				return fmt.Errorf("delete changed calendar busy window: %w", err)
+			}
 		}
-		if managedScheduleEventMatchesBlock(change, block) {
-			continue
-		}
-		if _, err := tx.ExecContext(ctx, invalidateChangedManagedScheduleEventQuery, block.ID); err != nil {
-			return fmt.Errorf("invalidate changed managed calendar event: %w", err)
-		}
-	}
 
-	if _, err := tx.ExecContext(ctx, `UPDATE calendar_connections SET sync_token = NULLIF($2, ''), updated_at = NOW() WHERE connection_id = $1`, connection.ID, strings.TrimSpace(delta.NextSyncToken)); err != nil {
-		return fmt.Errorf("store incremental calendar sync token: %w", err)
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit incremental calendar changes: %w", err)
+		for _, event := range delta.Events {
+			params, err := calendarEventUpsertParams(connection, event, uuid.New())
+			if err != nil {
+				return err
+			}
+			if err := queries.UpsertCalendarEvent(ctx, params); err != nil {
+				return fmt.Errorf("insert incremental calendar event: %w", err)
+			}
+		}
+		for _, window := range delta.BusyWindows {
+			if err := queries.InsertCalendarBusyWindow(ctx, calendarBusyWindowParams(connection, window)); err != nil {
+				return fmt.Errorf("insert incremental calendar busy window: %w", err)
+			}
+		}
+
+		for _, change := range delta.ManagedScheduleEventChanges {
+			if strings.TrimSpace(change.EventID) == "" {
+				continue
+			}
+			if change.Deleted {
+				if err := queries.InvalidateDeletedManagedScheduleEvent(ctx, calendarsql.InvalidateDeletedManagedScheduleEventParams{
+					UserID:   connection.UserID,
+					Provider: string(connection.Provider),
+					EventID:  change.EventID,
+				}); err != nil {
+					return fmt.Errorf("invalidate deleted managed calendar event: %w", err)
+				}
+				continue
+			}
+			row, err := queries.LockChangedManagedScheduleEvent(ctx, calendarsql.LockChangedManagedScheduleEventParams{
+				UserID:   connection.UserID,
+				Provider: string(connection.Provider),
+				EventID:  change.EventID,
+			})
+			if errors.Is(err, pgx.ErrNoRows) {
+				continue
+			}
+			if err != nil {
+				return fmt.Errorf("lock changed managed calendar event: %w", err)
+			}
+			block := managedScheduleBlockState{
+				ID: row.BlockID, WorkspaceID: row.WorkspaceID, StoryID: row.StoryID,
+				Title: row.Title, StartAt: row.StartAt, EndAt: row.EndAt,
+			}
+			if managedScheduleEventMatchesBlock(change, block) {
+				continue
+			}
+			if err := queries.InvalidateChangedManagedScheduleEvent(ctx, calendarsql.InvalidateChangedManagedScheduleEventParams{BlockID: block.ID}); err != nil {
+				return fmt.Errorf("invalidate changed managed calendar event: %w", err)
+			}
+		}
+		if err := queries.StoreIncrementalCalendarSyncToken(ctx, calendarsql.StoreIncrementalCalendarSyncTokenParams{
+			SyncToken:    strings.TrimSpace(delta.NextSyncToken),
+			ConnectionID: connection.ID,
+		}); err != nil {
+			return fmt.Errorf("store incremental calendar sync token: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("apply calendar changes transaction: %w", err)
 	}
 	return nil
 }

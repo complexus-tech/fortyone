@@ -1,0 +1,36 @@
+get:
+  operationId: listKeyResults
+  tags: [Objectives]
+  summary: List key results visible to the actor
+  description: Returns key results through the user credential's current workspace membership, team membership, scope, and optional team restriction. User credentials are personal access tokens or user-authorized OAuth tokens.
+  x-fortyone-scope: objectives:read
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+    - name: teamId
+      in: query
+      required: false
+      description: Restrict results to one team allowed by the credential.
+      schema: {type: string, format: uuid}
+    - name: objectiveId
+      in: query
+      required: false
+      description: Restrict results to one objective.
+      schema: {type: string, format: uuid}
+    - $ref: ../openapi.yaml#/components/parameters/Cursor
+    - $ref: ../openapi.yaml#/components/parameters/PageLimit
+  responses:
+    '200':
+      description: A deterministic page of visible key results.
+      headers:
+        X-Request-ID: {$ref: ../openapi.yaml#/components/headers/RequestId}
+        RateLimit: {$ref: ../openapi.yaml#/components/headers/RateLimit}
+        RateLimit-Policy: {$ref: ../openapi.yaml#/components/headers/RateLimitPolicy}
+      content:
+        application/json:
+          schema: {$ref: ../openapi.yaml#/components/schemas/KeyResultPageResponse}
+    '400': {$ref: ../openapi.yaml#/components/responses/BadRequest}
+    '401': {$ref: ../openapi.yaml#/components/responses/Unauthorized}
+    '403': {$ref: ../openapi.yaml#/components/responses/Forbidden}
+    '429': {$ref: ../openapi.yaml#/components/responses/RateLimited}
+    '500': {$ref: ../openapi.yaml#/components/responses/InternalError}
+    '503': {$ref: ../openapi.yaml#/components/responses/ServiceUnavailable}

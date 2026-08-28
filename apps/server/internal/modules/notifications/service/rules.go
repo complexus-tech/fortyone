@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	statesdomain "github.com/complexus-tech/projects-api/internal/modules/states/domain"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
+	usersdomain "github.com/complexus-tech/projects-api/internal/modules/users/domain"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
@@ -16,16 +16,24 @@ import (
 type Rules struct {
 	log      *logger.Logger
 	stories  storyRulesService
-	users    *users.Service
-	statuses *states.Service
+	users    userRulesService
+	statuses statusRulesService
 }
 
 type storyRulesService interface {
-	Get(ctx context.Context, storyID, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
-	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
+	Get(ctx context.Context, storyID, workspaceID uuid.UUID) (storydomain.Story, error)
+	RecordActivity(ctx context.Context, activity storydomain.Activity) error
 }
 
-func NewRules(log *logger.Logger, stories storyRulesService, users *users.Service, statuses *states.Service) *Rules {
+type userRulesService interface {
+	GetUser(context.Context, uuid.UUID) (usersdomain.User, error)
+}
+
+type statusRulesService interface {
+	Get(context.Context, uuid.UUID, uuid.UUID) (statesdomain.State, error)
+}
+
+func NewRules(log *logger.Logger, stories storyRulesService, users userRulesService, statuses statusRulesService) *Rules {
 	return &Rules{
 		log:      log,
 		stories:  stories,
@@ -36,7 +44,13 @@ func NewRules(log *logger.Logger, stories storyRulesService, users *users.Servic
 
 // ProcessStoryCreated applies notification rules for story creation
 func (r *Rules) ProcessStoryCreated(ctx context.Context, payload events.StoryCreatedPayload, actorID uuid.UUID) ([]CoreNewNotification, error) {
-	r.log.Info(ctx, "ProcessStoryCreated", "payload", payload, "actor_id", actorID)
+	if r.log != nil {
+		r.log.Info(ctx, "ProcessStoryCreated",
+			"story_id", payload.StoryID,
+			"workspace_id", payload.WorkspaceID,
+			"actor_id", actorID,
+		)
+	}
 
 	var notifications []CoreNewNotification
 
@@ -69,7 +83,14 @@ func (r *Rules) ProcessStoryCreated(ctx context.Context, payload events.StoryCre
 
 // ProcessStoryUpdate applies notification rules for story updates
 func (r *Rules) ProcessStoryUpdate(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) ([]CoreNewNotification, error) {
-	r.log.Info(ctx, "ProcessStoryUpdate", "payload", payload, "actor_id", actorID)
+	if r.log != nil {
+		r.log.Info(ctx, "ProcessStoryUpdate",
+			"story_id", payload.StoryID,
+			"workspace_id", payload.WorkspaceID,
+			"actor_id", actorID,
+			"changed_field_count", len(payload.Updates),
+		)
+	}
 
 	var notifications []CoreNewNotification
 	directRecipients := make(map[uuid.UUID]struct{})

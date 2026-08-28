@@ -1,7 +1,7 @@
 {
   "name": "docs",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "scripts": {
     "build": "next build",
     "dev": "next dev --turbo --port 3002",

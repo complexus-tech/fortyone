@@ -1,33 +1,58 @@
 package commentsrepository
 
 import (
-	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
+	"context"
+	"errors"
+
+	commentsql "github.com/complexus-tech/projects-api/internal/modules/comments/repository/sqlc"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type repo struct {
-	log *logger.Logger
-	db  *sqlx.DB
+var errTransactionsUnavailable = errors.New("comments repository transactions are unavailable")
+
+type Repository struct {
+	log            *logger.Logger
+	queries        commentsql.Querier
+	runTransaction func(context.Context, func(commentsql.Querier) error) error
 }
 
-func New(log *logger.Logger, db *sqlx.DB) *repo {
-	return &repo{
-		log: log,
-		db:  db,
+func New(log *logger.Logger, db *pgxpool.Pool) *Repository {
+	if db == nil {
+		return &Repository{log: log}
 	}
+	queries := commentsql.New(db)
+	transactor := platformdatabase.NewTransactor(db)
+	repository := newWithQueries(log, queries)
+	repository.runTransaction = func(ctx context.Context, operation func(commentsql.Querier) error) error {
+		return transactor.WithinTransaction(ctx, pgx.TxOptions{}, func(tx pgx.Tx) error {
+			return operation(queries.WithTx(tx))
+		})
+	}
+	return repository
 }
 
-// toCoreComment converts a DbComment to a CoreComment
-func toCoreComment(dbComment DbComment) comments.CoreComment {
-	return comments.CoreComment{
-		ID:          dbComment.ID,
-		StoryID:     dbComment.StoryID,
-		Parent:      dbComment.Parent,
-		UserID:      dbComment.UserID,
-		Comment:     dbComment.Comment,
-		CreatedAt:   dbComment.CreatedAt,
-		UpdatedAt:   dbComment.UpdatedAt,
-		SubComments: []comments.CoreComment{}, // Empty for single comment fetch
+func newWithQueries(log *logger.Logger, queries commentsql.Querier) *Repository {
+	repository := &Repository{log: log, queries: queries}
+	if queries != nil {
+		repository.runTransaction = func(ctx context.Context, operation func(commentsql.Querier) error) error {
+			return operation(queries)
+		}
 	}
+	return repository
+}
+
+func (r *Repository) withinTransaction(
+	ctx context.Context,
+	operation func(commentsql.Querier) error,
+) error {
+	if operation == nil {
+		return platformdatabase.ErrNilTransactionOperation
+	}
+	if r == nil || r.runTransaction == nil {
+		return errTransactionsUnavailable
+	}
+	return r.runTransaction(ctx, operation)
 }

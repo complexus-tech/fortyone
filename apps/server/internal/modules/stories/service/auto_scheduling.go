@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 )
@@ -134,11 +135,19 @@ func (s *Service) prepareAutoSchedulingUpdate(ctx context.Context, story CoreSin
 		if story.AutoSchedulingStatus != AutoSchedulingStatusScheduled && story.AutoSchedulingStatus != AutoSchedulingStatusAtRisk {
 			return false, ErrAutoSchedulingLockEmpty
 		}
-		autoRepo, ok := s.repo.(autoSchedulingRepository)
-		if !ok {
+		var exists bool
+		var err error
+		if repository, ok := s.repo.(authorizedAutoSchedulingRepository); ok {
+			scope, scopeErr := mutationScope(ctx, story.Workspace, uuid.Nil, auth.PrincipalHumanUser)
+			if scopeErr != nil {
+				return false, scopeErr
+			}
+			exists, err = repository.AuthorizedMayaScheduleBlocksExist(ctx, scope, story.ID)
+		} else if legacy, ok := s.repo.(autoSchedulingRepository); ok {
+			exists, err = legacy.MayaScheduleBlocksExist(ctx, story.ID, story.Workspace)
+		} else {
 			return false, errors.New("story repository does not support auto-scheduling state")
 		}
-		exists, err := autoRepo.MayaScheduleBlocksExist(ctx, story.ID, story.Workspace)
 		if err != nil {
 			return false, err
 		}
@@ -193,7 +202,7 @@ func (s *Service) autoSchedulingUpdateIsTerminal(ctx context.Context, story Core
 	if !valid || statusID == nil {
 		return false, fmt.Errorf("invalid status_id type: %T", rawStatus)
 	}
-	category, err := s.repo.GetStatusCategory(ctx, statusID.String())
+	category, err := s.getStoryStatusCategory(ctx, story.Workspace, *statusID)
 	if err != nil {
 		return false, err
 	}
@@ -306,7 +315,7 @@ func (s *Service) UpdateAutomationStateIfUnchanged(
 			return errors.New("schedule transition state does not match persisted auto-scheduling status")
 		}
 	}
-	story, err := s.repo.Get(ctx, storyID, workspaceID)
+	story, err := s.getVisibleStory(ctx, storyID, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -329,7 +338,7 @@ func (s *Service) UpdateAutomationStateIfUnchanged(
 	}
 
 	stateUpdatedAt := time.Now().UTC()
-	audienceIDs, audienceErr := s.repo.GetNotificationAudience(ctx, storyID, workspaceID)
+	audienceIDs, audienceErr := s.GetNotificationAudience(ctx, storyID, workspaceID)
 	audienceResolved := audienceErr == nil
 	if audienceErr != nil {
 		s.log.Error(ctx, "failed to load story notification audience", "error", audienceErr, "story_id", storyID)
@@ -403,20 +412,22 @@ func (s *Service) UpdateAutomationStateIfUnchanged(
 		return nil
 	}
 
-	autoRepo, ok := s.repo.(autoSchedulingRepository)
-	if !ok {
+	var updated bool
+	if repository, ok := s.repo.(authorizedAutoSchedulingRepository); ok {
+		scope, scopeErr := mutationScope(ctx, workspaceID, actorID, auth.PrincipalSystem)
+		if scopeErr != nil {
+			return scopeErr
+		}
+		updated, err = repository.UpdateAuthorizedAutoSchedulingStateIfUnchanged(
+			ctx, scope, storyID, expectedUpdatedAt, status, reason, stateUpdatedAt, locked,
+		)
+	} else if legacy, ok := s.repo.(autoSchedulingRepository); ok {
+		updated, err = legacy.UpdateAutoSchedulingStateIfUnchanged(
+			ctx, storyID, workspaceID, expectedUpdatedAt, status, reason, stateUpdatedAt, locked,
+		)
+	} else {
 		return errors.New("story repository does not support auto-scheduling state")
 	}
-	updated, err := autoRepo.UpdateAutoSchedulingStateIfUnchanged(
-		ctx,
-		storyID,
-		workspaceID,
-		expectedUpdatedAt,
-		status,
-		reason,
-		stateUpdatedAt,
-		locked,
-	)
 	if err != nil {
 		return err
 	}

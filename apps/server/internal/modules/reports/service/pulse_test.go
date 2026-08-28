@@ -93,7 +93,7 @@ func TestGetPulseReportComposesDeterministicSections(t *testing.T) {
 	}
 	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
 
-	got, err := service.GetPulseReport(context.Background(), workspaceID, ReportFilters{})
+	got, err := service.GetPulseReport(reportTestContext(workspaceID), workspaceID, ReportFilters{})
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -138,7 +138,7 @@ func TestGetPulseReportBuildsOrderedRiskCards(t *testing.T) {
 	}
 	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
 
-	got, err := service.GetPulseReport(context.Background(), workspaceID, ReportFilters{})
+	got, err := service.GetPulseReport(reportTestContext(workspaceID), workspaceID, ReportFilters{})
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -160,7 +160,7 @@ func TestTrackWorkspaceAnalyticsEventNormalizesSafeInput(t *testing.T) {
 	repo := &pulseRepoStub{}
 	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
 
-	got, err := service.TrackWorkspaceAnalyticsEvent(context.Background(), CoreWorkspaceAnalyticsEventInput{
+	got, err := service.TrackWorkspaceAnalyticsEvent(reportTestContext(userID), CoreWorkspaceAnalyticsEventInput{
 		WorkspaceID: workspaceID,
 		UserID:      userID,
 		EventName:   " analytics_report_viewed ",
@@ -194,9 +194,11 @@ func TestTrackWorkspaceAnalyticsEventRejectsBlankEventName(t *testing.T) {
 	repo := &pulseRepoStub{}
 	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
 
-	_, err := service.TrackWorkspaceAnalyticsEvent(context.Background(), CoreWorkspaceAnalyticsEventInput{
-		WorkspaceID: uuid.New(),
-		UserID:      uuid.New(),
+	workspaceID := uuid.New()
+	userID := uuid.New()
+	_, err := service.TrackWorkspaceAnalyticsEvent(reportTestContext(userID), CoreWorkspaceAnalyticsEventInput{
+		WorkspaceID: workspaceID,
+		UserID:      userID,
 		EventName:   " ",
 	})
 

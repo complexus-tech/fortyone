@@ -1,13 +1,16 @@
 package slack
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/complexus-tech/projects-api/internal/platform/secretbox"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	"github.com/google/uuid"
 )
 
 type slackCredential struct {
@@ -16,20 +19,61 @@ type slackCredential struct {
 	ExpiresAt    *time.Time `json:"expiresAt,omitempty"`
 }
 
-type credentialCodec struct {
-	box *secretbox.Box
+type slackCredentialBinding struct {
+	WorkspaceID       uuid.UUID
+	SlackTeamID       string
+	InstallGeneration uuid.UUID
 }
 
-func newCredentialCodec(secret string) (*credentialCodec, error) {
-	box, err := secretbox.New(secret)
-	if err != nil {
-		return nil, err
+func (b slackCredentialBinding) vaultContext() credentialvault.Context {
+	// #nosec G101 -- these literals are public AAD domain identifiers, not credentials.
+	return credentialvault.Context{
+		Provider:       "slack",
+		TenantID:       b.WorkspaceID.String(),
+		SubjectID:      strings.TrimSpace(b.SlackTeamID),
+		CredentialType: "bot-oauth",
+		Generation:     b.InstallGeneration.String(),
 	}
-	return &credentialCodec{box: box}, nil
 }
 
-func (c *credentialCodec) seal(credential slackCredential) (string, int, error) {
-	if c == nil || c.box == nil {
+type credentialCodec struct {
+	vault CredentialVault
+}
+
+func (s *Service) botToken(_ context.Context, installation slackdomain.Installation) (string, error) {
+	payload := strings.TrimSpace(installation.BotAccessToken)
+	if payload == "" {
+		return "", errors.New("slack installation is missing bot token")
+	}
+	if s.credentials == nil {
+		return "", errors.New("slack credential encryption is not configured")
+	}
+	if installation.CredentialVersion != credentialvault.CurrentVersion {
+		return "", errors.New("slack credential requires vault migration")
+	}
+	credential, openedVersion, err := s.credentials.open(slackCredentialBinding{
+		WorkspaceID:       installation.WorkspaceID,
+		SlackTeamID:       installation.SlackTeamID,
+		InstallGeneration: installation.InstallGeneration,
+	}, payload)
+	if err != nil {
+		return "", err
+	}
+	if openedVersion != installation.CredentialVersion {
+		return "", errors.New("slack credential envelope version mismatch")
+	}
+	return credential.AccessToken, nil
+}
+
+func newCredentialCodec(vault CredentialVault) (*credentialCodec, error) {
+	if vault == nil {
+		return nil, credentialvault.ErrNotConfigured
+	}
+	return &credentialCodec{vault: vault}, nil
+}
+
+func (c *credentialCodec) seal(binding slackCredentialBinding, credential slackCredential) (string, int, error) {
+	if c == nil || c.vault == nil {
 		return "", 0, errors.New("slack credential encryption is not configured")
 	}
 	credential.AccessToken = strings.TrimSpace(credential.AccessToken)
@@ -37,68 +81,50 @@ func (c *credentialCodec) seal(credential slackCredential) (string, int, error) 
 	if credential.AccessToken == "" {
 		return "", 0, errors.New("slack access token is required")
 	}
+	// #nosec G117 -- this buffer is cleared and passed directly to envelope encryption below.
 	payload, err := json.Marshal(credential)
 	if err != nil {
 		return "", 0, fmt.Errorf("encode slack credential: %w", err)
 	}
-	value, err := c.box.Seal(payload)
+	defer clear(payload)
+	value, err := c.vault.Seal(binding.vaultContext(), payload)
 	if err != nil {
 		return "", 0, fmt.Errorf("encrypt slack credential: %w", err)
 	}
-	return value, secretbox.CurrentVersion(), nil
+	return value, credentialvault.CurrentVersion, nil
 }
 
-func (c *credentialCodec) open(value string) (slackCredential, int, error) {
-	if c == nil || c.box == nil {
+func (c *credentialCodec) open(binding slackCredentialBinding, value string) (slackCredential, int, error) {
+	if c == nil || c.vault == nil {
 		return slackCredential{}, 0, errors.New("slack credential encryption is not configured")
 	}
-	opened, err := c.box.Open(value)
+	if !credentialvault.IsEnvelope(value) {
+		return slackCredential{}, 0, errors.New("slack credential requires vault migration")
+	}
+	opened, err := c.vault.Open(binding.vaultContext(), value)
 	if err != nil {
 		return slackCredential{}, 0, fmt.Errorf("decrypt slack credential: %w", err)
 	}
-	if opened.Version == 0 {
-		token := strings.TrimSpace(string(opened.Plaintext))
-		if token == "" {
-			return slackCredential{}, 0, errors.New("slack access token is empty")
-		}
-		return slackCredential{AccessToken: token}, 0, nil
+	defer opened.Destroy()
+	plaintext := opened.Reveal()
+	defer clear(plaintext)
+	credential, err := decodeSlackCredential(plaintext)
+	if err != nil {
+		return slackCredential{}, 0, err
 	}
+	return credential, credentialvault.CurrentVersion, nil
+}
+func decodeSlackCredential(payload []byte) (slackCredential, error) {
 	var credential slackCredential
-	if err := json.Unmarshal(opened.Plaintext, &credential); err != nil {
-		return slackCredential{}, 0, fmt.Errorf("decode slack credential: %w", err)
+	if err := json.Unmarshal(payload, &credential); err != nil {
+		// JSON/time decoding errors can echo input values. Keep provider
+		// credential plaintext out of error and logging boundaries.
+		return slackCredential{}, errors.New("decode slack credential: invalid payload")
 	}
 	credential.AccessToken = strings.TrimSpace(credential.AccessToken)
 	credential.RefreshToken = strings.TrimSpace(credential.RefreshToken)
 	if credential.AccessToken == "" {
-		return slackCredential{}, 0, errors.New("slack access token is empty")
+		return slackCredential{}, errors.New("slack access token is empty")
 	}
-	return credential, opened.Version, nil
-}
-
-func (c *credentialCodec) sealPayload(payload []byte) (string, error) {
-	if c == nil || c.box == nil {
-		return "", errors.New("slack payload encryption is not configured")
-	}
-	if len(payload) == 0 {
-		return "", errors.New("slack payload is empty")
-	}
-	value, err := c.box.Seal(payload)
-	if err != nil {
-		return "", fmt.Errorf("encrypt Slack payload: %w", err)
-	}
-	return value, nil
-}
-
-func (c *credentialCodec) openPayload(value string) ([]byte, error) {
-	if c == nil || c.box == nil {
-		return nil, errors.New("slack payload encryption is not configured")
-	}
-	opened, err := c.box.Open(value)
-	if err != nil {
-		return nil, fmt.Errorf("decrypt Slack payload: %w", err)
-	}
-	if opened.Version == 0 {
-		return nil, errors.New("unencrypted Slack payload is not allowed")
-	}
-	return opened.Plaintext, nil
+	return credential, nil
 }

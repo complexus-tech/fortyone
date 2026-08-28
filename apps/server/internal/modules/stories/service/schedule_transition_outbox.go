@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
@@ -25,32 +26,13 @@ const (
 	scheduleTransitionOutboxSchemaVersion  = 1
 )
 
-// CoreScheduleTransitionOutboxInput is the immutable delivery snapshot written
-// in the same transaction as its scheduler-owned story state.
-type CoreScheduleTransitionOutboxInput struct {
-	EventID             uuid.UUID
-	StoryID             uuid.UUID
-	WorkspaceID         uuid.UUID
-	ActorID             uuid.UUID
-	SemanticFingerprint string
-	EventPayload        json.RawMessage
-	ClaimImmediately    bool
-}
+// CoreScheduleTransitionOutboxInput preserves the existing service-facing name
+// while ownership of the persistence value remains in the stories domain.
+type CoreScheduleTransitionOutboxInput = storydomain.ScheduleTransitionOutboxInput
 
-// CoreScheduleTransitionOutboxEvent is one claimed durable StoryUpdated event.
-// The raw envelope is retained so retries publish the original timestamp and
-// audience snapshot instead of reconstructing mutable state.
-type CoreScheduleTransitionOutboxEvent struct {
-	EventID             uuid.UUID
-	StoryID             uuid.UUID
-	WorkspaceID         uuid.UUID
-	ActorID             uuid.UUID
-	SemanticFingerprint string
-	TransitionSequence  int64
-	ClaimToken          uuid.UUID
-	AttemptCount        int
-	EventPayload        json.RawMessage
-}
+// CoreScheduleTransitionOutboxEvent preserves the existing service-facing name
+// while ownership of the claimed-event value remains in the stories domain.
+type CoreScheduleTransitionOutboxEvent = storydomain.ScheduleTransitionOutboxEvent
 
 type scheduleTransitionOutboxWriter interface {
 	UpdateAutoSchedulingStateAndClaimTransitionIfUnchanged(

@@ -4,10 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
-	"crypto/subtle"
-	"database/sql"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -17,7 +14,9 @@ import (
 	"strings"
 	"time"
 
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	figmadomain "github.com/complexus-tech/projects-api/internal/modules/figma/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	"github.com/complexus-tech/projects-api/internal/platform/webhooks"
 	"github.com/complexus-tech/projects-api/internal/platform/workspaceurl"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
@@ -38,53 +37,59 @@ var oauthScopes = []string{
 }
 
 type Service struct {
-	log     *logger.Logger
-	repo    Repository
-	stories StoryService
-	config  Config
-	client  apiClient
-	now     func() time.Time
+	log             *logger.Logger
+	repo            Repository
+	stories         StoryService
+	config          Config
+	client          apiClient
+	secrets         CredentialVault
+	webhookGateway  *webhooks.Gateway
+	webhookInbox    webhooks.Inbox
+	webhookPayloads WebhookPayloadOpener
+	now             func() time.Time
 }
 
 func New(log *logger.Logger, repo Repository, storyService StoryService, config Config) *Service {
 	httpClient := &http.Client{Timeout: 20 * time.Second}
-	return &Service{log: log, repo: repo, stories: storyService, config: config, client: apiClient{http: httpClient, config: config}, now: time.Now}
+	return &Service{
+		log: log, repo: repo, stories: storyService, config: config,
+		client: apiClient{http: httpClient, config: config}, secrets: config.Credentials,
+		webhookGateway: config.WebhookGateway, webhookInbox: config.WebhookInbox,
+		webhookPayloads: config.WebhookPayloads,
+		now:             time.Now,
+	}
 }
 
 func (s *Service) configured() bool {
-	return strings.TrimSpace(s.config.ClientID) != "" && strings.TrimSpace(s.config.ClientSecret) != "" && strings.TrimSpace(s.config.RedirectURL) != "" && strings.TrimSpace(s.config.SecretKey) != ""
+	return strings.TrimSpace(s.config.ClientID) != "" &&
+		strings.TrimSpace(s.config.ClientSecret) != "" &&
+		strings.TrimSpace(s.config.RedirectURL) != "" &&
+		s.secrets != nil
 }
 
 func (s *Service) GetIntegration(ctx context.Context, workspaceID uuid.UUID) (Integration, error) {
 	integration := Integration{Configured: s.configured()}
 	connection, err := s.repo.GetConnection(ctx, workspaceID)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
+		if !errors.Is(err, figmadomain.ErrNotFound) {
 			return integration, err
 		}
 		return integration, nil
 	}
-	connection.TokenPayload = ""
+	connection.CredentialPayload = ""
 	integration.Connection = &connection
 	return integration, nil
 }
 
 func (s *Service) CreateInstallSession(ctx context.Context, workspaceID, userID uuid.UUID, workspaceSlug string) (string, error) {
 	if !s.configured() {
-		return "", errors.New("Figma integration is not configured")
+		return "", errors.New("figma integration is not configured")
 	}
-	state, err := randomValue(32)
-	if err != nil {
-		return "", err
-	}
-	verifier, err := randomValue(48)
+	state, verifier, err := s.createOAuthState(ctx, workspaceID, userID, workspaceSlug)
 	if err != nil {
 		return "", err
 	}
 	challengeBytes := sha256.Sum256([]byte(verifier))
-	if err := s.repo.SaveOAuthState(ctx, OAuthState{StateHash: digest(state), WorkspaceID: workspaceID, UserID: userID, WorkspaceSlug: workspaceSlug, CodeVerifier: verifier, ExpiresAt: s.now().UTC().Add(10 * time.Minute)}); err != nil {
-		return "", err
-	}
 	query := url.Values{
 		"client_id": {s.config.ClientID}, "redirect_uri": {s.config.RedirectURL}, "scope": {strings.Join(oauthScopes, ",")},
 		"state": {state}, "response_type": {"code"}, "code_challenge": {base64.RawURLEncoding.EncodeToString(challengeBytes[:])}, "code_challenge_method": {"S256"},
@@ -93,11 +98,14 @@ func (s *Service) CreateInstallSession(ctx context.Context, workspaceID, userID 
 }
 
 func (s *Service) CompleteOAuth(ctx context.Context, code, state string) (string, error) {
-	stored, err := s.repo.ConsumeOAuthState(ctx, digest(state), s.now().UTC())
+	stored, err := s.consumeOAuthState(ctx, state)
 	if err != nil {
-		return "", errors.New("the Figma connection session expired; try again")
+		return "", fmt.Errorf("the Figma connection session expired; try again: %w", err)
 	}
 	failureURL := s.integrationURL(stored.WorkspaceSlug, "figma_error=connection_failed")
+	if strings.TrimSpace(code) == "" {
+		return failureURL, errors.New("figma OAuth callback is missing its authorization code")
+	}
 	response, err := s.client.exchange(ctx, code, s.config.RedirectURL, stored.CodeVerifier)
 	if err != nil {
 		s.log.Error(ctx, "failed exchanging Figma OAuth code", "error", err, "workspace_id", stored.WorkspaceID)
@@ -110,7 +118,9 @@ func (s *Service) CompleteOAuth(ctx context.Context, code, state string) (string
 	}
 	expiresAt := s.now().UTC().Add(time.Duration(response.ExpiresIn) * time.Second)
 	token := Token{AccessToken: response.AccessToken, RefreshToken: response.RefreshToken, TokenType: response.TokenType, ExpiresAt: expiresAt}
-	payload, err := encryptToken(s.config.SecretKey, token)
+	connectionID := uuid.New()
+	installationGeneration := uuid.New()
+	payload, err := s.sealToken(stored.WorkspaceID, connectionID, installationGeneration, token)
 	if err != nil {
 		s.log.Error(ctx, "failed encrypting Figma OAuth token", "error", err, "workspace_id", stored.WorkspaceID)
 		return failureURL, err
@@ -124,7 +134,20 @@ func (s *Service) CompleteOAuth(ctx context.Context, code, state string) (string
 	if previous, previousToken, previousErr := s.connectionToken(ctx, stored.WorkspaceID); previousErr == nil {
 		s.cleanupWebhooks(ctx, previous, previousToken)
 	}
-	_, err = s.repo.UpsertConnection(ctx, Connection{WorkspaceID: stored.WorkspaceID, FigmaUserID: userID, Email: optional(user.Email), Handle: optional(user.Handle), TokenPayload: payload, Scopes: append([]string(nil), oauthScopes...), ExpiresAt: expiresAt, ConnectedByUserID: stored.UserID, IsActive: true})
+	_, err = s.repo.UpsertConnection(ctx, Connection{
+		ID:                     connectionID,
+		WorkspaceID:            stored.WorkspaceID,
+		FigmaUserID:            userID,
+		Email:                  optional(user.Email),
+		Handle:                 optional(user.Handle),
+		CredentialPayload:      payload,
+		CredentialVersion:      int16(credentialvault.CurrentVersion),
+		InstallationGeneration: installationGeneration,
+		Scopes:                 append([]string(nil), oauthScopes...),
+		ExpiresAt:              expiresAt,
+		ConnectedByUserID:      stored.UserID,
+		IsActive:               true,
+	})
 	if err != nil {
 		s.log.Error(ctx, "failed storing Figma OAuth connection", "error", err, "workspace_id", stored.WorkspaceID)
 		return failureURL, err
@@ -215,14 +238,18 @@ func (s *Service) LinkStory(ctx context.Context, workspaceID, actorID, storyID u
 		}
 		s.ensureWebhooks(ctx, connection, token, artifact.FileKey)
 	}
-	_ = s.stories.RecordActivity(ctx, stories.CoreActivity{StoryID: storyID, UserID: actorID, Type: "link", Field: "figma", CurrentValue: deref(artifact.NodeName, artifact.FileName), NewValue: artifact.CanonicalURL, WorkspaceID: workspaceID})
+	_ = s.stories.RecordActivity(ctx, StoryActivity{
+		StoryID: storyID, ActorID: actorID, Type: "link", Field: "figma",
+		Previous: deref(artifact.NodeName, artifact.FileName),
+		Current:  artifact.CanonicalURL, WorkspaceID: workspaceID,
+	})
 	return link, nil
 }
 
-func (s *Service) CreateStoryFromLink(ctx context.Context, workspaceID, actorID uuid.UUID, input CreateStoryInput) (stories.CoreSingleStory, StoryLink, error) {
+func (s *Service) CreateStoryFromLink(ctx context.Context, workspaceID, actorID uuid.UUID, input CreateStoryInput) (Story, StoryLink, error) {
 	artifact, err := s.ResolveLink(ctx, workspaceID, input.URL)
 	if err != nil {
-		return stories.CoreSingleStory{}, StoryLink{}, err
+		return Story{}, StoryLink{}, err
 	}
 	title := deref(artifact.NodeName, artifact.FileName)
 	if input.Title != nil && strings.TrimSpace(*input.Title) != "" {
@@ -233,9 +260,13 @@ func (s *Service) CreateStoryFromLink(ctx context.Context, workspaceID, actorID 
 		value := "Design: " + artifact.CanonicalURL
 		description = &value
 	}
-	story, err := s.stories.CreateExternal(ctx, actorID, stories.CoreNewStory{Title: title, Description: description, DescriptionHTML: description, Team: input.TeamID, Status: input.StatusID, Reporter: &actorID, Priority: "No Priority"}, workspaceID)
+	story, err := s.stories.CreateExternal(ctx, actorID, NewStory{
+		Title: title, Description: description, DescriptionHTML: description,
+		TeamID: input.TeamID, StatusID: input.StatusID,
+		ReporterID: &actorID, Priority: "No Priority",
+	}, workspaceID)
 	if err != nil {
-		return stories.CoreSingleStory{}, StoryLink{}, err
+		return Story{}, StoryLink{}, err
 	}
 	link, err := s.LinkStory(ctx, workspaceID, actorID, story.ID, input.WorkspaceSlug, input.URL)
 	return story, link, err
@@ -288,96 +319,11 @@ func (s *Service) RefreshStoryLink(ctx context.Context, workspaceID, linkID uuid
 }
 
 func (s *Service) HandleWebhook(ctx context.Context, body []byte) error {
-	var event WebhookEvent
-	if err := json.Unmarshal(body, &event); err != nil {
-		return err
-	}
-	event.Raw = append([]byte(nil), body...)
-	webhookID := int64(event.WebhookID)
-	if webhookID <= 0 {
-		return errors.New("invalid Figma webhook id")
-	}
-	webhook, err := s.repo.GetWebhook(ctx, webhookID)
-	if err != nil {
-		return errors.New("unknown Figma webhook")
-	}
-	if subtle.ConstantTimeCompare([]byte(digest(event.Passcode)), []byte(webhook.PasscodeHash)) != 1 {
-		return errors.New("invalid Figma webhook passcode")
-	}
-	if event.EventType != "PING" && event.EventType != webhook.EventType {
-		return errors.New("Figma webhook event type does not match its subscription")
-	}
-	if event.EventType != "PING" && event.FileKey != webhook.FileKey {
-		return errors.New("Figma webhook file does not match its subscription")
-	}
-	eventKey := fmt.Sprintf("%d:%s:%s:%s:%s", webhookID, event.EventType, event.Timestamp, event.FileKey, event.NodeID)
-	created, err := s.repo.RecordWebhookEvent(ctx, eventKey, event)
-	if err != nil || !created {
-		return err
-	}
-	if event.EventType == "PING" {
-		return nil
-	}
-	links, err := s.repo.ListLinksByFile(ctx, webhook.WorkspaceID, event.FileKey)
-	if err != nil {
-		return err
-	}
-	for _, link := range links {
-		if event.EventType == EventDevModeStatusUpdate && link.Artifact.NodeID != nil && *link.Artifact.NodeID == event.NodeID {
-			status := event.Status
-			link.DevStatus = &status
-			if err := s.repo.UpdateStoryLink(ctx, link); err != nil {
-				return err
-			}
-			_ = s.stories.RecordActivity(ctx, stories.CoreActivity{StoryID: link.StoryID, UserID: link.CreatedByUserID, Type: "update", Field: "figma_dev_status", CurrentValue: event.ChangeMessage, NewValue: event.Status, WorkspaceID: link.WorkspaceID})
-			continue
-		}
-		if event.EventType == EventFileUpdate {
-			artifact, resolveErr := s.ResolveLink(ctx, link.WorkspaceID, link.Artifact.CanonicalURL)
-			if resolveErr != nil {
-				now := s.now().UTC()
-				link.UnavailableAt = &now
-			} else {
-				link.Artifact = artifact
-				link.UnavailableAt = nil
-			}
-			if err := s.repo.UpdateStoryLink(ctx, link); err != nil {
-				return err
-			}
-			_ = s.stories.RecordActivity(ctx, stories.CoreActivity{StoryID: link.StoryID, UserID: link.CreatedByUserID, Type: "update", Field: "figma_design", CurrentValue: event.FileName, NewValue: link.Artifact.CanonicalURL, WorkspaceID: link.WorkspaceID})
-		}
-	}
-	return nil
-}
-
-func (s *Service) connectionToken(ctx context.Context, workspaceID uuid.UUID) (Connection, Token, error) {
-	connection, err := s.repo.GetConnection(ctx, workspaceID)
-	if err != nil {
-		return Connection{}, Token{}, ErrNotConnected
-	}
-	token, err := decryptToken(s.config.SecretKey, connection.TokenPayload)
-	if err != nil {
-		return Connection{}, Token{}, err
-	}
-	if s.now().UTC().Before(token.ExpiresAt.Add(-5 * time.Minute)) {
-		return connection, token, nil
-	}
-	refreshed, err := s.client.refresh(ctx, token.RefreshToken)
-	if err != nil {
-		return Connection{}, Token{}, err
-	}
-	if refreshed.RefreshToken == "" {
-		refreshed.RefreshToken = token.RefreshToken
-	}
-	token = Token{AccessToken: refreshed.AccessToken, RefreshToken: refreshed.RefreshToken, TokenType: refreshed.TokenType, ExpiresAt: s.now().UTC().Add(time.Duration(refreshed.ExpiresIn) * time.Second)}
-	payload, err := encryptToken(s.config.SecretKey, token)
-	if err != nil {
-		return Connection{}, Token{}, err
-	}
-	if err := s.repo.UpdateConnectionToken(ctx, connection.ID, payload, token.ExpiresAt); err != nil {
-		return Connection{}, Token{}, err
-	}
-	return connection, token, nil
+	_, err := s.ReceiveWebhook(ctx, webhooks.SignedRequest{
+		Method: "POST",
+		Body:   append([]byte(nil), body...),
+	})
+	return err
 }
 
 func (s *Service) ensureWebhooks(ctx context.Context, connection Connection, token Token, fileKey string) {
@@ -387,7 +333,7 @@ func (s *Service) ensureWebhooks(ctx context.Context, connection Connection, tok
 	for _, eventType := range []string{EventFileUpdate, EventDevModeStatusUpdate} {
 		if _, err := s.repo.FindWebhook(ctx, connection.ID, fileKey, eventType); err == nil {
 			continue
-		} else if !errors.Is(err, sql.ErrNoRows) {
+		} else if !errors.Is(err, figmadomain.ErrNotFound) {
 			s.log.Warn(ctx, "failed checking existing Figma webhook", "error", err)
 			continue
 		}
@@ -422,7 +368,7 @@ func (s *Service) cleanupWebhooks(ctx context.Context, connection Connection, to
 	}
 }
 
-func (s *Service) storyURL(workspaceSlug string, story stories.CoreSingleStory) string {
+func (s *Service) storyURL(workspaceSlug string, story Story) string {
 	baseURL, err := url.Parse(strings.TrimRight(strings.TrimSpace(s.config.WebsiteURL), "/"))
 	if err != nil || baseURL.Hostname() == "" {
 		return ""

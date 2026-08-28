@@ -1,125 +1,46 @@
 package chatsessions
 
-import (
-	"encoding/json"
-	"time"
+import chatsessionsdomain "github.com/complexus-tech/projects-api/internal/modules/chatsessions/domain"
 
-	"github.com/google/uuid"
-)
-
-type MutationApprovalExecutionState string
-
-type MessageWriteOperation string
+type MutationApprovalExecutionState = chatsessionsdomain.MutationApprovalExecutionState
+type MessageWriteOperation = chatsessionsdomain.MessageWriteOperation
 
 const (
-	MutationApprovalExecutionClaimed    MutationApprovalExecutionState = "claimed"
-	MutationApprovalExecutionStarted    MutationApprovalExecutionState = "started"
-	MutationApprovalExecutionReady      MutationApprovalExecutionState = "ready"
-	MutationApprovalExecutionExecuting  MutationApprovalExecutionState = "executing"
-	MutationApprovalExecutionInProgress MutationApprovalExecutionState = "in_progress"
-	MutationApprovalExecutionCompleted  MutationApprovalExecutionState = "completed"
-	MutationApprovalExecutionFailed     MutationApprovalExecutionState = "failed_uncertain"
+	MutationApprovalExecutionClaimed    = chatsessionsdomain.MutationApprovalExecutionClaimed
+	MutationApprovalExecutionStarted    = chatsessionsdomain.MutationApprovalExecutionStarted
+	MutationApprovalExecutionReady      = chatsessionsdomain.MutationApprovalExecutionReady
+	MutationApprovalExecutionExecuting  = chatsessionsdomain.MutationApprovalExecutionExecuting
+	MutationApprovalExecutionInProgress = chatsessionsdomain.MutationApprovalExecutionInProgress
+	MutationApprovalExecutionCompleted  = chatsessionsdomain.MutationApprovalExecutionCompleted
+	MutationApprovalExecutionFailed     = chatsessionsdomain.MutationApprovalExecutionFailed
+
+	MessageWriteAppend     = chatsessionsdomain.MessageWriteAppend
+	MessageWriteRegenerate = chatsessionsdomain.MessageWriteRegenerate
+	MessageWriteApproval   = chatsessionsdomain.MessageWriteApproval
 )
+
+type MutationApprovalReconciliationResolution = chatsessionsdomain.MutationApprovalReconciliationResolution
 
 const (
-	MessageWriteAppend     MessageWriteOperation = "append"
-	MessageWriteRegenerate MessageWriteOperation = "regenerate"
-	MessageWriteApproval   MessageWriteOperation = "approval"
+	MutationApprovalReconciliationVerifiedCompleted  = chatsessionsdomain.MutationApprovalReconciliationVerifiedCompleted
+	MutationApprovalReconciliationVerifiedNotApplied = chatsessionsdomain.MutationApprovalReconciliationVerifiedNotApplied
 )
 
-type MutationApprovalReconciliationResolution string
+type MutationApprovalReconciliationEvidenceKind = chatsessionsdomain.MutationApprovalReconciliationEvidenceKind
 
 const (
-	MutationApprovalReconciliationVerifiedCompleted  MutationApprovalReconciliationResolution = "verified_completed"
-	MutationApprovalReconciliationVerifiedNotApplied MutationApprovalReconciliationResolution = "verified_not_applied"
+	MutationApprovalReconciliationEvidenceIdempotencyLookup = chatsessionsdomain.MutationApprovalReconciliationEvidenceIdempotencyLookup
+	MutationApprovalReconciliationEvidenceWorkspaceProbe    = chatsessionsdomain.MutationApprovalReconciliationEvidenceWorkspaceProbe
 )
 
-type MutationApprovalReconciliationEvidenceKind string
-
-const (
-	MutationApprovalReconciliationEvidenceIdempotencyLookup MutationApprovalReconciliationEvidenceKind = "idempotency_lookup"
-	MutationApprovalReconciliationEvidenceWorkspaceProbe    MutationApprovalReconciliationEvidenceKind = "workspace_state_probe"
-)
-
-type CoreChatSession struct {
-	ID          string     `json:"id"`
-	UserID      uuid.UUID  `json:"userId"`
-	WorkspaceID uuid.UUID  `json:"workspaceId"`
-	Title       string     `json:"title"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
-	DeletedAt   *time.Time `json:"deletedAt,omitempty"`
-}
-
-type CoreNewChatSession struct {
-	ID          string    `json:"id"`
-	UserID      uuid.UUID `json:"userId"`
-	WorkspaceID uuid.UUID `json:"workspaceId"`
-	Title       string    `json:"title"`
-	Messages    []any     `json:"messages"`
-}
-
-type BeginMessageWriteParams struct {
-	Session         CoreChatSession
-	Messages        []any
-	Operation       MessageWriteOperation
-	TargetMessageID string
-}
-
-type CoreMessageWriteReservation struct {
-	Generation int64     `json:"generation"`
-	Token      uuid.UUID `json:"token"`
-	// Messages is populated only when the server repaired request history.
-	// It is a client-safe projection and never rehydrates omitted attachments.
-	Messages []any `json:"messages,omitempty"`
-}
-
-type FinalizeMessageWriteParams struct {
-	SessionID   string
-	UserID      uuid.UUID
-	WorkspaceID uuid.UUID
-	Messages    []any
-	Generation  int64
-	Token       uuid.UUID
-}
-
-type CoreMessageWriteResult struct {
-	Applied bool `json:"applied"`
-}
-
-type RecoverMutationApprovalOutputParams struct {
-	SessionID   string
-	UserID      uuid.UUID
-	WorkspaceID uuid.UUID
-	ToolCallID  string
-	Fingerprint string
-}
-
-type CoreMutationApprovalExecution struct {
-	State          MutationApprovalExecutionState `json:"state"`
-	Output         json.RawMessage                `json:"output,omitempty"`
-	LeaseToken     *uuid.UUID                     `json:"leaseToken,omitempty"`
-	LeaseExpiresAt *time.Time                     `json:"leaseExpiresAt,omitempty"`
-	FailureCode    string                         `json:"failureCode,omitempty"`
-}
-
-type MutationApprovalExecutionParams struct {
-	SessionID   string
-	UserID      uuid.UUID
-	WorkspaceID uuid.UUID
-	ToolCallID  string
-	Fingerprint string
-	LeaseToken  uuid.UUID
-}
-
-type MutationApprovalReconciliationEvidence struct {
-	Kind      MutationApprovalReconciliationEvidenceKind `json:"kind"`
-	Reference string                                     `json:"reference"`
-	Summary   string                                     `json:"summary"`
-}
-
-type MutationApprovalReconciliation struct {
-	Resolution MutationApprovalReconciliationResolution
-	Evidence   MutationApprovalReconciliationEvidence
-	Output     json.RawMessage
-}
+type CoreChatSession = chatsessionsdomain.CoreChatSession
+type CoreNewChatSession = chatsessionsdomain.CoreNewChatSession
+type BeginMessageWriteParams = chatsessionsdomain.BeginMessageWriteParams
+type CoreMessageWriteReservation = chatsessionsdomain.CoreMessageWriteReservation
+type FinalizeMessageWriteParams = chatsessionsdomain.FinalizeMessageWriteParams
+type CoreMessageWriteResult = chatsessionsdomain.CoreMessageWriteResult
+type RecoverMutationApprovalOutputParams = chatsessionsdomain.RecoverMutationApprovalOutputParams
+type CoreMutationApprovalExecution = chatsessionsdomain.CoreMutationApprovalExecution
+type MutationApprovalExecutionParams = chatsessionsdomain.MutationApprovalExecutionParams
+type MutationApprovalReconciliationEvidence = chatsessionsdomain.MutationApprovalReconciliationEvidence
+type MutationApprovalReconciliation = chatsessionsdomain.MutationApprovalReconciliation

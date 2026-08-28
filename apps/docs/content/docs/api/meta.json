@@ -1,0 +1,16 @@
+{
+  "title": "Developer API",
+  "pages": [
+    "quickstart",
+    "authentication",
+    "oauth-apps",
+    "scopes",
+    "resources",
+    "idempotency",
+    "pagination-and-errors",
+    "sdks",
+    "outbound-webhooks",
+    "service-accounts",
+    "changelog"
+  ]
+}

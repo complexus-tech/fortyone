@@ -1,0 +1,73 @@
+---
+title: Pagination, errors, and rate limits
+description: Build predictable FortyOne API clients using opaque cursors and stable error codes.
+---
+
+## Cursor pagination
+
+List endpoints accept `limit` from 1 to 100 and return:
+
+```json
+{
+  "data": [],
+  "meta": {
+    "hasMore": true,
+    "nextCursor": "v1.example.opaque.signature"
+  }
+}
+```
+
+When `hasMore` is true, send `nextCursor` unchanged as the next request's
+`cursor`. Cursors are signed and bound to the workspace, credential principal,
+page size, and relevant filters. Modifying one or reusing it with different
+filters returns `invalid_cursor`. Do not decode cursors or persist them as
+permanent checkpoints.
+
+## Stable errors
+
+Every API error uses one envelope:
+
+```json
+{
+  "error": {
+    "code": "invalid_cursor",
+    "message": "The cursor is invalid or does not match this request.",
+    "requestId": "34daaf72-01e5-4999-8f9f-339cd28093ae"
+  }
+}
+```
+
+Branch on `error.code`, not `message`. The message can improve without a
+version change. Log `requestId`, the operation name, and non-secret resource
+IDs; never log bearer credentials or webhook signing secrets.
+
+Common codes include `machine_authentication_required`, `access_denied`,
+`scope_required`, `principal_not_supported`, `invalid_request`,
+`invalid_cursor`, `invalid_idempotency_key`, `invalid_reference`,
+`idempotency_in_progress`, `idempotency_key_reused`, `resource_not_found`,
+`resource_conflict`, `request_too_large`, `unsupported_media_type`,
+`rate_limit_exceeded`, `service_unavailable`, and `internal_error`.
+
+Idempotency conflicts both use HTTP `409`, but require different decisions:
+
+| Code                      | Meaning                                                      | Action                                                                                 |
+| ------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `idempotency_in_progress` | The same key and request bytes are still being processed.    | Honor `Retry-After`, then retry with the same key and exact body.                      |
+| `idempotency_key_reused`  | The same active key was paired with different request bytes. | Stop. Recover the original request, or use a new key only for a new logical operation. |
+
+See [Idempotent writes](./idempotency) for the full request and recovery
+contract.
+
+## Rate limits
+
+The preview enforces a fixed per-credential quota. `RateLimit-Policy` describes
+the quota and window; `RateLimit` reports remaining requests. A `429` includes
+`Retry-After`. A `503` can also include `Retry-After` when the quota store is
+unavailable, because FortyOne fails closed rather than serving unmetered
+requests.
+
+Use bounded exponential backoff with jitter. Retry `GET` requests safely. Retry
+a mutation only when its contract explicitly makes that safe. For story
+creation, keep one `Idempotency-Key` and the exact serialized body across every
+attempt; receiving a timeout does not prove the original mutation failed. The
+SDK transports do not automatically retry writes.

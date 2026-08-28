@@ -2,20 +2,20 @@ package documents
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"strings"
 
-	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	documentdomain "github.com/complexus-tech/projects-api/internal/modules/documents/domain"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 )
 
 var (
-	ErrInvalidInput = errors.New("invalid document input")
-	ErrForbidden    = errors.New("document access denied")
-	ErrNotFound     = sql.ErrNoRows
+	ErrInvalidInput = documentdomain.ErrInvalidInput
+	ErrForbidden    = documentdomain.ErrForbidden
+	ErrNotFound     = documentdomain.ErrNotFound
 )
+
+var documentTracer = otel.Tracer("github.com/complexus-tech/projects-api/internal/modules/documents/service")
 
 const maxListLimit = 100
 
@@ -39,15 +39,14 @@ type Repository interface {
 
 type Service struct {
 	repo Repository
-	log  *logger.Logger
 }
 
-func New(log *logger.Logger, repo Repository) *Service {
-	return &Service{repo: repo, log: log}
+func New(repo Repository) *Service {
+	return &Service{repo: repo}
 }
 
 func (s *Service) List(ctx context.Context, input CoreListInput) ([]CoreDocumentSummary, error) {
-	ctx, span := web.AddSpan(ctx, "business.core.documents.List")
+	ctx, span := documentTracer.Start(ctx, "core.documents.List")
 	defer span.End()
 	if input.WorkspaceID == uuid.Nil || input.UserID == uuid.Nil {
 		return nil, ErrInvalidInput

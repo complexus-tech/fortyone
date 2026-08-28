@@ -122,7 +122,7 @@ func previousAssociationTypePtr(value string) *string {
 }
 
 func newActivityRecordingService(repo *activityRecordingRepo) *Service {
-	return New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil, nil)
+	return New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
 }
 
 func TestUpdateLabelsRecordsActivity(t *testing.T) {

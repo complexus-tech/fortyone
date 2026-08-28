@@ -8,26 +8,26 @@ import (
 	"strings"
 	"time"
 
-	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
-	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
-	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
+	objectivesdomain "github.com/complexus-tech/projects-api/internal/modules/objectives/domain"
+	sprintdomain "github.com/complexus-tech/projects-api/internal/modules/sprints/domain"
+	statesdomain "github.com/complexus-tech/projects-api/internal/modules/states/domain"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
+	teamsdomain "github.com/complexus-tech/projects-api/internal/modules/teams/domain"
 	"github.com/google/uuid"
 )
 
 // SprintsService is the membership-aware sprint surface used by planning
 // assistant tools.
 type SprintsService interface {
-	List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filters map[string]any) ([]sprints.CoreSprint, error)
-	GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID) (sprints.CoreSprintAnalytics, error)
+	List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filters map[string]any) ([]sprintdomain.Sprint, error)
+	GetAnalytics(ctx context.Context, sprintID uuid.UUID, workspaceID uuid.UUID, userID uuid.UUID) (sprintdomain.Analytics, error)
 }
 
 // ObjectiveAnalyticsService is optional because the objective list already
 // carries aggregate counts. Production uses it to provide the richer status
 // breakdown when the repository supports analytics.
 type ObjectiveAnalyticsService interface {
-	GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspaceID uuid.UUID) (objectives.CoreObjectiveAnalytics, error)
+	GetAnalytics(ctx context.Context, objectiveID uuid.UUID, workspaceID uuid.UUID) (objectivesdomain.ObjectiveAnalytics, error)
 }
 
 func planningToolDefinitions() []ToolDefinition {
@@ -118,14 +118,14 @@ func (e *FortyOneToolExecutor) listSprints(ctx context.Context, scope ToolScope,
 
 	result := listSprintsResult{Sprints: make([]sprintResult, 0, min(len(items), limit))}
 	for _, sprint := range items {
-		if sprint.Workspace != scope.WorkspaceID || joinedByID[sprint.Team].ID == uuid.Nil {
+		if sprint.WorkspaceID != scope.WorkspaceID || joinedByID[sprint.TeamID].ID == uuid.Nil {
 			continue
 		}
 		result.Total++
 		if len(result.Sprints) == limit {
 			continue
 		}
-		result.Sprints = append(result.Sprints, newSprintResult(sprint, joinedByID[sprint.Team]))
+		result.Sprints = append(result.Sprints, newSprintResult(sprint, joinedByID[sprint.TeamID]))
 	}
 	result.Truncated = result.Total > len(result.Sprints)
 	return marshalToolResult(result)
@@ -153,11 +153,11 @@ func (e *FortyOneToolExecutor) getSprintSummary(ctx context.Context, scope ToolS
 	if err != nil {
 		return nil, err
 	}
-	analytics, err := e.sprints.GetAnalytics(ctx, sprint.ID, scope.WorkspaceID)
+	analytics, err := e.sprints.GetAnalytics(ctx, sprint.ID, scope.WorkspaceID, scope.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("get sprint analytics: %w", err)
 	}
-	work, err := e.listPlanningWork(ctx, scope, joinedByID, planningWorkFilter{TeamID: sprint.Team, SprintID: &sprint.ID}, limit)
+	work, err := e.listPlanningWork(ctx, scope, joinedByID, planningWorkFilter{TeamID: sprint.TeamID, SprintID: &sprint.ID}, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list sprint work: %w", err)
 	}
@@ -167,9 +167,9 @@ func (e *FortyOneToolExecutor) getSprintSummary(ctx context.Context, scope ToolS
 			ID:                sprint.ID,
 			Name:              sprint.Name,
 			Goal:              sprint.Goal,
-			TeamID:            sprint.Team,
-			TeamName:          joinedByID[sprint.Team].Name,
-			TeamCode:          strings.ToUpper(strings.TrimSpace(joinedByID[sprint.Team].Code)),
+			TeamID:            sprint.TeamID,
+			TeamName:          joinedByID[sprint.TeamID].Name,
+			TeamCode:          strings.ToUpper(strings.TrimSpace(joinedByID[sprint.TeamID].Code)),
 			StartDate:         formatPlanningDate(sprint.StartDate),
 			EndDate:           formatPlanningDate(sprint.EndDate),
 			Status:            analytics.Overview.Status,
@@ -267,48 +267,48 @@ func (e *FortyOneToolExecutor) getObjectiveSummary(ctx context.Context, scope To
 	})
 }
 
-func (e *FortyOneToolExecutor) resolveSprint(ctx context.Context, scope ToolScope, name string, team *teams.CoreTeam) (sprints.CoreSprint, error) {
+func (e *FortyOneToolExecutor) resolveSprint(ctx context.Context, scope ToolScope, name string, team *teamsdomain.Team) (sprintdomain.Sprint, error) {
 	filters := map[string]any{"search": strings.TrimSpace(name), "limit": maxToolLimit}
 	if team != nil {
 		filters["team_id"] = team.ID
 	}
 	items, err := e.sprints.List(ctx, scope.WorkspaceID, scope.UserID, filters)
 	if err != nil {
-		return sprints.CoreSprint{}, fmt.Errorf("resolve sprint: %w", err)
+		return sprintdomain.Sprint{}, fmt.Errorf("resolve sprint: %w", err)
 	}
-	matching := make([]sprints.CoreSprint, 0, len(items))
+	matching := make([]sprintdomain.Sprint, 0, len(items))
 	wanted := normalizePlanningName(name)
 	for _, item := range items {
-		if item.Workspace == scope.WorkspaceID && normalizePlanningName(item.Name) == wanted {
+		if item.WorkspaceID == scope.WorkspaceID && normalizePlanningName(item.Name) == wanted {
 			matching = append(matching, item)
 		}
 	}
 	if len(matching) == 0 {
 		for _, item := range items {
-			if item.Workspace == scope.WorkspaceID && strings.Contains(normalizePlanningName(item.Name), wanted) {
+			if item.WorkspaceID == scope.WorkspaceID && strings.Contains(normalizePlanningName(item.Name), wanted) {
 				matching = append(matching, item)
 			}
 		}
 	}
 	if len(matching) == 0 {
-		return sprints.CoreSprint{}, fmt.Errorf("sprint %q was not found in the accessible teams", strings.TrimSpace(name))
+		return sprintdomain.Sprint{}, fmt.Errorf("sprint %q was not found in the accessible teams", strings.TrimSpace(name))
 	}
 	if len(matching) > 1 {
-		return sprints.CoreSprint{}, fmt.Errorf("sprint %q is ambiguous; include the team name", strings.TrimSpace(name))
+		return sprintdomain.Sprint{}, fmt.Errorf("sprint %q is ambiguous; include the team name", strings.TrimSpace(name))
 	}
 	return matching[0], nil
 }
 
-func (e *FortyOneToolExecutor) resolveObjective(ctx context.Context, scope ToolScope, name string, team *teams.CoreTeam) (objectives.CoreObjective, error) {
+func (e *FortyOneToolExecutor) resolveObjective(ctx context.Context, scope ToolScope, name string, team *teamsdomain.Team) (objectivesdomain.Objective, error) {
 	filters := map[string]any{"search": strings.TrimSpace(name), "limit": maxToolLimit}
 	if team != nil {
 		filters["team_id"] = team.ID
 	}
 	items, err := e.objectives.List(ctx, scope.WorkspaceID, scope.UserID, filters)
 	if err != nil {
-		return objectives.CoreObjective{}, fmt.Errorf("resolve objective: %w", err)
+		return objectivesdomain.Objective{}, fmt.Errorf("resolve objective: %w", err)
 	}
-	matching := make([]objectives.CoreObjective, 0, len(items))
+	matching := make([]objectivesdomain.Objective, 0, len(items))
 	wanted := normalizePlanningName(name)
 	for _, item := range items {
 		if item.Workspace == scope.WorkspaceID && normalizePlanningName(item.Name) == wanted {
@@ -323,15 +323,15 @@ func (e *FortyOneToolExecutor) resolveObjective(ctx context.Context, scope ToolS
 		}
 	}
 	if len(matching) == 0 {
-		return objectives.CoreObjective{}, fmt.Errorf("objective %q was not found in the accessible teams", strings.TrimSpace(name))
+		return objectivesdomain.Objective{}, fmt.Errorf("objective %q was not found in the accessible teams", strings.TrimSpace(name))
 	}
 	if len(matching) > 1 {
-		return objectives.CoreObjective{}, fmt.Errorf("objective %q is ambiguous; include the team name", strings.TrimSpace(name))
+		return objectivesdomain.Objective{}, fmt.Errorf("objective %q is ambiguous; include the team name", strings.TrimSpace(name))
 	}
 	return matching[0], nil
 }
 
-func teamByName(value *string, joined []teams.CoreTeam) (*teams.CoreTeam, error) {
+func teamByName(value *string, joined []teamsdomain.Team) (*teamsdomain.Team, error) {
 	if value == nil || strings.TrimSpace(*value) == "" {
 		return nil, nil
 	}
@@ -360,20 +360,21 @@ type planningWorkFilter struct {
 	ObjectiveID *uuid.UUID
 }
 
-func (e *FortyOneToolExecutor) listPlanningWork(ctx context.Context, scope ToolScope, joinedByID map[uuid.UUID]teams.CoreTeam, filter planningWorkFilter, limit int) (planningWorkResult, error) {
-	filters := map[string]any{"show_sub_stories": false}
+func (e *FortyOneToolExecutor) listPlanningWork(ctx context.Context, scope ToolScope, joinedByID map[uuid.UUID]teamsdomain.Team, filter planningWorkFilter, limit int) (planningWorkResult, error) {
+	showSubStories := false
+	filters := storydomain.StoryFilters{ShowSubStories: &showSubStories}
 	if filter.SprintID != nil {
-		filters["sprint_ids"] = []uuid.UUID{*filter.SprintID}
+		filters.SprintIDs = []uuid.UUID{*filter.SprintID}
 	}
 	if filter.ObjectiveID != nil {
-		filters["objective_id"] = *filter.ObjectiveID
+		filters.Objective = filter.ObjectiveID
 	}
 	items, err := e.completed.List(ctx, scope.WorkspaceID, filters)
 	if err != nil {
 		return planningWorkResult{}, err
 	}
 
-	var statusesByID map[uuid.UUID]states.CoreState
+	var statusesByID map[uuid.UUID]statesdomain.State
 	if e.states != nil {
 		_, statusesByID, err = e.scopedStatuses(ctx, scope, joinedByID)
 		if err != nil {
@@ -457,12 +458,12 @@ func capPlanningStories(items []planningStoryResult, limit int) ([]planningStory
 	return items[:limit], true
 }
 
-func newSprintResult(sprint sprints.CoreSprint, team teams.CoreTeam) sprintResult {
+func newSprintResult(sprint sprintdomain.Sprint, team teamsdomain.Team) sprintResult {
 	return sprintResult{
 		ID:                sprint.ID,
 		Name:              sprint.Name,
 		Goal:              sprint.Goal,
-		TeamID:            sprint.Team,
+		TeamID:            sprint.TeamID,
 		TeamName:          team.Name,
 		TeamCode:          strings.ToUpper(strings.TrimSpace(team.Code)),
 		StartDate:         formatPlanningDate(sprint.StartDate),
@@ -589,9 +590,3 @@ type planningWorkResult struct {
 	remainingTruncated bool                  `json:"-"`
 	cancelledTruncated bool                  `json:"-"`
 }
-
-var (
-	_ SprintsService            = (*sprints.Service)(nil)
-	_ ObjectiveAnalyticsService = (*objectives.Service)(nil)
-	_ StoriesService            = (*stories.Service)(nil)
-)

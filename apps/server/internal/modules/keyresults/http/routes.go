@@ -9,20 +9,20 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 )
 
 // Config contains the required dependencies for key results routes
 type Config struct {
-	DB             *sqlx.DB
-	Log            *logger.Logger
-	SecretKey      string
-	Cache          *cache.Service
-	StorageConfig  storage.Config
-	StorageService storage.StorageService
-	KeyResults     *keyresults.Service
-	OKRActivities  *okractivities.Service
-	Attachments    *attachments.Service
+	Log               *logger.Logger
+	SecretKey         string
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	StorageConfig     storage.Config
+	StorageService    storage.StorageService
+	KeyResults        *keyresults.Service
+	OKRActivities     *okractivities.Service
+	Attachments       *attachments.Service
 }
 
 // Routes sets up all the key results routes
@@ -33,9 +33,9 @@ func Routes(cfg Config, app *web.App) {
 
 	attachmentsService := cfg.Attachments
 	h := New(keyResultsService, okrActivitiesService, attachmentsService, cfg.Cache, cfg.Log)
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	gzip := mid.Gzip(cfg.Log)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
 	app.Put("/workspaces/{workspaceSlug}/key-results/{id}", h.Update, auth, workspace, memberAndAdmin)

@@ -9,6 +9,7 @@ import (
 
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
+	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	"github.com/google/uuid"
 	mcpauth "github.com/modelcontextprotocol/go-sdk/auth"
@@ -113,17 +114,17 @@ func (h *Handler) listStoryStatuses(ctx context.Context, _ *mcp.CallToolRequest,
 }
 
 func (h *Handler) listStories(ctx context.Context, _ *mcp.CallToolRequest, in storyListInput) (*mcp.CallToolResult, any, error) {
-	workspaceID, userID, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
+	workspaceID, _, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
 	if err != nil {
 		return nil, nil, err
 	}
-	filters, err := storyListFilters(in, userID)
+	filters, err := storyListFilters(in)
 	if err != nil {
 		return nil, nil, err
 	}
 	page, pageSize, offset, limit := normalizePagination(in.Page, in.PageSize)
-	filters["limit"] = limit
-	filters["offset"] = offset
+	filters.Limit = limit
+	filters.Offset = offset
 	items, err := h.cfg.Stories.List(ctx, workspaceID, filters)
 	if err != nil {
 		return nil, nil, err
@@ -181,7 +182,7 @@ func (h *Handler) listSprints(ctx context.Context, _ *mcp.CallToolRequest, in ob
 }
 
 func (h *Handler) analyzeSprint(ctx context.Context, _ *mcp.CallToolRequest, in entityInput) (*mcp.CallToolResult, any, error) {
-	workspaceID, _, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
+	workspaceID, userID, err := h.authorizeWorkspace(ctx, in.WorkspaceID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -189,7 +190,7 @@ func (h *Handler) analyzeSprint(ctx context.Context, _ *mcp.CallToolRequest, in 
 	if err != nil {
 		return nil, nil, err
 	}
-	result, err := h.cfg.Sprints.GetAnalytics(ctx, id, workspaceID)
+	result, err := h.cfg.Sprints.GetAnalytics(ctx, id, workspaceID, userID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -399,34 +400,33 @@ func parseUUIDs(values []string) ([]uuid.UUID, error) {
 	}
 	return result, nil
 }
-func storyListFilters(input storyListInput, userID uuid.UUID) (map[string]any, error) {
-	filters := map[string]any{"current_user_id": userID}
+func storyListFilters(input storyListInput) (stories.CoreStoryFilters, error) {
+	var filters stories.CoreStoryFilters
 	if search := strings.TrimSpace(input.Search); search != "" {
-		filters["title_contains"] = search
+		filters.TitleContains = &search
 	}
 	if input.AssignedToMe {
-		filters["assigned_to_me"] = true
+		filters.AssignedToMe = &input.AssignedToMe
 	}
 	if strings.TrimSpace(input.DueOn) != "" {
 		dueOn, err := optionalDate(input.DueOn)
 		if err != nil {
-			return nil, fmt.Errorf("dueOn: %w", err)
+			return stories.CoreStoryFilters{}, fmt.Errorf("dueOn: %w", err)
 		}
-		filters["deadline_after"] = *dueOn
-		filters["deadline_before"] = *dueOn
+		filters.DeadlineAfter = dueOn
+		filters.DeadlineBefore = dueOn
 	}
 	fields := []struct {
-		name     string
-		value    string
-		queryKey string
-		plural   bool
+		name   string
+		value  string
+		assign func(uuid.UUID)
 	}{
-		{name: "teamId", value: input.TeamID, queryKey: "team_ids", plural: true},
-		{name: "sprintId", value: input.SprintID, queryKey: "sprint_ids", plural: true},
-		{name: "objectiveId", value: input.ObjectiveID, queryKey: "objective_id"},
-		{name: "assigneeId", value: input.AssigneeID, queryKey: "assignee_ids", plural: true},
-		{name: "statusId", value: input.StatusID, queryKey: "status_ids", plural: true},
-		{name: "keyResultId", value: input.KeyResultID, queryKey: "key_result_id"},
+		{name: "teamId", value: input.TeamID, assign: func(id uuid.UUID) { filters.TeamIDs = []uuid.UUID{id} }},
+		{name: "sprintId", value: input.SprintID, assign: func(id uuid.UUID) { filters.SprintIDs = []uuid.UUID{id} }},
+		{name: "objectiveId", value: input.ObjectiveID, assign: func(id uuid.UUID) { filters.Objective = &id }},
+		{name: "assigneeId", value: input.AssigneeID, assign: func(id uuid.UUID) { filters.AssigneeIDs = []uuid.UUID{id} }},
+		{name: "statusId", value: input.StatusID, assign: func(id uuid.UUID) { filters.StatusIDs = []uuid.UUID{id} }},
+		{name: "keyResultId", value: input.KeyResultID, assign: func(id uuid.UUID) { filters.KeyResult = &id }},
 	}
 
 	for _, field := range fields {
@@ -435,13 +435,9 @@ func storyListFilters(input storyListInput, userID uuid.UUID) (map[string]any, e
 		}
 		id, err := parseRequiredUUID(field.name, field.value)
 		if err != nil {
-			return nil, err
+			return stories.CoreStoryFilters{}, err
 		}
-		if field.plural {
-			filters[field.queryKey] = []uuid.UUID{id}
-		} else {
-			filters[field.queryKey] = id
-		}
+		field.assign(id)
 	}
 
 	return filters, nil

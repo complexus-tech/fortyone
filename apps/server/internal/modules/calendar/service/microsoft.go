@@ -176,11 +176,11 @@ func (p *MicrosoftProvider) readCalendarDelta(ctx context.Context, token Provide
 		}
 		nextURL = ""
 		if strings.TrimSpace(page.DeltaLink) == "" {
-			return nil, nil, nil, nil, "", errors.New("Microsoft calendar delta response did not include a delta link")
+			return nil, nil, nil, nil, "", errors.New("microsoft calendar delta response did not include a delta link")
 		}
 		return events, windows, deleted, managed, page.DeltaLink, nil
 	}
-	return events, windows, deleted, managed, "", errors.New("Microsoft calendar delta URL is empty")
+	return events, windows, deleted, managed, "", errors.New("microsoft calendar delta URL is empty")
 }
 
 func (p *MicrosoftProvider) WatchCalendar(ctx context.Context, token ProviderToken, input CalendarWatchInput) (CalendarWatchChannel, error) {
@@ -268,7 +268,7 @@ func (p *MicrosoftProvider) UpsertScheduleEvent(ctx context.Context, token Provi
 		return ExternalScheduleEventResult{}, err
 	}
 	if strings.TrimSpace(response.ID) == "" {
-		return ExternalScheduleEventResult{}, errors.New("Microsoft calendar event response is missing an ID")
+		return ExternalScheduleEventResult{}, errors.New("microsoft calendar event response is missing an ID")
 	}
 	return ExternalScheduleEventResult{EventID: response.ID}, nil
 }
@@ -440,7 +440,7 @@ type microsoftSubscription struct {
 func microsoftSubscriptionChannel(subscription microsoftSubscription) (CalendarWatchChannel, error) {
 	channel := CalendarWatchChannel{ChannelID: strings.TrimSpace(subscription.ID), ResourceID: strings.TrimSpace(subscription.Resource), ExpiresAt: subscription.ExpirationDateTime.UTC()}
 	if channel.ChannelID == "" || channel.ResourceID == "" || channel.ExpiresAt.IsZero() {
-		return CalendarWatchChannel{}, errors.New("Microsoft Graph returned an incomplete subscription")
+		return CalendarWatchChannel{}, errors.New("microsoft Graph returned an incomplete subscription")
 	}
 	return channel, nil
 }
@@ -515,7 +515,7 @@ func microsoftEventTime(value microsoftDateTime) (time.Time, error) {
 			return parsed.UTC(), nil
 		}
 	}
-	return time.Time{}, fmt.Errorf("Microsoft calendar event has invalid time %q", raw)
+	return time.Time{}, fmt.Errorf("microsoft calendar event has invalid time %q", raw)
 }
 
 func normalizeMicrosoftSensitivity(value string) string {

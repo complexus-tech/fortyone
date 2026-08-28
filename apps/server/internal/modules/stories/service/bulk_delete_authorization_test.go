@@ -41,7 +41,7 @@ func TestBulkDeletePreservesReceiptAndAuthorization(t *testing.T) {
 	workspaceID := uuid.New()
 	authorization := BulkDeleteAuthorization{ActorID: uuid.New(), IsAdmin: false}
 	repo := &authorizedBulkDeleteRepo{deletedIDs: deletedIDs}
-	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil, nil)
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
 
 	got, err := service.BulkDelete(context.Background(), requestedIDs, workspaceID, authorization)
 	if err != nil {
@@ -63,7 +63,7 @@ func TestDeletePassesAuthoritativeActorAuthorization(t *testing.T) {
 	workspaceID := uuid.New()
 	authorization := BulkDeleteAuthorization{ActorID: uuid.New()}
 	repo := &authorizedBulkDeleteRepo{}
-	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil, nil)
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
 
 	if err := service.Delete(context.Background(), storyID, workspaceID, authorization); err != nil {
 		t.Fatalf("delete story: %v", err)

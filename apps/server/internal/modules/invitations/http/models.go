@@ -1,6 +1,9 @@
 package invitationshttp
 
 import (
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
@@ -18,6 +21,23 @@ type AppNewInvitation struct {
 	TeamIDs []uuid.UUID `json:"teamIds,omitempty"`
 }
 
+// Validate enforces the invitation contract used by web.Decode. Service-level
+// validation remains authoritative for callers outside HTTP.
+func (request AppNewInvitationBulk) Validate() error {
+	if len(request.Invitations) == 0 {
+		return errors.New("at least one invitation is required")
+	}
+	for index, invitation := range request.Invitations {
+		if strings.TrimSpace(invitation.Email) == "" {
+			return fmt.Errorf("invitations[%d].email is required", index)
+		}
+		if err := invitations.ValidateInvitationRole(invitation.Role); err != nil {
+			return fmt.Errorf("invitations[%d].role: %w", index, err)
+		}
+	}
+	return nil
+}
+
 // Response Models
 type AppInvitation struct {
 	ID             uuid.UUID   `json:"id"`
@@ -26,7 +46,6 @@ type AppInvitation struct {
 	Email          string      `json:"email"`
 	Role           string      `json:"role"`
 	TeamIDs        []uuid.UUID `json:"teamIds,omitempty"`
-	Token          string      `json:"token,omitempty"`
 	ExpiresAt      time.Time   `json:"expiresAt"`
 	UsedAt         *time.Time  `json:"usedAt,omitempty"`
 	CreatedAt      time.Time   `json:"createdAt"`
@@ -45,7 +64,6 @@ func toAppInvitation(i invitations.CoreWorkspaceInvitation) AppInvitation {
 		Email:          i.Email,
 		Role:           i.Role,
 		TeamIDs:        i.TeamIDs,
-		Token:          i.Token,
 		ExpiresAt:      i.ExpiresAt,
 		UsedAt:         i.UsedAt,
 		CreatedAt:      i.CreatedAt,

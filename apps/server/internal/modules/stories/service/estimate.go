@@ -77,6 +77,39 @@ func ValidateEstimateValue(scheme string, estimateValue *int16) error {
 	return nil
 }
 
+func normalizeEstimateUpdateValue(value any) (*int16, error) {
+	const (
+		minimumInt16 = -1 << 15
+		maximumInt16 = 1<<15 - 1
+	)
+
+	switch value := value.(type) {
+	case nil:
+		return nil, nil
+	case *int16:
+		return value, nil
+	case int16:
+		return &value, nil
+	case int:
+		if value < minimumInt16 || value > maximumInt16 {
+			return nil, fmt.Errorf("invalid estimate value type: %T", value)
+		}
+		normalized := int16(value)
+		return &normalized, nil
+	case float64:
+		if value < minimumInt16 || value > maximumInt16 {
+			return nil, fmt.Errorf("invalid estimate value type: %T", value)
+		}
+		normalized := int16(value)
+		if float64(normalized) != value {
+			return nil, fmt.Errorf("invalid estimate value type: %T", value)
+		}
+		return &normalized, nil
+	default:
+		return nil, fmt.Errorf("invalid estimate value type: %T", value)
+	}
+}
+
 func EstimateLabelFromValue(scheme string, estimateValue *int16) *string {
 	if estimateValue == nil {
 		return nil

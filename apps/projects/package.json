@@ -1,7 +1,7 @@
 {
   "name": "projects",
   "version": "1.0.0",
-  "private": false,
+  "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",

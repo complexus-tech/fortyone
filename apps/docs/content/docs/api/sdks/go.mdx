@@ -1,0 +1,113 @@
+---
+title: Go SDK
+description: Call the FortyOne v1 contract with the generated Go client and focused security helpers.
+---
+
+The Go preview is a nested module in `apps/server/sdk/go`. It is not yet tagged
+or available from the public Go module proxy. The runnable
+`apps/server/examples/external-integration` module uses a local replacement so
+you can test the full boundary from a repository checkout.
+
+```go
+client, err := fortyone.New(fortyone.Config{
+    Token: os.Getenv("FORTYONE_TOKEN"),
+})
+if err != nil {
+    return err
+}
+
+workspaceID, err := uuid.Parse(os.Getenv("FORTYONE_WORKSPACE_ID"))
+if err != nil {
+    return err
+}
+pager, err := fortyone.NewStoryPager(
+    client,
+    workspaceID,
+    fortyone.StoryPaginationOptions{Limit: 100},
+)
+if err != nil {
+    return err
+}
+for {
+    page, ok, err := pager.NextPage(ctx)
+    if err != nil {
+        return err
+    }
+    if !ok {
+        break
+    }
+    for _, story := range page.Data {
+        log.Printf("story id=%s reference=%s", story.Id, story.Reference)
+    }
+}
+```
+
+## Create a story idempotently
+
+Generate one key per logical create and persist it with the request before the
+first call. Do not call `NewIdempotencyKey` again inside a retry loop.
+
+```go
+key, err := fortyone.NewIdempotencyKey()
+if err != nil {
+    return err
+}
+
+request := fortyone.ComponentsResourcesCreateStoryRequest{
+    Title:  "Investigate latency",
+    TeamId: teamID,
+}
+
+// Persist key and request here before attempting the network call.
+response, err := client.CreateStoryWithResponse(
+    ctx,
+    workspaceID,
+    &fortyone.CreateStoryParams{IdempotencyKey: key},
+    request,
+)
+if err != nil {
+    // The outcome is unknown. Retry with the same key and unchanged request.
+    return err
+}
+if response.JSON201 == nil {
+    if response.HTTPResponse == nil {
+        return errors.New("FortyOne returned no HTTP response")
+    }
+    return fortyone.NewAPIError(
+        response.StatusCode(),
+        response.HTTPResponse.Header,
+        response.Body,
+    )
+}
+log.Printf(
+    "story created id=%s reference=%s",
+    response.JSON201.Data.Id,
+    response.JSON201.Data.Reference,
+)
+```
+
+`NewIdempotencyKey` returns 32 cryptographically random bytes as 64 hexadecimal
+characters. `ValidateIdempotencyKey` is available when loading a retained key.
+Keep the SDK version and request encoding unchanged during retries because
+FortyOne compares exact JSON bytes, not decoded JSON meaning. For a workflow
+that stores the serialized bytes directly, use the generated
+`CreateStoryWithBodyWithResponse` method with a new reader over the same bytes
+on each attempt.
+
+The generated story operation accepts a PAT or service-account key with
+`stories:write`. Construct a separate client with the service-account key when
+reads and writes use different least-privilege credentials. The transport
+deliberately does not retry `POST`; your application must honor `Retry-After`
+and reuse the retained key and body for documented retryable states. A `5xx`
+without retry metadata is not an automatic retry signal. Read
+[Idempotent writes](../idempotency) before implementing recovery.
+
+The default HTTP client has a 30-second timeout, refuses redirects, and retries
+only safe reads. Supply `RetryPolicy{MaxAttempts: 1}` to disable retry. Use
+`NewAPIError` with a generated non-success response's status, headers, and body
+to retain stable error metadata without retaining the raw response.
+
+`NewWebhookVerifier` accepts a show-once `whsec_` secret and validates multiple
+rotation signatures, a bounded timestamp window, a canonical delivery UUID,
+and the exact raw body. After verification, durably insert the delivery ID and
+payload in one database transaction before returning `2xx`.

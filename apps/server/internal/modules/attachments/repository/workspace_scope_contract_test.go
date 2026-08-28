@@ -7,33 +7,28 @@ import (
 )
 
 func TestStoryAttachmentReadsScopeStoryAndAttachmentWorkspace(t *testing.T) {
-	queriesData, err := os.ReadFile("queries.go")
+	queriesData, err := os.ReadFile("queries/attachments.sql")
 	if err != nil {
 		t.Fatalf("read queries.go: %v", err)
 	}
 	queries := string(queriesData)
-	start := strings.Index(queries, "func (r *Repository) GetAttachmentsByStoryID(")
+	start := strings.Index(queries, "-- name: ListStoryAttachments")
 	if start < 0 {
 		t.Fatal("GetAttachmentsByStoryID is missing")
 	}
 	listBody := queries[start:]
-	for _, part := range []string{"JOIN stories s", "s.workspace_id = :workspace_id", "a.workspace_id = :workspace_id"} {
+	for _, part := range []string{"INNER JOIN public.stories", "story.workspace_id = sqlc.arg(workspace_id)", "attachment.workspace_id = story.workspace_id"} {
 		if !strings.Contains(listBody, part) {
 			t.Fatalf("attachment list query is missing %q", part)
 		}
 	}
 
-	mediaData, err := os.ReadFile("story_media.go")
-	if err != nil {
-		t.Fatalf("read story_media.go: %v", err)
-	}
-	media := string(mediaData)
-	start = strings.Index(media, "func (r *Repository) AuthorizeStoryAttachment(")
+	start = strings.Index(queries, "-- name: AuthorizeWorkspaceStoryAttachment")
 	if start < 0 {
 		t.Fatal("AuthorizeStoryAttachment is missing")
 	}
-	authorizationBody := media[start:]
-	for _, part := range []string{"story_attachments", "sa.story_id = $1", "a.attachment_id = $2", "s.workspace_id = $3", "attachments.ErrNotFound"} {
+	authorizationBody := queries[start:]
+	for _, part := range []string{"story_attachments", "relation.story_id = sqlc.arg(story_id)", "relation.attachment_id = sqlc.arg(attachment_id)", "story.workspace_id = sqlc.arg(workspace_id)"} {
 		if !strings.Contains(authorizationBody, part) {
 			t.Fatalf("attachment authorization is missing %q", part)
 		}

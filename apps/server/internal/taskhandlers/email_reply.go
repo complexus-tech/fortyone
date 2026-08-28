@@ -16,7 +16,7 @@ func (h *handlers) HandleBrevoEmailReply(ctx context.Context, task *asynq.Task) 
 		return fmt.Errorf("decode Brevo email reply task: %w: %w", err, asynq.SkipRetry)
 	}
 	if h.emailReplies == nil {
-		return errors.New("Brevo email reply processor is not configured")
+		return errors.New("brevo email reply processor is not configured")
 	}
 	if err := h.emailReplies.ProcessEvent(ctx, payload.ExternalWorkspaceID, payload.EventID); err != nil {
 		return fmt.Errorf("process Brevo email reply: %w", err)
@@ -26,7 +26,7 @@ func (h *handlers) HandleBrevoEmailReply(ctx context.Context, task *asynq.Task) 
 
 func (h *handlers) HandleBrevoEmailReplyRecovery(ctx context.Context, _ *asynq.Task) error {
 	if h.emailRecovery == nil {
-		return errors.New("Brevo email reply recovery is not configured")
+		return errors.New("brevo email reply recovery is not configured")
 	}
 	recovered, err := h.emailRecovery.RecoverPendingEvents(ctx)
 	if err != nil {

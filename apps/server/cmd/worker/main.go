@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	workerbootstrap "github.com/complexus-tech/projects-api/internal/bootstrap/worker"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -11,11 +13,14 @@ import (
 
 var (
 	service = "projects-worker"
+	version = "development"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	log := logger.NewWithJSON(os.Stdout, slog.LevelDebug, service)
+	log.Info(ctx, "Starting worker process", "version", version)
 
 	app, err := workerbootstrap.New(ctx, log)
 	if err != nil {

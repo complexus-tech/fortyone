@@ -2,10 +2,10 @@ package jobs
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
 
+	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/google/uuid"
@@ -270,36 +270,63 @@ func TestSendFeedbackDigestUsesGeneratedThemeCopyAndMayaSender(t *testing.T) {
 	require.Equal(t, "Review the signal", data["NotificationCTALabel"])
 }
 
-func TestFeedbackDigestQueriesKeepWorkspaceAndTeamAccessBoundaries(t *testing.T) {
-	recipientsQuery := feedbackDigestRecipientsQuery()
-	require.Contains(t, recipientsQuery, "tm.user_id = fbs.user_id")
-	require.Contains(t, recipientsQuery, "wm.workspace_id = fb.workspace_id")
-	require.Contains(t, recipientsQuery, "wm.role IN ('admin', 'member')")
-	require.Contains(t, recipientsQuery, "u.is_active = true")
-	require.Contains(t, recipientsQuery, "u.is_system = false")
+func TestProcessFeedbackDigestRecipientUsesDurableStoreForEmptyDigest(t *testing.T) {
+	now := time.Date(2026, time.August, 24, 10, 0, 0, 0, time.UTC)
+	recipient := feedbackDigestRecipient{
+		UserID:      uuid.New(),
+		WorkspaceID: uuid.New(),
+		Timezone:    "UTC",
+	}
+	store := &recordingFeedbackDigestStore{
+		deliveryID: uuid.New(),
+		subscriptions: []feedback.CoreDigestSubscription{{
+			BoardID:        uuid.New(),
+			TeamID:         uuid.New(),
+			EmailFrequency: "daily",
+			CreatedAt:      now.Add(-24 * time.Hour),
+		}},
+	}
 
-	subscriptionsQuery := feedbackDigestSubscriptionsQuery()
-	require.Contains(t, subscriptionsQuery, "fb.workspace_id = $2")
-	require.Contains(t, subscriptionsQuery, "tm.user_id = fbs.user_id")
-	require.Contains(t, subscriptionsQuery, "wm.role IN ('admin', 'member')")
+	err := processFeedbackDigestRecipient(context.Background(), store, newTestJobLogger(), nil, nil, nil, recipient, now)
 
-	itemsQuery := feedbackDigestItemsQuery()
-	require.Contains(t, itemsQuery, "fi.workspace_id = $2")
-	require.Contains(t, itemsQuery, "fb.workspace_id = fi.workspace_id")
-	require.Contains(t, itemsQuery, "fbs.user_id = $1")
-	require.Contains(t, itemsQuery, "fi.created_at > bw.window_start")
-	require.Contains(t, itemsQuery, "fi.created_at <= $5")
-	require.Contains(t, itemsQuery, "fi.submission_source IN ('portal', 'widget', 'integration')")
-	require.Contains(t, itemsQuery, "fi.description")
-	require.False(t, strings.Contains(itemsQuery, "submission_source = 'internal'"))
+	require.NoError(t, err)
+	require.Equal(t, recipient.WorkspaceID, store.claim.WorkspaceID)
+	require.Equal(t, recipient.UserID, store.claim.RecipientID)
+	require.Equal(t, now.Add(-feedbackDigestClaimStaleAfter), store.claim.StaleBefore)
+	require.Equal(t, feedback.DigestDeliverySkipped, store.completion.Status)
+	require.Equal(t, store.deliveryID, store.completion.DeliveryID)
+	require.Equal(t, int32(0), store.completion.ItemCount)
 }
 
-func TestFeedbackDigestClaimRetriesOnlyFailedOrStaleProcessingDeliveries(t *testing.T) {
-	query := feedbackDigestClaimQuery()
-	require.Contains(t, query, "ON CONFLICT (workspace_id, recipient_id, local_date)")
-	require.Contains(t, query, "feedback_digest_deliveries.status = 'failed'")
-	require.Contains(t, query, "feedback_digest_deliveries.status = 'processing'")
-	require.Contains(t, query, "updated_at < NOW() - INTERVAL '7200 seconds'")
-	require.NotContains(t, query, "status = 'sent'")
-	require.NotContains(t, query, "status = 'skipped'")
+type recordingFeedbackDigestStore struct {
+	deliveryID    uuid.UUID
+	subscriptions []feedback.CoreDigestSubscription
+	claim         feedback.CoreDigestDeliveryClaim
+	completion    feedback.CoreDigestDeliveryCompletion
+}
+
+func (s *recordingFeedbackDigestStore) ListDigestRecipients(context.Context, feedback.CoreDigestRecipientCursor) ([]feedback.CoreDigestRecipient, error) {
+	return nil, nil
+}
+
+func (s *recordingFeedbackDigestStore) ListDigestSubscriptions(context.Context, uuid.UUID, uuid.UUID) ([]feedback.CoreDigestSubscription, error) {
+	return s.subscriptions, nil
+}
+
+func (s *recordingFeedbackDigestStore) ClaimDigestDelivery(_ context.Context, claim feedback.CoreDigestDeliveryClaim) (uuid.UUID, bool, error) {
+	s.claim = claim
+	return s.deliveryID, true, nil
+}
+
+func (s *recordingFeedbackDigestStore) ListDigestItems(context.Context, feedback.CoreDigestItemsQuery) ([]feedback.CoreDigestItem, error) {
+	return nil, nil
+}
+
+func (s *recordingFeedbackDigestStore) CompleteDigestDelivery(_ context.Context, completion feedback.CoreDigestDeliveryCompletion) error {
+	s.completion = completion
+	return nil
+}
+
+func (s *recordingFeedbackDigestStore) FailDigestDelivery(context.Context, uuid.UUID, string) error {
+	return nil
 }

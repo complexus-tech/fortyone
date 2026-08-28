@@ -8,21 +8,23 @@ import (
 	"strings"
 	"time"
 
+	chatsessionsdomain "github.com/complexus-tech/projects-api/internal/modules/chatsessions/domain"
+	platformclock "github.com/complexus-tech/projects-api/internal/platform/clock"
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
 var (
-	ErrNotFound                  = errors.New("chat session not found")
-	ErrMutationApprovalConflict  = errors.New("mutation approval does not match the prepared tool call")
+	ErrNotFound                  = chatsessionsdomain.ErrNotFound
+	ErrMutationApprovalConflict  = chatsessionsdomain.ErrMutationApprovalConflict
 	ErrMutationApprovalUncertain = errors.New("an identical mutation has an unresolved execution")
-	ErrMutationApprovalLease     = errors.New("mutation approval execution lease is invalid or expired")
-	ErrMessageWriteConflict      = errors.New("chat transcript changed before this write could be applied")
-	ErrMessageWriteApprovalOpen  = errors.New("chat transcript has an unresolved mutation approval")
-	ErrMessageWriteInvalid       = errors.New("chat transcript write is invalid")
+	ErrMutationApprovalLease     = chatsessionsdomain.ErrMutationApprovalLease
+	ErrMessageWriteConflict      = chatsessionsdomain.ErrMessageWriteConflict
+	ErrMessageWriteApprovalOpen  = chatsessionsdomain.ErrMessageWriteApprovalOpen
+	ErrMessageWriteInvalid       = chatsessionsdomain.ErrMessageWriteInvalid
 )
 
 const (
@@ -56,7 +58,7 @@ type Repository interface {
 // transcript in the same transaction as the reservation.
 func (s *Service) BeginMessageWrite(ctx context.Context, params BeginMessageWriteParams) (CoreMessageWriteReservation, error) {
 	s.log.Info(ctx, "business.core.chatsessions.BeginMessageWrite")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.BeginMessageWrite")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.BeginMessageWrite")
 	defer span.End()
 
 	reservation, err := s.repo.BeginMessageWrite(ctx, params)
@@ -76,7 +78,7 @@ func (s *Service) BeginMessageWrite(ctx context.Context, params BeginMessageWrit
 // owns the active generation. Superseded responses are successful no-ops.
 func (s *Service) FinalizeMessageWrite(ctx context.Context, params FinalizeMessageWriteParams) (CoreMessageWriteResult, error) {
 	s.log.Info(ctx, "business.core.chatsessions.FinalizeMessageWrite")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.FinalizeMessageWrite")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.FinalizeMessageWrite")
 	defer span.End()
 
 	if params.Generation <= 0 || params.Token == uuid.Nil {
@@ -95,7 +97,7 @@ func (s *Service) FinalizeMessageWrite(ctx context.Context, params FinalizeMessa
 // the exact surviving tool call without replacing any surrounding history.
 func (s *Service) RecoverMutationApprovalOutput(ctx context.Context, params RecoverMutationApprovalOutputParams) (CoreMessageWriteResult, error) {
 	s.log.Info(ctx, "business.core.chatsessions.RecoverMutationApprovalOutput")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.RecoverMutationApprovalOutput")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.RecoverMutationApprovalOutput")
 	defer span.End()
 
 	result, err := s.repo.RecoverMutationApprovalOutput(ctx, params)
@@ -109,22 +111,29 @@ func (s *Service) RecoverMutationApprovalOutput(ctx context.Context, params Reco
 
 // Service provides chat session-related operations.
 type Service struct {
-	repo Repository
-	log  *logger.Logger
+	repo  Repository
+	log   *logger.Logger
+	clock platformclock.Clock
 }
 
-// New constructs a new chat sessions service instance with the provided repository.
+// New constructs a chat sessions service using wall-clock decision time.
 func New(log *logger.Logger, repo Repository) *Service {
-	return &Service{
-		repo: repo,
-		log:  log,
+	return NewWithClock(log, repo, platformclock.System{})
+}
+
+// NewWithClock constructs a chat sessions service with deterministic decision
+// time. A nil clock falls back to the system clock for compatibility.
+func NewWithClock(log *logger.Logger, repo Repository, source platformclock.Clock) *Service {
+	if source == nil {
+		source = platformclock.System{}
 	}
+	return &Service{repo: repo, log: log, clock: source}
 }
 
 // CreateSession creates a new chat session with initial messages.
 func (s *Service) CreateSession(ctx context.Context, ncs CoreNewChatSession) (CoreChatSession, error) {
 	s.log.Info(ctx, "business.core.chatsessions.create")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.Create")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.Create")
 	defer span.End()
 	if err := validateLegacyMessageInitialization(ncs.Messages); err != nil {
 		span.RecordError(err)
@@ -155,7 +164,7 @@ func (s *Service) CreateSession(ctx context.Context, ncs CoreNewChatSession) (Co
 // GetSession returns the chat session with the specified ID.
 func (s *Service) GetSession(ctx context.Context, id string, userID, workspaceID uuid.UUID) (CoreChatSession, error) {
 	s.log.Info(ctx, "business.core.chatsessions.GetSession")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.GetSession")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.GetSession")
 	defer span.End()
 
 	session, err := s.repo.GetSession(ctx, id, userID, workspaceID)
@@ -170,7 +179,7 @@ func (s *Service) GetSession(ctx context.Context, id string, userID, workspaceID
 // ListSessions returns a list of chat sessions for a user in a workspace.
 func (s *Service) ListSessions(ctx context.Context, userID, workspaceID uuid.UUID) ([]CoreChatSession, error) {
 	s.log.Info(ctx, "business.core.chatsessions.ListSessions")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.ListSessions")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.ListSessions")
 	defer span.End()
 
 	sessions, err := s.repo.ListSessions(ctx, userID, workspaceID)
@@ -188,7 +197,7 @@ func (s *Service) ListSessions(ctx context.Context, userID, workspaceID uuid.UUI
 // UpdateSession updates the title of a chat session.
 func (s *Service) UpdateSession(ctx context.Context, id string, userID, workspaceID uuid.UUID, title string) error {
 	s.log.Info(ctx, "business.core.chatsessions.UpdateSession")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.UpdateSession")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.UpdateSession")
 	defer span.End()
 
 	if err := s.repo.UpdateSession(ctx, id, userID, workspaceID, title); err != nil {
@@ -202,7 +211,7 @@ func (s *Service) UpdateSession(ctx context.Context, id string, userID, workspac
 // DeleteSession deletes the chat session with the specified ID.
 func (s *Service) DeleteSession(ctx context.Context, id string, userID, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "business.core.chatsessions.DeleteSession")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.DeleteSession")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.DeleteSession")
 	defer span.End()
 
 	if err := s.repo.DeleteSession(ctx, id, userID, workspaceID); err != nil {
@@ -216,7 +225,7 @@ func (s *Service) DeleteSession(ctx context.Context, id string, userID, workspac
 // SaveMessages saves messages for a chat session.
 func (s *Service) SaveMessages(ctx context.Context, sessionID string, userID, workspaceID uuid.UUID, messages []any) error {
 	s.log.Info(ctx, "business.core.chatsessions.SaveMessages")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.SaveMessages")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.SaveMessages")
 	defer span.End()
 	if err := validateLegacyMessageInitialization(messages); err != nil {
 		span.RecordError(err)
@@ -239,39 +248,13 @@ func (s *Service) SaveMessages(ctx context.Context, sessionID string, userID, wo
 // text/file history without letting the legacy endpoints manufacture an
 // already-approved mutation outside the reservation protocol.
 func validateLegacyMessageInitialization(messages []any) error {
-	for _, rawMessage := range messages {
-		message, ok := rawMessage.(map[string]any)
-		if !ok {
-			return fmt.Errorf("%w: legacy message must be an object", ErrMessageWriteInvalid)
-		}
-		parts, ok := message["parts"].([]any)
-		if !ok {
-			return fmt.Errorf("%w: legacy message parts are invalid", ErrMessageWriteInvalid)
-		}
-		for _, rawPart := range parts {
-			part, ok := rawPart.(map[string]any)
-			if !ok {
-				return fmt.Errorf("%w: legacy message part must be an object", ErrMessageWriteInvalid)
-			}
-			partType, _ := part["type"].(string)
-			_, hasToolCallID := part["toolCallId"]
-			_, hasApproval := part["approval"]
-			if strings.HasPrefix(partType, "tool-") ||
-				partType == "dynamic-tool" ||
-				partType == "tool-invocation" ||
-				hasToolCallID ||
-				hasApproval {
-				return fmt.Errorf("%w: legacy initialization cannot contain tool state", ErrMessageWriteInvalid)
-			}
-		}
-	}
-	return nil
+	return chatsessionsdomain.ValidateLegacyMessageInitialization(messages)
 }
 
 // GetMessages returns the messages for a chat session.
 func (s *Service) GetMessages(ctx context.Context, sessionID string, userID, workspaceID uuid.UUID) ([]any, error) {
 	s.log.Info(ctx, "business.core.chatsessions.GetMessages")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.GetMessages")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.GetMessages")
 	defer span.End()
 
 	messages, err := s.repo.GetMessages(ctx, sessionID, userID, workspaceID)
@@ -286,7 +269,7 @@ func (s *Service) GetMessages(ctx context.Context, sessionID string, userID, wor
 // GetLatestAssistantMessage returns only the newest persisted assistant message for approval validation.
 func (s *Service) GetLatestAssistantMessage(ctx context.Context, sessionID string, userID, workspaceID uuid.UUID) (json.RawMessage, error) {
 	s.log.Info(ctx, "business.core.chatsessions.GetLatestAssistantMessage")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.GetLatestAssistantMessage")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.GetLatestAssistantMessage")
 	defer span.End()
 
 	message, err := s.repo.GetLatestAssistantMessage(ctx, sessionID, userID, workspaceID)
@@ -301,7 +284,7 @@ func (s *Service) GetLatestAssistantMessage(ctx context.Context, sessionID strin
 // ClaimMutationApproval atomically claims a prepared mutation or returns its durable state.
 func (s *Service) ClaimMutationApproval(ctx context.Context, params MutationApprovalExecutionParams) (CoreMutationApprovalExecution, error) {
 	s.log.Info(ctx, "business.core.chatsessions.ClaimMutationApproval")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.ClaimMutationApproval")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.ClaimMutationApproval")
 	defer span.End()
 
 	execution, err := s.repo.ClaimMutationApproval(ctx, params)
@@ -317,7 +300,7 @@ func (s *Service) ClaimMutationApproval(ctx context.Context, params MutationAppr
 // before invoking the approved tool.
 func (s *Service) StartMutationApproval(ctx context.Context, params MutationApprovalExecutionParams) (CoreMutationApprovalExecution, error) {
 	s.log.Info(ctx, "business.core.chatsessions.StartMutationApproval")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.StartMutationApproval")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.StartMutationApproval")
 	defer span.End()
 
 	if params.LeaseToken == uuid.Nil {
@@ -335,7 +318,7 @@ func (s *Service) StartMutationApproval(ctx context.Context, params MutationAppr
 // CompleteMutationApproval durably records the first result produced by a claimed mutation.
 func (s *Service) CompleteMutationApproval(ctx context.Context, params MutationApprovalExecutionParams, output json.RawMessage) (CoreMutationApprovalExecution, error) {
 	s.log.Info(ctx, "business.core.chatsessions.CompleteMutationApproval")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.CompleteMutationApproval")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.CompleteMutationApproval")
 	defer span.End()
 
 	if !json.Valid(output) {
@@ -358,7 +341,7 @@ func (s *Service) CompleteMutationApproval(ctx context.Context, params MutationA
 // completion. It never makes an approval retryable.
 func (s *Service) FailMutationApproval(ctx context.Context, params MutationApprovalExecutionParams, failureCode string) (CoreMutationApprovalExecution, error) {
 	s.log.Info(ctx, "business.core.chatsessions.FailMutationApproval")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.FailMutationApproval")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.FailMutationApproval")
 	defer span.End()
 
 	if params.LeaseToken == uuid.Nil {
@@ -386,7 +369,7 @@ func (s *Service) FailMutationApproval(ctx context.Context, params MutationAppro
 // approval request.
 func (s *Service) ReconcileMutationApproval(ctx context.Context, params MutationApprovalExecutionParams, reconciliation MutationApprovalReconciliation) (CoreMutationApprovalExecution, error) {
 	s.log.Info(ctx, "business.core.chatsessions.ReconcileMutationApproval")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.ReconcileMutationApproval")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.ReconcileMutationApproval")
 	defer span.End()
 
 	if err := validateMutationApprovalReconciliation(reconciliation); err != nil {
@@ -436,15 +419,16 @@ func validateMutationApprovalReconciliation(reconciliation MutationApprovalRecon
 // CountUserMessagesCurrentMonth returns the number of messages sent by the user in the current month.
 func (s *Service) CountUserMessagesCurrentMonth(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) (int, error) {
 	s.log.Info(ctx, "business.core.chatsessions.CountUserMessagesCurrentMonth")
-	ctx, span := web.AddSpan(ctx, "business.core.chatsessions.CountUserMessagesCurrentMonth")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.chatsessions.CountUserMessagesCurrentMonth")
 	defer span.End()
 
-	now := time.Now()
+	now := s.clock.Now()
 	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	end := now.Add(time.Duration(24 * time.Hour))
+	end := start.AddDate(0, 1, 0)
 
 	count, err := s.repo.CountUserMessages(ctx, userID, workspaceID, start, end)
 	if err != nil {
+		span.RecordError(err)
 		return 0, fmt.Errorf("counting user messages: %w", err)
 	}
 

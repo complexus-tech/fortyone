@@ -2,17 +2,26 @@ package reports
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
-	"github.com/complexus-tech/projects-api/pkg/web"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
 )
 
+const commandCenterSectionUnavailable = "report section unavailable"
+
 func (s *Service) GetWorkspaceCommandCenterReport(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkspaceCommandCenterReport, error) {
 	s.log.Info(ctx, "business.core.reports.GetWorkspaceCommandCenterReport")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetWorkspaceCommandCenterReport")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetWorkspaceCommandCenterReport")
 	defer span.End()
+
+	filters, err := normalizeReportFilters(ctx, workspaceID, filters, true)
+	if err != nil {
+		span.RecordError(err)
+		return CoreWorkspaceCommandCenterReport{}, err
+	}
 
 	reportDate := time.Now().UTC()
 	overview := emptyWorkspaceOverview(workspaceID, reportDate, filters)
@@ -31,6 +40,7 @@ func (s *Service) GetWorkspaceCommandCenterReport(ctx context.Context, workspace
 
 	var errorsMu sync.Mutex
 	sectionErrors := []CoreWorkspaceCommandCenterSectionError{}
+	accessDenied := false
 	recordSectionError := func(section string, err error) {
 		if err == nil {
 			return
@@ -41,9 +51,12 @@ func (s *Service) GetWorkspaceCommandCenterReport(ctx context.Context, workspace
 
 		errorsMu.Lock()
 		defer errorsMu.Unlock()
+		if errors.Is(err, ErrReportsAccessDenied) {
+			accessDenied = true
+		}
 		sectionErrors = append(sectionErrors, CoreWorkspaceCommandCenterSectionError{
 			Section: section,
-			Message: err.Error(),
+			Message: commandCenterSectionUnavailable,
 		})
 	}
 
@@ -152,6 +165,10 @@ func (s *Service) GetWorkspaceCommandCenterReport(ctx context.Context, workspace
 	if err := ctx.Err(); err != nil {
 		span.RecordError(err)
 		return CoreWorkspaceCommandCenterReport{}, err
+	}
+	if accessDenied {
+		span.RecordError(ErrReportsAccessDenied)
+		return CoreWorkspaceCommandCenterReport{}, ErrReportsAccessDenied
 	}
 
 	pulse := CorePulseReport{

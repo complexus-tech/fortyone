@@ -87,9 +87,64 @@ func TestServiceAndRepositoryDoNotImportHTTP(t *testing.T) {
 	}
 }
 
+func TestGeneratedSQLCPackagesStayInsideOwningRepository(t *testing.T) {
+	root := serverDir(t)
+	internalRoot := filepath.Join(root, "internal")
+	fset := token.NewFileSet()
+	generatedPrefix := modulePrefix + "modules/"
+
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			switch d.Name() {
+			case ".tools", "tmp", "vendor":
+				return filepath.SkipDir
+			default:
+				return nil
+			}
+		}
+		if !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+
+		file, parseErr := parser.ParseFile(fset, path, nil, parser.ImportsOnly)
+		if parseErr != nil {
+			t.Fatalf("parse imports for %s: %v", path, parseErr)
+		}
+		for _, imp := range file.Imports {
+			importPath, unquoteErr := strconv.Unquote(imp.Path.Value)
+			if unquoteErr != nil {
+				t.Fatalf("unquote import in %s: %v", path, unquoteErr)
+			}
+			if !strings.HasPrefix(importPath, generatedPrefix) || !strings.HasSuffix(importPath, "/repository/sqlc") {
+				continue
+			}
+
+			modulePath := strings.TrimPrefix(importPath, generatedPrefix)
+			moduleName := strings.TrimSuffix(modulePath, "/repository/sqlc")
+			ownerDirectory := filepath.Join(internalRoot, "modules", moduleName, "repository")
+			relative, relativeErr := filepath.Rel(ownerDirectory, path)
+			if relativeErr != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+				t.Errorf("generated sqlc boundary violation: %s imports %s", path, importPath)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk server dir: %v", err)
+	}
+}
+
 func internalDir(t *testing.T) string {
 	t.Helper()
 
-	root := filepath.Clean(filepath.Join("..", "..", ".."))
-	return filepath.Join(root, "internal")
+	return filepath.Join(serverDir(t), "internal")
+}
+
+func serverDir(t *testing.T) string {
+	t.Helper()
+
+	return filepath.Clean(filepath.Join("..", "..", ".."))
 }

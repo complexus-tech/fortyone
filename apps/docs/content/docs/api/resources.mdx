@@ -1,0 +1,130 @@
+---
+title: Workspace, team, and story resources
+description: Read workspace data and create stories through the typed `/api/v1` contract.
+---
+
+All resource paths include the credential's workspace UUID. FortyOne compares
+that UUID with the credential before loading application data. Passing a UUID
+from another workspace always fails, even if the underlying human belongs to
+both workspaces.
+
+| Method | Path                                                 | Required scope    |
+| ------ | ---------------------------------------------------- | ----------------- |
+| `GET`  | `/api/v1/workspaces/{workspaceId}`                   | `workspaces:read` |
+| `GET`  | `/api/v1/workspaces/{workspaceId}/teams`             | `teams:read`      |
+| `GET`  | `/api/v1/workspaces/{workspaceId}/stories`           | `stories:read`    |
+| `POST` | `/api/v1/workspaces/{workspaceId}/stories`           | `stories:write`   |
+| `GET`  | `/api/v1/workspaces/{workspaceId}/stories/{storyId}` | `stories:read`    |
+
+The read operations require a user-backed credential: either a PAT or an OAuth
+token issued for the exact `https://api.fortyone.app/api/v1` resource. Both
+delegate a user, and FortyOne verifies live membership and resource access on
+every request. Revoking the PAT/OAuth grant, removing the user, deactivating the
+user, or removing team access takes effect on the next request. Story creation
+also accepts a service-account key and revalidates its live principal,
+credential, scope, workspace, and team restriction in the typed mutation query.
+
+List stories for one team:
+
+```sh
+curl --fail-with-body --get \
+  --header "Authorization: Bearer ${FORTYONE_TOKEN}" \
+  --data-urlencode "teamId=${FORTYONE_TEAM_ID}" \
+  --data-urlencode "limit=50" \
+  "https://api.fortyone.app/api/v1/workspaces/${FORTYONE_WORKSPACE_ID}/stories"
+```
+
+Credential team restrictions and current product membership are both applied.
+A scope can narrow access; it never creates membership or bypasses a private
+team.
+
+## Create a story
+
+`POST /api/v1/workspaces/{workspaceId}/stories` creates one story in an
+authorized team. It requires:
+
+- a PAT, service-account key, or API-audience OAuth token with
+  `stories:write`;
+- a path `workspaceId` equal to the credential's workspace;
+- `Content-Type: application/json` and a body no larger than 64 KiB; and
+- an `Idempotency-Key` containing 16–255 visible ASCII characters.
+
+The request object rejects unknown fields. Omit optional fields you do not want
+to set; JSON `null` is not part of the schema.
+
+| Field                                                                          | Required | Contract                                                                                                |
+| ------------------------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------- |
+| `title`                                                                        | Yes      | Non-empty string, at most 500 characters.                                                               |
+| `teamId`                                                                       | Yes      | Team UUID in the path workspace and allowed by current user access or service-account key restrictions. |
+| `description`                                                                  | No       | String, at most 100,000 characters. The 64 KiB HTTP-body limit is stricter for this endpoint.           |
+| `parentId`, `objectiveId`, `statusId`, `assigneeId`, `sprintId`, `keyResultId` | No       | UUIDs that must resolve through current workspace and product authorization rules.                      |
+| `priority`                                                                     | No       | `No Priority`, `Low`, `Medium`, `High`, or `Urgent`; defaults to `No Priority`.                         |
+| `estimateValue`                                                                | No       | Integer from 0 through 32,767, also constrained by the team's estimate scheme.                          |
+| `estimatedDurationMinutes`                                                     | No       | Integer from 0 through 525,600.                                                                         |
+| `minimumFocusBlockMinutes`                                                     | No       | Integer from 0 through 10,080 and valid for the requested duration.                                     |
+| `autoSchedulingEnabled`                                                        | No       | Boolean; defaults to `false` and remains subject to workspace scheduling policy.                        |
+| `labelIds`                                                                     | No       | Up to 100 unique label UUIDs.                                                                           |
+| `startDate`, `endDate`                                                         | No       | UTC-aware RFC 3339 timestamps; their ordering must be valid.                                            |
+
+```sh
+export FORTYONE_IDEMPOTENCY_KEY="$(openssl rand -hex 32)"
+FORTYONE_STORY_BODY="$(printf \
+  '{"title":"Investigate latency","teamId":"%s","priority":"High"}' \
+  "${FORTYONE_TEAM_ID}")"
+
+curl --fail-with-body \
+  --request POST \
+  --header "Authorization: Bearer ${FORTYONE_WRITE_TOKEN:-${FORTYONE_TOKEN}}" \
+  --header "Content-Type: application/json" \
+  --header "Idempotency-Key: ${FORTYONE_IDEMPOTENCY_KEY}" \
+  --data-binary "${FORTYONE_STORY_BODY}" \
+  "https://api.fortyone.app/api/v1/workspaces/${FORTYONE_WORKSPACE_ID}/stories"
+```
+
+The `201 Created` response wraps the typed story in `data` and includes its UUID
+and human reference. If a supplied relationship is unavailable, the API
+returns the non-disclosing `invalid_reference` error rather than revealing
+whether another workspace owns it.
+
+```json
+{
+  "data": {
+    "id": "7d86b130-0374-4974-8700-c20d3f0d51f4",
+    "workspaceId": "8cc8aeb1-35c1-49dd-88bb-8ca16980ad77",
+    "teamId": "7ec30f3e-915c-45de-b0f2-e4c62b876949",
+    "sequenceId": 184,
+    "reference": "ENG-184",
+    "title": "Investigate latency",
+    "priority": "High",
+    "autoSchedulingEnabled": false,
+    "autoSchedulingLocked": false,
+    "autoSchedulingStatus": "off",
+    "labels": [],
+    "createdAt": "2026-08-28T10:15:00Z",
+    "updatedAt": "2026-08-28T10:15:00Z"
+  }
+}
+```
+
+A successful create records one durable `story.created` integration event.
+Enabled outbound endpoints subscribed to that event receive it asynchronously.
+An exact idempotent replay returns the original story and does not create a
+second story or event. Read [Idempotent writes](./idempotency) before adding a
+retry loop.
+
+When a service account creates the story, FortyOne retains that machine
+principal in the mutation event and leaves human reporter/activity attribution
+unset. It never substitutes the administrator who created the key.
+
+## Epics are not a public resource
+
+The preview `/api/v1` surface does not currently expose epics, and story list
+requests do not accept an `epicId` filter. FortyOne has not introduced a durable
+workspace-scoped epic model yet, so clients must not infer epics from story
+payload placeholders or call product-internal routes.
+
+The authenticated product route that previously returned synthetic epic rows
+now responds with HTTP `501 Not Implemented` in the product API's standard error
+envelope. No random or transient epic identifiers are returned. A future public
+epics resource will be documented here with its scopes and migration contract
+before it is supported for integrations.

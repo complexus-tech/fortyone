@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
 
 const TypeAttachmentImageOptimization = "attachments:image:optimize"
 
 type AttachmentImageOptimizationPayload struct {
-	BlobName string `json:"blobName"`
+	AttachmentID uuid.UUID `json:"attachmentId"`
+	WorkspaceID  uuid.UUID `json:"workspaceId"`
 }
 
 func (s *Service) EnqueueAttachmentImageOptimization(payload AttachmentImageOptimizationPayload) error {
@@ -30,10 +32,10 @@ func (s *Service) EnqueueAttachmentImageOptimization(payload AttachmentImageOpti
 
 	info, err := s.asynqClient.Enqueue(task)
 	if err != nil {
-		s.log.Error(ctx, "failed to enqueue attachment image optimization", "error", err, "blob_name", payload.BlobName)
+		s.log.Error(ctx, "failed to enqueue attachment image optimization", "error", err, "attachment_id", payload.AttachmentID)
 		return fmt.Errorf("tasks: enqueue %s task: %w", TypeAttachmentImageOptimization, err)
 	}
 
-	s.log.Info(ctx, "attachment image optimization enqueued", "task_id", info.ID, "blob_name", payload.BlobName)
+	s.log.Info(ctx, "attachment image optimization enqueued", "task_id", info.ID, "attachment_id", payload.AttachmentID)
 	return nil
 }

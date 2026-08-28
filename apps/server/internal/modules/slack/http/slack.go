@@ -4,36 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
 	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
-	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 )
-
-const maxSlackRequestBodyBytes = 1 << 20
-const maxConcurrentSlackRequestLogs = 32
-
-type Handlers struct {
-	log             *logger.Logger
-	service         *slack.Service
-	requestLogSlots chan struct{}
-}
-
-func New(log *logger.Logger, service *slack.Service) *Handlers {
-	return &Handlers{
-		log:             log,
-		service:         service,
-		requestLogSlots: make(chan struct{}, maxConcurrentSlackRequestLogs),
-	}
-}
 
 func (h *Handlers) GetIntegration(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	workspace, err := mid.GetWorkspace(ctx)
@@ -46,7 +26,7 @@ func (h *Handlers) GetIntegration(ctx context.Context, w http.ResponseWriter, r 
 	}
 	integration, err := h.service.GetIntegration(ctx, workspace.ID, userID)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusInternalServerError))
 	}
 	return web.Respond(ctx, w, toAppIntegration(integration), http.StatusOK)
 }
@@ -56,19 +36,30 @@ func (h *Handlers) GetRequestLogs(ctx context.Context, w http.ResponseWriter, r 
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	limit := 50
-	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
-		parsed, parseErr := strconv.Atoi(raw)
-		if parseErr != nil {
-			return web.RespondError(ctx, w, parseErr, http.StatusBadRequest)
-		}
-		limit = parsed
-	}
-	logs, err := h.service.GetRequestLogs(ctx, workspace.ID, limit)
+	actorID, err := mid.GetUserID(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	limit, err := requestLogLimit(r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	logs, err := h.service.GetRequestLogs(ctx, workspace.ID, actorID, limit)
+	if err != nil {
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusInternalServerError))
 	}
 	return web.Respond(ctx, w, toAppRequestLogs(logs), http.StatusOK)
+}
+
+func requestLogLimit(request *http.Request) (int, error) {
+	limit, present, err := web.OptionalIntegerQueryParameter(request.URL.Query(), "limit", 16, 1, 200)
+	if err != nil {
+		return 0, err
+	}
+	if !present {
+		return 50, nil
+	}
+	return limit, nil
 }
 
 func (h *Handlers) CreateInstallSession(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -82,7 +73,7 @@ func (h *Handlers) CreateInstallSession(ctx context.Context, w http.ResponseWrit
 	}
 	session, err := h.service.CreateInstallSession(ctx, workspace.ID, userID, workspace.Slug)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusBadRequest))
 	}
 	return web.Respond(ctx, w, AppCreateInstallSession{InstallURL: session.InstallURL}, http.StatusOK)
 }
@@ -102,7 +93,7 @@ func (h *Handlers) CreateAccountLinkSession(ctx context.Context, w http.Response
 	}
 	session, err := h.service.CreateAccountLinkSession(ctx, workspace.ID, userID, workspace.Slug, input.ReturnURL)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusBadRequest))
 	}
 	return web.Respond(ctx, w, AppCreateAccountLinkSession{
 		Linked:     session.Linked,
@@ -128,7 +119,7 @@ func (h *Handlers) LinkAccount(ctx context.Context, w http.ResponseWriter, r *ht
 
 	result, err := h.service.LinkSlackAccount(ctx, workspace.ID, userID, input.Token)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusBadRequest))
 	}
 	status := "connected"
 	if result.AlreadyLinked {
@@ -153,7 +144,7 @@ func (h *Handlers) DisconnectAccount(ctx context.Context, w http.ResponseWriter,
 		if slack.IsNotFound(err) {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusInternalServerError))
 	}
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
@@ -163,23 +154,35 @@ func (h *Handlers) DisconnectWorkspace(ctx context.Context, w http.ResponseWrite
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	if err := h.service.DisconnectWorkspace(ctx, workspace.ID); err != nil {
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	if err := h.service.DisconnectWorkspace(ctx, workspace.ID, actorID); err != nil {
 		if slack.IsNotFound(err) {
 			return web.RespondError(ctx, w, err, http.StatusNotFound)
 		}
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusInternalServerError))
 	}
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
 }
 
 func (h *Handlers) HandleSetup(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	code := r.URL.Query().Get("code")
-	state := r.URL.Query().Get("state")
-	slackError := r.URL.Query().Get("error")
-	redirectURL, err := h.service.HandleSetup(ctx, code, state, slackError)
+	w.Header().Set("Cache-Control", "private, no-store")
+	callback, err := web.ParseOAuthCallbackQuery(r.URL.Query())
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
+	providerError := callback.ProviderError
+	if providerError != "" && providerError != "access_denied" {
+		providerError = "provider_error"
+	}
+	redirectURL, err := h.service.HandleSetup(ctx, callback.Code, callback.State, providerError)
+	if err != nil {
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusBadRequest))
+	}
+	// #nosec G710 -- HandleSetup consumes a one-time, server-stored OAuth nonce
+	// and returns only the configured FortyOne origin or a same-origin return URL.
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 	return nil
 }
@@ -189,67 +192,14 @@ func (h *Handlers) ResyncChannels(ctx context.Context, w http.ResponseWriter, r 
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	if err := h.service.SyncChannels(ctx, workspace.ID); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-	return web.Respond(ctx, w, nil, http.StatusOK)
-}
-
-func (h *Handlers) HandleEvents(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	statusCode := http.StatusOK
-	outcome := "received"
-	errorMessage := ""
-	headers := captureSlackHeaders(r.Header)
-	var rawBody []byte
-	verified := false
-	defer func() {
-		if !verified {
-			return
-		}
-		h.recordRequestLogAsync(ctx, slack.CoreRequestLogInput{
-			RequestType:  "events",
-			Endpoint:     r.URL.Path,
-			RawBody:      rawBody,
-			Headers:      headers,
-			ResponseCode: statusCode,
-			Outcome:      outcome,
-			ErrorMessage: errorMessage,
-		})
-	}()
-
-	rawBody, err := readSlackBody(w, r)
+	actorID, err := mid.GetUserID(ctx)
 	if err != nil {
-		statusCode = http.StatusBadRequest
-		outcome = "body_read_failed"
-		errorMessage = err.Error()
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
-	}
-	if err := h.service.VerifyRequest(rawBody, r.Header); err != nil {
-		statusCode = http.StatusUnauthorized
-		outcome = "signature_verification_failed"
-		errorMessage = err.Error()
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	verified = true
-	eventCtx, cancel := context.WithTimeout(ctx, 2500*time.Millisecond)
-	defer cancel()
-	response, err := h.service.HandleEvents(eventCtx, rawBody)
-	if err != nil {
-		statusCode = http.StatusServiceUnavailable
-		if errors.Is(err, slack.ErrSlackInvalidEventPayload) {
-			statusCode = http.StatusBadRequest
-		}
-		outcome = "event_handler_failed"
-		errorMessage = err.Error()
-		return web.RespondError(ctx, w, err, statusCode)
+	if err := h.service.SyncChannels(ctx, workspace.ID, actorID); err != nil {
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusInternalServerError))
 	}
-	if response.Challenge != "" {
-		outcome = "url_verification_ack"
-		return writeRawJSON(w, http.StatusOK, response)
-	}
-	outcome = "processed"
-	w.WriteHeader(http.StatusOK)
-	return nil
+	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
 func (h *Handlers) HandleCommands(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

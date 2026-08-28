@@ -4,7 +4,7 @@
 [![Fumadocs](https://img.shields.io/badge/Fumadocs-15-blue.svg)](https://fumadocs.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 
-The comprehensive documentation site for FortyOne, built with Next.js and Fumadocs. This site provides user guides, API documentation, developer resources, and community support materials.
+The customer documentation site for FortyOne, built with Next.js and Fumadocs. It provides user guides, API documentation, developer resources, and product support content for the managed FortyOne service.
 
 ## ✨ Features
 
@@ -17,7 +17,7 @@ The comprehensive documentation site for FortyOne, built with Next.js and Fumado
 - **🔗 Cross-References**: Automatic linking between related pages
 - **📊 Analytics**: Usage tracking and content insights
 - **🌐 SEO Optimized**: Meta tags and structured data
-- **🛠️ Developer Friendly**: Easy to contribute and maintain
+- **🛠️ Developer Friendly**: Straightforward to update and maintain
 
 ## 🚀 Quick Start
 
@@ -53,7 +53,7 @@ The comprehensive documentation site for FortyOne, built with Next.js and Fumado
 - **Content**: MDX for rich documentation
 - **Search**: Built-in full-text search
 - **Styling**: Tailwind CSS with Fumadocs UI
-- **Deployment**: Vercel or static hosting
+- **Deployment**: Internally managed hosting
 
 ### Content Structure
 
@@ -89,7 +89,7 @@ apps/docs/
 
 ### MDX Features
 
-````mdx
+```mdx
 ---
 title: Getting Started
 description: Learn how to get started with FortyOne
@@ -97,34 +97,15 @@ description: Learn how to get started with FortyOne
 
 # Getting Started
 
-Welcome to FortyOne! This guide will help you get up and running quickly.
+Welcome to FortyOne! This guide explains the first workflow to configure.
 
-## Installation
-
-Install FortyOne using your preferred package manager:
-
-```bash
-npm install fortyone
-# or
-yarn add fortyone
-# or
-pnpm add fortyone
-```
-````
-
-## Basic Usage
-
-```tsx
-import { FortyOne } from "fortyone";
-
-function App() {
-  return <FortyOne />;
-}
-```
+## Before you begin
 
 <Callout type="info">
-  Make sure you have Node.js 18+ installed before proceeding.
+  Ask a workspace administrator for an invitation before signing in.
 </Callout>
+
+Continue to the [workspace guide](/docs/product-guide/workspaces).
 ```
 
 ### Frontmatter
@@ -154,28 +135,11 @@ pnpm postinstall  # Generate MDX content (runs automatically)
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+The documentation site is deployed through the internally managed hosting
+project. Production configuration and the `docs.fortyone.app` domain are owned
+by the deployment platform; do not create independent public deployments.
 
-1. **Connect Repository**:
-
-   - Import to Vercel with build settings:
-     - Build Command: `cd apps/docs && pnpm build`
-     - Output Directory: `apps/docs/.next`
-     - Install Command: `pnpm install`
-
-2. **Custom Domain**:
-   - Configure `docs.fortyone.app` or your preferred domain
-
-### Static Export
-
-For static hosting platforms:
-
-```bash
-pnpm build
-# Output will be in .next/static
-```
-
-## 🤝 Contributing Documentation
+## Updating documentation
 
 ### Adding New Pages
 
@@ -183,7 +147,7 @@ pnpm build
 2. **Add frontmatter** with title, description, and metadata
 3. **Write content** following style guidelines
 4. **Test locally** to ensure proper rendering
-5. **Submit PR** for review
+5. **Request internal review** before publishing
 
 ### Content Organization
 
@@ -252,12 +216,8 @@ The documentation site includes analytics to understand:
 
 Access analytics through your configured provider.
 
-## 📄 License
+## Internal ownership
 
-This documentation is licensed under the [FortyOne License](../../LICENSE).
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/complexus/fortyone/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/complexus/fortyone/discussions)
-- **Contributing**: See [CONTRIBUTING.md](../../CONTRIBUTING.md)
+Documentation defects and publishing incidents are tracked through the private
+engineering workflow. Customer-facing support remains available through the
+channels published on `fortyone.app`.

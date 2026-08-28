@@ -1,0 +1,78 @@
+---
+title: API authentication
+description: Choose a FortyOne PAT, service-account key, delegated-user OAuth token, or installed-application OAuth token for the versioned API.
+---
+
+FortyOne `/api/v1` accepts four scoped bearer families:
+
+- a personal access token (PAT) for a user-owned script or integration;
+- a service-account key for a supported workspace-owned automation; or
+- a user-authorized OAuth access token whose exact resource is
+  `https://api.fortyone.app/api/v1`; or
+- an installed-application OAuth access token for one administrator-approved
+  workspace installation and the same exact API resource.
+
+A newly created PAT, service-account key, or confidential OAuth client secret
+is shown once. Copy it directly to your secret manager; FortyOne cannot display
+or recover it later. OAuth access tokens are short-lived. Delegated-user
+clients store the rotating refresh token securely; application tokens do not
+have refresh tokens.
+
+Send a released developer credential only in the HTTP header:
+
+```http
+Authorization: Bearer <credential>
+```
+
+Never put a credential in a URL, query parameter, browser storage, source code,
+support message, or log. Rotate it immediately if it may have been exposed.
+
+## Version boundary
+
+Developer credentials are accepted only by the documented `/api/v1` routes.
+They are never accepted by FortyOne's unversioned web-application routes. A web
+session cookie, token query parameter, or duplicated `Authorization` header is
+not a substitute for a single bearer header.
+
+User-backed operations accept a PAT or a user-authorized OAuth token. OAuth
+authorization uses code with S256 PKCE and must request the exact
+`https://api.fortyone.app/api/v1` resource; a token for
+`https://api.fortyone.app/mcp` is rejected. OAuth access is still delegated to
+the consenting user, so every request rechecks current workspace and resource
+authorization.
+
+Service-account keys and installed-application OAuth tokens currently support
+idempotent story creation. User-only reads, updates, deletes, comments, webhook
+management, and MCP access return `principal_not_supported` for these machine
+actors instead of silently borrowing a creator's or installer's privileges.
+
+An application token belongs to a dedicated `oauth_application` principal, not
+the administrator who installed it. Authorization is derived from the active
+installation, its exact workspace and API resource, and its explicit
+`stories:write` grant. Every request rechecks that state, so revoking an
+installation invalidates an already-issued token on its next use.
+
+## Credential lifecycle
+
+- Every credential has an explicit expiry between one minute and 365 days.
+- Lists show a non-secret prefix and metadata, never the bearer value.
+- PAT rotation revokes the old token immediately.
+- Service-account key rotation can use a bounded overlap of at most 24 hours.
+- OAuth client-secret rotation requires a bounded overlap from one minute to
+  24 hours; an old generation expires at the earlier of its normal expiry or
+  the overlap cutoff.
+- Application credential exchange accepts `client_secret_basic` only. Never
+  send a client secret in a form body or query string.
+- Revocation, expiry, membership removal, user deactivation, or service-account
+  disable takes effect on the next authentication attempt. Application, secret,
+  installation, scope, resource, or principal changes take effect on the next
+  application-token exchange or API verification.
+- FortyOne records coarse last-used time for investigation without writing on
+  every request.
+
+Authentication errors deliberately do not reveal whether a credential was
+unknown, expired, revoked, malformed, or signed with an unavailable generation.
+
+Delegated public-API and remote MCP clients share the authorization server but
+use separate, non-interchangeable audiences and scope catalogs. See
+[OAuth applications](./oauth-apps).

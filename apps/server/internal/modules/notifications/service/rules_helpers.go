@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
+	statesdomain "github.com/complexus-tech/projects-api/internal/modules/states/domain"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 )
@@ -52,18 +52,18 @@ func (r *Rules) getStoryTitle(ctx context.Context, storyID, workspaceID uuid.UUI
 }
 
 // getStatus gets a status
-func (r *Rules) getStatus(ctx context.Context, statusID uuid.UUID, workspaceID uuid.UUID) states.CoreState {
+func (r *Rules) getStatus(ctx context.Context, statusID uuid.UUID, workspaceID uuid.UUID) statesdomain.State {
 	status, _ := r.statuses.Get(ctx, workspaceID, statusID)
 	return status
 }
 
 // createNotification creates a notification with consistent structure
-func (r *Rules) createNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, notifType, title string, message NotificationMessage) CoreNewNotification {
+func (r *Rules) createNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, notifType NotificationType, title string, message NotificationMessage) CoreNewNotification {
 	return CoreNewNotification{
 		RecipientID: recipientID,
 		WorkspaceID: payload.WorkspaceID,
 		Type:        notifType,
-		EntityType:  "story",
+		EntityType:  EntityTypeStory,
 		EntityID:    payload.StoryID,
 		ActorID:     actorID,
 		Title:       title,

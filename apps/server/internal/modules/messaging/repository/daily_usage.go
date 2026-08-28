@@ -2,14 +2,17 @@ package messagingrepository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 
-	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
+	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/domain"
+	messagingsql "github.com/complexus-tech/projects-api/internal/modules/messaging/repository/sqlc"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
+	"github.com/complexus-tech/projects-api/internal/platform/safecast"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const DefaultDailyWorkspaceTokenLimit int64 = 1_000_000
@@ -40,10 +43,6 @@ type DailyUsageSnapshot struct {
 	Allowed      bool
 }
 
-// DailyUsageRecordInput identifies one assistant execution within a provider
-// event. AttemptCount must be the durable inbound receipt attempt returned by
-// StartInboundEvent. Replaying the same attempt is idempotent; a later attempt
-// can record additional Responses Usage legitimately incurred by a retry.
 type DailyUsageRecordInput struct {
 	InboundEventID      uuid.UUID
 	WorkspaceID         uuid.UUID
@@ -54,81 +53,77 @@ type DailyUsageRecordInput struct {
 	Usage               messaging.Usage
 }
 
-type dailyUsageQuerier interface {
-	GetContext(ctx context.Context, destination any, query string, args ...any) error
+type dailyUsageQueries interface {
+	AddAssistantDailyUsage(context.Context, messagingsql.AddAssistantDailyUsageParams) (messagingsql.AddAssistantDailyUsageRow, error)
+	ClaimAssistantUsageEvent(context.Context, messagingsql.ClaimAssistantUsageEventParams) (int32, error)
+	GetAssistantDailyUsage(context.Context, messagingsql.GetAssistantDailyUsageParams) (messagingsql.GetAssistantDailyUsageRow, error)
 }
 
-type dailyUsageTransaction interface {
-	dailyUsageQuerier
-	Commit() error
-	Rollback() error
-}
-
-type dailyUsageDatabase interface {
-	dailyUsageQuerier
-	Begin(ctx context.Context) (dailyUsageTransaction, error)
-}
-
-type sqlxDailyUsageDatabase struct {
-	db *sqlx.DB
-}
-
-func (d sqlxDailyUsageDatabase) GetContext(ctx context.Context, destination any, query string, args ...any) error {
-	return d.db.GetContext(ctx, destination, query, args...)
-}
-
-func (d sqlxDailyUsageDatabase) Begin(ctx context.Context) (dailyUsageTransaction, error) {
-	return d.db.BeginTxx(ctx, nil)
-}
-
-// DailyUsageRepository persists the workspace-wide messaging assistant budget.
-// Slack, Teams, and future provider adapters intentionally share the same UTC
-// daily ceiling so adding a provider cannot bypass the cost control.
 type DailyUsageRepository struct {
-	db dailyUsageDatabase
+	queries        dailyUsageQueries
+	runTransaction func(context.Context, func(dailyUsageQueries) error) error
 }
 
-func NewDailyUsageRepository(db *sqlx.DB) *DailyUsageRepository {
-	if db == nil {
+func NewDailyUsageRepository(pool *pgxpool.Pool) *DailyUsageRepository {
+	if pool == nil {
 		return &DailyUsageRepository{}
 	}
-	return &DailyUsageRepository{db: sqlxDailyUsageDatabase{db: db}}
+	queries := messagingsql.New(pool)
+	transactor := platformdatabase.NewTransactor(pool)
+	return &DailyUsageRepository{
+		queries: queries,
+		runTransaction: func(ctx context.Context, operation func(dailyUsageQueries) error) error {
+			return transactor.WithinTransaction(ctx, pgx.TxOptions{
+				IsoLevel:   pgx.ReadCommitted,
+				AccessMode: pgx.ReadWrite,
+			}, func(tx pgx.Tx) error {
+				return operation(queries.WithTx(tx))
+			})
+		},
+	}
 }
 
-// Check returns ErrDailyWorkspaceTokenLimit when the current UTC-day total has
-// reached the configured ceiling. A zero limit selects the production default.
-func (r *DailyUsageRepository) Check(ctx context.Context, workspaceID uuid.UUID, limit int64) (DailyUsageSnapshot, error) {
-	if err := validateDailyUsageRepository(r, workspaceID); err != nil {
+func newDailyUsageRepositoryWithQueries(queries dailyUsageQueries) *DailyUsageRepository {
+	return &DailyUsageRepository{
+		queries: queries,
+		runTransaction: func(ctx context.Context, operation func(dailyUsageQueries) error) error {
+			return operation(queries)
+		},
+	}
+}
+
+func (repository *DailyUsageRepository) Check(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	limit int64,
+) (DailyUsageSnapshot, error) {
+	if err := validateDailyUsageRepository(repository, workspaceID); err != nil {
 		return DailyUsageSnapshot{}, err
 	}
 	limit, err := normalizedDailyTokenLimit(limit)
 	if err != nil {
 		return DailyUsageSnapshot{}, err
 	}
-	row, err := r.load(ctx, workspaceID)
+	row, err := repository.load(ctx, workspaceID)
 	if err != nil {
 		return DailyUsageSnapshot{}, err
 	}
 	snapshot := dailyUsageSnapshot(row, limit)
 	if !snapshot.Allowed {
-		return snapshot, &DailyTokenLimitError{
-			WorkspaceID: workspaceID,
-			Used:        snapshot.TotalTokens,
-			Limit:       limit,
-		}
+		return snapshot, &DailyTokenLimitError{WorkspaceID: workspaceID, Used: snapshot.TotalTokens, Limit: limit}
 	}
 	return snapshot, nil
 }
 
-// Record atomically claims an execution ledger key and adds aggregate Responses
-// Usage only when that key is new. Callers must invoke it for both successful
-// responses and errors containing partial tool-loop usage. It returns the new
-// total but does not reject usage already incurred by the provider.
-func (r *DailyUsageRepository) Record(ctx context.Context, input DailyUsageRecordInput, limit int64) (DailyUsageSnapshot, error) {
+func (repository *DailyUsageRepository) Record(
+	ctx context.Context,
+	input DailyUsageRecordInput,
+	limit int64,
+) (DailyUsageSnapshot, error) {
 	input.Provider = strings.ToLower(strings.TrimSpace(input.Provider))
 	input.ExternalWorkspaceID = strings.TrimSpace(input.ExternalWorkspaceID)
 	input.ExternalEventID = strings.TrimSpace(input.ExternalEventID)
-	if err := validateDailyUsageRepository(r, input.WorkspaceID); err != nil {
+	if err := validateDailyUsageRepository(repository, input.WorkspaceID); err != nil {
 		return DailyUsageSnapshot{}, err
 	}
 	if input.Provider == "" || input.ExternalWorkspaceID == "" || input.ExternalEventID == "" {
@@ -147,139 +142,69 @@ func (r *DailyUsageRepository) Record(ctx context.Context, input DailyUsageRecor
 	if err := validateUsage(input.Usage); err != nil {
 		return DailyUsageSnapshot{}, err
 	}
-	if input.Usage.TotalTokens == 0 {
-		row, loadErr := r.load(ctx, input.WorkspaceID)
-		if loadErr != nil {
-			return DailyUsageSnapshot{}, loadErr
-		}
-		return dailyUsageSnapshot(row, limit), nil
-	}
-
-	tx, err := r.db.Begin(ctx)
+	databaseAttemptCount, err := safecast.Int32(input.AttemptCount)
 	if err != nil {
-		return DailyUsageSnapshot{}, fmt.Errorf("begin messaging assistant usage record: %w", err)
+		return DailyUsageSnapshot{}, fmt.Errorf("validate messaging assistant usage attempt count: %w", err)
 	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-
-	var inserted int
-	err = tx.GetContext(ctx, &inserted, `
-		INSERT INTO messaging_assistant_usage_events (
-			inbound_event_id,
-			workspace_id,
-			provider,
-			external_workspace_id,
-			external_event_id,
-			attempt_count,
-			usage_date,
-			input_tokens,
-			output_tokens,
-			total_tokens
-		) VALUES (
-			$1,
-			$2,
-			$3,
-			$4,
-			$5,
-			$6,
-			CAST(NOW() AT TIME ZONE 'UTC' AS date),
-			$7,
-			$8,
-			$9
-		)
-		ON CONFLICT (
-			inbound_event_id,
-			attempt_count
-		) DO NOTHING
-		RETURNING 1
-	`,
-		input.InboundEventID,
-		input.WorkspaceID,
-		input.Provider,
-		input.ExternalWorkspaceID,
-		input.ExternalEventID,
-		input.AttemptCount,
-		int64(input.Usage.InputTokens),
-		int64(input.Usage.OutputTokens),
-		int64(input.Usage.TotalTokens),
-	)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return DailyUsageSnapshot{}, fmt.Errorf("claim messaging assistant usage event: %w", err)
+	if input.Usage.TotalTokens == 0 {
+		row, loadErr := repository.load(ctx, input.WorkspaceID)
+		return dailyUsageSnapshot(row, limit), loadErr
 	}
 
-	var row dailyUsageRow
-	if errors.Is(err, sql.ErrNoRows) {
-		row, err = loadDailyUsage(ctx, tx, input.WorkspaceID)
-		if err != nil {
-			return DailyUsageSnapshot{}, err
+	var result dailyUsageRow
+	err = repository.runTransaction(ctx, func(queries dailyUsageQueries) error {
+		_, claimErr := queries.ClaimAssistantUsageEvent(ctx, messagingsql.ClaimAssistantUsageEventParams{
+			InboundEventID: input.InboundEventID, WorkspaceID: input.WorkspaceID,
+			Provider: input.Provider, ExternalWorkspaceID: input.ExternalWorkspaceID,
+			ExternalEventID: input.ExternalEventID, AttemptCount: databaseAttemptCount,
+			InputTokens: int64(input.Usage.InputTokens), OutputTokens: int64(input.Usage.OutputTokens),
+			TotalTokens: int64(input.Usage.TotalTokens),
+		})
+		if claimErr != nil && !errors.Is(claimErr, pgx.ErrNoRows) {
+			return fmt.Errorf("claim messaging assistant usage event: %w", claimErr)
 		}
-	} else {
-		err = tx.GetContext(ctx, &row, `
-			INSERT INTO messaging_assistant_daily_usage (
-				workspace_id, usage_date, input_tokens, output_tokens, total_tokens, request_count
-			) VALUES (
-				$1,
-				CAST(NOW() AT TIME ZONE 'UTC' AS date),
-				$2,
-				$3,
-				$4,
-				1
-			)
-			ON CONFLICT (workspace_id, usage_date) DO UPDATE SET
-				input_tokens = messaging_assistant_daily_usage.input_tokens + EXCLUDED.input_tokens,
-				output_tokens = messaging_assistant_daily_usage.output_tokens + EXCLUDED.output_tokens,
-				total_tokens = messaging_assistant_daily_usage.total_tokens + EXCLUDED.total_tokens,
-				request_count = messaging_assistant_daily_usage.request_count + 1,
-				updated_at = NOW()
-			RETURNING input_tokens, output_tokens, total_tokens, request_count
-		`,
-			input.WorkspaceID,
-			int64(input.Usage.InputTokens),
-			int64(input.Usage.OutputTokens),
-			int64(input.Usage.TotalTokens),
-		)
-		if err != nil {
-			return DailyUsageSnapshot{}, fmt.Errorf("record messaging assistant daily usage: %w", err)
+		if errors.Is(claimErr, pgx.ErrNoRows) {
+			loaded, loadErr := loadDailyUsage(ctx, queries, input.WorkspaceID)
+			result = loaded
+			return loadErr
 		}
+		row, addErr := queries.AddAssistantDailyUsage(ctx, messagingsql.AddAssistantDailyUsageParams{
+			WorkspaceID: input.WorkspaceID, InputTokens: int64(input.Usage.InputTokens),
+			OutputTokens: int64(input.Usage.OutputTokens), TotalTokens: int64(input.Usage.TotalTokens),
+		})
+		if addErr != nil {
+			return fmt.Errorf("record messaging assistant daily usage: %w", addErr)
+		}
+		result = dailyUsageRow(row)
+		return nil
+	})
+	if err != nil {
+		return DailyUsageSnapshot{}, fmt.Errorf("record messaging assistant usage: %w", err)
 	}
-	if err := tx.Commit(); err != nil {
-		return DailyUsageSnapshot{}, fmt.Errorf("commit messaging assistant usage record: %w", err)
-	}
-	return dailyUsageSnapshot(row, limit), nil
+	return dailyUsageSnapshot(result, limit), nil
 }
 
-func (r *DailyUsageRepository) load(ctx context.Context, workspaceID uuid.UUID) (dailyUsageRow, error) {
-	return loadDailyUsage(ctx, r.db, workspaceID)
+func (repository *DailyUsageRepository) load(ctx context.Context, workspaceID uuid.UUID) (dailyUsageRow, error) {
+	return loadDailyUsage(ctx, repository.queries, workspaceID)
 }
 
-func loadDailyUsage(ctx context.Context, querier dailyUsageQuerier, workspaceID uuid.UUID) (dailyUsageRow, error) {
-	var row dailyUsageRow
-	err := querier.GetContext(ctx, &row, `
-		SELECT
-			CAST(COALESCE(SUM(input_tokens), 0) AS bigint) AS input_tokens,
-			CAST(COALESCE(SUM(output_tokens), 0) AS bigint) AS output_tokens,
-			CAST(COALESCE(SUM(total_tokens), 0) AS bigint) AS total_tokens,
-			CAST(COALESCE(SUM(request_count), 0) AS bigint) AS request_count
-		FROM messaging_assistant_daily_usage
-		WHERE workspace_id = $1
-		  AND usage_date = CAST(NOW() AT TIME ZONE 'UTC' AS date)
-	`, workspaceID)
+func loadDailyUsage(ctx context.Context, queries dailyUsageQueries, workspaceID uuid.UUID) (dailyUsageRow, error) {
+	row, err := queries.GetAssistantDailyUsage(ctx, messagingsql.GetAssistantDailyUsageParams{WorkspaceID: workspaceID})
 	if err != nil {
 		return dailyUsageRow{}, fmt.Errorf("check messaging assistant daily usage: %w", err)
 	}
-	return row, nil
+	return dailyUsageRow(row), nil
 }
 
 type dailyUsageRow struct {
-	InputTokens  int64 `db:"input_tokens"`
-	OutputTokens int64 `db:"output_tokens"`
-	TotalTokens  int64 `db:"total_tokens"`
-	RequestCount int64 `db:"request_count"`
+	InputTokens  int64
+	OutputTokens int64
+	TotalTokens  int64
+	RequestCount int64
 }
 
 func validateDailyUsageRepository(repository *DailyUsageRepository, workspaceID uuid.UUID) error {
-	if repository == nil || repository.db == nil {
+	if repository == nil || repository.queries == nil || repository.runTransaction == nil {
 		return errors.New("messaging assistant daily usage repository is not configured")
 	}
 	if workspaceID == uuid.Nil {
@@ -314,12 +239,8 @@ func dailyUsageSnapshot(row dailyUsageRow, limit int64) DailyUsageSnapshot {
 		remaining = 0
 	}
 	return DailyUsageSnapshot{
-		InputTokens:  row.InputTokens,
-		OutputTokens: row.OutputTokens,
-		TotalTokens:  row.TotalTokens,
-		RequestCount: row.RequestCount,
-		Limit:        limit,
-		Remaining:    remaining,
-		Allowed:      row.TotalTokens < limit,
+		InputTokens: row.InputTokens, OutputTokens: row.OutputTokens,
+		TotalTokens: row.TotalTokens, RequestCount: row.RequestCount,
+		Limit: limit, Remaining: remaining, Allowed: row.TotalTokens < limit,
 	}
 }

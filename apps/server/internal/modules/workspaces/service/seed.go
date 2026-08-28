@@ -1,14 +1,36 @@
 package workspaces
 
 import (
+	"errors"
 	"time"
 
-	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
 )
 
-func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState) []stories.CoreNewStory {
+var ErrNoSeedStatuses = errors.New("workspace seed content requires at least one team status")
+
+type SeedStatus struct {
+	ID       uuid.UUID
+	Category string
+}
+
+type SeedStory struct {
+	Title           string
+	Description     *string
+	DescriptionHTML *string
+	Reporter        uuid.UUID
+	Assignee        uuid.UUID
+	Priority        string
+	Team            uuid.UUID
+	Status          uuid.UUID
+	StartDate       *time.Time
+	EndDate         *time.Time
+}
+
+func BuildSeedStories(teamID, userID uuid.UUID, statuses []SeedStatus) ([]SeedStory, error) {
+	if len(statuses) == 0 {
+		return nil, ErrNoSeedStatuses
+	}
 	// Helper function to create date pointers
 	datePtr := func(days int) *time.Time {
 		t := time.Now().AddDate(0, 0, days)
@@ -124,7 +146,7 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 	// Fallback to first status if specific category not found
 	fallbackStatusID := statuses[0].ID
 
-	s := make([]stories.CoreNewStory, len(storyData))
+	result := make([]SeedStory, len(storyData))
 	for i, data := range storyData {
 		desc := data.description
 		descHTML := data.descriptionHTML
@@ -135,19 +157,19 @@ func seedStories(teamID uuid.UUID, userID uuid.UUID, statuses []states.CoreState
 			statusID = fallbackStatusID
 		}
 
-		s[i] = stories.CoreNewStory{
+		result[i] = SeedStory{
 			Title:           data.title,
 			Description:     &desc,
 			DescriptionHTML: &descHTML,
-			Reporter:        &userID,
-			Assignee:        &userID,
+			Reporter:        userID,
+			Assignee:        userID,
 			Priority:        data.priority,
 			Team:            teamID,
-			Status:          &statusID,
+			Status:          statusID,
 			StartDate:       data.startDate,
 			EndDate:         data.endDate,
 		}
 	}
 
-	return s
+	return result, nil
 }

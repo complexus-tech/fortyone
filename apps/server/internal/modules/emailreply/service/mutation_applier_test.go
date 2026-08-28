@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	emailagent "github.com/complexus-tech/projects-api/internal/modules/emailagent/service"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
+	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -35,7 +35,7 @@ func (stub *objectiveMutationStub) UpdateExternalUserActionIfUnchanged(
 
 type keyResultMutationStub struct{}
 
-func (*keyResultMutationStub) UpdateExternalUserActionIfUnchanged(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time, map[string]any, string) error {
+func (*keyResultMutationStub) UpdateExternalUserActionIfUnchanged(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time, keyresults.KeyResultPatch, string) error {
 	return nil
 }
 
@@ -59,7 +59,7 @@ type versionReaderStub struct {
 	err     error
 }
 
-func (stub versionReaderStub) CurrentVersion(context.Context, emailagent.ActionProposal) (time.Time, error) {
+func (stub versionReaderStub) CurrentVersion(context.Context, ActionProposal) (time.Time, error) {
 	return stub.version, stub.err
 }
 
@@ -75,15 +75,15 @@ func TestDomainMutationApplierMapsObjectiveCASAndCheckIn(t *testing.T) {
 
 	workspaceID, actorID, objectiveID, teamID := uuid.New(), uuid.New(), uuid.New(), uuid.New()
 	expected := time.Now().UTC()
-	health := emailagent.ObjectiveHealthOnTrack
+	health := ObjectiveHealthOnTrack
 	checkIn := "The launch blocker is resolved."
 	objective := &objectiveMutationStub{}
 	applier := newMutationApplierForTest(t, objective, &storyMutationStub{}, expected)
 
-	err := applier.Apply(context.Background(), emailagent.ActionProposal{
-		WorkspaceID: workspaceID, ActorID: actorID, Kind: emailagent.ActionObjectiveUpdate,
-		Objective: &emailagent.ObjectiveAction{
-			Target: emailagent.TargetSnapshot{ID: objectiveID, TeamID: teamID, ExpectedUpdatedAt: expected},
+	err := applier.Apply(context.Background(), ActionProposal{
+		WorkspaceID: workspaceID, ActorID: actorID, Kind: ActionObjectiveUpdate,
+		Objective: &ObjectiveAction{
+			Target: TargetSnapshot{ID: objectiveID, TeamID: teamID, ExpectedUpdatedAt: expected},
 			Health: &health, CheckIn: &checkIn,
 		},
 	})
@@ -103,12 +103,12 @@ func TestDomainMutationApplierMapsStoryClearAndUnassign(t *testing.T) {
 	story := &storyMutationStub{}
 	expected := time.Now()
 	applier := newMutationApplierForTest(t, &objectiveMutationStub{}, story, expected)
-	err := applier.Apply(context.Background(), emailagent.ActionProposal{
-		WorkspaceID: uuid.New(), ActorID: uuid.New(), Kind: emailagent.ActionStoryUpdate,
-		Story: &emailagent.StoryAction{
-			Target:   emailagent.TargetSnapshot{ID: uuid.New(), TeamID: uuid.New(), ExpectedUpdatedAt: expected},
-			DueDate:  &emailagent.DateChange{Operation: emailagent.DateClear},
-			Assignee: &emailagent.AssigneeChange{Operation: emailagent.AssigneeUnassign},
+	err := applier.Apply(context.Background(), ActionProposal{
+		WorkspaceID: uuid.New(), ActorID: uuid.New(), Kind: ActionStoryUpdate,
+		Story: &StoryAction{
+			Target:   TargetSnapshot{ID: uuid.New(), TeamID: uuid.New(), ExpectedUpdatedAt: expected},
+			DueDate:  &DateChange{Operation: DateClear},
+			Assignee: &AssigneeChange{Operation: AssigneeUnassign},
 		},
 	})
 
@@ -122,14 +122,14 @@ func TestDomainMutationApplierMapsStoryClearAndUnassign(t *testing.T) {
 func TestDomainMutationApplierNormalizesCASConflict(t *testing.T) {
 	t.Parallel()
 
-	health := emailagent.ObjectiveHealthAtRisk
+	health := ObjectiveHealthAtRisk
 	objective := &objectiveMutationStub{err: objectives.ErrVersionConflict}
 	expected := time.Now()
 	applier := newMutationApplierForTest(t, objective, &storyMutationStub{}, expected)
-	err := applier.Apply(context.Background(), emailagent.ActionProposal{
-		WorkspaceID: uuid.New(), ActorID: uuid.New(), Kind: emailagent.ActionObjectiveUpdate,
-		Objective: &emailagent.ObjectiveAction{
-			Target: emailagent.TargetSnapshot{ID: uuid.New(), TeamID: uuid.New(), ExpectedUpdatedAt: expected},
+	err := applier.Apply(context.Background(), ActionProposal{
+		WorkspaceID: uuid.New(), ActorID: uuid.New(), Kind: ActionObjectiveUpdate,
+		Objective: &ObjectiveAction{
+			Target: TargetSnapshot{ID: uuid.New(), TeamID: uuid.New(), ExpectedUpdatedAt: expected},
 			Health: &health,
 		},
 	})

@@ -23,8 +23,10 @@
 ## Environment & Setup
 
 - Node.js `>=18` and `pnpm@9.3.0`.
-- Go `>=1.23` for `apps/server` (see `apps/server/README.md`).
-- Docker & Docker Compose are required for the server stack.
+- Go `1.25.0` for `apps/server` (see `apps/server/go.mod` and `.go-version`).
+- Docker is required for production API/worker image builds. Local development
+  uses internally approved PostgreSQL and Redis endpoints; there is no supported
+  full-stack Compose installation.
 - `air` is used for live reload in `apps/server` (`go install github.com/air-verse/air@latest`).
 - Install dependencies: `pnpm install`.
 
@@ -78,8 +80,6 @@
 - Worker process: `make worker`.
 - Run API without live reload: `make develop`.
 - Go module tidy: `make tidy`.
-- Start Jaeger (OTel): `make otel`.
-- Stop Jaeger: `make stop-otel`.
 - Create migration: `make migrate-create name=add_table_name`.
 - Apply migrations: `make migrate-up`.
 - Rollback migrations: `make migrate-down n=1`.

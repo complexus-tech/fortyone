@@ -16,6 +16,8 @@ const (
 	TypeNotificationEmailDigest = "notification:email:digest"
 	TypeWeeklyDigestEmail       = "email:digest:weekly"
 	TypeFeedbackDigestEmail     = "feedback:email:digest"
+	TypeOverdueStoriesEmail     = "overdue:stories:email"
+	TypeObjectiveOverdueEmail   = "overdue:objectives:email"
 	TypeStrategyCommunications  = "strategy:communications"
 
 	notificationEmailDigestDelay = time.Hour

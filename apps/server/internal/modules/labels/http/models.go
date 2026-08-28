@@ -18,23 +18,14 @@ type AppLabel struct {
 }
 
 type AppNewLabel struct {
-	Name   string     `json:"name"`
+	Name   string     `json:"name" validate:"required,max=100"`
 	TeamID *uuid.UUID `json:"teamId"`
-	Color  string     `json:"color"`
+	Color  string     `json:"color" validate:"required,max=56"`
 }
 
 type AppUpdateLabel struct {
-	Name  string `json:"name"`
-	Color string `json:"color"`
-}
-
-type AppFilters struct {
-	Team     *uuid.UUID `json:"teamId" db:"team_id"`
-	Search   string     `json:"search" db:"search"`
-	Page     int        `json:"page"`
-	PageSize int        `json:"pageSize"`
-	Limit    int        `json:"limit"`
-	Offset   int        `json:"offset"`
+	Name  string `json:"name" validate:"required,max=100"`
+	Color string `json:"color" validate:"required,max=56"`
 }
 
 type AppPagination struct {
@@ -51,7 +42,7 @@ type AppLabelsResponse struct {
 
 func toAppLabel(label labels.CoreLabel) AppLabel {
 	return AppLabel{
-		ID:          label.LabelID,
+		ID:          label.ID,
 		Name:        label.Name,
 		TeamID:      label.TeamID,
 		WorkspaceID: label.WorkspaceID,

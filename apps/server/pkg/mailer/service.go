@@ -87,7 +87,10 @@ const (
 
 func NewService(cfg Config, log *logger.Logger) (Service, error) {
 	dialer := gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
-	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: cfg.Environment != "production"}
+	dialer.TLSConfig = &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		ServerName: strings.TrimSpace(cfg.Host),
+	}
 
 	if cfg.BaseDir == "" {
 		return nil, fmt.Errorf("email template base directory is required")
@@ -98,9 +101,7 @@ func NewService(cfg Config, log *logger.Logger) (Service, error) {
 		"formatDate": func(t time.Time) string {
 			return t.Format("January 2, 2006")
 		},
-		"safeHTML": func(value string) template.HTML {
-			return template.HTML(value)
-		},
+		"safeHTML":   safeEmailHTML,
 		"emailStyle": emailStyle,
 	}).ParseFiles(baseTemplatePath)
 	if err != nil {

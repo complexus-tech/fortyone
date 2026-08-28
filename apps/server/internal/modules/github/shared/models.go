@@ -1,10 +1,24 @@
 package githubshared
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+var ErrWebhookInstallationNotFound = errors.New("authorized GitHub webhook installation not found")
+
+// WebhookInstallation is the minimal current grant required to accept and
+// later process a GitHub delivery. It is neutral to persistence and SDK types.
+type WebhookInstallation struct {
+	ID                     uuid.UUID
+	WorkspaceID            uuid.UUID
+	ExternalInstallationID int64
+	InstallationGeneration uuid.UUID
+	RepositoryID           uuid.UUID
+	ExternalRepositoryID   int64
+}
 
 const (
 	SyncDirectionInboundOnly            = "inbound_only"

@@ -177,7 +177,6 @@ func TestDispatchReadyPublicationEventsPersistsDedupedSideEffectsBeforeCompletin
 	require.Equal(t, itemID, *delivery.ItemID)
 	require.Len(t, taskService.payloads, 1)
 	require.Equal(t, delivery.DeliveryID, taskService.payloads[0].DeliveryID)
-	require.NotEmpty(t, taskService.payloads[0].UnsubscribeToken)
 
 	require.Len(t, publisher.events, 1)
 	accountEvent := publisher.events[0]

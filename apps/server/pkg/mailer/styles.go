@@ -65,6 +65,8 @@ var emailStyles = map[string]string{
 }
 
 func emailStyle(name string) template.CSS {
+	// #nosec G203 -- EmailStyleString only returns values from the immutable
+	// emailStyles allowlist; caller input can select a key but cannot add CSS.
 	return template.CSS(EmailStyleString(name))
 }
 

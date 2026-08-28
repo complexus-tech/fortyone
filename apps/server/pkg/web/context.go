@@ -21,6 +21,7 @@ const key contextKey = 1
 // These values include tracing information, timing, and response status.
 type Values struct {
 	TraceID    string
+	RequestID  string
 	Tracer     trace.Tracer
 	Now        time.Time
 	StatusCode int
@@ -51,6 +52,16 @@ func GetTraceID(ctx context.Context) string {
 		return "None"
 	}
 	return v.TraceID
+}
+
+// GetRequestID returns the server-generated correlation identifier for the
+// current request. An empty value means the context did not originate in App.
+func GetRequestID(ctx context.Context) string {
+	v, ok := ctx.Value(key).(*Values)
+	if !ok {
+		return ""
+	}
+	return v.RequestID
 }
 
 // GetTime returns the time from the web values.

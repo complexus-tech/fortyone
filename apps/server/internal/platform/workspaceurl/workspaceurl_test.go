@@ -36,7 +36,7 @@ func TestBuild(t *testing.T) {
 			want:       "http://localhost:3000/acme/settings/workspace/integrations/figma",
 		},
 		{
-			name:       "self-hosted path routing",
+			name:       "preview path routing",
 			websiteURL: "https://projects.example.com/app",
 			workspace:  "acme",
 			want:       "https://projects.example.com/app/acme/settings/workspace/integrations/figma",

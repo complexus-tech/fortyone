@@ -8,8 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
 	"github.com/google/uuid"
 )
 
@@ -19,7 +18,7 @@ const (
 	slackWorkObjectCompactPriorityField  = "priority"
 )
 
-var errSlackWorkObjectNoStatuses = errors.New("Slack story has no statuses available")
+var errSlackWorkObjectNoStatuses = errors.New("slack story has no statuses available")
 
 type slackWorkObjectCompactEditMetadata struct {
 	Source         requestSourceContext `json:"source"`
@@ -66,7 +65,7 @@ func (s *Service) handleSlackStoryCompactEditAction(ctx context.Context, payload
 
 	installation, err := s.repo.GetSlackWorkspaceByTeamID(ctx, strings.TrimSpace(payload.Team.ID))
 	if err != nil {
-		if slackrepository.IsNotFound(err) {
+		if isSlackRepositoryNotFound(err) {
 			return InteractionResponse{}, ErrSlackNoWorkspaceLinked
 		}
 		return InteractionResponse{}, err
@@ -114,7 +113,7 @@ func (s *Service) handleSlackStoryCompactEditAction(ctx context.Context, payload
 
 	storyService, ok := s.stories.(slackWorkObjectStoryService)
 	if !ok {
-		return InteractionResponse{}, errors.New("Slack Work Object story editing is not configured")
+		return InteractionResponse{}, errors.New("slack Work Object story editing is not configured")
 	}
 	story, err := storyService.QueryByRef(ctx, installation.WorkspaceID, link.StoryReference)
 	if err != nil {
@@ -133,7 +132,7 @@ func (s *Service) handleSlackStoryCompactEditAction(ctx context.Context, payload
 		return InteractionResponse{}, err
 	}
 
-	statuses := []slackrepository.StatusRecord(nil)
+	statuses := []slackdomain.Status(nil)
 	if field == slackWorkObjectCompactStatusField {
 		statuses, err = s.repo.ListTeamStatuses(ctx, story.Team)
 		if err != nil {
@@ -162,13 +161,13 @@ func (s *Service) handleSlackStoryCompactEditAction(ctx context.Context, payload
 	return InteractionResponse{StatusCode: http.StatusOK}, nil
 }
 
-func buildSlackStoryCompactEditModal(metadata slackWorkObjectCompactEditMetadata, story stories.CoreSingleStory, statuses []slackrepository.StatusRecord) (map[string]any, error) {
+func buildSlackStoryCompactEditModal(metadata slackWorkObjectCompactEditMetadata, story Story, statuses []slackdomain.Status) (map[string]any, error) {
 	metadataBytes, err := json.Marshal(metadata)
 	if err != nil {
 		return nil, err
 	}
 	if len(metadataBytes) > modalMetadataMaxBytes {
-		return nil, errors.New("Slack compact edit metadata exceeds the provider limit")
+		return nil, errors.New("slack compact edit metadata exceeds the provider limit")
 	}
 
 	fieldLabel := "Priority"
@@ -237,7 +236,7 @@ func (s *Service) handleSlackStoryCompactEditSubmission(ctx context.Context, pay
 
 	installation, err := s.repo.GetSlackWorkspaceByTeamID(ctx, metadata.Source.SlackTeamID)
 	if err != nil {
-		if slackrepository.IsNotFound(err) {
+		if isSlackRepositoryNotFound(err) {
 			return InteractionResponse{}, ErrSlackNoWorkspaceLinked
 		}
 		return InteractionResponse{}, err
@@ -258,7 +257,7 @@ func (s *Service) handleSlackStoryCompactEditSubmission(ctx context.Context, pay
 	}
 	storyService, ok := s.stories.(slackWorkObjectStoryService)
 	if !ok {
-		return InteractionResponse{}, errors.New("Slack Work Object story editing is not configured")
+		return InteractionResponse{}, errors.New("slack Work Object story editing is not configured")
 	}
 	story, err := storyService.QueryByRef(ctx, installation.WorkspaceID, link.StoryReference)
 	if err != nil {
@@ -325,7 +324,7 @@ func (s *Service) handleSlackStoryCompactEditSubmission(ctx context.Context, pay
 	}
 	repository, ok := s.repo.(slackWorkObjectRepository)
 	if !ok {
-		return InteractionResponse{}, errors.New("Slack Work Object repository is not configured")
+		return InteractionResponse{}, errors.New("slack Work Object repository is not configured")
 	}
 	input, err := buildSlackStoryWorkObjectInput(ctx, repository, actorID, metadata.Source.SlackUserID, link.PostedURL, refreshed, false)
 	if err != nil {

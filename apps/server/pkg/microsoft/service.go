@@ -107,11 +107,12 @@ type jwksDocument struct {
 }
 
 type jwk struct {
-	KeyType string `json:"kty"`
-	KeyID   string `json:"kid"`
-	Use     string `json:"use"`
-	N       string `json:"n"`
-	E       string `json:"e"`
+	KeyType   string `json:"kty"`
+	KeyID     string `json:"kid"`
+	Use       string `json:"use"`
+	Algorithm string `json:"alg"`
+	N         string `json:"n"`
+	E         string `json:"e"`
 }
 
 func NewService(cfg Config) *Service {
@@ -321,6 +322,10 @@ func (s *Service) verifyIDToken(ctx context.Context, rawToken, nonce string) (Id
 		rawToken,
 		claims,
 		func(token *jwt.Token) (any, error) {
+			tokenType, _ := token.Header["typ"].(string)
+			if !strings.EqualFold(strings.TrimSpace(tokenType), "JWT") {
+				return nil, fmt.Errorf("%w: invalid token type", ErrInvalidToken)
+			}
 			keyID, _ := token.Header["kid"].(string)
 			if keyID == "" {
 				return nil, fmt.Errorf("%w: missing signing key id", ErrInvalidToken)
@@ -329,6 +334,8 @@ func (s *Service) verifyIDToken(ctx context.Context, rawToken, nonce string) (Id
 		},
 		jwt.WithAudience(s.clientID),
 		jwt.WithExpirationRequired(),
+		jwt.WithIssuedAt(),
+		jwt.WithLeeway(30*time.Second),
 		jwt.WithValidMethods([]string{"RS256"}),
 		jwt.WithTimeFunc(s.now),
 	)
@@ -338,6 +345,9 @@ func (s *Service) verifyIDToken(ctx context.Context, rawToken, nonce string) (Id
 
 	tenantID := strings.TrimSpace(claims.TenantID)
 	objectID := strings.TrimSpace(claims.ObjectID)
+	if strings.TrimSpace(claims.Subject) == "" || claims.IssuedAt == nil {
+		return Identity{}, fmt.Errorf("%w: missing required identity claims", ErrInvalidToken)
+	}
 	if _, err := uuid.Parse(tenantID); err != nil {
 		return Identity{}, fmt.Errorf("%w: invalid tenant id", ErrInvalidToken)
 	}
@@ -447,7 +457,9 @@ func (s *Service) refreshSigningKeys(ctx context.Context) error {
 	}
 	keys := make(map[string]*rsa.PublicKey, len(document.Keys))
 	for _, value := range document.Keys {
-		if value.KeyType != "RSA" || value.KeyID == "" || value.N == "" || value.E == "" {
+		if value.KeyType != "RSA" || value.KeyID == "" || value.N == "" || value.E == "" ||
+			(value.Use != "" && value.Use != "sig") ||
+			(value.Algorithm != "" && value.Algorithm != jwt.SigningMethodRS256.Alg()) {
 			continue
 		}
 		key, err := rsaKey(value.N, value.E)

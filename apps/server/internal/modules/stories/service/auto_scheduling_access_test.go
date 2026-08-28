@@ -13,7 +13,7 @@ import (
 )
 
 func newAutoSchedulingContractService(repo Repository) *Service {
-	return New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil, nil)
+	return New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
 }
 
 func TestCreateRejectsIncompleteMayaSchedulingIntentBeforePersistence(t *testing.T) {

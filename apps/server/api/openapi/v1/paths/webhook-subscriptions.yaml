@@ -1,0 +1,31 @@
+put:
+  operationId: replaceWebhookSubscriptions
+  tags: [Webhooks]
+  summary: Replace an endpoint's event subscriptions
+  description: Requires a current workspace administrator personal access token or user-authorized OAuth token. This is a full replacement, not an additive patch.
+  x-fortyone-scope: webhooks:manage
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+    - $ref: ../openapi.yaml#/components/parameters/EndpointId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: {$ref: ../openapi.yaml#/components/schemas/ReplaceWebhookSubscriptionsRequest}
+  responses:
+    '204':
+      description: Subscriptions replaced.
+      headers:
+        X-Request-ID: {$ref: ../openapi.yaml#/components/headers/RequestId}
+        RateLimit: {$ref: ../openapi.yaml#/components/headers/RateLimit}
+        RateLimit-Policy: {$ref: ../openapi.yaml#/components/headers/RateLimitPolicy}
+    '400': {$ref: ../openapi.yaml#/components/responses/BadRequest}
+    '401': {$ref: ../openapi.yaml#/components/responses/Unauthorized}
+    '403': {$ref: ../openapi.yaml#/components/responses/Forbidden}
+    '404': {$ref: ../openapi.yaml#/components/responses/NotFound}
+    '409': {$ref: ../openapi.yaml#/components/responses/Conflict}
+    '413': {$ref: ../openapi.yaml#/components/responses/RequestTooLarge}
+    '415': {$ref: ../openapi.yaml#/components/responses/UnsupportedMediaType}
+    '429': {$ref: ../openapi.yaml#/components/responses/RateLimited}
+    '500': {$ref: ../openapi.yaml#/components/responses/InternalError}
+    '503': {$ref: ../openapi.yaml#/components/responses/ServiceUnavailable}

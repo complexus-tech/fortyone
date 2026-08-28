@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -11,9 +12,11 @@ import (
 )
 
 type ErrorDetail struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-	Hint    string `json:"hint"`
+	Code      string           `json:"code"`
+	Message   string           `json:"message"`
+	Hint      string           `json:"hint"`
+	RequestID string           `json:"request_id,omitempty"`
+	Fields    []FieldViolation `json:"fields,omitempty"`
 }
 
 type Response struct {
@@ -22,20 +25,46 @@ type Response struct {
 }
 
 func RespondError(ctx context.Context, w http.ResponseWriter, err error, statusCode int) error {
+	statusCode = canonicalErrorStatus(err, statusCode)
+	var validationError *ValidationError
+	errors.As(err, &validationError)
 	errResponse := Response{
 		Error: &ErrorDetail{
-			Code:    errorCode(statusCode),
-			Message: sanitizeErrorMessage(err, statusCode),
-			Hint:    resolutionHint(statusCode),
+			Code:      errorCode(statusCode),
+			Message:   sanitizeErrorMessage(err, statusCode),
+			Hint:      resolutionHint(statusCode),
+			RequestID: GetRequestID(ctx),
 		},
 	}
+	if validationError != nil {
+		errResponse.Error.Fields = append([]FieldViolation(nil), validationError.Violations...)
+	}
 	return respond(ctx, w, errResponse, statusCode)
+}
+
+// canonicalErrorStatus lets platform-level request errors retain their HTTP
+// semantics even while legacy handlers still pass StatusBadRequest directly.
+// Domain errors remain owned by their handlers until the typed error migration
+// reaches them.
+func canonicalErrorStatus(err error, fallback int) int {
+	switch {
+	case errors.Is(err, ErrInvalidJSONContentType):
+		return http.StatusUnsupportedMediaType
+	case errors.Is(err, ErrRequestBodyTooLarge):
+		return http.StatusRequestEntityTooLarge
+	default:
+		return fallback
+	}
 }
 
 func errorCode(statusCode int) string {
 	switch statusCode {
 	case http.StatusBadRequest:
 		return "bad_request"
+	case http.StatusRequestEntityTooLarge:
+		return "request_too_large"
+	case http.StatusUnsupportedMediaType:
+		return "unsupported_media_type"
 	case http.StatusUnauthorized:
 		return "authentication_required"
 	case http.StatusForbidden:
@@ -61,21 +90,25 @@ func errorCode(statusCode int) string {
 func resolutionHint(statusCode int) string {
 	switch statusCode {
 	case http.StatusBadRequest:
-		return "Check the request parameters and body against https://www.fortyone.app/openapi.json."
+		return "Check the request parameters and body."
+	case http.StatusRequestEntityTooLarge:
+		return "Reduce the request body size and retry."
+	case http.StatusUnsupportedMediaType:
+		return "Send JSON with Content-Type application/json."
 	case http.StatusUnauthorized:
 		return "Authenticate with a FortyOne session that can access the requested workspace."
 	case http.StatusForbidden:
 		return "Use an account with permission for this workspace resource."
 	case http.StatusNotFound:
-		return "Check the path and resource identifier, then consult https://www.fortyone.app/openapi.json."
+		return "Check the path and resource identifier."
 	case http.StatusMethodNotAllowed:
-		return "Use one of the methods advertised for this path in https://www.fortyone.app/openapi.json."
+		return "Use a supported method for this path."
 	case http.StatusTooManyRequests:
 		return "Wait before retrying and honor any Retry-After header."
 	case http.StatusServiceUnavailable:
 		return "Retry with backoff after the service reports ready."
 	default:
-		return "Consult https://www.fortyone.app/developers and retry only when it is safe to do so."
+		return "Retry only when the operation is safe to repeat."
 	}
 }
 

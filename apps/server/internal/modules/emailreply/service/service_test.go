@@ -161,7 +161,7 @@ func TestProcessorEmailPayloadDropsUnneededSensitiveProviderFields(t *testing.T)
 			ContentID     string `json:"ContentID"`
 			DownloadToken string `json:"DownloadToken"`
 		}{{Name: "private.pdf", DownloadToken: "download-capability"}},
-	})
+	}, "event-1")
 
 	require.NoError(t, err)
 	require.Contains(t, string(payload), "Current reply")
@@ -169,6 +169,33 @@ func TestProcessorEmailPayloadDropsUnneededSensitiveProviderFields(t *testing.T)
 	require.NotContains(t, string(payload), "private signature")
 	require.NotContains(t, string(payload), "observer@example.com")
 	require.NotContains(t, string(payload), "download-capability")
+	require.NotContains(t, string(payload), "fortyone.app")
+}
+
+func TestIngestHonorsCancelledContextBeforePersistence(t *testing.T) {
+	t.Parallel()
+
+	store := &storeStub{}
+	service, err := New("application-secret", store, &queueStub{})
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err = service.Ingest(ctx, inboundWebhookFixture(t, "<cancelled@example.com>", "sender@example.com", "Do nothing"))
+
+	require.ErrorIs(t, err, ErrWebhookRetry)
+	require.Empty(t, store.lookupInput.Provider)
+	require.Empty(t, store.input.Provider)
+}
+
+func TestProcessorStateRejectsOversizedPlaintext(t *testing.T) {
+	t.Parallel()
+
+	service, err := New("application-secret", &storeStub{}, &queueStub{})
+	require.NoError(t, err)
+
+	_, err = service.SealProcessorState(make([]byte, maximumProcessorStateBytes+1))
+	require.Error(t, err)
 }
 
 func TestIngestIgnoresSenderMismatchBeforePersistence(t *testing.T) {

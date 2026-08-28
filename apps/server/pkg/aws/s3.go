@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/safeio"
 )
 
 // S3Service provides operations with AWS S3.
@@ -23,31 +24,37 @@ type S3Service struct {
 
 // NewS3Service creates a new AWS S3 service.
 func NewS3Service(cfg Config, log *logger.Logger) (*S3Service, error) {
-	if cfg.AccessKeyID == "" || cfg.SecretAccessKey == "" || cfg.Region == "" {
-		return nil, fmt.Errorf("aws access key, secret key, and region are required")
+	if strings.TrimSpace(cfg.Region) == "" {
+		return nil, fmt.Errorf("aws region is required")
+	}
+	hasAccessKey := strings.TrimSpace(cfg.AccessKeyID) != ""
+	hasSecretKey := strings.TrimSpace(cfg.SecretAccessKey) != ""
+	if hasAccessKey != hasSecretKey {
+		return nil, fmt.Errorf("aws static access key and secret key must be configured together")
 	}
 
-	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
+	loadOptions := []func(*config.LoadOptions) error{
 		config.WithRegion(cfg.Region),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, "")),
-		config.WithEndpointResolverWithOptions(sdkaws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (sdkaws.Endpoint, error) {
-			if cfg.Endpoint == "" || service != s3.ServiceID {
-				return sdkaws.Endpoint{}, &sdkaws.EndpointNotFoundError{}
-			}
+	}
+	if hasAccessKey {
+		loadOptions = append(loadOptions, config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
+		))
+	}
 
-			return sdkaws.Endpoint{
-				URL:               cfg.Endpoint,
-				SigningRegion:     cfg.Region,
-				HostnameImmutable: true,
-			}, nil
-		})),
-	)
+	// Empty static credentials intentionally select the AWS SDK default chain.
+	// In ECS production this resolves short-lived task-role credentials; local
+	// S3-compatible development may still provide an explicit key pair.
+	awsCfg, err := config.LoadDefaultConfig(context.Background(), loadOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
 	client := s3.NewFromConfig(awsCfg, func(options *s3.Options) {
 		options.UsePathStyle = cfg.ForcePathStyle
+		if cfg.Endpoint != "" {
+			options.BaseEndpoint = sdkaws.String(cfg.Endpoint)
+		}
 	})
 
 	return &S3Service{
@@ -75,7 +82,7 @@ func (s *S3Service) UploadFile(ctx context.Context, bucket, key string, data io.
 }
 
 // DownloadFile implements storage.StorageService.
-func (s *S3Service) DownloadFile(ctx context.Context, bucket, key string) ([]byte, string, error) {
+func (s *S3Service) DownloadFile(ctx context.Context, bucket, key string, maxBytes int64) ([]byte, string, error) {
 	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: sdkaws.String(bucket),
 		Key:    sdkaws.String(key),
@@ -85,7 +92,7 @@ func (s *S3Service) DownloadFile(ctx context.Context, bucket, key string) ([]byt
 	}
 	defer output.Body.Close()
 
-	data, err := io.ReadAll(output.Body)
+	data, err := safeio.ReadAll(output.Body, maxBytes)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to read object from S3: %w", err)
 	}
