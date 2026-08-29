@@ -115,7 +115,7 @@ func TestJavaScriptWorkspacesCannotBePublished(t *testing.T) {
 	}
 }
 
-func TestProductionImagesStayInPrivateECR(t *testing.T) {
+func TestProductionImagesUseExistingDockerHubRepositories(t *testing.T) {
 	t.Parallel()
 
 	root := filepath.Clean(filepath.Join(serverDir(t), "..", ".."))
@@ -126,9 +126,11 @@ func TestProductionImagesStayInPrivateECR(t *testing.T) {
 	}
 	workflow := string(content)
 	for _, required := range []string{
-		"amazon-ecr-login",
-		"ECR_SERVER_REPOSITORY",
-		"ECR_WORKER_REPOSITORY",
+		"docker/login-action",
+		"DOCKERHUB_SERVER_IMAGE: fortyoneapp/server",
+		"DOCKERHUB_WORKER_IMAGE: fortyoneapp/worker",
+		"secrets.DOCKERHUB_USERNAME",
+		"secrets.DOCKERHUB_TOKEN",
 		"${{ github.sha }}",
 		"provenance: mode=max",
 		"sbom: true",
@@ -137,37 +139,30 @@ func TestProductionImagesStayInPrivateECR(t *testing.T) {
 		"--exit-code 1",
 	} {
 		if !strings.Contains(workflow, required) {
-			t.Errorf("production release is missing private image contract %q", required)
+			t.Errorf("production release is missing Docker Hub image contract %q", required)
 		}
 	}
 	for _, forbidden := range []string{
-		"docker/login-action",
-		"DOCKERHUB_",
-		"fortyoneapp/server",
-		"fortyoneapp/worker",
+		"amazon-ecr-login",
+		"ECR_SERVER_REPOSITORY",
+		"ECR_WORKER_REPOSITORY",
 		":latest",
 	} {
 		if strings.Contains(workflow, forbidden) {
-			t.Errorf("production release contains public or mutable image contract %q", forbidden)
+			t.Errorf("production release contains unsupported or mutable image contract %q", forbidden)
 		}
 	}
-	if got := strings.Count(workflow, "imageDetails[0].imageDigest"); got != 3 {
-		t.Errorf("production release resolves %d image digests, want one each for migration, worker, and API", got)
-	}
-	if got := strings.Count(workflow, "@$image_digest"); got != 3 {
-		t.Errorf("production release pins %d task images by digest, want three", got)
-	}
-	for _, mutableDeployment := range []string{
-		"image: ${{ needs.registry.outputs.url }}/${{ env.ECR_SERVER_REPOSITORY }}:${{ env.IMAGE_TAG }}",
-		"image: ${{ needs.registry.outputs.url }}/${{ env.ECR_WORKER_REPOSITORY }}:${{ env.IMAGE_TAG }}",
+	for _, deploymentImage := range []string{
+		"image: ${{ env.DOCKERHUB_SERVER_IMAGE }}:${{ env.IMAGE_TAG }}",
+		"image: ${{ env.DOCKERHUB_WORKER_IMAGE }}:${{ env.IMAGE_TAG }}",
 	} {
-		if strings.Contains(workflow, mutableDeployment) {
-			t.Errorf("production release deploys a mutable image tag %q", mutableDeployment)
+		if !strings.Contains(workflow, deploymentImage) {
+			t.Errorf("production release does not deploy commit-tagged image %q", deploymentImage)
 		}
 	}
 }
 
-func TestProductionReleaseKeepsOptionalMigrationBeforeCredentialCutoverAndAPI(t *testing.T) {
+func TestProductionReleaseSkipsMigrationsAndUsesPreviousDeploymentOrder(t *testing.T) {
 	t.Parallel()
 
 	root := filepath.Clean(filepath.Join(serverDir(t), "..", ".."))
@@ -178,43 +173,36 @@ func TestProductionReleaseKeepsOptionalMigrationBeforeCredentialCutoverAndAPI(t 
 	}
 	workflow := string(content)
 
-	migrationStart := strings.Index(workflow, "\n  migrate-database:\n")
 	workerStart := strings.Index(workflow, "\n  deploy-worker:\n")
 	serverStart := strings.Index(workflow, "\n  deploy-server:\n")
-	if migrationStart < 0 || workerStart < 0 || serverStart < 0 {
+	if workerStart < 0 || serverStart < 0 {
 		t.Fatalf(
-			"release workflow must declare migrate-database, deploy-worker, and deploy-server jobs; indexes = %d/%d/%d",
-			migrationStart,
-			workerStart,
+			"release workflow must declare deploy-server and deploy-worker jobs; indexes = %d/%d",
 			serverStart,
+			workerStart,
 		)
 	}
-	if !(migrationStart < workerStart && workerStart < serverStart) {
-		t.Fatalf("release jobs are not ordered migration -> worker cutover -> API")
+	if serverStart >= workerStart {
+		t.Fatal("release jobs are not ordered API -> worker")
 	}
-
-	migrationJob := workflow[migrationStart:workerStart]
-	for _, required := range []string{
-		"vars.RUN_PRODUCTION_MIGRATIONS == 'true'",
-		"vars.RUN_PRODUCTION_MIGRATIONS != 'true'",
+	for _, forbidden := range []string{
+		"\n  migrate-database:\n",
 		"aws ecs register-task-definition",
 		"aws ecs run-task",
 		`command: ["/app/api", "-migrate"]`,
-		"aws ecs wait tasks-stopped",
-		`if [ "$exit_code" != "0" ]`,
 	} {
-		if !strings.Contains(migrationJob, required) {
-			t.Errorf("optional migration release job is missing contract %q", required)
+		if strings.Contains(workflow, forbidden) {
+			t.Errorf("production release still contains CI migration behavior %q", forbidden)
 		}
 	}
 
-	workerJob := workflow[workerStart:serverStart]
-	if !strings.Contains(workerJob, "- migrate-database") {
-		t.Error("worker deployment must depend on the successful one-shot migration")
+	serverJob := workflow[serverStart:workerStart]
+	if !strings.Contains(serverJob, "needs: build-and-push") {
+		t.Error("API deployment must depend on the image build")
 	}
-	serverJob := workflow[serverStart:]
-	if !strings.Contains(serverJob, "- deploy-worker") {
-		t.Error("API deployment must depend on the replacement worker credential cutover")
+	workerJob := workflow[workerStart:]
+	if !strings.Contains(workerJob, "- deploy-server") {
+		t.Error("worker deployment must depend on the API deployment")
 	}
 }
 

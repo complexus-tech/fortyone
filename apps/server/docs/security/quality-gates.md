@@ -6,7 +6,7 @@ workflows:
 - `server-quality.yml` checks module integrity, gofmt, `go vet`, Staticcheck,
   unit tests, and the architecture debt gate;
 - its independent race-and-fuzz job runs the complete hermetic suite under the
-  race detector and every governed fuzz target for a bounded duration;
+  race detector and every governed fuzz target for a fixed execution count;
 - `server-sqlc.yml` applies the real migration chain, checks clean SQLC
   generation, prepares queries against PostgreSQL, and runs the tagged database
   suite;
@@ -16,8 +16,8 @@ workflows:
 The production release workflow calls both workflows before image publication.
 It emits BuildKit SBOM and provenance attestations, blocks high or critical
 runtime-image vulnerabilities with an immutable Trivy image, and deploys the
-resolved ECR content digest rather than the lookup tag. A release cannot bypass
-the checks that protect pull requests.
+commit-tagged Docker Hub images. A release cannot bypass the checks that
+protect pull requests.
 
 ## Pinned tools
 
@@ -44,11 +44,11 @@ scans every workflow and rejects moving tags or branches. Dependabot or a
 dedicated maintenance change may propose upgrades, but the commit, release
 notes, permissions, inputs, and output behavior must be reviewed together.
 
-The production release authenticates to AWS through GitHub's OIDC token and the
-repository variable `AWS_DEPLOY_ROLE_ARN`. Long-lived AWS access-key inputs are
-forbidden by an architecture regression test. The IAM role trust policy must be
-restricted to this repository and the protected `main` deployment subject, and
-the role policy must grant only the ECR/ECS operations used by the workflow.
+The production release uses the repository's existing paired AWS access-key
+secrets and `AWS_REGION`. The architecture regression test keeps those names
+aligned with the deployed repository configuration. The associated IAM policy
+must remain restricted to the ECS operations and task-definition roles used by
+this workflow, and the key pair must be rotated operationally.
 
 Do not replace a pin with `latest`. Upgrade one tool at a time, review release
 notes and new findings, update the pin/checksum, run the full workflow, and keep
@@ -58,8 +58,8 @@ The Trivy release gate has no blanket ignore file and does not ignore unfixed
 high or critical findings. A temporary waiver requires a reviewed exact
 vulnerability identifier, owner, impact analysis, compensating control, and
 expiry; encode it narrowly rather than weakening the severity or exit-code
-flags. The commit-SHA image tag remains a human lookup key, but migration and
-service task definitions use the registry digest resolved after the scan.
+flags. The commit-SHA image tag is the release identity used by both ECS task
+definitions.
 
 ## Governed G104 transport exception
 
