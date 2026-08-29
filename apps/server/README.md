@@ -130,8 +130,8 @@ for the startup order, failure policy, timeout configuration, and testing seams.
 Request IDs, trace/log correlation, safe field rules, and incident lookup are
 documented in
 [`docs/operations/observability.md`](docs/operations/observability.md).
-Release OIDC, ECS task-role storage access, least-privilege boundaries, and
-recovery checks are documented in
+Deployment credentials, ECS task-role storage access, least-privilege
+boundaries, and recovery checks are documented in
 [`docs/operations/aws-identity.md`](docs/operations/aws-identity.md).
 
 ## Worker health and queue monitoring

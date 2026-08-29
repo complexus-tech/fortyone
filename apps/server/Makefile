@@ -32,23 +32,24 @@ test-integration:
 test-race:
 	@go test -count=1 -race ./...
 
-# Keep fuzz smoke deterministic in scope and bounded in time. Add a line here
-# when a new fuzz target becomes part of the governed pull-request surface.
+# Keep fuzz smoke deterministic in scope and execution count. Fixed counts avoid
+# runner-speed-dependent deadline failures. Add a line here when a new fuzz
+# target becomes part of the governed pull-request surface.
 test-fuzz:
-	@go test -run '^$$' -fuzz '^FuzzCursorCodecDecode$$' -fuzztime=5s ./internal/platform/pagination
-	@go test -run '^$$' -fuzz '^FuzzParseKeyAndDigest$$' -fuzztime=5s ./internal/platform/idempotency
-	@go test -run '^$$' -fuzz '^FuzzHashRequestUsesExactBytes$$' -fuzztime=5s ./internal/platform/idempotency
-	@go test -run '^$$' -fuzz '^FuzzInvitationTokenLookupNeverPanics$$' -fuzztime=5s ./internal/modules/invitations/service
-	@go test -run '^$$' -fuzz '^FuzzParseURLFormNeverPanics$$' -fuzztime=5s ./pkg/web
-	@go test -run '^$$' -fuzz '^FuzzDecodeWithLimitNeverPanics$$' -fuzztime=5s ./pkg/web
-	@go test -run '^$$' -fuzz '^FuzzUUIDPathParameterDoesNotExposeInput$$' -fuzztime=5s ./pkg/web
-	@go test -run '^$$' -fuzz '^FuzzOptionalQueryParameterNeverPanics$$' -fuzztime=5s ./pkg/web
-	@go test -run '^$$' -fuzz '^FuzzOptionalTextQueryParameterNeverPanics$$' -fuzztime=5s ./pkg/web
-	@go test -run '^$$' -fuzz '^FuzzOptionalListQueryParameterNeverPanics$$' -fuzztime=5s ./pkg/web
-	@go test -run '^$$' -fuzz '^FuzzOptionalCommaSeparatedUUIDQueryParameterNeverPanics$$' -fuzztime=5s ./pkg/web
-	@go test -run '^$$' -fuzz '^FuzzOptionalIntegerQueryParameterNeverPanics$$' -fuzztime=5s ./pkg/web
-	@go test -run '^$$' -fuzz '^FuzzReadBoundedBodyNeverPanics$$' -fuzztime=5s ./pkg/web
-	@go test -run '^$$' -fuzz '^FuzzInt64ToInt32$$' -fuzztime=5s ./internal/platform/safecast
+	@go test -run '^$$' -fuzz '^FuzzCursorCodecDecode$$' -fuzztime=10000x ./internal/platform/pagination
+	@go test -run '^$$' -fuzz '^FuzzParseKeyAndDigest$$' -fuzztime=10000x ./internal/platform/idempotency
+	@go test -run '^$$' -fuzz '^FuzzHashRequestUsesExactBytes$$' -fuzztime=10000x ./internal/platform/idempotency
+	@go test -run '^$$' -fuzz '^FuzzInvitationTokenLookupNeverPanics$$' -fuzztime=10000x ./internal/modules/invitations/service
+	@go test -run '^$$' -fuzz '^FuzzParseURLFormNeverPanics$$' -fuzztime=10000x ./pkg/web
+	@go test -run '^$$' -fuzz '^FuzzDecodeWithLimitNeverPanics$$' -fuzztime=10000x ./pkg/web
+	@go test -run '^$$' -fuzz '^FuzzUUIDPathParameterDoesNotExposeInput$$' -fuzztime=10000x ./pkg/web
+	@go test -run '^$$' -fuzz '^FuzzOptionalQueryParameterNeverPanics$$' -fuzztime=10000x ./pkg/web
+	@go test -run '^$$' -fuzz '^FuzzOptionalTextQueryParameterNeverPanics$$' -fuzztime=10000x ./pkg/web
+	@go test -run '^$$' -fuzz '^FuzzOptionalListQueryParameterNeverPanics$$' -fuzztime=10000x ./pkg/web
+	@go test -run '^$$' -fuzz '^FuzzOptionalCommaSeparatedUUIDQueryParameterNeverPanics$$' -fuzztime=10000x ./pkg/web
+	@go test -run '^$$' -fuzz '^FuzzOptionalIntegerQueryParameterNeverPanics$$' -fuzztime=10000x ./pkg/web
+	@go test -run '^$$' -fuzz '^FuzzReadBoundedBodyNeverPanics$$' -fuzztime=10000x ./pkg/web
+	@go test -run '^$$' -fuzz '^FuzzInt64ToInt32$$' -fuzztime=10000x ./internal/platform/safecast
 
 # =============================================================================
 # Required API quality and security checks
