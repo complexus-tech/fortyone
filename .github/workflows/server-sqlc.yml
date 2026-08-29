@@ -86,8 +86,10 @@ jobs:
       - name: Validate migration manifest and operator contract
         run: make migration-check
 
-      - name: Install pinned sqlc
-        run: make sqlc-bootstrap
+      - name: Install pinned generation tools
+        run: |
+          make sqlc-bootstrap
+          make oapi-bootstrap
 
       - name: Verify generated queries
         run: make generated-check
