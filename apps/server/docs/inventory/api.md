@@ -4,7 +4,7 @@
 
 This deterministic inventory shows where routes and persistence live in the API codebase. Run `make inventory-generate` after moving a route, test, or query, or changing a persistence dependency; `make inventory-check` rejects drift. Counts describe code shape, not test quality or security approval.
 
-Current snapshot: **426 routes across 46 modules**. Registered middleware classifies 341 routes with required user authentication, 9 with optional authentication, 76 without user-auth middleware, 303 with current workspace-membership resolution, 156 with an explicit role/scope guard, and 46 with a route-level rate limit. The no-user-auth set includes 6 webhook routes whose provider signature/replay policy must be verified in their handler contract. These are registration facts, not proof of complete service/resource authorization.
+Current snapshot: **431 routes across 46 modules**. Registered middleware classifies 346 routes with required user authentication, 9 with optional authentication, 76 without user-auth middleware, 308 with current workspace-membership resolution, 161 with an explicit role/scope guard, and 50 with a route-level rate limit. The no-user-auth set includes 6 webhook routes whose provider signature/replay policy must be verified in their handler contract. These are registration facts, not proof of complete service/resource authorization.
 
 Credential configuration is indexed in [`docs/configuration.md`](../configuration.md), migration compatibility in [`docs/database/migration-operations.md`](../database/migration-operations.md), and architectural exceptions in the enforced debt baseline.
 
@@ -21,7 +21,7 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `chatsessions` | 16 | 14 / 59 | 35 | yes | 0 | [chatsessions.go](../../internal/modules/chatsessions/http/chatsessions.go#L1) (661) |
 | `comments` | 2 | 5 / 17 | 7 | yes | 0 | [commands.go](../../internal/modules/comments/repository/commands.go#L1) (216) |
 | `developeraccess` | 0 | 1 / 5 | 0 | no | 0 | [resolver.go](../../internal/modules/developeraccess/resolver.go#L1) (137) |
-| `developercredentials` | 11 | 6 / 20 | 29 | yes | 0 | [service_accounts.go](../../internal/modules/developercredentials/service/service_accounts.go#L1) (284) |
+| `developercredentials` | 11 | 6 / 21 | 29 | yes | 0 | [service_accounts.go](../../internal/modules/developercredentials/service/service_accounts.go#L1) (284) |
 | `developeroauth` | 9 | 10 / 36 | 45 | yes | 0 | [application_management.go](../../internal/modules/developeroauth/service/application_management.go#L1) (517) |
 | `documents` | 14 | 4 / 23 | 25 | yes | 0 | [documents.go](../../internal/modules/documents/http/documents.go#L1) (484) |
 | `emailagent` | 0 | 6 / 31 | 0 | no | 0 | [service.go](../../internal/modules/emailagent/service/service.go#L1) (520) |
@@ -44,14 +44,14 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `objectives` | 15 | 18 / 54 | 36 | yes | 0 | [strategy_communications.go](../../internal/modules/objectives/repository/strategy_communications.go#L1) (442) |
 | `objectivestatus` | 4 | 3 / 3 | 15 | yes | 0 | [repository.go](../../internal/modules/objectivestatus/repository/repository.go#L1) (318) |
 | `okractivities` | 0 | 4 / 12 | 3 | yes | 0 | [repository.go](../../internal/modules/okractivities/repository/repository.go#L1) (201) |
-| `outboundwebhooks` | 0 | 9 / 21 | 24 | yes | 0 | [dispatcher.go](../../internal/modules/outboundwebhooks/service/dispatcher.go#L1) (337) |
+| `outboundwebhooks` | 5 | 10 / 25 | 24 | yes | 0 | [dispatcher.go](../../internal/modules/outboundwebhooks/service/dispatcher.go#L1) (337) |
 | `reports` | 15 | 8 / 23 | 44 | yes | 0 | [reports.go](../../internal/modules/reports/service/reports.go#L1) (318) |
 | `search` | 2 | 7 / 18 | 5 | yes | 0 | [models.go](../../internal/modules/search/http/models.go#L1) (227) |
 | `slack` | 16 | 68 / 296 | 78 | yes | 0 | [capability_models.go](../../internal/modules/slack/service/capability_models.go#L1) (555) |
 | `sprints` | 7 | 7 / 13 | 14 | yes | 0 | [models.go](../../internal/modules/sprints/http/models.go#L1) (270) |
 | `sse` | 1 | 0 / 0 | 0 | no | 0 | — |
 | `states` | 4 | 4 / 5 | 17 | yes | 0 | [repository.go](../../internal/modules/states/repository/repository.go#L1) (332) |
-| `stories` | 34 | 63 / 182 | 91 | yes | 0 | [secondary_mutations.go](../../internal/modules/stories/repository/secondary_mutations.go#L1) (470) |
+| `stories` | 34 | 63 / 183 | 91 | yes | 0 | [secondary_mutations.go](../../internal/modules/stories/repository/secondary_mutations.go#L1) (470) |
 | `subscriptions` | 7 | 8 / 26 | 18 | yes | 0 | [subscriptions.go](../../internal/modules/subscriptions/http/subscriptions.go#L1) (280) |
 | `teams` | 12 | 5 / 16 | 16 | yes | 0 | [teams.go](../../internal/modules/teams/http/teams.go#L1) (590) |
 | `teamsettings` | 4 | 14 / 33 | 27 | yes | 0 | [sprint_automation.go](../../internal/modules/teamsettings/repository/sprint_automation.go#L1) (394) |
@@ -443,6 +443,15 @@ Credential configuration is indexed in [`docs/configuration.md`](../configuratio
 | `POST` | `/workspaces/{workspaceSlug}/objective-statuses` | `auth=required; workspace=current; role>=admin` | `h.Create` | `auth → workspace → adminOnly` | [routes.go](../../internal/modules/objectivestatus/http/routes.go#L28) |
 | `DELETE` | `/workspaces/{workspaceSlug}/objective-statuses/{statusId}` | `auth=required; workspace=current; role>=admin` | `h.Delete` | `auth → workspace → adminOnly` | [routes.go](../../internal/modules/objectivestatus/http/routes.go#L30) |
 | `PUT` | `/workspaces/{workspaceSlug}/objective-statuses/{statusId}` | `auth=required; workspace=current; role>=admin` | `h.Update` | `auth → workspace → adminOnly` | [routes.go](../../internal/modules/objectivestatus/http/routes.go#L29) |
+### outboundwebhooks
+
+| Method | Path | Registered guards | Handler | Registered middleware | Source |
+| --- | --- | --- | --- | --- | --- |
+| `GET` | `/workspaces/{workspaceSlug}/webhook-endpoints` | `auth=required; workspace=current; role>=admin+scope` | `handlers.ListEndpoints` | `auth → workspace → adminOnly → webhookScope` | [routes.go](../../internal/modules/outboundwebhooks/http/routes.go#L46) |
+| `POST` | `/workspaces/{workspaceSlug}/webhook-endpoints` | `auth=required; workspace=current; role>=admin+scope; rate-limited` | `handlers.CreateEndpoint` | `auth → mutationLimit → workspace → adminOnly → webhookScope` | [routes.go](../../internal/modules/outboundwebhooks/http/routes.go#L47) |
+| `POST` | `/workspaces/{workspaceSlug}/webhook-endpoints/{endpointId}/disable` | `auth=required; workspace=current; role>=admin+scope; rate-limited` | `handlers.DisableEndpoint` | `auth → mutationLimit → workspace → adminOnly → webhookScope` | [routes.go](../../internal/modules/outboundwebhooks/http/routes.go#L50) |
+| `POST` | `/workspaces/{workspaceSlug}/webhook-endpoints/{endpointId}/rotate-secret` | `auth=required; workspace=current; role>=admin+scope; rate-limited` | `handlers.RotateSecret` | `auth → mutationLimit → workspace → adminOnly → webhookScope` | [routes.go](../../internal/modules/outboundwebhooks/http/routes.go#L49) |
+| `PUT` | `/workspaces/{workspaceSlug}/webhook-endpoints/{endpointId}/subscriptions` | `auth=required; workspace=current; role>=admin+scope; rate-limited` | `handlers.ReplaceSubscriptions` | `auth → mutationLimit → workspace → adminOnly → webhookScope` | [routes.go](../../internal/modules/outboundwebhooks/http/routes.go#L48) |
 ### reports
 
 | Method | Path | Registered guards | Handler | Registered middleware | Source |

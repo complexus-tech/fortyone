@@ -47,7 +47,7 @@ export interface paths {
         };
         /**
          * List key results visible to the actor
-         * @description Returns key results through the user credential's current workspace membership, team membership, scope, and optional team restriction. User credentials are personal access tokens or user-authorized OAuth tokens.
+         * @description Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
          */
         get: operations["listKeyResults"];
         put?: never;
@@ -67,7 +67,7 @@ export interface paths {
         };
         /**
          * List labels visible in one team context
-         * @description Returns team and workspace-wide labels after current team membership is verified. A personal access token or user-authorized OAuth token and an explicit team are required in this preview.
+         * @description Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
          */
         get: operations["listLabels"];
         put?: never;
@@ -127,7 +127,7 @@ export interface paths {
         };
         /**
          * List workflow states for one team
-         * @description Returns the ordered workflow for a team the personal access token or OAuth grant's user currently belongs to.
+         * @description Returns the ordered workflow for a team the personal access token's user currently belongs to.
          */
         get: operations["listWorkflowStates"];
         put?: never;
@@ -153,7 +153,7 @@ export interface paths {
         put?: never;
         /**
          * Create a story
-         * @description Creates one story with a personal access token, service-account key, or user-authorized OAuth token. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
+         * @description Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
          */
         post: operations["createStory"];
         delete?: never;
@@ -191,7 +191,7 @@ export interface paths {
         };
         /**
          * List comments on one visible story
-         * @description Returns comments only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+         * @description Returns comments only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
          */
         get: operations["listStoryComments"];
         put?: never;
@@ -211,7 +211,7 @@ export interface paths {
         };
         /**
          * Get one comment on a visible story
-         * @description Returns a comment only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+         * @description Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
          */
         get: operations["getStoryComment"];
         put?: never;
@@ -251,13 +251,13 @@ export interface paths {
         };
         /**
          * List outbound webhook endpoints
-         * @description Requires a current workspace administrator personal access token or user-authorized OAuth token.
+         * @description Requires a current workspace administrator personal access token.
          */
         get: operations["listWebhookEndpoints"];
         put?: never;
         /**
          * Register an outbound webhook endpoint
-         * @description Requires a current workspace administrator personal access token or user-authorized OAuth token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
+         * @description Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
          */
         post: operations["createWebhookEndpoint"];
         delete?: never;
@@ -275,7 +275,7 @@ export interface paths {
         };
         /**
          * Get an outbound webhook endpoint
-         * @description Requires a current workspace administrator personal access token or user-authorized OAuth token.
+         * @description Requires a current workspace administrator personal access token.
          */
         get: operations["getWebhookEndpoint"];
         put?: never;
@@ -297,7 +297,7 @@ export interface paths {
         put?: never;
         /**
          * Disable an outbound webhook endpoint
-         * @description Requires a current workspace administrator personal access token or user-authorized OAuth token. Disabled endpoints stop receiving newly created deliveries.
+         * @description Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
          */
         post: operations["disableWebhookEndpoint"];
         delete?: never;
@@ -317,7 +317,7 @@ export interface paths {
         put?: never;
         /**
          * Rotate an endpoint's signing secret
-         * @description Requires a current workspace administrator personal access token or user-authorized OAuth token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
+         * @description Requires a current workspace administrator personal access token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
          */
         post: operations["rotateWebhookSecret"];
         delete?: never;
@@ -336,7 +336,7 @@ export interface paths {
         get?: never;
         /**
          * Replace an endpoint's event subscriptions
-         * @description Requires a current workspace administrator personal access token or user-authorized OAuth token. This is a full replacement, not an additive patch.
+         * @description Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
          */
         put: operations["replaceWebhookSubscriptions"];
         post?: never;

@@ -11,6 +11,10 @@ import { primaryUseCaseLinks } from "@/lib/use-case-links";
 
 const resourceLinks = [
   { label: "Docs", href: "https://docs.fortyone.app" },
+  {
+    label: "API Reference",
+    href: "https://docs.fortyone.app/api-reference",
+  },
   { label: "Blog", href: "/blog" },
   { label: "Pitch", href: "https://pitch.fortyone.app" },
 ];

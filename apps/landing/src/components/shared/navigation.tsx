@@ -30,14 +30,21 @@ type NavigationMenuItem = NavigationLinkItem & {
 
 const resourceLinks: NavigationMenuItem[] = [
   {
-    description: "Learn how FortyOne works",
+    description: "Learn how FortyOne works in practice",
     href: "https://docs.fortyone.app",
     icon: "documents",
     title: "Docs",
     tone: "blue",
   },
   {
-    description: "Ideas for building focused teams",
+    description: "Integrate FortyOne with your applications",
+    href: "https://docs.fortyone.app/api-reference",
+    icon: "api-reference",
+    title: "API Reference",
+    tone: "lilac",
+  },
+  {
+    description: "Ideas for building focused teams that deliver",
     href: "/blog",
     icon: "blog",
     title: "Blog",
@@ -365,8 +372,8 @@ export const Navigation = () => {
                 value="features"
               />
               <NavigationDropdown
-                contentClassName="w-[38rem] max-w-[calc(100vw-3rem)]"
-                gridClassName="grid-cols-2"
+                contentClassName="w-[46rem] max-w-[calc(100vw-3rem)]"
+                gridClassName="grid-cols-3"
                 isOpen={activeMenu === "use-cases"}
                 items={primaryUseCaseMenuLinks}
                 label="Use Cases"
@@ -374,8 +381,8 @@ export const Navigation = () => {
                 value="use-cases"
               />
               <NavigationDropdown
-                contentClassName="right-0 left-auto w-[22rem]"
-                gridClassName="grid-cols-1"
+                contentClassName="left-0 w-[38rem] max-w-[calc(100vw-3rem)]"
+                gridClassName="grid-cols-2"
                 isOpen={activeMenu === "resources"}
                 items={resourceLinks}
                 label="Resources"

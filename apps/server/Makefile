@@ -111,7 +111,7 @@ bootstrap-tools: air-bootstrap migrate-bootstrap sqlc-bootstrap oapi-bootstrap o
 air-bootstrap:
 	@if [ ! -x "$(AIR)" ]; then \
 		mkdir -p "$(dir $(AIR))"; \
-		GOTOOLCHAIN=go1.25.0 GOBIN="$(dir $(AIR))" go install github.com/air-verse/air@$(AIR_VERSION); \
+		GOTOOLCHAIN=go1.25.14 GOBIN="$(dir $(AIR))" go install github.com/air-verse/air@$(AIR_VERSION); \
 	fi
 
 migrate-bootstrap:
@@ -122,7 +122,7 @@ migrate-bootstrap:
 			exit 1; \
 		fi; \
 		mkdir -p "$(dir $(MIGRATE))"; \
-		GOTOOLCHAIN=go1.25.0 go build -tags postgres -ldflags '-X main.Version=$(MIGRATE_VERSION)' -o "$(MIGRATE)" github.com/golang-migrate/migrate/v4/cmd/migrate; \
+		GOTOOLCHAIN=go1.25.14 go build -tags postgres -ldflags '-X main.Version=$(MIGRATE_VERSION)' -o "$(MIGRATE)" github.com/golang-migrate/migrate/v4/cmd/migrate; \
 	fi
 
 tool-versions:

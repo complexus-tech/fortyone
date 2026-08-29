@@ -102,7 +102,7 @@ export const FEEDBACK_WIDGET_LOADER_SOURCE = String.raw`(function (window, docum
       ".launcher svg{width:18px;height:18px;transition:transform .2s ease}",
       ".root[data-open=true] .launcher svg{transform:scale(.9) rotate(3deg)}",
       ".right .launcher{right:20px}.left .launcher{left:20px}",
-      ".panel{position:fixed;bottom:78px;width:min(408px,calc(100vw - 32px));height:min(680px,calc(100dvh - 98px));overflow:hidden;border:1px solid var(--widget-border);border-radius:.825rem;background:var(--widget-background);box-shadow:0 30px 80px rgba(0,0,0,.25),0 6px 22px rgba(0,0,0,.1);opacity:0;visibility:hidden;transform:translateY(12px) scale(.985);transform-origin:bottom;transition:opacity .18s ease,transform .22s cubic-bezier(.2,.8,.2,1),visibility 0s linear .22s}",
+      ".panel{position:fixed;bottom:78px;width:min(408px,calc(100vw - 32px));height:min(700px,calc(100dvh - 98px));overflow:hidden;border:1px solid var(--widget-border);border-radius:.825rem;background:var(--widget-background);box-shadow:0 30px 80px rgba(0,0,0,.25),0 6px 22px rgba(0,0,0,.1);opacity:0;visibility:hidden;transform:translateY(12px) scale(.985);transform-origin:bottom;transition:opacity .18s ease,transform .22s cubic-bezier(.2,.8,.2,1),visibility 0s linear .22s}",
       ".right .panel{right:20px}.left .panel{left:20px}",
       ".root[data-open=true] .panel{opacity:1;visibility:visible;transform:none;transition-delay:0s}",
       ".panel iframe{display:block;width:100%;height:100%;border:0;background:var(--widget-background);color-scheme:inherit}",
