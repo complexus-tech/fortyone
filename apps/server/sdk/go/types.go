@@ -14,6 +14,7 @@ type (
 	Comment                       = ComponentsResourcesComment
 	CommentResponse               = ComponentsResourcesCommentResponse
 	CommentPage                   = ComponentsResourcesCommentPageResponse
+	CreateStoryRequest            = ComponentsResourcesCreateStoryRequest
 	Label                         = ComponentsResourcesLabel
 	LabelPage                     = ComponentsResourcesLabelPageResponse
 	WorkflowState                 = ComponentsResourcesWorkflowState

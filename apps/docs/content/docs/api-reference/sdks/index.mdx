@@ -1,24 +1,28 @@
 ---
-title: SDK previews
-description: Use typed clients generated from the FortyOne API contract.
+title: SDKs
+description: Integrate with FortyOne using typed clients for TypeScript and Go.
 icon: Boxes
 ---
 
-FortyOne keeps TypeScript and Go client previews in the repository. Both are
-generated from the same OpenAPI v1 contract that powers this reference.
+The FortyOne SDKs provide typed access to the v1 API, bearer authentication,
+safe-read retries, cursor pagination, idempotency helpers, structured errors,
+and webhook verification.
 
-| SDK        | Location             | Status             |
-| ---------- | -------------------- | ------------------ |
-| TypeScript | `packages/sdk`       | Repository preview |
-| Go         | `apps/server/sdk/go` | Repository preview |
+<Callout type="info" title="Preview availability">
+  The TypeScript and Go SDKs are in preview and are not yet available from
+  public package registries. Installation instructions will be added with the
+  first public releases. Until then, use the [API
+  reference](/api-reference/reference) or generate a client from the published
+  OpenAPI contract.
+</Callout>
 
-The generated operation and model types are authoritative. Small handwritten
-wrappers add secure transport defaults, typed pagination helpers, and secure
-idempotency-key generation.
+## Choose an SDK
 
-These packages are not yet public releases. Until a tagged release is announced,
-generate a client from the published OpenAPI contract or use the repository
-preview from a matching FortyOne checkout.
+| SDK                                          | Best for                                        |
+| -------------------------------------------- | ----------------------------------------------- |
+| [TypeScript](/api-reference/sdks/typescript) | Node.js services, scripts, and server runtimes  |
+| [Go](/api-reference/sdks/go)                 | Go services, workers, and command-line programs |
 
-- [TypeScript SDK](/api-reference/sdks/typescript)
-- [Go SDK](/api-reference/sdks/go)
+Both SDKs target `https://api.fortyone.app` by default. You provide a bearer
+credential when creating a client and a workspace ID when calling a
+workspace-scoped operation.

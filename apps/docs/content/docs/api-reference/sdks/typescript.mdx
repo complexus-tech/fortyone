@@ -1,96 +1,117 @@
 ---
 title: TypeScript SDK
-description: Call the FortyOne v1 contract with generated TypeScript types and secure transport helpers.
-icon: FileCode2
+description: Integrate with FortyOne using generated TypeScript types and secure transport helpers.
+icon: TypeScript
 ---
 
-The private `@fortyone/sdk` workspace package uses generated
-`openapi-typescript` declarations with `openapi-fetch`. Until a published SDK
-release exists, import it only from a FortyOne repository checkout.
+Use `@fortyone/sdk` to call the FortyOne v1 API with generated request and
+response types. The client adds bearer authentication, targets the production
+API by default, retries safe reads, and includes helpers for pagination,
+idempotency, structured errors, and webhook verification.
+
+<Callout type="info" title="Preview availability">
+  The TypeScript SDK is not yet available from the public npm registry. The
+  examples below show the current preview API; installation instructions will be
+  added with the first public release.
+</Callout>
+
+## Create a client and list stories
+
+```ts
+import { createFortyOneClient, paginateStories } from "@fortyone/sdk";
+
+const token = process.env.FORTYONE_TOKEN;
+const workspaceId = process.env.FORTYONE_WORKSPACE_ID;
+
+if (!token || !workspaceId) {
+  throw new Error("FORTYONE_TOKEN and FORTYONE_WORKSPACE_ID are required");
+}
+
+const client = createFortyOneClient({ token });
+
+for await (const story of paginateStories(client, workspaceId, {
+  limit: 100,
+})) {
+  console.log(story.id, story.reference);
+}
+```
+
+`createFortyOneClient` targets `https://api.fortyone.app` unless you explicitly
+override `baseUrl` for an approved environment. `workspaceId` is not a URL or a
+client setting. It identifies the workspace whose resources you want to access
+because FortyOne API operations are workspace-scoped.
+
+## Create a story idempotently
+
+Create one idempotency key for each logical write and persist it with the
+request before the first attempt. Reusing the same key and request makes an
+ambiguous network retry safe; creating a new key represents a new operation.
 
 ```ts
 import {
   apiErrorFromResponse,
-  createFortyOneClient,
   createIdempotencyKey,
-  paginateStories,
-  verifyWebhook,
   type CreateStoryRequest,
 } from "@fortyone/sdk";
 
-const client = createFortyOneClient({
-  token: process.env.FORTYONE_TOKEN!,
-});
-
-for await (const story of paginateStories(
-  client,
-  process.env.FORTYONE_WORKSPACE_ID!,
-  { limit: 100 },
-)) {
-  console.log(story.id, story.reference);
+const teamId = process.env.FORTYONE_TEAM_ID;
+if (!teamId) {
+  throw new Error("FORTYONE_TEAM_ID is required");
 }
 
-const workspace = await client.GET("/api/v1/workspaces/{workspaceId}", {
-  params: { path: { workspaceId: process.env.FORTYONE_WORKSPACE_ID! } },
-});
-if (workspace.error !== undefined) {
-  throw apiErrorFromResponse(workspace.response, workspace.error);
-}
-```
-
-## Create a story idempotently
-
-Create one key and persist it with the request before the first attempt. A key
-created during each retry represents a different operation and can create a
-duplicate.
-
-```ts
 const idempotencyKey = createIdempotencyKey();
 const request: CreateStoryRequest = {
   title: "Investigate latency",
-  teamId: process.env.FORTYONE_TEAM_ID!,
+  teamId,
 };
 
-// Durably persist idempotencyKey and request here.
-const created = await client.POST("/api/v1/workspaces/{workspaceId}/stories", {
+// Persist idempotencyKey and request before the first network attempt.
+const result = await client.POST("/api/v1/workspaces/{workspaceId}/stories", {
   params: {
-    path: { workspaceId: process.env.FORTYONE_WORKSPACE_ID! },
+    path: { workspaceId },
     header: { "Idempotency-Key": idempotencyKey },
   },
   body: request,
 });
-if (created.error !== undefined) {
-  throw apiErrorFromResponse(created.response, created.error);
+
+if (result.error !== undefined) {
+  throw apiErrorFromResponse(result.response, result.error);
 }
-console.log(created.data.data.id, created.data.data.reference);
+
+console.log(result.data.data.id, result.data.data.reference);
 ```
 
-`createIdempotencyKey` uses `crypto.getRandomValues` and returns 64 hexadecimal
-characters. `validateIdempotencyKey` validates a retained key when restoring
-pending work. Keep the SDK version, object property order, and values unchanged
-across attempts: the API compares exact serialized JSON bytes, not decoded JSON
-meaning.
+`createIdempotencyKey` returns 64 hexadecimal characters generated with
+`crypto.getRandomValues`. Use `validateIdempotencyKey` when restoring a retained
+key. Keep the SDK version, object property order, and values unchanged across
+attempts because the API compares the exact serialized JSON bytes.
 
-The operation accepts a PAT or service-account key with `stories:write`. Create
-a separate client with the service-account key when reads and writes use
-different least-privilege credentials. The SDK never retries `POST`
-automatically. On a network failure, `idempotency_in_progress`, `429`, or a
-`503` carrying `Retry-After`, your application must retain and reuse the same
-key and request, honor the delay, and apply a bounded retry budget. A `5xx`
-without retry metadata is not an automatic retry signal. See
-[Idempotent writes](../idempotency) for the complete decision table.
+The create operation accepts a personal access token or service-account key
+with `stories:write`. Use separate clients when reads and writes use different
+least-privilege credentials.
 
-Retries are enabled by default with three total attempts. Set `retry: false` to
-disable them or provide bounded retry options. Writes are never retried by the
-helper, including operations that have a server-side idempotency contract.
+Safe reads use a maximum of three attempts by default. Set `retry: false` to
+disable retries or provide a bounded retry policy. The SDK never retries writes.
+For an ambiguous network failure, `idempotency_in_progress`, `429`, or a `503`
+with `Retry-After`, retain and reuse the same key and request, honor the delay,
+and apply a bounded retry budget. See [Idempotent writes](../idempotency) for the
+complete decision table.
 
-For a server-side webhook route, read the unmodified bytes once and verify
-before parsing:
+## Verify a webhook
+
+Read the unmodified request bytes once and verify them before parsing JSON:
 
 ```ts
+import { verifyWebhook } from "@fortyone/sdk";
+
+const secret = process.env.FORTYONE_WEBHOOK_SECRET;
+if (!secret) {
+  throw new Error("FORTYONE_WEBHOOK_SECRET is required");
+}
+
 const body = new Uint8Array(await request.arrayBuffer());
 await verifyWebhook({
-  secret: process.env.FORTYONE_WEBHOOK_SECRET!,
+  secret,
   body,
   webhookId: request.headers.get("Webhook-Id") ?? "",
   webhookTimestamp: request.headers.get("Webhook-Timestamp") ?? "",
