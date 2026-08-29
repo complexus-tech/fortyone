@@ -10,8 +10,10 @@ Every release uses one Git commit SHA for both images and follows this order:
 
 1. run the required server quality and SQLC workflows;
 2. publish the API and worker images to private ECR;
-3. register a one-shot task definition using the new API image;
-4. run `/app/api -migrate` in the API service's existing VPC configuration and
+3. skip production database migrations unless the optional repository variable
+   `RUN_PRODUCTION_MIGRATIONS` is exactly `true`;
+4. when enabled, register a one-shot task definition using the new API image,
+   run `/app/api -migrate` in the API service's existing VPC configuration, and
    require a zero exit code;
 5. deploy the worker and wait for service stability, including its fail-closed
    provider credential and payload cutovers;
@@ -25,9 +27,12 @@ When the bounded cutover code is removed, changing this order requires an
 updated migration compatibility declaration and a staging exercise.
 
 The workflow never runs a migration from a developer checkout and never uses a
-floating image tag. The migration task inherits the reviewed API task
-definition's environment, secrets, execution role, task role, CPU, memory, and
-network boundary; only its image and command are replaced.
+floating image tag. Production migrations are disabled by default. While they
+remain disabled, an operator must apply required migrations separately before
+deploying code that depends on them. When explicitly enabled, the migration
+task inherits the reviewed API task definition's environment, secrets,
+execution role, task role, CPU, memory, and network boundary; only its image and
+command are replaced.
 
 ## Required repository variables
 
@@ -46,6 +51,12 @@ names, and VPC configuration must already exist. A missing or ambiguous
 container, absent network configuration, failed task start, missing exit code,
 non-zero migration exit, or unstable service fails the release.
 
+The `release-config` job validates every required repository variable before
+the workflow requests an AWS identity. It reports missing variable names but
+never prints their values. If `AWS_DEPLOY_ROLE_ARN` is absent, the OIDC action
+cannot obtain credentials; configure the role instead of restoring long-lived
+AWS access-key secrets.
+
 ## Schema and compatibility review
 
 Before merging a migration, update `internal/migrations/manifest.json` and
@@ -63,9 +74,10 @@ keys required to read existing credential envelopes or token digests.
 
 - **Image publication fails:** no service changes. Repair the build or registry
   contract and rerun the same commit.
-- **Migration task fails:** no replacement service is deployed. Inspect the ECS
-  task's structured logs and stopped reason without printing database URLs or
-  secrets. Follow the migration manifest's forward-fix procedure.
+- **Migration task fails when enabled:** no replacement service is deployed.
+  Inspect the ECS task's structured logs and stopped reason without printing
+  database URLs or secrets. Follow the migration manifest's forward-fix
+  procedure.
 - **Worker deployment fails:** do not deploy the API. Preserve the migrated
   schema and deploy a compatible worker forward fix; never restore a binary the
   manifest declares incompatible with encrypted or migrated rows.

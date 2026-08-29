@@ -79,3 +79,49 @@ func TestServerReleaseUsesOIDCInsteadOfLongLivedAWSKeys(t *testing.T) {
 		}
 	}
 }
+
+func TestServerReleaseValidatesRequiredConfigurationBeforeAWS(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(serverDir(t), "..", "..", ".github", "workflows", "ecs-fargate-release.yml")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read server release workflow: %v", err)
+	}
+	workflow := string(content)
+
+	preflightStart := strings.Index(workflow, "\n  release-config:\n")
+	qualityStart := strings.Index(workflow, "\n  server-quality:\n")
+	if preflightStart < 0 || qualityStart < 0 || preflightStart >= qualityStart {
+		t.Fatal("release workflow must validate production configuration before declaring release jobs")
+	}
+
+	preflight := workflow[preflightStart:qualityStart]
+	for _, variable := range []string{
+		"AWS_DEPLOY_ROLE_ARN",
+		"AWS_REGION",
+		"ECR_SERVER_REPOSITORY",
+		"ECR_WORKER_REPOSITORY",
+		"ECS_CLUSTER",
+		"ECS_SERVER_SERVICE",
+		"ECS_SERVER_TASK_DEFINITION",
+		"ECS_SERVER_CONTAINER",
+		"ECS_WORKER_SERVICE",
+		"ECS_WORKER_TASK_DEFINITION",
+		"ECS_WORKER_CONTAINER",
+	} {
+		if !strings.Contains(preflight, variable) {
+			t.Errorf("release configuration preflight does not validate %s", variable)
+		}
+	}
+
+	registryStart := strings.Index(workflow, "\n  registry:\n")
+	buildStart := strings.Index(workflow, "\n  build-and-push:\n")
+	if registryStart < 0 || buildStart < 0 || registryStart >= buildStart {
+		t.Fatal("release workflow must declare registry before build-and-push")
+	}
+	registry := workflow[registryStart:buildStart]
+	if !strings.Contains(registry, "needs: release-config") {
+		t.Error("registry authentication must wait for release configuration preflight")
+	}
+}
