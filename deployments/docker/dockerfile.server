@@ -7,8 +7,10 @@ ARG BUILD_VERSION=development
 
 WORKDIR /app
 
-# Install git and ca-certificates (required for private repos)
-RUN apk add --no-cache git ca-certificates tzdata
+# Upgrade base packages before installing build dependencies so patched Alpine
+# security releases are present even when the digest-pinned base is older.
+RUN apk upgrade --no-cache \
+    && apk add --no-cache git ca-certificates tzdata
 
 # Copy go mod files
 COPY apps/server/go.mod apps/server/go.sum ./
@@ -32,7 +34,8 @@ ARG BUILD_VERSION=development
 LABEL org.opencontainers.image.title="FortyOne API" \
     org.opencontainers.image.revision="$BUILD_VERSION"
 
-RUN apk add --no-cache ca-certificates tzdata \
+RUN apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates tzdata \
     && addgroup -S -g 10001 fortyone \
     && adduser -S -D -H -u 10001 -G fortyone fortyone
 
