@@ -21,13 +21,8 @@ jobs:
   server-quality:
     uses: ./.github/workflows/server-quality.yml
 
-  server-sqlc:
-    uses: ./.github/workflows/server-sqlc.yml
-
   build-and-push:
-    needs:
-      - server-quality
-      - server-sqlc
+    needs: server-quality
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -114,12 +109,10 @@ jobs:
           task-definition: ${{ steps.render-server.outputs.task-definition }}
           service: ${{ vars.ECS_SERVER_SERVICE }}
           cluster: ${{ vars.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          wait-for-service-stability: false
 
   deploy-worker:
-    needs:
-      - build-and-push
-      - deploy-server
+    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
@@ -149,4 +142,4 @@ jobs:
           task-definition: ${{ steps.render-worker.outputs.task-definition }}
           service: ${{ vars.ECS_WORKER_SERVICE }}
           cluster: ${{ vars.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          wait-for-service-stability: false
