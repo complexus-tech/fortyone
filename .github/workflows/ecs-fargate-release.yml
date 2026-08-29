@@ -18,6 +18,52 @@ env:
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
+  release-config:
+    runs-on: ubuntu-latest
+    env:
+      AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_SERVER_REPOSITORY: ${{ vars.ECR_SERVER_REPOSITORY }}
+      ECR_WORKER_REPOSITORY: ${{ vars.ECR_WORKER_REPOSITORY }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_SERVER_SERVICE: ${{ vars.ECS_SERVER_SERVICE }}
+      ECS_SERVER_TASK_DEFINITION: ${{ vars.ECS_SERVER_TASK_DEFINITION }}
+      ECS_SERVER_CONTAINER: ${{ vars.ECS_SERVER_CONTAINER }}
+      ECS_WORKER_SERVICE: ${{ vars.ECS_WORKER_SERVICE }}
+      ECS_WORKER_TASK_DEFINITION: ${{ vars.ECS_WORKER_TASK_DEFINITION }}
+      ECS_WORKER_CONTAINER: ${{ vars.ECS_WORKER_CONTAINER }}
+    steps:
+      - name: Validate production release configuration
+        run: |
+          set -euo pipefail
+
+          required_variables=(
+            AWS_DEPLOY_ROLE_ARN
+            AWS_REGION
+            ECR_SERVER_REPOSITORY
+            ECR_WORKER_REPOSITORY
+            ECS_CLUSTER
+            ECS_SERVER_SERVICE
+            ECS_SERVER_TASK_DEFINITION
+            ECS_SERVER_CONTAINER
+            ECS_WORKER_SERVICE
+            ECS_WORKER_TASK_DEFINITION
+            ECS_WORKER_CONTAINER
+          )
+          missing_variables=()
+
+          for variable_name in "${required_variables[@]}"; do
+            if [ -z "${!variable_name}" ]; then
+              echo "::error title=Missing production release variable::$variable_name must be configured in Settings > Secrets and variables > Actions > Variables."
+              missing_variables+=("$variable_name")
+            fi
+          done
+
+          if [ "${#missing_variables[@]}" -gt 0 ]; then
+            printf 'Production release configuration is incomplete. Missing: %s\n' "${missing_variables[*]}" >&2
+            exit 1
+          fi
+
   server-quality:
     uses: ./.github/workflows/server-quality.yml
 
@@ -25,6 +71,7 @@ jobs:
     uses: ./.github/workflows/server-sqlc.yml
 
   registry:
+    needs: release-config
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -137,7 +184,12 @@ jobs:
       - build-and-push
       - registry
     steps:
+      - name: Report disabled production migrations
+        if: ${{ vars.RUN_PRODUCTION_MIGRATIONS != 'true' }}
+        run: echo "Production migrations are disabled; apply required migrations outside this workflow before deploying schema-dependent code."
+
       - name: Configure AWS credentials
+        if: ${{ vars.RUN_PRODUCTION_MIGRATIONS == 'true' }}
         uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
@@ -145,6 +197,7 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Register immutable migration task definition
+        if: ${{ vars.RUN_PRODUCTION_MIGRATIONS == 'true' }}
         id: migration-task
         env:
           CONTAINER_NAME: ${{ vars.ECS_SERVER_CONTAINER }}
@@ -205,6 +258,7 @@ jobs:
           echo "arn=$task_definition_arn" >> "$GITHUB_OUTPUT"
 
       - name: Apply schema migrations as a one-shot task
+        if: ${{ vars.RUN_PRODUCTION_MIGRATIONS == 'true' }}
         env:
           CONTAINER_NAME: ${{ vars.ECS_SERVER_CONTAINER }}
           TASK_DEFINITION_ARN: ${{ steps.migration-task.outputs.arn }}

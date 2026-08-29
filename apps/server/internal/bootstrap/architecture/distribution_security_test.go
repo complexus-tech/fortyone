@@ -167,7 +167,7 @@ func TestProductionImagesStayInPrivateECR(t *testing.T) {
 	}
 }
 
-func TestProductionReleaseMigratesBeforeCredentialCutoverAndAPI(t *testing.T) {
+func TestProductionReleaseKeepsOptionalMigrationBeforeCredentialCutoverAndAPI(t *testing.T) {
 	t.Parallel()
 
 	root := filepath.Clean(filepath.Join(serverDir(t), "..", ".."))
@@ -195,6 +195,8 @@ func TestProductionReleaseMigratesBeforeCredentialCutoverAndAPI(t *testing.T) {
 
 	migrationJob := workflow[migrationStart:workerStart]
 	for _, required := range []string{
+		"vars.RUN_PRODUCTION_MIGRATIONS == 'true'",
+		"vars.RUN_PRODUCTION_MIGRATIONS != 'true'",
 		"aws ecs register-task-definition",
 		"aws ecs run-task",
 		`command: ["/app/api", "-migrate"]`,
@@ -202,7 +204,7 @@ func TestProductionReleaseMigratesBeforeCredentialCutoverAndAPI(t *testing.T) {
 		`if [ "$exit_code" != "0" ]`,
 	} {
 		if !strings.Contains(migrationJob, required) {
-			t.Errorf("migration release job is missing fail-closed contract %q", required)
+			t.Errorf("optional migration release job is missing contract %q", required)
 		}
 	}
 

@@ -6,7 +6,7 @@ in GitHub or a production task environment.
 
 | Identity          | Obtained by                                                | Purpose                                                                                                       |
 | ----------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Release role      | GitHub Actions OIDC assumes `AWS_DEPLOY_ROLE_ARN`          | Build and publish private ECR images, run the one-shot migration task, and deploy the API/worker ECS services |
+| Release role      | GitHub Actions OIDC assumes `AWS_DEPLOY_ROLE_ARN`          | Build and publish private ECR images and deploy the API/worker ECS services; it can run the optional one-shot migration task when explicitly enabled |
 | Runtime task role | ECS supplies credentials through the AWS SDK default chain | Access only the S3 buckets and object prefixes required by the API or worker                                  |
 
 The ECS **execution role** that pulls images and writes platform logs is a third
@@ -36,10 +36,12 @@ as a one-shot migration task, and permits describing that task until it stops.
 Any `iam:PassRole` permission is restricted to the exact ECS execution and task
 roles referenced by those task definitions.
 
-The migration task reuses the server service's `awsvpc` configuration and task
-secrets; it overrides only the reviewed image and command. The release role
-must not be able to inject arbitrary environment secrets, choose unrelated task
-roles, or run task families outside this contract. See
+Production migrations are disabled unless the optional repository variable
+`RUN_PRODUCTION_MIGRATIONS` is exactly `true`. When enabled, the migration task
+reuses the server service's `awsvpc` configuration and task secrets; it
+overrides only the reviewed image and command. The release role must not be able
+to inject arbitrary environment secrets, choose unrelated task roles, or run
+task families outside this contract. See
 [`ecs-release.md`](ecs-release.md) for sequencing and recovery.
 
 Every third-party workflow action is pinned to a reviewed 40-character commit.
