@@ -93,13 +93,6 @@ export const userKeys = {
     [...userKeys.all, "automation-preferences", workspaceSlug] as const,
 };
 
-export const invitationKeys = {
-  all: ["invitations"] as const,
-  pending: (workspaceSlug: string) =>
-    [...invitationKeys.all, "pending", workspaceSlug] as const,
-  mine: ["my-invitations"] as const,
-};
-
 export const notificationKeys = {
   all: (workspaceSlug: string) => ["notifications", workspaceSlug] as const,
   unread: (workspaceSlug: string) =>

@@ -1,21 +1,16 @@
-import type { ApiResponse } from "@/types";
 import ky from "ky";
 import { buildAuthHeaders } from "@/lib/http/auth-headers";
 import { getCookieHeader } from "@/lib/http/header";
 import { getApiUrl } from "@/lib/api-url";
-import { auth } from "@/auth";
-import { getApiError } from "@/utils";
+import { requestError } from "@/lib/fetch-error";
+import type { ApiResponse } from "@/types";
 
 const apiUrl = getApiUrl();
 
 export async function acceptInvitation(inviteToken: string) {
-  const session = await auth();
   const cookieHeader = await getCookieHeader();
   try {
-    const headers = buildAuthHeaders({
-      token: session?.token,
-      cookieHeader,
-    });
+    const headers = buildAuthHeaders({ cookieHeader });
     const response = await ky.post(
       `${apiUrl}/invitations/${inviteToken}/accept`,
       {
@@ -27,6 +22,6 @@ export async function acceptInvitation(inviteToken: string) {
     const data = await response.json<ApiResponse<null>>();
     return data;
   } catch (error) {
-    return getApiError(error);
+    return requestError<null>(error);
   }
 }

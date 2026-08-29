@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { getMyInvitationsForCurrentRequest } from "@/modules/invitations/queries/my-invitations-for-current-request";
 import { getAuthCode } from "@/lib/queries/get-auth-code";
-import { getMyInvitations } from "@/lib/queries/get-invitations";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 import { getLoginUrl } from "@/utils/callback-url";
@@ -30,7 +30,7 @@ export default async function AuthCallback({
   }
 
   const [invitations, workspaces, profile] = await Promise.all([
-    getMyInvitations(),
+    getMyInvitationsForCurrentRequest(),
     getWorkspaces(),
     getProfile(),
   ]);
@@ -48,7 +48,7 @@ export default async function AuthCallback({
   return (
     <ClientPage
       callbackUrl={callbackUrl}
-      invitations={invitations.data || []}
+      invitations={invitations}
       profile={profile}
       session={session}
       workspaces={workspaces}

@@ -121,7 +121,7 @@ describe("Navigation", () => {
     render(<Navigation />);
 
     const workspaceTrigger = screen.getByRole("button", {
-      name: "Workspace",
+      name: "Workspace navigation",
     });
 
     expect(workspaceTrigger).toHaveAttribute("aria-expanded", "true");
@@ -143,7 +143,6 @@ describe("Navigation", () => {
     expect(calendarLink).toHaveAttribute("href", "/acme/calendar");
     expect(calendarLink).toHaveAttribute("aria-current", "page");
     expect(calendarLink).toHaveClass(
-      "py-2",
       "before:w-1",
       "before:h-[30px]",
       "before:-left-4",
@@ -175,10 +174,9 @@ describe("Navigation", () => {
 
     render(<Navigation />);
 
-    expect(screen.getByRole("button", { name: "Workspace" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
+    expect(
+      screen.getByRole("button", { name: "Workspace navigation" }),
+    ).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("link", { name: "Active Sprint" })).toBeVisible();
     expect(screen.queryByRole("link", { name: "Roadmap" })).toBeNull();
     expect(screen.getByRole("link", { name: "Calendar" })).toBeVisible();

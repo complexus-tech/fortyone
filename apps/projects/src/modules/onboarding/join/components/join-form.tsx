@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { redirect } from "next/navigation";
 import type { Invitation } from "@/modules/invitations/types";
-import { acceptInvitation } from "@/lib/actions/accept-invitation";
+import { acceptInvitation } from "@/modules/invitations/actions/accept-invitation";
 import { buildWorkspaceUrl } from "@/utils";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
 
@@ -67,7 +67,7 @@ export const JoinForm = ({
       </Wrapper>
       <Flex align="center" className="my-3 gap-4" justify="between">
         <Box className="bg-surface-muted h-px w-full" />
-        <Text color="muted" className="text-[0.95rem]">
+        <Text className="text-[0.95rem]" color="muted">
           OR
         </Text>
         <Box className="bg-surface-muted h-px w-full" />
@@ -78,8 +78,8 @@ export const JoinForm = ({
         color="tertiary"
         fullWidth
         href="/onboarding/create"
-        variant="naked"
         size="lg"
+        variant="naked"
       >
         Create your own workspace
       </Button>

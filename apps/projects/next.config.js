@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   // productionBrowserSourceMaps: true,
-  transpilePackages: ["ui", "icons"],
+  transpilePackages: ["ui", "icons", "ky", "marked", "next-public-env"],
   devIndicators: false,
   reactCompiler: true,
   experimental: {

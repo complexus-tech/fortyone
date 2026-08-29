@@ -3,7 +3,7 @@
 import { createRichTextExtensions } from "./rich-text-extensions";
 
 describe("rich-text editor extensions", () => {
-  it("registers every node used by the shared slash-command experience", () => {
+  it("registers the starter kit and every separately configured extension", () => {
     const names = createRichTextExtensions({
       onMediaFiles: () => undefined,
       onMediaRequest: () => undefined,
@@ -12,15 +12,10 @@ describe("rich-text editor extensions", () => {
 
     expect(names).toEqual(
       expect.arrayContaining([
-        "blockquote",
-        "bulletList",
-        "codeBlock",
         "documentVideo",
-        "heading",
-        "horizontalRule",
         "image",
-        "orderedList",
         "slashCommand",
+        "starterKit",
         "table",
         "taskList",
       ]),

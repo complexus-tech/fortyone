@@ -6,12 +6,12 @@ import {
   teamKeys,
   sprintKeys,
   userKeys,
-  invitationKeys,
   notificationKeys,
   workspaceKeys,
   memberKeys,
   subscriptionKeys,
 } from "@/constants/keys";
+import { invitationKeys } from "@/modules/invitations/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 import { getPublicTeams } from "@/modules/teams/queries/get-public-teams";

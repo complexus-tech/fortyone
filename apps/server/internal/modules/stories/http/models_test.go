@@ -1,6 +1,7 @@
 package storieshttp
 
 import (
+	"encoding/json"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -115,6 +116,23 @@ func TestToCoreNewStoryMapsLabelIDs(t *testing.T) {
 	}
 	if appStory.AutoSchedulingReason != &autoSchedulingReason || appStory.AutoSchedulingUpdatedAt != &autoSchedulingUpdatedAt {
 		t.Fatalf("expected auto-scheduling metadata pointers to be preserved, got %#v", appStory)
+	}
+}
+
+func TestToAppStorySerializesEmptyCollaboratorIDsAsArray(t *testing.T) {
+	payload, err := json.Marshal(toAppStory(stories.CoreSingleStory{}, nil))
+	if err != nil {
+		t.Fatalf("marshal app story: %v", err)
+	}
+
+	var response struct {
+		CollaboratorIDs json.RawMessage `json:"collaboratorIds"`
+	}
+	if err := json.Unmarshal(payload, &response); err != nil {
+		t.Fatalf("unmarshal app story: %v", err)
+	}
+	if string(response.CollaboratorIDs) != "[]" {
+		t.Fatalf("collaboratorIds = %s, want []", response.CollaboratorIDs)
 	}
 }
 

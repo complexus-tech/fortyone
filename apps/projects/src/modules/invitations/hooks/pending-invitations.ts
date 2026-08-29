@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
-import { invitationKeys } from "@/constants/keys";
 import { useWorkspacePath } from "@/hooks";
+import { invitationKeys } from "../keys";
 import { getPendingInvitations } from "../queries/pending-invitations";
 
 export const usePendingInvitations = () => {

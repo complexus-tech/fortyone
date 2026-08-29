@@ -155,7 +155,7 @@ func toAppStory(i stories.CoreSingleStory, usersByID map[uuid.UUID]AppUserSummar
 		Status:                   i.Status,
 		AssigneeID:               i.Assignee,
 		Assignee:                 findAppUserSummary(usersByID, i.Assignee),
-		CollaboratorIDs:          i.Collaborators,
+		CollaboratorIDs:          nonNilCollaboratorIDs(i.Collaborators),
 		Collaborators:            findAppUserSummaries(usersByID, i.Collaborators),
 		CollaboratorCount:        len(i.Collaborators),
 		WatcherCount:             i.WatcherCount,
@@ -184,6 +184,13 @@ func toAppStory(i stories.CoreSingleStory, usersByID map[uuid.UUID]AppUserSummar
 		Labels:                   i.Labels,
 		Associations:             toAppStoryAssociations(i.Associations, usersByID),
 	}
+}
+
+func nonNilCollaboratorIDs(values []uuid.UUID) []uuid.UUID {
+	if values == nil {
+		return []uuid.UUID{}
+	}
+	return values
 }
 
 func toAppStoryAssociations(associations []stories.CoreStoryAssociation, usersByID map[uuid.UUID]AppUserSummary) []AppStoryAssociation {

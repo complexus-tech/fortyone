@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui";
 import type { Workspace } from "@/types";
 import type { Team } from "@/modules/teams/types";
-import { inviteMembers } from "@/lib/actions/invite-members";
+import { inviteOnboardingMembers } from "@/modules/invitations/actions/invite-onboarding-members";
 import { withOnboardingCallbackUrl } from "@/modules/onboarding/routing";
 import { InviteForm } from "./components/invite-form";
 
@@ -45,7 +45,7 @@ export const InviteTeam = ({
     }
 
     setIsLoading(true);
-    const res = await inviteMembers(
+    const res = await inviteOnboardingMembers(
       validEmails,
       teams.map((t) => t.id),
       activeWorkspace.slug,

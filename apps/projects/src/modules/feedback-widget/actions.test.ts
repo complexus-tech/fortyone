@@ -22,6 +22,9 @@ jest.mock("@/utils", () => ({
 jest.mock("@/modules/public-portal/data", () => ({
   toPublicRequest: (item: unknown) => item,
 }));
+jest.mock("@/modules/public-portal/query", () => ({
+  getPublicFeedbackPortal: jest.fn(),
+}));
 jest.mock("@/modules/public-portal/feedback-ingress", () => ({
   createFeedbackIngressHeaders: jest.fn(async () => ({
     "X-FortyOne-Feedback-Signature": "signed",
