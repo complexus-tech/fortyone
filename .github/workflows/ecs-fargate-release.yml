@@ -112,7 +112,9 @@ jobs:
           wait-for-service-stability: false
 
   deploy-worker:
-    needs: build-and-push
+    needs:
+      - build-and-push
+      - deploy-server
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
