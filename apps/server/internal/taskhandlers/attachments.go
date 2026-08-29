@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
+	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
 
@@ -17,25 +17,25 @@ func (h *handlers) HandleAttachmentImageOptimization(ctx context.Context, task *
 	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
 		return fmt.Errorf("unmarshal attachment image optimization payload: %w: %w", err, asynq.SkipRetry)
 	}
-	if strings.TrimSpace(payload.BlobName) == "" {
-		return fmt.Errorf("attachment image optimization blob name is required: %w", asynq.SkipRetry)
+	if payload.AttachmentID == uuid.Nil || payload.WorkspaceID == uuid.Nil {
+		return fmt.Errorf("attachment image optimization identity is required: %w", asynq.SkipRetry)
 	}
 	if h.attachments == nil {
 		return fmt.Errorf("attachments service is required: %w", asynq.SkipRetry)
 	}
 
-	err := h.attachments.OptimizeStoredAttachment(ctx, payload.BlobName)
+	err := h.attachments.OptimizeStoredAttachment(ctx, payload.AttachmentID, payload.WorkspaceID)
 	if err == nil {
-		h.log.Info(ctx, "attachment image optimized", "blob_name", payload.BlobName)
+		h.log.Info(ctx, "attachment image optimized", "attachment_id", payload.AttachmentID)
 		return nil
 	}
 
 	if errors.Is(err, attachments.ErrImageOptimizationNotApplicable) ||
 		errors.Is(err, attachments.ErrImageOptimizationSkipped) {
-		h.log.Info(ctx, "attachment image optimization skipped", "blob_name", payload.BlobName, "reason", err)
+		h.log.Info(ctx, "attachment image optimization skipped", "attachment_id", payload.AttachmentID, "reason", err)
 		return nil
 	}
 
-	h.log.Error(ctx, "attachment image optimization failed", "blob_name", payload.BlobName, "error", err)
+	h.log.Error(ctx, "attachment image optimization failed", "attachment_id", payload.AttachmentID, "error", err)
 	return fmt.Errorf("optimize attachment image: %w", err)
 }

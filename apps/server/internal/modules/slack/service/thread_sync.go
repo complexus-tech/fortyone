@@ -7,20 +7,19 @@ import (
 	"strings"
 	"time"
 
-	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
 	"github.com/google/uuid"
 )
 
 type SlackThreadSync interface {
-	IngestInboundProviderComment(ctx context.Context, input integrationrequests.CoreInboundProviderCommentInput) (handled bool, err error)
-	BindProviderThread(ctx context.Context, input integrationrequests.CoreBindProviderThreadInput) (integrationrequests.CoreProviderThread, error)
+	IngestInboundProviderComment(ctx context.Context, input InboundProviderCommentInput) (handled bool, err error)
+	BindProviderThread(ctx context.Context, input BindProviderThreadInput) (ProviderThread, error)
 }
 
 func bindSlackRequestThreadContinuation(
 	ctx context.Context,
 	binder interface {
-		BindProviderThread(context.Context, integrationrequests.CoreBindProviderThreadInput) (integrationrequests.CoreProviderThread, error)
+		BindProviderThread(context.Context, BindProviderThreadInput) (ProviderThread, error)
 	},
 	workspaceID uuid.UUID,
 	installGeneration uuid.UUID,
@@ -35,14 +34,14 @@ func bindSlackRequestThreadContinuation(
 		return nil
 	}
 	if binder == nil {
-		return errors.New("Slack request thread binder is not configured")
+		return errors.New("slack request thread binder is not configured")
 	}
 	canonicalThreadID := strings.TrimSpace(externalThreadID)
 	if canonicalThreadID == "" {
 		canonicalThreadID = strings.TrimSpace(externalMessageID)
 	}
 	if workspaceID == uuid.Nil || installGeneration == uuid.Nil || strings.TrimSpace(externalWorkspaceID) == "" || strings.TrimSpace(externalChannelID) == "" || canonicalThreadID == "" {
-		return errors.New("Slack request thread continuation is missing its installation or destination")
+		return errors.New("slack request thread continuation is missing its installation or destination")
 	}
 
 	var sourceMessageID *string
@@ -53,10 +52,10 @@ func bindSlackRequestThreadContinuation(
 	if value := strings.TrimSpace(binding.SourceURL); value != "" {
 		sourceURL = &value
 	}
-	_, err := binder.BindProviderThread(ctx, integrationrequests.CoreBindProviderThreadInput{
+	_, err := binder.BindProviderThread(ctx, BindProviderThreadInput{
 		WorkspaceID:             workspaceID,
 		IntegrationRequestID:    binding.IntegrationRequestID,
-		Provider:                integrationrequests.ProviderSlack,
+		Provider:                ProviderSlack,
 		ExternalWorkspaceID:     strings.TrimSpace(externalWorkspaceID),
 		InstallationGeneration:  &installGeneration,
 		ExternalChannelID:       strings.TrimSpace(externalChannelID),
@@ -69,7 +68,7 @@ func bindSlackRequestThreadContinuation(
 
 func (p *EventProcessor) syncIntegrationRequestThreadReply(
 	ctx context.Context,
-	installation slackrepository.SlackWorkspaceRecord,
+	installation slackdomain.Installation,
 	linkedUserID *uuid.UUID,
 	event normalizedSlackEvent,
 ) (bool, error) {
@@ -77,8 +76,8 @@ func (p *EventProcessor) syncIntegrationRequestThreadReply(
 	if threadTS == "" {
 		return false, nil
 	}
-	return p.threadSync.IngestInboundProviderComment(ctx, integrationrequests.CoreInboundProviderCommentInput{
-		Provider:               integrationrequests.ProviderSlack,
+	return p.threadSync.IngestInboundProviderComment(ctx, InboundProviderCommentInput{
+		Provider:               ProviderSlack,
 		ExternalWorkspaceID:    installation.SlackTeamID,
 		InstallationGeneration: installation.InstallGeneration,
 		ExternalChannelID:      event.ChannelID,

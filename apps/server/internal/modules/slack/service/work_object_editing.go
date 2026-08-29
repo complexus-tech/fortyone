@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/google/uuid"
 )
 
@@ -17,12 +16,12 @@ const (
 )
 
 var (
-	errSlackWorkObjectEditDenied    = errors.New("Slack Work Object edit is not authorized")
-	errSlackWorkObjectEditMalformed = errors.New("Slack Work Object edit is malformed")
+	errSlackWorkObjectEditDenied    = errors.New("slack Work Object edit is not authorized")
+	errSlackWorkObjectEditMalformed = errors.New("slack Work Object edit is malformed")
 )
 
 type slackWorkObjectStoryService interface {
-	QueryByRef(ctx context.Context, workspaceID uuid.UUID, storyRef string) (stories.CoreSingleStory, error)
+	QueryByRef(ctx context.Context, workspaceID uuid.UUID, storyRef string) (Story, error)
 	UpdateExternalUserActionIfUnchanged(
 		ctx context.Context,
 		actorID, storyID, workspaceID uuid.UUID,
@@ -115,7 +114,7 @@ func (s *Service) processSlackWorkObjectEdit(ctx context.Context, payload intera
 
 	storyService, ok := s.stories.(slackWorkObjectStoryService)
 	if !ok {
-		return errors.New("Slack Work Object story editing is not configured")
+		return errors.New("slack Work Object story editing is not configured")
 	}
 	story, err := storyService.QueryByRef(ctx, installation.WorkspaceID, link.StoryReference)
 	if err != nil {
@@ -171,7 +170,7 @@ func (s *Service) processSlackWorkObjectEdit(ctx context.Context, payload intera
 	}
 	repository, ok := s.repo.(slackWorkObjectRepository)
 	if !ok {
-		return errors.New("Slack Work Object repository is not configured")
+		return errors.New("slack Work Object repository is not configured")
 	}
 	input, err := buildSlackStoryWorkObjectInput(ctx, repository, actorID, slackUserID, link.CanonicalURL, refreshed, true)
 	if err != nil {
@@ -190,7 +189,7 @@ func (s *Service) processSlackWorkObjectEdit(ctx context.Context, payload intera
 
 func (s *Service) authorizedSlackWorkObjectUpdates(
 	ctx context.Context,
-	story stories.CoreSingleStory,
+	story Story,
 	state interactionViewStateValues,
 ) (map[string]any, error) {
 	updates := make(map[string]any, 7)
@@ -355,7 +354,7 @@ func (s *Service) presentSlackWorkObjectEditError(ctx context.Context, payload i
 
 func slackWorkObjectEditErrorMessage(err error) string {
 	switch {
-	case errors.Is(err, stories.ErrStoryChanged):
+	case errors.Is(err, ErrStoryChanged):
 		return "This task changed while you were editing it. Refresh the task and try again."
 	case errors.Is(err, errSlackWorkObjectEditDenied), errors.Is(err, ErrSlackUserNotLinked), errors.Is(err, ErrSlackTeamNotAvailable):
 		return "This task is no longer available to you in this Slack context."
@@ -365,5 +364,3 @@ func slackWorkObjectEditErrorMessage(err error) string {
 		return "FortyOne could not save these changes. Refresh the task and try again."
 	}
 }
-
-var _ slackWorkObjectStoryService = (*stories.Service)(nil)

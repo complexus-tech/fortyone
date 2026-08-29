@@ -134,67 +134,16 @@ pnpm reset-project # Reset to fresh Expo project
 pnpm lint          # Run linting
 ```
 
-## 🚀 Deployment
+## 🚀 Managed mobile delivery
 
-### EAS Build (Recommended)
+Production builds, signing credentials, store submissions, and over-the-air
+updates are owned by the internal mobile release process. Do not run an ad hoc
+production EAS build or store submission from a personal Expo account.
 
-Expo Application Services (EAS) provides managed builds:
-
-1. **Install EAS CLI**:
-
-   ```bash
-   npm install -g eas-cli
-   ```
-
-2. **Configure EAS**:
-
-   ```bash
-   eas build:configure
-   ```
-
-3. **Build for platforms**:
-
-   ```bash
-   # iOS
-   eas build --platform ios
-
-   # Android
-   eas build --platform android
-   ```
-
-### App Store Deployment
-
-1. **iOS (TestFlight/App Store)**:
-
-   ```bash
-   eas submit --platform ios
-   ```
-
-2. **Android (Play Store)**:
-   ```bash
-   eas submit --platform android
-   ```
-
-### Environment-Specific Builds
-
-Configure different environments in `eas.json`:
-
-```json
-{
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
-      "distribution": "internal"
-    },
-    "production": {
-      "distribution": "store"
-    }
-  }
-}
-```
+Use the checked-in development profile only after receiving access through the
+team's managed Expo organization. Changes to `eas.json`, native identifiers,
+entitlements, signing, or release channels require review from the mobile
+release owner.
 
 ## 📱 Device Testing
 
@@ -217,27 +166,13 @@ eas build --platform android --profile development
 - [ ] Performance is smooth
 - [ ] All screen sizes supported
 
-## 🤝 Contributing
-
-See the main [Contributing Guide](../../CONTRIBUTING.md) for details.
-
-### Mobile-Specific Guidelines
+## Internal development guidelines
 
 - **Platform Testing**: Test on both iOS and Android
 - **Performance**: Optimize for mobile performance
 - **Accessibility**: Follow mobile accessibility guidelines
 - **Offline First**: Consider offline functionality
 - **Touch Interactions**: Design for touch interfaces
-
-## 📄 License
-
-This project is licensed under the [FortyOne License](../../LICENSE).
-
-## 📞 Support
-
-- **Documentation**: [docs.fortyone.app](https://docs.fortyone.app/mobile)
-- **Issues**: [GitHub Issues](https://github.com/complexus/fortyone/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/complexus/fortyone/discussions)
 
 ## 🔗 Related Projects
 

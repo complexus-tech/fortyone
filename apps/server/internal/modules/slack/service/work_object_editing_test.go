@@ -13,7 +13,6 @@ import (
 	"time"
 
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -22,7 +21,7 @@ import (
 type workObjectStoryServiceStub struct {
 	*mockStoryService
 	mu            sync.Mutex
-	story         stories.CoreSingleStory
+	story         singleStory
 	updates       map[string]any
 	updateCalls   int
 	queryCalls    int
@@ -31,7 +30,7 @@ type workObjectStoryServiceStub struct {
 	expectedAt    time.Time
 }
 
-func (s *workObjectStoryServiceStub) QueryByRef(_ context.Context, _ uuid.UUID, _ string) (stories.CoreSingleStory, error) {
+func (s *workObjectStoryServiceStub) QueryByRef(_ context.Context, _ uuid.UUID, _ string) (singleStory, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.queryCalls++
@@ -57,14 +56,14 @@ func (s *workObjectStoryServiceStub) UpdateExternalUserActionIfUnchanged(
 		return s.updateErr
 	}
 	if storyID != s.story.ID || workspaceID != s.story.Workspace || !expectedUpdatedAt.Equal(s.story.UpdatedAt) {
-		return stories.ErrStoryChanged
+		return ErrStoryChanged
 	}
 	applyWorkObjectStoryUpdates(&s.story, updates)
 	s.story.UpdatedAt = s.story.UpdatedAt.Add(time.Second)
 	return nil
 }
 
-func applyWorkObjectStoryUpdates(story *stories.CoreSingleStory, updates map[string]any) {
+func applyWorkObjectStoryUpdates(story *singleStory, updates map[string]any) {
 	if value, ok := updates["title"].(string); ok {
 		story.Title = value
 	}
@@ -206,11 +205,11 @@ func TestProcessSlackWorkObjectEditReturnsStaleConflictWithoutRefresh(t *testing
 	t.Parallel()
 
 	fixture := newWorkObjectEditFixture(t)
-	fixture.stories.updateErr = stories.ErrStoryChanged
+	fixture.stories.updateErr = ErrStoryChanged
 	fixture.payload.View.State.Values = interactionViewStateValues{"title": workObjectTextState("title", "Conflicting title")}
 
 	err := fixture.service.processSlackWorkObjectEdit(context.Background(), fixture.payload)
-	require.ErrorIs(t, err, stories.ErrStoryChanged)
+	require.ErrorIs(t, err, ErrStoryChanged)
 	require.Equal(t, 1, fixture.stories.updateCalls)
 	require.Equal(t, "This task changed while you were editing it. Refresh the task and try again.", slackWorkObjectEditErrorMessage(err))
 	require.Equal(t, 1, fixture.stories.queryCalls)
@@ -307,7 +306,7 @@ func newWorkObjectEditFixture(t *testing.T) workObjectEditFixture {
 	}
 	storyService := &workObjectStoryServiceStub{
 		mockStoryService: &mockStoryService{},
-		story: stories.CoreSingleStory{
+		story: singleStory{
 			ID:         storyID,
 			SequenceID: 123,
 			Title:      "Original title",
@@ -323,7 +322,8 @@ func newWorkObjectEditFixture(t *testing.T) workObjectEditFixture {
 		},
 	}
 	testLogger := logger.NewWithJSON(io.Discard, slog.LevelError, "test")
-	service := New(testLogger, repo, &mockRequestStore{}, storyService, Config{})
+	service := newTestService(repo, &mockRequestStore{}, storyService, Config{})
+	service.log = testLogger
 
 	payload := interactionPayload{Type: "view_submission", TriggerID: "trigger-123"}
 	payload.Team.ID = "T123"

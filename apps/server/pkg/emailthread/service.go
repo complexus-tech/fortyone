@@ -200,7 +200,7 @@ func (s *Service) PrepareReply(ctx context.Context, input ReplyInput) (PreparedR
 			return PreparedReply{}, fmt.Errorf("rotate Maya reply address: %w", err)
 		}
 	} else if !validOpaqueReplyToken(token) {
-		return PreparedReply{}, errors.New("Maya reply token is invalid")
+		return PreparedReply{}, errors.New("maya reply token is invalid")
 	}
 	message, _, err := s.store.AppendEmailMessage(ctx, messaging.EmailMessageInput{
 		ThreadID:           input.Thread.ID,

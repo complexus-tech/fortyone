@@ -14,6 +14,7 @@ import (
 
 func TestSyncChannelsRefreshesEntirePaginatedSnapshot(t *testing.T) {
 	workspaceID := uuid.New()
+	actorID := uuid.New()
 	installationID := uuid.New()
 	scopes := slackBotOAuthScopeValue()
 	repo := &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
@@ -100,7 +101,7 @@ func TestSyncChannelsRefreshesEntirePaginatedSnapshot(t *testing.T) {
 	service.webClient = newSlackWebClient(service.client)
 	service.webClient.baseURL = provider.URL
 
-	require.NoError(t, service.SyncChannels(context.Background(), workspaceID))
+	require.NoError(t, service.SyncChannels(context.Background(), workspaceID, actorID))
 	require.Equal(t, 1, repo.upsertChannels)
 	require.Equal(t, workspaceID, repo.lastChannelWorkspaceID)
 	require.Equal(t, installationID, repo.lastChannelInstallID)
@@ -118,7 +119,7 @@ func TestSyncChannelsRefreshesEntirePaginatedSnapshot(t *testing.T) {
 		},
 	}, repo.lastChannels)
 
-	require.NoError(t, service.SyncChannels(context.Background(), workspaceID))
+	require.NoError(t, service.SyncChannels(context.Background(), workspaceID, actorID))
 	require.Equal(t, 2, repo.upsertChannels)
 	require.Equal(t, []slackrepository.SlackChannelPayload{
 		{
@@ -137,6 +138,7 @@ func TestSyncChannelsRefreshesEntirePaginatedSnapshot(t *testing.T) {
 
 func TestSyncChannelsDoesNotPersistAPartialSnapshot(t *testing.T) {
 	workspaceID := uuid.New()
+	actorID := uuid.New()
 	repo := &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
 		ID:             uuid.New(),
 		WorkspaceID:    workspaceID,
@@ -167,7 +169,7 @@ func TestSyncChannelsDoesNotPersistAPartialSnapshot(t *testing.T) {
 	service.webClient = newSlackWebClient(service.client)
 	service.webClient.baseURL = provider.URL
 
-	err := service.SyncChannels(context.Background(), workspaceID)
+	err := service.SyncChannels(context.Background(), workspaceID, actorID)
 
 	require.Error(t, err)
 	require.Zero(t, repo.upsertChannels)
@@ -176,6 +178,7 @@ func TestSyncChannelsDoesNotPersistAPartialSnapshot(t *testing.T) {
 
 func TestSyncChannelsRejectsRepeatedPaginationCursor(t *testing.T) {
 	workspaceID := uuid.New()
+	actorID := uuid.New()
 	repo := &mockRepo{slackWorkspace: slackrepository.SlackWorkspaceRecord{
 		ID:             uuid.New(),
 		WorkspaceID:    workspaceID,
@@ -205,7 +208,7 @@ func TestSyncChannelsRejectsRepeatedPaginationCursor(t *testing.T) {
 	service.webClient = newSlackWebClient(service.client)
 	service.webClient.baseURL = provider.URL
 
-	err := service.SyncChannels(context.Background(), workspaceID)
+	err := service.SyncChannels(context.Background(), workspaceID, actorID)
 
 	require.ErrorContains(t, err, "repeated a cursor")
 	require.Zero(t, repo.upsertChannels)
@@ -224,7 +227,6 @@ func TestHandleSetupKeepsInstallationWhenInitialChannelSyncFails(t *testing.T) {
 		ClientSecret: "client-secret",
 		RedirectURL:  "https://api.example.com/integrations/slack/setup",
 		WebsiteURL:   "https://fortyone.app",
-		SecretKey:    "encryption-secret",
 	})
 	session, err := service.CreateInstallSession(context.Background(), workspaceID, userID, "acme")
 	require.NoError(t, err)

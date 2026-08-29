@@ -3,18 +3,18 @@ package emailreplyhttp
 import (
 	"context"
 	"errors"
-	"io"
 	"mime"
 	"net/http"
 	"strings"
+	"time"
 
 	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
 	"github.com/complexus-tech/projects-api/pkg/web"
 )
 
 const (
-	maxInboundEmailWebhookBytes = 5 << 20
-	brevoRetryAfterSeconds      = "600"
+	brevoRetryAfterSeconds     = "600"
+	inboundEmailWebhookTimeout = 15 * time.Second
 )
 
 type Ingress interface {
@@ -24,10 +24,18 @@ type Ingress interface {
 
 type Handlers struct {
 	service Ingress
+	timeout time.Duration
 }
 
 func New(service Ingress) *Handlers {
-	return &Handlers{service: service}
+	return newWithTimeout(service, inboundEmailWebhookTimeout)
+}
+
+func newWithTimeout(service Ingress, timeout time.Duration) *Handlers {
+	if timeout <= 0 {
+		timeout = inboundEmailWebhookTimeout
+	}
+	return &Handlers{service: service, timeout: timeout}
 }
 
 func (h *Handlers) HandleInboundEmailProcessed(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -42,18 +50,18 @@ func (h *Handlers) HandleInboundEmailProcessed(ctx context.Context, w http.Respo
 		return web.RespondError(ctx, w, nil, http.StatusUnsupportedMediaType)
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxInboundEmailWebhookBytes)
-	rawBody, err := io.ReadAll(r.Body)
+	rawBody, err := web.ReadBoundedBody(w, r, emailreply.MaximumInboundWebhookBytes)
 	if err != nil {
-		var tooLarge *http.MaxBytesError
-		if errors.As(err, &tooLarge) {
+		if errors.Is(err, web.ErrRequestBodyTooLarge) {
 			return web.RespondError(ctx, w, nil, http.StatusRequestEntityTooLarge)
 		}
 		w.Header().Set("Retry-After", brevoRetryAfterSeconds)
 		return web.RespondError(ctx, w, nil, http.StatusTooManyRequests)
 	}
 
-	if _, err := h.service.Ingest(ctx, rawBody); err != nil {
+	ingestCtx, cancel := context.WithTimeout(ctx, h.timeout)
+	defer cancel()
+	if _, err := h.service.Ingest(ingestCtx, rawBody); err != nil {
 		switch {
 		case errors.Is(err, emailreply.ErrInvalidPayload):
 			return web.RespondError(ctx, w, nil, http.StatusBadRequest)

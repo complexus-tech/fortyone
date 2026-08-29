@@ -10,9 +10,9 @@ import (
 
 const hostedDomain = "fortyone.app"
 
-// Build returns a workspace-aware application URL. FortyOne's hosted app uses
-// the workspace slug as a subdomain, while local and self-hosted deployments
-// keep the workspace slug in the path.
+// Build returns a workspace-aware application URL. FortyOne's production domain
+// uses the workspace slug as a subdomain, while local and preview origins keep
+// the workspace slug in the path.
 func Build(websiteURL, workspaceSlug string, routeSegments ...string) string {
 	baseURL, err := url.Parse(strings.TrimRight(strings.TrimSpace(websiteURL), "/"))
 	if err != nil ||

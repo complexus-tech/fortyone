@@ -12,8 +12,7 @@ import (
 
 	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,13 +24,14 @@ func TestStoryMutationConfirmationPostgresContract(t *testing.T) {
 	if databaseURL == "" {
 		t.Skip("MESSAGING_CONFIRMATION_TEST_DATABASE_URL is not configured")
 	}
-	db, err := sqlx.Connect("postgres", databaseURL)
+	pool, err := pgxpool.New(context.Background(), databaseURL)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = db.Close() })
+	require.NoError(t, pool.Ping(context.Background()))
+	t.Cleanup(pool.Close)
 
 	ctx := context.Background()
-	repo := New(db)
-	workspaceID, userID, teamID := seedStoryMutationConfirmationActor(t, db)
+	repo := New(pool)
+	workspaceID, userID, teamID := seedStoryMutationConfirmationActor(t, pool)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 
 	bindingFor := func(confirmationID uuid.UUID, tokenHash []byte) messaging.StoryMutationConfirmationBinding {
@@ -150,7 +150,7 @@ func TestStoryMutationConfirmationPostgresContract(t *testing.T) {
 		assertProposalRedacted := func(confirmationID uuid.UUID) {
 			t.Helper()
 			var persistedProposal []byte
-			require.NoError(t, db.QueryRowxContext(ctx, `
+			require.NoError(t, pool.QueryRow(ctx, `
 				SELECT proposal
 				FROM messaging_story_mutation_confirmations
 				WHERE confirmation_id = $1
@@ -239,7 +239,7 @@ func TestStoryMutationConfirmationPostgresContract(t *testing.T) {
 		var retainedProposal []byte
 		var retainedResult []byte
 		var lastError *string
-		require.NoError(t, db.QueryRowxContext(ctx, `
+		require.NoError(t, pool.QueryRow(ctx, `
 			SELECT proposal, result, last_error
 			FROM messaging_story_mutation_confirmations
 			WHERE confirmation_id = $1
@@ -279,7 +279,7 @@ func mustJSON(t *testing.T, value any) string {
 	return string(payload)
 }
 
-func seedStoryMutationConfirmationActor(t *testing.T, db *sqlx.DB) (uuid.UUID, uuid.UUID, uuid.UUID) {
+func seedStoryMutationConfirmationActor(t *testing.T, pool *pgxpool.Pool) (uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
 	ctx := context.Background()
 	userID := uuid.New()
@@ -287,20 +287,20 @@ func seedStoryMutationConfirmationActor(t *testing.T, db *sqlx.DB) (uuid.UUID, u
 	teamID := uuid.New()
 	suffix := uuid.NewString()
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(context.Background(), "DELETE FROM workspaces WHERE workspace_id = $1", workspaceID)
-		_, _ = db.ExecContext(context.Background(), "DELETE FROM users WHERE user_id = $1", userID)
+		_, _ = pool.Exec(context.Background(), "DELETE FROM workspaces WHERE workspace_id = $1", workspaceID)
+		_, _ = pool.Exec(context.Background(), "DELETE FROM users WHERE user_id = $1", userID)
 	})
-	_, err := db.ExecContext(ctx, `
+	_, err := pool.Exec(ctx, `
 		INSERT INTO users (user_id, username, email)
 		VALUES ($1, $2, $3)
 	`, userID, "confirmation-"+suffix, "confirmation-"+suffix+"@example.test")
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `
+	_, err = pool.Exec(ctx, `
 		INSERT INTO workspaces (workspace_id, name, slug, created_by)
 		VALUES ($1, 'Confirmation Test', $2, $3)
 	`, workspaceID, "confirmation-"+suffix, userID)
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `
+	_, err = pool.Exec(ctx, `
 		INSERT INTO teams (team_id, workspace_id, name, code, color)
 		VALUES ($1, $2, 'Web', $3, '#111827')
 	`, teamID, workspaceID, "WEB-"+suffix)

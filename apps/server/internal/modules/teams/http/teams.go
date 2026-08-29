@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
-	"strings"
+	"net/url"
 
 	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/internal/platform/pagination"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -26,11 +28,33 @@ type Handlers struct {
 	cache *cache.Service
 }
 
-func listTeamsFilter(r *http.Request) teams.CoreListTeamsFilter {
-	return teams.CoreListTeamsFilter{
-		Search:     strings.TrimSpace(r.URL.Query().Get("search")),
-		JoinedOnly: r.URL.Query().Get("joinedOnly") == "true",
+func parseListTeamsQuery(values url.Values) (teams.CoreListTeamsFilter, *pagination.OffsetParams, error) {
+	search, _, err := web.OptionalTextQueryParameter(
+		values, "search", web.DefaultMaxQueryParameterBytes, web.DefaultMaxQueryParameterBytes,
+	)
+	if err != nil {
+		return teams.CoreListTeamsFilter{}, nil, err
 	}
+	joinedOnly, _, err := web.OptionalBooleanQueryParameter(values, "joinedOnly")
+	if err != nil {
+		return teams.CoreListTeamsFilter{}, nil, err
+	}
+	filter := teams.CoreListTeamsFilter{
+		Search:     search,
+		JoinedOnly: joinedOnly,
+	}
+	if !pagination.OffsetRequested(values) {
+		return filter, nil, nil
+	}
+	params, err := pagination.ParseOffsetQuery(values, pagination.OffsetQueryConfig{
+		DefaultPageSize: pagination.DefaultMenuPageSize,
+		MaximumPageSize: pagination.MaximumPageSize,
+		MaximumOffset:   math.MaxInt32,
+	})
+	if err != nil {
+		return teams.CoreListTeamsFilter{}, nil, err
+	}
+	return filter, &params, nil
 }
 
 func New(teams *teams.Service, cacheService *cache.Service) *Handlers {
@@ -51,12 +75,15 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	filter := listTeamsFilter(r)
+	filter, params, err := parseListTeamsQuery(r.URL.Query())
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
 
-	if paginationRequested(r) {
-		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+	if params != nil {
+		page, pageSize := params.Page, params.PageSize
 		filter.Limit = pageSize + 1
-		filter.Offset = (page - 1) * pageSize
+		filter.Offset = params.Offset()
 
 		teams, err := h.teams.List(ctx, workspace.ID, userID, filter)
 		if err != nil {
@@ -128,12 +155,15 @@ func (h *Handlers) ListPublicTeams(ctx context.Context, w http.ResponseWriter, r
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	filter := listTeamsFilter(r)
+	filter, params, err := parseListTeamsQuery(r.URL.Query())
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
 
-	if paginationRequested(r) {
-		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
+	if params != nil {
+		page, pageSize := params.Page, params.PageSize
 		filter.Limit = pageSize + 1
-		filter.Offset = (page - 1) * pageSize
+		filter.Offset = params.Offset()
 
 		teams, err := h.teams.ListPublicTeams(ctx, workspace.ID, userID, filter)
 		if err != nil {

@@ -1,0 +1,24 @@
+---
+title: SDK previews
+description: Use typed clients generated from the FortyOne API contract.
+icon: Boxes
+---
+
+FortyOne keeps TypeScript and Go client previews in the repository. Both are
+generated from the same OpenAPI v1 contract that powers this reference.
+
+| SDK        | Location             | Status             |
+| ---------- | -------------------- | ------------------ |
+| TypeScript | `packages/sdk`       | Repository preview |
+| Go         | `apps/server/sdk/go` | Repository preview |
+
+The generated operation and model types are authoritative. Small handwritten
+wrappers add secure transport defaults, typed pagination helpers, and secure
+idempotency-key generation.
+
+These packages are not yet public releases. Until a tagged release is announced,
+generate a client from the published OpenAPI contract or use the repository
+preview from a matching FortyOne checkout.
+
+- [TypeScript SDK](/api-reference/sdks/typescript)
+- [Go SDK](/api-reference/sdks/go)

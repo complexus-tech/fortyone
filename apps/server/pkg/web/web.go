@@ -3,14 +3,16 @@ package web
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/complexus-tech/projects-api/pkg/logger"
 	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -26,6 +28,8 @@ type App struct {
 	shutdown    chan os.Signal
 	tracer      oteltrace.Tracer
 	strictSlash bool
+	origins     OriginPolicy
+	log         *logger.Logger
 }
 
 // New creates an application struct that will handle all requests to the application.
@@ -44,12 +48,13 @@ func New(shutdown chan os.Signal, tracer oteltrace.Tracer, mw ...Middleware) *Ap
 // It then calls the ServeHTTP method on the embedded Mux.
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// extract this into a configurable middleware
-	if origin := AllowedOrigin(r); origin != "" {
+	if origin := a.origins.AllowedOrigin(r); origin != "" {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Add("Vary", "Origin")
+		w.Header().Set("Access-Control-Expose-Headers", "X-Request-ID, Retry-After, RateLimit-Policy, RateLimit")
 	}
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
-	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Mcp-Protocol-Version, Mcp-Session-Id, Last-Event-ID")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Idempotency-Key, Mcp-Protocol-Version, Mcp-Session-Id, Last-Event-ID")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Max-Age", "86400")
 
@@ -63,6 +68,20 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = path
 	}
 	a.mux.ServeHTTP(w, r)
+}
+
+// SetOriginPolicy configures the exact credentialed CORS allowlist before the
+// application starts serving requests.
+func (a *App) SetOriginPolicy(policy OriginPolicy) {
+	a.origins = policy
+}
+
+// SetLogger configures the request-bound structured logger used for unexpected
+// handler failures. The raw error is deliberately not logged here: this is the
+// final transport boundary and errors can contain SQL, credentials, or provider
+// payloads. Lower layers may log a safe, classified cause with domain context.
+func (a *App) SetLogger(log *logger.Logger) {
+	a.log = log
 }
 
 // StripSlash will remove the trailing slash from the URL.
@@ -89,17 +108,24 @@ func (a *App) Handle(method string, pattern string, handler Handler, mw ...Middl
 
 		ctx, span := a.startSpan(w, r)
 		defer span.End()
+		requestID := uuid.NewString()
+		w.Header().Set("X-Request-ID", requestID)
+		ctx = logger.WithRequestID(ctx, requestID)
 
 		v := &Values{
-			TraceID: span.SpanContext().TraceID().String(),
-			Tracer:  a.tracer,
-			Now:     time.Now(),
+			TraceID:   span.SpanContext().TraceID().String(),
+			RequestID: requestID,
+			Tracer:    a.tracer,
+			Now:       time.Now(),
 		}
 
 		ctx = SetValues(ctx, v)
 
 		if err := handler(ctx, w, r); err != nil {
-			log.Print(err)
+			span.SetStatus(codes.Error, "request handler failed")
+			if a.log != nil {
+				a.log.Error(ctx, "request handler failed", "status_code", http.StatusInternalServerError)
+			}
 			_ = RespondError(ctx, w, err, http.StatusInternalServerError)
 			return
 		}
@@ -154,7 +180,11 @@ func (a *App) Shutdown() {
 func (a *App) startSpan(w http.ResponseWriter, r *http.Request) (context.Context, oteltrace.Span) {
 	ctx := r.Context()
 
-	ctx, span := apptracing.StartHTTPSpan(ctx, a.tracer, "pkg.web.handle", r.Method, r.RequestURI)
+	endpoint := strings.TrimSpace(r.Pattern)
+	if endpoint == "" {
+		endpoint = "unmatched"
+	}
+	ctx, span := apptracing.StartHTTPSpan(ctx, a.tracer, "pkg.web.handle", r.Method, endpoint)
 	apptracing.InjectTraceHeaders(ctx, w.Header())
 	return ctx, span
 }

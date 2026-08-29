@@ -4,100 +4,28 @@ import (
 	"context"
 	"time"
 
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	integrationrequestdomain "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/domain"
 	"github.com/google/uuid"
 )
 
 const (
-	ProviderGitHub   = "github"
-	ProviderSlack    = "slack"
-	ProviderIntercom = "intercom"
+	ProviderGitHub   = integrationrequestdomain.ProviderGitHub
+	ProviderSlack    = integrationrequestdomain.ProviderSlack
+	ProviderIntercom = integrationrequestdomain.ProviderIntercom
+	SourceTypeIssue  = integrationrequestdomain.SourceTypeIssue
+	StatusPending    = integrationrequestdomain.StatusPending
+	StatusAccepted   = integrationrequestdomain.StatusAccepted
+	StatusDeclined   = integrationrequestdomain.StatusDeclined
 
-	SourceTypeIssue = "issue"
-
-	StatusPending  = "pending"
-	StatusAccepted = "accepted"
-	StatusDeclined = "declined"
-
-	AcceptanceStateIdle     = "idle"
-	AcceptanceStateReserved = "reserved"
+	AcceptanceStateIdle      = integrationrequestdomain.AcceptanceStateIdle
+	AcceptanceStateReserved  = integrationrequestdomain.AcceptanceStateReserved
+	CommentDirectionInbound  = integrationrequestdomain.CommentDirectionInbound
+	CommentDirectionOutbound = integrationrequestdomain.CommentDirectionOutbound
 )
 
-type CoreIntegrationRequest struct {
-	ID                        uuid.UUID
-	WorkspaceID               uuid.UUID
-	TeamID                    uuid.UUID
-	Provider                  string
-	SourceType                string
-	SourceExternalID          string
-	SourceNumber              *int
-	SourceURL                 *string
-	Title                     string
-	Description               *string
-	StatusID                  *uuid.UUID
-	Priority                  string
-	AssigneeID                *uuid.UUID
-	EstimateValue             *int16
-	EstimatedDurationMinutes  *int
-	MinimumFocusBlockMinutes  *int
-	ObjectiveID               *uuid.UUID
-	KeyResultID               *uuid.UUID
-	SprintID                  *uuid.UUID
-	StartDate                 *time.Time
-	EndDate                   *time.Time
-	LabelIDs                  []uuid.UUID
-	Status                    string
-	Metadata                  map[string]any
-	AcceptedStoryID           *uuid.UUID
-	AcceptedByUserID          *uuid.UUID
-	AcceptedAt                *time.Time
-	DeclinedByUserID          *uuid.UUID
-	DeclinedAt                *time.Time
-	AcceptanceState           string
-	AcceptanceStartedByUserID *uuid.UUID
-	AcceptanceStartedAt       *time.Time
-	CreatedByUserID           *uuid.UUID
-	CreatedAt                 time.Time
-	UpdatedAt                 time.Time
-}
-
-type CoreUpsertRequestInput struct {
-	WorkspaceID              uuid.UUID
-	TeamID                   uuid.UUID
-	Provider                 string
-	SourceType               string
-	SourceExternalID         string
-	SourceNumber             *int
-	SourceURL                *string
-	Title                    string
-	Description              *string
-	StatusID                 *uuid.UUID
-	Priority                 string
-	AssigneeID               *uuid.UUID
-	EstimateValue            *int16
-	EstimatedDurationMinutes *int
-	MinimumFocusBlockMinutes *int
-	ObjectiveID              *uuid.UUID
-	KeyResultID              *uuid.UUID
-	SprintID                 *uuid.UUID
-	StartDate                *time.Time
-	EndDate                  *time.Time
-	LabelIDs                 []uuid.UUID
-	Metadata                 map[string]any
-	CreatedByUserID          *uuid.UUID
-}
-
-type CoreListRequestsFilter struct {
-	Search        string
-	Status        string
-	Provider      string
-	Priority      string
-	AssigneeID    *uuid.UUID
-	CreatedAfter  *time.Time
-	CreatedBefore *time.Time
-	Page          int
-	PageSize      int
-}
+type CoreIntegrationRequest = integrationrequestdomain.IntegrationRequest
+type CoreUpsertRequestInput = integrationrequestdomain.UpsertRequestInput
+type CoreListRequestsFilter = integrationrequestdomain.ListRequestsFilter
 
 type CoreBulkRequestResult struct {
 	// Count and RequestIDs are retained for existing callers and contain only
@@ -119,147 +47,65 @@ type CoreBulkRequestItemResult struct {
 	Error           string
 }
 
-// OptionalValue distinguishes an omitted patch field from an explicitly null
-// value. Value is nil only when the caller intentionally clears a nullable
-// property.
-type OptionalValue[T any] struct {
-	Set   bool
-	Value *T
+type OptionalValue[T any] = integrationrequestdomain.OptionalValue[T]
+type CoreUpdateRequestInput = integrationrequestdomain.UpdateRequestInput
+type CoreProviderThread = integrationrequestdomain.ProviderThread
+type CoreIntegrationRequestComment = integrationrequestdomain.Comment
+type CoreThreadActivity = integrationrequestdomain.ThreadActivity
+type CoreBindProviderThreadInput = integrationrequestdomain.BindProviderThreadInput
+type CoreProviderThreadMatchInput = integrationrequestdomain.ProviderThreadMatchInput
+type CoreProviderThreadLookupInput = integrationrequestdomain.ProviderThreadLookupInput
+type CoreCreateCommentInput = integrationrequestdomain.CreateCommentInput
+type CorePreparedProviderComment = integrationrequestdomain.PreparedProviderComment
+type CoreInboundProviderCommentInput = integrationrequestdomain.InboundProviderCommentInput
+
+// NewStory is the integration-request module's story-creation intent. It is
+// mapped to the Stories module only at composition time, so provider and
+// persistence contracts do not leak a sibling service model.
+type NewStory struct {
+	Title                    string
+	Description              *string
+	StatusID                 *uuid.UUID
+	ReporterID               *uuid.UUID
+	AssigneeID               *uuid.UUID
+	TeamID                   uuid.UUID
+	Priority                 string
+	EstimateValue            *int16
+	EstimatedDurationMinutes *int
+	MinimumFocusBlockMinutes *int
+	ObjectiveID              *uuid.UUID
+	KeyResultID              *uuid.UUID
+	SprintID                 *uuid.UUID
+	StartDate                *time.Time
+	EndDate                  *time.Time
+	LabelIDs                 []uuid.UUID
+	CreationKey              string
 }
 
-type CoreUpdateRequestInput struct {
-	Title                    *string
-	Description              OptionalValue[string]
-	StatusID                 OptionalValue[uuid.UUID]
-	Priority                 *string
-	AssigneeID               OptionalValue[uuid.UUID]
-	EstimateValue            OptionalValue[int16]
-	EstimatedDurationMinutes OptionalValue[int]
-	MinimumFocusBlockMinutes OptionalValue[int]
-	ObjectiveID              OptionalValue[uuid.UUID]
-	KeyResultID              OptionalValue[uuid.UUID]
-	SprintID                 OptionalValue[uuid.UUID]
-	StartDate                OptionalValue[time.Time]
-	EndDate                  OptionalValue[time.Time]
-	LabelIDs                 *[]uuid.UUID
+// Story is the provider-safe snapshot produced by an accepted request. It is
+// deliberately limited to fields used by acceptance callbacks.
+type Story struct {
+	ID          uuid.UUID
+	SequenceID  int
+	TeamID      uuid.UUID
+	TeamCode    string
+	Title       string
+	Description *string
+	StatusID    *uuid.UUID
+	Priority    string
+	AssigneeID  *uuid.UUID
+	ReporterID  *uuid.UUID
+	EndDate     *time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
-const (
-	CommentDirectionInbound  = "inbound"
-	CommentDirectionOutbound = "outbound"
-)
-
-type CoreProviderThread struct {
-	ID                      uuid.UUID
-	WorkspaceID             uuid.UUID
-	IntegrationRequestID    uuid.UUID
-	TeamID                  uuid.UUID
-	AcceptedStoryID         *uuid.UUID
-	Provider                string
-	ExternalWorkspaceID     string
-	InstallationGeneration  *uuid.UUID
-	ExternalChannelID       string
-	ExternalThreadID        string
-	ExternalSourceMessageID *string
-	SourceURL               *string
-	RequestTitle            string
-	CreatedAt               time.Time
-	UpdatedAt               time.Time
-}
-
-type CoreIntegrationRequestComment struct {
-	ID                     uuid.UUID
-	WorkspaceID            uuid.UUID
-	ThreadID               uuid.UUID
-	Direction              string
-	AuthorUserID           *uuid.UUID
-	AuthorName             string
-	AuthorAvatar           *string
-	ExternalAuthorID       *string
-	ExternalMessageID      *string
-	ClientIdempotencyKey   *uuid.UUID
-	OutboundIdempotencyKey *string
-	DeliveryStatus         *string
-	Body                   string
-	CreatedAt              time.Time
-	UpdatedAt              time.Time
-}
-
-type CoreThreadActivity struct {
-	Thread   CoreProviderThread
-	Comments []CoreIntegrationRequestComment
-}
-
-type CoreBindProviderThreadInput struct {
-	WorkspaceID             uuid.UUID
-	IntegrationRequestID    uuid.UUID
-	Provider                string
-	ExternalWorkspaceID     string
-	InstallationGeneration  *uuid.UUID
-	ExternalChannelID       string
-	ExternalThreadID        string
-	ExternalSourceMessageID *string
-	SourceURL               *string
-}
-
-type CoreProviderThreadMatchInput struct {
-	WorkspaceID            uuid.UUID
-	UserID                 uuid.UUID
-	Provider               string
-	ExternalWorkspaceID    string
-	InstallationGeneration uuid.UUID
-	ExternalChannelID      string
-	ExternalThreadID       string
-}
-
-// CoreProviderThreadLookupInput identifies a provider thread using only the
-// signed provider envelope and the current installation generation. It is
-// intentionally independent of a FortyOne user because external participants
-// can reply to an already-authorized Slack thread before linking an account.
-type CoreProviderThreadLookupInput struct {
-	WorkspaceID            uuid.UUID
-	Provider               string
-	ExternalWorkspaceID    string
-	InstallationGeneration uuid.UUID
-	ExternalChannelID      string
-	ExternalThreadID       string
-}
-
-type CoreCreateCommentInput struct {
-	WorkspaceID          uuid.UUID
-	RequestID            uuid.UUID
-	AuthorID             uuid.UUID
-	ClientIdempotencyKey uuid.UUID
-	Body                 string
-}
-
-// CorePreparedProviderComment is the provider-neutral envelope persisted in
-// the same transaction as an outbound comment. ProviderPayload remains opaque
-// to the integration request repository.
-type CorePreparedProviderComment struct {
-	ExternalRecipientUserID string
-	ProviderPayload         []byte
-}
-
-type CoreInboundProviderCommentInput struct {
-	Provider               string
-	ExternalWorkspaceID    string
-	InstallationGeneration uuid.UUID
-	ExternalChannelID      string
-	ExternalThreadID       string
-	ExternalMessageID      string
-	ExternalAuthorID       string
-	AuthorUserID           *uuid.UUID
-	Body                   string
-	CreatedAt              time.Time
-}
-
-type StoryService interface {
-	CreateExternalUserAction(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
+type StoryCreator interface {
+	CreateForIntegrationRequest(ctx context.Context, actorID, workspaceID uuid.UUID, input NewStory) (Story, error)
 }
 
 type ProviderAccepter interface {
-	AcceptIntegrationRequest(ctx context.Context, request CoreIntegrationRequest, story stories.CoreSingleStory) error
+	AcceptIntegrationRequest(ctx context.Context, request CoreIntegrationRequest, story Story) error
 }
 
 type ProviderCommenter interface {

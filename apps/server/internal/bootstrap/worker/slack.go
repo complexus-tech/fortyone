@@ -1,21 +1,18 @@
 package workerbootstrap
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"time"
 
+	"github.com/complexus-tech/projects-api/internal/bootstrap/slackadapter"
 	integrationrequestsrepository "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/repository"
-	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
 	messagingbudget "github.com/complexus-tech/projects-api/internal/modules/messaging/budget"
 	messagingcontext "github.com/complexus-tech/projects-api/internal/modules/messaging/context"
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
 	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
-	okractivitiesrepository "github.com/complexus-tech/projects-api/internal/modules/okractivities/repository"
-	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	reportsrepository "github.com/complexus-tech/projects-api/internal/modules/reports/repository"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	searchrepository "github.com/complexus-tech/projects-api/internal/modules/search/repository"
@@ -33,27 +30,21 @@ import (
 	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
-	"github.com/complexus-tech/projects-api/internal/platform/billing"
+	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 )
 
-type workspaceAssistantAccess struct {
-	db *sqlx.DB
-}
-
-func (a workspaceAssistantAccess) CanUseAssistant(ctx context.Context, workspaceID uuid.UUID) (bool, error) {
-	return billing.WorkspaceCanUseMaya(ctx, a.db, workspaceID)
-}
-
 type slackEventProcessorDependencies struct {
-	EventPublisher *publisher.Publisher
-	Tasks          *tasks.Service
-	MayaActorID    uuid.UUID
+	EventPublisher  *publisher.Publisher
+	Tasks           *tasks.Service
+	MayaActorID     uuid.UUID
+	MayaAccess      mayaWorkspaceAccess
+	CredentialVault *credentialvault.Vault
 }
 
 func (d slackEventProcessorDependencies) validate() error {
@@ -66,39 +57,44 @@ func (d slackEventProcessorDependencies) validate() error {
 	if d.MayaActorID == uuid.Nil {
 		return errors.New("slack event processor: Maya actor ID is required")
 	}
+	if d.MayaAccess == nil {
+		return errors.New("slack event processor: Maya workspace access is required")
+	}
+	if d.CredentialVault == nil {
+		return errors.New("slack event processor: credential vault is required")
+	}
 	return nil
 }
 
-func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redis.Client, cfg Config, dependencies slackEventProcessorDependencies) (*slack.EventProcessor, error) {
+func buildSlackEventProcessor(log *logger.Logger, pool *pgxpool.Pool, redisClient *redis.Client, cfg Config, dependencies slackEventProcessorDependencies) (*slack.EventProcessor, error) {
 	if err := dependencies.validate(); err != nil {
 		return nil, err
 	}
 
-	messagingRepo := messagingrepository.New(db)
-	teamsService := teams.New(log, teamsrepository.New(log, db))
-	statesService := states.New(log, statesrepository.New(log, db))
-	usersService := users.New(log, usersrepository.New(log, db), nil)
+	messagingRepo := messagingrepository.New(pool)
+	slackRepo := slackrepository.New(pool)
+	teamsService := teams.New(log, teamsrepository.New(pool))
+	statesService := states.New(statesrepository.New(pool))
+	usersService := users.New(log, usersrepository.New(pool), nil)
 	storiesService := stories.New(
 		log,
-		storiesrepository.New(log, db),
-		mentionsrepository.New(log, db),
+		storiesrepository.New(log, pool),
 		dependencies.EventPublisher,
 		dependencies.Tasks,
 	)
+	storiesService.ConfigureCommentCreator(buildStoryCommentCreator(log, pool))
 	storiesService.ConfigureMayaActor(dependencies.MayaActorID)
-	storiesService.ConfigureAutoSchedulingEligibility(workspaceAssistantAccess{db: db}.CanUseAssistant)
-	searchService := search.New(log, searchrepository.New(log, db))
-	okrActivitiesService := okractivities.New(log, okractivitiesrepository.New(log, db))
+	storiesService.ConfigureAutoSchedulingEligibility(dependencies.MayaAccess.WorkspaceCanUseMaya)
+	searchService := search.New(log, searchrepository.New(pool))
 	objectivesService := objectives.New(
 		log,
-		objectivesrepository.New(log, db),
-		okrActivitiesService,
+		objectivesrepository.New(pool),
 	)
-	sprintsService := sprints.New(log, sprintsrepository.New(log, db))
-	reportsService := reports.New(log, reportsrepository.New(log, db))
+	sprintsService := sprints.New(log, sprintsrepository.New(pool))
+	reportsService := reports.New(log, reportsrepository.New(log, pool))
 	contextProvider, err := messagingcontext.New(
 		usersService,
-		workspacesrepository.New(log, db),
+		workspacesrepository.New(pool),
 		teamsService,
 	)
 	if err != nil {
@@ -118,7 +114,7 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 		messaging.WithPlanningTools(messaging.PlanningToolServices{
 			Sprints: sprintsService,
 		}),
-		messaging.WithStoryMutations(cfg.Auth.SecretKey),
+		messaging.WithStoryMutations(cfg.Messaging.MutationHMACKey),
 		messaging.WithStoryMutationConfirmationStore(messagingRepo),
 	)
 	if err != nil {
@@ -145,24 +141,37 @@ func buildSlackEventProcessor(log *logger.Logger, db *sqlx.DB, redisClient *redi
 	if err != nil {
 		return nil, err
 	}
-	processorConfig := slackEventProcessorConfig(cfg, dependencies.Tasks)
-	processorConfig.CallLimiter = callLimiter
-	processorConfig.UsageBudget = messagingrepository.NewDailyUsageRepository(db)
-	processorConfig.ContextProvider = contextProvider
-	requestRepository := integrationrequestsrepository.New(log, db)
-	processorConfig.ThreadSync = requestRepository
-	processorConfig.StoryReader = storiesService
-	processorConfig.RequestReader = requestRepository
-	processorConfig.ObjectiveReader = objectivesService
-	processorConfig.SprintReader = sprintsService
-	processorConfig.MutationConfirmer = toolExecutor
+	webhookGateway, webhookInbox, err := buildSlackWebhookRuntime(
+		pool,
+		slackRepo,
+		dependencies.Tasks,
+		slackWebhookConfig(cfg, dependencies.CredentialVault),
+	)
+	if err != nil {
+		return nil, err
+	}
+	processorConfig := slackEventProcessorConfig(cfg, dependencies.CredentialVault)
+	processorConfig.CallLimiter = slackadapter.NewCallLimiter(callLimiter)
+	processorConfig.UsageBudget = slackadapter.NewUsageBudget(messagingrepository.NewDailyUsageRepository(pool))
+	processorConfig.ContextProvider = slackadapter.NewContextProvider(contextProvider)
+	requestRepository := integrationrequestsrepository.New(pool)
+	requestStore := slackadapter.NewRequestStore(requestRepository)
+	storyService := slackadapter.NewStoryService(storiesService)
+	processorConfig.ThreadSync = requestStore
+	processorConfig.StoryReader = storyService
+	processorConfig.RequestReader = requestStore
+	processorConfig.ObjectiveReader = slackadapter.NewObjectiveReader(objectivesService)
+	processorConfig.SprintReader = slackadapter.NewSprintReader(sprintsService)
+	processorConfig.MutationConfirmer = slackadapter.NewMutationConfirmer(toolExecutor)
+	processorConfig.WebhookInbox = webhookInbox
+	processorConfig.WebhookRecovery = webhookGateway
 
 	return slack.NewEventProcessor(
 		log,
-		slackrepository.New(log, db),
-		messagingRepo,
-		assistant,
-		workspaceAssistantAccess{db: db},
+		slackRepo,
+		slackadapter.NewMessagingStore(messagingRepo),
+		slackadapter.NewAssistant(assistant),
+		workspaceAssistantAccess{access: dependencies.MayaAccess},
 		processorConfig,
 	)
 }
@@ -175,13 +184,21 @@ func messagingAssistantCallLimiterConfig(cfg Config) messagingbudget.CallLimiter
 	}
 }
 
-func slackEventProcessorConfig(cfg Config, eventQueue slack.EventQueue) slack.EventProcessorConfig {
+func slackEventProcessorConfig(cfg Config, vault *credentialvault.Vault) slack.EventProcessorConfig {
 	return slack.EventProcessorConfig{
 		WebsiteURL:               cfg.Website.URL,
-		SecretKey:                cfg.Auth.SecretKey,
+		WebhookPayloadSecret:     cfg.Slack.WebhookPayloadSecret,
+		CredentialVault:          vault,
 		ClientID:                 cfg.Slack.ClientID,
 		ClientSecret:             cfg.Slack.ClientSecret,
-		EventQueue:               eventQueue,
 		DailyWorkspaceTokenLimit: cfg.MessagingAssistant.WorkspaceTokensPerDay,
+	}
+}
+
+func slackWebhookConfig(cfg Config, vault *credentialvault.Vault) slack.Config {
+	return slack.Config{
+		SigningSecret:        cfg.Slack.SigningSecret,
+		WebhookPayloadSecret: cfg.Slack.WebhookPayloadSecret,
+		CredentialVault:      vault,
 	}
 }

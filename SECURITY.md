@@ -1,98 +1,58 @@
-# Security Policy
+# Internal security process
 
-## Supported Versions
+FortyOne is a managed cloud service. This document defines the repository's
+internal security expectations; it is not a public vulnerability-disclosure or
+version-support policy.
 
-We take security seriously and actively maintain security updates. The following versions receive security updates:
+## Report immediately
 
-| Version | Supported          | Security Updates |
-| ------- | ------------------ | ---------------- |
-| Latest  | :white_check_mark: | :white_check_mark: |
-| < Latest| :x:                | :white_check_mark: |
+Escalate suspected vulnerabilities, leaked credentials, unauthorized access,
+customer-data exposure, and suspicious production activity through the private
+company incident channel and `security@fortyone.app`.
 
-**Security updates are provided for all released versions**, but new features are only added to the latest version.
+Include only the information needed to begin triage:
 
-## Reporting a Vulnerability
+- affected service, workspace, integration, or deployment;
+- first observed time and whether the issue is still active;
+- a concise reproduction or sequence of events;
+- likely impact and affected data classes;
+- relevant request, trace, deployment, or audit identifiers.
 
-If you discover a security vulnerability in FortyOne, please help us by reporting it responsibly.
+Do not include secrets, bearer URLs, raw access tokens, private keys, complete
+customer records, or unnecessary personal data. Share sensitive evidence only
+through the approved encrypted channel.
 
-### How to Report
+## Initial response
 
-**DO NOT** create public GitHub issues for security vulnerabilities.
+The incident owner should:
 
-Instead, please report security issues by emailing: **hello@complexus.tech**
+1. Preserve relevant audit, deployment, and application evidence.
+2. Contain active access without destroying evidence.
+3. Rotate or revoke exposed credentials and integration grants.
+4. Identify affected tenants and verify tenant isolation.
+5. Record decisions, owners, and timestamps in the private incident record.
+6. Coordinate customer or regulatory communication with company leadership.
 
-### What to Include
+Never announce an incident publicly, contact customers, or disclose technical
+details without the incident owner's approval.
 
-Please include the following information in your report:
+## Engineering requirements
 
-- **Description**: A clear description of the vulnerability
-- **Steps to reproduce**: Detailed steps to reproduce the issue
-- **Impact**: Potential impact and severity of the vulnerability
-- **Affected versions**: Which versions are affected
-- **Environment**: Any specific environment details
-- **Contact information**: How we can reach you for follow-up
+- Keep credentials in the managed secret store; never commit them to Git.
+- Use parameterized, tenant-scoped database access and explicit authorization.
+- Verify webhook signatures, timestamps, replay protection, and idempotency.
+- Redact secrets and sensitive payloads from logs and traces.
+- Apply least-privilege permissions to cloud roles, API keys, and integrations.
+- Add regression tests for every confirmed security defect.
+- Treat generated artifacts, fixtures, and screenshots as potential data leaks.
+- Review dependency and container findings before production release.
 
-### Response Timeline
+## Production changes
 
-We will acknowledge your report within **48 hours** and provide a more detailed response within **7 days** indicating our next steps.
+Security-sensitive changes require review proportional to their impact. Changes
+to authentication, authorization, tenant boundaries, cryptography, credentials,
+webhooks, billing, data export, or production infrastructure must include an
+explicit threat and rollback assessment.
 
-We will keep you informed about our progress throughout the process of fixing the vulnerability.
-
-### Disclosure Policy
-
-- We will credit you (if desired) once the vulnerability is fixed
-- We will not disclose vulnerability details until a fix is available
-- We follow responsible disclosure practices
-
-## Security Best Practices
-
-### For Contributors
-
-When contributing code, please:
-
-- Avoid hardcoding sensitive information
-- Use environment variables for secrets
-- Follow secure coding practices
-- Add input validation and sanitization
-- Use parameterized queries for database operations
-
-### For Users
-
-To keep your FortyOne installation secure:
-
-- Keep dependencies updated
-- Use strong, unique passwords
-- Enable two-factor authentication
-- Regularly backup your data
-- Monitor for security updates
-
-## Security Updates
-
-### How We Handle Updates
-
-1. **Assessment**: Security team assesses the vulnerability
-2. **Fix Development**: Develop and test security fixes
-3. **Release**: Release security updates to all supported versions
-4. **Communication**: Notify users through security advisories
-5. **Public Disclosure**: Make vulnerability details public after fixes are available
-
-### Security Advisories
-
-Security advisories will be published on:
-- GitHub Security Advisories
-- Our security mailing list
-- Project documentation
-
-## Contact
-
-For security-related questions or concerns:
-- **Email**: security@fortyone.app
-- **PGP Key**: Available upon request for encrypted communications
-
-## Recognition
-
-We appreciate security researchers who help keep FortyOne safe. With your permission, we'll acknowledge your contribution in our security hall of fame.
-
-## Disclaimer
-
-This security policy applies to the FortyOne software and related components. Third-party integrations and services may have their own security policies.
+Production releases use the reviewed CI/CD path. Do not publish source archives,
+installers, environment templates, or application images as public artifacts.

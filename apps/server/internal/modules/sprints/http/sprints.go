@@ -2,7 +2,6 @@ package sprintshttp
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 
@@ -10,17 +9,12 @@ import (
 	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/google/uuid"
 )
 
 type Handlers struct {
 	sprints     *sprints.Service
 	attachments *attachments.Service
 }
-
-var (
-	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
-)
 
 func New(sprints *sprints.Service, attachments *attachments.Service) *Handlers {
 	return &Handlers{
@@ -46,23 +40,23 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppFilters
-	filters, err := web.GetFilters(r.URL.Query(), &af)
+	userID, err := mid.GetUserID(ctx)
 	if err != nil {
-		web.Respond(ctx, w, err.Error(), http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	userID, _ := mid.GetUserID(ctx)
+	query, err := parseSprintListQuery(r.URL.Query(), workspace.ID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
 
-	if paginationRequested(r) {
-		page, pageSize := paginationParams(r, menuPageSize, maxPageSize)
-		filters["limit"] = pageSize + 1
-		filters["offset"] = (page - 1) * pageSize
+	if query.Page != nil {
+		params := *query.Page
+		page, pageSize := params.Page, params.PageSize
 
-		sprints, err := h.sprints.List(ctx, workspace.ID, userID, filters)
+		sprints, err := h.sprints.ListQuery(ctx, query.Query)
 		if err != nil {
-			return err
+			return respondSprintError(ctx, w, err)
 		}
 
 		hasMore := len(sprints) > pageSize
@@ -74,9 +68,9 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return nil
 	}
 
-	sprints, err := h.sprints.List(ctx, workspace.ID, userID, filters)
+	sprints, err := h.sprints.ListQuery(ctx, query.Query)
 	if err != nil {
-		return err
+		return respondSprintError(ctx, w, err)
 	}
 	web.Respond(ctx, w, toAppSprints(sprints), http.StatusOK)
 	return nil
@@ -88,11 +82,14 @@ func (h *Handlers) Running(ctx context.Context, w http.ResponseWriter, r *http.R
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	userID, _ := mid.GetUserID(ctx)
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	sprints, err := h.sprints.Running(ctx, workspace.ID, userID)
 	if err != nil {
-		return err
+		return respondSprintError(ctx, w, err)
 	}
 	web.Respond(ctx, w, toAppSprints(sprints), http.StatusOK)
 	return nil
@@ -104,15 +101,18 @@ func (h *Handlers) GetByID(ctx context.Context, w http.ResponseWriter, r *http.R
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	sprintIdParam := web.Params(r, "sprintId")
-	sprintId, err := uuid.Parse(sprintIdParam)
+	sprintID, ok := sprintPathID(ctx, w, r)
+	if !ok {
+		return nil
+	}
+	userID, err := mid.GetUserID(ctx)
 	if err != nil {
-		return errors.New("sprint id is not in its proper form")
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	sprint, err := h.sprints.GetByID(ctx, sprintId, workspace.ID)
+	sprint, err := h.sprints.GetByID(ctx, sprintID, workspace.ID, userID)
 	if err != nil {
-		return err
+		return respondSprintError(ctx, w, err)
 	}
 
 	web.Respond(ctx, w, toAppSprint(sprint), http.StatusOK)
@@ -125,15 +125,18 @@ func (h *Handlers) GetAnalytics(ctx context.Context, w http.ResponseWriter, r *h
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	sprintIdParam := web.Params(r, "sprintId")
-	sprintId, err := uuid.Parse(sprintIdParam)
+	sprintID, ok := sprintPathID(ctx, w, r)
+	if !ok {
+		return nil
+	}
+	userID, err := mid.GetUserID(ctx)
 	if err != nil {
-		return errors.New("sprint id is not in its proper form")
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	analytics, err := h.sprints.GetAnalytics(ctx, sprintId, workspace.ID)
+	analytics, err := h.sprints.GetAnalytics(ctx, sprintID, workspace.ID, userID)
 	if err != nil {
-		return err
+		return respondSprintError(ctx, w, err)
 	}
 
 	for i := range analytics.TeamAllocation {
@@ -152,24 +155,23 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	var app AppNewSprint
 	if err := web.Decode(r, &app); err != nil {
-		return err
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
 	sprint := sprints.CoreNewSprint{
-		Name:      app.Name,
-		Goal:      app.Goal,
-		Objective: app.Objective,
-		Team:      app.Team,
-		Workspace: workspace.ID,
-		StartDate: app.StartDate.Time(),
-		EndDate:   app.EndDate.Time(),
+		Name: app.Name, Goal: app.Goal, ObjectiveID: app.Objective,
+		TeamID: app.Team, WorkspaceID: workspace.ID,
+		StartDate: app.StartDate.Time(), EndDate: app.EndDate.Time(),
 	}
 
-	userID, _ := mid.GetUserID(ctx)
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
 	result, err := h.sprints.Create(ctx, sprint, &userID)
 	if err != nil {
-		return err
+		return respondSprintError(ctx, w, err)
 	}
 
 	web.Respond(ctx, w, toAppSprints([]sprints.CoreSprint{result})[0], http.StatusCreated)
@@ -182,38 +184,26 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	sprintIdParam := web.Params(r, "sprintId")
-	sprintId, err := uuid.Parse(sprintIdParam)
-	if err != nil {
-		return errors.New("sprint id is not in its proper form")
+	sprintID, ok := sprintPathID(ctx, w, r)
+	if !ok {
+		return nil
 	}
 
 	var app AppUpdateSprint
 	if err := web.Decode(r, &app); err != nil {
-		return err
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	userID, _ := mid.GetUserID(ctx)
-
-	existingSprints, err := h.sprints.List(ctx, workspace.ID, userID, map[string]any{"sprint_id": sprintId})
+	userID, err := mid.GetUserID(ctx)
 	if err != nil {
-		return err
-	}
-	if len(existingSprints) == 0 {
-		return errors.New("sprint not found in workspace")
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	sprint := sprints.CoreUpdateSprint{
-		Name:      app.Name,
-		Goal:      app.Goal,
-		Objective: app.Objective,
-		StartDate: app.StartDate.TimePtr(),
-		EndDate:   app.EndDate.TimePtr(),
-	}
-
-	result, err := h.sprints.Update(ctx, sprintId, workspace.ID, sprint, &userID)
+	result, err := h.sprints.UpdatePatch(
+		ctx, sprintID, workspace.ID, userID, app.SprintPatch(), app.ExpectedUpdatedAt,
+	)
 	if err != nil {
-		return err
+		return respondSprintError(ctx, w, err)
 	}
 
 	web.Respond(ctx, w, toAppSprints([]sprints.CoreSprint{result})[0], http.StatusOK)
@@ -226,16 +216,18 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	sprintIdParam := web.Params(r, "sprintId")
-	sprintId, err := uuid.Parse(sprintIdParam)
-	if err != nil {
-		return errors.New("sprint id is not in its proper form")
+	sprintID, ok := sprintPathID(ctx, w, r)
+	if !ok {
+		return nil
 	}
 
-	userID, _ := mid.GetUserID(ctx)
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 
-	if err := h.sprints.Delete(ctx, sprintId, workspace.ID, &userID); err != nil {
-		return err
+	if err := h.sprints.Delete(ctx, sprintID, workspace.ID, &userID); err != nil {
+		return respondSprintError(ctx, w, err)
 	}
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)

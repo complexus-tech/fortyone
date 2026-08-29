@@ -29,21 +29,6 @@ func nonEmptyFactTokens(values ...string) []string {
 	return tokens
 }
 
-func deadlineFactToken(deadlineStatus string) string {
-	switch deadlineStatus {
-	case "overdue":
-		return "overdue"
-	case "due_today":
-		return "due today"
-	case "due_tomorrow":
-		return "due tomorrow"
-	case "future":
-		return "on schedule"
-	default:
-		return "due on"
-	}
-}
-
 // deadlineSemanticFactTokens protects the relationship between a deadline's
 // label, distance, and date. Literal numeric validation alone cannot detect a
 // model swapping two dates or assigning a day count to the wrong field.

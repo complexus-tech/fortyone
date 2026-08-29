@@ -28,12 +28,12 @@ func (s *slackAssistantStatusSetter) SetStatus(
 	botToken, channelID, threadTS, status string,
 ) error {
 	if s == nil || s.client == nil {
-		return errors.New("Slack assistant status client is not configured")
+		return errors.New("slack assistant status client is not configured")
 	}
 	channelID = strings.TrimSpace(channelID)
 	threadTS = strings.TrimSpace(threadTS)
 	if channelID == "" || threadTS == "" {
-		return errors.New("Slack assistant status requires a channel and thread")
+		return errors.New("slack assistant status requires a channel and thread")
 	}
 	return s.client.callJSON(ctx, botToken, "assistant.threads.setStatus", map[string]any{
 		"channel_id": channelID,

@@ -72,7 +72,11 @@ describe("resolveJoinedTeams", () => {
     ).resolves.toBeNull();
     expect(consoleError).toHaveBeenCalledWith(
       "Failed to resolve joined teams for Maya",
-      error,
+      {
+        codes: [],
+        errorType: "Error",
+        statuses: [],
+      },
     );
 
     consoleError.mockRestore();

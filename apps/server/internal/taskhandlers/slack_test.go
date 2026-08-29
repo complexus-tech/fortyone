@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/complexus-tech/projects-api/internal/platform/integrations"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 )
@@ -15,11 +17,19 @@ import (
 type slackEventProcessorStub struct {
 	externalWorkspaceID string
 	eventID             string
+	provider            integrations.ProviderKey
+	inboxID             uuid.UUID
 	err                 error
 	backfilled          int
 	backfillErr         error
 	recovered           int
 	recoveryErr         error
+}
+
+func (s *slackEventProcessorStub) ProcessWebhook(_ context.Context, provider integrations.ProviderKey, inboxID uuid.UUID) error {
+	s.provider = provider
+	s.inboxID = inboxID
+	return s.err
 }
 
 func (s *slackEventProcessorStub) ProcessEvent(_ context.Context, externalWorkspaceID, eventID string) error {
@@ -39,14 +49,29 @@ func (s *slackEventProcessorStub) RecoverPendingEvents(context.Context) (int, er
 func TestHandleSlackEvent(t *testing.T) {
 	t.Parallel()
 
-	t.Run("processes valid payload", func(t *testing.T) {
+	t.Run("processes inbox identity payload", func(t *testing.T) {
+		t.Parallel()
+		inboxID := uuid.MustParse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+		processor := &slackEventProcessorStub{}
+		handler := &handlers{
+			log:         logger.NewWithText(io.Discard, slog.LevelError, "test"),
+			slackEvents: processor,
+		}
+		task := asynq.NewTask("slack:event:process", []byte(`{"provider":"slack","inboxId":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}`))
+
+		require.NoError(t, handler.HandleSlackEvent(context.Background(), task))
+		require.Equal(t, integrations.ProviderKey("slack"), processor.provider)
+		require.Equal(t, inboxID, processor.inboxID)
+	})
+
+	t.Run("processes a legacy rollout payload through compatibility lookup", func(t *testing.T) {
 		t.Parallel()
 		processor := &slackEventProcessorStub{}
 		handler := &handlers{
 			log:         logger.NewWithText(io.Discard, slog.LevelError, "test"),
 			slackEvents: processor,
 		}
-		task := asynq.NewTask("slack:event:process", []byte(`{"externalWorkspaceId":"T1","eventId":"Ev123"}`))
+		task := asynq.NewTask("slack:event:process", []byte(`{"externalWorkspaceId":"T1","eventId":"Ev123","recoveryAttempt":2}`))
 
 		require.NoError(t, handler.HandleSlackEvent(context.Background(), task))
 		require.Equal(t, "Ev123", processor.eventID)
@@ -72,7 +97,7 @@ func TestHandleSlackEvent(t *testing.T) {
 			log:         logger.NewWithText(io.Discard, slog.LevelError, "test"),
 			slackEvents: &slackEventProcessorStub{err: expected},
 		}
-		task := asynq.NewTask("slack:event:process", []byte(`{"externalWorkspaceId":"T1","eventId":"Ev123"}`))
+		task := asynq.NewTask("slack:event:process", []byte(`{"provider":"slack","inboxId":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}`))
 
 		err := handler.HandleSlackEvent(context.Background(), task)
 

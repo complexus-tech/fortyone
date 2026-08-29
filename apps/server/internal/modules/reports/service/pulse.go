@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/complexus-tech/projects-api/pkg/web"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
 )
 
@@ -14,8 +14,14 @@ const pulseRiskLimit = 8
 
 func (s *Service) GetPulseReport(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CorePulseReport, error) {
 	s.log.Info(ctx, "business.core.reports.GetPulseReport")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetPulseReport")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetPulseReport")
 	defer span.End()
+
+	filters, err := normalizeReportFilters(ctx, workspaceID, filters, false)
+	if err != nil {
+		span.RecordError(err)
+		return CorePulseReport{}, err
+	}
 
 	workload, err := s.GetWorkloadAnalysis(ctx, workspaceID, filters)
 	if err != nil {

@@ -3,100 +3,51 @@ package usersrepository
 import (
 	"time"
 
-	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	usersdomain "github.com/complexus-tech/projects-api/internal/modules/users/domain"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
-type dbUser struct {
-	ID                            uuid.UUID     `db:"user_id"`
-	Username                      string        `db:"username"`
-	Email                         string        `db:"email"`
-	FullName                      *string       `db:"full_name"`
-	AvatarURL                     *string       `db:"avatar_url"`
-	IsActive                      bool          `db:"is_active"`
-	IsSystem                      bool          `db:"is_system"`
-	IsInternal                    bool          `db:"is_internal"`
-	HasSeenWalkthrough            bool          `db:"has_seen_walkthrough"`
-	Timezone                      string        `db:"timezone"`
-	WorkingDays                   pq.Int64Array `db:"working_days"`
-	WorkingStartMinute            *int          `db:"working_start_minute"`
-	WorkingEndMinute              *int          `db:"working_end_minute"`
-	LastLoginAt                   *time.Time    `db:"last_login_at"`
-	LastUsedWorkspaceID           *uuid.UUID    `db:"last_used_workspace_id"`
-	GitHubUsername                *string       `db:"github_username"`
-	CreatedAt                     time.Time     `db:"created_at"`
-	UpdatedAt                     time.Time     `db:"updated_at"`
-	Role                          *string       `db:"role"`
-	TeamAIRoleTitle               *string       `db:"team_ai_role_title"`
-	TeamAIRoleDescription         *string       `db:"team_ai_role_description"`
-	InferredTeamAIRoleTitle       *string       `db:"inferred_team_ai_role_title"`
-	InferredTeamAIRoleDescription *string       `db:"inferred_team_ai_role_description"`
-	InferredTeamAIRoleStoryCount  int           `db:"inferred_team_ai_role_story_count"`
-	InferredTeamAIRoleConfidence  float32       `db:"inferred_team_ai_role_confidence"`
-	InferredTeamAIRoleGeneratedAt *time.Time    `db:"inferred_team_ai_role_generated_at"`
-	LastStoryActivityAt           *time.Time    `db:"last_story_activity_at"`
+type userRow struct {
+	id                  uuid.UUID
+	username            string
+	email               string
+	fullName            *string
+	avatarURL           *string
+	isActive            bool
+	isSystem            bool
+	isInternal          bool
+	hasSeenWalkthrough  bool
+	timezone            string
+	workingDays         []int16
+	workingStartMinute  *int16
+	workingEndMinute    *int16
+	lastLoginAt         *time.Time
+	lastUsedWorkspaceID *uuid.UUID
+	githubUsername      *string
+	createdAt           time.Time
+	updatedAt           time.Time
 }
 
-// dbVerificationToken represents a verification token in the database
-type dbVerificationToken struct {
-	ID        uuid.UUID  `db:"id"`
-	Token     string     `db:"token"`
-	Email     string     `db:"email"`
-	UserID    *uuid.UUID `db:"user_id"`
-	ExpiresAt time.Time  `db:"expires_at"`
-	UsedAt    *time.Time `db:"used_at"`
-	TokenType string     `db:"token_type"`
-	CreatedAt time.Time  `db:"created_at"`
-	UpdatedAt time.Time  `db:"updated_at"`
-}
-
-// dbAutomationPreferences represents automation preferences in the database
-type dbAutomationPreferences struct {
-	UserID                     uuid.UUID `db:"user_id"`
-	WorkspaceID                uuid.UUID `db:"workspace_id"`
-	AutoAssignSelf             bool      `db:"auto_assign_self"`
-	AutoScheduling             bool      `db:"auto_scheduling"`
-	AssignSelfOnBranchCopy     bool      `db:"assign_self_on_branch_copy"`
-	MoveStoryToStartedOnBranch bool      `db:"move_story_to_started_on_branch"`
-	OpenStoryInDialog          bool      `db:"open_story_in_dialog"`
-	CreatedAt                  time.Time `db:"created_at"`
-	UpdatedAt                  time.Time `db:"updated_at"`
-}
-
-func toCoreUser(p dbUser) users.CoreUser {
-	workingDays := make([]int, len(p.WorkingDays))
-	for index, day := range p.WorkingDays {
-		workingDays[index] = int(day)
-	}
-	return users.CoreUser{
-		ID:                            p.ID,
-		Username:                      p.Username,
-		Email:                         p.Email,
-		FullName:                      derefString(p.FullName),
-		AvatarURL:                     derefString(p.AvatarURL),
-		IsActive:                      p.IsActive,
-		IsSystem:                      p.IsSystem,
-		IsInternal:                    p.IsInternal,
-		HasSeenWalkthrough:            p.HasSeenWalkthrough,
-		Timezone:                      p.Timezone,
-		WorkingDays:                   workingDays,
-		WorkingStartMinute:            p.WorkingStartMinute,
-		WorkingEndMinute:              p.WorkingEndMinute,
-		LastLoginAt:                   derefTime(p.LastLoginAt),
-		LastUsedWorkspaceID:           p.LastUsedWorkspaceID,
-		GitHubUsername:                p.GitHubUsername,
-		CreatedAt:                     p.CreatedAt,
-		UpdatedAt:                     p.UpdatedAt,
-		Role:                          p.Role,
-		TeamAIRoleTitle:               derefString(p.TeamAIRoleTitle),
-		TeamAIRoleDescription:         derefString(p.TeamAIRoleDescription),
-		InferredTeamAIRoleTitle:       derefString(p.InferredTeamAIRoleTitle),
-		InferredTeamAIRoleDescription: derefString(p.InferredTeamAIRoleDescription),
-		InferredTeamAIRoleStoryCount:  p.InferredTeamAIRoleStoryCount,
-		InferredTeamAIRoleConfidence:  p.InferredTeamAIRoleConfidence,
-		InferredTeamAIRoleGeneratedAt: p.InferredTeamAIRoleGeneratedAt,
-		LastStoryActivityAt:           p.LastStoryActivityAt,
+func toCoreUser(row userRow) usersdomain.User {
+	return usersdomain.User{
+		ID:                  row.id,
+		Username:            row.username,
+		Email:               row.email,
+		FullName:            derefString(row.fullName),
+		AvatarURL:           derefString(row.avatarURL),
+		IsActive:            row.isActive,
+		IsSystem:            row.isSystem,
+		IsInternal:          row.isInternal,
+		HasSeenWalkthrough:  row.hasSeenWalkthrough,
+		Timezone:            row.timezone,
+		WorkingDays:         int16sToInts(row.workingDays),
+		WorkingStartMinute:  int16PointerToInt(row.workingStartMinute),
+		WorkingEndMinute:    int16PointerToInt(row.workingEndMinute),
+		LastLoginAt:         derefTime(row.lastLoginAt),
+		LastUsedWorkspaceID: row.lastUsedWorkspaceID,
+		GitHubUsername:      row.githubUsername,
+		CreatedAt:           row.createdAt,
+		UpdatedAt:           row.updatedAt,
 	}
 }
 
@@ -114,67 +65,25 @@ func derefTime(value *time.Time) time.Time {
 	return *value
 }
 
-func toCoreUsers(du []dbUser) []users.CoreUser {
-	coreUsers := make([]users.CoreUser, len(du))
-	for i, user := range du {
-		coreUsers[i] = toCoreUser(user)
+func int16sToInts(values []int16) []int {
+	result := make([]int, len(values))
+	for index, value := range values {
+		result[index] = int(value)
 	}
-	return coreUsers
+	return result
 }
 
-func toCoreVerificationToken(dbToken dbVerificationToken) users.CoreVerificationToken {
-	return users.CoreVerificationToken{
-		ID:        dbToken.ID,
-		Token:     dbToken.Token,
-		Email:     dbToken.Email,
-		UserID:    dbToken.UserID,
-		ExpiresAt: dbToken.ExpiresAt,
-		UsedAt:    dbToken.UsedAt,
-		TokenType: dbToken.TokenType,
-		CreatedAt: dbToken.CreatedAt,
-		UpdatedAt: dbToken.UpdatedAt,
+func int16PointerToInt(value *int16) *int {
+	if value == nil {
+		return nil
 	}
+	converted := int(*value)
+	return &converted
 }
 
-// Convert database automation preferences to core model
-func toCoreAutomationPreferences(p dbAutomationPreferences) users.CoreAutomationPreferences {
-	return users.CoreAutomationPreferences{
-		UserID:                     p.UserID,
-		WorkspaceID:                p.WorkspaceID,
-		AutoAssignSelf:             p.AutoAssignSelf,
-		AutoScheduling:             p.AutoScheduling,
-		AssignSelfOnBranchCopy:     p.AssignSelfOnBranchCopy,
-		MoveStoryToStartedOnBranch: p.MoveStoryToStartedOnBranch,
-		OpenStoryInDialog:          p.OpenStoryInDialog,
-		CreatedAt:                  p.CreatedAt,
-		UpdatedAt:                  p.UpdatedAt,
+func optionalTime(present bool, value time.Time) *time.Time {
+	if !present {
+		return nil
 	}
-}
-
-type dbUserMemoryItem struct {
-	ID          uuid.UUID `db:"id"`
-	WorkspaceID uuid.UUID `db:"workspace_id"`
-	UserID      uuid.UUID `db:"user_id"`
-	Content     string    `db:"content"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
-}
-
-func toCoreUserMemoryItem(db dbUserMemoryItem) users.CoreUserMemoryItem {
-	return users.CoreUserMemoryItem{
-		ID:          db.ID,
-		WorkspaceID: db.WorkspaceID,
-		UserID:      db.UserID,
-		Content:     db.Content,
-		CreatedAt:   db.CreatedAt,
-		UpdatedAt:   db.UpdatedAt,
-	}
-}
-
-func toCoreUserMemoryItems(dbItems []dbUserMemoryItem) []users.CoreUserMemoryItem {
-	items := make([]users.CoreUserMemoryItem, len(dbItems))
-	for i, db := range dbItems {
-		items[i] = toCoreUserMemoryItem(db)
-	}
-	return items
+	return &value
 }

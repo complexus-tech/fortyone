@@ -195,9 +195,7 @@ func renderTemplateForTest(t *testing.T, templateName string, data map[string]an
 		"formatDate": func(t time.Time) string {
 			return t.Format("January 2, 2006")
 		},
-		"safeHTML": func(value string) template.HTML {
-			return template.HTML(value)
-		},
+		"safeHTML":   safeEmailHTML,
 		"emailStyle": emailStyle,
 	}).ParseFiles(basePath, contentPath)
 	if err != nil {

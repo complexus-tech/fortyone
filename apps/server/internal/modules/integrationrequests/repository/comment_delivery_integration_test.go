@@ -1,15 +1,14 @@
+//go:build integration
+
 package integrationrequestsrepository
 
 import (
-	"context"
-	"os"
 	"testing"
 	"time"
 
-	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
+	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/domain"
+	"github.com/complexus-tech/projects-api/internal/testkit"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,15 +16,9 @@ import (
 // provider-payload, nullable external-author, and retained-status invariants
 // against a fully migrated PostgreSQL database when one is supplied.
 func TestCommentDeliveryPostgresContract(t *testing.T) {
-	databaseURL := os.Getenv("INTEGRATION_REQUEST_TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("INTEGRATION_REQUEST_TEST_DATABASE_URL is not configured")
-	}
-	db, err := sqlx.Connect("postgres", databaseURL)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, db.Close()) })
-
-	ctx := context.Background()
+	postgres := testkit.NewPostgres(t)
+	db := postgres.Pool
+	ctx := t.Context()
 	workspaceID := uuid.New()
 	teamID := uuid.New()
 	requestID := uuid.New()
@@ -34,34 +27,34 @@ func TestCommentDeliveryPostgresContract(t *testing.T) {
 	installGeneration := uuid.New()
 	clientKey := uuid.New()
 
-	_, err = db.ExecContext(ctx, `
+	_, err := db.Exec(ctx, `
 		INSERT INTO users (user_id, username, email)
 		VALUES ($1, $2, $3)
 	`, authorID, "comment-author-"+authorID.String(), "comment-author-"+authorID.String()+"@example.com")
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `
+	_, err = db.Exec(ctx, `
 		INSERT INTO workspaces (workspace_id, name, slug)
 		VALUES ($1, 'Comment delivery test', $2)
 	`, workspaceID, "comment-delivery-"+workspaceID.String())
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `
+	_, err = db.Exec(ctx, `
 		INSERT INTO teams (team_id, workspace_id, name, code, color)
 		VALUES ($1, $2, 'Comment team', 'CMT', '#111827')
 	`, teamID, workspaceID)
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `
+	_, err = db.Exec(ctx, `
 		INSERT INTO team_members (team_id, user_id)
 		VALUES ($1, $2)
 	`, teamID, authorID)
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `
+	_, err = db.Exec(ctx, `
 		INSERT INTO integration_requests (
 			id, workspace_id, team_id, provider, source_type,
 			source_external_id, title, priority
 		) VALUES ($1, $2, $3, 'slack', 'message', $4, 'Durable comment request', 'High')
 	`, requestID, workspaceID, teamID, "event-"+requestID.String())
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `
+	_, err = db.Exec(ctx, `
 		INSERT INTO integration_request_threads (
 			id, workspace_id, integration_request_id, provider,
 			external_workspace_id, installation_generation,
@@ -69,22 +62,15 @@ func TestCommentDeliveryPostgresContract(t *testing.T) {
 		) VALUES ($1, $2, $3, 'slack', 'T-comment', $4, 'C-comment', '1710000000.001')
 	`, threadID, workspaceID, requestID, installGeneration)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		_, cleanupErr := db.Exec(`DELETE FROM workspaces WHERE workspace_id = $1`, workspaceID)
-		require.NoError(t, cleanupErr)
-		_, cleanupErr = db.Exec(`DELETE FROM users WHERE user_id = $1`, authorID)
-		require.NoError(t, cleanupErr)
-	})
-
-	repo := New(nil, db)
-	input := integrationrequests.CoreCreateCommentInput{
+	repo := New(db)
+	input := integrationrequests.CreateCommentInput{
 		WorkspaceID:          workspaceID,
 		RequestID:            requestID,
 		AuthorID:             authorID,
 		ClientIdempotencyKey: clientKey,
 		Body:                 "Ship this reply",
 	}
-	prepared := integrationrequests.CorePreparedProviderComment{
+	prepared := integrationrequests.PreparedProviderComment{
 		ProviderPayload: []byte(`{"opaque_provider_authorization":{"team":"selected"}}`),
 	}
 	_, first, err := repo.CreateOutboundComment(ctx, input, prepared)
@@ -102,18 +88,18 @@ func TestCommentDeliveryPostgresContract(t *testing.T) {
 	require.ErrorIs(t, err, integrationrequests.ErrIdempotencyConflict)
 
 	var commentCount, deliveryCount int
-	require.NoError(t, db.GetContext(ctx, &commentCount, `
+	require.NoError(t, db.QueryRow(ctx, `
 		SELECT COUNT(*) FROM integration_request_comments
 		WHERE workspace_id = $1 AND client_idempotency_key = $2
-	`, workspaceID, clientKey))
-	require.NoError(t, db.GetContext(ctx, &deliveryCount, `
+	`, workspaceID, clientKey).Scan(&commentCount))
+	require.NoError(t, db.QueryRow(ctx, `
 		SELECT COUNT(*) FROM messaging_outbound_deliveries
 		WHERE workspace_id = $1 AND idempotency_key = $2
-	`, workspaceID, "integration-request-comment:"+clientKey.String()))
+	`, workspaceID, "integration-request-comment:"+clientKey.String()).Scan(&deliveryCount))
 	require.Equal(t, 1, commentCount)
 	require.Equal(t, 1, deliveryCount)
 
-	_, err = db.ExecContext(ctx, `
+	_, err = db.Exec(ctx, `
 		UPDATE messaging_outbound_deliveries
 		SET status = 'failed', attempt_count = 2
 		WHERE workspace_id = $1 AND idempotency_key = $2
@@ -123,7 +109,7 @@ func TestCommentDeliveryPostgresContract(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "retrying", valueOrEmpty(retrying.DeliveryStatus))
 
-	_, err = db.ExecContext(ctx, `
+	_, err = db.Exec(ctx, `
 		UPDATE messaging_outbound_deliveries
 		SET status = 'failed', attempt_count = 20
 		WHERE workspace_id = $1 AND idempotency_key = $2
@@ -133,7 +119,7 @@ func TestCommentDeliveryPostgresContract(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "failed", valueOrEmpty(failed.DeliveryStatus))
 
-	_, err = db.ExecContext(ctx, `
+	_, err = db.Exec(ctx, `
 		UPDATE messaging_outbound_deliveries
 		SET status = 'cancelled'
 		WHERE workspace_id = $1 AND idempotency_key = $2
@@ -143,7 +129,7 @@ func TestCommentDeliveryPostgresContract(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "not-sent", valueOrEmpty(notSent.DeliveryStatus))
 
-	_, err = db.ExecContext(ctx, `
+	_, err = db.Exec(ctx, `
 		UPDATE messaging_outbound_deliveries
 		SET status = 'delivered', external_message_id = '1710000000.002', delivered_at = NOW()
 		WHERE workspace_id = $1 AND idempotency_key = $2
@@ -153,7 +139,7 @@ func TestCommentDeliveryPostgresContract(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "sent", valueOrEmpty(sent.DeliveryStatus))
 
-	_, err = db.ExecContext(ctx, `
+	_, err = db.Exec(ctx, `
 		DELETE FROM messaging_outbound_deliveries
 		WHERE workspace_id = $1 AND idempotency_key = $2
 	`, workspaceID, "integration-request-comment:"+clientKey.String())
@@ -162,7 +148,7 @@ func TestCommentDeliveryPostgresContract(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "sent", valueOrEmpty(retained.DeliveryStatus))
 
-	handled, err := repo.IngestInboundProviderComment(ctx, integrationrequests.CoreInboundProviderCommentInput{
+	handled, err := repo.IngestInboundProviderComment(ctx, integrationrequests.InboundProviderCommentInput{
 		Provider:               integrationrequests.ProviderSlack,
 		ExternalWorkspaceID:    "T-comment",
 		InstallationGeneration: installGeneration,
@@ -182,7 +168,7 @@ func TestCommentDeliveryPostgresContract(t *testing.T) {
 	require.Nil(t, comments[1].AuthorUserID)
 	require.Equal(t, "U-external", valueOrEmpty(comments[1].ExternalAuthorID))
 
-	handled, err = repo.IngestInboundProviderComment(ctx, integrationrequests.CoreInboundProviderCommentInput{
+	handled, err = repo.IngestInboundProviderComment(ctx, integrationrequests.InboundProviderCommentInput{
 		Provider:               integrationrequests.ProviderSlack,
 		ExternalWorkspaceID:    "T-comment",
 		InstallationGeneration: uuid.New(),

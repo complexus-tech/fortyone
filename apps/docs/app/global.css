@@ -1,8 +1,10 @@
 @import "tailwind-config";
 @import "fumadocs-ui/css/black.css";
 @import "fumadocs-ui/css/preset.css";
+@import "fumadocs-openapi/css/preset.css";
 
 :root {
+  --font-body: var(--font-geist), -apple-system, BlinkMacSystemFont, sans-serif;
   --color-fd-background: var(--color-background);
   --color-fd-foreground: var(--color-foreground);
   --color-fd-muted: var(--color-muted);
@@ -21,6 +23,20 @@
   --color-fd-ring: var(--color-ring);
 }
 
+@supports (corner-shape: squircle) {
+  .prose table,
+  .prose pre,
+  .prose :where(:not(pre) > code),
+  [role="dialog"],
+  [data-radix-popper-content-wrapper] > * {
+    corner-shape: squircle;
+  }
+}
+
+body {
+  font-family: var(--font-body);
+}
+
 .max-w-fd-container {
   @apply mx-auto max-w-6xl;
 }
@@ -31,14 +47,48 @@ img {
 
 [role="dialog"],
 [data-radix-popper-content-wrapper] > * {
-  border-radius: 0.6rem;
+  border-radius: var(--radius-lg);
 }
 
 .prose :where(h1, h2, h3, h4) {
   letter-spacing: -0.02em;
 }
 
-.prose pre,
-.prose code {
-  border-radius: 0.45rem;
+.prose :where(a:not([data-card])) {
+  color: var(--color-fd-foreground);
+  text-decoration-color: currentColor;
+  text-underline-offset: 0.18em;
+}
+
+.prose :where(a:not([data-card])):hover {
+  color: var(--color-fd-foreground);
+  text-decoration-thickness: 2px;
+}
+
+[data-header-tabs] a {
+  color: var(--color-fd-muted-foreground);
+}
+
+[data-header-tabs] {
+  display: flex;
+}
+
+[data-header-tabs] a.border-fd-primary {
+  border-color: var(--color-fd-foreground);
+  color: var(--color-fd-foreground);
+}
+
+.prose pre {
+  border-radius: var(--radius-md);
+}
+
+.prose :where(:not(pre) > code) {
+  border-radius: var(--radius-sm);
+}
+
+.prose table {
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-md);
 }

@@ -1,0 +1,185 @@
+openapi: 3.1.0
+info:
+  title: FortyOne API
+  version: 1.0.0-preview.1
+  summary: Stable, developer-authenticated collaboration and integration API.
+  description: |
+    The `/api/v1` contract is deliberately separate from FortyOne's legacy
+    first-party web and mobile routes. The authentication boundary recognizes
+    personal access tokens and supported service-account keys in the
+    Authorization header, but credential
+    recognition does not imply operation authorization. Every operation
+    documents its supported principal and required scopes. Current preview
+    reads accept a personal access token. Story creation also supports a
+    service-account key and preserves the calling
+    principal's attribution; every other operation rejects service accounts
+    with `principal_not_supported` until its resource explicitly supports them.
+servers:
+  - url: https://api.fortyone.app
+    description: Production
+security:
+  - machineBearer: []
+tags:
+  - name: Workspaces
+  - name: Teams
+  - name: Stories
+  - name: Comments
+  - name: Labels
+  - name: Workflows
+  - name: Sprints
+  - name: Objectives
+  - name: Webhooks
+paths:
+  /api/v1/workspaces/{workspaceId}:
+    $ref: ./paths/workspace.yaml
+  /api/v1/workspaces/{workspaceId}/teams:
+    $ref: ./paths/teams.yaml
+  /api/v1/workspaces/{workspaceId}/stories:
+    $ref: ./paths/stories.yaml
+  /api/v1/workspaces/{workspaceId}/stories/{storyId}:
+    $ref: ./paths/story.yaml
+  /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments:
+    $ref: ./paths/comments.yaml
+  /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments/{commentId}:
+    $ref: ./paths/comment.yaml
+  /api/v1/workspaces/{workspaceId}/labels:
+    $ref: ./paths/labels.yaml
+  /api/v1/workspaces/{workspaceId}/states:
+    $ref: ./paths/states.yaml
+  /api/v1/workspaces/{workspaceId}/sprints:
+    $ref: ./paths/sprints.yaml
+  /api/v1/workspaces/{workspaceId}/objectives:
+    $ref: ./paths/objectives.yaml
+  /api/v1/workspaces/{workspaceId}/key-results:
+    $ref: ./paths/key-results.yaml
+  /api/v1/workspaces/{workspaceId}/webhook-endpoints:
+    $ref: ./paths/webhook-endpoints.yaml
+  /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}:
+    $ref: ./paths/webhook-endpoint.yaml
+  /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/subscriptions:
+    $ref: ./paths/webhook-subscriptions.yaml
+  /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/rotate-secret:
+    $ref: ./paths/webhook-rotate-secret.yaml
+  /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/disable:
+    $ref: ./paths/webhook-disable.yaml
+components:
+  securitySchemes:
+    machineBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: FortyOne developer credential
+      description: Personal access tokens and supported service-account keys are accepted only in the Authorization header and never in URLs. Each operation documents which principal types it authorizes.
+  parameters:
+    WorkspaceId:
+      $ref: ./components/common.yaml#/components/parameters/WorkspaceId
+    StoryId:
+      $ref: ./components/common.yaml#/components/parameters/StoryId
+    CommentId:
+      $ref: ./components/common.yaml#/components/parameters/CommentId
+    EndpointId:
+      $ref: ./components/common.yaml#/components/parameters/EndpointId
+    Cursor:
+      $ref: ./components/common.yaml#/components/parameters/Cursor
+    PageLimit:
+      $ref: ./components/common.yaml#/components/parameters/PageLimit
+    IdempotencyKey:
+      $ref: ./components/common.yaml#/components/parameters/IdempotencyKey
+  headers:
+    RequestId:
+      $ref: ./components/common.yaml#/components/headers/RequestId
+    RateLimit:
+      $ref: ./components/common.yaml#/components/headers/RateLimit
+    RateLimitPolicy:
+      $ref: ./components/common.yaml#/components/headers/RateLimitPolicy
+    RetryAfter:
+      $ref: ./components/common.yaml#/components/headers/RetryAfter
+  responses:
+    BadRequest:
+      $ref: ./components/common.yaml#/components/responses/BadRequest
+    Unauthorized:
+      $ref: ./components/common.yaml#/components/responses/Unauthorized
+    Forbidden:
+      $ref: ./components/common.yaml#/components/responses/Forbidden
+    NotFound:
+      $ref: ./components/common.yaml#/components/responses/NotFound
+    MethodNotAllowed:
+      $ref: ./components/common.yaml#/components/responses/MethodNotAllowed
+    Conflict:
+      $ref: ./components/common.yaml#/components/responses/Conflict
+    RequestTooLarge:
+      $ref: ./components/common.yaml#/components/responses/RequestTooLarge
+    UnsupportedMediaType:
+      $ref: ./components/common.yaml#/components/responses/UnsupportedMediaType
+    RateLimited:
+      $ref: ./components/common.yaml#/components/responses/RateLimited
+    ServiceUnavailable:
+      $ref: ./components/common.yaml#/components/responses/ServiceUnavailable
+    InternalError:
+      $ref: ./components/common.yaml#/components/responses/InternalError
+  schemas:
+    Error:
+      $ref: ./components/common.yaml#/components/schemas/Error
+    ErrorResponse:
+      $ref: ./components/common.yaml#/components/schemas/ErrorResponse
+    PageMeta:
+      $ref: ./components/common.yaml#/components/schemas/PageMeta
+    Workspace:
+      $ref: ./components/resources.yaml#/components/schemas/Workspace
+    WorkspaceResponse:
+      $ref: ./components/resources.yaml#/components/schemas/WorkspaceResponse
+    Team:
+      $ref: ./components/resources.yaml#/components/schemas/Team
+    TeamPageResponse:
+      $ref: ./components/resources.yaml#/components/schemas/TeamPageResponse
+    Story:
+      $ref: ./components/resources.yaml#/components/schemas/Story
+    StoryResponse:
+      $ref: ./components/resources.yaml#/components/schemas/StoryResponse
+    CreateStoryRequest:
+      $ref: ./components/resources.yaml#/components/schemas/CreateStoryRequest
+    StoryPageResponse:
+      $ref: ./components/resources.yaml#/components/schemas/StoryPageResponse
+    Comment:
+      $ref: ./components/resources.yaml#/components/schemas/Comment
+    CommentResponse:
+      $ref: ./components/resources.yaml#/components/schemas/CommentResponse
+    CommentPageResponse:
+      $ref: ./components/resources.yaml#/components/schemas/CommentPageResponse
+    Label:
+      $ref: ./components/resources.yaml#/components/schemas/Label
+    LabelPageResponse:
+      $ref: ./components/resources.yaml#/components/schemas/LabelPageResponse
+    WorkflowState:
+      $ref: ./components/resources.yaml#/components/schemas/WorkflowState
+    WorkflowStatePageResponse:
+      $ref: ./components/resources.yaml#/components/schemas/WorkflowStatePageResponse
+    Sprint:
+      $ref: ./components/resources.yaml#/components/schemas/Sprint
+    SprintPageResponse:
+      $ref: ./components/resources.yaml#/components/schemas/SprintPageResponse
+    Objective:
+      $ref: ./components/resources.yaml#/components/schemas/Objective
+    ObjectivePageResponse:
+      $ref: ./components/resources.yaml#/components/schemas/ObjectivePageResponse
+    KeyResult:
+      $ref: ./components/resources.yaml#/components/schemas/KeyResult
+    KeyResultPageResponse:
+      $ref: ./components/resources.yaml#/components/schemas/KeyResultPageResponse
+    WebhookEventType:
+      $ref: ./components/webhooks.yaml#/components/schemas/WebhookEventType
+    WebhookEndpoint:
+      $ref: ./components/webhooks.yaml#/components/schemas/WebhookEndpoint
+    WebhookEndpointResponse:
+      $ref: ./components/webhooks.yaml#/components/schemas/WebhookEndpointResponse
+    WebhookEndpointPageResponse:
+      $ref: ./components/webhooks.yaml#/components/schemas/WebhookEndpointPageResponse
+    CreateWebhookEndpointRequest:
+      $ref: ./components/webhooks.yaml#/components/schemas/CreateWebhookEndpointRequest
+    CreatedWebhookEndpointResponse:
+      $ref: ./components/webhooks.yaml#/components/schemas/CreatedWebhookEndpointResponse
+    ReplaceWebhookSubscriptionsRequest:
+      $ref: ./components/webhooks.yaml#/components/schemas/ReplaceWebhookSubscriptionsRequest
+    RotateWebhookSecretResponse:
+      $ref: ./components/webhooks.yaml#/components/schemas/RotateWebhookSecretResponse
+    DisableWebhookEndpointRequest:
+      $ref: ./components/webhooks.yaml#/components/schemas/DisableWebhookEndpointRequest

@@ -18,9 +18,13 @@ func (h *Handlers) GetAgentSettings(ctx context.Context, w http.ResponseWriter, 
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	settings, err := h.service.GetAgentSettings(ctx, workspace.ID)
+	actorID, err := mid.GetUserID(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	settings, err := h.service.GetAgentSettings(ctx, workspace.ID, actorID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusInternalServerError))
 	}
 	return web.Respond(ctx, w, toAppSlackAgentSettings(settings), http.StatusOK)
 }
@@ -30,15 +34,19 @@ func (h *Handlers) UpdateAgentSettings(ctx context.Context, w http.ResponseWrite
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	var input AppSlackAgentSettings
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	settings, err := h.service.UpdateAgentSettings(ctx, workspace.ID, slack.CoreSlackAgentSettings{
+	settings, err := h.service.UpdateAgentSettings(ctx, workspace.ID, actorID, slack.CoreSlackAgentSettings{
 		Guidance: input.Guidance,
 	})
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, statusForSlackError(err, http.StatusBadRequest))
 	}
 	return web.Respond(ctx, w, toAppSlackAgentSettings(settings), http.StatusOK)
 }

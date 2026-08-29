@@ -4,6 +4,7 @@
 **/dist
 **/build
 **/.cache
+**/.tools
 **/.pnpm-store
 **/coverage
 **/*.log

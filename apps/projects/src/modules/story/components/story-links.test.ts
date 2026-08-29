@@ -55,14 +55,13 @@ describe("Story links", () => {
 
     expect(linksSource).toContain('<Box className="mt-4">');
     expect(associationsSource).toContain('<Box className="mt-4">');
-    expect(subStoriesSource).toContain('<Box className="mt-5">');
-    expect(subStoriesSource).toContain('className="h-auto pt-1 pb-0"');
+    expect(subStoriesSource).toContain('className="h-auto pb-0"');
     expect(relatedDocumentsSource).toContain('<Box className="mt-4">');
     expect(mainDetailsSource).toContain(
       '<Attachments className="mt-4" storyId={storyId} />',
     );
-    expect(mainDetailsSource).toContain('className={cn("max-w-5xl');
-    expect(mainDetailsSource).toContain("-left-px mb-5 text-3xl");
+    expect(mainDetailsSource).toContain('className={cn("max-w-6xl');
+    expect(mainDetailsSource).toContain("-left-px mb-6 text-3xl");
   });
 
   it("renders related documents as link-style rows with document actions", () => {

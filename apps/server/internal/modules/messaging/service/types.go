@@ -8,6 +8,7 @@ import (
 	"errors"
 	"time"
 
+	messagingdomain "github.com/complexus-tech/projects-api/internal/modules/messaging/domain"
 	"github.com/google/uuid"
 )
 
@@ -33,11 +34,14 @@ var (
 	ErrToolExecution          = errors.New("assistant tool execution failed")
 	ErrTeamNotAccessible      = errors.New("team is not accessible to the user")
 	ErrMutationNotAllowed     = errors.New("story mutations are not allowed")
-	ErrInvalidConfirmation    = errors.New("invalid story mutation confirmation")
-	ErrExpiredConfirmation    = errors.New("story mutation confirmation expired")
-	ErrCancelledConfirmation  = errors.New("story mutation confirmation was cancelled")
-	ErrAppliedConfirmation    = errors.New("story mutation confirmation was already applied")
 	ErrStaleMutation          = errors.New("story changed after mutation confirmation was requested")
+)
+
+var (
+	ErrInvalidConfirmation   = messagingdomain.ErrInvalidConfirmation
+	ErrExpiredConfirmation   = messagingdomain.ErrExpiredConfirmation
+	ErrCancelledConfirmation = messagingdomain.ErrCancelledConfirmation
+	ErrAppliedConfirmation   = messagingdomain.ErrAppliedConfirmation
 )
 
 // Assistant answers a provider-neutral conversation request. Provider adapters
@@ -165,12 +169,7 @@ type Response struct {
 	Confirmation *StoryMutationConfirmation
 }
 
-// Usage contains aggregate token usage for quota accounting.
-type Usage struct {
-	InputTokens  int
-	OutputTokens int
-	TotalTokens  int
-}
+type Usage = messagingdomain.Usage
 
 // ToolScope is the complete authorization scope available to a tool call.
 type ToolScope struct {
@@ -190,16 +189,14 @@ type ToolScope struct {
 	Timezone      string
 }
 
-// StoryMutationOperation identifies the write that an explicit confirmation
-// will perform.
-type StoryMutationOperation string
+type StoryMutationOperation = messagingdomain.StoryMutationOperation
 
 const (
-	StoryMutationCreate      StoryMutationOperation = "create_story"
-	StoryMutationCreateBatch StoryMutationOperation = "create_stories"
-	StoryMutationUpdate      StoryMutationOperation = "update_story"
-	StoryMutationComment     StoryMutationOperation = "add_story_comment"
-	StoryMutationRelation    StoryMutationOperation = "add_story_relationship"
+	StoryMutationCreate      = messagingdomain.StoryMutationCreate
+	StoryMutationCreateBatch = messagingdomain.StoryMutationCreateBatch
+	StoryMutationUpdate      = messagingdomain.StoryMutationUpdate
+	StoryMutationComment     = messagingdomain.StoryMutationComment
+	StoryMutationRelation    = messagingdomain.StoryMutationRelation
 )
 
 // StoryMutationConfirmation is a provider-neutral, non-mutating proposal.
@@ -237,109 +234,21 @@ type StoryMutationPreview struct {
 	ChangedFields            []string   `json:"changed_fields,omitempty"`
 }
 
-// StoryMutationResult is returned after a provider explicitly confirms a
-// proposal. Status is "applied" or "already_applied" on success. A batch may
-// return "partial" alongside an error so providers can show already-created
-// items and offer a safe retry.
-type StoryMutationResult struct {
-	Status                   string                    `json:"status"`
-	Operation                StoryMutationOperation    `json:"operation"`
-	StoryID                  uuid.UUID                 `json:"story_id"`
-	Reference                string                    `json:"reference"`
-	TeamID                   uuid.UUID                 `json:"team_id"`
-	Title                    string                    `json:"title"`
-	Priority                 string                    `json:"priority"`
-	AssigneeID               *uuid.UUID                `json:"assignee_id,omitempty"`
-	EstimatedDurationMinutes *int                      `json:"estimated_duration_minutes,omitempty"`
-	MinimumFocusBlockMinutes *int                      `json:"minimum_focus_block_minutes,omitempty"`
-	AutoSchedulingEnabled    bool                      `json:"auto_scheduling_enabled"`
-	AutoSchedulingLocked     bool                      `json:"auto_scheduling_locked"`
-	AutoSchedulingStatus     string                    `json:"auto_scheduling_status"`
-	AutoSchedulingReason     *string                   `json:"auto_scheduling_reason,omitempty"`
-	AutoSchedulingUpdatedAt  *time.Time                `json:"auto_scheduling_updated_at,omitempty"`
-	CommentID                *uuid.UUID                `json:"comment_id,omitempty"`
-	AssociationID            *uuid.UUID                `json:"association_id,omitempty"`
-	Items                    []StoryMutationItemResult `json:"items,omitempty"`
-}
-
-// StoryMutationItemResult is one durable outcome within a confirmed batch.
-// Index preserves the order shown in the confirmation prompt.
-type StoryMutationItemResult struct {
-	Index                    int        `json:"index"`
-	Status                   string     `json:"status"`
-	StoryID                  uuid.UUID  `json:"story_id"`
-	Reference                string     `json:"reference"`
-	TeamID                   uuid.UUID  `json:"team_id"`
-	Title                    string     `json:"title"`
-	Priority                 string     `json:"priority"`
-	AssigneeID               *uuid.UUID `json:"assignee_id,omitempty"`
-	EstimatedDurationMinutes *int       `json:"estimated_duration_minutes,omitempty"`
-	MinimumFocusBlockMinutes *int       `json:"minimum_focus_block_minutes,omitempty"`
-	AutoSchedulingEnabled    bool       `json:"auto_scheduling_enabled"`
-	AutoSchedulingLocked     bool       `json:"auto_scheduling_locked"`
-	AutoSchedulingStatus     string     `json:"auto_scheduling_status"`
-	AutoSchedulingReason     *string    `json:"auto_scheduling_reason,omitempty"`
-	AutoSchedulingUpdatedAt  *time.Time `json:"auto_scheduling_updated_at,omitempty"`
-}
-
-// StoryMutationCancellationResult describes a successful cancellation. Status
-// is "cancelled" for the transition and "already_cancelled" for an idempotent
-// retry of the same outcome.
-type StoryMutationCancellationResult struct {
-	Status string `json:"status"`
-}
-
-// StoryMutationConfirmationStatus is the durable, provider-neutral lifecycle
-// of a proposed mutation. Applied batches remain retryable while they retain a
-// proposal and last error; cancelled, expired, and completed applied rows are
-// terminal.
-type StoryMutationConfirmationStatus string
+type StoryMutationResult = messagingdomain.StoryMutationResult
+type StoryMutationItemResult = messagingdomain.StoryMutationItemResult
+type StoryMutationCancellationResult = messagingdomain.StoryMutationCancellationResult
+type StoryMutationConfirmationStatus = messagingdomain.StoryMutationConfirmationStatus
 
 const (
-	StoryMutationConfirmationPending   StoryMutationConfirmationStatus = "pending"
-	StoryMutationConfirmationApplied   StoryMutationConfirmationStatus = "applied"
-	StoryMutationConfirmationCancelled StoryMutationConfirmationStatus = "cancelled"
-	StoryMutationConfirmationExpired   StoryMutationConfirmationStatus = "expired"
+	StoryMutationConfirmationPending   = messagingdomain.StoryMutationConfirmationPending
+	StoryMutationConfirmationApplied   = messagingdomain.StoryMutationConfirmationApplied
+	StoryMutationConfirmationCancelled = messagingdomain.StoryMutationConfirmationCancelled
+	StoryMutationConfirmationExpired   = messagingdomain.StoryMutationConfirmationExpired
 )
 
-// StoryMutationConfirmationStateInput records a proposal before its signed
-// token is exposed to a provider.
-type StoryMutationConfirmationStateInput struct {
-	ConfirmationID uuid.UUID
-	WorkspaceID    uuid.UUID
-	UserID         uuid.UUID
-	TeamID         uuid.UUID
-	Operation      StoryMutationOperation
-	TokenHash      []byte
-	// Proposal contains immutable server-side mutation data for opaque-token
-	// confirmations. Signed single-story confirmations leave it nil.
-	Proposal  json.RawMessage
-	ExpiresAt time.Time
-}
-
-// StoryMutationConfirmationRecord is the immutable server-side portion of a
-// confirmation. It is returned only after workspace, actor, and token binding
-// validation succeeds.
-type StoryMutationConfirmationRecord struct {
-	TeamID    uuid.UUID
-	Operation StoryMutationOperation
-	Status    StoryMutationConfirmationStatus
-	Proposal  json.RawMessage
-	// Result is populated for completed batches and for durable partial
-	// progress. LastError distinguishes retryable partial progress from a
-	// completed result after the sensitive proposal has been redacted.
-	Result    *StoryMutationResult
-	LastError string
-}
-
-// StoryMutationConfirmationBinding prevents a signed proposal from being
-// replayed under another confirmation, workspace, or actor identity.
-type StoryMutationConfirmationBinding struct {
-	ConfirmationID uuid.UUID
-	WorkspaceID    uuid.UUID
-	UserID         uuid.UUID
-	TokenHash      []byte
-}
+type StoryMutationConfirmationStateInput = messagingdomain.StoryMutationConfirmationStateInput
+type StoryMutationConfirmationRecord = messagingdomain.StoryMutationConfirmationRecord
+type StoryMutationConfirmationBinding = messagingdomain.StoryMutationConfirmationBinding
 
 // StoryMutationConfirmationStore arbitrates confirmation outcomes in durable
 // storage. Apply must atomically consume pending consent before invoking apply,

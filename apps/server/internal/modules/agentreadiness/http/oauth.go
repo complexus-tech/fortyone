@@ -11,43 +11,30 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
+	developeroauthdomain "github.com/complexus-tech/projects-api/internal/modules/developeroauth/domain"
+	developeroauth "github.com/complexus-tech/projects-api/internal/modules/developeroauth/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 )
 
 const (
-	accessTokenTTL       = 15 * time.Minute
-	authorizationCodeTTL = 5 * time.Minute
-	refreshTokenTTL      = 30 * 24 * time.Hour
+	approvalTTL        = 5 * time.Minute
+	oauthFormBodyLimit = 32 << 10
 )
 
-type oauthClient struct {
-	ClientID     string   `json:"client_id"`
-	ClientName   string   `json:"client_name"`
-	RedirectURIs []string `json:"redirect_uris"`
-}
 type authorizationRequest struct {
 	ClientID      string
 	RedirectURI   string
+	Resource      string
 	State         string
 	Scope         string
 	CodeChallenge string
 	UserID        string
-}
-type authorizationCode struct {
-	ClientID      string
-	RedirectURI   string
-	Scope         string
-	CodeChallenge string
-	UserID        string
-}
-type refreshGrant struct {
-	ClientID string
-	Scope    string
-	UserID   string
 }
 
 type approvalPageData struct {
@@ -343,47 +330,85 @@ func renderApprovalPage(w http.ResponseWriter, data approvalPageData) error {
 }
 
 func (h *Handler) ProtectedResourceMetadata(_ context.Context, w http.ResponseWriter, _ *http.Request) error {
+	return h.writeProtectedResourceMetadata(w, h.resource)
+}
+
+func (h *Handler) APIProtectedResourceMetadata(_ context.Context, w http.ResponseWriter, _ *http.Request) error {
+	return h.writeProtectedResourceMetadata(w, h.apiResource)
+}
+
+func (h *Handler) writeProtectedResourceMetadata(w http.ResponseWriter, resource string) error {
 	base := strings.TrimRight(h.cfg.APIPublicURL, "/")
-	return writeJSON(w, http.StatusOK, map[string]any{"resource": h.resource, "authorization_servers": []string{base}, "scopes_supported": []string{mcpScope, "offline_access"}, "bearer_methods_supported": []string{"header"}})
+	return writeJSON(w, http.StatusOK, map[string]any{
+		"resource": resource, "authorization_servers": []string{base},
+		"scopes_supported": h.supportedScopes(resource), "bearer_methods_supported": []string{"header"},
+	})
 }
 
 func (h *Handler) AuthorizationServerMetadata(_ context.Context, w http.ResponseWriter, _ *http.Request) error {
 	base := strings.TrimRight(h.cfg.APIPublicURL, "/")
-	return writeJSON(w, http.StatusOK, map[string]any{"issuer": base, "authorization_endpoint": base + "/oauth/authorize", "token_endpoint": base + "/oauth/token", "registration_endpoint": base + "/oauth/register", "revocation_endpoint": base + "/oauth/revoke", "response_types_supported": []string{"code"}, "grant_types_supported": []string{"authorization_code", "refresh_token"}, "code_challenge_methods_supported": []string{"S256"}, "token_endpoint_auth_methods_supported": []string{"none"}, "authorization_response_iss_parameter_supported": true, "scopes_supported": []string{mcpScope, "offline_access"}})
+	return writeJSON(w, http.StatusOK, map[string]any{"issuer": base, "authorization_endpoint": base + "/oauth/authorize", "token_endpoint": base + "/oauth/token", "registration_endpoint": base + "/oauth/register", "revocation_endpoint": base + "/oauth/revoke", "response_types_supported": []string{"code"}, "grant_types_supported": []string{"authorization_code", "refresh_token", "client_credentials"}, "code_challenge_methods_supported": []string{"S256"}, "token_endpoint_auth_methods_supported": []string{"none", "client_secret_basic"}, "authorization_response_iss_parameter_supported": true, "scopes_supported": h.allSupportedScopes()})
+}
+
+func (h *Handler) supportedScopes(resource string) []string {
+	if catalog, ok := h.cfg.OAuth.(oauthResourceCatalog); ok {
+		if scopes := catalog.SupportedScopes(resource); len(scopes) > 0 {
+			return scopes
+		}
+	}
+	if resource == h.resource {
+		return []string{mcpScope, developeroauthdomain.ScopeOfflineAccess}
+	}
+	return []string{}
+}
+
+func (h *Handler) allSupportedScopes() []string {
+	unique := make(map[string]struct{})
+	resources := []string{h.resource}
+	if catalog, ok := h.cfg.OAuth.(oauthResourceCatalog); ok {
+		resources = catalog.Resources()
+	}
+	for _, resource := range resources {
+		for _, scope := range h.supportedScopes(resource) {
+			unique[scope] = struct{}{}
+		}
+	}
+	scopes := make([]string, 0, len(unique))
+	for scope := range unique {
+		scopes = append(scopes, scope)
+	}
+	sort.Strings(scopes)
+	return scopes
 }
 
 func (h *Handler) RegisterClient(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if h.cfg.OAuth == nil {
+		return h.oauthError(ctx, w, "register_client", http.StatusServiceUnavailable, "temporarily_unavailable", "OAuth service is unavailable")
+	}
 	var request struct {
 		ClientName              string   `json:"client_name"`
 		RedirectURIs            []string `json:"redirect_uris"`
 		TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&request); err != nil {
+	if err := web.DecodeWithLimit(r, &request, 64<<10); err != nil {
 		return h.oauthError(ctx, w, "register_client", http.StatusBadRequest, "invalid_client_metadata", "invalid JSON registration")
 	}
 	if request.TokenEndpointAuthMethod != "" && request.TokenEndpointAuthMethod != "none" {
 		return h.oauthError(ctx, w, "register_client", http.StatusBadRequest, "invalid_client_metadata", "only public PKCE clients are supported")
 	}
-	if len(request.RedirectURIs) == 0 {
-		return h.oauthError(ctx, w, "register_client", http.StatusBadRequest, "invalid_redirect_uri", "at least one redirect URI is required")
-	}
-	for _, redirectURI := range request.RedirectURIs {
-		if err := validateRedirectURI(redirectURI); err != nil {
+	client, err := h.cfg.OAuth.RegisterPublicApplication(ctx, request.ClientName, request.RedirectURIs)
+	if err != nil {
+		if errors.Is(err, developeroauthdomain.ErrInvalidRedirectURI) {
 			return h.oauthError(ctx, w, "register_client", http.StatusBadRequest, "invalid_redirect_uri", err.Error())
 		}
+		return h.oauthError(ctx, w, "register_client", http.StatusBadRequest, "invalid_client_metadata", err.Error())
 	}
-	clientID, err := randomToken(24)
-	if err != nil {
-		return err
-	}
-	client := oauthClient{ClientID: clientID, ClientName: strings.TrimSpace(request.ClientName), RedirectURIs: request.RedirectURIs}
-	if client.ClientName == "" {
-		client.ClientName = "MCP client"
-	}
-	if err := h.cfg.Cache.Set(ctx, oauthKey("client", clientID), client, 365*24*time.Hour); err != nil {
-		return err
-	}
-	return writeJSON(w, http.StatusCreated, map[string]any{"client_id": clientID, "client_name": client.ClientName, "redirect_uris": client.RedirectURIs, "token_endpoint_auth_method": "none", "grant_types": []string{"authorization_code", "refresh_token"}, "response_types": []string{"code"}})
+	return writeJSON(w, http.StatusCreated, map[string]any{
+		"client_id": client.ClientID, "client_name": client.Name, "redirect_uris": client.RedirectURIs,
+		"client_id_issued_at": client.CreatedAt.Unix(), "client_id_expires_at": client.ExpiresAt.Unix(),
+		"token_endpoint_auth_method": "none", "grant_types": []string{"authorization_code", "refresh_token"},
+		"response_types": []string{"code"},
+	})
 }
 
 func (h *Handler) Authorize(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -394,21 +419,34 @@ func (h *Handler) Authorize(ctx context.Context, w http.ResponseWriter, r *http.
 	if query.Get("response_type") != "code" {
 		return h.oauthError(ctx, w, "authorize", http.StatusBadRequest, "unsupported_response_type", "response_type must be code")
 	}
-	client, err := h.loadClient(ctx, query.Get("client_id"))
+	if h.cfg.OAuth == nil {
+		return h.oauthError(ctx, w, "authorize", http.StatusServiceUnavailable, "temporarily_unavailable", "OAuth service is unavailable")
+	}
+	if query.Get("code_challenge_method") != "S256" {
+		return h.oauthError(ctx, w, "authorize", http.StatusBadRequest, "invalid_request", "PKCE S256 is required")
+	}
+	prepared := developeroauth.AuthorizationRequest{
+		ClientID: query.Get("client_id"), RedirectURI: query.Get("redirect_uri"),
+		Resource: query.Get("resource"), Scopes: strings.Fields(query.Get("scope")),
+		CodeChallenge: query.Get("code_challenge"),
+	}
+	client, scopes, err := h.cfg.OAuth.PrepareAuthorization(ctx, prepared)
 	if err != nil {
-		return h.oauthError(ctx, w, "authorize", http.StatusBadRequest, "invalid_request", "unknown client_id")
+		switch {
+		case errors.Is(err, developeroauthdomain.ErrApplicationNotFound), errors.Is(err, developeroauthdomain.ErrInvalidRedirectURI):
+			return h.oauthError(ctx, w, "authorize", http.StatusBadRequest, "invalid_request", "client or redirect URI is invalid")
+		case errors.Is(err, developeroauthdomain.ErrInvalidResource):
+			if client.ID == uuid.Nil {
+				return h.oauthError(ctx, w, "authorize", http.StatusBadRequest, "invalid_target", "resource is not a supported FortyOne OAuth audience")
+			}
+			return redirectOAuthError(w, r, prepared.RedirectURI, query.Get("state"), "invalid_target", "resource is not a supported FortyOne OAuth audience")
+		case errors.Is(err, developeroauthdomain.ErrInvalidPKCE):
+			return redirectOAuthError(w, r, prepared.RedirectURI, query.Get("state"), "invalid_request", "PKCE challenge is invalid")
+		default:
+			return redirectOAuthError(w, r, prepared.RedirectURI, query.Get("state"), "invalid_scope", "requested scope is not supported")
+		}
 	}
-	redirectURI := query.Get("redirect_uri")
-	if !slicesContains(client.RedirectURIs, redirectURI) {
-		return h.oauthError(ctx, w, "authorize", http.StatusBadRequest, "invalid_request", "redirect_uri is not registered")
-	}
-	if query.Get("code_challenge_method") != "S256" || query.Get("code_challenge") == "" {
-		return redirectOAuthError(w, r, redirectURI, query.Get("state"), "invalid_request", "PKCE S256 is required")
-	}
-	if resource := query.Get("resource"); resource != h.resource {
-		return redirectOAuthError(w, r, redirectURI, query.Get("state"), "invalid_target", "resource does not match the FortyOne MCP endpoint")
-	}
-	userID, ok, err := mid.ResolveSessionUserID(ctx, r)
+	userID, ok, err := mid.ResolveSessionUserID(ctx, r, h.cfg.BrowserSessions)
 	if err != nil {
 		return err
 	}
@@ -417,168 +455,153 @@ func (h *Handler) Authorize(ctx context.Context, w http.ResponseWriter, r *http.
 		http.Redirect(w, r, strings.TrimRight(h.cfg.LoginURL, "/")+"/?callbackUrl="+url.QueryEscape(callback), http.StatusFound)
 		return nil
 	}
-	scope := normalizeScope(query.Get("scope"))
 	approval, err := randomToken(24)
 	if err != nil {
 		return err
 	}
-	pending := authorizationRequest{ClientID: client.ClientID, RedirectURI: redirectURI, State: query.Get("state"), Scope: scope, CodeChallenge: query.Get("code_challenge"), UserID: userID.String()}
-	if err := h.cfg.Cache.Set(ctx, oauthKey("approval", approval), pending, authorizationCodeTTL); err != nil {
+	pending := authorizationRequest{
+		ClientID: client.ClientID, RedirectURI: prepared.RedirectURI, Resource: prepared.Resource,
+		State: query.Get("state"),
+		Scope: developeroauth.ScopeString(scopes), CodeChallenge: prepared.CodeChallenge, UserID: userID.String(),
+	}
+	if err := h.cfg.Cache.Set(ctx, oauthApprovalKey(approval), pending, approvalTTL); err != nil {
 		return err
 	}
-	return renderApprovalPage(w, approvalPageData{ClientName: client.ClientName, Approval: approval, RedirectURI: pending.RedirectURI})
+	return renderApprovalPage(w, approvalPageData{ClientName: client.Name, Approval: approval, RedirectURI: pending.RedirectURI})
 }
 
 func (h *Handler) approveAuthorization(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if err := r.ParseForm(); err != nil {
+	if err := web.ParseURLForm(w, r, oauthFormBodyLimit); err != nil {
 		return h.oauthError(ctx, w, "approve_authorization", http.StatusBadRequest, "invalid_request", "invalid approval")
 	}
-	approval := r.Form.Get("approval")
+	approval := r.PostForm.Get("approval")
 	var pending authorizationRequest
-	if err := h.cfg.Cache.Get(ctx, oauthKey("approval", approval), &pending); err != nil {
+	if err := h.cfg.Cache.Get(ctx, oauthApprovalKey(approval), &pending); err != nil {
 		return h.oauthError(ctx, w, "approve_authorization", http.StatusBadRequest, "invalid_request", "approval expired")
 	}
-	_ = h.cfg.Cache.Delete(ctx, oauthKey("approval", approval))
-	userID, ok, err := mid.ResolveSessionUserID(ctx, r)
+	userID, ok, err := mid.ResolveSessionUserID(ctx, r, h.cfg.BrowserSessions)
 	if err != nil {
 		return err
 	}
 	if !ok || userID.String() != pending.UserID {
 		return h.oauthError(ctx, w, "approve_authorization", http.StatusUnauthorized, "access_denied", "session is missing or changed")
 	}
-	if r.Form.Get("decision") != "allow" {
+	var consumed authorizationRequest
+	if err := h.cfg.Cache.Take(ctx, oauthApprovalKey(approval), &consumed); err != nil || consumed != pending {
+		return h.oauthError(ctx, w, "approve_authorization", http.StatusBadRequest, "invalid_request", "approval expired")
+	}
+	if r.PostForm.Get("decision") != "allow" {
 		return redirectOAuthError(w, r, pending.RedirectURI, pending.State, "access_denied", "the user declined access")
 	}
-	code, err := randomToken(32)
-	if err != nil {
-		return err
+	if h.cfg.OAuth == nil {
+		return h.oauthError(ctx, w, "approve_authorization", http.StatusServiceUnavailable, "temporarily_unavailable", "OAuth service is unavailable")
 	}
-	record := authorizationCode{ClientID: pending.ClientID, RedirectURI: pending.RedirectURI, Scope: pending.Scope, CodeChallenge: pending.CodeChallenge, UserID: pending.UserID}
-	if err := h.cfg.Cache.Set(ctx, oauthKey("code", hashToken(code)), record, authorizationCodeTTL); err != nil {
-		return err
+	code, err := h.cfg.OAuth.AuthorizeUser(ctx, developeroauth.AuthorizationRequest{
+		ClientID: pending.ClientID, UserID: userID, RedirectURI: pending.RedirectURI,
+		Resource: pending.Resource, Scopes: strings.Fields(pending.Scope), CodeChallenge: pending.CodeChallenge,
+	})
+	if err != nil {
+		return h.oauthError(ctx, w, "approve_authorization", http.StatusBadRequest, "access_denied", "authorization could not be completed")
 	}
 	destination, _ := url.Parse(pending.RedirectURI)
 	values := destination.Query()
-	values.Set("code", code)
+	values.Set("code", code.Reveal())
 	if pending.State != "" {
 		values.Set("state", pending.State)
 	}
 	values.Set("iss", strings.TrimRight(h.cfg.APIPublicURL, "/"))
 	destination.RawQuery = values.Encode()
+	// #nosec G710 -- pending.RedirectURI was an exact registered-client match
+	// validated as HTTPS (or loopback HTTP) before this one-time approval.
 	http.Redirect(w, r, destination.String(), http.StatusFound)
 	return nil
 }
 
 func (h *Handler) Token(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if err := r.ParseForm(); err != nil {
+	if err := web.ParseURLForm(w, r, oauthFormBodyLimit); err != nil {
 		return h.oauthError(ctx, w, "token", http.StatusBadRequest, "invalid_request", "invalid form")
 	}
-	switch r.Form.Get("grant_type") {
+	grantType, ok := singleOAuthFormValue(r, "grant_type", 64)
+	if !ok {
+		return h.oauthError(ctx, w, "token", http.StatusBadRequest, "invalid_request", "grant_type must appear exactly once")
+	}
+	switch grantType {
 	case "authorization_code":
 		return h.exchangeCode(ctx, w, r)
 	case "refresh_token":
 		return h.exchangeRefreshToken(ctx, w, r)
+	case "client_credentials":
+		return h.exchangeClientCredentials(ctx, w, r)
 	default:
 		return h.oauthError(ctx, w, "token", http.StatusBadRequest, "unsupported_grant_type", "grant_type is not supported")
 	}
 }
 
+func singleOAuthFormValue(request *http.Request, name string, maximumBytes int) (string, bool) {
+	if request == nil || maximumBytes <= 0 {
+		return "", false
+	}
+	values, exists := request.PostForm[name]
+	if !exists || len(values) != 1 || values[0] == "" || len(values[0]) > maximumBytes {
+		return "", false
+	}
+	return values[0], true
+}
+
 func (h *Handler) exchangeCode(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if r.Form.Get("resource") != h.resource {
-		return h.oauthError(ctx, w, "exchange_code", http.StatusBadRequest, "invalid_target", "resource must match the FortyOne MCP endpoint")
+	if h.cfg.OAuth == nil {
+		return h.oauthError(ctx, w, "exchange_code", http.StatusServiceUnavailable, "temporarily_unavailable", "OAuth service is unavailable")
 	}
-	code := r.Form.Get("code")
-	key := oauthKey("code", hashToken(code))
-	var record authorizationCode
-	if err := h.cfg.Cache.Get(ctx, key, &record); err != nil {
-		return h.oauthError(ctx, w, "exchange_code", http.StatusBadRequest, "invalid_grant", "authorization code is invalid or expired")
+	pair, err := h.cfg.OAuth.ExchangeAuthorizationCode(ctx, developeroauth.AuthorizationCodeExchange{
+		Code: r.PostForm.Get("code"), ClientID: r.PostForm.Get("client_id"),
+		RedirectURI: r.PostForm.Get("redirect_uri"), Resource: r.PostForm.Get("resource"),
+		CodeVerifier: r.PostForm.Get("code_verifier"),
+	})
+	if err != nil {
+		if errors.Is(err, developeroauthdomain.ErrInvalidResource) {
+			return h.oauthError(ctx, w, "exchange_code", http.StatusBadRequest, "invalid_target", "resource is not a supported FortyOne OAuth audience")
+		}
+		return h.oauthError(ctx, w, "exchange_code", http.StatusBadRequest, "invalid_grant", "authorization code is invalid, expired, used, or incorrectly bound")
 	}
-	_ = h.cfg.Cache.Delete(ctx, key)
-	if record.ClientID != r.Form.Get("client_id") || record.RedirectURI != r.Form.Get("redirect_uri") {
-		return h.oauthError(ctx, w, "exchange_code", http.StatusBadRequest, "invalid_grant", "authorization code binding does not match")
-	}
-	digest := sha256.Sum256([]byte(r.Form.Get("code_verifier")))
-	if base64.RawURLEncoding.EncodeToString(digest[:]) != record.CodeChallenge {
-		return h.oauthError(ctx, w, "exchange_code", http.StatusBadRequest, "invalid_grant", "PKCE verification failed")
-	}
-	return h.issueTokens(ctx, w, record.UserID, record.ClientID, record.Scope)
+	return writeTokenPair(w, pair)
 }
 
 func (h *Handler) exchangeRefreshToken(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if r.Form.Get("resource") != h.resource {
-		return h.oauthError(ctx, w, "exchange_refresh_token", http.StatusBadRequest, "invalid_target", "resource must match the FortyOne MCP endpoint")
+	if h.cfg.OAuth == nil {
+		return h.oauthError(ctx, w, "exchange_refresh_token", http.StatusServiceUnavailable, "temporarily_unavailable", "OAuth service is unavailable")
 	}
-	raw := r.Form.Get("refresh_token")
-	key := oauthKey("refresh", hashToken(raw))
-	var grant refreshGrant
-	if err := h.cfg.Cache.Get(ctx, key, &grant); err != nil {
-		return h.oauthError(ctx, w, "exchange_refresh_token", http.StatusBadRequest, "invalid_grant", "refresh token is invalid or expired")
-	}
-	_ = h.cfg.Cache.Delete(ctx, key)
-	if grant.ClientID != r.Form.Get("client_id") {
-		return h.oauthError(ctx, w, "exchange_refresh_token", http.StatusBadRequest, "invalid_grant", "refresh token client does not match")
-	}
-	return h.issueTokens(ctx, w, grant.UserID, grant.ClientID, grant.Scope)
-}
-
-func (h *Handler) issueTokens(ctx context.Context, w http.ResponseWriter, userID, clientID, scope string) error {
-	now := time.Now().UTC()
-	claims := mcpClaims{RegisteredClaims: jwt.RegisteredClaims{Issuer: strings.TrimRight(h.cfg.APIPublicURL, "/"), Subject: userID, Audience: jwt.ClaimStrings{h.resource}, IssuedAt: jwt.NewNumericDate(now), ExpiresAt: jwt.NewNumericDate(now.Add(accessTokenTTL))}, Scope: scope}
-	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(h.signingKey())
+	pair, err := h.cfg.OAuth.ExchangeRefreshToken(ctx, developeroauth.RefreshExchange{
+		RefreshToken: r.PostForm.Get("refresh_token"), ClientID: r.PostForm.Get("client_id"),
+		Resource: r.PostForm.Get("resource"),
+	})
 	if err != nil {
-		return err
+		if errors.Is(err, developeroauthdomain.ErrInvalidResource) {
+			return h.oauthError(ctx, w, "exchange_refresh_token", http.StatusBadRequest, "invalid_target", "resource is not a supported FortyOne OAuth audience")
+		}
+		return h.oauthError(ctx, w, "exchange_refresh_token", http.StatusBadRequest, "invalid_grant", "refresh token is invalid, expired, revoked, replayed, or incorrectly bound")
 	}
-	refreshToken, err := randomToken(48)
-	if err != nil {
-		return err
-	}
-	if err := h.cfg.Cache.Set(ctx, oauthKey("refresh", hashToken(refreshToken)), refreshGrant{ClientID: clientID, Scope: scope, UserID: userID}, refreshTokenTTL); err != nil {
-		return err
-	}
-	return writeJSON(w, http.StatusOK, map[string]any{"access_token": accessToken, "token_type": "Bearer", "expires_in": int(accessTokenTTL.Seconds()), "refresh_token": refreshToken, "scope": scope})
+	return writeTokenPair(w, pair)
 }
 
 func (h *Handler) Revoke(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if err := r.ParseForm(); err == nil {
-		_ = h.cfg.Cache.Delete(ctx, oauthKey("refresh", hashToken(r.Form.Get("token"))))
+	if err := web.ParseURLForm(w, r, oauthFormBodyLimit); err == nil && h.cfg.OAuth != nil {
+		_ = h.cfg.OAuth.RevokeRefreshToken(ctx, r.PostForm.Get("token"))
 	}
+	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
 	return nil
 }
-func (h *Handler) loadClient(ctx context.Context, clientID string) (oauthClient, error) {
-	var client oauthClient
-	if h.cfg.Cache == nil {
-		return client, errors.New("oauth cache unavailable")
-	}
-	err := h.cfg.Cache.Get(ctx, oauthKey("client", clientID), &client)
-	return client, err
+
+func writeTokenPair(w http.ResponseWriter, pair developeroauthdomain.TokenPair) error {
+	return writeJSON(w, http.StatusOK, map[string]any{
+		"access_token": pair.AccessToken.Reveal(), "token_type": "Bearer",
+		"expires_in": int(pair.ExpiresIn.Seconds()), "refresh_token": pair.RefreshToken.Reveal(),
+		"scope": developeroauth.ScopeString(pair.Scopes),
+	})
 }
-func normalizeScope(raw string) string {
-	fields := strings.Fields(raw)
-	if !slicesContains(fields, mcpScope) {
-		fields = append(fields, mcpScope)
-	}
-	if !slicesContains(fields, "offline_access") {
-		fields = append(fields, "offline_access")
-	}
-	return strings.Join(fields, " ")
-}
+
 func validateRedirectURI(raw string) error {
-	parsed, err := url.Parse(raw)
-	if err != nil || parsed.Host == "" || parsed.Fragment != "" {
-		return errors.New("redirect URI must be an absolute URI without a fragment")
-	}
-	if parsed.User != nil {
-		return errors.New("redirect URI must not contain user information")
-	}
-	if parsed.Scheme == "https" {
-		return nil
-	}
-	host := parsed.Hostname()
-	if parsed.Scheme == "http" && (host == "localhost" || host == "127.0.0.1" || host == "::1") {
-		return nil
-	}
-	return errors.New("redirect URI must use HTTPS, except for localhost clients")
+	return developeroauth.ValidateRedirectURI(raw)
 }
 
 func oauthRedirectOrigin(raw string) (string, error) {
@@ -602,14 +625,9 @@ func hashToken(value string) string {
 	digest := sha256.Sum256([]byte(value))
 	return hex.EncodeToString(digest[:])
 }
-func oauthKey(kind, id string) string { return "mcp:oauth:" + kind + ":" + id }
-func slicesContains(values []string, value string) bool {
-	for _, candidate := range values {
-		if candidate == value {
-			return true
-		}
-	}
-	return false
+
+func oauthApprovalKey(raw string) string {
+	return "mcp:oauth:approval:" + hashToken(raw)
 }
 func absoluteRequestURL(base string, r *http.Request) string {
 	parsed, _ := url.Parse(strings.TrimRight(base, "/"))
@@ -629,6 +647,8 @@ func redirectOAuthError(w http.ResponseWriter, r *http.Request, redirectURI, sta
 		values.Set("state", state)
 	}
 	destination.RawQuery = values.Encode()
+	// #nosec G710 -- redirectURI is an exact registered-client match validated
+	// as HTTPS (or loopback HTTP) before it is persisted in the OAuth flow.
 	http.Redirect(w, r, destination.String(), http.StatusFound)
 	return nil
 }

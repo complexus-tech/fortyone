@@ -1,0 +1,54 @@
+---
+title: Webhooks
+description: Receive signed FortyOne events without polling.
+icon: Webhook
+---
+
+Webhooks send changes to an HTTPS endpoint you control. Managing endpoints
+requires a workspace administrator token with `webhooks:manage`.
+
+## Delivery flow
+
+| Stage    | What happens                                                                       |
+| -------- | ---------------------------------------------------------------------------------- |
+| Register | Add a public HTTPS endpoint and choose event subscriptions                         |
+| Sign     | FortyOne signs the exact request body with the endpoint secret                     |
+| Deliver  | Your server validates the signature, records the delivery ID, and responds quickly |
+| Process  | Business work runs asynchronously after the response                               |
+| Retry    | Transient failures are retried with the same delivery identity                     |
+
+## Available events
+
+| Resource | Events                                                  |
+| -------- | ------------------------------------------------------- |
+| Stories  | `story.created`, `story.updated`, `story.deleted`       |
+| Comments | `comment.created`, `comment.updated`, `comment.deleted` |
+
+Use the [Webhooks API reference](/api-reference/reference/webhooks/listWebhookEndpoints)
+for endpoint paths and request schemas.
+
+## Verify every delivery
+
+Verification must use the raw body bytes before JSON parsing. Check the signing
+version, timestamp tolerance, and HMAC signature with a constant-time comparison.
+Reject a delivery when any check fails.
+
+```ts
+const expected = createHmac("sha256", secret)
+  .update(`${timestamp}.${rawBody}`)
+  .digest("hex");
+
+if (!timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) {
+  throw new Error("Invalid webhook signature");
+}
+```
+
+Store the delivery ID before acknowledging the request so a retry cannot apply
+the event twice. Return a `2xx` response after durable receipt, then process the
+event outside the request path.
+
+## Secret rotation
+
+Rotation shows the new secret once and keeps the previous secret valid for a
+bounded overlap. During that window, verify against both active generations.
+Remove the old secret from your secret manager after the overlap ends.

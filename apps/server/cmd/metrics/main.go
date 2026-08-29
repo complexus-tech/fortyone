@@ -8,14 +8,7 @@ import (
 	"os"
 )
 
-var (
-	service = "projects-api"
-	version = "0.0.1"
-	environ = "development"
-)
-
 func main() {
-
 	ctx := context.Background()
 	if err := run(ctx); err != nil {
 		os.Exit(1)

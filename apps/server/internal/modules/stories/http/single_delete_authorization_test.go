@@ -7,7 +7,7 @@ import (
 )
 
 func TestSingleDeleteBindsAuthenticatedActorAndWorkspaceRole(t *testing.T) {
-	data, err := os.ReadFile("stories.go")
+	data, err := os.ReadFile("mutation_handlers.go")
 	if err != nil {
 		t.Fatalf("read story handlers: %v", err)
 	}

@@ -1,7 +1,6 @@
 package calendarrepository
 
 import (
-	"os"
 	"strings"
 	"testing"
 )
@@ -9,24 +8,31 @@ import (
 func TestCalendarEventReadsAuthorizeProviderSpecificScopes(t *testing.T) {
 	t.Parallel()
 
-	data, err := os.ReadFile("events.go")
-	if err != nil {
-		t.Fatalf("read events.go: %v", err)
+	for _, queryName := range []string{"ListCalendarEvents", "GetCalendarEvent"} {
+		query := normalizedNamedQuery(t, "queries/events.sql", queryName)
+		for _, contract := range []string{
+			"connection.cleanup_pending_at is null",
+			"connection.provider = sqlc.arg(google_provider)",
+			"cast(sqlc.arg(google_read_scope) as text) = any(connection.scopes)",
+			"connection.provider = sqlc.arg(microsoft_provider)",
+			"cast(sqlc.arg(microsoft_read_scope) as text) = any(connection.scopes)",
+			"event.user_id = sqlc.arg(user_id)",
+		} {
+			if !strings.Contains(query, contract) {
+				t.Errorf("%s is missing provider authorization contract %q", queryName, contract)
+			}
+		}
 	}
-	source := string(data)
 
+	source := readRepositorySource(t, "event_reads.go")
 	for _, contract := range []string{
-		"(cc.provider = $4 AND $5 = ANY(cc.scopes))",
-		"OR (cc.provider = $6 AND $7 = ANY(cc.scopes))",
-		"(cc.provider = $3 AND $4 = ANY(cc.scopes))",
-		"OR (cc.provider = $5 AND $6 = ANY(cc.scopes))",
-		"calendar.ProviderGoogle",
-		"calendar.GoogleCalendarEventsReadonlyScope",
-		"calendar.ProviderMicrosoft",
-		"calendar.MicrosoftCalendarReadWriteScope",
+		"GoogleProvider: string(calendar.ProviderGoogle)",
+		"GoogleReadScope: calendar.GoogleCalendarEventsReadonlyScope",
+		"MicrosoftProvider: string(calendar.ProviderMicrosoft)",
+		"MicrosoftReadScope: calendar.MicrosoftCalendarReadWriteScope",
 	} {
 		if !strings.Contains(source, contract) {
-			t.Fatalf("calendar event reads are missing provider authorization contract %q", contract)
+			t.Errorf("calendar event repository is missing typed SQLC argument %q", contract)
 		}
 	}
 }

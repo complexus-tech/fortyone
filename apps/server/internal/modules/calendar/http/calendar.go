@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"html"
 	"net/http"
 	"time"
 
@@ -12,6 +13,11 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
+)
+
+const (
+	maxMicrosoftValidationTokenBytes = 2 << 10
+	maxMicrosoftWebhookBodyBytes     = 1 << 20
 )
 
 type Handlers struct {
@@ -266,9 +272,12 @@ func (h *Handlers) HandleGoogleCallback(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	code := r.URL.Query().Get("code")
-	state := r.URL.Query().Get("state")
-	providerError := r.URL.Query().Get("error")
+	callback, err := web.ParseOAuthCallbackQuery(r.URL.Query())
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	state := callback.State
+	providerError := callback.ProviderError
 	if providerError != "" {
 		errorCode := "connection_failed"
 		if providerError == "access_denied" {
@@ -278,18 +287,24 @@ func (h *Handlers) HandleGoogleCallback(ctx context.Context, w http.ResponseWrit
 		if err != nil {
 			return web.RespondError(ctx, w, err, h.statusCode(err))
 		}
+		// #nosec G710 -- CalendarCallbackErrorURL verifies signed, expiring,
+		// user-bound state and constructs a configured FortyOne-origin URL.
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return nil
 	}
-	_, redirectURL, err := h.service.CompleteConnect(ctx, userID, code, state)
+	_, redirectURL, err := h.service.CompleteConnect(ctx, userID, callback.Code, state)
 	if err != nil {
 		failureURL, redirectErr := h.service.CalendarCallbackErrorURL(state, userID, "connection_failed")
 		if redirectErr != nil {
 			return web.RespondError(ctx, w, err, h.statusCode(err))
 		}
+		// #nosec G710 -- the callback service validates the same signed state and
+		// returns only a configured FortyOne-origin failure destination.
 		http.Redirect(w, r, failureURL, http.StatusTemporaryRedirect)
 		return nil
 	}
+	// #nosec G710 -- CompleteConnect verifies signed, expiring, user-bound state
+	// and returns only a configured FortyOne-origin success destination.
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 	return nil
 }
@@ -310,10 +325,23 @@ func (h *Handlers) HandleGoogleNotification(ctx context.Context, w http.Response
 }
 
 func (h *Handlers) HandleMicrosoftNotification(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if validationToken := r.URL.Query().Get("validationToken"); validationToken != "" {
+	validationToken, validationRequest, err := web.OptionalOpaqueQueryParameter(
+		r.URL.Query(),
+		"validationToken",
+		maxMicrosoftValidationTokenBytes,
+	)
+	if err != nil || (validationRequest && validationToken == "") {
+		return web.RespondError(ctx, w, calendar.ErrInvalidCalendarNotification, http.StatusBadRequest)
+	}
+	if validationRequest {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(validationToken))
+		// Microsoft requires the decoded opaque token in the response body and
+		// documents that legitimate tokens contain no HTML or JavaScript. Escaping
+		// preserves that contract while making attacker-supplied probes inert.
+		_, _ = w.Write([]byte(html.EscapeString(validationToken)))
 		return nil
 	}
 	var notification struct {
@@ -322,7 +350,11 @@ func (h *Handlers) HandleMicrosoftNotification(ctx context.Context, w http.Respo
 			ClientState    string `json:"clientState"`
 		} `json:"value"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&notification); err != nil {
+	body, err := web.ReadBoundedBody(w, r, maxMicrosoftWebhookBodyBytes)
+	if err != nil {
+		return web.RespondError(ctx, w, calendar.ErrInvalidCalendarNotification, canonicalWebhookStatus(err))
+	}
+	if err := json.Unmarshal(body, &notification); err != nil {
 		return web.RespondError(ctx, w, calendar.ErrInvalidCalendarNotification, http.StatusBadRequest)
 	}
 	for _, item := range notification.Value {
@@ -332,6 +364,13 @@ func (h *Handlers) HandleMicrosoftNotification(ctx context.Context, w http.Respo
 	}
 	w.WriteHeader(http.StatusAccepted)
 	return nil
+}
+
+func canonicalWebhookStatus(err error) int {
+	if errors.Is(err, web.ErrRequestBodyTooLarge) {
+		return http.StatusRequestEntityTooLarge
+	}
+	return http.StatusBadRequest
 }
 
 func (h *Handlers) statusCode(err error) int {
@@ -372,15 +411,24 @@ func (h *Handlers) statusCode(err error) int {
 }
 
 func parseScheduleRange(r *http.Request) (time.Time, time.Time, error) {
-	startRaw := r.URL.Query().Get("start")
-	endRaw := r.URL.Query().Get("end")
-	startAt, err := time.Parse(time.RFC3339, startRaw)
+	startRaw, err := web.RequiredTextQueryParameter(r.URL.Query(), "start", 64, 64)
 	if err != nil {
 		return time.Time{}, time.Time{}, err
 	}
-	endAt, err := time.Parse(time.RFC3339, endRaw)
+	endRaw, err := web.RequiredTextQueryParameter(r.URL.Query(), "end", 64, 64)
 	if err != nil {
 		return time.Time{}, time.Time{}, err
+	}
+	startAt, err := time.Parse(time.RFC3339, startRaw)
+	if err != nil {
+		return time.Time{}, time.Time{}, calendar.ErrInvalidScheduleRange
+	}
+	endAt, err := time.Parse(time.RFC3339, endRaw)
+	if err != nil {
+		return time.Time{}, time.Time{}, calendar.ErrInvalidScheduleRange
+	}
+	if !startAt.Before(endAt) {
+		return time.Time{}, time.Time{}, calendar.ErrInvalidScheduleRange
 	}
 	return startAt, endAt, nil
 }

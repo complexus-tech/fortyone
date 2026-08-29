@@ -39,7 +39,7 @@ func TestHTTPStatusClassifiesFeedbackErrors(t *testing.T) {
 	}
 }
 
-func TestPublicItemsInputRejectsInvalidAuthorID(t *testing.T) {
+func TestParsePublicItemsQueryRejectsInvalidAuthorID(t *testing.T) {
 	t.Parallel()
 
 	for _, authorID := range []string{"not-a-uuid", uuid.Nil.String()} {
@@ -50,9 +50,9 @@ func TestPublicItemsInputRejectsInvalidAuthorID(t *testing.T) {
 			if err != nil {
 				t.Fatalf("create request: %v", err)
 			}
-			_, err = publicItemsInput(request)
+			_, err = parsePublicItemsQuery(request.URL.Query())
 			if !errors.Is(err, feedback.ErrInvalidInput) {
-				t.Fatalf("public items input error = %v, want invalid input", err)
+				t.Fatalf("parse public items query error = %v, want invalid input", err)
 			}
 			if status := httpStatus(err); status != http.StatusBadRequest {
 				t.Fatalf("invalid author status = %d, want %d", status, http.StatusBadRequest)
@@ -61,7 +61,7 @@ func TestPublicItemsInputRejectsInvalidAuthorID(t *testing.T) {
 	}
 }
 
-func TestPublicItemsInputRejectsInvalidBoardAndView(t *testing.T) {
+func TestParsePublicItemsQueryRejectsInvalidBoardAndView(t *testing.T) {
 	t.Parallel()
 
 	for _, rawQuery := range []string{
@@ -73,23 +73,23 @@ func TestPublicItemsInputRejectsInvalidBoardAndView(t *testing.T) {
 	} {
 		request := httptest.NewRequest(http.MethodGet, "/?"+rawQuery, nil)
 
-		_, err := publicItemsInput(request)
+		_, err := parsePublicItemsQuery(request.URL.Query())
 
 		if !errors.Is(err, feedback.ErrInvalidInput) {
-			t.Fatalf("publicItemsInput(%q) error = %v, want invalid input", rawQuery, err)
+			t.Fatalf("parsePublicItemsQuery(%q) error = %v, want invalid input", rawQuery, err)
 		}
 	}
 }
 
-func TestPublicItemsInputParsesExactItemID(t *testing.T) {
+func TestParsePublicItemsQueryParsesExactItemID(t *testing.T) {
 	t.Parallel()
 	itemID := uuid.New()
 	request := httptest.NewRequest(http.MethodGet, "/?itemId="+itemID.String()+"&view=summary", nil)
 
-	input, err := publicItemsInput(request)
+	input, err := parsePublicItemsQuery(request.URL.Query())
 
 	if err != nil {
-		t.Fatalf("publicItemsInput error = %v", err)
+		t.Fatalf("parsePublicItemsQuery error = %v", err)
 	}
 	if input.ItemID != itemID {
 		t.Fatalf("item id = %s, want %s", input.ItemID, itemID)
@@ -111,14 +111,17 @@ func TestPublicContributorIDRejectsInvalidValues(t *testing.T) {
 	}
 }
 
-func TestPublicContributorPaginationDefersNormalizationToService(t *testing.T) {
+func TestParseContributorPaginationUsesExplicitValues(t *testing.T) {
 	t.Parallel()
 
 	request := httptest.NewRequest(http.MethodGet, "/?page=3&pageSize=25", nil)
-	page, pageSize := publicContributorPagination(request)
+	params, err := parseContributorPagination(request.URL.Query())
+	if err != nil {
+		t.Fatalf("parse contributor pagination: %v", err)
+	}
 
-	if page != 3 || pageSize != 25 {
-		t.Fatalf("pagination = (%d, %d), want (3, 25)", page, pageSize)
+	if params.Page != 3 || params.PageSize != 25 {
+		t.Fatalf("pagination = %#v, want (3, 25)", params)
 	}
 }
 

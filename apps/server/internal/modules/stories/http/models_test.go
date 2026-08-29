@@ -1,6 +1,7 @@
 package storieshttp
 
 import (
+	"encoding/json"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -118,6 +119,23 @@ func TestToCoreNewStoryMapsLabelIDs(t *testing.T) {
 	}
 }
 
+func TestToAppStorySerializesEmptyCollaboratorIDsAsArray(t *testing.T) {
+	payload, err := json.Marshal(toAppStory(stories.CoreSingleStory{}, nil))
+	if err != nil {
+		t.Fatalf("marshal app story: %v", err)
+	}
+
+	var response struct {
+		CollaboratorIDs json.RawMessage `json:"collaboratorIds"`
+	}
+	if err := json.Unmarshal(payload, &response); err != nil {
+		t.Fatalf("unmarshal app story: %v", err)
+	}
+	if string(response.CollaboratorIDs) != "[]" {
+		t.Fatalf("collaboratorIds = %s, want []", response.CollaboratorIDs)
+	}
+}
+
 func TestParseStoryQueryMapsEstimateValues(t *testing.T) {
 	request := httptest.NewRequest(
 		"GET",
@@ -125,7 +143,7 @@ func TestParseStoryQueryMapsEstimateValues(t *testing.T) {
 		nil,
 	)
 
-	query, err := parseStoryQuery(request, uuid.New(), uuid.New())
+	query, err := parseStoryQuery(request)
 	if err != nil {
 		t.Fatalf("expected query to parse, got error: %v", err)
 	}
@@ -152,7 +170,7 @@ func TestParseStoryQueryMapsNegatedFilters(t *testing.T) {
 		nil,
 	)
 
-	query, err := parseStoryQuery(request, uuid.New(), uuid.New())
+	query, err := parseStoryQuery(request)
 	if err != nil {
 		t.Fatalf("expected query to parse, got error: %v", err)
 	}
@@ -188,7 +206,7 @@ func TestParseStoryQueryMapsCollaborationFilters(t *testing.T) {
 		nil,
 	)
 
-	query, err := parseStoryQuery(request, uuid.New(), uuid.New())
+	query, err := parseStoryQuery(request)
 	if err != nil {
 		t.Fatalf("expected query to parse, got error: %v", err)
 	}

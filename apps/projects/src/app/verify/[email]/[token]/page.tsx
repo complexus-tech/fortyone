@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getRedirectUrl } from "@/utils";
-import { getMyInvitations } from "@/lib/queries/get-invitations";
+import { getMyInvitationsForCurrentRequest } from "@/modules/invitations/queries/my-invitations-for-current-request";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 import { EmailVerificationCallback } from "./client";
@@ -24,14 +24,14 @@ export default async function Page({
   const session = await auth();
   if (session && !isMobileApp) {
     const [invitations, workspaces, profile] = await Promise.all([
-      getMyInvitations(),
+      getMyInvitationsForCurrentRequest(),
       getWorkspaces(),
       getProfile(),
     ]);
     redirect(
       getRedirectUrl(
         workspaces,
-        invitations.data || [],
+        invitations,
         profile.lastUsedWorkspaceId,
         callbackUrl,
       ),

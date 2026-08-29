@@ -1,4 +1,5 @@
 {
   "title": "Integrations",
-  "pages": ["slack"]
+  "icon": "Plug",
+  "pages": ["index", "github", "slack", "calendar", "figma"]
 }

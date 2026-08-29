@@ -78,7 +78,6 @@ const organization: WithContext<Organization> = {
   url: "https://complexus.tech",
   sameAs: [
     "https://www.linkedin.com/company/complexus-app/",
-    "https://github.com/complexus-tech/fortyone",
     "https://www.instagram.com/complexus_tech/",
     "https://www.facebook.com/complexus.tech",
   ],

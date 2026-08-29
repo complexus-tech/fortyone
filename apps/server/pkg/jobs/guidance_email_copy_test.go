@@ -77,7 +77,10 @@ func TestSendWeeklyDigestEmailUsesCompleteGeneratedCopyAndMayaSender(t *testing.
 	}}
 	mailerService := &recordingMailer{}
 
-	err := sendWeeklyDigestEmail(context.Background(), newTestJobLogger(), mailerService, generator, nil, recipient, stats)
+	err := sendWeeklyDigestEmail(
+		context.Background(), newTestJobLogger(), mailerService, generator, nil, recipient, stats,
+		time.Date(2026, time.August, 31, 8, 0, 0, 0, time.UTC),
+	)
 	require.NoError(t, err)
 	require.Len(t, generator.requests, 1)
 	require.Len(t, mailerService.templatedEmails, 1)
@@ -110,7 +113,10 @@ func TestSendWeeklyDigestEmailFallsBackWhenGenerationFails(t *testing.T) {
 	generator := &recordingEmailCopyGenerator{err: errors.New("generation timed out")}
 	mailerService := &recordingMailer{}
 
-	err := sendWeeklyDigestEmail(context.Background(), newTestJobLogger(), mailerService, generator, nil, recipient, WeeklyDigestStats{OverdueStories: 2})
+	err := sendWeeklyDigestEmail(
+		context.Background(), newTestJobLogger(), mailerService, generator, nil, recipient, WeeklyDigestStats{OverdueStories: 2},
+		time.Date(2026, time.August, 31, 8, 0, 0, 0, time.UTC),
+	)
 	require.NoError(t, err)
 	require.Len(t, mailerService.templatedEmails, 1)
 
@@ -134,7 +140,8 @@ func TestSendWeeklyDigestEmailCreatesReplyThreadAndMultipartMessage(t *testing.T
 	mailerService := &recordingMailer{}
 	threader := &recordingGuidancePreparer{}
 
-	err := sendWeeklyDigestEmail(context.Background(), newTestJobLogger(), mailerService, nil, threader, recipient, WeeklyDigestStats{OverdueStories: 1})
+	asOf := time.Date(2026, time.August, 31, 8, 0, 0, 0, time.UTC)
+	err := sendWeeklyDigestEmail(context.Background(), newTestJobLogger(), mailerService, nil, threader, recipient, WeeklyDigestStats{OverdueStories: 1}, asOf)
 	require.NoError(t, err)
 	require.Len(t, threader.inputs, 1)
 	require.Len(t, mailerService.templatedEmails, 1)
@@ -151,6 +158,7 @@ func TestSendWeeklyDigestEmailCreatesReplyThreadAndMultipartMessage(t *testing.T
 	require.Contains(t, email.PlainTextBody, "I’m Maya, your AI agent")
 	require.Contains(t, email.PlainTextBody, "Reply to this email")
 	require.Equal(t, input.InternetMessageID, email.MessageID)
+	require.Equal(t, guidanceEmailMessageID("weekly-digest", recipient.WorkspaceID, recipient.UserID, asOf), email.MessageID)
 }
 
 func TestSendOverdueStoriesEmailLinksGeneratedRowsToCanonicalTasks(t *testing.T) {

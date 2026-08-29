@@ -121,7 +121,7 @@ func TestGetWorkspaceCommandCenterReportComposesDetailedSections(t *testing.T) {
 	}
 	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
 
-	got, err := service.GetWorkspaceCommandCenterReport(context.Background(), workspaceID, ReportFilters{
+	got, err := service.GetWorkspaceCommandCenterReport(reportTestContext(workspaceID), workspaceID, ReportFilters{
 		StartDate: &startDate,
 		EndDate:   &endDate,
 	})
@@ -150,6 +150,8 @@ func TestGetWorkspaceCommandCenterReportKeepsSectionFailuresPartial(t *testing.T
 	t.Parallel()
 
 	workspaceID := uuid.New()
+	startDate := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(2026, 6, 24, 0, 0, 0, 0, time.UTC)
 	repo := &commandCenterRepoStub{
 		storyErr: errors.New("story analytics unavailable"),
 		workloadResult: CoreWorkloadAnalysis{
@@ -166,7 +168,10 @@ func TestGetWorkspaceCommandCenterReportKeepsSectionFailuresPartial(t *testing.T
 	}
 	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), repo)
 
-	got, err := service.GetWorkspaceCommandCenterReport(context.Background(), workspaceID, ReportFilters{})
+	got, err := service.GetWorkspaceCommandCenterReport(reportTestContext(workspaceID), workspaceID, ReportFilters{
+		StartDate: &startDate,
+		EndDate:   &endDate,
+	})
 
 	if err != nil {
 		t.Fatalf("expected partial report, got error %v", err)
@@ -177,10 +182,32 @@ func TestGetWorkspaceCommandCenterReportKeepsSectionFailuresPartial(t *testing.T
 	if got.SectionErrors[0].Section != "stories" {
 		t.Fatalf("expected stories section error, got %#v", got.SectionErrors[0])
 	}
+	if got.SectionErrors[0].Message != commandCenterSectionUnavailable {
+		t.Fatalf("expected sanitized section error, got %#v", got.SectionErrors[0])
+	}
 	if got.Stories.StatusBreakdown == nil {
 		t.Fatal("expected failed stories section to keep empty slices, got nil")
 	}
 	if got.Pulse.Summary.OpenStories != 7 {
 		t.Fatalf("expected pulse summary to use workload data, got %#v", got.Pulse.Summary)
+	}
+}
+
+func TestGetWorkspaceCommandCenterReportFailsClosedOnAccessDenied(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	startDate := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(2026, 6, 24, 0, 0, 0, 0, time.UTC)
+	service := New(logger.NewWithText(io.Discard, slog.LevelError, "reports-test"), &commandCenterRepoStub{
+		storyErr: ErrReportsAccessDenied,
+	})
+
+	_, err := service.GetWorkspaceCommandCenterReport(reportTestContext(workspaceID), workspaceID, ReportFilters{
+		StartDate: &startDate,
+		EndDate:   &endDate,
+	})
+	if !errors.Is(err, ErrReportsAccessDenied) {
+		t.Fatalf("command center error = %v, want access denied", err)
 	}
 }

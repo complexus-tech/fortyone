@@ -49,7 +49,7 @@ func (h *handlers) HandleCalendarScheduleOutboxDispatch(ctx context.Context, _ *
 
 func (h *handlers) HandleCalendarScheduleReconcile(ctx context.Context, task *asynq.Task) error {
 	if h.mayaService == nil {
-		return fmt.Errorf("Maya schedule reconciler is not configured")
+		return fmt.Errorf("maya schedule reconciler is not configured")
 	}
 	var payload tasks.CalendarScheduleReconcilePayload
 	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
@@ -62,8 +62,8 @@ func (h *handlers) HandleCalendarScheduleReconcile(ctx context.Context, task *as
 }
 
 func (h *handlers) HandleCalendarWorkspaceScheduleBatch(ctx context.Context, task *asynq.Task) error {
-	if h.mayaService == nil || h.db == nil || h.systemUserID == uuid.Nil {
-		return fmt.Errorf("Maya workspace schedule batch worker is not configured")
+	if h.mayaService == nil || h.mayaAssignments == nil || h.systemUserID == uuid.Nil {
+		return fmt.Errorf("maya workspace schedule batch worker is not configured")
 	}
 	var payload tasks.CalendarWorkspaceScheduleBatchPayload
 	if err := json.Unmarshal(task.Payload(), &payload); err != nil {

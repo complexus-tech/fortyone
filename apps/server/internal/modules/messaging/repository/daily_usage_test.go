@@ -2,106 +2,86 @@ package messagingrepository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
+	"math"
+	"os"
 	"strings"
 	"testing"
 
-	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
+	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/domain"
+	messagingsql "github.com/complexus-tech/projects-api/internal/modules/messaging/repository/sqlc"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
-type dailyUsageDBStub struct {
-	rows       []dailyUsageRow
-	err        error
-	beginErr   error
-	duplicate  bool
-	committed  bool
-	rolledBack bool
-	queries    []string
-	args       [][]any
+type dailyUsageQueriesStub struct {
+	claimResult int32
+	claimErr    error
+	addResult   messagingsql.AddAssistantDailyUsageRow
+	addErr      error
+	getResults  []messagingsql.GetAssistantDailyUsageRow
+	getErr      error
+	claims      []messagingsql.ClaimAssistantUsageEventParams
+	adds        []messagingsql.AddAssistantDailyUsageParams
+	gets        []messagingsql.GetAssistantDailyUsageParams
 }
 
-func (s *dailyUsageDBStub) GetContext(_ context.Context, destination any, query string, args ...any) error {
-	return s.getContext(destination, query, args...)
+func (stub *dailyUsageQueriesStub) ClaimAssistantUsageEvent(
+	_ context.Context,
+	params messagingsql.ClaimAssistantUsageEventParams,
+) (int32, error) {
+	stub.claims = append(stub.claims, params)
+	return stub.claimResult, stub.claimErr
 }
 
-func (s *dailyUsageDBStub) Begin(context.Context) (dailyUsageTransaction, error) {
-	if s.beginErr != nil {
-		return nil, s.beginErr
+func (stub *dailyUsageQueriesStub) AddAssistantDailyUsage(
+	_ context.Context,
+	params messagingsql.AddAssistantDailyUsageParams,
+) (messagingsql.AddAssistantDailyUsageRow, error) {
+	stub.adds = append(stub.adds, params)
+	return stub.addResult, stub.addErr
+}
+
+func (stub *dailyUsageQueriesStub) GetAssistantDailyUsage(
+	_ context.Context,
+	params messagingsql.GetAssistantDailyUsageParams,
+) (messagingsql.GetAssistantDailyUsageRow, error) {
+	stub.gets = append(stub.gets, params)
+	if len(stub.getResults) == 0 {
+		return messagingsql.GetAssistantDailyUsageRow{}, stub.getErr
 	}
-	return &dailyUsageTxStub{db: s}, nil
-}
-
-func (s *dailyUsageDBStub) getContext(destination any, query string, args ...any) error {
-	s.queries = append(s.queries, query)
-	s.args = append(s.args, append([]any(nil), args...))
-	if s.err != nil {
-		return s.err
-	}
-	if strings.Contains(query, "INSERT INTO messaging_assistant_usage_events") {
-		if s.duplicate {
-			return sql.ErrNoRows
-		}
-		inserted, ok := destination.(*int)
-		if !ok {
-			return errors.New("unexpected usage event destination")
-		}
-		*inserted = 1
-		return nil
-	}
-	row, ok := destination.(*dailyUsageRow)
-	if !ok {
-		return errors.New("unexpected daily usage destination")
-	}
-	if len(s.rows) > 0 {
-		*row = s.rows[0]
-		s.rows = s.rows[1:]
-	}
-	return nil
-}
-
-type dailyUsageTxStub struct {
-	db *dailyUsageDBStub
-}
-
-func (s *dailyUsageTxStub) GetContext(_ context.Context, destination any, query string, args ...any) error {
-	return s.db.getContext(destination, query, args...)
-}
-
-func (s *dailyUsageTxStub) Commit() error {
-	s.db.committed = true
-	return nil
-}
-
-func (s *dailyUsageTxStub) Rollback() error {
-	s.db.rolledBack = true
-	return nil
+	row := stub.getResults[0]
+	stub.getResults = stub.getResults[1:]
+	return row, stub.getErr
 }
 
 func TestDailyUsageRepositoryCheckUsesDefaultCeiling(t *testing.T) {
 	t.Parallel()
 
-	db := &dailyUsageDBStub{rows: []dailyUsageRow{{InputTokens: 800, OutputTokens: 200, TotalTokens: 1_000, RequestCount: 2}}}
-	repository := &DailyUsageRepository{db: db}
+	queries := &dailyUsageQueriesStub{getResults: []messagingsql.GetAssistantDailyUsageRow{{
+		InputTokens: 800, OutputTokens: 200, TotalTokens: 1_000, RequestCount: 2,
+	}}}
+	repository := newDailyUsageRepositoryWithQueries(queries)
 
-	snapshot, err := repository.Check(context.Background(), dailyUsageWorkspaceID(), 0)
+	snapshot, err := repository.Check(t.Context(), dailyUsageWorkspaceID(), 0)
 
 	require.NoError(t, err)
 	require.True(t, snapshot.Allowed)
 	require.Equal(t, DefaultDailyWorkspaceTokenLimit, snapshot.Limit)
 	require.Equal(t, DefaultDailyWorkspaceTokenLimit-1_000, snapshot.Remaining)
-	require.Contains(t, db.queries[0], "CAST(NOW() AT TIME ZONE 'UTC' AS date)")
+	require.Equal(t, dailyUsageWorkspaceID(), queries.gets[0].WorkspaceID)
 }
 
 func TestDailyUsageRepositoryCheckRejectsExhaustedWorkspace(t *testing.T) {
 	t.Parallel()
 
-	db := &dailyUsageDBStub{rows: []dailyUsageRow{{InputTokens: 750, OutputTokens: 250, TotalTokens: 1_000, RequestCount: 3}}}
-	repository := &DailyUsageRepository{db: db}
+	queries := &dailyUsageQueriesStub{getResults: []messagingsql.GetAssistantDailyUsageRow{{
+		InputTokens: 750, OutputTokens: 250, TotalTokens: 1_000, RequestCount: 3,
+	}}}
+	repository := newDailyUsageRepositoryWithQueries(queries)
 
-	snapshot, err := repository.Check(context.Background(), dailyUsageWorkspaceID(), 1_000)
+	snapshot, err := repository.Check(t.Context(), dailyUsageWorkspaceID(), 1_000)
 
 	require.ErrorIs(t, err, ErrDailyWorkspaceTokenLimit)
 	require.False(t, snapshot.Allowed)
@@ -111,88 +91,53 @@ func TestDailyUsageRepositoryCheckRejectsExhaustedWorkspace(t *testing.T) {
 	require.Equal(t, int64(1_000), limitError.Used)
 }
 
-func TestDailyUsageRepositoryRecordPersistsResponsesUsage(t *testing.T) {
+func TestDailyUsageRepositoryRecordPersistsTypedUsage(t *testing.T) {
 	t.Parallel()
 
-	db := &dailyUsageDBStub{rows: []dailyUsageRow{{InputTokens: 1_100, OutputTokens: 400, TotalTokens: 1_500, RequestCount: 4}}}
-	repository := &DailyUsageRepository{db: db}
+	queries := &dailyUsageQueriesStub{
+		claimResult: 1,
+		addResult: messagingsql.AddAssistantDailyUsageRow{
+			InputTokens: 1_100, OutputTokens: 400, TotalTokens: 1_500, RequestCount: 4,
+		},
+	}
+	repository := newDailyUsageRepositoryWithQueries(queries)
 	usage := messaging.Usage{InputTokens: 300, OutputTokens: 100, TotalTokens: 400}
 
-	snapshot, err := repository.Record(context.Background(), dailyUsageRecordInput(4, usage), 2_000)
+	snapshot, err := repository.Record(t.Context(), dailyUsageRecordInput(4, usage), 2_000)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(1_500), snapshot.TotalTokens)
-	require.Equal(t, int64(4), snapshot.RequestCount)
 	require.True(t, snapshot.Allowed)
-	require.True(t, db.committed)
-	require.True(t, db.rolledBack, "deferred rollback should safely run after commit")
-	require.Len(t, db.queries, 2)
-	require.Contains(t, db.queries[0], "INSERT INTO messaging_assistant_usage_events")
-	require.Contains(t, db.queries[0], "inbound_event_id,\n\t\t\tattempt_count\n\t\t) DO NOTHING")
-	require.Contains(t, db.queries[0], "RETURNING 1")
-	require.Contains(t, db.queries[1], "INSERT INTO messaging_assistant_daily_usage")
-	require.Contains(t, db.queries[1], "ON CONFLICT (workspace_id, usage_date) DO UPDATE")
-	require.Equal(t, []any{
-		testUsageInboundEventID(),
-		dailyUsageWorkspaceID(),
-		"slack",
-		"T1",
-		"Ev1",
-		4,
-		int64(300),
-		int64(100),
-		int64(400),
-	}, db.args[0])
-	require.Equal(t, []any{
-		dailyUsageWorkspaceID(),
-		int64(300),
-		int64(100),
-		int64(400),
-	}, db.args[1])
+	require.Len(t, queries.claims, 1)
+	require.Len(t, queries.adds, 1)
+	require.Equal(t, int32(4), queries.claims[0].AttemptCount)
+	require.Equal(t, int64(300), queries.claims[0].InputTokens)
+	require.Equal(t, int64(400), queries.adds[0].TotalTokens)
 }
 
-func TestDailyUsageRepositoryRecordReturnsExhaustedSnapshotAfterIncurredUsage(t *testing.T) {
+func TestDailyUsageRepositoryDuplicateExecutionReturnsCurrentSnapshot(t *testing.T) {
 	t.Parallel()
 
-	db := &dailyUsageDBStub{rows: []dailyUsageRow{{InputTokens: 900, OutputTokens: 200, TotalTokens: 1_100, RequestCount: 2}}}
-	repository := &DailyUsageRepository{db: db}
+	queries := &dailyUsageQueriesStub{
+		claimErr: pgx.ErrNoRows,
+		getResults: []messagingsql.GetAssistantDailyUsageRow{{
+			InputTokens: 900, OutputTokens: 100, TotalTokens: 1_000, RequestCount: 3,
+		}},
+	}
+	repository := newDailyUsageRepositoryWithQueries(queries)
 
-	snapshot, err := repository.Record(context.Background(), dailyUsageRecordInput(2, messaging.Usage{
-		InputTokens: 100, OutputTokens: 100, TotalTokens: 200,
-	}), 1_000)
+	snapshot, err := repository.Record(t.Context(), dailyUsageRecordInput(3, messaging.Usage{
+		InputTokens: 300, OutputTokens: 100, TotalTokens: 400,
+	}), 2_000)
 
 	require.NoError(t, err)
-	require.False(t, snapshot.Allowed)
-	require.Zero(t, snapshot.Remaining)
+	require.Equal(t, int64(1_000), snapshot.TotalTokens)
+	require.Len(t, queries.claims, 1)
+	require.Empty(t, queries.adds)
+	require.Len(t, queries.gets, 1)
 }
 
-func TestDailyUsageRepositoryRejectsInvalidUsageBeforeDatabaseWrite(t *testing.T) {
-	t.Parallel()
-
-	db := &dailyUsageDBStub{}
-	repository := &DailyUsageRepository{db: db}
-
-	_, err := repository.Record(context.Background(), dailyUsageRecordInput(1, messaging.Usage{
-		InputTokens: 10, OutputTokens: 5, TotalTokens: 14,
-	}), 1_000)
-
-	require.ErrorContains(t, err, "total usage")
-	require.Empty(t, db.queries)
-}
-
-func TestDailyUsageRepositoryUsesCastSyntaxInApplicationSQL(t *testing.T) {
-	t.Parallel()
-
-	db := &dailyUsageDBStub{}
-	repository := &DailyUsageRepository{db: db}
-
-	_, err := repository.Check(context.Background(), dailyUsageWorkspaceID(), 1_000)
-
-	require.NoError(t, err)
-	require.NotContains(t, strings.Join(db.queries, "\n"), "::")
-}
-
-func TestDailyUsageRepositoryRecordRequiresDurableExecutionIdentity(t *testing.T) {
+func TestDailyUsageRepositoryRejectsInvalidInputBeforeQueries(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -204,76 +149,52 @@ func TestDailyUsageRepositoryRecordRequiresDurableExecutionIdentity(t *testing.T
 		{name: "external event", mutate: func(input *DailyUsageRecordInput) { input.ExternalEventID = "" }},
 		{name: "inbound event", mutate: func(input *DailyUsageRecordInput) { input.InboundEventID = uuid.Nil }},
 		{name: "attempt", mutate: func(input *DailyUsageRecordInput) { input.AttemptCount = 0 }},
+		{name: "attempt overflow", mutate: func(input *DailyUsageRecordInput) { input.AttemptCount = math.MaxInt32 + 1 }},
+		{name: "mismatched totals", mutate: func(input *DailyUsageRecordInput) { input.Usage.TotalTokens++ }},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			db := &dailyUsageDBStub{}
-			repository := &DailyUsageRepository{db: db}
+			queries := &dailyUsageQueriesStub{}
+			repository := newDailyUsageRepositoryWithQueries(queries)
 			input := dailyUsageRecordInput(1, messaging.Usage{InputTokens: 1, OutputTokens: 1, TotalTokens: 2})
 			test.mutate(&input)
 
-			_, err := repository.Record(context.Background(), input, 1_000)
+			_, err := repository.Record(t.Context(), input, 1_000)
 
 			require.Error(t, err)
-			require.Empty(t, db.queries)
+			require.Empty(t, queries.claims)
+			require.Empty(t, queries.adds)
+			require.Empty(t, queries.gets)
 		})
 	}
 }
 
-func TestDailyUsageRepositoryDuplicateExecutionReturnsCurrentSnapshot(t *testing.T) {
+func TestDailyUsageRepositoryWrapsQueryFailures(t *testing.T) {
 	t.Parallel()
 
-	db := &dailyUsageDBStub{duplicate: true, rows: []dailyUsageRow{{
-		InputTokens: 900, OutputTokens: 100, TotalTokens: 1_000, RequestCount: 3,
-	}}}
-	repository := &DailyUsageRepository{db: db}
+	queries := &dailyUsageQueriesStub{claimErr: errors.New("database unavailable")}
+	repository := newDailyUsageRepositoryWithQueries(queries)
 
-	snapshot, err := repository.Record(context.Background(), dailyUsageRecordInput(3, messaging.Usage{
-		InputTokens: 300, OutputTokens: 100, TotalTokens: 400,
-	}), 2_000)
-
-	require.NoError(t, err)
-	require.Equal(t, int64(1_000), snapshot.TotalTokens)
-	require.Equal(t, int64(3), snapshot.RequestCount)
-	require.True(t, db.committed)
-	require.Len(t, db.queries, 2)
-	require.Contains(t, db.queries[0], "INSERT INTO messaging_assistant_usage_events")
-	require.Contains(t, db.queries[1], "FROM messaging_assistant_daily_usage")
-	require.NotContains(t, db.queries[1], "INSERT INTO messaging_assistant_daily_usage")
-}
-
-func TestDailyUsageRepositoryLaterAttemptUsesDistinctLedgerKey(t *testing.T) {
-	t.Parallel()
-
-	db := &dailyUsageDBStub{rows: []dailyUsageRow{{
-		InputTokens: 1_200, OutputTokens: 300, TotalTokens: 1_500, RequestCount: 2,
-	}}}
-	repository := &DailyUsageRepository{db: db}
-
-	_, err := repository.Record(context.Background(), dailyUsageRecordInput(2, messaging.Usage{
-		InputTokens: 200, OutputTokens: 50, TotalTokens: 250,
-	}), 2_000)
-
-	require.NoError(t, err)
-	require.Equal(t, 2, db.args[0][5])
-	require.Contains(t, db.queries[0], "attempt_count")
-}
-
-func TestDailyUsageRepositoryRollsBackWhenAggregateWriteFails(t *testing.T) {
-	t.Parallel()
-
-	db := &dailyUsageDBStub{err: errors.New("database unavailable")}
-	repository := &DailyUsageRepository{db: db}
-
-	_, err := repository.Record(context.Background(), dailyUsageRecordInput(1, messaging.Usage{
+	_, err := repository.Record(t.Context(), dailyUsageRecordInput(1, messaging.Usage{
 		InputTokens: 1, OutputTokens: 1, TotalTokens: 2,
 	}), 2_000)
 
 	require.ErrorContains(t, err, "claim messaging assistant usage event")
-	require.False(t, db.committed)
-	require.True(t, db.rolledBack)
+	require.Empty(t, queries.adds)
+}
+
+func TestDailyUsageQueriesAreNamedStaticSQL(t *testing.T) {
+	t.Parallel()
+
+	source, err := os.ReadFile("queries/daily_usage.sql")
+	require.NoError(t, err)
+	queryText := string(source)
+	require.Contains(t, queryText, "-- name: ClaimAssistantUsageEvent :one")
+	require.Contains(t, queryText, "-- name: AddAssistantDailyUsage :one")
+	require.Contains(t, queryText, "-- name: GetAssistantDailyUsage :one")
+	require.NotContains(t, strings.ToLower(queryText), "fmt.sprintf")
 }
 
 func dailyUsageWorkspaceID() uuid.UUID {

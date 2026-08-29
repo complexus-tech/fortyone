@@ -1,44 +1,27 @@
 package stories
 
 import (
-	"errors"
 	"fmt"
+
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 )
 
 var (
-	ErrInvalidEstimatedDuration   = errors.New("estimated duration minutes must be greater than zero")
-	ErrInvalidMinimumFocusBlock   = errors.New("minimum focus block minutes must be greater than zero")
-	ErrEstimatedDurationTooLarge  = errors.New("estimated duration minutes must not exceed 2400")
-	ErrMinimumFocusBlockTooLarge  = errors.New("minimum focus block minutes must not exceed 2400")
-	ErrFocusBlockRequiresDuration = errors.New("minimum focus block minutes require estimated duration minutes")
-	ErrFocusBlockExceedsDuration  = errors.New("minimum focus block minutes must not exceed estimated duration minutes")
+	ErrInvalidEstimatedDuration   = storydomain.ErrInvalidEstimatedDuration
+	ErrInvalidMinimumFocusBlock   = storydomain.ErrInvalidMinimumFocusBlock
+	ErrEstimatedDurationTooLarge  = storydomain.ErrEstimatedDurationTooLarge
+	ErrMinimumFocusBlockTooLarge  = storydomain.ErrMinimumFocusBlockTooLarge
+	ErrFocusBlockRequiresDuration = storydomain.ErrFocusBlockRequiresDuration
+	ErrFocusBlockExceedsDuration  = storydomain.ErrFocusBlockExceedsDuration
 )
 
-const MaximumEstimatedDurationMinutes = 40 * 60
+const MaximumEstimatedDurationMinutes = storydomain.MaximumEstimatedDurationMinutes
 
 // ValidateStoryTimeContract validates the user-entered scheduling inputs on a
 // story. Both fields are optional, but a minimum focus block is only meaningful
 // when the story also has an estimated duration and cannot exceed that duration.
 func ValidateStoryTimeContract(estimatedDurationMinutes, minimumFocusBlockMinutes *int) error {
-	if estimatedDurationMinutes != nil && *estimatedDurationMinutes <= 0 {
-		return ErrInvalidEstimatedDuration
-	}
-	if estimatedDurationMinutes != nil && *estimatedDurationMinutes > MaximumEstimatedDurationMinutes {
-		return ErrEstimatedDurationTooLarge
-	}
-	if minimumFocusBlockMinutes != nil && *minimumFocusBlockMinutes <= 0 {
-		return ErrInvalidMinimumFocusBlock
-	}
-	if minimumFocusBlockMinutes != nil && *minimumFocusBlockMinutes > MaximumEstimatedDurationMinutes {
-		return ErrMinimumFocusBlockTooLarge
-	}
-	if estimatedDurationMinutes == nil && minimumFocusBlockMinutes != nil {
-		return ErrFocusBlockRequiresDuration
-	}
-	if estimatedDurationMinutes != nil && minimumFocusBlockMinutes != nil && *minimumFocusBlockMinutes > *estimatedDurationMinutes {
-		return ErrFocusBlockExceedsDuration
-	}
-	return nil
+	return storydomain.ValidateScheduling(estimatedDurationMinutes, minimumFocusBlockMinutes)
 }
 
 func applyStoryTimeContractUpdate(story CoreSingleStory, updates map[string]any) error {

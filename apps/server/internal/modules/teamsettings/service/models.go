@@ -1,70 +1,31 @@
 package teamsettings
 
 import (
-	"time"
-
-	"github.com/google/uuid"
+	teamsettingsdomain "github.com/complexus-tech/projects-api/internal/modules/teamsettings/domain"
+	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
 )
 
-type CoreTeamSprintSettings struct {
-	TeamID                       uuid.UUID
-	WorkspaceID                  uuid.UUID
-	AutoCreateSprints            bool
-	UpcomingSprintsCount         int
-	SprintDurationWeeks          int
-	SprintStartDay               string
-	WorkingDays                  []int
-	MoveIncompleteStoriesEnabled bool
-	LastAutoSprintNumber         int
-	NextAutoSprintNumber         int
-	AutoCreateDisabledAt         *time.Time
-	AutoCreateDisabledReason     *string
-	CreatedAt                    time.Time
-	UpdatedAt                    time.Time
+type CoreTeamSprintSettings = teamsettingsdomain.SprintSettings
+type CoreTeamStoryAutomationSettings = teamsettingsdomain.StoryAutomationSettings
+type CoreTeamEstimationSettings = teamsettingsdomain.EstimationSettings
+type CoreTeamSettings = teamsettingsdomain.Settings
+
+type PatchField[T any] = teamsettingsdomain.PatchField[T]
+
+func PatchFromPointer[T any](value *T) PatchField[T] {
+	return teamsettingsdomain.PatchFromPointer(value)
 }
 
-type CoreTeamStoryAutomationSettings struct {
-	TeamID                   uuid.UUID
-	WorkspaceID              uuid.UUID
-	AutoCloseInactiveEnabled bool
-	AutoCloseInactiveMonths  int
-	AutoArchiveEnabled       bool
-	AutoArchiveMonths        int
-	CreatedAt                time.Time
-	UpdatedAt                time.Time
+type CoreUpdateTeamSprintSettings = teamsettingsdomain.SprintSettingsUpdate
+type CoreUpdateTeamStoryAutomationSettings = teamsettingsdomain.StoryAutomationSettingsUpdate
+type CoreUpdateTeamEstimationSettings = teamsettingsdomain.EstimationSettingsUpdate
+type Access = teamsettingsdomain.Access
+type AuditActor = teamsettingsdomain.AuditActor
+
+func UserAuditActor(actor platformauth.Actor) AuditActor {
+	return teamsettingsdomain.UserAuditActor(actor)
 }
 
-type CoreTeamEstimationSettings struct {
-	TeamID      uuid.UUID
-	WorkspaceID uuid.UUID
-	Scheme      string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-type CoreTeamSettings struct {
-	SprintSettings          CoreTeamSprintSettings
-	StoryAutomationSettings CoreTeamStoryAutomationSettings
-	EstimationSettings      CoreTeamEstimationSettings
-}
-
-type CoreUpdateTeamSprintSettings struct {
-	AutoCreateSprints            *bool
-	UpcomingSprintsCount         *int
-	SprintDurationWeeks          *int
-	SprintStartDay               *string
-	WorkingDays                  *[]int
-	MoveIncompleteStoriesEnabled *bool
-	NextAutoSprintNumber         *int
-}
-
-type CoreUpdateTeamStoryAutomationSettings struct {
-	AutoCloseInactiveEnabled *bool
-	AutoCloseInactiveMonths  *int
-	AutoArchiveEnabled       *bool
-	AutoArchiveMonths        *int
-}
-
-type CoreUpdateTeamEstimationSettings struct {
-	Scheme *string
+func SystemAuditActor() AuditActor {
+	return teamsettingsdomain.SystemAuditActor()
 }

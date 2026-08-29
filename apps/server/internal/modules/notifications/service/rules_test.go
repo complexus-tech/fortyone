@@ -173,7 +173,7 @@ func TestNotificationTypes(t *testing.T) {
 		assignmentMessage,
 	)
 
-	assert.Equal(t, "story_update", assignmentNotif.Type)
+	assert.Equal(t, "story_update", string(assignmentNotif.Type))
 	assert.Equal(t, "{actor} assigned you a story", assignmentNotif.Message.Template)
 	assert.Equal(t, "testuser", assignmentNotif.Message.Variables["actor"].Value)
 	assert.Equal(t, "actor", assignmentNotif.Message.Variables["actor"].Type)
@@ -203,7 +203,7 @@ func TestNotificationTypes(t *testing.T) {
 		updateMessage,
 	)
 
-	assert.Equal(t, "story_update", updateNotif.Type)
+	assert.Equal(t, "story_update", string(updateNotif.Type))
 	assert.Equal(t, "{actor} set the {field} to {value}", updateNotif.Message.Template)
 	assert.Equal(t, "testuser", updateNotif.Message.Variables["actor"].Value)
 	assert.Equal(t, "priority", updateNotif.Message.Variables["field"].Value)
@@ -228,7 +228,7 @@ func TestNotificationTypes(t *testing.T) {
 		unassignMessage,
 	)
 
-	assert.Equal(t, "story_update", unassignNotif.Type)
+	assert.Equal(t, "story_update", string(unassignNotif.Type))
 	assert.Equal(t, "{actor} reassigned story to {assignee}", unassignNotif.Message.Template)
 	assert.Equal(t, "testuser", unassignNotif.Message.Variables["actor"].Value)
 	assert.Equal(t, "tom", unassignNotif.Message.Variables["assignee"].Value)
@@ -428,8 +428,8 @@ func TestProcessCommentCreated(t *testing.T) {
 			if tt.expectedCount > 0 {
 				notification := notifications[0]
 				assert.Equal(t, tt.expectedRecipient, notification.RecipientID)
-				assert.Equal(t, tt.expectedType, notification.Type)
-				assert.Equal(t, "story", notification.EntityType)
+				assert.Equal(t, tt.expectedType, string(notification.Type))
+				assert.Equal(t, "story", string(notification.EntityType))
 				assert.Equal(t, tt.payload.StoryID, notification.EntityID)
 				assert.Equal(t, tt.payload.StoryTitle, notification.Title)
 				assert.Equal(t, tt.actorID, notification.ActorID)
@@ -457,8 +457,8 @@ func TestProcessFeedbackCommentCreated(t *testing.T) {
 
 	assert.Len(t, result, 1)
 	assert.Equal(t, recipientID, result[0].RecipientID)
-	assert.Equal(t, "feedback_comment", result[0].Type)
-	assert.Equal(t, "feedback", result[0].EntityType)
+	assert.Equal(t, "feedback_comment", string(result[0].Type))
+	assert.Equal(t, "feedback", string(result[0].EntityType))
 	assert.Equal(t, payload.FeedbackID, result[0].EntityID)
 	assert.Equal(t, payload.FeedbackTitle, result[0].Title)
 	assert.Equal(t, "{actor} commented on your feedback", result[0].Message.Template)
@@ -488,7 +488,7 @@ func TestProcessFeedbackStatusUpdated(t *testing.T) {
 	result := rules.ProcessFeedbackStatusUpdated(context.Background(), payload, actorID)
 
 	assert.Len(t, result, 1)
-	assert.Equal(t, "feedback_status_update", result[0].Type)
+	assert.Equal(t, "feedback_status_update", string(result[0].Type))
 	assert.Equal(t, "in progress", result[0].Message.Variables["status"].Value)
 	assert.Empty(t, rules.ProcessFeedbackStatusUpdated(context.Background(), payload, recipientID))
 }
@@ -504,8 +504,8 @@ func TestProcessFeedbackUpdatePublishedUsesRecipientDedupeKey(t *testing.T) {
 	result := rules.ProcessFeedbackUpdatePublished(context.Background(), payload, actorID)
 
 	assert.Len(t, result, 1)
-	assert.Equal(t, "feedback_update_published", result[0].Type)
-	assert.Equal(t, "feedback", result[0].EntityType)
+	assert.Equal(t, "feedback_update_published", string(result[0].Type))
+	assert.Equal(t, "feedback", string(result[0].EntityType))
 	assert.Equal(t, payload.LinkedItemID, result[0].EntityID)
 	assert.Equal(t, "feedback-update:"+payload.PublicationEventID.String()+":"+recipientID.String(), result[0].DedupeKey)
 	assert.Empty(t, rules.ProcessFeedbackUpdatePublished(context.Background(), payload, recipientID))
@@ -523,8 +523,8 @@ func TestProcessFeedbackItemMergedUsesStableRecipientDedupeKey(t *testing.T) {
 	result := rules.ProcessFeedbackItemMerged(context.Background(), payload, actorID)
 
 	assert.Len(t, result, 1)
-	assert.Equal(t, "feedback_item_merged", result[0].Type)
-	assert.Equal(t, "feedback", result[0].EntityType)
+	assert.Equal(t, "feedback_item_merged", string(result[0].Type))
+	assert.Equal(t, "feedback", string(result[0].EntityType))
 	assert.Equal(t, payload.TargetItemID, result[0].EntityID)
 	assert.Equal(t, "feedback-merge:"+payload.MergeEventID.String()+":"+recipientID.String(), result[0].DedupeKey)
 	assert.Equal(t, "{actor} merged feedback into {feedback}", result[0].Message.Template)
@@ -589,8 +589,8 @@ func TestProcessCommentReplied(t *testing.T) {
 			if tt.expectedCount > 0 {
 				notification := notifications[0]
 				assert.Equal(t, tt.expectedRecipient, notification.RecipientID)
-				assert.Equal(t, tt.expectedType, notification.Type)
-				assert.Equal(t, "story", notification.EntityType)
+				assert.Equal(t, tt.expectedType, string(notification.Type))
+				assert.Equal(t, "story", string(notification.EntityType))
 				assert.Equal(t, tt.payload.StoryID, notification.EntityID)
 				assert.Equal(t, tt.payload.StoryTitle, notification.Title)
 				assert.Equal(t, tt.actorID, notification.ActorID)
@@ -654,8 +654,8 @@ func TestProcessUserMentioned(t *testing.T) {
 			if tt.expectedCount > 0 {
 				notification := notifications[0]
 				assert.Equal(t, tt.expectedRecipient, notification.RecipientID)
-				assert.Equal(t, tt.expectedType, notification.Type)
-				assert.Equal(t, "story", notification.EntityType)
+				assert.Equal(t, tt.expectedType, string(notification.Type))
+				assert.Equal(t, "story", string(notification.EntityType))
 				assert.Equal(t, tt.payload.StoryID, notification.EntityID)
 				assert.Equal(t, tt.payload.StoryTitle, notification.Title)
 				assert.Equal(t, tt.actorID, notification.ActorID)

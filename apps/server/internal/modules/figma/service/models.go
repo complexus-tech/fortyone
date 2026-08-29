@@ -1,15 +1,14 @@
 package figma
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"strconv"
 	"time"
 
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	figmadomain "github.com/complexus-tech/projects-api/internal/modules/figma/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	"github.com/complexus-tech/projects-api/internal/platform/integrations"
+	"github.com/complexus-tech/projects-api/internal/platform/webhooks"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 )
 
@@ -24,139 +23,43 @@ type Config struct {
 	RedirectURL  string
 	WebhookURL   string
 	WebsiteURL   string
-	SecretKey    string
+	Credentials  CredentialVault
+	// WebhookPayloadSecret protects exact provider bytes in the shared durable
+	// inbox. It is separate from retained OAuth credentials and provider
+	// passcodes.
+	WebhookPayloadSecret string
+	WebhookGateway       *webhooks.Gateway
+	WebhookInbox         webhooks.Inbox
+	WebhookPayloads      WebhookPayloadOpener
 }
 
-type Token struct {
-	AccessToken  string    `json:"accessToken"`
-	RefreshToken string    `json:"refreshToken"`
-	TokenType    string    `json:"tokenType"`
-	ExpiresAt    time.Time `json:"expiresAt"`
-}
-
-type Connection struct {
-	ID                uuid.UUID `json:"id"`
-	WorkspaceID       uuid.UUID `json:"workspaceId"`
-	FigmaUserID       string    `json:"figmaUserId"`
-	Email             *string   `json:"email"`
-	Handle            *string   `json:"handle"`
-	TokenPayload      string    `json:"-"`
-	Scopes            []string  `json:"scopes"`
-	ExpiresAt         time.Time `json:"expiresAt"`
-	ConnectedByUserID uuid.UUID `json:"connectedByUserId"`
-	IsActive          bool      `json:"isActive"`
-	CreatedAt         time.Time `json:"createdAt"`
-	UpdatedAt         time.Time `json:"updatedAt"`
-}
-
-type OAuthState struct {
-	StateHash     string
-	WorkspaceID   uuid.UUID
-	UserID        uuid.UUID
-	WorkspaceSlug string
-	CodeVerifier  string
-	ExpiresAt     time.Time
-}
-
-type Artifact struct {
-	FileKey      string          `json:"fileKey"`
-	NodeID       *string         `json:"nodeId"`
-	OriginalURL  string          `json:"originalUrl"`
-	CanonicalURL string          `json:"canonicalUrl"`
-	FileName     string          `json:"fileName"`
-	NodeName     *string         `json:"nodeName"`
-	NodeType     *string         `json:"nodeType"`
-	ThumbnailURL *string         `json:"thumbnailUrl"`
-	Version      *string         `json:"version"`
-	LastModified *time.Time      `json:"lastModified"`
-	TextContent  []string        `json:"textContent,omitempty"`
-	Metadata     json.RawMessage `json:"metadata"`
-}
-
-type StoryHandoffStatus struct {
-	StoryID uuid.UUID `json:"storyId" db:"story_id"`
-	Status  string    `json:"status" db:"status"`
-}
-
-type StoryLink struct {
-	ID              uuid.UUID  `json:"id"`
-	WorkspaceID     uuid.UUID  `json:"workspaceId"`
-	StoryID         uuid.UUID  `json:"storyId"`
-	CreatedByUserID uuid.UUID  `json:"createdByUserId"`
-	StoryLinkID     *uuid.UUID `json:"storyLinkId"`
-	Artifact        Artifact   `json:"artifact"`
-	DevStatus       *string    `json:"devStatus"`
-	DevResourceID   *string    `json:"devResourceId"`
-	LastSyncedAt    time.Time  `json:"lastSyncedAt"`
-	UnavailableAt   *time.Time `json:"unavailableAt"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
-}
+type Token = figmadomain.Token
+type Connection = figmadomain.Connection
+type OAuthState = figmadomain.OAuthState
+type Artifact = figmadomain.Artifact
+type StoryHandoffStatus = figmadomain.StoryHandoffStatus
+type StoryLink = figmadomain.StoryLink
 
 type Integration struct {
 	Configured bool        `json:"configured"`
 	Connection *Connection `json:"connection"`
 }
 
-type Webhook struct {
-	ID             uuid.UUID
-	ConnectionID   uuid.UUID
-	WorkspaceID    uuid.UUID
-	FileKey        string
-	EventType      string
-	FigmaWebhookID int64
-	PasscodeHash   string
-	IsActive       bool
-}
-
-type WebhookEvent struct {
-	EventType     string          `json:"event_type"`
-	FileKey       string          `json:"file_key"`
-	FileName      string          `json:"file_name"`
-	NodeID        string          `json:"node_id"`
-	Status        string          `json:"status"`
-	ChangeMessage string          `json:"change_message"`
-	Passcode      string          `json:"passcode"`
-	Timestamp     string          `json:"timestamp"`
-	WebhookID     FlexibleInt64   `json:"webhook_id"`
-	Raw           json.RawMessage `json:"-"`
-}
-
-// FlexibleInt64 accepts the string and numeric webhook IDs Figma has emitted
-// across versions of its webhook payloads.
-type FlexibleInt64 int64
-
-func (value *FlexibleInt64) UnmarshalJSON(data []byte) error {
-	data = bytes.TrimSpace(data)
-	if len(data) == 0 {
-		return errors.New("empty integer")
-	}
-	if data[0] == '"' {
-		var text string
-		if err := json.Unmarshal(data, &text); err != nil {
-			return err
-		}
-		parsed, err := strconv.ParseInt(text, 10, 64)
-		if err != nil {
-			return fmt.Errorf("parse quoted integer: %w", err)
-		}
-		*value = FlexibleInt64(parsed)
-		return nil
-	}
-	parsed, err := strconv.ParseInt(string(data), 10, 64)
-	if err != nil {
-		return fmt.Errorf("parse integer: %w", err)
-	}
-	*value = FlexibleInt64(parsed)
-	return nil
-}
+type Webhook = figmadomain.Webhook
+type WebhookEvent = figmadomain.WebhookEvent
+type FlexibleInt64 = figmadomain.FlexibleInt64
 
 type Repository interface {
 	SaveOAuthState(ctx context.Context, state OAuthState) error
 	ConsumeOAuthState(ctx context.Context, stateHash string, now time.Time) (OAuthState, error)
 	UpsertConnection(ctx context.Context, connection Connection) (Connection, error)
 	GetConnection(ctx context.Context, workspaceID uuid.UUID) (Connection, error)
-	UpdateConnectionToken(ctx context.Context, connectionID uuid.UUID, payload string, expiresAt time.Time) error
+	UpdateConnectionCredential(
+		ctx context.Context,
+		connectionID, installationGeneration uuid.UUID,
+		previousPayload, nextPayload string,
+		expiresAt time.Time,
+	) (bool, error)
 	Disconnect(ctx context.Context, workspaceID uuid.UUID) error
 	ListStoryLinks(ctx context.Context, workspaceID, storyID uuid.UUID) ([]StoryLink, error)
 	ListStoryHandoffStatuses(ctx context.Context, workspaceID uuid.UUID) ([]StoryHandoffStatus, error)
@@ -167,16 +70,78 @@ type Repository interface {
 	DeleteStoryLink(ctx context.Context, workspaceID, linkID uuid.UUID) (StoryLink, error)
 	SaveWebhook(ctx context.Context, webhook Webhook) error
 	GetWebhook(ctx context.Context, figmaWebhookID int64) (Webhook, error)
-	RecordWebhookEvent(ctx context.Context, eventKey string, event WebhookEvent) (bool, error)
+	GetCurrentWebhook(
+		ctx context.Context,
+		connectionID, installationGeneration uuid.UUID,
+		figmaWebhookID int64,
+	) (Webhook, error)
 	FindWebhook(ctx context.Context, connectionID uuid.UUID, fileKey, eventType string) (Webhook, error)
 	ListWebhooks(ctx context.Context, connectionID uuid.UUID) ([]Webhook, error)
 	DeactivateWebhook(ctx context.Context, figmaWebhookID int64) error
+	ListCredentialsForRewrap(
+		ctx context.Context,
+		after *uuid.UUID,
+		limit int32,
+	) ([]figmadomain.Credential, error)
+	RewrapCredential(
+		ctx context.Context,
+		record figmadomain.Credential,
+		nextPayload string,
+	) (bool, error)
+}
+
+// CredentialVault is the narrow shared secret capability used by the Figma
+// adapter. The provider never receives keyring configuration or key material.
+type CredentialVault interface {
+	Seal(binding credentialvault.Context, plaintext []byte) (string, error)
+	Open(binding credentialvault.Context, envelope string) (credentialvault.Secret, error)
+	Rewrap(binding credentialvault.Context, envelope string) (credentialvault.RewrapResult, error)
+	ActiveKeyRef() (credentialvault.KeyRef, error)
+}
+
+type WebhookQueue interface {
+	EnqueueFigmaWebhook(ctx context.Context, payload tasks.FigmaWebhookPayload) error
+}
+
+type WebhookPayloadOpener interface {
+	Open(record webhooks.Record, value string) ([]byte, error)
+}
+
+type WebhookProcessor interface {
+	ProcessWebhook(ctx context.Context, provider integrations.ProviderKey, inboxID uuid.UUID) error
 }
 
 type StoryService interface {
-	Get(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
-	CreateExternal(ctx context.Context, actorID uuid.UUID, story stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
-	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
+	Get(ctx context.Context, id, workspaceID uuid.UUID) (Story, error)
+	CreateExternal(ctx context.Context, actorID uuid.UUID, story NewStory, workspaceID uuid.UUID) (Story, error)
+	RecordActivity(ctx context.Context, activity StoryActivity) error
+}
+
+type Story struct {
+	ID         uuid.UUID
+	SequenceID int
+	TeamCode   string
+	Title      string
+}
+
+type NewStory struct {
+	Title           string
+	Description     *string
+	DescriptionHTML *string
+	TeamID          uuid.UUID
+	StatusID        *uuid.UUID
+	ReporterID      *uuid.UUID
+	Priority        string
+}
+
+type StoryActivity struct {
+	StoryID     uuid.UUID
+	ActorID     uuid.UUID
+	Type        string
+	Field       string
+	Previous    string
+	Current     string
+	WorkspaceID uuid.UUID
 }
 
 type CreateStoryInput struct {

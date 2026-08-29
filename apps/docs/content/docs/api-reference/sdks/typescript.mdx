@@ -1,0 +1,102 @@
+---
+title: TypeScript SDK
+description: Call the FortyOne v1 contract with generated TypeScript types and secure transport helpers.
+icon: FileCode2
+---
+
+The private `@fortyone/sdk` workspace package uses generated
+`openapi-typescript` declarations with `openapi-fetch`. Until a published SDK
+release exists, import it only from a FortyOne repository checkout.
+
+```ts
+import {
+  apiErrorFromResponse,
+  createFortyOneClient,
+  createIdempotencyKey,
+  paginateStories,
+  verifyWebhook,
+  type CreateStoryRequest,
+} from "@fortyone/sdk";
+
+const client = createFortyOneClient({
+  token: process.env.FORTYONE_TOKEN!,
+});
+
+for await (const story of paginateStories(
+  client,
+  process.env.FORTYONE_WORKSPACE_ID!,
+  { limit: 100 },
+)) {
+  console.log(story.id, story.reference);
+}
+
+const workspace = await client.GET("/api/v1/workspaces/{workspaceId}", {
+  params: { path: { workspaceId: process.env.FORTYONE_WORKSPACE_ID! } },
+});
+if (workspace.error !== undefined) {
+  throw apiErrorFromResponse(workspace.response, workspace.error);
+}
+```
+
+## Create a story idempotently
+
+Create one key and persist it with the request before the first attempt. A key
+created during each retry represents a different operation and can create a
+duplicate.
+
+```ts
+const idempotencyKey = createIdempotencyKey();
+const request: CreateStoryRequest = {
+  title: "Investigate latency",
+  teamId: process.env.FORTYONE_TEAM_ID!,
+};
+
+// Durably persist idempotencyKey and request here.
+const created = await client.POST("/api/v1/workspaces/{workspaceId}/stories", {
+  params: {
+    path: { workspaceId: process.env.FORTYONE_WORKSPACE_ID! },
+    header: { "Idempotency-Key": idempotencyKey },
+  },
+  body: request,
+});
+if (created.error !== undefined) {
+  throw apiErrorFromResponse(created.response, created.error);
+}
+console.log(created.data.data.id, created.data.data.reference);
+```
+
+`createIdempotencyKey` uses `crypto.getRandomValues` and returns 64 hexadecimal
+characters. `validateIdempotencyKey` validates a retained key when restoring
+pending work. Keep the SDK version, object property order, and values unchanged
+across attempts: the API compares exact serialized JSON bytes, not decoded JSON
+meaning.
+
+The operation accepts a PAT or service-account key with `stories:write`. Create
+a separate client with the service-account key when reads and writes use
+different least-privilege credentials. The SDK never retries `POST`
+automatically. On a network failure, `idempotency_in_progress`, `429`, or a
+`503` carrying `Retry-After`, your application must retain and reuse the same
+key and request, honor the delay, and apply a bounded retry budget. A `5xx`
+without retry metadata is not an automatic retry signal. See
+[Idempotent writes](../idempotency) for the complete decision table.
+
+Retries are enabled by default with three total attempts. Set `retry: false` to
+disable them or provide bounded retry options. Writes are never retried by the
+helper, including operations that have a server-side idempotency contract.
+
+For a server-side webhook route, read the unmodified bytes once and verify
+before parsing:
+
+```ts
+const body = new Uint8Array(await request.arrayBuffer());
+await verifyWebhook({
+  secret: process.env.FORTYONE_WEBHOOK_SECRET!,
+  body,
+  webhookId: request.headers.get("Webhook-Id") ?? "",
+  webhookTimestamp: request.headers.get("Webhook-Timestamp") ?? "",
+  webhookSignature: request.headers.get("Webhook-Signature") ?? "",
+});
+```
+
+Record and deduplicate `Webhook-Id` durably before returning `2xx`. Do not log
+the token, signing secret, signature, or raw payload.

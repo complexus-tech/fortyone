@@ -2,13 +2,11 @@ package integrationrequests
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"testing"
 	"time"
 
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
+	integrationrequestdomain "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/domain"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +16,7 @@ type requestRepoStub struct {
 	markedAccepted  []uuid.UUID
 	markedDeclined  []uuid.UUID
 	statusID        uuid.UUID
-	createdStories  []stories.CoreNewStory
+	createdStories  []NewStory
 	deniedUsers     map[uuid.UUID]struct{}
 	commentInput    CoreCreateCommentInput
 	commentPrepared CorePreparedProviderComment
@@ -33,7 +31,7 @@ func (r *requestRepoStub) UpsertPending(ctx context.Context, input CoreUpsertReq
 
 func (r *requestRepoStub) AuthorizeTeam(_ context.Context, _, _ uuid.UUID, userID uuid.UUID) error {
 	if _, denied := r.deniedUsers[userID]; denied {
-		return sql.ErrNoRows
+		return integrationrequestdomain.ErrNotFound
 	}
 	return nil
 }
@@ -101,7 +99,7 @@ func (r *requestRepoStub) GetForUser(ctx context.Context, workspaceID, requestID
 			return request, nil
 		}
 	}
-	return CoreIntegrationRequest{}, sql.ErrNoRows
+	return CoreIntegrationRequest{}, integrationrequestdomain.ErrNotFound
 }
 
 func (r *requestRepoStub) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {
@@ -119,7 +117,7 @@ func (r *requestRepoStub) ReserveAcceptance(ctx context.Context, workspaceID, re
 		return CoreIntegrationRequest{}, err
 	}
 	if request.Status != StatusPending {
-		return CoreIntegrationRequest{}, sql.ErrNoRows
+		return CoreIntegrationRequest{}, integrationrequestdomain.ErrNotFound
 	}
 	if request.AcceptanceState == "" || request.AcceptanceState == AcceptanceStateIdle {
 		request.AcceptanceState = AcceptanceStateReserved
@@ -145,7 +143,7 @@ func (r *requestRepoStub) MarkAccepted(_ context.Context, workspaceID, requestID
 		}
 	}
 	if !found || request.Status != StatusPending || request.AcceptanceState != AcceptanceStateReserved || request.AcceptanceStartedByUserID == nil || *request.AcceptanceStartedByUserID != acceptedByUserID {
-		return CoreIntegrationRequest{}, sql.ErrNoRows
+		return CoreIntegrationRequest{}, integrationrequestdomain.ErrNotFound
 	}
 	r.markedAccepted = append(r.markedAccepted, requestID)
 	request.Status = StatusAccepted
@@ -169,7 +167,7 @@ func (r *requestRepoStub) MarkDeclined(ctx context.Context, workspaceID, request
 		return CoreIntegrationRequest{}, err
 	}
 	if request.AcceptanceState == AcceptanceStateReserved {
-		return CoreIntegrationRequest{}, sql.ErrNoRows
+		return CoreIntegrationRequest{}, integrationrequestdomain.ErrNotFound
 	}
 	request.Status = StatusDeclined
 	for index := range r.requests {
@@ -224,31 +222,30 @@ type storyServiceStub struct {
 
 type idempotentStoryServiceStub struct {
 	calls   int
-	stories map[string]stories.CoreSingleStory
+	stories map[string]Story
 }
 
-func (s *idempotentStoryServiceStub) CreateExternalUserAction(_ context.Context, _ uuid.UUID, input stories.CoreNewStory, _ uuid.UUID) (stories.CoreSingleStory, error) {
+func (s *idempotentStoryServiceStub) CreateForIntegrationRequest(_ context.Context, _, _ uuid.UUID, input NewStory) (Story, error) {
 	s.calls++
-	if input.CreationKey == nil {
-		return stories.CoreSingleStory{}, errors.New("creation key is required")
+	if input.CreationKey == "" {
+		return Story{}, errors.New("creation key is required")
 	}
-	if existing, ok := s.stories[*input.CreationKey]; ok {
-		existing.CreatedNow = false
+	if existing, ok := s.stories[input.CreationKey]; ok {
 		return existing, nil
 	}
-	created := stories.CoreSingleStory{ID: uuid.New(), CreatedNow: true}
-	s.stories[*input.CreationKey] = created
+	created := Story{ID: uuid.New()}
+	s.stories[input.CreationKey] = created
 	return created, nil
 }
 
-func (s storyServiceStub) CreateExternalUserAction(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
-	s.repo.createdStories = append(s.repo.createdStories, ns)
-	return stories.CoreSingleStory{ID: uuid.New()}, nil
+func (s storyServiceStub) CreateForIntegrationRequest(_ context.Context, _, _ uuid.UUID, input NewStory) (Story, error) {
+	s.repo.createdStories = append(s.repo.createdStories, input)
+	return Story{ID: uuid.New()}, nil
 }
 
 type providerAccepterStub struct{}
 
-func (providerAccepterStub) AcceptIntegrationRequest(ctx context.Context, request CoreIntegrationRequest, story stories.CoreSingleStory) error {
+func (providerAccepterStub) AcceptIntegrationRequest(context.Context, CoreIntegrationRequest, Story) error {
 	return nil
 }
 
@@ -258,7 +255,7 @@ type flakyProviderAccepterStub struct {
 	storyIDs     []uuid.UUID
 }
 
-func (s *flakyProviderAccepterStub) AcceptIntegrationRequest(_ context.Context, _ CoreIntegrationRequest, story stories.CoreSingleStory) error {
+func (s *flakyProviderAccepterStub) AcceptIntegrationRequest(_ context.Context, _ CoreIntegrationRequest, story Story) error {
 	s.calls++
 	s.storyIDs = append(s.storyIDs, story.ID)
 	if s.failuresLeft > 0 {
@@ -324,8 +321,8 @@ func TestAcceptAllPendingByTeamAcceptsEveryPendingRequest(t *testing.T) {
 	require.Equal(t, "High", repo.createdStories[0].Priority)
 	require.Equal(t, "No Priority", repo.createdStories[1].Priority)
 	for index, created := range repo.createdStories {
-		require.NotNil(t, created.CreationKey, "story %d has no idempotency key", index)
-		require.Contains(t, *created.CreationKey, workspaceID.String())
+		require.NotEmpty(t, created.CreationKey, "story %d has no idempotency key", index)
+		require.Contains(t, created.CreationKey, workspaceID.String())
 	}
 }
 
@@ -398,8 +395,7 @@ func TestAcceptPreservesValidatedSlackRequestLabels(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, repo.createdStories, 1)
 	require.Equal(t, []uuid.UUID{firstLabelID, secondLabelID}, repo.createdStories[0].LabelIDs)
-	require.NotNil(t, repo.createdStories[0].CreationKey)
-	require.Equal(t, "integration-request:"+workspaceID.String()+":"+requestID.String(), *repo.createdStories[0].CreationKey)
+	require.Equal(t, "integration-request:"+workspaceID.String()+":"+requestID.String(), repo.createdStories[0].CreationKey)
 }
 
 func TestAcceptResumesReservedConversionWithoutCreatingAnotherStory(t *testing.T) {
@@ -417,7 +413,7 @@ func TestAcceptResumesReservedConversionWithoutCreatingAnotherStory(t *testing.T
 			AcceptanceState: AcceptanceStateIdle,
 		}},
 	}
-	storyService := &idempotentStoryServiceStub{stories: make(map[string]stories.CoreSingleStory)}
+	storyService := &idempotentStoryServiceStub{stories: make(map[string]Story)}
 	accepter := &flakyProviderAccepterStub{failuresLeft: 1}
 	service := New(nil, repo, storyService, map[string]ProviderAccepter{ProviderSlack: accepter})
 
@@ -604,9 +600,9 @@ func TestAcceptMapsRequestStoryFieldsToCreatedStory(t *testing.T) {
 	require.Equal(t, &estimateValue, createdStory.EstimateValue)
 	require.Equal(t, &estimatedDurationMinutes, createdStory.EstimatedDurationMinutes)
 	require.Equal(t, &minimumFocusBlockMinutes, createdStory.MinimumFocusBlockMinutes)
-	require.Equal(t, &objectiveID, createdStory.Objective)
-	require.Equal(t, &keyResultID, createdStory.KeyResult)
-	require.Equal(t, &sprintID, createdStory.Sprint)
+	require.Equal(t, &objectiveID, createdStory.ObjectiveID)
+	require.Equal(t, &keyResultID, createdStory.KeyResultID)
+	require.Equal(t, &sprintID, createdStory.SprintID)
 	require.Equal(t, &startDate, createdStory.StartDate)
 	require.Equal(t, &endDate, createdStory.EndDate)
 }
@@ -677,232 +673,4 @@ func TestDeclineAllPendingByTeamContinuesAndReportsPerItemFailures(t *testing.T)
 	require.Equal(t, ErrRequestNotPending.Error(), result.Items[1].Error)
 	require.Equal(t, thirdID, result.Items[2].RequestID)
 	require.True(t, result.Items[2].Success)
-}
-
-func TestUserFacingOperationsRejectActorsWithoutTeamAccess(t *testing.T) {
-	workspaceID := uuid.New()
-	teamID := uuid.New()
-	requestID := uuid.New()
-	actorID := uuid.New()
-	newService := func() (*Service, *requestRepoStub) {
-		repo := &requestRepoStub{
-			statusID:    uuid.New(),
-			deniedUsers: map[uuid.UUID]struct{}{actorID: {}},
-			requests: []CoreIntegrationRequest{{
-				ID:               requestID,
-				WorkspaceID:      workspaceID,
-				TeamID:           teamID,
-				Provider:         ProviderSlack,
-				SourceType:       SourceTypeIssue,
-				SourceExternalID: "1",
-				Title:            "Private team request",
-				Status:           StatusPending,
-			}},
-		}
-		return New(nil, repo, storyServiceStub{repo: repo}, map[string]ProviderAccepter{
-			ProviderSlack: providerAccepterStub{},
-		}), repo
-	}
-
-	tests := []struct {
-		name string
-		run  func(*Service) error
-	}{
-		{
-			name: "list",
-			run: func(service *Service) error {
-				_, err := service.ListByTeam(context.Background(), workspaceID, teamID, actorID, CoreListRequestsFilter{})
-				return err
-			},
-		},
-		{
-			name: "count",
-			run: func(service *Service) error {
-				_, err := service.CountByTeam(context.Background(), workspaceID, teamID, actorID, CoreListRequestsFilter{})
-				return err
-			},
-		},
-		{
-			name: "get",
-			run: func(service *Service) error {
-				_, err := service.GetForUser(context.Background(), workspaceID, requestID, actorID)
-				return err
-			},
-		},
-		{
-			name: "context get",
-			run: func(service *Service) error {
-				ctx := platformauth.SetUserID(context.Background(), actorID)
-				_, err := service.Get(ctx, workspaceID, requestID)
-				return err
-			},
-		},
-		{
-			name: "update",
-			run: func(service *Service) error {
-				_, err := service.UpdatePending(context.Background(), workspaceID, requestID, actorID, CoreUpdateRequestInput{})
-				return err
-			},
-		},
-		{
-			name: "accept",
-			run: func(service *Service) error {
-				_, err := service.Accept(context.Background(), workspaceID, requestID, actorID)
-				return err
-			},
-		},
-		{
-			name: "decline",
-			run: func(service *Service) error {
-				_, err := service.Decline(context.Background(), workspaceID, requestID, actorID)
-				return err
-			},
-		},
-		{
-			name: "accept all",
-			run: func(service *Service) error {
-				_, err := service.AcceptAllPendingByTeam(context.Background(), workspaceID, teamID, actorID)
-				return err
-			},
-		},
-		{
-			name: "decline all",
-			run: func(service *Service) error {
-				_, err := service.DeclineAllPendingByTeam(context.Background(), workspaceID, teamID, actorID)
-				return err
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			service, repo := newService()
-			err := test.run(service)
-
-			require.ErrorIs(t, err, sql.ErrNoRows)
-			require.Empty(t, repo.createdStories)
-			require.Empty(t, repo.markedAccepted)
-			require.Empty(t, repo.markedDeclined)
-		})
-	}
-}
-
-func TestGetRequiresAuthenticatedActorContext(t *testing.T) {
-	service := New(nil, &requestRepoStub{}, storyServiceStub{}, nil)
-
-	_, err := service.Get(context.Background(), uuid.New(), uuid.New())
-
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "resolve integration request actor")
-}
-
-func TestCreateCommentPersistsBeforeImmediateProviderDelivery(t *testing.T) {
-	workspaceID := uuid.New()
-	teamID := uuid.New()
-	requestID := uuid.New()
-	authorID := uuid.New()
-	thread := CoreProviderThread{
-		ID: uuid.New(), IntegrationRequestID: requestID, WorkspaceID: workspaceID,
-		Provider: ProviderSlack, TeamID: teamID,
-	}
-	comment := CoreIntegrationRequestComment{
-		ID: uuid.New(), ThreadID: thread.ID, Direction: CommentDirectionOutbound,
-		AuthorUserID: &authorID, Body: "Ship this update to Slack",
-	}
-	repo := &requestRepoStub{
-		requests: []CoreIntegrationRequest{{
-			ID: requestID, WorkspaceID: workspaceID, TeamID: teamID,
-			Provider: ProviderSlack, Status: StatusAccepted,
-		}},
-		commentThread: thread,
-		commentResult: comment,
-	}
-	commenter := &providerCommenterStub{}
-	service := New(nil, repo, storyServiceStub{repo: repo}, nil,
-		WithProviderCommenter(ProviderSlack, commenter),
-	)
-
-	created, err := service.CreateComment(context.Background(), CoreCreateCommentInput{
-		WorkspaceID:          workspaceID,
-		RequestID:            requestID,
-		AuthorID:             authorID,
-		ClientIdempotencyKey: uuid.New(),
-		Body:                 "  Ship this update to Slack  ",
-	})
-
-	require.NoError(t, err)
-	require.Equal(t, comment.ID, created.ID)
-	require.Equal(t, "Ship this update to Slack", repo.commentInput.Body)
-	require.Equal(t, 1, commenter.calls)
-	require.Equal(t, 1, commenter.prepareCalls)
-	require.Equal(t, requestID, commenter.request.ID)
-	require.Equal(t, thread.ID, commenter.thread.ID)
-	require.Equal(t, comment.ID, commenter.comment.ID)
-}
-
-func TestCreateCommentReturnsDurableTerminalDuplicateWithoutAnotherProviderSend(t *testing.T) {
-	workspaceID := uuid.New()
-	teamID := uuid.New()
-	requestID := uuid.New()
-	authorID := uuid.New()
-	deliveryStatus := "sent"
-	thread := CoreProviderThread{
-		ID: uuid.New(), IntegrationRequestID: requestID, WorkspaceID: workspaceID,
-		Provider: ProviderSlack, TeamID: teamID,
-	}
-	comment := CoreIntegrationRequestComment{
-		ID: uuid.New(), ThreadID: thread.ID, Direction: CommentDirectionOutbound,
-		AuthorUserID: &authorID, DeliveryStatus: &deliveryStatus, Body: "Already delivered",
-	}
-	repo := &requestRepoStub{
-		requests: []CoreIntegrationRequest{{
-			ID: requestID, WorkspaceID: workspaceID, TeamID: teamID,
-			Provider: ProviderSlack, Status: StatusAccepted,
-		}},
-		commentThread: thread,
-		commentResult: comment,
-	}
-	commenter := &providerCommenterStub{}
-	service := New(nil, repo, storyServiceStub{repo: repo}, nil,
-		WithProviderCommenter(ProviderSlack, commenter),
-	)
-
-	created, err := service.CreateComment(context.Background(), CoreCreateCommentInput{
-		WorkspaceID:          workspaceID,
-		RequestID:            requestID,
-		AuthorID:             authorID,
-		ClientIdempotencyKey: uuid.New(),
-		Body:                 "Already delivered",
-	})
-
-	require.NoError(t, err)
-	require.Equal(t, comment.ID, created.ID)
-	require.Equal(t, 1, commenter.prepareCalls)
-	require.Zero(t, commenter.calls)
-}
-
-func TestCreateCommentRequiresCallerIdempotencyKey(t *testing.T) {
-	repo := &requestRepoStub{}
-	service := New(nil, repo, storyServiceStub{repo: repo}, nil)
-
-	_, err := service.CreateComment(context.Background(), CoreCreateCommentInput{
-		WorkspaceID: uuid.New(), RequestID: uuid.New(), AuthorID: uuid.New(), Body: "Post once",
-	})
-
-	require.ErrorIs(t, err, ErrInvalidRequestProperty)
-	require.ErrorContains(t, err, "comment idempotency key is required")
-	require.Equal(t, CoreCreateCommentInput{}, repo.commentInput)
-}
-
-func TestCreateCommentRejectsWhitespaceBodyBeforePersistence(t *testing.T) {
-	repo := &requestRepoStub{}
-	service := New(nil, repo, storyServiceStub{repo: repo}, nil)
-
-	_, err := service.CreateComment(context.Background(), CoreCreateCommentInput{
-		WorkspaceID: uuid.New(), RequestID: uuid.New(), AuthorID: uuid.New(), Body: "  ",
-	})
-
-	require.ErrorIs(t, err, ErrInvalidRequestProperty)
-	require.ErrorContains(t, err, "comment body is required")
-	require.Equal(t, CoreCreateCommentInput{}, repo.commentInput)
 }

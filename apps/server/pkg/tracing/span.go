@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+const contextTracerName = "github.com/complexus-tech/projects-api/pkg/tracing"
+
 // StartSpan starts a span with the provided tracer and attributes.
 func StartSpan(ctx context.Context, tracer trace.Tracer, spanName string, keyValues ...attribute.KeyValue) (context.Context, trace.Span) {
 	if tracer == nil {
@@ -27,6 +29,14 @@ func StartSpan(ctx context.Context, tracer trace.Tracer, spanName string, keyVal
 // AddSpan is kept as the primary helper name for span creation in services.
 func AddSpan(ctx context.Context, tracer trace.Tracer, spanName string, keyValues ...attribute.KeyValue) (context.Context, trace.Span) {
 	return StartSpan(ctx, tracer, spanName, keyValues...)
+}
+
+// AddSpanFromContext starts a child span on the same provider as the current
+// span. Service, repository, and worker code use this helper without depending
+// on HTTP request-context implementation details.
+func AddSpanFromContext(ctx context.Context, spanName string, keyValues ...attribute.KeyValue) (context.Context, trace.Span) {
+	provider := trace.SpanFromContext(ctx).TracerProvider()
+	return StartSpan(ctx, provider.Tracer(contextTracerName), spanName, keyValues...)
 }
 
 // StartHTTPSpan starts a standard HTTP handler span and sets request attributes.

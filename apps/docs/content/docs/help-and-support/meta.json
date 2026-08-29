@@ -1,4 +1,5 @@
 {
-  "title": "Help & Support",
+  "title": "Help",
+  "icon": "CircleHelp",
   "pages": ["faq", "contact-us"]
 }

@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { redirect } from "next/navigation";
-import { invitationKeys, workspaceKeys } from "@/constants/keys";
+import { workspaceKeys } from "@/constants/keys";
 import { acceptInvitation } from "../actions/accept-invitation";
+import { invitationKeys } from "../keys";
 import type { Invitation } from "../types";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";

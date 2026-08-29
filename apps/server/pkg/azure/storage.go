@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -12,6 +13,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/safeio"
 )
 
 // AzureStorageService provides operations with Azure Blob Storage.
@@ -68,14 +70,14 @@ func (s *AzureStorageService) UploadFile(ctx context.Context, containerName stri
 }
 
 // DownloadFile implements storage.StorageService.
-func (s *AzureStorageService) DownloadFile(ctx context.Context, containerName string, blobName string) ([]byte, string, error) {
+func (s *AzureStorageService) DownloadFile(ctx context.Context, containerName string, blobName string, maxBytes int64) ([]byte, string, error) {
 	response, err := s.client.DownloadStream(ctx, containerName, blobName, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to download blob: %w", err)
 	}
 	defer response.Body.Close()
 
-	data, err := io.ReadAll(response.Body)
+	data, err := safeio.ReadAll(response.Body, maxBytes)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to read blob: %w", err)
 	}
@@ -106,11 +108,19 @@ func (s *AzureStorageService) GenerateAccessURL(ctx context.Context, containerNa
 // DeleteFile implements storage.StorageService.
 func (s *AzureStorageService) DeleteFile(ctx context.Context, containerName string, blobName string) error {
 	_, err := s.client.DeleteBlob(ctx, containerName, blobName, nil)
+	if isNotFoundResponse(err) {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("failed to delete blob: %w", err)
 	}
 
 	return nil
+}
+
+func isNotFoundResponse(err error) bool {
+	var responseError *azcore.ResponseError
+	return errors.As(err, &responseError) && responseError.StatusCode == http.StatusNotFound
 }
 
 // GetPublicURL implements storage.StorageService.

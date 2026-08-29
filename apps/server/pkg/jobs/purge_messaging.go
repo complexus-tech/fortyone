@@ -2,138 +2,194 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
+	messagingdomain "github.com/complexus-tech/projects-api/internal/modules/messaging/domain"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
+
+const (
+	messagingAliasRetention    = 24 * time.Hour
+	messagingProviderRetention = 30 * 24 * time.Hour
+)
+
+// MessagingDataPurger is the worker-owned persistence capability for bounded,
+// atomic messaging retention batches.
+type MessagingDataPurger interface {
+	PurgeMessagingDataBatch(
+		context.Context,
+		messagingdomain.RetentionCutoffs,
+		int,
+	) (messagingdomain.RetentionPurgeResult, error)
+}
 
 // PurgeMessagingData removes expired nonces, redacts expired mutation
 // proposals, and deletes provider message data after its operational retention
 // window. Durable Maya email threads and messages are preserved so later
 // replies retain the complete conversation; only their expired or revoked
 // reply-address aliases are removed here.
-func PurgeMessagingData(ctx context.Context, db *sqlx.DB, log *logger.Logger) error {
+func PurgeMessagingData(ctx context.Context, store MessagingDataPurger, log *logger.Logger) error {
+	return purgeMessagingDataAt(ctx, store, log, time.Now().UTC())
+}
+
+func purgeMessagingDataAt(
+	ctx context.Context,
+	store MessagingDataPurger,
+	log *logger.Logger,
+	now time.Time,
+) error {
+	if ctx == nil {
+		return errors.New("messaging retention context is required")
+	}
 	ctx, span := web.AddSpan(ctx, "jobs.PurgeMessagingData")
 	defer span.End()
+	if store == nil {
+		return errors.New("messaging retention store is required")
+	}
+	if log == nil {
+		return errors.New("messaging retention logger is required")
+	}
+	if now.IsZero() {
+		return errors.New("messaging retention clock is required")
+	}
+	now = now.UTC()
+	cutoffs := messagingdomain.RetentionCutoffs{
+		ExpiredNoncesBefore:    now.Add(-messagingAliasRetention),
+		ConfirmationsExpiredAt: now,
+		ProviderDataBefore:     now.Add(-messagingProviderRetention),
+		ReplyTokensBefore:      now.Add(-messagingAliasRetention),
+	}
 
-	tx, err := db.BeginTxx(ctx, nil)
+	log.Info(ctx, "Purging expired messaging data")
+	result, err := drainMessagingRetentionBatches(ctx, store, cutoffs, func(batch int, result messagingdomain.RetentionPurgeResult) {
+		recordMessagingRetentionEvents(span, batch, result)
+	})
 	if err != nil {
 		span.RecordError(err)
-		return fmt.Errorf("begin messaging data cleanup: %w", err)
+		return err
 	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
+	log.Info(ctx, "Purged expired messaging data", "rows_affected", result.TotalAffected())
+	return nil
+}
 
-	queries := []struct {
-		name  string
-		query string
-	}{
-		{
-			name: "expired_nonces",
-			query: `
-				DELETE FROM messaging_nonces
-				WHERE expires_at < NOW() - INTERVAL '1 day'
-			`,
-		},
-		{
-			name: "expired_story_mutation_confirmations",
-			query: `
-				UPDATE messaging_story_mutation_confirmations
-				SET status = 'expired',
-				    proposal = NULL,
-				    applied_at = NULL,
-				    expired_at = NOW(),
-				    updated_at = NOW()
-				WHERE expires_at <= NOW()
-				  AND (
-				      status = 'pending'
-				      OR (
-				          status = 'applied'
-				          AND operation = 'create_stories'
-				          AND proposal IS NOT NULL
-				      )
-				  )
-			`,
-		},
-		{
-			name: "old_deliveries",
-			query: `
-				DELETE FROM messaging_outbound_deliveries
-				WHERE created_at < NOW() - INTERVAL '30 days'
-			`,
-		},
-		{
-			name: "old_inbound_events",
-			query: `
-				DELETE FROM messaging_inbound_events
-				WHERE received_at < NOW() - INTERVAL '30 days'
-			`,
-		},
-		{
-			name: "completed_slack_uninstalls",
-			query: `
-				DELETE FROM slack_uninstall_outbox
-				WHERE status = 'completed'
-				  AND completed_at < NOW() - INTERVAL '30 days'
-			`,
-		},
-		{
-			name: "old_messages",
-			query: `
-				DELETE FROM messaging_messages
-				WHERE created_at < NOW() - INTERVAL '30 days'
-			`,
-		},
-		{
-			name: "expired_email_reply_tokens",
-			query: `
-				DELETE FROM messaging_email_reply_tokens
-				WHERE expires_at < NOW() - INTERVAL '1 day'
-				   OR (revoked_at IS NOT NULL AND revoked_at < NOW() - INTERVAL '1 day')
-			`,
-		},
-		{
-			name: "empty_conversations",
-			query: `
-				DELETE FROM messaging_conversations mc
-				WHERE mc.updated_at < NOW() - INTERVAL '30 days'
-				  AND NOT EXISTS (
-					SELECT 1
-					FROM messaging_messages mm
-					WHERE mm.conversation_id = mc.id
-				  )
-			`,
-		},
+func drainMessagingRetentionBatches(
+	ctx context.Context,
+	store MessagingDataPurger,
+	cutoffs messagingdomain.RetentionCutoffs,
+	onCommitted func(int, messagingdomain.RetentionPurgeResult),
+) (messagingdomain.RetentionPurgeResult, error) {
+	if ctx == nil {
+		return messagingdomain.RetentionPurgeResult{}, errors.New("messaging retention context is required")
+	}
+	if store == nil {
+		return messagingdomain.RetentionPurgeResult{}, errors.New("messaging retention store is required")
 	}
 
-	var total int64
-	for _, operation := range queries {
-		result, execErr := tx.ExecContext(ctx, operation.query)
-		if execErr != nil {
-			span.RecordError(execErr)
-			return fmt.Errorf("delete %s: %w", operation.name, execErr)
+	var total messagingdomain.RetentionPurgeResult
+	for batch := 0; batch < maintenancePurgeMaxBatches; batch++ {
+		if err := ctx.Err(); err != nil {
+			return total, fmt.Errorf(
+				"purge messaging retention interrupted after %d rows: %w",
+				total.TotalAffected(),
+				err,
+			)
 		}
-		rows, rowsErr := result.RowsAffected()
-		if rowsErr != nil {
-			span.RecordError(rowsErr)
-			return fmt.Errorf("count deleted %s: %w", operation.name, rowsErr)
+
+		result, err := store.PurgeMessagingDataBatch(ctx, cutoffs, maintenancePurgeBatchSize)
+		if err != nil {
+			return total, fmt.Errorf("purge messaging retention batch: %w", err)
 		}
-		total += rows
+		if err := validateMessagingRetentionResult(result, maintenancePurgeBatchSize); err != nil {
+			return total, err
+		}
+		total = addMessagingRetentionResults(total, result)
+		if onCommitted != nil {
+			onCommitted(batch+1, result)
+		}
+		if !messagingRetentionBatchFull(result, maintenancePurgeBatchSize) {
+			return total, nil
+		}
+	}
+
+	return total, fmt.Errorf(
+		"purge messaging retention after %d rows: %w",
+		total.TotalAffected(),
+		errMaintenanceBacklogRemaining,
+	)
+}
+
+type messagingRetentionCount struct {
+	kind string
+	rows int64
+}
+
+func messagingRetentionCounts(result messagingdomain.RetentionPurgeResult) []messagingRetentionCount {
+	return []messagingRetentionCount{
+		{kind: "expired_nonces", rows: result.NoncesDeleted},
+		{kind: "expired_story_mutation_confirmations", rows: result.ConfirmationsRedacted},
+		{kind: "old_deliveries", rows: result.OutboundDeliveriesDeleted},
+		{kind: "old_inbound_events", rows: result.InboundEventsDeleted},
+		{kind: "completed_slack_uninstalls", rows: result.CompletedSlackUninstallsDeleted},
+		{kind: "old_messages", rows: result.MessagesDeleted},
+		{kind: "expired_email_reply_tokens", rows: result.ReplyTokensDeleted},
+		{kind: "empty_conversations", rows: result.ConversationsDeleted},
+	}
+}
+
+func validateMessagingRetentionResult(result messagingdomain.RetentionPurgeResult, batchSize int) error {
+	for _, count := range messagingRetentionCounts(result) {
+		if count.rows < 0 || count.rows > int64(batchSize) {
+			return fmt.Errorf(
+				"purge messaging retention %s: %w: got %d, want 0..%d",
+				count.kind,
+				errInvalidMaintenancePurgeResult,
+				count.rows,
+				batchSize,
+			)
+		}
+	}
+	return nil
+}
+
+func messagingRetentionBatchFull(result messagingdomain.RetentionPurgeResult, batchSize int) bool {
+	for _, count := range messagingRetentionCounts(result) {
+		if count.rows == int64(batchSize) {
+			return true
+		}
+	}
+	return false
+}
+
+func addMessagingRetentionResults(
+	total messagingdomain.RetentionPurgeResult,
+	result messagingdomain.RetentionPurgeResult,
+) messagingdomain.RetentionPurgeResult {
+	total.NoncesDeleted += result.NoncesDeleted
+	total.ConfirmationsRedacted += result.ConfirmationsRedacted
+	total.OutboundDeliveriesDeleted += result.OutboundDeliveriesDeleted
+	total.InboundEventsDeleted += result.InboundEventsDeleted
+	total.CompletedSlackUninstallsDeleted += result.CompletedSlackUninstallsDeleted
+	total.MessagesDeleted += result.MessagesDeleted
+	total.ReplyTokensDeleted += result.ReplyTokensDeleted
+	total.ConversationsDeleted += result.ConversationsDeleted
+	return total
+}
+
+func recordMessagingRetentionEvents(
+	span trace.Span,
+	batch int,
+	result messagingdomain.RetentionPurgeResult,
+) {
+	for _, count := range messagingRetentionCounts(result) {
 		span.AddEvent("messaging_data_deleted", trace.WithAttributes(
-			attribute.String("kind", operation.name),
-			attribute.Int64("rows_affected", rows),
+			attribute.String("kind", count.kind),
+			attribute.Int("batch", batch),
+			attribute.Int64("rows_affected", count.rows),
 		))
 	}
-
-	if err := tx.Commit(); err != nil {
-		span.RecordError(err)
-		return fmt.Errorf("commit messaging data cleanup: %w", err)
-	}
-	log.Info(ctx, "Purged expired messaging data", "rows_affected", total)
-	return nil
 }

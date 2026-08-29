@@ -3,30 +3,12 @@ package attachments
 import (
 	"time"
 
+	attachmentdomain "github.com/complexus-tech/projects-api/internal/modules/attachments/domain"
 	"github.com/google/uuid"
 )
 
 // CoreAttachment represents an attachment in the core layer
-type CoreAttachment struct {
-	ID          uuid.UUID
-	Filename    string
-	BlobName    string
-	Size        int64
-	MimeType    string
-	UploadedBy  uuid.UUID
-	WorkspaceID uuid.UUID
-	CreatedAt   time.Time
-}
-
-// CoreNewAttachment represents a new attachment
-type CoreNewAttachment struct {
-	Filename    string
-	BlobName    string
-	Size        int64
-	MimeType    string
-	UploadedBy  uuid.UUID
-	WorkspaceID uuid.UUID
-}
+type CoreAttachment = attachmentdomain.Attachment
 
 // FileInfo contains information about a file for responses
 type FileInfo struct {

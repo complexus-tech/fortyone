@@ -57,6 +57,35 @@ func TestInvalidateObjectiveKeysIncludesKeyResultsAndLists(t *testing.T) {
 	}
 }
 
+func TestSecretCacheKeysDoNotContainBearerValues(t *testing.T) {
+	t.Parallel()
+
+	secret := "opaque-secret-that-must-not-enter-redis-keys"
+	keys := []string{
+		AuthSessionCacheKey(secret),
+		AuthGoogleStateCacheKey(secret),
+		AuthMicrosoftStateCacheKey(secret),
+	}
+
+	for _, key := range keys {
+		if strings.Contains(key, secret) {
+			t.Fatalf("cache key exposed its bearer value: %q", key)
+		}
+		if !strings.Contains(key, ":v2:") {
+			t.Fatalf("cache key does not identify its digest scheme: %q", key)
+		}
+	}
+
+	firstSessionKey := AuthSessionCacheKey(secret)
+	secondSessionKey := AuthSessionCacheKey(strings.Clone(secret))
+	if firstSessionKey != secondSessionKey {
+		t.Fatal("session cache key must be deterministic")
+	}
+	if AuthSessionCacheKey(secret) == AuthGoogleStateCacheKey(secret) {
+		t.Fatal("different credential purposes must have separate namespaces")
+	}
+}
+
 func containsCacheKey(keys []string, target string) bool {
 	for _, key := range keys {
 		if key == target {

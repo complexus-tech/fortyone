@@ -93,7 +93,7 @@ func (r *repositoryStub) AuthorizeMedia(_ context.Context, input CoreMediaInput)
 
 func TestCreateDefaultsBlankTitle(t *testing.T) {
 	repo := &repositoryStub{}
-	service := New(nil, repo)
+	service := New(repo)
 	workspaceID, userID := uuid.New(), uuid.New()
 
 	document, err := service.Create(context.Background(), CoreCreateInput{
@@ -110,7 +110,7 @@ func TestCreateDefaultsBlankTitle(t *testing.T) {
 
 func TestListLeavesLimitUnsetWhenNotRequested(t *testing.T) {
 	repo := &repositoryStub{}
-	service := New(nil, repo)
+	service := New(repo)
 
 	_, err := service.List(context.Background(), CoreListInput{
 		WorkspaceID: uuid.New(),
@@ -123,7 +123,7 @@ func TestListLeavesLimitUnsetWhenNotRequested(t *testing.T) {
 
 func TestListCapsRequestedLimit(t *testing.T) {
 	repo := &repositoryStub{}
-	service := New(nil, repo)
+	service := New(repo)
 	requestedLimit := maxListLimit + 1
 
 	_, err := service.List(context.Background(), CoreListInput{
@@ -138,7 +138,7 @@ func TestListCapsRequestedLimit(t *testing.T) {
 }
 
 func TestListRejectsNonPositiveLimit(t *testing.T) {
-	service := New(nil, &repositoryStub{})
+	service := New(&repositoryStub{})
 
 	for _, limit := range []int{0, -1} {
 		limit := limit
@@ -156,7 +156,7 @@ func TestListRejectsNonPositiveLimit(t *testing.T) {
 
 func TestCreateForwardsTemplateContent(t *testing.T) {
 	repo := &repositoryStub{}
-	service := New(nil, repo)
+	service := New(repo)
 	contentHTML := "<h1>Meeting notes</h1><p>Agenda</p>"
 	contentText := "Meeting notes\nAgenda"
 
@@ -178,7 +178,7 @@ func TestCreateForwardsTemplateContent(t *testing.T) {
 
 func TestDuplicateForwardsDocumentIdentity(t *testing.T) {
 	repo := &repositoryStub{}
-	service := New(nil, repo)
+	service := New(repo)
 	workspaceID, userID, documentID := uuid.New(), uuid.New(), uuid.New()
 
 	document, err := service.Duplicate(context.Background(), workspaceID, userID, documentID)
@@ -190,7 +190,7 @@ func TestDuplicateForwardsDocumentIdentity(t *testing.T) {
 
 func TestDeleteRejectsIncompleteIdentity(t *testing.T) {
 	repo := &repositoryStub{}
-	service := New(nil, repo)
+	service := New(repo)
 
 	attachments, err := service.Delete(context.Background(), uuid.New(), uuid.Nil, uuid.New())
 
@@ -201,7 +201,7 @@ func TestDeleteRejectsIncompleteIdentity(t *testing.T) {
 
 func TestSetAccessDeduplicatesMembersAndExcludesOwner(t *testing.T) {
 	repo := &repositoryStub{}
-	service := New(nil, repo)
+	service := New(repo)
 	ownerID, memberID := uuid.New(), uuid.New()
 
 	_, err := service.SetAccess(context.Background(), CoreAccessInput{
@@ -221,7 +221,7 @@ func TestSetAccessDeduplicatesMembersAndExcludesOwner(t *testing.T) {
 }
 
 func TestRelationshipRejectsUnsupportedEntityType(t *testing.T) {
-	service := New(nil, &repositoryStub{})
+	service := New(&repositoryStub{})
 
 	_, err := service.AddRelationship(context.Background(), CoreRelationshipInput{
 		WorkspaceID: uuid.New(),
@@ -236,7 +236,7 @@ func TestRelationshipRejectsUnsupportedEntityType(t *testing.T) {
 
 func TestDocumentMediaRequiresCompleteIdentity(t *testing.T) {
 	repo := &repositoryStub{}
-	service := New(nil, repo)
+	service := New(repo)
 
 	err := service.LinkMedia(context.Background(), CoreMediaInput{
 		WorkspaceID: uuid.New(),
@@ -250,7 +250,7 @@ func TestDocumentMediaRequiresCompleteIdentity(t *testing.T) {
 
 func TestAuthorizeDocumentMediaForwardsAccessIdentity(t *testing.T) {
 	repo := &repositoryStub{}
-	service := New(nil, repo)
+	service := New(repo)
 	input := CoreMediaInput{
 		WorkspaceID:  uuid.New(),
 		UserID:       uuid.New(),

@@ -23,18 +23,18 @@ type AppStatesList struct {
 }
 
 type NewState struct {
-	Name      string    `json:"name" validate:"required"`
+	Name      string    `json:"name" validate:"required,max=255"`
 	Category  string    `json:"category" validate:"required,oneof=backlog unstarted started paused completed cancelled"`
 	Team      uuid.UUID `json:"teamId" validate:"required"`
 	IsDefault bool      `json:"isDefault"`
-	Color     string    `json:"color" validate:"required"`
+	Color     string    `json:"color" validate:"required,max=16"`
 }
 
 type UpdateState struct {
-	Name       *string `json:"name,omitempty"`
+	Name       *string `json:"name,omitempty" validate:"omitempty,max=255"`
 	OrderIndex *int    `json:"orderIndex,omitempty"`
 	IsDefault  *bool   `json:"isDefault,omitempty"`
-	Color      *string `json:"color,omitempty"`
+	Color      *string `json:"color,omitempty" validate:"omitempty,max=16"`
 }
 
 func toAppState(s states.CoreState) AppStatesList {

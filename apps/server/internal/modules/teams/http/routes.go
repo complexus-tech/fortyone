@@ -6,22 +6,22 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB        *sqlx.DB
-	Log       *logger.Logger
-	SecretKey string
-	Cache     *cache.Service
-	Service   *teams.Service
+	Log               *logger.Logger
+	SecretKey         string
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	Service           *teams.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	teamsService := cfg.Service
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	gzip := mid.Gzip(cfg.Log)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
 	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 

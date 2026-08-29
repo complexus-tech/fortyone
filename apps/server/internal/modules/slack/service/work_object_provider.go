@@ -31,40 +31,40 @@ func newSlackWorkObjectPublisher(client *slackWebClient) *slackWorkObjectPublish
 
 func (p *slackWorkObjectPublisher) Unfurl(ctx context.Context, botToken string, request SlackChatUnfurlRequest) error {
 	if p == nil || p.client == nil {
-		return errors.New("Slack Work Object publisher is not configured")
+		return errors.New("slack Work Object publisher is not configured")
 	}
 	if strings.TrimSpace(botToken) == "" {
-		return errors.New("Slack bot token is required")
+		return errors.New("slack bot token is required")
 	}
 	if err := validateSlackUnfurlRequestDestination(request); err != nil {
 		return err
 	}
 	if request.Metadata != nil {
 		if request.UserAuthRequired || request.UserAuthURL != "" || request.UserAuthMessage != "" {
-			return errors.New("Slack unfurl cannot mix Work Object metadata with an authentication prompt")
+			return errors.New("slack unfurl cannot mix Work Object metadata with an authentication prompt")
 		}
 		if err := validateSlackProviderPayload(SlackProviderPayload{Metadata: request.Metadata}); err != nil {
 			return err
 		}
 	} else if !request.UserAuthRequired || !isSafeFortyOneHTTPSURL(request.UserAuthURL) {
-		return errors.New("Slack unfurl requires authorized Work Object metadata or a safe account-link prompt")
+		return errors.New("slack unfurl requires authorized Work Object metadata or a safe account-link prompt")
 	}
 	return p.client.callJSON(ctx, botToken, "chat.unfurl", request, nil)
 }
 
 func (p *slackWorkObjectPublisher) PresentDetails(ctx context.Context, botToken string, request SlackEntityDetailsRequest) error {
 	if p == nil || p.client == nil {
-		return errors.New("Slack Work Object publisher is not configured")
+		return errors.New("slack Work Object publisher is not configured")
 	}
 	if strings.TrimSpace(botToken) == "" || strings.TrimSpace(request.TriggerID) == "" {
-		return errors.New("Slack bot token and entity details trigger are required")
+		return errors.New("slack bot token and entity details trigger are required")
 	}
 	if request.Metadata != nil {
 		if request.UserAuthRequired || request.UserAuthURL != "" || request.Error != nil {
-			return errors.New("Slack entity details cannot mix Work Object metadata with authentication or error responses")
+			return errors.New("slack entity details cannot mix Work Object metadata with authentication or error responses")
 		}
 		if request.Metadata.AppUnfurlURL != "" {
-			return errors.New("Slack entity details metadata cannot include app_unfurl_url")
+			return errors.New("slack entity details metadata cannot include app_unfurl_url")
 		}
 		if err := validateSlackProviderPayload(SlackProviderPayload{
 			Metadata: &SlackWorkObjectMetadata{Entities: []SlackWorkObjectEntity{*request.Metadata}},
@@ -73,10 +73,10 @@ func (p *slackWorkObjectPublisher) PresentDetails(ctx context.Context, botToken 
 		}
 	} else if request.Error != nil {
 		if request.UserAuthRequired || request.UserAuthURL != "" || request.Error.Status != "edit_error" || strings.TrimSpace(request.Error.CustomMessage) == "" {
-			return errors.New("Slack entity details edit error is invalid")
+			return errors.New("slack entity details edit error is invalid")
 		}
 	} else if !request.UserAuthRequired || !isSafeFortyOneHTTPSURL(request.UserAuthURL) {
-		return errors.New("Slack entity details requires authorized Work Object metadata, an edit error, or a safe account-link prompt")
+		return errors.New("slack entity details requires authorized Work Object metadata, an edit error, or a safe account-link prompt")
 	}
 	if err := p.client.callJSON(ctx, botToken, "entity.presentDetails", request, nil); err != nil {
 		// Once the provider call is attempted, the trigger must be treated as
@@ -117,10 +117,10 @@ func (p *slackWorkObjectPublisher) PostCreationReceipt(
 	receipt SlackStoryCreationReceipt,
 ) (string, error) {
 	if p == nil || p.client == nil {
-		return "", errors.New("Slack Work Object publisher is not configured")
+		return "", errors.New("slack Work Object publisher is not configured")
 	}
 	if strings.TrimSpace(botToken) == "" || strings.TrimSpace(channelID) == "" || strings.TrimSpace(receipt.Text) == "" {
-		return "", errors.New("Slack bot token, channel, and receipt text are required")
+		return "", errors.New("slack bot token, channel, and receipt text are required")
 	}
 	if _, err := EncodeSlackProviderPayload(receipt.ProviderPayload); err != nil {
 		return "", err

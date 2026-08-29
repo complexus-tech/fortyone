@@ -52,7 +52,6 @@ func TestAuthoritativeStoryMediaReconciliationRunsForUnchangedHTML(t *testing.T)
 		repo,
 		nil,
 		nil,
-		nil,
 	)
 	orphanedMediaIDs := []uuid.UUID{}
 	err := service.updateWithOptions(
@@ -82,7 +81,6 @@ func TestStoryMediaReconciliationRequiresDescriptionHTML(t *testing.T) {
 	service := New(
 		logger.NewWithText(io.Discard, slog.LevelError, "test"),
 		&storyMediaReconciliationRepo{},
-		nil,
 		nil,
 		nil,
 	)

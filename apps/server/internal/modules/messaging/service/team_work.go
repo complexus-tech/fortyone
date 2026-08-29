@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
-	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
+	teamsdomain "github.com/complexus-tech/projects-api/internal/modules/teams/domain"
+	usersdomain "github.com/complexus-tech/projects-api/internal/modules/users/domain"
 	"github.com/google/uuid"
 )
 
@@ -130,14 +130,14 @@ func (e *FortyOneToolExecutor) listTeamWork(ctx context.Context, scope ToolScope
 		return nil, err
 	}
 	assigneeIDs := make([]uuid.UUID, 0, len(selectedMembers))
-	selectedByID := make(map[uuid.UUID]users.CoreUser, len(selectedMembers))
+	selectedByID := make(map[uuid.UUID]usersdomain.User, len(selectedMembers))
 	for _, member := range selectedMembers {
 		assigneeIDs = append(assigneeIDs, member.ID)
 		selectedByID[member.ID] = member
 	}
 	categories := teamWorkCategories(args.Mode)
 	showSubStories := false
-	filters := stories.CoreStoryFilters{
+	filters := storydomain.StoryFilters{
 		TeamIDs:        []uuid.UUID{teamID},
 		AssigneeIDs:    assigneeIDs,
 		Categories:     append([]string(nil), categories...),
@@ -177,11 +177,11 @@ func (e *FortyOneToolExecutor) listTeamWork(ctx context.Context, scope ToolScope
 		queryGroupBy = teamWorkGroupAssignee
 		storiesPerGroup = perAssigneeLimit
 	}
-	groups, err := e.teamWork.ListGroupedStories(ctx, stories.CoreStoryQuery{
+	groups, err := e.teamWork.ListGroupedStories(ctx, storydomain.StoryQuery{
 		Filters:         filters,
-		GroupBy:         queryGroupBy,
-		OrderBy:         orderBy,
-		OrderDirection:  orderDirection,
+		GroupBy:         storydomain.StoryGroupBy(queryGroupBy),
+		OrderBy:         storydomain.StoryOrderBy(orderBy),
+		OrderDirection:  storydomain.SortDirection(orderDirection),
 		StoriesPerGroup: storiesPerGroup,
 		Page:            1,
 		PageSize:        limit,
@@ -420,16 +420,16 @@ func (e *FortyOneToolExecutor) activeTeamWorkMembers(
 	ctx context.Context,
 	workspaceID, teamID uuid.UUID,
 	limit int,
-) ([]users.CoreUser, map[uuid.UUID]users.CoreUser, bool, error) {
+) ([]usersdomain.User, map[uuid.UUID]usersdomain.User, bool, error) {
 	queryLimit := 0
 	if limit > 0 {
 		queryLimit = limit + 1
 	}
-	items, err := e.users.List(ctx, workspaceID, users.CoreListUsersFilter{TeamID: &teamID, Limit: queryLimit})
+	items, err := e.users.List(ctx, workspaceID, usersdomain.ListUsersFilter{TeamID: &teamID, Limit: queryLimit})
 	if err != nil {
 		return nil, nil, false, fmt.Errorf("list team work members: %w", err)
 	}
-	members := make([]users.CoreUser, 0, len(items))
+	members := make([]usersdomain.User, 0, len(items))
 	seen := make(map[uuid.UUID]struct{}, len(items))
 	for _, member := range items {
 		if member.ID == uuid.Nil || !member.IsActive || member.IsSystem {
@@ -453,7 +453,7 @@ func (e *FortyOneToolExecutor) activeTeamWorkMembers(
 	if truncated {
 		members = members[:limit]
 	}
-	membersByID := make(map[uuid.UUID]users.CoreUser, len(members))
+	membersByID := make(map[uuid.UUID]usersdomain.User, len(members))
 	for _, member := range members {
 		membersByID[member.ID] = member
 	}
@@ -464,18 +464,18 @@ func resolveTeamWorkMembers(
 	assigneeScope string,
 	rawAssigneeIDs []string,
 	actorID uuid.UUID,
-	members []users.CoreUser,
-	membersByID map[uuid.UUID]users.CoreUser,
-) ([]users.CoreUser, error) {
+	members []usersdomain.User,
+	membersByID map[uuid.UUID]usersdomain.User,
+) ([]usersdomain.User, error) {
 	switch assigneeScope {
 	case teamWorkAssigneeMe:
 		member, ok := membersByID[actorID]
 		if !ok {
 			return nil, fmt.Errorf("%w: authenticated user is not an active member of the selected team", ErrTeamNotAccessible)
 		}
-		return []users.CoreUser{member}, nil
+		return []usersdomain.User{member}, nil
 	case teamWorkAssigneeAll:
-		return append([]users.CoreUser(nil), members...), nil
+		return append([]usersdomain.User(nil), members...), nil
 	case teamWorkAssigneeSelected:
 		selectedIDs := make(map[uuid.UUID]struct{}, len(rawAssigneeIDs))
 		for _, rawAssigneeID := range rawAssigneeIDs {
@@ -488,7 +488,7 @@ func resolveTeamWorkMembers(
 			}
 			selectedIDs[assigneeID] = struct{}{}
 		}
-		selected := make([]users.CoreUser, 0, len(selectedIDs))
+		selected := make([]usersdomain.User, 0, len(selectedIDs))
 		for _, member := range members {
 			if _, ok := selectedIDs[member.ID]; ok {
 				selected = append(selected, member)
@@ -500,102 +500,13 @@ func resolveTeamWorkMembers(
 	}
 }
 
-type teamWorkDateRange struct {
-	StartDate       string
-	EndDate         string
-	CompletedAfter  time.Time
-	CompletedBefore time.Time
-	DueAfter        time.Time
-	DueBefore       time.Time
-}
-
-type teamWorkGroupMetadata struct {
-	Total      int
-	Loaded     int
-	TotalExact bool
-	Truncated  bool
-}
-
 type teamWorkCandidate struct {
-	Story      stories.CoreStoryList
+	Story      storydomain.StoryList
 	AssigneeID uuid.UUID
 	Grouped    bool
 }
 
-func teamWorkDateRangeForMode(mode string, startDate, endDate *string, timezone string, now time.Time) (*teamWorkDateRange, error) {
-	if mode != teamWorkModeCompleted && mode != teamWorkModeDue {
-		return nil, nil
-	}
-	location := time.UTC
-	if strings.TrimSpace(timezone) != "" {
-		loaded, err := time.LoadLocation(strings.TrimSpace(timezone))
-		if err != nil {
-			return nil, fmt.Errorf("invalid team work timezone %q: %w", timezone, err)
-		}
-		location = loaded
-	}
-
-	today := now.In(location)
-	start := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, location)
-	end := start
-	if startDate != nil {
-		parsed, err := parseTeamWorkDate(*startDate, location)
-		if err != nil {
-			return nil, err
-		}
-		start = parsed
-		end = parsed
-	}
-	if endDate != nil {
-		parsed, err := parseTeamWorkDate(*endDate, location)
-		if err != nil {
-			return nil, err
-		}
-		end = parsed
-		if startDate == nil {
-			start = parsed
-		}
-	}
-	if end.Before(start) {
-		return nil, fmt.Errorf("%w: end_date must be on or after start_date", ErrInvalidToolArguments)
-	}
-	if end.AddDate(0, 0, -maxCompletedTaskDays).After(start) {
-		return nil, fmt.Errorf("%w: team work date range cannot exceed %d days", ErrInvalidToolArguments, maxCompletedTaskDays)
-	}
-
-	endExclusive := end.AddDate(0, 0, 1)
-	return &teamWorkDateRange{
-		StartDate:       start.Format("2006-01-02"),
-		EndDate:         end.Format("2006-01-02"),
-		CompletedAfter:  start.UTC(),
-		CompletedBefore: endExclusive.Add(-time.Nanosecond).UTC(),
-		DueAfter:        time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC),
-		DueBefore:       time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.UTC),
-	}, nil
-}
-
-func parseTeamWorkDate(value string, location *time.Location) (time.Time, error) {
-	parsed, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(value), location)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("%w: team work dates must use YYYY-MM-DD: %v", ErrInvalidToolArguments, err)
-	}
-	return parsed, nil
-}
-
-func teamWorkCategories(mode string) []string {
-	switch mode {
-	case teamWorkModeInProgress:
-		return []string{"started"}
-	case teamWorkModeCompleted:
-		return []string{"completed"}
-	case teamWorkModeActive, teamWorkModeDue:
-		return activeTeamWorkCategories
-	default:
-		return nil
-	}
-}
-
-func teamWorkStoryMatchesDate(story stories.CoreStoryList, mode string, dateRange *teamWorkDateRange) bool {
+func teamWorkStoryMatchesDate(story storydomain.StoryList, mode string, dateRange *teamWorkDateRange) bool {
 	switch mode {
 	case teamWorkModeCompleted:
 		return dateRange != nil && story.CompletedAt != nil &&
@@ -640,12 +551,12 @@ func sortTeamWorkTasks(tasks []taskResult, mode string) {
 }
 
 func buildTeamWorkResult(
-	team teams.CoreTeam,
+	team teamsdomain.Team,
 	sharedWorkEnabled bool,
 	assigneeScope, mode, groupBy string,
 	dateRange *teamWorkDateRange,
 	limit, perAssigneeLimit int,
-	members []users.CoreUser,
+	members []usersdomain.User,
 	tasks []taskResult,
 	groupMetadata map[uuid.UUID]teamWorkGroupMetadata,
 	total int,
@@ -740,108 +651,4 @@ func buildTeamWorkResult(
 	}
 	result.Truncated = queryTruncated || result.Returned < result.Total
 	return result
-}
-
-func teamWorkToolDefinitions() []ToolDefinition {
-	nullableDate := func(description string) map[string]any {
-		return map[string]any{
-			"type":        []string{"string", "null"},
-			"description": description,
-			"pattern":     "^\\d{4}-\\d{2}-\\d{2}$",
-		}
-	}
-	nullableLimit := func(description string) map[string]any {
-		return map[string]any{
-			"type":        []string{"integer", "null"},
-			"description": description,
-			"minimum":     1,
-			"maximum":     maxToolLimit,
-		}
-	}
-
-	return []ToolDefinition{
-		{
-			Type: "function",
-			Name: toolListTeamWork,
-			Description: "List work currently assigned to the authenticated user, selected active members, or all active members of exactly one authorized team. " +
-				"Cross-assignee requests are limited to server-authorized shared teams and return a structured denied result when shared access is unavailable. Large all-member reports disclose assignee truncation. Completed work is filtered and ordered by completed_at and grouped by the current assignee; it does not identify who moved the task to Done.",
-			Strict: true,
-			Parameters: strictObjectSchema(map[string]any{
-				"team_id": map[string]any{
-					"type":        "string",
-					"description": "One exact team UUID returned by list_teams.",
-				},
-				"assignee_scope": map[string]any{
-					"type":        "string",
-					"description": "Use me for the authenticated user's work, selected for exact member IDs, or all for every active human team member.",
-					"enum":        []string{teamWorkAssigneeMe, teamWorkAssigneeSelected, teamWorkAssigneeAll},
-				},
-				"assignee_ids": map[string]any{
-					"type":        []string{"array", "null"},
-					"description": "Exact member UUIDs returned by list_team_members when assignee_scope is selected; otherwise null.",
-					"items": map[string]any{
-						"type": "string",
-					},
-					"maxItems": maxSelectedAssignees,
-				},
-				"mode": map[string]any{
-					"type":        "string",
-					"description": "in_progress means status category started; active includes backlog, unstarted, started, and paused; completed uses completed_at; due uses end_date and excludes completed work.",
-					"enum":        []string{teamWorkModeInProgress, teamWorkModeActive, teamWorkModeCompleted, teamWorkModeDue},
-				},
-				"start_date": nullableDate("Local start date for completed or due work in YYYY-MM-DD format; null defaults to today or the supplied end_date. Must be null for active and in_progress."),
-				"end_date":   nullableDate("Local end date for completed or due work in YYYY-MM-DD format; null defaults to the supplied start_date or today. Must be null for active and in_progress."),
-				"group_by": map[string]any{
-					"type":        "string",
-					"description": "Use assignee to return per-person groups, or none for one flat task list.",
-					"enum":        []string{teamWorkGroupAssignee, teamWorkGroupNone},
-				},
-				"limit":              nullableLimit("Maximum tasks across the whole response, or null for the default."),
-				"limit_per_assignee": nullableLimit("Maximum tasks in each assignee group, or null for the default. Must be null when group_by is none."),
-			}, []string{
-				"team_id",
-				"assignee_scope",
-				"assignee_ids",
-				"mode",
-				"start_date",
-				"end_date",
-				"group_by",
-				"limit",
-				"limit_per_assignee",
-			}),
-		},
-	}
-}
-
-type teamWorkAssigneeGroup struct {
-	AssigneeID       uuid.UUID    `json:"assignee_id"`
-	AssigneeName     string       `json:"assignee_name"`
-	AssigneeUsername string       `json:"assignee_username"`
-	Total            int          `json:"total"`
-	TotalIsExact     bool         `json:"total_is_exact"`
-	Returned         int          `json:"returned"`
-	Truncated        bool         `json:"truncated"`
-	Tasks            []taskResult `json:"tasks"`
-}
-
-type listTeamWorkResult struct {
-	Team               teamResult              `json:"team"`
-	Access             string                  `json:"access"`
-	AccessReason       string                  `json:"access_reason,omitempty"`
-	AssigneeScope      string                  `json:"assignee_scope"`
-	Mode               string                  `json:"mode"`
-	GroupBy            string                  `json:"group_by"`
-	StartDate          *string                 `json:"start_date,omitempty"`
-	EndDate            *string                 `json:"end_date,omitempty"`
-	Limit              int                     `json:"limit"`
-	LimitPerAssignee   int                     `json:"limit_per_assignee,omitempty"`
-	Total              int                     `json:"total"`
-	TotalIsExact       bool                    `json:"total_is_exact"`
-	Returned           int                     `json:"returned"`
-	Truncated          bool                    `json:"truncated"`
-	AssigneesTruncated bool                    `json:"assignees_truncated"`
-	AssigneeTotal      int                     `json:"assignee_total,omitempty"`
-	AssigneeReturned   int                     `json:"assignee_returned,omitempty"`
-	Tasks              []taskResult            `json:"tasks,omitempty"`
-	Groups             []teamWorkAssigneeGroup `json:"groups,omitempty"`
 }

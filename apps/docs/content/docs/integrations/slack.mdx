@@ -1,158 +1,44 @@
 ---
 title: Slack
-description: Connect Slack to FortyOne, create stories from conversations, ask Maya about work, and understand how access and data handling work.
+description: Turn conversations into work and use Maya without leaving Slack.
+icon: MessageSquare
 ---
 
-import { Step, Steps } from "fumadocs-ui/components/steps";
+The Slack integration connects a Slack workspace to one FortyOne workspace.
+People link their own identities before FortyOne returns private workspace data
+or creates work for them.
 
-## What the Slack integration does
+## What you can do
 
-The FortyOne Slack integration helps your team move between conversation and execution without copying context by hand. After the integration is connected, your team can:
+| Action                  | How it works                                                   |
+| ----------------------- | -------------------------------------------------------------- |
+| Create work             | Use `/fortyone` or the **Create a story** message action       |
+| Ask Maya                | Send a direct message or mention the FortyOne app in a channel |
+| Continue a conversation | Reply in the supported Slack thread                            |
+| Preview a link          | Share a supported FortyOne work or feedback URL                |
 
-- Create a FortyOne story with the `/fortyone` command.
-- Turn an existing Slack message into a story with the **Create a story** message shortcut.
-- Ask Maya about accessible FortyOne work in a direct message or by mentioning the FortyOne app.
-- Continue supported Maya and request conversations in their Slack threads.
-- See permission-aware previews when supported FortyOne story or request links are shared.
+## Connect Slack
 
-FortyOne links each Slack identity to a FortyOne account before returning workspace data or creating work. The integration applies the linked person's existing workspace and team permissions.
+1. A FortyOne workspace administrator opens **Settings → Integrations → Slack**.
+2. Select **Connect Slack**, choose the correct Slack workspace, and approve the
+   installation.
+3. Use **Resync channels** after channel access changes.
+4. Each member follows the private account-link prompt the first time FortyOne
+   needs their identity.
 
-## Before you connect
+Slack never grants additional FortyOne permissions. Every command, Maya answer,
+and preview uses the linked member’s current workspace and team access.
 
-You need:
+## Useful behavior
 
-- Administrator access to the FortyOne workspace.
-- Permission to install apps in the Slack workspace, or help from a Slack administrator who can approve the installation.
-- A FortyOne workspace and Slack workspace that represent the same team.
+- `/fortyone Prepare the launch handoff` opens a prefilled work-item form.
+- A message action keeps a link back to the source conversation.
+- Important Maya changes may require an explicit confirmation before they run.
+- Administrators can add workspace-specific terminology and operating guidance
+  for Maya in Slack settings.
 
-Only a FortyOne workspace administrator can connect or disconnect the shared Slack workspace. Individual members can connect their own Slack identity when FortyOne prompts them.
+## Disconnect
 
-## Connect a Slack workspace
-
-<Steps>
-  <Step>In FortyOne, open **Settings** and select **Integrations**.</Step>
-  <Step>Select **Slack**, then choose **Connect Slack**.</Step>
-  <Step>
-    Review the workspace and permissions shown by Slack. Choose the correct
-    Slack workspace, then approve the installation.
-  </Step>
-  <Step>
-    Return to the Slack integration settings in FortyOne. The connected Slack
-    workspace appears with a **Connected** status.
-  </Step>
-</Steps>
-
-If Slack requires administrator approval, submit the request in Slack and complete the connection after it is approved.
-
-## Connect your personal account
-
-FortyOne must match your Slack identity to the correct FortyOne member before you can create stories, ask Maya about workspace data, or open private story previews.
-
-Use `/fortyone`, message Maya, mention the FortyOne app, or open a supported FortyOne link. If your account is not linked, FortyOne sends you a private connection link. Open it while signed in to FortyOne and confirm the connection. The one-time link expires after 15 minutes; repeat the Slack action to receive a new link if necessary.
-
-The first time you interact with FortyOne in a Slack workspace, the app also sends you one private getting-started message. It explains how to work with Maya, create stories or requests, share previews, and continue conversations in threads. FortyOne does not post this introduction publicly or repeat it on later interactions.
-
-Never forward your personal connection link. It is created for one Slack identity and one FortyOne workspace.
-
-## Create a story with `/fortyone`
-
-Enter `/fortyone` in a Slack conversation. You can optionally add a title after the command:
-
-```text
-/fortyone Prepare the customer onboarding handoff
-```
-
-FortyOne opens a story form in Slack. Depending on the teams and fields available to your linked account, you can set:
-
-- Title and description
-- Team and workflow status
-- Priority and assignee
-- Labels and objective
-
-Submit the form to create the story. FortyOne posts a confirmation with a link to the new work item.
-
-## Create a story from a Slack message
-
-<Steps>
-  <Step>
-    Open the **More actions** menu for the Slack message that contains the
-    request or decision.
-  </Step>
-  <Step>Select **Create a story**.</Step>
-  <Step>
-    Review the title and description prepared from the source message, then
-    choose the appropriate FortyOne team and properties.
-  </Step>
-  <Step>Submit the form to create the story.</Step>
-</Steps>
-
-FortyOne keeps a source link so the story can be traced back to the Slack conversation that created it.
-
-## Ask Maya in Slack
-
-You can message Maya directly or mention the FortyOne app in a channel. Ask for project status, ownership, priorities, blockers, or next steps using the same language you would use in FortyOne.
-
-Examples:
-
-```text
-What is blocking the launch this week?
-```
-
-```text
-@FortyOne summarize the work that still needs product review.
-```
-
-Maya uses your linked FortyOne identity and the Slack conversation surface to determine what it can access. A channel response can establish a supported thread so follow-up replies keep the conversation together. Important proposed changes may require an explicit **Confirm** action before FortyOne applies them.
-
-Workspace administrators can add custom guidance from the Slack integration settings to explain workspace terminology, response style, or operating rules Maya should follow.
-
-## Story and request previews
-
-When someone shares a supported FortyOne story or request link, Slack can show a rich preview with useful work details such as status, priority, owner, or dates.
-
-Before returning the preview, FortyOne checks the viewer's linked account and access to the work item. If the viewer has not linked an account, FortyOne provides a private connection prompt. If the linked account cannot access it, the integration does not reveal its details.
-
-## Data and privacy
-
-FortyOne processes the Slack workspace, channel, user, command, interaction, and message data needed to deliver the feature a person invokes. Unsupported root channel messages, bot messages, edits, and replies in threads that are not connected to FortyOne are rejected before their content enters the durable messaging system.
-
-Accepted Slack payloads and connection credentials are encrypted at rest. Conversation and assistant message content used for short-term thread continuity is retained for up to 30 days. FortyOne does not use Slack API data to train general-purpose artificial intelligence models.
-
-To prevent the private getting-started message from repeating, FortyOne retains a one-way digest of the Slack workspace and user identity, plus the time that identity was first observed, for as long as the FortyOne workspace exists. This receipt does not contain the Slack message, Slack user ID, or Slack workspace ID.
-
-Read the [FortyOne Slack integration page](https://www.fortyone.app/integrations/slack) for a product overview and the [FortyOne Privacy Policy](https://www.fortyone.app/privacy) for the full data, retention, access, and deletion disclosures.
-
-## Disconnect Slack
-
-<Steps>
-  <Step>
-    As a FortyOne workspace administrator, open **Settings**, select
-    **Integrations**, and open **Slack**.
-  </Step>
-  <Step>Open the connected workspace actions menu.</Step>
-  <Step>Select **Disconnect workspace** and confirm.</Step>
-</Steps>
-
-Disconnecting stops slash commands, message actions, Maya responses, and work-item previews for that installation. FortyOne removes the active connection credentials and active connection records. The one-way first-use receipt described above remains so reconnecting the same integration does not repeat the getting-started message, subject to the retention described in the Privacy Policy.
-
-## Troubleshooting
-
-### The Slack workspace is waiting for approval
-
-Your Slack organization controls who may install apps. Ask a Slack administrator to approve FortyOne, then restart or complete the connection from FortyOne settings.
-
-### FortyOne asks me to connect my account
-
-Open the private connection link while signed in to the FortyOne account that belongs to the same workspace. If the link has expired, repeat the Slack command, mention, direct message, or preview action to receive a new one.
-
-### I cannot see a team or project detail
-
-Slack does not grant additional FortyOne access. Confirm that your linked FortyOne account is a member of the required workspace and team. Ask a FortyOne workspace administrator to update your access if needed.
-
-### Maya does not answer in a channel
-
-Confirm that the FortyOne app is installed, your personal account is linked, and the channel is an allowed surface for your workspace. Try a direct message to FortyOne to separate an account-link problem from a channel-access problem.
-
-### I need more help
-
-Contact [FortyOne support](mailto:hello@complexus.tech). You do not need a separate support account to email the team.
+Open the connected workspace menu under **Settings → Integrations → Slack** and
+choose **Disconnect workspace**. Slash commands, message actions, previews, and
+Maya responses stop for that installation.

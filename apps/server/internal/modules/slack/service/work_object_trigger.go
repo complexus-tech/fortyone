@@ -6,10 +6,7 @@ import (
 	"strings"
 	"time"
 
-	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
-	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
 	"github.com/google/uuid"
 )
 
@@ -42,7 +39,7 @@ func (s *Service) requireCurrentSlackInteractionActor(
 func (s *Service) handleSlackEntityDetailsEvent(ctx context.Context, event normalizedSlackEvent) error {
 	installation, err := s.repo.GetSlackWorkspaceByTeamID(ctx, event.TeamID)
 	if err != nil {
-		if slackrepository.IsNotFound(err) {
+		if isSlackRepositoryNotFound(err) {
 			return nil
 		}
 		return err
@@ -52,7 +49,7 @@ func (s *Service) handleSlackEntityDetailsEvent(ctx context.Context, event norma
 
 func (s *Service) processSlackEntityDetailsEvent(
 	ctx context.Context,
-	installation slackrepository.SlackWorkspaceRecord,
+	installation slackdomain.Installation,
 	event normalizedSlackEvent,
 ) error {
 	if event.Kind != slackEventKindEntityDetails || !installation.IsActive || installation.ID == uuid.Nil || installation.WorkspaceID == uuid.Nil {
@@ -130,11 +127,11 @@ func (s *Service) processSlackEntityDetailsEvent(
 
 	storyReader, ok := s.stories.(SlackStoryReader)
 	if !ok {
-		return errors.New("Slack Work Object story reader is not configured")
+		return errors.New("slack Work Object story reader is not configured")
 	}
 	story, err := storyReader.QueryByRef(ctx, workspace.ID, storyLink.StoryReference)
 	if err != nil {
-		if errors.Is(err, stories.ErrNotFound) || errors.Is(err, stories.ErrInvalidStoryReference) || slackrepository.IsNotFound(err) {
+		if errors.Is(err, ErrStoryNotFound) || errors.Is(err, ErrInvalidStoryReference) || isSlackRepositoryNotFound(err) {
 			return nil
 		}
 		return err
@@ -157,7 +154,7 @@ func (s *Service) processSlackEntityDetailsEvent(
 	}
 	repository, ok := s.repo.(slackWorkObjectRepository)
 	if !ok {
-		return errors.New("Slack Work Object repository is not configured")
+		return errors.New("slack Work Object repository is not configured")
 	}
 	input, err := buildSlackStoryWorkObjectInput(ctx, repository, *linkedUserID, event.UserID, storyLink.CanonicalURL, story, true)
 	if err != nil {
@@ -186,8 +183,8 @@ func (s *Service) presentSlackObjectiveEntityDetails(
 	ctx context.Context,
 	publisher *slackWorkObjectPublisher,
 	botToken string,
-	workspace slackrepository.WorkspaceRecord,
-	installation slackrepository.SlackWorkspaceRecord,
+	workspace slackdomain.Workspace,
+	installation slackdomain.Installation,
 	event normalizedSlackEvent,
 	actorID uuid.UUID,
 	link FortyOneObjectiveLink,
@@ -198,11 +195,11 @@ func (s *Service) presentSlackObjectiveEntityDetails(
 	if !validSlackObjectiveExternalRef(link, event.ExternalRef.ID) {
 		return nil
 	}
-	objectiveItems, err := s.objectiveReader.List(ctx, workspace.ID, actorID, map[string]any{"objective_id": link.ObjectiveID})
+	objectiveItems, err := s.objectiveReader.ListByID(ctx, workspace.ID, actorID, link.ObjectiveID)
 	if err != nil {
 		return err
 	}
-	var objective objectives.CoreObjective
+	var objective Objective
 	found := false
 	for _, candidate := range objectiveItems {
 		if candidate.ID == link.ObjectiveID && candidate.Workspace == workspace.ID && candidate.Team == link.TeamID {
@@ -229,7 +226,7 @@ func (s *Service) presentSlackObjectiveEntityDetails(
 	}
 	repository, ok := s.repo.(slackWorkObjectRepository)
 	if !ok {
-		return errors.New("Slack Work Object repository is not configured")
+		return errors.New("slack Work Object repository is not configured")
 	}
 	input, err := buildSlackObjectiveWorkObjectInput(ctx, repository, actorID, event.UserID, link.CanonicalURL, objective)
 	if err != nil {
@@ -252,8 +249,8 @@ func (s *Service) presentSlackSprintEntityDetails(
 	ctx context.Context,
 	publisher *slackWorkObjectPublisher,
 	botToken string,
-	workspace slackrepository.WorkspaceRecord,
-	installation slackrepository.SlackWorkspaceRecord,
+	workspace slackdomain.Workspace,
+	installation slackdomain.Installation,
 	event normalizedSlackEvent,
 	actorID uuid.UUID,
 	link FortyOneSprintLink,
@@ -264,14 +261,14 @@ func (s *Service) presentSlackSprintEntityDetails(
 	if !validSlackSprintExternalRef(link, event.ExternalRef.ID) {
 		return nil
 	}
-	sprintItems, err := s.sprintReader.List(ctx, workspace.ID, actorID, map[string]any{"sprint_id": link.SprintID})
+	sprintItems, err := s.sprintReader.ListByID(ctx, workspace.ID, actorID, link.SprintID)
 	if err != nil {
 		return err
 	}
-	var sprint sprints.CoreSprint
+	var sprint Sprint
 	found := false
 	for _, candidate := range sprintItems {
-		if candidate.ID == link.SprintID && candidate.Workspace == workspace.ID && candidate.Team == link.TeamID {
+		if candidate.ID == link.SprintID && candidate.WorkspaceID == workspace.ID && candidate.TeamID == link.TeamID {
 			sprint = candidate
 			found = true
 			break
@@ -287,7 +284,7 @@ func (s *Service) presentSlackSprintEntityDetails(
 		SlackThreadTS:  event.ThreadTS,
 		SlackUserID:    event.UserID,
 	}
-	if err := s.ensureTeamAvailableForSlackSource(ctx, workspace.ID, actorID, sprint.Team, source); err != nil {
+	if err := s.ensureTeamAvailableForSlackSource(ctx, workspace.ID, actorID, sprint.TeamID, source); err != nil {
 		if errors.Is(err, ErrSlackTeamNotAvailable) {
 			return nil
 		}
@@ -311,15 +308,15 @@ func (s *Service) presentSlackRequestEntityDetails(
 	ctx context.Context,
 	publisher *slackWorkObjectPublisher,
 	botToken string,
-	workspace slackrepository.WorkspaceRecord,
-	installation slackrepository.SlackWorkspaceRecord,
+	workspace slackdomain.Workspace,
+	installation slackdomain.Installation,
 	event normalizedSlackEvent,
 	actorID uuid.UUID,
 	link FortyOneRequestLink,
 ) error {
 	request, err := s.requests.GetForUser(ctx, workspace.ID, link.RequestID, actorID)
 	if err != nil {
-		if slackrepository.IsNotFound(err) {
+		if isSlackRepositoryNotFound(err) {
 			return nil
 		}
 		return err
@@ -342,7 +339,7 @@ func (s *Service) presentSlackRequestEntityDetails(
 	}
 	repository, ok := s.repo.(slackWorkObjectRepository)
 	if !ok {
-		return errors.New("Slack Work Object repository is not configured")
+		return errors.New("slack Work Object repository is not configured")
 	}
 	input, err := buildSlackRequestWorkObjectInput(ctx, repository, actorID, event.UserID, link.CanonicalURL, request)
 	if err != nil {

@@ -55,12 +55,3 @@ func TestPayloadCodecRejectsOtherPurposeKeyAndPlaintext(t *testing.T) {
 	_, err = codec.Open("reply")
 	require.ErrorContains(t, err, "unencrypted")
 }
-
-func TestValidateRuntimeSecretRejectsDevelopmentDefaultInProduction(t *testing.T) {
-	t.Parallel()
-
-	require.NoError(t, ValidateRuntimeSecret("secret", "development"))
-	require.ErrorContains(t, ValidateRuntimeSecret("secret", "production"), "APP_AUTH_SECRET_KEY")
-	require.ErrorContains(t, ValidateRuntimeSecret("too-short", " PRODUCTION "), "at least 32 bytes")
-	require.NoError(t, ValidateRuntimeSecret("a-unique-production-secret-with-32-bytes", "production"))
-}

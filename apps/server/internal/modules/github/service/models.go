@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
-	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	githubshared "github.com/complexus-tech/projects-api/internal/modules/github/shared"
-	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/authorization"
+	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	"github.com/complexus-tech/projects-api/internal/platform/webhooks"
 	"github.com/google/uuid"
 )
 
@@ -43,6 +44,57 @@ type CoreTeamGitHubSettings = githubshared.CoreTeamGitHubSettings
 type CoreWorkflowRuleInput = githubshared.CoreWorkflowRuleInput
 type CoreUpdateTeamGitHubSettings = githubshared.CoreUpdateTeamGitHubSettings
 
+// StoryActivity and NewStoryComment are the caller-owned contracts used by
+// GitHub workflows. Bootstrap adapters translate them into the stories
+// module's use-case commands.
+type StoryActivity struct {
+	StoryID      uuid.UUID
+	UserID       uuid.UUID
+	Type         string
+	Field        string
+	CurrentValue string
+	OldValue     any
+	NewValue     any
+	Reason       *string
+	WorkspaceID  uuid.UUID
+}
+
+type NewStoryComment struct {
+	StoryID  uuid.UUID
+	Parent   *uuid.UUID
+	UserID   uuid.UUID
+	Comment  string
+	Mentions []uuid.UUID
+}
+
+// IntegrationRequest is the GitHub-owned projection needed to accept or write
+// back to a GitHub issue. It intentionally omits unrelated request fields.
+type IntegrationRequest struct {
+	WorkspaceID      uuid.UUID
+	Provider         string
+	SourceType       string
+	SourceExternalID string
+	SourceNumber     *int
+	SourceURL        *string
+	Title            string
+	Metadata         map[string]any
+}
+
+type UpsertIntegrationRequestInput struct {
+	WorkspaceID      uuid.UUID
+	TeamID           uuid.UUID
+	Provider         string
+	SourceType       string
+	SourceExternalID string
+	SourceNumber     *int
+	SourceURL        *string
+	Title            string
+	Description      *string
+	Priority         string
+	Metadata         map[string]any
+	CreatedByUserID  *uuid.UUID
+}
+
 type CoreStorySyncInput struct {
 	StoryID     uuid.UUID
 	WorkspaceID uuid.UUID
@@ -53,18 +105,15 @@ type CoreStorySyncInput struct {
 }
 
 type StoryService interface {
-	Get(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID) (stories.CoreSingleStory, error)
-	CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
-	UpdateExternal(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error
+	Get(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (storydomain.Story, error)
 	UpdateExternalWithReason(ctx context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error
-	RecordActivity(ctx context.Context, activity stories.CoreActivity) error
-	CreateComment(ctx context.Context, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)
-	CreateCommentExternal(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID, cnc stories.CoreNewComment) (comments.CoreComment, error)
+	RecordActivity(ctx context.Context, activity StoryActivity) error
+	CreateCommentExternal(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID, comment NewStoryComment) (storydomain.Comment, error)
 }
 
 type RequestStore interface {
-	UpsertPending(ctx context.Context, input integrationrequests.CoreUpsertRequestInput) (integrationrequests.CoreIntegrationRequest, error)
-	Get(ctx context.Context, workspaceID, requestID uuid.UUID) (integrationrequests.CoreIntegrationRequest, error)
+	UpsertPending(ctx context.Context, input UpsertIntegrationRequestInput) (IntegrationRequest, error)
+	Get(ctx context.Context, workspaceID, requestID uuid.UUID) (IntegrationRequest, error)
 }
 
 // AvatarResolver resolves stored avatar blob names to accessible URLs.
@@ -72,15 +121,42 @@ type AvatarResolver interface {
 	ResolveProfileImageURL(ctx context.Context, avatar string, expiry time.Duration) (string, error)
 }
 
+// WorkspaceRoleReader provides an authoritative, workspace-scoped membership
+// lookup for privileged integration operations.
+type WorkspaceRoleReader interface {
+	GetWorkspaceRole(ctx context.Context, workspaceID, actorID uuid.UUID) (authorization.WorkspaceRole, error)
+}
+
+// OAuthStateStore is the shared, replica-safe cache capability used for
+// short-lived GitHub callback state. Implementations must make Take atomic.
+type OAuthStateStore interface {
+	Set(ctx context.Context, key string, value any, ttl time.Duration) error
+	Take(ctx context.Context, key string, destination any) error
+}
+
+// CredentialVault is the narrow recoverable-secret capability consumed by the
+// GitHub adapter. Provider SDK types and key material never cross this port.
+type CredentialVault interface {
+	Seal(binding credentialvault.Context, plaintext []byte) (string, error)
+	Open(binding credentialvault.Context, envelope string) (credentialvault.Secret, error)
+	Rewrap(binding credentialvault.Context, envelope string) (credentialvault.RewrapResult, error)
+	ActiveKeyRef() (credentialvault.KeyRef, error)
+}
+
 type Config struct {
-	AppID            int64
-	AppSlug          string
-	ClientID         string
-	ClientSecret     string
-	PrivateKeyBase64 string
-	RedirectURL      string
-	WebhookSecret    string
-	WebsiteURL       string
-	SecretKey        string
-	GitHubUserID     uuid.UUID
+	AppID                int64
+	AppSlug              string
+	ClientID             string
+	ClientSecret         string
+	PrivateKeyBase64     string
+	RedirectURL          string
+	WebhookSecret        string
+	WebsiteURL           string
+	WebhookPayloadSecret string
+	GitHubUserID         uuid.UUID
+	CredentialVault      CredentialVault
+	OAuthStateStore      OAuthStateStore
+	WebhookGateway       *webhooks.Gateway
+	WebhookInbox         webhooks.Inbox
+	WebhookPayloads      WebhookPayloadOpener
 }

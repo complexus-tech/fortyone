@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Box, Button, Text } from "ui";
 import { JoinWorkspace } from "@/modules/onboarding/join";
-import { verifyInvitation } from "@/lib/queries/verify-invitation";
+import { verifyInvitation } from "@/modules/invitations/queries/verify-invitation";
 import { Logo } from "@/components/ui";
 
 export const metadata: Metadata = {

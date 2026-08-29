@@ -4,29 +4,31 @@ import (
 	"context"
 	"errors"
 
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
 	"github.com/google/uuid"
 )
 
 type agentSettingsRepository interface {
-	GetAgentSettings(ctx context.Context, workspaceID uuid.UUID) (slackrepository.AgentSettingsRecord, error)
-	UpsertAgentSettings(ctx context.Context, workspaceID uuid.UUID, input slackrepository.AgentSettingsInput) (slackrepository.AgentSettingsRecord, error)
-}
-
-type agentSettingsReader interface {
-	GetAgentSettings(ctx context.Context, workspaceID uuid.UUID) (slackrepository.AgentSettingsRecord, error)
+	GetAgentSettingsForAdmin(ctx context.Context, query slackdomain.WorkspaceActorQuery) (slackdomain.AgentSettings, error)
+	UpsertAgentSettingsForAdmin(ctx context.Context, command slackdomain.UpdateAgentSettingsCommand) (slackdomain.AgentSettings, error)
 }
 
 type CoreSlackAgentSettings struct {
 	Guidance string
 }
 
-func (s *Service) GetAgentSettings(ctx context.Context, workspaceID uuid.UUID) (CoreSlackAgentSettings, error) {
-	repository, ok := s.repo.(agentSettingsReader)
-	if !ok {
-		return CoreSlackAgentSettings{}, errors.New("Slack agent settings repository is not configured")
+func (s *Service) GetAgentSettings(ctx context.Context, workspaceID, actorID uuid.UUID) (CoreSlackAgentSettings, error) {
+	if err := s.requireWorkspaceAdmin(ctx, workspaceID, actorID); err != nil {
+		return CoreSlackAgentSettings{}, err
 	}
-	record, err := repository.GetAgentSettings(ctx, workspaceID)
+	repository, ok := s.repo.(agentSettingsRepository)
+	if !ok {
+		return CoreSlackAgentSettings{}, errors.New("slack agent settings repository is not configured")
+	}
+	record, err := repository.GetAgentSettingsForAdmin(ctx, slackdomain.WorkspaceActorQuery{
+		WorkspaceID: workspaceID,
+		ActorID:     actorID,
+	})
 	if err != nil {
 		return CoreSlackAgentSettings{}, err
 	}
@@ -35,15 +37,21 @@ func (s *Service) GetAgentSettings(ctx context.Context, workspaceID uuid.UUID) (
 
 func (s *Service) UpdateAgentSettings(
 	ctx context.Context,
-	workspaceID uuid.UUID,
+	workspaceID, actorID uuid.UUID,
 	input CoreSlackAgentSettings,
 ) (CoreSlackAgentSettings, error) {
+	if err := s.requireWorkspaceAdmin(ctx, workspaceID, actorID); err != nil {
+		return CoreSlackAgentSettings{}, err
+	}
 	repository, ok := s.repo.(agentSettingsRepository)
 	if !ok {
-		return CoreSlackAgentSettings{}, errors.New("Slack agent settings repository is not configured")
+		return CoreSlackAgentSettings{}, errors.New("slack agent settings repository is not configured")
 	}
-	record, err := repository.UpsertAgentSettings(ctx, workspaceID, slackrepository.AgentSettingsInput{
-		Guidance: input.Guidance,
+	record, err := repository.UpsertAgentSettingsForAdmin(ctx, slackdomain.UpdateAgentSettingsCommand{
+		WorkspaceID: workspaceID,
+		ActorID:     actorID,
+		Guidance:    input.Guidance,
+		Now:         s.clock.Now().UTC(),
 	})
 	if err != nil {
 		return CoreSlackAgentSettings{}, err
@@ -51,7 +59,7 @@ func (s *Service) UpdateAgentSettings(
 	return toCoreSlackAgentSettings(record), nil
 }
 
-func toCoreSlackAgentSettings(record slackrepository.AgentSettingsRecord) CoreSlackAgentSettings {
+func toCoreSlackAgentSettings(record slackdomain.AgentSettings) CoreSlackAgentSettings {
 	return CoreSlackAgentSettings{
 		Guidance: record.Guidance,
 	}

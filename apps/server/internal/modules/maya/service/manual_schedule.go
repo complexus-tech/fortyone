@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/domain"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/google/uuid"
 )
 
@@ -50,7 +50,7 @@ func (s *Service) ManuallyScheduleStory(ctx context.Context, input ManualSchedul
 	if _, err := time.LoadLocation(input.Timezone); err != nil {
 		return calendar.CoreScheduleBlock{}, fmt.Errorf("%w: timezone is invalid", ErrInvalidPlanInput)
 	}
-	now := time.Now().UTC()
+	now := s.clock.Now().UTC()
 	if input.StartAt.Before(now.Add(-5*time.Minute)) || input.StartAt.After(now.Add(90*24*time.Hour)) {
 		return calendar.CoreScheduleBlock{}, fmt.Errorf("%w: start time must be within the next 90 days", ErrInvalidPlanInput)
 	}
@@ -100,15 +100,15 @@ func (s *Service) ManuallyScheduleStory(ctx context.Context, input ManualSchedul
 		}
 		remainingMinutes := *story.EstimatedDurationMinutes - scheduledMinutes
 		if remainingMinutes <= 0 {
-			return stories.ErrStoryChanged
+			return storydomain.ErrStoryChanged
 		}
 		endAt := input.StartAt.UTC().Add(time.Duration(remainingMinutes) * time.Minute)
 		if story.AutoSchedulingLocked && exactManualScheduleExists(existingBlocks, input.StartAt.UTC(), endAt) {
 			scheduledBlock = existingBlocks[0]
 			return nil
 		}
-		if story.AutoSchedulingStatus != stories.AutoSchedulingStatusCannotFit {
-			return stories.ErrStoryChanged
+		if story.AutoSchedulingStatus != storydomain.AutoSchedulingStatusCannotFit {
+			return storydomain.ErrStoryChanged
 		}
 		schedulable, eligibilityErr := scheduleRepo.StoryIsSchedulableForUser(ctx, input.WorkspaceID, input.StoryID, input.UserID)
 		if eligibilityErr != nil {
@@ -149,7 +149,7 @@ func (s *Service) ManuallyScheduleStory(ctx context.Context, input ManualSchedul
 			existingBlocks,
 			segments,
 			input.Timezone,
-			stories.AutoSchedulingStatusLocked,
+			storydomain.AutoSchedulingStatusLocked,
 			manualScheduleReason,
 		)
 		if updateErr := s.stories.UpdateAutomationStateIfUnchanged(
@@ -158,7 +158,7 @@ func (s *Service) ManuallyScheduleStory(ctx context.Context, input ManualSchedul
 			story.ID,
 			story.Workspace,
 			story.UpdatedAt,
-			stories.AutoSchedulingStatusLocked,
+			storydomain.AutoSchedulingStatusLocked,
 			&reason,
 			&locked,
 			transition,
@@ -218,8 +218,8 @@ func (s *Service) validateScheduleIssueOwner(ctx context.Context, workspaceID, s
 	if story.Assignee == nil || *story.Assignee != userID || !story.AutoSchedulingEnabled {
 		return fmt.Errorf("%w: the story is not assigned to this user for auto-scheduling", ErrInvalidPlanInput)
 	}
-	if story.AutoSchedulingStatus != stories.AutoSchedulingStatusCannotFit {
-		return stories.ErrStoryChanged
+	if story.AutoSchedulingStatus != storydomain.AutoSchedulingStatusCannotFit {
+		return storydomain.ErrStoryChanged
 	}
 	return nil
 }

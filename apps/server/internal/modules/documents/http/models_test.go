@@ -3,6 +3,7 @@ package documentshttp
 import (
 	"encoding/json"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
@@ -77,6 +78,10 @@ func TestDocumentListLimit(t *testing.T) {
 		{name: "zero", query: "?limit=0", wantErr: true},
 		{name: "negative", query: "?limit=-1", wantErr: true},
 		{name: "not a number", query: "?limit=recent", wantErr: true},
+		{name: "above maximum", query: "?limit=101", wantErr: true},
+		{name: "repeated", query: "?limit=10&limit=12", wantErr: true},
+		{name: "blank", query: "?limit=", wantErr: true},
+		{name: "overflow", query: "?limit=999999999999999999999999", wantErr: true},
 	}
 
 	for _, test := range tests {
@@ -102,6 +107,37 @@ func TestDocumentListLimit(t *testing.T) {
 			}
 			if got == nil || *got != *test.want {
 				t.Fatalf("expected limit %d, got %v", *test.want, got)
+			}
+		})
+	}
+}
+
+func TestDocumentListQueryIsBoundedAndUnambiguous(t *testing.T) {
+	t.Parallel()
+
+	t.Run("trims values", func(t *testing.T) {
+		t.Parallel()
+		request := httptest.NewRequest("GET", "/documents?search=%20roadmap%20&scope=%20mine%20&limit=20", nil)
+		query, err := documentListQuery(request)
+		if err != nil {
+			t.Fatalf("parse document query: %v", err)
+		}
+		if query.search != "roadmap" || query.scope != "mine" || query.limit == nil || *query.limit != 20 {
+			t.Fatalf("unexpected document query: %#v", query)
+		}
+	})
+
+	for name, path := range map[string]string{
+		"repeated search":  "/documents?search=one&search=two",
+		"repeated scope":   "/documents?scope=mine&scope=all",
+		"oversized search": "/documents?search=" + strings.Repeat("x", documentSearchMaximumBytes+1),
+	} {
+		name, path := name, path
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			request := httptest.NewRequest("GET", path, nil)
+			if _, err := documentListQuery(request); err == nil {
+				t.Fatal("expected an invalid document query")
 			}
 		})
 	}

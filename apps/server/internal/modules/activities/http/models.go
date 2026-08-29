@@ -30,10 +30,6 @@ type AppUserDetails struct {
 	IsActive  bool      `json:"isActive"`
 }
 
-type AppFilters struct {
-	Limit string `json:"limit"`
-}
-
 func toAppActivity(a activities.CoreActivity) AppActivity {
 	return AppActivity{
 		ID:           a.ID,

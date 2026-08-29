@@ -43,7 +43,6 @@ func newStrategyLinkService(repo Repository) *Service {
 		repo,
 		nil,
 		nil,
-		nil,
 	)
 }
 

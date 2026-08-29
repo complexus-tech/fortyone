@@ -6,88 +6,66 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
-func TestBulkDeletionAuthorizesAllTargetsInsideTransaction(t *testing.T) {
-	data, err := os.ReadFile("commands.go")
-	if err != nil {
-		t.Fatalf("read commands.go: %v", err)
-	}
-	source := string(data)
+func TestSecondaryMutationQueriesLockAndAuthorizeEveryTenantTarget(t *testing.T) {
+	t.Parallel()
+	data, err := os.ReadFile("queries/secondary_mutations.sql")
+	require.NoError(t, err)
+	queries := string(data)
 
-	for _, contract := range []struct {
-		name  string
-		start string
-		end   string
-	}{
-		{name: "soft", start: "func (r *repo) BulkDelete(", end: "// HardBulkDelete"},
-		{name: "hard", start: "func (r *repo) HardBulkDelete(", end: "type bulkDeleteTarget struct"},
+	for _, contract := range []string{
+		"story.id = ANY(CAST(sqlc.arg(story_ids) AS uuid[]))",
+		"story.workspace_id = sqlc.arg(workspace_id)",
+		"ORDER BY story.id",
+		"FOR UPDATE",
+		"workspace_member.workspace_id = target.workspace_id",
+		"team_member.team_id = target.team_id",
+		"credential.revoked_at IS NULL",
+		"credential.expires_at > sqlc.arg(now)",
+		"credential_scope.scope = 'stories:write'",
+		"restriction.team_id = target.team_id",
 	} {
-		t.Run(contract.name, func(t *testing.T) {
-			body := sourceBetweenMarkers(t, source, contract.start, contract.end)
-			beginIndex := strings.Index(body, "BeginTxx")
-			authorizeIndex := strings.Index(body, "authorizeBulkStoryDeletion")
-			mutationIndex := strings.Index(body, "UPDATE stories")
-			if contract.name == "hard" {
-				mutationIndex = strings.Index(body, "DELETE FROM stories")
-			}
-			commitIndex := strings.Index(body, "tx.Commit()")
-			if beginIndex < 0 || authorizeIndex <= beginIndex || mutationIndex <= authorizeIndex || commitIndex <= mutationIndex {
-				t.Fatalf("%s deletion must authorize before mutating and commit one transaction", contract.name)
-			}
-		})
-	}
-
-	authorizationBody := sourceBetweenMarkers(t, source, "func authorizeBulkStoryDeletion(", "func uniqueUUIDs(")
-	for _, part := range []string{"workspace_id = :workspace_id", "FOR UPDATE", "len(targets) != len(storyIDs)", "target.ReporterID", "stories.ErrDeleteForbidden"} {
-		if !strings.Contains(authorizationBody, part) {
-			t.Fatalf("bulk authorization is missing %q", part)
-		}
+		require.Contains(t, queries, contract)
 	}
 }
 
-func TestOrderUUIDSubsetPreservesRequestOrder(t *testing.T) {
+func TestSecondaryDeleteQueriesPreserveDesiredStateAndHardDeleteScope(t *testing.T) {
+	t.Parallel()
+	data, err := os.ReadFile("queries/secondary_mutations.sql")
+	require.NoError(t, err)
+	queries := string(data)
+	interactiveData, err := os.ReadFile("queries/interactive_hard_delete.sql")
+	require.NoError(t, err)
+	interactiveQueries := string(interactiveData)
+	retentionData, err := os.ReadFile("queries/retention.sql")
+	require.NoError(t, err)
+	retentionQueries := string(retentionData)
+
+	require.Contains(t, queries, "story.deleted_at IS NULL")
+	require.Contains(t, queries, "-- name: HardDeleteSecondaryStories :many")
+	require.Contains(t, interactiveQueries, "story.workspace_id = sqlc.arg(workspace_id)")
+	require.Contains(t, interactiveQueries, "attachment.workspace_id = story.workspace_id")
+	require.Contains(t, retentionQueries, "document_relation.attachment_id = attachment.attachment_id")
+}
+
+func TestOrderSecondarySubsetPreservesRequestOrder(t *testing.T) {
+	t.Parallel()
 	first := uuid.New()
 	second := uuid.New()
 	third := uuid.New()
-	got := orderUUIDSubset([]uuid.UUID{first, second, third}, []uuid.UUID{third, first})
-	if len(got) != 2 || got[0] != first || got[1] != third {
-		t.Fatalf("ordered subset = %v, want [%s %s]", got, first, third)
-	}
+	got := orderSecondarySubset([]uuid.UUID{first, second, third}, []uuid.UUID{third, first})
+	require.Equal(t, []uuid.UUID{first, third}, got)
 }
 
-func TestSoftBulkDeleteReturnsEveryAuthorizedTargetAfterIdempotentRetry(t *testing.T) {
-	data, err := os.ReadFile("commands.go")
-	if err != nil {
-		t.Fatalf("read commands.go: %v", err)
-	}
-	body := sourceBetweenMarkers(t, string(data), "func (r *repo) BulkDelete(", "// HardBulkDelete")
-
-	for _, part := range []string{
-		"authorizeBulkStoryDeletion",
-		"AND deleted_at IS NULL",
-		"return append([]uuid.UUID(nil), targetIDs...), nil",
-	} {
-		if !strings.Contains(body, part) {
-			t.Fatalf("soft deletion retry contract is missing %q", part)
-		}
-	}
-}
-
-func TestSingleDeleteReusesAuthorizedDesiredStateMutation(t *testing.T) {
-	data, err := os.ReadFile("commands.go")
-	if err != nil {
-		t.Fatalf("read commands.go: %v", err)
-	}
-	body := sourceBetweenMarkers(t, string(data), "func (r *repo) Delete(", "func (r *repo) BulkDelete(")
-
-	for _, part := range []string{
-		"r.BulkDelete(ctx, []uuid.UUID{id}, workspaceID, authorization)",
-		"len(deletedIDs) != 1",
-		"deletedIDs[0] != id",
-	} {
-		if !strings.Contains(body, part) {
-			t.Fatalf("single deletion authorization contract is missing %q", part)
-		}
-	}
+func TestSecondaryMutationSourceInsertsEventsAfterStateChange(t *testing.T) {
+	t.Parallel()
+	data, err := os.ReadFile("secondary_mutations.go")
+	require.NoError(t, err)
+	source := string(data)
+	mutation := strings.Index(source, "applySecondaryLifecycleState(")
+	event := strings.Index(source[mutation:], "insertMutationEvent(")
+	require.Greater(t, mutation, -1)
+	require.Greater(t, event, 0)
 }

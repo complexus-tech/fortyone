@@ -15,7 +15,9 @@ import (
 // gzipWriter is a simple wrapper that writes to a gzip writer
 type gzipWriter struct {
 	http.ResponseWriter
-	gz *gzip.Writer
+	gz  *gzip.Writer
+	ctx context.Context
+	log *logger.Logger
 }
 
 // Write compresses data before writing to the response
@@ -25,7 +27,9 @@ func (gw *gzipWriter) Write(b []byte) (int, error) {
 
 // Flush implements the http.Flusher interface
 func (gw *gzipWriter) Flush() {
-	gw.gz.Flush()
+	if err := gw.gz.Flush(); err != nil && gw.log != nil {
+		gw.log.Error(gw.ctx, "failed to flush gzip writer", "error", err)
+	}
 	if flusher, ok := gw.ResponseWriter.(http.Flusher); ok {
 		flusher.Flush()
 	}
@@ -91,6 +95,8 @@ func Gzip(log *logger.Logger) web.Middleware {
 			gzw := &gzipWriter{
 				ResponseWriter: w,
 				gz:             gz,
+				ctx:            ctx,
+				log:            log,
 			}
 
 			// Pass control to the next handler with compressed writer

@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -32,8 +33,8 @@ type onboardingSignalStore struct {
 
 func (s *onboardingSignalStore) StartOutboundDelivery(
 	ctx context.Context,
-	input messagingrepository.OutboundDeliveryInput,
-) (messagingrepository.OutboundDeliveryRecord, bool, error) {
+	input outboundDeliveryInput,
+) (outboundDeliveryRecord, bool, error) {
 	record, claimed, err := s.eventStoreStub.StartOutboundDelivery(ctx, input)
 	select {
 	case s.started <- struct{}{}:
@@ -73,7 +74,7 @@ func TestSendFirstInteractionGuidePostsOneDurablePrivateMessage(t *testing.T) {
 		},
 	}}
 	store := newEventStoreStub()
-	service := New(nil, repo, nil, nil, Config{})
+	service := newTestService(repo, nil, nil, Config{})
 	service.outbound = store
 
 	var posted map[string]any
@@ -132,7 +133,7 @@ func TestSendFirstInteractionGuideStopsAtDurableReceipt(t *testing.T) {
 		IsActive:          true,
 	}
 	store := newEventStoreStub()
-	service := New(nil, repo, nil, nil, Config{})
+	service := newTestService(repo, nil, nil, Config{})
 	service.outbound = store
 
 	_, shouldSend, err := service.prepareFirstInteractionGuide(context.Background(), installation, "U123")
@@ -152,8 +153,8 @@ func TestSendFirstInteractionGuideTreatsConcurrentClaimAsInFlight(t *testing.T) 
 		IsActive:          true,
 	}
 	store := newEventStoreStub()
-	store.outboundErr = &messagingrepository.LeaseBusyError{}
-	service := New(nil, repo, nil, nil, Config{})
+	store.outboundErr = errors.Join(ErrOutboundDeliveryBusy, &messagingrepository.LeaseBusyError{})
+	service := newTestService(repo, nil, nil, Config{})
 	service.outbound = store
 
 	_, shouldSend, err := service.prepareFirstInteractionGuide(context.Background(), installation, "U123")
@@ -167,7 +168,7 @@ func TestSendFirstInteractionGuideTreatsConcurrentClaimAsInFlight(t *testing.T) 
 func TestFirstInteractionGuideProviderIdentitySurvivesReinstall(t *testing.T) {
 	workspaceID := uuid.New()
 	repo := &onboardingReceiptRepoStub{mockRepo: &mockRepo{}}
-	service := New(nil, repo, nil, nil, Config{})
+	service := newTestService(repo, nil, nil, Config{})
 	service.outbound = newEventStoreStub()
 	firstInstallation := slackrepository.SlackWorkspaceRecord{
 		WorkspaceID:       workspaceID,
@@ -208,7 +209,7 @@ func TestDispatchFirstInteractionGuideRetriesAfterPreparationDeadline(t *testing
 		started:        make(chan struct{}, 1),
 	}
 	store.processOutbound = false
-	service := New(nil, repo, nil, nil, Config{})
+	service := newTestService(repo, nil, nil, Config{})
 	service.outbound = store
 
 	service.dispatchFirstInteractionGuide(context.Background(), installation, "U123")

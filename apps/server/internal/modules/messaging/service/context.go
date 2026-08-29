@@ -298,7 +298,7 @@ func runtimeContextPayloadFrom(runtime *RuntimeContext) runtimeContextPayload {
 	if len(runtime.TeamHints) > 0 {
 		payload.TeamHints = make([]runtimeTeamPayload, len(runtime.TeamHints))
 		for index, hint := range runtime.TeamHints {
-			payload.TeamHints[index] = runtimeTeamPayload{Name: hint.Name, Code: hint.Code}
+			payload.TeamHints[index] = runtimeTeamPayload(hint)
 		}
 		if len(payload.TeamHints) == 1 {
 			defaultTeam := payload.TeamHints[0]

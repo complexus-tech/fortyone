@@ -3,56 +3,33 @@ package agentreadinesshttp
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
+	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
-type memoryOAuthStore struct {
-	mu    sync.Mutex
-	items map[string][]byte
+type oauthSessionAccounts struct{}
+
+func (oauthSessionAccounts) ResolveActiveBrowserSessionVersion(context.Context, uuid.UUID) (int64, bool, error) {
+	return 1, true, nil
 }
 
-func (s *memoryOAuthStore) Set(_ context.Context, key string, value any, _ time.Duration) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	data, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	s.items[key] = data
-	return nil
-}
-
-func (s *memoryOAuthStore) Get(_ context.Context, key string, dest any) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	data, ok := s.items[key]
-	if !ok {
-		return errors.New("not found")
-	}
-	return json.Unmarshal(data, dest)
-}
-
-func (s *memoryOAuthStore) Delete(_ context.Context, key string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.items, key)
-	return nil
+func testOAuthBrowserSessions(store mid.SessionStore) mid.SessionResolver {
+	return mid.NewBrowserSessionResolver(store, oauthSessionAccounts{})
 }
 
 func TestApprovalPageUsesApplicationThemeAndEscapesClientName(t *testing.T) {
@@ -93,7 +70,6 @@ func TestApprovalPageUsesApplicationThemeAndEscapesClientName(t *testing.T) {
 
 func TestStoryListFiltersUseScopedAdvancedQueryContract(t *testing.T) {
 	t.Parallel()
-	userID := uuid.New()
 	teamID := uuid.New()
 	sprintID := uuid.New()
 	objectiveID := uuid.New()
@@ -112,20 +88,20 @@ func TestStoryListFiltersUseScopedAdvancedQueryContract(t *testing.T) {
 		Search:       " launch task ",
 		StatusID:     statusID.String(),
 		KeyResultID:  keyResultID.String(),
-	}, userID)
+	})
 	require.NoError(t, err)
-	require.Equal(t, userID, filters["current_user_id"])
-	require.Equal(t, []uuid.UUID{teamID}, filters["team_ids"])
-	require.Equal(t, []uuid.UUID{sprintID}, filters["sprint_ids"])
-	require.Equal(t, objectiveID, filters["objective_id"])
-	require.Equal(t, []uuid.UUID{assigneeID}, filters["assignee_ids"])
-	require.Equal(t, true, filters["assigned_to_me"])
+	require.Equal(t, []uuid.UUID{teamID}, filters.TeamIDs)
+	require.Equal(t, []uuid.UUID{sprintID}, filters.SprintIDs)
+	require.Equal(t, objectiveID, *filters.Objective)
+	require.Equal(t, []uuid.UUID{assigneeID}, filters.AssigneeIDs)
+	require.NotNil(t, filters.AssignedToMe)
+	require.True(t, *filters.AssignedToMe)
 	expectedDueOn := time.Date(2026, time.August, 22, 0, 0, 0, 0, time.UTC)
-	require.Equal(t, expectedDueOn, filters["deadline_after"])
-	require.Equal(t, expectedDueOn, filters["deadline_before"])
-	require.Equal(t, "launch task", filters["title_contains"])
-	require.Equal(t, []uuid.UUID{statusID}, filters["status_ids"])
-	require.Equal(t, keyResultID, filters["key_result_id"])
+	require.Equal(t, expectedDueOn, *filters.DeadlineAfter)
+	require.Equal(t, expectedDueOn, *filters.DeadlineBefore)
+	require.Equal(t, "launch task", *filters.TitleContains)
+	require.Equal(t, []uuid.UUID{statusID}, filters.StatusIDs)
+	require.Equal(t, keyResultID, *filters.KeyResult)
 }
 
 func TestMCPPaginationIsBoundedAndReportsMoreResults(t *testing.T) {
@@ -169,19 +145,19 @@ func TestStoryToolResultDoesNotExposeInternalCreationKey(t *testing.T) {
 
 func TestStoryListFiltersRejectInvalidUUID(t *testing.T) {
 	t.Parallel()
-	_, err := storyListFilters(storyListInput{TeamID: "not-a-uuid"}, uuid.New())
+	_, err := storyListFilters(storyListInput{TeamID: "not-a-uuid"})
 	require.EqualError(t, err, "teamId must be a valid UUID")
 }
 
 func TestStoryListFiltersRejectInvalidDueDate(t *testing.T) {
 	t.Parallel()
-	_, err := storyListFilters(storyListInput{DueOn: "today"}, uuid.New())
+	_, err := storyListFilters(storyListInput{DueOn: "today"})
 	require.EqualError(t, err, "dueOn: date must use YYYY-MM-DD")
 }
 
 func TestOpenAPIIsValidJSONWithUniqueOperationIDs(t *testing.T) {
 	t.Parallel()
-	handler := New(Config{SecretKey: "test", APIPublicURL: "https://api.fortyone.app"})
+	handler := New(Config{APIPublicURL: "https://api.fortyone.app"})
 	recorder := httptest.NewRecorder()
 	require.NoError(t, handler.OpenAPI(context.Background(), recorder, httptest.NewRequest(http.MethodGet, "/openapi.json", nil)))
 	require.Equal(t, http.StatusOK, recorder.Code)
@@ -190,24 +166,199 @@ func TestOpenAPIIsValidJSONWithUniqueOperationIDs(t *testing.T) {
 	require.Equal(t, "3.1.1", document["openapi"])
 }
 
-func TestOAuthDiscoveryDescribesRemoteMCPResource(t *testing.T) {
+func TestOAuthDiscoveryDescribesRemoteMCPAndAPIResources(t *testing.T) {
 	t.Parallel()
-	handler := New(Config{SecretKey: "test", APIPublicURL: "https://api.fortyone.app"})
+	handler := New(Config{APIPublicURL: "https://api.fortyone.app", OAuth: newStubOAuthPlatform()})
 	protected := httptest.NewRecorder()
 	require.NoError(t, handler.ProtectedResourceMetadata(context.Background(), protected, httptest.NewRequest(http.MethodGet, "/.well-known/oauth-protected-resource", nil)))
 	require.Contains(t, protected.Body.String(), `"resource":"https://api.fortyone.app/mcp"`)
 	require.Contains(t, protected.Body.String(), `"authorization_servers":["https://api.fortyone.app"]`)
+	require.Contains(t, protected.Body.String(), `"mcp:access"`)
+
+	apiProtected := httptest.NewRecorder()
+	require.NoError(t, handler.APIProtectedResourceMetadata(context.Background(), apiProtected, httptest.NewRequest(http.MethodGet, "/.well-known/oauth-protected-resource/api/v1", nil)))
+	require.Contains(t, apiProtected.Body.String(), `"resource":"https://api.fortyone.app/api/v1"`)
+	require.Contains(t, apiProtected.Body.String(), `"stories:read"`)
+	require.NotContains(t, apiProtected.Body.String(), `"mcp:access"`)
 
 	authorization := httptest.NewRecorder()
 	require.NoError(t, handler.AuthorizationServerMetadata(context.Background(), authorization, httptest.NewRequest(http.MethodGet, "/.well-known/oauth-authorization-server", nil)))
 	require.Contains(t, authorization.Body.String(), `"code_challenge_methods_supported":["S256"]`)
 	require.Contains(t, authorization.Body.String(), `"registration_endpoint":"https://api.fortyone.app/oauth/register"`)
 	require.Contains(t, authorization.Body.String(), `"authorization_response_iss_parameter_supported":true`)
+	require.Contains(t, authorization.Body.String(), `"stories:write"`)
+	require.Contains(t, authorization.Body.String(), `"client_credentials"`)
+	require.Contains(t, authorization.Body.String(), `"client_secret_basic"`)
+}
+
+func TestOAuthApprovalPreservesExactAPIResource(t *testing.T) {
+	t.Parallel()
+	store := &memoryOAuthStore{items: make(map[string][]byte)}
+	oauth := newStubOAuthPlatform()
+	handler := New(Config{
+		APIPublicURL: "https://api.fortyone.app", Cache: store, OAuth: oauth,
+		BrowserSessions: testOAuthBrowserSessions(store),
+	})
+	const approval = "api-resource-approval"
+	const session = "api-resource-session"
+	require.NoError(t, store.Set(context.Background(), oauthApprovalKey(approval), authorizationRequest{
+		ClientID: oauth.application.ClientID, RedirectURI: oauth.application.RedirectURIs[0],
+		Resource: oauth.apiResource, Scope: "offline_access stories:read", CodeChallenge: "challenge",
+		UserID: oauth.identity.UserID.String(),
+	}, approvalTTL))
+	require.NoError(t, store.Set(context.Background(), cache.AuthSessionCacheKey(session), platformauth.BrowserSession{
+		UserID: oauth.identity.UserID, Version: 1,
+	}, time.Hour))
+
+	request := httptest.NewRequest(http.MethodPost, "/oauth/authorize", strings.NewReader("approval="+approval+"&decision=allow"))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.AddCookie(&http.Cookie{Name: "fortyone_session", Value: session})
+	recorder := httptest.NewRecorder()
+	require.NoError(t, handler.Authorize(context.Background(), recorder, request))
+	require.Equal(t, http.StatusFound, recorder.Code)
+	require.Equal(t, oauth.apiResource, oauth.authorizedRequest().Resource)
+}
+
+func TestOAuthRegistrationRejectsUnknownAndTrailingJSON(t *testing.T) {
+	t.Parallel()
+	handler := New(Config{APIPublicURL: "https://api.fortyone.app", OAuth: newStubOAuthPlatform()})
+
+	for _, body := range []string{
+		`{"client_name":"Client","redirect_uris":["https://client.example/callback"],"trusted":true}`,
+		`{"client_name":"Client","redirect_uris":["https://client.example/callback"]} {}`,
+	} {
+		request := httptest.NewRequest(http.MethodPost, "/oauth/register", strings.NewReader(body))
+		request.Header.Set("Content-Type", "application/json")
+		recorder := httptest.NewRecorder()
+
+		require.NoError(t, handler.RegisterClient(context.Background(), recorder, request))
+		require.Equal(t, http.StatusBadRequest, recorder.Code)
+		require.Contains(t, recorder.Body.String(), `"error":"invalid_client_metadata"`)
+	}
+}
+
+func TestOAuthInvalidResourceCannotRedirectThroughUnregisteredURI(t *testing.T) {
+	t.Parallel()
+	oauth := newStubOAuthPlatform()
+	handler := New(Config{APIPublicURL: "https://api.fortyone.app", OAuth: oauth})
+	request := httptest.NewRequest(
+		http.MethodGet,
+		"/oauth/authorize?response_type=code&client_id="+url.QueryEscape(oauth.application.ClientID)+
+			"&redirect_uri="+url.QueryEscape("https://attacker.example/callback")+
+			"&code_challenge="+strings.Repeat("a", 43)+
+			"&code_challenge_method=S256&resource="+url.QueryEscape("https://wrong.example/mcp"),
+		nil,
+	)
+	recorder := httptest.NewRecorder()
+
+	require.NoError(t, handler.Authorize(context.Background(), recorder, request))
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+	require.Empty(t, recorder.Header().Get("Location"))
+	require.Contains(t, recorder.Body.String(), `"error":"invalid_request"`)
+}
+
+func TestOAuthApprovalIsConsumedExactlyOnceUnderConcurrency(t *testing.T) {
+	t.Parallel()
+	store := &memoryOAuthStore{items: make(map[string][]byte)}
+	oauth := newStubOAuthPlatform()
+	handler := New(Config{
+		APIPublicURL: "https://api.fortyone.app", Cache: store, OAuth: oauth,
+		BrowserSessions: testOAuthBrowserSessions(store),
+	})
+	userID := oauth.identity.UserID
+	const approval = "single-use-approval"
+	const session = "browser-session"
+	pending := authorizationRequest{
+		ClientID: oauth.application.ClientID, RedirectURI: oauth.application.RedirectURIs[0],
+		State: "opaque-state", Scope: mcpScope + " offline_access", CodeChallenge: "challenge",
+		UserID: userID.String(),
+	}
+	require.NoError(t, store.Set(context.Background(), oauthApprovalKey(approval), pending, approvalTTL))
+	require.NoError(t, store.Set(context.Background(), cache.AuthSessionCacheKey(session), platformauth.BrowserSession{
+		UserID: userID, Version: 1,
+	}, time.Hour))
+
+	start := make(chan struct{})
+	statusCodes := make([]int, 2)
+	locations := make([]string, 2)
+	var wait sync.WaitGroup
+	for index := range statusCodes {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			<-start
+			request := httptest.NewRequest(
+				http.MethodPost,
+				"/oauth/authorize",
+				strings.NewReader("approval="+approval+"&decision=allow"),
+			)
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			request.AddCookie(&http.Cookie{Name: "fortyone_session", Value: session})
+			recorder := httptest.NewRecorder()
+			require.NoError(t, handler.Authorize(context.Background(), recorder, request))
+			statusCodes[index] = recorder.Code
+			locations[index] = recorder.Header().Get("Location")
+		}()
+	}
+	close(start)
+	wait.Wait()
+
+	redirects := 0
+	rejections := 0
+	for index, status := range statusCodes {
+		switch status {
+		case http.StatusFound:
+			redirects++
+			require.Contains(t, locations[index], "code=one-time-code")
+		case http.StatusBadRequest:
+			rejections++
+		default:
+			t.Fatalf("approval status = %d, want redirect or replay rejection", status)
+		}
+	}
+	require.Equal(t, 1, redirects)
+	require.Equal(t, 1, rejections)
+}
+
+func TestOAuthMismatchedSessionCannotConsumeAnotherUsersApproval(t *testing.T) {
+	t.Parallel()
+	store := &memoryOAuthStore{items: make(map[string][]byte)}
+	oauth := newStubOAuthPlatform()
+	handler := New(Config{
+		APIPublicURL: "https://api.fortyone.app", Cache: store, OAuth: oauth,
+		BrowserSessions: testOAuthBrowserSessions(store),
+	})
+	const approval = "session-bound-approval"
+	require.NoError(t, store.Set(context.Background(), oauthApprovalKey(approval), authorizationRequest{
+		ClientID: oauth.application.ClientID, RedirectURI: oauth.application.RedirectURIs[0],
+		Scope: mcpScope, CodeChallenge: "challenge", UserID: oauth.identity.UserID.String(),
+	}, approvalTTL))
+	require.NoError(t, store.Set(context.Background(), cache.AuthSessionCacheKey("wrong-session"), platformauth.BrowserSession{
+		UserID: uuid.New(), Version: 1,
+	}, time.Hour))
+	require.NoError(t, store.Set(context.Background(), cache.AuthSessionCacheKey("right-session"), platformauth.BrowserSession{
+		UserID: oauth.identity.UserID, Version: 1,
+	}, time.Hour))
+
+	request := func(session string) *http.Request {
+		value := httptest.NewRequest(http.MethodPost, "/oauth/authorize", strings.NewReader("approval="+approval+"&decision=allow"))
+		value.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		value.AddCookie(&http.Cookie{Name: "fortyone_session", Value: session})
+		return value
+	}
+	wrong := httptest.NewRecorder()
+	require.NoError(t, handler.Authorize(context.Background(), wrong, request("wrong-session")))
+	require.Equal(t, http.StatusUnauthorized, wrong.Code)
+
+	right := httptest.NewRecorder()
+	require.NoError(t, handler.Authorize(context.Background(), right, request("right-session")))
+	require.Equal(t, http.StatusFound, right.Code)
+	require.Contains(t, right.Header().Get("Location"), "code=one-time-code")
 }
 
 func TestMCPRejectsMissingBearerTokenWithDiscoveryHint(t *testing.T) {
 	t.Parallel()
-	handler := New(Config{SecretKey: "test", APIPublicURL: "https://api.fortyone.app"})
+	handler := New(Config{APIPublicURL: "https://api.fortyone.app"})
 	request := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize"}`))
 	request.Header.Set("Content-Type", "application/json")
 	recorder := httptest.NewRecorder()
@@ -218,10 +369,13 @@ func TestMCPRejectsMissingBearerTokenWithDiscoveryHint(t *testing.T) {
 
 func TestMCPListsSchedulingAndPlanningTools(t *testing.T) {
 	t.Parallel()
-	handler := New(Config{SecretKey: "test", APIPublicURL: "https://api.fortyone.app"})
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, mcpClaims{RegisteredClaims: jwt.RegisteredClaims{Subject: "e1e76f7c-2832-43b6-88f7-0af378bde150", Audience: jwt.ClaimStrings{"https://api.fortyone.app/mcp"}, ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour))}, Scope: mcpScope})
-	rawToken, err := token.SignedString(handler.signingKey())
-	require.NoError(t, err)
+	oauth := newStubOAuthPlatform()
+	handler := New(Config{
+		APIPublicURL: "https://api.fortyone.app",
+		OAuth:        oauth,
+		Cache:        &memoryOAuthStore{items: make(map[string][]byte)},
+	})
+	rawToken := oauth.pair.AccessToken.Reveal()
 
 	request := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}`))
 	request.Header.Set("Content-Type", "application/json")
@@ -248,22 +402,12 @@ func TestRedirectURIValidation(t *testing.T) {
 	require.Equal(t, "https://chatgpt.com", origin)
 }
 
-func TestOAuthAuthorizationCodeExchangeUsesPKCEAndResourceAudience(t *testing.T) {
+func TestOAuthAuthorizationCodeExchangeReturnsBoundedTokenResponse(t *testing.T) {
 	t.Parallel()
-	store := &memoryOAuthStore{items: make(map[string][]byte)}
-	handler := New(Config{SecretKey: "test", APIPublicURL: "https://api.fortyone.app", Cache: store})
-	verifier := "correct-horse-battery-staple"
-	digest := sha256.Sum256([]byte(verifier))
-	record := authorizationCode{
-		ClientID:      "test-client",
-		RedirectURI:   "https://client.example/callback",
-		Scope:         "mcp:access offline_access",
-		CodeChallenge: base64.RawURLEncoding.EncodeToString(digest[:]),
-		UserID:        "e1e76f7c-2832-43b6-88f7-0af378bde150",
-	}
-	require.NoError(t, store.Set(context.Background(), oauthKey("code", hashToken("one-time-code")), record, time.Minute))
+	oauth := newStubOAuthPlatform()
+	handler := New(Config{APIPublicURL: "https://api.fortyone.app", OAuth: oauth})
 
-	form := "grant_type=authorization_code&code=one-time-code&client_id=test-client&redirect_uri=https%3A%2F%2Fclient.example%2Fcallback&code_verifier=" + verifier + "&resource=https%3A%2F%2Fapi.fortyone.app%2Fmcp"
+	form := "grant_type=authorization_code&code=one-time-code&client_id=test-client&redirect_uri=https%3A%2F%2Fclient.example%2Fcallback&code_verifier=verifier&resource=https%3A%2F%2Fapi.fortyone.app%2Fmcp"
 	request := httptest.NewRequest(http.MethodPost, "/oauth/token", strings.NewReader(form))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	recorder := httptest.NewRecorder()
@@ -275,19 +419,19 @@ func TestOAuthAuthorizationCodeExchangeUsesPKCEAndResourceAudience(t *testing.T)
 		RefreshToken string `json:"refresh_token"`
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
-	require.NotEmpty(t, response.RefreshToken)
+	require.Equal(t, oauth.pair.RefreshToken.Reveal(), response.RefreshToken)
 	info, err := handler.verifyToken(context.Background(), response.AccessToken, request)
 	require.NoError(t, err)
-	require.Equal(t, record.UserID, info.UserID)
+	require.Equal(t, oauth.identity.UserID.String(), info.UserID)
 }
 
 func TestOAuthTokenRejectionsAreLoggedWithoutCredentialValues(t *testing.T) {
 	t.Parallel()
 	var logs bytes.Buffer
+	oauth := newStubOAuthPlatform()
 	handler := New(Config{
-		SecretKey:    "test",
 		APIPublicURL: "https://api.fortyone.app",
-		Cache:        &memoryOAuthStore{items: make(map[string][]byte)},
+		OAuth:        oauth,
 		Log:          logger.NewWithJSON(&logs, slog.LevelDebug, "agent-readiness-test"),
 	})
 	request := httptest.NewRequest(http.MethodPost, "/oauth/token", strings.NewReader("grant_type=authorization_code&code=sensitive-code&resource=https%3A%2F%2Fwrong.example%2Fmcp"))
@@ -303,17 +447,55 @@ func TestOAuthTokenRejectionsAreLoggedWithoutCredentialValues(t *testing.T) {
 	require.NotContains(t, logs.String(), "sensitive-code")
 }
 
+func TestOAuthTokenUsesOnlyBoundedBodyCredentials(t *testing.T) {
+	t.Parallel()
+
+	handler := New(Config{
+		APIPublicURL: "https://api.fortyone.app",
+		OAuth:        newStubOAuthPlatform(),
+	})
+
+	t.Run("query parameters cannot substitute for token form fields", func(t *testing.T) {
+		request := httptest.NewRequest(
+			http.MethodPost,
+			"/oauth/token?grant_type=refresh_token&refresh_token=query-secret&client_id=query-client",
+			strings.NewReader("grant_type=unsupported"),
+		)
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		recorder := httptest.NewRecorder()
+
+		require.NoError(t, handler.Token(context.Background(), recorder, request))
+		require.Equal(t, http.StatusBadRequest, recorder.Code)
+		require.Contains(t, recorder.Body.String(), `"error":"unsupported_grant_type"`)
+	})
+
+	t.Run("oversized form is rejected before credential lookup", func(t *testing.T) {
+		request := httptest.NewRequest(
+			http.MethodPost,
+			"/oauth/token",
+			strings.NewReader("grant_type=refresh_token&refresh_token="+strings.Repeat("a", oauthFormBodyLimit)),
+		)
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		recorder := httptest.NewRecorder()
+
+		require.NoError(t, handler.Token(context.Background(), recorder, request))
+		require.Equal(t, http.StatusBadRequest, recorder.Code)
+		require.Contains(t, recorder.Body.String(), `"error":"invalid_request"`)
+	})
+}
+
 func TestOAuthUsesDedicatedLoginURLWithoutChangingWebsiteURL(t *testing.T) {
 	t.Parallel()
 	store := &memoryOAuthStore{items: make(map[string][]byte)}
+	oauth := newStubOAuthPlatform()
+	oauth.application.ClientID = "test-client"
 	handler := New(Config{
-		SecretKey:    "test",
-		APIPublicURL: "https://api.fortyone.app",
-		LoginURL:     "https://cloud.fortyone.app",
-		Cache:        store,
+		APIPublicURL:    "https://api.fortyone.app",
+		LoginURL:        "https://cloud.fortyone.app",
+		Cache:           store,
+		BrowserSessions: testOAuthBrowserSessions(store),
+		OAuth:           oauth,
 	})
-	client := oauthClient{ClientID: "test-client", ClientName: "Test client", RedirectURIs: []string{"https://client.example/callback"}}
-	require.NoError(t, store.Set(context.Background(), oauthKey("client", client.ClientID), client, time.Minute))
 
 	request := httptest.NewRequest(http.MethodGet, "/oauth/authorize?response_type=code&client_id=test-client&redirect_uri=https%3A%2F%2Fclient.example%2Fcallback&code_challenge=challenge&code_challenge_method=S256&resource=https%3A%2F%2Fapi.fortyone.app%2Fmcp", nil)
 	recorder := httptest.NewRecorder()

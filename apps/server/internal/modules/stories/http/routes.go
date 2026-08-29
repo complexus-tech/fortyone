@@ -2,7 +2,6 @@ package storieshttp
 
 import (
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
-	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	links "github.com/complexus-tech/projects-api/internal/modules/links/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
@@ -12,38 +11,34 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/go-playground/validator/v10"
-	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB             *sqlx.DB
-	Log            *logger.Logger
-	SecretKey      string
-	Publisher      *publisher.Publisher
-	Validate       *validator.Validate
-	StorageConfig  storage.Config
-	StorageService storage.StorageService
-	Cache          *cache.Service
-	Stories        *stories.Service
-	Users          *users.Service
-	Comments       *comments.Service
-	Links          *links.Service
-	Attachments    *attachments.Service
+	Log               *logger.Logger
+	SecretKey         string
+	Publisher         *publisher.Publisher
+	StorageConfig     storage.Config
+	StorageService    storage.StorageService
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	Stories           *stories.Service
+	Users             *users.Service
+	Links             *links.Service
+	Attachments       *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	storiesService := cfg.Stories
-	commentsService := cfg.Comments
 	linksService := cfg.Links
 	attachmentsService := cfg.Attachments
 
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	gzip := mid.Gzip(cfg.Log)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
-	h := New(storiesService, cfg.Users, commentsService, linksService, attachmentsService, cfg.Cache, cfg.Log)
+	h := New(storiesService, cfg.Users, linksService, attachmentsService, cfg.Cache, cfg.Log)
 
 	// Stories
 	app.Get("/workspaces/{workspaceSlug}/stories", h.List, auth, workspace, gzip)

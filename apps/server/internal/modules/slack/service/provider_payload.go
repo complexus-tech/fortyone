@@ -51,59 +51,59 @@ func DecodeSlackProviderPayload(raw []byte) (SlackProviderPayload, error) {
 
 func validateSlackProviderPayload(payload SlackProviderPayload) error {
 	if authorSlackUserID := strings.TrimSpace(payload.AuthorSlackUserID); authorSlackUserID != "" && !validSlackUserID(authorSlackUserID) {
-		return errors.New("Slack provider payload contains an invalid author user ID")
+		return errors.New("slack provider payload contains an invalid author user ID")
 	}
 	if payload.RequestThreadBinding != nil && payload.RequestThreadBinding.IntegrationRequestID == uuid.Nil {
-		return errors.New("Slack request thread binding requires an integration request ID")
+		return errors.New("slack request thread binding requires an integration request ID")
 	}
 	if payload.Authorization != nil {
 		if payload.Authorization.ActorUserID != nil && *payload.Authorization.ActorUserID == uuid.Nil {
-			return errors.New("Slack delivery authorization contains an invalid actor ID")
+			return errors.New("slack delivery authorization contains an invalid actor ID")
 		}
 		if len(payload.Authorization.AllowedTeamIDs) == 0 || len(payload.Authorization.AllowedTeamIDs) > 1000 {
-			return errors.New("Slack delivery authorization requires between 1 and 1000 team IDs")
+			return errors.New("slack delivery authorization requires between 1 and 1000 team IDs")
 		}
 		seen := make(map[string]struct{}, len(payload.Authorization.AllowedTeamIDs))
 		for _, teamID := range payload.Authorization.AllowedTeamIDs {
 			if teamID == uuid.Nil {
-				return errors.New("Slack delivery authorization contains an invalid team ID")
+				return errors.New("slack delivery authorization contains an invalid team ID")
 			}
 			key := teamID.String()
 			if _, exists := seen[key]; exists {
-				return errors.New("Slack delivery authorization contains duplicate team IDs")
+				return errors.New("slack delivery authorization contains duplicate team IDs")
 			}
 			seen[key] = struct{}{}
 		}
 		if len(payload.Authorization.SharedTeamIDs) > 1000 {
-			return errors.New("Slack delivery authorization exceeds 1000 shared team IDs")
+			return errors.New("slack delivery authorization exceeds 1000 shared team IDs")
 		}
 		shared := make(map[string]struct{}, len(payload.Authorization.SharedTeamIDs))
 		for _, teamID := range payload.Authorization.SharedTeamIDs {
 			if teamID == uuid.Nil {
-				return errors.New("Slack delivery authorization contains an invalid shared team ID")
+				return errors.New("slack delivery authorization contains an invalid shared team ID")
 			}
 			key := teamID.String()
 			if _, exists := shared[key]; exists {
-				return errors.New("Slack delivery authorization contains duplicate shared team IDs")
+				return errors.New("slack delivery authorization contains duplicate shared team IDs")
 			}
 			if _, allowed := seen[key]; !allowed {
-				return errors.New("Slack delivery authorization contains a shared team outside its allowed teams")
+				return errors.New("slack delivery authorization contains a shared team outside its allowed teams")
 			}
 			shared[key] = struct{}{}
 		}
 	}
 	if len(payload.Blocks) > 50 {
-		return errors.New("Slack provider payload exceeds the 50-block message limit")
+		return errors.New("slack provider payload exceeds the 50-block message limit")
 	}
 	for _, block := range payload.Blocks {
 		switch block.Type {
 		case "section":
 			if block.Text == nil || strings.TrimSpace(block.Text.Text) == "" {
-				return errors.New("Slack section block text is required")
+				return errors.New("slack section block text is required")
 			}
 		case "actions":
 			if len(block.Elements) == 0 || len(block.Elements) > 25 {
-				return errors.New("Slack actions block must contain between 1 and 25 elements")
+				return errors.New("slack actions block must contain between 1 and 25 elements")
 			}
 		default:
 			return fmt.Errorf("unsupported durable Slack block type %q", block.Type)
@@ -113,17 +113,17 @@ func validateSlackProviderPayload(payload SlackProviderPayload) error {
 				return errors.New("durable Slack actions support only identified buttons with text")
 			}
 			if len([]rune(element.Value)) > slackButtonValueLimit {
-				return errors.New("Slack button value exceeds the provider limit")
+				return errors.New("slack button value exceeds the provider limit")
 			}
 		}
 	}
 	if payload.Metadata != nil {
 		if len(payload.Metadata.Entities) == 0 {
-			return errors.New("Slack Work Object metadata requires at least one entity")
+			return errors.New("slack Work Object metadata requires at least one entity")
 		}
 		for _, entity := range payload.Metadata.Entities {
 			if entity.EntityType != slackTaskEntityType || strings.TrimSpace(entity.EntityPayload.Attributes.Title.Text) == "" {
-				return errors.New("Slack provider payload contains an invalid task Work Object")
+				return errors.New("slack provider payload contains an invalid task Work Object")
 			}
 			if err := validateSlackProviderWorkObjectIdentity(entity); err != nil {
 				return err
@@ -138,49 +138,49 @@ func validateSlackProviderWorkObjectIdentity(entity SlackWorkObjectEntity) error
 	case slackStoryExternalRefType:
 		link, err := ParseFortyOneStoryURL(entity.URL)
 		if err != nil || !validSlackStoryExternalRef(link, entity.ExternalRef.ID) {
-			return errors.New("Slack provider payload Work Object identity is invalid")
+			return errors.New("slack provider payload Work Object identity is invalid")
 		}
 		if entity.AppUnfurlURL != "" {
 			postedLink, err := ParseFortyOneStoryURL(entity.AppUnfurlURL)
 			if err != nil || postedLink.CanonicalURL != entity.URL {
-				return errors.New("Slack provider payload Work Object unfurl URL is invalid")
+				return errors.New("slack provider payload Work Object unfurl URL is invalid")
 			}
 		}
 	case slackRequestExternalRefType:
 		link, err := ParseFortyOneRequestURL(entity.URL)
 		if err != nil || link.CanonicalURL != entity.URL || !validSlackRequestExternalRef(link, entity.ExternalRef.ID) {
-			return errors.New("Slack provider payload Work Object identity is invalid")
+			return errors.New("slack provider payload Work Object identity is invalid")
 		}
 		if entity.AppUnfurlURL != "" {
 			postedLink, err := ParseFortyOneRequestURL(entity.AppUnfurlURL)
 			if err != nil || postedLink.CanonicalURL != entity.URL {
-				return errors.New("Slack provider payload Work Object unfurl URL is invalid")
+				return errors.New("slack provider payload Work Object unfurl URL is invalid")
 			}
 		}
 	case slackObjectiveExternalRefType:
 		link, err := ParseFortyOneObjectiveURL(entity.URL)
 		if err != nil || link.CanonicalURL != entity.URL || !validSlackObjectiveExternalRef(link, entity.ExternalRef.ID) {
-			return errors.New("Slack provider payload Work Object identity is invalid")
+			return errors.New("slack provider payload Work Object identity is invalid")
 		}
 		if entity.AppUnfurlURL != "" {
 			postedLink, err := ParseFortyOneObjectiveURL(entity.AppUnfurlURL)
 			if err != nil || postedLink.CanonicalURL != entity.URL {
-				return errors.New("Slack provider payload Work Object unfurl URL is invalid")
+				return errors.New("slack provider payload Work Object unfurl URL is invalid")
 			}
 		}
 	case slackSprintExternalRefType:
 		link, err := ParseFortyOneSprintURL(entity.URL)
 		if err != nil || link.CanonicalURL != entity.URL || !validSlackSprintExternalRef(link, entity.ExternalRef.ID) {
-			return errors.New("Slack provider payload Work Object identity is invalid")
+			return errors.New("slack provider payload Work Object identity is invalid")
 		}
 		if entity.AppUnfurlURL != "" {
 			postedLink, err := ParseFortyOneSprintURL(entity.AppUnfurlURL)
 			if err != nil || postedLink.CanonicalURL != entity.URL {
-				return errors.New("Slack provider payload Work Object unfurl URL is invalid")
+				return errors.New("slack provider payload Work Object unfurl URL is invalid")
 			}
 		}
 	default:
-		return errors.New("Slack provider payload Work Object identity is invalid")
+		return errors.New("slack provider payload Work Object identity is invalid")
 	}
 	return nil
 }

@@ -3,8 +3,10 @@ package figma
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,18 +43,27 @@ func TestParseURL(t *testing.T) {
 
 func TestCredentialRoundTrip(t *testing.T) {
 	t.Parallel()
-	token := Token{AccessToken: "access", RefreshToken: "refresh", TokenType: "bearer"}
-	sealed, err := encryptToken("secret", token)
+	workspaceID, connectionID, generation := uuid.New(), uuid.New(), uuid.New()
+	service := &Service{secrets: newFigmaTestCredentialVault(t)}
+	token := Token{
+		AccessToken: "access", RefreshToken: "refresh", TokenType: "bearer",
+		ExpiresAt: time.Date(2026, time.August, 28, 13, 0, 0, 0, time.UTC),
+	}
+	sealed, err := service.sealToken(workspaceID, connectionID, generation, token)
 	require.NoError(t, err)
 	require.NotContains(t, sealed, token.AccessToken)
-	opened, err := decryptToken("secret", sealed)
+	opened, err := service.openToken(Connection{
+		ID: connectionID, WorkspaceID: workspaceID,
+		CredentialPayload: sealed, CredentialVersion: int16(credentialvault.CurrentVersion),
+		InstallationGeneration: generation,
+	})
 	require.NoError(t, err)
 	require.Equal(t, token, opened)
 }
 
 func TestStoryURL(t *testing.T) {
 	t.Parallel()
-	story := stories.CoreSingleStory{TeamCode: "prd", SequenceID: 42}
+	story := Story{TeamCode: "prd", SequenceID: 42}
 	require.Equal(t, "https://acme.fortyone.app/work/PRD-42", (&Service{config: Config{WebsiteURL: "https://fortyone.app"}}).storyURL("acme", story))
 	require.Equal(t, "http://localhost:3000/acme/work/PRD-42", (&Service{config: Config{WebsiteURL: "http://localhost:3000"}}).storyURL("acme", story))
 }

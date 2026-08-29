@@ -2,200 +2,95 @@ package invitationsrepository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
-	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	invitationsdomain "github.com/complexus-tech/projects-api/internal/modules/invitations/domain"
+	invitationsql "github.com/complexus-tech/projects-api/internal/modules/invitations/repository/sqlc"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/jackc/pgx/v5"
 )
 
-// GetInvitation retrieves a workspace invitation by token
-func (r *repo) GetInvitation(ctx context.Context, token string) (invitations.CoreWorkspaceInvitation, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.invitations.GetInvitation")
-	defer span.End()
-
-	var result dbWorkspaceInvitation
-	query := `
-		SELECT
-			i.invitation_id,
-			i.workspace_id,
-			i.inviter_id,
-			i.email,
-			i.role,
-			i.token,
-			i.expires_at,
-			i.used_at,
-			i.created_at,
-			i.updated_at,
-			w.name AS workspace_name,
-			w.slug AS workspace_slug,
-			w.color AS workspace_color,
-			COALESCE(
-				(
-					SELECT json_agg(t.team_id)
-					FROM workspace_invitation_teams t
-					WHERE t.invitation_id = i.invitation_id
-				),
-				'[]'
-			) as team_ids
-		FROM workspace_invitations i
-		JOIN workspaces w ON i.workspace_id = w.workspace_id
-		WHERE i.token = :token
-	`
-
-	params := map[string]interface{}{
-		"token": token,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+func (r *repo) GetInvitation(
+	ctx context.Context,
+	lookup invitationsdomain.TokenLookup,
+) (invitationsdomain.WorkspaceInvitation, error) {
+	row, err := r.queries.GetInvitationByToken(ctx, tokenLookupParams(lookup))
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return invitations.CoreWorkspaceInvitation{}, err
-	}
-	defer stmt.Close()
-
-	if err := stmt.GetContext(ctx, &result, params); err != nil {
-		if err == sql.ErrNoRows {
-			return invitations.CoreWorkspaceInvitation{}, invitations.ErrInvitationNotFound
+		if errors.Is(err, pgx.ErrNoRows) {
+			return invitationsdomain.WorkspaceInvitation{}, invitationsdomain.ErrInvitationNotFound
 		}
-		errMsg := fmt.Sprintf("failed to get invitation: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to get invitation"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return invitations.CoreWorkspaceInvitation{}, err
+		return invitationsdomain.WorkspaceInvitation{}, fmt.Errorf("get invitation by token digest: %w", err)
 	}
-
-	return toCoreInvitation(result), nil
+	return invitationFromGet(row), nil
 }
 
-// ListInvitations returns all pending invitations for a workspace
-func (r *repo) ListInvitations(ctx context.Context, workspaceID uuid.UUID) ([]invitations.CoreWorkspaceInvitation, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.invitations.ListInvitations")
-	defer span.End()
+func (r *repo) ListInvitations(
+	ctx context.Context,
+	workspaceID uuid.UUID,
+	actorID uuid.UUID,
+	now time.Time,
+) ([]invitationsdomain.WorkspaceInvitation, error) {
+	var result []invitationsdomain.WorkspaceInvitation
+	err := r.withinTransaction(ctx, func(queries invitationsql.Querier) error {
+		if err := lockActiveWorkspaceAdmin(ctx, queries, workspaceID, actorID); err != nil {
+			return err
+		}
 
-	var results []dbWorkspaceInvitation
-	query := `
-		SELECT
-			i.invitation_id,
-			i.workspace_id,
-			i.inviter_id,
-			i.email,
-			i.role,
-			i.expires_at,
-			i.used_at,
-			i.created_at,
-			i.updated_at,
-			w.name AS workspace_name,
-			w.slug AS workspace_slug,
-			w.color AS workspace_color,
-			COALESCE(
-				(
-					SELECT json_agg(t.team_id)
-					FROM workspace_invitation_teams t
-					WHERE t.invitation_id = i.invitation_id
-				),
-				'[]'
-			) as team_ids
-		FROM workspace_invitations i
-		JOIN workspaces w ON i.workspace_id = w.workspace_id
-		WHERE 
-			i.workspace_id = :workspace_id
-			AND i.used_at IS NULL
-			AND i.expires_at > NOW()
-		ORDER BY i.created_at DESC
-	`
-
-	params := map[string]interface{}{
-		"workspace_id": workspaceID,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+		rows, err := queries.ListWorkspaceInvitations(ctx, invitationsql.ListWorkspaceInvitationsParams{
+			WorkspaceID: workspaceID,
+			Now:         now.UTC(),
+		})
+		if err != nil {
+			return fmt.Errorf("list workspace invitations: %w", err)
+		}
+		result = make([]invitationsdomain.WorkspaceInvitation, 0, len(rows))
+		for _, row := range rows {
+			result = append(result, invitationFromWorkspaceList(row))
+		}
+		return nil
+	})
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
 		return nil, err
 	}
-	defer stmt.Close()
-
-	if err := stmt.SelectContext(ctx, &results, params); err != nil {
-		errMsg := fmt.Sprintf("failed to list invitations: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to list invitations"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
-	}
-
-	return toCoreInvitations(results), nil
+	return result, nil
 }
 
-// Add BeginTx method
-func (r *repo) BeginTx(ctx context.Context) (*sqlx.Tx, error) {
-	return r.db.BeginTxx(ctx, nil)
-}
-
-// ListInvitationsByEmail returns all pending invitations for a user's email
-func (r *repo) ListInvitationsByEmail(ctx context.Context, email string) ([]invitations.CoreWorkspaceInvitation, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.invitations.ListInvitationsByEmail")
-	defer span.End()
-
-	var results []dbWorkspaceInvitation
-	query := `
-		SELECT
-			i.invitation_id,
-			i.workspace_id,
-			i.inviter_id,
-			i.email,
-			i.role,
-			i.token,
-			i.expires_at,
-			i.used_at,
-			i.created_at,
-			i.updated_at,
-			w.name AS workspace_name,
-			w.slug AS workspace_slug,
-			w.color AS workspace_color,
-			COALESCE(
-				(
-					SELECT json_agg(t.team_id)
-					FROM workspace_invitation_teams t
-					WHERE t.invitation_id = i.invitation_id
-				),
-				'[]'
-			) as team_ids
-		FROM workspace_invitations i
-		JOIN workspaces w ON i.workspace_id = w.workspace_id
-		WHERE 
-			i.email = :email
-			AND i.used_at IS NULL
-			AND i.expires_at > NOW()
-		ORDER BY i.created_at DESC
-	`
-
-	params := map[string]interface{}{
-		"email": email,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+func (r *repo) ListInvitationsByEmail(
+	ctx context.Context,
+	email string,
+	now time.Time,
+) ([]invitationsdomain.WorkspaceInvitation, error) {
+	rows, err := r.queries.ListInvitationsByEmail(ctx, invitationsql.ListInvitationsByEmailParams{
+		Email: email,
+		Now:   now,
+	})
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to prepare named statement: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to prepare statement"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
+		return nil, fmt.Errorf("list invitations by email: %w", err)
 	}
-	defer stmt.Close()
-
-	if err := stmt.SelectContext(ctx, &results, params); err != nil {
-		errMsg := fmt.Sprintf("failed to list invitations: %s", err)
-		r.log.Error(ctx, errMsg)
-		span.RecordError(errors.New("failed to list invitations"), trace.WithAttributes(attribute.String("error", errMsg)))
-		return nil, err
+	result := make([]invitationsdomain.WorkspaceInvitation, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, invitationFromEmailList(row))
 	}
+	return result, nil
+}
 
-	return toCoreInvitations(results), nil
+func tokenLookupParams(lookup invitationsdomain.TokenLookup) invitationsql.GetInvitationByTokenParams {
+	var version *int16
+	if lookup.Version > 0 {
+		value := lookup.Version
+		version = &value
+	}
+	return invitationsql.GetInvitationByTokenParams{
+		TokenKeyID:   lookup.KeyID,
+		TokenVersion: version,
+		TokenDigest:  lookup.Digest,
+		LegacyToken:  lookup.LegacyToken,
+	}
+}
+
+func lockTokenLookupParams(lookup invitationsdomain.TokenLookup) invitationsql.LockInvitationByTokenParams {
+	params := tokenLookupParams(lookup)
+	return invitationsql.LockInvitationByTokenParams(params)
 }

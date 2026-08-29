@@ -104,8 +104,8 @@ func toAppNotification(n notifications.CoreNotification) AppNotification {
 		ID:          n.ID,
 		RecipientID: n.RecipientID,
 		WorkspaceID: n.WorkspaceID,
-		Type:        n.Type,
-		EntityType:  n.EntityType,
+		Type:        string(n.Type),
+		EntityType:  string(n.EntityType),
 		EntityID:    n.EntityID,
 		ActorID:     n.ActorID,
 		Actor:       toAppNotificationActor(n.Actor),
@@ -176,7 +176,7 @@ func toAppPortalNotificationsResponse(ns []notifications.CorePortalNotification,
 		notification := portalNotification.Notification.Public()
 		result = append(result, AppPortalNotification{
 			ID:      notification.ID,
-			Type:    notification.Type,
+			Type:    string(notification.Type),
 			Title:   notification.Title,
 			Message: notification.Message,
 			Actor: AppPortalNotificationActor{
@@ -217,29 +217,10 @@ func toAppNotificationPreferences(p notifications.CoreNotificationPreferences) A
 		UpdatedAt:   p.UpdatedAt,
 	}
 
-	// Convert between internal and API representations
 	for key, channels := range p.Preferences {
-		// Handle the interface{} type from the database
-		if channelMap, ok := channels.(map[string]interface{}); ok {
-			email := false
-			inApp := false
-
-			if emailVal, exists := channelMap["email"]; exists {
-				if emailBool, ok := emailVal.(bool); ok {
-					email = emailBool
-				}
-			}
-
-			if inAppVal, exists := channelMap["in_app"]; exists {
-				if inAppBool, ok := inAppVal.(bool); ok {
-					inApp = inAppBool
-				}
-			}
-
-			appPrefs.Preferences[key] = NotificationChannel{
-				Email: email,
-				InApp: inApp,
-			}
+		appPrefs.Preferences[string(key)] = NotificationChannel{
+			Email: channels.Email,
+			InApp: channels.InApp,
 		}
 	}
 

@@ -1,0 +1,31 @@
+package developeroauthdomain
+
+import "errors"
+
+var (
+	ErrApplicationNotFound         = errors.New("OAuth application not found")
+	ErrAuthorizationDenied         = errors.New("OAuth authorization denied")
+	ErrAuthorizationCode           = errors.New("OAuth authorization code is invalid or expired")
+	ErrAuthorizationCodeUsed       = errors.New("OAuth authorization code has already been used")
+	ErrInvalidClient               = errors.New("OAuth client binding is invalid")
+	ErrClientSecret                = errors.New("OAuth client secret is invalid or expired")
+	ErrApplicationActorUnavailable = errors.New("OAuth application actors are unavailable for this resource")
+	ErrInstallationNotFound        = errors.New("OAuth application installation not found")
+	ErrInstallationRevoked         = errors.New("OAuth application installation is revoked")
+	ErrAccessDenied                = errors.New("OAuth application management access denied")
+	ErrConcurrentUpdate            = errors.New("OAuth application state changed concurrently")
+	ErrInvalidExpiry               = errors.New("OAuth application expiry is invalid")
+	ErrInvalidName                 = errors.New("OAuth application name is invalid")
+	ErrInvalidReason               = errors.New("OAuth application revocation reason is invalid")
+	ErrInvalidRotationOverlap      = errors.New("OAuth client-secret rotation overlap is invalid")
+	ErrSecretPrefixCollision       = errors.New("OAuth client-secret lookup prefix collision")
+	ErrSecretNotFound              = errors.New("OAuth client secret not found")
+	ErrInvalidGrant                = errors.New("OAuth grant is invalid or expired")
+	ErrInvalidPKCE                 = errors.New("OAuth PKCE challenge or verifier is invalid")
+	ErrInvalidRedirectURI          = errors.New("OAuth redirect URI is invalid")
+	ErrInvalidResource             = errors.New("OAuth resource is invalid")
+	ErrInvalidScope                = errors.New("OAuth scope is invalid")
+	ErrRefreshToken                = errors.New("OAuth refresh token is invalid or expired")
+	ErrRefreshTokenReuse           = errors.New("OAuth refresh token reuse detected")
+	ErrTokenKeyUnavailable         = errors.New("OAuth token digest key is unavailable")
+)

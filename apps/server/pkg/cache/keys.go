@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -19,24 +21,28 @@ const (
 
 // Key formats for different types of cache entries
 const (
-	ObjectiveListKey      = "objectives:list:%s"        // workspaceID
-	ObjectiveDetailKey    = "objectives:detail:%s:%s"   // workspaceID, objectiveID
-	KeyResultsListKey     = "key-results:list:%s:%s"    // workspaceID, objectiveID
-	StoryListKey          = "stories:list:%s"           // workspaceID
-	StoryDetailKey        = "stories:detail:%s:%s"      // workspaceID, storyID
-	WorkspaceDetailKey    = "workspaces:detail:%s"      // workspaceID
-	UserDetailKey         = "users:detail:%s"           // userID
-	MyStoriesKey          = "stories:my-stories:%s"     // workspaceID
-	StoryCommentsKey      = "stories:comments:%s:%s"    // workspaceID, storyID
-	StoryActivitiesKey    = "stories:activities:%s:%s"  // workspaceID, storyID
-	StoryAttachmentsKey   = "stories:attachments:%s:%s" // workspaceID, storyID
-	WorkspacesListKey     = "workspaces:list:%s"        // userID (list of workspaces for a user)
-	WorkspaceMembersKey   = "workspaces:members:%s"     // workspaceID (members of a workspace)
-	WorkspaceTeamsKey     = "workspaces:teams:%s"       // workspaceID (teams in a workspace)
-	WorkspaceSettingsKey  = "workspaces:settings:%s"    // workspaceID
-	AuthSessionKey        = "auth:session:%s"           // session token
-	AuthGoogleStateKey    = "auth:google:state:%s"      // oauth state
-	AuthMicrosoftStateKey = "auth:microsoft:state:%s"   // oauth state
+	ObjectiveListKey      = "objectives:list:%s"         // workspaceID
+	ObjectiveDetailKey    = "objectives:detail:%s:%s"    // workspaceID, objectiveID
+	KeyResultsListKey     = "key-results:list:%s:%s"     // workspaceID, objectiveID
+	StoryListKey          = "stories:list:%s"            // workspaceID
+	StoryDetailKey        = "stories:detail:%s:%s"       // workspaceID, storyID
+	WorkspaceDetailKey    = "workspaces:detail:%s"       // workspaceID
+	UserDetailKey         = "users:detail:%s"            // userID
+	MyStoriesKey          = "stories:my-stories:%s"      // workspaceID
+	StoryCommentsKey      = "stories:comments:%s:%s"     // workspaceID, storyID
+	StoryActivitiesKey    = "stories:activities:%s:%s"   // workspaceID, storyID
+	StoryAttachmentsKey   = "stories:attachments:%s:%s"  // workspaceID, storyID
+	WorkspacesListKey     = "workspaces:list:%s"         // userID (list of workspaces for a user)
+	WorkspaceMembersKey   = "workspaces:members:%s"      // workspaceID (members of a workspace)
+	WorkspaceTeamsKey     = "workspaces:teams:%s"        // workspaceID (teams in a workspace)
+	WorkspaceSettingsKey  = "workspaces:settings:%s"     // workspaceID
+	AuthSessionKey        = "auth:session:v2:%s"         // SHA-256 session-token digest
+	AuthGoogleStateKey    = "auth:google:state:v2:%s"    // SHA-256 OAuth-state digest
+	AuthMicrosoftStateKey = "auth:microsoft:state:v2:%s" // SHA-256 OAuth-state digest
+
+	legacyAuthSessionKey        = "auth:session:%s"
+	legacyAuthGoogleStateKey    = "auth:google:state:%s"
+	legacyAuthMicrosoftStateKey = "auth:microsoft:state:%s"
 )
 
 // ObjectiveListCacheKey generates a cache key for a user's list of objectives.
@@ -117,17 +123,41 @@ func WorkspaceSettingsCacheKey(workspaceID uuid.UUID) string {
 
 // AuthSessionCacheKey generates a cache key for an authenticated session token.
 func AuthSessionCacheKey(token string) string {
-	return fmt.Sprintf(AuthSessionKey, token)
+	return secretCacheKey(AuthSessionKey, token)
 }
 
 // AuthGoogleStateCacheKey generates a cache key for Google OAuth state values.
 func AuthGoogleStateCacheKey(state string) string {
-	return fmt.Sprintf(AuthGoogleStateKey, state)
+	return secretCacheKey(AuthGoogleStateKey, state)
 }
 
 // AuthMicrosoftStateCacheKey generates a cache key for Microsoft OAuth state values.
 func AuthMicrosoftStateCacheKey(state string) string {
-	return fmt.Sprintf(AuthMicrosoftStateKey, state)
+	return secretCacheKey(AuthMicrosoftStateKey, state)
+}
+
+// LegacyAuthSessionCacheKey supports only read/delete compatibility for sessions
+// issued before digest-key deployment. New values must never be written here.
+// Remove this function after the 30-day session compatibility window expires.
+func LegacyAuthSessionCacheKey(token string) string {
+	return fmt.Sprintf(legacyAuthSessionKey, token)
+}
+
+// LegacyAuthGoogleStateCacheKey supports consuming an OAuth state issued by an
+// old API instance during deployment. New values must never be written here.
+func LegacyAuthGoogleStateCacheKey(state string) string {
+	return fmt.Sprintf(legacyAuthGoogleStateKey, state)
+}
+
+// LegacyAuthMicrosoftStateCacheKey supports consuming an OAuth state issued by
+// an old API instance during deployment. New values must never be written here.
+func LegacyAuthMicrosoftStateCacheKey(state string) string {
+	return fmt.Sprintf(legacyAuthMicrosoftStateKey, state)
+}
+
+func secretCacheKey(format, secret string) string {
+	digest := sha256.Sum256([]byte(secret))
+	return fmt.Sprintf(format, hex.EncodeToString(digest[:]))
 }
 
 // InvalidateObjectiveKeys invalidates all cache keys related to an objective

@@ -1,0 +1,39 @@
+---
+title: Scopes and access
+description: Give an integration only the FortyOne permissions it needs.
+icon: ShieldCheck
+---
+
+A scope allows a credential to request an operation. It does not create
+workspace membership, team membership, an administrator role, or ownership.
+FortyOne checks current access again on every request.
+
+## Published scopes
+
+| Scope             | Allows                                                 |
+| ----------------- | ------------------------------------------------------ |
+| `workspaces:read` | Read the current workspace                             |
+| `teams:read`      | List accessible teams                                  |
+| `stories:read`    | Read accessible stories and workflow states            |
+| `stories:write`   | Create supported stories                               |
+| `comments:read`   | Read comments on stories the actor can also read       |
+| `labels:read`     | Read labels in an accessible team context              |
+| `sprints:read`    | Read accessible sprints                                |
+| `objectives:read` | Read objectives and key results                        |
+| `webhooks:manage` | Manage workspace webhook endpoints as an administrator |
+
+Some credential-management screens contain scopes reserved for future or
+first-party use. A listed scope does not imply that a public endpoint exists.
+The [API reference](/api-reference/reference) is authoritative for operations
+and their required scopes.
+
+## Least-privilege rules
+
+- Issue a separate credential for each integration.
+- Select only the scopes required by its current operations.
+- Add team restrictions when automation belongs to a fixed set of teams.
+- Review long-lived credentials regularly and revoke unused ones.
+- Remember that `comments:read` also requires `stories:read`.
+
+`first_party:*` is reserved for FortyOne applications and cannot be assigned to
+a developer credential.

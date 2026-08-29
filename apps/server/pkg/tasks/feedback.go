@@ -15,12 +15,11 @@ const (
 )
 
 type FeedbackContributorDeliveryPayload struct {
-	DeliveryID       uuid.UUID `json:"deliveryId"`
-	UnsubscribeToken string    `json:"unsubscribeToken"`
+	DeliveryID uuid.UUID `json:"deliveryId"`
 }
 
 func (s *Service) EnqueueFeedbackContributorDelivery(payload FeedbackContributorDeliveryPayload) error {
-	if payload.DeliveryID == uuid.Nil || payload.UnsubscribeToken == "" {
+	if payload.DeliveryID == uuid.Nil {
 		return fmt.Errorf("tasks: feedback contributor delivery payload is incomplete")
 	}
 	encoded, err := json.Marshal(payload)

@@ -1,28 +1,9 @@
 package links
 
-import (
-	"time"
+import linksdomain "github.com/complexus-tech/projects-api/internal/modules/links/domain"
 
-	"github.com/google/uuid"
-)
-
-type CoreLink struct {
-	LinkID    uuid.UUID
-	Title     *string
-	URL       string
-	StoryID   uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-type CoreNewLink struct {
-	Title       *string
-	URL         string
-	StoryID     uuid.UUID
-	WorkspaceID uuid.UUID
-}
-
-type CoreUpdateLink struct {
-	Title *string
-	URL   *string
-}
+// Compatibility aliases keep the existing service and HTTP API stable while
+// the persistence adapter depends only on transport-neutral domain values.
+type CoreLink = linksdomain.Link
+type CoreNewLink = linksdomain.CreateLink
+type CoreUpdateLink = linksdomain.UpdateLink

@@ -5,17 +5,16 @@ import (
 	"strings"
 
 	emailagent "github.com/complexus-tech/projects-api/internal/modules/emailagent/service"
+	emailreplyrepository "github.com/complexus-tech/projects-api/internal/modules/emailreply/repository"
 	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
 	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
+	feedbackstory "github.com/complexus-tech/projects-api/internal/modules/feedback/storyadapter"
 	keyresultsrepository "github.com/complexus-tech/projects-api/internal/modules/keyresults/repository"
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
-	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
 	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
-	okractivitiesrepository "github.com/complexus-tech/projects-api/internal/modules/okractivities/repository"
-	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/pkg/emailthread"
@@ -24,13 +23,14 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 )
 
 func buildEmailReplyProcessor(
 	log *logger.Logger,
-	db *sqlx.DB,
+	pool *pgxpool.Pool,
+	mayaAccess mayaWorkspaceAccess,
 	redisClient *redis.Client,
 	cfg Config,
 	tasksService *tasks.Service,
@@ -43,33 +43,30 @@ func buildEmailReplyProcessor(
 	eventPublisher := publisher.New(redisClient, log)
 	storyService := stories.New(
 		log,
-		storiesrepository.New(log, db),
-		mentionsrepository.New(log, db),
+		storiesrepository.New(log, pool),
 		eventPublisher,
 		tasksService,
 	)
+	storyService.ConfigureCommentCreator(buildStoryCommentCreator(log, pool))
 	storyService.ConfigureMayaActor(mayaActorID)
-	storyService.ConfigureAutoSchedulingEligibility(workspaceAssistantAccess{db: db}.CanUseAssistant)
-	okrActivityService := okractivities.New(log, okractivitiesrepository.New(log, db))
+	storyService.ConfigureAutoSchedulingEligibility(mayaAccess.WorkspaceCanUseMaya)
 	objectiveService := objectives.New(
 		log,
-		objectivesrepository.New(log, db),
-		okrActivityService,
+		objectivesrepository.New(pool),
 		objectives.WithPublisher(eventPublisher),
 	)
 	keyResultService := keyresults.New(
 		log,
-		keyresultsrepository.New(log, db),
-		okrActivityService,
+		keyresultsrepository.New(pool),
 		keyresults.WithPublisher(eventPublisher),
 	)
 	feedbackService := feedback.New(
-		feedbackrepository.New(log, db),
-		storyService,
+		feedbackrepository.New(log, pool),
+		feedbackstory.New(storyService),
 		feedback.WithEventPublisher(log, eventPublisher),
 	)
 
-	contextLoader, err := emailreply.NewDBContextLoader(db)
+	contextLoader, err := emailreply.NewDBContextLoader(emailreplyrepository.New(pool))
 	if err != nil {
 		return nil, fmt.Errorf("initialize Maya email reply context: %w", err)
 	}
@@ -103,11 +100,12 @@ func buildEmailReplyProcessor(
 
 	processor, err := emailreply.NewProcessor(emailreply.ProcessorConfig{
 		Log:        log,
-		Store:      messagingRepo,
+		Store:      emailReplyStoreAdapter{repository: messagingRepo},
 		Inbound:    inbound,
-		Agent:      decisionService,
-		Summarizer: summarizer,
-		Threads:    threads,
+		Agent:      emailDecisionAdapter{backend: decisionService},
+		Summarizer: emailSummaryAdapter{backend: summarizer},
+		Renderer:   emailCopyRenderer{},
+		Threads:    emailReplyThreadAdapter{service: threads},
 		Mailer:     mailerService,
 		Context:    contextLoader,
 		Mutations:  mutations,

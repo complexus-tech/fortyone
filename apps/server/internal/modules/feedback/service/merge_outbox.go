@@ -175,7 +175,7 @@ func (s *Service) dispatchMergeEvent(ctx context.Context, merge CoreMergeOutboxE
 
 func (s *Service) persistAndEnqueueMergeDelivery(ctx context.Context, merge CoreMergeOutboxEvent, snapshot mergeSnapshot, contributorID uuid.UUID, destinationURL string) error {
 	deliveryID := stableMergeDeliveryID(merge.EventID, contributorID)
-	unsubscribeToken, unsubscribeHash, err := feedbacksecurity.DeriveUnsubscribeTokenWithKey(s.security.unsubscribeKey[:], deliveryID)
+	_, unsubscribeHash, err := feedbacksecurity.DeriveUnsubscribeTokenWithKey(s.security.unsubscribeKey[:], deliveryID)
 	if err != nil {
 		return fmt.Errorf("derive merge unsubscribe token: %w", err)
 	}
@@ -197,7 +197,7 @@ func (s *Service) persistAndEnqueueMergeDelivery(ctx context.Context, merge Core
 		return nil
 	}
 	if err := s.tasks.EnqueueFeedbackContributorDelivery(tasks.FeedbackContributorDeliveryPayload{
-		DeliveryID: delivery.ID, UnsubscribeToken: unsubscribeToken,
+		DeliveryID: delivery.ID,
 	}); err != nil {
 		return fmt.Errorf("enqueue merge delivery %s: %w", delivery.ID, err)
 	}

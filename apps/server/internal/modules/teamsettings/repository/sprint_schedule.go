@@ -2,135 +2,159 @@ package teamsettingsrepository
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
-	teamsettings "github.com/complexus-tech/projects-api/internal/modules/teamsettings/service"
+	teamsettings "github.com/complexus-tech/projects-api/internal/modules/teamsettings/domain"
+	teamsettingssql "github.com/complexus-tech/projects-api/internal/modules/teamsettings/repository/sqlc"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5"
 )
 
 type scheduledSprint struct {
-	ID        uuid.UUID `db:"sprint_id"`
-	Name      string    `db:"name"`
-	StartDate time.Time `db:"start_date"`
-	EndDate   time.Time `db:"end_date"`
+	ID        uuid.UUID
+	Name      string
+	StartDate time.Time
+	EndDate   time.Time
 }
+
+const maxManagedSprintScheduleRows = 100
+
+type sprintScheduleAuditWriter func(
+	context.Context,
+	teamsettingssql.Querier,
+	teamsettings.CoreTeamSprintSettings,
+	scheduledSprint,
+	time.Time,
+	time.Time,
+) error
 
 func (r *repo) ReconcileSprintSchedule(
 	ctx context.Context,
 	settings teamsettings.CoreTeamSprintSettings,
-	actorID *uuid.UUID,
+	actor teamsettings.AuditActor,
 ) (int, error) {
-	tx, err := r.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return 0, fmt.Errorf("begin sprint schedule reconciliation: %w", err)
-	}
-	defer tx.Rollback()
-
-	updated, err := r.reconcileSprintScheduleTx(ctx, tx, settings, actorID)
-	if err != nil {
-		return 0, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("commit sprint schedule reconciliation: %w", err)
-	}
-
-	return updated, nil
+	updated := 0
+	err := r.withinTransaction(ctx, func(queries teamsettingssql.Querier) error {
+		locked, err := queries.LockSprintSettings(ctx, teamsettingssql.LockSprintSettingsParams{
+			TeamID: settings.TeamID, WorkspaceID: settings.WorkspaceID,
+		})
+		if err != nil {
+			return fmt.Errorf("lock sprint settings: %w", err)
+		}
+		updated, err = reconcileSprintSchedule(ctx, queries, mapLockedSprintSettings(locked), actor)
+		return err
+	})
+	return updated, err
 }
 
-func (r *repo) reconcileSprintScheduleTx(
+func reconcileSprintSchedule(
 	ctx context.Context,
-	tx *sqlx.Tx,
+	queries teamsettingssql.Querier,
 	settings teamsettings.CoreTeamSprintSettings,
-	actorID *uuid.UUID,
+	actor teamsettings.AuditActor,
 ) (int, error) {
-	var futureSprints []scheduledSprint
-	if err := tx.SelectContext(ctx, &futureSprints, `
-		SELECT sprint_id, name, start_date, end_date
-		FROM sprints
-		WHERE team_id = $1
-			AND workspace_id = $2
-			AND schedule_managed_by_automation = true
-			AND start_date > CURRENT_DATE
-		ORDER BY start_date, sprint_id
-		FOR UPDATE
-	`, settings.TeamID, settings.WorkspaceID); err != nil {
+	scheduleDate, err := queries.GetDatabaseDate(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("get database schedule date: %w", err)
+	}
+	changedAt := time.Now().UTC()
+	return reconcileSprintScheduleAt(
+		ctx,
+		queries,
+		settings,
+		scheduleDate,
+		changedAt,
+		func(
+			ctx context.Context,
+			queries teamsettingssql.Querier,
+			settings teamsettings.CoreTeamSprintSettings,
+			sprint scheduledSprint,
+			startDate, endDate time.Time,
+		) error {
+			return insertAuditEvent(
+				ctx, queries, settings.WorkspaceID, settings.TeamID, actor,
+				"sprint", sprint.ID, "sprint.auto_rescheduled",
+				scheduleAuditMetadata(settings, sprint, startDate, endDate),
+			)
+		},
+	)
+}
+
+func reconcileSprintScheduleAt(
+	ctx context.Context,
+	queries teamsettingssql.Querier,
+	settings teamsettings.CoreTeamSprintSettings,
+	scheduleDate, changedAt time.Time,
+	writeAudit sprintScheduleAuditWriter,
+) (int, error) {
+	managedRows, err := queries.ListManagedFutureSprintsForUpdate(ctx, teamsettingssql.ListManagedFutureSprintsForUpdateParams{
+		TeamID: settings.TeamID, WorkspaceID: settings.WorkspaceID, ScheduleDate: scheduleDate,
+		RowLimit: maxManagedSprintScheduleRows + 1,
+	})
+	if err != nil {
 		return 0, fmt.Errorf("list automation-managed future sprints: %w", err)
 	}
-	if len(futureSprints) == 0 {
+	if len(managedRows) > maxManagedSprintScheduleRows {
+		return 0, teamsettings.ErrSprintScheduleTooLarge
+	}
+	if len(managedRows) == 0 {
 		return 0, nil
 	}
-
-	var currentDate time.Time
-	if err := tx.GetContext(ctx, &currentDate, "SELECT CURRENT_DATE"); err != nil {
-		return 0, fmt.Errorf("get current schedule date: %w", err)
+	managed := make([]scheduledSprint, len(managedRows))
+	for index, row := range managedRows {
+		managed[index] = scheduledSprint{ID: row.SprintID, Name: row.Name, StartDate: row.StartDate, EndDate: row.EndDate}
 	}
 
-	anchorDate := currentDate
-	var activeSprintEnd time.Time
-	err := tx.GetContext(ctx, &activeSprintEnd, `
-		SELECT end_date
-		FROM sprints
-		WHERE team_id = $1
-			AND workspace_id = $2
-			AND start_date <= CURRENT_DATE
-			AND end_date >= CURRENT_DATE
-		ORDER BY end_date DESC
-		LIMIT 1
-	`, settings.TeamID, settings.WorkspaceID)
-	if err != nil && err != sql.ErrNoRows {
+	anchorDate := scheduleDate
+	activeEnd, err := queries.GetActiveSprintEnd(ctx, teamsettingssql.GetActiveSprintEndParams{
+		TeamID: settings.TeamID, WorkspaceID: settings.WorkspaceID, ScheduleDate: scheduleDate,
+	})
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return 0, fmt.Errorf("get active sprint schedule boundary: %w", err)
 	}
-	if err == nil && activeSprintEnd.After(anchorDate) {
-		anchorDate = activeSprintEnd
-	}
-
-	var customFutureSprints []scheduledSprint
-	if err := tx.SelectContext(ctx, &customFutureSprints, `
-		SELECT sprint_id, name, start_date, end_date
-		FROM sprints
-		WHERE team_id = $1
-			AND workspace_id = $2
-			AND schedule_managed_by_automation = false
-			AND start_date > CURRENT_DATE
-		ORDER BY start_date, sprint_id
-	`, settings.TeamID, settings.WorkspaceID); err != nil {
-		return 0, fmt.Errorf("list custom future sprints: %w", err)
+	if err == nil && activeEnd.After(anchorDate) {
+		anchorDate = activeEnd
 	}
 
 	nextStart := nextSprintStartAfter(anchorDate, settings.SprintStartDay)
 	updatedCount := 0
-	for _, sprint := range futureSprints {
+	for _, sprint := range managed {
 		nextEnd := nextStart.AddDate(0, 0, settings.SprintDurationWeeks*7-1)
-		if conflictingSprint, ok := findScheduleConflict(nextStart, nextEnd, customFutureSprints); ok {
-			return 0, fmt.Errorf("%w: %s", teamsettings.ErrSprintScheduleConflict, conflictingSprint.Name)
+		conflict, err := queries.FindCustomSprintScheduleConflict(ctx, teamsettingssql.FindCustomSprintScheduleConflictParams{
+			TeamID: settings.TeamID, WorkspaceID: settings.WorkspaceID,
+			ScheduleDate: scheduleDate, ProposedStartDate: nextStart, ProposedEndDate: nextEnd,
+		})
+		if err == nil {
+			return 0, fmt.Errorf("%w: %s", teamsettings.ErrSprintScheduleConflict, conflict.Name)
 		}
-
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return 0, fmt.Errorf("find custom sprint schedule conflict: %w", err)
+		}
 		if sprint.StartDate.Equal(nextStart) && sprint.EndDate.Equal(nextEnd) {
 			nextStart = nextEnd.AddDate(0, 0, 1)
 			continue
 		}
-
-		if _, err := tx.ExecContext(ctx, `
-			UPDATE sprints
-			SET start_date = $1, end_date = $2, updated_at = NOW()
-			WHERE sprint_id = $3 AND workspace_id = $4
-		`, nextStart, nextEnd, sprint.ID, settings.WorkspaceID); err != nil {
-			return 0, fmt.Errorf("reschedule sprint %s: %w", sprint.ID, err)
+		rowsAffected, err := queries.UpdateManagedSprintSchedule(ctx, teamsettingssql.UpdateManagedSprintScheduleParams{
+			StartDate: nextStart, EndDate: nextEnd, SprintID: sprint.ID,
+			TeamID: settings.TeamID, WorkspaceID: settings.WorkspaceID, UpdatedAt: changedAt,
+		})
+		if err != nil {
+			return 0, fmt.Errorf("reschedule managed sprint: %w", err)
 		}
-
-		if err := recordSprintScheduleAuditEvent(ctx, tx, settings, sprint, nextStart, nextEnd, actorID); err != nil {
+		if rowsAffected != 1 {
+			return 0, teamsettings.ErrConcurrentUpdate
+		}
+		if writeAudit == nil {
+			return 0, errors.New("sprint schedule audit writer is required")
+		}
+		if err := writeAudit(ctx, queries, settings, sprint, nextStart, nextEnd); err != nil {
 			return 0, err
 		}
-
 		updatedCount++
 		nextStart = nextEnd.AddDate(0, 0, 1)
 	}
-
 	return updatedCount, nil
 }
 
@@ -140,11 +164,10 @@ func nextSprintStartAfter(anchor time.Time, startDay string) time.Time {
 		"Thursday": time.Thursday, "Friday": time.Friday, "Saturday": time.Saturday,
 		"Sunday": time.Sunday,
 	}
-	target, ok := weekdays[startDay]
-	if !ok {
+	target, valid := weekdays[startDay]
+	if !valid {
 		target = time.Monday
 	}
-
 	daysUntilTarget := (int(target) - int(anchor.Weekday()) + 7) % 7
 	if daysUntilTarget == 0 {
 		daysUntilTarget = 7
@@ -152,47 +175,11 @@ func nextSprintStartAfter(anchor time.Time, startDay string) time.Time {
 	return anchor.AddDate(0, 0, daysUntilTarget)
 }
 
-func findScheduleConflict(startDate, endDate time.Time, customSprints []scheduledSprint) (scheduledSprint, bool) {
-	for _, sprint := range customSprints {
+func findScheduleConflict(startDate, endDate time.Time, custom []scheduledSprint) (scheduledSprint, bool) {
+	for _, sprint := range custom {
 		if !startDate.After(sprint.EndDate) && !endDate.Before(sprint.StartDate) {
 			return sprint, true
 		}
 	}
 	return scheduledSprint{}, false
-}
-
-func recordSprintScheduleAuditEvent(
-	ctx context.Context,
-	tx *sqlx.Tx,
-	settings teamsettings.CoreTeamSprintSettings,
-	sprint scheduledSprint,
-	startDate, endDate time.Time,
-	actorID *uuid.UUID,
-) error {
-	metadata, err := json.Marshal(map[string]any{
-		"old_start_date":        sprint.StartDate.Format("2006-01-02"),
-		"old_end_date":          sprint.EndDate.Format("2006-01-02"),
-		"new_start_date":        startDate.Format("2006-01-02"),
-		"new_end_date":          endDate.Format("2006-01-02"),
-		"sprint_duration_weeks": settings.SprintDurationWeeks,
-		"sprint_start_day":      settings.SprintStartDay,
-	})
-	if err != nil {
-		return fmt.Errorf("marshal sprint schedule audit metadata: %w", err)
-	}
-
-	actorType := "automation"
-	if actorID != nil {
-		actorType = "user"
-	}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO audit_events (
-			workspace_id, team_id, actor_type, actor_id,
-			entity_type, entity_id, event_type, metadata
-		) VALUES ($1, $2, $3, $4, 'sprint', $5, 'sprint.auto_rescheduled', CAST($6 AS jsonb))
-	`, settings.WorkspaceID, settings.TeamID, actorType, actorID, sprint.ID, string(metadata)); err != nil {
-		return fmt.Errorf("record sprint schedule audit event: %w", err)
-	}
-
-	return nil
 }

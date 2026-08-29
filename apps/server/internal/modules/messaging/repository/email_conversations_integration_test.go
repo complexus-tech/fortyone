@@ -11,8 +11,7 @@ import (
 
 	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,13 +23,14 @@ func TestEmailConversationPostgresContract(t *testing.T) {
 	if databaseURL == "" {
 		t.Skip("MESSAGING_EMAIL_TEST_DATABASE_URL is not configured")
 	}
-	db, err := sqlx.Connect("postgres", databaseURL)
+	pool, err := pgxpool.New(context.Background(), databaseURL)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = db.Close() })
+	require.NoError(t, pool.Ping(context.Background()))
+	t.Cleanup(pool.Close)
 
 	ctx := context.Background()
-	repo := New(db)
-	workspaceID, userID := seedEmailConversationActor(t, db)
+	repo := New(pool)
+	workspaceID, userID := seedEmailConversationActor(t, pool)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	tokenHash := bytes.Repeat([]byte{1}, sha256DigestSize)
 	thread, created, err := repo.CreateEmailThread(ctx, messaging.EmailThreadInput{
@@ -52,7 +52,7 @@ func TestEmailConversationPostgresContract(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, thread.ID, lookup.Thread.ID)
-	_, err = db.ExecContext(ctx, `
+	_, err = pool.Exec(ctx, `
 		UPDATE workspace_members
 		SET role = 'guest'
 		WHERE workspace_id = $1 AND user_id = $2
@@ -74,13 +74,13 @@ func TestEmailConversationPostgresContract(t *testing.T) {
 		Provider: "brevo_email", TokenHash: tokenHash, Now: now,
 	})
 	require.NoError(t, err, "rotating an alias must not invalidate an older active address")
-	_, err = db.ExecContext(ctx, `UPDATE users SET email = 'changed@example.test' WHERE user_id = $1`, userID)
+	_, err = pool.Exec(ctx, `UPDATE users SET email = 'changed@example.test' WHERE user_id = $1`, userID)
 	require.NoError(t, err)
 	_, err = repo.FindEmailThreadByReplyToken(ctx, messaging.EmailReplyTokenLookup{
 		Provider: "brevo_email", TokenHash: tokenHash, Now: now,
 	})
 	require.ErrorIs(t, err, messaging.ErrInvalidEmailReplyToken, "an old mailbox must lose authority after the account email changes")
-	_, err = db.ExecContext(ctx, `UPDATE users SET email = 'email-conversation@example.test' WHERE user_id = $1`, userID)
+	_, err = pool.Exec(ctx, `UPDATE users SET email = 'email-conversation@example.test' WHERE user_id = $1`, userID)
 	require.NoError(t, err)
 
 	messageInput := messaging.EmailMessageInput{
@@ -203,7 +203,7 @@ func TestEmailConversationPostgresContract(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, messaging.EmailActionProposalExpired, expiringProposal.Status)
 
-	_, err = db.ExecContext(ctx, `
+	_, err = pool.Exec(ctx, `
 		DELETE FROM workspace_members
 		WHERE workspace_id = $1 AND user_id = $2
 	`, workspaceID, userID)
@@ -219,27 +219,27 @@ func TestEmailConversationPostgresContract(t *testing.T) {
 	require.ErrorIs(t, err, messaging.ErrInvalidEmailReplyToken)
 }
 
-func seedEmailConversationActor(t *testing.T, db *sqlx.DB) (uuid.UUID, uuid.UUID) {
+func seedEmailConversationActor(t *testing.T, pool *pgxpool.Pool) (uuid.UUID, uuid.UUID) {
 	t.Helper()
 	ctx := context.Background()
 	userID := uuid.New()
 	workspaceID := uuid.New()
 	suffix := uuid.NewString()
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(context.Background(), "DELETE FROM workspaces WHERE workspace_id = $1", workspaceID)
-		_, _ = db.ExecContext(context.Background(), "DELETE FROM users WHERE user_id = $1", userID)
+		_, _ = pool.Exec(context.Background(), "DELETE FROM workspaces WHERE workspace_id = $1", workspaceID)
+		_, _ = pool.Exec(context.Background(), "DELETE FROM users WHERE user_id = $1", userID)
 	})
-	_, err := db.ExecContext(ctx, `
+	_, err := pool.Exec(ctx, `
 		INSERT INTO users (user_id, username, email)
 		VALUES ($1, $2, $3)
 	`, userID, "email-conversation-"+suffix, "email-conversation-"+suffix+"@example.test")
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `
+	_, err = pool.Exec(ctx, `
 		INSERT INTO workspaces (workspace_id, name, slug, created_by)
 		VALUES ($1, 'Email Conversation Test', $2, $3)
 	`, workspaceID, "email-conversation-"+suffix, userID)
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `
+	_, err = pool.Exec(ctx, `
 		INSERT INTO workspace_members (workspace_id, user_id, role)
 		VALUES ($1, $2, 'member')
 	`, workspaceID, userID)

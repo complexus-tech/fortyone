@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "rulePathCounts": {
+    "cross_module_http_import": {},
+    "cross_module_service_import": {},
+    "direct_sql_outside_persistence": {},
+    "generated_openapi_leak": {},
+    "generated_sqlc_leak": {},
+    "module_dependency_cycle": {},
+    "raw_database_route_config": {},
+    "repository_auth_context_read": {},
+    "repository_repository_import": {},
+    "repository_service_http_import": {},
+    "repository_service_import": {},
+    "service_repository_import": {},
+    "sqlx_import": {},
+    "unsafe_raw_request_body_read": {}
+  },
+  "oversizedFiles": {
+    "internal/modules/maya/service/reconciliation_test.go": 710
+  }
+}

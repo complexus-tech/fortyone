@@ -12,9 +12,11 @@ import (
 	"testing"
 	"time"
 
+	attachmentdomain "github.com/complexus-tech/projects-api/internal/modules/attachments/domain"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
+	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/google/uuid"
 )
 
@@ -48,13 +50,8 @@ func (r *attachmentRepositoryStub) CreateAttachment(_ context.Context, attachmen
 	r.attachment = attachment
 	return attachment, nil
 }
-
-func (r *attachmentRepositoryStub) GetAttachmentByID(_ context.Context, _ uuid.UUID) (CoreAttachment, error) {
-	return r.attachment, nil
-}
-
-func (r *attachmentRepositoryStub) GetAttachmentByBlobName(_ context.Context, blobName string) (CoreAttachment, error) {
-	if r.attachment.BlobName != blobName {
+func (r *attachmentRepositoryStub) GetAttachmentByID(_ context.Context, id, workspaceID uuid.UUID) (CoreAttachment, error) {
+	if r.attachment.ID != id || r.attachment.WorkspaceID != workspaceID {
 		return CoreAttachment{}, ErrNotFound
 	}
 	return r.attachment, nil
@@ -110,24 +107,55 @@ func (r *attachmentRepositoryStub) UnlinkStoryMedia(_ context.Context, storyID, 
 		return false, ErrNotFound
 	}
 	r.storyMediaUnlinkCount++
+	if r.storyMediaOrphaned {
+		r.deletedAttachmentID = attachmentID
+	}
 	return r.storyMediaOrphaned, nil
 }
 
-func (r *attachmentRepositoryStub) UpdateAttachmentStorageMetadata(_ context.Context, blobName string, size int64, mimeType string) error {
-	if r.attachment.BlobName != blobName {
+func (r *attachmentRepositoryStub) StartAttachmentOptimization(_ context.Context, attachmentID, workspaceID uuid.UUID, _ time.Duration) (CoreAttachment, error) {
+	if r.attachment.ID != attachmentID || r.attachment.WorkspaceID != workspaceID {
+		return CoreAttachment{}, ErrNotFound
+	}
+	r.attachment.OptimizationStatus = attachmentdomain.OptimizationProcessing
+	return r.attachment, nil
+}
+
+func (r *attachmentRepositoryStub) CompleteAttachmentOptimization(_ context.Context, attachmentID, workspaceID uuid.UUID, size int64, mimeType string, status attachmentdomain.OptimizationStatus) error {
+	if r.attachment.ID != attachmentID || r.attachment.WorkspaceID != workspaceID {
 		return ErrNotFound
 	}
 	r.attachment.Size = size
 	r.attachment.MimeType = mimeType
+	r.attachment.OptimizationStatus = status
 	return nil
 }
 
-func (r *attachmentRepositoryStub) DeleteAttachment(_ context.Context, id uuid.UUID) error {
+func (r *attachmentRepositoryStub) FailAttachmentOptimization(_ context.Context, attachmentID, workspaceID uuid.UUID, _ string, _ bool) error {
+	if r.attachment.ID != attachmentID || r.attachment.WorkspaceID != workspaceID {
+		return ErrNotFound
+	}
+	r.attachment.OptimizationStatus = attachmentdomain.OptimizationFailed
+	return nil
+}
+
+func (r *attachmentRepositoryStub) DeleteAttachment(_ context.Context, id, workspaceID uuid.UUID) error {
+	if r.attachment.ID != uuid.Nil && (r.attachment.ID != id || r.attachment.WorkspaceID != workspaceID) {
+		return ErrNotFound
+	}
 	r.deletedAttachmentID = id
 	return nil
 }
 
-func (r *attachmentRepositoryStub) LinkAttachmentToStory(_ context.Context, _, _ uuid.UUID) error {
+func (r *attachmentRepositoryStub) DeleteAttachmentIfUnreferenced(_ context.Context, id, workspaceID uuid.UUID) (bool, error) {
+	if r.attachment.ID != id || r.attachment.WorkspaceID != workspaceID {
+		return false, ErrNotFound
+	}
+	r.deletedAttachmentID = id
+	return true, nil
+}
+
+func (r *attachmentRepositoryStub) LinkAttachmentToStory(_ context.Context, _, _, _ uuid.UUID) error {
 	return nil
 }
 
@@ -139,6 +167,7 @@ type attachmentStorageStub struct {
 	generatedExpiry   time.Duration
 	generatedFilename string
 	deletedFilename   string
+	downloadLimit     int64
 }
 
 func (s *attachmentStorageStub) UploadFile(_ context.Context, _, _ string, data io.Reader, contentType string) (string, error) {
@@ -152,7 +181,8 @@ func (s *attachmentStorageStub) UploadFile(_ context.Context, _, _ string, data 
 	return "https://storage.test/attachment", nil
 }
 
-func (s *attachmentStorageStub) DownloadFile(_ context.Context, _, _ string) ([]byte, string, error) {
+func (s *attachmentStorageStub) DownloadFile(_ context.Context, _, _ string, maxBytes int64) ([]byte, string, error) {
+	s.downloadLimit = maxBytes
 	return append([]byte(nil), s.data...), s.contentType, nil
 }
 
@@ -231,12 +261,17 @@ func TestAttachmentUploadEnqueuesOptimizationAndWorkerCompressesStoredImage(t *t
 	if len(storageStub.data) != len(original) {
 		t.Fatalf("upload should store original bytes before the worker runs: stored=%d original=%d", len(storageStub.data), len(original))
 	}
-	if len(optimizer.payloads) != 1 || optimizer.payloads[0].BlobName != uploaded.BlobName {
-		t.Fatalf("expected one optimization task for %q, got %#v", uploaded.BlobName, optimizer.payloads)
+	if len(optimizer.payloads) != 1 ||
+		optimizer.payloads[0].AttachmentID != uploaded.ID ||
+		optimizer.payloads[0].WorkspaceID != repo.attachment.WorkspaceID {
+		t.Fatalf("expected one tenant-scoped optimization task for %s, got %#v", uploaded.ID, optimizer.payloads)
 	}
 
-	if err := service.OptimizeStoredAttachment(context.Background(), uploaded.BlobName); err != nil {
+	if err := service.OptimizeStoredAttachment(context.Background(), uploaded.ID, repo.attachment.WorkspaceID); err != nil {
 		t.Fatalf("optimize stored attachment: %v", err)
+	}
+	if storageStub.downloadLimit != validate.MaxAttachmentSize {
+		t.Fatalf("download limit = %d, want %d", storageStub.downloadLimit, validate.MaxAttachmentSize)
 	}
 	if len(storageStub.data) >= len(original) {
 		t.Fatalf("expected worker output to be smaller: optimized=%d original=%d", len(storageStub.data), len(original))

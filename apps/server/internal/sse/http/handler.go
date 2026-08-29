@@ -2,21 +2,30 @@ package ssehttp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/internal/sse"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 )
 
+const browserSessionRevalidationInterval = 25 * time.Second
+
 type Handler struct {
-	Log        *logger.Logger
-	SSEHub     *sse.Hub
-	CorsOrigin string
+	Log             *logger.Logger
+	SSEHub          *sse.Hub
+	Origins         web.OriginPolicy
+	BrowserSessions mid.SessionResolver
+	WorkspaceAccess mid.WorkspaceResolver
+
+	// keepAlive is injected only by focused stream tests. Production streams
+	// leave it nil and use browserSessionRevalidationInterval.
+	keepAlive <-chan time.Time
 }
 
 func (h *Handler) StreamNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -34,109 +43,147 @@ func (h *Handler) StreamNotifications(ctx context.Context, w http.ResponseWriter
 		return fmt.Errorf("invalid workspace: %w", err)
 	}
 
-	h.Log.Info(ctx, "SSE connection attempt (hijack) for user in workspace", "userID", userID, "workspaceID", workspace.ID)
-
-	hijacker, ok := w.(http.Hijacker)
+	_, ok := w.(http.Flusher)
 	if !ok {
-		h.Log.Error(ctx, "sse (hijack): ResponseWriter does not support hijacking", "userID", userID, "workspaceID", workspace.ID)
-		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
-		return fmt.Errorf("hijacking unsupported: ResponseWriter does not implement http.Hijacker")
+		h.Log.Error(ctx, "sse: ResponseWriter does not support streaming", "userID", userID, "workspaceID", workspace.ID)
+		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		return fmt.Errorf("streaming unsupported: ResponseWriter does not implement http.Flusher")
 	}
 
-	conn, bufRW, err := hijacker.Hijack()
+	sseClient, err := h.SSEHub.RegisterNewClient(userID, workspace.ID)
 	if err != nil {
-		h.Log.Error(ctx, "sse (hijack): Failed to hijack connection", "userID", userID, "workspaceID", workspace.ID, "error", err)
-		return fmt.Errorf("failed to hijack connection: %w", err)
-	}
-	defer func() {
-		h.Log.Info(ctx, "SSE (hijack): Closing hijacked connection", "userID", userID, "workspaceID", workspace.ID)
-		conn.Close()
-	}()
-
-	var headers strings.Builder
-	headers.WriteString("HTTP/1.1 200 OK\r\n")
-	headers.WriteString("Content-Type: text/event-stream\r\n")
-	headers.WriteString("Cache-Control: no-cache\r\n")
-	headers.WriteString("Connection: keep-alive\r\n")
-	allowedOrigin := web.AllowedOrigin(r)
-	if allowedOrigin != "" {
-		headers.WriteString(fmt.Sprintf("Access-Control-Allow-Origin: %s\r\n", allowedOrigin))
-		headers.WriteString("Access-Control-Allow-Credentials: true\r\n")
-		headers.WriteString("Vary: Origin\r\n")
-	} else if h.CorsOrigin != "" && h.CorsOrigin != "*" {
-		headers.WriteString(fmt.Sprintf("Access-Control-Allow-Origin: %s\r\n", h.CorsOrigin))
-		headers.WriteString("Access-Control-Allow-Credentials: true\r\n")
-		headers.WriteString("Vary: Origin\r\n")
-	}
-	headers.WriteString("X-Accel-Buffering: no\r\n")
-	headers.WriteString("\r\n")
-
-	_, err = bufRW.WriteString(headers.String())
-	if err == nil {
-		err = bufRW.Flush()
-	}
-	if err != nil {
-		h.Log.Error(ctx, "sse (hijack): Failed to write initial headers", "userID", userID, "workspaceID", workspace.ID, "error", err)
+		h.Log.Warn(ctx, "sse: Hub is not accepting clients", "userID", userID, "workspaceID", workspace.ID, "error", err)
+		http.Error(w, "Event stream is not ready", http.StatusServiceUnavailable)
 		return nil
 	}
-
-	sseClient := h.SSEHub.RegisterNewClient(userID, workspace.ID)
-	h.Log.Info(ctx, "SSE (hijack): Client registered with hub", "userID", userID, "workspaceID", workspace.ID)
 	defer func() {
 		h.SSEHub.UnregisterClient(sseClient)
-		h.Log.Info(ctx, "SSE (hijack): Client unregistered from hub", "userID", userID, "workspaceID", workspace.ID)
+		h.Log.Info(context.Background(), "SSE client unregistered from hub", "userID", userID, "workspaceID", workspace.ID)
 	}()
 
-	initialEvent := fmt.Sprintf("event: connected\ndata: {\"status\": \"connected\", \"userID\": \"%s\", \"workspaceID\": \"%s\"}\n\n", userID.String(), workspace.ID.String())
-	_, err = bufRW.WriteString(initialEvent)
-	if err == nil {
-		err = bufRW.Flush()
+	return h.serveStream(ctx, w, r, userID, workspace.ID, workspace.Slug, sseClient.Ctx(), sseClient.Send)
+}
+
+func (h *Handler) serveStream(
+	ctx context.Context,
+	w http.ResponseWriter,
+	r *http.Request,
+	userID uuid.UUID,
+	workspaceID uuid.UUID,
+	workspaceSlug string,
+	clientCtx context.Context,
+	messages <-chan []byte,
+) error {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		return fmt.Errorf("streaming unsupported: ResponseWriter does not implement http.Flusher")
 	}
-	if err != nil {
-		h.Log.Warn(ctx, "sse (hijack): Error writing initial connected event", "userID", userID, "workspaceID", workspace.ID, "error", err)
+
+	// A global HTTP write timeout is useful for ordinary endpoints but would
+	// otherwise impose a fixed lifetime on this long-lived response.
+	if err := http.NewResponseController(w).SetWriteDeadline(time.Time{}); err != nil && !errors.Is(err, http.ErrNotSupported) {
+		h.Log.Warn(ctx, "sse: Failed to clear stream write deadline", "userID", userID, "workspaceID", workspaceID, "error", err)
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache, no-store")
+	w.Header().Set("X-Accel-Buffering", "no")
+	allowedOrigin := h.Origins.AllowedOrigin(r)
+	if allowedOrigin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Add("Vary", "Origin")
+	}
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+	h.Log.Info(ctx, "SSE client registered with hub", "userID", userID, "workspaceID", workspaceID)
+
+	initialEvent := fmt.Sprintf("event: connected\ndata: {\"status\": \"connected\", \"userID\": \"%s\", \"workspaceID\": \"%s\"}\n\n", userID.String(), workspaceID.String())
+	if _, err := fmt.Fprint(w, initialEvent); err != nil {
+		h.Log.Warn(ctx, "sse: Error writing initial connected event", "userID", userID, "workspaceID", workspaceID, "error", err)
 		return nil
 	}
+	flusher.Flush()
 
-	keepAliveTicker := time.NewTicker(25 * time.Second)
-	defer keepAliveTicker.Stop()
-
-	h.Log.Info(ctx, "SSE (hijack): Event loop starting", "userID", userID, "workspaceID", workspace.ID)
+	keepAlive := h.keepAlive
+	if keepAlive == nil {
+		keepAliveTicker := time.NewTicker(browserSessionRevalidationInterval)
+		defer keepAliveTicker.Stop()
+		keepAlive = keepAliveTicker.C
+	}
 
 	for {
 		select {
 		case <-r.Context().Done():
-			h.Log.Info(ctx, "SSE (hijack): Request context done", "userID", userID, "workspaceID", workspace.ID, "error", r.Context().Err())
+			h.Log.Info(context.Background(), "SSE request context done", "userID", userID, "workspaceID", workspaceID, "error", r.Context().Err())
 			return nil
-
-		case <-sseClient.Ctx().Done():
-			h.Log.Info(ctx, "SSE (hijack): Hub client context done", "userID", userID, "workspaceID", workspace.ID)
+		case <-clientCtx.Done():
+			h.Log.Info(context.Background(), "SSE hub client context done", "userID", userID, "workspaceID", workspaceID)
 			return nil
-
-		case messageData, ok_chan := <-sseClient.Send:
-			if !ok_chan {
-				h.Log.Info(ctx, "SSE (hijack): Hub send channel closed", "userID", userID, "workspaceID", workspace.ID)
+		case messageData, ok := <-messages:
+			if !ok || !h.streamAuthorizationIsCurrent(ctx, r, clientCtx, userID, workspaceID, workspaceSlug) {
 				return nil
 			}
-			dataLine := fmt.Sprintf("data: %s\n\n", messageData)
-			_, err = bufRW.WriteString(dataLine)
-			if err == nil {
-				err = bufRW.Flush()
-			}
-			if err != nil {
-				h.Log.Warn(ctx, "SSE (hijack): Error writing data event to client", "userID", userID, "workspaceID", workspace.ID, "error", err)
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", messageData); err != nil {
+				h.Log.Warn(ctx, "sse: Error writing data event to client", "userID", userID, "workspaceID", workspaceID, "error", err)
 				return nil
 			}
-
-		case <-keepAliveTicker.C:
-			pingData := ":keep-alive\n\n"
-			_, err = bufRW.WriteString(pingData)
-			if err == nil {
-				err = bufRW.Flush()
-			}
-			if err != nil {
-				h.Log.Warn(ctx, "SSE (hijack): Error writing keep-alive to client", "userID", userID, "workspaceID", workspace.ID, "error", err)
+			flusher.Flush()
+		case <-keepAlive:
+			if !h.streamAuthorizationIsCurrent(ctx, r, clientCtx, userID, workspaceID, workspaceSlug) {
 				return nil
 			}
+			if _, err := fmt.Fprint(w, ":keep-alive\n\n"); err != nil {
+				h.Log.Warn(ctx, "sse: Error writing keep-alive", "userID", userID, "workspaceID", workspaceID, "error", err)
+				return nil
+			}
+			flusher.Flush()
 		}
 	}
+}
+
+func (h *Handler) streamAuthorizationIsCurrent(
+	ctx context.Context,
+	r *http.Request,
+	clientCtx context.Context,
+	expectedUserID uuid.UUID,
+	workspaceID uuid.UUID,
+	workspaceSlug string,
+) bool {
+	if ctx.Err() != nil || r.Context().Err() != nil || clientCtx.Err() != nil {
+		return false
+	}
+
+	userID, ok, err := mid.ResolveSessionUserID(ctx, r, h.BrowserSessions)
+	if err != nil {
+		// Authentication and cache errors are intentionally confined to server
+		// logs. An SSE client learns only that its stream has ended.
+		h.Log.Warn(ctx, "sse: Browser session revalidation failed; closing stream", "userID", expectedUserID, "workspaceID", workspaceID, "error", err)
+		return false
+	}
+	if !ok || userID != expectedUserID {
+		h.Log.Info(ctx, "sse: Browser session is no longer valid; closing stream", "userID", expectedUserID, "workspaceID", workspaceID)
+		return false
+	}
+
+	if h.WorkspaceAccess == nil {
+		h.Log.Error(ctx, "sse: Workspace access resolver is unavailable; closing stream", "userID", expectedUserID, "workspaceID", workspaceID)
+		return false
+	}
+	workspace, err := h.WorkspaceAccess.ResolveCurrentWorkspace(ctx, workspaceSlug, expectedUserID)
+	if err != nil || workspace.ID != workspaceID {
+		// Workspace authorization failures are confined to server logs. The
+		// stream closes without distinguishing membership removal, workspace
+		// deletion, or an unavailable backing store to the client.
+		if err != nil {
+			h.Log.Warn(ctx, "sse: Workspace access revalidation failed; closing stream", "userID", expectedUserID, "workspaceID", workspaceID, "error", err)
+		} else {
+			h.Log.Warn(ctx, "sse: Workspace access changed; closing stream", "userID", expectedUserID, "workspaceID", workspaceID)
+		}
+		return false
+	}
+
+	// Cancellation can race the backing-store lookup. Recheck both lifetimes so
+	// a successful stale lookup cannot authorize one final write after teardown.
+	return ctx.Err() == nil && r.Context().Err() == nil && clientCtx.Err() == nil
 }

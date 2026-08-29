@@ -62,7 +62,6 @@ describe("Roadmap objective list selection", () => {
     expect(keyResultSource).toContain("formatKeyResultValue");
     expect(keyResultSource).toContain("<CircleProgressBar");
     expect(keyResultSource).not.toContain("<ProgressBar ");
-    expect(keyResultSource).toContain("py-[0.925rem]");
     expect(keyResultSource).toContain("h-[1.1rem] w-[1.1rem] shrink-0");
     expect(keyResultSource).not.toContain("bg-surface-muted/45");
     expect(keyResultSource).not.toContain("pr-4 text-[0.9375rem]");

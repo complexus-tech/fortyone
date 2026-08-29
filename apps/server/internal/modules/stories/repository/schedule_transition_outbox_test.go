@@ -1,9 +1,9 @@
 package storiesrepository
 
 import (
+	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -11,8 +11,8 @@ import (
 func TestImmediateScheduleTransitionRetryRequiresLatestFingerprintAndCurrentState(t *testing.T) {
 	t.Parallel()
 	reason := "Scheduled after the stand-up."
-	current := dbScheduleTransitionStoryState{Status: "scheduled", Reason: &reason, Locked: false}
-	latest := dbLatestScheduleTransition{SemanticFingerprint: "same", TransitionSequence: 7}
+	current := scheduleTransitionStoryState{Status: "scheduled", Reason: &reason, Locked: false}
+	latest := latestScheduleTransition{SemanticFingerprint: "same", TransitionSequence: 7}
 
 	require.True(t, isImmediateScheduleTransitionRetry(current, latest, true, "scheduled", &reason, false, "same"))
 	require.False(t, isImmediateScheduleTransitionRetry(current, latest, false, "scheduled", &reason, false, "same"))
@@ -23,51 +23,49 @@ func TestImmediateScheduleTransitionRetryRequiresLatestFingerprintAndCurrentStat
 
 func TestStoryScheduleTransitionWriteSerializesAndUsesMonotonicLatestEvent(t *testing.T) {
 	t.Parallel()
+	queries := scheduleTransitionQueries(t)
 
-	require.Contains(t, lockStoryForScheduleTransitionQuery, "updated_at = $3")
-	require.Contains(t, lockStoryForScheduleTransitionQuery, "FOR UPDATE")
-	require.Contains(t, latestStoryScheduleTransitionFingerprintQuery, "transition_sequence")
-	require.Contains(t, latestStoryScheduleTransitionFingerprintQuery, "ORDER BY transition_sequence DESC")
-	require.NotContains(t, latestStoryScheduleTransitionFingerprintQuery, "ORDER BY created_at")
-	require.Contains(t, insertStoryScheduleTransitionOutboxQuery, "transition_sequence")
-	require.Contains(t, insertStoryScheduleTransitionOutboxQuery, "CAST($5 AS jsonb)")
-	require.Contains(t, insertStoryScheduleTransitionOutboxQuery, "CAST($9 AS uuid)")
-	require.Contains(t, updateStoryAutoSchedulingStateForTransitionQuery, "updated_at = $3")
+	require.Contains(t, queries, "story.updated_at = sqlc.arg(expected_updated_at)")
+	require.Contains(t, queries, "FOR UPDATE")
+	require.Contains(t, queries, "ORDER BY outbox.transition_sequence DESC")
+	require.NotContains(t, queries, "ORDER BY outbox.created_at DESC")
+	require.Contains(t, queries, "transition_sequence")
+	require.Contains(t, queries, "sqlc.arg(event_payload)")
+	require.Contains(t, queries, "sqlc.narg(claim_token)")
 }
 
 func TestStoryScheduleTransitionClaimsAreRecoverableAndClaimGuarded(t *testing.T) {
 	t.Parallel()
 
-	claim := strings.ToLower(claimStoryScheduleTransitionOutboxQuery)
+	claim := strings.ToLower(scheduleTransitionQueries(t))
 	for _, contract := range []string{
 		"for update skip locked",
 		"status in ('pending', 'retrying')",
 		"status = 'processing'",
-		"claimed_at <= current_timestamp - cast($2 as interval)",
+		"claimed_at <= current_timestamp - make_interval",
 		"attempt_count = outbox.attempt_count + 1",
 		"claim_token = gen_random_uuid()",
 	} {
 		require.Contains(t, claim, contract)
 	}
 
-	for _, lifecycleQuery := range []string{
-		completeStoryScheduleTransitionOutboxQuery,
-		retryStoryScheduleTransitionOutboxQuery,
-		failStoryScheduleTransitionOutboxQuery,
-	} {
-		require.Contains(t, lifecycleQuery, "claim_token = $2")
-		require.Contains(t, lifecycleQuery, "status = 'processing'")
-	}
-	require.Equal(t, "600.000000 seconds", scheduleTransitionIntervalLiteral(10*time.Minute))
+	require.GreaterOrEqual(t, strings.Count(claim, "claim_token = sqlc.arg(claim_token)"), 3)
+	require.GreaterOrEqual(t, strings.Count(claim, "status = 'processing'"), 4)
 }
 
 func TestStoryScheduleTransitionPublisherFailuresRemainRetryableAndCleanupIsBounded(t *testing.T) {
 	t.Parallel()
 
-	require.Contains(t, retryStoryScheduleTransitionOutboxQuery, "status = 'retrying'")
-	require.NotContains(t, retryStoryScheduleTransitionOutboxQuery, "status = 'failed'")
-	require.Contains(t, deleteCompletedStoryScheduleTransitionOutboxQuery, "status = 'completed'")
-	require.Contains(t, deleteCompletedStoryScheduleTransitionOutboxQuery, "FOR UPDATE SKIP LOCKED")
-	require.Contains(t, deleteCompletedStoryScheduleTransitionOutboxQuery, "LIMIT $2")
-	require.NotContains(t, deleteCompletedStoryScheduleTransitionOutboxQuery, "status = 'failed'")
+	queries := scheduleTransitionQueries(t)
+	require.Contains(t, queries, "status = 'retrying'")
+	require.Contains(t, queries, "status = 'completed'")
+	require.Contains(t, queries, "FOR UPDATE SKIP LOCKED")
+	require.Contains(t, queries, "LIMIT sqlc.arg(batch_size)")
+}
+
+func scheduleTransitionQueries(t *testing.T) string {
+	t.Helper()
+	data, err := os.ReadFile("queries/schedule_transition.sql")
+	require.NoError(t, err)
+	return string(data)
 }

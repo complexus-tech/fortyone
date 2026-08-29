@@ -4,7 +4,9 @@ import (
 	"time"
 
 	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
+	platformpatch "github.com/complexus-tech/projects-api/internal/platform/patch"
 	"github.com/complexus-tech/projects-api/pkg/date"
+	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
 
@@ -48,14 +50,6 @@ type SprintStats struct {
 	Backlog   int `json:"backlog"`
 }
 
-type AppFilters struct {
-	Objective *uuid.UUID `json:"objectiveId" db:"objective_id"`
-	Team      *uuid.UUID `json:"teamId" db:"team_id"`
-	Search    string     `json:"search" db:"search"`
-	Page      int        `json:"page"`
-	PageSize  int        `json:"pageSize"`
-}
-
 type AppPagination struct {
 	Page     int  `json:"page"`
 	PageSize int  `json:"pageSize"`
@@ -78,11 +72,47 @@ type AppNewSprint struct {
 }
 
 type AppUpdateSprint struct {
-	Name      *string    `json:"name,omitempty"`
-	Goal      *string    `json:"goal,omitempty"`
-	Objective *uuid.UUID `json:"objectiveId,omitempty"`
-	StartDate *date.Date `json:"startDate,omitempty"`
-	EndDate   *date.Date `json:"endDate,omitempty"`
+	Name              web.PatchField[string]    `json:"name"`
+	Goal              web.PatchField[string]    `json:"goal"`
+	Objective         web.PatchField[uuid.UUID] `json:"objectiveId"`
+	StartDate         web.PatchField[date.Date] `json:"startDate"`
+	EndDate           web.PatchField[date.Date] `json:"endDate"`
+	ExpectedUpdatedAt *time.Time                `json:"expectedUpdatedAt"`
+}
+
+func (request AppUpdateSprint) Validate() error {
+	_, err := request.SprintPatch().Normalize()
+	return err
+}
+
+func (request AppUpdateSprint) SprintPatch() sprints.SprintPatch {
+	return sprints.SprintPatch{
+		Name: sprintPatchField(request.Name), Goal: sprintPatchField(request.Goal),
+		ObjectiveID: sprintPatchField(request.Objective),
+		StartDate:   sprintDatePatchField(request.StartDate), EndDate: sprintDatePatchField(request.EndDate),
+	}
+}
+
+func sprintPatchField[T any](field web.PatchField[T]) platformpatch.Field[T] {
+	value, specified := field.Value()
+	if !specified {
+		return platformpatch.Field[T]{}
+	}
+	if value == nil {
+		return platformpatch.Clear[T]()
+	}
+	return platformpatch.Set(*value)
+}
+
+func sprintDatePatchField(field web.PatchField[date.Date]) platformpatch.Field[time.Time] {
+	value, specified := field.Value()
+	if !specified {
+		return platformpatch.Field[time.Time]{}
+	}
+	if value == nil {
+		return platformpatch.Clear[time.Time]()
+	}
+	return platformpatch.Set(value.Time())
 }
 
 // toAppSprints converts a list of core sprints to a list of application sprints.
@@ -93,9 +123,9 @@ func toAppSprints(sprints []sprints.CoreSprint) []AppSprintsList {
 			ID:                          sprint.ID,
 			Name:                        sprint.Name,
 			Goal:                        sprint.Goal,
-			Objective:                   sprint.Objective,
-			Team:                        sprint.Team,
-			Workspace:                   sprint.Workspace,
+			Objective:                   sprint.ObjectiveID,
+			Team:                        sprint.TeamID,
+			Workspace:                   sprint.WorkspaceID,
 			StartDate:                   sprint.StartDate,
 			EndDate:                     sprint.EndDate,
 			CreatedAt:                   sprint.CreatedAt,
@@ -137,9 +167,9 @@ func toAppSprint(sprint sprints.CoreSprint) AppSprint {
 		ID:                          sprint.ID,
 		Name:                        sprint.Name,
 		Goal:                        sprint.Goal,
-		Objective:                   sprint.Objective,
-		Team:                        sprint.Team,
-		Workspace:                   sprint.Workspace,
+		Objective:                   sprint.ObjectiveID,
+		Team:                        sprint.TeamID,
+		Workspace:                   sprint.WorkspaceID,
 		StartDate:                   sprint.StartDate,
 		EndDate:                     sprint.EndDate,
 		CreatedAt:                   sprint.CreatedAt,

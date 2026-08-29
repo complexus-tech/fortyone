@@ -16,8 +16,8 @@ func TestHasSlackUserOnboardingReceiptValidatesIdentity(t *testing.T) {
 	require.ErrorContains(t, err, "workspace is required")
 
 	_, err = repo.HasSlackUserOnboardingReceipt(context.Background(), uuid.New(), " ", "U123")
-	require.ErrorContains(t, err, "Slack team is required")
+	require.ErrorContains(t, err, "slack team is required")
 
 	_, err = repo.HasSlackUserOnboardingReceipt(context.Background(), uuid.New(), "T123", " ")
-	require.ErrorContains(t, err, "Slack user is required")
+	require.ErrorContains(t, err, "slack user is required")
 }

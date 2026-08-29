@@ -158,7 +158,7 @@ func (c apiClient) tokenRequest(ctx context.Context, path string, values url.Val
 		return oauthTokenResponse{}, err
 	}
 	if strings.TrimSpace(response.AccessToken) == "" {
-		return oauthTokenResponse{}, errors.New("Figma returned an empty access token")
+		return oauthTokenResponse{}, errors.New("figma returned an empty access token")
 	}
 	return response, nil
 }
@@ -223,7 +223,7 @@ func (c apiClient) createDevResource(ctx context.Context, token string, link Sto
 	}
 	if len(response.Links) == 0 {
 		if len(response.Errors) > 0 {
-			return nil, fmt.Errorf("Figma could not create the story backlink")
+			return nil, fmt.Errorf("figma could not create the story backlink")
 		}
 		return nil, nil
 	}
@@ -248,7 +248,7 @@ func (c apiClient) createWebhook(ctx context.Context, token, eventType, fileKey,
 		return 0, err
 	}
 	if response.ID <= 0 {
-		return 0, errors.New("Figma returned an invalid webhook id")
+		return 0, errors.New("figma returned an invalid webhook id")
 	}
 	return int64(response.ID), nil
 }

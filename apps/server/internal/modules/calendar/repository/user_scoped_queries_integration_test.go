@@ -6,10 +6,9 @@ import (
 	"testing"
 	"time"
 
-	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/domain"
 	"github.com/google/uuid"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,24 +18,26 @@ func TestUserScopedCalendarReadQueriesExecute(t *testing.T) {
 		t.Skip("CALENDAR_TEST_DATABASE_URL is not configured")
 	}
 
-	db, err := sqlx.Connect("pgx", databaseURL)
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, databaseURL)
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, db.Close()) })
+	t.Cleanup(pool.Close)
+	require.NoError(t, pool.Ping(ctx))
 
-	repo := New(nil, db)
+	repo := New(pool)
 	workspaceID := uuid.New()
 	userID := uuid.New()
 	startAt := time.Now().UTC().Add(-time.Hour)
 	endAt := startAt.Add(2 * time.Hour)
 
-	events, err := repo.ListCalendarEvents(context.Background(), workspaceID, userID, startAt, endAt)
+	events, err := repo.ListCalendarEvents(ctx, workspaceID, userID, startAt, endAt)
 	require.NoError(t, err)
 	require.Empty(t, events)
 
-	_, err = repo.GetCalendarEvent(context.Background(), workspaceID, userID, uuid.New())
+	_, err = repo.GetCalendarEvent(ctx, workspaceID, userID, uuid.New())
 	require.ErrorIs(t, err, calendar.ErrCalendarEventNotFound)
 
-	busyWindows, err := repo.ListBusyWindows(context.Background(), workspaceID, userID, startAt, endAt)
+	busyWindows, err := repo.ListBusyWindows(ctx, workspaceID, userID, startAt, endAt)
 	require.NoError(t, err)
 	require.Empty(t, busyWindows)
 }

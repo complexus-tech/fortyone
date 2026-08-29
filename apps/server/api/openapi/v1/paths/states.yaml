@@ -1,0 +1,35 @@
+get:
+  operationId: listWorkflowStates
+  tags: [Workflows]
+  summary: List workflow states for one team
+  description: Returns the ordered workflow for a team the personal access token's user currently belongs to.
+  x-fortyone-scope: stories:read
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+    - name: teamId
+      in: query
+      required: true
+      description: Team whose workflow states are requested.
+      schema: { type: string, format: uuid }
+    - $ref: ../openapi.yaml#/components/parameters/Cursor
+    - $ref: ../openapi.yaml#/components/parameters/PageLimit
+  responses:
+    "200":
+      description: A deterministic page of workflow states.
+      headers:
+        X-Request-ID: { $ref: ../openapi.yaml#/components/headers/RequestId }
+        RateLimit: { $ref: ../openapi.yaml#/components/headers/RateLimit }
+        RateLimit-Policy:
+          { $ref: ../openapi.yaml#/components/headers/RateLimitPolicy }
+      content:
+        application/json:
+          schema:
+            {
+              $ref: ../openapi.yaml#/components/schemas/WorkflowStatePageResponse,
+            }
+    "400": { $ref: ../openapi.yaml#/components/responses/BadRequest }
+    "401": { $ref: ../openapi.yaml#/components/responses/Unauthorized }
+    "403": { $ref: ../openapi.yaml#/components/responses/Forbidden }
+    "429": { $ref: ../openapi.yaml#/components/responses/RateLimited }
+    "500": { $ref: ../openapi.yaml#/components/responses/InternalError }
+    "503": { $ref: ../openapi.yaml#/components/responses/ServiceUnavailable }

@@ -63,7 +63,10 @@ type service struct {
 
 func NewService(cfg Config, log *logger.Logger) (Service, error) {
 	dialer := gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
-	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: cfg.Environment != "production"}
+	dialer.TLSConfig = &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		ServerName: strings.TrimSpace(cfg.Host),
+	}
 
 	// Ensure base directory is set
 	if cfg.BaseDir == "" {

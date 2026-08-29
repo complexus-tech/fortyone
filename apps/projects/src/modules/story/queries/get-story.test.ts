@@ -31,11 +31,30 @@ describe("story detail queries", () => {
   });
 
   it("uses the story reference endpoint for human-readable codes", async () => {
-    const story = { id: "story-id", title: "Story" };
+    const story = {
+      collaboratorIds: ["collaborator-id"],
+      id: "story-id",
+      title: "Story",
+    };
     mockedGet.mockResolvedValue({ data: story });
 
-    await expect(getStoryRef("PRD-453", ctx)).resolves.toBe(story);
+    await expect(getStoryRef("PRD-453", ctx)).resolves.toEqual(story);
     expect(mockedGet).toHaveBeenCalledWith("story-by-ref/PRD-453", ctx);
+  });
+
+  it.each([
+    ["UUID lookup", () => getStory("story-id", ctx)],
+    ["reference lookup", () => getStoryRef("PRD-453", ctx)],
+  ])("normalizes null collaborator IDs for a %s", async (_, load) => {
+    mockedGet.mockResolvedValue({
+      data: {
+        collaboratorIds: null,
+        id: "story-id",
+        title: "Story",
+      },
+    });
+
+    await expect(load()).resolves.toMatchObject({ collaboratorIds: [] });
   });
 
   it.each([

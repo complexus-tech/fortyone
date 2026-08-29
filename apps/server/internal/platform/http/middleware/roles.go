@@ -7,32 +7,25 @@ import (
 	"net/http"
 	"slices"
 
+	"github.com/complexus-tech/projects-api/internal/platform/authorization"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 )
 
-// Role represents a user role in the workspace
-type Role string
+// Role represents a user role in the workspace.
+type Role = authorization.WorkspaceRole
 
 const (
-	RoleGuest  Role = "guest"
-	RoleMember Role = "member"
-	RoleAdmin  Role = "admin"
+	RoleGuest  = authorization.WorkspaceRoleGuest
+	RoleMember = authorization.WorkspaceRoleMember
+	RoleAdmin  = authorization.WorkspaceRoleAdmin
 )
-
-// RoleLevel defines role hierarchy (higher number = more permissions)
-var RoleLevel = map[Role]int{
-	RoleGuest:  1,
-	RoleMember: 2,
-	RoleAdmin:  3,
-}
 
 // RequireMinimumRole ensures the user has at least the specified role level or higher.
 // Example: RequireMinimumRole(log, RoleMember) allows member and admin users.
 func RequireMinimumRole(log *logger.Logger, minimumRole Role) web.Middleware {
 	// Validate minimum role at startup (fail fast)
-	minimumLevel, exists := RoleLevel[minimumRole]
-	if !exists {
+	if err := authorization.ValidateWorkspaceRole(minimumRole); err != nil {
 		panic(fmt.Sprintf("invalid minimum role: %s", minimumRole))
 	}
 
@@ -44,13 +37,12 @@ func RequireMinimumRole(log *logger.Logger, minimumRole Role) web.Middleware {
 			}
 
 			userRole := Role(workspace.UserRole)
-			userLevel, exists := RoleLevel[userRole]
-			if !exists {
+			err = authorization.RequireMinimumWorkspaceRole(userRole, minimumRole)
+			if errors.Is(err, authorization.ErrInvalidWorkspaceRole) {
 				log.Error(ctx, "invalid role in database", "role", userRole)
 				return web.RespondError(ctx, w, errors.New("invalid user role"), http.StatusInternalServerError)
 			}
-
-			if userLevel >= minimumLevel {
+			if err == nil {
 				return next(ctx, w, r)
 			}
 
@@ -69,8 +61,7 @@ func RequireRoles(log *logger.Logger, roles ...Role) web.Middleware {
 			}
 
 			userRole := Role(workspace.UserRole)
-			_, exists := RoleLevel[userRole]
-			if !exists {
+			if err := authorization.ValidateWorkspaceRole(userRole); err != nil {
 				log.Error(ctx, "invalid role in database", "role", userRole)
 				return web.RespondError(ctx, w, errors.New("invalid user role"), http.StatusInternalServerError)
 			}

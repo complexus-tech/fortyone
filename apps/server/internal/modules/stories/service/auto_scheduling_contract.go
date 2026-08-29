@@ -1,54 +1,34 @@
 package stories
 
-import (
-	"errors"
-	"fmt"
-)
+import storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 
 const (
-	AutoSchedulingStatusOff        = "off"
-	AutoSchedulingStatusNeedsOwner = "needs_owner"
-	AutoSchedulingStatusNeedsTime  = "needs_time"
-	AutoSchedulingStatusPlanning   = "planning"
-	AutoSchedulingStatusScheduled  = "scheduled"
-	AutoSchedulingStatusAtRisk     = "at_risk"
-	AutoSchedulingStatusCannotFit  = "cannot_fit"
-	AutoSchedulingStatusLocked     = "locked"
+	AutoSchedulingStatusOff        = storydomain.AutoSchedulingStatusOff
+	AutoSchedulingStatusNeedsOwner = storydomain.AutoSchedulingStatusNeedsOwner
+	AutoSchedulingStatusNeedsTime  = storydomain.AutoSchedulingStatusNeedsTime
+	AutoSchedulingStatusPlanning   = storydomain.AutoSchedulingStatusPlanning
+	AutoSchedulingStatusScheduled  = storydomain.AutoSchedulingStatusScheduled
+	AutoSchedulingStatusAtRisk     = storydomain.AutoSchedulingStatusAtRisk
+	AutoSchedulingStatusCannotFit  = storydomain.AutoSchedulingStatusCannotFit
+	AutoSchedulingStatusLocked     = storydomain.AutoSchedulingStatusLocked
 )
 
 var (
-	ErrInvalidAutoSchedulingStatus = errors.New("invalid auto-scheduling status")
-	ErrLockedAutoSchedulingOff     = errors.New("auto-scheduling cannot be locked while disabled")
-	ErrAutoSchedulingLockEmpty     = errors.New("auto-scheduling cannot be locked before Maya has scheduled work")
-	ErrAutoSchedulingOwnerLocked   = errors.New("unlock auto-scheduling before changing the assignee or schedule")
+	ErrInvalidAutoSchedulingStatus = storydomain.ErrInvalidAutoSchedulingStatus
+	ErrLockedAutoSchedulingOff     = storydomain.ErrLockedAutoSchedulingOff
+	ErrAutoSchedulingLockEmpty     = storydomain.ErrAutoSchedulingLockEmpty
+	ErrAutoSchedulingOwnerLocked   = storydomain.ErrAutoSchedulingOwnerLocked
 )
-
-var validAutoSchedulingStatuses = map[string]struct{}{
-	AutoSchedulingStatusOff:        {},
-	AutoSchedulingStatusNeedsOwner: {},
-	AutoSchedulingStatusNeedsTime:  {},
-	AutoSchedulingStatusPlanning:   {},
-	AutoSchedulingStatusScheduled:  {},
-	AutoSchedulingStatusAtRisk:     {},
-	AutoSchedulingStatusCannotFit:  {},
-	AutoSchedulingStatusLocked:     {},
-}
 
 // ValidateAutoSchedulingStatus keeps application writes aligned with the
 // stories_auto_scheduling_status_check database constraint.
 func ValidateAutoSchedulingStatus(status string) error {
-	if _, ok := validAutoSchedulingStatuses[status]; !ok {
-		return fmt.Errorf("%w: %q", ErrInvalidAutoSchedulingStatus, status)
-	}
-	return nil
+	return storydomain.ValidateAutoSchedulingStatus(status)
 }
 
 // ValidateStoryAutoSchedulingContract validates invariants that span multiple
 // auto-scheduling fields. Callers should normalize an omitted create status to
 // AutoSchedulingStatusOff before invoking it.
 func ValidateStoryAutoSchedulingContract(enabled, locked bool, status string) error {
-	if locked && !enabled {
-		return ErrLockedAutoSchedulingOff
-	}
-	return ValidateAutoSchedulingStatus(status)
+	return storydomain.ValidateStoryAutoSchedulingContract(enabled, locked, status)
 }

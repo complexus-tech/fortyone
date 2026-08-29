@@ -181,14 +181,14 @@ func TestEmailProposalConfirmationReplayIncludesApplyLifecycle(t *testing.T) {
 func TestEmailConversationQueriesRetainGuestAccessAndCurrentMembershipGuards(t *testing.T) {
 	t.Parallel()
 
-	source := readEmailConversationRepositorySource(t)
-	require.Contains(t, source, "INNER JOIN workspace_members member")
+	source := readEmailQuerySource(t, "email_conversations.sql")
+	require.Contains(t, source, "INNER JOIN workspace_members AS member")
 	require.Contains(t, source, "workspace.deleted_at IS NULL")
 	require.Contains(t, source, "actor.is_active = true")
 	require.Contains(t, source, "actor.is_system = false")
 	require.Equal(t, 2, strings.Count(source, "member.role IN ('admin', 'member', 'guest')"))
 
-	proposalSource := readEmailActionProposalRepositorySource(t)
+	proposalSource := readEmailQuerySource(t, "email_action_proposals.sql")
 	require.Contains(t, proposalSource, "member.role IN ('admin', 'member', 'guest')")
 }
 
@@ -255,16 +255,9 @@ func validEmailMessageInput() messaging.EmailMessageInput {
 	}
 }
 
-func readEmailConversationRepositorySource(t *testing.T) string {
+func readEmailQuerySource(t *testing.T, name string) string {
 	t.Helper()
-	data, err := os.ReadFile("email_conversations.go")
-	require.NoError(t, err)
-	return string(data)
-}
-
-func readEmailActionProposalRepositorySource(t *testing.T) string {
-	t.Helper()
-	data, err := os.ReadFile("email_action_proposals.go")
+	data, err := os.ReadFile(filepath.Join("queries", name))
 	require.NoError(t, err)
 	return string(data)
 }

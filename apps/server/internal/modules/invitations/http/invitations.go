@@ -7,6 +7,7 @@ import (
 
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	"github.com/complexus-tech/projects-api/internal/platform/authorization"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
@@ -61,7 +62,7 @@ func (h *Handlers) CreateBulkInvitations(ctx context.Context, w http.ResponseWri
 
 	results, err := h.invitations.CreateBulkInvitations(ctx, workspace.ID, userID, requests)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, invitationAdminErrorStatus(err, http.StatusInternalServerError))
 	}
 
 	span.AddEvent("bulk invitations created", trace.WithAttributes(
@@ -81,9 +82,14 @@ func (h *Handlers) ListInvitations(ctx context.Context, w http.ResponseWriter, r
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	invitations, err := h.invitations.ListInvitations(ctx, workspace.ID)
+	userID, err := mid.GetUserID(ctx)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	invitations, err := h.invitations.ListInvitations(ctx, workspace.ID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, invitationAdminErrorStatus(err, http.StatusInternalServerError))
 	}
 
 	return web.Respond(ctx, w, toAppInvitations(invitations), http.StatusOK)
@@ -93,8 +99,11 @@ func (h *Handlers) RevokeInvitation(ctx context.Context, w http.ResponseWriter, 
 	ctx, span := web.AddSpan(ctx, "handlers.invitations.RevokeInvitation")
 	defer span.End()
 
-	// Workspace is in context for authorization, but not directly used here.
-	_, err := mid.GetWorkspace(ctx)
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
@@ -104,8 +113,8 @@ func (h *Handlers) RevokeInvitation(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, ErrInvalidInvitationID, http.StatusBadRequest)
 	}
 
-	if err := h.invitations.RevokeInvitation(ctx, invitationID); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	if err := h.invitations.RevokeInvitation(ctx, workspace.ID, userID, invitationID); err != nil {
+		return web.RespondError(ctx, w, err, invitationAdminErrorStatus(err, http.StatusInternalServerError))
 	}
 
 	span.AddEvent("invitation revoked", trace.WithAttributes(
@@ -113,6 +122,27 @@ func (h *Handlers) RevokeInvitation(ctx context.Context, w http.ResponseWriter, 
 	))
 
 	return web.Respond(ctx, w, nil, http.StatusNoContent)
+}
+
+func invitationAdminErrorStatus(err error, fallback int) int {
+	switch {
+	case errors.Is(err, authorization.ErrWorkspaceAdminRequired):
+		return http.StatusForbidden
+	case errors.Is(err, invitations.ErrInvalidInvitationRole):
+		return http.StatusBadRequest
+	case errors.Is(err, invitations.ErrInvalidInvitationEmail):
+		return http.StatusBadRequest
+	case errors.Is(err, invitations.ErrInvalidInvitationTeam):
+		return http.StatusBadRequest
+	case errors.Is(err, invitations.ErrTooManyInvitations):
+		return http.StatusBadRequest
+	case errors.Is(err, invitations.ErrDuplicateInvitation):
+		return http.StatusConflict
+	case errors.Is(err, invitations.ErrInvitationNotFound):
+		return http.StatusNotFound
+	default:
+		return fallback
+	}
 }
 
 func (h *Handlers) GetInvitation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -126,16 +156,10 @@ func (h *Handlers) GetInvitation(ctx context.Context, w http.ResponseWriter, r *
 
 	invitation, err := h.invitations.GetInvitation(ctx, token)
 	if err != nil {
-		switch err {
-		case invitations.ErrInvitationNotFound:
-			return web.RespondError(ctx, w, err, http.StatusNotFound)
-		case invitations.ErrInvitationExpired:
-			return web.RespondError(ctx, w, err, http.StatusGone)
-		case invitations.ErrInvitationUsed:
-			return web.RespondError(ctx, w, err, http.StatusGone)
-		default:
-			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		if status, handled, publicError := publicInvitationBearerError(err); handled {
+			return web.RespondError(ctx, w, publicError, status)
 		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
 
 	return web.Respond(ctx, w, toAppInvitation(invitation), http.StatusOK)
@@ -178,16 +202,13 @@ func (h *Handlers) AcceptInvitation(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	if err := h.invitations.AcceptInvitation(ctx, token, userID); err != nil {
-		switch err {
-		case invitations.ErrInvitationNotFound:
-			return web.RespondError(ctx, w, err, http.StatusNotFound)
-		case invitations.ErrInvitationExpired:
-			return web.RespondError(ctx, w, err, http.StatusGone)
-		case invitations.ErrInvitationUsed:
-			return web.RespondError(ctx, w, err, http.StatusGone)
-		case invitations.ErrInvalidInvitee:
-			return web.RespondError(ctx, w, err, http.StatusForbidden)
-		case invitations.ErrAlreadyWorkspaceMember:
+		if status, handled, publicError := publicInvitationBearerError(err); handled {
+			return web.RespondError(ctx, w, publicError, status)
+		}
+		switch {
+		case errors.Is(err, invitations.ErrInvalidInvitee):
+			return web.RespondError(ctx, w, invitations.ErrInvitationNotFound, http.StatusNotFound)
+		case errors.Is(err, invitations.ErrAlreadyWorkspaceMember):
 			return web.RespondError(ctx, w, err, http.StatusConflict)
 		default:
 			return web.RespondError(ctx, w, err, http.StatusInternalServerError)
@@ -195,4 +216,19 @@ func (h *Handlers) AcceptInvitation(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	return web.Respond(ctx, w, nil, http.StatusOK)
+}
+
+// publicInvitationBearerError deliberately collapses token lifecycle state so
+// callers cannot distinguish an unknown bearer from a known expired, revoked,
+// or already-used bearer.
+func publicInvitationBearerError(err error) (int, bool, error) {
+	switch {
+	case errors.Is(err, invitations.ErrInvitationNotFound),
+		errors.Is(err, invitations.ErrInvitationExpired),
+		errors.Is(err, invitations.ErrInvitationUsed),
+		errors.Is(err, invitations.ErrInvitationRevoked):
+		return http.StatusNotFound, true, invitations.ErrInvitationNotFound
+	default:
+		return 0, false, nil
+	}
 }

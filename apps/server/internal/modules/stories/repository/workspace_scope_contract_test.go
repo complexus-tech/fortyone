@@ -7,43 +7,40 @@ import (
 )
 
 func TestStorySubresourceQueriesCarryWorkspaceScope(t *testing.T) {
-	data, err := os.ReadFile("queries.go")
+	data, err := os.ReadFile("queries/support_reads.sql")
 	if err != nil {
-		t.Fatalf("read queries.go: %v", err)
+		t.Fatalf("read support queries: %v", err)
 	}
 	source := string(data)
 
-	for _, contract := range []struct {
-		name  string
-		start string
-		end   string
-		parts []string
-	}{
-		{name: "links", start: "func (r *repo) GetStoryLinks(", end: "func (r *repo) MyStories(", parts: []string{"INNER JOIN stories", "s.workspace_id = :workspace_id"}},
-		{name: "activities", start: "func (r *repo) GetActivitiesWithUser(", end: "func (r *repo) GetComments(", parts: []string{"INNER JOIN stories", "sa.workspace_id = :workspace_id", "s.workspace_id = :workspace_id"}},
-		{name: "comments", start: "func (r *repo) GetComments(", end: "func (r *repo) GetComment(", parts: []string{"INNER JOIN stories", "s.workspace_id = :workspace_id", "sub.story_id = sc.story_id"}},
-		{name: "comment", start: "func (r *repo) GetComment(", end: "func (r *repo) CountStoriesInWorkspace(", parts: []string{"sc.story_id = :story_id", "s.workspace_id = :workspace_id", "stories.ErrNotFound"}},
+	for _, part := range []string{
+		"story.workspace_id = sqlc.arg(workspace_id)",
+		"workspace_member.workspace_id = story.workspace_id",
+		"team_member.team_id = story.team_id",
+		"actor.user_id = sqlc.arg(actor_id)",
+		"story.team_id = ANY(CAST(sqlc.arg(allowed_team_ids) AS uuid[]))",
+		"story.id = activity.story_id",
+		"story.id = story_link.story_id",
 	} {
-		t.Run(contract.name, func(t *testing.T) {
-			body := sourceBetweenMarkers(t, source, contract.start, contract.end)
-			for _, part := range contract.parts {
-				if !strings.Contains(body, part) {
-					t.Fatalf("%s query is missing %q", contract.name, part)
-				}
-			}
-		})
+		if !strings.Contains(source, part) {
+			t.Fatalf("typed story support queries are missing %q", part)
+		}
 	}
-}
 
-func sourceBetweenMarkers(t *testing.T, source, start, end string) string {
-	t.Helper()
-	startIndex := strings.Index(source, start)
-	if startIndex < 0 {
-		t.Fatalf("source is missing %q", start)
+	commentQueries, err := os.ReadFile("queries/comment_reads.sql")
+	if err != nil {
+		t.Fatalf("read comment queries: %v", err)
 	}
-	endIndex := strings.Index(source[startIndex+len(start):], end)
-	if endIndex < 0 {
-		t.Fatalf("source after %q is missing %q", start, end)
+	for _, part := range []string{
+		"workspace_member.workspace_id = story.workspace_id",
+		"team_member.team_id = story.team_id",
+		"comment.story_id = sqlc.arg(story_id)",
+		"reply.parent_id = ANY",
+		"story.workspace_id = sqlc.arg(workspace_id)",
+		"story.deleted_at IS NULL",
+	} {
+		if !strings.Contains(string(commentQueries), part) {
+			t.Fatalf("typed comment queries are missing %q", part)
+		}
 	}
-	return source[startIndex : startIndex+len(start)+endIndex]
 }

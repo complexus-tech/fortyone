@@ -1,0 +1,103 @@
+components:
+  schemas:
+    WebhookEventType:
+      type: string
+      enum:
+        - story.created
+        - story.updated
+        - story.deleted
+        - comment.created
+        - comment.updated
+        - comment.deleted
+    WebhookEndpoint:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceId, name, url, status, secretGeneration, subscriptionGeneration, subscriptions, consecutiveFailures, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        name: {type: string}
+        url: {type: string, format: uri, maxLength: 2048}
+        status:
+          type: string
+          enum: [active, disabled]
+        secretGeneration: {type: integer, minimum: 1}
+        subscriptionGeneration: {type: integer, minimum: 1}
+        subscriptions:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/WebhookEventType'}
+        consecutiveFailures: {type: integer, minimum: 0}
+        lastSuccessAt: {type: string, format: date-time}
+        disabledAt: {type: string, format: date-time}
+        disabledReason: {type: string}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    WebhookEndpointResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/WebhookEndpoint'}
+    WebhookEndpointPageResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/WebhookEndpoint'}
+        meta:
+          $ref: ./common.yaml#/components/schemas/PageMeta
+    CreateWebhookEndpointRequest:
+      type: object
+      additionalProperties: false
+      required: [name, url, subscriptions]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        url: {type: string, format: uri, minLength: 1, maxLength: 2048}
+        subscriptions:
+          type: array
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/WebhookEventType'}
+    CreatedWebhookEndpointResponse:
+      type: object
+      additionalProperties: false
+      required: [data, signingSecret]
+      properties:
+        data: {$ref: '#/components/schemas/WebhookEndpoint'}
+        signingSecret:
+          type: string
+          readOnly: true
+          description: Returned once. Store it in a secret manager; FortyOne cannot reveal it later.
+    ReplaceWebhookSubscriptionsRequest:
+      type: object
+      additionalProperties: false
+      required: [subscriptions]
+      properties:
+        subscriptions:
+          type: array
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/WebhookEventType'}
+    RotateWebhookSecretResponse:
+      type: object
+      additionalProperties: false
+      required: [signingSecret, generation, previousSecretExpiresAt]
+      properties:
+        signingSecret:
+          type: string
+          readOnly: true
+          description: Returned once. The preceding secret remains valid until previousSecretExpiresAt.
+        generation: {type: integer, minimum: 2}
+        previousSecretExpiresAt: {type: string, format: date-time}
+    DisableWebhookEndpointRequest:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason: {type: string, minLength: 1, maxLength: 240}

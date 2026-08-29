@@ -7,7 +7,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,14 +20,18 @@ import (
 )
 
 const (
-	documentMediaAccessTTL           = 5 * time.Minute
-	multipartOverheadAllowance int64 = 1 << 20
+	documentMediaAccessTTL               = 5 * time.Minute
+	multipartOverheadAllowance     int64 = 1 << 20
+	documentListMaximumLimit             = 100
+	documentSearchMaximumBytes           = 512
+	documentScopeMaximumBytes            = 16
+	documentEntityTypeMaximumBytes       = 64
 )
 
 type attachmentMediaService interface {
 	UploadDocumentMedia(context.Context, multipart.File, *multipart.FileHeader, uuid.UUID, uuid.UUID) (attachments.FileInfo, error)
 	ResolveAttachmentAccessURL(context.Context, uuid.UUID, uuid.UUID, time.Duration) (attachments.FileInfo, error)
-	DeleteAttachment(context.Context, uuid.UUID, uuid.UUID) error
+	DeleteAttachment(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error
 	DeleteDocumentMedia(context.Context, uuid.UUID, uuid.UUID) error
 }
 
@@ -47,16 +50,16 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	limit, err := documentListLimit(r)
+	query, err := documentListQuery(r)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 	result, err := h.documents.List(ctx, documents.CoreListInput{
 		WorkspaceID: workspace.ID,
 		UserID:      userID,
-		Search:      r.URL.Query().Get("search"),
-		Scope:       r.URL.Query().Get("scope"),
-		Limit:       limit,
+		Search:      query.search,
+		Scope:       query.scope,
+		Limit:       query.limit,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
@@ -65,15 +68,46 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 }
 
 func documentListLimit(r *http.Request) (*int, error) {
-	raw := strings.TrimSpace(r.URL.Query().Get("limit"))
-	if raw == "" {
+	limit, present, err := web.OptionalIntegerQueryParameter(
+		r.URL.Query(),
+		"limit",
+		16,
+		1,
+		documentListMaximumLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if !present {
 		return nil, nil
 	}
-	limit, err := strconv.Atoi(raw)
-	if err != nil || limit <= 0 {
-		return nil, documents.ErrInvalidInput
-	}
 	return &limit, nil
+}
+
+type documentQuery struct {
+	search string
+	scope  string
+	limit  *int
+}
+
+func documentListQuery(r *http.Request) (documentQuery, error) {
+	search, _, err := web.OptionalQueryParameter(r.URL.Query(), "search", documentSearchMaximumBytes)
+	if err != nil {
+		return documentQuery{}, err
+	}
+	scope, _, err := web.OptionalQueryParameter(r.URL.Query(), "scope", documentScopeMaximumBytes)
+	if err != nil {
+		return documentQuery{}, err
+	}
+	limit, err := documentListLimit(r)
+	if err != nil {
+		return documentQuery{}, err
+	}
+	return documentQuery{
+		search: strings.TrimSpace(search),
+		scope:  strings.TrimSpace(scope),
+		limit:  limit,
+	}, nil
 }
 
 func (h *Handlers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -159,22 +193,14 @@ func (h *Handlers) UploadMedia(ctx context.Context, w http.ResponseWriter, r *ht
 		return web.RespondError(ctx, w, documents.ErrForbidden, http.StatusForbidden)
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, validate.MaxAttachmentSize+multipartOverheadAllowance)
-	if err := r.ParseMultipartForm(validate.MaxAttachmentSize); err != nil {
-		var maxBytesError *http.MaxBytesError
-		if errors.As(err, &maxBytesError) {
-			return web.RespondError(
-				ctx,
-				w,
-				fmt.Errorf("%w: maximum document media size is 25 MB", attachments.ErrFileTooLarge),
-				http.StatusRequestEntityTooLarge,
-			)
-		}
+	if err := web.ParseMultipartForm(w, r, validate.MaxAttachmentSize+multipartOverheadAllowance); err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("invalid upload request: %w", err), http.StatusBadRequest)
 	}
-	if r.MultipartForm != nil {
-		defer r.MultipartForm.RemoveAll()
-	}
+	defer func() {
+		if err := web.RemoveMultipartForm(r); err != nil {
+			h.log.Warn(ctx, "failed to remove document media upload temporary files", "error", err)
+		}
+	}()
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -194,7 +220,7 @@ func (h *Handlers) UploadMedia(ctx context.Context, w http.ResponseWriter, r *ht
 		AttachmentID: fileInfo.ID,
 	}
 	if err := h.documents.LinkMedia(ctx, mediaInput); err != nil {
-		if cleanupErr := h.attachments.DeleteAttachment(ctx, fileInfo.ID, userID); cleanupErr != nil && h.log != nil {
+		if cleanupErr := h.attachments.DeleteAttachment(ctx, fileInfo.ID, workspace.ID, userID); cleanupErr != nil && h.log != nil {
 			h.log.Error(ctx, "failed to clean up unlinked document media", "error", cleanupErr, "attachment_id", fileInfo.ID)
 		}
 		return web.RespondError(ctx, w, err, documentHTTPStatus(err))
@@ -359,13 +385,21 @@ func (h *Handlers) ListRelatedDocuments(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	entityID, err := uuid.Parse(r.URL.Query().Get("entityId"))
-	if err != nil {
+	entityID, err := web.OptionalUUIDQueryParameter(r.URL.Query(), "entityId")
+	if err != nil || entityID == nil {
+		return web.RespondError(ctx, w, documents.ErrInvalidInput, http.StatusBadRequest)
+	}
+	entityType, present, err := web.OptionalQueryParameter(
+		r.URL.Query(),
+		"entityType",
+		documentEntityTypeMaximumBytes,
+	)
+	if err != nil || !present || strings.TrimSpace(entityType) == "" {
 		return web.RespondError(ctx, w, documents.ErrInvalidInput, http.StatusBadRequest)
 	}
 	result, err := h.documents.ListRelatedDocuments(
 		ctx, workspace.ID, userID,
-		documents.RelationshipType(r.URL.Query().Get("entityType")), entityID,
+		documents.RelationshipType(strings.TrimSpace(entityType)), *entityID,
 	)
 	if err != nil {
 		return web.RespondError(ctx, w, err, documentHTTPStatus(err))

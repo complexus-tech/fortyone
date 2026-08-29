@@ -1,126 +1,24 @@
 package search
 
-import (
-	"time"
+import searchdomain "github.com/complexus-tech/projects-api/internal/modules/search/domain"
 
-	"github.com/google/uuid"
+// Service-facing aliases preserve the existing public module contract while
+// keeping the canonical types in the dependency-neutral domain package.
+type (
+	CoreSearchStory     = searchdomain.CoreSearchStory
+	CoreSearchObjective = searchdomain.CoreSearchObjective
+	CoreSearchResult    = searchdomain.CoreSearchResult
+	CoreSimilarStory    = searchdomain.CoreSimilarStory
+	SearchType          = searchdomain.SearchType
+	SortOption          = searchdomain.SortOption
+	SearchParams        = searchdomain.SearchParams
 )
-
-// CoreSearchStory represents a story in search results
-type CoreSearchStory struct {
-	ID                       uuid.UUID
-	SequenceID               int
-	Title                    string
-	Parent                   *uuid.UUID
-	Objective                *uuid.UUID
-	Status                   *uuid.UUID
-	StatusName               *string
-	StatusColor              *string
-	StatusCategory           *string
-	Assignee                 *uuid.UUID
-	AssigneeFullName         *string
-	AssigneeUsername         *string
-	Reporter                 *uuid.UUID
-	Priority                 string
-	EstimateLabel            *string
-	EstimateValue            *int16
-	EstimateScheme           string
-	Sprint                   *uuid.UUID
-	KeyResult                *uuid.UUID
-	Team                     uuid.UUID
-	TeamName                 string
-	TeamCode                 string
-	Workspace                uuid.UUID
-	StartDate                *time.Time
-	EndDate                  *time.Time
-	EstimatedDurationMinutes *int
-	MinimumFocusBlockMinutes *int
-	AutoSchedulingEnabled    bool
-	AutoSchedulingLocked     bool
-	AutoSchedulingStatus     string
-	AutoSchedulingReason     *string
-	AutoSchedulingUpdatedAt  *time.Time
-	CreatedAt                time.Time
-	UpdatedAt                time.Time
-	Labels                   []uuid.UUID
-}
-
-// CoreSearchObjective represents an objective in search results
-type CoreSearchObjective struct {
-	ID           uuid.UUID
-	Name         string
-	Description  *string
-	ShortSummary *string
-	LeadUser     *uuid.UUID
-	LeadFullName *string
-	LeadUsername *string
-	Team         uuid.UUID
-	TeamName     string
-	TeamCode     string
-	Workspace    uuid.UUID
-	StartDate    *time.Time
-	EndDate      *time.Time
-	Status       uuid.UUID
-	Priority     *string
-	Health       *string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-}
-
-// CoreSearchResult represents the combined search results
-type CoreSearchResult struct {
-	Stories         []CoreSearchStory
-	Objectives      []CoreSearchObjective
-	TotalStories    int
-	TotalObjectives int
-}
-
-// CoreSimilarStory represents a story that may duplicate a proposed title.
-type CoreSimilarStory struct {
-	ID         uuid.UUID
-	SequenceID int
-	Title      string
-	Team       uuid.UUID
-	Status     *uuid.UUID
-	Assignee   *uuid.UUID
-	Priority   string
-	Confidence float64
-}
-
-// SearchType defines the type of content to search for
-type SearchType string
 
 const (
-	// SearchTypeAll searches all content types
-	SearchTypeAll SearchType = "all"
-	// SearchTypeStories searches only stories
-	SearchTypeStories SearchType = "stories"
-	// SearchTypeObjectives searches only objectives
-	SearchTypeObjectives SearchType = "objectives"
+	SearchTypeAll        = searchdomain.SearchTypeAll
+	SearchTypeStories    = searchdomain.SearchTypeStories
+	SearchTypeObjectives = searchdomain.SearchTypeObjectives
+	SortByRelevance      = searchdomain.SortByRelevance
+	SortByUpdated        = searchdomain.SortByUpdated
+	SortByCreated        = searchdomain.SortByCreated
 )
-
-// SortOption defines how search results should be sorted
-type SortOption string
-
-const (
-	// SortByRelevance sorts by search relevance (default)
-	SortByRelevance SortOption = "relevance"
-	// SortByUpdated sorts by last updated time
-	SortByUpdated SortOption = "updated"
-	// SortByCreated sorts by creation time
-	SortByCreated SortOption = "created"
-)
-
-// SearchParams represents the parameters for a search query
-type SearchParams struct {
-	Type       SearchType
-	Query      string
-	TeamID     *uuid.UUID
-	AssigneeID *uuid.UUID
-	LabelID    *uuid.UUID
-	StatusID   *uuid.UUID
-	Priority   *string
-	SortBy     SortOption
-	Page       int
-	PageSize   int
-}

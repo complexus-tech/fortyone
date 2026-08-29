@@ -3,16 +3,18 @@
   "pages": [
     "index",
     "concepts",
-    "---Getting Started---",
+    "use-cases",
+    "---Start---",
     "...start-here",
-    "---Core Features---",
+    "---Plan and deliver---",
     "product-guide",
     "roles-and-permissions",
     "---Integrations---",
     "integrations",
-    "---Workspace Administration---",
+    "---Administration---",
     "...administration",
-    "---Help & Support---",
-    "...help-and-support"
+    "---Help---",
+    "...help-and-support",
+    "api-reference"
   ]
 }

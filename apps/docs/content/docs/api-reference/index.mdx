@@ -1,0 +1,55 @@
+---
+title: Overview
+description: Build integrations and automate FortyOne with the public API.
+icon: Code2
+---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { BookOpenText, Boxes, Rocket, Webhook } from "lucide-react";
+
+Use the Developer API when work needs to move between FortyOne and another
+system. The API is versioned under `/api/v1`, uses scoped credentials, and is
+described by the same OpenAPI contract used to generate this reference.
+
+<Cards>
+  <Card
+    href="/api-reference/quickstart"
+    title="Start with the quickstart"
+    icon={<Rocket />}
+  >
+    Prepare a credential and make a request without copying a long example.
+  </Card>
+  <Card
+    href="/api-reference/reference"
+    title="Browse the API reference"
+    icon={<BookOpenText />}
+  >
+    See the exact operations, parameters, schemas, and responses.
+  </Card>
+  <Card
+    href="/api-reference/outbound-webhooks"
+    title="Listen for changes"
+    icon={<Webhook />}
+  >
+    Receive signed events instead of polling for updates.
+  </Card>
+  <Card href="/api-reference/sdks" title="Use a typed client" icon={<Boxes />}>
+    Generate a client from the OpenAPI contract or use an SDK preview.
+  </Card>
+</Cards>
+
+## Choose the right guide
+
+| If you need to…                        | Read…                                                   |
+| -------------------------------------- | ------------------------------------------------------- |
+| authenticate a personal script         | [Authentication](/api-reference/authentication)         |
+| limit what a credential can do         | [Scopes and access](/api-reference/scopes)              |
+| retry a write safely                   | [Idempotent writes](/api-reference/idempotency)         |
+| handle lists, failures, and throttling | [API conventions](/api-reference/pagination-and-errors) |
+| run workspace-owned automation         | [Service accounts](/api-reference/service-accounts)     |
+
+<Callout type="info" title="Reference is the source of truth">
+  Use the generated [API reference](/api-reference/reference) for endpoint
+  paths, fields, and response schemas. The guides explain decisions and safe
+  operating patterns without duplicating every endpoint.
+</Callout>

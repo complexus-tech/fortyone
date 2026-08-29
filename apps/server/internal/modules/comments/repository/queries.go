@@ -2,42 +2,39 @@ package commentsrepository
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
-	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/google/uuid"
+	commentsdomain "github.com/complexus-tech/projects-api/internal/modules/comments/domain"
+	commentsql "github.com/complexus-tech/projects-api/internal/modules/comments/repository/sqlc"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func (r *repo) GetComment(ctx context.Context, commentID uuid.UUID) (comments.CoreComment, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.comments.GetComment")
+func (r *Repository) GetComment(
+	ctx context.Context,
+	query commentsdomain.GetQuery,
+) (commentsdomain.Comment, error) {
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.repository.comments.GetComment")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("commentId", commentID.String()))
+	span.SetAttributes(
+		attribute.String("commentId", query.CommentID.String()),
+		attribute.String("workspaceId", query.WorkspaceID.String()),
+	)
 
-	query := `
-		SELECT comment_id, story_id, commenter_id,
-		content, parent_id, created_at, updated_at
-		FROM story_comments 
-		WHERE comment_id = :comment_id
-	`
-
-	params := map[string]any{
-		"comment_id": commentID,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	comment, err := r.queries.GetCommentForWorkspace(ctx, commentsql.GetCommentForWorkspaceParams{
+		CommentID:   query.CommentID,
+		WorkspaceID: query.WorkspaceID,
+	})
 	if err != nil {
-		r.log.Error(ctx, "error preparing statement", err)
-		return comments.CoreComment{}, err
-	}
-	defer stmt.Close()
-
-	var dbComment DbComment
-	if err := stmt.GetContext(ctx, &dbComment, params); err != nil {
-		r.log.Error(ctx, "error getting comment", err)
-		return comments.CoreComment{}, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return commentsdomain.Comment{}, commentsdomain.ErrNotFound
+		}
+		r.log.Error(ctx, "error getting comment", "error", err)
+		return commentsdomain.Comment{}, fmt.Errorf("get comment: %w", err)
 	}
 
-	return toCoreComment(dbComment), nil
+	return toCoreComment(comment), nil
 }

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 )
@@ -66,7 +66,7 @@ func (r *Rules) RecordScheduleTransitionActivity(
 	if reason != "" {
 		activityReason = &reason
 	}
-	return r.stories.RecordActivity(ctx, stories.CoreActivity{
+	return r.stories.RecordActivity(ctx, storydomain.Activity{
 		ID:           scheduleTransitionActivityID(payload, actorID, eventTimestamp),
 		StoryID:      payload.StoryID,
 		UserID:       actorID,

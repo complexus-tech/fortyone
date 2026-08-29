@@ -30,7 +30,6 @@ func TestHandleSetupCompletesSameWorkspaceSameTeamOAuthRefresh(t *testing.T) {
 		ClientSecret: "client-secret",
 		RedirectURL:  "https://api.example.com/integrations/slack/setup",
 		WebsiteURL:   "https://fortyone.app",
-		SecretKey:    "encryption-secret",
 	})
 	session, err := service.CreateInstallSession(context.Background(), workspaceID, userID, "acme")
 	require.NoError(t, err)

@@ -23,7 +23,9 @@ describe("MayaChat", () => {
       "src/components/ui/chat/chat-messages.tsx",
     );
 
-    expect(source).toContain('className="flex flex-col overflow-hidden"');
+    expect(source).toContain(
+      'className="flex h-full min-h-0 flex-col overflow-hidden"',
+    );
     expect(source).toContain(
       'className="mx-auto flex w-full max-w-3xl shrink-0 flex-col"',
     );

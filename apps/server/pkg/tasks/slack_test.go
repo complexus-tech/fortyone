@@ -5,27 +5,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
-
-func TestSlackEventTaskID(t *testing.T) {
-	t.Parallel()
-
-	initial := slackEventTaskID("T1", "Ev123", 0)
-	recovery := slackEventTaskID("T1", "Ev123", 7)
-
-	require.Equal(t, initial, slackEventTaskID(" T1 ", " Ev123 ", 0))
-	require.Equal(t, recovery, slackEventTaskID("T1", "Ev123", 7))
-	require.NotEqual(t, initial, recovery)
-	require.NotEqual(t, recovery, slackEventTaskID("T1", "Ev123", 8))
-	require.NotEqual(t, recovery, slackEventTaskID("T2", "Ev123", 7))
-}
 
 func TestSlackEventPayloadContainsNoProviderMessageBody(t *testing.T) {
 	t.Parallel()
 
-	payload, err := json.Marshal(SlackEventPayload{ExternalWorkspaceID: "T1", EventID: "Ev123", RecoveryAttempt: 2})
+	inboxID := uuid.MustParse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+	payload, err := json.Marshal(SlackEventPayload{Provider: "slack", InboxID: inboxID})
 	require.NoError(t, err)
-	require.JSONEq(t, `{"externalWorkspaceId":"T1","eventId":"Ev123","recoveryAttempt":2}`, string(payload))
+	require.JSONEq(t, `{"provider":"slack","inboxId":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}`, string(payload))
 	require.NotContains(t, strings.ToLower(string(payload)), "body")
+	require.NotContains(t, string(payload), "Ev123")
+	require.NotContains(t, string(payload), "T1")
 }

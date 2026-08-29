@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
@@ -177,8 +176,13 @@ func (h *Handlers) UpdateContributorPreferences(ctx context.Context, w http.Resp
 }
 
 func (h *Handlers) ListPublicUpdates(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	page, pageSize := updatesPagination(r)
-	updates, err := h.feedback.ListPublicUpdates(ctx, web.Params(r, "portalSlug"), page, pageSize)
+	params, err := parseUpdatesPagination(r.URL.Query())
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	updates, err := h.feedback.ListPublicUpdates(
+		ctx, web.Params(r, "portalSlug"), params.Page, params.PageSize,
+	)
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
@@ -222,8 +226,11 @@ func (h *Handlers) ListWorkspaceUpdates(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
-	page, pageSize := updatesPagination(r)
-	updates, err := h.feedback.ListWorkspaceUpdates(ctx, workspace.ID, page, pageSize)
+	params, err := parseUpdatesPagination(r.URL.Query())
+	if err != nil {
+		return web.RespondError(ctx, w, err, httpStatus(err))
+	}
+	updates, err := h.feedback.ListWorkspaceUpdates(ctx, workspace.ID, params.Page, params.PageSize)
 	if err != nil {
 		return web.RespondError(ctx, w, err, httpStatus(err))
 	}
@@ -431,17 +438,6 @@ func (h *Handlers) resolveContributorForItem(ctx context.Context, r *http.Reques
 func (h *Handlers) resolvePublicParticipant(ctx context.Context, r *http.Request, expectedKind string) (feedback.CoreResolvedParticipant, error) {
 	accountID, _ := mid.GetUserID(ctx)
 	return h.feedback.ResolvePublicParticipant(ctx, web.Params(r, "portalSlug"), accountID, r.Header.Get("Authorization"), expectedKind)
-}
-
-func updatesPagination(r *http.Request) (int, int) {
-	page, pageSize := 1, 20
-	if value, err := strconv.Atoi(r.URL.Query().Get("page")); err == nil && value > 0 {
-		page = value
-	}
-	if value, err := strconv.Atoi(r.URL.Query().Get("pageSize")); err == nil && value > 0 {
-		pageSize = value
-	}
-	return page, pageSize
 }
 
 func workspaceAndUpdateID(ctx context.Context, r *http.Request) (uuid.UUID, uuid.UUID, error) {

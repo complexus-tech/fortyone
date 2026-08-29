@@ -2,23 +2,22 @@ package integrationrequests
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	platformauth "github.com/complexus-tech/projects-api/internal/platform/auth"
+	integrationrequestdomain "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/domain"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 )
 
 var (
-	ErrUnsupportedProvider    = errors.New("unsupported integration request provider")
-	ErrRequestNotPending      = errors.New("integration request is not pending")
-	ErrInvalidRequestProperty = errors.New("invalid integration request property")
-	ErrProviderThreadNotFound = errors.New("integration request provider thread not found")
-	ErrIdempotencyConflict    = errors.New("comment idempotency key was already used for different content")
+	ErrUnsupportedProvider    = integrationrequestdomain.ErrUnsupportedProvider
+	ErrRequestNotPending      = integrationrequestdomain.ErrRequestNotPending
+	ErrInvalidRequestProperty = integrationrequestdomain.ErrInvalidRequestProperty
+	ErrProviderThreadNotFound = integrationrequestdomain.ErrProviderThreadNotFound
+	ErrIdempotencyConflict    = integrationrequestdomain.ErrIdempotencyConflict
 )
 
 var supportedRequestPriorities = map[string]string{
@@ -53,7 +52,7 @@ type Repository interface {
 type Service struct {
 	log                *logger.Logger
 	repo               Repository
-	stories            StoryService
+	stories            StoryCreator
 	providerAccepters  map[string]ProviderAccepter
 	providerCommenters map[string]ProviderCommenter
 }
@@ -69,7 +68,7 @@ func WithProviderCommenter(provider string, commenter ProviderCommenter) Option 
 	}
 }
 
-func New(log *logger.Logger, repo Repository, stories StoryService, providerAccepters map[string]ProviderAccepter, options ...Option) *Service {
+func New(log *logger.Logger, repo Repository, stories StoryCreator, providerAccepters map[string]ProviderAccepter, options ...Option) *Service {
 	service := &Service{
 		log:                log,
 		repo:               repo,
@@ -111,17 +110,6 @@ func (s *Service) CountByTeam(ctx context.Context, workspaceID, teamID, userID u
 	return s.repo.CountByTeam(ctx, workspaceID, teamID, userID, filter)
 }
 
-// Get resolves an integration request for the authenticated actor stored in
-// the context. Provider-specific HTTP services use this compatibility method;
-// callers that already have the actor ID should use GetForUser directly.
-func (s *Service) Get(ctx context.Context, workspaceID, requestID uuid.UUID) (CoreIntegrationRequest, error) {
-	userID, err := platformauth.GetUserID(ctx)
-	if err != nil {
-		return CoreIntegrationRequest{}, fmt.Errorf("resolve integration request actor: %w", err)
-	}
-	return s.GetForUser(ctx, workspaceID, requestID, userID)
-}
-
 func (s *Service) GetForUser(ctx context.Context, workspaceID, requestID, userID uuid.UUID) (CoreIntegrationRequest, error) {
 	return s.repo.GetForUser(ctx, workspaceID, requestID, userID)
 }
@@ -138,16 +126,16 @@ func (s *Service) UpdatePending(ctx context.Context, workspaceID, requestID, use
 		input.Priority = &priority
 	}
 	if input.EstimatedDurationMinutes.Set && input.EstimatedDurationMinutes.Value != nil && *input.EstimatedDurationMinutes.Value <= 0 {
-		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, stories.ErrInvalidEstimatedDuration)
+		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, storydomain.ErrInvalidEstimatedDuration)
 	}
-	if input.EstimatedDurationMinutes.Set && input.EstimatedDurationMinutes.Value != nil && *input.EstimatedDurationMinutes.Value > stories.MaximumEstimatedDurationMinutes {
-		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, stories.ErrEstimatedDurationTooLarge)
+	if input.EstimatedDurationMinutes.Set && input.EstimatedDurationMinutes.Value != nil && *input.EstimatedDurationMinutes.Value > storydomain.MaximumEstimatedDurationMinutes {
+		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, storydomain.ErrEstimatedDurationTooLarge)
 	}
 	if input.MinimumFocusBlockMinutes.Set && input.MinimumFocusBlockMinutes.Value != nil && *input.MinimumFocusBlockMinutes.Value <= 0 {
-		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, stories.ErrInvalidMinimumFocusBlock)
+		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, storydomain.ErrInvalidMinimumFocusBlock)
 	}
-	if input.MinimumFocusBlockMinutes.Set && input.MinimumFocusBlockMinutes.Value != nil && *input.MinimumFocusBlockMinutes.Value > stories.MaximumEstimatedDurationMinutes {
-		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, stories.ErrMinimumFocusBlockTooLarge)
+	if input.MinimumFocusBlockMinutes.Set && input.MinimumFocusBlockMinutes.Value != nil && *input.MinimumFocusBlockMinutes.Value > storydomain.MaximumEstimatedDurationMinutes {
+		return CoreIntegrationRequest{}, fmt.Errorf("%w: %w", ErrInvalidRequestProperty, storydomain.ErrMinimumFocusBlockTooLarge)
 	}
 	return s.repo.UpdatePending(ctx, workspaceID, requestID, userID, input)
 }
@@ -177,7 +165,7 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 	// one story even after a process crash.
 	request, err = s.repo.ReserveAcceptance(ctx, workspaceID, requestID, actorID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, integrationrequestdomain.ErrNotFound) {
 			current, getErr := s.repo.GetForUser(ctx, workspaceID, requestID, actorID)
 			if getErr == nil && current.Status == StatusAccepted && current.AcceptedStoryID != nil {
 				return current, nil
@@ -210,25 +198,25 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 	}
 	creationKey := fmt.Sprintf("integration-request:%s:%s", workspaceID, request.ID)
 
-	story, err := s.stories.CreateExternalUserAction(ctx, conversionActorID, stories.CoreNewStory{
+	story, err := s.stories.CreateForIntegrationRequest(ctx, conversionActorID, workspaceID, NewStory{
 		Title:                    request.Title,
 		Description:              request.Description,
-		Status:                   statusID,
-		Reporter:                 &conversionActorID,
-		Assignee:                 request.AssigneeID,
-		Team:                     request.TeamID,
+		StatusID:                 statusID,
+		ReporterID:               &conversionActorID,
+		AssigneeID:               request.AssigneeID,
+		TeamID:                   request.TeamID,
 		Priority:                 priority,
 		EstimateValue:            request.EstimateValue,
 		EstimatedDurationMinutes: request.EstimatedDurationMinutes,
 		MinimumFocusBlockMinutes: request.MinimumFocusBlockMinutes,
-		Objective:                request.ObjectiveID,
-		KeyResult:                request.KeyResultID,
-		Sprint:                   request.SprintID,
+		ObjectiveID:              request.ObjectiveID,
+		KeyResultID:              request.KeyResultID,
+		SprintID:                 request.SprintID,
 		StartDate:                request.StartDate,
 		EndDate:                  request.EndDate,
-		LabelIDs:                 request.LabelIDs,
-		CreationKey:              &creationKey,
-	}, workspaceID)
+		LabelIDs:                 append([]uuid.UUID(nil), request.LabelIDs...),
+		CreationKey:              creationKey,
+	})
 	if err != nil {
 		return CoreIntegrationRequest{}, err
 	}
@@ -241,7 +229,7 @@ func (s *Service) Accept(ctx context.Context, workspaceID, requestID, actorID uu
 	if err == nil {
 		return accepted, nil
 	}
-	if !errors.Is(err, sql.ErrNoRows) {
+	if !errors.Is(err, integrationrequestdomain.ErrNotFound) {
 		return CoreIntegrationRequest{}, err
 	}
 	current, getErr := s.repo.GetForUser(ctx, workspaceID, requestID, actorID)
@@ -351,7 +339,7 @@ func validateUpsertInput(input CoreUpsertRequestInput) error {
 	if strings.TrimSpace(input.Title) == "" {
 		return errors.New("title is required")
 	}
-	if err := stories.ValidateStoryTimeContract(input.EstimatedDurationMinutes, input.MinimumFocusBlockMinutes); err != nil {
+	if err := storydomain.ValidateScheduling(input.EstimatedDurationMinutes, input.MinimumFocusBlockMinutes); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidRequestProperty, err)
 	}
 	return nil
@@ -369,5 +357,5 @@ func normalizeRequestPriority(value string) (string, error) {
 }
 
 func IsNotFound(err error) bool {
-	return errors.Is(err, sql.ErrNoRows)
+	return errors.Is(err, integrationrequestdomain.ErrNotFound)
 }

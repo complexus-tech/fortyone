@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { invitationKeys } from "@/constants/keys";
 import { useWorkspacePath } from "@/hooks";
 import { revokeInvitation } from "../actions/revoke";
+import { invitationKeys } from "../keys";
 import type { Invitation } from "../types";
 
 export const useRevokeInvitationMutation = () => {

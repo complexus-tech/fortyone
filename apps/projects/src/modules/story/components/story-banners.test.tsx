@@ -263,8 +263,9 @@ describe("StoryBanners", () => {
       />,
     );
 
-    fireEvent.click(
+    fireEvent.pointerDown(
       screen.getByRole("button", { name: "More Maya scheduling actions" }),
+      { button: 0, ctrlKey: false },
     );
     expect(
       screen.queryByRole("menuitem", { name: "Retry" }),
@@ -287,8 +288,9 @@ describe("StoryBanners", () => {
   it("offers the time-needed picker when Maya needs an estimate", () => {
     render(<StoryBanners story={createStory()} />);
 
-    fireEvent.click(
+    fireEvent.pointerDown(
       screen.getByRole("button", { name: "More Maya scheduling actions" }),
+      { button: 0, ctrlKey: false },
     );
 
     expect(
@@ -313,8 +315,9 @@ describe("StoryBanners", () => {
       />,
     );
 
-    fireEvent.click(
+    fireEvent.pointerDown(
       screen.getByRole("button", { name: "More Maya scheduling actions" }),
+      { button: 0, ctrlKey: false },
     );
 
     expect(
@@ -336,8 +339,9 @@ describe("StoryBanners", () => {
       />,
     );
 
-    fireEvent.click(
+    fireEvent.pointerDown(
       screen.getByRole("button", { name: "More Maya scheduling actions" }),
+      { button: 0, ctrlKey: false },
     );
 
     expect(

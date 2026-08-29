@@ -1,6 +1,7 @@
 {
   "name": "ui",
   "version": "0.0.0",
+  "private": true,
   "sideEffects": [
     "**/*.css"
   ],
@@ -11,7 +12,6 @@
     ".": "./dist/index.js",
     "./styles.css": "./dist/styles.css"
   },
-  "license": "MIT",
   "scripts": {
     "build:styles": "tailwindcss -i ./src/styles.css -o ./dist/styles.css",
     "build:components": "tsc",

@@ -11,7 +11,7 @@ import (
 func TestMessageWriteRepositoryBlocksOnlyLiveApprovalExecutions(t *testing.T) {
 	t.Parallel()
 
-	data, err := os.ReadFile("message_writes.go")
+	data, err := os.ReadFile("queries/message_writes.sql")
 	if err != nil {
 		t.Fatalf("read message write repository: %v", err)
 	}
@@ -47,22 +47,22 @@ func TestApprovalReservationsPrepareSafeRetriesBeforeDurableRecovery(t *testing.
 func TestSafeRetryPreparationIsExactOriginAuditedAndBounded(t *testing.T) {
 	t.Parallel()
 
-	data, err := os.ReadFile("message_writes.go")
+	data, err := os.ReadFile("queries/message_writes.sql")
 	if err != nil {
 		t.Fatalf("read message write repository: %v", err)
 	}
 	source := strings.Join(strings.Fields(strings.ToLower(string(data))), " ")
 
 	for _, contract := range []string{
-		"execution.session_id = $1",
-		"execution.user_id = $2",
-		"execution.workspace_id = $3",
-		"execution.tool_call_id = $4",
-		"execution.fingerprint = $5",
+		"execution.session_id = sqlc.arg(session_id)",
+		"execution.user_id = sqlc.arg(user_id)",
+		"execution.workspace_id = sqlc.arg(workspace_id)",
+		"execution.tool_call_id = sqlc.arg(tool_call_id)",
+		"execution.fingerprint = sqlc.arg(fingerprint)",
 		"execution.status = 'failed_uncertain'",
 		"execution.reconciliation_count = 0",
-		"set status = 'retry_ready'",
-		"last_reconciliation_resolution = $6",
+		"status = 'retry_ready'",
+		"last_reconciliation_resolution = sqlc.arg(resolution)",
 		"reconciliation_count = reconciliation_count + 1",
 		"session.deleted_at is null",
 	} {
@@ -75,7 +75,7 @@ func TestSafeRetryPreparationIsExactOriginAuditedAndBounded(t *testing.T) {
 func TestLegacyWholeArrayWritesCannotReplaceExistingTranscript(t *testing.T) {
 	t.Parallel()
 
-	data, err := os.ReadFile("commands.go")
+	data, err := os.ReadFile("queries/sessions.sql")
 	if err != nil {
 		t.Fatalf("read chat session commands: %v", err)
 	}
@@ -86,7 +86,11 @@ func TestLegacyWholeArrayWritesCannotReplaceExistingTranscript(t *testing.T) {
 	if count := strings.Count(source, "on conflict (session_id) do nothing"); count < 2 {
 		t.Fatalf("found %d create-only transcript writes, want at least 2", count)
 	}
-	if !strings.Contains(source, "return chatsessions.errmessagewriteconflict") {
+	commandData, err := os.ReadFile("commands.go")
+	if err != nil {
+		t.Fatalf("read chat session command adapter: %v", err)
+	}
+	if !strings.Contains(strings.ToLower(string(commandData)), "return chatsessions.errmessagewriteconflict") {
 		t.Fatal("legacy SaveMessages must report a conflict for an existing transcript")
 	}
 }

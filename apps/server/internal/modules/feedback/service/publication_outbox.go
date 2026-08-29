@@ -174,7 +174,7 @@ func (s *Service) dispatchPublicationEvent(ctx context.Context, repository Publi
 			continue
 		}
 		deliveryID := stablePublicationDeliveryID(publication.EventID, recipient.ContributorID)
-		unsubscribeToken, unsubscribeHash, err := feedbacksecurity.DeriveUnsubscribeTokenWithKey(s.security.unsubscribeKey[:], deliveryID)
+		_, unsubscribeHash, err := feedbacksecurity.DeriveUnsubscribeTokenWithKey(s.security.unsubscribeKey[:], deliveryID)
 		if err != nil {
 			return fmt.Errorf("derive contributor unsubscribe token: %w", err)
 		}
@@ -195,7 +195,7 @@ func (s *Service) dispatchPublicationEvent(ctx context.Context, repository Publi
 			continue
 		}
 		if err := s.tasks.EnqueueFeedbackContributorDelivery(tasks.FeedbackContributorDeliveryPayload{
-			DeliveryID: delivery.ID, UnsubscribeToken: unsubscribeToken,
+			DeliveryID: delivery.ID,
 		}); err != nil {
 			return fmt.Errorf("enqueue contributor delivery %s: %w", delivery.ID, err)
 		}

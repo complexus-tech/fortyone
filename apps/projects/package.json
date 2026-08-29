@@ -1,12 +1,15 @@
 {
   "name": "projects",
   "version": "1.0.0",
-  "private": false,
+  "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
     "ai:devtools": "npx @ai-sdk/devtools",
+    "architecture:baseline": "node scripts/architecture/check.mjs --write-baseline",
+    "architecture:check": "node scripts/architecture/check.mjs",
+    "architecture:test": "node --test scripts/architecture/architecture.test.mjs",
     "test": "jest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
 	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -50,8 +49,8 @@ func (r *blockingOnboardingReceiptRepo) HasSlackUserOnboardingReceipt(
 // the same runtime value through OutboundStore.
 func (s *onboardingIngressRuntimeStub) FindConversation(
 	ctx context.Context,
-	input messagingrepository.ConversationInput,
-) (messagingrepository.ConversationRecord, error) {
+	input conversationInput,
+) (conversationRecord, error) {
 	return s.eventInboxCapture.FindConversation(ctx, input)
 }
 
@@ -202,7 +201,7 @@ func TestHandleEventsClaimsFirstUseGuideForDirectMessage(t *testing.T) {
 		eventStoreStub:    newEventStoreStub(),
 	}
 	runtime.processOutbound = false
-	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{SecretKey: "event-secret"})
+	service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
 	WithEventRuntime(queue, runtime)(service)
 
 	response, err := service.HandleEvents(
@@ -213,8 +212,9 @@ func TestHandleEventsClaimsFirstUseGuideForDirectMessage(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, response.Challenge)
 	assertSingleFirstUseIngressClaim(t, runtime.eventStoreStub, installation, "U1")
-	require.Equal(t, 1, runtime.registrations)
 	require.Len(t, queue.payloads, 1)
+	require.Equal(t, "slack", queue.payloads[0].Provider)
+	require.NotEqual(t, uuid.Nil, queue.payloads[0].InboxID)
 }
 
 func TestHandleEventsDoesNotClaimFirstUseGuideForIgnoredMessages(t *testing.T) {
@@ -242,7 +242,7 @@ func TestHandleEventsDoesNotClaimFirstUseGuideForIgnoredMessages(t *testing.T) {
 				eventStoreStub:    newEventStoreStub(),
 			}
 			runtime.processOutbound = false
-			service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{SecretKey: "event-secret"})
+			service := newTestService(repo, &mockRequestStore{}, &mockStoryService{}, Config{})
 			WithEventRuntime(queue, runtime)(service)
 
 			response, err := service.HandleEvents(context.Background(), []byte(test.eventBody))
@@ -250,7 +250,6 @@ func TestHandleEventsDoesNotClaimFirstUseGuideForIgnoredMessages(t *testing.T) {
 			require.NoError(t, err)
 			require.Empty(t, response.Challenge)
 			require.Empty(t, runtime.outboundInputs)
-			require.Zero(t, runtime.registrations)
 			require.Empty(t, queue.payloads)
 		})
 	}

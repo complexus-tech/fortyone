@@ -2,169 +2,209 @@ package objectivesrepository
 
 import (
 	"context"
-	"database/sql"
+	"errors"
 	"fmt"
-	"strings"
 
-	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
+	objectivesdomain "github.com/complexus-tech/projects-api/internal/modules/objectives/domain"
+	objectivessql "github.com/complexus-tech/projects-api/internal/modules/objectives/repository/sqlc"
+	"github.com/complexus-tech/projects-api/internal/platform/safecast"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
-type dbStrategy struct {
-	UltimateGoal string  `db:"ultimate_goal"`
-	Description  *string `db:"description"`
-}
-
-type dbStrategicPillar struct {
-	ID          uuid.UUID `db:"pillar_id"`
-	Name        string    `db:"name"`
-	Description *string   `db:"description"`
-	OrderIndex  int       `db:"order_index"`
-}
-
-type dbObjectiveAlignment struct {
-	PillarID    uuid.UUID `db:"pillar_id"`
-	ObjectiveID uuid.UUID `db:"objective_id"`
-}
-
-func (r *repo) GetStrategyMap(ctx context.Context, workspaceID uuid.UUID) (objectives.CoreStrategyMap, error) {
-	strategy := dbStrategy{}
-	err := r.db.GetContext(ctx, &strategy, `
-		SELECT ultimate_goal, description
-		FROM workspace_strategies
-		WHERE workspace_id = $1
-	`, workspaceID)
-	if err != nil && err != sql.ErrNoRows {
-		return objectives.CoreStrategyMap{}, fmt.Errorf("get workspace strategy: %w", err)
+func (repository *Repository) GetStrategyMap(
+	ctx context.Context,
+	query objectivesdomain.StrategyQuery,
+) (objectivesdomain.StrategyMap, error) {
+	if err := query.Validate(); err != nil {
+		return objectivesdomain.StrategyMap{}, err
+	}
+	canRead, err := repository.queries.CanReadObjectiveStrategy(ctx, objectivessql.CanReadObjectiveStrategyParams{
+		WorkspaceID: query.WorkspaceID, ActorID: query.ActorID,
+	})
+	if err != nil {
+		return objectivesdomain.StrategyMap{}, fmt.Errorf("authorize strategy read: %w", err)
+	}
+	if !canRead {
+		return objectivesdomain.StrategyMap{}, objectivesdomain.ErrForbidden
 	}
 
-	var dbPillars []dbStrategicPillar
-	if err := r.db.SelectContext(ctx, &dbPillars, `
-		SELECT pillar_id, name, description, order_index
-		FROM strategic_pillars
-		WHERE workspace_id = $1
-		ORDER BY order_index, created_at
-	`, workspaceID); err != nil {
-		return objectives.CoreStrategyMap{}, fmt.Errorf("list strategic pillars: %w", err)
+	strategy := objectivessql.GetWorkspaceStrategyRow{}
+	strategy, err = repository.queries.GetWorkspaceStrategy(ctx, objectivessql.GetWorkspaceStrategyParams{
+		WorkspaceID: query.WorkspaceID, ActorID: query.ActorID,
+	})
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return objectivesdomain.StrategyMap{}, fmt.Errorf("get workspace strategy: %w", err)
+	}
+	pillars, err := repository.queries.ListStrategicPillars(ctx, objectivessql.ListStrategicPillarsParams{
+		WorkspaceID: query.WorkspaceID, ActorID: query.ActorID,
+	})
+	if err != nil {
+		return objectivesdomain.StrategyMap{}, fmt.Errorf("list strategic pillars: %w", err)
+	}
+	alignments, err := repository.queries.ListVisibleStrategyAlignments(ctx, objectivessql.ListVisibleStrategyAlignmentsParams{
+		ActorID: query.ActorID, WorkspaceID: query.WorkspaceID,
+	})
+	if err != nil {
+		return objectivesdomain.StrategyMap{}, fmt.Errorf("list strategy alignments: %w", err)
 	}
 
-	var alignments []dbObjectiveAlignment
-	if err := r.db.SelectContext(ctx, &alignments, `
-		SELECT pillar_id, objective_id
-		FROM strategy_objective_alignments
-		WHERE workspace_id = $1
-	`, workspaceID); err != nil {
-		return objectives.CoreStrategyMap{}, fmt.Errorf("list strategy alignments: %w", err)
-	}
-
-	objectiveIDs := make(map[uuid.UUID][]uuid.UUID, len(dbPillars))
-	for _, pillar := range dbPillars {
-		objectiveIDs[pillar.ID] = make([]uuid.UUID, 0)
+	objectiveIDs := make(map[uuid.UUID][]uuid.UUID, len(pillars))
+	for _, pillar := range pillars {
+		objectiveIDs[pillar.PillarID] = []uuid.UUID{}
 	}
 	for _, alignment := range alignments {
 		objectiveIDs[alignment.PillarID] = append(objectiveIDs[alignment.PillarID], alignment.ObjectiveID)
 	}
-
-	pillars := make([]objectives.CoreStrategicPillar, 0, len(dbPillars))
-	for _, pillar := range dbPillars {
-		pillars = append(pillars, objectives.CoreStrategicPillar{
-			ID: pillar.ID, Name: pillar.Name, Description: pillar.Description,
-			OrderIndex: pillar.OrderIndex, ObjectiveIDs: objectiveIDs[pillar.ID],
+	result := objectivesdomain.StrategyMap{
+		UltimateGoal: strategy.UltimateGoal, Description: strategy.Description,
+		Pillars: make([]objectivesdomain.StrategicPillar, 0, len(pillars)),
+	}
+	for _, pillar := range pillars {
+		result.Pillars = append(result.Pillars, objectivesdomain.StrategicPillar{
+			ID: pillar.PillarID, Name: pillar.Name, Description: pillar.Description,
+			OrderIndex: int(pillar.OrderIndex), ObjectiveIDs: objectiveIDs[pillar.PillarID],
 		})
 	}
-
-	return objectives.CoreStrategyMap{UltimateGoal: strategy.UltimateGoal, Description: strategy.Description, Pillars: pillars}, nil
+	return result, nil
 }
 
-func (r *repo) UpdateStrategy(ctx context.Context, workspaceID uuid.UUID, strategy objectives.CoreStrategyUpdate) error {
-	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO workspace_strategies (workspace_id, ultimate_goal, description)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (workspace_id) DO UPDATE SET
-			ultimate_goal = EXCLUDED.ultimate_goal,
-			description = EXCLUDED.description,
-			updated_at = NOW()
-	`, workspaceID, strategy.UltimateGoal, strategy.Description)
+func (repository *Repository) UpdateStrategy(
+	ctx context.Context,
+	query objectivesdomain.StrategyQuery,
+	strategy objectivesdomain.StrategyUpdate,
+) error {
+	if err := query.Validate(); err != nil {
+		return err
+	}
+	if err := strategy.Validate(); err != nil {
+		return err
+	}
+	_, err := repository.queries.UpdateWorkspaceStrategy(ctx, objectivessql.UpdateWorkspaceStrategyParams{
+		WorkspaceID: query.WorkspaceID, ActorID: query.ActorID,
+		UltimateGoal: strategy.UltimateGoal, Description: strategy.Description,
+	})
+	return mapStrategyError("update workspace strategy", err)
+}
+
+func (repository *Repository) CreateStrategicPillar(
+	ctx context.Context,
+	query objectivesdomain.StrategyQuery,
+	pillar objectivesdomain.NewStrategicPillar,
+) (objectivesdomain.StrategicPillar, error) {
+	if err := query.Validate(); err != nil {
+		return objectivesdomain.StrategicPillar{}, err
+	}
+	if err := pillar.Validate(); err != nil {
+		return objectivesdomain.StrategicPillar{}, err
+	}
+	orderIndex, err := safecast.Int32(pillar.OrderIndex)
 	if err != nil {
-		return fmt.Errorf("update workspace strategy: %w", err)
+		return objectivesdomain.StrategicPillar{}, fmt.Errorf("%w: pillar order: %v", objectivesdomain.ErrInvalid, err)
 	}
-	return nil
-}
-
-func (r *repo) CreateStrategicPillar(ctx context.Context, workspaceID uuid.UUID, pillar objectives.CoreNewStrategicPillar) (objectives.CoreStrategicPillar, error) {
-	var created dbStrategicPillar
-	err := r.db.GetContext(ctx, &created, `
-		INSERT INTO strategic_pillars (workspace_id, name, description, order_index)
-		VALUES ($1, $2, $3, $4)
-		RETURNING pillar_id, name, description, order_index
-	`, workspaceID, pillar.Name, pillar.Description, pillar.OrderIndex)
+	row, err := repository.queries.CreateStrategicPillar(ctx, objectivessql.CreateStrategicPillarParams{
+		WorkspaceID: query.WorkspaceID, ActorID: query.ActorID, Name: pillar.Name,
+		Description: pillar.Description, OrderIndex: orderIndex,
+	})
 	if err != nil {
-		return objectives.CoreStrategicPillar{}, fmt.Errorf("create strategic pillar: %w", err)
+		return objectivesdomain.StrategicPillar{}, mapStrategyError("create strategic pillar", err)
 	}
-	return objectives.CoreStrategicPillar{ID: created.ID, Name: created.Name, Description: created.Description, OrderIndex: created.OrderIndex, ObjectiveIDs: []uuid.UUID{}}, nil
+	return strategicPillarFromValues(row.PillarID, row.Name, row.Description, row.OrderIndex), nil
 }
 
-func (r *repo) UpdateStrategicPillar(ctx context.Context, workspaceID, pillarID uuid.UUID, pillar objectives.CoreUpdateStrategicPillar) (objectives.CoreStrategicPillar, error) {
-	setClauses := []string{"updated_at = NOW()"}
-	params := map[string]any{"workspace_id": workspaceID, "pillar_id": pillarID}
-	if pillar.Name != nil {
-		setClauses = append(setClauses, "name = :name")
-		params["name"] = *pillar.Name
+func (repository *Repository) UpdateStrategicPillar(
+	ctx context.Context,
+	query objectivesdomain.StrategyQuery,
+	pillarID uuid.UUID,
+	patch objectivesdomain.UpdateStrategicPillar,
+) (objectivesdomain.StrategicPillar, error) {
+	if err := query.Validate(); err != nil {
+		return objectivesdomain.StrategicPillar{}, err
 	}
-	if pillar.Description != nil {
-		setClauses = append(setClauses, "description = :description")
-		params["description"] = *pillar.Description
+	if pillarID == uuid.Nil {
+		return objectivesdomain.StrategicPillar{}, fmt.Errorf("%w: pillar is required", objectivesdomain.ErrInvalid)
 	}
-	if pillar.OrderIndex != nil {
-		setClauses = append(setClauses, "order_index = :order_index")
-		params["order_index"] = *pillar.OrderIndex
+	if err := patch.Validate(); err != nil {
+		return objectivesdomain.StrategicPillar{}, err
 	}
-
-	query := `UPDATE strategic_pillars SET ` + strings.Join(setClauses, ", ") + `
-		WHERE workspace_id = :workspace_id AND pillar_id = :pillar_id
-		RETURNING pillar_id, name, description, order_index`
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	params := objectivessql.UpdateStrategicPillarParams{
+		WorkspaceID: query.WorkspaceID, ActorID: query.ActorID, PillarID: pillarID,
+	}
+	if value, specified := patch.Name.Value(); specified {
+		params.SetName, params.Name = true, valueOrZero(value)
+	}
+	if value, specified := patch.Description.Value(); specified {
+		params.SetDescription, params.Description = true, value
+	}
+	if value, specified := patch.OrderIndex.Value(); specified {
+		orderIndex, err := safecast.Int32(valueOrZero(value))
+		if err != nil {
+			return objectivesdomain.StrategicPillar{}, fmt.Errorf("%w: pillar order: %v", objectivesdomain.ErrInvalid, err)
+		}
+		params.SetOrderIndex, params.OrderIndex = true, orderIndex
+	}
+	row, err := repository.queries.UpdateStrategicPillar(ctx, params)
 	if err != nil {
-		return objectives.CoreStrategicPillar{}, fmt.Errorf("prepare strategic pillar update: %w", err)
+		return objectivesdomain.StrategicPillar{}, mapStrategyError("update strategic pillar", err)
 	}
-	defer stmt.Close()
-	var updated dbStrategicPillar
-	if err := stmt.GetContext(ctx, &updated, params); err != nil {
-		return objectives.CoreStrategicPillar{}, fmt.Errorf("update strategic pillar: %w", err)
-	}
-	return objectives.CoreStrategicPillar{ID: updated.ID, Name: updated.Name, Description: updated.Description, OrderIndex: updated.OrderIndex, ObjectiveIDs: []uuid.UUID{}}, nil
+	return strategicPillarFromValues(row.PillarID, row.Name, row.Description, row.OrderIndex), nil
 }
 
-func (r *repo) DeleteStrategicPillar(ctx context.Context, workspaceID, pillarID uuid.UUID) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM strategic_pillars WHERE workspace_id = $1 AND pillar_id = $2`, workspaceID, pillarID)
-	if err != nil {
-		return fmt.Errorf("delete strategic pillar: %w", err)
+func (repository *Repository) DeleteStrategicPillar(
+	ctx context.Context,
+	query objectivesdomain.StrategyQuery,
+	pillarID uuid.UUID,
+) error {
+	if err := query.Validate(); err != nil {
+		return err
 	}
-	return nil
+	if pillarID == uuid.Nil {
+		return fmt.Errorf("%w: pillar is required", objectivesdomain.ErrInvalid)
+	}
+	_, err := repository.queries.DeleteStrategicPillar(ctx, objectivessql.DeleteStrategicPillarParams{
+		WorkspaceID: query.WorkspaceID, ActorID: query.ActorID, PillarID: pillarID,
+	})
+	return mapStrategyError("delete strategic pillar", err)
 }
 
-func (r *repo) AlignObjective(ctx context.Context, workspaceID, objectiveID uuid.UUID, pillarID *uuid.UUID) error {
+func (repository *Repository) AlignObjective(
+	ctx context.Context,
+	query objectivesdomain.StrategyQuery,
+	objectiveID uuid.UUID,
+	pillarID *uuid.UUID,
+) error {
+	if err := query.Validate(); err != nil {
+		return err
+	}
+	if objectiveID == uuid.Nil || (pillarID != nil && *pillarID == uuid.Nil) {
+		return fmt.Errorf("%w: objective and pillar references must be valid", objectivesdomain.ErrInvalid)
+	}
+	var err error
 	if pillarID == nil {
-		_, err := r.db.ExecContext(ctx, `DELETE FROM strategy_objective_alignments WHERE workspace_id = $1 AND objective_id = $2`, workspaceID, objectiveID)
-		return err
+		_, err = repository.queries.DeleteObjectiveAlignment(ctx, objectivessql.DeleteObjectiveAlignmentParams{
+			WorkspaceID: uuidPointer(query.WorkspaceID), ActorID: query.ActorID, ObjectiveID: objectiveID,
+		})
+	} else {
+		_, err = repository.queries.AlignObjective(ctx, objectivessql.AlignObjectiveParams{
+			WorkspaceID: query.WorkspaceID, ActorID: query.ActorID,
+			ObjectiveID: objectiveID, PillarID: *pillarID,
+		})
 	}
-	result, err := r.db.ExecContext(ctx, `
-		INSERT INTO strategy_objective_alignments (workspace_id, objective_id, pillar_id)
-		SELECT $1, o.objective_id, p.pillar_id
-		FROM objectives o
-		JOIN strategic_pillars p ON p.pillar_id = $3 AND p.workspace_id = $1
-		WHERE o.objective_id = $2 AND o.workspace_id = $1
-		ON CONFLICT (objective_id) DO UPDATE SET pillar_id = EXCLUDED.pillar_id, workspace_id = EXCLUDED.workspace_id, updated_at = NOW()
-	`, workspaceID, objectiveID, *pillarID)
+	return mapStrategyError("align objective", err)
+}
+
+func strategicPillarFromValues(id uuid.UUID, name string, description *string, orderIndex int32) objectivesdomain.StrategicPillar {
+	return objectivesdomain.StrategicPillar{
+		ID: id, Name: name, Description: description, OrderIndex: int(orderIndex), ObjectiveIDs: []uuid.UUID{},
+	}
+}
+
+func mapStrategyError(operation string, err error) error {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return objectivesdomain.ErrNotFound
+	}
 	if err != nil {
-		return fmt.Errorf("align objective: %w", err)
-	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return objectives.ErrNotFound
+		return fmt.Errorf("%s: %w", operation, mapDatabaseError(err))
 	}
 	return nil
 }

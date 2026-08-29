@@ -1,0 +1,31 @@
+get:
+  operationId: listObjectives
+  tags: [Objectives]
+  summary: List objectives visible to the actor
+  description: Returns objectives from current team memberships. Personal access token team restrictions are applied before the product query.
+  x-fortyone-scope: objectives:read
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+    - name: teamId
+      in: query
+      required: false
+      description: Restrict results to one visible team. Credentials restricted to multiple teams must provide this filter.
+      schema: {type: string, format: uuid}
+    - $ref: ../openapi.yaml#/components/parameters/Cursor
+    - $ref: ../openapi.yaml#/components/parameters/PageLimit
+  responses:
+    '200':
+      description: A deterministic page of visible objectives.
+      headers:
+        X-Request-ID: {$ref: ../openapi.yaml#/components/headers/RequestId}
+        RateLimit: {$ref: ../openapi.yaml#/components/headers/RateLimit}
+        RateLimit-Policy: {$ref: ../openapi.yaml#/components/headers/RateLimitPolicy}
+      content:
+        application/json:
+          schema: {$ref: ../openapi.yaml#/components/schemas/ObjectivePageResponse}
+    '400': {$ref: ../openapi.yaml#/components/responses/BadRequest}
+    '401': {$ref: ../openapi.yaml#/components/responses/Unauthorized}
+    '403': {$ref: ../openapi.yaml#/components/responses/Forbidden}
+    '429': {$ref: ../openapi.yaml#/components/responses/RateLimited}
+    '500': {$ref: ../openapi.yaml#/components/responses/InternalError}
+    '503': {$ref: ../openapi.yaml#/components/responses/ServiceUnavailable}

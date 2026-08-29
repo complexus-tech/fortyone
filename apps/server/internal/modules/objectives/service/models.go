@@ -1,199 +1,48 @@
 package objectives
 
-import (
-	"time"
+import objectivesdomain "github.com/complexus-tech/projects-api/internal/modules/objectives/domain"
 
-	"github.com/google/uuid"
-)
-
-// ObjectiveHealth represents the possible health states of an objective
-type ObjectiveHealth string
+type ObjectiveHealth = objectivesdomain.ObjectiveHealth
 
 const (
-	HealthAtRisk   ObjectiveHealth = "At Risk"
-	HealthOnTrack  ObjectiveHealth = "On Track"
-	HealthOffTrack ObjectiveHealth = "Off Track"
+	HealthAtRisk   = objectivesdomain.HealthAtRisk
+	HealthOnTrack  = objectivesdomain.HealthOnTrack
+	HealthOffTrack = objectivesdomain.HealthOffTrack
 )
 
-const DefaultObjectiveColor = "#4A90E2"
+const DefaultObjectiveColor = objectivesdomain.DefaultObjectiveColor
 
-// ObjectiveScheduleStatus describes the objective's live delivery forecast.
-// It is deliberately separate from the manually managed objective health.
-type ObjectiveScheduleStatus string
+type ObjectiveScheduleStatus = objectivesdomain.ObjectiveScheduleStatus
 
 const (
-	ScheduleStatusOnTrack    ObjectiveScheduleStatus = "on_track"
-	ScheduleStatusAtRisk     ObjectiveScheduleStatus = "at_risk"
-	ScheduleStatusNoTarget   ObjectiveScheduleStatus = "no_target"
-	ScheduleStatusNoSchedule ObjectiveScheduleStatus = "no_schedule"
+	ScheduleStatusOnTrack    = objectivesdomain.ScheduleStatusOnTrack
+	ScheduleStatusAtRisk     = objectivesdomain.ScheduleStatusAtRisk
+	ScheduleStatusNoTarget   = objectivesdomain.ScheduleStatusNoTarget
+	ScheduleStatusNoSchedule = objectivesdomain.ScheduleStatusNoSchedule
 )
 
-type CoreForecastCauseStory struct {
-	ID         uuid.UUID
-	SequenceID int
-	Title      string
-	Source     string
-}
+// Compatibility aliases keep the established public service API stable while
+// the domain package owns transport-neutral objective types.
+type CoreForecastCauseStory = objectivesdomain.ForecastCauseStory
+type CoreObjective = objectivesdomain.Objective
+type CoreNewObjective = objectivesdomain.NewObjective
+type CoreNewKeyResult = objectivesdomain.NewKeyResult
+type CoreKeyResult = objectivesdomain.KeyResult
+type CoreStrategyMap = objectivesdomain.StrategyMap
+type CoreStrategicPillar = objectivesdomain.StrategicPillar
+type CoreStrategyUpdate = objectivesdomain.StrategyUpdate
+type CoreNewStrategicPillar = objectivesdomain.NewStrategicPillar
 
-type CoreObjective struct {
-	ID                 uuid.UUID
-	SequenceID         int
-	Name               string
-	Description        *string
-	ShortSummary       *string
-	LeadUser           *uuid.UUID
-	Team               uuid.UUID
-	Workspace          uuid.UUID
-	StartDate          *time.Time
-	EndDate            *time.Time
-	IsPrivate          bool
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	Status             uuid.UUID
-	CreatedBy          uuid.UUID
-	Priority           *string
-	Health             *ObjectiveHealth
-	Color              string
-	ForecastStartDate  *time.Time
-	ForecastEndDate    *time.Time
-	ScheduleStatus     ObjectiveScheduleStatus
-	ForecastDaysDelta  int
-	ForecastCauseStory *CoreForecastCauseStory
-	KeyResultCount     int
-	TotalStories       int
-	CancelledStories   int
-	CompletedStories   int
-	StartedStories     int
-	UnstartedStories   int
-	BacklogStories     int
-}
-
-type CoreNewObjective struct {
-	Name         string
-	Description  *string
-	ShortSummary *string
-	LeadUser     *uuid.UUID
-	Team         uuid.UUID
-	StartDate    *time.Time
-	EndDate      *time.Time
-	IsPrivate    bool
-	Status       uuid.UUID
-	Priority     *string
-	Color        string
-	CreatedBy    uuid.UUID
-}
-
-type CoreUpdateObjective struct {
-	Name         *string
-	Description  *string
-	ShortSummary *string
-	LeadUser     *uuid.UUID
-	Team         *uuid.UUID
-	StartDate    *time.Time
-	EndDate      *time.Time
-	IsPrivate    *bool
-	Visibility   *string
-	Status       *uuid.UUID
-	Priority     *string
-	Health       *ObjectiveHealth
-	Color        *string
-}
-
-// ApplyScheduleForecast derives delivery risk from the committed objective
-// target and the latest active linked work. It never mutates target dates.
-func (objective *CoreObjective) ApplyScheduleForecast() {
-	objective.ForecastDaysDelta = 0
-
-	if objective.EndDate == nil {
-		objective.ScheduleStatus = ScheduleStatusNoTarget
-		return
-	}
-	if objective.ForecastEndDate == nil {
-		objective.ScheduleStatus = ScheduleStatusNoSchedule
-		return
-	}
-
-	objective.ForecastDaysDelta = calendarDayDelta(*objective.EndDate, *objective.ForecastEndDate)
-	if objective.ForecastDaysDelta > 0 {
-		objective.ScheduleStatus = ScheduleStatusAtRisk
-		return
-	}
-
-	objective.ScheduleStatus = ScheduleStatusOnTrack
-}
-
-func calendarDayDelta(from, to time.Time) int {
-	fromDate := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
-	toDate := time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, time.UTC)
-	return int(toDate.Sub(fromDate).Hours() / 24)
-}
-
-type CoreStrategyMap struct {
-	UltimateGoal string
-	Description  *string
-	Pillars      []CoreStrategicPillar
-}
-
-type CoreStrategicPillar struct {
-	ID           uuid.UUID
-	Name         string
-	Description  *string
-	OrderIndex   int
-	ObjectiveIDs []uuid.UUID
-}
-
-type CoreStrategyUpdate struct {
-	UltimateGoal string
-	Description  *string
-}
-
-type CoreNewStrategicPillar struct {
-	Name        string
-	Description *string
-	OrderIndex  int
-}
-
+// CoreUpdateStrategicPillar is retained for existing callers. The service
+// converts it to a tri-state domain patch before persistence.
 type CoreUpdateStrategicPillar struct {
 	Name        *string
 	Description *string
 	OrderIndex  *int
 }
 
-// Objective Analytics Models
-
-type CoreObjectiveAnalytics struct {
-	ObjectiveID       uuid.UUID
-	PriorityBreakdown []CorePriorityBreakdown
-	ProgressBreakdown CoreProgressBreakdown
-	TeamAllocation    []CoreTeamMemberAllocation
-	ProgressChart     []CoreObjectiveProgressDataPoint
-}
-
-type CorePriorityBreakdown struct {
-	Priority string `db:"priority"`
-	Count    int    `db:"count"`
-}
-
-type CoreProgressBreakdown struct {
-	Total      int `db:"total"`
-	Completed  int `db:"completed"`
-	InProgress int `db:"in_progress"`
-	Todo       int `db:"todo"`
-	Blocked    int `db:"blocked"`
-	Cancelled  int `db:"cancelled"`
-}
-
-type CoreTeamMemberAllocation struct {
-	MemberID  uuid.UUID `db:"user_id"`
-	Username  string    `db:"username"`
-	AvatarURL *string   `db:"avatar_url"`
-	Assigned  int       `db:"assigned"`
-	Completed int       `db:"completed"`
-}
-
-type CoreObjectiveProgressDataPoint struct {
-	Date       time.Time `json:"date" db:"completion_date"`
-	Completed  int       `json:"completed" db:"stories_completed"`
-	InProgress int       `json:"inProgress" db:"stories_in_progress"`
-	Total      int       `json:"total" db:"total_stories"`
-}
+type CoreObjectiveAnalytics = objectivesdomain.ObjectiveAnalytics
+type CorePriorityBreakdown = objectivesdomain.PriorityBreakdown
+type CoreProgressBreakdown = objectivesdomain.ProgressBreakdown
+type CoreTeamMemberAllocation = objectivesdomain.TeamMemberAllocation
+type CoreObjectiveProgressDataPoint = objectivesdomain.ObjectiveProgressDataPoint

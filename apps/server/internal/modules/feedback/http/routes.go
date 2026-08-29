@@ -10,24 +10,24 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB            *sqlx.DB
-	Log           *logger.Logger
-	SecretKey     string
-	IngressSecret string
-	Cache         *cache.Service
-	Service       *feedback.Service
-	Teams         *teams.Service
-	Attachments   *attachments.Service
+	Log               *logger.Logger
+	SecretKey         string
+	IngressSecret     string
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	Service           *feedback.Service
+	Teams             *teams.Service
+	Attachments       *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	h := New(cfg.Service, cfg.Teams, cfg.Attachments, cfg.Log)
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-	optionalAuth := mid.OptionalAuth(cfg.Log, cfg.SecretKey)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
+	optionalAuth := mid.OptionalAuth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	createItemRateLimit := mid.PublicFeedbackRateLimit(cfg.Log, cfg.Cache, mid.PublicFeedbackRateLimitConfig{
 		Scope:                "public-feedback-item",
 		AuthenticatedLimit:   10,
@@ -52,7 +52,7 @@ func Routes(cfg Config, app *web.App) {
 		Window: time.Hour, IngressSecret: cfg.IngressSecret,
 		ContributorResolver: cfg.Service.ResolveContributorRateLimitIdentity,
 	})
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
 	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 

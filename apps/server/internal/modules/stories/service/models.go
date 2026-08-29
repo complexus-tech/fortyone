@@ -3,8 +3,30 @@ package stories
 import (
 	"time"
 
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/google/uuid"
 )
+
+var (
+	ErrNotFound               = storydomain.ErrNotFound
+	ErrInvalidStoryReadScope  = storydomain.ErrInvalidReadScope
+	ErrInvalidStoryReadQuery  = storydomain.ErrInvalidReadQuery
+	ErrInvalidStoryMutation   = storydomain.ErrInvalidMutation
+	ErrStoryMutationForbidden = storydomain.ErrMutationForbidden
+)
+
+type StoryPatch = storydomain.StoryPatch
+type Field[T any] = storydomain.Field[T]
+
+func SetField[T any](value T) storydomain.Field[T] {
+	return storydomain.SetField(value)
+}
+
+func ClearField[T any]() storydomain.Field[T] {
+	return storydomain.ClearField[T]()
+}
+
+type StoryReadScope = storydomain.ReadScope
 
 // BulkDeleteAuthorization carries the actor information required to enforce
 // the same delete policy for every story in a bulk mutation.
@@ -13,11 +35,13 @@ type BulkDeleteAuthorization struct {
 	IsAdmin bool
 }
 
-// HardBulkDeleteResult separates the deleted-story receipt from orphaned media
-// that the HTTP layer must remove from object storage after the transaction.
+// HardBulkDeleteResult separates the deleted-story receipt from retired media.
+// AttachmentObjectDeletionDeferred is true when durable outbox delivery owns
+// object removal; false preserves the legacy post-transaction cleanup path.
 type HardBulkDeleteResult struct {
-	StoryIDs              []uuid.UUID
-	OrphanedAttachmentIDs []uuid.UUID
+	StoryIDs                         []uuid.UUID
+	OrphanedAttachmentIDs            []uuid.UUID
+	AttachmentObjectDeletionDeferred bool
 }
 
 // BulkUpdateItemResult records the outcome for one requested story while
@@ -50,145 +74,35 @@ type CoreLabel struct {
 	UpdatedAt   time.Time  `json:"updatedAt"`
 }
 
-type CoreTeamSummary struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
-	Code string    `json:"code"`
-}
+type CoreTeamSummary = storydomain.TeamSummary
+type CoreObjectiveSummary = storydomain.ObjectiveSummary
+type CoreSprintSummary = storydomain.SprintSummary
+type CoreStoryList = storydomain.StoryList
+type CoreSingleStory = storydomain.Story
+type CoreStoryFilters = storydomain.StoryFilters
+type CoreStoryQuery = storydomain.StoryQuery
+type CoreStoryGroup = storydomain.StoryGroup
+type StoryGroupBy = storydomain.StoryGroupBy
+type StoryOrderBy = storydomain.StoryOrderBy
+type SortDirection = storydomain.SortDirection
 
-type CoreObjectiveSummary struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description *string   `json:"description"`
-}
+const (
+	StoryGroupNone      = storydomain.StoryGroupNone
+	StoryGroupStatus    = storydomain.StoryGroupStatus
+	StoryGroupAssignee  = storydomain.StoryGroupAssignee
+	StoryGroupPriority  = storydomain.StoryGroupPriority
+	StoryGroupTeam      = storydomain.StoryGroupTeam
+	StoryGroupSprint    = storydomain.StoryGroupSprint
+	StoryOrderCreated   = storydomain.StoryOrderCreated
+	StoryOrderUpdated   = storydomain.StoryOrderUpdated
+	StoryOrderPriority  = storydomain.StoryOrderPriority
+	StoryOrderDeadline  = storydomain.StoryOrderDeadline
+	StoryOrderCompleted = storydomain.StoryOrderCompleted
+	SortAscending       = storydomain.SortAscending
+	SortDescending      = storydomain.SortDescending
+)
 
-type CoreSprintSummary struct {
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	Goal      *string   `json:"goal"`
-	StartDate time.Time `json:"startDate"`
-	EndDate   time.Time `json:"endDate"`
-}
-
-// CoreStoryList represents a list of stories.
-type CoreStoryList struct {
-	ID                       uuid.UUID             `json:"id"`
-	SequenceID               int                   `json:"sequence_id"`
-	Title                    string                `json:"title"`
-	EstimateLabel            *string               `json:"estimate_label"`
-	EstimateValue            *int16                `json:"estimate_value"`
-	EstimateScheme           string                `json:"estimate_scheme"`
-	EstimatedDurationMinutes *int                  `json:"estimated_duration_minutes"`
-	MinimumFocusBlockMinutes *int                  `json:"minimum_focus_block_minutes"`
-	AutoSchedulingEnabled    bool                  `json:"auto_scheduling_enabled"`
-	AutoSchedulingLocked     bool                  `json:"auto_scheduling_locked"`
-	AutoSchedulingStatus     string                `json:"auto_scheduling_status"`
-	AutoSchedulingReason     *string               `json:"auto_scheduling_reason"`
-	AutoSchedulingUpdatedAt  *time.Time            `json:"auto_scheduling_updated_at"`
-	Parent                   *uuid.UUID            `json:"parent_id"`
-	Objective                *uuid.UUID            `json:"objective_id"`
-	ObjectiveSummary         *CoreObjectiveSummary `json:"objective"`
-	Epic                     *uuid.UUID            `json:"epic_id"`
-	Status                   *uuid.UUID            `json:"status_id"`
-	Assignee                 *uuid.UUID            `json:"assignee_id"`
-	CollaboratorCount        int                   `json:"collaborator_count"`
-	Reporter                 *uuid.UUID            `json:"reporter_id"`
-	Priority                 string                `json:"priority"`
-	Sprint                   *uuid.UUID            `json:"sprint_id"`
-	SprintSummary            *CoreSprintSummary    `json:"sprint"`
-	KeyResult                *uuid.UUID            `json:"key_result_id"`
-	Team                     uuid.UUID             `json:"team_id"`
-	TeamSummary              *CoreTeamSummary      `json:"team"`
-	Workspace                uuid.UUID             `json:"workspace_id"`
-	StartDate                *time.Time            `json:"start_date"`
-	EndDate                  *time.Time            `json:"end_date"`
-	CreatedAt                time.Time             `json:"created_at"`
-	UpdatedAt                time.Time             `json:"updated_at"`
-	CompletedAt              *time.Time            `json:"completed_at"`
-	DeletedAt                *time.Time            `json:"deleted_at"`
-	ArchivedAt               *time.Time            `json:"archived_at"`
-	Labels                   []uuid.UUID           `json:"labels"`
-	SubStories               []CoreStoryList       `json:"subStories"`
-}
-
-// CoreSingleStory represents a single story.
-type CoreSingleStory struct {
-	ID                       uuid.UUID
-	SequenceID               int
-	Title                    string
-	EstimateLabel            *string
-	EstimateValue            *int16
-	EstimateScheme           string
-	EstimatedDurationMinutes *int
-	MinimumFocusBlockMinutes *int
-	AutoSchedulingEnabled    bool
-	AutoSchedulingLocked     bool
-	AutoSchedulingStatus     string
-	AutoSchedulingReason     *string
-	AutoSchedulingUpdatedAt  *time.Time
-	TeamCode                 string
-	Description              *string
-	DescriptionHTML          *string
-	Parent                   *uuid.UUID
-	Objective                *uuid.UUID
-	Status                   *uuid.UUID
-	Assignee                 *uuid.UUID
-	Collaborators            []uuid.UUID
-	WatcherIDs               []uuid.UUID
-	WatcherCount             int
-	IsWatching               bool
-	WatchingReason           *string
-	BlockedBy                *uuid.UUID
-	Blocking                 *uuid.UUID
-	Related                  *uuid.UUID
-	Reporter                 *uuid.UUID
-	Priority                 string
-	Sprint                   *uuid.UUID
-	SprintSummary            *CoreSprintSummary
-	Epic                     *uuid.UUID
-	KeyResult                *uuid.UUID
-	Team                     uuid.UUID
-	Workspace                uuid.UUID
-	StartDate                *time.Time
-	EndDate                  *time.Time
-	CreatedAt                time.Time
-	UpdatedAt                time.Time
-	DeletedAt                *time.Time
-	ArchivedAt               *time.Time
-	CompletedAt              *time.Time
-	SubStories               []CoreStoryList
-	Labels                   []uuid.UUID
-	Associations             []CoreStoryAssociation
-	CreationKey              *string
-	CreatedNow               bool
-}
-
-type CoreNewStory struct {
-	Title                    string      `json:"title"`
-	EstimateValue            *int16      `json:"estimateValue"`
-	EstimatedDurationMinutes *int        `json:"estimatedDurationMinutes"`
-	MinimumFocusBlockMinutes *int        `json:"minimumFocusBlockMinutes"`
-	AutoSchedulingEnabled    bool        `json:"autoSchedulingEnabled"`
-	AutoSchedulingLocked     bool        `json:"autoSchedulingLocked"`
-	Description              *string     `json:"description"`
-	DescriptionHTML          *string     `json:"descriptionHTML"`
-	Parent                   *uuid.UUID  `json:"parentId"`
-	Objective                *uuid.UUID  `json:"objectiveId"`
-	Status                   *uuid.UUID  `json:"statusId"`
-	Assignee                 *uuid.UUID  `json:"assigneeId"`
-	BlockedBy                *uuid.UUID  `json:"blockedById"`
-	Blocking                 *uuid.UUID  `json:"blockingId"`
-	Related                  *uuid.UUID  `json:"relatedId"`
-	Reporter                 *uuid.UUID  `json:"reporterId"`
-	Priority                 string      `json:"priority"`
-	Sprint                   *uuid.UUID  `json:"sprintId"`
-	KeyResult                *uuid.UUID  `json:"keyResultId"`
-	LabelIDs                 []uuid.UUID `json:"labelIds"`
-	StartDate                *time.Time  `json:"startDate"`
-	EndDate                  *time.Time  `json:"endDate"`
-	Team                     uuid.UUID   `json:"teamId"`
-	CreationKey              *string     `json:"-"`
-}
+type CoreNewStory = storydomain.NewStory
 
 type CoreUpdateStory struct {
 	Title                    *string
@@ -249,16 +163,7 @@ func toCoreSingleStory(ns CoreNewStory, workspaceId uuid.UUID) CoreSingleStory {
 }
 
 // CoreStoryAssociation represents a relationship between two stories.
-type CoreStoryAssociation struct {
-	ID             uuid.UUID     `json:"id"`
-	FromStoryID    uuid.UUID     `json:"fromStoryId"`
-	ToStoryID      uuid.UUID     `json:"toStoryId"`
-	Type           string        `json:"type"` // "blocking", "related", "duplicate"
-	PreviousType   *string       `json:"previousType,omitempty"`
-	Story          CoreStoryList `json:"story"`
-	FromStoryTitle string        `json:"-"`
-	ToStoryTitle   string        `json:"-"`
-}
+type CoreStoryAssociation = storydomain.StoryAssociation
 
 // CoreKeyResultReference contains the strategy details needed when linking a story.
 type CoreKeyResultReference struct {
@@ -266,20 +171,7 @@ type CoreKeyResultReference struct {
 	Name        string
 }
 
-// CoreActivity represents the core model for an activity.
-type CoreActivity struct {
-	ID           uuid.UUID `json:"id"`
-	StoryID      uuid.UUID `json:"storyId"`
-	UserID       uuid.UUID `json:"userId"`
-	Type         string    `json:"type"`
-	Field        string    `json:"field"`
-	CurrentValue string    `json:"currentValue"`
-	OldValue     any       `json:"oldValue"`
-	NewValue     any       `json:"newValue"`
-	Reason       *string   `json:"reason,omitempty"`
-	CreatedAt    time.Time `json:"createdAt"`
-	WorkspaceID  uuid.UUID `json:"workspaceId"`
-}
+type CoreActivity = storydomain.Activity
 
 // CoreActivityWithUser represents an activity with embedded user details
 type CoreActivityWithUser struct {
@@ -307,87 +199,8 @@ type UserDetails struct {
 	IsSystem  bool      `json:"isSystem"`
 }
 
-type CoreNewComment struct {
-	StoryID  uuid.UUID
-	Parent   *uuid.UUID
-	UserID   uuid.UUID
-	Comment  string
-	Mentions []uuid.UUID
-}
+type CoreNewComment = storydomain.NewComment
 
-// CoreStoryFilters represents filtering options for stories
-type CoreStoryFilters struct {
-	StatusIDs              []uuid.UUID `json:"statusIds"`
-	ExcludedStatusIDs      []uuid.UUID `json:"excludedStatusIds"`
-	AssigneeIDs            []uuid.UUID `json:"assigneeIds"`
-	ExcludedAssigneeIDs    []uuid.UUID `json:"excludedAssigneeIds"`
-	CollaboratorIDs        []uuid.UUID `json:"collaboratorIds"`
-	ReporterIDs            []uuid.UUID `json:"reporterIds"`
-	ExcludedReporterIDs    []uuid.UUID `json:"excludedReporterIds"`
-	TitleContains          *string     `json:"titleContains"`
-	TitleNotContains       *string     `json:"titleNotContains"`
-	Priorities             []string    `json:"priorities"`
-	ExcludedPriorities     []string    `json:"excludedPriorities"`
-	Categories             []string    `json:"categories"`
-	TeamIDs                []uuid.UUID `json:"teamIds"`
-	ExcludedTeamIDs        []uuid.UUID `json:"excludedTeamIds"`
-	SprintIDs              []uuid.UUID `json:"sprintIds"`
-	ExcludedSprintIDs      []uuid.UUID `json:"excludedSprintIds"`
-	LabelIDs               []uuid.UUID `json:"labelIds"`
-	ExcludedLabelIDs       []uuid.UUID `json:"excludedLabelIds"`
-	EstimateValues         []int16     `json:"estimateValues"`
-	ExcludedEstimateValues []int16     `json:"excludedEstimateValues"`
-	Parent                 *uuid.UUID  `json:"parentId"`
-	Objective              *uuid.UUID  `json:"objectiveId"`
-	ExcludedObjective      *uuid.UUID  `json:"excludedObjectiveId"`
-	Epic                   *uuid.UUID  `json:"epicId"`
-	KeyResult              *uuid.UUID  `json:"keyResultId"`
-	HasNoAssignee          *bool       `json:"hasNoAssignee"`
-	HasAssignee            *bool       `json:"hasAssignee"`
-	HasBlockedBy           *bool       `json:"hasBlockedBy"`
-	AssignedToMe           *bool       `json:"assignedToMe"`
-	CollaboratingWithMe    *bool       `json:"collaboratingWithMe"`
-	CreatedByMe            *bool       `json:"createdByMe"`
-	ShowSubStories         *bool       `json:"showSubStories"`
-	CurrentUserID          uuid.UUID   `json:"currentUserId"`
-	WorkspaceID            uuid.UUID   `json:"workspaceId"`
-	// Date range filters
-	CreatedAfter    *time.Time `json:"createdAfter"`
-	CreatedBefore   *time.Time `json:"createdBefore"`
-	UpdatedAfter    *time.Time `json:"updatedAfter"`
-	UpdatedBefore   *time.Time `json:"updatedBefore"`
-	StartDateAfter  *time.Time `json:"startDateAfter"`
-	StartDateBefore *time.Time `json:"startDateBefore"`
-	StartDateNot    *time.Time `json:"startDateNot"`
-	DeadlineAfter   *time.Time `json:"deadlineAfter"`
-	DeadlineBefore  *time.Time `json:"deadlineBefore"`
-	DeadlineNot     *time.Time `json:"deadlineNot"`
-	CompletedAfter  *time.Time `json:"completedAfter"`
-	CompletedBefore *time.Time `json:"completedBefore"`
-	IsCompleted     *bool      `json:"isCompleted"`
-	IsNotCompleted  *bool      `json:"isNotCompleted"`
-	IncludeArchived *bool      `json:"includeArchived"`
-	IncludeDeleted  *bool      `json:"includeDeleted"`
-}
+type CoreComment = storydomain.Comment
 
-// CoreStoryQuery represents query parameters for grouped stories
-type CoreStoryQuery struct {
-	Filters         CoreStoryFilters `json:"filters"`
-	GroupBy         string           `json:"groupBy"`
-	OrderBy         string           `json:"orderBy"`
-	OrderDirection  string           `json:"orderDirection"`
-	StoriesPerGroup int              `json:"storiesPerGroup"`
-	GroupKey        string           `json:"groupKey"`
-	Page            int              `json:"page"`
-	PageSize        int              `json:"pageSize"`
-}
-
-// CoreStoryGroup represents a group of stories
-type CoreStoryGroup struct {
-	Key         string          `json:"key"`
-	LoadedCount int             `json:"loadedCount"`
-	TotalCount  int             `json:"totalCount"`
-	HasMore     bool            `json:"hasMore"`
-	Stories     []CoreStoryList `json:"stories"`
-	NextPage    int             `json:"nextPage"`
-}
+type CreateCommentCommand = storydomain.CreateCommentCommand

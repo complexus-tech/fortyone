@@ -7,7 +7,8 @@ import (
 	"strings"
 	"time"
 
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
 	"github.com/google/uuid"
 )
 
@@ -17,7 +18,7 @@ type slackUninstallStore interface {
 }
 
 type activeSlackInstallationFinder interface {
-	GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID string) (slackrepository.SlackWorkspaceRecord, error)
+	GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID string) (slackdomain.Installation, error)
 }
 
 func executeSlackUninstall(
@@ -28,7 +29,7 @@ func executeSlackUninstall(
 	codec *credentialCodec,
 	clientID, clientSecret string,
 	now time.Time,
-	record slackrepository.SlackUninstallRecord,
+	record slackdomain.Uninstall,
 ) (bool, error) {
 	active, err := installations.GetSlackWorkspaceByTeamID(ctx, record.SlackTeamID)
 	if err == nil {
@@ -41,27 +42,31 @@ func executeSlackUninstall(
 		}
 		return true, nil
 	}
-	if !slackrepository.IsNotFound(err) {
+	if !isSlackRepositoryNotFound(err) {
 		return false, failSlackUninstall(ctx, store, now, record, fmt.Errorf("check active Slack installation: %w", err))
 	}
 	if strings.TrimSpace(clientID) == "" || strings.TrimSpace(clientSecret) == "" {
 		return false, failSlackUninstall(ctx, store, now, record, ErrSlackNotConfigured)
 	}
 	if codec == nil {
-		return false, failSlackUninstall(ctx, store, now, record, errors.New("Slack credential encryption is not configured"))
+		return false, failSlackUninstall(ctx, store, now, record, errors.New("slack credential encryption is not configured"))
 	}
 	if client == nil {
-		return false, failSlackUninstall(ctx, store, now, record, errors.New("Slack web client is not configured"))
+		return false, failSlackUninstall(ctx, store, now, record, errors.New("slack web client is not configured"))
 	}
-	if record.CredentialKeyVersion <= 0 {
-		return false, failSlackUninstall(ctx, store, now, record, errors.New("Slack uninstall credential is not versioned"))
+	if record.CredentialKeyVersion != credentialvault.CurrentVersion {
+		return false, failSlackUninstall(ctx, store, now, record, errors.New("slack uninstall credential requires vault migration"))
 	}
-	credential, version, err := codec.open(record.CredentialPayload)
+	credential, version, err := codec.open(slackCredentialBinding{
+		WorkspaceID:       record.WorkspaceID,
+		SlackTeamID:       record.SlackTeamID,
+		InstallGeneration: record.InstallGeneration,
+	}, record.CredentialPayload)
 	if err != nil {
 		return false, failSlackUninstall(ctx, store, now, record, err)
 	}
-	if version <= 0 || version != record.CredentialKeyVersion {
-		return false, failSlackUninstall(ctx, store, now, record, errors.New("Slack uninstall credential version mismatch"))
+	if version != record.CredentialKeyVersion {
+		return false, failSlackUninstall(ctx, store, now, record, errors.New("slack uninstall credential version mismatch"))
 	}
 
 	err = client.appsUninstall(ctx, clientID, clientSecret, credential.AccessToken)
@@ -80,9 +85,9 @@ func executeSlackUninstall(
 	return false, failSlackUninstall(ctx, store, now, record, err)
 }
 
-func failSlackUninstall(ctx context.Context, store slackUninstallStore, now time.Time, record slackrepository.SlackUninstallRecord, cause error) error {
+func failSlackUninstall(ctx context.Context, store slackUninstallStore, now time.Time, record slackdomain.Uninstall, cause error) error {
 	var nextAttemptAt *time.Time
-	if record.AttemptCount < slackrepository.SlackUninstallMaxAttempts {
+	if record.AttemptCount < slackdomain.UninstallMaxAttempts {
 		delay := slackUninstallBackoff(record.AttemptCount, cause)
 		next := now.UTC().Add(delay)
 		nextAttemptAt = &next

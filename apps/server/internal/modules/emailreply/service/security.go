@@ -13,32 +13,18 @@ import (
 
 const (
 	// WebhookTokenHeader is configured as a custom header on the Brevo inbound
-	// webhook. The value is derived from APP_AUTH_SECRET_KEY, so the application
-	// secret itself is never disclosed to Brevo.
-	WebhookTokenHeader = "X-FortyOne-Webhook-Token"
+	// webhook. The value is derived from APP_EMAIL_REPLY_SECURITY_KEY, so the
+	// security key itself is never disclosed to Brevo.
+	WebhookTokenHeader = "X-FortyOne-Webhook-Token" // #nosec G101 -- HTTP header name, not a token value.
 
-	webhookTokenPurpose          = "fortyone:brevo:inbound-email-webhook:v1"
-	payloadKeyPurpose            = "fortyone:brevo:inbound-email-payload:v1"
-	minimumProductionSecretBytes = 32
+	webhookTokenPurpose = "fortyone:brevo:inbound-email-webhook:v1" // #nosec G101 -- HMAC domain separator, not a credential.
+	payloadKeyPurpose   = "fortyone:brevo:inbound-email-payload:v1"
 )
-
-// ValidateRuntimeSecret prevents the development authentication default from
-// becoming the bearer and encryption root for production email replies. It is
-// intentionally permissive outside production so local setup keeps working.
-func ValidateRuntimeSecret(secret, environment string) error {
-	if !strings.EqualFold(strings.TrimSpace(environment), "production") {
-		return nil
-	}
-	secret = strings.TrimSpace(secret)
-	if secret == "secret" || len([]byte(secret)) < minimumProductionSecretBytes {
-		return fmt.Errorf("APP_AUTH_SECRET_KEY must be a unique secret of at least %d bytes in production", minimumProductionSecretBytes)
-	}
-	return nil
-}
 
 // DeriveWebhookToken returns the bearer capability configured on Brevo's
 // inbound webhook. It is deterministic to make configuration reproducible and
-// domain-separated from every other use of APP_AUTH_SECRET_KEY.
+// domain-separated from payload encryption under the same dedicated ingress
+// key.
 func DeriveWebhookToken(secret string) (string, error) {
 	secret = strings.TrimSpace(secret)
 	if secret == "" {
@@ -58,7 +44,8 @@ func VerifyWebhookToken(secret, provided string) bool {
 
 // PayloadCodec encrypts inbound email payloads before they enter the durable
 // messaging inbox. The derived key prevents ciphertext from being opened by a
-// codec serving another integration even when both use APP_AUTH_SECRET_KEY.
+// codec serving another capability even if a caller accidentally crosses the
+// two email-reply key purposes.
 type PayloadCodec struct {
 	box *secretbox.Box
 }

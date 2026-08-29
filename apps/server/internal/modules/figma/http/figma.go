@@ -3,16 +3,18 @@ package figmahttp
 import (
 	"context"
 	"errors"
-	"io"
 	"net/http"
 
 	figma "github.com/complexus-tech/projects-api/internal/modules/figma/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/internal/platform/webhooks"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
 
 type Handlers struct{ service *figma.Service }
+
+const maxFigmaWebhookBodyBytes = 1 << 20
 
 func providerErrorStatus(err error) int {
 	var apiErr *figma.APIError
@@ -62,14 +64,23 @@ func (h *Handlers) CreateInstallSession(ctx context.Context, w http.ResponseWrit
 	return web.Respond(ctx, w, map[string]string{"authorizationUrl": authURL}, http.StatusOK)
 }
 func (h *Handlers) CompleteOAuth(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	redirect, err := h.service.CompleteOAuth(ctx, r.URL.Query().Get("code"), r.URL.Query().Get("state"))
+	w.Header().Set("Cache-Control", "private, no-store")
+	callback, err := web.ParseOAuthCallbackQuery(r.URL.Query())
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	redirect, err := h.service.CompleteOAuth(ctx, callback.Code, callback.State)
 	if err != nil {
 		if redirect != "" {
+			// #nosec G710 -- CompleteOAuth consumes one-time persisted state and
+			// builds both success and failure URLs from the configured app origin.
 			http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 			return nil
 		}
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
+	// #nosec G710 -- CompleteOAuth consumes one-time persisted state and builds
+	// the destination from the configured app origin.
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 	return nil
 }
@@ -200,12 +211,20 @@ func (h *Handlers) CreateStoryFromLink(ctx context.Context, w http.ResponseWrite
 	}, http.StatusCreated)
 }
 func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	body, err := web.ReadBoundedBody(w, r, maxFigmaWebhookBodyBytes)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	if err := h.service.HandleWebhook(ctx, body); err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	receipt, err := h.service.ReceiveWebhook(ctx, webhooks.SignedRequest{
+		Method:        r.Method,
+		RequestTarget: r.URL.RequestURI(),
+		Body:          body,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, webhooks.IngressHTTPStatus(err))
 	}
-	return web.Respond(ctx, w, nil, http.StatusOK)
+	return web.Respond(ctx, w, map[string]any{
+		"accepted":  receipt.Queued || receipt.Ignored || !receipt.Created,
+		"receiptId": receipt.ID,
+	}, http.StatusAccepted)
 }

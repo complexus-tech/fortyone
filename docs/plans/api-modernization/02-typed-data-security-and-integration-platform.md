@@ -1,8 +1,9 @@
 # FortyOne API Modernization: Typed Data, Security, and Integration Platform
 
-**Status:** Proposed implementation plan  
+**Status:** Active source of truth
 **Scope:** persistence, authorization, public API, developer credentials, and provider integrations in `apps/server`  
 **Companion plans:** [target Go architecture](./01-target-go-architecture.md) and [delivery, testing, and documentation](./03-delivery-testing-and-documentation-roadmap.md)
+**Implementation status:** [evidence and crash-recovery ledger](./00-implementation-status.md)
 
 ### Relationship to the earlier sqlc plan
 

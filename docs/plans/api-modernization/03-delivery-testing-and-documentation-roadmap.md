@@ -1,8 +1,9 @@
 # FortyOne API Modernization: Delivery, Testing, and Documentation Roadmap
 
-**Status:** Proposed execution plan  
+**Status:** Active implementation plan
 **Scope:** `apps/server`, its CI/release path, and public API documentation in `apps/docs`  
 **Companion plans:** [target Go architecture](./01-target-go-architecture.md) and [typed data, security, and integrations](./02-typed-data-security-and-integration-platform.md)
+**Implementation status:** [evidence and crash-recovery ledger](./00-implementation-status.md)
 
 ## 1. Outcome
 
@@ -13,6 +14,17 @@ This document turns the target architecture into a safe sequence of work. It is 
 3. a large test rewrite that produces coverage numbers without trustworthy failure detection.
 
 The program finishes when FortyOne can make API changes quickly with strong compile-time, security, behavioral, database, contract, and operational feedback. “All SQL uses sqlc” is a major milestone, but it is not the whole definition of success.
+
+### 1.1 Deployment and distribution scope
+
+FortyOne is an internally operated managed service. This program does not
+maintain a public source distribution, self-hosting installer, Compose stack,
+public container registry, or community support contract. Production API and
+worker images remain internal deployment artifacts and are published only to a
+private registry through the reviewed release workflow.
+
+The public developer API remains in scope because it is the supported boundary
+for customer and partner integrations; it is not a self-hosting mechanism.
 
 ## 2. Baseline and interpretation
 
@@ -872,12 +884,25 @@ Release only a previously validated immutable image digest:
 1. acquire deployment concurrency lock;
 2. verify the release's API/worker/task-envelope/schema compatibility declaration against the currently deployed versions and queued task versions;
 3. apply a one-shot migration job and verify the compatible schema version/range;
-4. deploy API with stability/readiness wait;
-5. run API smoke/canary checks;
-6. deploy worker after compatible API/schema is healthy;
+4. select and enforce the binary order declared by the migration compatibility
+   manifest: API-first is the normal additive path, while a fail-closed
+   credential or queued-payload cutover may require a replacement worker to
+   finish before the vault-only API starts;
+5. deploy the first binary with stability/readiness wait and run its smoke or
+   cutover verification;
+6. deploy the second binary only after the declared compatibility gate passes,
+   then run API smoke/canary checks;
 7. verify queue, webhook, error-rate, latency, and old/new task processing signals;
 8. promote or roll back according to runbook, including durable queued work;
 9. record artifact, migration, commit, actor, and outcome.
+
+The order is an explicit release property, not a convention inferred from job
+names. The current provider-vault and Figma migrations require schema, then one
+replacement worker completing its fail-closed cutovers, then the replacement
+API. An API-first release is unsafe for that window because the vault-only API
+cannot use unconverted legacy credentials. Once those compatibility paths are
+deleted, the manifest and workflow must be updated together and re-exercised in
+staging.
 
 Use cloud workload identity/OIDC with an assumed deployment role rather than long-lived AWS access-key inputs. Pin third-party GitHub Actions to reviewed immutable commit SHAs, with a documented update process; a moving major tag is not a reproducible release dependency. Do not publish `latest` as the sole operational identity.
 

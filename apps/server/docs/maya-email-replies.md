@@ -27,10 +27,10 @@ APP_EMAIL_MAYA_FROM_NAME="Maya, AI Agent"
 
 Create these DNS records for the dedicated receiving subdomain:
 
-| Name | Type | Priority | Value |
-| --- | --- | ---: | --- |
-| `reply.fortyone.app` | MX | 10 | `inbound1.sendinblue.com.` |
-| `reply.fortyone.app` | MX | 20 | `inbound2.sendinblue.com.` |
+| Name                 | Type | Priority | Value                      |
+| -------------------- | ---- | -------: | -------------------------- |
+| `reply.fortyone.app` | MX   |       10 | `inbound1.sendinblue.com.` |
+| `reply.fortyone.app` | MX   |       20 | `inbound2.sendinblue.com.` |
 
 Do not add a normal mailbox provider or competing MX record to this subdomain.
 It is deliberately separate from the domain used to send email. Brevo's
@@ -56,8 +56,8 @@ Configure this webhook:
 }
 ```
 
-Generate the header value with the same `APP_AUTH_SECRET_KEY` used by the API
-and worker:
+Generate the header value with the same dedicated
+`APP_EMAIL_REPLY_SECURITY_KEY` used by the API and worker:
 
 ```sh
 cd apps/server
@@ -69,18 +69,18 @@ the application secret. Brevo supports custom authentication headers on
 webhooks as described in its
 [secured webhook documentation](https://developers.brevo.com/docs/secured-webhooks).
 
-Rotating `APP_AUTH_SECRET_KEY` also rotates the webhook header and the key used
-to encrypt queued email payloads. Drain pending email-reply work and update the
-Brevo header as part of the same controlled rotation.
+Rotating `APP_EMAIL_REPLY_SECURITY_KEY` also rotates the webhook header and the
+key used to encrypt queued email payloads. Drain pending email-reply work and
+update the Brevo header as part of the same controlled rotation.
 
 ### 4. Existing runtime configuration
 
-No new reply-specific environment variable is required. Production still
-needs the existing values for Postgres, Redis, the shared application secret,
-SMTP, and OpenAI:
+Production needs the existing values for Postgres, Redis, SMTP, and OpenAI,
+plus the dedicated email-reply key shared by the API and worker:
 
 ```text
-APP_AUTH_SECRET_KEY
+APP_EMAIL_REPLY_SECURITY_KEY
+APP_ENVIRONMENT=production
 APP_EMAIL_HOST
 APP_EMAIL_PORT
 APP_EMAIL_USERNAME
@@ -89,14 +89,69 @@ APP_EMAIL_ENVIRONMENT=production
 OPENAI_API_KEY
 ```
 
-In production, `APP_AUTH_SECRET_KEY` must be a unique value of at least 32
-bytes. The API and worker refuse to start with the development default or a
-short secret because this value protects both the webhook capability and
-queued email payloads.
+`APP_ENVIRONMENT` is the authoritative deployment mode for security policy.
+`APP_EMAIL_ENVIRONMENT` controls email-delivery behavior only. In production,
+`APP_EMAIL_REPLY_SECURITY_KEY` must be a unique value of at least 32 bytes. The
+API and worker refuse to start with the development default, a short key, or a
+value reused by another security capability because it protects both the
+webhook capability and queued email payloads.
 
 `OPENAI_MODEL` is optional and defaults to `gpt-5.6-luna`. The worker manages
 conversation state in FortyOne and calls the model with provider storage
 disabled.
+
+## Runtime boundaries
+
+The ingress route authenticates the derived webhook header before reading the
+body. It accepts JSON only, reads at most 5 MiB, allows at most 100 provider
+items and 100 mailboxes per item, and gives durable inbox handoff 15 seconds.
+Brevo receives `429` plus `Retry-After: 600` when a transient dependency or the
+deadline prevents a safe acknowledgement. Malformed permanent input is not
+retried.
+
+Only the data needed to authenticate and interpret the current reply enters the
+encrypted inbox. HTML, signatures, carbon-copy recipients, attachment download
+capabilities, provider display names, and raw quoted history are removed. The
+visible reply is limited to 32,000 Unicode code points; canonical inbound and
+sealed delivery state are each limited to 256 KiB. Redis tasks contain only the
+opaque workspace/thread scope and provider event ID. The worker task itself has
+a 45-second deadline, and post-cancellation receipt/delivery bookkeeping gets a
+separate five-second bounded context rather than an unbounded detached context.
+
+Authorization is deliberately repeated at each trust transition:
+
+- ingress verifies the derived HMAC capability, opaque reply token, exact
+  sender address, thread, workspace, and user binding;
+- the worker reloads current workspace membership and current team access after
+  acquiring the per-thread lease;
+- proposal confirmation reloads the target and validates its current team,
+  version, selected status, and selected assignee;
+- finite typed objective, key-result, story, and feedback commands adapt to the
+  existing domain CAS methods; arbitrary model-produced maps never cross the
+  email-reply mutation boundary;
+- a frozen retryable delivery records the authorized team IDs and is rejected
+  if the actor has lost any required access before the send retry.
+
+## Code map
+
+- `internal/modules/emailreply/http/emailreply.go` owns webhook authentication,
+  media-type enforcement, body limits, the ingress deadline, and HTTP mapping.
+- `internal/modules/emailreply/service/service.go` owns durable ingress,
+  encryption, sender/thread binding, deduplication, and recovery.
+- `internal/modules/emailreply/service/context_loader.go` rebuilds current
+  workspace, team, target, status, and assignee authorization.
+- `internal/modules/emailreply/service/mutation_applier.go` and
+  `mutation_ports.go` own confirmed finite mutation commands and domain adapters.
+- `processor_agent_ports.go` and `processor_conversation_ports.go` define the
+  emailreply-owned decision, summary, rendering, conversation, proposal, and
+  delivery contracts. They contain neutral finite types and do not import the
+  concrete emailagent or messaging services.
+- `processor.go`, `processor_proposals.go`, `processor_delivery.go`, and
+  `processor_history.go` separate orchestration, confirmation, delivery, and
+  bounded conversation history.
+- `internal/bootstrap/worker/email_reply_agent_adapter.go` and
+  `email_reply_store_adapter.go` are the only worker composition adapters that
+  translate those contracts to emailagent, emailthread, and messaging types.
 
 ## Product flow by example
 

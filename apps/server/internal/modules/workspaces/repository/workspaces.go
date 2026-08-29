@@ -1,22 +1,55 @@
 package workspacesrepository
 
 import (
-	"math/rand"
+	"context"
+	"crypto/rand"
+	"errors"
+	"fmt"
+	"math/big"
 
-	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/jmoiron/sqlx"
+	workspacesql "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository/sqlc"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type repo struct {
-	db  *sqlx.DB
-	log *logger.Logger
+	queries         workspacesql.Querier
+	bindTransaction func(pgx.Tx) workspacesql.Querier
+	runTransaction  func(context.Context, func(workspacesql.Querier) error) error
 }
 
-func New(log *logger.Logger, db *sqlx.DB) *repo {
+// New constructs the workspace persistence adapter over the shared native pgx
+// pool. All handwritten SQL for this module lives in the sqlc query files.
+func New(pool *pgxpool.Pool) *repo {
+	queries := workspacesql.New(pool)
+	transactor := platformdatabase.NewTransactor(pool)
+
 	return &repo{
-		db:  db,
-		log: log,
+		queries: queries,
+		bindTransaction: func(tx pgx.Tx) workspacesql.Querier {
+			return queries.WithTx(tx)
+		},
+		runTransaction: func(ctx context.Context, operation func(workspacesql.Querier) error) error {
+			return transactor.WithinTransaction(ctx, pgx.TxOptions{}, func(tx pgx.Tx) error {
+				return operation(queries.WithTx(tx))
+			})
+		},
 	}
+}
+
+func newWithQueries(queries workspacesql.Querier) *repo {
+	return &repo{queries: queries}
+}
+
+func (r *repo) withinTransaction(ctx context.Context, operation func(workspacesql.Querier) error) error {
+	if operation == nil {
+		return platformdatabase.ErrNilTransactionOperation
+	}
+	if r == nil || r.runTransaction == nil {
+		return errors.New("workspace repository transactions are unavailable")
+	}
+	return r.runTransaction(ctx, operation)
 }
 
 var colors = []string{
@@ -27,6 +60,13 @@ var colors = []string{
 }
 
 // generateRandomColor returns a random color from the Colors slice
-func generateRandomColor() string {
-	return colors[rand.Intn(len(colors))]
+func generateRandomColor() (string, error) {
+	if len(colors) == 0 {
+		return "", fmt.Errorf("workspace color palette is empty")
+	}
+	index, err := rand.Int(rand.Reader, big.NewInt(int64(len(colors))))
+	if err != nil {
+		return "", fmt.Errorf("select workspace color: %w", err)
+	}
+	return colors[index.Int64()], nil
 }

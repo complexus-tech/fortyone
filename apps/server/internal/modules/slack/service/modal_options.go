@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
 )
 
 const (
@@ -21,11 +21,11 @@ func limitedSlackOptions(options []map[string]any) []map[string]any {
 	return options[:slackSelectMaxOptions]
 }
 
-func slackTeamOption(team slackrepository.TeamRecord) map[string]any {
+func slackTeamOption(team slackdomain.Team) map[string]any {
 	return toSlackOption(slackTeamOptionText(team), team.ID.String())
 }
 
-func slackTeamOptionText(team slackrepository.TeamRecord) string {
+func slackTeamOptionText(team slackdomain.Team) string {
 	name := strings.TrimSpace(team.Name)
 	code := strings.TrimSpace(team.Code)
 	switch {
@@ -44,7 +44,7 @@ func slackTeamOptionText(team slackrepository.TeamRecord) string {
 	return strings.TrimSpace(name + suffix)
 }
 
-func slackTeamSuggestionOptions(teams []slackrepository.TeamRecord, query string) []map[string]any {
+func slackTeamSuggestionOptions(teams []slackdomain.Team, query string) []map[string]any {
 	query = strings.ToLower(strings.TrimSpace(query))
 	options := make([]map[string]any, 0, min(len(teams), slackSelectMaxOptions))
 	for _, team := range teams {
@@ -61,7 +61,7 @@ func slackTeamSuggestionOptions(teams []slackrepository.TeamRecord, query string
 	return options
 }
 
-func slackStatusSuggestionOptions(statuses []slackrepository.StatusRecord, query string) []map[string]any {
+func slackStatusSuggestionOptions(statuses []slackdomain.Status, query string) []map[string]any {
 	query = strings.ToLower(strings.TrimSpace(query))
 	options := make([]map[string]any, 0, min(len(statuses)+1, slackSelectMaxOptions))
 	if query == "" || strings.Contains(strings.ToLower("Request"), query) {

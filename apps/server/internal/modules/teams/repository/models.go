@@ -3,42 +3,123 @@ package teamsrepository
 import (
 	"time"
 
-	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
+	teamsdomain "github.com/complexus-tech/projects-api/internal/modules/teams/domain"
+	teamsql "github.com/complexus-tech/projects-api/internal/modules/teams/repository/sqlc"
 	"github.com/google/uuid"
 )
 
-type dbTeam struct {
-	ID             uuid.UUID `db:"team_id"`
-	Name           string    `db:"name"`
-	Code           string    `db:"code"`
-	Color          string    `db:"color"`
-	IsPrivate      bool      `db:"is_private"`
-	Workspace      uuid.UUID `db:"workspace_id"`
-	CreatedAt      time.Time `db:"created_at"`
-	UpdatedAt      time.Time `db:"updated_at"`
-	MemberCount    int       `db:"member_count"`
-	SprintsEnabled bool      `db:"sprints_enabled"`
+type teamRow struct {
+	id             uuid.UUID
+	name           string
+	code           string
+	color          string
+	isPrivate      bool
+	workspaceID    uuid.UUID
+	createdAt      time.Time
+	updatedAt      time.Time
+	memberCount    int32
+	sprintsEnabled bool
 }
 
-func toCoreTeam(t dbTeam) teams.CoreTeam {
-	return teams.CoreTeam{
-		ID:             t.ID,
-		Name:           t.Name,
-		Code:           t.Code,
-		Color:          t.Color,
-		IsPrivate:      t.IsPrivate,
-		Workspace:      t.Workspace,
-		CreatedAt:      t.CreatedAt,
-		UpdatedAt:      t.UpdatedAt,
-		MemberCount:    t.MemberCount,
-		SprintsEnabled: t.SprintsEnabled,
+func toCoreTeam(row teamRow) teamsdomain.Team {
+	return teamsdomain.Team{
+		ID:             row.id,
+		Name:           row.name,
+		Code:           row.code,
+		Color:          row.color,
+		IsPrivate:      row.isPrivate,
+		Workspace:      row.workspaceID,
+		CreatedAt:      row.createdAt,
+		UpdatedAt:      row.updatedAt,
+		MemberCount:    int(row.memberCount),
+		SprintsEnabled: row.sprintsEnabled,
 	}
 }
 
-func toCoreTeams(t []dbTeam) []teams.CoreTeam {
-	result := make([]teams.CoreTeam, len(t))
-	for i, team := range t {
-		result[i] = toCoreTeam(team)
+func toCoreListTeam(row teamsql.ListTeamsForActorRow) teamsdomain.Team {
+	return toCoreTeam(teamRow{
+		id:             row.TeamID,
+		name:           row.Name,
+		code:           row.Code,
+		color:          row.Color,
+		isPrivate:      row.IsPrivate,
+		workspaceID:    row.WorkspaceID,
+		createdAt:      row.CreatedAt,
+		updatedAt:      row.UpdatedAt,
+		memberCount:    row.MemberCount,
+		sprintsEnabled: row.SprintsEnabled,
+	})
+}
+
+func toCoreListTeams(rows []teamsql.ListTeamsForActorRow) []teamsdomain.Team {
+	result := make([]teamsdomain.Team, len(rows))
+	for index, row := range rows {
+		result[index] = toCoreListTeam(row)
 	}
 	return result
+}
+
+func toCorePublicTeam(row teamsql.ListPublicTeamsForActorRow) teamsdomain.Team {
+	return toCoreTeam(teamRow{
+		id:             row.TeamID,
+		name:           row.Name,
+		code:           row.Code,
+		color:          row.Color,
+		isPrivate:      row.IsPrivate,
+		workspaceID:    row.WorkspaceID,
+		createdAt:      row.CreatedAt,
+		updatedAt:      row.UpdatedAt,
+		memberCount:    row.MemberCount,
+		sprintsEnabled: row.SprintsEnabled,
+	})
+}
+
+func toCorePublicTeams(rows []teamsql.ListPublicTeamsForActorRow) []teamsdomain.Team {
+	result := make([]teamsdomain.Team, len(rows))
+	for index, row := range rows {
+		result[index] = toCorePublicTeam(row)
+	}
+	return result
+}
+
+func toCoreGetTeam(row teamsql.GetTeamForActorRow) teamsdomain.Team {
+	return toCoreTeam(teamRow{
+		id:             row.TeamID,
+		name:           row.Name,
+		code:           row.Code,
+		color:          row.Color,
+		isPrivate:      row.IsPrivate,
+		workspaceID:    row.WorkspaceID,
+		createdAt:      row.CreatedAt,
+		updatedAt:      row.UpdatedAt,
+		memberCount:    row.MemberCount,
+		sprintsEnabled: row.SprintsEnabled,
+	})
+}
+
+func toCoreCreatedTeam(row teamsql.CreateTeamRow) teamsdomain.Team {
+	return toCoreTeam(teamRow{
+		id:          row.TeamID,
+		name:        row.Name,
+		code:        row.Code,
+		color:       row.Color,
+		isPrivate:   row.IsPrivate,
+		workspaceID: row.WorkspaceID,
+		createdAt:   row.CreatedAt,
+		updatedAt:   row.UpdatedAt,
+		memberCount: 1,
+	})
+}
+
+func toCoreUpdatedTeam(row teamsql.UpdateTeamForWorkspaceRow) teamsdomain.Team {
+	return toCoreTeam(teamRow{
+		id:          row.TeamID,
+		name:        row.Name,
+		code:        row.Code,
+		color:       row.Color,
+		isPrivate:   row.IsPrivate,
+		workspaceID: row.WorkspaceID,
+		createdAt:   row.CreatedAt,
+		updatedAt:   row.UpdatedAt,
+	})
 }

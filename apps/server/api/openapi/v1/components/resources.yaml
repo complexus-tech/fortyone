@@ -1,0 +1,322 @@
+components:
+  schemas:
+    Workspace:
+      type: object
+      additionalProperties: false
+      required: [id, slug, name, color, active, role, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        slug: {type: string}
+        name: {type: string}
+        color: {type: string}
+        avatarUrl: {type: string, format: uri}
+        active: {type: boolean}
+        role:
+          type: string
+          enum: [guest, member, admin]
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    WorkspaceResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Workspace'}
+    Team:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceId, name, code, color, private, memberCount, sprintsEnabled, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        name: {type: string}
+        code: {type: string}
+        color: {type: string}
+        private: {type: boolean}
+        memberCount: {type: integer, minimum: 0}
+        sprintsEnabled: {type: boolean}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    TeamPageResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Team'}
+        meta:
+          $ref: ./common.yaml#/components/schemas/PageMeta
+    Story:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceId, teamId, sequenceId, reference, title, priority, autoSchedulingEnabled, autoSchedulingLocked, autoSchedulingStatus, labels, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        sequenceId: {type: integer, minimum: 1}
+        reference: {type: string}
+        title: {type: string}
+        description: {type: string}
+        statusId: {type: string, format: uuid}
+        assigneeId: {type: string, format: uuid}
+        reporterId: {type: string, format: uuid}
+        sprintId: {type: string, format: uuid}
+        objectiveId: {type: string, format: uuid}
+        keyResultId: {type: string, format: uuid}
+        parentId: {type: string, format: uuid}
+        priority: {type: string}
+        estimateValue: {type: integer, format: int32}
+        estimateLabel: {type: string}
+        estimatedDurationMinutes: {type: integer, minimum: 0}
+        minimumFocusBlockMinutes: {type: integer, minimum: 0}
+        autoSchedulingEnabled: {type: boolean}
+        autoSchedulingLocked: {type: boolean}
+        autoSchedulingStatus: {type: string}
+        labels:
+          type: array
+          items: {type: string, format: uuid}
+        startDate: {type: string, format: date-time}
+        endDate: {type: string, format: date-time}
+        completedAt: {type: string, format: date-time}
+        archivedAt: {type: string, format: date-time}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    StoryResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Story'}
+    CreateStoryRequest:
+      type: object
+      additionalProperties: false
+      required: [title, teamId]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 500}
+        teamId: {type: string, format: uuid}
+        description: {type: string, maxLength: 100000}
+        parentId: {type: string, format: uuid}
+        objectiveId: {type: string, format: uuid}
+        statusId: {type: string, format: uuid}
+        assigneeId: {type: string, format: uuid}
+        sprintId: {type: string, format: uuid}
+        keyResultId: {type: string, format: uuid}
+        priority:
+          type: string
+          default: No Priority
+          enum: [No Priority, Low, Medium, High, Urgent]
+        estimateValue: {type: integer, format: int32, minimum: 0, maximum: 32767}
+        estimatedDurationMinutes: {type: integer, minimum: 0, maximum: 525600}
+        minimumFocusBlockMinutes: {type: integer, minimum: 0, maximum: 10080}
+        autoSchedulingEnabled: {type: boolean, default: false}
+        labelIds:
+          type: array
+          maxItems: 100
+          uniqueItems: true
+          items: {type: string, format: uuid}
+        startDate: {type: string, format: date-time}
+        endDate: {type: string, format: date-time}
+    StoryPageResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Story'}
+        meta:
+          $ref: ./common.yaml#/components/schemas/PageMeta
+    Comment:
+      type: object
+      additionalProperties: false
+      required: [id, storyId, authorId, content, replies, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        storyId: {type: string, format: uuid}
+        parentId: {type: string, format: uuid}
+        authorId: {type: string, format: uuid}
+        content: {type: string}
+        replies:
+          type: array
+          items: {$ref: '#/components/schemas/Comment'}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    CommentResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Comment'}
+    CommentPageResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Comment'}
+        meta: {$ref: ./common.yaml#/components/schemas/PageMeta}
+    Label:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceId, name, color, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        name: {type: string}
+        color: {type: string}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    LabelPageResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Label'}
+        meta: {$ref: ./common.yaml#/components/schemas/PageMeta}
+    WorkflowState:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceId, teamId, name, category, order, default, color, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        name: {type: string}
+        category:
+          type: string
+          enum: [backlog, unstarted, started, paused, completed, cancelled]
+        order: {type: integer}
+        default: {type: boolean}
+        color: {type: string}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    WorkflowStatePageResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/WorkflowState'}
+        meta: {$ref: ./common.yaml#/components/schemas/PageMeta}
+    Sprint:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceId, teamId, name, startDate, endDate, automationManaged, storyCounts, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        objectiveId: {type: string, format: uuid}
+        name: {type: string}
+        goal: {type: string}
+        startDate: {type: string, format: date-time}
+        endDate: {type: string, format: date-time}
+        automationManaged: {type: boolean}
+        storyCounts: {$ref: '#/components/schemas/StoryCounts'}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    SprintPageResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Sprint'}
+        meta: {$ref: ./common.yaml#/components/schemas/PageMeta}
+    StoryCounts:
+      type: object
+      additionalProperties: false
+      required: [total, backlog, unstarted, started, completed, cancelled]
+      properties:
+        total: {type: integer, minimum: 0}
+        backlog: {type: integer, minimum: 0}
+        unstarted: {type: integer, minimum: 0}
+        started: {type: integer, minimum: 0}
+        completed: {type: integer, minimum: 0}
+        cancelled: {type: integer, minimum: 0}
+    Objective:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceId, teamId, sequenceId, name, private, statusId, color, scheduleStatus, forecastDaysDelta, keyResultCount, storyCounts, createdBy, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        sequenceId: {type: integer, minimum: 1}
+        name: {type: string}
+        description: {type: string}
+        shortSummary: {type: string}
+        leadUserId: {type: string, format: uuid}
+        startDate: {type: string, format: date-time}
+        endDate: {type: string, format: date-time}
+        private: {type: boolean}
+        statusId: {type: string, format: uuid}
+        priority: {type: string}
+        health:
+          type: string
+          enum: [At Risk, On Track, Off Track]
+        color: {type: string}
+        forecastStartDate: {type: string, format: date-time}
+        forecastEndDate: {type: string, format: date-time}
+        scheduleStatus:
+          type: string
+          enum: [on_track, at_risk, no_target, no_schedule]
+        forecastDaysDelta: {type: integer}
+        keyResultCount: {type: integer, minimum: 0}
+        storyCounts: {$ref: '#/components/schemas/StoryCounts'}
+        createdBy: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    ObjectivePageResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Objective'}
+        meta: {$ref: ./common.yaml#/components/schemas/PageMeta}
+    KeyResult:
+      type: object
+      additionalProperties: false
+      required: [id, workspaceId, teamId, objectiveId, sequenceId, name, measurementType, startValue, currentValue, targetValue, contributorIds, createdBy, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        objectiveId: {type: string, format: uuid}
+        objectiveName: {type: string}
+        sequenceId: {type: integer, minimum: 1}
+        name: {type: string}
+        measurementType:
+          type: string
+          enum: [percentage, number, boolean]
+        startValue: {type: number, format: double}
+        currentValue: {type: number, format: double}
+        targetValue: {type: number, format: double}
+        leadUserId: {type: string, format: uuid}
+        contributorIds:
+          type: array
+          items: {type: string, format: uuid}
+        startDate: {type: string, format: date-time}
+        endDate: {type: string, format: date-time}
+        createdBy: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    KeyResultPageResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/KeyResult'}
+        meta: {$ref: ./common.yaml#/components/schemas/PageMeta}

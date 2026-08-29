@@ -14,8 +14,6 @@ import (
 	"testing"
 	"time"
 
-	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -44,7 +42,6 @@ func TestHandleEventsPresentsEntityDetailsWithoutDurableQueue(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, response.Challenge)
 	require.EqualValues(t, 1, calls.Load())
-	require.Zero(t, inbox.registrations)
 	require.Empty(t, queue.payloads)
 }
 
@@ -53,12 +50,12 @@ func TestHandleEventsPresentsReadOnlyRequestEntityDetails(t *testing.T) {
 
 	fixture := newWorkObjectEditFixture(t)
 	requestID := uuid.New()
-	requestStore := &mockRequestStore{request: integrationrequests.CoreIntegrationRequest{
+	requestStore := &mockRequestStore{request: integrationRequest{
 		ID:              requestID,
 		WorkspaceID:     fixture.repo.workspace.ID,
 		TeamID:          fixture.repo.team.ID,
 		Title:           "Investigate mobile login",
-		Status:          integrationrequests.StatusPending,
+		Status:          integrationRequestStatusPending,
 		Priority:        "High",
 		AssigneeID:      &fixture.actorID,
 		CreatedByUserID: &fixture.actorID,
@@ -102,7 +99,6 @@ func TestHandleEventsPresentsReadOnlyRequestEntityDetails(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("request entity details were not presented")
 	}
-	require.Zero(t, inbox.registrations)
 	require.Empty(t, queue.payloads)
 }
 
@@ -116,7 +112,7 @@ func TestHandleEventsKeepsLinkSharedOnDurableQueue(t *testing.T) {
 		fixture.repo,
 		&mockRequestStore{},
 		fixture.stories,
-		Config{SecretKey: "event-secret"},
+		Config{},
 	)
 	WithEventRuntime(queue, inbox)(service)
 	var logs bytes.Buffer
@@ -127,9 +123,11 @@ func TestHandleEventsKeepsLinkSharedOnDurableQueue(t *testing.T) {
 	))
 
 	require.NoError(t, err)
-	require.Equal(t, 1, inbox.registrations)
 	require.Len(t, queue.payloads, 1)
-	require.Equal(t, "Ev-link-durable", queue.payloads[0].EventID)
+	require.Equal(t, "slack", queue.payloads[0].Provider)
+	require.NotEqual(t, uuid.Nil, queue.payloads[0].InboxID)
+	require.Len(t, queue.requests, 1)
+	require.Contains(t, string(queue.requests[0].Body), `"event_id":"Ev-link-durable"`)
 	require.Contains(t, logs.String(), `"msg":"Slack story preview event received"`)
 	require.Contains(t, logs.String(), `"msg":"Slack story preview event queued"`)
 	require.Contains(t, logs.String(), `"event_id":"Ev-link-durable"`)
@@ -157,7 +155,6 @@ func TestHandleEventsTreatsInvalidEntityTriggerAsTerminal(t *testing.T) {
 
 	require.NoError(t, err, "a spent trigger must be acknowledged instead of retried")
 	require.EqualValues(t, 1, calls.Load())
-	require.Zero(t, inbox.registrations)
 	require.Empty(t, queue.payloads)
 }
 
@@ -195,7 +192,6 @@ func TestHandleEventsBoundsEntityDetailsToTriggerDeadline(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("entity.presentDetails was not attempted")
 	}
-	require.Zero(t, inbox.registrations)
 	require.Empty(t, queue.payloads)
 }
 
@@ -264,7 +260,9 @@ func TestDispatchSlackWorkObjectEditDetachesAndUsesTriggerOnlyOnce(t *testing.T)
 	case <-time.After(time.Second):
 		t.Fatal("Work Object edit did not stop at its trigger deadline")
 	}
-	time.Sleep(75 * time.Millisecond)
+	require.Never(t, func() bool {
+		return calls.Load() > 1
+	}, 75*time.Millisecond, time.Millisecond)
 	require.EqualValues(t, 1, calls.Load(), "a failed presentation attempt must not reuse the trigger for edit feedback")
 }
 
@@ -273,7 +271,7 @@ func TestDispatchSlackWorkObjectEditPresentsConflictWithinOriginalDeadline(t *te
 
 	fixture := newWorkObjectEditFixture(t)
 	fixture.service.workObjectTriggerTimeout = 250 * time.Millisecond
-	fixture.stories.updateErr = stories.ErrStoryChanged
+	fixture.stories.updateErr = ErrStoryChanged
 	fixture.payload.View.State.Values = interactionViewStateValues{
 		"title": workObjectTextState("title", "Conflicting title"),
 	}
@@ -331,7 +329,7 @@ func TestEventProcessorIgnoresLegacyQueuedEntityDetailsTrigger(t *testing.T) {
 	)
 
 	rawBody := strings.Replace(entityDetailsEventBody("Ev-legacy-entity", "story-id"), `"team_id":"T123"`, `"team_id":"T1"`, 1)
-	err := processor.Process(context.Background(), []byte(rawBody))
+	err := processSlackRaw(t, processor, []byte(rawBody))
 
 	require.NoError(t, err)
 	assertSingleInboundStatus(t, store, "ignored")

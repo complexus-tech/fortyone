@@ -100,22 +100,22 @@ func toAppTeamSettings(settings teamsettings.CoreTeamSettings) AppTeamSettings {
 
 func toCoreUpdateTeamSprintSettings(app AppUpdateTeamSprintSettings) teamsettings.CoreUpdateTeamSprintSettings {
 	return teamsettings.CoreUpdateTeamSprintSettings{
-		AutoCreateSprints:            app.AutoCreateSprints,
-		UpcomingSprintsCount:         app.UpcomingSprintsCount,
-		SprintDurationWeeks:          app.SprintDurationWeeks,
-		SprintStartDay:               app.SprintStartDay,
-		WorkingDays:                  app.WorkingDays,
-		MoveIncompleteStoriesEnabled: app.MoveIncompleteStoriesEnabled,
-		NextAutoSprintNumber:         app.NextAutoSprintNumber,
+		AutoCreateSprints:            teamsettings.PatchFromPointer(app.AutoCreateSprints),
+		UpcomingSprintsCount:         teamsettings.PatchFromPointer(app.UpcomingSprintsCount),
+		SprintDurationWeeks:          teamsettings.PatchFromPointer(app.SprintDurationWeeks),
+		SprintStartDay:               teamsettings.PatchFromPointer(app.SprintStartDay),
+		WorkingDays:                  teamsettings.PatchFromPointer(app.WorkingDays),
+		MoveIncompleteStoriesEnabled: teamsettings.PatchFromPointer(app.MoveIncompleteStoriesEnabled),
+		NextAutoSprintNumber:         teamsettings.PatchFromPointer(app.NextAutoSprintNumber),
 	}
 }
 
 func toCoreUpdateTeamStoryAutomationSettings(app AppUpdateTeamStoryAutomationSettings) teamsettings.CoreUpdateTeamStoryAutomationSettings {
 	return teamsettings.CoreUpdateTeamStoryAutomationSettings{
-		AutoCloseInactiveEnabled: app.AutoCloseInactiveEnabled,
-		AutoCloseInactiveMonths:  app.AutoCloseInactiveMonths,
-		AutoArchiveEnabled:       app.AutoArchiveEnabled,
-		AutoArchiveMonths:        app.AutoArchiveMonths,
+		AutoCloseInactiveEnabled: teamsettings.PatchFromPointer(app.AutoCloseInactiveEnabled),
+		AutoCloseInactiveMonths:  teamsettings.PatchFromPointer(app.AutoCloseInactiveMonths),
+		AutoArchiveEnabled:       teamsettings.PatchFromPointer(app.AutoArchiveEnabled),
+		AutoArchiveMonths:        teamsettings.PatchFromPointer(app.AutoArchiveMonths),
 	}
 }
 
@@ -129,6 +129,6 @@ func toAppTeamEstimationSettings(settings teamsettings.CoreTeamEstimationSetting
 
 func toCoreUpdateTeamEstimationSettings(app AppUpdateTeamEstimationSettings) teamsettings.CoreUpdateTeamEstimationSettings {
 	return teamsettings.CoreUpdateTeamEstimationSettings{
-		Scheme: app.Scheme,
+		Scheme: teamsettings.PatchFromPointer(app.Scheme),
 	}
 }

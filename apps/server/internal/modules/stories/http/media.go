@@ -37,26 +37,18 @@ func (h *Handlers) UploadStoryMedia(ctx context.Context, w http.ResponseWriter, 
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	r.Body = http.MaxBytesReader(
+	if err := web.ParseMultipartForm(
 		w,
-		r.Body,
+		r,
 		validate.MaxAttachmentSize+storyMediaMultipartOverheadAllowance,
-	)
-	if err := r.ParseMultipartForm(validate.MaxAttachmentSize); err != nil {
-		var maxBytesError *http.MaxBytesError
-		if errors.As(err, &maxBytesError) {
-			return web.RespondError(
-				ctx,
-				w,
-				fmt.Errorf("%w: maximum story media size is 25 MB", attachments.ErrFileTooLarge),
-				http.StatusRequestEntityTooLarge,
-			)
-		}
+	); err != nil {
 		return web.RespondError(ctx, w, fmt.Errorf("invalid upload request: %w", err), http.StatusBadRequest)
 	}
-	if r.MultipartForm != nil {
-		defer r.MultipartForm.RemoveAll()
-	}
+	defer func() {
+		if err := web.RemoveMultipartForm(r); err != nil {
+			h.log.Warn(ctx, "failed to remove story media upload temporary files", "error", err)
+		}
+	}()
 
 	file, header, err := r.FormFile("file")
 	if err != nil {

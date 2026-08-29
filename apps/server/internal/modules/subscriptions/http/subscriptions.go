@@ -3,7 +3,6 @@ package subscriptionshttp
 import (
 	"context"
 	"errors"
-	"io"
 	"net/http"
 
 	subscriptions "github.com/complexus-tech/projects-api/internal/modules/subscriptions/service"
@@ -20,14 +19,20 @@ var (
 
 type Handlers struct {
 	subscriptions *subscriptions.Service
+	webhookEvents webhookEventService
 	users         *users.Service
 	workspaces    *workspaces.Service
 	log           *logger.Logger
 }
 
+type webhookEventService interface {
+	HandleWebhookEvent(ctx context.Context, payload []byte, signature string) error
+}
+
 func New(subscriptions *subscriptions.Service, users *users.Service, workspaces *workspaces.Service, log *logger.Logger) *Handlers {
 	return &Handlers{
 		subscriptions: subscriptions,
+		webhookEvents: subscriptions,
 		users:         users,
 		workspaces:    workspaces,
 		log:           log,
@@ -67,7 +72,9 @@ func (h *Handlers) CreateCheckoutSession(ctx context.Context, w http.ResponseWri
 
 	url, err := h.subscriptions.CreateCheckoutSession(ctx, workspace.ID, req.PriceLookupKey, user.Email, workspace.Name, req.SuccessURL, req.CancelURL)
 	if err != nil {
-		if errors.Is(err, subscriptions.ErrWorkspaceHasActiveSub) {
+		if errors.Is(err, subscriptions.ErrWorkspaceHasActiveSub) ||
+			errors.Is(err, subscriptions.ErrInvalidBillingRedirect) ||
+			errors.Is(err, subscriptions.ErrInvalidPriceLookupKey) {
 			web.RespondError(ctx, w, err, http.StatusBadRequest)
 			return nil
 		}
@@ -126,6 +133,10 @@ func (h *Handlers) CreateCustomerPortal(ctx context.Context, w http.ResponseWrit
 
 	url, err := h.subscriptions.CreateCustomerPortalSession(ctx, workspace.ID, req.ReturnURL)
 	if err != nil {
+		if errors.Is(err, subscriptions.ErrInvalidBillingRedirect) {
+			web.RespondError(ctx, w, err, http.StatusBadRequest)
+			return nil
+		}
 		span.RecordError(err)
 		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
@@ -191,13 +202,16 @@ func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *
 	ctx, span := web.AddSpan(ctx, "handlers.subscriptions.HandleWebhook")
 	defer span.End()
 
-	const MaxBodyBytes = int64(65536)
-	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
-	body, err := io.ReadAll(r.Body)
+	const maxBodyBytes = int64(64 * 1024)
+	body, err := web.ReadBoundedBody(w, r, maxBodyBytes)
 	if err != nil {
 		span.RecordError(err)
-		h.log.Error(ctx, "Failed to read webhook body", "error", err)
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
+		h.log.Warn(ctx, "Rejected unreadable Stripe webhook body")
+		if errors.Is(err, web.ErrRequestBodyTooLarge) {
+			web.RespondError(ctx, w, err, http.StatusRequestEntityTooLarge)
+			return nil
+		}
+		web.RespondError(ctx, w, web.HumanizeJSONDecodeError(err), http.StatusBadRequest)
 		return nil
 	}
 
@@ -209,15 +223,19 @@ func (h *Handlers) HandleWebhook(ctx context.Context, w http.ResponseWriter, r *
 		return nil
 	}
 
-	err = h.subscriptions.HandleWebhookEvent(ctx, body, signature)
+	err = h.webhookEvents.HandleWebhookEvent(ctx, body, signature)
 	if err != nil {
 		span.RecordError(err)
-		h.log.Error(ctx, "Failed to handle webhook event", "error", err)
-		if errors.Is(err, subscriptions.ErrFailedToCreateSubscription) {
-			web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		if errors.Is(err, subscriptions.ErrInvalidWebhookSignature) {
+			h.log.Warn(ctx, "Rejected Stripe webhook with an invalid signature")
+			web.RespondError(ctx, w, subscriptions.ErrInvalidWebhookSignature, http.StatusBadRequest)
 			return nil
 		}
-		web.Respond(ctx, w, nil, http.StatusOK)
+
+		// Stripe retries only non-2xx responses. Processing, lease, and durable
+		// persistence failures must therefore remain retryable.
+		h.log.Error(ctx, "Stripe webhook did not reach a durable terminal state")
+		web.RespondError(ctx, w, err, http.StatusInternalServerError)
 		return nil
 	}
 
@@ -243,17 +261,12 @@ func (h *Handlers) ChangeSubscriptionPlan(ctx context.Context, w http.ResponseWr
 		return nil
 	}
 
-	if err := req.Validate(); err != nil {
-		span.RecordError(err)
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
-		return nil
-	}
-
 	err = h.subscriptions.ChangeSubscriptionPlan(ctx, workspace.ID, req.NewLookupKey)
 	if err != nil {
 		switch {
 		case errors.Is(err, subscriptions.ErrNoActiveSubscriptionToChange),
-			errors.Is(err, subscriptions.ErrAlreadySubscribedToThisPlan):
+			errors.Is(err, subscriptions.ErrAlreadySubscribedToThisPlan),
+			errors.Is(err, subscriptions.ErrInvalidPriceLookupKey):
 			web.RespondError(ctx, w, err, http.StatusBadRequest)
 		default:
 			span.RecordError(err)

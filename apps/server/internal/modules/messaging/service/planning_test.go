@@ -28,13 +28,13 @@ func TestFortyOneToolExecutorSprintSummaryUsesScopedAnalyticsAndStories(t *testi
 	storiesReader := &completedStoriesServiceStub{items: []stories.CoreStoryList{completedStory, remainingStory}}
 	sprintsReader := &planningSprintsServiceStub{
 		items: []sprints.CoreSprint{{
-			ID:        sprintID,
-			Name:      "Sprint 1",
-			Goal:      stringPtr("Establish the UI foundation"),
-			Team:      team.ID,
-			Workspace: scope.WorkspaceID,
-			StartDate: time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC),
-			EndDate:   time.Date(2026, 8, 21, 0, 0, 0, 0, time.UTC),
+			ID:          sprintID,
+			Name:        "Sprint 1",
+			Goal:        stringPtr("Establish the UI foundation"),
+			TeamID:      team.ID,
+			WorkspaceID: scope.WorkspaceID,
+			StartDate:   time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC),
+			EndDate:     time.Date(2026, 8, 21, 0, 0, 0, 0, time.UTC),
 		}},
 		analytics: sprints.CoreSprintAnalytics{
 			SprintID:       sprintID,
@@ -65,7 +65,7 @@ func TestFortyOneToolExecutorSprintSummaryUsesScopedAnalyticsAndStories(t *testi
 		t.Fatalf("expected scoped completed and remaining work, got %#v", result.Work)
 	}
 	call := storiesReader.lastCall()
-	if call.filters["sprint_ids"].([]uuid.UUID)[0] != sprintID {
+	if len(call.filters.SprintIDs) != 1 || call.filters.SprintIDs[0] != sprintID {
 		t.Fatalf("expected sprint-scoped story filter, got %#v", call.filters)
 	}
 }
@@ -115,7 +115,7 @@ func TestFortyOneToolExecutorObjectiveSummaryUsesObjectiveScopedStories(t *testi
 		t.Fatalf("expected objective work split, got %#v", result.Work)
 	}
 	call := storiesReader.lastCall()
-	if call.filters["objective_id"].(uuid.UUID) != objectiveID {
+	if call.filters.Objective == nil || *call.filters.Objective != objectiveID {
 		t.Fatalf("expected objective-scoped story filter, got %#v", call.filters)
 	}
 }
@@ -130,7 +130,7 @@ func (s *planningSprintsServiceStub) List(_ context.Context, _ uuid.UUID, _ uuid
 	teamID, _ := filters["team_id"].(uuid.UUID)
 	result := make([]sprints.CoreSprint, 0, len(s.items))
 	for _, item := range s.items {
-		if teamID != uuid.Nil && item.Team != teamID {
+		if teamID != uuid.Nil && item.TeamID != teamID {
 			continue
 		}
 		if search != "" && !strings.Contains(strings.ToLower(item.Name), strings.ToLower(search)) {
@@ -141,7 +141,7 @@ func (s *planningSprintsServiceStub) List(_ context.Context, _ uuid.UUID, _ uuid
 	return result, nil
 }
 
-func (s *planningSprintsServiceStub) GetAnalytics(_ context.Context, _ uuid.UUID, _ uuid.UUID) (sprints.CoreSprintAnalytics, error) {
+func (s *planningSprintsServiceStub) GetAnalytics(_ context.Context, _ uuid.UUID, _ uuid.UUID, _ uuid.UUID) (sprints.CoreSprintAnalytics, error) {
 	return s.analytics, nil
 }
 

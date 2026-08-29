@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"strings"
 
-	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
-	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
+	reportdomain "github.com/complexus-tech/projects-api/internal/modules/reports/domain"
+	teamsdomain "github.com/complexus-tech/projects-api/internal/modules/teams/domain"
 	"github.com/google/uuid"
 )
 
 // WorkloadService is the bounded reports surface used by the assistant to
 // answer team workload questions.
 type WorkloadService interface {
-	GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters reports.ReportFilters) (reports.CoreWorkloadAnalysis, error)
+	GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters reportdomain.ReportFilters) (reportdomain.CoreWorkloadAnalysis, error)
 }
 
 const (
@@ -91,7 +91,7 @@ func (e *FortyOneToolExecutor) getWorkloadSummary(ctx context.Context, scope Too
 		})
 	}
 
-	analysis, err := e.workload.GetWorkloadAnalysis(ctx, scope.WorkspaceID, reports.ReportFilters{TeamIDs: sharedTeamIDs})
+	analysis, err := e.workload.GetWorkloadAnalysis(ctx, scope.WorkspaceID, reportdomain.ReportFilters{TeamIDs: sharedTeamIDs})
 	if err != nil {
 		return nil, fmt.Errorf("get workload summary: %w", err)
 	}
@@ -138,7 +138,7 @@ func (e *FortyOneToolExecutor) getWorkloadSummary(ctx context.Context, scope Too
 	return marshalToolResult(result)
 }
 
-func sharedAccessibleTeamIDs(sharedTeamIDs []uuid.UUID, joinedByID map[uuid.UUID]teams.CoreTeam) []uuid.UUID {
+func sharedAccessibleTeamIDs(sharedTeamIDs []uuid.UUID, joinedByID map[uuid.UUID]teamsdomain.Team) []uuid.UUID {
 	result := make([]uuid.UUID, 0, len(sharedTeamIDs))
 	seen := make(map[uuid.UUID]struct{}, len(sharedTeamIDs))
 	for _, teamID := range sharedTeamIDs {
@@ -154,10 +154,10 @@ func sharedAccessibleTeamIDs(sharedTeamIDs []uuid.UUID, joinedByID map[uuid.UUID
 	return result
 }
 
-func resolveWorkloadMember(members []reports.CoreMemberWorkload, query string) (reports.CoreMemberWorkload, bool, error) {
+func resolveWorkloadMember(members []reportdomain.CoreMemberWorkload, query string) (reportdomain.CoreMemberWorkload, bool, error) {
 	wanted := normalizePlanningName(query)
-	exact := make([]reports.CoreMemberWorkload, 0, 1)
-	contains := make([]reports.CoreMemberWorkload, 0, 1)
+	exact := make([]reportdomain.CoreMemberWorkload, 0, 1)
+	contains := make([]reportdomain.CoreMemberWorkload, 0, 1)
 	for _, member := range members {
 		name := normalizePlanningName(member.FullName)
 		username := normalizePlanningName(member.Username)
@@ -173,15 +173,15 @@ func resolveWorkloadMember(members []reports.CoreMemberWorkload, query string) (
 		return exact[0], true, nil
 	}
 	if len(exact) > 1 || len(contains) > 1 {
-		return reports.CoreMemberWorkload{}, false, fmt.Errorf("member %q is ambiguous; include a more specific name", strings.TrimSpace(query))
+		return reportdomain.CoreMemberWorkload{}, false, fmt.Errorf("member %q is ambiguous; include a more specific name", strings.TrimSpace(query))
 	}
 	if len(contains) == 1 {
 		return contains[0], true, nil
 	}
-	return reports.CoreMemberWorkload{}, false, nil
+	return reportdomain.CoreMemberWorkload{}, false, nil
 }
 
-func workloadTeamName(team *teams.CoreTeam, sharedTeamCount int) string {
+func workloadTeamName(team *teamsdomain.Team, sharedTeamCount int) string {
 	if team != nil {
 		return team.Name
 	}
@@ -191,7 +191,7 @@ func workloadTeamName(team *teams.CoreTeam, sharedTeamCount int) string {
 	return "shared teams"
 }
 
-func newWorkloadMemberResult(member reports.CoreMemberWorkload) workloadMemberResult {
+func newWorkloadMemberResult(member reportdomain.CoreMemberWorkload) workloadMemberResult {
 	return workloadMemberResult{
 		Name:                member.FullName,
 		Username:            member.Username,
@@ -247,5 +247,3 @@ type workloadMemberResult struct {
 	HighPriorityStories int    `json:"high_priority_stories"`
 	UnestimatedStories  int    `json:"unestimated_stories"`
 }
-
-var _ WorkloadService = (*reports.Service)(nil)

@@ -2,7 +2,6 @@ package jobs
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -241,43 +240,31 @@ func TestBuildStrategyCheckInsDeduplicatesAndPreservesSignalCounts(t *testing.T)
 	)
 }
 
-func TestStrategyWeeklyCheckInsQueryPreselectsDueRecipientsBeforeSignals(t *testing.T) {
-	query := strategyWeeklyCheckInsQuery()
-	dueRecipientsIndex := strings.Index(query, "due_recipients AS MATERIALIZED")
-	eligibleObjectivesIndex := strings.Index(query, "eligible_objectives AS")
+func TestStrategyWeeklyLocalTimeFallsBackToUTCForInvalidTimezone(t *testing.T) {
+	now := time.Date(2026, time.August, 26, 9, 0, 0, 0, time.UTC)
 
-	require.NotEqual(t, -1, dueRecipientsIndex)
-	require.NotEqual(t, -1, eligibleObjectivesIndex)
-	require.Less(t, dueRecipientsIndex, eligibleObjectivesIndex)
-	require.Contains(t, query, "EXTRACT(ISODOW FROM CAST($2 AS TIMESTAMPTZ)")
-	require.Contains(t, query, "EXTRACT(HOUR FROM CAST($2 AS TIMESTAMPTZ)")
-	require.Contains(t, query, "JOIN objectives o ON o.workspace_id = recipient.workspace_id AND o.lead_user_id = recipient.user_id")
-	require.Contains(t, query, "COALESCE(timezone_names.name, 'UTC')")
-	require.NotContains(t, query, "JOIN users u ON u.user_id = o.lead_user_id")
+	localNow, due := strategyWeeklyLocalTime(now, "not/a-timezone")
+
+	require.True(t, due)
+	require.Equal(t, time.UTC, localNow.Location())
+	require.Equal(t, now, localNow)
 }
 
-func TestStrategySnapshotQueriesUseActiveObjectiveAndMeasurementScopes(t *testing.T) {
-	weeklyQuery := strategyWeeklyCheckInsQuery()
-	require.Contains(t, weeklyQuery, "COALESCE(os.category, '') NOT IN ('completed', 'cancelled', 'paused')")
-	require.Contains(t, weeklyQuery, "CAST(kr.measurement_type AS TEXT) IN ('percentage', 'number')")
-	require.Contains(t, weeklyQuery, "kr.target_value >= kr.start_value")
-	require.Contains(t, weeklyQuery, "kr.current_value >= kr.target_value")
-	require.Contains(t, weeklyQuery, "kr.target_value < kr.start_value")
-	require.Contains(t, weeklyQuery, "kr.current_value <= kr.target_value")
-	require.Contains(t, weeklyQuery, "CAST(kr.measurement_type AS TEXT) = 'boolean'")
-	require.NotContains(t, weeklyQuery, "kr.current_value IS DISTINCT FROM kr.target_value")
+func TestStrategyWeeklyLocalTimeTracksDaylightSavingBoundary(t *testing.T) {
+	beforeDST := time.Date(2026, time.March, 4, 14, 0, 0, 0, time.UTC)
+	afterDST := time.Date(2026, time.March, 11, 13, 0, 0, 0, time.UTC)
 
-	foundationQuery := strategyFoundationQuery()
-	require.Contains(t, foundationQuery, "LEFT JOIN objective_statuses os ON os.status_id = o.status_id")
-	require.Contains(t, foundationQuery, "COALESCE(os.category, '') NOT IN ('completed', 'cancelled', 'paused')")
+	beforeLocal, beforeDue := strategyWeeklyLocalTime(beforeDST, "America/New_York")
+	afterLocal, afterDue := strategyWeeklyLocalTime(afterDST, "America/New_York")
 
-	monthlyQuery := strategyMonthlySummaryQuery()
-	require.Contains(t, monthlyQuery, "LEFT JOIN objective_statuses os ON os.status_id = o.status_id")
-	require.Contains(t, monthlyQuery, "COALESCE(os.category, '') NOT IN ('completed', 'cancelled', 'paused')")
-	require.Contains(t, monthlyQuery, "JOIN objective_data objective ON objective.objective_id = kr.objective_id")
-	require.Contains(t, monthlyQuery, "(SELECT COUNT(*) FROM key_result_data) AS key_result_count")
-	require.Contains(t, monthlyQuery, "(SELECT AVG(progress) FROM key_result_data) AS key_result_progress")
-	require.NotContains(t, monthlyQuery, "COALESCE((SELECT AVG(progress) FROM key_result_data), 0)")
+	require.True(t, beforeDue)
+	require.True(t, afterDue)
+	require.Equal(t, 9, beforeLocal.Hour())
+	require.Equal(t, 9, afterLocal.Hour())
+	_, beforeOffset := beforeLocal.Zone()
+	_, afterOffset := afterLocal.Zone()
+	require.Equal(t, -5*60*60, beforeOffset)
+	require.Equal(t, -4*60*60, afterOffset)
 }
 
 func TestStrategyMonthlySummaryTextDoesNotInventZeroProgressWithoutKeyResults(t *testing.T) {

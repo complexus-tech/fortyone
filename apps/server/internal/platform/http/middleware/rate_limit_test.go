@@ -32,13 +32,22 @@ func TestPublicFeedbackRateLimitUsesSignedAnonymousIdentity(t *testing.T) {
 	request.SetPathValue("portalSlug", "city-roads")
 	setFeedbackIngressProof(request, "test-secret", "city-roads", strings.Repeat("ab", 32), now)
 
-	require.NoError(t, handler(request.Context(), httptest.NewRecorder(), request))
+	recorder := httptest.NewRecorder()
+	require.NoError(t, handler(request.Context(), recorder, request))
 	require.True(t, nextCalled)
 	require.Equal(t, "rate-limit:feedback-item:portal:city-roads:anonymous:"+strings.Repeat("ab", 32), store.key)
 	require.Equal(t, []string{
 		"rate-limit:feedback-item:anonymous:" + strings.Repeat("ab", 32),
 		"rate-limit:feedback-item:portal:city-roads:anonymous:" + strings.Repeat("ab", 32),
 	}, store.keys)
+	require.Equal(t, []string{
+		`"feedback-item-global";q=12;w=3600`,
+		`"feedback-item-portal";q=3;w=3600`,
+	}, recorder.Header().Values("RateLimit-Policy"))
+	require.Equal(t, []string{
+		`"feedback-item-global";r=11;t=3600`,
+		`"feedback-item-portal";r=2;t=3600`,
+	}, recorder.Header().Values("RateLimit"))
 }
 
 func TestPublicFeedbackRateLimitUsesPortalAndUser(t *testing.T) {
@@ -273,6 +282,8 @@ func TestAuthenticatedUserRateLimitRejectsRequestAboveLimit(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusTooManyRequests, recorder.Code)
+	require.Equal(t, `"feedback-item";q=10;w=3600`, recorder.Header().Get("RateLimit-Policy"))
+	require.Equal(t, `"feedback-item";r=0;t=3600`, recorder.Header().Get("RateLimit"))
 	require.Equal(t, "3600", recorder.Header().Get("Retry-After"))
 }
 

@@ -1,14 +1,17 @@
 import { ApiError } from "api-client";
 import type { ApiResponse, Workspace } from "@/types";
-import type { Invitation } from "@/modules/invitations/types";
 import { getSafeCallbackUrl } from "./callback-url";
 import { reportApiErrorOutcome } from "./api-error-outcome";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
+type InvitationRedirectCandidate = {
+  token?: string;
+};
+
 export const getRedirectUrl = (
   workspaces: Workspace[],
-  invitations: Invitation[] = [],
+  invitations: InvitationRedirectCandidate[] = [],
   lastUsedWorkspaceId?: string,
   callbackUrl?: string,
 ) => {

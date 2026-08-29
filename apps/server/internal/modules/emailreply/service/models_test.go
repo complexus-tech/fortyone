@@ -73,3 +73,19 @@ func TestDecodeInboundWebhookRejectsEmptyAndOversizedBatches(t *testing.T) {
 	_, err = decodeInboundWebhook(raw)
 	require.ErrorIs(t, err, ErrInvalidPayload)
 }
+
+func TestDecodeInboundWebhookRejectsOversizedBodyAndMailboxFanout(t *testing.T) {
+	t.Parallel()
+
+	_, err := decodeInboundWebhook(make([]byte, MaximumInboundWebhookBytes+1))
+	require.ErrorIs(t, err, ErrInvalidPayload)
+
+	recipients := make(Mailboxes, maxInboundMailboxes+1)
+	for index := range recipients {
+		recipients[index] = Mailbox{Address: "person@example.com"}
+	}
+	raw, err := json.Marshal(InboundEmail{From: Mailbox{Address: "sender@example.com"}, To: recipients})
+	require.NoError(t, err)
+	_, err = decodeInboundEmail(raw)
+	require.ErrorIs(t, err, ErrInvalidPayload)
+}

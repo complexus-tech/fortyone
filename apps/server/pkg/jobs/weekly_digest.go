@@ -2,17 +2,17 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	notificationsdomain "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
 	"github.com/complexus-tech/projects-api/pkg/emailcopy"
 	"github.com/complexus-tech/projects-api/pkg/emailthread"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/mailer"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -20,68 +20,92 @@ import (
 const (
 	mayaGuidanceProductVoice = "Calm, concise product guidance that helps the recipient decide what to advance next. Avoid marketing language and notification-system jargon."
 	maxGuidanceEmailRows     = 12
+	weeklyDigestBatchSize    = 100
+	weeklyDigestBatchDelay   = 100 * time.Millisecond
 )
 
-type WeeklyDigestRecipient struct {
-	UserID        uuid.UUID `db:"user_id"`
-	UserEmail     string    `db:"user_email"`
-	UserName      string    `db:"user_name"`
-	WorkspaceID   uuid.UUID `db:"workspace_id"`
-	WorkspaceName string    `db:"workspace_name"`
-	WorkspaceSlug string    `db:"workspace_slug"`
+type WeeklyDigestRecipient = notificationsdomain.WeeklyDigestRecipient
+type WeeklyDigestStats = notificationsdomain.WeeklyDigestStats
+
+// WeeklyDigestStore is the worker-owned persistence capability needed to page
+// current recipients and load one scoped aggregate for each recipient.
+type WeeklyDigestStore interface {
+	ListWeeklyDigestRecipients(context.Context, *notificationsdomain.WeeklyDigestCursor, int) ([]notificationsdomain.WeeklyDigestRecipient, error)
+	GetWeeklyDigestStats(context.Context, notificationsdomain.WeeklyDigestStatsQuery) (notificationsdomain.WeeklyDigestStats, error)
 }
 
-type WeeklyDigestStats struct {
-	UnreadNotifications         int `db:"unread_notifications"`
-	UnreadPriorityNotifications int `db:"unread_priority_notifications"`
-	OverdueStories              int `db:"overdue_stories"`
-	DueThisWeekStories          int `db:"due_this_week_stories"`
-	ObjectiveRisks              int `db:"objective_risks"`
-	TeamComments                int `db:"team_comments"`
-}
-
-func (s WeeklyDigestStats) hasSignal() bool {
-	return s.UnreadPriorityNotifications+
-		s.OverdueStories+
-		s.DueThisWeekStories+
-		s.ObjectiveRisks > 0
+func hasWeeklyDigestSignal(stats WeeklyDigestStats) bool {
+	return stats.UnreadPriorityNotifications+
+		stats.OverdueStories+
+		stats.DueThisWeekStories+
+		stats.ObjectiveRisks > 0
 }
 
 // ProcessWeeklyDigestEmail sends a weekly workspace digest to users with meaningful activity.
-func ProcessWeeklyDigestEmail(ctx context.Context, db *sqlx.DB, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer) error {
+func ProcessWeeklyDigestEmail(ctx context.Context, store WeeklyDigestStore, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer) error {
+	return processWeeklyDigestEmailAt(ctx, store, log, mailerService, copyGenerator, threader, time.Now().UTC())
+}
+
+func processWeeklyDigestEmailAt(
+	ctx context.Context,
+	store WeeklyDigestStore,
+	log *logger.Logger,
+	mailerService mailer.Service,
+	copyGenerator emailcopy.Generator,
+	threader emailthread.GuidancePreparer,
+	asOf time.Time,
+) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessWeeklyDigestEmail")
 	defer span.End()
+	if store == nil {
+		return errors.New("weekly digest store is required")
+	}
+	if log == nil {
+		return errors.New("weekly digest logger is required")
+	}
+	if mailerService == nil {
+		return errors.New("weekly digest mailer is required")
+	}
+	if asOf.IsZero() {
+		return errors.New("weekly digest as-of time is required")
+	}
+	asOf = asOf.UTC()
 
 	log.Info(ctx, "Processing weekly digest emails")
 	startTime := time.Now()
 
-	const recipientBatchSize = 100
 	totalProcessed := 0
 	totalEmailsSent := 0
 	batchCount := 0
+	var cursor *notificationsdomain.WeeklyDigestCursor
 
 	for {
-		batchCount++
-		recipients, err := getWeeklyDigestRecipients(ctx, db, recipientBatchSize, batchCount-1)
+		nextBatch := batchCount + 1
+		recipients, err := store.ListWeeklyDigestRecipients(ctx, cursor, weeklyDigestBatchSize)
 		if err != nil {
 			span.RecordError(err)
-			return fmt.Errorf("failed to get weekly digest recipients batch %d: %w", batchCount, err)
+			return fmt.Errorf("list weekly digest recipients batch %d: %w", nextBatch, err)
 		}
 		if len(recipients) == 0 {
 			break
 		}
+		batchCount = nextBatch
 
 		results, batchErr := processGuidanceEmailBatch(ctx, recipients, func(batchCtx context.Context, recipient WeeklyDigestRecipient) guidanceEmailBatchResult {
 			return processGuidanceEmailRecipient(batchCtx, func(attemptCtx context.Context) guidanceEmailBatchResult {
-				stats, statsErr := getWeeklyDigestStats(attemptCtx, db, recipient.UserID, recipient.WorkspaceID)
+				stats, statsErr := store.GetWeeklyDigestStats(attemptCtx, notificationsdomain.WeeklyDigestStatsQuery{
+					UserID:      recipient.UserID,
+					WorkspaceID: recipient.WorkspaceID,
+					AsOf:        asOf,
+				})
 				if statsErr != nil {
 					log.Error(attemptCtx, "Failed to get weekly digest stats", "user_id", recipient.UserID, "workspace_id", recipient.WorkspaceID, "error", statsErr)
 					return guidanceEmailBatchResult{Err: statsErr, Retryable: true}
 				}
-				if !stats.hasSignal() {
+				if !hasWeeklyDigestSignal(stats) {
 					return guidanceEmailBatchResult{Processed: true}
 				}
-				if sendErr := sendWeeklyDigestEmail(attemptCtx, log, mailerService, copyGenerator, threader, recipient, stats); sendErr != nil {
+				if sendErr := sendWeeklyDigestEmail(attemptCtx, log, mailerService, copyGenerator, threader, recipient, stats, asOf); sendErr != nil {
 					log.Error(attemptCtx, "Failed to send weekly digest email", "user_id", recipient.UserID, "workspace_id", recipient.WorkspaceID, "error", sendErr)
 					return guidanceEmailBatchResult{Err: sendErr}
 				}
@@ -105,7 +129,18 @@ func ProcessWeeklyDigestEmail(ctx context.Context, db *sqlx.DB, log *logger.Logg
 			span.AddEvent("weekly digest recipient deliveries failed", trace.WithAttributes(attribute.Int("failed_recipients", failureCount)))
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		lastRecipient := recipients[len(recipients)-1]
+		cursor = &notificationsdomain.WeeklyDigestCursor{
+			WorkspaceID: lastRecipient.WorkspaceID,
+			UserID:      lastRecipient.UserID,
+		}
+		if len(recipients) < weeklyDigestBatchSize {
+			break
+		}
+		if err := waitForNextWeeklyDigestBatch(ctx); err != nil {
+			span.RecordError(err)
+			return fmt.Errorf("wait before weekly digest batch %d: %w", batchCount+1, err)
+		}
 	}
 
 	duration := time.Since(startTime)
@@ -124,281 +159,19 @@ func ProcessWeeklyDigestEmail(ctx context.Context, db *sqlx.DB, log *logger.Logg
 	return nil
 }
 
-func getWeeklyDigestRecipients(ctx context.Context, db *sqlx.DB, batchSize int, offset int) ([]WeeklyDigestRecipient, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.getWeeklyDigestRecipients")
-	defer span.End()
+func waitForNextWeeklyDigestBatch(ctx context.Context) error {
+	timer := time.NewTimer(weeklyDigestBatchDelay)
+	defer timer.Stop()
 
-	query := weeklyDigestRecipientsQuery()
-
-	params := map[string]any{
-		"batch_size": batchSize,
-		"offset":     offset * batchSize,
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
-
-	stmt, err := db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to prepare weekly digest recipients query: %w", err)
-	}
-	defer stmt.Close()
-
-	var recipients []WeeklyDigestRecipient
-	if err := stmt.SelectContext(ctx, &recipients, params); err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to execute weekly digest recipients query: %w", err)
-	}
-
-	span.AddEvent("weekly digest recipients retrieved", trace.WithAttributes(
-		attribute.Int("recipients.count", len(recipients)),
-		attribute.Int("batch_size", batchSize),
-		attribute.Int("offset", offset),
-	))
-	return recipients, nil
 }
 
-func weeklyDigestRecipientsQuery() string {
-	return `
-		SELECT
-			wm.user_id,
-			u.email AS user_email,
-			COALESCE(NULLIF(u.full_name, ''), u.username) AS user_name,
-			w.workspace_id,
-			w.name AS workspace_name,
-			w.slug AS workspace_slug
-		FROM workspace_members wm
-		INNER JOIN users u ON wm.user_id = u.user_id
-		INNER JOIN workspaces w ON wm.workspace_id = w.workspace_id
-		LEFT JOIN notification_preferences np ON wm.user_id = np.user_id
-			AND wm.workspace_id = np.workspace_id
-		WHERE u.is_active = true
-			AND u.is_system = false
-			AND wm.role IN ('admin', 'member')
-			AND w.deleted_at IS NULL
-			AND NULLIF(TRIM(u.email), '') IS NOT NULL
-			AND CAST(COALESCE(np.preferences -> 'weekly_digest' ->> 'email', 'true') AS BOOLEAN) = true
-		ORDER BY w.workspace_id, wm.user_id
-		LIMIT :batch_size OFFSET :offset;
-	`
-}
-
-func getWeeklyDigestStats(ctx context.Context, db *sqlx.DB, userID, workspaceID uuid.UUID) (WeeklyDigestStats, error) {
-	ctx, span := web.AddSpan(ctx, "jobs.getWeeklyDigestStats")
-	defer span.End()
-
-	query := weeklyDigestStatsQuery()
-
-	params := map[string]any{
-		"user_id":      userID,
-		"workspace_id": workspaceID,
-	}
-
-	stmt, err := db.PrepareNamedContext(ctx, query)
-	if err != nil {
-		span.RecordError(err)
-		return WeeklyDigestStats{}, fmt.Errorf("failed to prepare weekly digest stats query: %w", err)
-	}
-	defer stmt.Close()
-
-	var stats WeeklyDigestStats
-	if err := stmt.GetContext(ctx, &stats, params); err != nil {
-		span.RecordError(err)
-		return WeeklyDigestStats{}, fmt.Errorf("failed to execute weekly digest stats query: %w", err)
-	}
-
-	span.AddEvent("weekly digest stats retrieved", trace.WithAttributes(
-		attribute.String("user_id", userID.String()),
-		attribute.String("workspace_id", workspaceID.String()),
-		attribute.Int("unread_notifications", stats.UnreadNotifications),
-		attribute.Int("overdue_stories", stats.OverdueStories),
-		attribute.Int("due_this_week_stories", stats.DueThisWeekStories),
-		attribute.Int("objective_risks", stats.ObjectiveRisks),
-		attribute.Int("team_comments", stats.TeamComments),
-	))
-	return stats, nil
-}
-
-func weeklyDigestStatsQuery() string {
-	return `
-		WITH recipient_access AS (
-			SELECT wm.role
-			FROM workspace_members wm
-			INNER JOIN workspaces w ON w.workspace_id = wm.workspace_id
-			WHERE wm.user_id = :user_id
-				AND wm.workspace_id = :workspace_id
-				AND wm.role IN ('admin', 'member')
-				AND w.deleted_at IS NULL
-		),
-		visible_teams AS (
-			SELECT tm.team_id
-			FROM team_members tm
-			WHERE tm.user_id = :user_id
-		),
-		accessible_notifications AS (
-			SELECT n.notification_id, n.type, n.created_at
-			FROM notifications n
-			WHERE n.recipient_id = :user_id
-				AND n.workspace_id = :workspace_id
-				AND n.read_at IS NULL
-				AND (
-					(
-						CAST(n.entity_type AS TEXT) = 'feedback'
-						AND EXISTS (
-							SELECT 1
-							FROM feedback_items feedback
-							WHERE feedback.id = n.entity_id
-								AND feedback.workspace_id = n.workspace_id
-								AND feedback.deleted_at IS NULL
-						)
-					)
-					OR (
-						EXISTS (SELECT 1 FROM recipient_access)
-						AND (
-							(
-								CAST(n.entity_type AS TEXT) = 'story'
-								AND EXISTS (
-									SELECT 1
-									FROM stories story
-									WHERE story.id = n.entity_id
-										AND story.workspace_id = n.workspace_id
-										AND story.deleted_at IS NULL
-										AND (
-											EXISTS (SELECT 1 FROM recipient_access WHERE role = 'admin')
-											OR story.team_id IN (SELECT team_id FROM visible_teams)
-										)
-								)
-							)
-							OR (
-								CAST(n.entity_type AS TEXT) = 'comment'
-								AND EXISTS (
-									SELECT 1
-									FROM story_comments comment
-									INNER JOIN stories story ON story.id = comment.story_id
-									WHERE comment.comment_id = n.entity_id
-										AND story.workspace_id = n.workspace_id
-										AND story.deleted_at IS NULL
-										AND (
-											EXISTS (SELECT 1 FROM recipient_access WHERE role = 'admin')
-											OR story.team_id IN (SELECT team_id FROM visible_teams)
-										)
-								)
-							)
-							OR (
-								CAST(n.entity_type AS TEXT) = 'objective'
-								AND EXISTS (
-									SELECT 1
-									FROM objectives objective
-									WHERE objective.objective_id = n.entity_id
-										AND objective.workspace_id = n.workspace_id
-										AND (
-											EXISTS (SELECT 1 FROM recipient_access WHERE role = 'admin')
-											OR objective.team_id IN (SELECT team_id FROM visible_teams)
-										)
-								)
-							)
-							OR (
-								CAST(n.entity_type AS TEXT) = 'key_result'
-								AND EXISTS (
-									SELECT 1
-									FROM key_results key_result
-									INNER JOIN objectives objective ON objective.objective_id = key_result.objective_id
-									WHERE key_result.id = n.entity_id
-										AND objective.workspace_id = n.workspace_id
-										AND (
-											EXISTS (SELECT 1 FROM recipient_access WHERE role = 'admin')
-											OR objective.team_id IN (SELECT team_id FROM visible_teams)
-										)
-								)
-							)
-							OR (
-								CAST(n.entity_type AS TEXT) = 'strategy'
-								AND (
-									EXISTS (SELECT 1 FROM recipient_access WHERE role = 'admin')
-									OR n.message -> 'strategy' ->> 'kind' = 'weekly_check_in'
-								)
-							)
-						)
-					)
-				)
-		)
-		SELECT
-			CAST((
-				SELECT COUNT(*)
-				FROM accessible_notifications
-			) AS int) AS unread_notifications,
-			CAST((
-				SELECT COUNT(*)
-				FROM accessible_notifications notification
-				WHERE notification.created_at >= NOW() - INTERVAL '7 days'
-					AND notification.type IN ('mention', 'comment_reply')
-			) AS int) AS unread_priority_notifications,
-			CAST((
-				SELECT COUNT(*)
-				FROM stories s
-				INNER JOIN statuses st ON s.status_id = st.status_id
-				WHERE s.assignee_id = :user_id
-					AND s.workspace_id = :workspace_id
-					AND EXISTS (SELECT 1 FROM recipient_access)
-					AND s.end_date < CURRENT_DATE
-					AND st.category NOT IN ('completed', 'cancelled', 'paused')
-					AND s.deleted_at IS NULL
-					AND s.archived_at IS NULL
-					AND s.completed_at IS NULL
-					AND (
-						EXISTS (SELECT 1 FROM recipient_access WHERE role = 'admin')
-						OR s.team_id IN (SELECT team_id FROM visible_teams)
-					)
-			) AS int) AS overdue_stories,
-			CAST((
-				SELECT COUNT(*)
-				FROM stories s
-				INNER JOIN statuses st ON s.status_id = st.status_id
-				WHERE s.assignee_id = :user_id
-					AND s.workspace_id = :workspace_id
-					AND EXISTS (SELECT 1 FROM recipient_access)
-					AND s.end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
-					AND st.category NOT IN ('completed', 'cancelled', 'paused')
-					AND s.deleted_at IS NULL
-					AND s.archived_at IS NULL
-					AND s.completed_at IS NULL
-					AND (
-						EXISTS (SELECT 1 FROM recipient_access WHERE role = 'admin')
-						OR s.team_id IN (SELECT team_id FROM visible_teams)
-					)
-			) AS int) AS due_this_week_stories,
-			CAST((
-				SELECT COUNT(*)
-				FROM objectives o
-				INNER JOIN objective_statuses os ON o.status_id = os.status_id
-				INNER JOIN workspace_settings ws ON o.workspace_id = ws.workspace_id
-				WHERE o.lead_user_id = :user_id
-					AND o.workspace_id = :workspace_id
-					AND EXISTS (SELECT 1 FROM recipient_access)
-					AND o.end_date BETWEEN CURRENT_DATE - INTERVAL '7 days' AND CURRENT_DATE + INTERVAL '7 days'
-					AND os.category NOT IN ('completed', 'cancelled', 'paused')
-					AND ws.objective_enabled = true
-					AND (
-						EXISTS (SELECT 1 FROM recipient_access WHERE role = 'admin')
-						OR o.team_id IN (SELECT team_id FROM visible_teams)
-					)
-			) AS int) AS objective_risks,
-			CAST((
-				SELECT COUNT(*)
-				FROM story_comments sc
-				INNER JOIN stories s ON sc.story_id = s.id
-				WHERE s.workspace_id = :workspace_id
-					AND EXISTS (SELECT 1 FROM recipient_access)
-					AND sc.commenter_id <> :user_id
-					AND sc.created_at >= NOW() - INTERVAL '7 days'
-					AND s.deleted_at IS NULL
-					AND (
-						EXISTS (SELECT 1 FROM recipient_access WHERE role = 'admin')
-						OR s.team_id IN (SELECT team_id FROM visible_teams)
-					)
-			) AS int) AS team_comments;
-	`
-}
-
-func sendWeeklyDigestEmail(ctx context.Context, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer, recipient WeeklyDigestRecipient, stats WeeklyDigestStats) error {
+func sendWeeklyDigestEmail(ctx context.Context, log *logger.Logger, mailerService mailer.Service, copyGenerator emailcopy.Generator, threader emailthread.GuidancePreparer, recipient WeeklyDigestRecipient, stats WeeklyDigestStats, asOf time.Time) error {
 	if strings.TrimSpace(recipient.UserEmail) == "" {
 		log.Info(ctx, "Skipping weekly digest because user email is empty", "user_id", recipient.UserID, "workspace_id", recipient.WorkspaceID)
 		return nil
@@ -442,7 +215,7 @@ func sendWeeklyDigestEmail(ctx context.Context, log *logger.Logger, mailerServic
 		"NotificationCTALabel":     ctaLabel,
 		"NotificationsSettingsURL": fmt.Sprintf("%s/settings/account/notifications", workspaceURL),
 	}
-	messageID := guidanceEmailMessageID("weekly-digest", recipient.WorkspaceID, recipient.UserID, time.Now())
+	messageID := guidanceEmailMessageID("weekly-digest", recipient.WorkspaceID, recipient.UserID, asOf)
 	threadContext, err := emailthread.EncodeThreadContext(emailthread.ThreadContext{
 		Source:        "weekly_digest",
 		WorkspaceSlug: recipient.WorkspaceSlug,
@@ -480,8 +253,7 @@ func sendWeeklyDigestEmail(ctx context.Context, log *logger.Logger, mailerServic
 
 	log.Info(ctx, "Successfully sent weekly digest email",
 		"user_id", recipient.UserID,
-		"workspace_id", recipient.WorkspaceID,
-		"user_email", recipient.UserEmail)
+		"workspace_id", recipient.WorkspaceID)
 	return nil
 }
 

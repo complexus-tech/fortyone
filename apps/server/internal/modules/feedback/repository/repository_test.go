@@ -3,6 +3,7 @@ package feedbackrepository
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,362 +13,131 @@ import (
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 )
 
-func repositoryMethodSource(t *testing.T, filename, method string) string {
+func TestCreateBoardRejectsOrderIndexOutsidePostgresIntegerRange(t *testing.T) {
+	t.Parallel()
+
+	repository := newWithQueries(nil, nil)
+	_, err := repository.CreateBoard(t.Context(), feedback.CoreBoardInput{OrderIndex: math.MaxInt})
+
+	require.ErrorIs(t, err, feedback.ErrInvalidInput)
+}
+
+func readFeedbackQueries(t *testing.T, name string) string {
 	t.Helper()
-	data, err := os.ReadFile(filename)
+	contents, err := os.ReadFile(filepath.Join("queries", name))
 	require.NoError(t, err)
-	source := string(data)
-	startMarker := "func (r *Repo) " + method + "("
-	start := strings.Index(source, startMarker)
-	require.NotEqual(t, -1, start, "method %s not found in %s", method, filename)
-	rest := source[start+len(startMarker):]
-	next := strings.Index(rest, "\nfunc (r *Repo) ")
-	if next < 0 {
-		return source[start:]
-	}
-	return source[start : start+len(startMarker)+next]
+	return string(contents)
 }
 
-func TestFeedbackMutationQueriesRejectMergedSources(t *testing.T) {
+func TestAuthenticatedFeedbackQueriesFenceCurrentActorWorkspaceAndTeam(t *testing.T) {
 	t.Parallel()
-	for _, method := range []string{
-		"UpdateItemStatus",
-		"UpdateItemStatusIfUnchanged",
-		"TrashItem",
-		"RestoreItem",
-		"CreateComment",
-		"ToggleVote",
-		"LinkStory",
-	} {
-		body := repositoryMethodSource(t, "repository.go", method)
-		require.Contains(t, body, "merged_into_item_id IS NULL", "%s must reject a merged source", method)
+
+	for _, name := range []string{"community.sql", "items.sql", "merges.sql", "story_links.sql"} {
+		queries := readFeedbackQueries(t, name)
+		require.Contains(t, queries, "workspace_members", name)
+		require.Contains(t, queries, "team_members", name)
+		require.Contains(t, queries, "current_actor.is_active = true", name)
+		require.Contains(t, queries, "current_actor.is_system = false", name)
+		require.Contains(t, queries, "credential_team_ids", name)
 	}
-	for _, method := range []string{
-		"CreateContributorComment",
-		"ToggleContributorVote",
-		"GetItemFollow",
-		"SetItemFollow",
-	} {
-		body := repositoryMethodSource(t, "next_phase.go", method)
-		require.Contains(t, body, "merged_into_item_id IS NULL", "%s must reject a merged source", method)
-	}
-	trashBody := repositoryMethodSource(t, "repository.go", "TrashItem")
-	require.Contains(t, trashBody, "merged_source.merged_into_item_id = feedback_items.id")
-	require.Contains(t, trashBody, "return feedback.ErrMergeConflict")
 }
 
-func TestPublicAuthorMaskingNeverMasksAccountsOrLeaksMaskedGuestAvatars(t *testing.T) {
+func TestFeedbackMutationsRejectDeletedOrMergedItems(t *testing.T) {
 	t.Parallel()
 
-	publicQueries := []string{
-		repositoryMethodSource(t, "repository.go", "ListComments"),
-		repositoryMethodSource(t, "repository.go", "ListItemComments"),
-		repositoryMethodSource(t, "repository.go", "GetComment"),
-		repositoryMethodSource(t, "repository.go", "ListSimilarItems"),
-		itemSelectQuery(),
-		repositoryMethodSource(t, "next_phase.go", "CreateContributorComment"),
+	for _, name := range []string{"community.sql", "items.sql", "merges.sql", "story_links.sql", "updates.sql"} {
+		queries := readFeedbackQueries(t, name)
+		require.Contains(t, queries, "deleted_at IS NULL", name)
+		require.Contains(t, queries, "merged_into_item_id IS NULL", name)
 	}
-	for _, query := range publicQueries {
-		require.Contains(t, query, "contributor.kind IN ('verified_guest', 'external')")
-		require.Contains(t, query, "portal.guest_identity_policy = 'always_mask_guests'")
-		require.Contains(t, query, "THEN NULL")
-		require.NotContains(t, query, "contributor.kind = 'anonymous' OR contributor.public_masked")
+}
+
+func TestPublicIdentityQueriesMaskGuestContactDetails(t *testing.T) {
+	t.Parallel()
+
+	for _, name := range []string{"community.sql", "items.sql"} {
+		queries := readFeedbackQueries(t, name)
+		require.Contains(t, queries, "guest_identity_policy = 'always_mask_guests'", name)
+		require.Contains(t, queries, "contributor.kind IN ('verified_guest', 'external')", name)
+		require.Contains(t, queries, "THEN 'Anonymous'", name)
+		require.NotContains(t, queries, "THEN CAST(NULL AS text)", name)
 	}
-
-	privateAuthorQuery := repositoryMethodSource(t, "repository.go", "GetPrivateAuthor")
-	require.Contains(t, privateAuthorQuery, "contributor.kind IN ('verified_guest', 'external')")
-	require.NotContains(t, privateAuthorQuery, "contributor.kind <> 'anonymous'")
 }
 
-func TestMergeAudienceRechecksTargetFollowAndCurrentEligibility(t *testing.T) {
-	t.Parallel()
-	body := repositoryMethodSource(t, "next_phase.go", "ListMergeRecipients")
-	require.Contains(t, body, "target_follower.item_id = $2")
-	require.Contains(t, body, "target_follower.unsubscribed_at IS NULL")
-	require.Contains(t, body, "contributor.blocked_at IS NULL")
-	require.Contains(t, body, "preference.email_unsubscribed_at IS NULL")
-}
-
-func TestWidgetSettingsUpsertPreservesOptionalIdentityAndCreatesMissingSettings(t *testing.T) {
+func TestFeedbackApplicationQueriesAvoidPostgresShorthandCasts(t *testing.T) {
 	t.Parallel()
 
-	require.Contains(t, upsertWidgetSettingsQuery, "LEFT JOIN feedback_widget_settings settings")
-	require.Contains(t, upsertWidgetSettingsQuery, "settings.signing_secret_encrypted")
-	require.Contains(t, upsertWidgetSettingsQuery, "COALESCE(signing_secret_version, 0)")
-	require.Contains(t, upsertWidgetSettingsQuery, "COALESCE(widget_key_id, gen_random_uuid())")
-	require.Contains(t, upsertWidgetSettingsQuery, "ON CONFLICT (portal_id) DO UPDATE")
-	require.Contains(t, upsertWidgetSettingsQuery, "SET enabled = EXCLUDED.enabled")
-}
-
-func TestAnonymousParticipationMigrationPreservesFeedbackIdentityLifecycle(t *testing.T) {
-	t.Parallel()
-
-	data, err := os.ReadFile(filepath.Join("..", "..", "..", "migrations", "000119_feedback_anonymous_participation.up.sql"))
+	entries, err := filepath.Glob(filepath.Join("queries", "*.sql"))
 	require.NoError(t, err)
-	migration := string(data)
-	require.Contains(t, migration, "participation_mode IN ('account_required', 'anonymous_allowed')")
+	require.NotEmpty(t, entries)
+	for _, entry := range entries {
+		contents, readErr := os.ReadFile(entry)
+		require.NoError(t, readErr)
+		require.NotContains(t, string(contents), "::", filepath.Base(entry))
+	}
+}
+
+func TestAnonymousParticipationMigrationPreservesIdentityLifecycle(t *testing.T) {
+	t.Parallel()
+
+	contents, err := os.ReadFile(filepath.Join("..", "..", "..", "migrations", "000119_feedback_anonymous_participation.up.sql"))
+	require.NoError(t, err)
+	migration := string(contents)
 	require.Contains(t, migration, "one unlinkable anonymous contributor each")
 	require.Contains(t, migration, "ON DELETE SET NULL")
 	require.Contains(t, migration, "ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED")
-	require.NotContains(t, migration, "feedback_contributor_sessions")
 }
 
-func TestIsPrimaryStoryConflictRecognizesPGXConstraintError(t *testing.T) {
-	err := fmt.Errorf("insert primary feedback story: %w", &pgconn.PgError{
-		Code:           "23505",
-		ConstraintName: "feedback_story_links_one_primary_per_item",
-	})
+func TestConstraintErrorsMapToFiniteFeedbackErrors(t *testing.T) {
+	t.Parallel()
 
-	require.True(t, isPrimaryStoryConflict(err))
+	primaryErr := fmt.Errorf("insert primary feedback story: %w", &pgconn.PgError{
+		Code: uniqueViolation, ConstraintName: "feedback_story_links_one_primary_per_item",
+	})
+	require.True(t, isPrimaryStoryConflict(primaryErr))
 	require.False(t, isPrimaryStoryConflict(errors.New("database unavailable")))
+
+	boardErr := &pgconn.PgError{Code: uniqueViolation, ConstraintName: "feedback_boards_workspace_team_unique"}
+	require.ErrorIs(t, normalizeBoardWriteError(boardErr), feedback.ErrBoardExists)
 }
 
-func TestIsBoardTeamConflictRecognizesPGXConstraintError(t *testing.T) {
-	err := fmt.Errorf("insert feedback board: %w", &pgconn.PgError{
-		Code:           "23505",
-		ConstraintName: "feedback_boards_workspace_team_unique",
-	})
+func TestItemProjectionIncludesPrimaryLinkAndExplicitIdentity(t *testing.T) {
+	t.Parallel()
 
-	require.True(t, isBoardTeamConflict(err))
-	require.False(t, isBoardTeamConflict(errors.New("database unavailable")))
-}
-
-func TestItemSelectQuerySupportsNamedPaginationParameters(t *testing.T) {
-	query := fmt.Sprintf(
-		"%s WHERE fi.portal_id = :portal_id ORDER BY fi.created_at DESC LIMIT :limit OFFSET :offset",
-		itemSelectQuery(),
-	)
-
-	boundQuery, args, err := sqlx.BindNamed(sqlx.DOLLAR, query, map[string]any{
-		"portal_id": uuid.New(),
-		"limit":     21,
-		"offset":    0,
-	})
-
-	require.NoError(t, err)
-	require.Len(t, args, 3)
-	require.False(t, strings.Contains(boundQuery, ":"), "bound query contains an uncompiled named parameter")
-}
-
-func TestBuildListContributorCommentsQueryScopesAndPaginates(t *testing.T) {
-	portalID := uuid.New()
-	authorID := uuid.New()
-	query, params := buildListContributorCommentsQuery(feedback.CoreListContributorCommentsInput{
-		PortalID: portalID,
-		AuthorID: authorID,
-		Page:     3,
-		PageSize: 20,
-	})
-
-	require.Contains(t, query, "fi.portal_id = :portal_id")
-	require.Contains(t, query, "fc.author_id = :author_id")
-	require.Contains(t, query, "ORDER BY fc.created_at DESC, fc.id DESC")
-	require.Contains(t, query, "LIMIT :limit OFFSET :offset")
-	require.Equal(t, portalID, params["portal_id"])
-	require.Equal(t, authorID, params["author_id"])
-	require.Equal(t, 21, params["limit"])
-	require.Equal(t, 40, params["offset"])
-
-	boundQuery, args, err := sqlx.BindNamed(sqlx.DOLLAR, query, params)
-	require.NoError(t, err)
-	require.Len(t, args, 4)
-	require.False(t, strings.Contains(boundQuery, ":"), "bound query contains an uncompiled named parameter")
-}
-
-func TestBuildListItemsQueryUsesFullTextSearchAndFilters(t *testing.T) {
-	portalID := uuid.New()
-	itemID := uuid.New()
-	boardID := uuid.New()
-	authorID := uuid.New()
-	query, params := buildListItemsQuery(feedback.CoreListItemsInput{
-		PortalID: portalID,
-		ItemID:   itemID,
-		BoardID:  &boardID,
-		AuthorID: authorID,
-		Status:   feedback.StatusReviewing,
-		Search:   `traffic lights -closed`,
-		Sort:     "top",
-		Page:     2,
-		PageSize: 20,
-	})
-
-	require.Contains(t, query, feedbackItemSearchVector+" @@ websearch_to_tsquery('english', :search)")
-	require.Contains(t, query, projectedFeedbackStatus+" = :status")
-	require.Contains(t, query, "fi.board_id = :board_id")
-	require.Contains(t, query, "fi.author_id = :author_id")
-	require.Contains(t, query, "fi.id = :item_id")
-	require.Contains(t, query, "ORDER BY vote_count DESC, fi.created_at DESC")
-	require.Contains(t, query, "fi.deleted_at IS NULL")
-	require.Equal(t, portalID, params["portal_id"])
-	require.Equal(t, itemID, params["item_id"])
-	require.Equal(t, boardID, params["board_id"])
-	require.Equal(t, authorID, params["author_id"])
-	require.Equal(t, feedback.StatusReviewing, params["status"])
-	require.Equal(t, `traffic lights -closed`, params["search"])
-	require.Equal(t, 21, params["limit"])
-	require.Equal(t, 20, params["offset"])
-}
-
-func TestBuildListItemsQueryScopesTeamFeedbackAcrossBoards(t *testing.T) {
-	workspaceID := uuid.New()
-	teamID := uuid.New()
-	viewerID := uuid.New()
-	query, params := buildListItemsQuery(feedback.CoreListItemsInput{
-		WorkspaceID: workspaceID,
-		TeamID:      &teamID,
-		ViewerID:    viewerID,
-		Status:      "active",
-		Sort:        "newest",
-		Page:        1,
-		PageSize:    25,
-	})
-
-	require.Contains(t, query, "fi.workspace_id = :workspace_id")
-	require.Contains(t, query, "fb.team_id = :team_id")
-	require.Contains(t, query, "feedback_read.user_id = :viewer_id")
-	require.Contains(t, query, "feedback_read.read_at")
-	require.Contains(t, query, projectedFeedbackStatus+" IN ('pending', 'reviewing', 'planned', 'in_progress')")
-	require.NotContains(t, query, "fi.portal_id = :portal_id")
-	require.Equal(t, workspaceID, params["workspace_id"])
-	require.Equal(t, teamID, params["team_id"])
-	require.Equal(t, viewerID, params["viewer_id"])
-}
-
-func TestBuildListItemsQueryScopesTrashToRecoveryWindow(t *testing.T) {
-	teamID := uuid.New()
-	query, _ := buildListItemsQuery(feedback.CoreListItemsInput{
-		WorkspaceID: uuid.New(),
-		TeamID:      &teamID,
-		Status:      "all",
-		Page:        1,
-		PageSize:    25,
-		DeletedOnly: true,
-	})
-
-	require.Contains(t, query, "fi.deleted_at IS NOT NULL")
-	require.Contains(t, query, "fi.deleted_at >= NOW() - INTERVAL '30 days'")
-	require.NotContains(t, query, "fi.deleted_at IS NULL")
-}
-
-func TestProjectedFeedbackStatusCoversEveryStoryCategory(t *testing.T) {
-	expected := map[string]string{
-		"backlog":   "reviewing",
-		"unstarted": "planned",
-		"started":   "in_progress",
-		"paused":    "planned",
-		"completed": "completed",
-		"cancelled": "closed",
-	}
-
-	for category, status := range expected {
-		require.Contains(t, projectedFeedbackStatus, "projected_state.category = '"+category+"'")
-		require.Contains(t, projectedFeedbackStatus, "THEN '"+status+"'")
-	}
-	query := itemSelectQuery()
-	require.Contains(t, query, "fsl.is_primary = true")
-	require.Contains(t, query, "fv.direction = 1) AS integer) AS upvote_count")
-	require.Contains(t, query, "fv.direction = -1) AS integer) AS downvote_count")
-}
-
-func TestToCoreItemIncludesPrimaryStoryLink(t *testing.T) {
-	itemID := uuid.New()
-	workspaceID := uuid.New()
-	linkID := uuid.New()
-	storyID := uuid.New()
+	itemID, workspaceID, portalID, boardID := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+	linkID, storyID := uuid.New(), uuid.New()
+	createdAt := time.Now().UTC()
 	relationship := feedback.RelationshipCreatedFrom
-	storyTitle := "Repair the traffic signals"
-	readAt := time.Now().Add(-time.Minute)
-	createdAt := time.Now()
-
-	item := toCoreItem(itemRow{
-		ID:                itemID,
-		WorkspaceID:       workspaceID,
-		PrimaryLinkID:     &linkID,
-		PrimaryStoryID:    &storyID,
-		PrimaryStoryTitle: &storyTitle,
-		PrimaryRelation:   &relationship,
-		PrimaryCreatedAt:  &createdAt,
-		ReadAt:            &readAt,
-		UpvoteCount:       8,
-		DownvoteCount:     3,
-	})
-
-	require.Len(t, item.StoryLinks, 1)
-	require.Equal(t, linkID, item.StoryLinks[0].ID)
-	require.Equal(t, storyID, item.StoryLinks[0].StoryID)
-	require.Equal(t, storyTitle, item.StoryLinks[0].StoryTitle)
-	require.True(t, item.StoryLinks[0].IsPrimary)
-	require.Equal(t, readAt, *item.ReadAt)
-	require.Equal(t, 8, item.UpvoteCount)
-	require.Equal(t, 3, item.DownvoteCount)
-}
-
-func TestToCoreBoardReviewerMapsDigestPreference(t *testing.T) {
-	userID := uuid.New()
-	reviewer := toCoreBoardReviewer(boardReviewerRow{
-		UserID:         userID,
-		Name:           "Ada Lovelace",
-		Email:          "ada@example.com",
-		Role:           "admin",
-		EmailFrequency: feedback.EmailFrequencyDaily,
-	})
-
-	require.Equal(t, userID, reviewer.UserID)
-	require.Equal(t, "Ada Lovelace", reviewer.Name)
-	require.Equal(t, "ada@example.com", reviewer.Email)
-	require.Equal(t, "admin", reviewer.Role)
-	require.Equal(t, feedback.EmailFrequencyDaily, reviewer.EmailFrequency)
-}
-
-func TestToCoreContributorMapsProfileAndNetVoteScore(t *testing.T) {
-	authorID := uuid.New()
-	joinedAt := time.Now().AddDate(-1, 0, 0)
+	title := "Repair traffic signals"
 	avatar := "profiles/ada.webp"
+	item := (itemProjection{ID: itemID, WorkspaceID: workspaceID, PortalID: portalID, BoardID: boardID,
+		AuthorName: "Ada", AuthorEmail: "ada@example.com", AuthorAvatar: &avatar,
+		PrimaryLinkID: &linkID, PrimaryStoryID: &storyID, PrimaryStoryTitle: &title,
+		PrimaryRelationship: &relationship, PrimaryCreatedAt: &createdAt}).core()
 
-	contributor := toCoreContributor(contributorRow{
-		ID:            authorID,
-		Name:          "Ada Lovelace",
-		AvatarURL:     &avatar,
-		JoinedAt:      joinedAt,
-		FeedbackCount: 4,
-		CommentCount:  7,
-		VoteScore:     -3,
-	})
-
-	require.Equal(t, authorID, contributor.ID)
-	require.Equal(t, "Ada Lovelace", contributor.Name)
-	require.Equal(t, avatar, *contributor.AvatarURL)
-	require.Equal(t, joinedAt, contributor.JoinedAt)
-	require.Equal(t, 4, contributor.Stats.FeedbackCount)
-	require.Equal(t, 7, contributor.Stats.CommentCount)
-	require.Equal(t, -3, contributor.Stats.VoteScore)
+	require.Equal(t, "Ada", item.AuthorName)
+	require.Equal(t, "ada@example.com", item.AuthorEmail)
+	require.Equal(t, avatar, *item.AuthorAvatar)
+	require.Len(t, item.StoryLinks, 1)
+	require.Equal(t, storyID, item.StoryLinks[0].StoryID)
 }
 
-func TestBuildListItemsQuerySortsFeedback(t *testing.T) {
-	tests := []struct {
-		name    string
-		sort    string
-		orderBy string
-	}{
-		{name: "top", sort: "top", orderBy: "vote_count DESC, fi.created_at DESC"},
-		{name: "newest", sort: "newest", orderBy: "fi.created_at DESC"},
-		{name: "oldest", sort: "oldest", orderBy: "fi.created_at ASC"},
-	}
+func TestFeedbackRepositoryContainsNoRawApplicationSQL(t *testing.T) {
+	t.Parallel()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			query, _ := buildListItemsQuery(feedback.CoreListItemsInput{
-				PortalID: uuid.New(),
-				Sort:     tt.sort,
-				Page:     1,
-				PageSize: 20,
-			})
-
-			require.Contains(t, query, "ORDER BY "+tt.orderBy)
-		})
+	entries, err := filepath.Glob("*.go")
+	require.NoError(t, err)
+	for _, entry := range entries {
+		if strings.HasSuffix(entry, "_test.go") {
+			continue
+		}
+		contents, readErr := os.ReadFile(entry)
+		require.NoError(t, readErr)
+		source := string(contents)
+		require.NotContains(t, source, "github.com/jmoiron/sqlx", entry)
+		require.NotContains(t, source, "database/sql", entry)
 	}
 }
