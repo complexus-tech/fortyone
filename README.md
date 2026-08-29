@@ -105,19 +105,16 @@ managed hosting projects. The API and worker are built from
 `deployments/docker/dockerfile.worker`, then deployed to the internal ECS
 services by `.github/workflows/ecs-fargate-release.yml`.
 
-The release workflow publishes immutable commit-SHA images to private Amazon
-ECR repositories named by the `ECR_SERVER_REPOSITORY` and
-`ECR_WORKER_REPOSITORY` GitHub repository variables. Both repositories must
-exist in the configured AWS account, and the ECS execution roles must be able
-to pull from them. The workflow fails closed when this private registry contract
-is incomplete.
+The release workflow publishes commit-SHA images to the existing
+`fortyoneapp/server` and `fortyoneapp/worker` Docker Hub repositories. It uses
+the repository's existing Docker Hub credentials, AWS access-key secrets, AWS
+region, and ECS service variables. It does not run production database
+migrations; apply required migrations separately before deploying
+schema-dependent code.
 
-GitHub authenticates to AWS with a short-lived OIDC session by assuming the IAM
-role named by `AWS_DEPLOY_ROLE_ARN`; repository access-key secrets are neither
-required nor accepted by the workflow. Restrict that role's trust policy to this
-repository's protected `main` release subject. Third-party workflow actions are
-pinned to immutable commits and enforced by the API architecture suite. The
-release sequencing and ECS identity contracts are documented in
+Third-party workflow actions are pinned to immutable commits and enforced by
+the API architecture suite. The release sequencing and ECS identity contracts
+are documented in
 [`apps/server/docs/operations/ecs-release.md`](apps/server/docs/operations/ecs-release.md)
 and
 [`apps/server/docs/operations/aws-identity.md`](apps/server/docs/operations/aws-identity.md).
