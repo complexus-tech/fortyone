@@ -25,6 +25,16 @@ const config = {
         destination: "/tasks/:path*",
         permanent: true,
       },
+      {
+        source: "/api",
+        destination: "/api-reference",
+        permanent: true,
+      },
+      {
+        source: "/api/:path*",
+        destination: "/api-reference/:path*",
+        permanent: true,
+      },
     ];
   },
 };

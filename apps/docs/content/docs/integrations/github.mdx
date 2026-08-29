@@ -1,0 +1,38 @@
+---
+title: GitHub
+description: Link code activity and GitHub issues to FortyOne work.
+icon: Workflow
+---
+
+The GitHub integration connects repositories to the teams that own their work.
+It can link pull requests, branches, commits, and issues without giving GitHub
+broader access to FortyOne.
+
+## Capabilities
+
+| Capability              | What it does                                                                |
+| ----------------------- | --------------------------------------------------------------------------- |
+| GitHub App installation | Grants access to selected organizations and repositories                    |
+| Issue sync              | Sends GitHub issues into a chosen FortyOne team, with optional two-way sync |
+| Pull request links      | Connects pull requests, branches, and commits to work items                 |
+| Team automations        | Moves work when an issue or pull request opens, reopens, merges, or closes  |
+| Branch format           | Controls the branch name copied from FortyOne                               |
+
+## Connect GitHub
+
+1. Open **Settings → Integrations → GitHub** as a workspace administrator.
+2. Select **Connect GitHub** and install the FortyOne GitHub App for the intended
+   organization and repositories.
+3. Return to FortyOne and resync if a newly granted repository is not visible.
+4. Link each repository to the team that owns the corresponding work.
+5. Configure team-level GitHub automations only after confirming the sync
+   direction and workflow-state mapping.
+
+Members can also connect their GitHub identity from account settings so commits
+and pull requests are attributed to the right person.
+
+<Callout type="warn" title="Choose sync direction deliberately">
+  Inbound-only sync keeps GitHub as the issue source. Two-way sync allows
+  supported changes to travel in both directions. Test the mapping with one
+  issue before enabling it for an active repository.
+</Callout>

@@ -1,4 +1,5 @@
 {
-  "title": "Workspace Settings",
+  "title": "Workspace",
+  "icon": "Building2",
   "pages": ["general", "members", "terminology"]
 }

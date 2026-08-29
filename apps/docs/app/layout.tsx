@@ -1,9 +1,9 @@
 import "./global.css";
-import { RootProvider } from "fumadocs-ui/provider";
+import { RootProvider } from "fumadocs-ui/provider/next";
 import { cn } from "lib";
 import {
-  Inter,
   Bricolage_Grotesque as BricolageGrotesque,
+  Geist,
 } from "next/font/google";
 import type { Metadata } from "next";
 import Script from "next/script";
@@ -13,8 +13,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://docs.fortyone.app"),
 };
 
-const inter = Inter({
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
+  display: "swap",
+  weight: "variable",
 });
 
 const heading = BricolageGrotesque({
@@ -28,25 +31,21 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={cn(inter.className, heading.variable)}
+      className={cn(geist.variable, heading.variable)}
       suppressHydrationWarning
     >
-      <Script id="brevo-conversations" strategy="afterInteractive">
-        {`
-        (function(d, w, c) {
-            w.BrevoConversationsID = '6834856b58b6d2f7800e0e5e';
-            w[c] = w[c] || function() {
-                (w[c].q = w[c].q || []).push(arguments);
-            };
-            var s = d.createElement('script');
-            s.async = true;
-            s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
-            if (d.head) d.head.appendChild(s);
-        })(document, window, 'BrevoConversations');
-      `}
-      </Script>
       <body className="flex flex-col min-h-screen antialiased">
         <RootProvider>{children}</RootProvider>
+        <Script
+          async
+          data-default-tab="home"
+          data-mode="bubble"
+          data-portal="complexus"
+          data-position="bottom-right"
+          data-theme="auto"
+          src="https://complexus.fortyone.app/api/feedback-widget/v1.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

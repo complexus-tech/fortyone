@@ -1,0 +1,61 @@
+---
+title: API conventions
+description: Build predictable clients around lists, failures, and throttling.
+icon: ListRestart
+---
+
+## Cursor pagination
+
+List operations accept a `limit` from 1 to 100. When another page exists, the
+response includes an opaque cursor:
+
+```json
+{
+  "data": [],
+  "meta": {
+    "nextCursor": "opaque-value"
+  }
+}
+```
+
+Pass that value back as `cursor` without decoding or changing it. A cursor is
+tied to its query context; do not reuse it with different filters or resources.
+
+| Situation                    | Client behavior                             |
+| ---------------------------- | ------------------------------------------- |
+| `nextCursor` is present      | Request the next page with the same filters |
+| `nextCursor` is absent       | Stop; the list is complete                  |
+| Cursor is invalid or expired | Restart from the first page                 |
+
+## Error envelope
+
+Errors use a stable machine-readable code and a safe message:
+
+```json
+{
+  "error": {
+    "code": "forbidden",
+    "message": "You do not have access to this resource."
+  }
+}
+```
+
+Branch on `error.code`, not the prose message. Keep the response `X-Request-ID`
+when you need support.
+
+| Status | Typical meaning                                   | Retry?                             |
+| ------ | ------------------------------------------------- | ---------------------------------- |
+| `400`  | Invalid input or cursor                           | Fix the request                    |
+| `401`  | Missing or invalid credential                     | Refresh or replace the credential  |
+| `403`  | Scope or current access is insufficient           | Change access, not retries         |
+| `404`  | Resource is unavailable to this actor             | Do not probe for ownership         |
+| `409`  | Idempotency conflict or request still in progress | Follow the returned error code     |
+| `429`  | Rate limit reached                                | Wait for `Retry-After`             |
+| `5xx`  | Temporary server failure                          | Retry safe operations with backoff |
+
+## Rate limits
+
+Read `RateLimit`, `RateLimit-Policy`, and `Retry-After` from the response. Use
+bounded exponential backoff with jitter, and cap both retry count and total
+elapsed time. Never retry a mutation unless its operation documents an
+idempotency contract.

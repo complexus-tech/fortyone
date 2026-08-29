@@ -1,0 +1,41 @@
+---
+title: Idempotent writes
+description: Retry supported mutations without creating duplicate work.
+icon: RefreshCw
+---
+
+An idempotency key identifies one logical mutation. FortyOne currently requires
+one when creating a story through the public API.
+
+## The rule
+
+Create one unpredictable key, persist it with the serialized request, and reuse
+both until that operation has definitely succeeded or failed.
+
+```http
+POST /api/v1/workspaces/{workspaceId}/stories
+Idempotency-Key: 7f2c4c2d-ff08-4e70-9dc5-b6f021a91f31
+Content-Type: application/json
+```
+
+| Retry                                       | Result                                   |
+| ------------------------------------------- | ---------------------------------------- |
+| Same key and same body bytes                | Returns the original successful response |
+| Same key and different body bytes           | Rejected with `idempotency_key_reused`   |
+| Same key while the first request is running | Rejected with `request_in_progress`      |
+| New key                                     | Treated as a new logical operation       |
+
+Semantically equivalent JSON is not necessarily byte-identical. Changing field
+order or whitespace changes the request bytes, so save the final serialized body
+before sending it.
+
+## Client pattern
+
+1. Generate the key with a cryptographically secure random source.
+2. Serialize and persist the request body once.
+3. Send the request with a finite timeout.
+4. Retry transient transport failures with the same key and bytes.
+5. Stop retrying when you receive a final validation or authorization error.
+
+Idempotency records are retained for a bounded period. Do not use the key as a
+permanent business identifier.

@@ -1,5 +1,6 @@
 import "../styles/global.css";
 import type { Metadata } from "next";
+import Script from "next/script";
 import { type ReactNode } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { cn } from "lib";
@@ -55,6 +56,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <span className="text-icon" />
         </Providers>
         <Toaster />
+        <Script
+          async
+          data-default-tab="home"
+          data-mode="bubble"
+          data-portal="complexus"
+          data-position="bottom-right"
+          data-theme="auto"
+          src="https://complexus.fortyone.app/api/feedback-widget/v1.js"
+          strategy="afterInteractive"
+        />
       </body>
       {isProduction ? (
         <>

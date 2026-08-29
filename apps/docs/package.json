@@ -5,31 +5,33 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev --turbo --port 3002",
-    "start": "next start",
-    "postinstall": "fumadocs-mdx"
+    "start": "next start"
   },
   "dependencies": {
-    "fumadocs-core": "15.3.2",
-    "fumadocs-mdx": "11.6.3",
-    "fumadocs-ui": "15.3.2",
+    "fumadocs-core": "16.15.4",
+    "fumadocs-mdx": "15.4.0",
+    "fumadocs-openapi": "11.3.5",
+    "fumadocs-ui": "16.15.4",
     "icons": "workspace:*",
     "lib": "workspace:*",
-    "lucide-react": "^0.510.0",
+    "lucide-react": "1.37.0",
     "next": "16.3.0",
     "player.style": "^0.1.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "shiki": "4.4.3",
     "tailwind-config": "workspace:*",
-    "ui": "workspace:*"
+    "ui": "workspace:*",
+    "yaml": "2.9.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.5",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/mdx": "^2.0.13",
     "@types/node": "22.15.12",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.5",
+    "tailwindcss": "4.3.3",
     "typescript": "7.0.2"
   }
 }

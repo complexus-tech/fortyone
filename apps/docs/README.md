@@ -1,14 +1,15 @@
 # FortyOne Documentation
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
-[![Fumadocs](https://img.shields.io/badge/Fumadocs-15-blue.svg)](https://fumadocs.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
+[![Fumadocs](https://img.shields.io/badge/Fumadocs-16-blue.svg)](https://fumadocs.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7-blue.svg)](https://www.typescriptlang.org/)
 
 The customer documentation site for FortyOne, built with Next.js and Fumadocs. It provides user guides, API documentation, developer resources, and product support content for the managed FortyOne service.
 
 ## ✨ Features
 
-- **📚 Comprehensive Documentation**: User guides, API docs, and tutorials
+- **📚 Comprehensive Documentation**: Product guides, API guides, and tutorials
+- **🔌 Generated API Reference**: Endpoint pages generated from the server's OpenAPI 3.1 contract
 - **🔍 Full-Text Search**: Fast, client-side search across all content
 - **📝 MDX Support**: Rich content with code blocks, tables, and components
 - **🎨 Modern UI**: Clean, responsive design with dark/light mode
@@ -44,13 +45,18 @@ The customer documentation site for FortyOne, built with Next.js and Fumadocs. I
 3. **Access the documentation**:
    - http://localhost:3002
 
+The interactive API playground sends requests directly to the API. Add
+`http://localhost:3002` to `APP_API_CORS_ALLOWED_ORIGINS` in the local API
+configuration when testing requests from the docs site. Production must likewise
+allow the exact HTTPS documentation origin.
+
 ## 🏗️ Architecture
 
 ### Tech Stack
 
-- **Framework**: Next.js 15 with App Router
+- **Framework**: Next.js 16 with App Router
 - **Documentation**: Fumadocs for content management
-- **Content**: MDX for rich documentation
+- **Content**: MDX guides plus a virtual OpenAPI reference source
 - **Search**: Built-in full-text search
 - **Styling**: Tailwind CSS with Fumadocs UI
 - **Deployment**: Internally managed hosting
@@ -74,7 +80,6 @@ apps/docs/
 │   ├── (home)/          # Landing and overview pages
 │   ├── docs/            # Documentation pages
 │   └── api/             # Search API
-└── source.config.ts     # Fumadocs configuration
 ```
 
 ## 📝 Writing Documentation
@@ -128,9 +133,6 @@ icon: IconName
 pnpm dev          # Start development server
 pnpm build        # Build for production
 pnpm start        # Start production server
-
-# Content
-pnpm postinstall  # Generate MDX content (runs automatically)
 ```
 
 ## 🚀 Deployment
@@ -160,6 +162,14 @@ content/docs/
 └── troubleshooting/    # Common issues and solutions
 ```
 
+### API reference source of truth
+
+Conceptual API guides are written in `content/docs/api`. Endpoint reference pages
+are generated at build time from `../server/api/openapi/v1/openapi.yaml` through
+`fumadocs-openapi`; do not duplicate endpoint schemas in MDX. Update the server
+contract and rebuild this app whenever an operation, request, response, or security
+scheme changes.
+
 ### Style Guidelines
 
 - **Headers**: Use sentence case for headings
@@ -170,26 +180,24 @@ content/docs/
 
 ## 🔧 Configuration
 
-### Fumadocs Config
+### Fumadocs sources
 
-The `source.config.ts` file controls documentation behavior:
+The `lib/source.ts` module combines the handwritten MDX collection and the
+generated OpenAPI reference:
 
 ```typescript
-import { createDocs } from "fumadocs-core";
+import { loader } from "fumadocs-core/source";
+import { defineDocs } from "fumadocs-mdx/macro";
 
-export const source = createDocs({
-  docs: {
-    // Documentation pages
-    dir: "content/docs",
-    // URL prefix
-    url: "/docs",
+const docs = defineDocs({ dir: "content/docs" });
+
+export const source = loader(
+  {
+    apiReference,
+    docs: docs.toFumadocsSource(),
   },
-  meta: {
-    // Global metadata
-    title: "FortyOne Docs",
-    description: "Comprehensive documentation for FortyOne",
-  },
-});
+  { baseUrl: "/" },
+);
 ```
 
 ### Custom Components

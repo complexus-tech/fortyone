@@ -6,12 +6,12 @@ info:
   description: |
     The `/api/v1` contract is deliberately separate from FortyOne's legacy
     first-party web and mobile routes. The authentication boundary recognizes
-    personal access tokens, service-account keys, and OAuth access tokens for
-    the exact `/api/v1` audience in the Authorization header, but credential
+    personal access tokens and supported service-account keys in the
+    Authorization header, but credential
     recognition does not imply operation authorization. Every operation
     documents its supported principal and required scopes. Current preview
-    reads accept a personal access token or user-authorized OAuth token. Story
-    creation also supports a service-account key and preserves the calling
+    reads accept a personal access token. Story creation also supports a
+    service-account key and preserves the calling
     principal's attribution; every other operation rejects service accounts
     with `principal_not_supported` until its resource explicitly supports them.
 servers:
@@ -68,7 +68,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: FortyOne developer credential
-      description: Personal access tokens, service-account keys, and OAuth tokens issued for the exact /api/v1 audience are accepted only in the Authorization header and never in URLs. The stable scheme name is retained for preview-client compatibility; each operation documents which principal types it authorizes.
+      description: Personal access tokens and supported service-account keys are accepted only in the Authorization header and never in URLs. Each operation documents which principal types it authorizes.
   parameters:
     WorkspaceId:
       $ref: ./components/common.yaml#/components/parameters/WorkspaceId

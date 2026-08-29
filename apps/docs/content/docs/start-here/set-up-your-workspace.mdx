@@ -1,68 +1,45 @@
 ---
-title: Set Up Your Workspace
-description: Configure your new FortyOne workspace and take your first steps towards productivity.
+title: Set up your workspace
+description: Give the team a clear, useful FortyOne workspace without configuring everything at once.
+icon: Settings2
 ---
 
-Welcome to your new FortyOne workspace! Now that your central hub is created, let's walk through a few essential first steps to get you and your team up and running smoothly.
+import { Step, Steps } from "fumadocs-ui/components/steps";
 
-## 1. Create Your Workspace (If You Haven't Already)
+<Steps>
+  <Step>
+    **Create the workspace.** Choose a recognizable name and confirm the default
+    terminology under **Settings → Workspace**.
+  </Step>
+  <Step>
+    **Create the first team.** Give it a short code, a workflow, and only the
+    labels the team will use immediately.
+  </Step>
+  <Step>
+    **Invite members.** Add people with the smallest role they need. Team access
+    can be managed separately from workspace membership.
+  </Step>
+  <Step>
+    **Add real work.** Create a small set of current work items, assign owners,
+    and move them through the workflow before importing a large backlog.
+  </Step>
+  <Step>
+    **Connect useful tools.** Add only the integrations that remove an existing
+    handoff: Slack, GitHub, Figma, Google Calendar, or Outlook Calendar.
+  </Step>
+</Steps>
 
-Workspace creation is the foundational step when you sign up for FortyOne. If you're just starting, ensure you've completed the sign-up process to establish your dedicated workspace.
+## Recommended first-week setup
 
-Once your workspace is active, you can proceed with the following setup actions.
+| Area          | A good first decision                                                |
+| ------------- | -------------------------------------------------------------------- |
+| Workflow      | Keep the number of states small and make “done” unambiguous          |
+| Teams         | Organize around durable ownership, not every temporary project       |
+| Labels        | Add labels when they support filtering or reporting                  |
+| Working hours | Set realistic hours before enabling auto-scheduling                  |
+| Notifications | Keep assignments and direct mentions on; reduce broad activity noise |
+| Integrations  | Connect one workflow at a time and verify it with a real example     |
 
-## 2. Invite Your Team Members
-
-FortyOne shines when your team collaborates. Inviting your colleagues is a critical next step:
-
-- **Why it matters**: Shared visibility, better communication, and aligned efforts on projects and objectives.
-- **How to do it**: You can invite members during the initial onboarding process or at any time afterwards. Look for options to invite team members via keyboard shortcuts `Cmd + I`, dedicated buttons in the sidebar or workspace menu.
-
-![Invite members](/teams/invite.png)
-
-## 3. Familiarize Yourself with the FortyOne UI
-
-Take a moment to explore the main areas of the FortyOne interface. Understanding the layout will help you navigate efficiently:
-
-- **Sidebar (Left)**: Your primary navigation hub. Access your work (My Work, Tasks, etc.), Objectives, Sprints, Teams, and other modules.
-- **Workspace Switcher & Menu (Top-Left)**: Click your current workspace name to switch between workspaces (if you have multiple), create a new workspace, access workspace settings, or invite members.
-- **Command Menu (via `Cmd+K` / `Ctrl+K`)**: Quickly find anything or execute commands. Search for tasks, objectives, projects, navigate to different parts of the app, or access settings.
-- **User Profile & Settings (Top-Right)**: Access your personal account settings, profile, notifications, and log out.
-
-![Placeholder overview of the FortyOne main UI areas](/command.png "FortyOne Main UI Overview")
-
-## 4. Create Your First Team (If Applicable)
-
-Teams in FortyOne help organize members and their work (like Sprints and Objectives) into logical groups (e.g., Engineering, Marketing, Product).
-
-- If your work naturally falls into distinct teams, creating them early can be beneficial.
-- **How to Create a Team**:
-  - **Primary Method**: Navigate to **Settings**. From there, go to the **Workspace** section, select **Teams**, and then click on **"Create a team"**.
-  - **Sidebar Shortcut**: Under the "Your Teams" heading in the main sidebar, look for a menu. This menu should provide a quick link to the "Manage Teams" or "Create new team" page, which will take you to the same team creation area within Settings.
-- You'll typically be asked to provide:
-  - **Team Name**: A descriptive name for your team (e.g., "Frontend Engineers", "Growth Marketing").
-- **Team Code**: A short prefix for team-specific items, like Tasks (e.g., ENG, MKT).
-  - **Team Color**: To visually distinguish the team within the workspace.
-  - **Privacy Settings**: You may have options to set the team as private (visible only to members and admins) or public.
-
-## 5. Create Your First Task
-
-The best way to learn is by doing! Let's create your first work item, typically called a "Task" in FortyOne (this term might be customized in your workspace).
-
-- **How**: Look for a prominent **`Create Task`** button, often in the header or sidebar. Alternatively, use the universal keyboard shortcut (often `Shift+N`).
-- **Fill in the basics**: Give it a title (e.g., "Draft initial project plan"), a brief description, and assign it to yourself.
-- Don't worry about all the fields yet; just get a feel for the creation process.
-
-This will help you see how work is captured and appears in lists or boards.
-
-## Next Steps
-
-With these initial steps completed, you're well on your way!
-
-Consider exploring these areas next:
-
-- Dive deeper into **[Product Guide](../product-guide/tasks)** like managing Tasks, Objectives, and Sprints.
-- Understand key **[Concepts](../concepts)** that underpin FortyOne.
-- Customize your **[Workspace Settings](../administration/workspace-settings)**.
-
-Welcome aboard!
+Once the basics work, explore [core concepts](/concepts),
+[auto-scheduling](/product-guide/auto-scheduling), and the
+[integration guides](/integrations).

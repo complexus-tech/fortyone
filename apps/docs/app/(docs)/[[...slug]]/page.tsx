@@ -1,13 +1,14 @@
-import { source } from '@/lib/source';
+import { OpenAPIPage } from "@/components/api-page";
+import { source } from "@/lib/source";
+import { getMDXComponents } from "@/mdx-components";
 import {
-  DocsPage,
   DocsBody,
   DocsDescription,
+  DocsPage,
   DocsTitle,
-} from 'fumadocs-ui/page';
-import { notFound } from 'next/navigation';
-import { createRelativeLink } from 'fumadocs-ui/mdx';
-import { getMDXComponents } from '@/mdx-components';
+} from "fumadocs-ui/layouts/notebook/page";
+import { createRelativeLink } from "fumadocs-ui/mdx";
+import { notFound } from "next/navigation";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -15,6 +16,18 @@ export default async function Page(props: {
   const params = await props.params;
   const page = source.getPage(params.slug);
   if (!page) notFound();
+
+  if (page.type === "apiReference") {
+    return (
+      <DocsPage full tableOfContent={{ style: "clerk" }} toc={page.data.toc}>
+        <DocsTitle>{page.data.title}</DocsTitle>
+        <DocsDescription>{page.data.description}</DocsDescription>
+        <DocsBody>
+          <OpenAPIPage {...page.data.getOpenAPIPageProps()} />
+        </DocsBody>
+      </DocsPage>
+    );
+  }
 
   const MDXContent = page.data.body;
 

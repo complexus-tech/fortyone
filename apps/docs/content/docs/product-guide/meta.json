@@ -1,10 +1,14 @@
 {
-  "title": "Product Guide",
+  "title": "Product",
+  "icon": "Blocks",
   "pages": [
     "tasks",
+    "maya",
+    "auto-scheduling",
     "objectives",
     "key-results",
     "sprints",
+    "feedback-and-roadmaps",
     "teams",
     "search-and-filters"
   ]

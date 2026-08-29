@@ -1,0 +1,36 @@
+---
+title: Calendar
+description: Connect Google Calendar or Outlook Calendar to plan around real availability.
+icon: CalendarDays
+---
+
+Calendar connections belong to individual accounts. Each member can connect
+Google Calendar, Outlook Calendar, or both. One connection is primary and is
+used when FortyOne writes scheduled work.
+
+## What syncs
+
+| Data                         | Purpose                                                     |
+| ---------------------------- | ----------------------------------------------------------- |
+| Meetings and calendar events | Show existing commitments and availability                  |
+| Working hours                | Define when Maya is allowed to reserve focus time           |
+| Scheduled work               | Add and update focus blocks on the primary calendar         |
+| Meeting links and details    | Open an event from the FortyOne calendar when access allows |
+
+## Connect a calendar
+
+1. Open **Settings → Account → Calendar**.
+2. Choose **Google Calendar** or **Outlook Calendar** and approve the requested
+   permissions.
+3. Connect the second provider if you need its events considered for availability.
+4. Mark the calendar where FortyOne should write scheduled work as primary.
+5. Open **Calendar** and run a sync if recent events have not appeared yet.
+
+If a connection needs additional write permission, FortyOne asks you to
+reconnect once. Existing events remain visible from the last successful sync
+while a provider is temporarily unavailable.
+
+<Callout type="info" title="Availability and writing are separate">
+  A secondary connection can contribute busy time without receiving FortyOne
+  work blocks. Only the primary writable connection is used for scheduled work.
+</Callout>

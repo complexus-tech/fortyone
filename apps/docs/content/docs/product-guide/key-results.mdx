@@ -1,67 +1,24 @@
 ---
-title: Key Results
-description: Track the measurable outcomes of your FortyOne Objectives with Key Results.
+title: Key results
+description: Measure whether an objective is producing the intended outcome.
+icon: ChartNoAxesColumnIncreasing
 ---
 
-Key Results (KRs) in FortyOne are the specific, measurable outcomes that indicate whether an Objective is being achieved. They are a core component of the popular OKR (Objectives and Key Results) framework, and are sometimes referred to simply as "Objective Key Results." They break down your high-level goals into quantifiable targets, making progress tangible and transparent.
+A key result is a measurable signal attached to an objective. It gives the team
+a shared definition of progress.
 
-## What is a Key Result?
+| Field   | Example                             |
+| ------- | ----------------------------------- |
+| Name    | Reduce median support response time |
+| Start   | 18 hours                            |
+| Target  | 4 hours                             |
+| Current | 7 hours                             |
+| Owner   | Support operations lead             |
 
-A Key Result defines what success looks like for a part of your Objective. It should be:
+Choose a measure that can be updated consistently. A delivery milestone can be
+useful, but an outcome measure is usually stronger because it shows whether the
+work changed anything.
 
-- **Specific**: Clearly define what will be measured.
-- **Measurable**: Must be quantifiable, either as a number, percentage, or a binary state (complete/incomplete).
-- **Achievable**: Realistic given your resources and constraints.
-- **Relevant**: Directly contributes to the success of the parent Objective.
-- **Time-bound**: Often implicitly tied to the Objective's timeframe, though individual KRs might have their own milestones.
-
-## Creating Key Results
-
-You can create Key Results in FortyOne in two main ways:
-
-1.  **When Creating a New Objective**: The "New Objective" dialog allows you to add Key Results inline as you define the objective itself.
-    ![Adding a Key Result inline in the FortyOne New Objective dialog](/objectives/create-with-kr.png)
-
-    - After providing the Objective's name and description, you can click `Add Key result`.
-    - An inline form appears where you define the KR's Name, how it's Measured as (Number, Percentage, Boolean), and its Starting/Target Values (for Number type).
-
-2.  **From an Existing Objective's Detail Page**: If an Objective already exists, you can add Key Results to it directly from its detail page.
-    - Navigate to the Objective's detail page.
-    - In the "Key Results" section, click the `Add Key Result` button.
-    - This will open a "Create Key Result" dialog.
-
-### The "Create Key Result" Dialog
-
-Whether adding inline or via the dedicated dialog, you'll define the following for each Key Result:
-
-- **Name**: A clear description of the measurable outcome (e.g., "Increase user-base from 60k to 90k", "Onboard at least 10 beta testers by end of April").
-- **Measurement Type**: How the Key Result will be tracked. This is a critical choice:
-  - **Number**: Track progress towards a numerical target. You will define:
-    - **Starting Value**: The baseline value when tracking begins.
-    - **Target Value**: The desired value to achieve.
-  - **Percentage (0-100%)**: Track progress as a percentage from 0% to 100%.
-    - You will typically update the current percentage value directly.
-  - **Boolean (Complete/Incomplete)**: Track a binary state.
-    - **Current Value**: Toggled between "Incomplete" and "Complete". This usually translates to 0% or 100% progress for that KR.
-
-## Viewing and Updating Key Results
-
-On an Objective's detail page, all its Key Results are listed, showing key information at a glance:
-
-![List of Key Results on the FortyOne Objective Detail page, showing progress and options menu](/objectives/kr.png)
-
-For each Key Result, you typically see:
-
-- Its **Name** and when it was last updated / who updated it.
-- The **Current** value/status.
-- The **Target** value (if applicable, e.g., for Number type KRs).
-- A **Progress** bar and percentage, visually representing its completion.
-
-### Updating Progress
-
-On each KR there is a menu button that allows you to update or delete a Key Result.
-
-- **Update progress**: This opens a dialog like "Update Key Result Progress" where you can input the new **Current Value**. The system then recalculates the progress. You can also update fields on the same dialog.
-- **Delete**: Used to remove the Key Result (use with caution, as this may affect Objective progress data).
-
-By diligently defining and updating your Key Results, you ensure that your progress towards strategic FortyOne Objectives is always clear and data-driven.
+Update progress during the objective review, and add context when a number moves
+unexpectedly. Closing the related work does not automatically prove that the key
+result was achieved.

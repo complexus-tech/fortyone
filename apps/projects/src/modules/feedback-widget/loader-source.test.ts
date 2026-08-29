@@ -192,6 +192,9 @@ describe("feedback widget loader", () => {
     );
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("@media(max-width:640px)");
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("height:100dvh");
+    expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
+      "height:min(680px,calc(100dvh - 98px))",
+    );
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("border-radius:.825rem");
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain("--widget-border:#292824");
     expect(FEEDBACK_WIDGET_LOADER_SOURCE).toContain(
