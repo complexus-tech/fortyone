@@ -71,13 +71,19 @@ func TestConsumerRunJoinsLoopsOnCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	result := make(chan error, 1)
+	commandsBeforeRun := redisServer.CommandCount()
 	go func() { result <- consumer.Run(ctx) }()
+	require.Eventually(t, func() bool {
+		return redisServer.CommandCount() > commandsBeforeRun
+	}, 5*time.Second, 10*time.Millisecond, "consumer read loop did not start")
 	cancel()
 
+	joinDeadline := time.NewTimer(streamReadBlock + time.Second)
+	defer joinDeadline.Stop()
 	select {
 	case err := <-result:
 		require.NoError(t, err)
-	case <-time.After(time.Second):
+	case <-joinDeadline.C:
 		t.Fatal("consumer loops were not joined after cancellation")
 	}
 }

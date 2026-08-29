@@ -36,7 +36,7 @@ func mapDatabaseError(err error) error {
 		return developercredentialsdomain.ErrInvalidCredentialKind
 	case "api_credential_team_restrictions_team_workspace_fkey":
 		return developercredentialsdomain.ErrTeamRestrictionNotAllowed
-	case "principals_service_account_role_check", "principals_identity_shape_check":
+	case "principals_service_account_role_check", "principals_machine_role_check", "principals_identity_shape_check":
 		return developercredentialsdomain.ErrInvalidServiceAccountRole
 	default:
 		return err

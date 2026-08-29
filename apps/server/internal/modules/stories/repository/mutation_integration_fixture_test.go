@@ -102,6 +102,7 @@ func seedStoryMutationServiceAccount(
 	t.Helper()
 
 	principalID, credentialID := uuid.New(), uuid.New()
+	expiresAt := time.Now().UTC().Add(24 * time.Hour)
 	mustMutationExec(
 		t, ctx, pool,
 		`INSERT INTO principals (
@@ -117,11 +118,11 @@ func seedStoryMutationServiceAccount(
 			secret_digest, token_version, digest_key_id, digest_key_version,
 			expires_at, created_by_user_id, created_at
 		) VALUES (
-			$1, $2, $3, 'service_account_key', 'Story integration key', 'exampleprefix',
+			$1, $2, $3, 'service_account_key', 'Story integration key', repeat('a', 12),
 			$4, 1, 'integration', 1, $5, $6, $7
 		)`,
 		credentialID, fixture.workspaceID, principalID, make([]byte, 32),
-		createdAt.Add(24*time.Hour), fixture.actorID, createdAt,
+		expiresAt, fixture.actorID, createdAt,
 	)
 	mustMutationExec(
 		t, ctx, pool,

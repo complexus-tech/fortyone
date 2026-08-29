@@ -1,6 +1,6 @@
 //go:build integration
 
-package database
+package database_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/internal/testkit"
 )
 
@@ -21,7 +22,7 @@ func TestNativePoolHonorsConnectionBudgetAndClosesCleanly(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	connections, err := Open(ctx, cfg)
+	connections, err := platformdatabase.Open(ctx, cfg)
 	if err != nil {
 		t.Fatalf("open database connections: %v", err)
 	}
@@ -57,7 +58,7 @@ func TestNativePoolHonorsConnectionBudgetAndClosesCleanly(t *testing.T) {
 	}
 }
 
-func configFromTestURL(t *testing.T, databaseURL string) Config {
+func configFromTestURL(t *testing.T, databaseURL string) platformdatabase.Config {
 	t.Helper()
 	parsed, err := url.Parse(databaseURL)
 	if err != nil {
@@ -67,7 +68,7 @@ func configFromTestURL(t *testing.T, databaseURL string) Config {
 		t.Fatalf("TEST_DATABASE_URL must include credentials, host, port, and database name")
 	}
 	password, _ := parsed.User.Password()
-	return Config{
+	return platformdatabase.Config{
 		Host:        parsed.Hostname(),
 		Port:        parsed.Port(),
 		User:        parsed.User.Username(),

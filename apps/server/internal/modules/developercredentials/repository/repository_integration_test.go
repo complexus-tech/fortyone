@@ -203,7 +203,7 @@ func TestServiceAccountKeysEnforceLeastPrivilegeRotationAndAuditImmutability(t *
 		UPDATE principals SET workspace_role = 'admin'
 		WHERE principal_id = $1
 	`, account.ID)
-	assertPostgresConstraint(t, err, "principals_service_account_role_check")
+	assertPostgresConstraint(t, err, "principals_machine_role_check")
 
 	const rotations = 2
 	start := make(chan struct{})
@@ -285,7 +285,7 @@ func TestServiceAccountKeysEnforceLeastPrivilegeRotationAndAuditImmutability(t *
 }
 
 func TestDeveloperCredentialMigrationRollsBackAtEmptyBoundary(t *testing.T) {
-	postgres := testkit.NewPostgres(t)
+	postgres := testkit.NewPostgresAtMigration(t, 160)
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 

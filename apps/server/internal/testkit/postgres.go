@@ -47,6 +47,21 @@ type Postgres struct {
 // tests deliberately fail when TEST_DATABASE_URL or PostgreSQL is unavailable;
 // they must never silently degrade into skipped coverage.
 func NewPostgres(t testing.TB) *Postgres {
+	return newPostgres(t, nil)
+}
+
+// NewPostgresAtMigration creates an isolated database migrated through the
+// requested version. It is intended for testing migration boundaries without
+// running historical down migrations against newer dependent schemas.
+func NewPostgresAtMigration(t testing.TB, version uint) *Postgres {
+	t.Helper()
+	if version == 0 {
+		t.Fatal("migration version must be positive")
+	}
+	return newPostgres(t, &version)
+}
+
+func newPostgres(t testing.TB, migrationVersion *uint) *Postgres {
 	t.Helper()
 
 	controlURL, err := parseControlDatabaseURL(os.Getenv(TestDatabaseURLEnv))
@@ -78,7 +93,7 @@ func NewPostgres(t testing.TB) *Postgres {
 		}
 	})
 
-	if err := applyMigrations(setupCtx, databaseURL, databaseName); err != nil {
+	if err := applyMigrations(setupCtx, databaseURL, databaseName, migrationVersion); err != nil {
 		t.Fatalf("apply migrations to isolated PostgreSQL database: %v", err)
 	}
 
@@ -185,7 +200,7 @@ func dropDatabase(ctx context.Context, controlURL string, databaseName string) e
 	return nil
 }
 
-func applyMigrations(ctx context.Context, databaseURL string, databaseName string) error {
+func applyMigrations(ctx context.Context, databaseURL string, databaseName string, version *uint) error {
 	migrationSource, err := iofs.New(migrations.FS, ".")
 	if err != nil {
 		return fmt.Errorf("load embedded migrations: %w", err)
@@ -226,7 +241,12 @@ func applyMigrations(ctx context.Context, databaseURL string, databaseName strin
 		)
 	}
 
-	migrationErr := migrator.Up()
+	var migrationErr error
+	if version == nil {
+		migrationErr = migrator.Up()
+	} else {
+		migrationErr = migrator.Migrate(*version)
+	}
 	if errors.Is(migrationErr, migrate.ErrNoChange) {
 		migrationErr = nil
 	}
