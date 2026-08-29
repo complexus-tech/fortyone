@@ -9,8 +9,7 @@ import (
 	"time"
 
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
-	"github.com/complexus-tech/projects-api/internal/platform/configvalue"
-	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	"github.com/complexus-tech/projects-api/internal/platform/appkeys"
 	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 	"github.com/josemukorivo/config"
@@ -110,12 +109,6 @@ type Config struct {
 	Messaging struct {
 		MutationHMACKey string `default:"development-only-messaging-mutation-hmac-key" env:"APP_MESSAGING_MUTATION_HMAC_KEY"`
 	}
-	CredentialVault struct {
-		ActiveKeyID      string                 `default:"development" env:"APP_CREDENTIAL_VAULT_ACTIVE_KEY_ID"`
-		ActiveKeyVersion configvalue.KeyVersion `default:"1" env:"APP_CREDENTIAL_VAULT_ACTIVE_KEY_VERSION"`
-		Keys             string                 `default:"{\"development@1\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"}" env:"APP_CREDENTIAL_VAULT_KEYS"`
-		RewrapOnStartup  bool                   `default:"false" env:"APP_CREDENTIAL_VAULT_REWRAP_ON_STARTUP"`
-	}
 	InvitationTokens struct {
 		HMACKey      string `default:"development-only-invitation-hmac-key" env:"APP_INVITATION_TOKEN_HMAC_KEY"`
 		HMACKeyID    string `default:"v1" env:"APP_INVITATION_TOKEN_HMAC_KEY_ID"`
@@ -153,25 +146,22 @@ type Config struct {
 		WorkspaceTokensPerDay   int64 `default:"1000000" env:"OPENAI_ASSISTANT_WORKSPACE_TOKENS_PER_DAY"`
 	}
 	Slack struct {
-		ClientID             string `env:"SLACK_CLIENT_ID"`
-		ClientSecret         string `env:"SLACK_CLIENT_SECRET"`
-		SigningSecret        string `env:"SLACK_SIGNING_SECRET"`
-		WebhookPayloadSecret string `default:"development-only-slack-webhook-payload-secret" env:"APP_SLACK_WEBHOOK_PAYLOAD_SECRET"`
+		ClientID      string `env:"SLACK_CLIENT_ID"`
+		ClientSecret  string `env:"SLACK_CLIENT_SECRET"`
+		SigningSecret string `env:"SLACK_SIGNING_SECRET"`
 	}
 	GitHub struct {
-		AppID                int64  `env:"APP_GITHUB_APP_ID"`
-		AppSlug              string `env:"GITHUB_APP_SLUG"`
-		PrivateKeyBase64     string `env:"GITHUB_PRIVATE_KEY_BASE64"`
-		RedirectURL          string `env:"GITHUB_REDIRECT_URL"`
-		WebhookSecret        string `env:"GITHUB_WEBHOOK_SECRET"`
-		WebhookPayloadSecret string `default:"development-only-github-webhook-payload-secret" env:"APP_GITHUB_WEBHOOK_PAYLOAD_SECRET"`
+		AppID            int64  `env:"APP_GITHUB_APP_ID"`
+		AppSlug          string `env:"GITHUB_APP_SLUG"`
+		PrivateKeyBase64 string `env:"GITHUB_PRIVATE_KEY_BASE64"`
+		RedirectURL      string `env:"GITHUB_REDIRECT_URL"`
+		WebhookSecret    string `env:"GITHUB_WEBHOOK_SECRET"`
 	}
 	Figma struct {
-		ClientID             string `env:"FIGMA_CLIENT_ID"`
-		ClientSecret         string `env:"FIGMA_CLIENT_SECRET"`
-		RedirectURL          string `default:"https://api.fortyone.app/integrations/figma/callback" env:"FIGMA_REDIRECT_URL"`
-		WebhookURL           string `default:"https://api.fortyone.app/webhooks/figma" env:"FIGMA_WEBHOOK_URL"`
-		WebhookPayloadSecret string `default:"development-only-figma-webhook-payload-secret" env:"APP_FIGMA_WEBHOOK_PAYLOAD_SECRET"`
+		ClientID     string `env:"FIGMA_CLIENT_ID"`
+		ClientSecret string `env:"FIGMA_CLIENT_SECRET"`
+		RedirectURL  string `default:"https://api.fortyone.app/integrations/figma/callback" env:"FIGMA_REDIRECT_URL"`
+		WebhookURL   string `default:"https://api.fortyone.app/webhooks/figma" env:"FIGMA_WEBHOOK_URL"`
 	}
 	Queues map[string]int `default:"{\"critical\":6,\"default\":3,\"integrations\":2,\"low\":1,\"onboarding\":5,\"cleanup\":2,\"notifications\":4,\"automation\":3}"`
 }
@@ -225,21 +215,6 @@ func validateRuntimeConfig(cfg Config) (deployment.Mode, error) {
 		Name:            "APP_INVITATION_TOKEN_HMAC_KEY",
 		Value:           cfg.InvitationTokens.HMACKey,
 		ForbiddenValues: []string{"development-only-invitation-hmac-key"},
-	}, {
-		Name:  "APP_CREDENTIAL_VAULT_KEYS",
-		Value: cfg.CredentialVault.Keys,
-	}, {
-		Name:            "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET",
-		Value:           cfg.GitHub.WebhookPayloadSecret,
-		ForbiddenValues: []string{"development-only-github-webhook-payload-secret"},
-	}, {
-		Name:            "APP_SLACK_WEBHOOK_PAYLOAD_SECRET",
-		Value:           cfg.Slack.WebhookPayloadSecret,
-		ForbiddenValues: []string{"development-only-slack-webhook-payload-secret"},
-	}, {
-		Name:            "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET",
-		Value:           cfg.Figma.WebhookPayloadSecret,
-		ForbiddenValues: []string{"development-only-figma-webhook-payload-secret"},
 	}}
 	if cfg.Monitor.Enabled {
 		secretRequirements = append(secretRequirements, deployment.SecretRequirement{
@@ -258,29 +233,13 @@ func validateRuntimeConfig(cfg Config) (deployment.Mode, error) {
 		cfg.AWS.SecretAccessKey,
 	)
 	httpErr := validateHTTPConfig(cfg.HTTP, cfg.Monitor)
-	_, vaultErr := credentialvault.NewFromEncodedKeyring(
-		cfg.CredentialVault.ActiveKeyID,
-		cfg.CredentialVault.ActiveKeyVersion.Uint32(),
-		cfg.CredentialVault.Keys,
-	)
-	if vaultErr != nil {
-		vaultErr = fmt.Errorf("APP_CREDENTIAL_VAULT_KEYS: %w", vaultErr)
-	}
-	containsDevelopmentVaultKey, developmentVaultErr := credentialvault.ContainsDevelopmentKey(
-		cfg.CredentialVault.ActiveKeyID,
-		cfg.CredentialVault.ActiveKeyVersion.Uint32(),
-		cfg.CredentialVault.Keys,
-	)
-	if developmentVaultErr == nil && mode.IsProduction() && containsDevelopmentVaultKey {
-		developmentVaultErr = errors.New("APP_CREDENTIAL_VAULT_KEYS must not contain the public development key")
-	}
+	_, integrationKeyErr := appkeys.NewIntegrationKeys(cfg.Auth.SecretKey)
 	invitationConfig, invitationConfigErr := workerInvitationTokenConfig(cfg)
 	var invitationTokenErr error
 	if invitationConfigErr == nil {
 		_, invitationTokenErr = invitations.NewInvitationTokenManager(invitationConfig)
 	}
 	keySeparationErr := validateWorkerSecurityKeySeparation(mode, cfg, invitationConfig)
-	vaultKeySeparationErr := validateWorkerVaultKeySeparation(mode, cfg, invitationConfig)
 
 	if err := errors.Join(
 		databaseErr,
@@ -288,90 +247,14 @@ func validateRuntimeConfig(cfg Config) (deployment.Mode, error) {
 		transportErr,
 		awsCredentialErr,
 		httpErr,
-		vaultErr,
-		developmentVaultErr,
+		integrationKeyErr,
 		invitationConfigErr,
 		invitationTokenErr,
 		keySeparationErr,
-		vaultKeySeparationErr,
 	); err != nil {
 		return "", fmt.Errorf("validate worker configuration: %w", err)
 	}
 	return mode, nil
-}
-
-func validateWorkerVaultKeySeparation(
-	mode deployment.Mode,
-	cfg Config,
-	invitationConfig invitations.InvitationTokenConfig,
-) error {
-	if !mode.IsProduction() {
-		return nil
-	}
-	secrets := []struct {
-		name  string
-		value string
-	}{{name: "APP_AUTH_SECRET_KEY", value: cfg.Auth.SecretKey}, {
-		name:  "APP_FEEDBACK_SECURITY_KEY",
-		value: cfg.Feedback.SecurityKey,
-	}, {
-		name:  "APP_EMAIL_REPLY_SECURITY_KEY",
-		value: cfg.EmailReply.SecurityKey,
-	}, {
-		name:  "APP_MESSAGING_MUTATION_HMAC_KEY",
-		value: cfg.Messaging.MutationHMACKey,
-	}, {
-		name:  "APP_INVITATION_TOKEN_HMAC_KEY",
-		value: invitationConfig.Current.Secret,
-	}, {
-		name:  "GITHUB_PRIVATE_KEY_BASE64",
-		value: cfg.GitHub.PrivateKeyBase64,
-	}, {
-		name:  "GITHUB_WEBHOOK_SECRET",
-		value: cfg.GitHub.WebhookSecret,
-	}, {
-		name:  "SLACK_CLIENT_SECRET",
-		value: cfg.Slack.ClientSecret,
-	}, {
-		name:  "SLACK_SIGNING_SECRET",
-		value: cfg.Slack.SigningSecret,
-	}, {
-		name:  "APP_SLACK_WEBHOOK_PAYLOAD_SECRET",
-		value: cfg.Slack.WebhookPayloadSecret,
-	}, {
-		name:  "FIGMA_CLIENT_SECRET",
-		value: cfg.Figma.ClientSecret,
-	}, {
-		name:  "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET",
-		value: cfg.GitHub.WebhookPayloadSecret,
-	}, {
-		name:  "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET",
-		value: cfg.Figma.WebhookPayloadSecret,
-	}}
-	for _, previous := range invitationConfig.Previous {
-		secrets = append(secrets, struct {
-			name  string
-			value string
-		}{
-			name:  "APP_INVITATION_TOKEN_HMAC_PREVIOUS_KEYS[" + previous.ID + "]",
-			value: previous.Secret,
-		})
-	}
-	for _, secret := range secrets {
-		reused, err := credentialvault.ReusesSecretMaterial(
-			cfg.CredentialVault.ActiveKeyID,
-			cfg.CredentialVault.ActiveKeyVersion.Uint32(),
-			cfg.CredentialVault.Keys,
-			secret.value,
-		)
-		if err != nil {
-			return err
-		}
-		if reused {
-			return fmt.Errorf("APP_CREDENTIAL_VAULT_KEYS must not reuse %s", secret.name)
-		}
-	}
-	return nil
 }
 
 func workerInvitationTokenConfig(cfg Config) (invitations.InvitationTokenConfig, error) {
@@ -422,10 +305,7 @@ func validateWorkerSecurityKeySeparation(
 		{name: "GITHUB_WEBHOOK_SECRET", value: cfg.GitHub.WebhookSecret},
 		{name: "SLACK_CLIENT_SECRET", value: cfg.Slack.ClientSecret},
 		{name: "SLACK_SIGNING_SECRET", value: cfg.Slack.SigningSecret},
-		{name: "APP_SLACK_WEBHOOK_PAYLOAD_SECRET", value: cfg.Slack.WebhookPayloadSecret},
 		{name: "FIGMA_CLIENT_SECRET", value: cfg.Figma.ClientSecret},
-		{name: "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET", value: cfg.GitHub.WebhookPayloadSecret},
-		{name: "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET", value: cfg.Figma.WebhookPayloadSecret},
 	} {
 		secret := strings.TrimSpace(candidate.value)
 		if secret == "" {

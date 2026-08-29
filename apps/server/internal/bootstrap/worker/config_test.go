@@ -19,40 +19,12 @@ func TestLoadConfigReadsSlackUninstallCredentials(t *testing.T) {
 	require.Equal(t, "worker-client-secret", cfg.Slack.ClientSecret)
 }
 
-func TestLoadConfigReadsCredentialVaultMaintenanceMode(t *testing.T) {
-	t.Setenv("APP_GITHUB_APP_ID", "0")
-	t.Setenv("APP_CREDENTIAL_VAULT_REWRAP_ON_STARTUP", "true")
-
-	cfg, err := loadConfig()
-	require.NoError(t, err)
-	require.True(t, cfg.CredentialVault.RewrapOnStartup)
-}
-
-func TestLoadConfigReadsGitHubWebhookPayloadSecret(t *testing.T) {
-	t.Setenv("APP_GITHUB_APP_ID", "0")
-	t.Setenv("APP_GITHUB_WEBHOOK_PAYLOAD_SECRET", "github-webhook-payload-secret-with-32-bytes")
-
-	cfg, err := loadConfig()
-	require.NoError(t, err)
-	require.Equal(t, "github-webhook-payload-secret-with-32-bytes", cfg.GitHub.WebhookPayloadSecret)
-}
-
-func TestLoadConfigReadsSlackWebhookPayloadSecret(t *testing.T) {
-	t.Setenv("APP_GITHUB_APP_ID", "0")
-	t.Setenv("APP_SLACK_WEBHOOK_PAYLOAD_SECRET", "slack-webhook-payload-secret-with-32-bytes")
-
-	cfg, err := loadConfig()
-	require.NoError(t, err)
-	require.Equal(t, "slack-webhook-payload-secret-with-32-bytes", cfg.Slack.WebhookPayloadSecret)
-}
-
 func TestLoadConfigReadsFigmaWorkerConfiguration(t *testing.T) {
 	t.Setenv("APP_GITHUB_APP_ID", "0")
 	t.Setenv("FIGMA_CLIENT_ID", "figma-client-id")
 	t.Setenv("FIGMA_CLIENT_SECRET", "figma-client-secret")
 	t.Setenv("FIGMA_REDIRECT_URL", "https://api.example.com/integrations/figma/callback")
 	t.Setenv("FIGMA_WEBHOOK_URL", "https://api.example.com/webhooks/figma")
-	t.Setenv("APP_FIGMA_WEBHOOK_PAYLOAD_SECRET", "figma-webhook-payload-secret-with-32-bytes")
 
 	cfg, err := loadConfig()
 	require.NoError(t, err)
@@ -60,7 +32,6 @@ func TestLoadConfigReadsFigmaWorkerConfiguration(t *testing.T) {
 	require.Equal(t, "figma-client-secret", cfg.Figma.ClientSecret)
 	require.Equal(t, "https://api.example.com/integrations/figma/callback", cfg.Figma.RedirectURL)
 	require.Equal(t, "https://api.example.com/webhooks/figma", cfg.Figma.WebhookURL)
-	require.Equal(t, "figma-webhook-payload-secret-with-32-bytes", cfg.Figma.WebhookPayloadSecret)
 }
 
 func TestEnvironmentDefault(t *testing.T) {
@@ -93,30 +64,6 @@ func TestEmailAndMessagingSecurityConfigurationIsSharedWithAPI(t *testing.T) {
 	require.Equal(t, "development-only-messaging-mutation-hmac-key", mutationKey.Tag.Get("default"))
 }
 
-func TestFigmaWebhookPayloadConfigurationIsSharedWithAPI(t *testing.T) {
-	configType := reflect.TypeOf(Config{}.Figma)
-	payloadSecret, found := configType.FieldByName("WebhookPayloadSecret")
-	require.True(t, found)
-	require.Equal(t, "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET", payloadSecret.Tag.Get("env"))
-	require.Equal(t, "development-only-figma-webhook-payload-secret", payloadSecret.Tag.Get("default"))
-}
-
-func TestGitHubWebhookPayloadConfigurationIsSharedWithAPI(t *testing.T) {
-	configType := reflect.TypeOf(Config{}.GitHub)
-	payloadSecret, found := configType.FieldByName("WebhookPayloadSecret")
-	require.True(t, found)
-	require.Equal(t, "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET", payloadSecret.Tag.Get("env"))
-	require.Equal(t, "development-only-github-webhook-payload-secret", payloadSecret.Tag.Get("default"))
-}
-
-func TestSlackWebhookPayloadConfigurationIsSharedWithAPI(t *testing.T) {
-	configType := reflect.TypeOf(Config{}.Slack)
-	payloadSecret, found := configType.FieldByName("WebhookPayloadSecret")
-	require.True(t, found)
-	require.Equal(t, "APP_SLACK_WEBHOOK_PAYLOAD_SECRET", payloadSecret.Tag.Get("env"))
-	require.Equal(t, "development-only-slack-webhook-payload-secret", payloadSecret.Tag.Get("default"))
-}
-
 func TestValidateRuntimeConfigRejectsUnsafeProductionConfiguration(t *testing.T) {
 	t.Parallel()
 
@@ -130,9 +77,6 @@ func TestValidateRuntimeConfigRejectsUnsafeProductionConfiguration(t *testing.T)
 	require.ErrorContains(t, err, "APP_AUTH_SECRET_KEY")
 	require.ErrorContains(t, err, "APP_EMAIL_REPLY_SECURITY_KEY")
 	require.ErrorContains(t, err, "APP_MESSAGING_MUTATION_HMAC_KEY")
-	require.ErrorContains(t, err, "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET")
-	require.ErrorContains(t, err, "APP_SLACK_WEBHOOK_PAYLOAD_SECRET")
-	require.ErrorContains(t, err, "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET")
 	require.ErrorContains(t, err, "APP_DB_SSL_MODE")
 	require.ErrorContains(t, err, "APP_REDIS_DISABLE_TLS")
 }
@@ -146,7 +90,7 @@ func TestValidateRuntimeConfigAcceptsSecureProductionConfiguration(t *testing.T)
 	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
 	cfg.DB.SSLMode = "verify-full"
 	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
+	setValidWorkerSecurityConfig(&cfg)
 
 	mode, err := validateRuntimeConfig(cfg)
 	require.NoError(t, err)
@@ -162,7 +106,7 @@ func TestValidateRuntimeConfigRejectsStaticProductionAWSCredentials(t *testing.T
 	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
 	cfg.DB.SSLMode = "verify-full"
 	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
+	setValidWorkerSecurityConfig(&cfg)
 	cfg.AWS.AccessKeyID = "long-lived-access-key"
 	cfg.AWS.SecretAccessKey = "long-lived-secret-key"
 
@@ -189,7 +133,7 @@ func TestValidateRuntimeConfigRejectsWeakProductionMonitorPassword(t *testing.T)
 	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
 	cfg.DB.SSLMode = "verify-full"
 	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
+	setValidWorkerSecurityConfig(&cfg)
 	cfg.Monitor = MonitorConfig{
 		Enabled:  true,
 		Username: "operator",
@@ -297,17 +241,11 @@ func validWorkerHTTPConfig() HTTPConfig {
 	}
 }
 
-func setValidWorkerCredentialVault(cfg *Config) {
-	cfg.CredentialVault.ActiveKeyID = "production"
-	cfg.CredentialVault.ActiveKeyVersion = 1
-	cfg.CredentialVault.Keys = `{"production@1":"AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="}`
+func setValidWorkerSecurityConfig(cfg *Config) {
 	cfg.EmailReply.SecurityKey = "worker-email-reply-key-with-at-least-32-bytes"
 	cfg.Messaging.MutationHMACKey = "worker-messaging-mutation-key-with-at-least-32-bytes"
 	cfg.InvitationTokens.HMACKeyID = "2026-08-v1"
 	cfg.InvitationTokens.HMACKey = "worker-invitation-key-with-at-least-32-bytes"
-	cfg.GitHub.WebhookPayloadSecret = "worker-github-payload-key-with-at-least-32-bytes"
-	cfg.Slack.WebhookPayloadSecret = "worker-slack-payload-key-with-at-least-32-bytes"
-	cfg.Figma.WebhookPayloadSecret = "worker-figma-payload-key-with-at-least-32-bytes"
 }
 
 func TestValidateRuntimeConfigRejectsPurposeKeyReuseInProduction(t *testing.T) {
@@ -336,7 +274,7 @@ func TestValidateRuntimeConfigRejectsPurposeKeyReuseInProduction(t *testing.T) {
 			cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
 			cfg.DB.SSLMode = "verify-full"
 			cfg.HTTP = validWorkerHTTPConfig()
-			setValidWorkerCredentialVault(&cfg)
+			setValidWorkerSecurityConfig(&cfg)
 			test.configure(&cfg)
 
 			_, err := validateRuntimeConfig(cfg)
@@ -355,7 +293,7 @@ func TestValidateRuntimeConfigRejectsInvitationKeyReuseInProduction(t *testing.T
 	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
 	cfg.DB.SSLMode = "verify-full"
 	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
+	setValidWorkerSecurityConfig(&cfg)
 	cfg.InvitationTokens.HMACKey = cfg.Auth.SecretKey
 
 	_, err := validateRuntimeConfig(cfg)
@@ -371,148 +309,9 @@ func TestValidateRuntimeConfigRejectsFeedbackSecurityKeyReuseInProduction(t *tes
 	cfg.Feedback.SecurityKey = cfg.Auth.SecretKey
 	cfg.DB.SSLMode = "verify-full"
 	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
+	setValidWorkerSecurityConfig(&cfg)
 
 	_, err := validateRuntimeConfig(cfg)
 	require.ErrorContains(t, err, "APP_FEEDBACK_SECURITY_KEY must not reuse APP_AUTH_SECRET_KEY")
 	require.NotContains(t, err.Error(), cfg.Auth.SecretKey)
-}
-
-func TestValidateRuntimeConfigRejectsFigmaWebhookPayloadKeyReuseInProduction(t *testing.T) {
-	t.Parallel()
-
-	var cfg Config
-	cfg.Environment = "production"
-	cfg.Auth.SecretKey = "a-shared-production-secret-with-32-bytes"
-	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
-	cfg.DB.SSLMode = "verify-full"
-	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
-	cfg.Figma.WebhookPayloadSecret = cfg.Auth.SecretKey
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET must not reuse APP_AUTH_SECRET_KEY")
-	require.NotContains(t, err.Error(), cfg.Auth.SecretKey)
-}
-
-func TestValidateRuntimeConfigRejectsGitHubWebhookPayloadKeyReuseInProduction(t *testing.T) {
-	t.Parallel()
-
-	var cfg Config
-	cfg.Environment = "production"
-	cfg.Auth.SecretKey = "a-shared-production-secret-with-32-bytes"
-	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
-	cfg.DB.SSLMode = "verify-full"
-	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
-	cfg.GitHub.WebhookPayloadSecret = cfg.Auth.SecretKey
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET must not reuse APP_AUTH_SECRET_KEY")
-	require.NotContains(t, err.Error(), cfg.Auth.SecretKey)
-}
-
-func TestValidateRuntimeConfigRejectsSlackWebhookPayloadKeyReuseInProduction(t *testing.T) {
-	t.Parallel()
-
-	var cfg Config
-	cfg.Environment = "production"
-	cfg.Auth.SecretKey = "a-shared-production-secret-with-32-bytes"
-	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
-	cfg.DB.SSLMode = "verify-full"
-	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
-	cfg.Slack.WebhookPayloadSecret = cfg.Auth.SecretKey
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_SLACK_WEBHOOK_PAYLOAD_SECRET must not reuse APP_AUTH_SECRET_KEY")
-	require.NotContains(t, err.Error(), cfg.Auth.SecretKey)
-}
-
-func TestValidateRuntimeConfigRejectsGitHubSigningAndPayloadKeyReuseInProduction(t *testing.T) {
-	t.Parallel()
-
-	var cfg Config
-	cfg.Environment = "production"
-	cfg.Auth.SecretKey = "a-unique-production-secret-with-32-bytes"
-	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
-	cfg.DB.SSLMode = "verify-full"
-	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
-	cfg.GitHub.WebhookSecret = cfg.GitHub.WebhookPayloadSecret
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET must not reuse GITHUB_WEBHOOK_SECRET")
-	require.NotContains(t, err.Error(), cfg.GitHub.WebhookPayloadSecret)
-}
-
-func TestValidateRuntimeConfigRejectsVaultReuseOfGitHubWebhookPayloadKey(t *testing.T) {
-	t.Parallel()
-
-	const reusedSecret = "0123456789abcdef0123456789abcdef" // gitleaks:allow -- deterministic key-reuse test vector
-	var cfg Config
-	cfg.Environment = "production"
-	cfg.Auth.SecretKey = "a-unique-production-secret-with-32-bytes"
-	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
-	cfg.DB.SSLMode = "verify-full"
-	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
-	cfg.GitHub.WebhookPayloadSecret = reusedSecret
-	cfg.CredentialVault.Keys = `{"production@1":"MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="}`
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_CREDENTIAL_VAULT_KEYS must not reuse APP_GITHUB_WEBHOOK_PAYLOAD_SECRET")
-	require.NotContains(t, err.Error(), reusedSecret)
-}
-
-func TestValidateRuntimeConfigRejectsVaultReuseOfFigmaWebhookPayloadKey(t *testing.T) {
-	t.Parallel()
-
-	const reusedSecret = "0123456789abcdef0123456789abcdef" // gitleaks:allow -- deterministic key-reuse test vector
-	var cfg Config
-	cfg.Environment = "production"
-	cfg.Auth.SecretKey = "a-unique-production-secret-with-32-bytes"
-	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
-	cfg.DB.SSLMode = "verify-full"
-	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
-	cfg.Figma.WebhookPayloadSecret = reusedSecret
-	cfg.CredentialVault.Keys = `{"production@1":"MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="}`
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_CREDENTIAL_VAULT_KEYS must not reuse APP_FIGMA_WEBHOOK_PAYLOAD_SECRET")
-	require.NotContains(t, err.Error(), reusedSecret)
-}
-
-func TestValidateRuntimeConfigRejectsReformattedDevelopmentVaultKey(t *testing.T) {
-	t.Parallel()
-
-	var cfg Config
-	cfg.Environment = "production"
-	cfg.Auth.SecretKey = "a-unique-production-secret-with-32-bytes"
-	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
-	cfg.DB.SSLMode = "verify-full"
-	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
-	cfg.CredentialVault.ActiveKeyID = "development"
-	cfg.CredentialVault.Keys = `{ "development@1" : "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }`
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "must not contain the public development key")
-}
-
-func TestValidateRuntimeConfigRejectsVaultKEKReuse(t *testing.T) {
-	t.Parallel()
-
-	var cfg Config
-	cfg.Environment = "production"
-	cfg.Auth.SecretKey = "0123456789abcdef0123456789abcdef" // gitleaks:allow -- deterministic key-reuse test vector
-	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
-	cfg.DB.SSLMode = "verify-full"
-	cfg.HTTP = validWorkerHTTPConfig()
-	setValidWorkerCredentialVault(&cfg)
-	cfg.CredentialVault.Keys = `{"production@1":"MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="}`
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_CREDENTIAL_VAULT_KEYS must not reuse APP_AUTH_SECRET_KEY")
 }

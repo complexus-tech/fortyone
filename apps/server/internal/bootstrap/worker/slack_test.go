@@ -62,6 +62,17 @@ func TestBuildSlackEventProcessorRequiresStoryMutationSideEffects(t *testing.T) 
 			},
 			errorMessage: "credential vault is required",
 		},
+		{
+			name: "webhook payload secret",
+			dependencies: slackEventProcessorDependencies{
+				EventPublisher:  new(publisher.Publisher),
+				Tasks:           new(tasks.Service),
+				MayaActorID:     uuid.New(),
+				MayaAccess:      &mayaWorkspaceAccessStub{allowed: true},
+				CredentialVault: new(credentialvault.Vault),
+			},
+			errorMessage: "webhook payload secret is required",
+		},
 	}
 
 	for _, tt := range tests {
@@ -105,12 +116,12 @@ func TestSlackEventProcessorConfigIncludesUninstallCredentials(t *testing.T) {
 	cfg.Auth.SecretKey = "encryption-key"
 	cfg.Slack.ClientID = "worker-client-id"
 	cfg.Slack.ClientSecret = "worker-client-secret"
-	cfg.Slack.WebhookPayloadSecret = "worker-slack-webhook-payload-secret"
+	webhookPayloadSecret := "worker-slack-webhook-payload-secret"
 
-	processorConfig := slackEventProcessorConfig(cfg, nil)
+	processorConfig := slackEventProcessorConfig(cfg, nil, webhookPayloadSecret)
 
 	require.Equal(t, cfg.Website.URL, processorConfig.WebsiteURL)
-	require.Equal(t, cfg.Slack.WebhookPayloadSecret, processorConfig.WebhookPayloadSecret)
+	require.Equal(t, webhookPayloadSecret, processorConfig.WebhookPayloadSecret)
 	require.Equal(t, cfg.Slack.ClientID, processorConfig.ClientID)
 	require.Equal(t, cfg.Slack.ClientSecret, processorConfig.ClientSecret)
 	require.Equal(t, cfg.MessagingAssistant.WorkspaceTokensPerDay, processorConfig.DailyWorkspaceTokenLimit)

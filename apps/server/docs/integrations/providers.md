@@ -76,9 +76,9 @@ See [GitLab proof boundaries](code-hosts.md#gitlab-proof).
   must never update an envelope without that generation and original-value CAS.
 - Slack owns the remote event subscription, so disconnect revokes OAuth and
   removes local credentials rather than claiming a separately deletable webhook.
-- Verified webhook bodies use the independent
-  `APP_SLACK_WEBHOOK_PAYLOAD_SECRET`, are bound to the durable receipt and
-  installation generation, and are never queued as raw bytes. See
+- Verified webhook bodies use the internally derived Slack payload key, are
+  bound to the durable receipt and installation generation, and are never
+  queued as raw bytes. See
   [Slack webhook security](../security/slack-webhooks.md).
 
 ## Figma

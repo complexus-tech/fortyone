@@ -10,7 +10,6 @@ import (
 	developercredentials "github.com/complexus-tech/projects-api/internal/modules/developercredentials/service"
 	developeroauthrepository "github.com/complexus-tech/projects-api/internal/modules/developeroauth/repository"
 	developeroauth "github.com/complexus-tech/projects-api/internal/modules/developeroauth/service"
-	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
 	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -134,18 +133,6 @@ func validateDeveloperOAuthKeySeparation(cfg Config, applicationKeys []namedSecu
 	}
 	for _, oauthKey := range oauthKeyring.Keys {
 		encodedMaterial := base64.StdEncoding.EncodeToString(oauthKey.Material)
-		reusesVaultKey, err := credentialvault.ReusesSecretMaterial(
-			cfg.CredentialVault.ActiveKeyID,
-			cfg.CredentialVault.ActiveKeyVersion.Uint32(),
-			cfg.CredentialVault.Keys,
-			encodedMaterial,
-		)
-		if err != nil {
-			return fmt.Errorf("validate OAuth/vault key separation: %w", err)
-		}
-		if reusesVaultKey {
-			return errors.New("APP_OAUTH_TOKEN_HMAC_KEYS must not reuse APP_CREDENTIAL_VAULT_KEYS")
-		}
 		if developercredentials.DigestKeyringReusesSecret(developerKeyring, encodedMaterial) {
 			return errors.New("APP_OAUTH_TOKEN_HMAC_KEYS must not reuse APP_API_CREDENTIAL_HMAC_KEYS")
 		}

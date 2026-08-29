@@ -23,17 +23,17 @@ Figma payload fields or passcode rules.
 
 ## Payload-encryption key
 
-The API and worker share `APP_FIGMA_WEBHOOK_PAYLOAD_SECRET` only to encrypt and
-authenticate exact Figma request bodies in the durable inbox. It must be an
-independent random secret of at least 32 bytes. Production startup rejects the
-public development default and any equality with authentication, feedback,
-invitation, OAuth, developer-credential, or provider-vault key material.
+The API and worker derive the same Figma payload key from the stable
+`APP_AUTH_SECRET_KEY` using HKDF-SHA256 and a versioned Figma purpose label. It
+encrypts and authenticates exact Figma request bodies in the durable inbox
+without requiring another environment variable.
 
-This key is not the provider passcode and does not encrypt retained Figma OAuth
-tokens. Passcodes are one-way digested; OAuth tokens use the credential vault.
-Never substitute `APP_AUTH_SECRET_KEY`. Before rotating the payload key, pause
-Figma ingress and drain every pending or processing Figma inbox receipt; old
-inbox ciphertext is intentionally not opened with a fallback key.
+The derived key is not the provider passcode and does not encrypt retained
+Figma OAuth tokens. Passcodes are one-way digested; OAuth tokens use a separate
+derived credential-vault purpose. Before changing the application root or
+derivation version, pause Figma ingress and drain every pending or processing
+Figma inbox receipt; old inbox ciphertext is intentionally not opened with a
+cross-purpose fallback key.
 
 ## Ingress sequence
 

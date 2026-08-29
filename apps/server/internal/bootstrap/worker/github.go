@@ -62,6 +62,7 @@ func buildGitHubWorkerService(
 	queue *tasks.Service,
 	attachmentsService *attachments.Service,
 	vault *credentialvault.Vault,
+	webhookPayloadSecret string,
 	compatibility githubCompatibilityDependencies,
 ) (*github.Service, error) {
 	if err := compatibility.validate(); err != nil {
@@ -74,7 +75,7 @@ func buildGitHubWorkerService(
 		PrivateKeyBase64:     cfg.GitHub.PrivateKeyBase64,
 		RedirectURL:          cfg.GitHub.RedirectURL,
 		WebhookSecret:        cfg.GitHub.WebhookSecret,
-		WebhookPayloadSecret: cfg.GitHub.WebhookPayloadSecret,
+		WebhookPayloadSecret: webhookPayloadSecret,
 		WebsiteURL:           cfg.Website.URL,
 		GitHubUserID:         githubActorID,
 		CredentialVault:      vault,

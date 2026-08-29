@@ -316,7 +316,7 @@ func renderReference(variables []variable) []byte {
 		}
 		output.WriteString("\n")
 	}
-	return []byte(output.String())
+	return []byte(strings.TrimRight(output.String(), "\n") + "\n")
 }
 
 func renderVariableRow(item variable) string {
@@ -374,7 +374,7 @@ func variableCategory(name string) string {
 	switch {
 	case name == "APP_ENVIRONMENT", strings.HasPrefix(name, "APP_API_"), strings.HasPrefix(name, "APP_WORKER_"):
 		return "Runtime and lifecycle"
-	case strings.HasPrefix(name, "APP_AUTH_"), strings.Contains(name, "TOKEN_HMAC"), name == "FEEDBACK_INGRESS_SECRET", strings.HasPrefix(name, "APP_CREDENTIAL_VAULT_"):
+	case strings.HasPrefix(name, "APP_AUTH_"), strings.Contains(name, "TOKEN_HMAC"), name == "FEEDBACK_INGRESS_SECRET":
 		return "Authentication and security"
 	case strings.HasPrefix(name, "APP_DB_"):
 		return "Database"
@@ -409,7 +409,6 @@ func isSensitive(name string) bool {
 		strings.Contains(upper, "HMAC_KEY") ||
 		strings.Contains(upper, "TOKEN") ||
 		strings.Contains(upper, "CONNECTION_STRING") ||
-		name == "APP_CREDENTIAL_VAULT_KEYS" ||
 		name == "APP_TRACING_HEADERS"
 }
 

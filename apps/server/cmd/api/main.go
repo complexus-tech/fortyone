@@ -17,7 +17,7 @@ import (
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	actorsrepository "github.com/complexus-tech/projects-api/internal/platform/actors/repository"
-	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	"github.com/complexus-tech/projects-api/internal/platform/appkeys"
 	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 	platformhealth "github.com/complexus-tech/projects-api/internal/platform/health"
@@ -109,14 +109,11 @@ func run(ctx context.Context, log *logger.Logger) error {
 	if err != nil {
 		return fmt.Errorf("initialize invitation token security: %w", err)
 	}
-	credentialVault, err := credentialvault.NewFromEncodedKeyring(
-		cfg.CredentialVault.ActiveKeyID,
-		cfg.CredentialVault.ActiveKeyVersion.Uint32(),
-		cfg.CredentialVault.Keys,
-	)
+	integrationKeys, err := appkeys.NewIntegrationKeys(cfg.Auth.SecretKey)
 	if err != nil {
-		return fmt.Errorf("initialize provider credential vault: %w", err)
+		return fmt.Errorf("initialize integration security: %w", err)
 	}
+	credentialVault := integrationKeys.CredentialVault
 	developerCredentialTokens, err := newDeveloperCredentialTokenManager(cfg)
 	if err != nil {
 		return fmt.Errorf("initialize developer credential security: %w", err)
@@ -370,17 +367,17 @@ func run(ctx context.Context, log *logger.Logger) error {
 		GitHubKeyBase64:             cfg.GitHub.PrivateKeyBase64,
 		GitHubRedirect:              cfg.GitHub.RedirectURL,
 		GitHubWebhook:               cfg.GitHub.WebhookSecret,
-		GitHubWebhookPayloadSecret:  cfg.GitHub.WebhookPayloadSecret,
+		GitHubWebhookPayloadSecret:  integrationKeys.GitHubWebhookPayloadSecret,
 		SlackSigningSecret:          cfg.Slack.SigningSecret,
 		SlackClientID:               cfg.Slack.ClientID,
 		SlackClientSecret:           cfg.Slack.ClientSecret,
 		SlackRedirectURL:            cfg.Slack.RedirectURL,
-		SlackWebhookPayloadSecret:   cfg.Slack.WebhookPayloadSecret,
+		SlackWebhookPayloadSecret:   integrationKeys.SlackWebhookPayloadSecret,
 		FigmaClientID:               cfg.Figma.ClientID,
 		FigmaClientSecret:           cfg.Figma.ClientSecret,
 		FigmaRedirectURL:            cfg.Figma.RedirectURL,
 		FigmaWebhookURL:             cfg.Figma.WebhookURL,
-		FigmaWebhookPayloadSecret:   cfg.Figma.WebhookPayloadSecret,
+		FigmaWebhookPayloadSecret:   integrationKeys.FigmaWebhookPayloadSecret,
 		AIAPIKey:                    strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
 		SSEHub:                      sseHub,
 		AllowedOrigins:              originPolicy,

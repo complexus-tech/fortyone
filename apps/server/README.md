@@ -66,15 +66,12 @@ from route and actor policy through SQLC, tests, and generated documentation.
    [`docs/configuration.md`](docs/configuration.md). `make config-check` fails
    when either Go config schema or `.env.example` drifts from that contract.
 
-   Retained GitHub and Slack OAuth credentials use the shared envelope vault.
-   Configure the same `APP_CREDENTIAL_VAULT_*` keyring for the API and worker;
-   production rejects the public development key. The exact migration order,
-   AAD bindings, rotation limits, verification queries, and SQLC compatibility
-   debt are documented in
+   Retained GitHub, Slack, and Figma OAuth credentials use the shared envelope
+   vault. The API and worker derive its key, plus independent provider webhook
+   payload keys, from the same stable `APP_AUTH_SECRET_KEY`; no additional
+   integration encryption variables are required. The exact migration order,
+   AAD bindings, and SQLC compatibility debt are documented in
    [`docs/security/provider-credential-vault.md`](docs/security/provider-credential-vault.md).
-   Operators must use the separate
-   [`provider credential KEK rotation runbook`](docs/operations/provider-credential-rotation.md)
-   before changing or retiring a vault key generation.
 
    PATs and service-account keys use a separate versioned HMAC keyring. Set the
    three `APP_API_CREDENTIAL_HMAC_*` values, replace the public development key

@@ -106,9 +106,9 @@ ignored without revealing whether an installation exists.
 4. Only installation and repository identity are decoded for authorization.
 5. The active tenant/repository grant and opaque installation generation are
    resolved with generated SQLC.
-6. Exact bytes are encrypted with the dedicated
-   `APP_GITHUB_WEBHOOK_PAYLOAD_SECRET`; the auth secret, vault key, OAuth
-   secret, and GitHub signing secret are separate key domains.
+6. Exact bytes are encrypted with the dedicated GitHub payload key derived
+   from the application root; the vault, OAuth, and GitHub signing keys remain
+   separate cryptographic domains.
 7. The durable inbox deduplicates the stable GitHub delivery ID and queues only
    its UUID.
 8. The worker leases the row, opens the bound payload, and rechecks workspace,

@@ -48,8 +48,8 @@ both use the same `FigmaStoryAdapter`, which implements Figma's narrow
    `story_figma_links` in one transaction. A partial generic link is never
    committed.
 8. Webhook ingress persists encrypted exact bytes before queueing. Redis carries
-   only the shared inbox UUID. The API and worker share a dedicated
-   `APP_FIGMA_WEBHOOK_PAYLOAD_SECRET`; auth, passcode, OAuth-token, and
+   only the shared inbox UUID. The API and worker derive the same dedicated
+   Figma payload key from the application root; passcode, OAuth-token, and
    credential-vault keys are never used for inbox encryption.
 9. The worker rechecks the current connection generation before performing any
    event effect. Stale work becomes a terminal cancellation.
@@ -157,11 +157,10 @@ The recovery scheduler runs every minute. At-least-once queue delivery is
 intentional; the inbox lease and idempotent repository mutations, not Redis
 exactly-once assumptions, provide correctness.
 
-The API and worker must receive the same independent, randomly generated
-`APP_FIGMA_WEBHOOK_PAYLOAD_SECRET`. Production startup rejects a missing,
-undersized, development-default, or reused value. Rotating this key requires a
-drained Figma inbox because pending ciphertext must remain decryptable; do not
-silently fall back to `APP_AUTH_SECRET_KEY` or a credential-vault KEK.
+The API and worker derive the same versioned Figma payload key from the stable
+`APP_AUTH_SECRET_KEY`. Changing that root requires a drained Figma inbox and a
+coordinated provider-credential migration; pending ciphertext is not opened
+with a cross-purpose fallback.
 
 ## Adding behavior
 

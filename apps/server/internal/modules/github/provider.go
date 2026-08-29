@@ -34,7 +34,6 @@ func ProviderDescriptor() integrations.Descriptor {
 			{Key: "GITHUB_PRIVATE_KEY_BASE64", Required: true, Sensitive: true, Purpose: "GitHub App request signing"},
 			{Key: "GITHUB_REDIRECT_URL", Required: true, Purpose: "Exact OAuth callback"},
 			{Key: "GITHUB_WEBHOOK_SECRET", Required: true, Sensitive: true, Purpose: "Webhook verification"},
-			{Key: "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET", Required: true, Sensitive: true, Purpose: "Durable webhook payload encryption"},
 		},
 		Disconnect: integrations.DisconnectPolicy{
 			RevokeRemoteGrant:      true,

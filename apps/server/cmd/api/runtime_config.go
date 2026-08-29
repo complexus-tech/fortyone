@@ -9,7 +9,7 @@ import (
 
 	invitations "github.com/complexus-tech/projects-api/internal/modules/invitations/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
-	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	"github.com/complexus-tech/projects-api/internal/platform/appkeys"
 	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -84,10 +84,6 @@ func validateRuntimeConfig(cfg Config) (deployment.Mode, error) {
 			ForbiddenValues: []string{"development-only-invitation-hmac-key"},
 		},
 		deployment.SecretRequirement{
-			Name:  "APP_CREDENTIAL_VAULT_KEYS",
-			Value: cfg.CredentialVault.Keys,
-		},
-		deployment.SecretRequirement{
 			Name:  "APP_API_CREDENTIAL_HMAC_KEYS",
 			Value: cfg.DeveloperCredentials.Keys,
 		},
@@ -100,46 +96,13 @@ func validateRuntimeConfig(cfg Config) (deployment.Mode, error) {
 			Name:  "APP_OAUTH_TOKEN_HMAC_KEYS",
 			Value: cfg.DeveloperOAuth.DigestKeys,
 		},
-		deployment.SecretRequirement{
-			Name:            "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET",
-			Value:           cfg.GitHub.WebhookPayloadSecret,
-			ForbiddenValues: []string{"development-only-github-webhook-payload-secret"},
-		},
-		deployment.SecretRequirement{
-			Name:            "APP_SLACK_WEBHOOK_PAYLOAD_SECRET",
-			Value:           cfg.Slack.WebhookPayloadSecret,
-			ForbiddenValues: []string{"development-only-slack-webhook-payload-secret"},
-		},
-		deployment.SecretRequirement{
-			Name:            "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET",
-			Value:           cfg.Figma.WebhookPayloadSecret,
-			ForbiddenValues: []string{"development-only-figma-webhook-payload-secret"},
-		},
 	)
 	invitationConfig, invitationConfigErr := invitationTokenConfig(cfg)
 	securityKeySeparationErr := validateSecurityKeySeparation(mode, cfg, invitationConfig)
 	developerCredentialConfigErr := validateDeveloperCredentialConfig(mode, cfg)
 	developerOAuthConfigErr := validateDeveloperOAuthConfig(mode, cfg)
 	_, verificationTokenErr := users.NewVerificationTokenManager(verificationTokenConfig(cfg))
-	_, credentialVaultErr := credentialvault.NewFromEncodedKeyring(
-		cfg.CredentialVault.ActiveKeyID,
-		cfg.CredentialVault.ActiveKeyVersion.Uint32(),
-		cfg.CredentialVault.Keys,
-	)
-	var credentialVaultPolicyErr error
-	if credentialVaultErr == nil && mode.IsProduction() {
-		containsDevelopmentKey, err := credentialvault.ContainsDevelopmentKey(
-			cfg.CredentialVault.ActiveKeyID,
-			cfg.CredentialVault.ActiveKeyVersion.Uint32(),
-			cfg.CredentialVault.Keys,
-		)
-		switch {
-		case err != nil:
-			credentialVaultPolicyErr = fmt.Errorf("validate APP_CREDENTIAL_VAULT_KEYS policy: %w", err)
-		case containsDevelopmentKey:
-			credentialVaultPolicyErr = errors.New("APP_CREDENTIAL_VAULT_KEYS must not contain the development key in production")
-		}
-	}
+	_, integrationKeyErr := appkeys.NewIntegrationKeys(cfg.Auth.SecretKey)
 	var invitationTokenErr error
 	if invitationConfigErr == nil {
 		_, invitationTokenErr = invitations.NewInvitationTokenManager(invitationConfig)
@@ -170,8 +133,7 @@ func validateRuntimeConfig(cfg Config) (deployment.Mode, error) {
 		securityKeySeparationErr,
 		verificationTokenErr,
 		invitationTokenErr,
-		credentialVaultErr,
-		credentialVaultPolicyErr,
+		integrationKeyErr,
 		developerCredentialConfigErr,
 		developerOAuthConfigErr,
 		transportErr,
@@ -206,10 +168,7 @@ func validateSecurityKeySeparation(
 		{name: "GITHUB_WEBHOOK_SECRET", secret: cfg.GitHub.WebhookSecret},
 		{name: "SLACK_CLIENT_SECRET", secret: cfg.Slack.ClientSecret},
 		{name: "SLACK_SIGNING_SECRET", secret: cfg.Slack.SigningSecret},
-		{name: "APP_SLACK_WEBHOOK_PAYLOAD_SECRET", secret: cfg.Slack.WebhookPayloadSecret},
 		{name: "FIGMA_CLIENT_SECRET", secret: cfg.Figma.ClientSecret},
-		{name: "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET", secret: cfg.GitHub.WebhookPayloadSecret},
-		{name: "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET", secret: cfg.Figma.WebhookPayloadSecret},
 	}
 	for _, previous := range invitationConfig.Previous {
 		keys = append(keys, namedSecuritySecret{
@@ -227,24 +186,6 @@ func validateSecurityKeySeparation(
 			if secret == strings.TrimSpace(keys[otherIndex].secret) {
 				return fmt.Errorf("%s must not reuse %s", keys[otherIndex].name, key.name)
 			}
-		}
-	}
-	for _, key := range keys {
-		secret := strings.TrimSpace(key.secret)
-		if secret == "" {
-			continue
-		}
-		reusesSecret, err := credentialvault.ReusesSecretMaterial(
-			cfg.CredentialVault.ActiveKeyID,
-			cfg.CredentialVault.ActiveKeyVersion.Uint32(),
-			cfg.CredentialVault.Keys,
-			secret,
-		)
-		if err != nil {
-			return fmt.Errorf("validate APP_CREDENTIAL_VAULT_KEYS key separation: %w", err)
-		}
-		if reusesSecret {
-			return fmt.Errorf("APP_CREDENTIAL_VAULT_KEYS must not reuse %s", key.name)
 		}
 	}
 	if err := validateDeveloperCredentialKeySeparation(cfg, keys); err != nil {

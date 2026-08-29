@@ -72,11 +72,6 @@ type Config struct {
 		HMACKeyID    string `default:"v1" env:"APP_INVITATION_TOKEN_HMAC_KEY_ID"`
 		PreviousKeys string `env:"APP_INVITATION_TOKEN_HMAC_PREVIOUS_KEYS"`
 	}
-	CredentialVault struct {
-		ActiveKeyID      string                 `default:"development" env:"APP_CREDENTIAL_VAULT_ACTIVE_KEY_ID"`
-		ActiveKeyVersion configvalue.KeyVersion `default:"1" env:"APP_CREDENTIAL_VAULT_ACTIVE_KEY_VERSION"`
-		Keys             string                 `default:"{\"development@1\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"}" env:"APP_CREDENTIAL_VAULT_KEYS"`
-	}
 	DeveloperCredentials struct {
 		ActiveKeyID      string                 `default:"development" env:"APP_API_CREDENTIAL_HMAC_ACTIVE_KEY_ID"`
 		ActiveKeyVersion configvalue.KeyVersion `default:"1" env:"APP_API_CREDENTIAL_HMAC_ACTIVE_KEY_VERSION"`
@@ -166,29 +161,26 @@ type Config struct {
 		WebhookSecret string `env:"STRIPE_WEBHOOK_SECRET"`
 	}
 	GitHub struct {
-		AppID                int64  `env:"APP_GITHUB_APP_ID"`
-		AppSlug              string `env:"GITHUB_APP_SLUG"`
-		ClientID             string `env:"GITHUB_CLIENT_ID"`
-		ClientSecret         string `env:"GITHUB_CLIENT_SECRET"`
-		PrivateKeyBase64     string `env:"GITHUB_PRIVATE_KEY_BASE64"`
-		RedirectURL          string `env:"GITHUB_REDIRECT_URL"`
-		WebhookURL           string `env:"GITHUB_WEBHOOK_URL"`
-		WebhookSecret        string `env:"GITHUB_WEBHOOK_SECRET"`
-		WebhookPayloadSecret string `default:"development-only-github-webhook-payload-secret" env:"APP_GITHUB_WEBHOOK_PAYLOAD_SECRET"`
+		AppID            int64  `env:"APP_GITHUB_APP_ID"`
+		AppSlug          string `env:"GITHUB_APP_SLUG"`
+		ClientID         string `env:"GITHUB_CLIENT_ID"`
+		ClientSecret     string `env:"GITHUB_CLIENT_SECRET"`
+		PrivateKeyBase64 string `env:"GITHUB_PRIVATE_KEY_BASE64"`
+		RedirectURL      string `env:"GITHUB_REDIRECT_URL"`
+		WebhookURL       string `env:"GITHUB_WEBHOOK_URL"`
+		WebhookSecret    string `env:"GITHUB_WEBHOOK_SECRET"`
 	}
 	Slack struct {
-		ClientID             string `env:"SLACK_CLIENT_ID"`
-		ClientSecret         string `env:"SLACK_CLIENT_SECRET"`
-		SigningSecret        string `env:"SLACK_SIGNING_SECRET"`
-		RedirectURL          string `default:"https://api.fortyone.app/integrations/slack/setup" env:"SLACK_REDIRECT_URL"`
-		WebhookPayloadSecret string `default:"development-only-slack-webhook-payload-secret" env:"APP_SLACK_WEBHOOK_PAYLOAD_SECRET"`
+		ClientID      string `env:"SLACK_CLIENT_ID"`
+		ClientSecret  string `env:"SLACK_CLIENT_SECRET"`
+		SigningSecret string `env:"SLACK_SIGNING_SECRET"`
+		RedirectURL   string `default:"https://api.fortyone.app/integrations/slack/setup" env:"SLACK_REDIRECT_URL"`
 	}
 	Figma struct {
-		ClientID             string `env:"FIGMA_CLIENT_ID"`
-		ClientSecret         string `env:"FIGMA_CLIENT_SECRET"`
-		RedirectURL          string `default:"https://api.fortyone.app/integrations/figma/callback" env:"FIGMA_REDIRECT_URL"`
-		WebhookURL           string `default:"https://api.fortyone.app/webhooks/figma" env:"FIGMA_WEBHOOK_URL"`
-		WebhookPayloadSecret string `default:"development-only-figma-webhook-payload-secret" env:"APP_FIGMA_WEBHOOK_PAYLOAD_SECRET"`
+		ClientID     string `env:"FIGMA_CLIENT_ID"`
+		ClientSecret string `env:"FIGMA_CLIENT_SECRET"`
+		RedirectURL  string `default:"https://api.fortyone.app/integrations/figma/callback" env:"FIGMA_REDIRECT_URL"`
+		WebhookURL   string `default:"https://api.fortyone.app/webhooks/figma" env:"FIGMA_WEBHOOK_URL"`
 	}
 }
 

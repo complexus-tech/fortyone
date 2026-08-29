@@ -2,18 +2,18 @@
 
 Browser sessions use opaque random tokens backed by versioned Redis records and
 PostgreSQL account epochs; they do not use `APP_AUTH_SECRET_KEY` for signing or
-verification. That variable remains the legacy application key for bounded
-non-session protocols that have not yet moved to dedicated keys. New security
-capabilities must use an independently generated key or keyring. The API and
-worker validate required production values at startup and reject known
-development material, keys shorter than 32 bytes, reuse between named
-capabilities, and reuse of a credential-vault key.
+verification. That variable is the stable application root for legacy
+protocols and versioned, purpose-separated integration keys. New integration
+capabilities should derive a labelled key through `internal/platform/appkeys`
+instead of adding another operator-managed environment variable. Capabilities
+that issue externally durable credentials keep their explicit versioned
+keyrings so an application-root change cannot silently invalidate them.
 
 ## Active boundaries
 
 | Configuration                                                        | Owner                 | Protects                                                                                                                           | Shared by                       |
 | -------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| `APP_AUTH_SECRET_KEY`                                                | legacy application    | Existing calendar, Maya, feedback, public-API cursor, and bounded Slack cutover cryptography; never browser-session authentication | API and worker legacy consumers |
+| `APP_AUTH_SECRET_KEY`                                                | application root      | Legacy protocols and HKDF-derived integration keys; never browser-session authentication                                           | API and worker                  |
 | `APP_EMAIL_REPLY_SECURITY_KEY`                                       | Email Reply           | Brevo ingress proof and authenticated encryption of durable email-reply payloads                                                   | API and worker                  |
 | `APP_MESSAGING_MUTATION_HMAC_KEY`                                    | Messaging             | short-lived assistant mutation proposals and confirmations                                                                         | API and worker                  |
 | `APP_FEEDBACK_SECURITY_KEY`                                          | Feedback              | verification digests, unsubscribe links, and widget-secret encryption                                                              | API and worker                  |
@@ -21,21 +21,21 @@ capabilities, and reuse of a credential-vault key.
 | `APP_INVITATION_TOKEN_HMAC_KEY`                                      | Invitations           | invitation bearer-token digests                                                                                                    | API and worker                  |
 | `APP_API_CREDENTIAL_HMAC_KEYS`                                       | Developer credentials | PAT and service-account secret digests                                                                                             | API                             |
 | `APP_OAUTH_ACCESS_TOKEN_SIGNING_KEY` and `APP_OAUTH_TOKEN_HMAC_KEYS` | Developer OAuth       | access-token signatures and authorization/refresh-token digests                                                                    | API                             |
-| `APP_CREDENTIAL_VAULT_KEYS`                                          | Integration platform  | provider credential envelope encryption                                                                                            | API and worker                  |
-| `APP_<PROVIDER>_WEBHOOK_PAYLOAD_SECRET`                              | provider adapter      | authenticated encryption for one durable provider inbox                                                                            | API and worker                  |
+| Internally derived integration keys                                 | Integration platform  | provider credential envelopes and GitHub, Slack, and Figma durable webhook inboxes                                                  | API and worker                  |
 
-Domain separation inside one capability prevents cross-protocol use; it does
-not justify sharing that key with another row in the table. Provider signing
-secrets, OAuth client secrets, storage credentials, and deployment identities
-are also independent and are never accepted as substitutes for application
-keys.
+The integration derivation uses HKDF-SHA256 with fixed, versioned purpose
+labels. This provides domain separation without asking an operator to
+provision four additional secrets. Provider signing secrets, OAuth client
+secrets, storage credentials, and deployment identities remain external
+provider credentials and are never accepted as application keys.
 
 ## Provisioning
 
-Generate at least 32 random bytes per key in the managed secret store. Inject
-the same value into API and worker task definitions only when the table says the
-capability is shared. Never place plaintext values in source control, generated
-configuration documentation, logs, traces, task payloads, or support tickets.
+Generate at least 32 random bytes for each operator-managed key in the managed
+secret store. Keep `APP_AUTH_SECRET_KEY` identical across API and worker tasks;
+the application derives integration keys locally and never exports them. Never
+place plaintext values in source control, generated configuration
+documentation, logs, traces, task payloads, or support tickets.
 
 Before deployment, run:
 

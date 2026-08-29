@@ -29,7 +29,6 @@ func ProviderDescriptor() integrations.Descriptor {
 			{Key: "SLACK_CLIENT_SECRET", Required: true, Sensitive: true, Purpose: "OAuth client authentication"},
 			{Key: "SLACK_SIGNING_SECRET", Required: true, Sensitive: true, Purpose: "Request signature verification"},
 			{Key: "SLACK_REDIRECT_URL", Required: true, Purpose: "Exact OAuth callback"},
-			{Key: "APP_SLACK_WEBHOOK_PAYLOAD_SECRET", Required: true, Sensitive: true, Purpose: "Durable webhook payload encryption"},
 		},
 		Disconnect: integrations.DisconnectPolicy{
 			RevokeRemoteGrant:      true,

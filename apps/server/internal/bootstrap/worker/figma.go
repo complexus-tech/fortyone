@@ -30,6 +30,7 @@ func buildFigmaWorker(
 	updates *publisher.Publisher,
 	queue *tasks.Service,
 	vault *credentialvault.Vault,
+	webhookPayloadSecret string,
 ) (figmaWorker, error) {
 	if log == nil || pool == nil || queue == nil || vault == nil {
 		return figmaWorker{}, errors.New("build Figma worker: dependencies are required")
@@ -39,7 +40,7 @@ func buildFigmaWorker(
 		ClientID: cfg.Figma.ClientID, ClientSecret: cfg.Figma.ClientSecret,
 		RedirectURL: cfg.Figma.RedirectURL, WebhookURL: cfg.Figma.WebhookURL,
 		WebsiteURL: cfg.Website.URL, Credentials: vault,
-		WebhookPayloadSecret: cfg.Figma.WebhookPayloadSecret,
+		WebhookPayloadSecret: webhookPayloadSecret,
 	}
 	gateway, inbox, payloads, err := buildFigmaWebhookRuntime(pool, repository, queue, config)
 	if err != nil {

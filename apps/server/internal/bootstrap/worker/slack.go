@@ -40,11 +40,12 @@ import (
 )
 
 type slackEventProcessorDependencies struct {
-	EventPublisher  *publisher.Publisher
-	Tasks           *tasks.Service
-	MayaActorID     uuid.UUID
-	MayaAccess      mayaWorkspaceAccess
-	CredentialVault *credentialvault.Vault
+	EventPublisher       *publisher.Publisher
+	Tasks                *tasks.Service
+	MayaActorID          uuid.UUID
+	MayaAccess           mayaWorkspaceAccess
+	CredentialVault      *credentialvault.Vault
+	WebhookPayloadSecret string
 }
 
 func (d slackEventProcessorDependencies) validate() error {
@@ -62,6 +63,9 @@ func (d slackEventProcessorDependencies) validate() error {
 	}
 	if d.CredentialVault == nil {
 		return errors.New("slack event processor: credential vault is required")
+	}
+	if strings.TrimSpace(d.WebhookPayloadSecret) == "" {
+		return errors.New("slack event processor: webhook payload secret is required")
 	}
 	return nil
 }
@@ -145,12 +149,12 @@ func buildSlackEventProcessor(log *logger.Logger, pool *pgxpool.Pool, redisClien
 		pool,
 		slackRepo,
 		dependencies.Tasks,
-		slackWebhookConfig(cfg, dependencies.CredentialVault),
+		slackWebhookConfig(cfg, dependencies.CredentialVault, dependencies.WebhookPayloadSecret),
 	)
 	if err != nil {
 		return nil, err
 	}
-	processorConfig := slackEventProcessorConfig(cfg, dependencies.CredentialVault)
+	processorConfig := slackEventProcessorConfig(cfg, dependencies.CredentialVault, dependencies.WebhookPayloadSecret)
 	processorConfig.CallLimiter = slackadapter.NewCallLimiter(callLimiter)
 	processorConfig.UsageBudget = slackadapter.NewUsageBudget(messagingrepository.NewDailyUsageRepository(pool))
 	processorConfig.ContextProvider = slackadapter.NewContextProvider(contextProvider)
@@ -184,10 +188,10 @@ func messagingAssistantCallLimiterConfig(cfg Config) messagingbudget.CallLimiter
 	}
 }
 
-func slackEventProcessorConfig(cfg Config, vault *credentialvault.Vault) slack.EventProcessorConfig {
+func slackEventProcessorConfig(cfg Config, vault *credentialvault.Vault, webhookPayloadSecret string) slack.EventProcessorConfig {
 	return slack.EventProcessorConfig{
 		WebsiteURL:               cfg.Website.URL,
-		WebhookPayloadSecret:     cfg.Slack.WebhookPayloadSecret,
+		WebhookPayloadSecret:     webhookPayloadSecret,
 		CredentialVault:          vault,
 		ClientID:                 cfg.Slack.ClientID,
 		ClientSecret:             cfg.Slack.ClientSecret,
@@ -195,10 +199,10 @@ func slackEventProcessorConfig(cfg Config, vault *credentialvault.Vault) slack.E
 	}
 }
 
-func slackWebhookConfig(cfg Config, vault *credentialvault.Vault) slack.Config {
+func slackWebhookConfig(cfg Config, vault *credentialvault.Vault, webhookPayloadSecret string) slack.Config {
 	return slack.Config{
 		SigningSecret:        cfg.Slack.SigningSecret,
-		WebhookPayloadSecret: cfg.Slack.WebhookPayloadSecret,
+		WebhookPayloadSecret: webhookPayloadSecret,
 		CredentialVault:      vault,
 	}
 }

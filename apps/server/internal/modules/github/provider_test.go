@@ -17,13 +17,9 @@ func TestProviderDescriptorMatchesImplementedGitHubLifecycle(t *testing.T) {
 			t.Fatal("GitHub OAuth token refresh is not implemented")
 		}
 	}
-	foundPayloadSecret := false
 	for _, requirement := range descriptor.Configuration {
 		if requirement.Key == "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET" {
-			foundPayloadSecret = requirement.Required && requirement.Sensitive
+			t.Fatal("GitHub payload encryption is derived internally and must not be operator configuration")
 		}
-	}
-	if !foundPayloadSecret {
-		t.Fatal("GitHub durable payload encryption key is not declared as required sensitive configuration")
 	}
 }

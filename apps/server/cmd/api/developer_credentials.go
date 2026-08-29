@@ -1,13 +1,11 @@
 package main
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
 
 	developercredentials "github.com/complexus-tech/projects-api/internal/modules/developercredentials/service"
-	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
 	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 )
 
@@ -57,21 +55,6 @@ func validateDeveloperCredentialKeySeparation(cfg Config, applicationKeys []name
 		}
 		if developercredentials.DigestKeyringReusesSecret(keyring, applicationKey.secret) {
 			return fmt.Errorf("APP_API_CREDENTIAL_HMAC_KEYS must not reuse %s", applicationKey.name)
-		}
-	}
-	for _, digestKey := range keyring.Keys {
-		encodedMaterial := base64.StdEncoding.EncodeToString(digestKey.Material)
-		reusesVaultKey, err := credentialvault.ReusesSecretMaterial(
-			cfg.CredentialVault.ActiveKeyID,
-			cfg.CredentialVault.ActiveKeyVersion.Uint32(),
-			cfg.CredentialVault.Keys,
-			encodedMaterial,
-		)
-		if err != nil {
-			return fmt.Errorf("validate credential keyring separation: %w", err)
-		}
-		if reusesVaultKey {
-			return errors.New("APP_API_CREDENTIAL_HMAC_KEYS must not reuse APP_CREDENTIAL_VAULT_KEYS")
 		}
 	}
 	return nil

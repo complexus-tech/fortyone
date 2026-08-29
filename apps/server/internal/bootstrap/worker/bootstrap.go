@@ -24,7 +24,7 @@ import (
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
 	actorsrepository "github.com/complexus-tech/projects-api/internal/platform/actors/repository"
-	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	"github.com/complexus-tech/projects-api/internal/platform/appkeys"
 	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	platformidempotency "github.com/complexus-tech/projects-api/internal/platform/idempotency"
 	"github.com/complexus-tech/projects-api/pkg/aws"
@@ -67,14 +67,11 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 	if _, err := validateRuntimeConfig(cfg); err != nil {
 		return App{}, err
 	}
-	credentialVault, err := credentialvault.NewFromEncodedKeyring(
-		cfg.CredentialVault.ActiveKeyID,
-		cfg.CredentialVault.ActiveKeyVersion.Uint32(),
-		cfg.CredentialVault.Keys,
-	)
+	integrationKeys, err := appkeys.NewIntegrationKeys(cfg.Auth.SecretKey)
 	if err != nil {
-		return App{}, fmt.Errorf("initialize provider credential vault: %w", err)
+		return App{}, fmt.Errorf("initialize integration security: %w", err)
 	}
+	credentialVault := integrationKeys.CredentialVault
 	invitationConfig, err := workerInvitationTokenConfig(cfg)
 	if err != nil {
 		return App{}, fmt.Errorf("initialize invitation token security: %w", err)
@@ -245,6 +242,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		tasksService,
 		attachmentsService,
 		credentialVault,
+		integrationKeys.GitHubWebhookPayloadSecret,
 		buildGitHubCompatibilityDependencies(connections.Pool, mayaRepository),
 	)
 	if err != nil {
@@ -257,6 +255,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		eventPublisher,
 		tasksService,
 		credentialVault,
+		integrationKeys.FigmaWebhookPayloadSecret,
 	)
 	if err != nil {
 		return App{}, fmt.Errorf("initialize Figma worker service: %w", err)
@@ -330,11 +329,12 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		return App{}, err
 	}
 	slackEvents, err := buildSlackEventProcessor(log, connections.Pool, redisClient, cfg, slackEventProcessorDependencies{
-		EventPublisher:  eventPublisher,
-		Tasks:           tasksService,
-		MayaActorID:     systemUserID,
-		MayaAccess:      mayaRepository,
-		CredentialVault: credentialVault,
+		EventPublisher:       eventPublisher,
+		Tasks:                tasksService,
+		MayaActorID:          systemUserID,
+		MayaAccess:           mayaRepository,
+		CredentialVault:      credentialVault,
+		WebhookPayloadSecret: integrationKeys.SlackWebhookPayloadSecret,
 	})
 	if err != nil {
 		return App{}, fmt.Errorf("initialize Slack event processor: %w", err)
@@ -377,50 +377,6 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 			"scanned", figmaMigration.Scanned,
 			"migrated", figmaMigration.Migrated,
 			"stale", figmaMigration.Stale,
-		)
-	}
-	if cfg.CredentialVault.RewrapOnStartup {
-		githubRotation, err := githubService.RewrapUserCredentials(ctx)
-		if err != nil {
-			return App{}, fmt.Errorf("rewrap GitHub user credentials: %w", err)
-		}
-		log.Info(
-			ctx,
-			"Verified and rewrapped GitHub user credentials",
-			"active_key_id", githubRotation.ActiveKey.ID,
-			"active_key_version", githubRotation.ActiveKey.Version,
-			"scanned", githubRotation.Scanned,
-			"current", githubRotation.Current,
-			"rewrapped", githubRotation.Rewrapped,
-			"stale", githubRotation.Stale,
-		)
-		slackRotation, err := slackEvents.RewrapCredentials(ctx)
-		if err != nil {
-			return App{}, fmt.Errorf("rewrap Slack credentials: %w", err)
-		}
-		log.Info(
-			ctx,
-			"Verified and rewrapped Slack credentials",
-			"active_key_id", slackRotation.ActiveKey.ID,
-			"active_key_version", slackRotation.ActiveKey.Version,
-			"scanned", slackRotation.Scanned,
-			"current", slackRotation.Current,
-			"rewrapped", slackRotation.Rewrapped,
-			"stale", slackRotation.Stale,
-		)
-		figmaRotation, err := figmaRuntime.service.RewrapCredentials(ctx)
-		if err != nil {
-			return App{}, fmt.Errorf("rewrap Figma credentials: %w", err)
-		}
-		log.Info(
-			ctx,
-			"Verified and rewrapped Figma credentials",
-			"active_key_id", figmaRotation.ActiveKey.ID,
-			"active_key_version", figmaRotation.ActiveKey.Version,
-			"scanned", figmaRotation.Scanned,
-			"current", figmaRotation.Current,
-			"rewrapped", figmaRotation.Rewrapped,
-			"stale", figmaRotation.Stale,
 		)
 	}
 	outboundWebhookDispatcher, err := buildOutboundWebhookDispatcher(connections.Pool, credentialVault)

@@ -1,18 +1,16 @@
 # Slack webhook security
 
-Slack webhook ingress has two different secrets with different jobs:
+Slack webhook ingress has two different keys with different jobs:
 
-| Secret                             | Purpose                                                  | Where it is used       |
-| ---------------------------------- | -------------------------------------------------------- | ---------------------- |
-| `SLACK_SIGNING_SECRET`             | Authenticates the exact HTTP request Slack sent          | API verifier only      |
-| `APP_SLACK_WEBHOOK_PAYLOAD_SECRET` | Encrypts the verified body retained in the durable inbox | API ingress and worker |
+| Key | Purpose | Source | Where it is used |
+| --- | --- | --- | --- |
+| `SLACK_SIGNING_SECRET` | Authenticates the exact HTTP request Slack sent | Slack application configuration | API verifier only |
+| Slack webhook payload key | Encrypts the verified body retained in the durable inbox | Derived from `APP_AUTH_SECRET_KEY` with a versioned Slack purpose label | API ingress and worker |
 
-Neither key is a Slack OAuth token or a credential-vault key. Production startup
-rejects missing development placeholders and rejects reuse with the application
-auth secret, Slack client secret, Slack signing secret, provider credential
-keyring, or other webhook payload keys. Generate independent random values in
-the managed secret store and provide the same payload key to the replacement API
-and worker.
+Neither key is a Slack OAuth token or provider-credential key. The signing
+secret remains an external Slack credential. FortyOne derives the payload key
+internally, so operators provision only the same stable application root on the
+API and worker.
 
 ## Receive and processing boundary
 
@@ -53,7 +51,7 @@ only retryable Slack inbox rows in stable UUID order. For each row it:
 1. validates the complete durable identity;
 2. decrypts the legacy payload with the old application secret;
 3. verifies the Slack `team_id` and `event_id` against the row;
-4. reseals the exact body with `APP_SLACK_WEBHOOK_PAYLOAD_SECRET`; and
+4. reseals the exact body with the derived Slack payload key; and
 5. replaces the old value with an exact ciphertext-and-identity compare-and-swap.
 
 A concurrent update wins and is never overwritten. Any malformed identity,
@@ -64,11 +62,12 @@ secret from the Slack cutover path. Do not add a runtime fallback.
 
 ## Rotation and incident response
 
-The payload codec currently uses one active secret rather than a keyring. Rotate
-it only in a coordinated maintenance window: stop ingress, drain or reseal every
-retryable retained Slack payload with a purpose-built bounded migration, deploy
-the new key to both API and worker, and then resume traffic. Replacing the key
-without handling retained receipts makes them intentionally unreadable.
+The payload codec currently uses one derived key version rather than a keyring.
+Changing the application root or derivation version requires a coordinated
+maintenance window: stop ingress, drain or reseal every retryable retained
+Slack payload with a purpose-built bounded migration, deploy API and worker
+together, and then resume traffic. Changing the root without handling retained
+receipts makes them intentionally unreadable.
 
 If either Slack secret may be compromised, pause Slack ingress and delivery,
 replace the affected secret, revoke or reinstall exposed Slack credentials when

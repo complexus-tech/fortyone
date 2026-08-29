@@ -6,10 +6,10 @@ import (
 	"github.com/complexus-tech/projects-api/internal/platform/webhooks"
 )
 
-// v2 is the Slack cutover from APP_AUTH_SECRET_KEY to the dedicated
-// APP_SLACK_WEBHOOK_PAYLOAD_SECRET. The shared codec has its own authenticated
-// envelope version; this prefix identifies the provider key domain used to
-// create it so normal processing can never silently open a legacy receipt.
+// v2 is the Slack cutover from the legacy shared cipher to the derived Slack
+// payload key. The shared codec has its own authenticated envelope version;
+// this prefix identifies the provider key domain used to create it so normal
+// processing can never silently open a legacy receipt.
 const slackWebhookPayloadEnvelopePrefix = "slack-webhook.v2."
 
 type slackWebhookPayloadCodec interface {

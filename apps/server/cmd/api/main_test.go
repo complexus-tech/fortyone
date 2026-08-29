@@ -59,9 +59,6 @@ func TestValidateRuntimeConfigRejectsUnsafeProductionConfiguration(t *testing.T)
 	require.ErrorContains(t, err, "APP_EMAIL_REPLY_SECURITY_KEY")
 	require.ErrorContains(t, err, "APP_MESSAGING_MUTATION_HMAC_KEY")
 	require.ErrorContains(t, err, "APP_VERIFICATION_TOKEN_HMAC_KEY")
-	require.ErrorContains(t, err, "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET")
-	require.ErrorContains(t, err, "APP_SLACK_WEBHOOK_PAYLOAD_SECRET")
-	require.ErrorContains(t, err, "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET")
 	require.ErrorContains(t, err, "APP_DB_SSL_MODE")
 	require.ErrorContains(t, err, "APP_REDIS_DISABLE_TLS")
 }
@@ -116,106 +113,6 @@ func TestValidateRuntimeConfigAcceptsHTTPSSubdomainOrigins(t *testing.T) {
 
 	_, err := validateRuntimeConfig(cfg)
 	require.NoError(t, err)
-}
-
-func TestValidateRuntimeConfigRejectsSemanticDevelopmentVaultKeys(t *testing.T) {
-	t.Parallel()
-
-	tests := map[string]struct {
-		activeKeyID string
-		keys        string
-	}{
-		"formatted development key": {
-			activeKeyID: "development",
-			keys:        `{ "development@1" : "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }`,
-		},
-		"renamed development material": {
-			activeKeyID: "production",
-			keys:        `{"production@1":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}`,
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			cfg := secureProductionConfig()
-			cfg.CredentialVault.ActiveKeyID = tt.activeKeyID
-			cfg.CredentialVault.Keys = tt.keys
-
-			_, err := validateRuntimeConfig(cfg)
-			require.ErrorContains(t, err, "APP_CREDENTIAL_VAULT_KEYS must not contain the development key in production")
-		})
-	}
-}
-
-func TestValidateRuntimeConfigRejectsVaultReuseOfApplicationSecrets(t *testing.T) {
-	t.Parallel()
-
-	const reusedSecret = "0123456789abcdef0123456789abcdef" // gitleaks:allow -- deterministic key-reuse test vector
-	tests := map[string]struct {
-		configName string
-		configure  func(*Config)
-	}{
-		"authentication": {
-			configName: "APP_AUTH_SECRET_KEY",
-			configure:  func(cfg *Config) { cfg.Auth.SecretKey = reusedSecret },
-		},
-		"verification": {
-			configName: "APP_VERIFICATION_TOKEN_HMAC_KEY",
-			configure:  func(cfg *Config) { cfg.VerificationTokens.HMACKey = reusedSecret },
-		},
-		"email reply": {
-			configName: "APP_EMAIL_REPLY_SECURITY_KEY",
-			configure:  func(cfg *Config) { cfg.EmailReply.SecurityKey = reusedSecret },
-		},
-		"messaging mutation": {
-			configName: "APP_MESSAGING_MUTATION_HMAC_KEY",
-			configure:  func(cfg *Config) { cfg.Messaging.MutationHMACKey = reusedSecret },
-		},
-		"current invitation": {
-			configName: "APP_INVITATION_TOKEN_HMAC_KEY",
-			configure:  func(cfg *Config) { cfg.InvitationTokens.HMACKey = reusedSecret },
-		},
-		"previous invitation": {
-			configName: "APP_INVITATION_TOKEN_HMAC_PREVIOUS_KEYS[old]",
-			configure: func(cfg *Config) {
-				cfg.InvitationTokens.PreviousKeys = "old=" + reusedSecret
-			},
-		},
-		"Figma webhook payload": {
-			configName: "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET",
-			configure: func(cfg *Config) {
-				cfg.Figma.WebhookPayloadSecret = reusedSecret
-			},
-		},
-		"GitHub webhook payload": {
-			configName: "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET",
-			configure: func(cfg *Config) {
-				cfg.GitHub.WebhookPayloadSecret = reusedSecret
-			},
-		},
-		"Slack webhook payload": {
-			configName: "APP_SLACK_WEBHOOK_PAYLOAD_SECRET",
-			configure: func(cfg *Config) {
-				cfg.Slack.WebhookPayloadSecret = reusedSecret
-			},
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			cfg := secureProductionConfig()
-			cfg.CredentialVault.Keys = `{"production@1":"` + base64.StdEncoding.EncodeToString([]byte(reusedSecret)) + `"}`
-			tt.configure(&cfg)
-
-			_, err := validateRuntimeConfig(cfg)
-			require.ErrorContains(t, err, "APP_CREDENTIAL_VAULT_KEYS must not reuse "+tt.configName)
-			require.NotContains(t, err.Error(), reusedSecret)
-		})
-	}
 }
 
 func TestValidateRuntimeConfigRejectsReusedAuthAndVerificationKeys(t *testing.T) {
@@ -299,30 +196,6 @@ func TestValidateRuntimeConfigRejectsPurposeKeyReuse(t *testing.T) {
 	}
 }
 
-func TestFigmaWebhookPayloadConfigurationIsDedicated(t *testing.T) {
-	configType := reflect.TypeOf(Config{}.Figma)
-	payloadSecret, found := configType.FieldByName("WebhookPayloadSecret")
-	require.True(t, found)
-	require.Equal(t, "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET", payloadSecret.Tag.Get("env"))
-	require.Equal(t, "development-only-figma-webhook-payload-secret", payloadSecret.Tag.Get("default"))
-}
-
-func TestGitHubWebhookPayloadConfigurationIsDedicated(t *testing.T) {
-	configType := reflect.TypeOf(Config{}.GitHub)
-	payloadSecret, found := configType.FieldByName("WebhookPayloadSecret")
-	require.True(t, found)
-	require.Equal(t, "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET", payloadSecret.Tag.Get("env"))
-	require.Equal(t, "development-only-github-webhook-payload-secret", payloadSecret.Tag.Get("default"))
-}
-
-func TestSlackWebhookPayloadConfigurationIsDedicated(t *testing.T) {
-	configType := reflect.TypeOf(Config{}.Slack)
-	payloadSecret, found := configType.FieldByName("WebhookPayloadSecret")
-	require.True(t, found)
-	require.Equal(t, "APP_SLACK_WEBHOOK_PAYLOAD_SECRET", payloadSecret.Tag.Get("env"))
-	require.Equal(t, "development-only-slack-webhook-payload-secret", payloadSecret.Tag.Get("default"))
-}
-
 func TestValidateRuntimeConfigRejectsFeedbackSecurityKeyReuse(t *testing.T) {
 	t.Parallel()
 
@@ -332,50 +205,6 @@ func TestValidateRuntimeConfigRejectsFeedbackSecurityKeyReuse(t *testing.T) {
 	_, err := validateRuntimeConfig(cfg)
 	require.ErrorContains(t, err, "APP_FEEDBACK_SECURITY_KEY must not reuse APP_AUTH_SECRET_KEY")
 	require.NotContains(t, err.Error(), cfg.Auth.SecretKey)
-}
-
-func TestValidateRuntimeConfigRejectsFigmaWebhookPayloadKeyReuse(t *testing.T) {
-	t.Parallel()
-
-	cfg := secureProductionConfig()
-	cfg.Figma.WebhookPayloadSecret = cfg.Auth.SecretKey
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_FIGMA_WEBHOOK_PAYLOAD_SECRET must not reuse APP_AUTH_SECRET_KEY")
-	require.NotContains(t, err.Error(), cfg.Auth.SecretKey)
-}
-
-func TestValidateRuntimeConfigRejectsGitHubWebhookPayloadKeyReuse(t *testing.T) {
-	t.Parallel()
-
-	cfg := secureProductionConfig()
-	cfg.GitHub.WebhookPayloadSecret = cfg.Auth.SecretKey
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET must not reuse APP_AUTH_SECRET_KEY")
-	require.NotContains(t, err.Error(), cfg.Auth.SecretKey)
-}
-
-func TestValidateRuntimeConfigRejectsSlackWebhookPayloadKeyReuse(t *testing.T) {
-	t.Parallel()
-
-	cfg := secureProductionConfig()
-	cfg.Slack.WebhookPayloadSecret = cfg.Auth.SecretKey
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_SLACK_WEBHOOK_PAYLOAD_SECRET must not reuse APP_AUTH_SECRET_KEY")
-	require.NotContains(t, err.Error(), cfg.Auth.SecretKey)
-}
-
-func TestValidateRuntimeConfigRejectsGitHubSigningAndPayloadKeyReuse(t *testing.T) {
-	t.Parallel()
-
-	cfg := secureProductionConfig()
-	cfg.GitHub.WebhookSecret = cfg.GitHub.WebhookPayloadSecret
-
-	_, err := validateRuntimeConfig(cfg)
-	require.ErrorContains(t, err, "APP_GITHUB_WEBHOOK_PAYLOAD_SECRET must not reuse GITHUB_WEBHOOK_SECRET")
-	require.NotContains(t, err.Error(), cfg.GitHub.WebhookPayloadSecret)
 }
 
 func TestDeveloperCredentialConfigurationDefaults(t *testing.T) {
@@ -483,9 +312,6 @@ func secureProductionConfig() Config {
 	cfg.VerificationTokens.HMACKeyID = "2026-08-v1"
 	cfg.InvitationTokens.HMACKey = "a-separate-invitation-key-with-32-bytes"
 	cfg.InvitationTokens.HMACKeyID = "2026-08-v1"
-	cfg.CredentialVault.ActiveKeyID = "production"
-	cfg.CredentialVault.ActiveKeyVersion = 1
-	cfg.CredentialVault.Keys = `{"production@1":"MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="}`
 	cfg.DeveloperCredentials.ActiveKeyID = "production"
 	cfg.DeveloperCredentials.ActiveKeyVersion = 1
 	cfg.DeveloperCredentials.Keys = `{"production@1":"` + base64.StdEncoding.EncodeToString([]byte("abcdef0123456789abcdef0123456789")) + `"}`
@@ -493,9 +319,6 @@ func secureProductionConfig() Config {
 	cfg.DeveloperOAuth.ActiveDigestKeyID = "production"
 	cfg.DeveloperOAuth.DigestKeys = `{"production":"` + base64.StdEncoding.EncodeToString([]byte("oauth-digest-production-key-0001")) + `"}`
 	cfg.DeveloperOAuth.DynamicClientTTL = 30 * 24 * time.Hour
-	cfg.GitHub.WebhookPayloadSecret = "a-separate-github-payload-key-with-32-bytes"
-	cfg.Slack.WebhookPayloadSecret = "a-separate-slack-payload-key-with-32-bytes"
-	cfg.Figma.WebhookPayloadSecret = "a-separate-figma-payload-key-with-32-bytes"
 	cfg.DB.SSLMode = "verify-full"
 	cfg.Web.CORSAllowedOrigins = "https://app.fortyone.app"
 	return cfg

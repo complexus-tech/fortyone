@@ -17,13 +17,9 @@ func TestProviderDescriptorMatchesImplementedSlackLifecycle(t *testing.T) {
 			t.Fatal("Slack token rotation must not be advertised until refresh-token persistence and atomic rotation are implemented")
 		}
 	}
-	foundPayloadSecret := false
 	for _, requirement := range descriptor.Configuration {
 		if requirement.Key == "APP_SLACK_WEBHOOK_PAYLOAD_SECRET" {
-			foundPayloadSecret = requirement.Required && requirement.Sensitive
+			t.Fatal("Slack payload encryption is derived internally and must not be operator configuration")
 		}
-	}
-	if !foundPayloadSecret {
-		t.Fatal("Slack durable payload encryption key is not declared as required sensitive configuration")
 	}
 }
