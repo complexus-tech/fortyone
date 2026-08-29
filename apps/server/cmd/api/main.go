@@ -438,10 +438,9 @@ func run(ctx context.Context, log *logger.Logger) error {
 }
 
 func runMigrations(ctx context.Context, log *logger.Logger) error {
-	var cfg Config
-
-	if err := config.Parse("app", &cfg); err != nil {
-		return fmt.Errorf("error parsing config: %s", err)
+	cfg, err := parseMigrationProcessConfig()
+	if err != nil {
+		return err
 	}
 	mode, err := deployment.Parse(cfg.Environment)
 	if err != nil {
@@ -478,6 +477,14 @@ func runMigrations(ctx context.Context, log *logger.Logger) error {
 		MaxIdleConns:     cfg.DB.MigrationMaxIdleConns,
 		StatementTimeout: cfg.DB.MigrationStatementTimeout,
 	})
+}
+
+func parseMigrationProcessConfig() (migrationProcessConfig, error) {
+	var cfg migrationProcessConfig
+	if err := config.Parse("app", &cfg); err != nil {
+		return migrationProcessConfig{}, fmt.Errorf("parse migration configuration: %w", err)
+	}
+	return cfg, nil
 }
 
 func configuredLogLevel() slog.Level {
