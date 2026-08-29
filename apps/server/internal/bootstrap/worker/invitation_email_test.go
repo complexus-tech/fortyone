@@ -36,7 +36,7 @@ func TestInvitationEmailSenderBuildsOneTimeActionLink(t *testing.T) {
 		IdempotencyKey: "invitation-email:test",
 		InviterName:    "Ada",
 		Email:          "invitee@example.com",
-		Token:          "wi1.v1.nonce.signature",
+		Token:          "example",
 		Role:           invitations.InvitationRoleMember,
 		ExpiresAt:      now.Add(25 * time.Hour),
 		WorkspaceName:  "Compiler Team",
@@ -50,7 +50,7 @@ func TestInvitationEmailSenderBuildsOneTimeActionLink(t *testing.T) {
 	data, ok := email.Data.(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "2 days", data["ExpiresIn"])
-	require.Equal(t, "https://fortyone.app/onboarding/join?token=wi1.v1.nonce.signature", data["VerificationURL"])
+	require.Equal(t, "https://fortyone.app/onboarding/join?token=example", data["VerificationURL"])
 }
 
 func TestInvitationEmailSenderRejectsMissingOrExpiredBearer(t *testing.T) {

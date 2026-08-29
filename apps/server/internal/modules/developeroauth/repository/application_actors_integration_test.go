@@ -301,7 +301,7 @@ func newApplicationActorHarness(
 		store, tokens, clock, developeroauth.RandomIDGenerator{}, developeroauth.Config{
 			Issuer: "https://api.fortyone.app", Resource: applicationActorResource,
 			ScopePolicy:           developeroauth.PublicAPIResourceScopePolicy(),
-			AccessTokenSigningKey: "application-actor-signing-key-001",
+			AccessTokenSigningKey: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 			ApplicationActors:     store, ApplicationActorScopes: developeroauth.PublicAPIApplicationActorScopePolicy(),
 		},
 	)

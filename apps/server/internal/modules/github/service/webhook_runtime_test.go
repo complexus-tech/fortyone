@@ -58,7 +58,7 @@ func TestGitHubWebhookVerifierAuthenticatesExactBytesBeforeParsing(t *testing.T)
 	queue := &githubWebhookQueueStub{}
 	runtime, err := NewWebhookRuntime(repository, queue, Config{
 		WebhookSecret:        "github-signing-secret",
-		WebhookPayloadSecret: "0123456789abcdef0123456789abcdef",
+		WebhookPayloadSecret: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 	})
 	if err != nil {
 		t.Fatalf("NewWebhookRuntime() error = %v", err)
