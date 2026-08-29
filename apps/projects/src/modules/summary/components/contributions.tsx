@@ -11,16 +11,16 @@ import {
   Area,
 } from "recharts";
 import { useMemo } from "react";
-import { useTheme } from "next-themes";
 import type { Contribution } from "@/types";
 import { useContributions } from "@/lib/hooks/contributions";
 import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { ContributionsSkeleton } from "./contributions-skeleton";
-
-type ChartDataItem = {
-  date: string;
-  count: number;
-};
+import {
+  SUMMARY_CHART_CURSOR,
+  SUMMARY_CHART_GRID,
+  SUMMARY_CHART_PRIMARY,
+  SUMMARY_CHART_SURFACE,
+} from "./chart-colors";
 
 const CustomTooltip = ({
   active,
@@ -32,7 +32,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
+    <Box className="border-border/60 bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-lg border-[0.5px] px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {label}
       </Flex>
@@ -50,7 +50,6 @@ const formatDate = (date: string) => {
 };
 
 export const Contributions = () => {
-  const { resolvedTheme } = useTheme();
   const filters = useSummaryDateFilters();
   const { data: contributions = [], isLoading } = useContributions(filters);
   const chartData = useMemo(() => {
@@ -79,55 +78,57 @@ export const Contributions = () => {
           margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
         >
           <defs>
-            <linearGradient id="colorGradient" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
-              <stop offset="95%" stopColor="#6366F1" stopOpacity={0.05} />
+            <linearGradient
+              id="summaryContributionsGradient"
+              x1="0"
+              x2="0"
+              y1="0"
+              y2="1"
+            >
+              <stop
+                offset="5%"
+                stopColor={SUMMARY_CHART_PRIMARY}
+                stopOpacity={0.28}
+              />
+              <stop
+                offset="95%"
+                stopColor={SUMMARY_CHART_PRIMARY}
+                stopOpacity={0.02}
+              />
             </linearGradient>
           </defs>
           <CartesianGrid
-            stroke={resolvedTheme === "dark" ? "#222" : "#E0E0E0"}
+            stroke={SUMMARY_CHART_GRID}
             strokeDasharray="3 3"
             vertical={false}
           />
           <XAxis
-            axisLine={{
-              stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
-            }}
+            axisLine={{ stroke: SUMMARY_CHART_GRID }}
             dataKey="date"
             tick={{ fontSize: 12 }}
           />
           <YAxis axisLine={false} tick={{ fontSize: 12 }} tickLine={false} />
           <Tooltip
             content={<CustomTooltip />}
-            cursor={{
-              fill:
-                resolvedTheme === "dark"
-                  ? "rgba(255, 255, 255, 0.03)"
-                  : "rgba(0, 0, 0, 0.05)",
-            }}
+            cursor={{ fill: SUMMARY_CHART_CURSOR }}
           />
           <Area
             activeDot={{
               r: 4,
-              fill: "#6366F1",
+              fill: SUMMARY_CHART_PRIMARY,
               strokeWidth: 2,
-              stroke:
-                resolvedTheme === "dark"
-                  ? "rgba(255, 255, 255, 0.8)"
-                  : "#6366F1",
+              stroke: SUMMARY_CHART_SURFACE,
             }}
             dataKey="count"
             dot={{
               r: 2,
-              fill: "#6366F1",
+              fill: SUMMARY_CHART_PRIMARY,
               strokeWidth: 2,
-              stroke:
-                resolvedTheme === "dark"
-                  ? "rgba(255, 255, 255, 0.8)"
-                  : "#6366F1",
+              stroke: SUMMARY_CHART_SURFACE,
             }}
-            fill="url(#colorGradient)"
-            stroke="#6366F1"
+            fill="url(#summaryContributionsGradient)"
+            stroke={SUMMARY_CHART_PRIMARY}
+            strokeOpacity={0.82}
             strokeWidth={2}
             type="monotone"
           />

@@ -2,15 +2,27 @@ package attachments
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
+	"strings"
+	"time"
 
+	attachmentdomain "github.com/complexus-tech/projects-api/internal/modules/attachments/domain"
+	"github.com/complexus-tech/projects-api/pkg/validate"
+	"github.com/google/uuid"
 	_ "image/jpeg"
 	_ "image/png"
 
 	"golang.org/x/image/draw"
 )
+
+const maxImagePixels = 32_000_000
+
+const attachmentOptimizationLease = 10 * time.Minute
 
 type imageOptimizationPolicy struct {
 	MaxDimension int
@@ -35,6 +47,11 @@ var (
 
 func optimizeImageBytes(data []byte, contentType string, policy imageOptimizationPolicy) (optimizedImage, bool) {
 	if !isOptimizableImageType(contentType) {
+		return optimizedImage{}, false
+	}
+
+	config, _, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil || config.Width <= 0 || config.Height <= 0 || config.Width*config.Height > maxImagePixels {
 		return optimizedImage{}, false
 	}
 
@@ -81,6 +98,115 @@ func optimizeImageBytes(data []byte, contentType string, policy imageOptimizatio
 	}, true
 }
 
+// OptimizeStoredAttachment compresses an uploaded JPEG or PNG in place. The
+// worker uses both immutable attachment identity and tenant identity; storage
+// object names are never treated as authorization keys.
+func (s *Service) OptimizeStoredAttachment(ctx context.Context, attachmentID, workspaceID uuid.UUID) error {
+	if attachmentID == uuid.Nil || workspaceID == uuid.Nil {
+		return fmt.Errorf("%w: attachment and workspace are required", ErrImageOptimizationSkipped)
+	}
+
+	attachment, err := s.repo.StartAttachmentOptimization(
+		ctx,
+		attachmentID,
+		workspaceID,
+		attachmentOptimizationLease,
+	)
+	if err != nil {
+		if errors.Is(err, attachmentdomain.ErrStateConflict) || errors.Is(err, ErrNotFound) {
+			return ErrImageOptimizationSkipped
+		}
+		return fmt.Errorf("claim attachment for optimization: %w", err)
+	}
+
+	if !isOptimizableImageType(normalizeContentType(attachment.MimeType)) {
+		if err := s.repo.CompleteAttachmentOptimization(
+			ctx,
+			attachment.ID,
+			attachment.WorkspaceID,
+			attachment.Size,
+			attachment.MimeType,
+			attachmentdomain.OptimizationSkipped,
+		); err != nil {
+			return fmt.Errorf("record inapplicable attachment optimization: %w", err)
+		}
+		return ErrImageOptimizationNotApplicable
+	}
+
+	data, storageContentType, err := s.storage.DownloadFile(
+		ctx,
+		s.config.AttachmentsBucket,
+		attachment.BlobName,
+		validate.MaxAttachmentSize,
+	)
+	if err != nil {
+		return s.failOptimization(ctx, attachment, fmt.Errorf("download attachment for optimization: %w", err))
+	}
+	if len(data) == 0 {
+		return s.failOptimization(ctx, attachment, fmt.Errorf("stored attachment is empty"))
+	}
+
+	contentType := normalizeContentType(storageContentType)
+	if contentType == "" || contentType == "application/octet-stream" {
+		contentType = normalizeContentType(attachment.MimeType)
+	}
+
+	finalData := data
+	finalContentType := contentType
+	optimized, optimizedOK := optimizeImageBytes(data, contentType, attachmentImagePolicy)
+	if optimizedOK {
+		finalData = optimized.Data
+		finalContentType = optimized.ContentType
+		if _, err := s.storage.UploadFile(
+			ctx,
+			s.config.AttachmentsBucket,
+			attachment.BlobName,
+			bytes.NewReader(finalData),
+			finalContentType,
+		); err != nil {
+			return s.failOptimization(ctx, attachment, fmt.Errorf("replace attachment with optimized image: %w", err))
+		}
+	}
+
+	status := attachmentdomain.OptimizationSkipped
+	if optimizedOK {
+		status = attachmentdomain.OptimizationSucceeded
+	}
+	if err := s.repo.CompleteAttachmentOptimization(
+		ctx,
+		attachment.ID,
+		attachment.WorkspaceID,
+		int64(len(finalData)),
+		finalContentType,
+		status,
+	); err != nil {
+		return fmt.Errorf("complete attachment optimization: %w", err)
+	}
+
+	if !optimizedOK {
+		return ErrImageOptimizationSkipped
+	}
+
+	return nil
+}
+
+func (s *Service) failOptimization(ctx context.Context, attachment CoreAttachment, cause error) error {
+	if err := s.repo.FailAttachmentOptimization(
+		ctx,
+		attachment.ID,
+		attachment.WorkspaceID,
+		cause.Error(),
+		false,
+	); err != nil && !errors.Is(err, attachmentdomain.ErrStateConflict) {
+		return errors.Join(cause, fmt.Errorf("record attachment optimization failure: %w", err))
+	}
+	return cause
+}
+
+func normalizeContentType(contentType string) string {
+	return strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+}
+
 func constrainedDimensions(width, height, maxDimension int) (int, int, bool) {
 	if maxDimension <= 0 || (width <= maxDimension && height <= maxDimension) {
 		return width, height, false
@@ -98,7 +224,7 @@ func constrainedDimensions(width, height, maxDimension int) (int, int, bool) {
 }
 
 func isOptimizableImageType(contentType string) bool {
-	switch contentType {
+	switch normalizeContentType(contentType) {
 	case "image/jpeg", "image/png":
 		return true
 	default:

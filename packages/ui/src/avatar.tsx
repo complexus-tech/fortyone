@@ -1,9 +1,10 @@
 "use client";
-import { VariantProps, cva } from "cva";
-import { cn } from "lib";
-import { FC, HTMLAttributes } from "react";
-import { BlurImage } from "./image";
+import type { VariantProps } from "cva";
+import type { FC, HTMLAttributes } from "react";
+import { cva } from "cva";
 import { AssigneeIcon } from "icons";
+import { cn, getAvatarColor } from "lib";
+import { BlurImage } from "./image";
 
 const avatar = cva(
   "flex justify-center items-center aspect-square overflow-hidden text-center font-medium shrink-0 text-foreground",
@@ -17,8 +18,8 @@ const avatar = cva(
         lg: "rounded-xl",
       },
       color: {
-        primary: "text-white bg-primary",
-        secondary: "text-white bg-secondary",
+        primary: "text-primary-foreground bg-primary",
+        secondary: "text-secondary-foreground bg-secondary",
         tertiary: "bg-surface-muted",
         naked: "bg-transparent",
       },
@@ -34,7 +35,7 @@ const avatar = cva(
       rounded: "full",
       color: "tertiary",
     },
-  }
+  },
 );
 
 export interface AvatarProps
@@ -49,7 +50,7 @@ const getInitials = (name: string) => {
     return "U";
   }
 
-  const names = name.split(" ");
+  const names = name.trim().split(/\s+/);
 
   // If single word with 2 or more characters, return first two characters
   if (names.length === 1) {
@@ -67,15 +68,27 @@ const getInitials = (name: string) => {
 };
 
 export const Avatar: FC<AvatarProps> = (props) => {
-  const { className, src, name, color, size, rounded, ...rest } = props;
+  const { className, src, name, color, size, rounded, style, ...rest } = props;
   const classes = cn(avatar({ rounded, color, size }), className);
   const asIcon = !src && !name;
+  const hasCustomColor =
+    color !== undefined ||
+    style?.background !== undefined ||
+    style?.backgroundColor !== undefined ||
+    style?.color !== undefined;
+  const generatedColor =
+    !src && name && !hasCustomColor ? getAvatarColor(name) : undefined;
 
   return (
     <div
       className={cn(classes, {
         "bg-transparent dark:bg-transparent": asIcon,
       })}
+      style={{
+        backgroundColor: generatedColor?.backgroundColor,
+        color: generatedColor?.foregroundColor,
+        ...style,
+      }}
       {...rest}
     >
       {src && (
@@ -92,7 +105,7 @@ export const Avatar: FC<AvatarProps> = (props) => {
           imageClassName="object-top object-cover"
         />
       )}
-      {!src && name && <span title={name}>{getInitials(name.trim())}</span>}
+      {!src && name && <span title={name}>{getInitials(name)}</span>}
       {asIcon && (
         <AssigneeIcon
           className={cn("h-5 w-auto opacity-70", {

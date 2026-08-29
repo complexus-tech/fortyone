@@ -9,13 +9,19 @@ import (
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/google/uuid"
 )
 
 var (
 	ErrInvalidLinkID  = errors.New("link id is not in its proper form")
 	ErrInvalidStoryID = errors.New("story id is not in its proper form")
 )
+
+func mutationStatus(err error) int {
+	if errors.Is(err, links.ErrNotFound) {
+		return http.StatusNotFound
+	}
+	return http.StatusInternalServerError
+}
 
 type Handlers struct {
 	links *links.Service
@@ -30,7 +36,11 @@ func New(log *logger.Logger, links *links.Service) *Handlers {
 }
 
 func (h *Handlers) CreateLink(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	_, err := mid.GetWorkspace(ctx)
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
@@ -41,9 +51,9 @@ func (h *Handlers) CreateLink(ctx context.Context, w http.ResponseWriter, r *htt
 		return nil
 	}
 
-	link, err := h.links.CreateLink(ctx, toCoreNewLink(nl))
+	link, err := h.links.CreateLink(ctx, actorID, toCoreNewLink(nl, workspace.ID))
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		web.RespondError(ctx, w, err, mutationStatus(err))
 		return nil
 	}
 
@@ -51,13 +61,16 @@ func (h *Handlers) CreateLink(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (h *Handlers) UpdateLink(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	_, err := mid.GetWorkspace(ctx)
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	linkIdParam := web.Params(r, "id")
-	linkID, err := uuid.Parse(linkIdParam)
+	linkID, err := web.UUIDPathParameter(r, "id")
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidLinkID, http.StatusBadRequest)
 		return nil
@@ -69,8 +82,8 @@ func (h *Handlers) UpdateLink(ctx context.Context, w http.ResponseWriter, r *htt
 		return nil
 	}
 
-	if err := h.links.UpdateLink(ctx, linkID, toCoreUpdateLink(ul)); err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	if err := h.links.UpdateLink(ctx, actorID, linkID, workspace.ID, toCoreUpdateLink(ul)); err != nil {
+		web.RespondError(ctx, w, err, mutationStatus(err))
 		return nil
 	}
 
@@ -78,20 +91,23 @@ func (h *Handlers) UpdateLink(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (h *Handlers) DeleteLink(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	_, err := mid.GetWorkspace(ctx)
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	linkIdParam := web.Params(r, "id")
-	linkID, err := uuid.Parse(linkIdParam)
+	linkID, err := web.UUIDPathParameter(r, "id")
 	if err != nil {
 		web.RespondError(ctx, w, ErrInvalidLinkID, http.StatusBadRequest)
 		return nil
 	}
 
-	if err := h.links.DeleteLink(ctx, linkID); err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	if err := h.links.DeleteLink(ctx, actorID, linkID, workspace.ID); err != nil {
+		web.RespondError(ctx, w, err, mutationStatus(err))
 		return nil
 	}
 

@@ -9,11 +9,14 @@ import (
 
 	"mime/multipart"
 
+	usersdomain "github.com/complexus-tech/projects-api/internal/modules/users/domain"
+	platformclock "github.com/complexus-tech/projects-api/internal/platform/clock"
+	"github.com/complexus-tech/projects-api/internal/platform/workschedule"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
+	"github.com/complexus-tech/projects-api/pkg/validate"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -26,48 +29,23 @@ const (
 
 // Service errors
 var (
-	ErrNotFound              = errors.New("we couldn't find your account")
-	ErrEmailTaken            = errors.New("the email address is already registered")
-	ErrTokenExpired          = errors.New("the sign-in link has expired - please request a new one")
-	ErrTokenUsed             = errors.New("the sign-in link has already been used")
-	ErrTooManyAttempts       = errors.New("too many sign-in attempts - please wait a few minutes and try again")
-	ErrInvalidToken          = errors.New("the sign-in link is invalid - please request a new one")
-	ErrUserNotFound          = errors.New("user not found")
-	ErrInvalidCredentials    = errors.New("invalid credentials")
-	ErrEmailAlreadyExists    = errors.New("email already exists")
-	ErrUsernameAlreadyExists = errors.New("username already exists")
-	ErrTokenNotFound         = errors.New("token not found")
-	ErrWorkspaceNotFound     = errors.New("workspace not found")
+	ErrNotFound              = usersdomain.ErrNotFound
+	ErrEmailTaken            = usersdomain.ErrEmailTaken
+	ErrTokenExpired          = usersdomain.ErrTokenExpired
+	ErrTokenUsed             = usersdomain.ErrTokenUsed
+	ErrTooManyAttempts       = usersdomain.ErrTooManyAttempts
+	ErrInvalidToken          = usersdomain.ErrInvalidToken
+	ErrUserNotFound          = usersdomain.ErrUserNotFound
+	ErrInvalidCredentials    = usersdomain.ErrInvalidCredentials
+	ErrEmailAlreadyExists    = usersdomain.ErrEmailAlreadyExists
+	ErrUsernameAlreadyExists = usersdomain.ErrUsernameAlreadyExists
+	ErrTokenNotFound         = usersdomain.ErrTokenNotFound
+	ErrTokenCollision        = usersdomain.ErrTokenCollision
+	ErrVerificationDisabled  = usersdomain.ErrVerificationDisabled
+	ErrWorkspaceNotFound     = usersdomain.ErrWorkspaceNotFound
+	ErrMemoryNotFound        = usersdomain.ErrMemoryNotFound
+	ErrIdentityStoreMissing  = usersdomain.ErrIdentityStoreMissing
 )
-
-// Repository provides access to the users storage.
-type Repository interface {
-	GetUser(ctx context.Context, userID uuid.UUID) (CoreUser, error)
-	GetUserByEmail(ctx context.Context, email string) (CoreUser, error)
-	GetUserByEmailAnyStatus(ctx context.Context, email string) (CoreUser, error)
-	GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]CoreUser, error)
-	UpdateUser(ctx context.Context, userID uuid.UUID, updates CoreUpdateUser) (CoreUser, error)
-	ActivateUser(ctx context.Context, userID uuid.UUID) (CoreUser, error)
-	DeleteUser(ctx context.Context, userID uuid.UUID) error
-	UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error
-	List(ctx context.Context, workspaceID uuid.UUID, filter CoreListUsersFilter) ([]CoreUser, error)
-	Create(ctx context.Context, user CoreUser) (CoreUser, error)
-	// Verification token methods
-	CreateVerificationToken(ctx context.Context, email, tokenType string, expiresAt time.Time) (CoreVerificationToken, error)
-	GetVerificationToken(ctx context.Context, token string) (CoreVerificationToken, error)
-	MarkTokenUsed(ctx context.Context, tokenID uuid.UUID) error
-	InvalidateTokens(ctx context.Context, email string) error
-	GetValidTokenCount(ctx context.Context, email string, duration time.Duration) (int, error)
-	UpdateUserWorkspaceWithTx(ctx context.Context, tx *sqlx.Tx, userID, workspaceID uuid.UUID) error
-	// Automation preferences methods
-	GetAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (CoreAutomationPreferences, error)
-	UpdateAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID, updates CoreUpdateAutomationPreferences) error
-	// User Memory methods
-	AddUserMemory(ctx context.Context, memory NewUserMemoryItem) (CoreUserMemoryItem, error)
-	UpdateUserMemory(ctx context.Context, id uuid.UUID, update UpdateUserMemoryItem) error
-	DeleteUserMemory(ctx context.Context, id uuid.UUID) error
-	ListUserMemories(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) ([]CoreUserMemoryItem, error)
-}
 
 // AttachmentsService interface for profile image operations
 type AttachmentsService interface {
@@ -79,24 +57,59 @@ type AttachmentsService interface {
 
 // Service provides user-related operations.
 type Service struct {
-	repo         Repository
-	log          *logger.Logger
-	tasksService *tasks.Service
+	repo               Repository
+	log                *logger.Logger
+	tasksService       *tasks.Service
+	verificationTokens *VerificationTokenManager
+	verificationRepo   VerificationTokenRepository
+	clock              platformclock.Clock
+}
+
+// Option configures an optional users service capability.
+type Option func(*Service)
+
+// WithClock supplies the application decision clock used by account-state
+// mutations. Production defaults to the system clock; tests should inject a
+// deterministic clock when exact persistence timestamps matter.
+func WithClock(clock platformclock.Clock) Option {
+	return func(service *Service) {
+		if clock != nil {
+			service.clock = clock
+		}
+	}
+}
+
+// WithVerificationTokens enables verification code issuance and consumption.
+func WithVerificationTokens(
+	manager *VerificationTokenManager,
+	repository VerificationTokenRepository,
+) Option {
+	return func(service *Service) {
+		service.verificationTokens = manager
+		service.verificationRepo = repository
+	}
 }
 
 // New constructs a new users service instance with the provided repository.
-func New(log *logger.Logger, repo Repository, tasksService *tasks.Service) *Service {
-	return &Service{
+func New(log *logger.Logger, repo Repository, tasksService *tasks.Service, options ...Option) *Service {
+	service := &Service{
 		repo:         repo,
 		log:          log,
 		tasksService: tasksService,
+		clock:        platformclock.System{},
 	}
+	for _, option := range options {
+		if option != nil {
+			option(service)
+		}
+	}
+	return service
 }
 
 // GetUser returns a user by ID.
 func (s *Service) GetUser(ctx context.Context, userID uuid.UUID) (CoreUser, error) {
 	s.log.Info(ctx, "business.core.users.GetUser")
-	ctx, span := web.AddSpan(ctx, "business.core.users.GetUser")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.GetUser")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.id", userID.String()))
@@ -110,10 +123,20 @@ func (s *Service) GetUser(ctx context.Context, userID uuid.UUID) (CoreUser, erro
 	return user, nil
 }
 
+// ResolveActiveBrowserSessionVersion returns the monotonic first-party session
+// epoch for an active account. It is deliberately narrower than GetUser so the
+// authentication hot path does not hydrate profile or workspace fields.
+func (s *Service) ResolveActiveBrowserSessionVersion(ctx context.Context, userID uuid.UUID) (int64, bool, error) {
+	if userID == uuid.Nil {
+		return 0, false, nil
+	}
+	return s.repo.ResolveActiveBrowserSessionVersion(ctx, userID)
+}
+
 // GetUserByEmail returns a user by email.
 func (s *Service) GetUserByEmail(ctx context.Context, email string) (CoreUser, error) {
 	s.log.Info(ctx, "business.core.users.GetUserByEmail")
-	ctx, span := web.AddSpan(ctx, "business.core.users.GetUserByEmail")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.GetUserByEmail")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.email", email))
@@ -130,7 +153,7 @@ func (s *Service) GetUserByEmail(ctx context.Context, email string) (CoreUser, e
 // GetUserByEmailAnyStatus returns a user by email regardless of activation state.
 func (s *Service) GetUserByEmailAnyStatus(ctx context.Context, email string) (CoreUser, error) {
 	s.log.Info(ctx, "business.core.users.GetUserByEmailAnyStatus")
-	ctx, span := web.AddSpan(ctx, "business.core.users.GetUserByEmailAnyStatus")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.GetUserByEmailAnyStatus")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.email", email))
@@ -147,7 +170,7 @@ func (s *Service) GetUserByEmailAnyStatus(ctx context.Context, email string) (Co
 // GetUsersByIDs returns users by ID regardless of membership or active status.
 func (s *Service) GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]CoreUser, error) {
 	s.log.Info(ctx, "business.core.users.GetUsersByIDs")
-	ctx, span := web.AddSpan(ctx, "business.core.users.GetUsersByIDs")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.GetUsersByIDs")
 	defer span.End()
 
 	if len(userIDs) == 0 {
@@ -166,7 +189,7 @@ func (s *Service) GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]Cor
 // Register creates a new user account.
 func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, error) {
 	s.log.Info(ctx, "business.core.users.Register")
-	ctx, span := web.AddSpan(ctx, "business.core.users.Register")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.Register")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.email", newUser.Email))
@@ -212,15 +235,44 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 	return user, nil
 }
 
-// ActivateUser reactivates a previously inactive user account.
-func (s *Service) ActivateUser(ctx context.Context, userID uuid.UUID) (CoreUser, error) {
-	s.log.Info(ctx, "business.core.users.ActivateUser")
-	ctx, span := web.AddSpan(ctx, "business.core.users.ActivateUser")
+func (s *Service) AuthenticateExternalIdentity(ctx context.Context, input CoreExternalIdentityInput) (CoreUser, error) {
+	identityRepo, ok := s.repo.(ExternalIdentityRepository)
+	if !ok {
+		return CoreUser{}, ErrIdentityStoreMissing
+	}
+
+	result, err := identityRepo.ResolveExternalIdentity(ctx, input)
+	if err != nil {
+		return CoreUser{}, err
+	}
+
+	if result.Created && s.tasksService != nil {
+		if _, enqueueErr := s.tasksService.EnqueueUserOnboardingStart(tasks.UserOnboardingStartPayload{
+			UserID:   result.User.ID.String(),
+			Email:    result.User.Email,
+			FullName: result.User.FullName,
+		}); enqueueErr != nil {
+			s.log.Error(ctx, "error enqueuing external identity user onboarding", "error", enqueueErr, "user_id", result.User.ID)
+		}
+	}
+
+	return result.User, nil
+}
+
+// ReactivateUserForVerifiedSignIn reactivates only an account whose durable
+// policy permits a verified authentication to do so. Administrator-disabled
+// and conservatively backfilled legacy accounts fail with the same generic
+// invalid-credentials error used by authentication endpoints.
+func (s *Service) ReactivateUserForVerifiedSignIn(ctx context.Context, userID uuid.UUID) (CoreUser, error) {
+	s.log.Info(ctx, "business.core.users.ReactivateUserForVerifiedSignIn")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.ReactivateUserForVerifiedSignIn")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.id", userID.String()))
 
-	user, err := s.repo.ActivateUser(ctx, userID)
+	user, err := s.repo.ReactivateUserForVerifiedSignIn(ctx, usersdomain.VerifiedSignInReactivation{
+		UserID: userID, SignedInAt: s.clock.Now().UTC(),
+	})
 	if err != nil {
 		span.RecordError(err)
 		return CoreUser{}, err
@@ -232,10 +284,27 @@ func (s *Service) ActivateUser(ctx context.Context, userID uuid.UUID) (CoreUser,
 // UpdateUser updates a user's profile.
 func (s *Service) UpdateUser(ctx context.Context, userID uuid.UUID, updates CoreUpdateUser) error {
 	s.log.Info(ctx, "business.core.users.UpdateUser")
-	ctx, span := web.AddSpan(ctx, "business.core.users.UpdateUser")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.UpdateUser")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.id", userID.String()))
+	if updates.WorkSchedule != nil {
+		if len(updates.WorkSchedule.WorkingDays) > 0 {
+			if err := workschedule.ValidateWorkingDays(updates.WorkSchedule.WorkingDays); err != nil {
+				return err
+			}
+		}
+		hasStart := updates.WorkSchedule.WorkingStartMinute != nil
+		hasEnd := updates.WorkSchedule.WorkingEndMinute != nil
+		if hasStart != hasEnd {
+			return workschedule.ErrInvalidWorkingHours
+		}
+		if hasStart {
+			if err := workschedule.ValidateHours(*updates.WorkSchedule.WorkingStartMinute, *updates.WorkSchedule.WorkingEndMinute); err != nil {
+				return err
+			}
+		}
+	}
 
 	user, err := s.repo.UpdateUser(ctx, userID, updates)
 	if err != nil {
@@ -259,7 +328,7 @@ func (s *Service) UpdateUser(ctx context.Context, userID uuid.UUID, updates Core
 // DeleteUser deletes a user account.
 func (s *Service) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 	s.log.Info(ctx, "business.core.users.DeleteUser")
-	ctx, span := web.AddSpan(ctx, "business.core.users.DeleteUser")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.DeleteUser")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.id", userID.String()))
@@ -270,7 +339,7 @@ func (s *Service) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 		return err
 	}
 
-	if err := s.repo.DeleteUser(ctx, userID); err != nil {
+	if err := s.repo.DeleteUser(ctx, userID, s.clock.Now().UTC()); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -290,7 +359,7 @@ func (s *Service) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 // UpdateUserWorkspace updates the user's last used workspace.
 func (s *Service) UpdateUserWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "business.core.users.UpdateUserWorkspace")
-	ctx, span := web.AddSpan(ctx, "business.core.users.UpdateUserWorkspace")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.UpdateUserWorkspace")
 	defer span.End()
 
 	span.SetAttributes(
@@ -308,7 +377,7 @@ func (s *Service) UpdateUserWorkspace(ctx context.Context, userID, workspaceID u
 
 // List returns a list of users for a workspace.
 func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, filter CoreListUsersFilter) ([]CoreUser, error) {
-	ctx, span := web.AddSpan(ctx, "business.core.users.List")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.List")
 	defer span.End()
 
 	users, err := s.repo.List(ctx, workspaceID, filter)
@@ -320,114 +389,111 @@ func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, filter CoreLi
 }
 
 // CreateVerificationToken creates a new verification token.
-func (s *Service) CreateVerificationToken(ctx context.Context, email, tokenType string, expiresAt time.Time) (CoreVerificationToken, error) {
+func (s *Service) CreateVerificationToken(
+	ctx context.Context,
+	email string,
+	tokenType string,
+	expiresAt time.Time,
+) (CoreVerificationToken, error) {
 	s.log.Info(ctx, "business.core.users.CreateVerificationToken")
-	ctx, span := web.AddSpan(ctx, "business.core.users.CreateVerificationToken")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.CreateVerificationToken")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("user.email", email))
-
-	token, err := s.repo.CreateVerificationToken(ctx, email, tokenType, expiresAt)
-	if err != nil {
-		span.RecordError(err)
-		return CoreVerificationToken{}, err
+	if s.verificationTokens == nil || s.verificationRepo == nil {
+		span.RecordError(ErrVerificationDisabled)
+		return CoreVerificationToken{}, ErrVerificationDisabled
 	}
 
-	return token, nil
+	for range verificationTokenCollisionRetries {
+		plaintext, newToken, err := s.verificationTokens.issue(email, tokenType, expiresAt)
+		if err != nil {
+			span.RecordError(err)
+			return CoreVerificationToken{}, err
+		}
+
+		created, err := s.verificationRepo.CreateVerificationToken(ctx, newToken)
+		if errors.Is(err, ErrTokenCollision) {
+			continue
+		}
+		if err != nil {
+			span.RecordError(err)
+			return CoreVerificationToken{}, err
+		}
+		created.Token = plaintext
+		return created, nil
+	}
+
+	span.RecordError(ErrTokenCollision)
+	return CoreVerificationToken{}, ErrTokenCollision
 }
 
-// GetVerificationToken returns a verification token.
-func (s *Service) GetVerificationToken(ctx context.Context, token string) (CoreVerificationToken, error) {
-	s.log.Info(ctx, "business.core.users.GetVerificationToken")
-	ctx, span := web.AddSpan(ctx, "business.core.users.GetVerificationToken")
+// ConsumeVerificationToken atomically validates and consumes one code. The
+// approved purposes are explicit so a digest minted for one flow cannot be
+// replayed in another flow.
+func (s *Service) ConsumeVerificationToken(
+	ctx context.Context,
+	email string,
+	token string,
+	tokenTypes ...string,
+) (CoreVerificationToken, error) {
+	s.log.Info(ctx, "business.core.users.ConsumeVerificationToken")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.ConsumeVerificationToken")
 	defer span.End()
 
-	verificationToken, err := s.repo.GetVerificationToken(ctx, token)
+	if s.verificationTokens == nil || s.verificationRepo == nil {
+		span.RecordError(ErrVerificationDisabled)
+		return CoreVerificationToken{}, ErrVerificationDisabled
+	}
+
+	input, err := s.verificationTokens.consumption(email, token, tokenTypes...)
 	if err != nil {
+		if errors.Is(err, ErrInvalidToken) {
+			return CoreVerificationToken{}, ErrInvalidToken
+		}
 		span.RecordError(err)
 		return CoreVerificationToken{}, err
 	}
 
-	// Check if token has expired
-	if time.Now().After(verificationToken.ExpiresAt) {
-		span.RecordError(ErrTokenExpired)
-		return CoreVerificationToken{}, ErrTokenExpired
-	}
-
-	// Check if token has been used
-	if verificationToken.UsedAt != nil {
-		span.RecordError(ErrTokenUsed)
-		return CoreVerificationToken{}, ErrTokenUsed
+	verificationToken, err := s.verificationRepo.ConsumeVerificationToken(ctx, input)
+	if err != nil {
+		if errors.Is(err, ErrInvalidToken) {
+			return CoreVerificationToken{}, ErrInvalidToken
+		}
+		span.RecordError(err)
+		return CoreVerificationToken{}, err
 	}
 
 	return verificationToken, nil
 }
 
-// MarkTokenUsed marks a verification token as used.
-func (s *Service) MarkTokenUsed(ctx context.Context, tokenID uuid.UUID) error {
-	s.log.Info(ctx, "business.core.users.MarkTokenUsed")
-	ctx, span := web.AddSpan(ctx, "business.core.users.MarkTokenUsed")
-	defer span.End()
-
-	span.SetAttributes(attribute.String("token.id", tokenID.String()))
-
-	if err := s.repo.MarkTokenUsed(ctx, tokenID); err != nil {
-		span.RecordError(err)
-		return err
+// VerificationRateLimitKey returns an opaque key for public-auth abuse
+// controls without exposing the underlying identity in cache keyspace.
+func (s *Service) VerificationRateLimitKey(scope, identityType, identity string) (string, error) {
+	if s.verificationTokens == nil {
+		return "", ErrVerificationDisabled
 	}
-
-	return nil
+	return s.verificationTokens.RateLimitKey(scope, identityType, identity)
 }
 
 // InvalidateTokens invalidates all unused tokens for an email.
 func (s *Service) InvalidateTokens(ctx context.Context, email string) error {
 	s.log.Info(ctx, "business.core.users.InvalidateTokens")
-	ctx, span := web.AddSpan(ctx, "business.core.users.InvalidateTokens")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.InvalidateTokens")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("user.email", email))
-
-	if err := s.repo.InvalidateTokens(ctx, email); err != nil {
-		span.RecordError(err)
+	normalizedEmail, err := validate.Email(email)
+	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-// GetValidTokenCount returns the number of valid tokens for an email within a duration.
-func (s *Service) GetValidTokenCount(ctx context.Context, email string, duration time.Duration) (int, error) {
-	s.log.Info(ctx, "business.core.users.GetValidTokenCount")
-	ctx, span := web.AddSpan(ctx, "business.core.users.GetValidTokenCount")
-	defer span.End()
-
-	span.SetAttributes(attribute.String("user.email", email))
-
-	count, err := s.repo.GetValidTokenCount(ctx, email, duration)
-	if err != nil {
-		span.RecordError(err)
-		return 0, err
+	if s.verificationRepo == nil {
+		return ErrVerificationDisabled
 	}
 
-	return count, nil
-}
-
-// UpdateUserWorkspaceWithTx updates the user's last used workspace using an existing transaction.
-func (s *Service) UpdateUserWorkspaceWithTx(ctx context.Context, tx *sqlx.Tx, userID, workspaceID uuid.UUID) error {
-	s.log.Info(ctx, "business.core.users.UpdateUserWorkspaceWithTx")
-	ctx, span := web.AddSpan(ctx, "business.core.users.UpdateUserWorkspaceWithTx")
-	defer span.End()
-
-	if err := s.repo.UpdateUserWorkspaceWithTx(ctx, tx, userID, workspaceID); err != nil {
-		s.log.Error(ctx, "Error updating user workspace with transaction: %v", err)
+	if err := s.verificationRepo.InvalidateTokens(ctx, normalizedEmail); err != nil {
 		span.RecordError(err)
-		return fmt.Errorf("failed to update user last_used_workspace_id: %w", err)
+		return err
 	}
-
-	span.AddEvent("user workspace updated", trace.WithAttributes(
-		attribute.String("user.id", userID.String()),
-		attribute.String("workspace.id", workspaceID.String()),
-	))
 
 	return nil
 }
@@ -435,7 +501,7 @@ func (s *Service) UpdateUserWorkspaceWithTx(ctx context.Context, tx *sqlx.Tx, us
 // GetAutomationPreferences retrieves a user's automation preferences for a workspace.
 func (s *Service) GetAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID) (CoreAutomationPreferences, error) {
 	s.log.Info(ctx, "business.core.users.GetAutomationPreferences")
-	ctx, span := web.AddSpan(ctx, "business.core.users.GetAutomationPreferences")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.GetAutomationPreferences")
 	defer span.End()
 
 	preferences, err := s.repo.GetAutomationPreferences(ctx, userID, workspaceID)
@@ -456,7 +522,7 @@ func (s *Service) GetAutomationPreferences(ctx context.Context, userID, workspac
 // UpdateAutomationPreferences updates a user's automation preferences for a workspace.
 func (s *Service) UpdateAutomationPreferences(ctx context.Context, userID, workspaceID uuid.UUID, updates CoreUpdateAutomationPreferences) error {
 	s.log.Info(ctx, "business.core.users.UpdateAutomationPreferences")
-	ctx, span := web.AddSpan(ctx, "business.core.users.UpdateAutomationPreferences")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.UpdateAutomationPreferences")
 	defer span.End()
 
 	if err := s.repo.UpdateAutomationPreferences(ctx, userID, workspaceID, updates); err != nil {
@@ -476,7 +542,7 @@ func (s *Service) UpdateAutomationPreferences(ctx context.Context, userID, works
 // UploadProfileImage uploads a new profile image for a user
 func (s *Service) UploadProfileImage(ctx context.Context, userID uuid.UUID, file multipart.File, fileHeader *multipart.FileHeader, attachmentsService AttachmentsService) error {
 	s.log.Info(ctx, "business.core.users.uploadProfileImage")
-	ctx, span := web.AddSpan(ctx, "business.core.users.UploadProfileImage")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.UploadProfileImage")
 	defer span.End()
 
 	// Get current user to check for existing avatar
@@ -522,7 +588,7 @@ func (s *Service) UploadProfileImage(ctx context.Context, userID uuid.UUID, file
 // DeleteProfileImage removes the current profile image
 func (s *Service) DeleteProfileImage(ctx context.Context, userID uuid.UUID, attachmentsService AttachmentsService) error {
 	s.log.Info(ctx, "business.core.users.deleteProfileImage")
-	ctx, span := web.AddSpan(ctx, "business.core.users.DeleteProfileImage")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.DeleteProfileImage")
 	defer span.End()
 
 	// Get current user
@@ -559,7 +625,7 @@ func (s *Service) DeleteProfileImage(ctx context.Context, userID uuid.UUID, atta
 // AddUserMemory adds a new memory item for a user.
 func (s *Service) AddUserMemory(ctx context.Context, memory NewUserMemoryItem) (CoreUserMemoryItem, error) {
 	s.log.Info(ctx, "business.core.users.AddUserMemory")
-	ctx, span := web.AddSpan(ctx, "business.core.users.AddUserMemory")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.AddUserMemory")
 	defer span.End()
 
 	newItem, err := s.repo.AddUserMemory(ctx, memory)
@@ -571,12 +637,12 @@ func (s *Service) AddUserMemory(ctx context.Context, memory NewUserMemoryItem) (
 }
 
 // UpdateUserMemory updates a memory item.
-func (s *Service) UpdateUserMemory(ctx context.Context, id uuid.UUID, update UpdateUserMemoryItem) error {
+func (s *Service) UpdateUserMemory(ctx context.Context, id uuid.UUID, scope UserMemoryScope, update UpdateUserMemoryItem) error {
 	s.log.Info(ctx, "business.core.users.UpdateUserMemory")
-	ctx, span := web.AddSpan(ctx, "business.core.users.UpdateUserMemory")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.UpdateUserMemory")
 	defer span.End()
 
-	if err := s.repo.UpdateUserMemory(ctx, id, update); err != nil {
+	if err := s.repo.UpdateUserMemory(ctx, id, scope, update); err != nil {
 		return fmt.Errorf("updating user memory: %w", err)
 	}
 
@@ -584,12 +650,12 @@ func (s *Service) UpdateUserMemory(ctx context.Context, id uuid.UUID, update Upd
 }
 
 // DeleteUserMemory deletes a memory item.
-func (s *Service) DeleteUserMemory(ctx context.Context, id uuid.UUID) error {
+func (s *Service) DeleteUserMemory(ctx context.Context, id uuid.UUID, scope UserMemoryScope) error {
 	s.log.Info(ctx, "business.core.users.DeleteUserMemory")
-	ctx, span := web.AddSpan(ctx, "business.core.users.DeleteUserMemory")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.DeleteUserMemory")
 	defer span.End()
 
-	if err := s.repo.DeleteUserMemory(ctx, id); err != nil {
+	if err := s.repo.DeleteUserMemory(ctx, id, scope); err != nil {
 		return fmt.Errorf("deleting user memory: %w", err)
 	}
 
@@ -599,7 +665,7 @@ func (s *Service) DeleteUserMemory(ctx context.Context, id uuid.UUID) error {
 // ListUserMemories retrieves all memory items for a user in a workspace.
 func (s *Service) ListUserMemories(ctx context.Context, userID, workspaceID uuid.UUID) ([]CoreUserMemoryItem, error) {
 	s.log.Info(ctx, "business.core.users.ListUserMemories")
-	ctx, span := web.AddSpan(ctx, "business.core.users.ListUserMemories")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.users.ListUserMemories")
 	defer span.End()
 
 	items, err := s.repo.ListUserMemories(ctx, userID, workspaceID)

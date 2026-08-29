@@ -28,6 +28,7 @@ export const TeamOptionsProvider = ({
   const initialOptions: StoriesViewOptions = {
     groupBy: "priority",
     orderBy: "priority",
+    orderDirection: "desc",
     showEmptyGroups: true,
     showSubStories: true,
     displayColumns: [
@@ -35,6 +36,7 @@ export const TeamOptionsProvider = ({
       "Status",
       "Assignee",
       "Estimate",
+      "Time needed",
       "Priority",
       "Deadline",
       "Created",

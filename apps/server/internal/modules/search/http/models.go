@@ -9,41 +9,75 @@ import (
 
 // AppSearchStory represents a story in search results for the API.
 type AppSearchStory struct {
-	ID         uuid.UUID   `json:"id"`
-	SequenceID int         `json:"sequenceId"`
-	Title      string      `json:"title"`
-	Parent     *uuid.UUID  `json:"parentId"`
-	Objective  *uuid.UUID  `json:"objectiveId"`
-	Status     *uuid.UUID  `json:"statusId"`
-	Assignee   *uuid.UUID  `json:"assigneeId"`
-	Reporter   *uuid.UUID  `json:"reporterId"`
-	Priority   string      `json:"priority"`
-	Sprint     *uuid.UUID  `json:"sprintId"`
-	Team       uuid.UUID   `json:"teamId"`
-	Workspace  uuid.UUID   `json:"workspaceId"`
-	StartDate  *time.Time  `json:"startDate"`
-	EndDate    *time.Time  `json:"endDate"`
-	CreatedAt  time.Time   `json:"createdAt"`
-	UpdatedAt  time.Time   `json:"updatedAt"`
-	Labels     []uuid.UUID `json:"labels"`
-	SubStories []uuid.UUID `json:"subStories"`
+	ID                       uuid.UUID   `json:"id"`
+	SequenceID               int         `json:"sequenceId"`
+	Title                    string      `json:"title"`
+	Parent                   *uuid.UUID  `json:"parentId"`
+	Objective                *uuid.UUID  `json:"objectiveId"`
+	Status                   *uuid.UUID  `json:"statusId"`
+	StatusName               *string     `json:"statusName"`
+	StatusColor              *string     `json:"statusColor"`
+	StatusCategory           *string     `json:"statusCategory"`
+	Assignee                 *uuid.UUID  `json:"assigneeId"`
+	AssigneeFullName         *string     `json:"assigneeFullName"`
+	AssigneeUsername         *string     `json:"assigneeUsername"`
+	Reporter                 *uuid.UUID  `json:"reporterId"`
+	Priority                 string      `json:"priority"`
+	EstimateLabel            *string     `json:"estimateLabel"`
+	EstimateValue            *int16      `json:"estimateValue"`
+	EstimateScheme           string      `json:"estimateScheme"`
+	Sprint                   *uuid.UUID  `json:"sprintId"`
+	Team                     uuid.UUID   `json:"teamId"`
+	TeamName                 string      `json:"teamName"`
+	TeamCode                 string      `json:"teamCode"`
+	Workspace                uuid.UUID   `json:"workspaceId"`
+	StartDate                *time.Time  `json:"startDate"`
+	EndDate                  *time.Time  `json:"endDate"`
+	EstimatedDurationMinutes *int        `json:"estimatedDurationMinutes"`
+	MinimumFocusBlockMinutes *int        `json:"minimumFocusBlockMinutes"`
+	AutoSchedulingEnabled    bool        `json:"autoSchedulingEnabled"`
+	AutoSchedulingLocked     bool        `json:"autoSchedulingLocked"`
+	AutoSchedulingStatus     string      `json:"autoSchedulingStatus"`
+	AutoSchedulingReason     *string     `json:"autoSchedulingReason"`
+	AutoSchedulingUpdatedAt  *time.Time  `json:"autoSchedulingUpdatedAt"`
+	CreatedAt                time.Time   `json:"createdAt"`
+	UpdatedAt                time.Time   `json:"updatedAt"`
+	Labels                   []uuid.UUID `json:"labels"`
+	SubStories               []uuid.UUID `json:"subStories"`
+}
+
+// AppSimilarStory represents a possible duplicate for a proposed story title.
+type AppSimilarStory struct {
+	ID         uuid.UUID  `json:"id"`
+	SequenceID int        `json:"sequenceId"`
+	Title      string     `json:"title"`
+	Team       uuid.UUID  `json:"teamId"`
+	Status     *uuid.UUID `json:"statusId"`
+	Assignee   *uuid.UUID `json:"assigneeId"`
+	Priority   string     `json:"priority"`
+	Confidence float64    `json:"confidence"`
 }
 
 // AppSearchObjective represents an objective in search results for the API.
 type AppSearchObjective struct {
-	ID          uuid.UUID  `json:"id"`
-	Name        string     `json:"name"`
-	Description *string    `json:"description"`
-	LeadUser    *uuid.UUID `json:"leadUser"`
-	Team        uuid.UUID  `json:"teamId"`
-	Workspace   uuid.UUID  `json:"workspaceId"`
-	StartDate   *time.Time `json:"startDate"`
-	EndDate     *time.Time `json:"endDate"`
-	Status      uuid.UUID  `json:"statusId"`
-	Priority    *string    `json:"priority"`
-	Health      *string    `json:"health"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	ID           uuid.UUID  `json:"id"`
+	Name         string     `json:"name"`
+	Description  *string    `json:"description"`
+	ShortSummary *string    `json:"shortSummary"`
+	LeadUser     *uuid.UUID `json:"leadUser"`
+	LeadFullName *string    `json:"leadFullName"`
+	LeadUsername *string    `json:"leadUsername"`
+	Team         uuid.UUID  `json:"teamId"`
+	TeamName     string     `json:"teamName"`
+	TeamCode     string     `json:"teamCode"`
+	Workspace    uuid.UUID  `json:"workspaceId"`
+	StartDate    *time.Time `json:"startDate"`
+	EndDate      *time.Time `json:"endDate"`
+	Status       uuid.UUID  `json:"statusId"`
+	Priority     *string    `json:"priority"`
+	Health       *string    `json:"health"`
+	CreatedAt    time.Time  `json:"createdAt"`
+	UpdatedAt    time.Time  `json:"updatedAt"`
 }
 
 // AppSearchResponse represents the API response for a search request.
@@ -84,24 +118,41 @@ func toAppSearchStories(stories []search.CoreSearchStory) []AppSearchStory {
 func toAppSearchStory(story search.CoreSearchStory) AppSearchStory {
 	var subStories []uuid.UUID = []uuid.UUID{}
 	return AppSearchStory{
-		ID:         story.ID,
-		SequenceID: story.SequenceID,
-		Title:      story.Title,
-		Parent:     story.Parent,
-		Objective:  story.Objective,
-		Status:     story.Status,
-		Assignee:   story.Assignee,
-		Reporter:   story.Reporter,
-		Priority:   story.Priority,
-		Sprint:     story.Sprint,
-		Team:       story.Team,
-		Workspace:  story.Workspace,
-		StartDate:  story.StartDate,
-		EndDate:    story.EndDate,
-		CreatedAt:  story.CreatedAt,
-		UpdatedAt:  story.UpdatedAt,
-		Labels:     story.Labels,
-		SubStories: subStories,
+		ID:                       story.ID,
+		SequenceID:               story.SequenceID,
+		Title:                    story.Title,
+		Parent:                   story.Parent,
+		Objective:                story.Objective,
+		Status:                   story.Status,
+		StatusName:               story.StatusName,
+		StatusColor:              story.StatusColor,
+		StatusCategory:           story.StatusCategory,
+		Assignee:                 story.Assignee,
+		AssigneeFullName:         story.AssigneeFullName,
+		AssigneeUsername:         story.AssigneeUsername,
+		Reporter:                 story.Reporter,
+		Priority:                 story.Priority,
+		EstimateLabel:            story.EstimateLabel,
+		EstimateValue:            story.EstimateValue,
+		EstimateScheme:           story.EstimateScheme,
+		Sprint:                   story.Sprint,
+		Team:                     story.Team,
+		TeamName:                 story.TeamName,
+		TeamCode:                 story.TeamCode,
+		Workspace:                story.Workspace,
+		StartDate:                story.StartDate,
+		EndDate:                  story.EndDate,
+		EstimatedDurationMinutes: story.EstimatedDurationMinutes,
+		MinimumFocusBlockMinutes: story.MinimumFocusBlockMinutes,
+		AutoSchedulingEnabled:    story.AutoSchedulingEnabled,
+		AutoSchedulingLocked:     story.AutoSchedulingLocked,
+		AutoSchedulingStatus:     story.AutoSchedulingStatus,
+		AutoSchedulingReason:     story.AutoSchedulingReason,
+		AutoSchedulingUpdatedAt:  story.AutoSchedulingUpdatedAt,
+		CreatedAt:                story.CreatedAt,
+		UpdatedAt:                story.UpdatedAt,
+		Labels:                   story.Labels,
+		SubStories:               subStories,
 	}
 }
 
@@ -117,19 +168,24 @@ func toAppSearchObjectives(objectives []search.CoreSearchObjective) []AppSearchO
 // toAppSearchObjective converts a core objective to an app objective.
 func toAppSearchObjective(objective search.CoreSearchObjective) AppSearchObjective {
 	return AppSearchObjective{
-		ID:          objective.ID,
-		Name:        objective.Name,
-		Description: objective.Description,
-		LeadUser:    objective.LeadUser,
-		Team:        objective.Team,
-		Workspace:   objective.Workspace,
-		StartDate:   objective.StartDate,
-		EndDate:     objective.EndDate,
-		Status:      objective.Status,
-		Priority:    objective.Priority,
-		Health:      objective.Health,
-		CreatedAt:   objective.CreatedAt,
-		UpdatedAt:   objective.UpdatedAt,
+		ID:           objective.ID,
+		Name:         objective.Name,
+		Description:  objective.Description,
+		ShortSummary: objective.ShortSummary,
+		LeadUser:     objective.LeadUser,
+		LeadFullName: objective.LeadFullName,
+		LeadUsername: objective.LeadUsername,
+		Team:         objective.Team,
+		TeamName:     objective.TeamName,
+		TeamCode:     objective.TeamCode,
+		Workspace:    objective.Workspace,
+		StartDate:    objective.StartDate,
+		EndDate:      objective.EndDate,
+		Status:       objective.Status,
+		Priority:     objective.Priority,
+		Health:       objective.Health,
+		CreatedAt:    objective.CreatedAt,
+		UpdatedAt:    objective.UpdatedAt,
 	}
 }
 
@@ -151,4 +207,21 @@ func toAppSearchResponse(result search.CoreSearchResult, page, pageSize int) App
 		PageSize:        pageSize,
 		TotalPages:      totalPages,
 	}
+}
+
+func toAppSimilarStories(stories []search.CoreSimilarStory) []AppSimilarStory {
+	result := make([]AppSimilarStory, len(stories))
+	for index, story := range stories {
+		result[index] = AppSimilarStory{
+			ID:         story.ID,
+			SequenceID: story.SequenceID,
+			Title:      story.Title,
+			Team:       story.Team,
+			Status:     story.Status,
+			Assignee:   story.Assignee,
+			Priority:   story.Priority,
+			Confidence: story.Confidence,
+		}
+	}
+	return result
 }

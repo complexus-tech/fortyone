@@ -1,12 +1,15 @@
 @import "tailwindcss";
 @import "tailwind-config";
+@import "ui/styles.css";
+
+@source "../../../../packages/ui/src";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-main: -apple-system, BlinkMacSystemFont, var(--font-body), "Segoe UI",
+  --font-main: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  --font-heading: var(--font-heading);
+  --font-heading: var(--font-body);
 }
 
 :root {
@@ -15,7 +18,7 @@
 
 body,
 html {
-  @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-[13px] font-medium antialiased 2xl:text-[13.5px];
+  @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-[13.5px] font-medium antialiased 2xl:text-[14px];
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -41,14 +44,14 @@ html {
   input,
   textarea,
   select {
-    font-size: 13px;
+    font-size: 13.5px;
   }
 
   @media (max-width: 768px) {
     input,
     textarea,
     select {
-      font-size: 13px;
+      font-size: 13.5px;
       line-height: 1.2;
       transform-origin: top left;
     }
@@ -99,4 +102,42 @@ svg {
 
 [data-close-button] {
   @apply hover:border-border hover:bg-state-hover!;
+}
+
+main table tbody tr {
+  @apply bg-transparent!;
+}
+
+main table tbody tr:nth-child(odd) {
+  @apply bg-transparent!;
+}
+
+main table tbody tr:nth-child(even) {
+  @apply bg-surface-muted/65!;
+}
+
+main table tbody tr:not(:last-child) {
+  @apply border-border border-b;
+}
+
+main table tbody tr:hover {
+  @apply bg-state-hover!;
+}
+
+main table th {
+  @apply bg-surface-muted! text-text-muted dark:bg-surface-elevated! px-4! py-4! text-[1rem]!;
+}
+
+main table td {
+  @apply px-4! py-3! align-middle;
+}
+
+main table th:first-child,
+main table td:first-child {
+  @apply pl-4!;
+}
+
+main table th:last-child,
+main table td:last-child {
+  @apply pr-4!;
 }

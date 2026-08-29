@@ -1,56 +1,68 @@
-"use client";
-import Image from "next/image";
+import type { ReactNode } from "react";
 import { Box, Button } from "ui";
-import { motion } from "framer-motion";
+import { cn } from "lib";
 import { Container } from "@/components/ui";
 import { SIGNUP_URL } from "@/lib/app-url";
-import meshImage from "../../../public/images/meshing.webp";
+import { GoogleSignupButton } from "./google-signup-button";
 
-const viewport = { once: true, amount: 0.35 };
-const scaleIn = {
-  hidden: { scale: 0.98, opacity: 0 },
-  show: {
-    scale: 1,
-    opacity: 1,
-    transition: { duration: 0.7, ease: "easeOut" },
-  },
-};
-
-export const CallToAction = () => {
+export const CallToAction = ({
+  className,
+  contentClassName,
+  description,
+  title = "Ready to bring strategy, feedback, and work together?",
+}: {
+  className?: string;
+  contentClassName?: string;
+  description?: ReactNode;
+  title?: ReactNode;
+}) => {
   return (
-    <Container className="py-16 md:py-20">
-      <motion.div
-        initial="hidden"
-        variants={scaleIn}
-        viewport={viewport}
-        whileInView="show"
+    <Box
+      aria-labelledby="marketing-cta-title"
+      as="section"
+      className={cn("border-border border-t", className)}
+      id="call-to-action"
+    >
+      <Container
+        className={cn(
+          "flex items-center justify-center py-16 text-center sm:py-24 md:py-32",
+          contentClassName,
+        )}
       >
-        <Box className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl md:rounded-3xl">
-          <Image
-            alt=""
-            className="object-cover"
-            fill
-            quality={100}
-            sizes="100vw"
-            src={meshImage}
-          />
-          <Box className="absolute inset-0 z-1 dark:bg-black/30" />
-          <Box className="relative z-2 flex max-w-[760px] flex-col items-center px-6 py-24 md:py-36">
-            <h2 className="text-foreground text-center text-4xl font-medium tracking-tight md:text-6xl">
-              Make your next project easier to run.
-            </h2>
+        <Box
+          className="flex max-w-2xl flex-col items-center"
+          data-landing-reveal
+        >
+          <h2
+            className="text-3xl leading-[1.02] font-semibold tracking-tight text-balance sm:text-4xl md:text-6xl"
+            id="marketing-cta-title"
+          >
+            {title}
+          </h2>
+          {description ? (
+            <p className="text-text-muted mt-5 max-w-lg text-base leading-relaxed md:text-lg">
+              {description}
+            </p>
+          ) : null}
+          <Box
+            className={cn(
+              "flex w-full max-w-[18rem] flex-col items-stretch gap-2 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-3 [&>a]:w-full [&>a]:justify-center sm:[&>a]:w-max",
+              description ? "mt-8" : "mt-12",
+            )}
+          >
             <Button
-              className="mt-8 border-0"
+              className="relative z-1 w-full justify-center px-3 sm:w-max md:pr-4 md:pl-5"
               color="invert"
               href={SIGNUP_URL}
-              rounded="lg"
+              rounded="md"
               size="lg"
             >
-              Start free
+              Get started free
             </Button>
+            <GoogleSignupButton />
           </Box>
         </Box>
-      </motion.div>
-    </Container>
+      </Container>
+    </Box>
   );
 };

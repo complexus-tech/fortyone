@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"testing"
+	"time"
 
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
 	"github.com/complexus-tech/projects-api/pkg/logger"
@@ -17,6 +18,46 @@ type activityRecordingRepo struct {
 	activities              []CoreActivity
 	previousAssociationType string
 	removed                 CoreStoryAssociation
+	story                   CoreSingleStory
+	mayaBlocksExist         bool
+}
+
+func (r *activityRecordingRepo) Get(_ context.Context, storyID, workspaceID uuid.UUID) (CoreSingleStory, error) {
+	r.story.ID = storyID
+	r.story.Workspace = workspaceID
+	return r.story, nil
+}
+
+func (r *activityRecordingRepo) Update(_ context.Context, _, _ uuid.UUID, updates map[string]any) error {
+	if value, ok := updates["auto_scheduling_enabled"].(bool); ok {
+		r.story.AutoSchedulingEnabled = value
+	}
+	if value, ok := updates["auto_scheduling_locked"].(bool); ok {
+		r.story.AutoSchedulingLocked = value
+	}
+	if value, ok := updates["auto_scheduling_status"].(string); ok {
+		r.story.AutoSchedulingStatus = value
+	}
+	if value, ok := updates["auto_scheduling_reason"].(*string); ok {
+		r.story.AutoSchedulingReason = value
+	}
+	return nil
+}
+
+func (r *activityRecordingRepo) MayaScheduleBlocksExist(_ context.Context, _, _ uuid.UUID) (bool, error) {
+	return r.mayaBlocksExist, nil
+}
+
+func (r *activityRecordingRepo) UpdateAutoSchedulingStateIfUnchanged(
+	_ context.Context,
+	_, _ uuid.UUID,
+	_ time.Time,
+	_ string,
+	_ *string,
+	_ time.Time,
+	_ *bool,
+) (bool, error) {
+	return true, nil
 }
 
 func (r *activityRecordingRepo) UpdateLabels(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID, labels []uuid.UUID) error {
@@ -25,10 +66,12 @@ func (r *activityRecordingRepo) UpdateLabels(ctx context.Context, id uuid.UUID, 
 
 func (r *activityRecordingRepo) AddAssociation(ctx context.Context, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error) {
 	return CoreStoryAssociation{
-		ID:          uuid.New(),
-		FromStoryID: fromID,
-		ToStoryID:   toID,
-		Type:        associationType,
+		ID:             uuid.New(),
+		FromStoryID:    fromID,
+		ToStoryID:      toID,
+		Type:           associationType,
+		FromStoryTitle: "Source story",
+		ToStoryTitle:   "Related story",
 		Story: CoreStoryList{
 			ID:         toID,
 			SequenceID: 62,
@@ -39,11 +82,13 @@ func (r *activityRecordingRepo) AddAssociation(ctx context.Context, fromID, toID
 
 func (r *activityRecordingRepo) UpdateAssociation(ctx context.Context, associationID, fromID, toID uuid.UUID, associationType string, workspaceID uuid.UUID) (CoreStoryAssociation, error) {
 	return CoreStoryAssociation{
-		ID:           associationID,
-		FromStoryID:  fromID,
-		ToStoryID:    toID,
-		Type:         associationType,
-		PreviousType: previousAssociationTypePtr(r.previousAssociationType),
+		ID:             associationID,
+		FromStoryID:    fromID,
+		ToStoryID:      toID,
+		Type:           associationType,
+		PreviousType:   previousAssociationTypePtr(r.previousAssociationType),
+		FromStoryTitle: "Source story",
+		ToStoryTitle:   "Updated related story",
 		Story: CoreStoryList{
 			ID:         toID,
 			SequenceID: 63,
@@ -77,7 +122,7 @@ func previousAssociationTypePtr(value string) *string {
 }
 
 func newActivityRecordingService(repo *activityRecordingRepo) *Service {
-	return New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil, nil)
+	return New(logger.NewWithText(io.Discard, slog.LevelError, "test"), repo, nil, nil)
 }
 
 func TestUpdateLabelsRecordsActivity(t *testing.T) {
@@ -117,6 +162,54 @@ func TestUpdateLabelsRecordsActivity(t *testing.T) {
 	}
 }
 
+func TestAutoSchedulingLockAndUnlockEachRecordOneUserActivity(t *testing.T) {
+	actorID := uuid.New()
+	storyID := uuid.New()
+	workspaceID := uuid.New()
+	ctx := auth.SetUserID(context.Background(), actorID)
+
+	tests := []struct {
+		name        string
+		story       CoreSingleStory
+		lockedValue bool
+	}{
+		{
+			name: "lock",
+			story: CoreSingleStory{
+				AutoSchedulingEnabled: true,
+				AutoSchedulingStatus:  AutoSchedulingStatusScheduled,
+			},
+			lockedValue: true,
+		},
+		{
+			name: "unlock",
+			story: CoreSingleStory{
+				AutoSchedulingEnabled: true,
+				AutoSchedulingLocked:  true,
+				AutoSchedulingStatus:  AutoSchedulingStatusLocked,
+			},
+			lockedValue: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repo := &activityRecordingRepo{story: test.story, mayaBlocksExist: true}
+			service := newActivityRecordingService(repo)
+
+			if err := service.Update(ctx, storyID, workspaceID, map[string]any{"auto_scheduling_locked": test.lockedValue}); err != nil {
+				t.Fatalf("Update returned error: %v", err)
+			}
+			if len(repo.activities) != 1 {
+				t.Fatalf("expected exactly one semantic lock activity, got %#v", repo.activities)
+			}
+			if repo.activities[0].Field != "auto_scheduling_locked" {
+				t.Fatalf("activity field = %q, want auto_scheduling_locked", repo.activities[0].Field)
+			}
+		})
+	}
+}
+
 func TestAddAssociationRecordsActivityForBothStories(t *testing.T) {
 	repo := &activityRecordingRepo{}
 	service := newActivityRecordingService(repo)
@@ -149,6 +242,9 @@ func TestAddAssociationRecordsActivityForBothStories(t *testing.T) {
 	if fromActivity.Reason == nil || *fromActivity.Reason != "association_added" {
 		t.Fatalf("expected association_added reason, got %v", fromActivity.Reason)
 	}
+	if fromActivity.CurrentValue != "Related story" {
+		t.Fatalf("expected related story title, got %q", fromActivity.CurrentValue)
+	}
 
 	toActivity, ok := activityByStoryID[toStoryID]
 	if !ok {
@@ -159,6 +255,9 @@ func TestAddAssociationRecordsActivityForBothStories(t *testing.T) {
 	}
 	if toActivity.Reason == nil || *toActivity.Reason != "association_added" {
 		t.Fatalf("expected association_added reason, got %v", toActivity.Reason)
+	}
+	if toActivity.CurrentValue != "Source story" {
+		t.Fatalf("expected source story title, got %q", toActivity.CurrentValue)
 	}
 }
 
@@ -196,6 +295,9 @@ func TestUpdateAssociationRecordsActivityForBothStories(t *testing.T) {
 	if fromActivity.Reason == nil || *fromActivity.Reason != "association_updated" {
 		t.Fatalf("expected association_updated reason, got %v", fromActivity.Reason)
 	}
+	if fromActivity.CurrentValue != "Updated related story" {
+		t.Fatalf("expected related story title, got %q", fromActivity.CurrentValue)
+	}
 
 	toActivity := activityByStoryID[toStoryID]
 	if toActivity.Field != "duplicated_by_id" {
@@ -207,6 +309,9 @@ func TestUpdateAssociationRecordsActivityForBothStories(t *testing.T) {
 	if toActivity.Reason == nil || *toActivity.Reason != "association_updated" {
 		t.Fatalf("expected association_updated reason, got %v", toActivity.Reason)
 	}
+	if toActivity.CurrentValue != "Source story" {
+		t.Fatalf("expected source story title, got %q", toActivity.CurrentValue)
+	}
 }
 
 func TestRemoveAssociationRecordsActivityForBothStories(t *testing.T) {
@@ -215,10 +320,12 @@ func TestRemoveAssociationRecordsActivityForBothStories(t *testing.T) {
 	toStoryID := uuid.New()
 	repo := &activityRecordingRepo{
 		removed: CoreStoryAssociation{
-			ID:          associationID,
-			FromStoryID: fromStoryID,
-			ToStoryID:   toStoryID,
-			Type:        "related",
+			ID:             associationID,
+			FromStoryID:    fromStoryID,
+			ToStoryID:      toStoryID,
+			Type:           "related",
+			FromStoryTitle: "Source story",
+			ToStoryTitle:   "Related story",
 		},
 	}
 	service := newActivityRecordingService(repo)
@@ -245,10 +352,16 @@ func TestRemoveAssociationRecordsActivityForBothStories(t *testing.T) {
 	if activity := activityByStoryID[fromStoryID]; activity.Reason == nil || *activity.Reason != "association_removed" {
 		t.Fatalf("expected association_removed reason, got %v", activity.Reason)
 	}
+	if activity := activityByStoryID[fromStoryID]; activity.CurrentValue != "Related story" {
+		t.Fatalf("expected related story title, got %q", activity.CurrentValue)
+	}
 	if _, ok := activityByStoryID[toStoryID]; !ok {
 		t.Fatalf("expected activity for target story %s", toStoryID)
 	}
 	if activity := activityByStoryID[toStoryID]; activity.Reason == nil || *activity.Reason != "association_removed" {
 		t.Fatalf("expected association_removed reason, got %v", activity.Reason)
+	}
+	if activity := activityByStoryID[toStoryID]; activity.CurrentValue != "Source story" {
+		t.Fatalf("expected source story title, got %q", activity.CurrentValue)
 	}
 }

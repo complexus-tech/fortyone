@@ -79,14 +79,14 @@ export const StoriesKanbanHeader = ({
   onHide?: () => void;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const { viewOptions } = useBoard();
+  const { newStoryDefaults, viewOptions } = useBoard();
   const { showEmptyGroups } = viewOptions;
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
 
   return (
     <Box
-      className={cn({
+      className={cn("w-[340px] shrink-0", {
         hidden: group.loadedCount === 0 && !showEmptyGroups,
       })}
     >
@@ -104,7 +104,10 @@ export const StoriesKanbanHeader = ({
             priority={priority}
             status={status}
           />
-          <Tooltip side="bottom" title="Total stories">
+          <Tooltip
+            side="bottom"
+            title={`Total ${getTermDisplay("storyTerm", { variant: "plural" })}`}
+          >
             <span>
               <StoryIcon className="ml-0 h-5 w-auto" strokeWidth={2} />
             </span>
@@ -162,11 +165,14 @@ export const StoriesKanbanHeader = ({
         </Flex>
       </Flex>
       <NewStoryDialog
-        assigneeId={member?.id}
+        assigneeId={groupBy === "assignee" ? member?.id ?? null : undefined}
         isOpen={isOpen}
+        objectiveId={newStoryDefaults.objectiveId}
         priority={priority}
         setIsOpen={setIsOpen}
+        sprintId={newStoryDefaults.sprintId}
         statusId={status?.id}
+        teamId={newStoryDefaults.teamId}
       />
     </Box>
   );

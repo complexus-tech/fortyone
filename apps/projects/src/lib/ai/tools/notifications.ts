@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
-import { getNotifications } from "@/modules/notifications/queries/get-notifications";
+import { getUnreadNotificationsStrict } from "@/modules/notifications/queries/get-unread";
+import { getNotificationsPageStrict } from "@/modules/notifications/queries/get-notifications";
 import { readNotification } from "@/modules/notifications/actions/read";
 import { readAllNotifications } from "@/modules/notifications/actions/read-all";
 import { deleteNotification } from "@/modules/notifications/actions/delete";
@@ -10,6 +11,7 @@ import { deleteReadNotifications } from "@/modules/notifications/actions/delete-
 import { markUnread } from "@/modules/notifications/actions/mark-unread";
 import { updateNotificationPreferences } from "@/modules/notifications/actions/update-preferences";
 import type { AppNotification } from "@/modules/notifications/types";
+import { MAYA_TOOL_ACTIONS } from "@/lib/ai/tool-actions";
 import { paginateRecords } from "./tool-helpers";
 
 export const notificationsTool = tool({
@@ -17,18 +19,7 @@ export const notificationsTool = tool({
     "Manage user notifications including viewing, marking as read/unread, deleting, and managing notification preferences. Helps users stay on top of important updates.",
   inputSchema: z.object({
     action: z
-      .enum([
-        "list-notifications",
-        "get-unread-count",
-        "mark-as-read",
-        "mark-all-as-read",
-        "mark-as-unread",
-        "delete-notification",
-        "delete-all-notifications",
-        "delete-read-notifications",
-        "filter-notifications",
-        "update-notification-preferences",
-      ])
+      .enum(MAYA_TOOL_ACTIONS.notifications)
       .describe("The notification action to perform"),
 
     notificationId: z
@@ -156,7 +147,15 @@ export const notificationsTool = tool({
 
       switch (action) {
         case "list-notifications": {
-          let notifications = await getNotifications(ctx);
+          const requestedPage = page ?? 1;
+          const requestedPageSize = pageSize ?? limit;
+          const requiresLocalFiltering = Boolean(filterType || unreadOnly);
+          const notificationsPage = await getNotificationsPageStrict(
+            ctx,
+            requiresLocalFiltering ? 1 : requestedPage,
+            requiresLocalFiltering ? 100 : requestedPageSize,
+          );
+          let notifications = notificationsPage.notifications;
 
           // Apply filters
           if (filterType) {
@@ -167,11 +166,15 @@ export const notificationsTool = tool({
             notifications = notifications.filter((n) => !n.readAt);
           }
 
-          const totalFilteredCount = notifications.length;
-          const pagedNotifications = paginateRecords(notifications, {
-            page,
-            pageSize: pageSize ?? limit,
-          });
+          const pagedNotifications = requiresLocalFiltering
+            ? paginateRecords(notifications, {
+                page: requestedPage,
+                pageSize: requestedPageSize,
+              })
+            : {
+                records: notifications,
+                pagination: notificationsPage.pagination,
+              };
 
           const formattedNotifications =
             pagedNotifications.records.map(formatNotification);
@@ -180,22 +183,21 @@ export const notificationsTool = tool({
             success: true,
             notifications: formattedNotifications,
             count: formattedNotifications.length,
-            totalCount: totalFilteredCount,
-            unreadCount: notifications.filter((n) => !n.readAt).length,
+            unreadCount: await getUnreadNotificationsStrict(ctx),
             pagination: pagedNotifications.pagination,
+            resultsCapped:
+              requiresLocalFiltering && notificationsPage.pagination.hasMore,
             message: `Found ${formattedNotifications.length} notifications.`,
           };
         }
 
         case "get-unread-count": {
-          const notifications = await getNotifications(ctx);
-          const unreadCount = notifications.filter((n) => !n.readAt).length;
+          const unreadCount = await getUnreadNotificationsStrict(ctx);
 
           return {
             success: true,
             unreadCount,
-            totalCount: notifications.length,
-            message: `You have ${unreadCount} unread notifications out of ${notifications.length} total.`,
+            message: `You have ${unreadCount} unread notifications.`,
           };
         }
 
@@ -327,7 +329,12 @@ export const notificationsTool = tool({
         }
 
         case "filter-notifications": {
-          let notifications = await getNotifications(ctx);
+          const notificationsPage = await getNotificationsPageStrict(
+            ctx,
+            1,
+            100,
+          );
+          let notifications = notificationsPage.notifications;
 
           // Apply filters
           if (filterType) {
@@ -356,6 +363,7 @@ export const notificationsTool = tool({
             success: true,
             notifications: formattedNotifications,
             count: formattedNotifications.length,
+            resultsCapped: notificationsPage.pagination.hasMore,
             filters: { filterType, unreadOnly },
             message: `Found ${formattedNotifications.length} notifications${filterDescription ? ` with filters: ${filterDescription}` : ""}.`,
           };

@@ -1,40 +1,19 @@
 package github
 
 import (
+	"net/http"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
-func TestUserLinkStateRequiresSameUserAndValidReturnPath(t *testing.T) {
-	service := &Service{cfg: Config{SecretKey: "test-secret"}}
-	userID := uuid.New()
-
-	state, err := service.createUserLinkState(userID, "/settings/account/profile?tab=integrations", time.Now().Add(15*time.Minute))
+func TestDefaultGitHubHTTPClientDoesNotFollowRedirects(t *testing.T) {
+	t.Parallel()
+	service, err := New(nil, nil, nil, nil, nil, Config{})
 	require.NoError(t, err)
-
-	returnTo, err := service.verifyUserLinkState(state, userID, time.Now())
-	require.NoError(t, err)
-	require.Equal(t, "/settings/account/profile?tab=integrations", returnTo)
-
-	_, err = service.verifyUserLinkState(state, uuid.New(), time.Now())
-	require.Error(t, err)
-}
-
-func TestUserLinkStateRejectsExpiredOrUnsafeReturnPath(t *testing.T) {
-	service := &Service{cfg: Config{SecretKey: "test-secret"}}
-	userID := uuid.New()
-
-	expiredState, err := service.createUserLinkState(userID, "/settings/account/profile", time.Now().Add(-time.Minute))
-	require.NoError(t, err)
-
-	_, err = service.verifyUserLinkState(expiredState, userID, time.Now())
-	require.Error(t, err)
-
-	_, err = service.createUserLinkState(userID, "https://evil.example/callback", time.Now().Add(15*time.Minute))
-	require.Error(t, err)
+	require.NotNil(t, service.httpClient.CheckRedirect)
+	require.ErrorIs(t, service.httpClient.CheckRedirect(&http.Request{}, nil), http.ErrUseLastResponse)
 }
 
 func TestIsFortyOneAuthoredCommentBody(t *testing.T) {
@@ -88,6 +67,17 @@ func TestFortyOneCommentMarkerIsHiddenAndStripped(t *testing.T) {
 	require.Contains(t, body, "<!-- fortyone:comment:"+commentID.String()+" -->")
 	require.True(t, isFortyOneAuthoredCommentBody(body))
 	require.Equal(t, "Ship it", stripFortyOneCommentMarker(body))
+}
+
+func TestGitHubCommentIdempotencyRejectsSameMarkerWithDifferentBody(t *testing.T) {
+	t.Parallel()
+	commentID := uuid.New()
+	userBody := buildFortyOneUserCommentBody("Ship it", commentID)
+	botBody := buildFortyOneBotCommentBody("Joseph", "Ship it", commentID)
+
+	require.True(t, matchesGitHubCommentIntent(userBody, "Ship it"))
+	require.True(t, matchesGitHubCommentIntent(botBody, "Ship it"))
+	require.False(t, matchesGitHubCommentIntent(userBody, "Do not ship"))
 }
 
 func TestGitHubPriorityFromLabels(t *testing.T) {
@@ -158,4 +148,19 @@ func TestShouldIgnoreFortyOneIssueEcho(t *testing.T) {
 	require.False(t, shouldIgnoreFortyOneIssueEcho("closed", "fortyone", syncHash, githubIssueSyncHash("Fix webhook loop", "Changed", "closed")))
 	require.False(t, shouldIgnoreFortyOneIssueEcho("closed", "", syncHash, syncHash))
 	require.False(t, shouldIgnoreFortyOneIssueEcho("labeled", "fortyone", syncHash, syncHash))
+}
+
+func TestStoryURLFromWebsiteUsesCanonicalWorkReference(t *testing.T) {
+	hostedURL, err := storyURLFromWebsite("https://fortyone.app", "acme", "PRD-571")
+	require.NoError(t, err)
+	require.Equal(t, "https://acme.fortyone.app/work/PRD-571", hostedURL)
+
+	localURL, err := storyURLFromWebsite("http://localhost:3000", "acme", "PRD-571")
+	require.NoError(t, err)
+	require.Equal(t, "http://localhost:3000/acme/work/PRD-571", localURL)
+}
+
+func TestBuildStoryReference(t *testing.T) {
+	require.Equal(t, "PRD-571", buildStoryReference(" prd ", 571, "story-id"))
+	require.Equal(t, "story-id", buildStoryReference("", 571, "story-id"))
 }

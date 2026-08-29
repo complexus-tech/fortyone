@@ -2,11 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   // productionBrowserSourceMaps: true,
-  output: "standalone",
-  transpilePackages: ["ui", "icons"],
+  transpilePackages: ["ui", "icons", "ky", "marked", "next-public-env"],
   devIndicators: false,
   reactCompiler: true,
   experimental: {
+    useTypeScriptCli: true,
     turbopackFileSystemCacheForDev: false,
     staleTimes: {
       dynamic: 30,
@@ -20,51 +20,7 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === "production",
   },
   images: {
-    dangerouslyAllowLocalIP: true,
-    remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "minio",
-        port: "9000",
-      },
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "9000",
-      },
-      {
-        protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "avatars.githubusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "user-images.githubusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "fortyone.s3.us-east-1.amazonaws.com",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "complexus.blob.core.windows.net",
-      },
-      {
-        protocol: "https",
-        hostname: "www.fortyone.app",
-      },
-      {
-        protocol: "https",
-        hostname: "www.fortyone.lc",
-      },
-    ],
+    unoptimized: true,
   },
   async rewrites() {
     return [

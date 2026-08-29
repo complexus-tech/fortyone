@@ -53,6 +53,9 @@ const createKyClient = (prefixUrl?: string) => {
       beforeRequest: isServer
         ? [
             async (request) => {
+              if (request.credentials === "omit") {
+                return;
+              }
               const { headers } = await import("next/headers");
               const cookieHeader = (await headers()).get("cookie");
 

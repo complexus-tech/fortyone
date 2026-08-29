@@ -1,71 +1,37 @@
 package subscriptions
 
-import (
-	"time"
+import subscriptionsdomain "github.com/complexus-tech/projects-api/internal/modules/subscriptions/domain"
 
-	"github.com/google/uuid"
-)
-
-// SubscriptionStatus represents the status of a subscription
-type SubscriptionStatus string
+type SubscriptionStatus = subscriptionsdomain.SubscriptionStatus
 
 const (
-	StatusActive            SubscriptionStatus = "active"
-	StatusIncomplete        SubscriptionStatus = "incomplete"
-	StatusIncompleteExpired SubscriptionStatus = "incomplete_expired"
-	StatusTrialing          SubscriptionStatus = "trialing"
-	StatusPastDue           SubscriptionStatus = "past_due"
-	StatusUnpaid            SubscriptionStatus = "unpaid"
-	StatusCanceled          SubscriptionStatus = "canceled"
-	StatusPaused            SubscriptionStatus = "paused"
+	StatusActive            = subscriptionsdomain.StatusActive
+	StatusIncomplete        = subscriptionsdomain.StatusIncomplete
+	StatusIncompleteExpired = subscriptionsdomain.StatusIncompleteExpired
+	StatusTrialing          = subscriptionsdomain.StatusTrialing
+	StatusPastDue           = subscriptionsdomain.StatusPastDue
+	StatusUnpaid            = subscriptionsdomain.StatusUnpaid
+	StatusCanceled          = subscriptionsdomain.StatusCanceled
+	StatusPaused            = subscriptionsdomain.StatusPaused
 )
 
-// BillingInterval represents the billing interval of a subscription
-type BillingInterval string
+type BillingInterval = subscriptionsdomain.BillingInterval
 
 const (
-	IntervalDay   BillingInterval = "day"
-	IntervalWeek  BillingInterval = "week"
-	IntervalMonth BillingInterval = "month"
-	IntervalYear  BillingInterval = "year"
+	IntervalDay   = subscriptionsdomain.IntervalDay
+	IntervalWeek  = subscriptionsdomain.IntervalWeek
+	IntervalMonth = subscriptionsdomain.IntervalMonth
+	IntervalYear  = subscriptionsdomain.IntervalYear
 )
 
-// SubscriptionTier represents the tier of a subscription
-type SubscriptionTier string
+type SubscriptionTier = subscriptionsdomain.SubscriptionTier
 
 const (
-	TierFree       SubscriptionTier = "free"
-	TierPro        SubscriptionTier = "pro"
-	TierBusiness   SubscriptionTier = "business"
-	TierEnterprise SubscriptionTier = "enterprise"
+	TierFree       = subscriptionsdomain.TierFree
+	TierPro        = subscriptionsdomain.TierPro
+	TierBusiness   = subscriptionsdomain.TierBusiness
+	TierEnterprise = subscriptionsdomain.TierEnterprise
 )
 
-// CoreWorkspaceSubscription represents a workspace subscription
-type CoreWorkspaceSubscription struct {
-	WorkspaceID              uuid.UUID
-	StripeCustomerID         string
-	StripeSubscriptionID     *string
-	StripeSubscriptionItemID *string
-	SubscriptionStatus       *SubscriptionStatus
-	SubscriptionTier         SubscriptionTier
-	SeatCount                int
-	TrialEndDate             *time.Time
-	BillingInterval          *BillingInterval
-	BillingEndsAt            *time.Time
-	CreatedAt                time.Time
-	UpdatedAt                time.Time
-}
-
-// CoreSubscriptionInvoice represents a subscription invoice
-type CoreSubscriptionInvoice struct {
-	InvoiceID       int64
-	WorkspaceID     uuid.UUID
-	StripeInvoiceID string
-	AmountPaid      float64
-	InvoiceDate     time.Time
-	Status          string
-	SeatsCount      int
-	CreatedAt       time.Time
-	HostedURL       *string
-	CustomerName    *string
-}
+type CoreWorkspaceSubscription = subscriptionsdomain.WorkspaceSubscription
+type CoreSubscriptionInvoice = subscriptionsdomain.SubscriptionInvoice

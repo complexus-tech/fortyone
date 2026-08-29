@@ -9,32 +9,47 @@ import { normalizeOptionalString } from "@/lib/ai/tools/normalize-input";
 export const updateObjectiveTool = tool({
   description:
     "Update an existing objective. Only admins, objective creators, or assigned lead users can update objectives.",
-  inputSchema: z.object({
-    objectiveId: z.string().describe("Objective ID to update (required)"),
-    name: z.string().optional().describe("Updated objective name"),
-    description: z
-      .string()
-      .optional()
-      .describe("Updated objective description (HTML format)"),
-    leadUser: z.string().optional().describe("Updated lead user ID"),
-    startDate: z
-      .string()
-      .optional()
-      .describe("Updated start date (ISO  date string e.g 2005-06-13)"),
-    endDate: z
-      .string()
-      .optional()
-      .describe("Updated end date (ISO  date string e.g 2005-06-13)"),
-    statusId: z.string().optional().describe("Updated status ID"),
-    priority: z
-      .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
-      .optional()
-      .describe("Updated priority"),
-    health: z
-      .enum(["On Track", "At Risk", "Off Track"])
-      .optional()
-      .describe("Updated health status"),
-  }),
+  inputSchema: z
+    .object({
+      objectiveId: z.string().describe("Objective ID to update (required)"),
+      name: z.string().optional().describe("Updated objective name"),
+      description: z
+        .string()
+        .optional()
+        .describe("Updated objective description (HTML format)"),
+      leadUser: z.string().optional().describe("Updated lead user ID"),
+      startDate: z
+        .string()
+        .optional()
+        .describe("Updated start date (ISO  date string e.g 2005-06-13)"),
+      endDate: z
+        .string()
+        .optional()
+        .describe("Updated end date (ISO  date string e.g 2005-06-13)"),
+      statusId: z.string().optional().describe("Updated status ID"),
+      priority: z
+        .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
+        .optional()
+        .describe("Updated priority"),
+      health: z
+        .enum(["On Track", "At Risk", "Off Track"])
+        .optional()
+        .describe("Updated health status"),
+    })
+    .refine(
+      (input) =>
+        [
+          input.name,
+          input.description,
+          input.leadUser,
+          input.startDate,
+          input.endDate,
+          input.statusId,
+          input.priority,
+          input.health,
+        ].some((value) => value !== undefined),
+      { message: "Provide at least one objective field to update." },
+    ),
 
   execute: async (
     {
@@ -48,7 +63,7 @@ export const updateObjectiveTool = tool({
       priority,
       health,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -60,14 +75,14 @@ export const updateObjectiveTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
       const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
-      const userId = session.user!.id;
+      const userId = session.user.id;
 
       // Check if user can update this objective
       const objective = await getObjective(objectiveId, ctx);

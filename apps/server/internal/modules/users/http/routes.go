@@ -3,30 +3,35 @@ package usershttp
 import (
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	"github.com/complexus-tech/projects-api/internal/platform/deployment"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/google"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/microsoft"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB             *sqlx.DB
-	Log            *logger.Logger
-	SecretKey      string
-	CookieDomain   string
-	GoogleService  *google.Service
-	Publisher      *publisher.Publisher
-	TasksService   *tasks.Service
-	StorageConfig  storage.Config
-	StorageService storage.StorageService
-	Cache          *cache.Service
-	Users          *users.Service
-	Attachments    *attachments.Service
+	Log               *logger.Logger
+	DeploymentMode    deployment.Mode
+	SecretKey         string
+	CookieDomain      string
+	WebsiteURL        string
+	GoogleService     *google.Service
+	MicrosoftService  *microsoft.Service
+	Publisher         *publisher.Publisher
+	TasksService      *tasks.Service
+	StorageConfig     storage.Config
+	StorageService    storage.StorageService
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	Users             *users.Service
+	Attachments       *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -38,18 +43,24 @@ func Routes(cfg Config, app *web.App) {
 		attachmentsService,
 		cfg.SecretKey,
 		cfg.CookieDomain,
+		cfg.WebsiteURL,
 		cfg.Cache,
+		cfg.Log,
+		cfg.DeploymentMode,
 		cfg.GoogleService,
+		cfg.MicrosoftService,
 		cfg.Publisher,
 	)
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	gzip := mid.Gzip(cfg.Log)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 
 	// Public endpoints
 	app.Get("/auth/me", h.Me, auth)
 	app.Get("/auth/google", h.StartGoogleAuth)
 	app.Get("/auth/google/callback", h.CompleteGoogleAuth)
+	app.Get("/auth/microsoft", h.StartMicrosoftAuth)
+	app.Get("/auth/microsoft/callback", h.CompleteMicrosoftAuth)
 	app.Post("/auth/google/verify", h.GoogleAuth)
 	app.Post("/users/google/verify", h.GoogleAuth)
 	app.Post("/users/verify/email", h.SendEmailVerification)

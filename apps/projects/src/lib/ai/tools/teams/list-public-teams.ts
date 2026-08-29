@@ -2,7 +2,6 @@ import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { getPublicTeamsPage } from "@/modules/teams/queries/get-public-teams";
-import { getTeamsPage } from "@/modules/teams/queries/get-teams";
 import { resolvePaginationInput } from "../tool-helpers";
 
 export const listPublicTeams = tool({
@@ -42,26 +41,18 @@ export const listPublicTeams = tool({
       const ctx = { session, workspaceSlug };
       const pagination = resolvePaginationInput({ page, pageSize });
 
-      const [publicTeamsPage, userTeamsPage] = await Promise.all([
-        getPublicTeamsPage(
-          ctx,
-          searchQuery,
-          pagination.page,
-          pagination.pageSize,
-        ),
-        getTeamsPage(ctx, "", 1, 100),
-      ]);
-
-      const userTeamIds = userTeamsPage.teams.map((t) => t.id);
-      const availableTeams = publicTeamsPage.teams.filter(
-        (team) => !userTeamIds.includes(team.id),
+      const publicTeamsPage = await getPublicTeamsPage(
+        ctx,
+        searchQuery,
+        pagination.page,
+        pagination.pageSize,
       );
 
       return {
         success: true,
-        teams: availableTeams,
+        teams: publicTeamsPage.teams,
         pagination: publicTeamsPage.pagination,
-        message: `Found ${availableTeams.length} public team${availableTeams.length !== 1 ? "s" : ""} you can join.`,
+        message: `Found ${publicTeamsPage.teams.length} public team${publicTeamsPage.teams.length !== 1 ? "s" : ""} you can join.`,
       };
     } catch (error) {
       return {

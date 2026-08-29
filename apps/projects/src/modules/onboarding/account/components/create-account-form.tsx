@@ -7,12 +7,17 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
 import { updateProfile } from "@/lib/actions/update-profile";
+import { withOnboardingCallbackUrl } from "@/modules/onboarding/routing";
 
-export const CreateAccountForm = () => {
+export const CreateAccountForm = ({
+  callbackUrl,
+}: {
+  callbackUrl?: string;
+}) => {
   const { data: session } = useSession();
   const currentTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [isLoading, setIsLoading] = useState(false);
-  const [fullName, setFullName] = useState(session?.user?.name || "");
+  const [fullName, setFullName] = useState(session?.user.name || "");
   const [receiveUpdates, setReceiveUpdates] = useState(false);
   const router = useRouter();
 
@@ -31,7 +36,7 @@ export const CreateAccountForm = () => {
       // ignore and continue to onboarding flow
     }
     setIsLoading(false);
-    router.push("/onboarding/invite");
+    router.push(withOnboardingCallbackUrl("/onboarding/invite", callbackUrl));
   };
 
   return (
@@ -71,9 +76,9 @@ export const CreateAccountForm = () => {
         className="mt-4 md:py-3"
         color="invert"
         fullWidth
-        size="lg"
         loading={isLoading}
         loadingText="Creating account..."
+        size="lg"
       >
         Create Account
       </Button>

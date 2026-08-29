@@ -1,97 +1,71 @@
-import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
+import { isStoryCreationOutcomeUncertainError } from "@/modules/story/actions/story-creation-error";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
-import { requireToolConfirmation } from "../tool-helpers";
-import { normalizeStoryInput } from "./normalize-story-input";
+import type { DetailedStory } from "@/modules/story/types";
+import {
+  normalizeOptionalStoryId,
+  normalizeRequiredStoryId,
+  normalizeStoryInput,
+} from "./normalize-story-input";
+import { createSprintEndDateResolver } from "./resolve-sprint-end-date";
+import { createStoryStatusResolver } from "./resolve-story-status";
+import { getStoryCreationIdempotencyKey } from "./story-creation-idempotency";
+import {
+  applyBulkStorySharedValues,
+  bulkCreateStoriesInputSchema,
+} from "./story-creation-schema";
+import { getBulkStoryCalendarImpact } from "./story-calendar-impact";
+import { toStoryToolSummary } from "./story-tool-summary";
+
+const CREATION_BATCH_SIZE = 10;
+
+type FailedStory = {
+  kind: "failed";
+  title: string;
+  error: string;
+};
+
+type PreparedStory = {
+  index: number;
+  kind: "prepared";
+  story: ReturnType<typeof normalizeStoryInput>;
+};
+
+type PreparationResult = FailedStory | PreparedStory;
+
+type CreationResult =
+  | FailedStory
+  | {
+      kind: "created";
+      story: DetailedStory;
+    };
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+
+const inBatchesOf = <Item>(items: Item[], size: number) => {
+  const batches: Item[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    batches.push(items.slice(index, index + size));
+  }
+  return batches;
+};
+
+export { bulkCreateStoriesInputSchema } from "./story-creation-schema";
 
 export const bulkCreateStories = tool({
   description:
-    "Bulk create multiple stories at once. Only admins and members can perform bulk operations. always use this tool when creating multiple stories at once but create in batches of 10.",
-  inputSchema: z.object({
-    confirmed: z
-      .boolean()
-      .optional()
-      .describe(
-        "Must be true after the user explicitly confirms the bulk creation.",
-      ),
-    storiesData: z
-      .array(
-        z.object({
-          title: z.string().describe("Story title (required)"),
-          description: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Story description"),
-          descriptionHTML: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Story description HTML"),
-          teamId: z.string().describe("Team ID where story belongs (required)"),
-          statusId: z.string().describe("Initial status ID (required)"),
-          assigneeId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Assignee user ID"),
-          priority: z
-            .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
-            .default("No Priority")
-            .describe("Story priority (required)"),
-          estimateValue: z
-            .number()
-            .int()
-            .nullable()
-            .optional()
-            .describe(
-              "Canonical estimate value for the team's estimation scheme. Use 1, 2, 3, 5, or 8. Use 0, null, or omit for unestimated work.",
-            ),
-          labelIds: z
-            .array(z.string())
-            .optional()
-            .describe("Label IDs to attach to the story."),
-          sprintId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Sprint ID to assign story"),
-          objectiveId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Objective ID to assign story"),
-          parentId: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Parent story ID for sub-stories"),
-          startDate: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Story start date (ISO  date string e.g 2005-06-13)"),
-          endDate: z
-            .string()
-            .nullable()
-            .optional()
-            .describe("Story end date (ISO  date string e.g 2005-06-13)"),
-        }),
-      )
-      .describe("Array of story data for bulk creation (required)"),
-  }),
+    "Bulk create up to 50 stories. Default every story to no time estimate and calendar scheduling off; do not ask for or apply one batch-wide duration. Put team, assignee, status, or other genuinely common metadata in sharedValues. Include shared planning values only when the user explicitly says they apply to every story; otherwise use only supplied per-story planning values. Execution pauses for approval, processes in batches of 10, and reports every result.",
+  inputSchema: bulkCreateStoriesInputSchema,
+  needsApproval: true,
 
   execute: async (
-    { confirmed, storiesData },
-    { experimental_context: experimentalContext },
+    { sharedValues, storiesData },
+    { experimental_context: experimentalContext, toolCallId },
   ) => {
     try {
-      if (!confirmed) {
-        return requireToolConfirmation("create these stories");
-      }
-
       const session = await auth();
 
       if (!session) {
@@ -117,40 +91,128 @@ export const bulkCreateStories = tool({
         };
       }
 
-      const normalizedStoriesData = storiesData.map((storyData) =>
-        normalizeStoryInput(storyData),
+      const resolveStatusId = createStoryStatusResolver(ctx);
+      const resolveSprintEndDate = createSprintEndDateResolver(ctx);
+      const preparedResults: PreparationResult[] = await Promise.all(
+        storiesData.map(async (storyInput, index) => {
+          const storyData = applyBulkStorySharedValues(
+            sharedValues,
+            storyInput,
+          );
+          const title = storyData.title.trim() || `Story ${index + 1}`;
+
+          try {
+            const teamId = normalizeRequiredStoryId(
+              storyData.teamId ?? "",
+              "teamId",
+            );
+            const statusId = await resolveStatusId(teamId, storyData.statusId);
+            const sprintId = normalizeOptionalStoryId(
+              storyData.sprintId,
+              "sprintId",
+            );
+            const endDate = await resolveSprintEndDate(
+              sprintId,
+              storyData.endDate,
+            );
+
+            return {
+              index,
+              kind: "prepared",
+              story: normalizeStoryInput({
+                ...storyData,
+                teamId,
+                statusId,
+                sprintId,
+                endDate,
+              }),
+            };
+          } catch (error) {
+            return {
+              error: getErrorMessage(error, "Failed to validate story data."),
+              kind: "failed",
+              title,
+            };
+          }
+        }),
       );
 
-      const results = await Promise.all(
-        normalizedStoriesData.map((storyData) =>
-          createStoryAction(storyData, workspaceSlug),
-        ),
+      const failedStories: FailedStory[] = preparedResults.flatMap((result) =>
+        result.kind === "failed"
+          ? [{ error: result.error, kind: "failed", title: result.title }]
+          : [],
       );
+      const preparedStories = preparedResults.flatMap((result) =>
+        result.kind === "prepared" ? [result] : [],
+      );
+      const createdStories: DetailedStory[] = [];
 
-      const successCount = results.filter((r) => !r.error).length;
-      const errorCount = results.filter((r) => r.error).length;
-      const createdStories = results.filter((r) => !r.error).map((r) => r.data);
-      const failedStories = results
-        .map((result, index) => ({
-          title: normalizedStoriesData[index].title,
-          error: result.error?.message,
-        }))
-        .filter(
-          (failure): failure is { title: string; error: string } =>
-            typeof failure.error === "string" && failure.error.length > 0,
+      for (const batch of inBatchesOf(preparedStories, CREATION_BATCH_SIZE)) {
+        // eslint-disable-next-line no-await-in-loop -- Limits concurrent creation mutations to a safe batch.
+        const results: CreationResult[] = await Promise.all(
+          batch.map(async ({ index, story }) => {
+            const result = await createStoryAction(
+              {
+                ...story,
+                idempotencyKey: getStoryCreationIdempotencyKey({
+                  context: experimentalContext,
+                  index,
+                  toolCallId,
+                }),
+              },
+              workspaceSlug,
+            );
+
+            if (result.error?.message) {
+              return {
+                error: result.error.message,
+                kind: "failed",
+                title: story.title,
+              };
+            }
+
+            if (!result.data?.id) {
+              return {
+                error: "Story creation did not return a created story.",
+                kind: "failed",
+                title: story.title,
+              };
+            }
+
+            return { kind: "created", story: result.data };
+          }),
         );
+
+        for (const result of results) {
+          if (result.kind === "failed") {
+            failedStories.push({
+              error: result.error,
+              kind: "failed",
+              title: result.title,
+            });
+          } else {
+            createdStories.push(result.story);
+          }
+        }
+      }
+
+      const successCount = createdStories.length;
+      const errorCount = failedStories.length;
+
+      const calendarImpact = getBulkStoryCalendarImpact(createdStories);
 
       if (errorCount > 0) {
         return {
           success: false,
           createdCount: successCount,
           errorCount,
-          stories: createdStories,
+          stories: createdStories.map(toStoryToolSummary),
           failedStories,
+          calendarImpact,
           error: failedStories
             .map((failure) => `${failure.title}: ${failure.error}`)
             .join("; "),
-          message: `Created ${successCount} stories. ${errorCount} stories failed to create.`,
+          message: `Created ${successCount} stories. ${errorCount} stories failed to create. ${calendarImpact}`,
         };
       }
 
@@ -158,10 +220,13 @@ export const bulkCreateStories = tool({
         success: true,
         createdCount: successCount,
         errorCount,
-        stories: createdStories,
-        message: `Successfully created ${successCount} stories.${errorCount > 0 ? ` ${errorCount} stories failed to create.` : ""}`,
+        stories: createdStories.map(toStoryToolSummary),
+        calendarImpact,
+        message: `Successfully created ${successCount} stories. ${calendarImpact}`,
       };
     } catch (error) {
+      if (isStoryCreationOutcomeUncertainError(error)) throw error;
+
       return {
         success: false,
         error:

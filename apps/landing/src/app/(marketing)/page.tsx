@@ -1,46 +1,43 @@
 import type { Metadata } from "next";
+import { cn } from "lib";
 import { CallToAction, JsonLd } from "@/components/shared";
-import { Pricing } from "@/components/ui";
-import { Faqs } from "@/components/ui/faqs";
 import {
+  DEFAULT_SOCIAL_IMAGE,
+  DEFAULT_TWITTER_IMAGE,
+  getCanonicalUrl,
+  HOME_METADATA_DESCRIPTION,
+  HOME_METADATA_TITLE,
+} from "@/lib/seo";
+import {
+  CustomerStories,
+  DecideWhatMattersShowcase,
+  FeatureOverview,
   Hero,
-  HeroCards,
-  SampleClients,
+  HeroProductScreenshot,
   Integrations,
-  CoreValues,
-  HowItWorks,
-  PlatformWorkflow,
+  ProductWorkflowShowcase,
 } from "@/modules/home";
+import styles from "./home.module.css";
 
 export const metadata: Metadata = {
-  title: "FortyOne | AI Project Manager for Modern Teams",
-  description:
-    "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
-  keywords: [
-    "AI project management",
-    "AI project manager",
-    "project management platform",
-    "team project management",
-    "goal tracking software",
-    "sprint planning software",
-    "task management software",
-    "OKR software",
-    "team alignment tool",
-    "project planning software",
-  ],
+  title: HOME_METADATA_TITLE,
+  description: HOME_METADATA_DESCRIPTION,
+  alternates: {
+    canonical: getCanonicalUrl("/"),
+  },
   openGraph: {
-    title: "FortyOne | AI Project Manager for Modern Teams",
-    description:
-      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
+    title: HOME_METADATA_TITLE,
+    description: HOME_METADATA_DESCRIPTION,
     url: "/",
     siteName: "FortyOne",
     type: "website",
+    images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
-    title: "FortyOne | AI Project Manager for Modern Teams",
-    description:
-      "FortyOne is AI project management software for modern teams. Plan projects, assign tasks, track goals, and let AI find the right owner, estimate, schedule, and next step.",
+    title: HOME_METADATA_TITLE,
+    description: HOME_METADATA_DESCRIPTION,
     card: "summary_large_image",
+    images: [DEFAULT_TWITTER_IMAGE],
   },
 };
 
@@ -48,16 +45,32 @@ export default function Page() {
   return (
     <>
       <JsonLd />
-      <Hero />
-      <HeroCards />
-      <SampleClients />
-      <HowItWorks />
-      <CoreValues />
-      <PlatformWorkflow />
-      <Integrations />
-      <Pricing className="md:pt-0 md:pb-16" />
-      <Faqs />
-      <CallToAction />
+      <main className="[&_h1]:font-semibold [&_h2]:font-semibold">
+        <div
+          className={cn(
+            "landing-page-frame mt-16 rounded-2xl sm:mt-18 sm:rounded-[3rem] md:mt-20 md:rounded-[4rem]",
+            styles.heroShell,
+          )}
+        >
+          <section className="pt-px pb-6 md:pb-10">
+            <Hero />
+            <HeroProductScreenshot />
+          </section>
+          <DecideWhatMattersShowcase />
+        </div>
+        <div
+          className={cn(
+            "rounded-b-2xl sm:rounded-b-[3rem] md:rounded-b-[4rem]",
+            styles.progressBand,
+          )}
+        >
+          <ProductWorkflowShowcase />
+          <CustomerStories />
+          <FeatureOverview />
+          <Integrations />
+        </div>
+        <CallToAction className="border-t-0" />
+      </main>
     </>
   );
 }

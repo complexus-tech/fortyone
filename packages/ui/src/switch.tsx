@@ -10,17 +10,12 @@ export const Switch = ({ className, children, ...props }: SwitchProps) => {
   return (
     <SwitchPrimitive.Root
       className={cn(
-        "w-[24px] h-[14px] border bg-surface-prominent border-surface-prominent data-[state=checked]:border-primary rounded-full data-[state=checked]:bg-primary transition",
-        className
+        "relative flex h-4 min-h-4 w-7 min-w-7 shrink-0 flex-none items-center rounded-full border border-surface-prominent bg-surface-prominent transition dark:border-state-selected dark:bg-state-selected data-[state=checked]:border-primary data-[state=checked]:bg-primary",
+        className,
       )}
       {...props}
     >
-      <SwitchPrimitive.Thumb
-        className={cn(
-          "block h-[10px] translate-x-[1.5px] -translate-y-[0.2px] aspect-square bg-white rounded-full data-[state=checked]:translate-x-[11px] will-change-transform transition",
-          className
-        )}
-      />
+      <SwitchPrimitive.Thumb className="pointer-events-none block size-3 shrink-0 translate-x-0.5 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-3" />
     </SwitchPrimitive.Root>
   );
 };

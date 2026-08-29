@@ -1,7 +1,6 @@
 "use client";
-import { useEffect } from "react";
 import { Box, Tabs } from "ui";
-import { addDays, formatISO } from "date-fns";
+import { formatISO } from "date-fns";
 import {
   parseAsBoolean,
   parseAsIsoDate,
@@ -12,99 +11,12 @@ import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { BoardSkeleton } from "@/components/ui/board-skeleton";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
+import { StoriesEmptyIllustration } from "@/components/ui/illustrations/stories-empty-illustration";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
-import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
-import type { StoriesFilter } from "@/components/ui/stories-filter-types";
-import { useTerminology } from "@/hooks";
 import type { StateCategory } from "@/types/states";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
-import type {
-  GroupedStoriesResponse,
-  GroupedStoryParams,
-} from "@/modules/stories/types";
 import { useMyWork } from "./provider";
-
-const tabs = [
-  "all",
-  "today",
-  "upcoming",
-  "blocked",
-  "assigned",
-  "created",
-] as const;
-
-type MyWorkTab = (typeof tabs)[number];
-
-const stableTabs = ["all", "assigned", "created"] as const;
-
-const activeCategories = [
-  "backlog",
-  "unstarted",
-  "started",
-  "paused",
-] as const satisfies readonly StateCategory[];
-
-const getStoriesTotalCount = (groupedStories?: GroupedStoriesResponse) =>
-  groupedStories?.groups.reduce(
-    (total, group) => total + group.totalCount,
-    0,
-  ) ?? 0;
-
-const getDateValue = (date: Date) =>
-  formatISO(date, { representation: "date" });
-
-const getTabFilterParams = (
-  tab: MyWorkTab,
-  filters: StoriesFilter,
-): Partial<GroupedStoryParams> => {
-  const baseFilters = getGroupedStoryFilterParams(filters);
-  const today = getDateValue(new Date());
-  const tomorrow = getDateValue(addDays(new Date(), 1));
-  const nextWeek = getDateValue(addDays(new Date(), 7));
-
-  switch (tab) {
-    case "today":
-      return {
-        ...baseFilters,
-        assignedToMe: true,
-        categories: [...activeCategories],
-        deadlineAfter: today,
-        deadlineBefore: today,
-      };
-    case "upcoming":
-      return {
-        ...baseFilters,
-        assignedToMe: true,
-        categories: [...activeCategories],
-        deadlineAfter: tomorrow,
-        deadlineBefore: nextWeek,
-      };
-    case "blocked":
-      return {
-        ...baseFilters,
-        assignedToMe: true,
-        categories: [...activeCategories],
-        hasBlockedBy: true,
-      };
-    case "assigned":
-      return {
-        ...baseFilters,
-        assignedToMe: true,
-      };
-    case "created":
-      return {
-        ...baseFilters,
-        createdByMe: true,
-      };
-    case "all":
-    default:
-      return {
-        ...baseFilters,
-        createdByMe: true,
-        assignedToMe: true,
-      };
-  }
-};
+import { getMyWorkTabFilterParams, type MyWorkTab } from "./tabs";
 
 const StoriesPanelContent = ({
   layout,
@@ -129,8 +41,9 @@ const StoriesPanelContent = ({
   const [startDate] = useQueryState("startDate", parseAsIsoDate);
   const [endDate] = useQueryState("endDate", parseAsIsoDate);
   const { viewOptions, setViewOptions, filters } = useMyWork();
-  const tabFilters = getTabFilterParams(tab, filters);
+  const tabFilters = getMyWorkTabFilterParams(tab, filters);
   const groupedFilters = getGroupedStoryFilterParams(filters);
+  const hasEndDateFilter = Boolean(filters.endDate);
 
   let categories: StateCategory[] | undefined;
   if (overdue) {
@@ -156,22 +69,26 @@ const StoriesPanelContent = ({
       categories: categories ?? tabFilters.categories,
       createdAfter: createdAfter ?? tabFilters.createdAfter,
       createdBefore: createdBefore ?? tabFilters.createdBefore,
-      deadlineBefore:
-        filters.endDate ?? overdueDeadline ?? tabFilters.deadlineBefore,
+      deadlineAfter: hasEndDateFilter
+        ? groupedFilters.deadlineAfter
+        : tabFilters.deadlineAfter,
+      deadlineBefore: hasEndDateFilter
+        ? groupedFilters.deadlineBefore
+        : overdueDeadline ?? tabFilters.deadlineBefore,
+      deadlineNot: hasEndDateFilter
+        ? groupedFilters.deadlineNot
+        : tabFilters.deadlineNot,
       orderBy: viewOptions.orderBy,
+      orderDirection: viewOptions.orderDirection,
       showSubStories: viewOptions.showSubStories ? true : undefined,
     },
   );
-  const hasAppliedFilters = hasActiveStoriesFilters(filters);
-  const boardHeightClassName = hasAppliedFilters
-    ? "h-[calc(100dvh-11.3rem)]"
-    : "h-[calc(100dvh-7.7rem)]";
-
   return isPending ? (
-    <BoardSkeleton className={boardHeightClassName} layout={layout} />
+    <BoardSkeleton className="h-full" layout={layout} />
   ) : (
     <StoriesBoard
-      className={boardHeightClassName}
+      className="h-full"
+      emptyStateIllustration={<StoriesEmptyIllustration />}
       groupedStories={groupedStories}
       layout={layout}
       setViewOptions={setViewOptions}
@@ -181,123 +98,47 @@ const StoriesPanelContent = ({
 };
 
 export const ListMyWork = ({ layout }: { layout: StoriesLayout }) => {
-  const [tab, setTab] = useQueryState(
-    "tab",
-    parseAsStringLiteral(tabs).withDefault("all"),
-  );
-  const { getTermDisplay } = useTerminology();
-  const { filters, resetFilters, setFilters, viewOptions } = useMyWork();
-  const countFilters = getGroupedStoryFilterParams(filters);
-  const countOptions = {
-    ...countFilters,
-    categories: [...activeCategories],
-    assignedToMe: true,
-    storiesPerGroup: 1,
-    showSubStories: viewOptions.showSubStories ? true : undefined,
-  } satisfies Partial<GroupedStoryParams>;
-  const today = getDateValue(new Date());
-  const tomorrow = getDateValue(addDays(new Date(), 1));
-  const nextWeek = getDateValue(addDays(new Date(), 7));
-
-  const { data: todayStories, isPending: isTodayCountPending } =
-    useMyStoriesGrouped("none", {
-      ...countOptions,
-      deadlineAfter: today,
-      deadlineBefore: today,
-    });
-  const { data: upcomingStories, isPending: isUpcomingCountPending } =
-    useMyStoriesGrouped("none", {
-      ...countOptions,
-      deadlineAfter: tomorrow,
-      deadlineBefore: nextWeek,
-    });
-  const { data: blockedStories, isPending: isBlockedCountPending } =
-    useMyStoriesGrouped("none", {
-      ...countOptions,
-      hasBlockedBy: true,
-    });
-  const todayCount = getStoriesTotalCount(todayStories);
-  const upcomingCount = getStoriesTotalCount(upcomingStories);
-  const blockedCount = getStoriesTotalCount(blockedStories);
-  const optionalTabs: MyWorkTab[] = [];
-  if (todayCount > 0) {
-    optionalTabs.push("today");
-  }
-  if (upcomingCount > 0) {
-    optionalTabs.push("upcoming");
-  }
-  if (blockedCount > 0) {
-    optionalTabs.push("blocked");
-  }
-  const visibleTabs = [
-    "all",
-    ...optionalTabs,
-    ...stableTabs.slice(1),
-  ] satisfies MyWorkTab[];
-  const selectedTabIsVisible =
-    stableTabs.includes(tab as (typeof stableTabs)[number]) ||
-    (tab === "today" && (isTodayCountPending || todayCount > 0)) ||
-    (tab === "upcoming" && (isUpcomingCountPending || upcomingCount > 0)) ||
-    (tab === "blocked" && (isBlockedCountPending || blockedCount > 0));
-
-  useEffect(() => {
-    if (!selectedTabIsVisible) {
-      void setTab("all");
-    }
-  }, [selectedTabIsVisible, setTab]);
-
-  const tabLabels = {
-    all: `All ${getTermDisplay("storyTerm", { variant: "plural" })}`,
-    today: "Today",
-    upcoming: "Upcoming",
-    blocked: "Blocked",
-    assigned: "Assigned",
-    created: "Created",
-  } satisfies Record<MyWorkTab, string>;
+  const { filters, resetFilters, setFilters, tab } = useMyWork();
 
   return (
-    <Box className="h-[calc(100dvh-4rem)]">
-      <Tabs onValueChange={(v) => setTab(v as MyWorkTab)} value={tab}>
-        <Box className="border-border sticky top-0 z-10 flex h-[3.7rem] w-full flex-col justify-center border-b-[0.5px]">
-          <Tabs.List>
-            {visibleTabs.map((visibleTab) => (
-              <Tabs.Tab key={visibleTab} value={visibleTab}>
-                {tabLabels[visibleTab]}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-        </Box>
+    <Box className="h-(--app-page-content-height) min-h-0 overflow-hidden">
+      <Tabs className="flex h-full min-h-0 flex-col" value={tab}>
         <StoriesFilterBar
           filters={filters}
           resetFilters={resetFilters}
           setFilters={setFilters}
         />
-        <Tabs.Panel value="all">
+        <Tabs.Panel className="min-h-0 flex-1" value="all">
           {tab === "all" ? (
             <StoriesPanelContent layout={layout} tab="all" />
           ) : null}
         </Tabs.Panel>
-        <Tabs.Panel value="today">
+        <Tabs.Panel className="min-h-0 flex-1" value="today">
           {tab === "today" ? (
             <StoriesPanelContent layout={layout} tab="today" />
           ) : null}
         </Tabs.Panel>
-        <Tabs.Panel value="upcoming">
+        <Tabs.Panel className="min-h-0 flex-1" value="upcoming">
           {tab === "upcoming" ? (
             <StoriesPanelContent layout={layout} tab="upcoming" />
           ) : null}
         </Tabs.Panel>
-        <Tabs.Panel value="blocked">
+        <Tabs.Panel className="min-h-0 flex-1" value="blocked">
           {tab === "blocked" ? (
             <StoriesPanelContent layout={layout} tab="blocked" />
           ) : null}
         </Tabs.Panel>
-        <Tabs.Panel value="assigned">
+        <Tabs.Panel className="min-h-0 flex-1" value="assigned">
           {tab === "assigned" ? (
             <StoriesPanelContent layout={layout} tab="assigned" />
           ) : null}
         </Tabs.Panel>
-        <Tabs.Panel value="created">
+        <Tabs.Panel className="min-h-0 flex-1" value="collaborating">
+          {tab === "collaborating" ? (
+            <StoriesPanelContent layout={layout} tab="collaborating" />
+          ) : null}
+        </Tabs.Panel>
+        <Tabs.Panel className="min-h-0 flex-1" value="created">
           {tab === "created" ? (
             <StoriesPanelContent layout={layout} tab="created" />
           ) : null}

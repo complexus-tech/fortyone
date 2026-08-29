@@ -1,0 +1,44 @@
+---
+title: Auto-scheduling
+description: Reserve realistic focus time around meetings and working hours.
+icon: CalendarClock
+---
+
+Auto-scheduling places estimated work into available calendar time. It uses the
+assignee’s working hours, connected-calendar commitments, time estimate, and
+minimum focus-block size.
+
+## Before enabling it
+
+| Setting             | Why it matters                                                     |
+| ------------------- | ------------------------------------------------------------------ |
+| Calendar connection | Provides meetings and the primary calendar for work blocks         |
+| Working hours       | Limits when Maya may reserve time                                  |
+| Time needed         | Defines the total amount of focus time required                    |
+| Minimum focus block | Prevents the work from being split into impractically small pieces |
+| Assignee            | Identifies whose availability should be used                       |
+
+## Turn it on
+
+You can enable auto-scheduling on an individual work item. On supported plans,
+**Settings → Account → Preferences → Automations** can also enable it by default
+for newly created work.
+
+When Maya is the assignee, FortyOne manages scheduling as part of Maya’s work
+flow. The manual switch is disabled to avoid competing scheduling owners.
+
+## Manual overrides
+
+You can choose and lock an exact future start time. FortyOne shows conflicts but
+keeps that time fixed. An unlocked item can move when availability changes; a
+locked item stays where you placed it until you edit or unlock it.
+
+| Status          | Meaning                                                              |
+| --------------- | -------------------------------------------------------------------- |
+| Scheduled       | Focus time has been reserved                                         |
+| Needs attention | Required scheduling data is missing or no suitable time was found    |
+| Locked          | A person chose an exact time that automatic planning should preserve |
+| Off             | FortyOne will not place the work automatically                       |
+
+Start with accurate working hours and estimates. Auto-scheduling cannot improve
+a plan built on missing or unrealistic duration data.

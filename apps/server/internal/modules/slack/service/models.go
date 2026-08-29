@@ -4,9 +4,12 @@ import (
 	"context"
 	"time"
 
-	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
-	slackrepository "github.com/complexus-tech/projects-api/internal/modules/slack/repository"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	slackdomain "github.com/complexus-tech/projects-api/internal/modules/slack/domain"
+	platformclock "github.com/complexus-tech/projects-api/internal/platform/clock"
+	"github.com/complexus-tech/projects-api/internal/platform/credentialvault"
+	"github.com/complexus-tech/projects-api/internal/platform/integrations"
+	"github.com/complexus-tech/projects-api/internal/platform/webhooks"
+	"github.com/complexus-tech/projects-api/pkg/tasks"
 	"github.com/google/uuid"
 )
 
@@ -14,54 +17,129 @@ const (
 	SourceTypeSlackMessage = "slack_message"
 )
 
-type Repository interface {
-	FindWorkspaceBySlug(ctx context.Context, slug string) (slackrepository.WorkspaceRecord, error)
-	FindWorkspaceByID(ctx context.Context, workspaceID uuid.UUID) (slackrepository.WorkspaceRecord, error)
-	FindTeamByCode(ctx context.Context, workspaceID uuid.UUID, code string) (slackrepository.TeamRecord, error)
-	FindTeamByID(ctx context.Context, workspaceID, teamID uuid.UUID) (slackrepository.TeamRecord, error)
-	ListWorkspaceTeams(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.TeamRecord, error)
-	ListWorkspaceTeamsForUser(ctx context.Context, workspaceID, userID uuid.UUID) ([]slackrepository.TeamRecord, error)
-	ListTeamStatuses(ctx context.Context, teamID uuid.UUID) ([]slackrepository.StatusRecord, error)
-	ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]slackrepository.TeamMemberRecord, error)
-	ListTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID) ([]slackrepository.LabelRecord, error)
-	FindTeamMemberByID(ctx context.Context, teamID, userID uuid.UUID) (slackrepository.TeamMemberRecord, error)
-	FindTeamLabelByID(ctx context.Context, workspaceID, teamID, labelID uuid.UUID) (slackrepository.LabelRecord, error)
-	FindTeamObjectiveByID(ctx context.Context, workspaceID, teamID, objectiveID uuid.UUID) (slackrepository.ObjectiveRecord, error)
-	SearchTeamMembers(ctx context.Context, teamID uuid.UUID, query string, limit int) ([]slackrepository.TeamMemberRecord, error)
-	SearchTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID, query string, limit int) ([]slackrepository.LabelRecord, error)
-	SearchTeamObjectives(ctx context.Context, workspaceID, teamID uuid.UUID, query string, limit int) ([]slackrepository.ObjectiveRecord, error)
-	CreateStoryLink(ctx context.Context, storyID uuid.UUID, title, linkURL string) error
-	ListWorkspaceMembersForSlackLinking(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.WorkspaceMemberRecord, error)
-	UpsertSlackUserLinks(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, slackTeamID string, links []slackrepository.SlackUserLinkUpsert) error
+type WorkspaceDirectory interface {
+	FindWorkspaceBySlug(ctx context.Context, slug string) (slackdomain.Workspace, error)
+	FindWorkspaceByID(ctx context.Context, workspaceID uuid.UUID) (slackdomain.Workspace, error)
+	FindTeamByCode(ctx context.Context, workspaceID uuid.UUID, code string) (slackdomain.Team, error)
+	FindTeamByID(ctx context.Context, workspaceID, teamID uuid.UUID) (slackdomain.Team, error)
+	ListWorkspaceTeams(ctx context.Context, workspaceID uuid.UUID) ([]slackdomain.Team, error)
+	ListWorkspaceTeamsForUser(ctx context.Context, workspaceID, userID uuid.UUID) ([]slackdomain.Team, error)
+	ListTeamStatuses(ctx context.Context, teamID uuid.UUID) ([]slackdomain.Status, error)
+	ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]slackdomain.TeamMember, error)
+	ListTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID) ([]slackdomain.Label, error)
+	FindTeamMemberByID(ctx context.Context, teamID, userID uuid.UUID) (slackdomain.TeamMember, error)
+	FindTeamLabelByID(ctx context.Context, workspaceID, teamID, labelID uuid.UUID) (slackdomain.Label, error)
+	FindTeamObjectiveByID(ctx context.Context, workspaceID, teamID, objectiveID uuid.UUID) (slackdomain.Objective, error)
+	SearchTeamMembers(ctx context.Context, teamID uuid.UUID, query string, limit int) ([]slackdomain.TeamMember, error)
+	SearchTeamLabels(ctx context.Context, workspaceID, teamID uuid.UUID, query string, limit int) ([]slackdomain.Label, error)
+	SearchTeamObjectives(ctx context.Context, workspaceID, teamID uuid.UUID, query string, limit int) ([]slackdomain.Objective, error)
+	CreateStoryLink(ctx context.Context, storyID uuid.UUID, sourceKey, title, linkURL string) error
+}
+
+type UserLinkStore interface {
+	ListWorkspaceMembersForSlackLinking(ctx context.Context, workspaceID uuid.UUID) ([]slackdomain.WorkspaceMember, error)
+	UpsertSlackUserLinks(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, slackTeamID string, links []slackdomain.UserLinkUpsert) error
 	FindLinkedUserIDBySlackUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string) (*uuid.UUID, error)
-	GetWorkspaceBySlackTeamID(ctx context.Context, slackTeamID string) (slackrepository.WorkspaceRecord, error)
-	UpsertSlackWorkspace(ctx context.Context, workspaceID, installedByUserID uuid.UUID, payload slackrepository.OAuthInstallPayload) (slackrepository.SlackWorkspaceRecord, error)
-	GetSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) (slackrepository.SlackWorkspaceRecord, error)
-	GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID string) (slackrepository.SlackWorkspaceRecord, error)
-	DisconnectSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) error
-	UpsertChannels(ctx context.Context, workspaceID, slackWorkspaceID uuid.UUID, channels []slackrepository.SlackChannelPayload) error
-	ListChannels(ctx context.Context, workspaceID uuid.UUID) ([]slackrepository.SlackChannelRecord, error)
-	InsertRequestLog(ctx context.Context, entry slackrepository.SlackRequestLogInsert) error
-	ListRequestLogs(ctx context.Context, workspaceID uuid.UUID, limit int) ([]slackrepository.SlackRequestLogRecord, error)
+	FindSlackUserLinkByUser(ctx context.Context, workspaceID uuid.UUID, slackTeamID string, userID uuid.UUID) (*slackdomain.UserLink, error)
+	DeleteSlackUserLink(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string, userID uuid.UUID) (bool, error)
+}
+
+type InstallationStore interface {
+	GetWorkspaceBySlackTeamID(ctx context.Context, slackTeamID string) (slackdomain.Workspace, error)
+	UpsertSlackWorkspace(ctx context.Context, workspaceID, installedByUserID uuid.UUID, payload slackdomain.OAuthInstallation) (slackdomain.Installation, error)
+	GetSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) (slackdomain.Installation, error)
+	GetSlackWorkspaceByTeamID(ctx context.Context, slackTeamID string) (slackdomain.Installation, error)
+	DisconnectSlackWorkspace(ctx context.Context, command slackdomain.DisconnectInstallationCommand) (slackdomain.Uninstall, error)
+	EnqueueSlackUninstall(ctx context.Context, input slackdomain.EnqueueUninstall) (slackdomain.Uninstall, error)
+	ClaimSlackUninstall(ctx context.Context, id uuid.UUID) (slackdomain.Uninstall, bool, error)
+	CompleteSlackUninstall(ctx context.Context, id uuid.UUID, message string) error
+	FailSlackUninstall(ctx context.Context, id uuid.UUID, message string, nextAttemptAt *time.Time) error
+}
+
+type ChannelStore interface {
+	UpsertChannels(ctx context.Context, command slackdomain.SyncChannelsCommand) error
+	ListChannels(ctx context.Context, workspaceID uuid.UUID) ([]slackdomain.Channel, error)
+}
+
+type RequestLogStore interface {
+	InsertRequestLog(ctx context.Context, entry slackdomain.RequestLogInsert) error
+	ListRequestLogsForAdmin(ctx context.Context, query slackdomain.ListRequestLogsQuery) ([]slackdomain.RequestLog, error)
+}
+
+// HumanIntegrationStore keeps the live actor check in every dashboard read.
+// Provider workers use the separately named installation/directory methods and
+// must prove installation generation instead of fabricating a human actor.
+type HumanIntegrationStore interface {
+	GetSlackWorkspaceForMember(ctx context.Context, query slackdomain.WorkspaceActorQuery) (slackdomain.Installation, error)
+	FindSlackUserLinkForMember(ctx context.Context, query slackdomain.WorkspaceActorQuery, slackTeamID string) (*slackdomain.UserLink, error)
+	ListChannelsForMember(ctx context.Context, query slackdomain.WorkspaceActorQuery) ([]slackdomain.Channel, error)
+}
+
+type OnboardingStore interface {
 	FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error)
+	HasSlackUserOnboardingReceipt(ctx context.Context, workspaceID uuid.UUID, slackTeamID, slackUserID string) (bool, error)
+}
+
+// Repository is the composition contract. Individual use cases consume the
+// capability interfaces above; the constructor accepts the concrete aggregate
+// only so bootstrap cannot accidentally provide a partially configured Slack
+// persistence adapter.
+type Repository interface {
+	WorkspaceDirectory
+	UserLinkStore
+	InstallationStore
+	ChannelStore
+	HumanIntegrationStore
+	RequestLogStore
+	OnboardingStore
+}
+
+type EventQueue interface {
+	EnqueueSlackEvent(ctx context.Context, payload tasks.SlackEventPayload) error
+}
+
+type EventGateway interface {
+	Receive(ctx context.Context, provider integrations.ProviderKey, request webhooks.SignedRequest) (webhooks.Receipt, error)
+}
+
+type EventInbox interface {
+	FindConversation(ctx context.Context, input ConversationInput) (ConversationRecord, error)
+}
+
+type OutboundStore interface {
+	StartOutboundDelivery(ctx context.Context, input OutboundDeliveryInput) (OutboundDeliveryRecord, bool, error)
+	SetOutboundDeliveryContent(ctx context.Context, id uuid.UUID, content string) error
+	CompleteOutboundDelivery(ctx context.Context, id uuid.UUID, externalMessageID string) error
+	FailOutboundDelivery(ctx context.Context, id uuid.UUID, message string) error
+	CancelOutboundDelivery(ctx context.Context, id uuid.UUID, message string) error
+}
+
+type NonceStore interface {
+	CreateNonce(ctx context.Context, input NonceInput) error
+	ConsumeNonce(ctx context.Context, input NonceConsumeInput) (NonceRecord, error)
 }
 
 type RequestStore interface {
-	UpsertPending(ctx context.Context, input integrationrequests.CoreUpsertRequestInput) (integrationrequests.CoreIntegrationRequest, error)
+	UpsertPending(ctx context.Context, input UpsertIntegrationRequestInput) (IntegrationRequest, error)
+	GetForUser(ctx context.Context, workspaceID, requestID, userID uuid.UUID) (IntegrationRequest, error)
+	BindProviderThread(ctx context.Context, input BindProviderThreadInput) (ProviderThread, error)
+	HasAuthorizedProviderThread(ctx context.Context, input ProviderThreadMatchInput) (bool, error)
+	HasCurrentProviderThread(ctx context.Context, input ProviderThreadLookupInput) (bool, error)
+	FindProviderThread(ctx context.Context, workspaceID, requestID uuid.UUID, provider string) (ProviderThread, error)
 }
 
 type StoryService interface {
-	CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
-	UpdateLabels(ctx context.Context, id uuid.UUID, workspaceId uuid.UUID, labels []uuid.UUID) error
+	Create(ctx context.Context, story NewStory, workspaceID uuid.UUID) (Story, error)
 }
 
 type Config struct {
-	SigningSecret string
-	ClientID      string
-	ClientSecret  string
-	RedirectURL   string
-	WebsiteURL    string
-	SecretKey     string
+	SigningSecret        string
+	WebhookPayloadSecret string
+	ClientID             string
+	ClientSecret         string
+	RedirectURL          string
+	WebsiteURL           string
+	CredentialVault      CredentialVault
 }
 
 type CoreSlackWorkspace struct {
@@ -92,7 +170,14 @@ type CoreSlackChannel struct {
 
 type CoreIntegration struct {
 	SlackWorkspace *CoreSlackWorkspace
+	AccountLink    *CoreSlackAccountLink
 	Channels       []CoreSlackChannel
+}
+
+type CoreSlackAccountLink struct {
+	SlackUserID string
+	LinkedVia   string
+	LinkedAt    time.Time
 }
 
 type CoreRequestLog struct {
@@ -115,6 +200,17 @@ type CoreRequestLog struct {
 
 type CoreCreateInstallSession struct {
 	InstallURL string
+}
+
+type CoreCreateAccountLinkSession struct {
+	Linked     bool
+	CanLink    bool
+	InstallURL string
+}
+
+type CoreLinkSlackAccountResult struct {
+	AlreadyLinked bool
+	SlackUserID   string
 }
 
 type CommandResponse struct {
@@ -143,6 +239,14 @@ type viewSubmissionData struct {
 	LabelIDs    []uuid.UUID
 	ObjectiveID *uuid.UUID
 	Source      requestSourceContext
+	BlockIDs    modalDependentBlockIDs
+}
+
+type modalDependentBlockIDs struct {
+	Status    string
+	Assignee  string
+	Labels    string
+	Objective string
 }
 
 type requestSourceContext struct {
@@ -155,6 +259,7 @@ type requestSourceContext struct {
 	SlackUserID     string `json:"slack_user_id,omitempty"`
 	SlackUsername   string `json:"slack_username,omitempty"`
 	SlackText       string `json:"slack_text,omitempty"`
+	ResponseURL     string `json:"response_url,omitempty"`
 }
 
 type CoreRequestLogInput struct {
@@ -167,75 +272,18 @@ type CoreRequestLogInput struct {
 	ErrorMessage string
 }
 
-type CoreRuntimeActor struct {
-	SlackTeamID    string
-	SlackUserID    string
-	SlackUserName  string
-	SlackChannelID string
-	SlackChannel   string
-	SlackMessageTS string
-	SlackThreadTS  string
-}
-
-type CoreRuntimeOption struct {
-	Label string `json:"label"`
-	Value string `json:"value"`
-}
-
-type CoreRuntimeCreateStoryInput struct {
-	Title       string
-	Description string
-	TeamID      string
-	StatusID    string
-	Priority    string
-	AssigneeID  string
-	ObjectiveID string
-	LabelIDs    []string
-	Source      struct {
-		SlackTeamID    string `json:"teamId"`
-		SlackUserID    string `json:"userId"`
-		SlackUserName  string `json:"userName"`
-		SlackChannelID string `json:"channelId"`
-		SlackChannel   string `json:"channelName"`
-		SlackMessageTS string `json:"messageTs"`
-		SlackThreadTS  string `json:"threadTs"`
-		SlackText      string `json:"messageText"`
-	} `json:"source"`
-}
-
-type CoreRuntimeCreatedStory struct {
-	ID    string `json:"id"`
-	Ref   string `json:"ref"`
-	Title string `json:"title"`
-	URL   string `json:"url"`
-}
-
-type CoreRuntimeSlackInstallation struct {
-	BotToken  string
-	BotUserID string
-	TeamName  string
-}
-
-type CoreRuntimeIdentity struct {
-	WorkspaceID   uuid.UUID
-	WorkspaceSlug string
-	UserID        *uuid.UUID
-	ConnectURL    string
-}
-
-type CoreRuntimeLogInput struct {
-	Actor        CoreRuntimeActor
-	Endpoint     string
-	ErrorMessage string
-	Outcome      string
-	RequestType  string
-	ResponseCode int
-}
-
 type ProviderAccepter interface {
-	AcceptIntegrationRequest(ctx context.Context, request integrationrequests.CoreIntegrationRequest, story stories.CoreSingleStory) error
+	AcceptIntegrationRequest(ctx context.Context, request IntegrationRequest, story Story) error
 }
 
-type Clock interface {
-	Now() time.Time
+type Clock = platformclock.Clock
+
+// CredentialVault is the narrow recoverable-secret capability consumed by the
+// Slack adapter. Provider clients never receive vault key material or an
+// implementation-specific keyring.
+type CredentialVault interface {
+	Seal(binding credentialvault.Context, plaintext []byte) (string, error)
+	Open(binding credentialvault.Context, envelope string) (credentialvault.Secret, error)
+	Rewrap(binding credentialvault.Context, envelope string) (credentialvault.RewrapResult, error)
+	ActiveKeyRef() (credentialvault.KeyRef, error)
 }

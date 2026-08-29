@@ -1,4 +1,9 @@
 export const featureLinks = [
+  {
+    href: "/features/customer-feedback",
+    label: "Customer Feedback",
+    slug: "customer-feedback",
+  },
   { href: "/features/goals", label: "Goals", slug: "goals" },
   { href: "/features/tasks", label: "Tasks", slug: "tasks" },
   {

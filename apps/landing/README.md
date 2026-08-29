@@ -73,7 +73,7 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
 - **Animations**: Framer Motion + GSAP
 - **Content**: MDX for blog posts and documentation
 - **Analytics**: PostHog for user tracking
-- **Deployment**: Vercel or any Node.js hosting
+- **Deployment**: Internally managed hosting
 
 ### Key Components
 
@@ -116,47 +116,13 @@ pnpm postinstall  # Generate MDX content (runs automatically)
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+The landing site is deployed through its internally managed hosting project.
+Environment variables and the `fortyone.app` domain are controlled in the
+deployment platform. Do not create independent public deployments or publish a
+container image for this application.
 
-1. **Connect Repository**:
+## Internal development
 
-   - Import your GitHub repository to Vercel
-   - Configure build settings:
-     - Build Command: `cd apps/landing && pnpm build`
-     - Output Directory: `apps/landing/.next`
-     - Install Command: `pnpm install`
-
-2. **Environment Variables**:
-
-   - Add all environment variables from `.env` to Vercel project settings
-
-3. **Custom Domain**:
-   - Configure your production domain (e.g. `fortyone.app`)
-
-### Other Platforms
-
-The app can be deployed to any platform supporting Node.js:
-
-- **Railway**
-- **Render**
-- **Fly.io**
-- **Self-hosted** with Docker
-
-## 🤝 Contributing
-
-See the main [Contributing Guide](../../CONTRIBUTING.md) for details on:
-
-- Setting up the development environment
-- Code style and standards
-- Submitting pull requests
-- Reporting issues
-
-## 📄 License
-
-This project is licensed under the [FortyOne License](../../LICENSE).
-
-## 📞 Support
-
-- **Documentation**: [docs.fortyone.app](https://docs.fortyone.app)
-- **Issues**: [GitHub Issues](https://github.com/complexus/fortyone/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/complexus/fortyone/discussions)
+Changes follow the repository's review and verification requirements in
+`AGENTS.md`. Product and content changes should be reviewed by their internal
+owner before release.

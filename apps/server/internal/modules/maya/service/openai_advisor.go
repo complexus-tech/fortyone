@@ -15,8 +15,10 @@ import (
 )
 
 const (
-	defaultAIBaseURL = "https://api.openai.com/v1"
-	defaultAIModel   = "gpt-5-nano-2025-08-07"
+	defaultAIBaseURL          = "https://api.openai.com/v1"
+	defaultAIModel            = "gpt-5.6-luna"
+	defaultAIReasoningEffort  = "medium"
+	defaultAIReasoningContext = "current_turn"
 )
 
 type OpenAICompatibleConfig struct {
@@ -104,7 +106,8 @@ func (a *OpenAIAdvisor) RecommendCandidate(ctx context.Context, input CandidateR
 	}
 
 	data, err := a.client.postJSON(ctx, "/responses", responsesRequest{
-		Model: a.client.model,
+		Model:     a.client.model,
+		Reasoning: assignmentReasoningForModel(a.client.model),
 		Input: []responsesMessage{
 			{
 				Role: "developer",
@@ -157,7 +160,8 @@ func (a *OpenAIAdvisor) RecommendAssignments(ctx context.Context, input BatchAss
 	}
 
 	data, err := a.client.postJSON(ctx, "/responses", responsesRequest{
-		Model: a.client.model,
+		Model:     a.client.model,
+		Reasoning: assignmentReasoningForModel(a.client.model),
 		Input: []responsesMessage{
 			{
 				Role: "developer",
@@ -215,7 +219,7 @@ func (a *OpenAIAdvisor) RecommendAssignments(ctx context.Context, input BatchAss
 
 func mayaAssignmentSystemPrompt() string {
 	return strings.Join([]string{
-		"You are Maya, a project management scheduling assistant.",
+		"You are Maya, FortyOne's AI agent for scheduling project work.",
 		"Choose the best assignee from the provided candidates only.",
 		"Prioritize ownership fit, team role context, recent work fit inferred from the story, workload, urgency, and available calendar time.",
 		"Use candidate role titles and role descriptions as strong signals when they are present.",
@@ -227,7 +231,7 @@ func mayaAssignmentSystemPrompt() string {
 
 func mayaBatchAssignmentSystemPrompt() string {
 	return strings.Join([]string{
-		"You are Maya, a project management scheduling assistant.",
+		"You are Maya, FortyOne's AI agent for scheduling project work.",
 		"Assign each provided story to exactly one provided candidate.",
 		"Prioritize ownership fit, team role context, recent work fit inferred from each story, workload, urgency, and available calendar time.",
 		"Use candidate role titles and role descriptions as strong signals when they are present.",
@@ -420,9 +424,25 @@ func mustMarshalString(value any) string {
 }
 
 type responsesRequest struct {
-	Model string             `json:"model"`
-	Input []responsesMessage `json:"input"`
-	Text  responsesText      `json:"text"`
+	Model     string              `json:"model"`
+	Reasoning *responsesReasoning `json:"reasoning,omitempty"`
+	Input     []responsesMessage  `json:"input"`
+	Text      responsesText       `json:"text"`
+}
+
+type responsesReasoning struct {
+	Effort  string `json:"effort"`
+	Context string `json:"context"`
+}
+
+func assignmentReasoningForModel(model string) *responsesReasoning {
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(model)), "gpt-5.6") {
+		return nil
+	}
+	return &responsesReasoning{
+		Effort:  defaultAIReasoningEffort,
+		Context: defaultAIReasoningContext,
+	}
 }
 
 type responsesMessage struct {

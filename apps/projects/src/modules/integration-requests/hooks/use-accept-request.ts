@@ -14,10 +14,10 @@ export const useAcceptIntegrationRequest = () => {
       acceptIntegrationRequestAction(requestId, workspaceSlug),
     onSuccess: (res) => {
       if (res.error?.message) {
-        toast.error("Request", { description: res.error.message });
+        toast.error("Intake item", { description: res.error.message });
         return;
       }
-      toast.success("Request accepted");
+      toast.success("Intake item accepted");
       if (res.data?.acceptedStoryId) {
         queryClient.invalidateQueries({
           queryKey: storyKeys.detail(workspaceSlug, res.data.acceptedStoryId),

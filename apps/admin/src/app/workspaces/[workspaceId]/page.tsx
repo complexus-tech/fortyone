@@ -1,19 +1,20 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { GitHubIcon, SlackIcon, UserIcon, WorkspaceIcon } from "icons";
-import { Badge, Box, Flex, Table, Text } from "ui";
-import { getAuditLogs, getWorkspace } from "@/lib/admin-api";
+import { Avatar, Badge, Box, Flex, Table, Text } from "ui";
+import { getAdminNotes, getAuditLogs, getWorkspace } from "@/lib/admin-api";
 import {
+  formatAuditValue,
   formatCount,
   formatDate,
   formatDateTime,
   formatTrialState,
-  formatValue,
   humanizeKey,
 } from "@/lib/format";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
-import { TrialExtensionDialog } from "@/components/trial-extension-dialog";
+import { AdminNotesPanel } from "@/components/admin-notes-panel";
+import { WorkspaceActionsMenu } from "@/components/workspace-actions-menu";
 import {
   UserStatusBadge,
   WorkspaceStatusBadge,
@@ -25,19 +26,28 @@ export default async function WorkspaceDetailPage({
   params: Promise<{ workspaceId: string }>;
 }) {
   const { workspaceId } = await params;
-  const [overview, auditLogs] = await Promise.all([
+  const [overview, auditLogs, notes] = await Promise.all([
     getWorkspace(workspaceId),
     getAuditLogs({ workspaceId, limit: 8 }),
+    getAdminNotes({ targetType: "workspace", targetId: workspaceId, limit: 5 }),
   ]);
   const { workspace, members } = overview;
 
   return (
     <Box>
       <PageHeader
-        actions={<TrialExtensionDialog workspace={workspace} />}
         description={`${workspace.slug} · Created ${formatDate(workspace.createdAt)}`}
         eyebrow="Workspace"
+        icon={
+          <Avatar
+            className="h-5 text-[0.7rem]"
+            name={workspace.name}
+            src={workspace.avatarUrl}
+          />
+        }
+        parentHref="/workspaces"
         title={workspace.name}
+        titleActions={<WorkspaceActionsMenu workspace={workspace} />}
       />
 
       <Box className="space-y-5 p-5 md:p-7">
@@ -67,69 +77,76 @@ export default async function WorkspaceDetailPage({
         </Box>
 
         <Box className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <Box className="border-border bg-surface rounded-xl border-[0.5px]">
-            <Box className="border-border border-b-[0.5px] px-4 py-3">
-              <Text fontWeight="semibold">Workspace details</Text>
-              <Text className="mt-1 text-[0.92rem]" color="muted">
-                Operational state and connected systems.
-              </Text>
-            </Box>
-            <Box className="divide-border divide-y">
-              <DetailRow label="Status">
-                <WorkspaceStatusBadge workspace={workspace} />
-              </DetailRow>
-              <DetailRow label="Creator">
-                <Text>
-                  {workspace.createdByName ||
-                    workspace.createdByEmail ||
-                    "Unknown"}
+          <Box className="space-y-5">
+            <Box className="border-border bg-surface rounded-lg border-[0.5px]">
+              <Box className="border-border border-b-[0.5px] px-4 py-3">
+                <Text fontWeight="semibold">Workspace details</Text>
+                <Text className="mt-1 text-[0.95rem]" color="muted">
+                  Operational state and connected systems.
                 </Text>
-                {workspace.createdByEmail ? (
-                  <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                    {workspace.createdByEmail}
+              </Box>
+              <Box className="divide-border divide-y">
+                <DetailRow label="Status">
+                  <WorkspaceStatusBadge workspace={workspace} />
+                </DetailRow>
+                <DetailRow label="Creator">
+                  <Text
+                    className="truncate"
+                    title={[workspace.createdByName, workspace.createdByEmail]
+                      .filter(Boolean)
+                      .join(" - ")}
+                  >
+                    {workspace.createdByName ||
+                      workspace.createdByEmail ||
+                      "Unknown"}
+                    {workspace.createdByName && workspace.createdByEmail ? (
+                      <Text
+                        as="span"
+                        className="ml-1 text-[0.95rem]"
+                        color="muted"
+                      >
+                        · {workspace.createdByEmail}
+                      </Text>
+                    ) : null}
                   </Text>
-                ) : null}
-              </DetailRow>
-              <DetailRow label="Stripe customer">
-                <Text>{workspace.stripeCustomerId ?? "Not linked"}</Text>
-              </DetailRow>
-              <DetailRow label="Stripe subscription">
-                <Text>{workspace.stripeSubscriptionId ?? "Not linked"}</Text>
-              </DetailRow>
-              <DetailRow label="Integrations">
-                <Flex align="center" className="gap-2">
-                  <Badge
-                    color={workspace.slackInstalled ? "success" : "tertiary"}
-                    rounded="full"
-                    size="sm"
-                    variant={workspace.slackInstalled ? "outline" : "solid"}
-                  >
-                    <SlackIcon className="h-3.5" />
-                    Slack
-                  </Badge>
-                  <Badge
-                    color={workspace.gitHubInstalled ? "success" : "tertiary"}
-                    rounded="full"
-                    size="sm"
-                    variant={workspace.gitHubInstalled ? "outline" : "solid"}
-                  >
-                    <GitHubIcon className="h-3.5" />
-                    GitHub
-                  </Badge>
-                </Flex>
-              </DetailRow>
+                </DetailRow>
+                <DetailRow label="Stripe customer">
+                  <Text>{workspace.stripeCustomerId ?? "Not linked"}</Text>
+                </DetailRow>
+                <DetailRow label="Stripe subscription">
+                  <Text>{workspace.stripeSubscriptionId ?? "Not linked"}</Text>
+                </DetailRow>
+                <DetailRow label="Integrations">
+                  <Flex align="center" className="gap-2">
+                    <Badge color="tertiary">
+                      <SlackIcon className="h-4" />
+                      {workspace.slackInstalled ? "Slack" : "No Slack"}
+                    </Badge>
+                    <Badge color="tertiary">
+                      <GitHubIcon className="h-4" />
+                      {workspace.githubInstalled ? "GitHub" : "No GitHub"}
+                    </Badge>
+                  </Flex>
+                </DetailRow>
+              </Box>
             </Box>
+            <AdminNotesPanel
+              notes={notes.items}
+              targetId={workspace.id}
+              targetType="workspace"
+              workspaceId={workspace.id}
+            />
           </Box>
 
-          <Box className="border-border bg-surface overflow-hidden rounded-xl border-[0.5px]">
+          <Box className="border-border overflow-hidden rounded-lg border-[0.5px]">
             <Box className="border-border border-b-[0.5px] px-4 py-3">
               <Text fontWeight="semibold">Members</Text>
-              <Text className="mt-1 text-[0.92rem]" color="muted">
+              <Text className="mt-1 text-[0.95rem]" color="muted">
                 Users with access to this workspace.
               </Text>
             </Box>
             <Box className="overflow-x-auto">
-              <Table>
+              <Table color="light" variant="bordered">
                 <Table.Head>
                   <Table.Tr>
                     <Table.Th>User</Table.Th>
@@ -141,25 +158,28 @@ export default async function WorkspaceDetailPage({
                 <Table.Body>
                   {members.map((member) => (
                     <Table.Tr key={member.userId}>
-                      <Table.Td>
-                        <Link
-                          className="hover:text-primary line-clamp-1"
-                          href={`/users/${member.userId}`}
-                        >
-                          {member.fullName || member.email}
-                        </Link>
-                        <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                          {member.email}
-                        </Text>
+                      <Table.Td className="min-w-80 whitespace-nowrap">
+                        <Flex align="center" className="gap-2">
+                          <Link
+                            className="hover:text-primary line-clamp-1"
+                            href={`/users/${member.userId}`}
+                          >
+                            {member.fullName || "Unknown user"}
+                          </Link>
+                        </Flex>
                       </Table.Td>
-                      <Table.Td className="capitalize">{member.role}</Table.Td>
+                      <Table.Td className="whitespace-nowrap capitalize">
+                        {member.role}
+                      </Table.Td>
                       <Table.Td>
                         <UserStatusBadge
                           isActive
                           isInternal={member.isInternal}
                         />
                       </Table.Td>
-                      <Table.Td>{formatDate(member.joinedAt)}</Table.Td>
+                      <Table.Td className="whitespace-nowrap">
+                        {formatDate(member.joinedAt)}
+                      </Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Body>
@@ -168,15 +188,15 @@ export default async function WorkspaceDetailPage({
           </Box>
         </Box>
 
-        <Box className="border-border bg-surface overflow-hidden rounded-xl border-[0.5px]">
+        <Box className="border-border overflow-hidden rounded-lg border-[0.5px]">
           <Box className="border-border border-b-[0.5px] px-4 py-3">
             <Text fontWeight="semibold">Workspace audit history</Text>
-            <Text className="mt-1 text-[0.92rem]" color="muted">
+            <Text className="mt-1 text-[0.95rem]" color="muted">
               Admin actions related to this workspace.
             </Text>
           </Box>
           <Box className="overflow-x-auto">
-            <Table>
+            <Table color="light" variant="bordered">
               <Table.Head>
                 <Table.Tr>
                   <Table.Th>Action</Table.Th>
@@ -190,30 +210,45 @@ export default async function WorkspaceDetailPage({
                 {auditLogs.items.length > 0 ? (
                   auditLogs.items.map((entry) => (
                     <Table.Tr key={entry.id}>
-                      <Table.Td>{humanizeKey(entry.action)}</Table.Td>
-                      <Table.Td>{entry.actorName || entry.actorEmail}</Table.Td>
-                      <Table.Td className="min-w-52">
+                      <Table.Td className="min-w-48 whitespace-nowrap">
+                        {humanizeKey(entry.action)}
+                      </Table.Td>
+                      <Table.Td className="min-w-64 whitespace-nowrap">
+                        {entry.actorName || "Unknown actor"}
+                      </Table.Td>
+                      <Table.Td className="min-w-72 whitespace-nowrap">
                         <Text>
-                          {formatValue(entry.oldValue)} -&gt;{" "}
-                          {formatValue(entry.newValue)}
-                        </Text>
-                        {entry.fieldName ? (
-                          <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                            {entry.fieldName}
+                          <Text as="span" fontWeight="semibold">
+                            {entry.fieldName
+                              ? humanizeKey(entry.fieldName)
+                              : "Change"}
                           </Text>
-                        ) : null}
+                          <Text
+                            as="span"
+                            className="ml-1 text-[0.95rem]"
+                            color="muted"
+                          >
+                            {formatAuditValue(entry.oldValue)} -&gt;{" "}
+                            {formatAuditValue(entry.newValue)}
+                          </Text>
+                        </Text>
                       </Table.Td>
                       <Table.Td className="max-w-80">
                         <Text className="line-clamp-2">
                           {entry.reason || "No reason provided"}
                         </Text>
                       </Table.Td>
-                      <Table.Td>{formatDateTime(entry.createdAt)}</Table.Td>
+                      <Table.Td className="whitespace-nowrap">
+                        {formatDateTime(entry.createdAt)}
+                      </Table.Td>
                     </Table.Tr>
                   ))
                 ) : (
                   <Table.Tr>
-                    <Table.Td className="py-10 text-center" colSpan={5}>
+                    <Table.Td
+                      className="h-36 text-center align-middle"
+                      colSpan={5}
+                    >
                       <Text color="muted">
                         No admin audit entries for this workspace.
                       </Text>
@@ -238,7 +273,7 @@ const DetailRow = ({
 }) => {
   return (
     <Flex align="start" className="gap-4 px-4 py-3" justify="between">
-      <Text className="text-[0.92rem]" color="muted">
+      <Text className="text-[0.95rem]" color="muted">
         {label}
       </Text>
       <Box className="max-w-[70%] text-right">{children}</Box>

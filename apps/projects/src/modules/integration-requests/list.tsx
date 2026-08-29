@@ -2,17 +2,26 @@
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
+import { parseAsString, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { Box, Flex, Text } from "ui";
+import { useTerminology } from "@/hooks";
+import { InboxEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { IntegrationRequestCard } from "./card";
 import { IntegrationRequestsHeader } from "./header";
 import { useTeamIntegrationRequestsInfinite } from "./hooks/use-team-requests";
 
 export const ListIntegrationRequests = () => {
+  const { getTermDisplay } = useTerminology();
   const { teamId } = useParams<{ teamId: string }>();
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault(""),
+  );
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
-    useTeamIntegrationRequestsInfinite(teamId);
+    useTeamIntegrationRequestsInfinite(teamId, "pending", search);
   const requests = data?.pages.flatMap((page) => page.requests) ?? [];
+  const totalCount = data?.pages[0]?.pagination.totalCount ?? 0;
   const [triggerRef, { entry }] = useIntersectionObserver({
     threshold: 0,
     rootMargin: "240px",
@@ -25,12 +34,16 @@ export const ListIntegrationRequests = () => {
   }, [entry?.isIntersecting, fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <Box className="border-border/60 h-dvh border-r-[0.5px] pb-6">
+    <Box className="border-border flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-r-[0.5px] pb-6">
       <IntegrationRequestsHeader
-        requestCount={requests.length}
+        onSearchChange={(nextSearch) => {
+          void setSearch(nextSearch || null);
+        }}
+        requestCount={totalCount}
+        search={search}
         teamId={teamId}
       />
-      <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
+      <Box className="min-h-0 flex-1 overflow-y-auto">
         {isPending ? (
           <Box className="space-y-0">
             {Array.from({ length: 4 }).map((_, index) => (
@@ -70,13 +83,15 @@ export const ListIntegrationRequests = () => {
             ) : null}
             {requests.length === 0 ? (
               <Flex align="center" className="h-full px-6" justify="center">
-                <Box>
+                <Box className="flex flex-col items-center">
+                  <InboxEmptyIllustration className="mb-5 w-52" />
                   <Text align="center" className="mb-3" fontSize="xl">
-                    No requests
+                    {search ? "No matching intake" : "No intake items"}
                   </Text>
                   <Text align="center" color="muted">
-                    New integration items will appear here before becoming
-                    stories.
+                    {search
+                      ? `No intake items match “${search}”.`
+                      : `New integration items will appear here before becoming ${getTermDisplay("storyTerm", { variant: "plural" })}.`}
                   </Text>
                 </Box>
               </Flex>

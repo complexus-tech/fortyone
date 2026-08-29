@@ -16,9 +16,10 @@ export const getStoryComments = async (
   id: string,
   ctx: WorkspaceCtx,
   page = 1,
+  pageSize = 20,
 ) => {
   const response = await get<ApiResponse<CommentsResponse>>(
-    `stories/${id}/comments?page=${page}`,
+    `stories/${id}/comments?page=${page}&pageSize=${pageSize}`,
     ctx,
   );
   return response.data!;

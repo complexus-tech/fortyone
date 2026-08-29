@@ -2,7 +2,7 @@ import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
 import { auth } from "@/auth";
-import type { StoryAssociationType } from "../types";
+import type { StoryAssociation, StoryAssociationType } from "../types";
 
 export const addAssociationAction = async (
   fromStoryId: string,
@@ -14,7 +14,7 @@ export const addAssociationAction = async (
     const ctx = { session: session!, workspaceSlug };
     const res = await post<
       { toStoryId: string; type: StoryAssociationType },
-      ApiResponse<null>
+      ApiResponse<StoryAssociation>
     >(`stories/${fromStoryId}/associations`, payload, ctx);
     return res;
   } catch (error) {

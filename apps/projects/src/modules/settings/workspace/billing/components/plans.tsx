@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import { checkout } from "@/lib/actions/billing/checkout";
 import { changePlan } from "@/lib/actions/billing/change-plan";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import type { Plan } from "@/lib/actions/billing/types";
 import { ConfirmDialog } from "@/components/ui";
@@ -116,6 +116,7 @@ const getBusinessButtonState = (
 };
 
 export const Plans = () => {
+  const { getTermDisplay } = useTerminology();
   const { tier, billingInterval } = useSubscriptionFeatures();
   const { workspaceSlug } = useWorkspacePath();
   const pathname = usePathname();
@@ -463,7 +464,12 @@ export const Plans = () => {
 
             <Flex className="border-border border-b">
               <Box className="w-1/5 px-4 py-4">
-                <Text className="opacity-80">Stories</Text>
+                <Text className="opacity-80">
+                  {getTermDisplay("storyTerm", {
+                    capitalize: true,
+                    variant: "plural",
+                  })}
+                </Text>
               </Box>
               {plans.map((plan) => (
                 <Box
@@ -472,7 +478,12 @@ export const Plans = () => {
                   })}
                   key={`${plan.name}stories`}
                 >
-                  <Text>{plan.limits.issues}</Text>
+                  <Text>
+                    {plan.limits.issues}
+                    {plan.limits.issues === "Unlimited"
+                      ? null
+                      : ` ${getTermDisplay("storyTerm", { variant: "plural" })}`}
+                  </Text>
                 </Box>
               ))}
             </Flex>

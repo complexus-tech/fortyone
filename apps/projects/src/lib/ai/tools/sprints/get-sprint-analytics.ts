@@ -9,7 +9,10 @@ export const getSprintAnalyticsTool = tool({
   inputSchema: z.object({
     sprintId: z.string().describe("Sprint ID to get analytics for (required)"),
   }),
-  execute: async ({ sprintId }, { experimental_context }) => {
+  execute: async (
+    { sprintId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
 
@@ -20,7 +23,7 @@ export const getSprintAnalyticsTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -31,7 +34,6 @@ export const getSprintAnalyticsTool = tool({
         success: true,
         kind: "single-sprint-analytics-report",
         title: "Sprint analytics",
-        analyticsReport: analytics,
         analytics,
         message: "Retrieved sprint analytics successfully.",
       };

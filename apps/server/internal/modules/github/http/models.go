@@ -1,6 +1,8 @@
 package githubhttp
 
 import (
+	"errors"
+	"strings"
 	"time"
 
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
@@ -78,7 +80,7 @@ type AppCreateInstallSession struct {
 }
 
 type AppCreateUserLinkSessionRequest struct {
-	ReturnTo string `json:"returnTo" validate:"required"`
+	ReturnTo string `json:"returnTo" validate:"required,max=2048"`
 }
 
 type AppCreateUserLinkSession struct {
@@ -86,18 +88,18 @@ type AppCreateUserLinkSession struct {
 }
 
 type AppCreateIssueSyncLinkRequest struct {
-	RepositoryID  uuid.UUID `json:"repositoryId"`
-	TeamID        uuid.UUID `json:"teamId"`
-	SyncDirection string    `json:"syncDirection"`
+	RepositoryID  uuid.UUID `json:"repositoryId" validate:"required"`
+	TeamID        uuid.UUID `json:"teamId" validate:"required"`
+	SyncDirection string    `json:"syncDirection" validate:"required,oneof=inbound_only bidirectional"`
 }
 
 type AppUpdateIssueSyncLinkRequest struct {
-	SyncDirection *string `json:"syncDirection,omitempty"`
+	SyncDirection *string `json:"syncDirection,omitempty" validate:"omitempty,oneof=inbound_only bidirectional"`
 	IsActive      *bool   `json:"isActive,omitempty"`
 }
 
 type AppUpdateWorkspaceSettingsRequest struct {
-	BranchFormat            *string `json:"branchFormat,omitempty"`
+	BranchFormat            *string `json:"branchFormat,omitempty" validate:"omitempty,oneof=username/identifier-title identifier-title identifier/title"`
 	LinkCommitsByMagicWords *bool   `json:"linkCommitsByMagicWords,omitempty"`
 	SyncAssignees           *bool   `json:"syncAssignees,omitempty"`
 	SyncLabels              *bool   `json:"syncLabels,omitempty"`
@@ -106,12 +108,19 @@ type AppUpdateWorkspaceSettingsRequest struct {
 }
 
 type AppLinkGitHubUserRequest struct {
-	Code  string `json:"code" validate:"required"`
-	State string `json:"state" validate:"required"`
+	Code  string `json:"code" validate:"required,max=4096"`
+	State string `json:"state" validate:"required,max=128"`
 }
 
 type AppPostGitHubCommentRequest struct {
-	Body string `json:"body" validate:"required"`
+	Body string `json:"body" validate:"required,max=65536"`
+}
+
+func (request AppPostGitHubCommentRequest) Validate() error {
+	if strings.TrimSpace(request.Body) == "" {
+		return errors.New("comment body is required")
+	}
+	return nil
 }
 
 type AppTeamGitHubSettings struct {
@@ -120,13 +129,13 @@ type AppTeamGitHubSettings struct {
 }
 
 type AppUpdateTeamGitHubSettingsRequest struct {
-	Rules []AppUpdateWorkflowRule `json:"rules"`
+	Rules []AppUpdateWorkflowRule `json:"rules" validate:"required,max=64,dive"`
 }
 
 type AppUpdateWorkflowRule struct {
-	EventKey          string     `json:"eventKey"`
+	EventKey          string     `json:"eventKey" validate:"required,max=64"`
 	TargetStatusID    *uuid.UUID `json:"targetStatusId,omitempty"`
-	BaseBranchPattern *string    `json:"baseBranchPattern,omitempty"`
+	BaseBranchPattern *string    `json:"baseBranchPattern,omitempty" validate:"omitempty,max=255"`
 	IsActive          bool       `json:"isActive"`
 }
 

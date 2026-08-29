@@ -1,94 +1,31 @@
-import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { createStoryAction } from "@/modules/story/actions/create-story";
+import { isStoryCreationOutcomeUncertainError } from "@/modules/story/actions/story-creation-error";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
-import { requireToolConfirmation } from "../tool-helpers";
-import { normalizeStoryInput } from "./normalize-story-input";
+import {
+  normalizeOptionalStoryId,
+  normalizeRequiredStoryId,
+  normalizeStoryInput,
+} from "./normalize-story-input";
+import { createSprintEndDateResolver } from "./resolve-sprint-end-date";
+import { createStoryStatusResolver } from "./resolve-story-status";
+import { getStoryCreationIdempotencyKey } from "./story-creation-idempotency";
+import { createStoryInputSchema } from "./story-creation-schema";
+import { getStoryCalendarImpact } from "./story-calendar-impact";
+import { toStoryToolSummary } from "./story-tool-summary";
+
+export { createStoryInputSchema } from "./story-creation-schema";
 
 export const createStory = tool({
   description:
-    "Create a new story. Guests cannot create stories. Members and admins can create stories for teams they belong to.",
-  inputSchema: z.object({
-    title: z.string().describe("Story title (required)"),
-    confirmed: z
-      .boolean()
-      .optional()
-      .describe(
-        "Must be true after the user explicitly confirms creating the story.",
-      ),
-    description: z
-      .string()
-      .nullable()
-      .optional()
-      .describe("Story description"),
-    descriptionHTML: z
-      .string()
-      .nullable()
-      .optional()
-      .describe(
-        "Story description HTML (Always provided and properly formatted if description is provided)",
-      ),
-    teamId: z
-      .string()
-      .describe("Team ID where story belongs (required) (UUID)"),
-    statusId: z
-      .string()
-      .describe(
-        "Initial status ID (required) (UUID) always use statuses tool to get the statuses",
-      ),
-    assigneeId: z
-      .string()
-      .nullable()
-      .optional()
-      .describe("Assignee user ID (UUID)"),
-    priority: z
-      .enum(["No Priority", "Low", "Medium", "High", "Urgent"])
-      .default("No Priority")
-      .describe("Story priority (required)"),
-    estimateValue: z
-      .number()
-      .int()
-      .nullable()
-      .optional()
-      .describe(
-        "Canonical estimate value for the team's estimation scheme. Use 1, 2, 3, 5, or 8. Use 0, null, or omit for unestimated work.",
-      ),
-    labelIds: z
-      .array(z.string())
-      .optional()
-      .describe("Label IDs to attach to the story."),
-    sprintId: z
-      .string()
-      .nullable()
-      .optional()
-      .describe("Sprint ID to assign story (UUID)"),
-    objectiveId: z
-      .string()
-      .nullable()
-      .optional()
-      .describe("Objective ID to assign story (UUID)"),
-    parentId: z
-      .string()
-      .nullable()
-      .optional()
-      .describe("Parent story ID for sub-stories (UUID)"),
-    startDate: z
-      .string()
-      .nullable()
-      .optional()
-      .describe("Story start date (ISO date string e.g 2005-06-13)"),
-    endDate: z
-      .string()
-      .nullable()
-      .optional()
-      .describe("Story end date (ISO date string e.g 2005-06-13)"),
-  }),
+    "Create one story after its missing planning details have been answered or the user has explicitly chosen to skip them. A future/start/delivery date does not enable calendar scheduling; set autoSchedulingEnabled true only for explicit calendar intent. Guests cannot create stories. Members and admins can create stories for teams they belong to.",
+  inputSchema: createStoryInputSchema,
+  needsApproval: true,
 
   execute: async (
     {
       title,
-      confirmed,
       description,
       descriptionHTML,
       teamId,
@@ -96,20 +33,20 @@ export const createStory = tool({
       assigneeId,
       priority,
       estimateValue,
+      estimatedDurationMinutes,
+      minimumFocusBlockMinutes,
+      autoSchedulingEnabled,
       labelIds,
       sprintId,
       objectiveId,
+      keyResultId,
       parentId,
       startDate,
       endDate,
     },
-    { experimental_context: experimentalContext },
+    { experimental_context: experimentalContext, toolCallId },
   ) => {
     try {
-      if (!confirmed) {
-        return requireToolConfirmation("create this story");
-      }
-
       const session = await auth();
 
       if (!session) {
@@ -135,24 +72,47 @@ export const createStory = tool({
         };
       }
 
+      const resolvedTeamId = normalizeRequiredStoryId(teamId, "teamId");
+      const resolveStatusId = createStoryStatusResolver(ctx);
+      const resolvedStatusId = await resolveStatusId(resolvedTeamId, statusId);
+      const resolvedSprintId = normalizeOptionalStoryId(sprintId, "sprintId");
+      const resolveSprintEndDate = createSprintEndDateResolver(ctx);
+      const resolvedEndDate = await resolveSprintEndDate(
+        resolvedSprintId,
+        endDate,
+      );
+
       const storyData = normalizeStoryInput({
         title,
         description,
         descriptionHTML,
-        teamId,
-        statusId,
+        teamId: resolvedTeamId,
+        statusId: resolvedStatusId,
         assigneeId,
         priority,
         estimateValue,
+        estimatedDurationMinutes,
+        minimumFocusBlockMinutes,
+        autoSchedulingEnabled,
         labelIds,
-        sprintId,
+        sprintId: resolvedSprintId,
         objectiveId,
+        keyResultId,
         parentId,
         startDate,
-        endDate,
+        endDate: resolvedEndDate,
       });
 
-      const result = await createStoryAction(storyData, workspaceSlug);
+      const result = await createStoryAction(
+        {
+          ...storyData,
+          idempotencyKey: getStoryCreationIdempotencyKey({
+            context: experimentalContext,
+            toolCallId,
+          }),
+        },
+        workspaceSlug,
+      );
 
       if (result.error?.message) {
         return {
@@ -168,12 +128,17 @@ export const createStory = tool({
         };
       }
 
+      const calendarImpact = getStoryCalendarImpact(result.data);
+
       return {
         success: true,
-        story: result.data,
-        message: `Story "${title}" created successfully.`,
+        story: toStoryToolSummary(result.data),
+        calendarImpact,
+        message: `Story "${title}" created successfully. ${calendarImpact}`,
       };
     } catch (error) {
+      if (isStoryCreationOutcomeUncertainError(error)) throw error;
+
       return {
         success: false,
         error:

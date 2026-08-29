@@ -5,95 +5,274 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ecs-production-release
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
 env:
-  DOCKERHUB_SERVER_IMAGE: fortyoneapp/server
-  DOCKERHUB_WORKER_IMAGE: fortyoneapp/worker
+  ECR_SERVER_REPOSITORY: ${{ vars.ECR_SERVER_REPOSITORY }}
+  ECR_WORKER_REPOSITORY: ${{ vars.ECR_WORKER_REPOSITORY }}
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
-  build-and-push:
+  server-quality:
+    uses: ./.github/workflows/server-quality.yml
+
+  server-sqlc:
+    uses: ./.github/workflows/server-sqlc.yml
+
+  registry:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      url: ${{ steps.login-ecr.outputs.registry }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: fortyone-registry-${{ github.run_id }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to private Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+  build-and-push:
+    needs:
+      - registry
+      - server-quality
+      - server-sqlc
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
         service:
           - name: server
-            image: fortyoneapp/server
             dockerfile: deployments/docker/dockerfile.server
           - name: worker
-            image: fortyoneapp/worker
             dockerfile: deployments/docker/dockerfile.worker
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: fortyone-build-${{ github.run_id }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to private Amazon ECR
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+      - name: Resolve private image repository
+        id: image
+        env:
+          REGISTRY_URL: ${{ needs.registry.outputs.url }}
+          SERVICE_NAME: ${{ matrix.service.name }}
+        run: |
+          case "$SERVICE_NAME" in
+            server) repository="$ECR_SERVER_REPOSITORY" ;;
+            worker) repository="$ECR_WORKER_REPOSITORY" ;;
+            *) echo "unsupported service: $SERVICE_NAME" >&2; exit 1 ;;
+          esac
+
+          if [ -z "$repository" ]; then
+            echo "ECR repository variable is required for $SERVICE_NAME" >&2
+            exit 1
+          fi
+
+          aws ecr describe-repositories --repository-names "$repository" >/dev/null
+          echo "uri=$REGISTRY_URL/$repository" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           file: ${{ matrix.service.dockerfile }}
           platforms: linux/amd64
           push: true
-          tags: |
-            ${{ matrix.service.image }}:${{ env.IMAGE_TAG }}
-            ${{ matrix.service.image }}:latest
+          tags: ${{ steps.image.outputs.uri }}:${{ env.IMAGE_TAG }}
+          build-args: |
+            BUILD_VERSION=${{ github.sha }}
+          provenance: mode=max
+          sbom: true
           cache-from: type=gha,scope=${{ matrix.service.name }}-image
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-image
 
-  deploy-server:
+      - name: Block high and critical runtime vulnerabilities
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/trivy-cache"
+          docker run --rm \
+            --volume "$RUNNER_TEMP/trivy-cache:/root/.cache/trivy" \
+            --volume "$HOME/.docker/config.json:/root/.docker/config.json:ro" \
+            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+            image \
+            --cache-dir /root/.cache/trivy \
+            --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            --no-progress \
+            "${{ steps.image.outputs.uri }}:${{ env.IMAGE_TAG }}"
+
+  migrate-database:
     runs-on: ubuntu-latest
-    needs: build-and-push
+    permissions:
+      contents: read
+      id-token: write
+    needs:
+      - build-and-push
+      - registry
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: fortyone-migrate-${{ github.run_id }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Download server task definition
+      - name: Register immutable migration task definition
+        id: migration-task
+        env:
+          CONTAINER_NAME: ${{ vars.ECS_SERVER_CONTAINER }}
+          REGISTRY_URL: ${{ needs.registry.outputs.url }}
         run: |
+          set -euo pipefail
+
+          image_digest="$(aws ecr describe-images \
+            --repository-name "$ECR_SERVER_REPOSITORY" \
+            --image-ids imageTag="$IMAGE_TAG" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text)"
+          case "$image_digest" in
+            sha256:*) ;;
+            *) echo "ECR did not return a valid server image digest" >&2; exit 1 ;;
+          esac
+          image_uri="$REGISTRY_URL/$ECR_SERVER_REPOSITORY@$image_digest"
+
           aws ecs describe-task-definition \
             --task-definition "${{ vars.ECS_SERVER_TASK_DEFINITION }}" \
-            --query taskDefinition > task-definition-server.json
+            --query taskDefinition > migration-task-definition-source.json
 
-      - name: Render server task definition
-        id: render-server
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition-server.json
-          container-name: ${{ vars.ECS_SERVER_CONTAINER }}
-          image: ${{ env.DOCKERHUB_SERVER_IMAGE }}:${{ env.IMAGE_TAG }}
+          container_matches="$(jq \
+            --arg container "$CONTAINER_NAME" \
+            '[.containerDefinitions[] | select(.name == $container)] | length' \
+            migration-task-definition-source.json)"
+          if [ "$container_matches" != "1" ]; then
+            echo "expected exactly one ECS container named $CONTAINER_NAME; found $container_matches" >&2
+            exit 1
+          fi
 
-      - name: Deploy server service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.render-server.outputs.task-definition }}
-          service: ${{ vars.ECS_SERVER_SERVICE }}
-          cluster: ${{ vars.ECS_CLUSTER }}
-          wait-for-service-stability: false
+          jq \
+            --arg container "$CONTAINER_NAME" \
+            --arg image "$image_uri" \
+            'del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )
+            | .containerDefinitions |= map(
+                if .name == $container then .image = $image else . end
+              )' \
+            migration-task-definition-source.json \
+            > migration-task-definition.json
+
+          task_definition_arn="$(aws ecs register-task-definition \
+            --cli-input-json file://migration-task-definition.json \
+            --query taskDefinition.taskDefinitionArn \
+            --output text)"
+          if [ -z "$task_definition_arn" ] || [ "$task_definition_arn" = "None" ]; then
+            echo "ECS did not return a migration task definition ARN" >&2
+            exit 1
+          fi
+          echo "arn=$task_definition_arn" >> "$GITHUB_OUTPUT"
+
+      - name: Apply schema migrations as a one-shot task
+        env:
+          CONTAINER_NAME: ${{ vars.ECS_SERVER_CONTAINER }}
+          TASK_DEFINITION_ARN: ${{ steps.migration-task.outputs.arn }}
+        run: |
+          set -euo pipefail
+
+          network_configuration="$(aws ecs describe-services \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --services "${{ vars.ECS_SERVER_SERVICE }}" \
+            --query 'services[0].networkConfiguration.awsvpcConfiguration' \
+            --output json)"
+          if [ -z "$network_configuration" ] || [ "$network_configuration" = "null" ]; then
+            echo "server ECS service has no awsvpc network configuration" >&2
+            exit 1
+          fi
+          network_configuration="$(jq -cn \
+            --argjson awsvpc "$network_configuration" \
+            '{awsvpcConfiguration: $awsvpc}')"
+          overrides="$(jq -cn \
+            --arg container "$CONTAINER_NAME" \
+            '{containerOverrides: [{name: $container, command: ["/app/api", "-migrate"]}]}')"
+
+          task_arn="$(aws ecs run-task \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --task-definition "$TASK_DEFINITION_ARN" \
+            --launch-type FARGATE \
+            --network-configuration "$network_configuration" \
+            --overrides "$overrides" \
+            --query 'tasks[0].taskArn' \
+            --output text)"
+          if [ -z "$task_arn" ] || [ "$task_arn" = "None" ]; then
+            echo "ECS did not start the migration task" >&2
+            exit 1
+          fi
+
+          aws ecs wait tasks-stopped \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --tasks "$task_arn"
+
+          task_result="$(aws ecs describe-tasks \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --tasks "$task_arn" \
+            --output json)"
+          exit_code="$(jq -r \
+            --arg container "$CONTAINER_NAME" \
+            '.tasks[0].containers[] | select(.name == $container) | .exitCode // empty' \
+            <<< "$task_result")"
+          if [ "$exit_code" != "0" ]; then
+            stop_reason="$(jq -r '.tasks[0].stoppedReason // "unknown"' <<< "$task_result")"
+            echo "database migration task failed: exit_code=${exit_code:-missing}, reason=$stop_reason" >&2
+            exit 1
+          fi
 
   deploy-worker:
     runs-on: ubuntu-latest
-    needs: build-and-push
+    permissions:
+      contents: read
+      id-token: write
+    needs:
+      - build-and-push
+      - migrate-database
+      - registry
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: fortyone-worker-${{ github.run_id }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Download worker task definition
@@ -102,18 +281,91 @@ jobs:
             --task-definition "${{ vars.ECS_WORKER_TASK_DEFINITION }}" \
             --query taskDefinition > task-definition-worker.json
 
+      - name: Resolve immutable worker image
+        id: worker-image
+        env:
+          REGISTRY_URL: ${{ needs.registry.outputs.url }}
+        run: |
+          set -euo pipefail
+          image_digest="$(aws ecr describe-images \
+            --repository-name "$ECR_WORKER_REPOSITORY" \
+            --image-ids imageTag="$IMAGE_TAG" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text)"
+          case "$image_digest" in
+            sha256:*) ;;
+            *) echo "ECR did not return a valid worker image digest" >&2; exit 1 ;;
+          esac
+          echo "uri=$REGISTRY_URL/$ECR_WORKER_REPOSITORY@$image_digest" >> "$GITHUB_OUTPUT"
+
       - name: Render worker task definition
         id: render-worker
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        uses: aws-actions/amazon-ecs-render-task-definition@138c24f321fdbdf7edee4a685519d253cae2cdea # v1.9.0
         with:
           task-definition: task-definition-worker.json
           container-name: ${{ vars.ECS_WORKER_CONTAINER }}
-          image: ${{ env.DOCKERHUB_WORKER_IMAGE }}:${{ env.IMAGE_TAG }}
+          image: ${{ steps.worker-image.outputs.uri }}
 
-      - name: Deploy worker service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      - name: Deploy worker service and complete startup cutovers
+        uses: aws-actions/amazon-ecs-deploy-task-definition@c465972ecbd160473f22e683363b422a5412a3de # v2.6.3
         with:
           task-definition: ${{ steps.render-worker.outputs.task-definition }}
           service: ${{ vars.ECS_WORKER_SERVICE }}
           cluster: ${{ vars.ECS_CLUSTER }}
-          wait-for-service-stability: false
+          wait-for-service-stability: true
+
+  deploy-server:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    needs:
+      - build-and-push
+      - deploy-worker
+      - registry
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: fortyone-server-${{ github.run_id }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Download server task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "${{ vars.ECS_SERVER_TASK_DEFINITION }}" \
+            --query taskDefinition > task-definition-server.json
+
+      - name: Resolve immutable server image
+        id: server-image
+        env:
+          REGISTRY_URL: ${{ needs.registry.outputs.url }}
+        run: |
+          set -euo pipefail
+          image_digest="$(aws ecr describe-images \
+            --repository-name "$ECR_SERVER_REPOSITORY" \
+            --image-ids imageTag="$IMAGE_TAG" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text)"
+          case "$image_digest" in
+            sha256:*) ;;
+            *) echo "ECR did not return a valid server image digest" >&2; exit 1 ;;
+          esac
+          echo "uri=$REGISTRY_URL/$ECR_SERVER_REPOSITORY@$image_digest" >> "$GITHUB_OUTPUT"
+
+      - name: Render server task definition
+        id: render-server
+        uses: aws-actions/amazon-ecs-render-task-definition@138c24f321fdbdf7edee4a685519d253cae2cdea # v1.9.0
+        with:
+          task-definition: task-definition-server.json
+          container-name: ${{ vars.ECS_SERVER_CONTAINER }}
+          image: ${{ steps.server-image.outputs.uri }}
+
+      - name: Deploy server service after worker cutovers are ready
+        uses: aws-actions/amazon-ecs-deploy-task-definition@c465972ecbd160473f22e683363b422a5412a3de # v2.6.3
+        with:
+          task-definition: ${{ steps.render-server.outputs.task-definition }}
+          service: ${{ vars.ECS_SERVER_SERVICE }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true

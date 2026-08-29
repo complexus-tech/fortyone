@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
 )
 
 type Repository interface {
-	CreateLink(ctx context.Context, cnl CoreNewLink) (CoreLink, error)
-	UpdateLink(ctx context.Context, linkID uuid.UUID, cul CoreUpdateLink) error
-	DeleteLink(ctx context.Context, linkID uuid.UUID) error
+	CreateLink(ctx context.Context, actorID uuid.UUID, cnl CoreNewLink) (CoreLink, error)
+	UpdateLink(ctx context.Context, actorID, linkID, workspaceID uuid.UUID, cul CoreUpdateLink) error
+	DeleteLink(ctx context.Context, actorID, linkID, workspaceID uuid.UUID) error
 }
 
 type Service struct {
@@ -26,11 +26,11 @@ func New(log *logger.Logger, repo Repository) *Service {
 	}
 }
 
-func (s *Service) CreateLink(ctx context.Context, cnl CoreNewLink) (CoreLink, error) {
-	ctx, span := web.AddSpan(ctx, "business.service.links.CreateLink")
+func (s *Service) CreateLink(ctx context.Context, actorID uuid.UUID, cnl CoreNewLink) (CoreLink, error) {
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.service.links.CreateLink")
 	defer span.End()
 
-	link, err := s.repo.CreateLink(ctx, cnl)
+	link, err := s.repo.CreateLink(ctx, actorID, cnl)
 	if err != nil {
 		return CoreLink{}, err
 	}
@@ -38,11 +38,11 @@ func (s *Service) CreateLink(ctx context.Context, cnl CoreNewLink) (CoreLink, er
 	return link, nil
 }
 
-func (s *Service) UpdateLink(ctx context.Context, linkID uuid.UUID, cul CoreUpdateLink) error {
-	ctx, span := web.AddSpan(ctx, "business.service.links.UpdateLink")
+func (s *Service) UpdateLink(ctx context.Context, actorID, linkID, workspaceID uuid.UUID, cul CoreUpdateLink) error {
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.service.links.UpdateLink")
 	defer span.End()
 
-	err := s.repo.UpdateLink(ctx, linkID, cul)
+	err := s.repo.UpdateLink(ctx, actorID, linkID, workspaceID, cul)
 	if err != nil {
 		return err
 	}
@@ -50,11 +50,11 @@ func (s *Service) UpdateLink(ctx context.Context, linkID uuid.UUID, cul CoreUpda
 	return nil
 }
 
-func (s *Service) DeleteLink(ctx context.Context, linkID uuid.UUID) error {
-	ctx, span := web.AddSpan(ctx, "business.service.links.DeleteLink")
+func (s *Service) DeleteLink(ctx context.Context, actorID, linkID, workspaceID uuid.UUID) error {
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.service.links.DeleteLink")
 	defer span.End()
 
-	err := s.repo.DeleteLink(ctx, linkID)
+	err := s.repo.DeleteLink(ctx, actorID, linkID, workspaceID)
 	if err != nil {
 		return err
 	}

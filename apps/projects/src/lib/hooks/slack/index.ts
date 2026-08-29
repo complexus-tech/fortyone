@@ -1,5 +1,16 @@
 export { useSlackIntegration } from "./use-integration";
+export {
+  useSlackAgentSettings,
+  useUpdateSlackAgentSettings,
+} from "./use-agent-settings";
+export {
+  useSlackChannelAudiences,
+  useUpdateSlackChannelAudience,
+} from "./use-channel-audiences";
+export { useSlackAccountLinkToken } from "./use-account-link-token";
 export { useCreateSlackInstallSession } from "./use-create-install-session";
-export { useDisconnectSlackWorkspace } from "./use-disconnect-workspace";
-export { useLinkSlackAccount } from "./use-link-account";
 export { useResyncSlackChannels } from "./use-resync-channels";
+export { useCreateSlackAccountLinkSession } from "./use-create-account-link-session";
+export { useDisconnectSlackWorkspace } from "./use-disconnect-workspace";
+export { useDisconnectSlackAccount } from "./use-disconnect-account";
+export { useLinkSlackAccount } from "./use-link-account";

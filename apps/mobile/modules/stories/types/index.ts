@@ -7,10 +7,30 @@ export type StoryPriority =
   | "Medium"
   | "Low";
 
+export type AutoSchedulingStatus =
+  | "off"
+  | "needs_owner"
+  | "needs_time"
+  | "planning"
+  | "scheduled"
+  | "at_risk"
+  | "cannot_fit"
+  | "locked";
+
 export type Story = {
   id: string;
   sequenceId: number;
   title: string;
+  estimateLabel: string | null;
+  estimateValue: number | null;
+  estimateScheme: "points" | "tshirt";
+  estimatedDurationMinutes: number | null;
+  minimumFocusBlockMinutes: number | null;
+  autoSchedulingEnabled: boolean;
+  autoSchedulingLocked: boolean;
+  autoSchedulingStatus: AutoSchedulingStatus;
+  autoSchedulingReason: string | null;
+  autoSchedulingUpdatedAt: string | null;
   description?: string;
   statusId: string;
   sprintId: string | null;

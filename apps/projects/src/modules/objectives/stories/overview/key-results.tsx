@@ -21,28 +21,37 @@ import {
   InfoIcon,
   CalendarIcon,
 } from "icons";
-import { useParams } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { differenceInDays, format } from "date-fns";
 import { cn } from "lib";
+import { toast } from "sonner";
 import { ConfirmDialog, RowWrapper, AssigneesMenu } from "@/components/ui";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { useMediaQuery, useTerminology } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
+import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import {
-  useCreateKeyResultMutation,
+  useCreateKeyResultsMutation,
   useKeyResults,
   useObjective,
   useUpdateKeyResultMutation,
 } from "@/modules/objectives/hooks";
 import { useMembers } from "@/lib/hooks/members";
+import { toKeyResultCreateInput } from "@/modules/objectives/key-result-generation";
 import type { KeyResult } from "../../types";
 import { useDeleteKeyResultMutation } from "../../hooks/use-delete-key-result-mutation";
 import { keyResultGenerationSchema } from "../../schemas/key-result-generation";
 import { NewKeyResultButton } from "./new-key-result";
 import { UpdateKeyResultDialog } from "./update-key-result-dialog";
 import { KeyResultsSkeleton } from "./key-results-skeleton";
+import {
+  KeyResultDeepLinkTarget,
+  resolveTargetKeyResultId,
+} from "./key-result-deep-link";
+
+export type KeyResultsViewport = "desktop" | "mobile";
 
 const RenderValue = ({
   value,
@@ -84,6 +93,7 @@ const RenderValue = ({
 
 const Okr = ({
   id,
+  sequenceId,
   objectiveId,
   name,
   startValue,
@@ -96,7 +106,12 @@ const Okr = ({
   endDate,
   createdBy,
   updatedAt,
-}: KeyResult) => {
+  isDeepLinkTarget,
+  viewport,
+}: KeyResult & {
+  isDeepLinkTarget: boolean;
+  viewport: KeyResultsViewport;
+}) => {
   const { teamId } = useParams<{ teamId: string }>();
   const { getTermDisplay } = useTerminology();
   const { isAdminOrOwner } = useIsAdminOrOwner(createdBy);
@@ -164,187 +179,199 @@ const Okr = ({
   };
 
   return (
-    <Wrapper className="flex flex-col gap-4 py-2.5 md:flex-row md:items-center md:justify-between md:gap-2 md:px-3.5">
-      <Flex align="center" gap={3}>
-        <Badge className="aspect-square h-9" color="tertiary">
-          <OKRIcon strokeWidth={2.8} />
-        </Badge>
-        <Box>
-          <Text className="line-clamp-1" title={name}>
-            {name}
-          </Text>
-          <Tooltip title={getOverDueText()}>
-            <Text
-              className="flex items-center gap-1 text-[0.95rem]"
-              color={getOverDueColor()}
-            >
-              <CalendarIcon className="h-4 text-current dark:text-current" />
-              {format(new Date(startDate), "MMM d, yyyy")} -{" "}
-              {format(new Date(endDate), "MMM d, yyyy")}
+    <KeyResultDeepLinkTarget
+      id={id}
+      isTarget={isDeepLinkTarget}
+      name={name}
+      viewport={viewport}
+    >
+      <Wrapper className="flex flex-col gap-4 py-2.5 md:flex-row md:items-center md:justify-between md:gap-2 md:px-3.5">
+        <Flex align="center" gap={3}>
+          <Badge className="aspect-square h-9" color="tertiary">
+            <OKRIcon strokeWidth={2.8} />
+          </Badge>
+          <Box>
+            <Text className="line-clamp-1" title={name}>
+              {name}
             </Text>
-          </Tooltip>
-        </Box>
-      </Flex>
-      <Flex
-        align="center"
-        className="divide-border shrink-0 justify-between divide-x"
-      >
+            <Tooltip title={getOverDueText()}>
+              <Text
+                className="flex items-center gap-1 text-[0.95rem]"
+                color={getOverDueColor()}
+              >
+                <CalendarIcon className="h-4 text-current dark:text-current" />
+                {format(new Date(startDate), "MMM d, yyyy")} -{" "}
+                {format(new Date(endDate), "MMM d, yyyy")}
+              </Text>
+            </Tooltip>
+          </Box>
+        </Flex>
         <Flex
           align="center"
-          className="pr-6 md:px-6"
-          direction="column"
-          gap={1}
+          className="divide-border shrink-0 justify-between divide-x"
         >
-          <Text color="muted">Current</Text>
-          <RenderValue measurementType={measurementType} value={currentValue} />
-        </Flex>
-        {measurementType !== "boolean" && (
-          <Flex align="center" className="px-6" direction="column" gap={1}>
-            <Text color="muted">Target</Text>
+          <Flex
+            align="center"
+            className="pr-6 md:px-6"
+            direction="column"
+            gap={1}
+          >
+            <Text color="muted">Current</Text>
             <RenderValue
               measurementType={measurementType}
-              value={targetValue}
+              value={currentValue}
             />
           </Flex>
-        )}
-        <Flex align="center" className="px-5" direction="column" gap={1}>
-          <Text color="muted">Progress</Text>
-          <Flex align="center" gap={2}>
-            <ProgressBar className="w-16" progress={getProgress()} />
-            <Text className="text-[0.95rem]">{getProgress()}%</Text>
+          {measurementType !== "boolean" && (
+            <Flex align="center" className="px-6" direction="column" gap={1}>
+              <Text color="muted">Target</Text>
+              <RenderValue
+                measurementType={measurementType}
+                value={targetValue}
+              />
+            </Flex>
+          )}
+          <Flex align="center" className="px-5" direction="column" gap={1}>
+            <Text color="muted">Progress</Text>
+            <Flex align="center" gap={2}>
+              <ProgressBar className="w-16" progress={getProgress()} />
+              <Text className="text-[0.95rem]">{getProgress()}%</Text>
+            </Flex>
           </Flex>
-        </Flex>
 
-        {isAdminOrOwner ? (
-          <Flex align="center" className="h-full py-2 pl-4" gap={2}>
-            <Tooltip title="Lead">
-              <span>
-                <AssigneesMenu>
-                  <AssigneesMenu.Trigger>
-                    <Button
-                      asIcon
-                      className={cn("font-medium", {
-                        "text-text-secondary": !lead,
-                      })}
-                      color="tertiary"
-                      leftIcon={
-                        <Avatar
-                          className={cn({
-                            "text-foreground/80": !lead,
-                          })}
-                          name={leadMember?.username}
-                          size="sm"
-                          src={leadMember?.avatarUrl}
-                        />
-                      }
-                      rounded="full"
-                      size="sm"
-                      type="button"
-                      variant="naked"
+          {isAdminOrOwner ? (
+            <Flex align="center" className="h-full py-2 pl-4" gap={2}>
+              <Tooltip title="Lead">
+                <span>
+                  <AssigneesMenu>
+                    <AssigneesMenu.Trigger>
+                      <Button
+                        asIcon
+                        className={cn("font-medium", {
+                          "text-text-secondary": !lead,
+                        })}
+                        color="tertiary"
+                        leftIcon={
+                          <Avatar
+                            className={cn({
+                              "text-foreground/80": !lead,
+                            })}
+                            name={leadMember?.username}
+                            size="sm"
+                            src={leadMember?.avatarUrl}
+                          />
+                        }
+                        rounded="full"
+                        size="sm"
+                        type="button"
+                        variant="naked"
+                      >
+                        <span className="sr-only">{leadMember?.username}</span>
+                      </Button>
+                    </AssigneesMenu.Trigger>
+                    <AssigneesMenu.Items
+                      assigneeId={lead}
+                      onAssigneeSelected={(leadUser) => {
+                        updateKeyResult({
+                          keyResultId: id,
+                          objectiveId,
+                          data: { lead: leadUser },
+                        });
+                      }}
+                      placeholder="Assign lead..."
+                      teamId={teamId}
+                    />
+                  </AssigneesMenu>
+                </span>
+              </Tooltip>
+              <Menu>
+                <Menu.Button>
+                  <Button
+                    asIcon
+                    className="border-border"
+                    color="tertiary"
+                    leftIcon={<MoreHorizontalIcon />}
+                    rounded="full"
+                    size="xs"
+                  >
+                    <span className="sr-only">Edit</span>
+                  </Button>
+                </Menu.Button>
+                <Menu.Items>
+                  <Menu.Group>
+                    <Menu.Item
+                      onSelect={() => {
+                        setUpdateMode("other");
+                        setIsUpdateOpen(true);
+                      }}
                     >
-                      <span className="sr-only">{leadMember?.username}</span>
-                    </Button>
-                  </AssigneesMenu.Trigger>
-                  <AssigneesMenu.Items
-                    assigneeId={lead}
-                    onAssigneeSelected={(leadUser) => {
-                      updateKeyResult({
-                        keyResultId: id,
-                        objectiveId,
-                        data: { lead: leadUser },
-                      });
-                    }}
-                    placeholder="Assign lead..."
-                    teamId={teamId}
-                  />
-                </AssigneesMenu>
-              </span>
-            </Tooltip>
-            <Menu>
-              <Menu.Button>
-                <Button
-                  asIcon
-                  className="border-border"
-                  color="tertiary"
-                  leftIcon={<MoreHorizontalIcon />}
-                  rounded="full"
-                  size="xs"
-                >
-                  <span className="sr-only">Edit</span>
-                </Button>
-              </Menu.Button>
-              <Menu.Items>
-                <Menu.Group>
-                  <Menu.Item
-                    onSelect={() => {
-                      setUpdateMode("other");
-                      setIsUpdateOpen(true);
-                    }}
-                  >
-                    <EditIcon />
-                    Edit...
-                  </Menu.Item>
-                  <Menu.Item
-                    onSelect={() => {
-                      setUpdateMode("progress");
-                      setIsUpdateOpen(true);
-                    }}
-                  >
-                    <OKRIcon />
-                    Update progress...
-                  </Menu.Item>
-                  <Menu.Item
-                    onSelect={() => {
-                      setIsDeleteOpen(true);
-                    }}
-                  >
-                    <DeleteIcon />
-                    Delete
-                  </Menu.Item>
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
-          </Flex>
-        ) : null}
-      </Flex>
-      <ConfirmDialog
-        confirmText="Yes, Delete"
-        description="Are you sure you want to delete this key result? This action cannot be undone."
-        isOpen={isDeleteOpen}
-        onClose={() => {
-          setIsDeleteOpen(false);
-        }}
-        onConfirm={handleDelete}
-        title="Delete Key Result"
-      />
-      <UpdateKeyResultDialog
-        isOpen={isUpdateOpen}
-        keyResult={{
-          id,
-          objectiveId,
-          name,
-          startValue,
-          targetValue,
-          currentValue,
-          measurementType,
-          lead,
-          contributors,
-          startDate,
-          endDate,
-          createdAt: "",
-          updatedAt,
-        }}
-        onOpenChange={setIsUpdateOpen}
-        updateMode={updateMode}
-      />
-    </Wrapper>
+                      <EditIcon />
+                      Edit...
+                    </Menu.Item>
+                    <Menu.Item
+                      onSelect={() => {
+                        setUpdateMode("progress");
+                        setIsUpdateOpen(true);
+                      }}
+                    >
+                      <OKRIcon />
+                      Update progress...
+                    </Menu.Item>
+                    <Menu.Item
+                      onSelect={() => {
+                        setIsDeleteOpen(true);
+                      }}
+                    >
+                      <DeleteIcon />
+                      Delete
+                    </Menu.Item>
+                  </Menu.Group>
+                </Menu.Items>
+              </Menu>
+            </Flex>
+          ) : null}
+        </Flex>
+        <ConfirmDialog
+          confirmText="Yes, Delete"
+          description="Are you sure you want to delete this key result? This action cannot be undone."
+          isOpen={isDeleteOpen}
+          onClose={() => {
+            setIsDeleteOpen(false);
+          }}
+          onConfirm={handleDelete}
+          title="Delete Key Result"
+        />
+        <UpdateKeyResultDialog
+          isOpen={isUpdateOpen}
+          keyResult={{
+            id,
+            sequenceId,
+            objectiveId,
+            name,
+            startValue,
+            targetValue,
+            currentValue,
+            measurementType,
+            lead,
+            contributors,
+            startDate,
+            endDate,
+            createdAt: "",
+            updatedAt,
+          }}
+          onOpenChange={setIsUpdateOpen}
+          updateMode={updateMode}
+        />
+      </Wrapper>
+    </KeyResultDeepLinkTarget>
   );
 };
 
-export const KeyResults = () => {
+export const KeyResults = ({ viewport }: { viewport: KeyResultsViewport }) => {
   const { getTermDisplay } = useTerminology();
   const { objectiveId } = useParams<{ objectiveId: string }>();
-  const keyResultMutation = useCreateKeyResultMutation();
+  const searchParams = useSearchParams();
+  const createKeyResultsMutation = useCreateKeyResultsMutation();
   const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
   const { data: objective } = useObjective(objectiveId);
   const [manualSelectedKeyResults, setManualSelectedKeyResults] = useState<
@@ -354,6 +381,11 @@ export const KeyResults = () => {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
+  const targetKeyResultId = resolveTargetKeyResultId(
+    searchParams.get("keyResultId"),
+    keyResults.map((keyResult) => keyResult.id),
+  );
+  const isActiveViewport = viewport === (isDesktop ? "desktop" : "mobile");
 
   const { object, submit, isLoading } = useObject({
     api: "/api/suggest-key-results",
@@ -396,26 +428,34 @@ export const KeyResults = () => {
     setManualSelectedKeyResults(new Set());
   };
 
-  const handleAddSelected = () => {
-    const keyResults = object?.keyResults?.filter((kr) =>
+  const handleAddSelected = async () => {
+    const suggestions = object?.keyResults?.filter((kr) =>
       selectedKeyResults.has(kr?.name ?? ""),
     );
-    keyResults?.forEach((kr) => {
-      keyResultMutation.mutate({
-        name: kr?.name ?? "",
-        objectiveId,
-        measurementType: kr?.measurementType ?? "number",
-        startValue: kr?.startValue ?? 0,
-        targetValue: kr?.targetValue ?? 0,
-        currentValue: kr?.startValue ?? 0,
-        startDate: kr?.startDate ?? "",
-        endDate: kr?.endDate ?? "",
-        lead: null,
-        contributors: [],
+    if (!objective || !suggestions?.length) return;
+
+    const parsedSuggestions = suggestions.map((suggestion) =>
+      keyResultGenerationSchema.shape.keyResults.element.safeParse(suggestion),
+    );
+    if (parsedSuggestions.some((result) => !result.success)) {
+      toast.error("Suggestions are still being prepared", {
+        description: "Wait for Maya to finish, then try creating them again.",
       });
-    });
-    clearSelection();
-    setShowSuggestions(false);
+      return;
+    }
+
+    try {
+      await createKeyResultsMutation.mutateAsync({
+        objectiveId,
+        keyResults: parsedSuggestions.map((result) =>
+          toKeyResultCreateInput(result.data!, objective),
+        ),
+      });
+      clearSelection();
+      setShowSuggestions(false);
+    } catch {
+      // The mutation keeps the selected suggestions visible for retry.
+    }
   };
 
   const handleCancel = () => {
@@ -537,15 +577,25 @@ export const KeyResults = () => {
                   Cancel
                 </Button>
                 <Button
-                  disabled={selectedKeyResults.size === 0}
-                  onClick={handleAddSelected}
+                  disabled={
+                    selectedKeyResults.size === 0 ||
+                    isLoading ||
+                    createKeyResultsMutation.isPending
+                  }
+                  onClick={() => void handleAddSelected()}
                 >
-                  Create {selectedKeyResults.size}{" "}
-                  {getTermDisplay("keyResultTerm", {
-                    capitalize: true,
-                    variant:
-                      selectedKeyResults.size === 1 ? "singular" : "plural",
-                  })}
+                  {createKeyResultsMutation.isPending ? (
+                    "Creating..."
+                  ) : (
+                    <>
+                      Create {selectedKeyResults.size}{" "}
+                      {getTermDisplay("keyResultTerm", {
+                        capitalize: true,
+                        variant:
+                          selectedKeyResults.size === 1 ? "singular" : "plural",
+                      })}
+                    </>
+                  )}
                 </Button>
               </Flex>
             </>
@@ -582,9 +632,13 @@ export const KeyResults = () => {
         <Flex className="mt-3" direction="column" gap={3}>
           {keyResults.map((keyResult) => (
             <Okr
-              key={`${keyResult.id}-${keyResult.name.slice(0, 10)}`}
+              isDeepLinkTarget={
+                isActiveViewport ? targetKeyResultId === keyResult.id : false
+              }
+              key={keyResult.id}
               {...keyResult}
               objectiveId={objectiveId}
+              viewport={viewport}
             />
           ))}
         </Flex>
@@ -596,7 +650,7 @@ export const KeyResults = () => {
           gap={4}
           justify="center"
         >
-          <OKRIcon className="h-12" />
+          <RoadmapEmptyIllustration className="w-52" />
           <Text className="max-w-lg text-center" color="muted">
             You haven&apos;t added any{" "}
             {getTermDisplay("keyResultTerm", {

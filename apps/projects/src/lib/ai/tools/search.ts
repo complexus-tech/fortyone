@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
-import { getTeams } from "@/modules/teams/queries/get-teams";
-import { getStatuses } from "@/lib/queries/states/get-states";
-import { getMembers } from "@/lib/queries/members/get-members";
 import { searchQuery } from "@/modules/search/queries/search";
 import type { SearchQueryParams } from "@/modules/search/types";
 
@@ -76,7 +73,7 @@ export const searchTool = tool({
       pageSize = 20,
       includeDetails = false,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -88,7 +85,7 @@ export const searchTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -162,54 +159,39 @@ export const searchTool = tool({
       // Perform the search
       const searchResults = await searchQuery(ctx, searchParams);
 
-      // Get lookup data for enriching results
-      const [allStatuses, allTeams, allMembers] = await Promise.all([
-        getStatuses(ctx),
-        getTeams(ctx),
-        getMembers(ctx),
-      ]);
-
-      // Create lookup maps
-      const statusMap = new Map(allStatuses.map((s) => [s.id, s]));
-      const teamMap = new Map(allTeams.map((t) => [t.id, t]));
-      const memberMap = new Map(allMembers.map((m) => [m.id, m]));
-
       // Format stories results
       const formattedStories = searchResults.stories.map((story) => {
-        const status = statusMap.get(story.statusId);
-        const team = teamMap.get(story.teamId);
-        const assignee = story.assigneeId
-          ? memberMap.get(story.assigneeId)
-          : null;
-
         const baseStory = {
           id: story.id,
           title: story.title,
           priority: story.priority,
           statusId: story.statusId,
-          status: status
-            ? {
-                name: status.name,
-                color: status.color,
-                category: status.category,
-              }
-            : null,
+          status:
+            story.statusName && story.statusColor && story.statusCategory
+              ? {
+                  name: story.statusName,
+                  color: story.statusColor,
+                  category: story.statusCategory,
+                }
+              : null,
           assigneeId: story.assigneeId,
-          assignee: assignee
-            ? {
-                id: assignee.id,
-                fullName: assignee.fullName,
-                username: assignee.username,
-              }
-            : null,
+          assignee:
+            story.assigneeId && story.assigneeFullName && story.assigneeUsername
+              ? {
+                  id: story.assigneeId,
+                  fullName: story.assigneeFullName,
+                  username: story.assigneeUsername,
+                }
+              : null,
           teamId: story.teamId,
-          team: team
-            ? {
-                id: team.id,
-                name: team.name,
-                code: team.code,
-              }
-            : null,
+          team:
+            story.teamName && story.teamCode
+              ? {
+                  id: story.teamId,
+                  name: story.teamName,
+                  code: story.teamCode,
+                }
+              : null,
           createdAt: story.createdAt,
           updatedAt: story.updatedAt,
         };
@@ -229,29 +211,29 @@ export const searchTool = tool({
 
       // Format objectives results
       const formattedObjectives = searchResults.objectives.map((objective) => {
-        const team = teamMap.get(objective.teamId);
-        const leadUser = objective.leadUser
-          ? memberMap.get(objective.leadUser)
-          : null;
-
         const baseObjective = {
           id: objective.id,
+          sequenceId: objective.sequenceId,
           name: objective.name,
           teamId: objective.teamId,
-          team: team
-            ? {
-                id: team.id,
-                name: team.name,
-                code: team.code,
-              }
-            : null,
-          leadUser: leadUser
-            ? {
-                id: leadUser.id,
-                fullName: leadUser.fullName,
-                username: leadUser.username,
-              }
-            : null,
+          team:
+            objective.teamName && objective.teamCode
+              ? {
+                  id: objective.teamId,
+                  name: objective.teamName,
+                  code: objective.teamCode,
+                }
+              : null,
+          leadUser:
+            objective.leadUser &&
+            objective.leadFullName &&
+            objective.leadUsername
+              ? {
+                  id: objective.leadUser,
+                  fullName: objective.leadFullName,
+                  username: objective.leadUsername,
+                }
+              : null,
           startDate: objective.startDate,
           endDate: objective.endDate,
           priority: objective.priority,
@@ -264,6 +246,7 @@ export const searchTool = tool({
           return {
             ...baseObjective,
             description: objective.description,
+            shortSummary: objective.shortSummary,
             statusId: objective.statusId,
             isPrivate: objective.isPrivate,
             stats: objective.stats,

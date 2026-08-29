@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { UserIcon, WorkspaceIcon } from "icons";
-import { Box, Flex, Table, Text } from "ui";
-import { getUser } from "@/lib/admin-api";
+import { Avatar, Box, Flex, Table, Text } from "ui";
+import { getAdminNotes, getUser } from "@/lib/admin-api";
 import { formatCount, formatDate, formatDateTime } from "@/lib/format";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
+import { AdminNotesPanel } from "@/components/admin-notes-panel";
+import { UserActionsMenu } from "@/components/user-actions-menu";
 import { UserStatusBadge } from "@/components/status-badge";
 
 export default async function UserDetailPage({
@@ -14,7 +16,10 @@ export default async function UserDetailPage({
   params: Promise<{ userId: string }>;
 }) {
   const { userId } = await params;
-  const overview = await getUser(userId);
+  const [overview, notes] = await Promise.all([
+    getUser(userId),
+    getAdminNotes({ targetType: "user", targetId: userId, limit: 5 }),
+  ]);
   const { user, memberships } = overview;
 
   return (
@@ -22,7 +27,16 @@ export default async function UserDetailPage({
       <PageHeader
         description={`${user.email} · Joined ${formatDate(user.createdAt)}`}
         eyebrow="User"
+        icon={
+          <Avatar
+            className="h-5 text-[0.7rem]"
+            name={user.fullName || user.username}
+            src={user.avatarUrl}
+          />
+        }
+        parentHref="/users"
         title={user.fullName || user.username}
+        titleActions={<UserActionsMenu user={user} />}
       />
 
       <Box className="space-y-5 p-5 md:p-7">
@@ -50,8 +64,8 @@ export default async function UserDetailPage({
           />
           <MetricCard
             detail={
-              user.gitHubUsername
-                ? `GitHub: ${user.gitHubUsername}`
+              user.githubUsername
+                ? `GitHub: ${user.githubUsername}`
                 : "No GitHub username"
             }
             label="Identity"
@@ -60,47 +74,54 @@ export default async function UserDetailPage({
         </Box>
 
         <Box className="grid gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-          <Box className="border-border bg-surface rounded-xl border-[0.5px]">
-            <Box className="border-border border-b-[0.5px] px-4 py-3">
-              <Text fontWeight="semibold">Account details</Text>
-              <Text className="mt-1 text-[0.92rem]" color="muted">
-                Core user metadata and access flags.
-              </Text>
+          <Box className="space-y-5">
+            <Box className="border-border bg-surface rounded-lg border-[0.5px]">
+              <Box className="border-border border-b-[0.5px] px-4 py-3">
+                <Text fontWeight="semibold">Account details</Text>
+                <Text className="mt-1 text-[0.95rem]" color="muted">
+                  Core user metadata and access flags.
+                </Text>
+              </Box>
+              <Box className="divide-border divide-y">
+                <DetailRow label="Status">
+                  <UserStatusBadge
+                    isActive={user.isActive}
+                    isInternal={user.isInternal}
+                  />
+                </DetailRow>
+                <DetailRow label="Email">
+                  <Text>{user.email}</Text>
+                </DetailRow>
+                <DetailRow label="Username">
+                  <Text>{user.username}</Text>
+                </DetailRow>
+                <DetailRow label="Last login">
+                  <Text>{formatDateTime(user.lastLoginAt)}</Text>
+                </DetailRow>
+                <DetailRow label="Last workspace">
+                  <Text>{user.lastUsedWorkspace ?? "Not available"}</Text>
+                </DetailRow>
+                <DetailRow label="Updated">
+                  <Text>{formatDateTime(user.updatedAt)}</Text>
+                </DetailRow>
+              </Box>
             </Box>
-            <Box className="divide-border divide-y">
-              <DetailRow label="Status">
-                <UserStatusBadge
-                  isActive={user.isActive}
-                  isInternal={user.isInternal}
-                />
-              </DetailRow>
-              <DetailRow label="Email">
-                <Text>{user.email}</Text>
-              </DetailRow>
-              <DetailRow label="Username">
-                <Text>{user.username}</Text>
-              </DetailRow>
-              <DetailRow label="Last login">
-                <Text>{formatDateTime(user.lastLoginAt)}</Text>
-              </DetailRow>
-              <DetailRow label="Last workspace">
-                <Text>{user.lastUsedWorkspace ?? "Not available"}</Text>
-              </DetailRow>
-              <DetailRow label="Updated">
-                <Text>{formatDateTime(user.updatedAt)}</Text>
-              </DetailRow>
-            </Box>
+            <AdminNotesPanel
+              notes={notes.items}
+              targetId={user.id}
+              targetType="user"
+            />
           </Box>
 
-          <Box className="border-border bg-surface overflow-hidden rounded-xl border-[0.5px]">
+          <Box className="border-border overflow-hidden rounded-lg border-[0.5px]">
             <Box className="border-border border-b-[0.5px] px-4 py-3">
               <Text fontWeight="semibold">Workspace memberships</Text>
-              <Text className="mt-1 text-[0.92rem]" color="muted">
+              <Text className="mt-1 text-[0.95rem]" color="muted">
                 Workspaces this user can access.
               </Text>
             </Box>
             <Box className="overflow-x-auto">
-              <Table>
+              <Table color="light" variant="bordered">
                 <Table.Head>
                   <Table.Tr>
                     <Table.Th>Workspace</Table.Th>
@@ -112,21 +133,29 @@ export default async function UserDetailPage({
                   {memberships.length > 0 ? (
                     memberships.map((membership) => (
                       <Table.Tr key={membership.workspaceId}>
-                        <Table.Td>
-                          <Link
-                            className="hover:text-primary line-clamp-1"
-                            href={`/workspaces/${membership.workspaceId}`}
-                          >
-                            {membership.workspaceName}
-                          </Link>
-                          <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                            {membership.workspaceSlug}
-                          </Text>
+                        <Table.Td className="min-w-72 whitespace-nowrap">
+                          <Flex align="center" className="gap-2">
+                            <Link
+                              className="hover:text-primary line-clamp-1"
+                              href={`/workspaces/${membership.workspaceId}`}
+                            >
+                              {membership.workspaceName}
+                            </Link>
+                            <Text
+                              as="span"
+                              className="line-clamp-1 text-[0.95rem]"
+                              color="muted"
+                            >
+                              /{membership.workspaceSlug}
+                            </Text>
+                          </Flex>
                         </Table.Td>
-                        <Table.Td className="capitalize">
+                        <Table.Td className="whitespace-nowrap capitalize">
                           {membership.role}
                         </Table.Td>
-                        <Table.Td>{formatDate(membership.joinedAt)}</Table.Td>
+                        <Table.Td className="whitespace-nowrap">
+                          {formatDate(membership.joinedAt)}
+                        </Table.Td>
                       </Table.Tr>
                     ))
                   ) : (
@@ -157,7 +186,7 @@ const DetailRow = ({
 }) => {
   return (
     <Flex align="start" className="gap-4 px-4 py-3" justify="between">
-      <Text className="text-[0.92rem]" color="muted">
+      <Text className="text-[0.95rem]" color="muted">
         {label}
       </Text>
       <Box className="max-w-[70%] text-right">{children}</Box>

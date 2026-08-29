@@ -9,7 +9,7 @@ import { RowWrapper, PriorityIcon, StoryStatusIcon } from "@/components/ui";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { Story } from "@/modules/stories/types";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
@@ -25,6 +25,7 @@ const StoryRow = ({
   assignee,
   endDate,
 }: Story) => {
+  const { getTermDisplay } = useTerminology();
   const { withWorkspace } = useWorkspacePath();
   const { data: statuses = [] } = useStatuses();
 
@@ -37,21 +38,35 @@ const StoryRow = ({
     : String(sequenceId);
 
   return (
-    <Link href={withWorkspace(`/story/${id}/${slugify(title)}`)}>
+    <Link
+      href={withWorkspace(
+        getStoryPath({ id, sequenceId, teamCode: team?.code }),
+      )}
+    >
       <RowWrapper className="gap-4 px-0 md:px-0" key={id}>
-        <Flex align="center" className="relative select-none" gap={2}>
-          <Flex align="center" gap={2}>
-            <Text className="hidden opacity-80 md:block" color="muted">
+        <Flex
+          align="center"
+          className="relative min-w-0 flex-1 select-none"
+          gap={2}
+        >
+          <Flex align="center" className="min-w-0" gap={2}>
+            <Text
+              className="hidden shrink-0 whitespace-nowrap opacity-80 md:block"
+              color="muted"
+            >
               {storyReference}
             </Text>
-            <PriorityIcon className="relative -top-px" priority={priority} />
-            <Text className="line-clamp-1 hover:opacity-90">{title}</Text>
+            <PriorityIcon
+              className="relative -top-px shrink-0"
+              priority={priority}
+            />
+            <Text className="min-w-0 truncate hover:opacity-90">{title}</Text>
           </Flex>
         </Flex>
 
         <Flex align="center" className="shrink-0" gap={3}>
           <Text className="flex shrink-0 items-center gap-1">
-            <StoryStatusIcon className="relative -top-px" statusId={statusId} />
+            <StoryStatusIcon statusId={statusId} />
             <span className="hidden max-w-[16ch] truncate md:inline-block">
               {getStoryStatus()}
             </span>
@@ -69,7 +84,12 @@ const StoryRow = ({
                         new Date(endDate) >= new Date(),
                     })}
                   />
-                  <Box>{getDueDateMessage(new Date(endDate))}</Box>
+                  <Box>
+                    {getDueDateMessage(
+                      new Date(endDate),
+                      getTermDisplay("storyTerm"),
+                    )}
+                  </Box>
                 </Flex>
               }
             >
@@ -116,9 +136,9 @@ const List = ({ stories }: { stories: Story[] }) => {
   );
 };
 
-const getStoriesFromGrouped = (
-  grouped?: { groups: { stories: Story[] }[] },
-): Story[] => {
+const getStoriesFromGrouped = (grouped?: {
+  groups: { stories: Story[] }[];
+}): Story[] => {
   if (!grouped) return [];
   return grouped.groups.flatMap((group) => group.stories);
 };

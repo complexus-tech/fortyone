@@ -1,0 +1,79 @@
+<!--
+  Sender: FortyOne <notifications@fortyone.app>
+  Subject: AI should show its work
+  Preheader: Give Maya the uncertainty. Keep the final say.
+  Audience: At least one real Task exists and the recipient has not used Maya.
+  CTA: https://{{ contact.WORKSPACE_SLUG }}.fortyone.app/maya?utm_source=brevo&utm_medium=email&utm_campaign=workspace_onboarding_v3&utm_content=maya_plan
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <title>AI should show its work</title>
+    <style>
+      @media only screen and (max-width: 680px) {
+        .email-inner { padding: 32px 24px 28px !important; }
+        .email-heading { font-size: 25px !important; }
+        .email-button { display: block !important; text-align: center !important; }
+        .product-frame { padding: 6px !important; }
+        .prompt-panel { padding: 20px !important; }
+      }
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background-color:#fefefd;color:#3b3a38;font-family:Geist,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.62;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Give Maya the uncertainty. Keep the final say.</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background-color:#fefefd;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="640" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:640px;margin:0 auto;background-color:#fefefd;">
+            <tr>
+              <td class="email-inner" style="padding:48px 48px 38px;">
+                <a href="https://www.fortyone.app/" style="display:block;margin:0 0 40px;text-decoration:none;">
+                  <img src="https://www.fortyone.app/images/logo.png" width="42" height="42" alt="FortyOne" style="display:block;width:42px;height:42px;border:0;border-radius:8px;" />
+                </a>
+
+                <p style="margin:0 0 14px;color:#565552;font-size:12px;font-weight:600;line-height:1.4;text-transform:uppercase;letter-spacing:.06em;">Maya, AI Agent</p>
+                <h1 class="email-heading" style="margin:0;max-width:520px;color:#0b0a08;font-size:26px;font-weight:600;line-height:1.16;">Bring the mess. Keep the judgment.</h1>
+
+                <div style="margin-top:28px;">
+                  <p style="margin:0 0 18px;color:#3b3a38;font-size:15px;line-height:1.62;">Hi {{ contact.NAME|default:"there" }},</p>
+                  <p style="margin:0 0 18px;color:#3b3a38;font-size:15px;line-height:1.62;">A blank prompt should not demand a finished plan.</p>
+                  <p style="margin:0 0 18px;color:#3b3a38;font-size:15px;line-height:1.62;">Tell Maya what needs to change—even if the route is still unclear.</p>
+                </div>
+
+                <div class="prompt-panel" style="margin:26px 0;padding:22px 24px;border-radius:8px;background-color:#f7f7f4;">
+                  <p style="margin:0 0 9px;color:#565552;font-size:12px;font-weight:600;line-height:1.4;text-transform:uppercase;letter-spacing:.06em;">Try this prompt</p>
+                  <p style="margin:0;color:#0b0a08;font-size:15px;font-weight:500;line-height:1.62;">“We need to <strong>[outcome]</strong> by <strong>[date]</strong>. Here is what we know. Here is what might break. Challenge the plan, then draft the first five Tasks for <strong>[team]</strong>.”</p>
+                </div>
+
+                <p style="margin:0 0 18px;color:#3b3a38;font-size:15px;line-height:1.62;">Maya, AI Agent, can read the work already in FortyOne, surface workload and delivery risk, and prepare Tasks or updates for you to review.</p>
+                <p style="margin:0;color:#3b3a38;font-size:15px;line-height:1.62;">You see the proposed change before it becomes the plan. AI should show its work before changing yours.</p>
+
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:30px 0;">
+                  <tr>
+                    <td bgcolor="#14120b" style="border-radius:8px;">
+                      <a class="email-button" href="https://{{ contact.WORKSPACE_SLUG }}.fortyone.app/maya?utm_source=brevo&amp;utm_medium=email&amp;utm_campaign=workspace_onboarding_v3&amp;utm_content=maya_plan" style="display:inline-block;padding:11px 18px;border-radius:8px;background-color:#14120b;color:#fefefd;font-size:15px;font-weight:500;line-height:1.35;text-align:center;text-decoration:none;">Give Maya the unfinished plan</a>
+                    </td>
+                  </tr>
+                </table>
+
+                <div class="product-frame" style="margin:34px 0 0;padding:8px;border:1px solid #e5e4e2;border-radius:10px;background-color:#f7f7f4;">
+                  <a href="https://{{ contact.WORKSPACE_SLUG }}.fortyone.app/maya?utm_source=brevo&amp;utm_medium=email&amp;utm_campaign=workspace_onboarding_v3&amp;utm_content=maya_plan_image" style="display:block;text-decoration:none;">
+                    <img src="https://www.fortyone.app/images/product/maya-delivery-brief-light.webp" width="518" alt="Maya in FortyOne preparing a delivery brief from workspace context" style="display:block;width:100%;max-width:518px;height:auto;border:0;border-radius:6px;" />
+                  </a>
+                </div>
+
+                <div style="margin-top:46px;padding-top:26px;border-top:1px solid #e5e4e2;color:#565552;font-size:14px;line-height:1.5;">
+                  <p style="margin:0 0 6px;">FortyOne turns strategy and customer feedback into work your team can deliver.</p>
+                  <p style="margin:0;"><a href="mailto:joseph@fortyone.app" style="color:#565552;text-decoration:underline;text-underline-offset:3px;">Get help</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="{{ unsubscribe }}" style="color:#565552;text-decoration:underline;text-underline-offset:3px;">Unsubscribe</a></p>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

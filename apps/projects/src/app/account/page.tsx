@@ -1,0 +1,59 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { AccountPage } from "@/modules/public-portal/account-page";
+import { getFeedbackSetupHref } from "@/modules/public-portal/feedback-setup";
+import { getGlobalProfileHref } from "@/modules/public-portal/utils";
+import { auth } from "@/auth";
+import { getWorkspaces } from "@/lib/queries/get-workspaces";
+import { getProfile } from "@/lib/queries/profile";
+import { getRedirectUrl } from "@/utils";
+import { getLoginUrl } from "@/utils/callback-url";
+
+export const metadata: Metadata = {
+  title: "Account settings - FortyOne",
+  robots: {
+    follow: false,
+    index: false,
+  },
+};
+
+export default async function AccountRoute() {
+  const session = await auth();
+
+  if (!session) {
+    redirect(getLoginUrl("/account"));
+  }
+
+  const [profile, workspaces] = await Promise.all([
+    getProfile(),
+    getWorkspaces(),
+  ]);
+  const activeWorkspace =
+    workspaces.find(
+      (workspace) => workspace.id === profile.lastUsedWorkspaceId,
+    ) ?? workspaces.at(0);
+  const appHref = activeWorkspace
+    ? getRedirectUrl(workspaces, [], profile.lastUsedWorkspaceId)
+    : undefined;
+
+  return (
+    <AccountPage
+      profile={profile}
+      profileHref={getGlobalProfileHref()}
+      viewer={{
+        canReceiveUpdates: true,
+        id: profile.id,
+        kind: "account",
+        accountHref: "/account",
+        appHref,
+        avatarUrl: profile.avatarUrl,
+        email: profile.email,
+        feedbackSetupHref: getFeedbackSetupHref(
+          workspaces,
+          profile.lastUsedWorkspaceId,
+        ),
+        name: profile.fullName || profile.username,
+      }}
+    />
+  );
+}

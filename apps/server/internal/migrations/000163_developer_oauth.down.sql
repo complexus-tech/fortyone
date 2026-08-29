@@ -1,0 +1,10 @@
+DROP TRIGGER IF EXISTS oauth_audit_events_immutable ON public.oauth_audit_events;
+DROP FUNCTION IF EXISTS public.reject_oauth_audit_event_mutation();
+DROP TABLE IF EXISTS public.oauth_audit_events;
+DROP TABLE IF EXISTS public.oauth_refresh_tokens;
+DROP TABLE IF EXISTS public.oauth_refresh_token_families;
+DROP TABLE IF EXISTS public.oauth_authorization_codes;
+DROP TABLE IF EXISTS public.oauth_grant_scopes;
+DROP TABLE IF EXISTS public.oauth_grants;
+DROP TABLE IF EXISTS public.oauth_application_redirect_uris;
+DROP TABLE IF EXISTS public.oauth_applications;

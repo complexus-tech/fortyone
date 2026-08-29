@@ -2,143 +2,55 @@ package objectivestatus
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
-	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	objectivestatusdomain "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/domain"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
-// Repository provides access to the objective statuses storage.
+type CoreObjectiveStatus = objectivestatusdomain.Status
+type CoreNewObjectiveStatus = objectivestatusdomain.NewStatus
+type CoreUpdateObjectiveStatus = objectivestatusdomain.UpdateStatus
+
+var (
+	ErrNotFound            = objectivestatusdomain.ErrNotFound
+	ErrNoFields            = objectivestatusdomain.ErrNoFields
+	ErrStatusHasObjectives = objectivestatusdomain.ErrStatusHasObjectives
+	ErrLastInCategory      = objectivestatusdomain.ErrLastInCategory
+	ErrInvalidOrder        = objectivestatusdomain.ErrInvalidOrder
+)
+
 type Repository interface {
-	Create(ctx context.Context, workspaceId uuid.UUID, status CoreNewObjectiveStatus) (CoreObjectiveStatus, error)
-	Update(ctx context.Context, workspaceId, statusId uuid.UUID, status CoreUpdateObjectiveStatus) (CoreObjectiveStatus, error)
-	Delete(ctx context.Context, workspaceId, statusId uuid.UUID) error
-	List(ctx context.Context, workspaceId uuid.UUID) ([]CoreObjectiveStatus, error)
-	Get(ctx context.Context, workspaceId, statusId uuid.UUID) (CoreObjectiveStatus, error)
-	CountObjectivesWithStatus(ctx context.Context, statusID uuid.UUID, workspaceID uuid.UUID) (int, error)
-	CountStatusesInCategory(ctx context.Context, workspaceID uuid.UUID, category string) (int, error)
+	Create(context.Context, uuid.UUID, uuid.UUID, CoreNewObjectiveStatus) (CoreObjectiveStatus, error)
+	Update(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, CoreUpdateObjectiveStatus) (CoreObjectiveStatus, error)
+	Delete(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error
+	List(context.Context, uuid.UUID) ([]CoreObjectiveStatus, error)
+	ListForMember(context.Context, uuid.UUID, uuid.UUID) ([]CoreObjectiveStatus, error)
 }
 
-// Service errors
-var (
-	ErrNotFound            = errors.New("objective status not found")
-	ErrStatusHasObjectives = errors.New("cannot delete status with attached objectives")
-	ErrLastInCategory      = errors.New("cannot delete the last status in a category")
-)
-
-// Service provides objective status operations.
 type Service struct {
 	repo Repository
-	log  *logger.Logger
 }
 
-// New constructs a new objective status service instance.
-func New(log *logger.Logger, repo Repository) *Service {
-	return &Service{
-		repo: repo,
-		log:  log,
-	}
+func New(repo Repository) *Service {
+	return &Service{repo: repo}
 }
 
-// Create creates a new objective status.
-func (s *Service) Create(ctx context.Context, workspaceId uuid.UUID, ns CoreNewObjectiveStatus) (CoreObjectiveStatus, error) {
-	s.log.Info(ctx, "business.core.objectivestatus.Create")
-	ctx, span := web.AddSpan(ctx, "business.core.objectivestatus.Create")
-	defer span.End()
-
-	status, err := s.repo.Create(ctx, workspaceId, ns)
-	if err != nil {
-		span.RecordError(err)
-		return CoreObjectiveStatus{}, err
-	}
-
-	span.AddEvent("objective status created.", trace.WithAttributes(
-		attribute.String("status.name", status.Name),
-	))
-	return status, nil
+func (service *Service) Create(ctx context.Context, actorID, workspaceID uuid.UUID, input CoreNewObjectiveStatus) (CoreObjectiveStatus, error) {
+	return service.repo.Create(ctx, actorID, workspaceID, input)
 }
 
-// Update updates an existing objective status.
-func (s *Service) Update(ctx context.Context, workspaceId, statusId uuid.UUID, us CoreUpdateObjectiveStatus) (CoreObjectiveStatus, error) {
-	s.log.Info(ctx, "business.core.objectivestatus.Update")
-	ctx, span := web.AddSpan(ctx, "business.core.objectivestatus.Update")
-	defer span.End()
-
-	status, err := s.repo.Update(ctx, workspaceId, statusId, us)
-	if err != nil {
-		span.RecordError(err)
-		return CoreObjectiveStatus{}, err
-	}
-
-	span.AddEvent("objective status updated.", trace.WithAttributes(
-		attribute.String("status.id", statusId.String()),
-	))
-	return status, nil
+func (service *Service) Update(ctx context.Context, actorID, workspaceID, statusID uuid.UUID, input CoreUpdateObjectiveStatus) (CoreObjectiveStatus, error) {
+	return service.repo.Update(ctx, actorID, workspaceID, statusID, input)
 }
 
-// Delete deletes an objective status.
-func (s *Service) Delete(ctx context.Context, workspaceId, statusId uuid.UUID) error {
-	s.log.Info(ctx, "business.core.objectivestatus.Delete")
-	ctx, span := web.AddSpan(ctx, "business.core.objectivestatus.Delete")
-	defer span.End()
-
-	// 1. Get status details first to get category
-	status, err := s.repo.Get(ctx, workspaceId, statusId)
-	if err != nil {
-		span.RecordError(err)
-		return fmt.Errorf("failed to get status: %w", err)
-	}
-
-	// 2. Check for objectives using this status
-	objectivesCount, err := s.repo.CountObjectivesWithStatus(ctx, statusId, workspaceId)
-	if err != nil {
-		span.RecordError(err)
-		return fmt.Errorf("failed to check objectives: %w", err)
-	}
-	if objectivesCount > 0 {
-		return ErrStatusHasObjectives
-	}
-
-	// 3. Check if it's the last in category for this workspace
-	categoryCount, err := s.repo.CountStatusesInCategory(ctx, workspaceId, status.Category)
-	if err != nil {
-		span.RecordError(err)
-		return fmt.Errorf("failed to check category count: %w", err)
-	}
-	if categoryCount <= 1 {
-		return ErrLastInCategory
-	}
-
-	// 4. Proceed with deletion
-	if err := s.repo.Delete(ctx, workspaceId, statusId); err != nil {
-		span.RecordError(err)
-		return err
-	}
-
-	span.AddEvent("objective status deleted.", trace.WithAttributes(
-		attribute.String("status.id", statusId.String()),
-	))
-	return nil
+func (service *Service) Delete(ctx context.Context, actorID, workspaceID, statusID uuid.UUID) error {
+	return service.repo.Delete(ctx, actorID, workspaceID, statusID)
 }
 
-// List returns a list of objective statuses.
-func (s *Service) List(ctx context.Context, workspaceId uuid.UUID) ([]CoreObjectiveStatus, error) {
-	s.log.Info(ctx, "business.core.objectivestatus.List")
-	ctx, span := web.AddSpan(ctx, "business.core.objectivestatus.List")
-	defer span.End()
+func (service *Service) List(ctx context.Context, workspaceID uuid.UUID) ([]CoreObjectiveStatus, error) {
+	return service.repo.List(ctx, workspaceID)
+}
 
-	statuses, err := s.repo.List(ctx, workspaceId)
-	if err != nil {
-		span.RecordError(err)
-		return nil, err
-	}
-
-	span.AddEvent("objective statuses retrieved.", trace.WithAttributes(
-		attribute.Int("statuses.count", len(statuses)),
-	))
-	return statuses, nil
+func (service *Service) ListForMember(ctx context.Context, actorID, workspaceID uuid.UUID) ([]CoreObjectiveStatus, error) {
+	return service.repo.ListForMember(ctx, actorID, workspaceID)
 }

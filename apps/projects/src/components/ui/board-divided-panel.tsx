@@ -11,7 +11,11 @@ export const BoardDividedPanel = ({
   autoSaveId?: string;
 }) => {
   return (
-    <ResizablePanel autoSaveId={autoSaveId} direction="horizontal">
+    <ResizablePanel
+      autoSaveId={autoSaveId}
+      className="min-w-0 overflow-hidden"
+      direction="horizontal"
+    >
       {children}
     </ResizablePanel>
   );
@@ -19,7 +23,9 @@ export const BoardDividedPanel = ({
 
 const MainPanel = ({ children }: { children: ReactNode }) => {
   return (
-    <ResizablePanel.Panel defaultSize={70}>{children}</ResizablePanel.Panel>
+    <ResizablePanel.Panel className="min-w-0 overflow-hidden" defaultSize={70}>
+      {children}
+    </ResizablePanel.Panel>
   );
 };
 

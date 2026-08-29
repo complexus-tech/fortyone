@@ -4,6 +4,7 @@ export type KeyResultWithTeam = KeyResult & {
   objectiveName: string;
   teamId: string;
   teamName: string;
+  teamCode: string;
   workspaceId: string;
 };
 
@@ -19,8 +20,11 @@ export type KeyResultFilters = {
   objectiveIds?: string[];
   teamIds?: string[];
   measurementTypes?: KeyResult["measurementType"][];
+  leadIds?: string[];
   createdAfter?: string;
   createdBefore?: string;
+  endDateAfter?: string;
+  endDateBefore?: string;
   updatedAfter?: string;
   updatedBefore?: string;
   page?: number;

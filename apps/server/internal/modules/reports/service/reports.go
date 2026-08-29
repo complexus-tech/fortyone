@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -54,8 +54,14 @@ func New(log *logger.Logger, repo Repository) *Service {
 // GetStoryStats retrieves story statistics for a workspace.
 func (s *Service) GetStoryStats(ctx context.Context, workspaceID uuid.UUID, filters StoryStatsFilters) (CoreStoryStats, error) {
 	s.log.Info(ctx, "getting story stats")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetStoryStats")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetStoryStats")
 	defer span.End()
+
+	filters, err := normalizeStoryStatsFilters(ctx, workspaceID, filters)
+	if err != nil {
+		span.RecordError(err)
+		return CoreStoryStats{}, err
+	}
 
 	stats, err := s.repo.GetStoryStats(ctx, workspaceID, filters)
 	if err != nil {
@@ -69,8 +75,13 @@ func (s *Service) GetStoryStats(ctx context.Context, workspaceID uuid.UUID, filt
 // GetContributionStats retrieves contribution statistics for a user.
 func (s *Service) GetContributionStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, startDate time.Time, endDate time.Time) ([]CoreContributionStats, error) {
 	s.log.Info(ctx, "getting contribution stats")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetContributionStats")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetContributionStats")
 	defer span.End()
+
+	if err := authorizeUserReport(ctx, userID, workspaceID, &startDate, &endDate); err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
 
 	stats, err := s.repo.GetContributionStats(ctx, userID, workspaceID, startDate, endDate)
 	if err != nil {
@@ -84,8 +95,13 @@ func (s *Service) GetContributionStats(ctx context.Context, userID uuid.UUID, wo
 // GetUserStats retrieves user-specific statistics.
 func (s *Service) GetUserStats(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) (CoreUserStats, error) {
 	s.log.Info(ctx, "getting user stats")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetUserStats")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetUserStats")
 	defer span.End()
+
+	if err := authorizeUserReport(ctx, userID, workspaceID, nil, nil); err != nil {
+		span.RecordError(err)
+		return CoreUserStats{}, err
+	}
 
 	stats, err := s.repo.GetUserStats(ctx, userID, workspaceID)
 	if err != nil {
@@ -99,8 +115,14 @@ func (s *Service) GetUserStats(ctx context.Context, userID uuid.UUID, workspaceI
 // GetStatusStats returns status statistics for stories
 func (s *Service) GetStatusStats(ctx context.Context, workspaceID uuid.UUID, filters StatsFilters) ([]CoreStatusStats, error) {
 	s.log.Info(ctx, "business.core.reports.GetStatusStats")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetStatusStats")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetStatusStats")
 	defer span.End()
+
+	filters, err := normalizeStatsFilters(ctx, workspaceID, filters)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
 
 	stats, err := s.repo.GetStatusStats(ctx, workspaceID, filters)
 	if err != nil {
@@ -117,8 +139,14 @@ func (s *Service) GetStatusStats(ctx context.Context, workspaceID uuid.UUID, fil
 // GetPriorityStats returns priority statistics for stories
 func (s *Service) GetPriorityStats(ctx context.Context, workspaceID uuid.UUID, filters StatsFilters) ([]CorePriorityStats, error) {
 	s.log.Info(ctx, "business.core.reports.GetPriorityStats")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetPriorityStats")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetPriorityStats")
 	defer span.End()
+
+	filters, err := normalizeStatsFilters(ctx, workspaceID, filters)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
 
 	stats, err := s.repo.GetPriorityStats(ctx, workspaceID, filters)
 	if err != nil {
@@ -137,8 +165,14 @@ func (s *Service) GetPriorityStats(ctx context.Context, workspaceID uuid.UUID, f
 // GetWorkspaceOverview retrieves workspace overview with key metrics and trends.
 func (s *Service) GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkspaceOverview, error) {
 	s.log.Info(ctx, "business.core.reports.GetWorkspaceOverview")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetWorkspaceOverview")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetWorkspaceOverview")
 	defer span.End()
+
+	filters, err := normalizeReportFilters(ctx, workspaceID, filters, true)
+	if err != nil {
+		span.RecordError(err)
+		return CoreWorkspaceOverview{}, err
+	}
 
 	overview, err := s.repo.GetWorkspaceOverview(ctx, workspaceID, filters)
 	if err != nil {
@@ -153,8 +187,14 @@ func (s *Service) GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUI
 // GetStoryAnalytics retrieves story analytics including status breakdown and burndown.
 func (s *Service) GetStoryAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreStoryAnalytics, error) {
 	s.log.Info(ctx, "business.core.reports.GetStoryAnalytics")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetStoryAnalytics")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetStoryAnalytics")
 	defer span.End()
+
+	filters, err := normalizeReportFilters(ctx, workspaceID, filters, true)
+	if err != nil {
+		span.RecordError(err)
+		return CoreStoryAnalytics{}, err
+	}
 
 	analytics, err := s.repo.GetStoryAnalytics(ctx, workspaceID, filters)
 	if err != nil {
@@ -169,8 +209,14 @@ func (s *Service) GetStoryAnalytics(ctx context.Context, workspaceID uuid.UUID, 
 // GetObjectiveProgress retrieves objective progress including health and key results.
 func (s *Service) GetObjectiveProgress(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreObjectiveProgress, error) {
 	s.log.Info(ctx, "business.core.reports.GetObjectiveProgress")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetObjectiveProgress")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetObjectiveProgress")
 	defer span.End()
+
+	filters, err := normalizeReportFilters(ctx, workspaceID, filters, true)
+	if err != nil {
+		span.RecordError(err)
+		return CoreObjectiveProgress{}, err
+	}
 
 	progress, err := s.repo.GetObjectiveProgress(ctx, workspaceID, filters)
 	if err != nil {
@@ -185,8 +231,14 @@ func (s *Service) GetObjectiveProgress(ctx context.Context, workspaceID uuid.UUI
 // GetTeamPerformance retrieves team performance including workload and velocity.
 func (s *Service) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTeamPerformance, error) {
 	s.log.Info(ctx, "business.core.reports.GetTeamPerformance")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetTeamPerformance")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetTeamPerformance")
 	defer span.End()
+
+	filters, err := normalizeReportFilters(ctx, workspaceID, filters, true)
+	if err != nil {
+		span.RecordError(err)
+		return CoreTeamPerformance{}, err
+	}
 
 	performance, err := s.repo.GetTeamPerformance(ctx, workspaceID, filters)
 	if err != nil {
@@ -201,8 +253,14 @@ func (s *Service) GetTeamPerformance(ctx context.Context, workspaceID uuid.UUID,
 // GetWorkloadAnalysis retrieves member and team workload report data.
 func (s *Service) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreWorkloadAnalysis, error) {
 	s.log.Info(ctx, "business.core.reports.GetWorkloadAnalysis")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetWorkloadAnalysis")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetWorkloadAnalysis")
 	defer span.End()
+
+	filters, err := normalizeReportFilters(ctx, workspaceID, filters, false)
+	if err != nil {
+		span.RecordError(err)
+		return CoreWorkloadAnalysis{}, err
+	}
 
 	analysis, err := s.repo.GetWorkloadAnalysis(ctx, workspaceID, filters)
 	if err != nil {
@@ -218,8 +276,14 @@ func (s *Service) GetWorkloadAnalysis(ctx context.Context, workspaceID uuid.UUID
 // GetSprintAnalytics retrieves sprint analytics including progress and burndown.
 func (s *Service) GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreSprintAnalyticsWorkspace, error) {
 	s.log.Info(ctx, "business.core.reports.GetSprintAnalytics")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetSprintAnalytics")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetSprintAnalytics")
 	defer span.End()
+
+	filters, err := normalizeReportFilters(ctx, workspaceID, filters, true)
+	if err != nil {
+		span.RecordError(err)
+		return CoreSprintAnalyticsWorkspace{}, err
+	}
 
 	analytics, err := s.repo.GetSprintAnalytics(ctx, workspaceID, filters)
 	if err != nil {
@@ -234,8 +298,14 @@ func (s *Service) GetSprintAnalytics(ctx context.Context, workspaceID uuid.UUID,
 // GetTimelineTrends retrieves timeline trends for all key metrics.
 func (s *Service) GetTimelineTrends(ctx context.Context, workspaceID uuid.UUID, filters ReportFilters) (CoreTimelineTrends, error) {
 	s.log.Info(ctx, "business.core.reports.GetTimelineTrends")
-	ctx, span := web.AddSpan(ctx, "business.core.reports.GetTimelineTrends")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.reports.GetTimelineTrends")
 	defer span.End()
+
+	filters, err := normalizeReportFilters(ctx, workspaceID, filters, true)
+	if err != nil {
+		span.RecordError(err)
+		return CoreTimelineTrends{}, err
+	}
 
 	trends, err := s.repo.GetTimelineTrends(ctx, workspaceID, filters)
 	if err != nil {

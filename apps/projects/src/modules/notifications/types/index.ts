@@ -2,24 +2,35 @@ export type AppNotification = {
   id: string;
   recipientId: string;
   workspaceId: string;
-  type: "story_update" | "story_comment" | "mention";
-  entityType: "story" | "objective";
+  type:
+    | "story_update"
+    | "story_comment"
+    | "comment_reply"
+    | "mention"
+    | "objective_update"
+    | "key_result_update"
+    | "strategy_update";
+  entityType: "story" | "objective" | "key_result" | "strategy";
   entityId: string;
   actorId: string;
+  actor?: {
+    id: string;
+    username: string;
+    fullName: string;
+    avatarUrl: string;
+    isActive: boolean;
+    isSystem: boolean;
+  };
   title: string;
   message: {
     template: string;
-    variables: {
-      actor: {
+    variables: Record<
+      string,
+      {
         value: string;
-      };
-      field: {
-        value: string;
-      };
-      value: {
-        value: string;
-      };
-    };
+        type?: string;
+      }
+    >;
   };
   createdAt: string;
   readAt: string | null;
@@ -48,7 +59,8 @@ export type NotificationType =
   | "key_result_update"
   | "story_comment"
   | "reminders"
-  | "weekly_digest";
+  | "weekly_digest"
+  | "strategy_update";
 
 export type NotificationPreferences = {
   id: string;

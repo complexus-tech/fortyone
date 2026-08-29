@@ -1,41 +1,106 @@
 "use client";
 
-import { Box, Flex, Text, Tooltip, Avatar, DatePicker } from "ui";
-import { differenceInDays, formatISO } from "date-fns";
-import { useCallback, useState } from "react";
-import Link from "next/link";
+import { Box, Flex, Text, Tooltip, Avatar, Button, DatePicker } from "ui";
+import { differenceInDays, format, formatISO } from "date-fns";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSession } from "@/lib/auth/client";
-import { useRouter } from "next/navigation";
-import { CalendarPlusIcon } from "icons";
+import { CalendarPlusIcon, ChevronLeftIcon, ChevronRightIcon } from "icons";
 import type { DateRange } from "react-day-picker";
-import type { Objective } from "@/modules/objectives/types";
+import { useSession } from "@/lib/auth/client";
+import type { Objective, ObjectiveUpdate } from "@/modules/objectives/types";
 import { useUpdateObjectiveMutation } from "@/modules/objectives/hooks/update-mutation";
 import { useTeamMembers } from "@/lib/hooks/team-members";
-import { useUserRole, useWorkspacePath } from "@/hooks";
+import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
+import { useLocalStorage, useWorkspacePath } from "@/hooks";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
+import { ObjectiveHealthEditor } from "@/modules/objectives/components/objective-health-editor";
+import { ObjectiveForecastRiskBadge } from "@/modules/objectives/components/objective-forecast-risk";
+import { useCanUpdateObjective } from "@/modules/objectives/hooks";
 import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
 import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
+import { ObjectiveHealthIcon } from "@/components/ui/objective-health-icon";
+import { hexToRgba } from "@/utils";
 import { PriorityIcon } from "./priority-icon";
 import { ObjectiveStatusIcon } from "./objective-status-icon";
-import { BaseGantt, GanttHeader, type ZoomLevel } from "./base-gantt";
+import { BaseGantt, GanttControls, type ZoomLevel } from "./base-gantt";
+
+const ROADMAP_STICKY_COLUMNS_WIDTH = 640;
+const ROADMAP_COLLAPSED_COLUMNS_WIDTH = 320;
+const ROADMAP_ROW_HEIGHT = "3.5rem";
+const ROADMAP_COLUMNS =
+  "grid-cols-[2rem_2rem_2rem_minmax(0,7rem)_minmax(0,1fr)_7rem]";
+const DAYS_PER_DISPLAY_MONTH = 30;
+
+const formatObjectiveDuration = (days: number) => {
+  if (days < DAYS_PER_DISPLAY_MONTH) {
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+
+  const months = Math.max(1, Math.round(days / DAYS_PER_DISPLAY_MONTH));
+  return `${months} month${months === 1 ? "" : "s"}`;
+};
+
+type RoadmapGanttItem = {
+  id: string;
+  startDate: string | null;
+  endDate: string | null;
+  objective: Objective;
+};
+
+const getTimelineDate = (
+  dates: (string | null | undefined)[],
+  mode: "earliest" | "latest",
+) => {
+  let timestamp: number | null = null;
+  for (const value of dates) {
+    if (!value) continue;
+    const candidate = new Date(value).getTime();
+    if (Number.isNaN(candidate)) continue;
+
+    if (
+      timestamp === null ||
+      (mode === "earliest" ? candidate < timestamp : candidate > timestamp)
+    ) {
+      timestamp = candidate;
+    }
+  }
+
+  if (timestamp === null) return null;
+  return formatISO(new Date(timestamp), { representation: "date" });
+};
 
 // Individual Objective Row Component
 const ObjectiveRow = ({
   objective,
   duration,
   handleUpdate,
+  statusName,
+  statusColor,
+  isSelected,
+  isSidebarCollapsed,
+  onObjectiveSelect,
 }: {
   objective: Objective;
   duration: number | null;
-  handleUpdate: (objectiveId: string, data: Partial<Objective>) => void;
+  handleUpdate: (objectiveId: string, data: ObjectiveUpdate) => void;
+  statusName: string;
+  statusColor?: string;
+  isSelected: boolean;
+  isSidebarCollapsed: boolean;
+  onObjectiveSelect: (objective: Objective) => void;
 }) => {
-  // Import userRole directly in this component
-  const { userRole } = useUserRole();
+  const canUpdate = useCanUpdateObjective();
   const { data: session } = useSession();
-  const { workspaceSlug, withWorkspace } = useWorkspacePath();
+  const { workspaceSlug } = useWorkspacePath();
   const queryClient = useQueryClient();
   const [dates, setDates] = useState<DateRange | undefined>(undefined);
 
@@ -45,6 +110,79 @@ const ObjectiveRow = ({
   const selectedAssignee = members.find(
     (member) => member.id === objective.leadUser,
   );
+  const rowStyle = {
+    "--objective-row-background": hexToRgba(
+      objective.color,
+      isSelected ? 0.09 : 0.045,
+    ),
+    "--objective-row-background-dark": hexToRgba(
+      objective.color,
+      isSelected ? 0.11 : 0.06,
+    ),
+    "--objective-row-hover-background": hexToRgba(
+      objective.color,
+      isSelected ? 0.13 : 0.085,
+    ),
+    "--objective-row-hover-background-dark": hexToRgba(
+      objective.color,
+      isSelected ? 0.15 : 0.11,
+    ),
+  } as CSSProperties;
+  let scheduleCell: ReactNode;
+
+  if (objective.scheduleStatus === "at_risk") {
+    scheduleCell = (
+      <ObjectiveForecastRiskBadge objective={objective} size="row" />
+    );
+  } else if (duration !== null) {
+    const durationLabel = formatObjectiveDuration(duration);
+    scheduleCell = (
+      <Tooltip
+        className="pointer-events-none"
+        title={`${duration} calendar day${duration === 1 ? "" : "s"}`}
+      >
+        <Text
+          aria-label={`${durationLabel}, ${duration} calendar day${duration === 1 ? "" : "s"}`}
+          className="shrink-0 text-base"
+          color="muted"
+        >
+          {durationLabel}
+        </Text>
+      </Tooltip>
+    );
+  } else {
+    scheduleCell = (
+      <DatePicker>
+        <Tooltip title="Add dates">
+          <span className="mt-1">
+            <DatePicker.Trigger>
+              <button aria-label="Add objective dates" type="button">
+                <CalendarPlusIcon />
+              </button>
+            </DatePicker.Trigger>
+          </span>
+        </Tooltip>
+        <DatePicker.Calendar
+          mode="range"
+          numberOfMonths={2}
+          onSelect={(range) => {
+            setDates(range);
+            if (range?.from && range.to) {
+              handleUpdate(objective.id, {
+                startDate: formatISO(range.from, {
+                  representation: "date",
+                }),
+                endDate: formatISO(range.to, {
+                  representation: "date",
+                }),
+              });
+            }
+          }}
+          selected={dates}
+        />
+      </DatePicker>
+    );
+  }
 
   return (
     <Box
@@ -58,15 +196,19 @@ const ObjectiveRow = ({
         }
       }}
     >
-      <Flex
-        align="center"
-        className="group border-border hover:bg-state-hover h-14 border-b-[0.5px] px-6 transition-colors"
-        justify="between"
+      <Box
+        className={cn(
+          "group border-border dark:border-border/70 grid h-14 items-center gap-4 border-b-[0.5px] bg-[var(--objective-row-background)] px-4 transition-colors duration-150 hover:bg-[var(--objective-row-hover-background)] dark:bg-[var(--objective-row-background-dark)] dark:hover:bg-[var(--objective-row-hover-background-dark)]",
+          isSidebarCollapsed
+            ? "grid-cols-[2rem_2rem_2rem_2rem_minmax(0,1fr)] gap-3 px-3"
+            : ROADMAP_COLUMNS,
+        )}
+        style={rowStyle}
       >
-        <Flex align="center" className="min-w-0 flex-1 gap-3">
+        <Flex align="center" justify="center">
           <AssigneesMenu>
             <Tooltip
-              className="py-2.5"
+              className="pointer-events-none py-2.5"
               title={
                 selectedAssignee ? (
                   <Box>
@@ -92,16 +234,12 @@ const ObjectiveRow = ({
             >
               <span>
                 <AssigneesMenu.Trigger>
-                  <button
-                    className="flex"
-                    disabled={userRole === "guest"}
-                    type="button"
-                  >
+                  <button className="flex" disabled={!canUpdate} type="button">
                     <Avatar
                       name={
                         selectedAssignee?.fullName || selectedAssignee?.username
                       }
-                      size="xs"
+                      size="sm"
                       src={selectedAssignee?.avatarUrl}
                     />
                   </button>
@@ -118,18 +256,63 @@ const ObjectiveRow = ({
               teamId={objective.teamId}
             />
           </AssigneesMenu>
-
-          <PrioritiesMenu>
-            <PrioritiesMenu.Trigger>
-              <button
-                className="flex shrink-0 items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={userRole === "guest"}
-                type="button"
+        </Flex>
+        <Flex align="center" justify="center">
+          <Tooltip
+            className="pointer-events-none"
+            title={objective.health ?? "No health"}
+          >
+            <span>
+              <ObjectiveHealthEditor
+                health={objective.health}
+                objectiveId={objective.id}
               >
-                <PriorityIcon priority={objective.priority} />
-                <span className="sr-only">{objective.priority}</span>
-              </button>
-            </PrioritiesMenu.Trigger>
+                <Button
+                  aria-label={`Change health: ${objective.health ?? "No health"}`}
+                  asIcon
+                  className={cn(
+                    "h-[1.85rem] w-[1.85rem] min-w-[1.85rem] justify-center p-0",
+                    {
+                      "border-success/20 bg-success/10":
+                        objective.health === "On Track",
+                      "border-warning/20 bg-warning/10":
+                        objective.health === "At Risk",
+                      "border-danger/20 bg-danger/10":
+                        objective.health === "Off Track",
+                    },
+                  )}
+                  color="tertiary"
+                  disabled={!canUpdate}
+                  rounded="md"
+                  size="xs"
+                  type="button"
+                  variant="outline"
+                >
+                  <ObjectiveHealthIcon health={objective.health} />
+                </Button>
+              </ObjectiveHealthEditor>
+            </span>
+          </Tooltip>
+        </Flex>
+        <Flex align="center" justify="center">
+          <PrioritiesMenu>
+            <Tooltip
+              className="pointer-events-none"
+              title={objective.priority ?? "No priority"}
+            >
+              <span>
+                <PrioritiesMenu.Trigger>
+                  <button
+                    aria-label={`Change priority: ${objective.priority ?? "No priority"}`}
+                    className="focus-visible:ring-primary flex rounded-sm outline-none select-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={!canUpdate}
+                    type="button"
+                  >
+                    <PriorityIcon priority={objective.priority} />
+                  </button>
+                </PrioritiesMenu.Trigger>
+              </span>
+            </Tooltip>
             <PrioritiesMenu.Items
               priority={objective.priority}
               setPriority={(priority) => {
@@ -137,18 +320,38 @@ const ObjectiveRow = ({
               }}
             />
           </PrioritiesMenu>
-
+        </Flex>
+        <Flex align="center" className="min-w-0">
           <ObjectiveStatusesMenu>
-            <ObjectiveStatusesMenu.Trigger>
-              <button
-                className="flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={userRole === "guest"}
-                type="button"
-              >
-                <ObjectiveStatusIcon statusId={objective.statusId} />
-                <span className="sr-only">Objective status</span>
-              </button>
-            </ObjectiveStatusesMenu.Trigger>
+            <Tooltip className="pointer-events-none" title={statusName}>
+              <span className="block w-full min-w-0">
+                <ObjectiveStatusesMenu.Trigger>
+                  <Button
+                    aria-label={`Change status: ${statusName}`}
+                    className={cn(
+                      isSidebarCollapsed
+                        ? "h-[1.85rem] w-[1.85rem] min-w-[1.85rem] justify-center p-0"
+                        : "w-max max-w-full min-w-0 gap-1 pr-2",
+                    )}
+                    color="tertiary"
+                    disabled={!canUpdate}
+                    rounded="md"
+                    size="xs"
+                    style={{
+                      backgroundColor: hexToRgba(statusColor, 0.1),
+                      borderColor: hexToRgba(statusColor, 0.2),
+                    }}
+                    type="button"
+                    variant="outline"
+                  >
+                    <ObjectiveStatusIcon statusId={objective.statusId} />
+                    {isSidebarCollapsed ? null : (
+                      <span className="min-w-0 truncate">{statusName}</span>
+                    )}
+                  </Button>
+                </ObjectiveStatusesMenu.Trigger>
+              </span>
+            </Tooltip>
             <ObjectiveStatusesMenu.Items
               setStatusId={(statusId) => {
                 handleUpdate(objective.id, { statusId });
@@ -156,53 +359,34 @@ const ObjectiveRow = ({
               statusId={objective.statusId}
             />
           </ObjectiveStatusesMenu>
-
-          <Link
-            className="flex min-w-0 flex-1 items-center gap-1.5"
-            href={withWorkspace(
-              `/teams/${objective.teamId}/objectives/${objective.id}`,
-            )}
-          >
-            <Text className="line-clamp-1 hover:opacity-90" fontWeight="medium">
-              {objective.name}
-            </Text>
-          </Link>
         </Flex>
-
-        {duration ? (
-          <Text className="ml-4 shrink-0" color="muted">
-            {duration} day{duration !== 1 ? "s" : ""}
-          </Text>
-        ) : (
-          <DatePicker>
-            <Tooltip title="Add dates">
-              <span className="mt-1">
-                <DatePicker.Trigger>
-                  <button type="button">
-                    <CalendarPlusIcon />
-                  </button>
-                </DatePicker.Trigger>
-              </span>
-            </Tooltip>
-            <DatePicker.Calendar
-              mode="range"
-              numberOfMonths={2}
-              onSelect={(range) => {
-                setDates(range);
-                if (range?.from && range.to) {
-                  handleUpdate(objective.id, {
-                    startDate: formatISO(range.from, {
-                      representation: "date",
-                    }),
-                    endDate: formatISO(range.to, { representation: "date" }),
-                  });
-                }
+        {isSidebarCollapsed ? null : (
+          <Flex align="center" className="min-w-0 pr-3">
+            <button
+              className="focus-visible:ring-primary min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-1"
+              onClick={() => {
+                onObjectiveSelect(objective);
               }}
-              selected={dates}
-            />
-          </DatePicker>
+              type="button"
+            >
+              <Flex align="center" className="min-w-0" gap={2}>
+                <span
+                  aria-hidden
+                  className="size-2.5 shrink-0 rounded-sm"
+                  style={{ backgroundColor: objective.color }}
+                />
+                <Text
+                  className="line-clamp-1 hover:opacity-90"
+                  fontWeight="medium"
+                >
+                  {objective.name}
+                </Text>
+              </Flex>
+            </button>
+          </Flex>
         )}
-      </Flex>
+        <Flex justify="end">{scheduleCell}</Flex>
+      </Box>
     </Box>
   );
 };
@@ -210,15 +394,42 @@ const ObjectiveRow = ({
 type RoadmapGanttBoardProps = {
   objectives: Objective[];
   className?: string;
+  zoomLevel: ZoomLevel;
+  onZoomLevelChange: (zoomLevel: ZoomLevel) => void;
+  onObjectiveSelect: (objective: Objective) => void;
+  selectedObjectiveId?: string | null;
 };
 
 export const RoadmapGanttBoard = ({
   objectives,
   className,
+  zoomLevel,
+  onZoomLevelChange,
+  onObjectiveSelect,
+  selectedObjectiveId,
 }: RoadmapGanttBoardProps) => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useLocalStorage(
+    "roadmapTimelineSidebarCollapsed",
+    false,
+  );
   const { mutate } = useUpdateObjectiveMutation();
-  const router = useRouter();
-  const { withWorkspace } = useWorkspacePath();
+  const { data: statuses = [] } = useObjectiveStatuses();
+  const ganttItems = useMemo<RoadmapGanttItem[]>(
+    () =>
+      objectives.map((objective) => ({
+        id: objective.id,
+        startDate: getTimelineDate(
+          [objective.startDate, objective.forecastStartDate],
+          "earliest",
+        ),
+        endDate: getTimelineDate(
+          [objective.endDate, objective.forecastEndDate],
+          "latest",
+        ),
+        objective,
+      })),
+    [objectives],
+  );
 
   // Handle date updates from drag operations
   const handleDateUpdate = useCallback(
@@ -234,18 +445,8 @@ export const RoadmapGanttBoard = ({
     [mutate],
   );
 
-  // Handle bar clicks to navigate to objective page
-  const handleBarClick = useCallback(
-    (objective: Objective) => {
-      router.push(
-        withWorkspace(`/teams/${objective.teamId}/objectives/${objective.id}`),
-      );
-    },
-    [router, withWorkspace],
-  );
-
   const handleUpdate = useCallback(
-    (objectiveId: string, data: Partial<Objective>) => {
+    (objectiveId: string, data: ObjectiveUpdate) => {
       mutate({
         objectiveId,
         data,
@@ -257,19 +458,47 @@ export const RoadmapGanttBoard = ({
   // Render sidebar for objectives
   const renderSidebar = useCallback(
     (
-      objectives: Objective[],
+      items: RoadmapGanttItem[],
       onReset: () => void,
-      zoomLevel: ZoomLevel,
+      sidebarZoomLevel: ZoomLevel,
       onZoomChange: (zoom: ZoomLevel) => void,
     ) => {
       return (
-        <Box className="border-border/60 bg-background sticky left-0 z-20 w-screen shrink-0 border-r-[0.5px] md:w-136">
-          <GanttHeader
-            onReset={onReset}
-            onZoomChange={onZoomChange}
-            zoomLevel={zoomLevel}
-          />
-          {objectives.map((objective) => {
+        <Box
+          className={cn(
+            "border-border bg-background/80 sticky -left-0.5 z-40 w-screen shrink-0 border-r-[0.5px] backdrop-blur-2xl transition-[width] duration-200",
+            isSidebarCollapsed ? "md:w-80" : "md:w-160",
+          )}
+        >
+          <Box className="border-border bg-background/80 sticky top-0 z-10 hidden h-16 items-center border-b-[0.5px] px-4 backdrop-blur-2xl md:flex">
+            <GanttControls
+              className="min-w-0 flex-1 justify-between"
+              onReset={onReset}
+              onZoomChange={onZoomChange}
+              zoomLevel={sidebarZoomLevel}
+            />
+            <Tooltip title={isSidebarCollapsed ? "Expand" : "Collapse"}>
+              <button
+                aria-label={
+                  isSidebarCollapsed
+                    ? "Expand objectives panel"
+                    : "Collapse objectives panel"
+                }
+                className="group focus-visible:ring-ring text-foreground/70 hover:text-foreground ml-2 flex size-8 shrink-0 items-center justify-center border-0 bg-transparent p-0 transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                onClick={() => {
+                  setIsSidebarCollapsed((current) => !current);
+                }}
+                type="button"
+              >
+                {isSidebarCollapsed ? (
+                  <ChevronRightIcon aria-hidden="true" className="size-5" />
+                ) : (
+                  <ChevronLeftIcon aria-hidden="true" className="size-5" />
+                )}
+              </button>
+            </Tooltip>
+          </Box>
+          {items.map(({ objective }) => {
             const startDate = objective.startDate
               ? new Date(objective.startDate)
               : null;
@@ -278,42 +507,117 @@ export const RoadmapGanttBoard = ({
               : null;
             const duration =
               startDate && endDate
-                ? differenceInDays(endDate, startDate)
+                ? differenceInDays(endDate, startDate) + 1
                 : null;
+            const status = statuses.find(
+              (status) => status.id === objective.statusId,
+            );
 
             return (
               <ObjectiveRow
                 duration={duration}
                 handleUpdate={handleUpdate}
+                isSelected={selectedObjectiveId === objective.id}
+                isSidebarCollapsed={isSidebarCollapsed}
                 key={objective.id}
                 objective={objective}
+                onObjectiveSelect={onObjectiveSelect}
+                statusColor={status?.color}
+                statusName={status?.name ?? "No status"}
               />
             );
           })}
         </Box>
       );
     },
-    [handleUpdate],
+    [
+      handleUpdate,
+      isSidebarCollapsed,
+      onObjectiveSelect,
+      selectedObjectiveId,
+      setIsSidebarCollapsed,
+      statuses,
+    ],
   );
 
   // Render bar content
-  const renderBarContent = useCallback(
-    (objective: Objective) => (
-      <Text className="line-clamp-1" fontWeight="medium">
-        {objective.name}
-      </Text>
-    ),
-    [],
-  );
+  const renderBarContent = useCallback((item: RoadmapGanttItem) => {
+    const { objective } = item;
+    const isAtRisk = objective.scheduleStatus === "at_risk";
+    const timelineStart = item.startDate ? new Date(item.startDate) : null;
+    const timelineEnd = item.endDate ? new Date(item.endDate) : null;
+    const targetEnd = objective.endDate ? new Date(objective.endDate) : null;
+    const timelineDays =
+      timelineStart && timelineEnd
+        ? Math.max(1, differenceInDays(timelineEnd, timelineStart))
+        : 1;
+    const targetPosition =
+      timelineStart && targetEnd
+        ? Math.min(
+            100,
+            Math.max(
+              0,
+              (differenceInDays(targetEnd, timelineStart) / timelineDays) * 100,
+            ),
+          )
+        : 100;
+
+    return (
+      <Box
+        className="absolute inset-0 overflow-hidden rounded-[inherit]"
+        style={{
+          background: isAtRisk
+            ? `linear-gradient(to right, ${hexToRgba(
+                objective.color,
+                0.28,
+              )} 0%, ${hexToRgba(
+                objective.color,
+                0.28,
+              )} ${targetPosition}%, ${hexToRgba(
+                objective.color,
+                0.1,
+              )} ${targetPosition}%, ${hexToRgba(objective.color, 0.1)} 100%)`
+            : hexToRgba(objective.color, 0.22),
+        }}
+      >
+        {isAtRisk && targetEnd ? (
+          <span
+            aria-label={`Target date ${format(targetEnd, "MMM d, yyyy")}`}
+            className="absolute inset-y-0 w-px bg-current opacity-35"
+            style={{ left: `${targetPosition}%` }}
+          />
+        ) : null}
+        <Flex align="center" className="h-full min-w-0 px-3" gap={2}>
+          <Text className="line-clamp-1 min-w-0" fontWeight="medium">
+            {objective.name}
+          </Text>
+          {isAtRisk ? (
+            <ObjectiveForecastRiskBadge label="delta" objective={objective} />
+          ) : null}
+        </Flex>
+      </Box>
+    );
+  }, []);
 
   return (
     <BaseGantt
+      barClassName="hover:border-border-strong dark:hover:border-border-strong"
       className={className}
-      items={objectives}
-      onBarClick={handleBarClick}
+      controlledZoomLevel={zoomLevel}
+      items={ganttItems}
+      onBarClick={(item) => {
+        onObjectiveSelect(item.objective);
+      }}
       onDateUpdate={handleDateUpdate}
+      onZoomLevelChange={onZoomLevelChange}
       renderBarContent={renderBarContent}
       renderSidebar={renderSidebar}
+      rowHeight={ROADMAP_ROW_HEIGHT}
+      stickyColumnsWidth={
+        isSidebarCollapsed
+          ? ROADMAP_COLLAPSED_COLUMNS_WIDTH
+          : ROADMAP_STICKY_COLUMNS_WIDTH
+      }
       storageKey="roadmapZoomLevel"
       zoomLevel="months"
     />

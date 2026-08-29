@@ -3,7 +3,6 @@ import { useParams } from "next/navigation";
 import type { StoriesLayout } from "@/components/ui";
 import { StoriesBoard } from "@/components/ui";
 import { getGroupedStoryFilterParams } from "@/components/ui/stories-filter-query";
-import { hasActiveStoriesFilters } from "@/components/ui/stories-filter-utils";
 import { StoriesSkeleton } from "@/modules/teams/stories/stories-skeleton";
 import { useSprintStoriesGrouped } from "@/modules/stories/hooks/use-sprint-stories-grouped";
 import { useSprintOptions } from "./provider";
@@ -14,14 +13,12 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
     teamId: string;
   }>();
   const { viewOptions, setViewOptions, filters } = useSprintOptions();
-  const boardHeightClassName = hasActiveStoriesFilters(filters)
-    ? "h-[calc(100dvh-7.2rem)]"
-    : "h-[calc(100dvh-3.6rem)]";
   const { data: groupedStories, isPending } = useSprintStoriesGrouped(
     sprintId,
     viewOptions.groupBy,
     {
       orderBy: viewOptions.orderBy,
+      orderDirection: viewOptions.orderDirection,
       ...getGroupedStoryFilterParams(filters),
       teamIds: [teamId],
       sprintIds: [sprintId],
@@ -30,12 +27,12 @@ export const AllStories = ({ layout }: { layout: StoriesLayout }) => {
   );
 
   if (isPending) {
-    return <StoriesSkeleton className={boardHeightClassName} layout={layout} />;
+    return <StoriesSkeleton className="h-full" layout={layout} />;
   }
 
   return (
     <StoriesBoard
-      className={boardHeightClassName}
+      className="h-full"
       groupedStories={groupedStories}
       layout={layout}
       setViewOptions={setViewOptions}

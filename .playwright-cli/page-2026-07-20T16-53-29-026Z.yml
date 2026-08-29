@@ -1,0 +1,401 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - link [ref=e4] [cursor=pointer]:
+      - /url: /
+    - navigation "Main" [ref=e7]:
+      - list [ref=e9]:
+        - listitem [ref=e10]:
+          - button "Features" [ref=e11] [cursor=pointer]
+        - listitem [ref=e12]:
+          - button "Use Cases" [ref=e13] [cursor=pointer]
+        - listitem [ref=e14]:
+          - link "AI Project Manager" [ref=e15] [cursor=pointer]:
+            - /url: /ai-project-manager
+        - listitem [ref=e16]:
+          - button "Resources" [ref=e17] [cursor=pointer]
+        - listitem [ref=e18]:
+          - link "Pricing" [ref=e19] [cursor=pointer]:
+            - /url: /pricing
+    - generic [ref=e20]:
+      - link "Login" [ref=e21] [cursor=pointer]:
+        - /url: http://localhost:3000
+      - link "Sign up" [ref=e22] [cursor=pointer]:
+        - /url: http://localhost:3000/signup
+  - generic [ref=e24]:
+    - generic [ref=e25]:
+      - heading "Plan and deliver projects with customer feedback built in." [level=1] [ref=e27]
+      - paragraph [ref=e29]: Collect requests, decide what matters, and move accepted feedback into the project plan without losing its context.
+    - link "Get started free" [ref=e31] [cursor=pointer]:
+      - /url: http://localhost:3000/signup
+  - img "Risks surface before the retro." [ref=e50]
+  - generic [ref=e52]:
+    - paragraph [ref=e53]: Trusted by teams at
+    - img "Miningo logo" [ref=e54]
+    - img "Digitank logo" [ref=e55]
+    - img "Art Circles logo" [ref=e56]
+    - img "Zimboriginal logo" [ref=e57]
+  - generic [ref=e58]:
+    - heading "Keep the original request attached to the work." [level=2] [ref=e60]
+    - generic [ref=e61]:
+      - generic [ref=e64]:
+        - generic [ref=e67]:
+          - generic [ref=e69]:
+            - paragraph [ref=e73]: Connect task to objective...
+            - paragraph [ref=e74]: Goal
+          - generic [ref=e75]:
+            - generic [ref=e76]:
+              - generic [ref=e77]: Q2 Objective
+              - paragraph [ref=e78]: Improve activation rate
+            - generic [ref=e79]:
+              - paragraph [ref=e82]: Redesign onboarding flow
+              - generic [ref=e83]: In Progress
+          - generic [ref=e84]:
+            - paragraph [ref=e87]: "Linked to #142"
+            - paragraph [ref=e91]: OBJ-7
+        - generic [ref=e92]:
+          - paragraph [ref=e93]: Plan the right work.
+          - paragraph [ref=e94]: Turn selected feedback, company goals, and team requests into clear tasks with the source context attached.
+      - generic [ref=e97]:
+        - generic [ref=e100]:
+          - generic [ref=e107]:
+            - paragraph [ref=e108]: AI assignment plan
+            - paragraph [ref=e109]: "Story: launch customer portal"
+          - generic [ref=e111]:
+            - generic [ref=e112]:
+              - paragraph [ref=e113]: Best owner
+              - paragraph [ref=e114]: Priya N.
+            - paragraph [ref=e115]: 92% fit
+          - generic [ref=e118]:
+            - generic [ref=e119]:
+              - paragraph [ref=e120]: Estimate
+              - paragraph [ref=e121]: 4 hours
+            - generic [ref=e122]:
+              - paragraph [ref=e123]: Work window
+              - paragraph [ref=e124]: Tue 10:30
+          - paragraph [ref=e127]: Calendar and workload checked
+        - generic [ref=e128]:
+          - paragraph [ref=e129]: Assign with context.
+          - paragraph [ref=e130]: Let AI use workload, estimates, and availability to suggest an owner and time for the work.
+      - generic [ref=e133]:
+        - generic [ref=e136]:
+          - generic [ref=e137]:
+            - paragraph [ref=e141]: Add context from
+            - paragraph [ref=e142]: "@"
+          - generic [ref=e143]:
+            - paragraph [ref=e149]: GitHub
+            - paragraph [ref=e153]: Drive
+            - generic [ref=e154]:
+              - paragraph [ref=e162]: Slack
+              - paragraph [ref=e163]: Connect
+            - paragraph [ref=e169]: Manage tools
+        - generic [ref=e172]:
+          - paragraph [ref=e173]: Keep the source attached.
+          - paragraph [ref=e174]: Bring conversations, files, and commits into the task so the team can see where the work came from.
+  - generic [ref=e175]:
+    - generic [ref=e176]:
+      - heading "Know where the work came from and why it matters." [level=2] [ref=e178]
+      - paragraph [ref=e180]: Feedback and goals stay with the tasks they create. Owners can see what was requested, why it matters, and how the work is going.
+    - generic [ref=e182]:
+      - generic [ref=e183]:
+        - heading "Work tied to goals." [level=3] [ref=e187]
+        - paragraph [ref=e188]: Connect tasks to company goals so the team knows why each item matters.
+      - generic [ref=e189]:
+        - heading "Capacity-aware assignments." [level=3] [ref=e194]
+        - paragraph [ref=e195]: Use workload and task context to find an owner without overloading the team.
+      - generic [ref=e196]:
+        - heading "AI help with planning." [level=3] [ref=e200]
+        - paragraph [ref=e201]: Fill in missing estimates, find time for the work, and flag delivery risk early.
+      - generic [ref=e202]:
+        - heading "One place for the project." [level=3] [ref=e208]
+        - paragraph [ref=e209]: Keep plans, tasks, owners, and progress together. No one has to rebuild the latest status by hand.
+      - generic [ref=e210]:
+        - heading "Feedback tied to delivery." [level=3] [ref=e215]
+        - paragraph [ref=e216]: Collect requests in a public portal, route them to the right team, and turn selected feedback into planned work.
+      - generic [ref=e217]:
+        - heading "Context from your tools." [level=3] [ref=e225]
+        - paragraph [ref=e226]: Attach conversations, files, and commits to the work they created.
+  - generic [ref=e227]:
+    - heading "See what is moving, blocked, and at risk." [level=2] [ref=e229]
+    - generic [ref=e230]:
+      - generic [ref=e233]:
+        - generic [ref=e236]:
+          - generic [ref=e237]:
+            - generic [ref=e238]:
+              - paragraph [ref=e239]: Sprint 14 Progress
+              - paragraph [ref=e240]: 65%
+            - generic [ref=e243]:
+              - generic [ref=e244]:
+                - paragraph [ref=e247]: API handoff
+                - paragraph [ref=e248]: Done
+              - generic [ref=e249]:
+                - paragraph [ref=e252]: Billing QA
+                - paragraph [ref=e253]: In review
+          - generic [ref=e254]:
+            - button "Approve" [ref=e255] [cursor=pointer]
+            - button "Done" [ref=e256] [cursor=pointer]
+            - button "More actions" [ref=e257] [cursor=pointer]
+          - paragraph [ref=e260]: Shared to
+        - generic [ref=e267]:
+          - paragraph [ref=e268]: Track delivery.
+          - paragraph [ref=e269]: Keep goals, tasks, and progress connected so the team can see what is done and what needs attention.
+      - generic [ref=e272]:
+        - generic [ref=e275]:
+          - generic [ref=e277]:
+            - generic [ref=e278]:
+              - paragraph [ref=e279]: Team capacity
+              - paragraph [ref=e280]: This week
+            - generic [ref=e281]:
+              - img "Product lead avatar" [ref=e282]
+              - img "Engineering lead avatar" [ref=e283]
+              - img "Operations lead avatar" [ref=e284]
+          - generic [ref=e285]:
+            - generic [ref=e287]:
+              - generic [ref=e288]:
+                - paragraph [ref=e289]: Product
+                - paragraph [ref=e290]: 2 open slots
+              - paragraph [ref=e291]: 72%
+            - generic [ref=e295]:
+              - generic [ref=e296]:
+                - paragraph [ref=e297]: Engineering
+                - paragraph [ref=e298]: Near limit
+              - paragraph [ref=e299]: 84%
+          - paragraph [ref=e304]: AI recommends Product for the next task.
+        - generic [ref=e305]:
+          - paragraph [ref=e306]: Plan around capacity.
+          - paragraph [ref=e307]: Check team workload before new assignments create a bottleneck.
+      - generic [ref=e310]:
+        - generic [ref=e313]:
+          - generic [ref=e318]:
+            - generic [ref=e319]:
+              - paragraph [ref=e320]: Review before apply
+              - paragraph [ref=e321]: 4 changes
+            - paragraph [ref=e322]: AI suggested an estimate, owner, and safer start time.
+          - generic [ref=e323]:
+            - generic [ref=e324]:
+              - paragraph [ref=e325]: Estimate
+              - paragraph [ref=e326]: 6 hours
+            - generic [ref=e327]:
+              - paragraph [ref=e328]: Owner
+              - paragraph [ref=e329]: Priya N.
+            - generic [ref=e330]:
+              - paragraph [ref=e331]: Start
+              - paragraph [ref=e332]: Wed 10:00
+            - generic [ref=e333]:
+              - paragraph [ref=e334]: Task
+              - paragraph [ref=e335]: Move API handoff
+          - generic [ref=e336]:
+            - button "Approve" [ref=e337] [cursor=pointer]
+            - button "Edit" [ref=e338] [cursor=pointer]
+        - generic [ref=e339]:
+          - paragraph [ref=e340]: Review AI changes.
+          - paragraph [ref=e341]: Approve or edit important suggestions before they change the plan.
+  - generic [ref=e342]:
+    - img "Slack logo"
+    - img "Intercom logo"
+    - img "Notion logo"
+    - img "Figma logo"
+    - img "Github logo"
+    - generic [ref=e344]:
+      - heading "Your tools bring the context. FortyOne turns it into a plan." [level=2] [ref=e346]
+      - paragraph [ref=e348]: Use Google Calendar for availability and Slack for task intake. GitHub, Figma, and GitLab bring delivery context into the project plan.
+      - link "Start free" [ref=e350] [cursor=pointer]:
+        - /url: http://localhost:3000/signup
+    - img "Jira logo"
+    - img "Drive logo"
+    - img "Gitlab logo"
+    - img "Figma logo"
+    - img "Zend logo"
+  - generic [ref=e352]:
+    - generic [ref=e353]:
+      - heading "Start with one team. Scale when the work does." [level=2] [ref=e355]
+      - paragraph [ref=e356]: No card and no trial clock. Run a real project on the free plan, then add teams, goals, integrations, and AI capacity as your organization grows.
+    - generic [ref=e359]:
+      - button "annual Billing" [ref=e360] [cursor=pointer]
+      - button "monthly Billing" [ref=e361] [cursor=pointer]
+    - generic [ref=e362]:
+      - generic [ref=e363]:
+        - paragraph [ref=e364]: Hobby
+        - paragraph [ref=e365]: $0
+        - link "Start free" [ref=e366] [cursor=pointer]:
+          - /url: http://localhost:3000/signup
+        - paragraph [ref=e367]: For small teams running their first project.
+        - generic [ref=e369]:
+          - paragraph [ref=e373]: 1 team
+          - paragraph [ref=e377]: Up to 5 members
+          - paragraph [ref=e381]: Up to 200 tasks
+          - paragraph [ref=e385]: Single Sign-On (SSO)
+          - paragraph [ref=e389]: Kanban & list views
+          - paragraph [ref=e393]: Email support
+      - generic [ref=e394]:
+        - paragraph [ref=e395]: Professional
+        - paragraph [ref=e396]:
+          - text: $5.60
+          - generic [ref=e397]: user/month
+        - link "Try Professional" [ref=e398] [cursor=pointer]:
+          - /url: http://localhost:3000/signup
+        - paragraph [ref=e399]: For growing teams that need goals and more room to plan.
+        - generic [ref=e401]:
+          - paragraph [ref=e405]: Everything in Hobby
+          - paragraph [ref=e409]: Up to 3 teams
+          - paragraph [ref=e413]: Up to 20 objectives
+          - paragraph [ref=e417]: OKR tracking
+          - paragraph [ref=e421]: Unlimited tasks
+          - paragraph [ref=e425]: Unlimited guests
+          - paragraph [ref=e429]: Custom workflows
+      - generic [ref=e430]:
+        - paragraph [ref=e431]:
+          - text: Business
+          - generic [ref=e432]: Most Popular
+        - paragraph [ref=e433]:
+          - text: $8
+          - generic [ref=e434]: user/month
+        - link "Try Business" [ref=e435] [cursor=pointer]:
+          - /url: http://localhost:3000/signup
+        - paragraph [ref=e436]: For organizations coordinating work across several teams.
+        - generic [ref=e438]:
+          - paragraph [ref=e442]: Everything in Professional
+          - paragraph [ref=e446]: Unlimited teams
+          - paragraph [ref=e450]: Unlimited objectives
+          - paragraph [ref=e454]: Unlimited everything
+          - paragraph [ref=e458]: Custom terminology
+          - paragraph [ref=e462]: Private teams
+          - paragraph [ref=e466]: Priority support
+      - generic [ref=e467]:
+        - paragraph [ref=e468]: Enterprise
+        - paragraph [ref=e469]: Custom
+        - link "Talk to sales" [ref=e470] [cursor=pointer]:
+          - /url: mailto:info@complexus.app
+        - paragraph [ref=e471]: For organizations with security, compliance, deployment, or integration requirements.
+        - generic [ref=e473]:
+          - paragraph [ref=e477]: Custom onboarding & integrations
+          - paragraph [ref=e481]: On-premise/Private Cloud Option
+          - paragraph [ref=e485]: Dedicated account manager
+          - paragraph [ref=e489]: Volume discounts
+  - generic [ref=e491]:
+    - heading "Questions worth answering." [level=2] [ref=e493]
+    - generic [ref=e494]:
+      - generic [ref=e495]:
+        - button "What makes FortyOne different from a task manager?" [expanded] [ref=e496] [cursor=pointer]
+        - region "What makes FortyOne different from a task manager?" [ref=e498]:
+          - paragraph [ref=e500]: FortyOne connects customer feedback and company goals to the tasks that deliver them. Teams can decide what to build without losing the original request or the reason behind the work.
+      - generic [ref=e501]:
+        - button "How does customer feedback work?" [ref=e502] [cursor=pointer]
+        - region "How does customer feedback work?":
+          - paragraph [ref=e505]: Customers can submit requests, vote, and comment in a public portal. Feedback boards route each request to the team that owns the work. The team can review it, close it, or turn it into planned work.
+      - generic [ref=e506]:
+        - button "What can FortyOne's AI do?" [ref=e507] [cursor=pointer]
+        - region "What can FortyOne's AI do?":
+          - paragraph [ref=e510]: AI can suggest an owner, fill in an estimate, find time for the work, and surface delivery risk from the project context already in FortyOne.
+      - generic [ref=e511]:
+        - button "Can we review AI actions before they are applied?" [ref=e512] [cursor=pointer]
+        - region "Can we review AI actions before they are applied?":
+          - paragraph [ref=e515]: Yes. Teams can review and edit important suggestions before they change the project plan.
+      - generic [ref=e516]:
+        - button "Is the free plan actually free?" [ref=e517] [cursor=pointer]
+        - region "Is the free plan actually free?":
+          - paragraph [ref=e520]: Yes. There is no credit card and no trial expiry. The Hobby plan supports one team and up to five members, enough to run a real sprint and decide whether FortyOne should scale with you.
+      - generic [ref=e521]:
+        - button "Can FortyOne plan around my team's calendar?" [ref=e522] [cursor=pointer]
+        - region "Can FortyOne plan around my team's calendar?":
+          - paragraph [ref=e525]: Yes. Google Calendar integration lets FortyOne sync availability so AI can recommend better schedules and work windows without storing private event details unnecessarily.
+      - generic [ref=e526]:
+        - button "Which tools does FortyOne work with?" [ref=e527] [cursor=pointer]
+        - region "Which tools does FortyOne work with?":
+          - paragraph [ref=e530]: FortyOne works with tools including Google Calendar, Slack, GitHub, GitLab, Figma, and Google Drive. These connections bring availability and source context into the project plan.
+  - generic [ref=e535]:
+    - heading "Give the team one clear plan." [level=2] [ref=e536]
+    - link "Start free" [ref=e537] [cursor=pointer]:
+      - /url: http://localhost:3000/signup
+  - contentinfo [ref=e538]:
+    - generic [ref=e540]:
+      - link [ref=e542] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e545]:
+        - paragraph [ref=e546]: Features
+        - link "Goals" [ref=e547] [cursor=pointer]:
+          - /url: /features/goals
+        - link "Tasks" [ref=e548] [cursor=pointer]:
+          - /url: /features/tasks
+        - link "AI Planning" [ref=e549] [cursor=pointer]:
+          - /url: /features/ai-planning
+        - link "Roadmaps" [ref=e550] [cursor=pointer]:
+          - /url: /features/roadmaps
+        - link "Integrations" [ref=e551] [cursor=pointer]:
+          - /url: /features/integrations
+      - generic [ref=e552]:
+        - paragraph [ref=e553]: Use cases
+        - link "Operations" [ref=e554] [cursor=pointer]:
+          - /url: /use-cases/operations
+        - link "Product" [ref=e555] [cursor=pointer]:
+          - /url: /use-cases/product
+        - link "Support" [ref=e556] [cursor=pointer]:
+          - /url: /use-cases/customer-support
+        - link "Developers" [ref=e557] [cursor=pointer]:
+          - /url: /use-cases/developers
+        - link "Government Teams" [ref=e558] [cursor=pointer]:
+          - /url: /use-cases/government
+        - link "Field Crews" [ref=e559] [cursor=pointer]:
+          - /url: /use-cases/field-crews
+        - link "Marketing" [ref=e560] [cursor=pointer]:
+          - /url: /use-cases/marketing
+        - link "Leadership" [ref=e561] [cursor=pointer]:
+          - /url: /use-cases/leadership
+      - generic [ref=e562]:
+        - paragraph [ref=e563]: Company
+        - link "Pricing" [ref=e564] [cursor=pointer]:
+          - /url: /pricing
+        - link "Contact" [ref=e565] [cursor=pointer]:
+          - /url: /contact
+        - generic [ref=e566]:
+          - paragraph [ref=e567]: Compare
+          - link "Asana" [ref=e568] [cursor=pointer]:
+            - /url: /compare/asana
+          - link "Jira" [ref=e569] [cursor=pointer]:
+            - /url: /compare/jira
+          - link "ClickUp" [ref=e570] [cursor=pointer]:
+            - /url: /compare/clickup
+          - link "Trello" [ref=e571] [cursor=pointer]:
+            - /url: /compare/trello
+          - link "Monday.com" [ref=e572] [cursor=pointer]:
+            - /url: /compare/monday
+      - generic [ref=e573]:
+        - paragraph [ref=e574]: Resources
+        - link "AI Project Manager" [ref=e575] [cursor=pointer]:
+          - /url: /ai-project-manager
+        - link "Docs" [ref=e576] [cursor=pointer]:
+          - /url: https://docs.fortyone.app
+        - link "Blog" [ref=e577] [cursor=pointer]:
+          - /url: /blog
+        - link "GitHub" [ref=e578] [cursor=pointer]:
+          - /url: https://github.com/complexus-tech/fortyone
+        - link "Pitch" [ref=e579] [cursor=pointer]:
+          - /url: https://pitch.fortyone.app
+      - generic [ref=e580]:
+        - paragraph [ref=e581]: Legal
+        - link "Privacy Policy" [ref=e582] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e583] [cursor=pointer]:
+          - /url: /terms
+    - generic [ref=e584]:
+      - generic [ref=e585]:
+        - generic [ref=e586]:
+          - link "Twitter" [ref=e587] [cursor=pointer]:
+            - /url: https://x.com/fortyoneapp
+          - link "LinkedIn" [ref=e591] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/complexus-app/
+          - link "Instagram" [ref=e597] [cursor=pointer]:
+            - /url: https://www.instagram.com/complexus_tech/
+          - link "Facebook" [ref=e602] [cursor=pointer]:
+            - /url: https://www.facebook.com/complexus.tech
+        - generic [ref=e606]:
+          - link "Privacy Policy" [ref=e607] [cursor=pointer]:
+            - /url: /privacy
+          - text: "|"
+          - paragraph [ref=e608]: © 2026Complexus LLC • All rights reserved.
+      - generic [ref=e609]:
+        - paragraph [ref=e610]: FortyOne is an open source product of Complexus LLC.
+        - generic [ref=e611]:
+          - button [ref=e612] [cursor=pointer]
+          - button [ref=e616] [cursor=pointer]
+          - button [ref=e620] [cursor=pointer]
+  - region "Notifications alt+T"

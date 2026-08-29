@@ -1,0 +1,30 @@
+get:
+  operationId: getWebhookEndpoint
+  tags: [Webhooks]
+  summary: Get an outbound webhook endpoint
+  description: Requires a current workspace administrator personal access token.
+  x-fortyone-scope: webhooks:manage
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+    - $ref: ../openapi.yaml#/components/parameters/EndpointId
+  responses:
+    "200":
+      description: The webhook endpoint. Signing secrets are never returned.
+      headers:
+        X-Request-ID: { $ref: ../openapi.yaml#/components/headers/RequestId }
+        RateLimit: { $ref: ../openapi.yaml#/components/headers/RateLimit }
+        RateLimit-Policy:
+          { $ref: ../openapi.yaml#/components/headers/RateLimitPolicy }
+      content:
+        application/json:
+          schema:
+            {
+              $ref: ../openapi.yaml#/components/schemas/WebhookEndpointResponse,
+            }
+    "400": { $ref: ../openapi.yaml#/components/responses/BadRequest }
+    "401": { $ref: ../openapi.yaml#/components/responses/Unauthorized }
+    "403": { $ref: ../openapi.yaml#/components/responses/Forbidden }
+    "404": { $ref: ../openapi.yaml#/components/responses/NotFound }
+    "429": { $ref: ../openapi.yaml#/components/responses/RateLimited }
+    "500": { $ref: ../openapi.yaml#/components/responses/InternalError }
+    "503": { $ref: ../openapi.yaml#/components/responses/ServiceUnavailable }

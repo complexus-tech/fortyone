@@ -1,73 +1,103 @@
-import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-import { createOpenAI } from "@ai-sdk/openai";
 import type { UIMessage } from "ai";
-import { generateObject } from "ai";
-import { z } from "zod";
-import { withTracing } from "@posthog/ai";
-import { saveAiChatMessagesAction } from "@/modules/ai-chats/actions/save-ai-chat-messages";
-import { createAiChatAction } from "@/modules/ai-chats/actions/create-ai-chat";
-import { auth } from "@/auth";
-import posthogServer from "@/app/posthog-server";
+import {
+  beginAiChatMessageWrite,
+  finalizeAiChatMessageWrite,
+} from "@/modules/ai-chats/actions/message-write";
+import type {
+  MessageWriteOperation,
+  MessageWriteReservation,
+  MessageWriteResult,
+} from "@/modules/ai-chats/actions/message-write";
+import { getChatTitle } from "./chat-title";
 
-export const saveChat = async ({
+const SLOW_MESSAGE_WRITE_MS = 2_000;
+
+const getPersistenceDiagnostic = (error: unknown) => {
+  const errorCode =
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof error.code === "string"
+      ? error.code
+      : "unknown";
+  return {
+    errorCode,
+    errorType: error instanceof Error ? error.name : typeof error,
+  };
+};
+
+export const beginChatWrite = async <UIMessageType extends UIMessage>({
   id,
+  messageId,
   messages,
+  operation,
   workspaceSlug,
 }: {
   id: string;
-  messages: UIMessage[];
+  messageId?: string;
+  messages: UIMessageType[];
+  operation: MessageWriteOperation;
   workspaceSlug: string;
-}) => {
-  const session = await auth();
-  let title = "";
-  // if its a new chat generate the title
-  const phClient = posthogServer();
-
-  const openaiClient = createOpenAI({
-    // eslint-disable-next-line turbo/no-undeclared-env-vars -- this is ok
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-
-  const model = withTracing(openaiClient("gpt-5-nano-2025-08-07"), phClient, {
-    posthogDistinctId: session?.user?.email ?? undefined,
-    posthogProperties: {
-      conversation_id: id,
-    },
-  });
-  if (messages.length <= 3) {
-    const firstMessage = messages[0];
-    let messageContent = "";
-    firstMessage.parts.forEach((part) => {
-      if (part.type === "text") {
-        messageContent = part.text;
-      }
-    });
-
-    const result = await generateObject({
-      model,
-      schema: z.object({
-        title: z.string(),
-      }),
-      providerOptions: {
-        openai: {
-          reasoningEffort: "minimal",
-          textVerbosity: "low",
-        } satisfies OpenAIResponsesProviderOptions,
-      },
-      prompt: `You're generating a short title for a conversation in FortyOne, a project management platform. Use the first user message to infer what the chat is about. Keep the title short, clear, and relevant to project work (e.g. planning, tasks, bugs, OKRs).
-    
-      User message: "${messageContent}"`,
-    });
-    title = result.object.title;
-  }
-
+}): Promise<MessageWriteReservation<UIMessageType>> => {
+  const startedAt = Date.now();
   try {
-    if (title) {
-      await createAiChatAction({ id, title, messages }, workspaceSlug);
-    } else {
-      await saveAiChatMessagesAction({ id, messages }, workspaceSlug);
+    const reservation = await beginAiChatMessageWrite({
+      chatId: id,
+      messageId,
+      messages,
+      operation,
+      title: getChatTitle(messages),
+      workspaceSlug,
+    });
+    const durationMs = Date.now() - startedAt;
+    if (durationMs >= SLOW_MESSAGE_WRITE_MS) {
+      // eslint-disable-next-line no-console -- Payload-free latency diagnostics keep the extra persistence call observable.
+      console.warn("[chat/save] Slow Maya write reservation", {
+        chatId: id,
+        durationMs,
+        operation,
+        workspaceSlug,
+      });
     }
+    return reservation;
   } catch (error) {
-    // log to analytics later
+    // eslint-disable-next-line no-console -- Never log transcript content or approval inputs.
+    console.error("[chat/save] Failed to reserve Maya conversation write", {
+      chatId: id,
+      ...getPersistenceDiagnostic(error),
+      operation,
+      workspaceSlug,
+    });
+    throw error;
+  }
+};
+
+export const saveChat = async <UIMessageType extends UIMessage>({
+  id,
+  messages,
+  reservation,
+  workspaceSlug,
+}: {
+  id: string;
+  messages: UIMessageType[];
+  reservation: MessageWriteReservation<UIMessageType>;
+  workspaceSlug: string;
+}): Promise<MessageWriteResult> => {
+  try {
+    return await finalizeAiChatMessageWrite({
+      chatId: id,
+      messages,
+      reservation,
+      workspaceSlug,
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console -- Persisting the conversation must remain observable without exposing message content.
+    console.error("[chat/save] Failed to finalize Maya conversation write", {
+      chatId: id,
+      ...getPersistenceDiagnostic(error),
+      generation: reservation.generation,
+      workspaceSlug,
+    });
+    throw error;
   }
 };

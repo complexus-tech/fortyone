@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CheckIcon, CloseIcon } from "icons";
+import { cn } from "lib";
 import meshImage from "../../../public/images/meshing.webp";
 import { CallToAction } from "./cta";
 
@@ -9,7 +10,7 @@ const UPDATED_LABEL = "June 24, 2026";
 const cardTextClass = "text-[0.9rem] leading-[1.35]";
 const cardMetaTextClass = "text-[0.82rem] leading-[1.25]";
 const cardSurfaceClass =
-  "rounded-xl border border-white/50 bg-background shadow-lg shadow-shadow dark:border-border";
+  "bg-surface-elevated rounded-xl border border-border/80 shadow-lg shadow-shadow";
 
 export type MarketingVisualRow = {
   label: string;
@@ -56,6 +57,8 @@ export type MarketingDetail = {
   questions: [string, string][];
   sections: MarketingSection[];
   slug: string;
+  updatedDate?: string;
+  updatedLabel?: string;
 };
 
 function PromptCard({
@@ -66,7 +69,7 @@ function PromptCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="my-10 rounded-2xl bg-black/[0.07] p-2 dark:bg-white/[0.12]">
+    <div className="bg-surface-muted my-10 rounded-2xl p-2">
       <div className="px-3 py-2">
         <p className="text-text-muted text-sm font-medium">{title}</p>
       </div>
@@ -79,10 +82,10 @@ function PromptCard({
 
 function FeatureCardFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-[320px] items-end overflow-hidden rounded-2xl">
+    <div className="relative flex items-end overflow-hidden rounded-2xl md:min-h-80">
       <Image
         alt=""
-        className="object-cover dark:opacity-40"
+        className="object-cover grayscale-100 dark:opacity-40"
         fill
         quality={100}
         sizes="(max-width: 767px) 100vw, 380px"
@@ -132,7 +135,7 @@ function MockupCard({ card }: { card: MarketingVisual }) {
                     {row.value}
                   </span>
                 </div>
-                <div className="bg-surface-muted h-2 overflow-hidden rounded-full dark:bg-white/10">
+                <div className="bg-surface-muted h-2 overflow-hidden rounded-full">
                   <div
                     className="bg-foreground h-full rounded-full"
                     style={{ width: row.width }}
@@ -141,7 +144,7 @@ function MockupCard({ card }: { card: MarketingVisual }) {
               </div>
             ) : (
               <div
-                className="rounded-lg bg-black/4 px-3 py-2 dark:bg-white/7"
+                className="bg-surface-muted rounded-lg px-3 py-2"
                 key={row.label}
               >
                 <p
@@ -205,7 +208,7 @@ function AvailabilityMark({ available }: { available: boolean }) {
       aria-label={available ? "Available" : "Not available"}
       className={
         available
-          ? "inline-flex h-5 w-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black"
+          ? "bg-background-inverse text-foreground-inverse inline-flex h-5 w-5 items-center justify-center rounded-full"
           : "bg-danger inline-flex h-5 w-5 items-center justify-center rounded-full text-white"
       }
     >
@@ -301,12 +304,14 @@ export function MarketingDetailPage({
   breadcrumbLabel,
   canonicalPath,
   detail,
+  hero,
   questionHeading,
 }: {
   basePath: string;
   breadcrumbLabel: string;
   canonicalPath?: string;
   detail: MarketingDetail;
+  hero?: React.ReactNode;
   questionHeading?: string;
 }) {
   return (
@@ -317,39 +322,49 @@ export function MarketingDetailPage({
         detail={detail}
       />
       <main className="bg-background text-foreground">
-        <div className="mx-auto max-w-[760px] px-5 pt-20 pb-16 md:px-8 md:pt-28">
+        {hero}
+        <div
+          className={cn(
+            "mx-auto max-w-[760px] px-5 pb-16 md:px-8",
+            hero ? "pt-0" : "pt-20 md:pt-28",
+          )}
+        >
           <article>
-            <nav className="text-text-muted mb-6 flex justify-center gap-2 text-sm">
-              <Link className="hover:text-foreground" href="/">
-                Home
-              </Link>
-              <span>/</span>
-              <span>{breadcrumbLabel}</span>
-            </nav>
+            {!hero ? (
+              <>
+                <nav className="text-text-muted mb-6 flex justify-center gap-2 text-sm">
+                  <Link className="hover:text-foreground" href="/">
+                    Home
+                  </Link>
+                  <span>/</span>
+                  <span>{breadcrumbLabel}</span>
+                </nav>
 
-            <header className="text-center">
-              <div className="shadow-shadow relative mx-auto max-w-[720px] overflow-hidden rounded-2xl shadow-2xl">
-                <Image
-                  alt=""
-                  className="h-[240px] w-full object-cover md:h-[320px]"
-                  placeholder="blur"
-                  priority
-                  src={meshImage}
-                />
-                <div className="absolute inset-0 bg-black/20 dark:bg-black/35" />
-                <div className="absolute inset-0 flex items-center justify-center px-6">
-                  <h1 className="font-heading text-4xl font-semibold tracking-normal text-white md:text-5xl">
-                    {detail.heroTitle}
-                  </h1>
-                </div>
-              </div>
-              <time
-                className="text-text-muted mt-5 block text-sm font-medium"
-                dateTime={UPDATED_DATE}
-              >
-                {UPDATED_LABEL}
-              </time>
-            </header>
+                <header className="text-center">
+                  <div className="shadow-shadow relative mx-auto max-w-[720px] overflow-hidden rounded-2xl shadow-2xl">
+                    <Image
+                      alt=""
+                      className="h-[240px] w-full object-cover grayscale-100 md:h-[320px]"
+                      placeholder="blur"
+                      priority
+                      src={meshImage}
+                    />
+                    <div className="absolute inset-0 bg-black/20 dark:bg-black/35" />
+                    <div className="absolute inset-0 flex items-center justify-center px-6">
+                      <h1 className="font-heading text-4xl font-semibold tracking-normal text-white md:text-5xl">
+                        {detail.heroTitle}
+                      </h1>
+                    </div>
+                  </div>
+                  <time
+                    className="text-text-muted mt-5 block text-sm font-medium"
+                    dateTime={detail.updatedDate ?? UPDATED_DATE}
+                  >
+                    {detail.updatedLabel ?? UPDATED_LABEL}
+                  </time>
+                </header>
+              </>
+            ) : null}
 
             <div className="text-text-muted mt-18 text-[1.05rem] leading-8">
               {detail.intro.map((paragraph) => (

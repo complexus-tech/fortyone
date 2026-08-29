@@ -1,205 +1,74 @@
 package feedback
 
-import (
-	"context"
-	"time"
-
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
-	"github.com/google/uuid"
-)
+import feedbackdomain "github.com/complexus-tech/projects-api/internal/modules/feedback/domain"
 
 const (
-	StatusPending    = "pending"
-	StatusReviewing  = "reviewing"
-	StatusPlanned    = "planned"
-	StatusInProgress = "in_progress"
-	StatusCompleted  = "completed"
-	StatusClosed     = "closed"
-
-	RelationshipCreatedFrom = "created_from"
-	RelationshipLinked      = "linked"
-	RelationshipSolves      = "solves"
+	StatusPending                     = feedbackdomain.StatusPending
+	StatusReviewing                   = feedbackdomain.StatusReviewing
+	StatusPlanned                     = feedbackdomain.StatusPlanned
+	StatusInProgress                  = feedbackdomain.StatusInProgress
+	StatusCompleted                   = feedbackdomain.StatusCompleted
+	StatusClosed                      = feedbackdomain.StatusClosed
+	ListStatusTrashed                 = feedbackdomain.ListStatusTrashed
+	RelationshipCreatedFrom           = feedbackdomain.RelationshipCreatedFrom
+	RelationshipLinked                = feedbackdomain.RelationshipLinked
+	RelationshipSolves                = feedbackdomain.RelationshipSolves
+	SubmissionSourceInternal          = feedbackdomain.SubmissionSourceInternal
+	SubmissionSourcePortal            = feedbackdomain.SubmissionSourcePortal
+	SubmissionSourceWidget            = feedbackdomain.SubmissionSourceWidget
+	SubmissionSourceIntegration       = feedbackdomain.SubmissionSourceIntegration
+	EmailFrequencyOff                 = feedbackdomain.EmailFrequencyOff
+	EmailFrequencyDaily               = feedbackdomain.EmailFrequencyDaily
+	EmailFrequencyWeekly              = feedbackdomain.EmailFrequencyWeekly
+	ParticipationModeAccountRequired  = feedbackdomain.ParticipationModeAccountRequired
+	ParticipationModeAnonymousAllowed = feedbackdomain.ParticipationModeAnonymousAllowed
+	ParticipationIntentAccount        = feedbackdomain.ParticipationIntentAccount
+	ParticipationIntentAnonymous      = feedbackdomain.ParticipationIntentAnonymous
+	ContributorKindAccount            = feedbackdomain.ContributorKindAccount
+	ContributorKindAnonymous          = feedbackdomain.ContributorKindAnonymous
 )
 
-type CorePortal struct {
-	ID          uuid.UUID
-	WorkspaceID uuid.UUID
-	Name        string
-	Slug        string
-	Description string
-	IsPublic    bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-type CoreBoard struct {
-	ID          uuid.UUID
-	WorkspaceID uuid.UUID
-	PortalID    uuid.UUID
-	TeamID      uuid.UUID
-	Name        string
-	Slug        string
-	Color       string
-	OrderIndex  int
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-type CoreItem struct {
-	ID             uuid.UUID
-	WorkspaceID    uuid.UUID
-	PortalID       uuid.UUID
-	BoardID        uuid.UUID
-	AuthorID       uuid.UUID
-	AuthorName     string
-	AuthorEmail    string
-	AuthorAvatar   *string
-	Title          string
-	Description    string
-	Slug           string
-	Status         string
-	VoteCount      int
-	CommentCount   int
-	RoadmapSummary *string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-}
-
-type CoreComment struct {
-	ID           uuid.UUID
-	WorkspaceID  uuid.UUID
-	ItemID       uuid.UUID
-	AuthorID     uuid.UUID
-	AuthorName   string
-	AuthorAvatar *string
-	Body         string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-}
-
-type CoreStoryLink struct {
-	ID              uuid.UUID
-	WorkspaceID     uuid.UUID
-	ItemID          uuid.UUID
-	StoryID         uuid.UUID
-	Relationship    string
-	CreatedByUserID uuid.UUID
-	CreatedAt       time.Time
-}
-
-type CorePortalSnapshot struct {
-	Portal       CorePortal
-	Boards       []CoreBoard
-	Items        []CoreItem
-	ItemsHasMore bool
-	Comments     []CoreComment
-	Links        []CoreStoryLink
-}
-
-type CorePortalInput struct {
-	WorkspaceID uuid.UUID
-	Description string
-	IsPublic    bool
-}
-
-type CoreWorkspacePortalInput struct {
-	WorkspaceID   uuid.UUID
-	WorkspaceName string
-	WorkspaceSlug string
-}
-
-type CoreBoardInput struct {
-	WorkspaceID uuid.UUID
-	PortalID    uuid.UUID
-	TeamID      uuid.UUID
-	Name        string
-	Slug        string
-	Color       string
-	OrderIndex  int
-}
-
-type CoreItemInput struct {
-	WorkspaceID uuid.UUID
-	PortalID    uuid.UUID
-	BoardID     uuid.UUID
-	AuthorID    uuid.UUID
-	Title       string
-	Description string
-	Slug        string
-}
-
-type CoreUpdateItemStatusInput struct {
-	Status         string
-	RoadmapSummary *string
-}
-
-type CoreCommentInput struct {
-	WorkspaceID uuid.UUID
-	ItemID      uuid.UUID
-	AuthorID    uuid.UUID
-	Body        string
-}
-
-type CoreVoteResult struct {
-	Voted     bool
-	VoteCount int
-}
-
-type CoreStoryLinkInput struct {
-	WorkspaceID     uuid.UUID
-	ItemID          uuid.UUID
-	StoryID         uuid.UUID
-	Relationship    string
-	CreatedByUserID uuid.UUID
-}
-
-type CoreCreateStoryInput struct {
-	TeamID   uuid.UUID
-	StatusID *uuid.UUID
-}
-
-type CoreCreateStoryResult struct {
-	ItemID  uuid.UUID
-	StoryID uuid.UUID
-	LinkID  uuid.UUID
-}
-
-type Repository interface {
-	GetPortalBySlug(ctx context.Context, slug string) (CorePortal, error)
-	GetPortalByWorkspaceSlugAndSlug(ctx context.Context, workspaceSlug, slug string) (CorePortal, error)
-	GetPortal(ctx context.Context, workspaceID, portalID uuid.UUID) (CorePortal, error)
-	ListPortals(ctx context.Context, workspaceID uuid.UUID) ([]CorePortal, error)
-	CreatePortal(ctx context.Context, input CorePortalInput) (CorePortal, error)
-	UpdatePortal(ctx context.Context, workspaceID, portalID uuid.UUID, input CorePortalInput) (CorePortal, error)
-	ListBoards(ctx context.Context, portalID uuid.UUID) ([]CoreBoard, error)
-	CreateBoard(ctx context.Context, input CoreBoardInput) (CoreBoard, error)
-	ListItems(ctx context.Context, input CoreListItemsInput) (CoreItemsPage, error)
-	ListComments(ctx context.Context, portalID uuid.UUID) ([]CoreComment, error)
-	ListStoryLinks(ctx context.Context, portalID uuid.UUID) ([]CoreStoryLink, error)
-	GetItem(ctx context.Context, workspaceID, itemID uuid.UUID) (CoreItem, error)
-	CreateItem(ctx context.Context, input CoreItemInput) (CoreItem, error)
-	UpdateItemStatus(ctx context.Context, workspaceID, itemID uuid.UUID, input CoreUpdateItemStatusInput) (CoreItem, error)
-	CreateComment(ctx context.Context, input CoreCommentInput) (CoreComment, error)
-	ToggleVote(ctx context.Context, workspaceID, itemID, userID uuid.UUID) (CoreVoteResult, error)
-	LinkStory(ctx context.Context, input CoreStoryLinkInput) (CoreStoryLink, error)
-	FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error)
-}
-
-type CoreListItemsInput struct {
-	PortalID uuid.UUID
-	Status   string
-	BoardID  *uuid.UUID
-	Search   string
-	Sort     string
-	Page     int
-	PageSize int
-}
-
-type CoreItemsPage struct {
-	Items   []CoreItem
-	HasMore bool
-}
-
-type StoryService interface {
-	CreateExternal(ctx context.Context, actorID uuid.UUID, ns stories.CoreNewStory, workspaceID uuid.UUID) (stories.CoreSingleStory, error)
-}
+type CorePortal = feedbackdomain.CorePortal
+type CoreContributorActivity = feedbackdomain.CoreContributorActivity
+type CoreContributorActivityPage = feedbackdomain.CoreContributorActivityPage
+type CoreListContributorActivityInput = feedbackdomain.CoreListContributorActivityInput
+type CoreBoard = feedbackdomain.CoreBoard
+type CoreItem = feedbackdomain.CoreItem
+type CorePrivateAuthor = feedbackdomain.CorePrivateAuthor
+type CoreMergeItemResult = feedbackdomain.CoreMergeItemResult
+type CoreCanonicalItem = feedbackdomain.CoreCanonicalItem
+type CoreSimilarItem = feedbackdomain.CoreSimilarItem
+type CoreComment = feedbackdomain.CoreComment
+type CoreContributorStats = feedbackdomain.CoreContributorStats
+type CoreContributor = feedbackdomain.CoreContributor
+type CoreContributorComment = feedbackdomain.CoreContributorComment
+type CoreStoryLink = feedbackdomain.CoreStoryLink
+type CoreStoryFeedbackLink = feedbackdomain.CoreStoryFeedbackLink
+type CoreTeamSummary = feedbackdomain.CoreTeamSummary
+type CoreBoardReviewer = feedbackdomain.CoreBoardReviewer
+type CorePortalSnapshot = feedbackdomain.CorePortalSnapshot
+type CorePortalInput = feedbackdomain.CorePortalInput
+type CoreWorkspacePortalInput = feedbackdomain.CoreWorkspacePortalInput
+type CoreBoardInput = feedbackdomain.CoreBoardInput
+type CoreItemInput = feedbackdomain.CoreItemInput
+type CoreBoardReviewerInput = feedbackdomain.CoreBoardReviewerInput
+type CorePublicItemInput = feedbackdomain.CorePublicItemInput
+type CorePublicItemResult = feedbackdomain.CorePublicItemResult
+type CorePublicCommentInput = feedbackdomain.CorePublicCommentInput
+type CorePublicVoteInput = feedbackdomain.CorePublicVoteInput
+type CoreUpdateItemStatusInput = feedbackdomain.CoreUpdateItemStatusInput
+type CoreCommentInput = feedbackdomain.CoreCommentInput
+type CoreVoteResult = feedbackdomain.CoreVoteResult
+type CoreStoryLinkInput = feedbackdomain.CoreStoryLinkInput
+type CoreCreateStoryInput = feedbackdomain.CoreCreateStoryInput
+type CoreCreateStoryResult = feedbackdomain.CoreCreateStoryResult
+type CoreItemDetails = feedbackdomain.CoreItemDetails
+type CoreListItemsInput = feedbackdomain.CoreListItemsInput
+type CorePortalSnapshotInput = feedbackdomain.CorePortalSnapshotInput
+type CoreItemsPage = feedbackdomain.CoreItemsPage
+type CoreListContributorCommentsInput = feedbackdomain.CoreListContributorCommentsInput
+type CoreContributorCommentsPage = feedbackdomain.CoreContributorCommentsPage
+type StoryPlan = feedbackdomain.StoryPlan
+type StoryDraft = feedbackdomain.StoryDraft
+type StoryPlanner = feedbackdomain.StoryPlanner
+type EventPublisher = feedbackdomain.EventPublisher

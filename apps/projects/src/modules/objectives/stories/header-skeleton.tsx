@@ -3,13 +3,13 @@ import { Flex, Skeleton } from "ui";
 import { parseAsString, useQueryState } from "nuqs";
 import { HeaderContainer } from "@/components/shared";
 import type { StoriesLayout } from "@/components/ui";
-import { LayoutSwitcher, NewStoryButton } from "@/components/ui";
+import { LayoutSwitcher } from "@/components/ui";
 
 export const HeaderSkeleton = ({ layout }: { layout: StoriesLayout }) => {
   const [tab] = useQueryState("tab", parseAsString.withDefault("overview"));
 
   return (
-    <HeaderContainer className="justify-between">
+    <HeaderContainer className="shrink-0 justify-between">
       <Flex gap={2}>
         <Flex align="center" gap={2}>
           <Skeleton className="size-6 rounded-full" />
@@ -26,10 +26,8 @@ export const HeaderSkeleton = ({ layout }: { layout: StoriesLayout }) => {
             <LayoutSwitcher layout={layout} setLayout={() => {}} />
             <Skeleton className="size-9 rounded md:size-8" />
             <Skeleton className="size-9 rounded md:size-8" />
-            <span className="text-text-secondary hidden md:inline">|</span>
           </>
         )}
-        <NewStoryButton className="hidden md:flex" />
       </Flex>
     </HeaderContainer>
   );

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { IntegrationRequestDetails } from "@/modules/integration-requests/details";
 
 export const metadata: Metadata = {
-  title: "Request",
+  title: "Intake",
 };
 
 export default async function Page({

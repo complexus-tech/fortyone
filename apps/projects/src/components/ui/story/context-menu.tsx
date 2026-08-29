@@ -7,7 +7,7 @@ import {
   DeleteIcon,
   DuplicateIcon,
   EditIcon,
-  NewTabIcon,
+  ExternalLinkIcon,
   ShareIcon,
   StoryIcon,
   UndoIcon,
@@ -15,8 +15,13 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import type { Story } from "@/modules/stories/types";
-import { useCopyToClipboard, useUserRole, useWorkspacePath } from "@/hooks";
-import { slugify } from "@/utils";
+import {
+  useCopyToClipboard,
+  useTerminology,
+  useUserRole,
+  useWorkspacePath,
+} from "@/hooks";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
 import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
@@ -24,6 +29,50 @@ import { useBulkRestoreStoryMutation } from "@/modules/stories/hooks/restore-mut
 import { useDuplicateStoryMutation } from "@/modules/story/hooks/duplicate-mutation";
 import type { DetailedStory } from "@/modules/story/types";
 import { ContextMenuItem } from "./context-menu-item";
+import { StoryPropertyContextMenu } from "./story-property-context-menu";
+
+const StoryActionConfirmationDialog = ({
+  confirmIcon,
+  confirmLabel,
+  description,
+  onConfirm,
+  onOpenChange,
+  open,
+  title,
+}: {
+  confirmIcon?: ReactNode;
+  confirmLabel: string;
+  description: ReactNode;
+  onConfirm: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  title: string;
+}) => (
+  <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog.Content>
+      <Dialog.Header>
+        <Dialog.Title className="px-6 pt-0.5 text-lg">{title}</Dialog.Title>
+      </Dialog.Header>
+      <Dialog.Body>
+        <Text color="muted">{description}</Text>
+      </Dialog.Body>
+      <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
+        <Button
+          className="px-4"
+          color="tertiary"
+          onClick={() => {
+            onOpenChange(false);
+          }}
+        >
+          Cancel
+        </Button>
+        <Button className="px-4" leftIcon={confirmIcon} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
+      </Dialog.Footer>
+    </Dialog.Content>
+  </Dialog>
+);
 
 export const StoryContextMenu = ({
   children,
@@ -46,11 +95,20 @@ export const StoryContextMenu = ({
   const { mutate: restoreStory } = useBulkRestoreStoryMutation();
   const { mutate: duplicateStory } = useDuplicateStoryMutation();
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
 
   const isOnDeletedPage = pathname.includes("/deleted");
   const isOnArchivePage = pathname.includes("/archived");
+  const canUpdateProperties = userRole !== "guest" && !isOnDeletedPage;
 
-  const storyUrl = withWorkspace(`/story/${story.id}/${slugify(story.title)}`);
+  const storyUrl = withWorkspace(
+    getStoryPath({
+      id: story.id,
+      sequenceId: story.sequenceId,
+      teamCode: story.team?.code,
+    }),
+  );
 
   const handleArchive = () => {
     archiveStory([story.id]);
@@ -89,6 +147,7 @@ export const StoryContextMenu = ({
                 title: story.title,
                 teamId: story.teamId,
                 objectiveId: story.objectiveId,
+                keyResultId: story.keyResultId,
                 sprintId: story.sprintId,
                 statusId: story.statusId,
                 assigneeId: story.assigneeId,
@@ -101,9 +160,9 @@ export const StoryContextMenu = ({
         },
         {
           label: "Open in new tab",
-          icon: <NewTabIcon />,
+          icon: <ExternalLinkIcon className="h-[1.15rem]" />,
           onSelect: () => {
-            window.open(storyUrl, "_blank");
+            window.open(storyUrl, "_blank", "noopener,noreferrer");
           },
         },
         {
@@ -118,7 +177,7 @@ export const StoryContextMenu = ({
         ...(!isOnDeletedPage && !isOnArchivePage
           ? [
               {
-                label: "Archive story",
+                label: `Archive ${storyTerm}`,
                 disabled: userRole === "guest",
                 icon: <ArchiveIcon />,
                 onSelect: () => {
@@ -131,7 +190,7 @@ export const StoryContextMenu = ({
         ...(isOnArchivePage
           ? [
               {
-                label: "Unarchive story",
+                label: `Unarchive ${storyTerm}`,
                 disabled: userRole === "guest",
                 icon: <ArchiveIcon />,
                 onSelect: () => {
@@ -144,7 +203,7 @@ export const StoryContextMenu = ({
         ...(isOnDeletedPage
           ? [
               {
-                label: "Restore story",
+                label: `Restore ${storyTerm}`,
                 disabled: userRole === "guest",
                 icon: <UndoIcon />,
                 onSelect: () => {
@@ -178,6 +237,10 @@ export const StoryContextMenu = ({
           <Box>{children}</Box>
         </ContextMenu.Trigger>
         <ContextMenu.Items className="w-56">
+          <StoryPropertyContextMenu
+            disabled={!canUpdateProperties}
+            story={story}
+          />
           {contextMenu.map(({ name, options }) => (
             <Fragment key={name}>
               <ContextMenu.Group key={name}>
@@ -187,6 +250,7 @@ export const StoryContextMenu = ({
                     icon={icon}
                     key={label}
                     label={label}
+                    labelColor={name === "Danger Zone" ? "danger" : undefined}
                     onSelect={onSelect}
                   />
                 ))}
@@ -199,153 +263,53 @@ export const StoryContextMenu = ({
         </ContextMenu.Items>
       </ContextMenu>
 
-      <Dialog onOpenChange={setIsDeleteOpen} open={isDeleteOpen}>
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title className="px-6 pt-0.5 text-lg">
-              Delete story
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Body>
-            <Text color="muted">
-              {isOnDeletedPage || isOnArchivePage
-                ? "This is an irreversible action. The story will be permanently deleted. You can't restore it."
-                : "This story will be moved to the recycle bin and will be permanently deleted after 30 days. You can restore it at any time before that."}
-            </Text>
-          </Dialog.Body>
-          <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
-            <Button
-              className="px-4"
-              color="tertiary"
-              onClick={() => {
-                setIsDeleteOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="px-4"
-              onClick={() => {
-                deleteStory({
-                  storyIds: [story.id],
-                  hardDelete: isOnDeletedPage || isOnArchivePage,
-                });
-                setIsDeleteOpen(false);
-              }}
-            >
-              {isOnDeletedPage || isOnArchivePage ? "Delete forever" : "Delete"}
-            </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog>
-
-      {/* Archive Dialog */}
-      <Dialog onOpenChange={setIsArchiveDialogOpen} open={isArchiveDialogOpen}>
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title className="px-6 pt-0.5 text-lg">
-              Archive story
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Body>
-            <Text color="muted">
-              This story will be moved to the archive and can be unarchived
-              later. It won&apos;t appear in your active story lists.
-            </Text>
-          </Dialog.Body>
-          <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
-            <Button
-              className="px-4"
-              color="tertiary"
-              onClick={() => {
-                setIsArchiveDialogOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="px-4"
-              leftIcon={<ArchiveIcon className="text-white dark:text-white" />}
-              onClick={handleArchive}
-            >
-              Archive
-            </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog>
-
-      {/* Unarchive Dialog */}
-      <Dialog
+      <StoryActionConfirmationDialog
+        confirmLabel={
+          isOnDeletedPage || isOnArchivePage ? "Delete forever" : "Delete"
+        }
+        description={
+          isOnDeletedPage || isOnArchivePage
+            ? `This is an irreversible action. The ${storyTerm} will be permanently deleted. You can't restore it.`
+            : `This ${storyTerm} will be moved to the recycle bin and will be permanently deleted after 30 days. You can restore it at any time before that.`
+        }
+        onConfirm={() => {
+          deleteStory({
+            storyIds: [story.id],
+            hardDelete: isOnDeletedPage || isOnArchivePage,
+          });
+          setIsDeleteOpen(false);
+        }}
+        onOpenChange={setIsDeleteOpen}
+        open={isDeleteOpen}
+        title={`Delete ${storyTerm}`}
+      />
+      <StoryActionConfirmationDialog
+        confirmIcon={<ArchiveIcon className="text-current" />}
+        confirmLabel="Archive"
+        description={`This ${storyTerm} will be moved to the archive and can be unarchived later. It won't appear in your active ${storyTerm} lists.`}
+        onConfirm={handleArchive}
+        onOpenChange={setIsArchiveDialogOpen}
+        open={isArchiveDialogOpen}
+        title={`Archive ${storyTerm}`}
+      />
+      <StoryActionConfirmationDialog
+        confirmIcon={<ArchiveIcon className="text-current" />}
+        confirmLabel="Unarchive"
+        description={`This ${storyTerm} will be restored to your active ${storyTerm} list and can be assigned to sprints and team members again.`}
+        onConfirm={handleUnarchive}
         onOpenChange={setIsUnarchiveDialogOpen}
         open={isUnarchiveDialogOpen}
-      >
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title className="px-6 pt-0.5 text-lg">
-              Unarchive story
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Body>
-            <Text color="muted">
-              This story will be restored to your active story list and can be
-              assigned to sprints and team members again.
-            </Text>
-          </Dialog.Body>
-          <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
-            <Button
-              className="px-4"
-              color="tertiary"
-              onClick={() => {
-                setIsUnarchiveDialogOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="px-4"
-              leftIcon={<ArchiveIcon className="text-white dark:text-white" />}
-              onClick={handleUnarchive}
-            >
-              Unarchive
-            </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog>
-
-      {/* Restore Dialog */}
-      <Dialog onOpenChange={setIsRestoreDialogOpen} open={isRestoreDialogOpen}>
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title className="px-6 pt-0.5 text-lg">
-              Restore story
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Body>
-            <Text color="muted">
-              This story will be restored to your active story list and can be
-              assigned to sprints and team members again.
-            </Text>
-          </Dialog.Body>
-          <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
-            <Button
-              className="px-4"
-              color="tertiary"
-              onClick={() => {
-                setIsRestoreDialogOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="px-4"
-              leftIcon={<UndoIcon className="text-white dark:text-white" />}
-              onClick={handleRestore}
-            >
-              Restore
-            </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog>
+        title={`Unarchive ${storyTerm}`}
+      />
+      <StoryActionConfirmationDialog
+        confirmIcon={<UndoIcon className="text-current" />}
+        confirmLabel="Restore"
+        description={`This ${storyTerm} will be restored to your active ${storyTerm} list and can be assigned to sprints and team members again.`}
+        onConfirm={handleRestore}
+        onOpenChange={setIsRestoreDialogOpen}
+        open={isRestoreDialogOpen}
+        title={`Restore ${storyTerm}`}
+      />
     </>
   );
 };

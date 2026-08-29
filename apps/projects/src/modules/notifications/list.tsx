@@ -1,15 +1,23 @@
 "use client";
 import { useEffect } from "react";
+import { parseAsString, useQueryState } from "nuqs";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { Box, Flex, Skeleton, Text } from "ui";
 import { NotificationCard } from "@/modules/notifications/card";
+import { NotificationsEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
+import { useTerminology } from "@/hooks";
 import { NotificationsHeader } from "./header";
 import { useNotificationsInfinite } from "./hooks/notifications";
 import { NotificationsSkeleton } from "./notifications-skeleton";
 
 export const ListNotifications = () => {
+  const { getTermDisplay } = useTerminology();
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault(""),
+  );
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
-    useNotificationsInfinite();
+    useNotificationsInfinite(search);
   const notifications = data?.pages.flatMap((page) => page.notifications) ?? [];
   const [triggerRef, { entry }] = useIntersectionObserver({
     threshold: 0,
@@ -24,9 +32,14 @@ export const ListNotifications = () => {
 
   if (isPending) return <NotificationsSkeleton />;
   return (
-    <Box className="border-border/60 d h-dvh border-r-[0.5px] pb-6">
-      <NotificationsHeader />
-      <Box className="h-[calc(100dvh-4rem)] overflow-y-auto">
+    <Box className="border-border flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-r-[0.5px] pb-6">
+      <NotificationsHeader
+        onSearchChange={(nextSearch) => {
+          void setSearch(nextSearch || null);
+        }}
+        search={search}
+      />
+      <Box className="min-h-0 flex-1 overflow-y-auto">
         {notifications.map((notification, idx) => (
           <NotificationCard
             key={notification.id}
@@ -61,13 +74,15 @@ export const ListNotifications = () => {
         ) : null}
         {notifications.length === 0 && (
           <Flex align="center" className="h-full px-6" justify="center">
-            <Box>
+            <Box className="flex flex-col items-center">
+              <NotificationsEmptyIllustration className="mb-5 w-52" />
               <Text align="center" className="mb-3" fontSize="xl">
-                No notifications
+                {search ? "No matching notifications" : "No notifications"}
               </Text>
               <Text align="center" color="muted">
-                You will receive notifications when you are assigned or
-                mentioned in a story.
+                {search
+                  ? `No notifications match “${search}”.`
+                  : `You will receive notifications when you are assigned or mentioned in a ${getTermDisplay("storyTerm")}.`}
               </Text>
             </Box>
           </Flex>

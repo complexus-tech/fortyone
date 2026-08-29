@@ -1,0 +1,31 @@
+{
+  "name": "@fortyone/sdk",
+  "version": "1.0.0-preview.1",
+  "private": true,
+  "description": "Generated preview client for the FortyOne developer API v1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "./scripts/test.sh",
+    "type-check": "tsc --project tsconfig.json"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.27",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

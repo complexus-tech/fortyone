@@ -53,6 +53,71 @@ describe("story filter query mapping", () => {
     });
   });
 
+  it("maps a key result into grouped story query params", () => {
+    const filters = {
+      ...baseFilters,
+      objectiveId: "objective-1",
+      keyResultId: "key-result-1",
+    } as StoriesFilter;
+
+    expect(getGroupedStoryFilterParams(filters)).toMatchObject({
+      objectiveId: "objective-1",
+      keyResultId: "key-result-1",
+    });
+  });
+
+  it("maps negated content and collection operators to exclusion params", () => {
+    const filters = {
+      ...baseFilters,
+      contentContains: "deprecated",
+      statusIds: ["status-1"],
+      assigneeIds: ["user-1"],
+      operators: {
+        contentContains: "doesNotContain",
+        statusIds: "isNotAnyOf",
+        assigneeIds: "isNotAnyOf",
+      },
+    } as StoriesFilter;
+
+    expect(getGroupedStoryFilterParams(filters)).toMatchObject({
+      titleNotContains: "deprecated",
+      excludedStatusIds: ["status-1"],
+      excludedAssigneeIds: ["user-1"],
+    });
+    expect(getGroupedStoryFilterParams(filters)).toMatchObject({
+      titleContains: undefined,
+      statusIds: undefined,
+      assigneeIds: undefined,
+    });
+  });
+
+  it("maps date comparison, objective, and assignee presence operators", () => {
+    const filters = {
+      ...baseFilters,
+      startDate: "2026-08-01",
+      endDate: "2026-08-31",
+      objectiveId: "objective-1",
+      hasNoAssignee: true,
+      operators: {
+        startDate: "isOnOrAfter",
+        endDate: "isNot",
+        objectiveId: "isNot",
+        hasNoAssignee: "isNotEmpty",
+      },
+    } as StoriesFilter;
+
+    expect(getGroupedStoryFilterParams(filters)).toMatchObject({
+      startDateAfter: "2026-08-01",
+      startDateBefore: undefined,
+      deadlineAfter: undefined,
+      deadlineBefore: undefined,
+      deadlineNot: "2026-08-31",
+      excludedObjectiveId: "objective-1",
+      hasNoAssignee: undefined,
+      hasAssignee: true,
+    });
+  });
+
   it("counts content and labels as active filters", () => {
     const filters = {
       ...baseFilters,
@@ -70,6 +135,16 @@ describe("story filter query mapping", () => {
     } as unknown as StoriesFilter;
 
     expect(getActiveStoriesFilterCount(filters)).toBe(1);
+  });
+
+  it("counts objective and key result filters independently", () => {
+    const filters = {
+      ...baseFilters,
+      objectiveId: "objective-1",
+      keyResultId: "key-result-1",
+    } as StoriesFilter;
+
+    expect(getActiveStoriesFilterCount(filters)).toBe(2);
   });
 });
 
@@ -90,6 +165,12 @@ describe("getScopedStoriesFilterTeamId", () => {
     expect(getScopedStoriesFilterTeamId(undefined, null)).toBeUndefined();
     expect(
       getScopedStoriesFilterTeamId(undefined, ["team-a", "team-b"]),
+    ).toBeUndefined();
+  });
+
+  it("does not scope dependent filters to an excluded team", () => {
+    expect(
+      getScopedStoriesFilterTeamId(undefined, ["team-a"], "isNotAnyOf"),
     ).toBeUndefined();
   });
 });

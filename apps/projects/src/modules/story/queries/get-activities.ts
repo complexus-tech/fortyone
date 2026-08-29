@@ -17,9 +17,10 @@ export const getStoryActivities = async (
   id: string,
   ctx: WorkspaceCtx,
   page = 1,
+  pageSize = 20,
 ) => {
   const response = await get<ApiResponse<ActivitiesResponse>>(
-    `stories/${id}/activities?page=${page}`,
+    `stories/${id}/activities?page=${page}&pageSize=${pageSize}`,
     ctx,
   );
   return response.data!;

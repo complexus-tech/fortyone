@@ -2,54 +2,22 @@ package mayarepository
 
 import (
 	"encoding/json"
-	"time"
 
-	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
-	"github.com/google/uuid"
+	mayadomain "github.com/complexus-tech/projects-api/internal/modules/maya/domain"
+	mayasql "github.com/complexus-tech/projects-api/internal/modules/maya/repository/sqlc"
 )
 
-type dbRun struct {
-	ID          uuid.UUID       `db:"run_id"`
-	WorkspaceID uuid.UUID       `db:"workspace_id"`
-	StoryID     uuid.UUID       `db:"story_id"`
-	TriggeredBy uuid.UUID       `db:"triggered_by_user_id"`
-	Trigger     string          `db:"trigger_type"`
-	Status      string          `db:"status"`
-	Summary     string          `db:"summary"`
-	Context     json.RawMessage `db:"context"`
-	Error       *string         `db:"error_message"`
-	StartedAt   time.Time       `db:"started_at"`
-	CompletedAt *time.Time      `db:"completed_at"`
-	CreatedAt   time.Time       `db:"created_at"`
-	UpdatedAt   time.Time       `db:"updated_at"`
-}
-
-type dbAction struct {
-	ID          uuid.UUID       `db:"action_id"`
-	RunID       uuid.UUID       `db:"run_id"`
-	WorkspaceID uuid.UUID       `db:"workspace_id"`
-	StoryID     uuid.UUID       `db:"story_id"`
-	Type        string          `db:"action_type"`
-	Status      string          `db:"status"`
-	Reason      string          `db:"reason"`
-	Payload     json.RawMessage `db:"payload"`
-	Error       *string         `db:"error_message"`
-	AppliedAt   *time.Time      `db:"applied_at"`
-	CreatedAt   time.Time       `db:"created_at"`
-	UpdatedAt   time.Time       `db:"updated_at"`
-}
-
-func toCoreRun(row dbRun) maya.CoreRun {
-	return maya.CoreRun{
-		ID:          row.ID,
+func toCoreRun(row mayasql.MayaAgentRun) mayadomain.CoreRun {
+	return mayadomain.CoreRun{
+		ID:          row.RunID,
 		WorkspaceID: row.WorkspaceID,
 		StoryID:     row.StoryID,
-		TriggeredBy: row.TriggeredBy,
-		Trigger:     maya.RunTrigger(row.Trigger),
-		Status:      maya.RunStatus(row.Status),
+		TriggeredBy: row.TriggeredByUserID,
+		Trigger:     mayadomain.RunTrigger(row.TriggerType),
+		Status:      mayadomain.RunStatus(row.Status),
 		Summary:     row.Summary,
-		Context:     row.Context,
-		Error:       row.Error,
+		Context:     append(json.RawMessage(nil), row.Context...),
+		Error:       row.ErrorMessage,
 		StartedAt:   row.StartedAt,
 		CompletedAt: row.CompletedAt,
 		CreatedAt:   row.CreatedAt,
@@ -57,24 +25,24 @@ func toCoreRun(row dbRun) maya.CoreRun {
 	}
 }
 
-func toCoreAction(row dbAction) (maya.CoreAction, error) {
-	var payload maya.ActionPayload
+func toCoreAction(row mayasql.MayaAgentAction) (mayadomain.CoreAction, error) {
+	var payload mayadomain.ActionPayload
 	if len(row.Payload) > 0 {
 		if err := json.Unmarshal(row.Payload, &payload); err != nil {
-			return maya.CoreAction{}, err
+			return mayadomain.CoreAction{}, err
 		}
 	}
-	return maya.CoreAction{
-		ID:          row.ID,
+	return mayadomain.CoreAction{
+		ID:          row.ActionID,
 		RunID:       row.RunID,
 		WorkspaceID: row.WorkspaceID,
 		StoryID:     row.StoryID,
-		Type:        maya.ActionType(row.Type),
-		Status:      maya.ActionStatus(row.Status),
+		Type:        mayadomain.ActionType(row.ActionType),
+		Status:      mayadomain.ActionStatus(row.Status),
 		Reason:      row.Reason,
 		Payload:     payload,
-		PayloadJSON: row.Payload,
-		Error:       row.Error,
+		PayloadJSON: append(json.RawMessage(nil), row.Payload...),
+		Error:       row.ErrorMessage,
 		AppliedAt:   row.AppliedAt,
 		CreatedAt:   row.CreatedAt,
 		UpdatedAt:   row.UpdatedAt,

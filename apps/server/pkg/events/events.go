@@ -14,6 +14,11 @@ const (
 	StoryDuplicated                        EventType = "story.duplicated"
 	CommentCreated                         EventType = "comment.created"
 	CommentReplied                         EventType = "comment.replied"
+	FeedbackCommentCreated                 EventType = "feedback.comment.created"
+	FeedbackStatusUpdated                  EventType = "feedback.status.updated"
+	FeedbackContributorVerification        EventType = "feedback.contributor.verification"
+	FeedbackUpdatePublished                EventType = "feedback.update.published"
+	FeedbackItemMerged                     EventType = "feedback.item.merged"
 	UserMentioned                          EventType = "user.mentioned"
 	ObjectiveUpdated                       EventType = "objective.updated"
 	KeyResultUpdated                       EventType = "keyresult.updated"
@@ -45,10 +50,66 @@ type StoryCreatedPayload struct {
 
 // StoryUpdatedPayload contains data for story update events
 type StoryUpdatedPayload struct {
-	StoryID     uuid.UUID      `json:"story_id"`
-	WorkspaceID uuid.UUID      `json:"workspace_id"`
-	Updates     map[string]any `json:"updates"`
-	AssigneeID  *uuid.UUID     `json:"assignee_id,omitempty"`
+	StoryID                 uuid.UUID                `json:"story_id"`
+	WorkspaceID             uuid.UUID                `json:"workspace_id"`
+	Updates                 map[string]any           `json:"updates"`
+	Source                  StoryUpdateSource        `json:"source,omitempty"`
+	Reason                  string                   `json:"reason,omitempty"`
+	Schedule                *StoryScheduleTransition `json:"schedule,omitempty"`
+	AssigneeID              *uuid.UUID               `json:"assignee_id,omitempty"`
+	AudienceIDs             []uuid.UUID              `json:"audience_ids,omitempty"`
+	AudienceResolved        bool                     `json:"audience_resolved"`
+	PreviousCollaboratorIDs []uuid.UUID              `json:"previous_collaborator_ids,omitempty"`
+	PreviousStatusID        *uuid.UUID               `json:"previous_status_id,omitempty"`
+}
+
+type StoryUpdateSource string
+
+const (
+	StoryUpdateSourceMaya StoryUpdateSource = "maya"
+)
+
+type StoryScheduleState string
+
+const (
+	StoryScheduleStateOff        StoryScheduleState = "off"
+	StoryScheduleStateNeedsOwner StoryScheduleState = "needs_owner"
+	StoryScheduleStateNeedsTime  StoryScheduleState = "needs_time"
+	StoryScheduleStatePlanning   StoryScheduleState = "planning"
+	StoryScheduleStateScheduled  StoryScheduleState = "scheduled"
+	StoryScheduleStateAtRisk     StoryScheduleState = "at_risk"
+	StoryScheduleStateCannotFit  StoryScheduleState = "cannot_fit"
+	StoryScheduleStateLocked     StoryScheduleState = "locked"
+)
+
+type StoryScheduleTransitionKind string
+
+const (
+	StoryScheduleTransitionFirstSchedule StoryScheduleTransitionKind = "first_schedule"
+	StoryScheduleTransitionDayChanged    StoryScheduleTransitionKind = "day_changed"
+	StoryScheduleTransitionMoved         StoryScheduleTransitionKind = "moved"
+	StoryScheduleTransitionStateChanged  StoryScheduleTransitionKind = "state_changed"
+	StoryScheduleTransitionLocked        StoryScheduleTransitionKind = "locked"
+	StoryScheduleTransitionUnlocked      StoryScheduleTransitionKind = "unlocked"
+)
+
+// StoryScheduleTransition carries the scheduler decision facts needed by
+// notification and activity consumers. Local dates are produced by the
+// scheduler in the assignee's timezone so consumers never infer a day change
+// from UTC dates.
+type StoryScheduleTransition struct {
+	Kind              StoryScheduleTransitionKind `json:"kind"`
+	UserID            uuid.UUID                   `json:"user_id"`
+	PreviousState     StoryScheduleState          `json:"previous_state,omitempty"`
+	State             StoryScheduleState          `json:"state"`
+	PreviousStartAt   *time.Time                  `json:"previous_start_at,omitempty"`
+	StartAt           *time.Time                  `json:"start_at,omitempty"`
+	PreviousEndAt     *time.Time                  `json:"previous_end_at,omitempty"`
+	EndAt             *time.Time                  `json:"end_at,omitempty"`
+	Timezone          string                      `json:"timezone,omitempty"`
+	PreviousLocalDate string                      `json:"previous_local_date,omitempty"`
+	LocalDate         string                      `json:"local_date,omitempty"`
+	ShiftMinutes      int                         `json:"shift_minutes,omitempty"`
 }
 
 // ObjectiveUpdatedPayload contains data for objective update events
@@ -69,10 +130,20 @@ type KeyResultUpdatedPayload struct {
 
 // EmailVerificationPayload contains data for email verification events
 type EmailVerificationPayload struct {
-	Email     string `json:"email"`
-	IsMobile  bool   `json:"is_mobile"`
-	Token     string `json:"token"`
-	TokenType string `json:"token_type"`
+	Email       string `json:"email"`
+	IsMobile    bool   `json:"is_mobile"`
+	Token       string `json:"token"`
+	TokenType   string `json:"token_type"`
+	CallbackURL string `json:"callback_url,omitempty"`
+}
+
+type FeedbackContributorVerificationPayload struct {
+	Email           string    `json:"email"`
+	DisplayName     string    `json:"display_name,omitempty"`
+	PortalName      string    `json:"portal_name"`
+	VerificationURL string    `json:"verification_url"`
+	Code            string    `json:"code"`
+	ExpiresAt       time.Time `json:"expires_at"`
 }
 
 // InvitationEmailPayload contains data for invitation email events
@@ -107,25 +178,77 @@ type StoryDuplicatedPayload struct {
 
 // CommentCreatedPayload contains data for comment creation events
 type CommentCreatedPayload struct {
-	CommentID   uuid.UUID   `json:"comment_id"`
-	StoryID     uuid.UUID   `json:"story_id"`
-	StoryTitle  string      `json:"story_title"`
-	AssigneeID  *uuid.UUID  `json:"assignee_id"`
-	WorkspaceID uuid.UUID   `json:"workspace_id"`
-	Content     string      `json:"content"`
-	Mentions    []uuid.UUID `json:"mentions"`
+	CommentID        uuid.UUID   `json:"comment_id"`
+	StoryID          uuid.UUID   `json:"story_id"`
+	StoryTitle       string      `json:"story_title"`
+	AssigneeID       *uuid.UUID  `json:"assignee_id"`
+	WorkspaceID      uuid.UUID   `json:"workspace_id"`
+	Content          string      `json:"content"`
+	Mentions         []uuid.UUID `json:"mentions"`
+	AudienceIDs      []uuid.UUID `json:"audience_ids,omitempty"`
+	AudienceResolved bool        `json:"audience_resolved"`
 }
 
 // CommentRepliedPayload contains data for comment reply events
 type CommentRepliedPayload struct {
-	CommentID       uuid.UUID   `json:"comment_id"`
-	ParentCommentID uuid.UUID   `json:"parent_comment_id"`
-	ParentAuthorID  uuid.UUID   `json:"parent_author_id"`
-	StoryID         uuid.UUID   `json:"story_id"`
-	StoryTitle      string      `json:"story_title"`
-	WorkspaceID     uuid.UUID   `json:"workspace_id"`
-	Content         string      `json:"content"`
-	Mentions        []uuid.UUID `json:"mentions"`
+	CommentID        uuid.UUID   `json:"comment_id"`
+	ParentCommentID  uuid.UUID   `json:"parent_comment_id"`
+	ParentAuthorID   uuid.UUID   `json:"parent_author_id"`
+	StoryID          uuid.UUID   `json:"story_id"`
+	StoryTitle       string      `json:"story_title"`
+	WorkspaceID      uuid.UUID   `json:"workspace_id"`
+	Content          string      `json:"content"`
+	Mentions         []uuid.UUID `json:"mentions"`
+	AudienceIDs      []uuid.UUID `json:"audience_ids,omitempty"`
+	AudienceResolved bool        `json:"audience_resolved"`
+}
+
+// FeedbackCommentCreatedPayload contains the public feedback data required to
+// notify the feedback author without requiring workspace membership.
+type FeedbackCommentCreatedPayload struct {
+	CommentID          uuid.UUID `json:"comment_id"`
+	FeedbackID         uuid.UUID `json:"feedback_id"`
+	FeedbackTitle      string    `json:"feedback_title"`
+	FeedbackSlug       string    `json:"feedback_slug"`
+	WorkspaceID        uuid.UUID `json:"workspace_id"`
+	RecipientID        uuid.UUID `json:"recipient_id"`
+	ActorContributorID uuid.UUID `json:"actor_contributor_id,omitempty"`
+	ActorName          string    `json:"actor_name,omitempty"`
+	Content            string    `json:"content"`
+	IsReply            bool      `json:"is_reply"`
+}
+
+// FeedbackStatusUpdatedPayload contains the public feedback data required to
+// notify its author when the team changes its delivery status.
+type FeedbackStatusUpdatedPayload struct {
+	EventID       uuid.UUID `json:"event_id"`
+	FeedbackID    uuid.UUID `json:"feedback_id"`
+	FeedbackTitle string    `json:"feedback_title"`
+	FeedbackSlug  string    `json:"feedback_slug"`
+	WorkspaceID   uuid.UUID `json:"workspace_id"`
+	RecipientID   uuid.UUID `json:"recipient_id"`
+	Status        string    `json:"status"`
+}
+
+type FeedbackUpdatePublishedPayload struct {
+	PublicationEventID  uuid.UUID `json:"publication_event_id,omitempty"`
+	PublicationSequence int64     `json:"publication_sequence,omitempty"`
+	UpdateID            uuid.UUID `json:"update_id"`
+	LinkedItemID        uuid.UUID `json:"linked_item_id"`
+	WorkspaceID         uuid.UUID `json:"workspace_id"`
+	RecipientID         uuid.UUID `json:"recipient_id"`
+	UpdateTitle         string    `json:"update_title"`
+	UpdateSlug          string    `json:"update_slug"`
+}
+
+type FeedbackItemMergedPayload struct {
+	MergeEventID    uuid.UUID `json:"merge_event_id"`
+	SourceItemID    uuid.UUID `json:"source_item_id"`
+	TargetItemID    uuid.UUID `json:"target_item_id"`
+	TargetItemTitle string    `json:"target_item_title"`
+	TargetItemSlug  string    `json:"target_item_slug"`
+	WorkspaceID     uuid.UUID `json:"workspace_id"`
+	RecipientID     uuid.UUID `json:"recipient_id"`
 }
 
 // UserMentionedPayload contains data for user mention events

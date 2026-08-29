@@ -3,62 +3,236 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { devToolsMiddleware } from "@ai-sdk/devtools";
-
-import type { UIMessage } from "ai";
 import {
+  consumeStream,
   convertToModelMessages,
   stepCountIs,
   streamText,
-  smoothStream,
   wrapLanguageModel,
 } from "ai";
 import type { NextRequest } from "next/server";
 import { withTracing } from "@posthog/ai";
+import {
+  OPENAI_DEFAULT_REASONING_EFFORT,
+  OPENAI_TEXT_MODEL,
+} from "@/lib/ai/models";
 import { tools } from "@/lib/ai/tools";
+import { withCompactModelOutputs } from "@/lib/ai/model-tools";
+import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
+import type { Workspace } from "@/types";
+import type { Memory } from "@/modules/ai-chats/types";
 import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
-import { saveChat } from "./save-chat";
+import { beginChatWrite, saveChat } from "./save-chat";
+import { normalizeInlineFileData } from "./normalize-file-data";
+import { resolveJoinedTeams } from "./resolve-joined-teams";
+import { selectActiveTools } from "./active-tools";
+import {
+  assertLatestUserTextWithinContextBudget,
+  compactChatToolOutputs,
+  compactUnknownChatToolOutputs,
+  getChatContextStartIndex,
+  omitHistoricalChatAttachments,
+  pruneChatModelMessages,
+} from "./chat-context";
+import {
+  getChatErrorDiagnostic,
+  getChatStreamErrorMessage,
+} from "./chat-errors";
+import { hasTerminalMutationResult } from "./stop-conditions";
+import { createMutationToolApprovalResponse } from "./mutation-tool-approval";
+import { resolveStoryCreationDefaults } from "./story-creation-defaults";
+import { sanitizeOpenAIHistoryItemReferences } from "./openai-history";
+import {
+  runWithMayaHttpRequestContext,
+  withMayaHttpRequestContext,
+} from "./maya-http-request-context";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
-export async function POST(req: NextRequest) {
+const CHAT_TIMEOUT = {
+  // Tool execution can legitimately be silent for up to 60 seconds. A chunk
+  // or step watchdog would abort those healthy calls before their own timeout;
+  // the total budget still bounds the complete model-and-tool run and leaves
+  // enough function time for preflight reads and an idempotent transcript-
+  // finalization retry. Increasing the function ceiling does not delay normal
+  // responses; it only prevents valid long-running tool work being killed.
+  totalMs: 250_000,
+} as const;
+const MAX_TOOL_STEPS = 12;
+const MAX_CHAT_REQUEST_BYTES = 16 * 1024 * 1024;
+const MAYA_PROMPT_CACHE_NAMESPACE = "maya-projects-v2";
+const modelTools = withMayaHttpRequestContext(withCompactModelOutputs(tools));
+const modelToolNames = new Set(Object.keys(modelTools));
+const ANALYTICAL_TOOL_NAME_PATTERN =
+  /(?:AnalyticsTool|ReportTool|focusBrief|workloadPlanningTool|activitySummaryTool)$/;
+
+type ChatRequestBody = {
+  currentPath: string;
+  currentTheme: string;
+  id: string;
+  memories: Memory[];
+  messageId?: string;
+  messages: MayaUIMessage[];
+  provider?: "google" | "openai";
+  resolvedTheme: string;
+  subscription?: {
+    billingEndsAt: string;
+    billingInterval: string;
+    status: string;
+    tier: string;
+    username?: string;
+  };
+  terminology: {
+    keyResults: string;
+    objectives: string;
+    sprints: string;
+    stories: string;
+  };
+  totalMessages: { current: number; limit: number };
+  trigger?: "regenerate-message" | "submit-message";
+  username?: string;
+  workspace: Workspace;
+};
+
+const getChatReasoningEffort = (activeTools: readonly string[]) =>
+  activeTools.some((toolName) => ANALYTICAL_TOOL_NAME_PATTERN.test(toolName))
+    ? OPENAI_DEFAULT_REASONING_EFFORT
+    : ("low" as const);
+
+const parseChatRequestBody = async (req: NextRequest) => {
+  const declaredLength = Number(req.headers.get("content-length"));
+  if (
+    Number.isFinite(declaredLength) &&
+    declaredLength > MAX_CHAT_REQUEST_BYTES
+  ) {
+    throw Object.assign(new Error("Maya chat request is too large."), {
+      code: "request_too_large",
+    });
+  }
+
+  const requestText = await req.text();
+  if (
+    new TextEncoder().encode(requestText).byteLength > MAX_CHAT_REQUEST_BYTES
+  ) {
+    throw Object.assign(new Error("Maya chat request is too large."), {
+      code: "request_too_large",
+    });
+  }
+
+  return JSON.parse(requestText) as ChatRequestBody;
+};
+
+const handleChatRequest = async (req: NextRequest) => {
+  const sessionPromise = auth();
   const {
     messages: messagesFromRequest,
     currentPath,
     currentTheme,
     resolvedTheme,
     subscription,
-    teams,
     id,
     username,
     terminology,
     workspace,
     memories,
-    webSearchEnabled = true,
+    messageId,
     provider = "openai",
     totalMessages,
-  } = await req.json();
-  const modelMessages = await convertToModelMessages(
-    messagesFromRequest as UIMessage[],
+    trigger,
+  } = await parseChatRequestBody(req);
+  const session = await sessionPromise;
+  if (!session?.user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const uiMessages = messagesFromRequest;
+  const mutationApprovalResponse = createMutationToolApprovalResponse({
+    abortSignal: req.signal,
+    chatId: id,
+    messageId,
+    messages: uiMessages,
+    userId: session.user.id,
+    workspaceSlug: workspace.slug,
+  });
+  if (mutationApprovalResponse) return mutationApprovalResponse;
+
+  if (messageId && trigger !== "regenerate-message") {
+    return new Response(
+      "Editing an earlier Maya message is not supported yet. Start a new message or regenerate an assistant response.",
+      { status: 409 },
+    );
+  }
+
+  assertLatestUserTextWithinContextBudget(uiMessages);
+
+  const writeReservation = await beginChatWrite({
+    id,
+    messageId,
+    messages: uiMessages,
+    operation: trigger === "regenerate-message" ? "regenerate" : "append",
+    workspaceSlug: workspace.slug,
+  });
+  const canonicalUiMessages = writeReservation.messages ?? uiMessages;
+
+  const messagesWithoutHistoricalAttachments =
+    omitHistoricalChatAttachments(canonicalUiMessages);
+  const compactMessages = compactChatToolOutputs(
+    messagesWithoutHistoricalAttachments,
+  );
+  const contextStartIndex = getChatContextStartIndex(compactMessages);
+  const contextMessages = compactMessages.slice(contextStartIndex);
+  const activeTools = selectActiveTools({
+    currentPath,
+    messages: contextMessages,
+    storyTerminology: terminology.stories,
+  });
+  // Compact copies determine the byte-bounded suffix and tool routing. Convert
+  // the aligned raw suffix so each registered toModelOutput projector runs
+  // exactly once; double-projecting would corrupt stateful tool receipts.
+  const convertedMessages = await convertToModelMessages(
+    compactUnknownChatToolOutputs(
+      messagesWithoutHistoricalAttachments.slice(contextStartIndex),
+      modelToolNames,
+    ),
+    { tools: modelTools },
   );
 
+  const modelMessages = normalizeInlineFileData(
+    sanitizeOpenAIHistoryItemReferences(
+      pruneChatModelMessages(convertedMessages),
+    ),
+  );
+  const [joinedTeams, storyCreationDefaults] =
+    await runWithMayaHttpRequestContext(req.signal, () =>
+      Promise.all([
+        resolveJoinedTeams({
+          session,
+          workspaceSlug: workspace.slug,
+        }),
+        resolveStoryCreationDefaults({
+          ctx: { session, workspaceSlug: workspace.slug },
+        }),
+      ]),
+    );
+
   // Get user context for "me" resolution
-  const userContext = await getUserContext({
+  const userContext = getUserContext({
+    user: session.user,
     currentPath,
     currentTheme,
     resolvedTheme,
     subscription,
     memories,
-    teams,
-    username,
+    joinedTeams,
+    storyCreationDefaults,
+    username: username ?? subscription?.username,
     terminology,
     workspace,
     totalMessages,
   });
-
-  const session = await auth();
 
   const phClient = posthogServer();
 
@@ -71,7 +245,7 @@ export async function POST(req: NextRequest) {
 
   let client =
     provider === "openai"
-      ? openaiClient("gpt-5.4-mini")
+      ? openaiClient(OPENAI_TEXT_MODEL)
       : googleClient("gemini-3-flash-preview");
 
   if (process.env.NODE_ENV === "development") {
@@ -82,60 +256,94 @@ export async function POST(req: NextRequest) {
   }
 
   const model = withTracing(client, phClient, {
-    posthogDistinctId: session?.user?.email ?? undefined,
+    posthogDistinctId: session.user.id,
+    posthogPrivacyMode: true,
     posthogProperties: {
+      active_tool_count: activeTools.length,
+      chat_context_message_count: contextMessages.length,
       conversation_id: id,
       paid: subscription?.status === "active",
     },
   });
 
-  try {
-    const result = streamText({
-      model,
-      messages: modelMessages,
-      maxOutputTokens: 4000,
-      stopWhen: [stepCountIs(25)],
-      tools: {
-        ...tools,
-        // ...(webSearchEnabled
-        //   ? {
-        //       google_search: google.tools.googleSearch({}) as Tool,
-        //     }
-        //   : {}),
-      },
-      system: systemPrompt + userContext,
-      experimental_transform: smoothStream({
-        delayInMs: 20,
-        chunking: "word",
-      }),
-      experimental_context: {
-        workspaceSlug: workspace?.slug,
-      },
-      providerOptions: {
-        openai: {
-          reasoningEffort: "low",
-          textVerbosity: "low",
-        } satisfies OpenAIResponsesProviderOptions,
-        google: {
-          thinkingConfig: {
-            thinkingBudget: -1,
-            includeThoughts: false,
-          },
+  const result = streamText({
+    abortSignal: req.signal,
+    model,
+    messages: modelMessages,
+    activeTools,
+    stopWhen: [hasTerminalMutationResult, stepCountIs(MAX_TOOL_STEPS)],
+    tools: {
+      ...modelTools,
+      // ...(webSearchEnabled
+      //   ? {
+      //       google_search: google.tools.googleSearch({}) as Tool,
+      //     }
+      //   : {}),
+    },
+    system: systemPrompt + userContext,
+    experimental_context: {
+      chatId: id,
+      workspaceSlug: workspace.slug,
+    },
+    providerOptions: {
+      openai: {
+        promptCacheKey: `${MAYA_PROMPT_CACHE_NAMESPACE}:${workspace.id}`,
+        reasoningEffort: getChatReasoningEffort(activeTools),
+        textVerbosity: "low",
+      } satisfies OpenAIResponsesProviderOptions,
+      google: {
+        thinkingConfig: {
+          thinkingBudget: -1,
+          includeThoughts: false,
         },
       },
-    });
-    return result.toUIMessageStreamResponse({
-      sendReasoning: false,
-      sendSources: false,
-      originalMessages: messagesFromRequest,
-      onFinish: async ({ messages }) => {
-        await saveChat({ id, messages, workspaceSlug: workspace?.slug || "" });
-      },
-    });
+    },
+    onError: ({ error }) => {
+      // eslint-disable-next-line no-console -- Diagnostics intentionally omit provider payloads and user content.
+      console.error("[chat/route] Stream error", getChatErrorDiagnostic(error));
+    },
+    onStepFinish: ({ finishReason, toolCalls, usage }) => {
+      if (finishReason !== "length" && finishReason !== "error") return;
+
+      // eslint-disable-next-line no-console -- Payload-free diagnostics for provider truncation and failures.
+      console.warn("[chat/route] Abnormal model step finish", {
+        finishReason,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        toolCallCount: toolCalls.length,
+      });
+    },
+    timeout: CHAT_TIMEOUT,
+  });
+  return result.toUIMessageStreamResponse({
+    // Drain an independent server-side copy so AI SDK still reaches onFinish
+    // and persists the canonical partial response when the browser disconnects
+    // or the user deliberately stops a stream.
+    consumeSseStream: consumeStream,
+    sendReasoning: false,
+    sendSources: false,
+    originalMessages: canonicalUiMessages,
+    onFinish: async ({ messages }) => {
+      await saveChat({
+        id,
+        messages,
+        reservation: writeReservation,
+        workspaceSlug: workspace.slug,
+      });
+    },
+    onError: getChatStreamErrorMessage,
+  });
+};
+
+export async function POST(req: NextRequest) {
+  try {
+    return await handleChatRequest(req);
   } catch (error) {
-    console.error("[chat/route] Stream error:", error);
-    throw new Error(
-      "I'm having trouble connecting to my AI service right now. You can ask me to help you navigate the app, manage stories, get sprint insights, and provide team information.",
+    // eslint-disable-next-line no-console -- Diagnostics intentionally omit request payloads and user content.
+    console.error(
+      "[chat/route] Request setup failed",
+      getChatErrorDiagnostic(error),
     );
+    return new Response(getChatStreamErrorMessage(error), { status: 500 });
   }
 }

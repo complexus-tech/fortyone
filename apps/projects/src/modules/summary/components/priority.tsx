@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useMemo } from "react";
-import { useTheme } from "next-themes";
 import { usePrioritySummary } from "@/lib/hooks/analytics-summaries";
 import type { PrioritySummary } from "@/types";
 import { PriorityIcon } from "@/components/ui";
@@ -19,11 +18,11 @@ import type { StoryPriority } from "@/modules/stories/types";
 import { useTerminology } from "@/hooks";
 import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { PrioritySkeleton } from "./priority-skeleton";
-
-type ChartDataItem = {
-  priority: string;
-  count: number;
-};
+import {
+  SUMMARY_CHART_CURSOR,
+  SUMMARY_CHART_GRID,
+  SUMMARY_CHART_PRIMARY,
+} from "./chart-colors";
 
 const CustomTooltip = ({
   active,
@@ -36,7 +35,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
+    <Box className="border-border/60 bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-lg border-[0.5px] px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Text className="mb-1 pl-0.5">
         {payload[0].value}{" "}
         {getTermDisplay("storyTerm", {
@@ -52,7 +51,6 @@ const CustomTooltip = ({
 };
 
 export const Priority = () => {
-  const { resolvedTheme } = useTheme();
   const filters = useSummaryDateFilters();
   const { data: prioritySummary = [], isLoading } = usePrioritySummary(filters);
   const chartData = useMemo(() => {
@@ -83,31 +81,25 @@ export const Priority = () => {
           margin={{ top: 20, right: 10, left: -35, bottom: 0 }}
         >
           <CartesianGrid
-            stroke={resolvedTheme === "dark" ? "#222" : "#E0E0E0"}
+            stroke={SUMMARY_CHART_GRID}
             strokeDasharray="3 3"
             vertical={false}
           />
           <XAxis
-            axisLine={{
-              stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
-            }}
+            axisLine={{ stroke: SUMMARY_CHART_GRID }}
             dataKey="priority"
             tick={{ fontSize: 12 }}
           />
           <YAxis axisLine={false} tick={{ fontSize: 12 }} tickLine={false} />
           <Tooltip
             content={<CustomTooltip />}
-            cursor={{
-              fill:
-                resolvedTheme === "dark"
-                  ? "rgba(255, 255, 255, 0.03)"
-                  : "rgba(0, 0, 0, 0.05)",
-            }}
+            cursor={{ fill: SUMMARY_CHART_CURSOR }}
           />
           <Bar
             barSize={35}
             dataKey="count"
-            fill="#6366F1"
+            fill={SUMMARY_CHART_PRIMARY}
+            fillOpacity={0.72}
             radius={[6, 6, 0, 0]}
           />
         </BarChart>

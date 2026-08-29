@@ -8,17 +8,7 @@ import type { StatusSummary } from "@/types";
 import { useTerminology } from "@/hooks";
 import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { StatusSkeleton } from "./status-skeleton";
-
-// Define colors for different statuses
-const COLORS = [
-  "#6366F1",
-  "#EA6060",
-  "#002F61",
-  "#22c55e",
-  "#eab308",
-  "#06b6d4",
-  "#f43f5e",
-];
+import { SUMMARY_STATUS_COLORS } from "./chart-colors";
 
 const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   const { getTermDisplay } = useTerminology();
@@ -27,7 +17,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   }
 
   return (
-    <Box className="border-border bg-surface-elevated/80 text-foreground relative z-50 min-w-28 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
+    <Box className="border-border/60 bg-surface-elevated/80 text-foreground relative z-50 min-w-28 rounded-lg border-[0.5px] px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {payload[0].name}
       </Flex>
@@ -93,7 +83,12 @@ export const Status = () => {
               >
                 {chartData.map((entry, index) => (
                   <Cell
-                    fill={COLORS[index % COLORS.length]}
+                    fill={
+                      SUMMARY_STATUS_COLORS[
+                        index % SUMMARY_STATUS_COLORS.length
+                      ]
+                    }
+                    fillOpacity={index === 0 ? 0.88 : 0.78}
                     key={`cell-${entry.name}`}
                     stroke="none"
                   />
@@ -108,7 +103,11 @@ export const Status = () => {
             <Flex align="center" gap={1} key={entry.name}>
               <Box
                 className="size-4 rounded"
-                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                style={{
+                  backgroundColor:
+                    SUMMARY_STATUS_COLORS[index % SUMMARY_STATUS_COLORS.length],
+                  opacity: index === 0 ? 0.88 : 0.78,
+                }}
               />
               <Text>{entry.name}</Text>
             </Flex>

@@ -1,33 +1,30 @@
 "use client";
 import { Box, Button, Divider, Flex, Popover, Switch, Text, Select } from "ui";
-import { ArrowDownIcon, PreferencesIcon } from "icons";
+import { ArrowDownIcon, ArrowUpDownIcon, PreferencesIcon } from "icons";
 import { useCallback, useEffect } from "react";
 import { useFeatures, useMediaQuery, useTerminology } from "@/hooks";
 import type { StoriesLayout } from "./stories-board";
+import {
+  DISPLAY_COLUMNS_VERSION,
+  migrateDisplayColumns,
+} from "./stories-view-options-utils";
+import type { DisplayColumn } from "./stories-view-options-utils";
+
+export type { DisplayColumn } from "./stories-view-options-utils";
 
 export type ViewOptionsGroupBy = "status" | "assignee" | "priority" | "none";
-export type DisplayColumn =
-  | "ID"
-  | "Status"
-  | "Assignee"
-  | "Estimate"
-  | "Priority"
-  | "Deadline"
-  | "Created"
-  | "Updated"
-  | "Sprint"
-  | "Objective"
-  | "Epic"
-  | "Labels";
 export type ViewOptionsOrderBy =
   | "priority"
   | "deadline"
   | "created"
   | "updated";
+export type ViewOptionsOrderDirection = "asc" | "desc";
 
 export type StoriesViewOptions = {
+  displayColumnsVersion?: number;
   groupBy: ViewOptionsGroupBy;
   orderBy: ViewOptionsOrderBy;
+  orderDirection: ViewOptionsOrderDirection;
   showEmptyGroups: boolean;
   showSubStories: boolean;
   displayColumns: DisplayColumn[];
@@ -37,8 +34,10 @@ export type StoriesViewOptions = {
 };
 
 const defaultViewOptions: StoriesViewOptions = {
+  displayColumnsVersion: DISPLAY_COLUMNS_VERSION,
   groupBy: "status",
   orderBy: "priority",
+  orderDirection: "desc",
   showEmptyGroups: true,
   showSubStories: false,
   displayColumns: [
@@ -46,12 +45,14 @@ const defaultViewOptions: StoriesViewOptions = {
     "Status",
     "Assignee",
     "Estimate",
+    "Time needed",
     "Priority",
     "Deadline",
     "Created",
     "Updated",
     "Sprint",
     "Objective",
+    "Key Result",
     "Labels",
   ],
 };
@@ -79,8 +80,14 @@ export const StoriesViewOptionsButton = ({
   const isMobile = useMediaQuery("(max-width: 768px)");
   const features = useFeatures();
   const { getTermDisplay } = useTerminology();
-  const { groupBy, orderBy, showEmptyGroups, showSubStories, displayColumns } =
-    viewOptions;
+  const {
+    groupBy,
+    orderBy,
+    orderDirection = "desc",
+    showEmptyGroups,
+    showSubStories,
+    displayColumns,
+  } = viewOptions;
 
   const allColumns: DisplayColumn[] = [
     "ID",
@@ -89,13 +96,14 @@ export const StoriesViewOptionsButton = ({
     "Status",
     "Assignee",
     "Estimate",
+    "Time needed",
     "Priority",
     ...(layout === "list" && isDesktop
       ? (["Created", "Updated"] as DisplayColumn[])
       : []),
     ...(isDesktop ? (["Sprint"] as DisplayColumn[]) : []),
     ...(features.objectiveEnabled && isDesktop
-      ? (["Objective"] as DisplayColumn[])
+      ? (["Objective", "Key Result"] as DisplayColumn[])
       : []),
   ];
 
@@ -111,7 +119,13 @@ export const StoriesViewOptionsButton = ({
       // For mobile and not kanban, only keep compact metadata columns.
       if (isMobile && layout === "list") {
         filteredColumns = filteredColumns.filter((column) =>
-          ["Status", "Assignee", "Estimate", "Priority"].includes(column),
+          [
+            "Status",
+            "Assignee",
+            "Estimate",
+            "Time needed",
+            "Priority",
+          ].includes(column),
         );
       }
 
@@ -121,11 +135,19 @@ export const StoriesViewOptionsButton = ({
   );
 
   useEffect(() => {
-    const filteredColumns = getFilteredDisplayColumns([...displayColumns]);
+    const migratedColumns = migrateDisplayColumns(
+      displayColumns,
+      viewOptions.displayColumnsVersion,
+    );
+    const filteredColumns = getFilteredDisplayColumns(migratedColumns);
 
-    if (JSON.stringify(filteredColumns) !== JSON.stringify(displayColumns)) {
+    if (
+      JSON.stringify(filteredColumns) !== JSON.stringify(displayColumns) ||
+      viewOptions.displayColumnsVersion !== DISPLAY_COLUMNS_VERSION
+    ) {
       setViewOptions({
         ...viewOptions,
+        displayColumnsVersion: DISPLAY_COLUMNS_VERSION,
         displayColumns: filteredColumns,
       });
     }
@@ -137,6 +159,10 @@ export const StoriesViewOptionsButton = ({
         return getTermDisplay("sprintTerm", { capitalize: true });
       case "Objective":
         return getTermDisplay("objectiveTerm", { capitalize: true });
+      case "Key Result":
+        return getTermDisplay("keyResultTerm", { capitalize: true });
+      case "Estimate":
+        return "Complexity";
       default:
         return column;
     }
@@ -180,10 +206,10 @@ export const StoriesViewOptionsButton = ({
             }}
             value={groupBy}
           >
-            <Select.Trigger className="w-32 capitalize">
+            <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-32 capitalize">
               <Select.Input />
             </Select.Trigger>
-            <Select.Content>
+            <Select.Content className="ring-border/70 shadow-2xl ring-1">
               <Select.Group>
                 {groupByOptions.map((option) => (
                   <Select.Option
@@ -200,34 +226,63 @@ export const StoriesViewOptionsButton = ({
         </Flex>
         <Flex align="center" className="mb-3 px-4" gap={2} justify="between">
           <Text color="muted">Order by</Text>
-          <Select
-            onValueChange={(value: ViewOptionsOrderBy) => {
-              setViewOptions({
-                ...viewOptions,
-                orderBy: value,
-              });
-            }}
-            value={orderBy}
-          >
-            <Select.Trigger className="w-32 capitalize">
-              <Select.Input />
-            </Select.Trigger>
-            <Select.Content>
-              <Select.Group>
-                {orderByOptions.map((option) => (
-                  <Select.Option
-                    className="capitalize"
-                    key={option}
-                    value={option}
-                  >
-                    {option}
-                  </Select.Option>
-                ))}
-              </Select.Group>
-            </Select.Content>
-          </Select>
+          <Flex align="center" gap={2}>
+            <Select
+              onValueChange={(value: ViewOptionsOrderBy) => {
+                setViewOptions({
+                  ...viewOptions,
+                  orderBy: value,
+                });
+              }}
+              value={orderBy}
+            >
+              <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-28 capitalize">
+                <Select.Input />
+              </Select.Trigger>
+              <Select.Content className="ring-border/70 shadow-2xl ring-1">
+                <Select.Group>
+                  {orderByOptions.map((option) => (
+                    <Select.Option
+                      className="capitalize"
+                      key={option}
+                      value={option}
+                    >
+                      {option}
+                    </Select.Option>
+                  ))}
+                </Select.Group>
+              </Select.Content>
+            </Select>
+            <Select
+              onValueChange={(value: ViewOptionsOrderDirection) => {
+                setViewOptions({
+                  ...viewOptions,
+                  orderDirection: value,
+                });
+              }}
+              value={orderDirection}
+            >
+              <Select.Trigger
+                aria-label="Order direction"
+                className="bg-surface-muted dark:bg-surface-prominent/70 w-28 capitalize"
+              >
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <ArrowUpDownIcon className="text-text-muted h-4 w-auto shrink-0" />
+                  <Select.Input>
+                    {orderDirection === "asc" ? "Asc" : "Desc"}
+                  </Select.Input>
+                </span>
+              </Select.Trigger>
+              <Select.Content className="ring-border/70 shadow-2xl ring-1">
+                <Select.Group>
+                  <Select.Option value="asc">Ascending</Select.Option>
+                  <Select.Option value="desc">Descending</Select.Option>
+                </Select.Group>
+              </Select.Content>
+            </Select>
+          </Flex>
         </Flex>
-        <Divider className="my-2" />
+        <Divider className="dark:border-border-strong/80 my-2" />
         <Box className="max-w-108 px-4 py-2">
           <Text className="mb-4" fontWeight="medium">
             Display options
@@ -304,7 +359,7 @@ export const StoriesViewOptionsButton = ({
             })}
           </Flex>
         </Box>
-        <Divider className="my-2" />
+        <Divider className="dark:border-border-strong/80 my-2" />
         <Flex className="px-4 pb-[0.1rem]" justify="end">
           <Button
             className="text-primary dark:text-primary"

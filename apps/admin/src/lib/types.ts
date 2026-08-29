@@ -20,7 +20,7 @@ export type DashboardSummary = {
   internalUsers: number;
   activeSubscriptions: number;
   slackInstallations: number;
-  gitHubInstallations: number;
+  githubInstallations: number;
   recentAdminAuditLogs: number;
 };
 
@@ -36,7 +36,7 @@ export type UserSummary = {
   lastLoginAt: string | null;
   lastUsedWorkspaceId: string | null;
   lastUsedWorkspace: string | null;
-  gitHubUsername: string | null;
+  githubUsername: string | null;
   workspaceCount: number;
   createdAt: string;
   updatedAt: string;
@@ -77,7 +77,7 @@ export type WorkspaceSummary = {
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
   slackInstalled: boolean;
-  gitHubInstalled: boolean;
+  githubInstalled: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -115,9 +115,30 @@ export type AuditLog = {
   createdAt: string;
 };
 
+export type AdminNote = {
+  id: string;
+  targetType: string;
+  targetId: string;
+  workspaceId: string | null;
+  body: string;
+  createdByUserId: string;
+  createdByName: string;
+  createdByEmail: string;
+  createdAt: string;
+};
+
 export type AdminListParams = {
   q?: string;
   status?: string;
   page?: string | number;
   limit?: string | number;
+};
+
+export type AuditListParams = AdminListParams & {
+  action?: string;
+  actor?: string;
+  from?: string;
+  targetType?: string;
+  to?: string;
+  workspaceId?: string;
 };

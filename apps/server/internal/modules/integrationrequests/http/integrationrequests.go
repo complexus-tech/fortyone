@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
-	"time"
 
 	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
@@ -31,44 +29,31 @@ func (h *Handlers) ListTeamRequests(ctx context.Context, w http.ResponseWriter, 
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	teamID, err := uuid.Parse(web.Params(r, "teamId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	status := r.URL.Query().Get("status")
-	provider := r.URL.Query().Get("provider")
-	priority := r.URL.Query().Get("priority")
-	assigneeID, err := optionalUUIDQuery(r, "assigneeId")
+	query, err := parseRequestListQuery(r)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	createdAfter, err := optionalDateQuery(r, "createdAfter")
+	requests, err := h.requests.ListByTeam(ctx, workspace.ID, teamID, userID, query.Filter)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
 	}
-	createdBefore, err := optionalDateQuery(r, "createdBefore")
+	totalCount, err := h.requests.CountByTeam(ctx, workspace.ID, teamID, userID, query.Filter)
 	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
 	}
-	page, pageSize := paginationParams(r, defaultRequestsPageSize, maxRequestsPageSize)
-	requests, err := h.requests.ListByTeam(ctx, workspace.ID, teamID, integrationrequests.CoreListRequestsFilter{
-		Status:        status,
-		Provider:      provider,
-		Priority:      priority,
-		AssigneeID:    assigneeID,
-		CreatedAfter:  createdAfter,
-		CreatedBefore: createdBefore,
-		Page:          page,
-		PageSize:      pageSize + 1,
-	})
-	if err != nil {
-		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
-	}
-	hasMore := len(requests) > pageSize
+	hasMore := len(requests) > query.PageSize
 	if hasMore {
-		requests = requests[:pageSize]
+		requests = requests[:query.PageSize]
 	}
-	return web.Respond(ctx, w, toAppRequestsResponse(requests, page, pageSize, hasMore), http.StatusOK)
+	return web.Respond(ctx, w, toAppRequestsResponse(requests, query.Page, query.PageSize, totalCount, hasMore), http.StatusOK)
 }
 
 func (h *Handlers) GetRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -76,11 +61,15 @@ func (h *Handlers) GetRequest(ctx context.Context, w http.ResponseWriter, r *htt
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	requestID, err := uuid.Parse(web.Params(r, "requestId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	request, err := h.requests.Get(ctx, workspace.ID, requestID)
+	request, err := h.requests.GetForUser(ctx, workspace.ID, requestID, userID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if integrationrequests.IsNotFound(err) {
@@ -96,6 +85,10 @@ func (h *Handlers) UpdateRequest(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
 	requestID, err := uuid.Parse(web.Params(r, "requestId"))
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
@@ -104,23 +97,100 @@ func (h *Handlers) UpdateRequest(ctx context.Context, w http.ResponseWriter, r *
 	if err := web.Decode(r, &input); err != nil {
 		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
-	request, err := h.requests.UpdatePending(ctx, workspace.ID, requestID, integrationrequests.CoreUpdateRequestInput{
-		Title:         input.Title,
-		Description:   input.Description,
-		StatusID:      input.StatusID,
-		Priority:      input.Priority,
-		AssigneeID:    input.AssigneeID,
-		EstimateValue: input.EstimateValue,
-		ObjectiveID:   input.ObjectiveID,
-		KeyResultID:   input.KeyResultID,
-		SprintID:      input.SprintID,
-		StartDate:     input.StartDate.TimePtr(),
-		EndDate:       input.EndDate.TimePtr(),
+	request, err := h.requests.UpdatePending(ctx, workspace.ID, requestID, userID, integrationrequests.CoreUpdateRequestInput{
+		Title:                    input.Title,
+		Description:              toCoreOptionalValue(input.Description),
+		StatusID:                 toCoreOptionalValue(input.StatusID),
+		Priority:                 input.Priority,
+		AssigneeID:               toCoreOptionalValue(input.AssigneeID),
+		EstimateValue:            toCoreOptionalValue(input.EstimateValue),
+		EstimatedDurationMinutes: toCoreOptionalValue(input.EstimatedDurationMinutes),
+		MinimumFocusBlockMinutes: toCoreOptionalValue(input.MinimumFocusBlockMinutes),
+		ObjectiveID:              toCoreOptionalValue(input.ObjectiveID),
+		KeyResultID:              toCoreOptionalValue(input.KeyResultID),
+		SprintID:                 toCoreOptionalValue(input.SprintID),
+		StartDate:                toCoreOptionalDate(input.StartDate),
+		EndDate:                  toCoreOptionalDate(input.EndDate),
+		LabelIDs:                 input.LabelIDs,
 	})
 	if err != nil {
 		return web.RespondError(ctx, w, err, requestErrorStatus(err))
 	}
 	return web.Respond(ctx, w, toAppRequest(request), http.StatusOK)
+}
+
+func (h *Handlers) GetRequestThreadActivity(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	requestID, err := uuid.Parse(web.Params(r, "requestId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	activity, err := h.requests.GetThreadActivityForRequest(ctx, workspace.ID, requestID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
+	}
+	return web.Respond(ctx, w, toAppThreadActivity(activity), http.StatusOK)
+}
+
+func (h *Handlers) CreateRequestComment(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	requestID, err := uuid.Parse(web.Params(r, "requestId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	var input AppCreateIntegrationRequestComment
+	if err := web.Decode(r, &input); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	comment, err := h.requests.CreateComment(ctx, integrationrequests.CoreCreateCommentInput{
+		WorkspaceID:          workspace.ID,
+		RequestID:            requestID,
+		AuthorID:             userID,
+		ClientIdempotencyKey: input.IdempotencyKey,
+		Body:                 input.Body,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
+	}
+	return web.Respond(ctx, w, toAppComment(comment), http.StatusCreated)
+}
+
+func (h *Handlers) GetStoryProviderThreads(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	workspace, err := mid.GetWorkspace(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	storyID, err := uuid.Parse(web.Params(r, "storyId"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	threads, err := h.requests.ListProviderThreadsForStory(ctx, workspace.ID, storyID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, requestErrorStatus(err))
+	}
+	response := make([]AppProviderThread, 0, len(threads))
+	for _, thread := range threads {
+		response = append(response, toAppProviderThread(thread))
+	}
+	return web.Respond(ctx, w, response, http.StatusOK)
 }
 
 func (h *Handlers) AcceptRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -207,58 +277,17 @@ func requestErrorStatus(err error) int {
 	switch {
 	case integrationrequests.IsNotFound(err):
 		return http.StatusNotFound
+	case errors.Is(err, integrationrequests.ErrProviderThreadNotFound):
+		return http.StatusNotFound
 	case errors.Is(err, integrationrequests.ErrRequestNotPending):
 		return http.StatusConflict
+	case errors.Is(err, integrationrequests.ErrIdempotencyConflict):
+		return http.StatusConflict
+	case errors.Is(err, integrationrequests.ErrInvalidRequestProperty):
+		return http.StatusBadRequest
 	case errors.Is(err, integrationrequests.ErrUnsupportedProvider):
 		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError
 	}
-}
-
-func paginationParams(r *http.Request, defaultPageSize, maxPageSize int) (int, int) {
-	page := 1
-	pageSize := defaultPageSize
-	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
-		if parsed, err := strconv.Atoi(pageStr); err == nil && parsed > 0 {
-			page = parsed
-		}
-	}
-	if pageSizeStr := r.URL.Query().Get("pageSize"); pageSizeStr != "" {
-		if parsed, err := strconv.Atoi(pageSizeStr); err == nil && parsed > 0 {
-			pageSize = parsed
-		}
-	}
-	if pageSize > maxPageSize {
-		pageSize = maxPageSize
-	}
-	return page, pageSize
-}
-
-func optionalUUIDQuery(r *http.Request, key string) (*uuid.UUID, error) {
-	value := r.URL.Query().Get(key)
-	if value == "" {
-		return nil, nil
-	}
-	parsed, err := uuid.Parse(value)
-	if err != nil {
-		return nil, err
-	}
-	return &parsed, nil
-}
-
-func optionalDateQuery(r *http.Request, key string) (*time.Time, error) {
-	value := r.URL.Query().Get(key)
-	if value == "" {
-		return nil, nil
-	}
-	parsed, err := time.Parse(time.RFC3339, value)
-	if err == nil {
-		return &parsed, nil
-	}
-	parsed, err = time.Parse("2006-01-02", value)
-	if err != nil {
-		return nil, err
-	}
-	return &parsed, nil
 }

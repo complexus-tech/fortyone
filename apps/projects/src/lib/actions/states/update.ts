@@ -8,6 +8,7 @@ export type UpdateState = {
   name?: string;
   orderIndex?: number;
   isDefault?: boolean;
+  color?: string;
 };
 
 export const updateStateAction = async (

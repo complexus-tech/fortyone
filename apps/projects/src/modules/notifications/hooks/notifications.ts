@@ -16,14 +16,23 @@ export const useNotifications = () => {
   });
 };
 
-export const useNotificationsInfinite = () => {
+export const useNotificationsInfinite = (search = "") => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
 
   return useInfiniteQuery({
-    queryKey: [...notificationKeys.all(workspaceSlug), "infinite"] as const,
+    queryKey: [
+      ...notificationKeys.all(workspaceSlug),
+      search,
+      "infinite",
+    ] as const,
     queryFn: ({ pageParam }) =>
-      getNotificationsPage({ session: session!, workspaceSlug }, pageParam),
+      getNotificationsPage(
+        { session: session!, workspaceSlug },
+        pageParam,
+        25,
+        search,
+      ),
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore ? lastPage.pagination.nextPage : undefined,
     initialPageParam: 1,

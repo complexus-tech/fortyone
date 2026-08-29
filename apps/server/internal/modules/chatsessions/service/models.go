@@ -1,25 +1,46 @@
 package chatsessions
 
-import (
-	"time"
+import chatsessionsdomain "github.com/complexus-tech/projects-api/internal/modules/chatsessions/domain"
 
-	"github.com/google/uuid"
+type MutationApprovalExecutionState = chatsessionsdomain.MutationApprovalExecutionState
+type MessageWriteOperation = chatsessionsdomain.MessageWriteOperation
+
+const (
+	MutationApprovalExecutionClaimed    = chatsessionsdomain.MutationApprovalExecutionClaimed
+	MutationApprovalExecutionStarted    = chatsessionsdomain.MutationApprovalExecutionStarted
+	MutationApprovalExecutionReady      = chatsessionsdomain.MutationApprovalExecutionReady
+	MutationApprovalExecutionExecuting  = chatsessionsdomain.MutationApprovalExecutionExecuting
+	MutationApprovalExecutionInProgress = chatsessionsdomain.MutationApprovalExecutionInProgress
+	MutationApprovalExecutionCompleted  = chatsessionsdomain.MutationApprovalExecutionCompleted
+	MutationApprovalExecutionFailed     = chatsessionsdomain.MutationApprovalExecutionFailed
+
+	MessageWriteAppend     = chatsessionsdomain.MessageWriteAppend
+	MessageWriteRegenerate = chatsessionsdomain.MessageWriteRegenerate
+	MessageWriteApproval   = chatsessionsdomain.MessageWriteApproval
 )
 
-type CoreChatSession struct {
-	ID          string     `json:"id"`
-	UserID      uuid.UUID  `json:"userId"`
-	WorkspaceID uuid.UUID  `json:"workspaceId"`
-	Title       string     `json:"title"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
-	DeletedAt   *time.Time `json:"deletedAt,omitempty"`
-}
+type MutationApprovalReconciliationResolution = chatsessionsdomain.MutationApprovalReconciliationResolution
 
-type CoreNewChatSession struct {
-	ID          string    `json:"id"`
-	UserID      uuid.UUID `json:"userId"`
-	WorkspaceID uuid.UUID `json:"workspaceId"`
-	Title       string    `json:"title"`
-	Messages    []any     `json:"messages"`
-}
+const (
+	MutationApprovalReconciliationVerifiedCompleted  = chatsessionsdomain.MutationApprovalReconciliationVerifiedCompleted
+	MutationApprovalReconciliationVerifiedNotApplied = chatsessionsdomain.MutationApprovalReconciliationVerifiedNotApplied
+)
+
+type MutationApprovalReconciliationEvidenceKind = chatsessionsdomain.MutationApprovalReconciliationEvidenceKind
+
+const (
+	MutationApprovalReconciliationEvidenceIdempotencyLookup = chatsessionsdomain.MutationApprovalReconciliationEvidenceIdempotencyLookup
+	MutationApprovalReconciliationEvidenceWorkspaceProbe    = chatsessionsdomain.MutationApprovalReconciliationEvidenceWorkspaceProbe
+)
+
+type CoreChatSession = chatsessionsdomain.CoreChatSession
+type CoreNewChatSession = chatsessionsdomain.CoreNewChatSession
+type BeginMessageWriteParams = chatsessionsdomain.BeginMessageWriteParams
+type CoreMessageWriteReservation = chatsessionsdomain.CoreMessageWriteReservation
+type FinalizeMessageWriteParams = chatsessionsdomain.FinalizeMessageWriteParams
+type CoreMessageWriteResult = chatsessionsdomain.CoreMessageWriteResult
+type RecoverMutationApprovalOutputParams = chatsessionsdomain.RecoverMutationApprovalOutputParams
+type CoreMutationApprovalExecution = chatsessionsdomain.CoreMutationApprovalExecution
+type MutationApprovalExecutionParams = chatsessionsdomain.MutationApprovalExecutionParams
+type MutationApprovalReconciliationEvidence = chatsessionsdomain.MutationApprovalReconciliationEvidence
+type MutationApprovalReconciliation = chatsessionsdomain.MutationApprovalReconciliation

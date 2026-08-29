@@ -6,8 +6,10 @@ import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
 import { SearchIcon, SlackIcon } from "icons";
 import { useGitHubIntegration } from "@/lib/hooks/github";
+import { useFigmaIntegration } from "@/lib/hooks/figma";
 import { useSlackIntegration } from "@/lib/hooks/slack";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
+import { FigmaIcon } from "./figma/icon";
 
 const GitHubIcon = () => (
   <svg
@@ -17,36 +19,6 @@ const GitHubIcon = () => (
     xmlns="http://www.w3.org/2000/svg"
   >
     <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
-  </svg>
-);
-
-const FigmaIcon = () => (
-  <svg
-    className="h-8 w-8"
-    fill="none"
-    viewBox="0 0 38 57"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M19 28.5C19 23.3 23.3 19 28.5 19S38 23.3 38 28.5 33.7 38 28.5 38 19 33.7 19 28.5Z"
-      fill="#1ABCFE"
-    />
-    <path
-      d="M0 47.5C0 42.3 4.3 38 9.5 38H19v9.5C19 52.7 14.7 57 9.5 57S0 52.7 0 47.5Z"
-      fill="#0ACF83"
-    />
-    <path
-      d="M19 0v19h9.5C33.7 19 38 14.7 38 9.5S33.7 0 28.5 0H19Z"
-      fill="#FF7262"
-    />
-    <path
-      d="M0 9.5C0 14.7 4.3 19 9.5 19H19V0H9.5C4.3 0 0 4.3 0 9.5Z"
-      fill="#F24E1E"
-    />
-    <path
-      d="M0 28.5C0 33.7 4.3 38 9.5 38H19V19H9.5C4.3 19 0 23.3 0 28.5Z"
-      fill="#A259FF"
-    />
   </svg>
 );
 
@@ -96,20 +68,20 @@ type Integration = {
   icon: ReactNode;
   enabled: boolean;
   href?: string;
+  status?: string;
 };
 
 const getIntegrationStatus = (integration: Integration) => {
+  if (integration.status) return integration.status;
   if (!integration.href) return "Coming soon";
   return integration.enabled ? "Installed" : "Not connected";
 };
 
 const IntegrationCard = ({
   integration,
-  basePath,
   showDescription = true,
 }: {
   integration: Integration;
-  basePath: string;
   showDescription?: boolean;
 }) => {
   const content = (
@@ -137,61 +109,74 @@ const IntegrationCard = ({
   );
 
   if (integration.href) {
-    return <Link href={`${basePath}/${integration.href}`}>{content}</Link>;
+    return <Link href={integration.href}>{content}</Link>;
   }
 
   return content;
 };
 
 export const IntegrationsIndex = () => {
-  const { data: integration } = useGitHubIntegration();
+  const { userRole } = useUserRole();
+  const isAdmin = userRole === "admin";
+  const { data: integration } = useGitHubIntegration({ enabled: isAdmin });
+  const { data: figmaIntegration } = useFigmaIntegration({ enabled: isAdmin });
   const { data: slackIntegration } = useSlackIntegration();
   const { withWorkspace } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const [search, setSearch] = useState("");
 
-  const basePath = withWorkspace("/settings/workspace/integrations");
   const isGitHubEnabled = (integration?.installations.length ?? 0) > 0;
   const isSlackEnabled = Boolean(slackIntegration?.slackWorkspace?.isActive);
-
-  const allIntegrations: Integration[] = [
+  const isFigmaEnabled = Boolean(figmaIntegration?.connection?.isActive);
+  const workspaceIntegrations: Integration[] = [
     {
       id: "github",
       name: "GitHub",
-      description: "Link PRs, branches, and commits to stories.",
+      description: `Link PRs, branches, and commits to ${storyTermPlural}.`,
       icon: <GitHubIcon />,
       enabled: isGitHubEnabled,
-      href: "github",
+      href: withWorkspace("/settings/workspace/integrations/github"),
     },
     {
       id: "slack",
       name: "Slack",
-      description: "Turn conversations into stories from Slack.",
+      description: `Turn conversations into ${storyTermPlural} from Slack.`,
       icon: <SlackIcon className="h-8 w-8" />,
       enabled: isSlackEnabled,
-      href: "slack",
+      href: withWorkspace(
+        isAdmin
+          ? "/settings/workspace/integrations/slack"
+          : "/settings/integrations/slack",
+      ),
     },
     {
       id: "gitlab",
       name: "GitLab",
-      description: "Connect merge requests and pipelines to stories.",
+      description: `Connect merge requests and pipelines to ${storyTermPlural}.`,
       icon: <GitLabIcon />,
       enabled: false,
     },
     {
       id: "figma",
       name: "Figma",
-      description: "Attach designs to stories from Figma.",
-      icon: <FigmaIcon />,
-      enabled: false,
+      description: `Attach designs to ${storyTermPlural} from Figma.`,
+      icon: <FigmaIcon className="h-8 w-auto" />,
+      enabled: isFigmaEnabled,
+      href: withWorkspace("/settings/workspace/integrations/figma"),
     },
     {
       id: "intercom",
       name: "Intercom",
-      description: "Route customer conversations into stories.",
+      description: `Route customer conversations into ${storyTermPlural}.`,
       icon: <IntercomIcon />,
       enabled: false,
     },
   ];
+  const visibleWorkspaceIntegrations = isAdmin
+    ? workspaceIntegrations
+    : workspaceIntegrations.filter(({ id }) => id === "slack");
+  const allIntegrations = visibleWorkspaceIntegrations;
 
   const enabledIntegrations = allIntegrations.filter((i) => i.enabled);
   const query = search.trim().toLowerCase();
@@ -235,7 +220,6 @@ export const IntegrationsIndex = () => {
           <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filteredEnabled.map((integration) => (
               <IntegrationCard
-                basePath={basePath}
                 integration={integration}
                 key={integration.id}
                 showDescription={false}
@@ -254,11 +238,7 @@ export const IntegrationsIndex = () => {
         </Text>
         <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filteredIntegrations.map((integration) => (
-            <IntegrationCard
-              basePath={basePath}
-              integration={integration}
-              key={integration.id}
-            />
+            <IntegrationCard integration={integration} key={integration.id} />
           ))}
         </Box>
       </Box>

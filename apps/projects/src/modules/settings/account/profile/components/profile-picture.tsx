@@ -1,15 +1,20 @@
 "use client";
 
-import { Avatar } from "ui";
 import { ProfileUploadDialog } from "ui";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { User } from "@/types";
 import { useProfile } from "@/lib/hooks/profile";
 import { useUploadProfileImageMutation } from "@/lib/hooks/user/upload-profile-image-mutation";
 import { useDeleteProfileImageMutation } from "@/lib/hooks/user/delete-profile-image-mutation";
+import { EditableAvatar } from "@/modules/settings/components";
 
-export const ProfilePicture = () => {
-  const { data: profile } = useProfile();
+export const ProfilePicture = ({
+  initialProfile,
+}: {
+  initialProfile?: User;
+}) => {
+  const { data: profile } = useProfile(initialProfile);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -46,19 +51,14 @@ export const ProfilePicture = () => {
 
   return (
     <>
-      <button
+      <EditableAvatar
+        label="Change profile picture"
+        name={profile?.fullName || profile?.username}
         onClick={() => {
           setIsDialogOpen(true);
         }}
-        type="button"
-      >
-        <Avatar
-          className="h-10"
-          name={profile?.fullName || profile?.username}
-          src={profile?.avatarUrl}
-        />
-        <span className="sr-only">Change profile picture</span>
-      </button>
+        src={profile?.avatarUrl}
+      />
       <ProfileUploadDialog
         currentImage={profile?.avatarUrl}
         isOpen={isDialogOpen}

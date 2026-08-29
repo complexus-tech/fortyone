@@ -1,0 +1,74 @@
+display_information:
+  name: FortyOne
+  description: Create, find, and discuss FortyOne work without leaving Slack.
+  long_description: >-
+    FortyOne brings your team’s work into Slack. Turn a conversation into a
+    story, choose the right team and workflow status, find existing work, and
+    ask the FortyOne agent questions in channels, threads, or direct messages.
+    Rich story previews keep status, ownership, priority, and due dates visible
+    while preserving the permissions configured in your FortyOne workspace.
+  background_color: "#111827"
+features:
+  app_home:
+    home_tab_enabled: false
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: false
+  bot_user:
+    display_name: fortyone
+    always_online: true
+  rich_previews:
+    is_active: true
+    entity_types:
+      - "slack#/entities/task"
+  shortcuts:
+    - name: Create a story
+      type: message
+      callback_id: fortyone_create_task
+      description: Turn this Slack message into a story in FortyOne.
+  slash_commands:
+    - command: /fortyone
+      url: https://api.fortyone.app/integrations/slack/commands
+      description: Create a story in FortyOne.
+      usage_hint: "[story title]"
+      should_escape: false
+  unfurl_domains:
+    - fortyone.app
+oauth_config:
+  redirect_urls:
+    - https://api.fortyone.app/integrations/slack/setup
+  scopes:
+    bot:
+      - app_mentions:read
+      - channels:history
+      - channels:read
+      - chat:write
+      - chat:write.public
+      - commands
+      - groups:history
+      - groups:read
+      - im:history
+      - links:read
+      - links:write
+      - users:read
+      - users:read.email
+  pkce_enabled: false
+settings:
+  event_subscriptions:
+    request_url: https://api.fortyone.app/integrations/slack/events
+    bot_events:
+      - app_mention
+      - app_uninstalled
+      - entity_details_requested
+      - link_shared
+      - message.channels
+      - message.groups
+      - message.im
+      - tokens_revoked
+  interactivity:
+    is_enabled: true
+    request_url: https://api.fortyone.app/integrations/slack/interactivity
+    message_menu_options_url: https://api.fortyone.app/integrations/slack/interactivity
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
+  is_mcp_enabled: false

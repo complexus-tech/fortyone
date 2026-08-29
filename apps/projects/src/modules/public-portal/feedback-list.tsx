@@ -1,43 +1,28 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpDownIcon, SearchIcon } from "icons";
 import { Box, Flex, Input, Text } from "ui";
 import { cn } from "lib";
+import { toast } from "sonner";
+import { InboxEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { requestFilters, requestStatusMeta } from "./status";
 import { PublicRequestCard } from "./request-card";
-import type { PublicPortal, PublicRequest, PublicRequestStatus } from "./types";
+import type {
+  PublicPortal,
+  PublicPortalFilters,
+  PublicPortalParticipant,
+  PublicRequest,
+} from "./types";
+import { usePublicFeedbackList } from "./client-query";
 
-type SortMode = "top" | "newest" | "oldest";
-
-type ApiResponse<T> = {
-  data: T;
-};
-
-const PAGE_SIZE = 20;
-
-const buildUrl = ({
-  page,
-  portal,
-  search,
-  sort,
-  status,
-}: {
-  page: number;
-  portal: PublicPortal;
-  search: string;
-  sort: SortMode;
-  status?: PublicRequestStatus;
-}) => {
-  const params = new URLSearchParams({
-    page: String(page),
-    pageSize: String(PAGE_SIZE),
-    sort,
+const mergeRequests = (current: PublicRequest[], incoming: PublicRequest[]) => {
+  const requests = new Map(current.map((request) => [request.id, request]));
+  incoming.forEach((request) => {
+    requests.set(request.id, request);
   });
-  if (search.trim()) params.set("search", search.trim());
-  if (status) params.set("status", status);
-  return `/api/public-portal/${portal.slug}?${params.toString()}`;
+  return Array.from(requests.values());
 };
 
 const FeedbackListSkeleton = () => (
@@ -57,56 +42,81 @@ const FeedbackListSkeleton = () => (
   </Box>
 );
 
-export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
-  const [requests, setRequests] = useState<PublicRequest[]>(portal.requests);
-  const [hasMore, setHasMore] = useState(portal.requestsHasMore);
-  const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<PublicRequestStatus | undefined>();
-  const [sort, setSort] = useState<SortMode>("top");
-  const [search, setSearch] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const hasMountedRef = useRef(false);
+const FeedbackSearch = ({
+  initialValue,
+  onSubmit,
+}: {
+  initialValue: string;
+  onSubmit: (search: string) => void;
+}) => {
+  const [value, setValue] = useState(initialValue);
+
+  return (
+    <Box
+      as="form"
+      className="min-w-0 flex-1 md:max-w-80"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit(value.trim());
+      }}
+    >
+      <Input
+        className="h-10"
+        leftIcon={<SearchIcon className="h-4" />}
+        onChange={(event) => {
+          setValue(event.target.value);
+        }}
+        placeholder="Search feedback..."
+        type="search"
+        value={value}
+        variant="solid"
+      />
+    </Box>
+  );
+};
+
+export const PublicFeedbackList = ({
+  filters,
+  initialFilters,
+  onFiltersChange,
+  participant,
+  portal,
+}: {
+  filters: PublicPortalFilters;
+  initialFilters: PublicPortalFilters;
+  onFiltersChange: (updates: Partial<PublicPortalFilters>) => void;
+  participant: PublicPortalParticipant;
+  portal: PublicPortal;
+}) => {
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    isFetchingNextPage,
+    isPending,
+  } = usePublicFeedbackList({
+    filters,
+    initialFilters,
+    initialPortal: portal,
+  });
+  const requests = (data?.pages ?? []).reduce<PublicRequest[]>(
+    (current, page) => mergeRequests(current, page.requests),
+    [],
+  );
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const loadPage = useCallback(
-    async (nextPage: number, mode: "append" | "replace") => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(
-          buildUrl({ page: nextPage, portal, search, sort, status }),
-        );
-        if (!response.ok) return;
-        const payload = (await response.json()) as ApiResponse<PublicPortal>;
-        setRequests((current) =>
-          mode === "append"
-            ? [...current, ...payload.data.requests]
-            : payload.data.requests,
-        );
-        setHasMore(payload.data.requestsHasMore);
-        setPage(nextPage);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [portal, search, sort, status],
-  );
-
   useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return;
-    }
-
-    void loadPage(1, "replace");
-  }, [loadPage]);
+    if (isError) toast.error("Unable to load feedback");
+  }, [isError]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || !hasMore) return;
+    if (!sentinel || !hasNextPage) return;
 
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting && !isLoading) {
-        void loadPage(page + 1, "append");
+      if (entries[0]?.isIntersecting && !isFetchingNextPage) {
+        void fetchNextPage();
       }
     });
     observer.observe(sentinel);
@@ -114,98 +124,73 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
     return () => {
       observer.disconnect();
     };
-  }, [hasMore, isLoading, loadPage, page]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   let feedbackContent: ReactNode = requests.map((request) => (
-    <PublicRequestCard key={request.id} portal={portal} request={request} />
+    <PublicRequestCard
+      key={request.id}
+      participant={participant}
+      portal={portal}
+      request={request}
+    />
   ));
-  if (isLoading && page === 1) {
+  if (isPending) {
     feedbackContent = <FeedbackListSkeleton />;
   } else if (requests.length === 0) {
+    const selectedBoard = portal.boards.find(
+      (board) => board.id === filters.boardId,
+    );
     feedbackContent = (
-      <Flex align="center" className="min-h-56" justify="center">
-        <Text color="muted">No feedback found</Text>
+      <Flex
+        align="center"
+        className="mt-28 min-h-72 text-center"
+        direction="column"
+        justify="center"
+      >
+        <InboxEmptyIllustration className="mb-4 w-52" />
+        <Text className="text-[1.05rem]" fontWeight="semibold">
+          No feedback yet
+        </Text>
+        <Text className="mt-1 max-w-sm" color="muted">
+          {selectedBoard
+            ? `No feedback has been submitted to ${selectedBoard.name}.`
+            : "New feedback will appear here once it has been submitted."}
+        </Text>
       </Flex>
     );
   }
 
+  const changeFilters = (updates: Partial<PublicPortalFilters>) => {
+    onFiltersChange(updates);
+  };
+
   return (
-    <>
-      <Box className="border-border/60 bg-surface/20 border-b">
-        <Box className="mx-auto flex min-h-16 max-w-[78rem] flex-wrap items-center gap-4 px-4 py-3 md:px-6">
-          <Box className="w-full md:w-72">
-            <Input
-              className="h-10 rounded-full"
-              leftIcon={<SearchIcon className="h-4" />}
-              onChange={(event) => {
-                setSearch(event.target.value);
-              }}
-              placeholder="Search feedback..."
-              type="search"
-              value={search}
-              variant="solid"
-            />
-          </Box>
+    <Flex className="min-h-0" direction="column">
+      <Box className="border-border/60 bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-10 shrink-0 border-b backdrop-blur-xl">
+        <Flex align="center" className="gap-3 py-3" justify="between">
+          <FeedbackSearch
+            initialValue={filters.search}
+            key={filters.search}
+            onSubmit={(search) => {
+              changeFilters({ search });
+            }}
+          />
           <Flex
             align="center"
-            className="bg-surface border-border/70 shadow-shadow/30 shrink-0 gap-1 rounded-full border p-1 shadow-sm"
-          >
-            <button
-              className={cn(
-                "text-text-muted hover:bg-state-hover hover:text-foreground rounded-full px-3.5 py-1.5 transition",
-                {
-                  "bg-state-selected/50 text-foreground dark:bg-state-selected shadow-xs":
-                    !status,
-                },
-              )}
-              onClick={() => {
-                setStatus(undefined);
-              }}
-              type="button"
-            >
-              All
-            </button>
-            {requestFilters.map((filter) => {
-              const meta = requestStatusMeta[filter];
-              return (
-                <button
-                  className={cn(
-                    "text-text-muted hover:bg-state-hover hover:text-foreground flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 transition",
-                    {
-                      "bg-state-selected/50 text-foreground dark:bg-state-selected shadow-xs":
-                        status === filter,
-                    },
-                  )}
-                  key={filter}
-                  onClick={() => {
-                    setStatus(filter);
-                  }}
-                  type="button"
-                >
-                  <span
-                    className={cn("size-2 rounded-full", meta.dotClassName)}
-                  />
-                  <span>{meta.label}</span>
-                </button>
-              );
-            })}
-          </Flex>
-          <Flex
-            align="center"
-            className="bg-surface border-border/70 shadow-shadow/30 shrink-0 gap-1 rounded-full border p-1 shadow-sm"
+            className="bg-surface-muted/85 h-10 shrink-0 gap-1 rounded-xl p-1"
           >
             {(["top", "newest", "oldest"] as const).map((option) => (
               <button
                 className={cn(
-                  "text-text-muted hover:bg-state-hover hover:text-foreground flex items-center gap-1.5 rounded-full px-3.5 py-1.5 capitalize transition",
+                  "text-text-muted hover:text-foreground flex h-full items-center gap-1.5 rounded-xl border border-transparent px-3 capitalize transition",
                   {
-                    "bg-state-selected/50 text-foreground dark:bg-state-selected shadow-xs":
-                      sort === option,
+                    "border-border bg-surface-elevated text-foreground":
+                      filters.sort === option,
                   },
                 )}
                 key={option}
                 onClick={() => {
-                  setSort(option);
+                  changeFilters({ sort: option });
                 }}
                 type="button"
               >
@@ -216,14 +201,56 @@ export const PublicFeedbackList = ({ portal }: { portal: PublicPortal }) => {
               </button>
             ))}
           </Flex>
-        </Box>
+        </Flex>
+        <Flex
+          align="center"
+          className="bg-surface-muted/85 mb-3 h-10 w-full gap-1 overflow-x-auto rounded-xl p-1"
+        >
+          <button
+            className={cn(
+              "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 items-center justify-center rounded-xl border border-transparent px-3.5 transition",
+              {
+                "border-border bg-surface-elevated text-foreground":
+                  filters.status === "active",
+              },
+            )}
+            onClick={() => {
+              changeFilters({ status: "active" });
+            }}
+            type="button"
+          >
+            Active
+          </button>
+          {requestFilters.map((filter) => {
+            const meta = requestStatusMeta[filter];
+            return (
+              <button
+                className={cn(
+                  "text-text-muted hover:text-foreground flex h-full min-w-max flex-1 shrink-0 items-center justify-center gap-2 rounded-xl border border-transparent px-3.5 transition",
+                  {
+                    "border-border bg-surface-elevated text-foreground":
+                      filters.status === filter,
+                  },
+                )}
+                key={filter}
+                onClick={() => {
+                  changeFilters({ status: filter });
+                }}
+                type="button"
+              >
+                <span className={cn("size-2 rounded-sm", meta.dotClassName)} />
+                <span>{meta.label}</span>
+              </button>
+            );
+          })}
+        </Flex>
       </Box>
 
-      <Box>
+      <Box className="min-h-0 md:flex-1">
         {feedbackContent}
         <div ref={sentinelRef} />
-        {isLoading && page > 1 ? <FeedbackListSkeleton /> : null}
+        {isFetchingNextPage ? <FeedbackListSkeleton /> : null}
       </Box>
-    </>
+    </Flex>
   );
 };

@@ -1,8 +1,8 @@
-import { Dialog, Command, Text, Divider, Flex, Box, Kbd } from "ui";
+import { Dialog, Command, Text, Flex, Kbd } from "ui";
 import {
   PlusIcon,
-  NotificationsIcon,
-  ObjectiveIcon,
+  Notification02Icon,
+  RoadmapIcon,
   SunIcon,
   HelpIcon,
   LogoutIcon,
@@ -30,6 +30,7 @@ import {
   InviteMembersDialog,
 } from "@/components/ui";
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
+import { CommandPaletteContent } from "./command-palette-content";
 import { clearAllStorage } from "./sidebar/utils";
 
 export const CommandBar = ({
@@ -51,6 +52,15 @@ export const CommandBar = ({
   const { resolvedTheme: theme, setTheme } = useTheme();
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const { withWorkspace } = useWorkspacePath();
+
+  const closePalette = () => {
+    setIsOpen(false);
+  };
+
+  const navigateFromPalette = (path: string) => {
+    closePalette();
+    router.push(withWorkspace(path));
+  };
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -83,7 +93,7 @@ export const CommandBar = ({
           ),
           action: () => {
             setIsStoryOpen(true);
-            setIsOpen(false);
+            closePalette();
           },
         },
         {
@@ -98,7 +108,7 @@ export const CommandBar = ({
           ),
           action: () => {
             setIsObjectivesOpen(true);
-            setIsOpen(false);
+            closePalette();
           },
         },
         ...(userRole === "admin"
@@ -114,7 +124,7 @@ export const CommandBar = ({
                 ),
                 action: () => {
                   setIsInviteMembersOpen(true);
-                  setIsOpen(false);
+                  closePalette();
                 },
               },
             ]
@@ -134,7 +144,7 @@ export const CommandBar = ({
             </Flex>
           ),
           action: () => {
-            setIsOpen(false);
+            closePalette();
             if (pathname !== withWorkspace("/my-work")) {
               router.push(withWorkspace("/my-work"));
             }
@@ -142,7 +152,7 @@ export const CommandBar = ({
         },
         {
           label: "Inbox",
-          icon: <NotificationsIcon />,
+          icon: <Notification02Icon />,
           shortcut: (
             <Flex align="center" gap={1}>
               <Kbd>g</Kbd>
@@ -150,7 +160,7 @@ export const CommandBar = ({
             </Flex>
           ),
           action: () => {
-            setIsOpen(false);
+            closePalette();
             if (pathname !== withWorkspace("/notifications")) {
               router.push(withWorkspace("/notifications"));
             }
@@ -166,28 +176,25 @@ export const CommandBar = ({
             </Flex>
           ),
           action: () => {
-            setIsOpen(false);
+            closePalette();
             if (pathname !== withWorkspace("/summary")) {
               router.push(withWorkspace("/summary"));
             }
           },
         },
         {
-          label: getTermDisplay("objectiveTerm", {
-            variant: "plural",
-            capitalize: true,
-          }),
-          icon: <ObjectiveIcon />,
+          label: "Roadmap",
+          icon: <RoadmapIcon />,
           shortcut: (
             <Flex align="center" gap={1}>
               <Kbd>g</Kbd>
-              <Kbd>o</Kbd>
+              <Kbd>r</Kbd>
             </Flex>
           ),
           action: () => {
-            setIsOpen(false);
-            if (pathname !== withWorkspace("/objectives")) {
-              router.push(withWorkspace("/objectives"));
+            closePalette();
+            if (pathname !== withWorkspace("/roadmap")) {
+              router.push(withWorkspace("/roadmap"));
             }
           },
         },
@@ -196,7 +203,7 @@ export const CommandBar = ({
           icon: <SearchIcon className="h-[1.15rem]" />,
           shortcut: <Kbd>/</Kbd>,
           action: () => {
-            setIsOpen(false);
+            closePalette();
             if (pathname !== withWorkspace("/search")) {
               router.push(withWorkspace("/search"));
             }
@@ -218,7 +225,7 @@ export const CommandBar = ({
             </Flex>
           ),
           action: () => {
-            setIsOpen(false);
+            closePalette();
             if (pathname !== withWorkspace("/settings")) {
               router.push(withWorkspace("/settings"));
             }
@@ -236,7 +243,7 @@ export const CommandBar = ({
           ),
           action: () => {
             toggleTheme();
-            setIsOpen(false);
+            closePalette();
           },
         },
         {
@@ -250,7 +257,7 @@ export const CommandBar = ({
           ),
           action: () => {
             setIsKeyboardShortcutsOpen((prev) => !prev);
-            setIsOpen(false);
+            closePalette();
           },
         },
         {
@@ -264,7 +271,7 @@ export const CommandBar = ({
             </Flex>
           ),
           action: async () => {
-            setIsOpen(false);
+            closePalette();
             await handleLogout();
           },
         },
@@ -273,61 +280,57 @@ export const CommandBar = ({
   ];
   return (
     <>
-      <Dialog onOpenChange={setIsOpen} open={isOpen}>
+      <Dialog
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) {
+            setIsOpen(true);
+          } else {
+            closePalette();
+          }
+        }}
+        open={isOpen}
+      >
         <Dialog.Content className="max-w-3xl" hideClose>
           <Dialog.Header className="sr-only">
             <Dialog.Title className="sr-only">Command Menu</Dialog.Title>
           </Dialog.Header>
-          <Dialog.Body className="px-0 pt-2 pb-0">
-            <Command>
-              <Command.Input
-                className="my-2.5 text-2xl antialiased"
-                icon={null}
-                placeholder="What do you want to do?"
-              />
-              <Divider className="my-2.5" />
-              <Command.Empty className="py-2">
-                <Text color="muted" fontSize="xl" fontWeight="normal">
-                  No results found.
-                </Text>
-              </Command.Empty>
-              <Box className="max-h-140 overflow-y-auto px-3 pt-2">
-                {commands.map((command) => (
-                  <Command.Group
-                    className="mb-4 px-0"
-                    heading={
-                      <Text
-                        className="mb-1.5 pl-3 dark:antialiased"
-                        color="muted"
+          {isOpen ? (
+            <CommandPaletteContent onNavigate={navigateFromPalette}>
+              {commands.map((command) => (
+                <Command.Group
+                  className="mb-4 px-0"
+                  heading={
+                    <Text
+                      className="mb-1.5 pl-3 dark:antialiased"
+                      color="muted"
+                    >
+                      {command.group}
+                    </Text>
+                  }
+                  key={command.group}
+                >
+                  {command.items.map((item) => (
+                    <Command.Item
+                      className="justify-between rounded-lg p-3 text-[1.1rem] opacity-85"
+                      disabled={item.disabled}
+                      key={item.label}
+                      onSelect={item.action}
+                    >
+                      <Flex
+                        align="center"
+                        className="font-medium antialiased"
+                        gap={3}
                       >
-                        {command.group}
-                      </Text>
-                    }
-                    key={command.group}
-                  >
-                    {command.items.map((item) => (
-                      <Command.Item
-                        className="justify-between rounded-lg p-3 text-[1.1rem] opacity-85"
-                        disabled={item.disabled}
-                        key={item.label}
-                        onSelect={item.action}
-                      >
-                        <Flex
-                          align="center"
-                          className="font-medium antialiased"
-                          gap={3}
-                        >
-                          {item.icon}
-                          {item.label}
-                        </Flex>
-                        {item.shortcut}
-                      </Command.Item>
-                    ))}
-                  </Command.Group>
-                ))}
-              </Box>
-            </Command>
-          </Dialog.Body>
+                        {item.icon}
+                        {item.label}
+                      </Flex>
+                      {item.shortcut}
+                    </Command.Item>
+                  ))}
+                </Command.Group>
+              ))}
+            </CommandPaletteContent>
+          ) : null}
         </Dialog.Content>
       </Dialog>
       <KeyboardShortcuts

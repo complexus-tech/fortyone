@@ -3,48 +3,56 @@ package workerbootstrap
 import (
 	"strings"
 
-	calendarrepository "github.com/complexus-tech/projects-api/internal/modules/calendar/repository"
 	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
 	mayarepository "github.com/complexus-tech/projects-api/internal/modules/maya/repository"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
-	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
 	reportsrepository "github.com/complexus-tech/projects-api/internal/modules/reports/repository"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
+	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	"github.com/complexus-tech/projects-api/pkg/logger"
+	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func buildMayaService(log *logger.Logger, db *sqlx.DB, cfg Config, mayaActorID uuid.UUID) *maya.Service {
-	mentionsRepo := mentionsrepository.New(log, db)
-	storiesService := stories.New(log, storiesrepository.New(log, db), mentionsRepo, nil, nil)
-	reportsService := reports.New(log, reportsrepository.New(log, db))
-	calendarService := calendar.New(log, calendarrepository.New(log, db), calendar.Config{
-		SecretKey:  cfg.Auth.SecretKey,
-		WebsiteURL: cfg.Website.URL,
-		Providers:  map[calendar.Provider]calendar.CalendarProvider{},
-	})
-	usersService := users.New(log, usersrepository.New(log, db), nil)
+func buildMayaService(
+	log *logger.Logger,
+	pool *pgxpool.Pool,
+	mayaRepository *mayarepository.Repo,
+	cfg Config,
+	calendarService *calendar.Service,
+	mayaActorID uuid.UUID,
+	eventPublisher *publisher.Publisher,
+) *maya.Service {
+	storiesService := stories.New(log, storiesrepository.New(log, pool), eventPublisher, nil)
+	storiesService.ConfigureCommentCreator(buildStoryCommentCreator(log, pool))
+	storiesService.ConfigureMayaActor(mayaActorID)
+	storiesService.ConfigureAutoSchedulingEligibility(mayaRepository.WorkspaceCanUseMaya)
+	reportsService := reports.New(log, reportsrepository.New(log, pool))
+	usersService := users.New(log, usersrepository.New(pool), nil)
 
 	planner := maya.NewPlanner()
 	if strings.TrimSpace(cfg.AIAPIKey) != "" {
 		aiClient := maya.NewOpenAICompatibleClient(maya.OpenAICompatibleConfig{
 			APIKey: strings.TrimSpace(cfg.AIAPIKey),
+			Model:  strings.TrimSpace(cfg.AIModel),
 		})
 		planner = maya.NewPlannerWithAdvisor(maya.NewOpenAIAdvisor(aiClient))
 	}
 
 	return maya.New(maya.Dependencies{
-		Repository:  mayarepository.New(log, db),
-		Stories:     storiesService,
-		Reports:     reportsService,
-		Calendar:    calendarService,
-		Users:       usersService,
-		Planner:     planner,
-		MayaActorID: mayaActorID,
+		Repository:        mayaRepository,
+		Realtime:          mayaRepository,
+		Stories:           storiesService,
+		Reports:           reportsService,
+		Calendar:          calendarService,
+		Users:             usersService,
+		WorkspaceSettings: workspacesrepository.New(pool),
+		Planner:           planner,
+		MayaActorID:       mayaActorID,
 	})
 }

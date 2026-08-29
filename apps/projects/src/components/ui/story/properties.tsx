@@ -1,28 +1,24 @@
-import {
-  Box,
-  Flex,
-  Button,
-  Text,
-  DatePicker,
-  Tooltip,
-  Badge,
-  Divider,
-} from "ui";
+import { Box, Flex, Button, Text, DatePicker, Tooltip, Divider } from "ui";
 import {
   ArrowRight2Icon,
   CalendarIcon,
   EstimateIcon,
-  ObjectiveIcon,
   SprintsIcon,
   SubStoryIcon,
+  Time02Icon,
 } from "icons";
 import { cn } from "lib";
 import { format, addDays, formatISO } from "date-fns";
 import Link from "next/link";
-import { useRef, useState } from "react";
-import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
+import {
+  forwardRef,
+  useRef,
+  useState,
+  type ComponentPropsWithoutRef,
+} from "react";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
 import { EstimateMenu } from "@/components/ui/story/estimate-menu";
+import { TimeNeededMenu } from "@/components/ui/story/time-needed-menu";
 import { Labels } from "@/components/ui/story/labels";
 import { sprintTooltip } from "@/components/ui/story/sprint-tooltip";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
@@ -33,17 +29,15 @@ import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import type { Story } from "@/modules/stories/types";
 import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
-import {
-  useMediaQuery,
-  useTerminology,
-  useUserRole,
-  useWorkspacePath,
-} from "@/hooks";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
-import { hexToRgba, slugify } from "@/utils";
+import { hexToRgba } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatEstimate } from "@/lib/estimate";
+import { formatTimeNeeded } from "@/lib/time-needed";
 import { RowWrapper } from "../row-wrapper";
+import { StoryStrategyProperties } from "./strategy-properties";
 
 type StoryPropertiesProps = Story & {
   handleUpdate: (data: Partial<Story>) => void;
@@ -52,6 +46,111 @@ type StoryPropertiesProps = Story & {
   isExpanded?: boolean;
   setIsExpanded?: (isExpanded: boolean) => void;
 };
+
+type StoryStatusPropertyProps = Omit<
+  ComponentPropsWithoutRef<typeof Button>,
+  "children"
+> & {
+  readOnly?: boolean;
+  statusColor?: string;
+  statusId: string;
+  statusName?: string;
+};
+
+export const StoryStatusProperty = forwardRef<
+  HTMLButtonElement,
+  StoryStatusPropertyProps
+>(
+  (
+    {
+      className,
+      disabled = false,
+      readOnly = false,
+      statusColor,
+      statusId,
+      statusName,
+      ...buttonProps
+    },
+    ref,
+  ) => (
+    <Button
+      {...buttonProps}
+      aria-hidden={readOnly || undefined}
+      className={cn("gap-1 pr-2", className)}
+      disabled={disabled}
+      ref={ref}
+      rounded="md"
+      size="xs"
+      style={{
+        backgroundColor: hexToRgba(statusColor, 0.1),
+        borderColor: hexToRgba(statusColor, 0.2),
+      }}
+      tabIndex={readOnly ? -1 : undefined}
+      type="button"
+      variant="outline"
+    >
+      <StoryStatusIcon statusId={statusId} />
+      {statusName}
+    </Button>
+  ),
+);
+
+StoryStatusProperty.displayName = "StoryStatusProperty";
+
+type StoryPriorityPropertyProps = Omit<
+  ComponentPropsWithoutRef<"button">,
+  "children"
+> & {
+  isListRow: boolean;
+  priority: Story["priority"];
+  readOnly?: boolean;
+  showName?: boolean;
+};
+
+export const StoryPriorityProperty = forwardRef<
+  HTMLButtonElement,
+  StoryPriorityPropertyProps
+>(
+  (
+    {
+      className,
+      disabled = false,
+      isListRow,
+      priority,
+      readOnly = false,
+      showName = false,
+      ...buttonProps
+    },
+    ref,
+  ) => (
+    <button
+      {...buttonProps}
+      aria-hidden={readOnly || undefined}
+      aria-label={priority}
+      className={cn(
+        "flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      )}
+      disabled={disabled}
+      ref={ref}
+      tabIndex={readOnly ? -1 : undefined}
+      type="button"
+    >
+      <PriorityIcon priority={priority} />
+      <span
+        className={cn({
+          inline: showName,
+          "hidden @6xl:inline": !showName && isListRow,
+          hidden: !showName && !isListRow,
+        })}
+      >
+        {priority}
+      </span>
+    </button>
+  ),
+);
+
+StoryPriorityProperty.displayName = "StoryPriorityProperty";
 
 const completedOrCancelled = (category?: StateCategory) => {
   return ["completed", "cancelled", "paused"].includes(category || "");
@@ -63,8 +162,11 @@ export const StoryProperties = ({
   priority,
   estimateValue,
   estimateScheme,
+  estimatedDurationMinutes,
+  minimumFocusBlockMinutes,
   objective,
   objectiveId,
+  keyResultId,
   sprint,
   sprintId,
   id,
@@ -85,15 +187,17 @@ export const StoryProperties = ({
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
   const pendingStatusIdRef = useRef<string | null>(null);
+  const showObjective = isColumnVisible("Objective");
+  const showKeyResult = isColumnVisible("Key Result");
+  const hasVisibleStrategyProperties = Boolean(
+    objectiveId && (showObjective || (showKeyResult && keyResultId)),
+  );
 
   const status =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
-  const isMobile = useMediaQuery("(max-width: 768px)");
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
   const isListRow = !asKanban;
-  const selectedObjective =
-    objectiveId && objective?.id === objectiveId ? objective : null;
   const selectedSprint = sprintId && sprint?.id === sprintId ? sprint : null;
   const isDoneStatus = (statusId: string) => {
     const status = statuses.find((s) => s.id === statusId);
@@ -160,21 +264,12 @@ export const StoryProperties = ({
       {isColumnVisible("Status") && (
         <StatusesMenu>
           <StatusesMenu.Trigger>
-            <Button
-              className="gap-1 pr-2"
+            <StoryStatusProperty
               disabled={isGuest}
-              rounded={asKanban ? "md" : "xl"}
-              size="xs"
-              style={{
-                backgroundColor: hexToRgba(status?.color, 0.1),
-                borderColor: hexToRgba(status?.color, 0.2),
-              }}
-              type="button"
-              variant="outline"
-            >
-              <StoryStatusIcon statusId={statusId} />
-              {status?.name}
-            </Button>
+              statusColor={status?.color}
+              statusId={statusId}
+              statusName={status?.name}
+            />
           </StatusesMenu.Trigger>
           <StatusesMenu.Items
             setStatusId={handleStatusUpdate}
@@ -199,17 +294,11 @@ export const StoryProperties = ({
                 {priority}
               </Button>
             ) : (
-              <button
-                aria-label={priority}
-                className="flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50"
+              <StoryPriorityProperty
                 disabled={isGuest}
-                type="button"
-              >
-                <PriorityIcon priority={priority} />
-                <span className={cn("hidden", { "@6xl:inline": isListRow })}>
-                  {priority}
-                </span>
-              </button>
+                isListRow={isListRow}
+                priority={priority}
+              />
             )}
           </PrioritiesMenu.Trigger>
           <PrioritiesMenu.Items
@@ -237,7 +326,7 @@ export const StoryProperties = ({
                   className="gap-1 px-2"
                   color="tertiary"
                   disabled={isGuest}
-                  rounded={asKanban ? "md" : "xl"}
+                  rounded="md"
                   size="xs"
                   type="button"
                   variant="outline"
@@ -257,59 +346,51 @@ export const StoryProperties = ({
           />
         </EstimateMenu>
       ) : null}
-      {isColumnVisible("Objective") && selectedObjective ? (
-        <ObjectivesMenu>
+      {isColumnVisible("Time needed") && estimatedDurationMinutes ? (
+        <TimeNeededMenu>
           <Tooltip
-            className="w-80 max-w-[calc(100vw-2rem)] py-3"
-            collisionPadding={16}
-            title={
-              <Flex align="start" gap={2}>
-                <ObjectiveIcon className="relative top-[3px] h-4 shrink-0" />
-                <Box className="min-w-0">
-                  <Text className="mb-1.5" fontSize="md">
-                    {selectedObjective.name}
-                  </Text>
-                  <Box
-                    className="text-text-muted mt-1 line-clamp-4 min-w-0 break-words"
-                    html={selectedObjective.description ?? ""}
-                  />
-                </Box>
-              </Flex>
-            }
+            className="pointer-events-none py-3"
+            title={formatTimeNeeded(estimatedDurationMinutes, "full")}
           >
             <span>
-              <ObjectivesMenu.Trigger>
+              <TimeNeededMenu.Trigger>
                 <Button
-                  aria-label={selectedObjective.name}
+                  aria-label={`Time needed: ${formatTimeNeeded(estimatedDurationMinutes, "full")}`}
                   className="gap-1 px-2"
                   color="tertiary"
                   disabled={isGuest}
-                  rounded={asKanban ? "md" : "xl"}
+                  rounded="md"
                   size="xs"
                   type="button"
                   variant="outline"
                 >
-                  <ObjectiveIcon className="h-4" />
-                  <span
-                    className={cn("max-w-32 truncate", {
-                      "inline-block": asKanban,
-                      "hidden @7xl:inline-block": isListRow,
-                    })}
-                  >
-                    {selectedObjective.name}
-                  </span>
+                  <Time02Icon className="h-4" />
+                  <span>{formatTimeNeeded(estimatedDurationMinutes)}</span>
                 </Button>
-              </ObjectivesMenu.Trigger>
+              </TimeNeededMenu.Trigger>
             </span>
           </Tooltip>
-          <ObjectivesMenu.Items
-            objectiveId={objectiveId ?? undefined}
-            setObjectiveId={(objectiveId) => {
-              handleUpdate({ objectiveId });
+          <TimeNeededMenu.Items
+            estimatedDurationMinutes={estimatedDurationMinutes}
+            minimumFocusBlockMinutes={minimumFocusBlockMinutes}
+            setTimeNeeded={(timeNeeded) => {
+              handleUpdate(timeNeeded);
             }}
-            teamId={teamId}
           />
-        </ObjectivesMenu>
+        </TimeNeededMenu>
+      ) : null}
+      {hasVisibleStrategyProperties ? (
+        <StoryStrategyProperties
+          asKanban={asKanban}
+          disabled={isGuest}
+          handleUpdate={handleUpdate}
+          keyResultId={keyResultId}
+          objective={objective}
+          objectiveId={objectiveId}
+          showKeyResult={showKeyResult}
+          showObjective={showObjective}
+          teamId={teamId}
+        />
       ) : null}
       {isColumnVisible("Sprint") && selectedSprint ? (
         <SprintsMenu>
@@ -324,7 +405,7 @@ export const StoryProperties = ({
                   className="gap-1 px-2"
                   color="tertiary"
                   disabled={isGuest}
-                  rounded={asKanban ? "md" : "xl"}
+                  rounded="md"
                   size="xs"
                   type="button"
                   variant="outline"
@@ -369,7 +450,11 @@ export const StoryProperties = ({
               {subStories.map((subStory, idx) => (
                 <Link
                   href={withWorkspace(
-                    `/story/${subStory.id}/${slugify(subStory.title)}`,
+                    getStoryPath({
+                      id: subStory.id,
+                      sequenceId: subStory.sequenceId,
+                      teamCode,
+                    }),
                   )}
                   key={subStory.id}
                 >
@@ -402,17 +487,18 @@ export const StoryProperties = ({
             </Box>
           }
         >
-          <Badge
-            className="text-foreground hidden h-[1.85rem] cursor-pointer bg-transparent text-[0.95rem] md:flex"
+          <Button
+            className="hidden gap-1 px-2 md:flex"
             color="tertiary"
             onClick={() => {
               if (!asKanban) {
                 setIsExpanded?.(!isExpanded);
               }
             }}
-            role="button"
-            rounded={asKanban || isMobile ? "md" : "xl"}
-            tabIndex={0}
+            rounded="md"
+            size="xs"
+            type="button"
+            variant="outline"
           >
             <SubStoryIcon />
             {subStories.length <= 10 ? subStories.length : `10+`} sub{" "}
@@ -427,7 +513,7 @@ export const StoryProperties = ({
                 strokeWidth={3}
               />
             )}
-          </Badge>
+          </Button>
         </Tooltip>
       )}
       {isColumnVisible("Labels") && storyLabels && storyLabels.length > 0 ? (
@@ -456,7 +542,12 @@ export const StoryProperties = ({
                       new Date(endDate) >= new Date(),
                   })}
                 />
-                <Box>{getDueDateMessage(new Date(endDate))}</Box>
+                <Box>
+                  {getDueDateMessage(
+                    new Date(endDate),
+                    getTermDisplay("storyTerm"),
+                  )}
+                </Box>
               </Flex>
             }
           >
@@ -473,7 +564,7 @@ export const StoryProperties = ({
                   })}
                   color="tertiary"
                   disabled={isGuest}
-                  rounded={asKanban ? "md" : "xl"}
+                  rounded="md"
                   size="xs"
                   type="button"
                   variant="outline"

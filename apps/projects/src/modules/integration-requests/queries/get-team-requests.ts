@@ -9,6 +9,7 @@ import type {
 } from "../types";
 
 export type IntegrationRequestListFilters = {
+  search?: string;
   status?: IntegrationRequestStatus;
   provider?: IntegrationRequestProvider;
   priority?: IntegrationRequest["priority"];
@@ -25,6 +26,7 @@ const emptyRequestsPage = (
   pagination: {
     page,
     pageSize,
+    totalCount: 0,
     hasMore: false,
     nextPage: page + 1,
   },
@@ -43,6 +45,7 @@ export const getTeamIntegrationRequestsPage = async (
     page: String(page),
     pageSize: String(pageSize),
   });
+  if (filters.search?.trim()) params.set("search", filters.search.trim());
   if (filters.provider) params.set("provider", filters.provider);
   if (filters.priority) params.set("priority", filters.priority);
   if (filters.assigneeId) params.set("assigneeId", filters.assigneeId);
@@ -62,6 +65,5 @@ export const getTeamIntegrationRequests = async (
   ctx: WorkspaceCtx,
   status: IntegrationRequestStatus = "pending",
 ) => {
-  const page = await getTeamIntegrationRequestsPage(teamId, ctx, status);
-  return page.requests;
+  return getTeamIntegrationRequestsPage(teamId, ctx, status);
 };

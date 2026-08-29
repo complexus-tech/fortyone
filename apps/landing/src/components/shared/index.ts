@@ -3,3 +3,5 @@ export * from "./cta";
 export * from "./footer";
 export * from "./json-ld";
 export * from "./request-demo";
+export * from "./google-signup-button";
+export * from "./signup-provider-button";

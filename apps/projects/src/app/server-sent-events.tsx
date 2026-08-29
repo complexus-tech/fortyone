@@ -6,11 +6,11 @@ import { useCallback, useEffect } from "react";
 import { getApiUrl } from "@/lib/api-url";
 import type { AppNotification } from "@/modules/notifications/types";
 import { storyKeys } from "@/modules/stories/constants";
-import { notificationKeys } from "@/constants/keys";
+import { calendarKeys, notificationKeys } from "@/constants/keys";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useWorkspacePath } from "@/hooks";
 import type { DetailedStory } from "@/modules/story/types";
-import type { Story } from "@/modules/stories/types";
+import type { AutoSchedulingStatus, Story } from "@/modules/stories/types";
 
 const apiURL = getApiUrl();
 
@@ -21,13 +21,27 @@ type WorkspaceUpdate = {
   workspaceId: string;
   changes: {
     statusId?: string;
+    completedAt?: string | null;
     assigneeId?: string;
     priority?: string;
     title?: string;
+    autoSchedulingEnabled?: boolean;
+    autoSchedulingLocked?: boolean;
+    autoSchedulingStatus?: AutoSchedulingStatus;
+    autoSchedulingReason?: string | null;
+    autoSchedulingUpdatedAt?: string | null;
   };
   actorId: string;
   actorName: string;
   timestamp: number;
+};
+
+type CalendarUpdate = {
+  type: "calendar.updated";
+  workspaceId: string;
+  userId: string;
+  connectionId: string;
+  syncedAt: string;
 };
 
 export const ServerSentEvents = () => {
@@ -88,6 +102,27 @@ export const ServerSentEvents = () => {
           };
         },
       );
+
+      if (
+        "statusId" in workspaceUpdate.changes ||
+        "completedAt" in workspaceUpdate.changes ||
+        "autoSchedulingStatus" in workspaceUpdate.changes ||
+        "autoSchedulingReason" in workspaceUpdate.changes ||
+        "autoSchedulingUpdatedAt" in workspaceUpdate.changes
+      ) {
+        void queryClient.invalidateQueries({
+          queryKey: calendarKeys.all(workspaceSlug),
+        });
+      }
+    },
+    [queryClient, workspaceSlug],
+  );
+
+  const handleCalendarUpdate = useCallback(
+    (_calendarUpdate: CalendarUpdate) => {
+      void queryClient.invalidateQueries({
+        queryKey: calendarKeys.all(workspaceSlug),
+      });
     },
     [queryClient, workspaceSlug],
   );
@@ -104,7 +139,9 @@ export const ServerSentEvents = () => {
       try {
         const data = JSON.parse(`${event.data}`);
 
-        if (data.type === "story.workspace_update") {
+        if (data.type === "calendar.updated") {
+          handleCalendarUpdate(data as CalendarUpdate);
+        } else if (data.type === "story.workspace_update") {
           const workspaceUpdate = data as WorkspaceUpdate;
           handleWorkspaceUpdate(workspaceUpdate);
         } else {
@@ -123,7 +160,13 @@ export const ServerSentEvents = () => {
     return () => {
       eventSource.close();
     };
-  }, [posthog, workspace?.slug, handleNotification, handleWorkspaceUpdate]);
+  }, [
+    posthog,
+    workspace?.slug,
+    handleNotification,
+    handleWorkspaceUpdate,
+    handleCalendarUpdate,
+  ]);
 
   return null;
 };

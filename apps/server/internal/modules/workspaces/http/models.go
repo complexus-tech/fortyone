@@ -99,36 +99,45 @@ type AppWorkspaceTerminologySettings struct {
 
 // AppWorkspaceSettings represents workspace settings for the API.
 type AppWorkspaceSettings struct {
-	StoryTerm        string    `json:"storyTerm"`
-	SprintTerm       string    `json:"sprintTerm"`
-	ObjectiveTerm    string    `json:"objectiveTerm"`
-	KeyResultTerm    string    `json:"keyResultTerm"`
-	ObjectiveEnabled bool      `json:"objectiveEnabled"`
-	KeyResultEnabled bool      `json:"keyResultEnabled"`
-	CreatedAt        time.Time `json:"createdAt"`
-	UpdatedAt        time.Time `json:"updatedAt"`
+	StoryTerm          string    `json:"storyTerm"`
+	SprintTerm         string    `json:"sprintTerm"`
+	ObjectiveTerm      string    `json:"objectiveTerm"`
+	KeyResultTerm      string    `json:"keyResultTerm"`
+	ObjectiveEnabled   bool      `json:"objectiveEnabled"`
+	KeyResultEnabled   bool      `json:"keyResultEnabled"`
+	WorkingDays        []int     `json:"workingDays"`
+	WorkingStartMinute int       `json:"workingStartMinute"`
+	WorkingEndMinute   int       `json:"workingEndMinute"`
+	CreatedAt          time.Time `json:"createdAt"`
+	UpdatedAt          time.Time `json:"updatedAt"`
 }
 
 // AppUpdateWorkspaceSettings represents the payload for updating workspace settings.
 type AppUpdateWorkspaceSettings struct {
-	StoryTerm        string `json:"storyTerm,omitempty"`
-	SprintTerm       string `json:"sprintTerm,omitempty"`
-	ObjectiveTerm    string `json:"objectiveTerm,omitempty"`
-	KeyResultTerm    string `json:"keyResultTerm,omitempty"`
-	ObjectiveEnabled *bool  `json:"objectiveEnabled,omitempty"`
-	KeyResultEnabled *bool  `json:"keyResultEnabled,omitempty"`
+	StoryTerm          string `json:"storyTerm,omitempty"`
+	SprintTerm         string `json:"sprintTerm,omitempty"`
+	ObjectiveTerm      string `json:"objectiveTerm,omitempty"`
+	KeyResultTerm      string `json:"keyResultTerm,omitempty"`
+	ObjectiveEnabled   *bool  `json:"objectiveEnabled,omitempty"`
+	KeyResultEnabled   *bool  `json:"keyResultEnabled,omitempty"`
+	WorkingDays        *[]int `json:"workingDays,omitempty"`
+	WorkingStartMinute *int   `json:"workingStartMinute,omitempty"`
+	WorkingEndMinute   *int   `json:"workingEndMinute,omitempty"`
 }
 
 // toCoreWorkspaceSettings converts an API update model to a core model
 func toCoreWorkspaceSettings(settings AppUpdateWorkspaceSettings, workspaceID uuid.UUID, current workspaces.CoreWorkspaceSettings) workspaces.CoreWorkspaceSettings {
 	result := workspaces.CoreWorkspaceSettings{
-		WorkspaceID:      workspaceID,
-		StoryTerm:        settings.StoryTerm,
-		SprintTerm:       settings.SprintTerm,
-		ObjectiveTerm:    settings.ObjectiveTerm,
-		KeyResultTerm:    settings.KeyResultTerm,
-		ObjectiveEnabled: current.ObjectiveEnabled,
-		KeyResultEnabled: current.KeyResultEnabled,
+		WorkspaceID:        workspaceID,
+		StoryTerm:          settings.StoryTerm,
+		SprintTerm:         settings.SprintTerm,
+		ObjectiveTerm:      settings.ObjectiveTerm,
+		KeyResultTerm:      settings.KeyResultTerm,
+		ObjectiveEnabled:   current.ObjectiveEnabled,
+		KeyResultEnabled:   current.KeyResultEnabled,
+		WorkingDays:        append([]int(nil), current.WorkingDays...),
+		WorkingStartMinute: current.WorkingStartMinute,
+		WorkingEndMinute:   current.WorkingEndMinute,
 	}
 
 	// Only update boolean fields if they are provided
@@ -138,6 +147,15 @@ func toCoreWorkspaceSettings(settings AppUpdateWorkspaceSettings, workspaceID uu
 	if settings.KeyResultEnabled != nil {
 		result.KeyResultEnabled = *settings.KeyResultEnabled
 	}
+	if settings.WorkingDays != nil {
+		result.WorkingDays = append([]int(nil), (*settings.WorkingDays)...)
+	}
+	if settings.WorkingStartMinute != nil {
+		result.WorkingStartMinute = *settings.WorkingStartMinute
+	}
+	if settings.WorkingEndMinute != nil {
+		result.WorkingEndMinute = *settings.WorkingEndMinute
+	}
 
 	return result
 }
@@ -145,13 +163,16 @@ func toCoreWorkspaceSettings(settings AppUpdateWorkspaceSettings, workspaceID uu
 // toAppWorkspaceSettings converts a core settings model to an API model
 func toAppWorkspaceSettings(settings workspaces.CoreWorkspaceSettings) AppWorkspaceSettings {
 	return AppWorkspaceSettings{
-		StoryTerm:        settings.StoryTerm,
-		SprintTerm:       settings.SprintTerm,
-		ObjectiveTerm:    settings.ObjectiveTerm,
-		KeyResultTerm:    settings.KeyResultTerm,
-		ObjectiveEnabled: settings.ObjectiveEnabled,
-		KeyResultEnabled: settings.KeyResultEnabled,
-		CreatedAt:        settings.CreatedAt,
-		UpdatedAt:        settings.UpdatedAt,
+		StoryTerm:          settings.StoryTerm,
+		SprintTerm:         settings.SprintTerm,
+		ObjectiveTerm:      settings.ObjectiveTerm,
+		KeyResultTerm:      settings.KeyResultTerm,
+		ObjectiveEnabled:   settings.ObjectiveEnabled,
+		KeyResultEnabled:   settings.KeyResultEnabled,
+		WorkingDays:        settings.WorkingDays,
+		WorkingStartMinute: settings.WorkingStartMinute,
+		WorkingEndMinute:   settings.WorkingEndMinute,
+		CreatedAt:          settings.CreatedAt,
+		UpdatedAt:          settings.UpdatedAt,
 	}
 }

@@ -9,11 +9,18 @@ import (
 
 // Cleanup task types
 const (
-	TypeTokenCleanup        = "cleanup:tokens"
-	TypeDeleteStories       = "cleanup:deleted_stories"
-	TypeWebhookCleanup      = "cleanup:stripe_webhooks"
-	TypeWorkspaceCleanup    = "cleanup:deleted_workspaces"
-	TypeChatSessionsCleanup = "cleanup:deleted_chat_sessions"
+	TypeTokenCleanup              = "cleanup:tokens"
+	TypeDeleteStories             = "cleanup:deleted_stories"
+	TypeAttachmentObjectDeletions = "cleanup:attachment_object_deletions"
+	TypeDeleteFeedback            = "cleanup:deleted_feedback"
+	TypeWebhookCleanup            = "cleanup:stripe_webhooks"
+	TypeWorkspaceCleanup          = "cleanup:deleted_workspaces"
+	TypeChatSessionsCleanup       = "cleanup:deleted_chat_sessions"
+	TypeMessagingCleanup          = "cleanup:messaging_data"
+	TypeAPIIdempotencyCleanup     = "cleanup:api_idempotency_receipts"
+	TypeSlackCredentialBackfill   = "cleanup:slack_credentials" // #nosec G101 -- Asynq task type, not a credential value.
+	TypeSlackInboxRecovery        = "cleanup:slack_inbox"
+	TypeBrevoEmailReplyRecovery   = "cleanup:brevo_email_reply_inbox"
 )
 
 // EnqueueDeleteStories enqueues a task to cleanup deleted stories.

@@ -1,52 +1,169 @@
-import { CopyIcon, ShareIcon } from "icons";
-import { Box, Flex, Text } from "ui";
-import type { PublicPortal } from "./types";
+"use client";
+
+import { CheckIcon, CopyIcon, ShareIcon } from "icons";
+import { Box, Button, Flex, Text } from "ui";
+import { toast } from "sonner";
+import { cn } from "lib";
+import { getLoginUrl } from "@/utils/callback-url";
+import type { PublicPortal, PublicPortalParticipant } from "./types";
 import { NewFeedbackButton } from "./feedback-controls";
+import { getNewFeedbackCallbackUrl } from "./utils";
+import { isContactableParticipant } from "./participant";
 
-export const PublicPortalSidebar = ({ portal }: { portal: PublicPortal }) => (
-  <aside className="space-y-8">
-    <NewFeedbackButton portal={portal} />
+const copyLink = async () => {
+  try {
+    await navigator.clipboard.writeText(window.location.href);
+    toast.success("Link copied to clipboard");
+  } catch {
+    toast.error("Unable to copy link");
+  }
+};
 
-    <Box className="border-border bg-surface shadow-shadow/40 rounded-3xl border-[0.5px] p-2 shadow-sm">
-      <Text
-        className="px-3 py-2 text-[0.8rem] tracking-[0.12em] uppercase"
-        color="muted"
+const shareLink = async (portal: PublicPortal) => {
+  const share = Reflect.get(navigator, "share") as
+    | Navigator["share"]
+    | undefined;
+  if (typeof share !== "function") {
+    toast.error("Sharing is not supported in this browser");
+    return;
+  }
+
+  try {
+    await share.call(navigator, {
+      title: portal.name,
+      text: `${portal.workspace.name} feedback`,
+      url: window.location.href,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") return;
+    toast.error("Unable to share link");
+  }
+};
+
+export const PublicPortalActions = ({ portal }: { portal: PublicPortal }) => (
+  <Box className="border-border bg-surface shadow-shadow/40 rounded-xl border-[0.5px] p-2 shadow-sm">
+    <Text className="px-2 py-2" fontWeight="semibold">
+      Actions
+    </Text>
+    <Flex direction="column" gap={1}>
+      <Button
+        className="w-full justify-start px-2"
+        color="tertiary"
+        leftIcon={<CopyIcon className="h-4" />}
+        onClick={() => {
+          void copyLink();
+        }}
+        variant="naked"
       >
-        Boards
-      </Text>
-      <Box className="bg-state-selected/50 dark:bg-state-selected rounded-full px-3 py-2.5">
-        <Flex align="center" gap={2}>
-          <span className="bg-text-muted size-2 rounded-full" />
-          <Text fontWeight="semibold">All Feedback</Text>
-        </Flex>
-      </Box>
-      {portal.boards.map((board) => (
-        <Flex
-          align="center"
-          className="hover:bg-state-hover rounded-full px-3 py-2.5 transition"
-          gap={2}
-          key={board.id}
-        >
-          <span className={`${board.colorClassName} size-2 rounded-full`} />
-          <Text color="muted">{board.name}</Text>
-        </Flex>
-      ))}
-    </Box>
-
-    <Box className="border-border bg-surface shadow-shadow/40 rounded-3xl border-[0.5px] p-4 shadow-sm">
-      <Text className="mb-4" fontWeight="semibold">
-        Actions
-      </Text>
-      <Flex className="text-text-muted gap-4" direction="column">
-        <Flex align="center" gap={2}>
-          <CopyIcon className="h-4" />
-          <span>Copy link</span>
-        </Flex>
-        <Flex align="center" gap={2}>
-          <ShareIcon className="h-4" />
-          <span>Share</span>
-        </Flex>
-      </Flex>
-    </Box>
-  </aside>
+        Copy link
+      </Button>
+      <Button
+        className="w-full justify-start px-2"
+        color="tertiary"
+        leftIcon={<ShareIcon className="h-4" />}
+        onClick={() => {
+          void shareLink(portal);
+        }}
+        variant="naked"
+      >
+        Share
+      </Button>
+    </Flex>
+  </Box>
 );
+
+export const PublicPortalSidebar = ({
+  initialFeedbackComposerOpen = false,
+  onBoardSelect,
+  participant,
+  portal,
+  selectedBoardId,
+}: {
+  initialFeedbackComposerOpen?: boolean;
+  onBoardSelect: (boardId?: string) => void;
+  participant: PublicPortalParticipant;
+  portal: PublicPortal;
+  selectedBoardId?: string;
+}) => {
+  return (
+    <aside className="space-y-8 md:sticky md:top-8 md:self-start">
+      {isContactableParticipant(participant) ||
+      portal.participationMode !== "account_required" ? (
+        <NewFeedbackButton
+          initialOpen={initialFeedbackComposerOpen}
+          participant={participant}
+          portal={portal}
+        />
+      ) : (
+        <Button
+          className="h-12 w-full justify-center text-[1rem]"
+          color="invert"
+          href={getLoginUrl(getNewFeedbackCallbackUrl(portal))}
+          size="lg"
+        >
+          Login to submit feedback
+        </Button>
+      )}
+
+      <Box className="border-border bg-surface shadow-shadow/40 rounded-xl border-[0.5px] p-2 shadow-sm">
+        <Text
+          className="px-3 py-2 text-[0.8rem] tracking-[0.12em] uppercase"
+          color="muted"
+        >
+          Boards
+        </Text>
+        <button
+          aria-pressed={!selectedBoardId}
+          className={cn(
+            "hover:bg-state-hover flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition",
+            { "bg-state-hover": !selectedBoardId },
+          )}
+          onClick={() => {
+            onBoardSelect(undefined);
+          }}
+          type="button"
+        >
+          <span className="bg-text-muted size-2 rounded-sm" />
+          <Text fontWeight={!selectedBoardId ? "semibold" : "normal"}>
+            All boards
+          </Text>
+          {!selectedBoardId ? (
+            <CheckIcon className="ml-auto h-4 w-auto" />
+          ) : null}
+        </button>
+        {portal.boards.map((board) => (
+          <button
+            aria-pressed={selectedBoardId === board.id}
+            className={cn(
+              "hover:bg-state-hover flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition",
+              { "bg-state-hover": selectedBoardId === board.id },
+            )}
+            key={board.id}
+            onClick={() => {
+              onBoardSelect(board.id);
+            }}
+            type="button"
+          >
+            <span
+              className="size-2 rounded-sm"
+              style={{
+                backgroundColor: board.color ?? "var(--color-text-muted)",
+              }}
+            />
+            <Text
+              color={selectedBoardId === board.id ? undefined : "muted"}
+              fontWeight={selectedBoardId === board.id ? "semibold" : "normal"}
+            >
+              {board.name}
+            </Text>
+            {selectedBoardId === board.id ? (
+              <CheckIcon className="ml-auto h-4 w-auto" />
+            ) : null}
+          </button>
+        ))}
+      </Box>
+
+      <PublicPortalActions portal={portal} />
+    </aside>
+  );
+};

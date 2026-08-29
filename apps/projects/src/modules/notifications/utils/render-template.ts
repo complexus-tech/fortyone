@@ -16,7 +16,7 @@ export const renderTemplate = (
       const key = match.slice(1, -1); // Remove { and }
       const variable = variables[key as keyof typeof variables];
 
-      if (variable.value) {
+      if (variable?.value) {
         if (wrapInSpan) {
           return `<span class="font-semibold antialiased text-foreground/90">${variable.value}</span>`;
         }

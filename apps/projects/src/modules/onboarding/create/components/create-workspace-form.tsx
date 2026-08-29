@@ -2,7 +2,7 @@
 
 import { Box, Input, Select, Text, Button, Flex } from "ui";
 import type { ChangeEvent, FormEvent } from "react";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CloseIcon } from "icons";
@@ -10,15 +10,29 @@ import { createWorkspaceAction } from "@/lib/actions/create-workspace";
 import { useDebounce } from "@/hooks";
 import { checkWorkspaceAvailability } from "@/lib/queries/check-workspace-availability";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
-import { buildWorkspaceUrl } from "@/utils";
+import {
+  getOnboardingWorkspaceUrl,
+  withOnboardingCallbackUrl,
+} from "@/modules/onboarding/routing";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
-export const CreateWorkspaceForm = () => {
+const formatSlug = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+export const CreateWorkspaceForm = ({
+  callbackUrl,
+}: {
+  callbackUrl?: string;
+}) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
-  const [hasOrgBlurred, setHasOrgBlurred] = useState(false);
+  const hasOrgBlurredRef = useRef(false);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -26,41 +40,33 @@ export const CreateWorkspaceForm = () => {
   });
   const { data: workspaces = [] } = useWorkspaces();
 
-  const formatSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-") // Replace non-alphanumeric chars with dash
-      .replace(/-+/g, "-") // Replace multiple dashes with single dash
-      .replace(/^-|-$/g, ""); // Remove leading/trailing dashes
-  };
+  const checkAvailability = useDebounce(
+    useCallback(async (slugToCheck: string) => {
+      if (slugToCheck.length <= 3) return;
 
-  const checkAvailability = useDebounce(async (slugToCheck: string) => {
-    if (slugToCheck.length > 3) {
-      setIsAvailable(true); // Reset availability while checking
+      setIsAvailable(true);
       const res = await checkWorkspaceAvailability(slugToCheck).catch(
         () => null,
       );
       setIsAvailable(Boolean(res?.data?.available));
-    }
-  }, 1000);
+    }, []),
+    1000,
+  );
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => {
-      const updates = { ...prev, [name]: value };
+    const shouldSyncSlug = name === "name" && !hasOrgBlurredRef.current;
+    const nextSlug = shouldSyncSlug ? formatSlug(value) : value.toLowerCase();
 
-      // If it's the org name and hasn't been blurred, update slug too
-      if (name === "name" && !hasOrgBlurred) {
-        updates.slug = formatSlug(value).toLowerCase();
-      }
+    setForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+      ...(shouldSyncSlug ? { slug: nextSlug } : {}),
+    }));
 
-      // Check availability when slug changes
-      if (name === "slug" || (name === "name" && !hasOrgBlurred)) {
-        checkAvailability(updates.slug.toLowerCase());
-      }
-
-      return updates;
-    });
+    if (name === "slug" || shouldSyncSlug) {
+      checkAvailability(nextSlug);
+    }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -102,9 +108,14 @@ export const CreateWorkspaceForm = () => {
     }
     const workspace = res.data!;
     if (workspaces.length === 0) {
-      router.push("/onboarding/account");
+      router.push(
+        withOnboardingCallbackUrl("/onboarding/account", callbackUrl),
+      );
     } else {
-      window.location.href = buildWorkspaceUrl(workspace?.slug);
+      window.location.href = getOnboardingWorkspaceUrl(
+        workspace.slug,
+        callbackUrl,
+      );
     }
   };
 
@@ -115,7 +126,7 @@ export const CreateWorkspaceForm = () => {
         label="Your Workspace"
         name="name"
         onBlur={() => {
-          setHasOrgBlurred(true);
+          hasOrgBlurredRef.current = true;
         }}
         onChange={handleChange}
         placeholder="Enter workspace name"
@@ -139,7 +150,7 @@ export const CreateWorkspaceForm = () => {
         required
         rightIcon={
           <Flex align="center" gap={2}>
-            {isFortyOneApp && <Text>.fortyone.app</Text>}
+            {isFortyOneApp ? <Text>.fortyone.app</Text> : null}
             {!isAvailable ? (
               <Flex
                 align="center"
@@ -162,7 +173,10 @@ export const CreateWorkspaceForm = () => {
         </Text>
         <Select
           onValueChange={(value) => {
-            setForm({ ...form, teamSize: value });
+            setForm((currentForm) => ({
+              ...currentForm,
+              teamSize: value,
+            }));
           }}
           value={form.teamSize}
         >
@@ -209,10 +223,10 @@ export const CreateWorkspaceForm = () => {
         align="center"
         className="mt-4 md:py-3"
         color="invert"
-        size="lg"
         fullWidth
         loading={isLoading}
         loadingText="Creating workspace..."
+        size="lg"
       >
         Create Workspace
       </Button>

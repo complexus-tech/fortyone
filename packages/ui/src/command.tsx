@@ -11,7 +11,7 @@ export const Command = ({ className, ...props }: any) => (
   <CommandPrimitive
     className={cn(
       "flex h-full w-full flex-col overflow-hidden rounded-md",
-      className
+      className,
     )}
     {...props}
   />
@@ -32,7 +32,7 @@ const CommandInput = ({
     <CommandPrimitive.Input
       className={cn(
         "bg-transparent placeholder:text-text-muted py-[0.15rem] pl-[1.1rem] outline-none w-full",
-        className
+        className,
       )}
       {...props}
     />
@@ -42,7 +42,7 @@ const CommandInput = ({
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 
 const contentClasses = cva(
-  "bg-surface-elevated/90 backdrop-blur-md z-50 border border-border w-max shadow-xl shadow-shadow mt-1 py-1.5",
+  "z-50 mt-1 w-max border-[0.5px] border-border/70 bg-surface-elevated py-1.5 shadow-xl shadow-shadow backdrop-blur-md dark:bg-surface-elevated/80",
   {
     variants: {
       rounded: {
@@ -54,7 +54,7 @@ const contentClasses = cva(
     defaultVariants: {
       rounded: "lg",
     },
-  }
+  },
 );
 
 const CommandList = ({
@@ -112,11 +112,11 @@ const CommandItem = ({
 }) => (
   <CommandPrimitive.Item
     className={cn(
-      "flex aria-selected:bg-accent gap-2 items-center select-none hover:bg-accent focus-visible:bg-accent rounded-lg w-full py-1.5 px-2 outline-none cursor-pointer data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:pointer-events-none",
+      "flex aria-selected:bg-accent gap-2 items-center select-none hover:bg-accent focus:bg-accent rounded-md w-full py-2 px-2 outline-none cursor-pointer data-[disabled=true]:opacity-50 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:pointer-events-none",
       {
         "bg-accent": active,
       },
-      className
+      className,
     )}
     {...props}
   />

@@ -1,45 +1,47 @@
 package invitations
 
 import (
-	"errors"
-	"time"
-
-	"github.com/google/uuid"
+	invitationsdomain "github.com/complexus-tech/projects-api/internal/modules/invitations/domain"
+	"github.com/complexus-tech/projects-api/internal/platform/authorization"
 )
 
-// Service errors
 var (
-	ErrInvitationNotFound     = errors.New("invitation not found")
-	ErrInvitationExpired      = errors.New("invitation expired")
-	ErrInvitationUsed         = errors.New("invitation already accepted")
-	ErrInvitationRevoked      = errors.New("invitation has been revoked")
-	ErrInvalidToken           = errors.New("invalid invitation token")
-	ErrDuplicateInvitation    = errors.New("duplicate invitation")
-	ErrInvalidInvitee         = errors.New("user email does not match invitation email")
-	ErrAlreadyWorkspaceMember = errors.New("you are already a member of this workspace")
+	ErrInvitationNotFound     = invitationsdomain.ErrInvitationNotFound
+	ErrInvitationExpired      = invitationsdomain.ErrInvitationExpired
+	ErrInvitationUsed         = invitationsdomain.ErrInvitationUsed
+	ErrInvitationRevoked      = invitationsdomain.ErrInvitationRevoked
+	ErrInvalidToken           = invitationsdomain.ErrInvalidToken
+	ErrDuplicateInvitation    = invitationsdomain.ErrDuplicateInvitation
+	ErrInvalidInvitee         = invitationsdomain.ErrInvalidInvitee
+	ErrAlreadyWorkspaceMember = invitationsdomain.ErrAlreadyWorkspaceMember
+	ErrInvalidInvitationRole  = invitationsdomain.ErrInvalidInvitationRole
+	ErrInvalidInvitationEmail = invitationsdomain.ErrInvalidInvitationEmail
+	ErrInvalidInvitationTeam  = invitationsdomain.ErrInvalidInvitationTeam
+	ErrTooManyInvitations     = invitationsdomain.ErrTooManyInvitations
+	ErrOutboxClaimLost        = invitationsdomain.ErrOutboxClaimLost
 )
 
-// InvitationRequest represents a request to create an invitation
-type InvitationRequest struct {
-	Email   string
-	Role    string
-	TeamIDs []uuid.UUID
+const (
+	InvitationRoleGuest  = string(authorization.WorkspaceRoleGuest)
+	InvitationRoleMember = string(authorization.WorkspaceRoleMember)
+	InvitationRoleAdmin  = string(authorization.WorkspaceRoleAdmin)
+)
+
+func ValidateInvitationRole(role string) error {
+	switch role {
+	case InvitationRoleGuest, InvitationRoleMember, InvitationRoleAdmin:
+		return nil
+	default:
+		return ErrInvalidInvitationRole
+	}
 }
 
-// CoreWorkspaceInvitation represents a workspace invitation in the application layer
-type CoreWorkspaceInvitation struct {
-	ID             uuid.UUID
-	WorkspaceID    uuid.UUID
-	InviterID      uuid.UUID
-	Email          string
-	Role           string
-	Token          string
-	TeamIDs        []uuid.UUID
-	ExpiresAt      time.Time
-	UsedAt         *time.Time
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	WorkspaceName  string // Workspace details
-	WorkspaceSlug  string
-	WorkspaceColor string
-}
+type InvitationRequest = invitationsdomain.Request
+type StoredInvitationToken = invitationsdomain.StoredToken
+type InvitationTokenLookup = invitationsdomain.TokenLookup
+type NewWorkspaceInvitation = invitationsdomain.NewWorkspaceInvitation
+type InvitationEmailOutboxPayload = invitationsdomain.EmailOutboxPayload
+type InvitationEmailDelivery = invitationsdomain.EmailDelivery
+type AcceptInvitationCommand = invitationsdomain.AcceptCommand
+type CoreInvitationOutboxEvent = invitationsdomain.OutboxEvent
+type CoreWorkspaceInvitation = invitationsdomain.WorkspaceInvitation

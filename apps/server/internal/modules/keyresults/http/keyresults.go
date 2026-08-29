@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
+	"github.com/complexus-tech/projects-api/internal/platform/pagination"
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
@@ -22,6 +22,7 @@ var (
 	ErrInvalidKeyResultID = errors.New("key result id is not in its proper form")
 	ErrInvalidWorkspaceID = errors.New("workspace id is not in its proper form")
 	ErrInvalidObjectiveID = errors.New("objective id is not in its proper form")
+	ErrInvalidFilters     = errors.New("invalid key result filters")
 )
 
 type Handlers struct {
@@ -53,16 +54,22 @@ func (h *Handlers) resolveUserAvatarURL(ctx context.Context, avatar string) stri
 	return resolved
 }
 
-func (h *Handlers) invalidateCache(ctx context.Context, workspaceID uuid.UUID) {
-	cacheKeys := cache.InvalidateKeyResultKeys(workspaceID)
-	for _, key := range cacheKeys {
+func (h *Handlers) invalidateObjectiveCache(ctx context.Context, workspaceID, objectiveID uuid.UUID) {
+	if h.cache == nil {
+		return
+	}
+	for _, key := range cache.InvalidateObjectiveKeys(workspaceID, objectiveID) {
 		if strings.Contains(key, "*") {
 			if err := h.cache.DeleteByPattern(ctx, key); err != nil {
-				h.log.Error(ctx, "failed to delete cache pattern", "key", key, "error", err)
+				if h.log != nil {
+					h.log.Error(ctx, "failed to delete objective cache pattern", "key", key, "error", err)
+				}
 			}
-		} else {
-			if err := h.cache.Delete(ctx, key); err != nil {
-				h.log.Error(ctx, "failed to delete cache", "key", key, "error", err)
+			continue
+		}
+		if err := h.cache.Delete(ctx, key); err != nil {
+			if h.log != nil {
+				h.log.Error(ctx, "failed to delete objective cache", "key", key, "error", err)
 			}
 		}
 	}
@@ -86,11 +93,11 @@ func (h *Handlers) Create(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	kr, err := h.keyResults.Create(ctx, toCoreNewKeyResult(nkr, userID), workspace.ID)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		web.RespondError(ctx, w, err, keyResultErrorStatus(err))
 		return nil
 	}
 
-	h.invalidateCache(ctx, workspace.ID)
+	h.invalidateObjectiveCache(ctx, workspace.ID, nkr.ObjectiveID)
 
 	web.Respond(ctx, w, toAppKeyResult(kr), http.StatusCreated)
 	return nil
@@ -123,45 +130,18 @@ func (h *Handlers) Update(ctx context.Context, w http.ResponseWriter, r *http.Re
 		comment = *ukr.Comment
 	}
 
-	updates := make(map[string]any)
-	if ukr.Name != "" {
-		updates["name"] = ukr.Name
-	}
-	if ukr.MeasurementType != "" {
-		updates["measurement_type"] = ukr.MeasurementType
-	}
-	if ukr.StartValue != nil {
-		updates["start_value"] = ukr.StartValue
-	}
-	if ukr.CurrentValue != nil {
-		updates["current_value"] = ukr.CurrentValue
-	}
-	if ukr.TargetValue != nil {
-		updates["target_value"] = ukr.TargetValue
-	}
-	if ukr.Lead != nil {
-		updates["lead"] = ukr.Lead
-	}
-	if ukr.StartDate != nil {
-		updates["start_date"] = ukr.StartDate.TimePtr()
-	}
-	if ukr.EndDate != nil {
-		updates["end_date"] = ukr.EndDate.TimePtr()
-	}
-	if ukr.Contributors != nil {
-		updates["contributors"] = *ukr.Contributors
+	patch := toKeyResultPatch(ukr)
+	currentKeyResult, err := h.keyResults.GetForActor(ctx, id, workspace.ID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, keyResultErrorStatus(err))
 	}
 
-	if err := h.keyResults.Update(ctx, id, workspace.ID, userID, updates, comment); err != nil {
-		if errors.Is(err, keyresults.ErrNotFound) {
-			web.RespondError(ctx, w, err, http.StatusNotFound)
-			return nil
-		}
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+	if err := h.keyResults.UpdateIntent(ctx, id, workspace.ID, userID, patch, comment); err != nil {
+		web.RespondError(ctx, w, err, keyResultErrorStatus(err))
 		return nil
 	}
 
-	h.invalidateCache(ctx, workspace.ID)
+	h.invalidateObjectiveCache(ctx, workspace.ID, currentKeyResult.ObjectiveID)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
@@ -184,17 +164,17 @@ func (h *Handlers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		web.RespondError(ctx, w, ErrInvalidKeyResultID, http.StatusBadRequest)
 		return nil
 	}
+	currentKeyResult, err := h.keyResults.GetForActor(ctx, id, workspace.ID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, keyResultErrorStatus(err))
+	}
 
 	if err := h.keyResults.Delete(ctx, id, workspace.ID, userID); err != nil {
-		if errors.Is(err, keyresults.ErrNotFound) {
-			web.RespondError(ctx, w, err, http.StatusNotFound)
-			return nil
-		}
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		web.RespondError(ctx, w, err, keyResultErrorStatus(err))
 		return nil
 	}
 
-	h.invalidateCache(ctx, workspace.ID)
+	h.invalidateObjectiveCache(ctx, workspace.ID, currentKeyResult.ObjectiveID)
 
 	web.Respond(ctx, w, nil, http.StatusNoContent)
 	return nil
@@ -215,7 +195,7 @@ func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	krs, err := h.keyResults.List(ctx, objID, workspace.ID)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		web.RespondError(ctx, w, err, keyResultErrorStatus(err))
 		return nil
 	}
 
@@ -237,81 +217,19 @@ func (h *Handlers) ListPaginated(ctx context.Context, w http.ResponseWriter, r *
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	filters := parseKeyResultFilters(r, workspace.ID, userID)
+	filters, err := parseKeyResultFilters(r, workspace.ID, userID)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
 
 	response, err := h.keyResults.ListPaginated(ctx, filters)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		web.RespondError(ctx, w, err, keyResultErrorStatus(err))
 		return nil
 	}
 
 	web.Respond(ctx, w, toAppKeyResultListResponse(response), http.StatusOK)
 	return nil
-}
-
-func parseKeyResultFilters(r *http.Request, workspaceID, userID uuid.UUID) keyresults.CoreKeyResultFilters {
-	query := r.URL.Query()
-
-	filters := keyresults.CoreKeyResultFilters{
-		WorkspaceID:    workspaceID,
-		CurrentUserID:  userID,
-		Page:           getIntParam(query, "page", 1),
-		PageSize:       getIntParam(query, "pageSize", 20),
-		OrderBy:        getStringParam(query, "orderBy", "created_at"),
-		OrderDirection: getStringParam(query, "orderDirection", "desc"),
-	}
-
-	if teamIDs := query["teamIds"]; len(teamIDs) > 0 {
-		filters.TeamIDs = parseUUIDArray(teamIDs)
-	}
-
-	if objectiveIDs := query["objectiveIds"]; len(objectiveIDs) > 0 {
-		filters.ObjectiveIDs = parseUUIDArray(objectiveIDs)
-	}
-
-	if measurementTypes := query["measurementTypes"]; len(measurementTypes) > 0 {
-		filters.MeasurementTypes = measurementTypes
-	}
-
-	if createdAfter := query.Get("createdAfter"); createdAfter != "" {
-		if t, err := time.Parse(time.RFC3339, createdAfter); err == nil {
-			filters.CreatedAfter = &t
-		}
-	}
-
-	if createdBefore := query.Get("createdBefore"); createdBefore != "" {
-		if t, err := time.Parse(time.RFC3339, createdBefore); err == nil {
-			filters.CreatedBefore = &t
-		}
-	}
-
-	return filters
-}
-
-func getIntParam(query map[string][]string, key string, defaultValue int) int {
-	if values := query[key]; len(values) > 0 {
-		if val, err := strconv.Atoi(values[0]); err == nil {
-			return val
-		}
-	}
-	return defaultValue
-}
-
-func getStringParam(query map[string][]string, key, defaultValue string) string {
-	if values := query[key]; len(values) > 0 {
-		return values[0]
-	}
-	return defaultValue
-}
-
-func parseUUIDArray(values []string) []uuid.UUID {
-	var uuids []uuid.UUID
-	for _, val := range values {
-		if id, err := uuid.Parse(val); err == nil {
-			uuids = append(uuids, id)
-		}
-	}
-	return uuids
 }
 
 func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -321,14 +239,38 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		web.RespondError(ctx, w, ErrInvalidKeyResultID, http.StatusBadRequest)
 		return nil
 	}
-
-	// Use your existing pagination helper functions
-	page := getIntParam(r.URL.Query(), "page", 1)
-	pageSize := getIntParam(r.URL.Query(), "pageSize", 20)
-
-	activities, hasMore, err := h.okrActivities.GetKeyResultActivities(ctx, id, page, pageSize)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusInternalServerError)
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	if _, err := h.keyResults.GetForActor(ctx, id, workspace.ID, userID); err != nil {
+		return web.RespondError(ctx, w, err, keyResultErrorStatus(err))
+	}
+
+	pageRequest, err := pagination.ParseOffsetQuery(r.URL.Query(), pagination.OffsetQueryConfig{
+		DefaultPageSize: okractivities.DefaultPageSize,
+		MaximumPageSize: okractivities.MaximumPageSize,
+		MaximumOffset:   maximumKeyResultQueryOffset,
+	})
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	page := pageRequest.Page
+	pageSize := pageRequest.PageSize
+
+	activities, hasMore, err := h.okrActivities.GetKeyResultActivities(ctx, id, workspace.ID, page, pageSize)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, okractivities.ErrInvalid) {
+			status = http.StatusBadRequest
+		} else if errors.Is(err, okractivities.ErrForbidden) {
+			status = http.StatusForbidden
+		}
+		web.RespondError(ctx, w, err, status)
 		return nil
 	}
 
@@ -336,15 +278,62 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		activities[i].User.AvatarURL = h.resolveUserAvatarURL(ctx, activities[i].User.AvatarURL)
 	}
 
-	response := map[string]any{
-		"activities": toAppKeyResultActivities(activities),
-		"pagination": map[string]any{
-			"page":     page,
-			"pageSize": pageSize,
-			"hasMore":  hasMore,
+	response := AppKeyResultActivitiesResponse{
+		Activities: toAppKeyResultActivities(activities),
+		Pagination: AppKeyResultActivityPagination{
+			Page: page, PageSize: pageSize, HasMore: hasMore,
 		},
 	}
 
 	web.Respond(ctx, w, response, http.StatusOK)
 	return nil
+}
+
+func toKeyResultPatch(update AppUpdateKeyResult) keyresults.KeyResultPatch {
+	patch := keyresults.KeyResultPatch{}
+	if update.Name != "" {
+		patch.Name = keyresults.SetField(update.Name)
+	}
+	if update.MeasurementType != "" {
+		patch.MeasurementType = keyresults.SetField(update.MeasurementType)
+	}
+	if update.StartValue != nil {
+		patch.StartValue = keyresults.SetField(*update.StartValue)
+	}
+	if update.CurrentValue != nil {
+		patch.CurrentValue = keyresults.SetField(*update.CurrentValue)
+	}
+	if update.TargetValue != nil {
+		patch.TargetValue = keyresults.SetField(*update.TargetValue)
+	}
+	if update.ClearLead {
+		patch.Lead = keyresults.ClearField[uuid.UUID]()
+	} else if update.Lead != nil {
+		patch.Lead = keyresults.SetField(update.Lead)
+	}
+	if update.Contributors != nil {
+		patch.Contributors = keyresults.SetField(*update.Contributors)
+	}
+	if update.StartDate != nil {
+		patch.StartDate = keyresults.SetField(update.StartDate.TimePtr())
+	}
+	if update.EndDate != nil {
+		patch.EndDate = keyresults.SetField(update.EndDate.TimePtr())
+	}
+	return patch
+}
+
+func keyResultErrorStatus(err error) int {
+	switch {
+	case errors.Is(err, keyresults.ErrInvalid), errors.Is(err, keyresults.ErrInvalidReference):
+		return http.StatusBadRequest
+	case errors.Is(err, keyresults.ErrForbidden):
+		return http.StatusForbidden
+	case errors.Is(err, keyresults.ErrNotFound):
+		return http.StatusNotFound
+	case errors.Is(err, keyresults.ErrVersionConflict):
+		return http.StatusConflict
+	default:
+		return http.StatusInternalServerError
+	}
 }

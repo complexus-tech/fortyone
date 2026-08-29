@@ -10,20 +10,20 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB             *sqlx.DB
-	Log            *logger.Logger
-	SecretKey      string
-	Cache          *cache.Service
-	StorageConfig  storage.Config
-	StorageService storage.StorageService
-	Objectives     *objectives.Service
-	KeyResults     *keyresults.Service
-	OKRActivities  *okractivities.Service
-	Attachments    *attachments.Service
+	Log               *logger.Logger
+	SecretKey         string
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	StorageConfig     storage.Config
+	StorageService    storage.StorageService
+	Objectives        *objectives.Service
+	KeyResults        *keyresults.Service
+	OKRActivities     *okractivities.Service
+	Attachments       *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
@@ -34,8 +34,8 @@ func Routes(cfg Config, app *web.App) {
 	keyResultsService := cfg.KeyResults
 
 	attachmentsService := cfg.Attachments
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
 	h := New(objectivesService, keyResultsService, okrActivitiesService, attachmentsService, cfg.Cache, cfg.Log)
@@ -45,7 +45,14 @@ func Routes(cfg Config, app *web.App) {
 	app.Put("/workspaces/{workspaceSlug}/objectives/{id}", h.Update, auth, workspace, memberAndAdmin)
 	app.Delete("/workspaces/{workspaceSlug}/objectives/{id}", h.Delete, auth, workspace, memberAndAdmin)
 	app.Get("/workspaces/{workspaceSlug}/objectives/{id}/key-results", h.GetKeyResults, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/objectives/{id}/key-results", h.CreateKeyResults, auth, workspace, memberAndAdmin)
 	app.Get("/workspaces/{workspaceSlug}/objectives/{id}/analytics", h.GetAnalytics, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/objectives/{id}/activities", h.GetActivities, auth, workspace, memberAndAdmin)
 	app.Post("/workspaces/{workspaceSlug}/objectives", h.Create, auth, workspace, memberAndAdmin)
+	app.Get("/workspaces/{workspaceSlug}/strategy-map", h.GetStrategyMap, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/strategy-map", h.UpdateStrategy, auth, workspace, memberAndAdmin)
+	app.Post("/workspaces/{workspaceSlug}/strategy-map/pillars", h.CreateStrategicPillar, auth, workspace, memberAndAdmin)
+	app.Put("/workspaces/{workspaceSlug}/strategy-map/pillars/{pillarId}", h.UpdateStrategicPillar, auth, workspace, memberAndAdmin)
+	app.Delete("/workspaces/{workspaceSlug}/strategy-map/pillars/{pillarId}", h.DeleteStrategicPillar, auth, workspace, memberAndAdmin)
+	app.Put("/workspaces/{workspaceSlug}/strategy-map/objectives/{id}", h.AlignObjective, auth, workspace, memberAndAdmin)
 }

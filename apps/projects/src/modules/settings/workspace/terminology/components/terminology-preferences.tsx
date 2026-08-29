@@ -12,7 +12,6 @@ import { useMemo } from "react";
 import { SectionHeader } from "@/modules/settings/components";
 import { FeatureGuard, RowWrapper } from "@/components/ui";
 import { useWorkspaceSettings } from "@/lib/hooks/workspace/settings";
-import type { WorkspaceSettings } from "@/types";
 import { useUpdateWorkspaceSettingsMutation } from "@/lib/hooks/workspace/update-settings";
 import { useTerminology } from "@/hooks/use-terminology-display";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
@@ -23,13 +22,19 @@ type TermOption = {
   value: string;
 };
 
+type TerminologyKey =
+  | "storyTerm"
+  | "sprintTerm"
+  | "objectiveTerm"
+  | "keyResultTerm";
+
 type TermEntity = {
   name: string;
   description: string;
   icon: ReactNode;
   defaultValue: string;
   options: TermOption[];
-  key: keyof WorkspaceSettings;
+  key: TerminologyKey;
   disabled?: boolean;
 };
 
@@ -42,6 +47,9 @@ export const TerminologyPreferences = () => {
       keyResultTerm: "key result",
       objectiveEnabled: true,
       keyResultEnabled: true,
+      workingDays: [1, 2, 3, 4, 5],
+      workingStartMinute: 9 * 60,
+      workingEndMinute: 17 * 60,
     },
   } = useWorkspaceSettings();
   const { mutate: updateSettings } = useUpdateWorkspaceSettingsMutation();
@@ -126,10 +134,7 @@ export const TerminologyPreferences = () => {
     [getTermDisplay, settings],
   );
 
-  const handleTerminologyChange = (
-    key: keyof WorkspaceSettings,
-    value: string,
-  ) => {
+  const handleTerminologyChange = (key: TerminologyKey, value: string) => {
     updateSettings({ [key]: value });
   };
 

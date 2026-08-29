@@ -1,5 +1,9 @@
+/* global describe, expect, it -- Jest globals are provided by the projects test runner. */
+
 import {
+  formatScheduleActivityValue,
   getActivityCopy,
+  getActivityValueIds,
   getDisplayActivityReason,
 } from "./activity-copy";
 
@@ -98,6 +102,119 @@ describe("activity copy", () => {
         type: "update",
       }).text,
     ).toBe("updated labels 3 labels");
+  });
+
+  it("uses natural copy for collaborator changes", () => {
+    const copy = getActivityCopy({
+      currentValue: "2 collaborators",
+      field: "collaborator_ids",
+      fieldLabel: "Collaborators",
+      type: "update",
+    });
+
+    expect(copy.text).toBe("updated collaborators to 2 collaborators");
+    expect(copy.segments).toContainEqual({
+      type: "currentValue",
+      value: "2 collaborators",
+    });
+  });
+
+  it("uses semantic copy for Maya scheduling transitions", () => {
+    expect(
+      getActivityCopy({
+        currentValue: "At risk",
+        field: "auto_scheduling_status",
+        fieldLabel: "Auto scheduling status",
+        oldValue: "scheduled",
+        reason: "A customer meeting displaced one focus block.",
+        type: "update",
+      }).text,
+    ).toBe("changed auto-scheduling from Scheduled to At risk");
+
+    expect(
+      getActivityCopy({
+        currentValue: "At risk",
+        field: "auto_scheduling_status",
+        fieldLabel: "Auto scheduling status",
+        oldValue: "at_risk",
+        reason: "Calendar availability changed again.",
+        type: "update",
+      }).text,
+    ).toBe("updated auto-scheduling status to At risk");
+
+    expect(
+      getActivityCopy({
+        currentValue: "2 Jan 2026 at 15:04 CAT",
+        field: "auto_scheduling_time",
+        fieldLabel: "Auto scheduling time",
+        oldValue: "2026-01-02T13:00:00Z",
+        type: "update",
+      }).text,
+    ).toBe("rescheduled work to 2 Jan 2026 at 15:04 CAT");
+
+    expect(
+      getActivityCopy({
+        currentValue: "true",
+        field: "auto_scheduling_locked",
+        fieldLabel: "Auto scheduling locked",
+        oldValue: false,
+        type: "update",
+      }).text,
+    ).toBe("locked the auto-scheduled calendar blocks");
+  });
+
+  it("formats Maya schedule times in the viewer's profile timezone without a suffix", () => {
+    expect(
+      formatScheduleActivityValue(
+        "21 Aug 2026 at 08:23 UTC",
+        "2026-08-21T08:23:00Z",
+        "Africa/Harare",
+      ),
+    ).toBe("21 Aug 2026 at 10:23");
+  });
+
+  it("removes the timezone suffix from legacy schedule copy when raw data is unavailable", () => {
+    expect(
+      formatScheduleActivityValue(
+        "21 Aug 2026 at 08:23 UTC",
+        undefined,
+        "Africa/Harare",
+      ),
+    ).toBe("21 Aug 2026 at 08:23");
+  });
+
+  it("describes the user's auto-scheduling preference as intent", () => {
+    expect(
+      getActivityCopy({
+        currentValue: "true",
+        field: "auto_scheduling_enabled",
+        fieldLabel: "Auto scheduling enabled",
+        oldValue: false,
+        type: "update",
+      }).text,
+    ).toBe("enabled auto-scheduling");
+
+    expect(
+      getActivityCopy({
+        currentValue: "false",
+        field: "auto_scheduling_enabled",
+        fieldLabel: "Auto scheduling enabled",
+        oldValue: true,
+        type: "update",
+      }).text,
+    ).toBe("paused auto-scheduling");
+  });
+
+  it("extracts collaborator IDs from legacy activity values", () => {
+    const collaboratorId = "8d852a9e-b36d-4790-9f92-8234407f1488";
+
+    expect(getActivityValueIds(`[${collaboratorId}]`)).toEqual([
+      collaboratorId,
+    ]);
+    expect(getActivityValueIds(`["${collaboratorId}"]`)).toEqual([
+      collaboratorId,
+    ]);
+    expect(getActivityValueIds([collaboratorId])).toEqual([collaboratorId]);
   });
 
   it("does not expose internal association reasons as activity notes", () => {

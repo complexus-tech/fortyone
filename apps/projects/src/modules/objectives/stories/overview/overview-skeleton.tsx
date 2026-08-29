@@ -4,7 +4,7 @@ import { KeyResultsSkeleton } from "./key-results-skeleton";
 
 export const OverviewSkeleton = () => {
   return (
-    <Container className="h-[calc(100vh-7.7rem)] overflow-y-auto pt-6">
+    <Container className="h-full min-h-0 overflow-y-auto pt-6">
       <Box>
         <Flex align="center" gap={6} justify="between">
           {/* Title skeleton */}

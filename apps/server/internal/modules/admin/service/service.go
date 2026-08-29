@@ -2,216 +2,84 @@ package admin
 
 import (
 	"context"
-	"strings"
 	"time"
 
-	"github.com/complexus-tech/projects-api/pkg/web"
+	admindomain "github.com/complexus-tech/projects-api/internal/modules/admin/domain"
+	platformclock "github.com/complexus-tech/projects-api/internal/platform/clock"
 	"github.com/google/uuid"
 )
 
 type Repository interface {
-	GetAdminUser(ctx context.Context, userID uuid.UUID) (UserSummary, error)
-	GetDashboardSummary(ctx context.Context) (DashboardSummary, error)
-	ListWorkspaces(ctx context.Context, input ListWorkspacesInput) (ListResult[WorkspaceSummary], error)
-	GetWorkspaceOverview(ctx context.Context, workspaceID uuid.UUID) (WorkspaceOverview, error)
-	UpdateWorkspaceTrial(ctx context.Context, input UpdateWorkspaceTrialInput) error
-	ListUsers(ctx context.Context, input ListUsersInput) (ListResult[UserSummary], error)
-	GetUserOverview(ctx context.Context, userID uuid.UUID) (UserOverview, error)
-	ListAuditLogs(ctx context.Context, input ListAuditLogsInput) (ListResult[AuditLog], error)
-	InsertAuditEntry(ctx context.Context, input AuditEntryInput) error
+	GetAdminUser(context.Context, uuid.UUID) (admindomain.UserSummary, error)
+	GetDashboardSummary(context.Context, admindomain.DashboardSummaryQuery) (admindomain.DashboardSummary, error)
+	ListWorkspaces(context.Context, admindomain.ListWorkspacesQuery) (admindomain.ListResult[admindomain.WorkspaceSummary], error)
+	GetWorkspaceOverview(context.Context, admindomain.GetWorkspaceQuery) (admindomain.WorkspaceOverview, error)
+	UpdateWorkspaceTrial(context.Context, admindomain.UpdateWorkspaceTrialCommand) (admindomain.WorkspaceOverview, error)
+	SetWorkspaceDeleted(context.Context, admindomain.SetWorkspaceDeletedCommand) (admindomain.WorkspaceOverview, error)
+	ListUsers(context.Context, admindomain.ListUsersQuery) (admindomain.ListResult[admindomain.UserSummary], error)
+	GetUserOverview(context.Context, admindomain.GetUserQuery) (admindomain.UserOverview, error)
+	UpdateUserState(context.Context, admindomain.UpdateUserStateCommand) (admindomain.UserOverview, error)
+	RequestSessionRevocation(context.Context, admindomain.RequestSessionRevocationCommand) (admindomain.UserOverview, error)
+	ListAuditLogs(context.Context, admindomain.ListAuditLogsQuery) (admindomain.ListResult[admindomain.AuditLog], error)
+	ListAdminNotes(context.Context, admindomain.ListAdminNotesQuery) (admindomain.ListResult[admindomain.AdminNote], error)
+	CreateAdminNote(context.Context, admindomain.CreateAdminNoteCommand) (admindomain.AdminNote, error)
+	BeginSubscriptionSync(context.Context, admindomain.BeginSubscriptionSyncCommand) (admindomain.SubscriptionSyncAttempt, admindomain.WorkspaceOverview, error)
+	FinishSubscriptionSync(context.Context, admindomain.FinishSubscriptionSyncCommand) (admindomain.WorkspaceOverview, error)
+}
+
+type AssetResolver interface {
+	ResolveProfileImageURL(context.Context, string, time.Duration) (string, error)
+	ResolveWorkspaceLogoURL(context.Context, string, time.Duration) (string, error)
+}
+
+type SubscriptionSyncer interface {
+	SyncSubscription(context.Context, uuid.UUID) error
 }
 
 type Service struct {
-	repo Repository
-	now  func() time.Time
+	repo               Repository
+	assetResolver      AssetResolver
+	subscriptionSyncer SubscriptionSyncer
+	clock              platformclock.Clock
 }
 
 type Option func(*Service)
 
-func WithNow(now func() time.Time) Option {
-	return func(s *Service) {
-		s.now = now
-	}
-}
-
-func New(repo Repository, opts ...Option) *Service {
-	s := &Service{
-		repo: repo,
-		now: func() time.Time {
-			return time.Now().UTC()
-		},
-	}
-	for _, opt := range opts {
-		opt(s)
-	}
-	return s
-}
-
-func (s *Service) GetCurrentAdmin(ctx context.Context, actorID uuid.UUID) (UserSummary, error) {
-	ctx, span := web.AddSpan(ctx, "business.admin.GetCurrentAdmin")
-	defer span.End()
-
-	return s.ensureAdmin(ctx, actorID)
-}
-
-func (s *Service) GetDashboardSummary(ctx context.Context, actorID uuid.UUID) (DashboardSummary, error) {
-	ctx, span := web.AddSpan(ctx, "business.admin.GetDashboardSummary")
-	defer span.End()
-
-	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
-		return DashboardSummary{}, err
-	}
-	return s.repo.GetDashboardSummary(ctx)
-}
-
-func (s *Service) ListWorkspaces(ctx context.Context, actorID uuid.UUID, input ListWorkspacesInput) (ListResult[WorkspaceSummary], error) {
-	ctx, span := web.AddSpan(ctx, "business.admin.ListWorkspaces")
-	defer span.End()
-
-	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
-		return ListResult[WorkspaceSummary]{}, err
-	}
-	return s.repo.ListWorkspaces(ctx, normalizeListWorkspacesInput(input))
-}
-
-func (s *Service) GetWorkspaceOverview(ctx context.Context, actorID, workspaceID uuid.UUID) (WorkspaceOverview, error) {
-	ctx, span := web.AddSpan(ctx, "business.admin.GetWorkspaceOverview")
-	defer span.End()
-
-	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
-		return WorkspaceOverview{}, err
-	}
-	return s.repo.GetWorkspaceOverview(ctx, workspaceID)
-}
-
-func (s *Service) UpdateWorkspaceTrial(ctx context.Context, actorID, workspaceID uuid.UUID, input UpdateWorkspaceTrialInput) (WorkspaceOverview, error) {
-	ctx, span := web.AddSpan(ctx, "business.admin.UpdateWorkspaceTrial")
-	defer span.End()
-
-	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
-		return WorkspaceOverview{}, err
-	}
-
-	overview, err := s.repo.GetWorkspaceOverview(ctx, workspaceID)
-	if err != nil {
-		return WorkspaceOverview{}, err
-	}
-
-	trialEndsOn := input.TrialEndsOn.UTC()
-	now := s.now().UTC()
-	if !trialEndsOn.After(now) {
-		return WorkspaceOverview{}, ErrInvalidTrialEndsOn
-	}
-
-	var oldTrialEndsOn any
-	if current := overview.Workspace.TrialEndsOn; current != nil {
-		oldTrialEndsOn = current.UTC()
-		if current.After(now) && !trialEndsOn.After(current.UTC()) {
-			return WorkspaceOverview{}, ErrInvalidTrialEndsOn
+func WithClock(clock platformclock.Clock) Option {
+	return func(service *Service) {
+		if clock != nil {
+			service.clock = clock
 		}
 	}
-
-	trimmedReason := strings.TrimSpace(input.Reason)
-	updateInput := UpdateWorkspaceTrialInput{
-		WorkspaceID: workspaceID,
-		TrialEndsOn: trialEndsOn,
-		Reason:      trimmedReason,
-	}
-	if err := s.repo.UpdateWorkspaceTrial(ctx, updateInput); err != nil {
-		return WorkspaceOverview{}, err
-	}
-
-	if err := s.repo.InsertAuditEntry(ctx, AuditEntryInput{
-		ActorUserID: actorID,
-		TargetType:  "workspace",
-		TargetID:    &workspaceID,
-		WorkspaceID: &workspaceID,
-		Action:      "workspace.trial_updated",
-		FieldName:   "trial_ends_on",
-		OldValue:    oldTrialEndsOn,
-		NewValue:    trialEndsOn,
-		Reason:      trimmedReason,
-		Metadata: map[string]any{
-			"workspace_name": overview.Workspace.Name,
-			"workspace_slug": overview.Workspace.Slug,
-		},
-	}); err != nil {
-		return WorkspaceOverview{}, err
-	}
-
-	overview.Workspace.TrialEndsOn = &trialEndsOn
-	return overview, nil
 }
 
-func (s *Service) ListUsers(ctx context.Context, actorID uuid.UUID, input ListUsersInput) (ListResult[UserSummary], error) {
-	ctx, span := web.AddSpan(ctx, "business.admin.ListUsers")
-	defer span.End()
-
-	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
-		return ListResult[UserSummary]{}, err
-	}
-	return s.repo.ListUsers(ctx, normalizeListUsersInput(input))
+// WithNow remains as a narrow compatibility seam for existing tests and
+// callers while all production composition uses the shared Clock contract.
+func WithNow(now func() time.Time) Option {
+	return WithClock(functionClock(now))
 }
 
-func (s *Service) GetUserOverview(ctx context.Context, actorID, userID uuid.UUID) (UserOverview, error) {
-	ctx, span := web.AddSpan(ctx, "business.admin.GetUserOverview")
-	defer span.End()
-
-	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
-		return UserOverview{}, err
-	}
-	return s.repo.GetUserOverview(ctx, userID)
+func WithAssetResolver(resolver AssetResolver) Option {
+	return func(service *Service) { service.assetResolver = resolver }
 }
 
-func (s *Service) ListAuditLogs(ctx context.Context, actorID uuid.UUID, input ListAuditLogsInput) (ListResult[AuditLog], error) {
-	ctx, span := web.AddSpan(ctx, "business.admin.ListAuditLogs")
-	defer span.End()
-
-	if _, err := s.ensureAdmin(ctx, actorID); err != nil {
-		return ListResult[AuditLog]{}, err
-	}
-	return s.repo.ListAuditLogs(ctx, normalizeListAuditLogsInput(input))
+func WithSubscriptionSyncer(syncer SubscriptionSyncer) Option {
+	return func(service *Service) { service.subscriptionSyncer = syncer }
 }
 
-func (s *Service) ensureAdmin(ctx context.Context, actorID uuid.UUID) (UserSummary, error) {
-	user, err := s.repo.GetAdminUser(ctx, actorID)
-	if err != nil {
-		return UserSummary{}, err
+func New(repository Repository, options ...Option) *Service {
+	service := &Service{repo: repository, clock: platformclock.System{}}
+	for _, option := range options {
+		option(service)
 	}
-	if !user.IsInternal || !user.IsActive {
-		return UserSummary{}, ErrForbidden
-	}
-	return user, nil
+	return service
 }
 
-func normalizeListWorkspacesInput(input ListWorkspacesInput) ListWorkspacesInput {
-	input.Pagination = normalizePagination(input.Pagination)
-	input.Query = strings.ToLower(strings.TrimSpace(input.Query))
-	input.Status = strings.ToLower(strings.TrimSpace(input.Status))
-	return input
-}
+type functionClock func() time.Time
 
-func normalizeListUsersInput(input ListUsersInput) ListUsersInput {
-	input.Pagination = normalizePagination(input.Pagination)
-	input.Query = strings.ToLower(strings.TrimSpace(input.Query))
-	return input
-}
-
-func normalizeListAuditLogsInput(input ListAuditLogsInput) ListAuditLogsInput {
-	input.Pagination = normalizePagination(input.Pagination)
-	input.TargetType = strings.ToLower(strings.TrimSpace(input.TargetType))
-	return input
-}
-
-func normalizePagination(input PaginationInput) PaginationInput {
-	if input.Page < 1 {
-		input.Page = 1
+func (clock functionClock) Now() time.Time {
+	if clock == nil {
+		return time.Now()
 	}
-	if input.Limit < 1 {
-		input.Limit = defaultPageLimit
-	}
-	if input.Limit > maxPageLimit {
-		input.Limit = maxPageLimit
-	}
-	return input
+	return clock()
 }

@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "target": "ESNext",
     "lib": [
       "dom",
@@ -17,7 +16,10 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "types": [
+      "*"
+    ],
+    "jsx": "react-jsx",
     "incremental": true,
     "paths": {
       "@/.source": [

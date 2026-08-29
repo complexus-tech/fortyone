@@ -7,6 +7,7 @@ type NavLinkProps = LinkProps & {
   active?: boolean;
   className?: string;
   children: ReactNode;
+  title?: string;
 };
 
 export const NavLink = ({
@@ -19,7 +20,7 @@ export const NavLink = ({
   return (
     <Link
       className={cn(
-        "group text-foreground/60 hover:bg-accent flex items-center gap-2 rounded-lg px-2 py-[0.4rem] transition-colors duration-200 outline-none",
+        "group text-foreground hover:bg-accent flex items-center gap-2 rounded-lg px-2 py-2 transition-colors duration-200 outline-none",
         {
           "bg-accent": active,
         },

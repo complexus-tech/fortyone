@@ -1,21 +1,18 @@
 package keyresultshttp
 
 import (
-	"fmt"
-	"reflect"
-	"strings"
 	"time"
 
 	keyresults "github.com/complexus-tech/projects-api/internal/modules/keyresults/service"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	"github.com/complexus-tech/projects-api/pkg/date"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
 // AppKeyResult represents a key result in the application
 type AppKeyResult struct {
 	ID              uuid.UUID   `json:"id"`
+	SequenceID      int         `json:"sequenceId"`
 	ObjectiveID     uuid.UUID   `json:"objectiveId"`
 	Name            string      `json:"name"`
 	MeasurementType string      `json:"measurementType"`
@@ -53,6 +50,7 @@ type AppUpdateKeyResult struct {
 	CurrentValue    *float64     `json:"currentValue" db:"current_value"`
 	TargetValue     *float64     `json:"targetValue" db:"target_value"`
 	Lead            *uuid.UUID   `json:"lead,omitempty" db:"lead"`
+	ClearLead       bool         `json:"clearLead,omitempty" db:"-"`
 	Contributors    *[]uuid.UUID `json:"contributors,omitempty" db:"-"` // Not directly updatable via this struct
 	StartDate       *date.Date   `json:"startDate" db:"start_date"`
 	EndDate         *date.Date   `json:"endDate" db:"end_date"`
@@ -66,6 +64,7 @@ type AppKeyResultWithObjective struct {
 	ObjectiveID   uuid.UUID `json:"objectiveId"`
 	TeamID        uuid.UUID `json:"teamId"`
 	TeamName      string    `json:"teamName"`
+	TeamCode      string    `json:"teamCode"`
 	WorkspaceID   uuid.UUID `json:"workspaceId"`
 }
 
@@ -83,8 +82,12 @@ type AppKeyResultFilters struct {
 	ObjectiveIDs     []uuid.UUID `json:"objectiveIds"`
 	TeamIDs          []uuid.UUID `json:"teamIds"`
 	MeasurementTypes []string    `json:"measurementTypes"`
+	LeadIDs          []uuid.UUID `json:"leadIds"`
+	CreatedBy        []uuid.UUID `json:"createdBy"`
 	CreatedAfter     *time.Time  `json:"createdAfter"`
 	CreatedBefore    *time.Time  `json:"createdBefore"`
+	EndDateAfter     *time.Time  `json:"endDateAfter"`
+	EndDateBefore    *time.Time  `json:"endDateBefore"`
 	UpdatedAfter     *time.Time  `json:"updatedAfter"`
 	UpdatedBefore    *time.Time  `json:"updatedBefore"`
 	Page             int         `json:"page"`
@@ -93,92 +96,11 @@ type AppKeyResultFilters struct {
 	OrderDirection   string      `json:"orderDirection"`
 }
 
-// Validate validates the AppNewKeyResult struct
-func (a AppNewKeyResult) Validate() error {
-	validate := validator.New(validator.WithRequiredStructEnabled())
-
-	err := validate.Struct(a)
-	if err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			var errorMessages []string
-			for _, e := range validationErrors {
-				fieldName := getJSONTagName(reflect.TypeOf(a), e.Field())
-				switch e.Tag() {
-				case "required":
-					errorMessages = append(errorMessages, fmt.Sprintf("%s is required", fieldName))
-				case "oneof":
-					options := strings.Split(e.Param(), " ")
-					formattedOptions := formatOptions(options)
-					errorMessages = append(errorMessages, fmt.Sprintf("%s should be one of: %s", fieldName, formattedOptions))
-				default:
-					errorMessages = append(errorMessages, fmt.Sprintf("%s failed validation: %s", fieldName, e.Tag()))
-				}
-			}
-			return fmt.Errorf("%s", strings.Join(errorMessages, "; "))
-		}
-	}
-
-	return nil
-}
-
-// formatOptions formats the options for error messages
-func formatOptions(options []string) string {
-	if len(options) == 0 {
-		return ""
-	}
-	if len(options) == 1 {
-		return options[0]
-	}
-	return fmt.Sprintf("%s or %s", strings.Join(options[:len(options)-1], ", "), options[len(options)-1])
-}
-
-// getJSONTagName gets the JSON tag name for a field
-func getJSONTagName(t reflect.Type, fieldName string) string {
-	field, found := t.FieldByName(fieldName)
-	if !found {
-		return fieldName
-	}
-
-	tag := field.Tag.Get("json")
-	name := strings.Split(tag, ",")[0]
-	if name == "" {
-		return fieldName
-	}
-	return name
-}
-
-// Validate validates the AppUpdateKeyResult struct
-func (a AppUpdateKeyResult) Validate() error {
-	validate := validator.New(validator.WithRequiredStructEnabled())
-
-	err := validate.Struct(a)
-	if err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			var errorMessages []string
-			for _, e := range validationErrors {
-				fieldName := getJSONTagName(reflect.TypeOf(a), e.Field())
-				switch e.Tag() {
-				case "required":
-					errorMessages = append(errorMessages, fmt.Sprintf("%s is required", fieldName))
-				case "oneof":
-					options := strings.Split(e.Param(), " ")
-					formattedOptions := formatOptions(options)
-					errorMessages = append(errorMessages, fmt.Sprintf("%s should be one of: %s", fieldName, formattedOptions))
-				default:
-					errorMessages = append(errorMessages, fmt.Sprintf("%s failed validation: %s", fieldName, e.Tag()))
-				}
-			}
-			return fmt.Errorf("%s", strings.Join(errorMessages, "; "))
-		}
-	}
-
-	return nil
-}
-
 // toAppKeyResult converts a CoreKeyResult to an AppKeyResult
 func toAppKeyResult(kr keyresults.CoreKeyResult) AppKeyResult {
 	return AppKeyResult{
 		ID:              kr.ID,
+		SequenceID:      kr.SequenceID,
 		ObjectiveID:     kr.ObjectiveID,
 		Name:            kr.Name,
 		MeasurementType: kr.MeasurementType,
@@ -220,6 +142,17 @@ type AppKeyResultActivity struct {
 
 	// User details
 	User AppUserDetails `json:"user"`
+}
+
+type AppKeyResultActivityPagination struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
+}
+
+type AppKeyResultActivitiesResponse struct {
+	Activities []AppKeyResultActivity         `json:"activities"`
+	Pagination AppKeyResultActivityPagination `json:"pagination"`
 }
 
 // AppUserDetails represents basic user information for activities
@@ -272,6 +205,7 @@ func toAppKeyResultWithObjective(kr keyresults.CoreKeyResultWithObjective) AppKe
 		ObjectiveID:   kr.ObjectiveID,
 		TeamID:        kr.TeamID,
 		TeamName:      kr.TeamName,
+		TeamCode:      kr.TeamCode,
 		WorkspaceID:   kr.WorkspaceID,
 	}
 }

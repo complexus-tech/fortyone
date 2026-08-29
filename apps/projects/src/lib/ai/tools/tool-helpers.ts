@@ -25,6 +25,13 @@ export type ActivityLike = {
   createdAt: string;
 };
 
+export type BackendPageInput = {
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+  nextPage?: number | null;
+};
+
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -85,6 +92,28 @@ export const paginateRecords = <T>(
       pageSize,
       totalCount: records.length,
     }),
+  };
+};
+
+export const describeBackendPage = (
+  pagination: BackendPageInput,
+  returnedCount: number,
+) => {
+  let nextPage: number | null = null;
+  if (pagination.hasMore) {
+    nextPage =
+      pagination.nextPage && pagination.nextPage > pagination.page
+        ? pagination.nextPage
+        : pagination.page + 1;
+  }
+
+  return {
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    returnedCount,
+    hasMore: pagination.hasMore,
+    nextPage,
+    completeHistory: pagination.page === 1 && !pagination.hasMore,
   };
 };
 

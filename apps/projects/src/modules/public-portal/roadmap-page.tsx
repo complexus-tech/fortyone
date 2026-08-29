@@ -1,15 +1,20 @@
 import { PublicPortalShell } from "./portal-shell";
 import { RoadmapBoard } from "./roadmap-board";
-import type { PublicPortal, PublicPortalViewer } from "./types";
+import type { PublicPortal, PublicPortalParticipant } from "./types";
+import { anonymousPublicPortalParticipant } from "./participant";
 
 export const PublicPortalRoadmapPage = ({
+  participant = anonymousPublicPortalParticipant,
   portal,
-  viewer,
 }: {
+  participant?: PublicPortalParticipant;
   portal: PublicPortal;
-  viewer?: PublicPortalViewer | null;
 }) => (
-  <PublicPortalShell activeTab="roadmap" portal={portal} viewer={viewer}>
-    <RoadmapBoard portal={portal} />
+  <PublicPortalShell
+    activeTab="roadmap"
+    participant={participant}
+    portal={portal}
+  >
+    <RoadmapBoard key={portal.slug} portal={portal} />
   </PublicPortalShell>
 );

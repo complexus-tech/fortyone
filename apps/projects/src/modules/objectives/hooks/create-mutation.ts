@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth/client";
-import { useWorkspacePath } from "@/hooks";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { createObjective } from "../actions/create-objective";
 import type { Objective, NewObjective } from "../types";
 
@@ -18,7 +17,7 @@ export const useCreateObjectiveMutation = () => {
       if (response.error?.message) {
         throw new Error(response.error.message);
       }
-      if (!response.data?.objective?.id) {
+      if (!response.data?.objective.id) {
         throw new Error(
           "Objective creation did not return a created objective.",
         );
@@ -30,19 +29,28 @@ export const useCreateObjectiveMutation = () => {
       const optimisticObjective: Objective = {
         ...newObjective,
         id: "optimistic",
+        sequenceId: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         workspaceId: "optimistic",
         isPrivate: false,
         health: null,
+        color: newObjective.color ?? "#4A90E2",
+        forecastStartDate: null,
+        forecastEndDate: null,
+        scheduleStatus: "no_schedule",
+        forecastDaysDelta: 0,
+        forecastCauseStory: null,
         priority: newObjective.priority,
         statusId: newObjective.statusId,
+        keyResultCount: newObjective.keyResults?.length ?? 0,
         description: newObjective.description || "",
+        shortSummary: newObjective.shortSummary || null,
         leadUser: newObjective.leadUser || "",
         teamId: newObjective.teamId || "",
         startDate: newObjective.startDate || "",
         endDate: newObjective.endDate || "",
-        createdBy: session?.user?.id || "",
+        createdBy: session?.user.id || "",
         stats: {
           total: 0,
           cancelled: 0,

@@ -2,342 +2,49 @@ package integrationrequestsrepository
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
-	"strconv"
-	"time"
+	"errors"
 
-	integrationrequests "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/service"
-	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
+	integrationrequestssql "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/repository/sqlc"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var errRepositoryNotConfigured = errors.New("integration request repository is not configured")
+
 type Repo struct {
-	log *logger.Logger
-	db  *sqlx.DB
+	queries           integrationrequestssql.Querier
+	withinTransaction func(context.Context, func(integrationrequestssql.Querier) error) error
 }
 
-func New(log *logger.Logger, db *sqlx.DB) *Repo {
-	return &Repo{log: log, db: db}
+func New(pool *pgxpool.Pool) *Repo {
+	if pool == nil {
+		return &Repo{}
+	}
+	queries := integrationrequestssql.New(pool)
+	transactor := platformdatabase.NewTransactor(pool)
+	repository := newWithQueries(queries)
+	repository.withinTransaction = func(ctx context.Context, operation func(integrationrequestssql.Querier) error) error {
+		return transactor.WithinTransaction(ctx, pgx.TxOptions{}, func(tx pgx.Tx) error {
+			return operation(queries.WithTx(tx))
+		})
+	}
+	return repository
 }
 
-type requestRow struct {
-	ID               uuid.UUID    `db:"id"`
-	WorkspaceID      uuid.UUID    `db:"workspace_id"`
-	TeamID           uuid.UUID    `db:"team_id"`
-	Provider         string       `db:"provider"`
-	SourceType       string       `db:"source_type"`
-	SourceExternalID string       `db:"source_external_id"`
-	SourceNumber     *int         `db:"source_number"`
-	SourceURL        *string      `db:"source_url"`
-	Title            string       `db:"title"`
-	Description      *string      `db:"description"`
-	StatusID         *uuid.UUID   `db:"status_id"`
-	Priority         string       `db:"priority"`
-	AssigneeID       *uuid.UUID   `db:"assignee_id"`
-	EstimateValue    *int16       `db:"estimate_unit"`
-	ObjectiveID      *uuid.UUID   `db:"objective_id"`
-	KeyResultID      *uuid.UUID   `db:"key_result_id"`
-	SprintID         *uuid.UUID   `db:"sprint_id"`
-	StartDate        *time.Time   `db:"start_date"`
-	EndDate          *time.Time   `db:"end_date"`
-	Status           string       `db:"status"`
-	Metadata         mapJSON      `db:"metadata"`
-	AcceptedStoryID  *uuid.UUID   `db:"accepted_story_id"`
-	AcceptedByUserID *uuid.UUID   `db:"accepted_by_user_id"`
-	AcceptedAt       sql.NullTime `db:"accepted_at"`
-	DeclinedByUserID *uuid.UUID   `db:"declined_by_user_id"`
-	DeclinedAt       sql.NullTime `db:"declined_at"`
-	CreatedByUserID  *uuid.UUID   `db:"created_by_user_id"`
-	CreatedAt        sql.NullTime `db:"created_at"`
-	UpdatedAt        sql.NullTime `db:"updated_at"`
+func newWithQueries(queries integrationrequestssql.Querier) *Repo {
+	repository := &Repo{queries: queries}
+	if queries != nil {
+		repository.withinTransaction = func(_ context.Context, operation func(integrationrequestssql.Querier) error) error {
+			return operation(queries)
+		}
+	}
+	return repository
 }
 
-type mapJSON map[string]any
-
-func (m *mapJSON) Scan(src any) error {
-	if src == nil {
-		*m = map[string]any{}
-		return nil
+func (r *Repo) configured() error {
+	if r == nil || r.queries == nil || r.withinTransaction == nil {
+		return errRepositoryNotConfigured
 	}
-	var raw []byte
-	switch value := src.(type) {
-	case []byte:
-		raw = value
-	case string:
-		raw = []byte(value)
-	default:
-		raw = []byte("{}")
-	}
-	if len(raw) == 0 {
-		raw = []byte("{}")
-	}
-	var parsed map[string]any
-	if err := json.Unmarshal(raw, &parsed); err != nil {
-		return err
-	}
-	*m = parsed
 	return nil
-}
-
-func (r *Repo) UpsertPending(ctx context.Context, input integrationrequests.CoreUpsertRequestInput) (integrationrequests.CoreIntegrationRequest, error) {
-	metadata, err := json.Marshal(input.Metadata)
-	if err != nil {
-		return integrationrequests.CoreIntegrationRequest{}, err
-	}
-	var row requestRow
-	query := `
-		INSERT INTO integration_requests (
-			workspace_id, team_id, provider, source_type, source_external_id, source_number,
-			source_url, title, description, status_id, priority, assignee_id, estimate_unit,
-			objective_id, key_result_id, sprint_id, start_date, end_date, metadata, created_by_user_id
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE(NULLIF($11, ''), 'No Priority'), $12, $13, $14, $15, $16, $17, $18, CAST($19 AS jsonb), $20)
-		ON CONFLICT (workspace_id, provider, source_type, source_external_id) DO UPDATE SET
-			team_id = EXCLUDED.team_id,
-			source_number = EXCLUDED.source_number,
-			source_url = EXCLUDED.source_url,
-			title = EXCLUDED.title,
-			description = EXCLUDED.description,
-			status_id = COALESCE(integration_requests.status_id, EXCLUDED.status_id),
-			priority = EXCLUDED.priority,
-			assignee_id = COALESCE(integration_requests.assignee_id, EXCLUDED.assignee_id),
-			estimate_unit = COALESCE(integration_requests.estimate_unit, EXCLUDED.estimate_unit),
-			objective_id = COALESCE(integration_requests.objective_id, EXCLUDED.objective_id),
-			key_result_id = COALESCE(integration_requests.key_result_id, EXCLUDED.key_result_id),
-			sprint_id = COALESCE(integration_requests.sprint_id, EXCLUDED.sprint_id),
-			start_date = COALESCE(integration_requests.start_date, EXCLUDED.start_date),
-			end_date = COALESCE(integration_requests.end_date, EXCLUDED.end_date),
-			metadata = EXCLUDED.metadata,
-			updated_at = NOW()
-		WHERE integration_requests.status = 'pending'
-		RETURNING *
-	`
-	err = r.db.GetContext(
-		ctx,
-		&row,
-		query,
-		input.WorkspaceID,
-		input.TeamID,
-		input.Provider,
-		input.SourceType,
-		input.SourceExternalID,
-		input.SourceNumber,
-		input.SourceURL,
-		input.Title,
-		input.Description,
-		input.StatusID,
-		input.Priority,
-		input.AssigneeID,
-		input.EstimateValue,
-		input.ObjectiveID,
-		input.KeyResultID,
-		input.SprintID,
-		input.StartDate,
-		input.EndDate,
-		string(metadata),
-		input.CreatedByUserID,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return r.GetByExternal(ctx, input.WorkspaceID, input.Provider, input.SourceType, input.SourceExternalID)
-		}
-		return integrationrequests.CoreIntegrationRequest{}, err
-	}
-	return toCore(row), nil
-}
-
-func (r *Repo) UpdatePending(ctx context.Context, workspaceID, requestID uuid.UUID, input integrationrequests.CoreUpdateRequestInput) (integrationrequests.CoreIntegrationRequest, error) {
-	var row requestRow
-	err := r.db.GetContext(ctx, &row, `
-		UPDATE integration_requests
-		SET title = COALESCE($3, title),
-			description = COALESCE($4, description),
-			status_id = COALESCE($5, status_id),
-			priority = COALESCE(NULLIF($6, ''), priority),
-			assignee_id = COALESCE($7, assignee_id),
-			estimate_unit = COALESCE($8, estimate_unit),
-			objective_id = COALESCE($9, objective_id),
-			key_result_id = COALESCE($10, key_result_id),
-			sprint_id = COALESCE($11, sprint_id),
-			start_date = COALESCE($12, start_date),
-			end_date = COALESCE($13, end_date),
-			updated_at = NOW()
-		WHERE workspace_id = $1 AND id = $2 AND status = 'pending'
-		RETURNING *
-	`, workspaceID, requestID, input.Title, input.Description, input.StatusID, input.Priority, input.AssigneeID, input.EstimateValue, input.ObjectiveID, input.KeyResultID, input.SprintID, input.StartDate, input.EndDate)
-	if err != nil {
-		return integrationrequests.CoreIntegrationRequest{}, err
-	}
-	return toCore(row), nil
-}
-
-func (r *Repo) ListByTeam(ctx context.Context, workspaceID, teamID uuid.UUID, filter integrationrequests.CoreListRequestsFilter) ([]integrationrequests.CoreIntegrationRequest, error) {
-	status := filter.Status
-	if status == "" {
-		status = integrationrequests.StatusPending
-	}
-	var rows []requestRow
-	query := `
-		SELECT *
-		FROM integration_requests
-		WHERE workspace_id = $1 AND team_id = $2 AND status = $3
-	`
-	args := []any{workspaceID, teamID, status}
-	if filter.Provider != "" {
-		args = append(args, filter.Provider)
-		query += ` AND provider = $` + strconv.Itoa(len(args))
-	}
-	if filter.Priority != "" {
-		args = append(args, filter.Priority)
-		query += ` AND priority = $` + strconv.Itoa(len(args))
-	}
-	if filter.AssigneeID != nil {
-		args = append(args, *filter.AssigneeID)
-		query += ` AND assignee_id = $` + strconv.Itoa(len(args))
-	}
-	if filter.CreatedAfter != nil {
-		args = append(args, *filter.CreatedAfter)
-		query += ` AND created_at >= $` + strconv.Itoa(len(args))
-	}
-	if filter.CreatedBefore != nil {
-		args = append(args, *filter.CreatedBefore)
-		query += ` AND created_at <= $` + strconv.Itoa(len(args))
-	}
-	query += ` ORDER BY created_at DESC`
-	if filter.PageSize > 0 {
-		page := filter.Page
-		if page <= 0 {
-			page = 1
-		}
-		args = append(args, filter.PageSize, (page-1)*filter.PageSize)
-		query += ` LIMIT $` + strconv.Itoa(len(args)-1) + ` OFFSET $` + strconv.Itoa(len(args))
-	}
-	err := r.db.SelectContext(ctx, &rows, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	result := make([]integrationrequests.CoreIntegrationRequest, 0, len(rows))
-	for _, row := range rows {
-		result = append(result, toCore(row))
-	}
-	return result, nil
-}
-
-func (r *Repo) Get(ctx context.Context, workspaceID, requestID uuid.UUID) (integrationrequests.CoreIntegrationRequest, error) {
-	var row requestRow
-	err := r.db.GetContext(ctx, &row, `SELECT * FROM integration_requests WHERE workspace_id = $1 AND id = $2`, workspaceID, requestID)
-	if err != nil {
-		return integrationrequests.CoreIntegrationRequest{}, err
-	}
-	return toCore(row), nil
-}
-
-func (r *Repo) GetByExternal(ctx context.Context, workspaceID uuid.UUID, provider, sourceType, sourceExternalID string) (integrationrequests.CoreIntegrationRequest, error) {
-	var row requestRow
-	err := r.db.GetContext(ctx, &row, `
-		SELECT *
-		FROM integration_requests
-		WHERE workspace_id = $1 AND provider = $2 AND source_type = $3 AND source_external_id = $4
-	`, workspaceID, provider, sourceType, sourceExternalID)
-	if err != nil {
-		return integrationrequests.CoreIntegrationRequest{}, err
-	}
-	return toCore(row), nil
-}
-
-func (r *Repo) FindFirstStatusByCategory(ctx context.Context, teamID uuid.UUID, category string) (*uuid.UUID, error) {
-	var statusID uuid.UUID
-	err := r.db.GetContext(ctx, &statusID, `SELECT status_id FROM statuses WHERE team_id = $1 AND category = $2 ORDER BY order_index ASC LIMIT 1`, teamID, category)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &statusID, nil
-}
-
-func (r *Repo) MarkAccepted(ctx context.Context, workspaceID, requestID, storyID, acceptedByUserID uuid.UUID) (integrationrequests.CoreIntegrationRequest, error) {
-	var row requestRow
-	err := r.db.GetContext(ctx, &row, `
-		UPDATE integration_requests
-		SET status = 'accepted',
-			accepted_story_id = $3,
-			accepted_by_user_id = $4,
-			accepted_at = NOW(),
-			updated_at = NOW()
-		WHERE workspace_id = $1 AND id = $2 AND status = 'pending'
-		RETURNING *
-	`, workspaceID, requestID, storyID, acceptedByUserID)
-	if err != nil {
-		return integrationrequests.CoreIntegrationRequest{}, err
-	}
-	return toCore(row), nil
-}
-
-func (r *Repo) MarkDeclined(ctx context.Context, workspaceID, requestID, declinedByUserID uuid.UUID) (integrationrequests.CoreIntegrationRequest, error) {
-	var row requestRow
-	err := r.db.GetContext(ctx, &row, `
-		UPDATE integration_requests
-		SET status = 'declined',
-			declined_by_user_id = $3,
-			declined_at = NOW(),
-			updated_at = NOW()
-		WHERE workspace_id = $1 AND id = $2 AND status = 'pending'
-		RETURNING *
-	`, workspaceID, requestID, declinedByUserID)
-	if err != nil {
-		return integrationrequests.CoreIntegrationRequest{}, err
-	}
-	return toCore(row), nil
-}
-
-func toCore(row requestRow) integrationrequests.CoreIntegrationRequest {
-	result := integrationrequests.CoreIntegrationRequest{
-		ID:               row.ID,
-		WorkspaceID:      row.WorkspaceID,
-		TeamID:           row.TeamID,
-		Provider:         row.Provider,
-		SourceType:       row.SourceType,
-		SourceExternalID: row.SourceExternalID,
-		SourceNumber:     row.SourceNumber,
-		SourceURL:        row.SourceURL,
-		Title:            row.Title,
-		Description:      row.Description,
-		StatusID:         row.StatusID,
-		Priority:         row.Priority,
-		AssigneeID:       row.AssigneeID,
-		EstimateValue:    row.EstimateValue,
-		ObjectiveID:      row.ObjectiveID,
-		KeyResultID:      row.KeyResultID,
-		SprintID:         row.SprintID,
-		StartDate:        row.StartDate,
-		EndDate:          row.EndDate,
-		Status:           row.Status,
-		Metadata:         map[string]any(row.Metadata),
-		AcceptedStoryID:  row.AcceptedStoryID,
-		AcceptedByUserID: row.AcceptedByUserID,
-		DeclinedByUserID: row.DeclinedByUserID,
-		CreatedByUserID:  row.CreatedByUserID,
-	}
-	result.AcceptedAt = nullTimePtr(row.AcceptedAt)
-	result.DeclinedAt = nullTimePtr(row.DeclinedAt)
-	if row.CreatedAt.Valid {
-		result.CreatedAt = row.CreatedAt.Time
-	}
-	if row.UpdatedAt.Valid {
-		result.UpdatedAt = row.UpdatedAt.Time
-	}
-	if result.Metadata == nil {
-		result.Metadata = map[string]any{}
-	}
-	return result
-}
-
-func nullTimePtr(value sql.NullTime) *time.Time {
-	if !value.Valid {
-		return nil
-	}
-	return &value.Time
 }

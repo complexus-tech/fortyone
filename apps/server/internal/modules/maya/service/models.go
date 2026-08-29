@@ -2,128 +2,112 @@ package maya
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
-	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/service"
-	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
-	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
+	calendar "github.com/complexus-tech/projects-api/internal/modules/calendar/domain"
+	mayadomain "github.com/complexus-tech/projects-api/internal/modules/maya/domain"
+	reportdomain "github.com/complexus-tech/projects-api/internal/modules/reports/domain"
+	storydomain "github.com/complexus-tech/projects-api/internal/modules/stories/domain"
 	"github.com/google/uuid"
 )
 
-type RunStatus string
-
-const (
-	RunStatusRunning   RunStatus = "running"
-	RunStatusSucceeded RunStatus = "succeeded"
-	RunStatusFailed    RunStatus = "failed"
+// These aliases keep Maya's use-case files expressed in the language of the
+// consuming module while depending only on provider-owned domain contracts.
+type (
+	Story                  = storydomain.Story
+	MemberWorkload         = reportdomain.CoreMemberWorkload
+	WorkloadReportFilters  = reportdomain.ReportFilters
+	ScheduleBlock          = calendar.CoreScheduleBlock
+	ScheduleSegmentInput   = calendar.MayaScheduleSegmentInput
+	ScheduleReconcileInput = calendar.MayaScheduleReconcileInput
+	RunStatus              = mayadomain.RunStatus
+	ActionStatus           = mayadomain.ActionStatus
+	ActionType             = mayadomain.ActionType
+	RunTrigger             = mayadomain.RunTrigger
+	CoreRun                = mayadomain.CoreRun
+	CoreAction             = mayadomain.CoreAction
+	ActionPayload          = mayadomain.ActionPayload
+	AssignStoryPayload     = mayadomain.AssignStoryPayload
+	ScheduleBlockPayload   = mayadomain.ScheduleBlockPayload
+	RiskPayload            = mayadomain.RiskPayload
+	ScheduleStoryRef       = mayadomain.ScheduleStoryRef
+	ScheduleRecoveryRef    = mayadomain.ScheduleRecoveryRef
+	CreateRunInput         = mayadomain.CreateRunInput
 )
 
-type ActionStatus string
-
 const (
-	ActionStatusProposed ActionStatus = "proposed"
-	ActionStatusApplied  ActionStatus = "applied"
-	ActionStatusFailed   ActionStatus = "failed"
+	MaximumEstimatedDurationMinutes = storydomain.MaximumEstimatedDurationMinutes
+	ScheduleBlockSourceMaya         = calendar.ScheduleBlockSourceMaya
+	AutoSchedulingStatusAtRisk      = storydomain.AutoSchedulingStatusAtRisk
+	AutoSchedulingStatusCannotFit   = storydomain.AutoSchedulingStatusCannotFit
+	AutoSchedulingStatusLocked      = storydomain.AutoSchedulingStatusLocked
+	AutoSchedulingStatusNeedsOwner  = storydomain.AutoSchedulingStatusNeedsOwner
+	AutoSchedulingStatusNeedsTime   = storydomain.AutoSchedulingStatusNeedsTime
+	AutoSchedulingStatusOff         = storydomain.AutoSchedulingStatusOff
+	AutoSchedulingStatusPlanning    = storydomain.AutoSchedulingStatusPlanning
+	AutoSchedulingStatusScheduled   = storydomain.AutoSchedulingStatusScheduled
+	RunStatusRunning                = mayadomain.RunStatusRunning
+	RunStatusSucceeded              = mayadomain.RunStatusSucceeded
+	RunStatusFailed                 = mayadomain.RunStatusFailed
+	ActionStatusProposed            = mayadomain.ActionStatusProposed
+	ActionStatusApplied             = mayadomain.ActionStatusApplied
+	ActionStatusFailed              = mayadomain.ActionStatusFailed
+	ActionTypeAssignStory           = mayadomain.ActionTypeAssignStory
+	ActionTypeScheduleWorkBlock     = mayadomain.ActionTypeScheduleWorkBlock
+	ActionTypeFlagScheduleRisk      = mayadomain.ActionTypeFlagScheduleRisk
+	RunTriggerManual                = mayadomain.RunTriggerManual
+	RunTriggerEvent                 = mayadomain.RunTriggerEvent
+	ScheduleBlockOperationUpsert    = mayadomain.ScheduleBlockOperationUpsert
+	ScheduleBlockOperationDelete    = mayadomain.ScheduleBlockOperationDelete
+	ScheduleBlockOperationRetain    = mayadomain.ScheduleBlockOperationRetain
 )
 
-type ActionType string
-
-const (
-	ActionTypeAssignStory       ActionType = "assign_story"
-	ActionTypeScheduleWorkBlock ActionType = "schedule_work_block"
-	ActionTypeFlagScheduleRisk  ActionType = "flag_schedule_risk"
+var (
+	ErrStoryNotFound             = storydomain.ErrNotFound
+	ErrAutoSchedulingOwnerLocked = storydomain.ErrAutoSchedulingOwnerLocked
+	ErrStoryChanged              = storydomain.ErrStoryChanged
 )
-
-type RunTrigger string
-
-const (
-	RunTriggerManual RunTrigger = "manual"
-	RunTriggerEvent  RunTrigger = "event"
-)
-
-type CoreRun struct {
-	ID          uuid.UUID       `json:"id"`
-	WorkspaceID uuid.UUID       `json:"workspaceId"`
-	StoryID     uuid.UUID       `json:"storyId"`
-	TriggeredBy uuid.UUID       `json:"triggeredBy"`
-	Trigger     RunTrigger      `json:"trigger"`
-	Status      RunStatus       `json:"status"`
-	Summary     string          `json:"summary"`
-	Context     json.RawMessage `json:"context,omitempty"`
-	Error       *string         `json:"error,omitempty"`
-	StartedAt   time.Time       `json:"startedAt"`
-	CompletedAt *time.Time      `json:"completedAt,omitempty"`
-	CreatedAt   time.Time       `json:"createdAt"`
-	UpdatedAt   time.Time       `json:"updatedAt"`
-}
-
-type CoreAction struct {
-	ID          uuid.UUID       `json:"id"`
-	RunID       uuid.UUID       `json:"runId"`
-	WorkspaceID uuid.UUID       `json:"workspaceId"`
-	StoryID     uuid.UUID       `json:"storyId"`
-	Type        ActionType      `json:"type"`
-	Status      ActionStatus    `json:"status"`
-	Reason      string          `json:"reason"`
-	Payload     ActionPayload   `json:"payload"`
-	PayloadJSON json.RawMessage `json:"-"`
-	Error       *string         `json:"error,omitempty"`
-	AppliedAt   *time.Time      `json:"appliedAt,omitempty"`
-	CreatedAt   time.Time       `json:"createdAt"`
-	UpdatedAt   time.Time       `json:"updatedAt"`
-}
-
-type ActionPayload struct {
-	AssignStory   *AssignStoryPayload   `json:"assignStory,omitempty"`
-	ScheduleBlock *ScheduleBlockPayload `json:"scheduleBlock,omitempty"`
-	Risk          *RiskPayload          `json:"risk,omitempty"`
-}
-
-type AssignStoryPayload struct {
-	AssigneeID uuid.UUID `json:"assigneeId"`
-}
-
-type ScheduleBlockPayload struct {
-	UserID         uuid.UUID `json:"userId"`
-	Title          string    `json:"title"`
-	StartAt        time.Time `json:"startAt"`
-	EndAt          time.Time `json:"endAt"`
-	PlannedStartAt time.Time `json:"plannedStartAt"`
-	PlannedEndAt   time.Time `json:"plannedEndAt"`
-}
-
-type RiskPayload struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
 
 type PlanInput struct {
-	Context          context.Context
-	WorkspaceID      uuid.UUID
-	Story            stories.CoreSingleStory
-	DurationMinutes  int
-	WindowStart      time.Time
-	WindowEnd        time.Time
-	Candidates       []CandidateSchedule
-	AssignmentReason string
+	Context                  context.Context
+	AsOf                     time.Time
+	WorkspaceID              uuid.UUID
+	Story                    storydomain.Story
+	DurationMinutes          int
+	MinimumFocusBlockMinutes int
+	WindowStart              time.Time
+	WindowEnd                time.Time
+	WorkingDays              []int
+	Candidates               []CandidateSchedule
+	AssignmentReason         string
 }
 
 type CandidateSchedule struct {
-	Member      reports.CoreMemberWorkload
-	BusyWindows []calendar.CoreBusyWindow
-	Blocks      []calendar.CoreScheduleBlock
+	Member               reportdomain.CoreMemberWorkload
+	Timezone             string
+	WorkingDays          []int
+	WorkingStartMinute   int
+	WorkingEndMinute     int
+	BusyWindows          []calendar.CoreBusyWindow
+	Blocks               []calendar.CoreScheduleBlock
+	PreemptibleBlockIDs  []uuid.UUID
+	PreferredStartMinute *int
 }
 
 type PlanResult struct {
-	Summary        string
-	SelectedUserID *uuid.UUID
-	Actions        []CoreAction
+	Summary           string
+	SelectedUserID    *uuid.UUID
+	Actions           []CoreAction
+	Timezone          string
+	PreemptedBlockIDs []uuid.UUID
+	DurationMinutes   int
+	ScheduledMinutes  int
+	RemainingMinutes  int
 }
 
 type CandidateRecommendationInput struct {
 	WorkspaceID     uuid.UUID
-	Story           stories.CoreSingleStory
+	Story           storydomain.Story
 	DurationMinutes int
 	WindowStart     time.Time
 	WindowEnd       time.Time
@@ -189,14 +173,19 @@ type Repository interface {
 	CreateRun(ctx context.Context, input CreateRunInput) (CoreRun, error)
 	CompleteRun(ctx context.Context, runID uuid.UUID, status RunStatus, summary string, message *string) (CoreRun, error)
 	CreateActions(ctx context.Context, actions []CoreAction) ([]CoreAction, error)
+	GetWorkPlan(ctx context.Context, runID, workspaceID, triggeredBy uuid.UUID) (WorkPlan, error)
 	MarkActionApplied(ctx context.Context, actionID uuid.UUID) error
 	MarkActionFailed(ctx context.Context, actionID uuid.UUID, message string) error
 }
 
-type CreateRunInput struct {
-	WorkspaceID uuid.UUID
-	StoryID     uuid.UUID
-	TriggeredBy uuid.UUID
-	Trigger     RunTrigger
-	Context     json.RawMessage
+type ScheduleRepository interface {
+	ListScheduleStoryRefsForUser(ctx context.Context, userID uuid.UUID) ([]ScheduleStoryRef, error)
+	ClaimScheduleRecoveryStoryRefs(ctx context.Context, limit int, retryBefore, interruptedRunBefore time.Time) ([]ScheduleRecoveryRef, error)
+	CompleteInterruptedScheduleRun(ctx context.Context, runID uuid.UUID, message string) error
+	ListMayaScheduleOwners(ctx context.Context, workspaceID, storyID uuid.UUID) ([]uuid.UUID, error)
+	WorkspaceCanUseMaya(ctx context.Context, workspaceID uuid.UUID) (bool, error)
+	StoryIsActiveForAutoScheduling(ctx context.Context, workspaceID, storyID uuid.UUID) (bool, error)
+	StoryIsSchedulableForUser(ctx context.Context, workspaceID, storyID, userID uuid.UUID) (bool, error)
+	StoryScheduleOwnershipIsRetainable(ctx context.Context, workspaceID, storyID, userID uuid.UUID) (bool, error)
+	WithScheduleStoryLock(ctx context.Context, workspaceID, storyID uuid.UUID, reconcile func() error) error
 }

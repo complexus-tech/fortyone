@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Box, ContextMenu, Flex, Text, TimeAgo } from "ui";
 import { ConfirmDialog, PriorityIcon } from "@/components/ui";
+import { ListItemAttentionDot } from "@/components/ui/list-item-attention-dot";
 import { useWorkspacePath } from "@/hooks";
 import type { IntegrationRequest } from "./types";
 import { useAcceptIntegrationRequest } from "./hooks/use-accept-request";
@@ -65,16 +66,20 @@ export const IntegrationRequestCard = ({
         >
           <Box
             className={cn(
-              "border-border hover:bg-surface-muted d d block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
+              "border-border block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
               {
-                "bg-surface-muted": isActive,
+                "bg-primary/5 hover:bg-primary/5": isActive,
+                "hover:bg-surface-muted": !isActive,
               },
             )}
           >
             <Flex align="center" className="mb-2" gap={2} justify="between">
-              <Text className="line-clamp-1 flex-1 font-medium">
-                {request.title}
-              </Text>
+              <Flex align="center" className="min-w-0 flex-1" gap={2}>
+                <ListItemAttentionDot />
+                <Text className="line-clamp-1 flex-1 font-medium">
+                  {request.title}
+                </Text>
+              </Flex>
               <Text className="shrink-0 text-[0.95rem]" color="muted">
                 <TimeAgo timestamp={request.createdAt} />
               </Text>
@@ -116,8 +121,8 @@ export const IntegrationRequestCard = ({
         </ContextMenu.Group>
       </ContextMenu.Items>
       <ConfirmDialog
-        confirmText="Decline request"
-        description="Declining removes this item from the team request queue."
+        confirmText="Decline intake item"
+        description="Declining removes this item from the team's intake queue."
         isLoading={declineRequest.isPending}
         isOpen={isDeclining}
         loadingText="Declining..."
@@ -134,7 +139,7 @@ export const IntegrationRequestCard = ({
             },
           });
         }}
-        title="Decline this request?"
+        title="Decline this intake item?"
       />
     </ContextMenu>
   );

@@ -2,6 +2,7 @@ package google
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"golang.org/x/oauth2"
@@ -34,15 +35,26 @@ func TestCalendarTokenScopesFallsBackWhenGoogleOmitsScopeField(t *testing.T) {
 	}
 }
 
-func TestCalendarIdentityFromTokenAllowsMissingIDToken(t *testing.T) {
+func TestCalendarIdentityFromTokenRejectsMissingIDToken(t *testing.T) {
 	t.Parallel()
 
 	service := &Service{}
-	identity, err := service.calendarIdentityFromToken(context.Background(), &oauth2.Token{})
-	if err != nil {
-		t.Fatalf("calendarIdentityFromToken returned error: %v", err)
+	_, err := service.calendarIdentityFromToken(context.Background(), &oauth2.Token{})
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Fatalf("expected invalid token, got %v", err)
 	}
-	if identity.Email != "" {
-		t.Fatalf("expected empty identity when token has no id_token: %#v", identity)
+}
+
+func TestCalendarOAuthRequestsOwnedEventWriteScope(t *testing.T) {
+	t.Parallel()
+	service, err := NewService(Config{
+		ClientIDs: []string{"client-id"}, ClientSecret: "client-secret",
+		RedirectURL: "https://example.com/auth/callback", CalendarRedirectURL: "https://example.com/calendar/callback",
+	})
+	if err != nil {
+		t.Fatalf("NewService returned error: %v", err)
+	}
+	if service.calendarOAuth == nil || !hasAnyScope(service.calendarOAuth.Scopes, scopeCalendarEventsOwned) {
+		t.Fatalf("expected calendar OAuth to request owned-event write access: %#v", service.calendarOAuth)
 	}
 }

@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useWorkspacePath } from "@/hooks";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import type { SearchResponse } from "@/modules/search/types";
 import { objectiveKeys } from "../constants";
 import { updateObjective } from "../actions/update-objective";
@@ -18,8 +17,15 @@ export const useUpdateObjectiveMutation = () => {
   const { analytics } = useAnalytics();
 
   const mutation = useMutation({
-    mutationFn: ({ objectiveId, data }: UpdateObjectiveVariables) =>
-      updateObjective(objectiveId, data, workspaceSlug),
+    mutationFn: async ({ objectiveId, data }: UpdateObjectiveVariables) => {
+      const response = await updateObjective(objectiveId, data, workspaceSlug);
+
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+
+      return response;
+    },
 
     onMutate: ({ objectiveId, data }) => {
       const prevObjective = queryClient.getQueryData<Objective>(
@@ -37,7 +43,10 @@ export const useUpdateObjectiveMutation = () => {
             ...prevObjective,
             name: data.name ?? prevObjective.name,
             description: data.description ?? prevObjective.description,
+            shortSummary: data.shortSummary ?? prevObjective.shortSummary,
             leadUser: data.leadUser ?? prevObjective.leadUser,
+            health: data.health ?? prevObjective.health,
+            color: data.color ?? prevObjective.color,
             startDate: data.startDate ?? prevObjective.startDate,
             endDate: data.endDate ?? prevObjective.endDate,
             statusId: data.statusId ?? prevObjective.statusId,
@@ -53,12 +62,16 @@ export const useUpdateObjectiveMutation = () => {
             objective.id === objectiveId
               ? {
                   ...objective,
+                  name: data.name ?? objective.name,
+                  description: data.description ?? objective.description,
+                  shortSummary: data.shortSummary ?? objective.shortSummary,
                   leadUser: data.leadUser ?? objective.leadUser,
                   startDate: data.startDate ?? objective.startDate,
                   endDate: data.endDate ?? objective.endDate,
                   statusId: data.statusId ?? objective.statusId,
                   priority: data.priority ?? objective.priority,
                   health: data.health ?? objective.health,
+                  color: data.color ?? objective.color,
                 }
               : objective,
           ),
@@ -78,12 +91,14 @@ export const useUpdateObjectiveMutation = () => {
                       ...objective,
                       name: data.name ?? objective.name,
                       description: data.description ?? objective.description,
+                      shortSummary: data.shortSummary ?? objective.shortSummary,
                       leadUser: data.leadUser ?? objective.leadUser,
                       startDate: data.startDate ?? objective.startDate,
                       endDate: data.endDate ?? objective.endDate,
                       statusId: data.statusId ?? objective.statusId,
                       priority: data.priority ?? objective.priority,
                       health: data.health ?? objective.health,
+                      color: data.color ?? objective.color,
                     }
                   : objective,
               ),
@@ -114,11 +129,7 @@ export const useUpdateObjectiveMutation = () => {
         },
       });
     },
-    onSuccess: (res, { objectiveId, data }) => {
-      if (res.error?.message) {
-        throw new Error(res.error.message);
-      }
-
+    onSuccess: (_res, { objectiveId, data }) => {
       analytics.track("objective_updated", {
         objectiveId,
         ...data,

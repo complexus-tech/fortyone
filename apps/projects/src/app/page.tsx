@@ -16,11 +16,16 @@ export const metadata: Metadata = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ mobileApp?: string; error?: string }>;
+  searchParams: Promise<{
+    callbackUrl?: string;
+    mobileApp?: string;
+    error?: string;
+  }>;
 }) {
   const params = await searchParams;
-  const isMobileApp = params?.mobileApp === "true";
-  const errorMessage = params?.error;
+  const isMobileApp = params.mobileApp === "true";
+  const errorMessage = params.error;
+  const callbackUrl = params.callbackUrl;
 
   const session = await auth();
 
@@ -30,13 +35,16 @@ export default async function Page({
       getWorkspaces(),
       getProfile(),
     ]);
-    redirect(getRedirectUrl(workspaces, [], profile?.lastUsedWorkspaceId));
+    redirect(
+      getRedirectUrl(workspaces, [], profile.lastUsedWorkspaceId, callbackUrl),
+    );
   }
 
   // Mobile app users always see login form (even if already logged in on web)
   return (
     <OnboardingLayout>
       <AuthLayout
+        callbackUrl={callbackUrl}
         errorMessage={errorMessage}
         isMobileApp={isMobileApp}
         page="login"

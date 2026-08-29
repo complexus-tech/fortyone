@@ -12,7 +12,7 @@ const contactRoutes = [
     heading: "Implementation support",
     email: "hello@complexus.tech",
     description:
-      "For setup, integrations, workspace planning, or help rolling FortyOne out to a team.",
+      "For setup, integrations, workspace planning, or help rolling FortyOne out to a team. We respond to support requests within two business days.",
   },
 ];
 
@@ -49,7 +49,7 @@ export const Support = () => {
           ))}
         </Box>
 
-        <Box className="bg-surface-muted rounded-2xl p-6 dark:bg-white/[0.06]">
+        <Box className="bg-surface-muted rounded-2xl p-6">
           <Text as="h2" className="text-foreground text-xl font-medium">
             What helps us respond faster
           </Text>

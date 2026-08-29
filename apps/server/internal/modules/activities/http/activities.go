@@ -4,13 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 	"time"
 
 	activities "github.com/complexus-tech/projects-api/internal/modules/activities/service"
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
-	"github.com/complexus-tech/projects-api/pkg/date"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 )
@@ -24,6 +22,7 @@ type Handlers struct {
 	activities  *activities.Service
 	log         *logger.Logger
 	attachments *attachments.Service
+	now         func() time.Time
 }
 
 func New(log *logger.Logger, activities *activities.Service, attachments *attachments.Service) *Handlers {
@@ -31,6 +30,7 @@ func New(log *logger.Logger, activities *activities.Service, attachments *attach
 		activities:  activities,
 		log:         log,
 		attachments: attachments,
+		now:         time.Now,
 	}
 }
 
@@ -57,32 +57,12 @@ func (h *Handlers) GetActivities(ctx context.Context, w http.ResponseWriter, r *
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
 
-	var af AppFilters
-	filters, err := web.GetFilters(r.URL.Query(), &af)
+	query, err := parseActivityListQuery(r.URL.Query(), h.now())
 	if err != nil {
-		web.RespondError(ctx, w, err, http.StatusBadRequest)
-		return nil
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
 	}
 
-	limit := 10
-	if filters["limit"] != nil {
-
-		limit, err = strconv.Atoi(filters["limit"].(string))
-		if err != nil {
-			web.RespondError(ctx, w, ErrInvalidLimit, http.StatusBadRequest)
-			return nil
-		}
-	}
-
-	startDate, endDate, err := date.RangeFromQuery(r.URL.Query(), 30)
-	if err != nil {
-		return web.RespondError(ctx, w, ErrInvalidDate, http.StatusBadRequest)
-	}
-
-	acts, err := h.activities.GetActivities(ctx, userID, limit, workspace.ID, activities.ActivityFilters{
-		StartDate: startDate,
-		EndDate:   endDate,
-	})
+	acts, err := h.activities.GetActivities(ctx, userID, query.Limit, workspace.ID, query.Filters)
 	if err != nil {
 		return err
 	}

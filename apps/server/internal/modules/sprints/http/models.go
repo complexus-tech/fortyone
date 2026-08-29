@@ -4,37 +4,41 @@ import (
 	"time"
 
 	sprints "github.com/complexus-tech/projects-api/internal/modules/sprints/service"
+	platformpatch "github.com/complexus-tech/projects-api/internal/platform/patch"
 	"github.com/complexus-tech/projects-api/pkg/date"
+	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
 )
 
 // AppSprint represents a single sprint without stats in the application layer.
 type AppSprint struct {
-	ID        uuid.UUID  `json:"id"`
-	Name      string     `json:"name"`
-	Goal      *string    `json:"goal"`
-	Objective *uuid.UUID `json:"objectiveId"`
-	Team      uuid.UUID  `json:"teamId"`
-	Workspace uuid.UUID  `json:"workspaceId"`
-	StartDate time.Time  `json:"startDate"`
-	EndDate   time.Time  `json:"endDate"`
-	CreatedAt time.Time  `json:"createdAt"`
-	UpdatedAt time.Time  `json:"updatedAt"`
+	ID                          uuid.UUID  `json:"id"`
+	Name                        string     `json:"name"`
+	Goal                        *string    `json:"goal"`
+	Objective                   *uuid.UUID `json:"objectiveId"`
+	Team                        uuid.UUID  `json:"teamId"`
+	Workspace                   uuid.UUID  `json:"workspaceId"`
+	StartDate                   time.Time  `json:"startDate"`
+	EndDate                     time.Time  `json:"endDate"`
+	CreatedAt                   time.Time  `json:"createdAt"`
+	UpdatedAt                   time.Time  `json:"updatedAt"`
+	ScheduleManagedByAutomation bool       `json:"scheduleManagedByAutomation"`
 }
 
 // AppSprintList represents a sprint in the application layer.
 type AppSprintsList struct {
-	ID        uuid.UUID   `json:"id"`
-	Name      string      `json:"name"`
-	Goal      *string     `json:"goal"`
-	Objective *uuid.UUID  `json:"objectiveId"`
-	Team      uuid.UUID   `json:"teamId"`
-	Workspace uuid.UUID   `json:"workspaceId"`
-	StartDate time.Time   `json:"startDate"`
-	EndDate   time.Time   `json:"endDate"`
-	CreatedAt time.Time   `json:"createdAt"`
-	UpdatedAt time.Time   `json:"updatedAt"`
-	Stats     SprintStats `json:"stats"`
+	ID                          uuid.UUID   `json:"id"`
+	Name                        string      `json:"name"`
+	Goal                        *string     `json:"goal"`
+	Objective                   *uuid.UUID  `json:"objectiveId"`
+	Team                        uuid.UUID   `json:"teamId"`
+	Workspace                   uuid.UUID   `json:"workspaceId"`
+	StartDate                   time.Time   `json:"startDate"`
+	EndDate                     time.Time   `json:"endDate"`
+	CreatedAt                   time.Time   `json:"createdAt"`
+	UpdatedAt                   time.Time   `json:"updatedAt"`
+	ScheduleManagedByAutomation bool        `json:"scheduleManagedByAutomation"`
+	Stats                       SprintStats `json:"stats"`
 }
 
 type SprintStats struct {
@@ -44,14 +48,6 @@ type SprintStats struct {
 	Started   int `json:"started"`
 	Unstarted int `json:"unstarted"`
 	Backlog   int `json:"backlog"`
-}
-
-type AppFilters struct {
-	Objective *uuid.UUID `json:"objectiveId" db:"objective_id"`
-	Team      *uuid.UUID `json:"teamId" db:"team_id"`
-	Search    string     `json:"search" db:"search"`
-	Page      int        `json:"page"`
-	PageSize  int        `json:"pageSize"`
 }
 
 type AppPagination struct {
@@ -76,11 +72,47 @@ type AppNewSprint struct {
 }
 
 type AppUpdateSprint struct {
-	Name      *string    `json:"name,omitempty"`
-	Goal      *string    `json:"goal,omitempty"`
-	Objective *uuid.UUID `json:"objectiveId,omitempty"`
-	StartDate *date.Date `json:"startDate,omitempty"`
-	EndDate   *date.Date `json:"endDate,omitempty"`
+	Name              web.PatchField[string]    `json:"name"`
+	Goal              web.PatchField[string]    `json:"goal"`
+	Objective         web.PatchField[uuid.UUID] `json:"objectiveId"`
+	StartDate         web.PatchField[date.Date] `json:"startDate"`
+	EndDate           web.PatchField[date.Date] `json:"endDate"`
+	ExpectedUpdatedAt *time.Time                `json:"expectedUpdatedAt"`
+}
+
+func (request AppUpdateSprint) Validate() error {
+	_, err := request.SprintPatch().Normalize()
+	return err
+}
+
+func (request AppUpdateSprint) SprintPatch() sprints.SprintPatch {
+	return sprints.SprintPatch{
+		Name: sprintPatchField(request.Name), Goal: sprintPatchField(request.Goal),
+		ObjectiveID: sprintPatchField(request.Objective),
+		StartDate:   sprintDatePatchField(request.StartDate), EndDate: sprintDatePatchField(request.EndDate),
+	}
+}
+
+func sprintPatchField[T any](field web.PatchField[T]) platformpatch.Field[T] {
+	value, specified := field.Value()
+	if !specified {
+		return platformpatch.Field[T]{}
+	}
+	if value == nil {
+		return platformpatch.Clear[T]()
+	}
+	return platformpatch.Set(*value)
+}
+
+func sprintDatePatchField(field web.PatchField[date.Date]) platformpatch.Field[time.Time] {
+	value, specified := field.Value()
+	if !specified {
+		return platformpatch.Field[time.Time]{}
+	}
+	if value == nil {
+		return platformpatch.Clear[time.Time]()
+	}
+	return platformpatch.Set(value.Time())
 }
 
 // toAppSprints converts a list of core sprints to a list of application sprints.
@@ -88,16 +120,17 @@ func toAppSprints(sprints []sprints.CoreSprint) []AppSprintsList {
 	appSprints := make([]AppSprintsList, len(sprints))
 	for i, sprint := range sprints {
 		appSprints[i] = AppSprintsList{
-			ID:        sprint.ID,
-			Name:      sprint.Name,
-			Goal:      sprint.Goal,
-			Objective: sprint.Objective,
-			Team:      sprint.Team,
-			Workspace: sprint.Workspace,
-			StartDate: sprint.StartDate,
-			EndDate:   sprint.EndDate,
-			CreatedAt: sprint.CreatedAt,
-			UpdatedAt: sprint.UpdatedAt,
+			ID:                          sprint.ID,
+			Name:                        sprint.Name,
+			Goal:                        sprint.Goal,
+			Objective:                   sprint.ObjectiveID,
+			Team:                        sprint.TeamID,
+			Workspace:                   sprint.WorkspaceID,
+			StartDate:                   sprint.StartDate,
+			EndDate:                     sprint.EndDate,
+			CreatedAt:                   sprint.CreatedAt,
+			UpdatedAt:                   sprint.UpdatedAt,
+			ScheduleManagedByAutomation: sprint.ScheduleManagedByAutomation,
 			Stats: SprintStats{
 				Total:     sprint.TotalStories,
 				Cancelled: sprint.CancelledStories,
@@ -131,16 +164,17 @@ func toAppSprintsResponse(sprints []sprints.CoreSprint, page, pageSize int, hasM
 // toAppSprint converts a core sprint to a simple application sprint (without stats).
 func toAppSprint(sprint sprints.CoreSprint) AppSprint {
 	return AppSprint{
-		ID:        sprint.ID,
-		Name:      sprint.Name,
-		Goal:      sprint.Goal,
-		Objective: sprint.Objective,
-		Team:      sprint.Team,
-		Workspace: sprint.Workspace,
-		StartDate: sprint.StartDate,
-		EndDate:   sprint.EndDate,
-		CreatedAt: sprint.CreatedAt,
-		UpdatedAt: sprint.UpdatedAt,
+		ID:                          sprint.ID,
+		Name:                        sprint.Name,
+		Goal:                        sprint.Goal,
+		Objective:                   sprint.ObjectiveID,
+		Team:                        sprint.TeamID,
+		Workspace:                   sprint.WorkspaceID,
+		StartDate:                   sprint.StartDate,
+		EndDate:                     sprint.EndDate,
+		CreatedAt:                   sprint.CreatedAt,
+		UpdatedAt:                   sprint.UpdatedAt,
+		ScheduleManagedByAutomation: sprint.ScheduleManagedByAutomation,
 	}
 }
 
@@ -148,6 +182,7 @@ func toAppSprint(sprint sprints.CoreSprint) AppSprint {
 
 type AppSprintAnalytics struct {
 	SprintID       uuid.UUID              `json:"sprintId"`
+	WorkingDays    []int                  `json:"workingDays"`
 	Overview       SprintOverview         `json:"overview"`
 	StoryBreakdown StoryBreakdown         `json:"storyBreakdown"`
 	Burndown       []BurndownDataPoint    `json:"burndown"`
@@ -187,7 +222,8 @@ type TeamMemberAllocation struct {
 // toAppSprintAnalytics converts core sprint analytics to app sprint analytics.
 func toAppSprintAnalytics(analytics sprints.CoreSprintAnalytics) AppSprintAnalytics {
 	return AppSprintAnalytics{
-		SprintID: analytics.SprintID,
+		SprintID:    analytics.SprintID,
+		WorkingDays: analytics.WorkingDays,
 		Overview: SprintOverview{
 			CompletionPercentage: analytics.Overview.CompletionPercentage,
 			DaysElapsed:          analytics.Overview.DaysElapsed,

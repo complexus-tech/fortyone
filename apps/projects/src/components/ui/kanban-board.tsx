@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Box, Button, Flex, Popover, Text } from "ui";
 import { cn } from "lib";
 import { MoreHorizontalIcon } from "icons";
@@ -24,6 +25,7 @@ import {
   hideKanbanGroup,
   showKanbanGroup,
 } from "./kanban-hidden-groups";
+import { useKanbanAutoScroll } from "./use-kanban-auto-scroll";
 
 const getKanbanGroupIdentity = ({
   group,
@@ -124,7 +126,7 @@ const HiddenKanbanHeader = ({ count }: { count: number }) => {
   if (count === 0) return null;
 
   return (
-    <Flex align="center" className="w-[340px] pl-1" gap={2}>
+    <Flex align="center" className="w-[340px] shrink-0 pl-1" gap={2}>
       <Text color="muted" fontWeight="medium">
         Hidden columns
       </Text>
@@ -234,6 +236,9 @@ export const KanbanBoard = ({
   groupedStories: GroupedStoriesResponse;
   className?: string;
 }) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  useKanbanAutoScroll(scrollContainerRef);
+
   const { teamId } = useParams<{ teamId: string }>();
   const { viewOptions, setViewOptions } = useBoard();
   const { groupBy } = viewOptions;
@@ -243,12 +248,12 @@ export const KanbanBoard = ({
   const { data: teamMembers = [] } = useTeamMembers(teamId);
   const members = teamId ? teamMembers : allMembers;
   const statuses = teamId ? teamStatuses : allStatuses;
-  const hiddenGroupKeys = getHiddenKanbanGroupKeys(viewOptions);
+  const hiddenGroupKeys = new Set(getHiddenKanbanGroupKeys(viewOptions));
   const visibleGroups = groupedStories.groups.filter(
-    (group) => !hiddenGroupKeys.includes(group.key),
+    (group) => !hiddenGroupKeys.has(group.key),
   );
   const hiddenGroups = groupedStories.groups.filter((group) =>
-    hiddenGroupKeys.includes(group.key),
+    hiddenGroupKeys.has(group.key),
   );
   const handleHide = (groupKey: string) => {
     setViewOptions?.(hideKanbanGroup(viewOptions, groupKey));
@@ -259,53 +264,64 @@ export const KanbanBoard = ({
 
   return (
     <BodyContainer
-      className={cn("bg-surface-muted/50 overflow-x-auto", className)}
+      aria-label="Kanban board"
+      className={cn(
+        "h-full min-h-0 w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain",
+        className,
+      )}
+      data-kanban-board-scroll
+      ref={scrollContainerRef}
+      role="region"
+      tabIndex={0}
     >
-      <Box className="sticky top-0 z-1 h-14 w-max px-6 backdrop-blur">
-        <Flex
-          align="center"
-          className="h-full shrink-0 overflow-x-auto"
-          gap={6}
-        >
+      <Box className="flex h-full min-h-0 w-max flex-col">
+        <Box className="z-1 h-14 shrink-0 px-6 backdrop-blur">
+          <Flex
+            align="center"
+            className="h-full w-max shrink-0"
+            gap={6}
+            justify="start"
+          >
+            {visibleGroups.map((group) => (
+              <GroupedKanbanHeader
+                group={group}
+                groupBy={groupBy}
+                key={group.key}
+                members={members}
+                onHide={
+                  setViewOptions
+                    ? () => {
+                        handleHide(group.key);
+                      }
+                    : undefined
+                }
+                statuses={statuses}
+                viewOptions={viewOptions}
+              />
+            ))}
+            <HiddenKanbanHeader count={hiddenGroups.length} />
+          </Flex>
+        </Box>
+        <Box className="flex min-h-0 w-max flex-1 justify-start gap-x-6 px-7">
           {visibleGroups.map((group) => (
-            <GroupedKanbanHeader
+            <GroupedKanbanStories
               group={group}
               groupBy={groupBy}
               key={group.key}
               members={members}
-              onHide={
-                setViewOptions
-                  ? () => {
-                      handleHide(group.key);
-                    }
-                  : undefined
-              }
+              meta={groupedStories.meta}
               statuses={statuses}
               viewOptions={viewOptions}
             />
           ))}
-          <HiddenKanbanHeader count={hiddenGroups.length} />
-        </Flex>
-      </Box>
-      <Box className="flex h-[calc(100%-3.5rem)] w-max gap-x-6 px-7">
-        {visibleGroups.map((group) => (
-          <GroupedKanbanStories
-            group={group}
+          <HiddenKanbanGroups
             groupBy={groupBy}
-            key={group.key}
+            groups={hiddenGroups}
             members={members}
-            meta={groupedStories.meta}
+            onShow={handleShow}
             statuses={statuses}
-            viewOptions={viewOptions}
           />
-        ))}
-        <HiddenKanbanGroups
-          groupBy={groupBy}
-          groups={hiddenGroups}
-          members={members}
-          onShow={handleShow}
-          statuses={statuses}
-        />
+        </Box>
       </Box>
     </BodyContainer>
   );

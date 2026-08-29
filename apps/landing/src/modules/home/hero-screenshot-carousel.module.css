@@ -1,0 +1,38 @@
+.viewport {
+  display: grid;
+}
+
+.slide {
+  grid-area: 1 / 1;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 420ms var(--landing-ease-out),
+    transform 560ms var(--landing-ease-out);
+}
+
+.activeSlide {
+  z-index: 2;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.queuedSlide {
+  transform: translate3d(0, 0.5rem, 0);
+}
+
+.exitingSlide {
+  transform: translate3d(0, -0.25rem, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide {
+    transition: opacity 120ms linear;
+  }
+
+  .activeSlide,
+  .queuedSlide,
+  .exitingSlide {
+    transform: none;
+  }
+}

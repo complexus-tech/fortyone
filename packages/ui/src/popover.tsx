@@ -4,8 +4,8 @@ import { cn } from "lib";
 import { forwardRef, ElementRef, ComponentPropsWithoutRef } from "react";
 
 type PopoverProps = ComponentPropsWithoutRef<typeof PopoverPrimitive.Root>;
-export const Popover = (props: PopoverProps) => (
-  <PopoverPrimitive.Root {...props} />
+export const Popover = ({ modal = false, ...props }: PopoverProps) => (
+  <PopoverPrimitive.Root modal={modal} {...props} />
 );
 
 const PopoverTrigger = PopoverPrimitive.Trigger;
@@ -20,8 +20,8 @@ const PopoverContent = forwardRef<
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 mt-1 mr-2 min-w-48 rounded-2xl border py-2 text-foreground shadow shadow-shadow backdrop-blur-md border-border bg-surface-elevated/90",
-        className
+        "z-50 mt-1 mr-2 min-w-48 rounded-xl border-[0.5px] border-border/70 bg-surface-elevated py-2 text-foreground shadow-xl shadow-shadow backdrop-blur-md dark:bg-surface-elevated/80",
+        className,
       )}
       {...props}
     />

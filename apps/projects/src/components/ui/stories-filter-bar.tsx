@@ -22,13 +22,14 @@ import {
 } from "ui";
 import {
   AssigneeIcon,
-  ArrowRightIcon,
   CalendarIcon,
   CheckIcon,
+  ChevronRightIcon,
   CloseIcon,
   EstimateIcon,
   ListIcon,
   ObjectiveIcon,
+  OKRIcon,
   PlusIcon,
   SprintsIcon,
   TagsIcon,
@@ -64,6 +65,8 @@ import {
 } from "@/modules/objectives/hooks/use-objectives";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
+import { useTerminology } from "@/hooks";
+import { useKeyResults } from "@/modules/objectives/hooks";
 import {
   LABEL_MENU_PAGE_SIZE,
   useLabels,
@@ -76,7 +79,12 @@ import {
   type EstimateScheme,
 } from "@/lib/estimate";
 import { getScopedStoriesFilterTeamId } from "./stories-filter-query";
-import type { StoriesFilter } from "./stories-filter-types";
+import type {
+  StoriesFilter,
+  StoriesFilterOperator,
+  StoriesFilterOperatorField,
+} from "./stories-filter-types";
+import { getStoriesFilterOperator } from "./stories-filter-types";
 import { MenuLoadingSkeleton } from "./menu-loading-skeleton";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -94,6 +102,7 @@ export type StoriesFilterField =
   | "labelIds"
   | "estimateValues"
   | "objectiveId"
+  | "keyResultId"
   | "startDate"
   | "endDate"
   | "assignedToMe"
@@ -104,8 +113,14 @@ type FilterChip = {
   field: StoriesFilterField;
   label: string;
   operator: string;
+  operatorOptions?: readonly OperatorOption[];
   value: ReactNode;
   icon?: ReactNode;
+};
+
+type OperatorOption = {
+  label: string;
+  value: StoriesFilterOperator;
 };
 
 type FilterOption = {
@@ -123,6 +138,88 @@ type StoriesFilterBarProps = {
 };
 
 const EMPTY_FILTER_FIELDS: readonly StoriesFilterField[] = [];
+
+const CONTENT_OPERATOR_OPTIONS = [
+  { label: "contains", value: "contains" },
+  { label: "does not contain", value: "doesNotContain" },
+] as const satisfies readonly OperatorOption[];
+
+const MULTI_VALUE_OPERATOR_OPTIONS = [
+  { label: "is any of", value: "isAnyOf" },
+  { label: "is not any of", value: "isNotAnyOf" },
+] as const satisfies readonly OperatorOption[];
+
+const SINGLE_VALUE_OPERATOR_OPTIONS = [
+  { label: "is", value: "is" },
+  { label: "is not", value: "isNot" },
+] as const satisfies readonly OperatorOption[];
+
+const DATE_OPERATOR_OPTIONS = [
+  { label: "is", value: "is" },
+  { label: "is on or before", value: "isOnOrBefore" },
+  { label: "is on or after", value: "isOnOrAfter" },
+  { label: "is not", value: "isNot" },
+] as const satisfies readonly OperatorOption[];
+
+const ASSIGNEE_PRESENCE_OPERATOR_OPTIONS = [
+  { label: "is", value: "isEmpty" },
+  { label: "is not", value: "isNotEmpty" },
+] as const satisfies readonly OperatorOption[];
+
+const FILTER_OPERATOR_FIELDS = new Set<StoriesFilterField>([
+  "contentContains",
+  "statusIds",
+  "assigneeIds",
+  "reporterIds",
+  "priorities",
+  "teamIds",
+  "sprintIds",
+  "labelIds",
+  "estimateValues",
+  "objectiveId",
+  "startDate",
+  "endDate",
+  "hasNoAssignee",
+]);
+
+const isFilterOperatorField = (
+  field: StoriesFilterField,
+): field is StoriesFilterOperatorField => FILTER_OPERATOR_FIELDS.has(field);
+
+const getOperatorOptions = (field: StoriesFilterOperatorField) => {
+  if (field === "contentContains") {
+    return CONTENT_OPERATOR_OPTIONS;
+  }
+
+  if (field === "startDate" || field === "endDate") {
+    return DATE_OPERATOR_OPTIONS;
+  }
+
+  if (field === "objectiveId") {
+    return SINGLE_VALUE_OPERATOR_OPTIONS;
+  }
+
+  if (field === "hasNoAssignee") {
+    return ASSIGNEE_PRESENCE_OPERATOR_OPTIONS;
+  }
+
+  return MULTI_VALUE_OPERATOR_OPTIONS;
+};
+
+const getOperatorConfig = (
+  filters: StoriesFilter,
+  field: StoriesFilterOperatorField,
+) => {
+  const operator = getStoriesFilterOperator(filters, field);
+  const operatorOptions = getOperatorOptions(field);
+
+  return {
+    operator:
+      operatorOptions.find((option) => option.value === operator)?.label ??
+      operatorOptions[0].label,
+    operatorOptions,
+  };
+};
 
 const getNames = (
   ids: string[] | null | undefined,
@@ -309,7 +406,11 @@ const EstimateChipValue = ({
       <Flex align="center" gap={1}>
         <EstimateIcon className="h-4 w-auto" />
         <span>
-          {getPluralLabel(estimateValues.length, "estimate", "estimates")}
+          {getPluralLabel(
+            estimateValues.length,
+            "complexity value",
+            "complexity values",
+          )}
         </span>
       </Flex>
     );
@@ -774,7 +875,11 @@ const SprintEditor = ({
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const scopedTeamId = getScopedStoriesFilterTeamId(teamId, filters.teamIds);
+  const scopedTeamId = getScopedStoriesFilterTeamId(
+    teamId,
+    filters.teamIds,
+    getStoriesFilterOperator(filters, "teamIds"),
+  );
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
     useTeamSprintsInfinite(
       scopedTeamId ?? "",
@@ -873,7 +978,11 @@ const ObjectiveEditor = ({
   const { teamId } = useParams<{ teamId?: string }>();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const scopedTeamId = getScopedStoriesFilterTeamId(teamId, filters.teamIds);
+  const scopedTeamId = getScopedStoriesFilterTeamId(
+    teamId,
+    filters.teamIds,
+    getStoriesFilterOperator(filters, "teamIds"),
+  );
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
     useTeamObjectivesInfinite(
       scopedTeamId ?? "",
@@ -929,12 +1038,15 @@ const ObjectiveEditor = ({
                 className="justify-between gap-4"
                 key={objective.id}
                 onSelect={() => {
+                  const objectiveId =
+                    filters.objectiveId === objective.id ? null : objective.id;
                   setFilters({
                     ...filters,
-                    objectiveId:
-                      filters.objectiveId === objective.id
-                        ? null
-                        : objective.id,
+                    objectiveId,
+                    keyResultId:
+                      objectiveId === filters.objectiveId
+                        ? filters.keyResultId
+                        : null,
                   });
                 }}
                 value={objective.name}
@@ -957,6 +1069,72 @@ const ObjectiveEditor = ({
             <MenuLoadingSkeleton rows={2} />
           </Command.Loading>
         ) : null}
+      </Command.Group>
+    </Command>
+  );
+};
+
+const KeyResultEditor = ({
+  filters,
+  setFilters,
+}: {
+  filters: StoriesFilter;
+  setFilters: (value: StoriesFilter) => void;
+}) => {
+  const { getTermDisplay } = useTerminology();
+  const { data: keyResults = [], isPending } = useKeyResults(
+    filters.objectiveId ?? "",
+    Boolean(filters.objectiveId),
+  );
+
+  return (
+    <Command>
+      <Command.Input
+        autoFocus
+        placeholder={`Search ${getTermDisplay("keyResultTerm", { variant: "plural" })}...`}
+      />
+      <Divider className="my-2" />
+      <Command.Group className="max-h-80 overflow-y-auto">
+        {!filters.objectiveId ? (
+          <Text className="px-3 py-2" color="muted">
+            Select an {getTermDisplay("objectiveTerm")} filter first.
+          </Text>
+        ) : null}
+        {isPending && filters.objectiveId ? (
+          <Command.Loading className="p-2">
+            <MenuLoadingSkeleton rows={4} />
+          </Command.Loading>
+        ) : null}
+        {!isPending && filters.objectiveId && keyResults.length === 0 ? (
+          <Command.Empty className="py-2">
+            <Text color="muted">
+              No {getTermDisplay("keyResultTerm", { variant: "plural" })} found.
+            </Text>
+          </Command.Empty>
+        ) : null}
+        {keyResults.map((keyResult) => (
+          <Command.Item
+            active={filters.keyResultId === keyResult.id}
+            className="justify-between gap-4"
+            key={keyResult.id}
+            onSelect={() => {
+              setFilters({
+                ...filters,
+                keyResultId:
+                  filters.keyResultId === keyResult.id ? null : keyResult.id,
+              });
+            }}
+            value={keyResult.name}
+          >
+            <Flex align="center" className="min-w-0 flex-1" gap={2}>
+              <OKRIcon className="text-text-secondary h-4 w-auto" />
+              <Text className="max-w-72 truncate">{keyResult.name}</Text>
+            </Flex>
+            {filters.keyResultId === keyResult.id ? (
+              <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
+            ) : null}
+          </Command.Item>
+        ))}
       </Command.Group>
     </Command>
   );
@@ -1074,10 +1252,10 @@ const EstimateEditor = ({
 
   return (
     <Command>
-      <Command.Input autoFocus placeholder="Change estimate..." />
+      <Command.Input autoFocus placeholder="Change complexity..." />
       <Divider className="my-2" />
       <Command.Empty className="py-2">
-        <Text color="muted">No estimate found.</Text>
+        <Text color="muted">No complexity found.</Text>
       </Command.Empty>
       <Command.Group>
         {options.map(({ label, value }, idx) => (
@@ -1187,6 +1365,10 @@ const FilterValueEditor = ({
     return <ObjectiveEditor filters={filters} setFilters={setFilters} />;
   }
 
+  if (field === "keyResultId") {
+    return <KeyResultEditor filters={filters} setFilters={setFilters} />;
+  }
+
   if (field === "labelIds") {
     return <LabelEditor filters={filters} setFilters={setFilters} />;
   }
@@ -1216,6 +1398,7 @@ const Chip = ({
   filters,
   setFilters,
   onEditTitle,
+  onOperatorChange,
   onRemove,
 }: {
   chip: FilterChip;
@@ -1223,6 +1406,7 @@ const Chip = ({
   filters: StoriesFilter;
   setFilters: (value: StoriesFilter) => void;
   onEditTitle: () => void;
+  onOperatorChange: (operator: StoriesFilterOperator) => void;
   onRemove: () => void;
 }) => {
   const isEditable =
@@ -1283,9 +1467,40 @@ const Chip = ({
         {chip.icon}
         {chip.label}
       </span>
-      <span className="border-border text-text-secondary flex h-full items-center border-r px-2.5">
-        {chip.operator}
-      </span>
+      {chip.operatorOptions ? (
+        <Menu>
+          <Menu.Button>
+            <button
+              aria-label={`Change ${chip.label} filter operator`}
+              className="hover:bg-state-hover border-border text-text-secondary flex h-[2.1rem] items-center border-r px-2.5 transition"
+              type="button"
+            >
+              {chip.operator}
+            </button>
+          </Menu.Button>
+          <Menu.Items align="start" className="w-44 p-1">
+            {chip.operatorOptions.map((option) => (
+              <Menu.Item
+                active={chip.operator === option.label}
+                className="justify-between"
+                key={option.value}
+                onSelect={() => {
+                  onOperatorChange(option.value);
+                }}
+              >
+                <span>{option.label}</span>
+                {chip.operator === option.label ? (
+                  <CheckIcon className="h-4 w-auto" />
+                ) : null}
+              </Menu.Item>
+            ))}
+          </Menu.Items>
+        </Menu>
+      ) : (
+        <span className="border-border text-text-secondary flex h-full items-center border-r px-2.5">
+          {chip.operator}
+        </span>
+      )}
       {valueControl}
       <button
         aria-label={`Remove ${chip.label} filter`}
@@ -1306,9 +1521,14 @@ export const StoriesFilterBar = ({
   hiddenFields = EMPTY_FILTER_FIELDS,
   showWhenEmpty = false,
 }: StoriesFilterBarProps) => {
+  const { getTermDisplay } = useTerminology();
   const { teamId } = useParams<{ teamId?: string }>();
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
-  const scopedTeamId = getScopedStoriesFilterTeamId(teamId, filters.teamIds);
+  const scopedTeamId = getScopedStoriesFilterTeamId(
+    teamId,
+    filters.teamIds,
+    getStoriesFilterOperator(filters, "teamIds"),
+  );
   const { data: allStatuses = [] } = useStatuses();
   const { data: allUsers = [] } = useMembers();
   const resolvedTeamId = scopedTeamId ?? "";
@@ -1316,6 +1536,10 @@ export const StoriesFilterBar = ({
   const { data: teams = [] } = useTeams();
   const { data: sprints = [] } = useTeamSprints(resolvedTeamId);
   const { data: objectives = [] } = useTeamObjectives(resolvedTeamId);
+  const { data: keyResults = [] } = useKeyResults(
+    filters.objectiveId ?? "",
+    Boolean(filters.objectiveId),
+  );
   const { data: allLabels = [] } = useLabels();
   const { data: teamSettings } = useTeamSettings(scopedTeamId);
   const estimateScheme =
@@ -1366,6 +1590,11 @@ export const StoriesFilterBar = ({
       new Map(objectives.map((objective) => [objective.id, objective.name])),
     [objectives],
   );
+  const keyResultById = useMemo(
+    () =>
+      new Map(keyResults.map((keyResult) => [keyResult.id, keyResult.name])),
+    [keyResults],
+  );
   const labelById = useMemo(
     () =>
       new Map(
@@ -1388,7 +1617,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "contentContains",
         label: "Content",
-        operator: "contains",
+        ...getOperatorConfig(filters, "contentContains"),
         value: filters.contentContains.trim(),
         icon: <ListIcon className="h-4 w-auto" />,
       });
@@ -1398,7 +1627,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "startDate",
         label: "Start date",
-        operator: "is",
+        ...getOperatorConfig(filters, "startDate"),
         value: format(new Date(filters.startDate), "MMM d, yyyy"),
         icon: <CalendarIcon className="h-4 w-auto" />,
       });
@@ -1408,7 +1637,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "endDate",
         label: "End date",
-        operator: "is",
+        ...getOperatorConfig(filters, "endDate"),
         value: format(new Date(filters.endDate), "MMM d, yyyy"),
         icon: <CalendarIcon className="h-4 w-auto" />,
       });
@@ -1423,7 +1652,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "statusIds",
         label: "Status",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "statusIds"),
         value: <StatusChipValue statuses={selectedStatuses} />,
         icon: <StoryStatusIcon statusId={filters.statusIds[0]} />,
       });
@@ -1437,7 +1666,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "assigneeIds",
         label: "Assignee",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "assigneeIds"),
         value: (
           <PeopleChipValue
             label="assignee"
@@ -1456,7 +1685,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "reporterIds",
         label: "Creator",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "reporterIds"),
         value: (
           <PeopleChipValue
             label="creator"
@@ -1473,7 +1702,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "priorities",
         label: "Priority",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "priorities"),
         value: <PriorityChipValue priorities={selectedPriorities} />,
         icon: (
           <PriorityIcon priority={filters.priorities[0] as StoryPriority} />
@@ -1485,7 +1714,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "teamIds",
         label: "Team",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "teamIds"),
         value: getNames(filters.teamIds, teamById),
         icon: <TeamColor color={teamColorById.get(filters.teamIds[0])} />,
       });
@@ -1495,7 +1724,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "sprintIds",
         label: "Sprint",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "sprintIds"),
         value: getNames(filters.sprintIds, sprintById),
       });
     }
@@ -1508,7 +1737,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "labelIds",
         label: "Label",
-        operator: "is any of",
+        ...getOperatorConfig(filters, "labelIds"),
         value: <LabelChipValue labels={selectedLabels} />,
         icon: (
           <TagsIcon
@@ -1522,8 +1751,8 @@ export const StoriesFilterBar = ({
     if (filters.estimateValues?.length) {
       items.push({
         field: "estimateValues",
-        label: "Estimate",
-        operator: "is any of",
+        label: "Complexity",
+        ...getOperatorConfig(filters, "estimateValues"),
         value: (
           <EstimateChipValue
             estimateScheme={estimateScheme}
@@ -1537,10 +1766,20 @@ export const StoriesFilterBar = ({
     if (filters.objectiveId) {
       items.push({
         field: "objectiveId",
-        label: "Objective",
-        operator: "is",
+        label: getTermDisplay("objectiveTerm", { capitalize: true }),
+        ...getOperatorConfig(filters, "objectiveId"),
         value: objectiveById.get(filters.objectiveId) ?? filters.objectiveId,
         icon: <ObjectiveIcon className="h-4 w-auto" />,
+      });
+    }
+
+    if (filters.keyResultId) {
+      items.push({
+        field: "keyResultId",
+        label: getTermDisplay("keyResultTerm", { capitalize: true }),
+        operator: "is",
+        value: keyResultById.get(filters.keyResultId) ?? filters.keyResultId,
+        icon: <OKRIcon className="h-4 w-auto" />,
       });
     }
 
@@ -1548,7 +1787,7 @@ export const StoriesFilterBar = ({
       items.push({
         field: "hasNoAssignee",
         label: "Assignee",
-        operator: "is",
+        ...getOperatorConfig(filters, "hasNoAssignee"),
         value: "empty",
       });
     }
@@ -1558,6 +1797,8 @@ export const StoriesFilterBar = ({
     filters,
     estimateScheme,
     hiddenFieldSet,
+    getTermDisplay,
+    keyResultById,
     labelById,
     objectiveById,
     sprintById,
@@ -1570,6 +1811,15 @@ export const StoriesFilterBar = ({
   const removeFilter = (field: StoriesFilterField) => {
     if (field === "assignedToMe" || field === "createdByMe") {
       setFilters({ ...filters, [field]: false });
+      return;
+    }
+
+    if (isFilterOperatorField(field)) {
+      setFilters({
+        ...filters,
+        [field]: null,
+        operators: { ...filters.operators, [field]: undefined },
+      });
       return;
     }
 
@@ -1591,6 +1841,11 @@ export const StoriesFilterBar = ({
       field: "reporterIds",
       icon: <UserIcon className="h-5 w-auto" />,
       label: "Creator",
+    },
+    {
+      field: "contentContains",
+      icon: <ListIcon className="h-5 w-auto" />,
+      label: "Content",
     },
     {
       field: "priorities",
@@ -1619,12 +1874,17 @@ export const StoriesFilterBar = ({
     {
       field: "estimateValues",
       icon: <EstimateIcon className="h-5 w-auto" />,
-      label: "Estimate",
+      label: "Complexity",
     },
     {
       field: "objectiveId",
       icon: <ObjectiveIcon className="h-5 w-auto" />,
-      label: "Objective",
+      label: getTermDisplay("objectiveTerm", { capitalize: true }),
+    },
+    {
+      field: "keyResultId",
+      icon: <OKRIcon className="h-5 w-auto" />,
+      label: getTermDisplay("keyResultTerm", { capitalize: true }),
     },
     {
       field: "startDate",
@@ -1635,11 +1895,6 @@ export const StoriesFilterBar = ({
       field: "endDate",
       icon: <CalendarIcon className="h-5 w-auto" />,
       label: "End date",
-    },
-    {
-      field: "contentContains",
-      icon: <ListIcon className="h-5 w-auto" />,
-      label: "Content",
     },
   ];
   const filterOptions = baseFilterOptions.filter(
@@ -1653,7 +1908,7 @@ export const StoriesFilterBar = ({
   return (
     <Flex
       align="center"
-      className="border-border bg-background h-[3.6rem] border-b-[0.5px] px-4"
+      className="border-border bg-background h-(--app-filter-bar-height) shrink-0 border-b-[0.5px] px-4"
       gap={3}
       justify="between"
     >
@@ -1666,6 +1921,19 @@ export const StoriesFilterBar = ({
             key={chip.field}
             onEditTitle={() => {
               setTitleDialogOpen(true);
+            }}
+            onOperatorChange={(operator) => {
+              if (!isFilterOperatorField(chip.field)) {
+                return;
+              }
+
+              setFilters({
+                ...filters,
+                operators: {
+                  ...filters.operators,
+                  [chip.field]: operator,
+                },
+              });
             }}
             onRemove={() => {
               removeFilter(chip.field);
@@ -1688,7 +1956,7 @@ export const StoriesFilterBar = ({
               <Menu.Input autoFocus placeholder="Add filter..." />
             </Box>
             <Menu.Separator className="my-0" />
-            <Menu.Group className="max-h-96 overflow-y-auto px-1 py-1.5">
+            <Menu.Group className="max-h-[min(30rem,calc(100dvh-12rem))] overflow-y-auto px-1 py-1.5">
               {filterOptions.map((option) => {
                 const isActive = chips.some(
                   (chip) => chip.field === option.field,
@@ -1728,7 +1996,7 @@ export const StoriesFilterBar = ({
                         <Text className="truncate">{option.label}</Text>
                       </Box>
                       <Flex align="center" className="shrink-0" gap={1}>
-                        <ArrowRightIcon
+                        <ChevronRightIcon
                           className="text-text-muted h-3.5 w-auto"
                           strokeWidth={2.8}
                         />

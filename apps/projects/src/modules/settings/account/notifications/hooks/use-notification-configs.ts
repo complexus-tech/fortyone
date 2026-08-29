@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { type NotificationType } from "@/modules/notifications/types";
 import { useFeatures, useTerminology } from "@/hooks";
 
@@ -12,58 +11,66 @@ export function useNotificationConfigs(): NotificationConfig[] {
   const { getTermDisplay } = useTerminology();
   const features = useFeatures();
 
-  return useMemo(() => {
-    const configs: NotificationConfig[] = [
-      {
-        type: "story_update",
-        title: `${getTermDisplay("storyTerm", { capitalize: true })} updates`,
-        description: `Get notified when a ${getTermDisplay("storyTerm")} you're involved with is updated`,
-      },
-      {
-        type: "comment_reply",
-        title: "Comments",
-        description: `Get notified when someone comments on your ${getTermDisplay("storyTerm", { variant: "plural" })}`,
-      },
-      {
-        type: "mention",
-        title: "Mentions",
-        description: `Get notified when someone mentions you in a comment or ${getTermDisplay("storyTerm")}`,
-      },
-      {
-        type: "story_comment",
-        title: `${getTermDisplay("storyTerm", { capitalize: true })} comments`,
-        description: `Get notified when comments are added to ${getTermDisplay("storyTerm", { variant: "plural" })}`,
-      },
-    ];
+  const configs: NotificationConfig[] = [
+    {
+      type: "story_update",
+      title: `${getTermDisplay("storyTerm", { capitalize: true })} updates`,
+      description: `Get notified when a ${getTermDisplay("storyTerm")} you're involved with is updated`,
+    },
+    {
+      type: "comment_reply",
+      title: "Comments",
+      description: `Get notified when someone comments on your ${getTermDisplay("storyTerm", { variant: "plural" })}`,
+    },
+    {
+      type: "mention",
+      title: "Mentions",
+      description: `Get notified when someone mentions you in a comment or ${getTermDisplay("storyTerm")}`,
+    },
+    {
+      type: "story_comment",
+      title: `${getTermDisplay("storyTerm", { capitalize: true })} comments`,
+      description: `Get notified when comments are added to ${getTermDisplay("storyTerm", { variant: "plural" })}`,
+    },
+  ];
 
-    if (features.objectiveEnabled) {
-      configs.push({
-        type: "objective_update",
-        title: `${getTermDisplay("objectiveTerm", { capitalize: true })} updates`,
-        description: `Get notified when ${getTermDisplay("objectiveTerm", { variant: "plural" })} are updated`,
-      });
-    }
-
-    if (features.keyResultEnabled) {
-      configs.push({
-        type: "key_result_update",
-        title: `${getTermDisplay("keyResultTerm", { capitalize: true })} updates`,
-        description: `Get notified about updates to ${getTermDisplay("keyResultTerm", { variant: "plural" })}`,
-      });
-    }
-
+  if (features.objectiveEnabled) {
     configs.push({
-      type: "reminders",
-      title: "Reminders",
+      type: "objective_update",
+      title: `${getTermDisplay("objectiveTerm", { capitalize: true })} updates`,
+      description: `Get notified when ${getTermDisplay("objectiveTerm", { variant: "plural" })} are updated`,
+    });
+  }
+
+  if (features.keyResultEnabled) {
+    configs.push({
+      type: "key_result_update",
+      title: `${getTermDisplay("keyResultTerm", { capitalize: true })} updates`,
+      description: `Get notified about updates to ${getTermDisplay("keyResultTerm", { variant: "plural" })}`,
+    });
+  }
+
+  if (features.objectiveEnabled) {
+    configs.push({
+      type: "strategy_update",
+      title: "Maya strategy guidance",
       description:
-        "Get notified about due dates, reminders, and important updates",
+        "Receive an email when Maya identifies strategy risks or review gaps that need attention",
     });
-    configs.push({
-      type: "weekly_digest",
-      title: "Weekly digest",
-      description: "Get a weekly summary of unread updates and work that needs attention",
-    });
+  }
 
-    return configs;
-  }, [getTermDisplay, features]);
+  configs.push({
+    type: "reminders",
+    title: "Reminders",
+    description:
+      "Get notified about due dates, reminders, and important updates",
+  });
+  configs.push({
+    type: "weekly_digest",
+    title: "Weekly digest",
+    description:
+      "Get a weekly summary of unread updates and work that needs attention",
+  });
+
+  return configs;
 }

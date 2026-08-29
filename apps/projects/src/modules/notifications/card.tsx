@@ -11,14 +11,16 @@ import {
 import Link from "next/link";
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
-import { useMembers } from "@/lib/hooks/members";
 import { PriorityIcon, StoryStatusIcon } from "@/components/ui";
+import { ListItemAttentionDot } from "@/components/ui/list-item-attention-dot";
+import { MayaAvatar } from "@/components/ui/maya-avatar";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import type { AppNotification } from "./types";
 import { useReadNotificationMutation } from "./hooks/read-mutation";
 import { useMarkUnreadMutation } from "./hooks/mark-unread-mutation";
 import { useDeleteMutation } from "./hooks/delete-mutation";
 import { renderTemplate } from "./utils/render-template";
+import { getNotificationDetailsPath } from "./utils/notification-destination";
 
 export const NotificationCard = ({
   id,
@@ -29,13 +31,13 @@ export const NotificationCard = ({
   entityType,
   readAt,
   createdAt,
-  actorId,
+  actor,
   index,
 }: AppNotification & { index: number }) => {
   const pathname = usePathname();
-  const { data: members = [] } = useMembers();
   const { withWorkspace } = useWorkspacePath();
-  const actor = members.find((member) => member.id === actorId);
+  const mayaActor = actor?.isSystem ? actor : null;
+  const isActive = pathname.includes(id);
   const isUnread = !readAt;
   const { mutate: readNotification } = useReadNotificationMutation();
   const { mutate: unreadNotification } = useMarkUnreadMutation();
@@ -54,8 +56,29 @@ export const NotificationCard = ({
     unreadNotification(id);
   };
   const storyTerm = getTermDisplay("storyTerm");
-  const html = renderTemplate(message).html.replace("story", storyTerm);
-  const text = renderTemplate(message).text.replace("story", storyTerm);
+  const hasActorVariable = Object.hasOwn(message.variables, "actor");
+  const messageWithActor =
+    actor && !hasActorVariable
+      ? {
+          ...message,
+          template: `{actor} ${message.template}`,
+          variables: {
+            ...message.variables,
+            actor: {
+              value: actor.fullName || actor.username || "Someone",
+              type: "actor",
+            },
+          },
+        }
+      : message;
+  const html = renderTemplate(messageWithActor).html.replace(
+    "story",
+    storyTerm,
+  );
+  const text = renderTemplate(messageWithActor).text.replace(
+    "story",
+    storyTerm,
+  );
 
   return (
     <ContextMenu>
@@ -64,39 +87,54 @@ export const NotificationCard = ({
           <Link
             className="block"
             href={withWorkspace(
-              `/notifications/${id}?entityId=${entityId}&entityType=${entityType}`,
+              getNotificationDetailsPath({
+                entityId,
+                entityType,
+                notificationId: id,
+              }),
             )}
             prefetch={index <= 10 ? true : null}
           >
             <Box
               className={cn(
-                "border-border hover:bg-surface-muted d d block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
+                "border-border block cursor-pointer border-b-[0.5px] px-5 py-[0.655rem] transition md:px-4",
                 {
-                  "bg-surface-muted": pathname.includes(id),
-                  "border-l-primary dark:border-l-primary border-l-[1.5px]":
-                    isUnread,
+                  "bg-primary/5 hover:bg-primary/5": isActive,
+                  "hover:bg-surface-muted": !isActive,
                 },
               )}
             >
               <Flex align="center" className="mb-2" gap={2} justify="between">
-                <Text
-                  className="line-clamp-1 flex-1 font-medium"
-                  color={isUnread ? undefined : "muted"}
-                >
-                  {title}
-                </Text>
+                <Flex align="center" className="min-w-0 flex-1" gap={2}>
+                  {isUnread ? <ListItemAttentionDot /> : null}
+                  <Text
+                    className="line-clamp-1 flex-1 font-medium"
+                    color={isUnread ? undefined : "muted"}
+                  >
+                    {title}
+                  </Text>
+                </Flex>
                 <Text className="shrink-0 text-[0.95rem]" color="muted">
                   <TimeAgo timestamp={createdAt} />
                 </Text>
               </Flex>
               <Flex align="center" gap={3} justify="between">
                 <Flex align="center" className="flex-1" gap={2}>
-                  <Avatar
-                    className="shrink-0"
-                    name={actor?.fullName || actor?.username}
-                    size="xs"
-                    src={actor?.avatarUrl}
-                  />
+                  {mayaActor ? (
+                    <MayaAvatar
+                      className="shrink-0"
+                      name={mayaActor.fullName}
+                      size="xs"
+                      src={mayaActor.avatarUrl}
+                    />
+                  ) : (
+                    <Avatar
+                      className="shrink-0"
+                      name={actor?.fullName || actor?.username}
+                      size="xs"
+                      src={actor?.avatarUrl}
+                    />
+                  )}
 
                   <Tooltip
                     className="max-w-[200px]"

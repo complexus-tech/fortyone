@@ -3,9 +3,9 @@ import { Box, Button, Text } from "ui";
 import { cn } from "lib";
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { ArrowLeft2Icon, StoryMissingIcon } from "icons";
-import { useChatContext } from "@/context/chat-context";
-import { useMediaQuery, useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks";
+import { NotFoundIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
+import { ResourceNotFoundState } from "@/components/ui/resource-not-found-state";
 import { MainDetailsSkeleton } from "./components/main-details-skeleton";
 import { Options } from "./components/options";
 import { useStoryById } from "./hooks/story";
@@ -30,38 +30,76 @@ export const StoryPage = ({
   isDialog?: boolean;
   mainHeader?: ReactNode;
 }) => {
-  const { isPending, data: story } = useStoryById(storyId);
+  const {
+    data: story,
+    isError,
+    isFetching,
+    isPending,
+    refetch,
+  } = useStoryById(storyId);
   const { withWorkspace } = useWorkspacePath();
-  const { isOpen: isChatOpen } = useChatContext();
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const shouldUseNotificationBodyOnlySkeleton = Boolean(
-    isNotifications && isChatOpen && isDesktop && !isDialog,
-  );
 
   if (isPending) {
-    return <StorySkeleton bodyOnly={shouldUseNotificationBodyOnlySkeleton} />;
+    return <StorySkeleton isDialog={isDialog} />;
+  }
+
+  if (isError) {
+    return (
+      <Box
+        className={cn(
+          "flex h-full min-h-0 items-center justify-center",
+          isDialog && "h-[85dvh]",
+        )}
+      >
+        <Box className="flex flex-col items-center">
+          <NotFoundIllustration />
+          <Text className="mt-10 mb-6" fontSize="3xl">
+            Unable to load this item
+          </Text>
+          <Text className="mb-6 max-w-md text-center" color="muted">
+            Something went wrong while loading this item. Try again in a moment.
+          </Text>
+          <Button
+            color="tertiary"
+            loading={isFetching}
+            onClick={() => void refetch()}
+          >
+            Try again
+          </Button>
+        </Box>
+      </Box>
+    );
   }
 
   return (
     <Box
-      className={cn("h-dvh", {
+      className={cn("h-full min-h-0", {
         "h-[85dvh] overflow-y-auto": isDialog,
       })}
     >
       {story ? (
         <>
-          <Box className="md:hidden">
+          <Box
+            className={cn("md:hidden", {
+              "dark:bg-surface": isDialog,
+            })}
+          >
             <MainDetails
+              isDialog={isDialog}
               isNotifications={Boolean(isNotifications)}
               storyId={storyId}
             />
           </Box>
           <Box
-            className={cn("hidden h-full md:flex", {
+            className={cn("hidden h-full min-h-0 md:flex", {
               "notification-story-container": isNotifications,
             })}
           >
-            <Box className="min-w-0 flex-1">
+            <Box
+              className={cn("min-h-0 min-w-0 flex-1", {
+                "dark:bg-surface": isDialog,
+              })}
+            >
               <MainDetails
                 isDialog={isDialog}
                 isNotifications={Boolean(isNotifications)}
@@ -71,7 +109,7 @@ export const StoryPage = ({
             </Box>
             <Box
               className={cn(
-                "border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px]",
+                "border-border h-full min-h-0 w-(--story-sidebar-width) shrink-0 overflow-hidden border-l-[0.5px]",
                 {
                   "notification-story-sidebar": isNotifications,
                 },
@@ -86,25 +124,11 @@ export const StoryPage = ({
           </Box>
         </>
       ) : (
-        <Box className="flex h-screen items-center justify-center">
-          <Box className="flex flex-col items-center">
-            <StoryMissingIcon className="h-20 w-auto rotate-12" />
-            <Text className="mt-10 mb-6" fontSize="3xl">
-              404: Item not found
-            </Text>
-            <Text className="mb-6 max-w-md text-center" color="muted">
-              This item might not exist or you do not have access to it.
-            </Text>
-            <Button
-              className="gap-1 pl-2"
-              color="tertiary"
-              href={withWorkspace("/my-work")}
-              leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
-            >
-              Go to my work
-            </Button>
-          </Box>
-        </Box>
+        <ResourceNotFoundState
+          description="This item might not exist or you do not have access to it."
+          href={withWorkspace("/my-work")}
+          title="404: Item not found"
+        />
       )}
     </Box>
   );

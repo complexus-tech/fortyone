@@ -1,7 +1,13 @@
 import type {
+  PublicContributor,
+  PublicContributorCommentsPage,
+  FeedbackGuestIdentityPolicy,
+  FeedbackParticipationMode,
   PublicFeedbackStoryLink,
   PublicPortal,
+  PublicPortalUpdate,
   PublicPortalWorkspace,
+  PublicParticipantKind,
   PublicRequestBoard,
   PublicRequestComment,
   PublicRequestStatus,
@@ -11,7 +17,9 @@ type ApiPortal = {
   id: string;
   name: string;
   slug: string;
-  description: string;
+  participationMode?: FeedbackParticipationMode;
+  guestIdentityPolicy?: FeedbackGuestIdentityPolicy;
+  hasPublishedUpdates?: boolean;
   itemsHasMore?: boolean;
   boards?: ApiBoard[];
   items?: ApiFeedbackItem[];
@@ -25,9 +33,11 @@ type ApiBoard = {
   color: string;
 };
 
-type ApiFeedbackItem = {
+export type ApiFeedbackItem = {
   id: string;
   boardId: string;
+  authorId: string | null;
+  authorMasked?: boolean;
   authorName: string;
   authorAvatar?: string | null;
   title: string;
@@ -40,30 +50,74 @@ type ApiFeedbackItem = {
   createdAt: string;
   comments?: ApiFeedbackComment[];
   storyLinks?: ApiFeedbackStoryLink[];
+  anonymous?: boolean;
+  participantKind?: PublicParticipantKind;
+  following?: boolean;
+  viewerVote?: -1 | 0 | 1;
 };
 
 type ApiFeedbackComment = {
   id: string;
+  parentId?: string | null;
+  authorMasked?: boolean;
   authorName: string;
   authorAvatar?: string | null;
   body: string;
   createdAt: string;
+  participantKind?: PublicParticipantKind;
+};
+
+export type ApiFeedbackUpdate = {
+  id: string;
+  slug: string;
+  title: string;
+  summary?: string | null;
+  body: string;
+  coverImageUrl?: string | null;
+  publishedAt: string;
+  linkedItems?: {
+    id: string;
+    slug: string;
+    title: string;
+    status: PublicRequestStatus;
+  }[];
+};
+
+export type ApiContributor = {
+  id: string;
+  name: string;
+  avatarUrl?: string | null;
+  joinedAt: string;
+  stats: {
+    feedbackCount: number;
+    commentCount: number;
+    voteScore: number;
+  };
+};
+
+export type ApiContributorCommentsPage = {
+  comments: {
+    id: string;
+    body: string;
+    createdAt: string;
+    feedback: {
+      id: string;
+      title: string;
+      slug: string;
+    };
+  }[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    nextPage: number;
+  };
 };
 
 type ApiFeedbackStoryLink = {
   id: string;
   storyId: string;
   relationship: PublicFeedbackStoryLink["relationship"];
-};
-
-const boardColorClasses: Record<string, string> = {
-  blue: "bg-info",
-  cyan: "bg-info",
-  green: "bg-success",
-  pink: "bg-primary",
-  purple: "bg-secondary",
-  red: "bg-danger",
-  yellow: "bg-warning",
 };
 
 const dateLabel = (value: string) => {
@@ -88,6 +142,81 @@ const dateLabel = (value: string) => {
   });
 };
 
+export const toPublicContributor = (
+  contributor: ApiContributor,
+): PublicContributor => ({
+  id: contributor.id,
+  name: contributor.name,
+  avatarUrl: contributor.avatarUrl,
+  joinedAt: contributor.joinedAt,
+  stats: contributor.stats,
+});
+
+export const toPublicContributorCommentsPage = (
+  page: ApiContributorCommentsPage,
+): PublicContributorCommentsPage => ({
+  comments: page.comments.map((comment) => ({
+    id: comment.id,
+    body: comment.body,
+    createdAtLabel: dateLabel(comment.createdAt),
+    feedback: comment.feedback,
+  })),
+  pagination: page.pagination,
+});
+
+export const toPublicRequest = (
+  item: ApiFeedbackItem,
+): PublicPortal["requests"][number] => {
+  const comments: PublicRequestComment[] = (item.comments ?? []).map(
+    (comment) => ({
+      id: comment.id,
+      parentId: comment.parentId,
+      authorMasked: comment.authorMasked,
+      authorName: comment.authorName,
+      authorAvatar: comment.authorAvatar,
+      body: comment.body,
+      createdAtLabel: dateLabel(comment.createdAt),
+      participantKind: comment.participantKind,
+    }),
+  );
+
+  return {
+    id: item.id,
+    authorId: item.authorId,
+    slug: item.slug,
+    title: item.title,
+    description: item.description,
+    authorMasked: item.authorMasked,
+    authorName: item.authorName,
+    authorAvatar: item.authorAvatar,
+    boardId: item.boardId,
+    status: item.status,
+    voteCount: item.voteCount,
+    commentCount: item.commentCount,
+    createdAtLabel: dateLabel(item.createdAt),
+    roadmapSummary: item.roadmapSummary ?? undefined,
+    comments,
+    storyLinks: item.storyLinks ?? [],
+    participantKind: item.participantKind,
+    following: item.following,
+    viewerVote: item.viewerVote,
+  };
+};
+
+export const toPublicPortalUpdate = (
+  update: ApiFeedbackUpdate,
+): PublicPortalUpdate => ({
+  id: update.id,
+  slug: update.slug,
+  title: update.title,
+  summary: update.summary,
+  body: update.body,
+  coverImageUrl: update.coverImageUrl,
+  publishedAt: update.publishedAt,
+  publishedAtLabel: dateLabel(update.publishedAt),
+  linkedItems: update.linkedItems ?? [],
+});
+
 export const toPublicPortal = (
   apiPortal: ApiPortal,
   workspace?: PublicPortalWorkspace,
@@ -99,7 +228,6 @@ export const toPublicPortal = (
       name: board.name,
       slug: board.slug,
       color: board.color,
-      colorClassName: boardColorClasses[board.color] ?? "bg-success",
     }),
   );
 
@@ -107,42 +235,17 @@ export const toPublicPortal = (
     id: apiPortal.id,
     name: apiPortal.name,
     slug: apiPortal.slug,
+    participationMode: apiPortal.participationMode ?? "account_required",
+    guestIdentityPolicy: apiPortal.guestIdentityPolicy ?? "show_identity",
+    hasPublishedUpdates: apiPortal.hasPublishedUpdates ?? false,
     workspace: workspace ?? {
       avatarUrl: null,
       color: "var(--primary)",
       name: apiPortal.name,
       slug: apiPortal.slug,
     },
-    description: apiPortal.description,
     boards,
-    requests: (apiPortal.items ?? []).map((item) => {
-      const comments: PublicRequestComment[] = (item.comments ?? []).map(
-        (comment) => ({
-          id: comment.id,
-          authorName: comment.authorName,
-          authorAvatar: comment.authorAvatar,
-          body: comment.body,
-          createdAtLabel: dateLabel(comment.createdAt),
-        }),
-      );
-
-      return {
-        id: item.id,
-        slug: item.slug,
-        title: item.title,
-        description: item.description,
-        authorName: item.authorName,
-        authorAvatar: item.authorAvatar,
-        boardId: item.boardId,
-        status: item.status,
-        voteCount: item.voteCount,
-        commentCount: item.commentCount,
-        createdAtLabel: dateLabel(item.createdAt),
-        roadmapSummary: item.roadmapSummary ?? undefined,
-        comments,
-        storyLinks: item.storyLinks ?? [],
-      };
-    }),
+    requests: (apiPortal.items ?? []).map(toPublicRequest),
     requestsHasMore: apiPortal.itemsHasMore ?? false,
     updates: [],
   };

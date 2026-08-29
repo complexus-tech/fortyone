@@ -2,6 +2,11 @@ import { tool } from "ai";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { isEstimateValue } from "@/lib/estimate";
+import {
+  MAX_TIME_NEEDED_MINUTES,
+  normalizeTimeNeededPatch,
+} from "@/lib/time-needed";
 import { acceptIntegrationRequestAction } from "@/modules/integration-requests/actions/accept";
 import { acceptAllIntegrationRequestsAction } from "@/modules/integration-requests/actions/accept-all";
 import { declineIntegrationRequestAction } from "@/modules/integration-requests/actions/decline";
@@ -28,6 +33,22 @@ const prioritySchema = z.enum([
 
 const requestStatusSchema = z.enum(["pending", "accepted", "declined"]);
 const requestProviderSchema = z.enum(["github", "slack", "intercom"]);
+const MAX_INTEGRATION_REQUEST_TEAMS = 20;
+const INTEGRATION_REQUEST_UPDATE_FIELDS = [
+  "title",
+  "description",
+  "statusId",
+  "priority",
+  "assigneeId",
+  "estimateValue",
+  "estimatedDurationMinutes",
+  "minimumFocusBlockMinutes",
+  "objectiveId",
+  "keyResultId",
+  "sprintId",
+  "startDate",
+  "endDate",
+] as const;
 
 const getAuthenticatedContext = async (experimentalContext: unknown) => {
   const session = await auth();
@@ -60,6 +81,8 @@ const toRequestSummary = (
   priority: request.priority,
   assigneeId: request.assigneeId,
   estimateValue: request.estimateValue,
+  estimatedDurationMinutes: request.estimatedDurationMinutes,
+  minimumFocusBlockMinutes: request.minimumFocusBlockMinutes,
   objectiveId: request.objectiveId,
   keyResultId: request.keyResultId,
   sprintId: request.sprintId,
@@ -75,9 +98,19 @@ export const listIntegrationRequestsTool = tool({
     "List integration requests for one or more teams. Use this for GitHub, Slack, or Intercom request triage before accepting or declining requests.",
   inputSchema: z.object({
     teamIds: z
-      .array(z.string())
+      .array(z.string().uuid("Each team ID must be a valid UUID."))
       .min(1)
-      .describe("Team IDs to list integration requests for."),
+      .max(
+        MAX_INTEGRATION_REQUEST_TEAMS,
+        `List requests for at most ${MAX_INTEGRATION_REQUEST_TEAMS} teams at once.`,
+      )
+      .refine(
+        (teamIds) => new Set(teamIds).size === teamIds.length,
+        "Team IDs must be unique.",
+      )
+      .describe(
+        `Team IDs to list integration requests for (max ${MAX_INTEGRATION_REQUEST_TEAMS}).`,
+      ),
     status: requestStatusSchema
       .optional()
       .describe("Request status filter. Defaults to pending."),
@@ -222,28 +255,64 @@ export const getIntegrationRequestTool = tool({
 export const updateIntegrationRequestTool = tool({
   description:
     "Update fields on a pending integration request before accepting it as a story. Requires explicit confirmation.",
-  inputSchema: z.object({
-    requestId: z.string().describe("Integration request ID."),
-    confirmed: z
-      .boolean()
-      .optional()
-      .describe("Must be true after the user explicitly confirms the update."),
-    title: z.string().optional(),
-    description: z.string().optional(),
-    statusId: z.string().optional(),
-    priority: prioritySchema.optional(),
-    assigneeId: z.string().optional(),
-    estimateValue: z
-      .number()
-      .int()
-      .optional()
-      .describe("Canonical estimate value for the team's estimation scheme."),
-    objectiveId: z.string().optional(),
-    keyResultId: z.string().optional(),
-    sprintId: z.string().optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
-  }),
+  inputSchema: z
+    .object({
+      requestId: z.string().describe("Integration request ID."),
+      confirmed: z
+        .boolean()
+        .optional()
+        .describe(
+          "Must be true after the user explicitly confirms the update.",
+        ),
+      title: z.string().optional(),
+      description: z.string().optional(),
+      statusId: z.string().optional(),
+      priority: prioritySchema.optional(),
+      assigneeId: z.string().optional(),
+      estimateValue: z
+        .number()
+        .int()
+        .refine(isEstimateValue, {
+          message: "Complexity must be 1, 2, 3, 5, or 8.",
+        })
+        .nullable()
+        .optional()
+        .describe(
+          "Relative complexity value using the team's scale. This is not a time duration; set null to clear it.",
+        ),
+      estimatedDurationMinutes: z
+        .number()
+        .int()
+        .positive()
+        .max(MAX_TIME_NEEDED_MINUTES)
+        .nullable()
+        .optional()
+        .describe(
+          "Total time needed in minutes for calendar scheduling. Set null to clear both the duration and its minimum focus block.",
+        ),
+      minimumFocusBlockMinutes: z
+        .number()
+        .int()
+        .positive()
+        .max(MAX_TIME_NEEDED_MINUTES)
+        .nullable()
+        .optional()
+        .describe(
+          "Optional smallest schedulable focus block in minutes. It cannot exceed estimatedDurationMinutes; set null to let Maya automatically fill available calendar time.",
+        ),
+      objectiveId: z.string().optional(),
+      keyResultId: z.string().optional(),
+      sprintId: z.string().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    })
+    .refine(
+      (input) =>
+        INTEGRATION_REQUEST_UPDATE_FIELDS.some(
+          (field) => input[field] !== undefined,
+        ),
+      "Provide at least one integration request field to update.",
+    ),
   execute: async (
     {
       requestId,
@@ -254,6 +323,8 @@ export const updateIntegrationRequestTool = tool({
       priority,
       assigneeId,
       estimateValue,
+      estimatedDurationMinutes,
+      minimumFocusBlockMinutes,
       objectiveId,
       keyResultId,
       sprintId,
@@ -270,6 +341,11 @@ export const updateIntegrationRequestTool = tool({
       const ctx = await getAuthenticatedContext(experimentalContext);
       if ("error" in ctx) return { success: false, error: ctx.error };
 
+      const timeNeededPatch = normalizeTimeNeededPatch(
+        estimatedDurationMinutes,
+        minimumFocusBlockMinutes,
+      );
+
       const result = await updateIntegrationRequestAction(
         requestId,
         {
@@ -279,6 +355,7 @@ export const updateIntegrationRequestTool = tool({
           priority,
           assigneeId: normalizeOptionalString(assigneeId),
           estimateValue,
+          ...timeNeededPatch,
           objectiveId: normalizeOptionalString(objectiveId),
           keyResultId: normalizeOptionalString(keyResultId),
           sprintId: normalizeOptionalString(sprintId),
@@ -455,10 +532,22 @@ export const acceptAllIntegrationRequestsTool = tool({
         return { success: false, error: result.error.message };
       }
 
+      if (!result.data) {
+        return {
+          success: false,
+          error: "The bulk accept completed without an itemized result",
+        };
+      }
+
+      const completedSuccessfully = result.data.failedCount === 0;
+
       return {
-        success: true,
+        success: completedSuccessfully,
+        partial: result.data.partial,
         result: result.data,
-        message: `Accepted ${result.data?.count ?? 0} integration request${result.data?.count === 1 ? "" : "s"}.`,
+        message: completedSuccessfully
+          ? `Accepted ${result.data.succeededCount} of ${result.data.totalCount} integration requests.`
+          : `Accepted ${result.data.succeededCount} of ${result.data.totalCount} integration requests; ${result.data.failedCount} failed.`,
       };
     } catch (error) {
       return {
@@ -512,10 +601,22 @@ export const declineAllIntegrationRequestsTool = tool({
         return { success: false, error: result.error.message };
       }
 
+      if (!result.data) {
+        return {
+          success: false,
+          error: "The bulk decline completed without an itemized result",
+        };
+      }
+
+      const completedSuccessfully = result.data.failedCount === 0;
+
       return {
-        success: true,
+        success: completedSuccessfully,
+        partial: result.data.partial,
         result: result.data,
-        message: `Declined ${result.data?.count ?? 0} integration request${result.data?.count === 1 ? "" : "s"}.`,
+        message: completedSuccessfully
+          ? `Declined ${result.data.succeededCount} of ${result.data.totalCount} integration requests.`
+          : `Declined ${result.data.succeededCount} of ${result.data.totalCount} integration requests; ${result.data.failedCount} failed.`,
       };
     } catch (error) {
       return {

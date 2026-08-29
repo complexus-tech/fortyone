@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useWorkspacePath } from "@/hooks";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
@@ -94,6 +94,8 @@ const updateListQuery = (
 export const useRestoreStoryMutation = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
 
   const mutation = useMutation({
     mutationFn: (storyId: string) => restoreStoryAction(storyId, workspaceSlug),
@@ -152,9 +154,9 @@ export const useRestoreStoryMutation = () => {
         }
       });
 
-      toast.error("Failed to restore story", {
+      toast.error(`Failed to restore ${storyTerm}`, {
         description:
-          error.message || "An error occurred while restoring the story",
+          error.message || `An error occurred while restoring the ${storyTerm}`,
         action: {
           label: "Retry",
           onClick: () => {

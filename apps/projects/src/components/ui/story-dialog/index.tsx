@@ -8,15 +8,16 @@ import {
   MaximizeIcon,
 } from "icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSession } from "@/lib/auth/client";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import type { Story } from "@/modules/stories/types";
 import { StoryPage } from "../../../modules/story";
+import { StoryActionsMenu } from "../../../modules/story/components/story-actions-menu";
 
 const EMPTY_STORIES: Story[] = [];
 
@@ -116,7 +117,7 @@ export const StoryDialog = ({
   return (
     <Dialog onOpenChange={setIsOpen} open={isOpen}>
       <Dialog.Content
-        className="border-border bg-surface max-w-[88rem] overflow-clip rounded-2xl border md:mt-auto md:mb-auto"
+        className="border-border bg-surface dark:bg-surface/80 max-w-[88rem] overflow-clip rounded-2xl border md:mt-auto md:mb-auto"
         hideClose
         overlayClassName="bg-black/10"
       >
@@ -129,19 +130,22 @@ export const StoryDialog = ({
             isNotifications={false}
             mainHeader={
               <Flex
-                className="bg-surface/80 sticky top-0 z-2 px-6 py-4 backdrop-blur"
+                className="sticky top-0 isolate z-2 px-6 py-4"
                 gap={2}
                 justify="between"
               >
+                <div
+                  aria-hidden="true"
+                  className="from-surface dark:from-surface/80 pointer-events-none absolute inset-x-0 top-0 -z-1 h-[4.5rem] bg-gradient-to-b to-transparent [mask-image:linear-gradient(to_bottom,black_0%,rgba(0,0,0,0.7)_42%,transparent_100%)] backdrop-blur-[2px]"
+                />
                 <Flex align="center" gap={2}>
                   <Button
-                    className="text-foreground/80 border-border bg-surface-muted/30 shrink-0 gap-1 pr-4 pl-2.5 font-semibold tracking-wide"
+                    className="text-foreground/80 bg-surface-muted/85 dark:bg-accent/85 shrink-0 gap-1 border-0 pr-4 pl-2.5 font-semibold tracking-wide backdrop-blur-[1px]"
                     color="tertiary"
                     leftIcon={<ArrowLeft2Icon strokeWidth={2.9} />}
                     onClick={() => {
                       setIsOpen(false);
                     }}
-                    variant="naked"
                   >
                     Close
                   </Button>
@@ -152,12 +156,11 @@ export const StoryDialog = ({
                   >
                     <Button
                       asIcon
-                      className="ml-5"
+                      className="bg-surface-muted/85 dark:bg-accent/85 ml-5 border-0 backdrop-blur-[1px]"
                       color="tertiary"
                       disabled={!hasPrev || !onNavigate}
                       leftIcon={<ArrowUp2Icon />}
                       onClick={handlePrev}
-                      variant="naked"
                     >
                       <span className="sr-only">Previous</span>
                     </Button>
@@ -168,15 +171,16 @@ export const StoryDialog = ({
                   >
                     <Button
                       asIcon
+                      className="bg-surface-muted/85 dark:bg-accent/85 border-0 backdrop-blur-[1px]"
                       color="tertiary"
                       disabled={!hasNext || !onNavigate}
                       leftIcon={<ArrowDown2Icon />}
                       onClick={handleNext}
-                      variant="naked"
                     >
                       <span className="sr-only">Next</span>
                     </Button>
                   </Tooltip>
+                  <StoryActionsMenu align="start" storyId={storyId} />
                 </Flex>
                 <Flex align="center" className="hidden" gap={2}>
                   <Tooltip side="bottom" title="Fullscreen">
@@ -185,7 +189,11 @@ export const StoryDialog = ({
                         asIcon
                         color="tertiary"
                         href={withWorkspace(
-                          `/story/${story?.id}/${slugify(story?.title)}`,
+                          getStoryPath({
+                            id: story?.id ?? storyId,
+                            sequenceId: story?.sequenceId,
+                            teamCode: story?.teamCode,
+                          }),
                         )}
                         leftIcon={
                           <MaximizeIcon

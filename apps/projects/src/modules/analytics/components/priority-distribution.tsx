@@ -36,7 +36,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
+    <Box className="border-border/60 bg-surface-elevated/80 text-foreground z-50 min-w-28 rounded-lg border-[0.5px] px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Text className="mb-1 pl-0.5">
         {payload[0].value}{" "}
         {getTermDisplay("storyTerm", {
@@ -53,6 +53,7 @@ const CustomTooltip = ({
 
 export const PriorityDistribution = () => {
   const { resolvedTheme } = useTheme();
+  const { getTermDisplay } = useTerminology();
   const filters = useAppliedFilters();
   const { data: storyAnalytics, isPending } = useStoryAnalytics(filters);
   const chartData = useMemo<ChartDataItem[]>(() => {
@@ -78,7 +79,13 @@ export const PriorityDistribution = () => {
         <Text className="mb-1" fontSize="lg">
           Priority distribution
         </Text>
-        <Text color="muted">Stories broken down by priority level.</Text>
+        <Text color="muted">
+          {getTermDisplay("storyTerm", {
+            capitalize: true,
+            variant: "plural",
+          })}{" "}
+          broken down by priority level.
+        </Text>
       </Box>
 
       <ResponsiveContainer height={220} width="100%">

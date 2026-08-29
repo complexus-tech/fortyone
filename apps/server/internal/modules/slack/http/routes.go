@@ -6,45 +6,39 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB        *sqlx.DB
-	Log       *logger.Logger
-	SecretKey string
-	Cache     *cache.Service
-	Service   *slack.Service
-	BotToken  string
+	Log               *logger.Logger
+	SecretKey         string
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	Service           *slack.Service
 }
 
 func Routes(cfg Config, app *web.App) {
-	h := New(cfg.Log, cfg.Service, cfg.BotToken)
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	h := New(cfg.Log, cfg.Service)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
+	member := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
+	admin := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
 
-	app.Get("/workspaces/{workspaceSlug}/integrations/slack", h.GetIntegration, auth, workspace)
-	app.Get("/workspaces/{workspaceSlug}/integrations/slack/logs", h.GetRequestLogs, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/integrations/slack/install-session", h.CreateInstallSession, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/integrations/slack/link-account", h.LinkAccount, auth, workspace)
-	app.Delete("/workspaces/{workspaceSlug}/integrations/slack", h.DisconnectWorkspace, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/integrations/slack/channels/resync", h.ResyncChannels, auth, workspace)
+	app.Get("/workspaces/{workspaceSlug}/integrations/slack", h.GetIntegration, auth, workspace, member)
+	app.Get("/workspaces/{workspaceSlug}/integrations/slack/logs", h.GetRequestLogs, auth, workspace, admin)
+	app.Post("/workspaces/{workspaceSlug}/integrations/slack/install-session", h.CreateInstallSession, auth, workspace, admin)
+	app.Post("/workspaces/{workspaceSlug}/integrations/slack/account-link-session", h.CreateAccountLinkSession, auth, workspace, member)
+	app.Post("/workspaces/{workspaceSlug}/integrations/slack/link-account", h.LinkAccount, auth, workspace, member)
+	app.Delete("/workspaces/{workspaceSlug}/integrations/slack/account-link", h.DisconnectAccount, auth, workspace, member)
+	app.Post("/workspaces/{workspaceSlug}/integrations/slack/channels/resync", h.ResyncChannels, auth, workspace, admin)
+	app.Get("/workspaces/{workspaceSlug}/integrations/slack/channel-audiences", h.ListChannelAudiences, auth, workspace, admin)
+	app.Put("/workspaces/{workspaceSlug}/integrations/slack/channel-audiences/{channelId}", h.UpdateChannelAudience, auth, workspace, admin)
+	app.Get("/workspaces/{workspaceSlug}/integrations/slack/agent-settings", h.GetAgentSettings, auth, workspace, admin)
+	app.Put("/workspaces/{workspaceSlug}/integrations/slack/agent-settings", h.UpdateAgentSettings, auth, workspace, admin)
+	app.Delete("/workspaces/{workspaceSlug}/integrations/slack", h.DisconnectWorkspace, auth, workspace, admin)
 
 	app.Get("/integrations/slack/setup", h.HandleSetup)
 	app.Post("/integrations/slack/events", h.HandleEvents)
 	app.Post("/integrations/slack/interactivity", h.HandleInteractivity)
 	app.Post("/integrations/slack/commands", h.HandleCommands)
-
-	app.Get("/internal/bot/slack/installations/{teamId}", h.RuntimeGetInstallation, h.BotAuth)
-	app.Post("/internal/bot/slack/identity/resolve", h.RuntimeResolveIdentity, h.BotAuth)
-	app.Post("/internal/bot/slack/options/teams", h.RuntimeSearchTeams, h.BotAuth)
-	app.Post("/internal/bot/slack/options/statuses", h.RuntimeSearchStatuses, h.BotAuth)
-	app.Post("/internal/bot/slack/options/members", h.RuntimeSearchMembers, h.BotAuth)
-	app.Post("/internal/bot/slack/options/objectives", h.RuntimeSearchObjectives, h.BotAuth)
-	app.Post("/internal/bot/slack/options/labels", h.RuntimeSearchLabels, h.BotAuth)
-	app.Post("/internal/bot/slack/stories", h.RuntimeCreateStory, h.BotAuth)
-	app.Post("/internal/bot/slack/thread-comments", h.RuntimeRecordThreadComment, h.BotAuth)
-	app.Post("/internal/bot/slack/unfurls/story", h.RuntimeStoryUnfurl, h.BotAuth)
-	app.Post("/internal/bot/slack/notifications/mentions", h.RuntimeMentionNotifications, h.BotAuth)
-	app.Post("/internal/bot/slack/logs", h.RuntimeRecordLog, h.BotAuth)
 }

@@ -1,20 +1,35 @@
-import { auth } from "@/auth";
 import type { Memory } from "@/modules/ai-chats/types";
 import type { Team } from "@/modules/teams/types";
 import type { Workspace } from "@/types";
+import type { StoryCreationDefaults } from "./story-creation-defaults";
 
-export async function getUserContext({
+type UserContextIdentity = {
+  id: string;
+  name?: string | null;
+};
+
+const MAX_CONTEXT_MEMORIES = 12;
+const MAX_MEMORY_CHARACTERS = 500;
+const MAX_CONTEXT_TEAMS = 20;
+
+const truncateMemory = (content: string) =>
+  content.length <= MAX_MEMORY_CHARACTERS
+    ? content
+    : `${content.slice(0, MAX_MEMORY_CHARACTERS).trimEnd()}…`;
+
+export function getUserContext({
+  user,
   currentPath,
   currentTheme,
   resolvedTheme,
-  subscription,
-  teams,
+  joinedTeams,
   username,
   terminology,
   workspace,
   memories,
-  totalMessages,
+  storyCreationDefaults,
 }: {
+  user?: UserContextIdentity;
   currentPath: string;
   currentTheme: string;
   resolvedTheme: string;
@@ -24,9 +39,9 @@ export async function getUserContext({
     billingEndsAt: string;
     status: string;
   };
-  teams: Team[];
+  joinedTeams: Team[] | null;
   memories: Memory[];
-  username: string;
+  username?: string;
   terminology: {
     stories: string;
     sprints: string;
@@ -34,16 +49,18 @@ export async function getUserContext({
     keyResults: string;
   };
   workspace: Workspace;
+  storyCreationDefaults?: StoryCreationDefaults | null;
   totalMessages: {
     current: number;
     limit: number;
   };
-}): Promise<string> {
-  const session = await auth();
-  if (!session?.user) {
+}): string {
+  if (!user) {
     return "";
   }
 
+  const displayName = user.name ?? "User";
+  const usernameLabel = username ? ` (@${username})` : "";
   const now = new Date();
   const currentDate = now.toISOString().split("T")[0];
   const currentTime = now.toLocaleTimeString("en-US", {
@@ -53,62 +70,66 @@ export async function getUserContext({
   });
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const teamsSummary =
-    teams.length > 0
-      ? teams.map((team) => `${team.name} (${team.code}) [${team.id}]`).join(", ")
-      : "None";
+  let joinedTeamsSummary = "Unavailable";
+  if (joinedTeams) {
+    joinedTeamsSummary =
+      joinedTeams.length > 0
+        ? joinedTeams
+            .slice(0, MAX_CONTEXT_TEAMS)
+            .map((team) => `${team.name} (${team.code}) [${team.id}]`)
+            .join(", ") +
+          (joinedTeams.length > MAX_CONTEXT_TEAMS
+            ? `, +${joinedTeams.length - MAX_CONTEXT_TEAMS} more`
+            : "")
+        : "None";
+  }
 
   const memoriesSummary =
     memories.length > 0
-      ? memories.map((memory) => `- ${memory.id}: ${memory.content}`).join("\n")
+      ? memories
+          .slice(0, MAX_CONTEXT_MEMORIES)
+          .map((memory) => `- ${memory.id}: ${truncateMemory(memory.content)}`)
+          .join("\n") +
+        (memories.length > MAX_CONTEXT_MEMORIES
+          ? `\n- +${memories.length - MAX_CONTEXT_MEMORIES} more memories omitted`
+          : "")
       : "- None";
 
-  const teamSelectionGuidance =
-    teams.length === 1
-      ? `If team selection is needed and the user does not specify one, default to ${teams[0]?.name} [${teams[0]?.id}].`
-      : "If team selection is needed and the user does not specify one, infer from context or ask a clarifying question.";
+  let teamSelectionGuidance =
+    'Joined-team membership could not be loaded. Call listTeams before answering a request about "my team"; do not infer membership from accessible or public teams.';
+  if (joinedTeams?.length === 0) {
+    teamSelectionGuidance =
+      'The user has not joined a team. Say that plainly when they ask about "my team"; do not offer public teams as substitutes.';
+  } else if (joinedTeams?.length === 1) {
+    teamSelectionGuidance = `If the user says "my team" without naming one, use ${joinedTeams[0]?.name} [${joinedTeams[0]?.id}].`;
+  } else if (joinedTeams && joinedTeams.length > 1) {
+    teamSelectionGuidance =
+      'If the user says "my team" and belongs to multiple teams, infer from conversation or the current path only when that team appears in this joined list; otherwise ask which joined team they mean.';
+  }
+
+  const storyCreationDefaultsSummary = storyCreationDefaults
+    ? `single-story suggestions: time needed=${storyCreationDefaults.singleStory.estimatedDurationMinutes} minutes, calendar scheduling=${storyCreationDefaults.singleStory.autoSchedulingEnabled ? "on" : "off"}; multiple-story default: no shared time estimate, calendar scheduling=off; calendar scheduling availability=${storyCreationDefaults.autoSchedulingAvailable ? "available" : "not available on the current plan"}`
+    : "single-story suggestions unavailable; multiple-story default: no shared time estimate, calendar scheduling=off";
 
   return `
 Runtime context:
-- User: ${session.user.name} (@${username}) [${session.user.id}]
+- User: ${displayName}${usernameLabel} [${user.id}]
 - Workspace: ${workspace.name} (${workspace.slug}) [${workspace.id}]
-- Workspace role: ${workspace.userRole}
-- Current path: ${currentPath}
-- Today: ${currentDate}
-- Current time: ${currentTime}
-- Timezone: ${timezone}
-- Theme preference: ${currentTheme}
-- Resolved theme: ${resolvedTheme}
+- Role: ${workspace.userRole}; path: ${currentPath}
+- Local time: ${currentDate} ${currentTime} (${timezone})
+- Theme: ${currentTheme} (resolved ${resolvedTheme})
+- Terms: stories=${terminology.stories}; sprints=${terminology.sprints}; objectives=${terminology.objectives}; key results=${terminology.keyResults}
+- Account story-creation defaults: ${storyCreationDefaultsSummary}
+- Single-story defaults are suggestions, not consent. Never apply or mention them as batch-wide defaults. A date or future-work phrase is not consent to reserve calendar time.
 
-Terminology:
-- Stories => ${terminology.stories}
-- Sprints => ${terminology.sprints}
-- Objectives => ${terminology.objectives}
-- Key Results => ${terminology.keyResults}
-
-Teams:
-- ${teamsSummary}
+Joined teams:
+- ${joinedTeamsSummary}
 - ${teamSelectionGuidance}
-
-Subscription:
-- Tier: ${subscription?.tier ?? "unknown"}
-- Status: ${subscription?.status ?? "unknown"}
-- Billing interval: ${subscription?.billingInterval ?? "unknown"}
-- Billing ends at: ${subscription?.billingEndsAt ?? "unknown"}
-
-Message usage:
-- Current: ${totalMessages.current}
-- Limit: ${totalMessages.limit}
+- Never treat a discoverable public team as one of the user's teams.
 
 Memories:
 ${memoriesSummary}
 
-"Me" resolution:
-- When the user says "me", "my", or "assign to me", resolve to ${session.user.name} [${session.user.id}].
-
-Date handling:
-- Server dates are UTC.
-- Present dates/times in ${timezone}.
-- Do not show seconds.
+Resolution: "me"/"my"/"assign to me" resolve to ${displayName} [${user.id}]. Server dates are UTC; present them in ${timezone} without seconds.
 `;
 }

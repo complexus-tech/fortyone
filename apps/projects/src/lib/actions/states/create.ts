@@ -9,6 +9,7 @@ export type NewState = {
   category: StateCategory;
   teamId: string;
   color: string;
+  isDefault?: boolean;
 };
 
 export const createStateAction = async (

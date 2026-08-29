@@ -6,13 +6,14 @@ import {
   SystemIcon,
   MoonIcon,
   SunIcon,
-  ArrowRightIcon,
+  ChevronRightIcon,
   InvitesIcon,
   ArrowRight2Icon,
-  NewTabIcon,
+  ExternalLinkIcon,
 } from "icons";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import { cn } from "lib";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useProfile } from "@/lib/hooks/profile";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
@@ -21,7 +22,13 @@ import { getPublicEnv } from "@/public-env";
 import { logOut } from "./actions";
 import { clearAllStorage } from "./utils";
 
-export const ProfileMenu = () => {
+export const ProfileMenu = ({
+  isCollapsed = false,
+  variant = "sidebar",
+}: {
+  isCollapsed?: boolean;
+  variant?: "sidebar" | "topbar";
+}) => {
   const { data: myInvitations = [] } = useMyInvitations();
   const { data: profile } = useProfile();
   const { workspace } = useCurrentWorkspace();
@@ -30,6 +37,7 @@ export const ProfileMenu = () => {
   const { theme, setTheme } = useTheme();
   const [_, setPathBeforeSettings] = useLocalStorage("pathBeforeSettings", "");
   const adminUrl = getPublicEnv().ADMIN_URL;
+  const isTopbar = variant === "topbar";
 
   const rememberCurrentPath = () => {
     setPathBeforeSettings(
@@ -54,37 +62,64 @@ export const ProfileMenu = () => {
   };
 
   return (
-    <Box className="border-border border-t-[0.5px] px-3 pt-4">
+    <Box
+      className={cn(
+        !isTopbar && "border-border border-t-[0.5px] px-3 pt-3",
+        !isTopbar && isCollapsed && "flex justify-center px-0",
+      )}
+    >
       <Menu>
         <Menu.Button>
           <Box className="relative">
             <Button
-              className="justify-between px-2"
+              aria-label="Open profile menu"
+              className={cn(
+                "h-9 justify-between px-2",
+                !isTopbar &&
+                  isCollapsed &&
+                  "h-12 w-12 justify-center px-0 md:h-12",
+                isTopbar && "h-11 w-11 justify-center px-0",
+              )}
               color="tertiary"
-              fullWidth
+              fullWidth={!isCollapsed && !isTopbar}
+              size="sm"
               variant="naked"
             >
               <Flex align="center" className="gap-2">
                 <Avatar
-                  className="relative h-7 text-sm"
+                  className={cn(
+                    "relative h-7 text-sm",
+                    isCollapsed && "h-9",
+                    isTopbar && "h-9",
+                  )}
                   name={profile?.fullName || profile?.username}
                   src={profile?.avatarUrl}
                   style={{
                     backgroundColor: workspace?.color,
                   }}
                 />
-                <Text className="line-clamp-1 text-left">
+                <Text
+                  className={cn(
+                    "line-clamp-1 text-left",
+                    (isCollapsed || isTopbar) && "hidden",
+                  )}
+                >
                   {profile?.fullName || profile?.username}{" "}
                 </Text>
               </Flex>
-              <ArrowRight2Icon className="shrink-0" />
+              <ArrowRight2Icon
+                className={cn(
+                  "shrink-0",
+                  (isCollapsed || isTopbar) && "hidden",
+                )}
+              />
             </Button>
             {myInvitations.length > 0 && (
               <Box className="bg-primary absolute top-0.5 right-1 z-2 size-2.5 animate-pulse rounded-full" />
             )}
           </Box>
         </Menu.Button>
-        <Menu.Items align="end" className="ml-3 pt-0">
+        <Menu.Items align="end" className={cn("pt-0", !isTopbar && "ml-3")}>
           <Menu.Group className="px-4 pt-2.5 pb-2">
             <Text className="line-clamp-1" color="muted">
               {profile?.email}
@@ -127,7 +162,7 @@ export const ProfileMenu = () => {
                           ? "Day mode"
                           : "Night mode"}
                     </Text>
-                    <ArrowRightIcon className="h-4" />
+                    <ChevronRightIcon className="h-4" />
                   </span>
                 </span>
               </Menu.SubTrigger>
@@ -192,7 +227,7 @@ export const ProfileMenu = () => {
                   rel="noreferrer"
                   target="_blank"
                 >
-                  <NewTabIcon className="h-[1.15rem]" />
+                  <ExternalLinkIcon className="h-[1.15rem]" />
                   Admin dashboard
                 </a>
               </Menu.Item>

@@ -1,323 +1,212 @@
-import { Avatar, Box, Text, Flex, Button, Tooltip } from "ui";
+import { Avatar, Box, Flex, Button, Tooltip } from "ui";
 import { cn } from "lib";
-import type { ChatStatus } from "ai";
-import { useState } from "react";
-import { CheckIcon, CopyIcon, PlusIcon, ReloadIcon } from "icons";
-import { usePathname } from "next/navigation";
-import { Streamdown } from "streamdown";
+import type { ChatAddToolApproveResponseFunction, ChatStatus } from "ai";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
+import {
+  ArrowDown2Icon,
+  CheckIcon,
+  CopyIcon,
+  PlusIcon,
+  ReloadIcon,
+} from "icons";
+import { Streamdown, type StreamdownProps } from "streamdown";
 import type { User } from "@/types";
-import { BurndownChart } from "@/modules/sprints/stories/burndown";
 import { useCopyToClipboard, useTerminology } from "@/hooks";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { NewStoryDialog } from "../new-story-dialog";
 import { AttachmentsDisplay } from "./attachments-display";
-import { AnalyticsReport } from "./analytics-report";
+import {
+  getMessageText,
+  getPromptTextSegments,
+  getVisibleToolPartIndexes,
+} from "./chat-message-utils";
+import { isToolMessagePart } from "./tool-output-policy";
+import { ToolOutputRenderer } from "./tool-output-renderer";
 
 type ChatMessageProps = {
+  isAnimating?: boolean;
   isLast: boolean;
   message: MayaUIMessage;
   profile: User | undefined;
   status: ChatStatus;
-  deferToolOutputs?: boolean;
   regenerate: (messageId?: string) => void;
+  onToolApproval: ChatAddToolApproveResponseFunction;
   onPromptSelect: (prompt: string) => void;
 };
 
-/** Maps tool part types to the single progress label shown below the chat. */
-const TOOL_THINKING_LABELS: Record<string, string> = {
-  // Stories
-  "tool-listTeamStories": "Fetching stories",
-  "tool-searchStories": "Searching stories",
-  "tool-getStoryDetails": "Getting story details",
-  "tool-createStory": "Creating story",
-  "tool-updateStory": "Updating story",
-  "tool-deleteStory": "Deleting story",
-  "tool-bulkCreateStories": "Creating stories",
-  "tool-bulkUpdateStories": "Updating stories",
-  "tool-bulkDeleteStories": "Deleting stories",
-  "tool-assignStoriesToUser": "Assigning stories",
-  "tool-duplicateStory": "Duplicating story",
-  "tool-restoreStory": "Restoring story",
-  "tool-addStoryAssociation": "Linking stories",
-  "tool-removeStoryAssociation": "Unlinking stories",
-  // Sprints
-  "tool-listSprints": "Loading sprints",
-  "tool-listRunningSprints": "Getting active sprints",
-  "tool-getSprintDetailsTool": "Getting sprint details",
-  "tool-getSprintAnalyticsTool": "Analyzing sprint data",
-  "tool-updateSprintSettings": "Updating sprint settings",
-  // Teams
-  "tool-listTeams": "Loading teams",
-  "tool-listPublicTeams": "Loading public teams",
-  "tool-getTeamDetails": "Getting team details",
-  "tool-listTeamMembers": "Loading team members",
-  "tool-createTeamTool": "Creating team",
-  "tool-updateTeam": "Updating team",
-  "tool-joinTeam": "Joining team",
-  "tool-leaveTeam": "Leaving team",
-  "tool-deleteTeam": "Deleting team",
-  "tool-getTeamSettingsTool": "Loading team settings",
-  // Objectives & Key Results
-  "tool-listObjectivesTool": "Loading objectives",
-  "tool-listTeamObjectivesTool": "Loading team objectives",
-  "tool-createObjectiveTool": "Creating objective",
-  "tool-updateObjectiveTool": "Updating objective",
-  "tool-deleteObjectiveTool": "Deleting objective",
-  "tool-getObjectiveDetailsTool": "Getting objective details",
-  "tool-objectiveAnalyticsTool": "Analyzing objective data",
-  "tool-getObjectiveActivitiesTool": "Loading objective activity",
-  "tool-listKeyResultsTool": "Loading key results",
-  "tool-createKeyResultTool": "Creating key result",
-  "tool-updateKeyResultTool": "Updating key result",
-  "tool-deleteKeyResultTool": "Deleting key result",
-  "tool-getKeyResultActivitiesTool": "Loading key result activity",
-  // Other
-  "tool-navigation": "Navigating",
-  "tool-search": "Searching",
-  "tool-members": "Loading members",
-  "tool-comments": "Loading comments",
-  "tool-notifications": "Checking notifications",
-  "tool-workspacePerformanceReportTool": "Building workspace report",
-  "tool-workspaceCommandCenterReportTool": "Building command center",
-  "tool-storyPerformanceReportTool": "Building story report",
-  "tool-objectiveProgressReportTool": "Building objective report",
-  "tool-teamPerformanceReportTool": "Building team report",
-  "tool-sprintPerformanceReportTool": "Building sprint report",
-  "tool-timelineTrendsReportTool": "Building trends report",
-  "tool-mayaWorkPlanTool": "Planning work",
-  "tool-getGitHubIntegrationTool": "Checking GitHub integration",
-  "tool-createGitHubInstallSessionTool": "Creating GitHub install link",
-  "tool-resyncGitHubRepositoriesTool": "Resyncing GitHub repositories",
-  "tool-createGitHubIssueSyncLinkTool": "Linking GitHub repository",
-  "tool-deleteGitHubIssueSyncLinkTool": "Removing GitHub sync link",
-  "tool-updateGitHubWorkspaceSettingsTool": "Updating GitHub settings",
-  "tool-getGitHubTeamSettingsTool": "Checking GitHub automation",
-  "tool-updateGitHubTeamSettingsTool": "Updating GitHub automation",
-  "tool-getStoryGitHubLinksTool": "Checking story GitHub links",
-  "tool-getStoryGitHubCommentsTool": "Reading GitHub comments",
-  "tool-postStoryGitHubCommentTool": "Posting GitHub comment",
-  "tool-deleteStoryGitHubLinkTool": "Removing story GitHub link",
-  "tool-statuses": "Loading statuses",
-  "tool-objectiveStatuses": "Loading objective statuses",
-  "tool-links": "Loading links",
-  "tool-labels": "Loading labels",
-  "tool-storyLabels": "Managing labels",
-  "tool-storyActivities": "Loading activity",
-  "tool-listAttachments": "Loading attachments",
-  "tool-deleteAttachment": "Deleting attachment",
-  "tool-listMemories": "Checking memory",
-  "tool-createMemory": "Saving to memory",
-  "tool-updateMemory": "Updating memory",
-  "tool-deleteMemory": "Removing memory",
-  "tool-theme": "Changing theme",
+const LinkText = ({ children }: ComponentProps<"a">) => <>{children}</>;
+
+const STREAMDOWN_COMPONENTS: NonNullable<StreamdownProps["components"]> = {
+  a: LinkText,
 };
 
-const DEFAULT_PROGRESS_LABEL = "Working on it";
+const USER_PROMPT_MAX_LINES = 20;
+const USER_PROMPT_LINE_HEIGHT_REM = 1.5;
 
-const isToolPart = (type: string): boolean => type.startsWith("tool-");
+const UserPrompt = ({ text }: { text: string }) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [canExpand, setCanExpand] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const segments = getPromptTextSegments(text);
 
-type ToolMessagePart = MayaUIMessage["parts"][number] & {
-  state: string;
-  output?: unknown;
-};
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
 
-const isToolMessagePart = (
-  part: MayaUIMessage["parts"][number],
-): part is ToolMessagePart => isToolPart(part.type) && "state" in part;
+    const measureOverflow = () => {
+      const lineHeight = Number.parseFloat(
+        window.getComputedStyle(content).lineHeight,
+      );
+      if (!Number.isFinite(lineHeight)) return;
 
-const isAnalyticsReportOutput = (
-  output: unknown,
-): output is Record<string, unknown> => {
-  if (!output || typeof output !== "object" || !("kind" in output)) {
-    return false;
-  }
+      setCanExpand(
+        content.scrollHeight > lineHeight * USER_PROMPT_MAX_LINES + 1,
+      );
+    };
 
-  const kind = (output as { kind?: unknown }).kind;
-  return typeof kind === "string" && kind.endsWith("-report");
-};
+    const initialMeasurementFrame =
+      window.requestAnimationFrame(measureOverflow);
+    const resizeObserver = new ResizeObserver(measureOverflow);
+    resizeObserver.observe(content);
 
-const asRecord = (value: unknown): Record<string, unknown> =>
-  value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+    return () => {
+      window.cancelAnimationFrame(initialMeasurementFrame);
+      resizeObserver.disconnect();
+    };
+  }, [text]);
 
-const getSprintBurndownData = (output: unknown) => {
-  const outputRecord = asRecord(output);
-  const analyticsReport = asRecord(outputRecord.analyticsReport);
-  return Array.isArray(analyticsReport.burndown)
-    ? analyticsReport.burndown
-    : [];
-};
-
-const getSuggestions = (output: unknown) => {
-  const outputRecord = asRecord(output);
-  return Array.isArray(outputRecord.suggestions)
-    ? outputRecord.suggestions.filter(
-        (suggestion): suggestion is string => typeof suggestion === "string",
-      )
-    : [];
-};
-
-export const getMessageProgressLabel = (message: MayaUIMessage) => {
-  const lastPart = message.parts.at(-1);
-
-  if (lastPart?.type === "text" && lastPart.text.trim()) {
-    return undefined;
-  }
-
-  const latestToolPart = message.parts.filter(isToolMessagePart).at(-1);
-
-  if (!latestToolPart) {
-    return "Thinking";
-  }
-
-  return TOOL_THINKING_LABELS[latestToolPart.type] ?? DEFAULT_PROGRESS_LABEL;
-};
-
-export const getMessageText = (message: MayaUIMessage) =>
-  message.parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join("");
-
-export const hasVisibleMessageContent = (
-  message: MayaUIMessage,
-  deferToolOutputs = false,
-) => {
-  if (message.role === "user") {
-    return true;
-  }
-
-  if (getMessageText(message).trim()) {
-    return true;
-  }
-
-  if (message.parts.some((part) => part.type === "file")) {
-    return true;
-  }
-
-  if (deferToolOutputs) {
-    return false;
-  }
-
-  return message.parts.some(
-    (part) => isToolMessagePart(part) && part.state === "output-available",
+  return (
+    <div className="min-w-0">
+      <div
+        className={cn(
+          "min-w-0 text-base leading-6 break-words whitespace-pre-wrap",
+          {
+            "overflow-hidden": !isExpanded,
+          },
+        )}
+        ref={contentRef}
+        style={
+          isExpanded
+            ? undefined
+            : {
+                maxHeight: `${USER_PROMPT_MAX_LINES * USER_PROMPT_LINE_HEIGHT_REM}rem`,
+              }
+        }
+      >
+        {segments.map((segment) =>
+          segment.type === "link" ? (
+            <a
+              className="text-primary focus-visible:ring-primary/50 break-all underline underline-offset-2 transition-opacity outline-none hover:opacity-75 focus-visible:ring-2"
+              href={segment.href}
+              key={`${segment.type}-${segment.start}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {segment.value}
+            </a>
+          ) : (
+            <span key={`${segment.type}-${segment.start}`}>
+              {segment.value}
+            </span>
+          ),
+        )}
+      </div>
+      {canExpand && !isExpanded ? (
+        <span aria-hidden="true" className="mt-1 block">
+          ...
+        </span>
+      ) : null}
+      {canExpand ? (
+        <button
+          aria-expanded={isExpanded}
+          className="text-text-muted hover:text-foreground focus-visible:ring-foreground/40 mt-2 flex items-center gap-1 rounded-sm text-base font-medium transition-colors outline-none focus-visible:ring-2"
+          onClick={() => {
+            setIsExpanded((current) => !current);
+          }}
+          type="button"
+        >
+          {isExpanded ? "Show less" : "Show more"}
+          <ArrowDown2Icon
+            aria-hidden="true"
+            className={cn("h-4 w-4 transition-transform duration-150", {
+              "rotate-180": isExpanded,
+            })}
+          />
+        </button>
+      ) : null}
+    </div>
   );
 };
 
 const RenderMessage = ({
+  isAnimating,
   message,
+  onToolApproval,
   onPromptSelect,
-  status,
-  deferToolOutputs = false,
 }: {
+  isAnimating: boolean;
   message: MayaUIMessage;
-  status: ChatStatus;
-  deferToolOutputs?: boolean;
+  onToolApproval: ChatAddToolApproveResponseFunction;
   onPromptSelect: (prompt: string) => void;
 }) => {
-  const pathname = usePathname();
-  const isStreaming = status === "streaming";
-  const isAssistant = message.role === "assistant";
+  if (message.role === "user") {
+    return <UserPrompt text={getMessageText(message)} />;
+  }
 
-  const textParts = message.parts.filter((part) => part.type === "text");
-  const toolParts = message.parts.filter(isToolMessagePart);
-  const reportParts = deferToolOutputs
-    ? []
-    : toolParts.filter(
-        (part) =>
-          part.state === "output-available" &&
-          isAnalyticsReportOutput(part.output),
-      );
-  const sprintAnalyticsParts = deferToolOutputs
-    ? []
-    : toolParts.filter(
-        (part) =>
-          part.type === "tool-getSprintAnalyticsTool" &&
-          part.state === "output-available",
-      );
-  const suggestionParts = deferToolOutputs
-    ? []
-    : toolParts.filter(
-        (part) =>
-          part.type === "tool-suggestions" && part.state === "output-available",
-      );
+  const visibleToolPartIndexes = getVisibleToolPartIndexes(message);
 
   return (
     <>
-      {textParts.map((part, index) => (
-        <Streamdown
-          className="chat-tables"
-          controls={{
-            table: true,
-            code: true,
-            mermaid: {
-              download: true,
-              copy: true,
-              fullscreen: true,
-              panZoom: true,
-            },
-          }}
-          isAnimating={Boolean(isStreaming && isAssistant)}
-          key={`${message.id}-text-${index}`}
-        >
-          {part.text}
-        </Streamdown>
-      ))}
-
-      {reportParts.map((part, index) => (
-        <AnalyticsReport
-          key={`${message.id}-report-${index}`}
-          output={asRecord(part.output)}
-        />
-      ))}
-
-      {sprintAnalyticsParts.map((part, index) => (
-        <Box className="mb-3" key={`${message.id}-sprint-${index}`}>
-          <Text as="h3" className="mt-4 mb-1 text-xl font-semibold antialiased">
-            Burndown graph
-          </Text>
-          <BurndownChart
-            burndownData={getSprintBurndownData(part.output)}
-            className={cn("h-72", {
-              "h-80": pathname.includes("/maya"),
-            })}
-          />
-        </Box>
-      ))}
-
-      {suggestionParts.map((part, index) => (
-        <Flex
-          className="mt-4"
-          gap={2}
-          key={`${message.id}-suggestions-${index}`}
-          wrap
-        >
-          {getSuggestions(part.output).map((suggestion, i) => (
-            <Button
-              className="truncate"
-              color="tertiary"
-              key={i}
-              onClick={() => {
-                onPromptSelect(suggestion);
+      {message.parts.map((part, index) => {
+        if (part.type === "text") {
+          return (
+            <Streamdown
+              className="chat-tables"
+              components={STREAMDOWN_COMPONENTS}
+              controls={{
+                table: true,
+                code: true,
+                mermaid: {
+                  download: true,
+                  copy: true,
+                  fullscreen: true,
+                  panZoom: true,
+                },
               }}
-              size="sm"
+              isAnimating={isAnimating}
+              key={`${message.id}-text-${index}`}
             >
-              {suggestion}
-            </Button>
-          ))}
-        </Flex>
-      ))}
+              {part.text}
+            </Streamdown>
+          );
+        }
+
+        if (isToolMessagePart(part)) {
+          if (!visibleToolPartIndexes.has(index)) return null;
+
+          return (
+            <ToolOutputRenderer
+              key={`${message.id}-${part.type}-${index}`}
+              onPromptSelect={onPromptSelect}
+              onToolApproval={onToolApproval}
+              part={part}
+            />
+          );
+        }
+
+        return null;
+      })}
     </>
   );
 };
 
 export const ChatMessage = ({
+  isAnimating = false,
   isLast,
   message,
+  onToolApproval,
   profile,
   status,
-  deferToolOutputs = false,
   regenerate,
   onPromptSelect,
 }: ChatMessageProps) => {
@@ -342,30 +231,31 @@ export const ChatMessage = ({
           />
         ) : null}
         <Flex
-          className={cn("flex-1", {
-            "items-end": message.role === "user",
-            "max-w-[80%]": message.role === "user",
-            "max-w-full": message.role === "assistant",
+          className={cn("min-w-0", {
+            "w-fit max-w-[80%] flex-none items-end": message.role === "user",
+            "max-w-full flex-1": message.role === "assistant",
           })}
           direction="column"
         >
           <Box
-            className={cn("mb-2 rounded-2xl px-4 py-3", {
-              "bg-state-hover/80 dark:bg-surface-muted/95 rounded-tr-md":
+            className={cn("mb-2 max-w-full min-w-0 rounded-2xl px-4 py-3", {
+              "bg-state-hover/80 w-fit rounded-tr-md break-words dark:bg-white/[0.08]":
                 message.role === "user",
-              "bg-transparent p-0": message.role === "assistant",
+              "w-full bg-transparent p-0": message.role === "assistant",
             })}
           >
             <RenderMessage
-              deferToolOutputs={deferToolOutputs}
+              isAnimating={isAnimating}
               message={message}
               onPromptSelect={onPromptSelect}
-              status={status}
+              onToolApproval={onToolApproval}
             />
           </Box>
           <AttachmentsDisplay message={message} />
           <Flex className="mt-2 px-0.5" justify="between">
-            {message.role === "assistant" && status !== "streaming" && (
+            {message.role === "assistant" &&
+            status !== "streaming" &&
+            !isAnimating ? (
               <Flex gap={2} justify="end">
                 <Tooltip title={`Create ${getTermDisplay("storyTerm")}`}>
                   <Button
@@ -398,7 +288,7 @@ export const ChatMessage = ({
                     {hasCopied ? <CheckIcon /> : <CopyIcon />}
                   </Button>
                 </Tooltip>
-                {isLast ? (
+                {isLast && message.metadata?.source !== "voice" ? (
                   <Tooltip title="Retry">
                     <Button
                       asIcon
@@ -409,12 +299,12 @@ export const ChatMessage = ({
                       size="sm"
                       variant="naked"
                     >
-                      <ReloadIcon strokeWidth={2.8} />
+                      <ReloadIcon />
                     </Button>
                   </Tooltip>
                 ) : null}
               </Flex>
-            )}
+            ) : null}
           </Flex>
         </Flex>
       </Flex>

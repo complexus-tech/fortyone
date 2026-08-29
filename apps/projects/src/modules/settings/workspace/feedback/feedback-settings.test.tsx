@@ -1,0 +1,794 @@
+/* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
+
+import type {
+  ChangeEvent,
+  ComponentPropsWithoutRef,
+  ElementType,
+  ReactNode,
+} from "react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useTeams } from "@/modules/teams/hooks/teams";
+import {
+  useCreateFeedbackBoardMutation,
+  useDeleteFeedbackBoardMutation,
+  useFeedbackBoardReviewers,
+  useFeedbackPortals,
+  useUpdateFeedbackBoardReviewerMutation,
+  useUpdateFeedbackPortalMutation,
+} from "./hooks";
+import { FeedbackSettings } from ".";
+
+jest.mock("@/modules/teams/hooks/teams", () => ({
+  useTeams: jest.fn(),
+}));
+
+jest.mock("icons", () => {
+  const React = jest.requireActual("react");
+  const Icon = (props: ComponentPropsWithoutRef<"svg">) =>
+    React.createElement("svg", props);
+
+  return {
+    ArrowDownIcon: Icon,
+    CheckIcon: Icon,
+    CodeIcon: Icon,
+    CopyIcon: Icon,
+    DeleteIcon: Icon,
+    ExternalLinkIcon: Icon,
+    KanbanIcon: Icon,
+    LinkIcon: Icon,
+    MoreHorizontalIcon: Icon,
+    PlusIcon: Icon,
+    SearchIcon: Icon,
+    SettingsIcon: Icon,
+    TeamIcon: Icon,
+    UpdatesIcon: Icon,
+  };
+});
+
+jest.mock("ui", () => {
+  const React = jest.requireActual("react");
+  const DialogContext = React.createContext(true);
+  const SelectContext = React.createContext({
+    disabled: false,
+    onValueChange: (_value: string) => undefined,
+    value: "",
+  });
+
+  const Box = ({ children, ...props }: ComponentPropsWithoutRef<"div">) =>
+    React.createElement("div", props, children);
+  const Flex = ({
+    children,
+    wrap: _wrap,
+    ...props
+  }: ComponentPropsWithoutRef<"div"> & { wrap?: boolean }) =>
+    React.createElement("div", props, children);
+  const Text = ({
+    as = "span",
+    children,
+    color: _color,
+    fontWeight: _fontWeight,
+    ...props
+  }: ComponentPropsWithoutRef<"span"> & {
+    as?: ElementType;
+    color?: string;
+    fontWeight?: string;
+  }) => React.createElement(as, props, children);
+  const Button = ({
+    asIcon: _asIcon,
+    children,
+    color: _color,
+    href,
+    leftIcon,
+    loading: _loading,
+    loadingText: _loadingText,
+    rightIcon,
+    size: _size,
+    variant: _variant,
+    ...props
+  }: ComponentPropsWithoutRef<"button"> & {
+    color?: string;
+    href?: string;
+    leftIcon?: ReactNode;
+    loading?: boolean;
+    loadingText?: string;
+    rightIcon?: ReactNode;
+    size?: string;
+    asIcon?: boolean;
+    variant?: string;
+  }) =>
+    React.createElement(
+      href ? "a" : "button",
+      href ? { ...props, href } : props,
+      leftIcon,
+      children,
+      rightIcon,
+    );
+  const Dialog = ({
+    children,
+    open = true,
+  }: {
+    children: ReactNode;
+    open?: boolean;
+  }) => React.createElement(DialogContext.Provider, { value: open }, children);
+  const DialogPart = ({
+    children,
+    ...props
+  }: ComponentPropsWithoutRef<"div">) =>
+    React.createElement("div", props, children);
+  const DialogContent = ({
+    children,
+    hideClose: _hideClose,
+    ...props
+  }: ComponentPropsWithoutRef<"div"> & { hideClose?: boolean }) => {
+    const open = React.useContext(DialogContext);
+    return open ? React.createElement("div", props, children) : null;
+  };
+
+  Object.assign(Dialog, {
+    Body: DialogPart,
+    Content: DialogContent,
+    Description: DialogPart,
+    Footer: DialogPart,
+    Header: DialogPart,
+    Title: DialogPart,
+  });
+
+  const Menu = ({ children }: { children: ReactNode }) =>
+    React.createElement("div", null, children);
+  const MenuItem = ({
+    children,
+    onSelect,
+    ...props
+  }: ComponentPropsWithoutRef<"button"> & { onSelect?: () => void }) =>
+    React.createElement(
+      "button",
+      { ...props, onClick: onSelect, type: "button" },
+      children,
+    );
+  Object.assign(Menu, {
+    Button: DialogPart,
+    Group: DialogPart,
+    Item: MenuItem,
+    Items: DialogPart,
+  });
+
+  const Select = ({
+    children,
+    disabled = false,
+    onValueChange,
+    value,
+  }: {
+    children: ReactNode;
+    disabled?: boolean;
+    onValueChange: (value: string) => void;
+    value: string;
+  }) =>
+    React.createElement(
+      SelectContext.Provider,
+      { value: { disabled, onValueChange, value } },
+      children,
+    );
+  const SelectTrigger = ({
+    children: _children,
+    ...props
+  }: ComponentPropsWithoutRef<"select">) => {
+    const context = React.useContext(SelectContext);
+    return React.createElement(
+      "select",
+      {
+        ...props,
+        disabled: context.disabled,
+        onChange: (event: ChangeEvent<HTMLSelectElement>) => {
+          context.onValueChange(event.target.value);
+        },
+        value: context.value,
+      },
+      React.createElement("option", { value: "off" }, "Off"),
+      React.createElement("option", { value: "daily" }, "Daily"),
+      React.createElement("option", { value: "weekly" }, "Weekly"),
+      React.createElement(
+        "option",
+        { value: "account_required" },
+        "Account required",
+      ),
+      React.createElement(
+        "option",
+        { value: "verified_guest" },
+        "Verified email",
+      ),
+      React.createElement(
+        "option",
+        { value: "anonymous_allowed" },
+        "Anonymous allowed",
+      ),
+      React.createElement(
+        "option",
+        { value: "show_identity" },
+        "Show display name",
+      ),
+      React.createElement(
+        "option",
+        { value: "allow_public_masking" },
+        "Let guests choose",
+      ),
+      React.createElement(
+        "option",
+        { value: "always_mask_guests" },
+        "Always hide names",
+      ),
+    );
+  };
+  Object.assign(Select, {
+    Content: () => null,
+    Input: () => null,
+    Option: () => null,
+    Trigger: SelectTrigger,
+  });
+
+  const TabsContext = React.createContext({
+    setValue: (_value: string) => undefined,
+    value: "general",
+  });
+  const Tabs = ({
+    children,
+    defaultValue,
+  }: {
+    children: ReactNode;
+    defaultValue: string;
+  }) => {
+    const [value, setValue] = React.useState(defaultValue);
+    return React.createElement(
+      TabsContext.Provider,
+      { value: { setValue, value } },
+      children,
+    );
+  };
+  const TabsTab = ({
+    children,
+    leftIcon,
+    value,
+  }: {
+    children: ReactNode;
+    leftIcon?: ReactNode;
+    value: string;
+  }) => {
+    const context = React.useContext(TabsContext);
+    return React.createElement(
+      "button",
+      {
+        "aria-selected": context.value === value,
+        onClick: () => {
+          context.setValue(value);
+        },
+        role: "tab",
+        type: "button",
+      },
+      leftIcon,
+      children,
+    );
+  };
+  const TabsPanel = ({
+    children,
+    value,
+  }: {
+    children: ReactNode;
+    value: string;
+  }) => {
+    const context = React.useContext(TabsContext);
+    return context.value === value
+      ? React.createElement("div", { role: "tabpanel" }, children)
+      : null;
+  };
+  Object.assign(Tabs, {
+    List: DialogPart,
+    Panel: TabsPanel,
+    Tab: TabsTab,
+  });
+
+  return {
+    Avatar: ({ name, ...props }: { name: string }) =>
+      React.createElement("div", { ...props, "aria-label": name }),
+    Box,
+    Button,
+    Dialog,
+    Flex,
+    Input: (props: ComponentPropsWithoutRef<"input">) =>
+      React.createElement("input", props),
+    Menu,
+    Switch: ({
+      checked,
+      onCheckedChange,
+      ...props
+    }: ComponentPropsWithoutRef<"button"> & {
+      checked: boolean;
+      onCheckedChange: (checked: boolean) => void;
+    }) =>
+      React.createElement("button", {
+        ...props,
+        "aria-checked": checked,
+        onClick: () => {
+          onCheckedChange(!checked);
+        },
+        role: "switch",
+        type: "button",
+      }),
+    Select,
+    Skeleton: (props: ComponentPropsWithoutRef<"div">) =>
+      React.createElement("div", props),
+    Tabs,
+    Text,
+  };
+});
+
+jest.mock("./hooks", () => ({
+  useCreateFeedbackBoardMutation: jest.fn(),
+  useCreateFeedbackUpdateMutation: () => ({
+    isPending: false,
+    mutateAsync: jest.fn(),
+  }),
+  useDeleteFeedbackUpdateMutation: () => ({
+    isPending: false,
+    mutate: jest.fn(),
+  }),
+  useDeleteFeedbackBoardMutation: jest.fn(),
+  useFeedbackBoardReviewers: jest.fn(),
+  useFeedbackPortals: jest.fn(),
+  useFeedbackUpdateCandidates: () => ({ data: [], isLoading: false }),
+  useFeedbackUpdates: () => ({ data: [], isLoading: false }),
+  usePublishFeedbackUpdateMutation: () => ({
+    isPending: false,
+    mutate: jest.fn(),
+  }),
+  useUpdateFeedbackUpdateMutation: () => ({
+    isPending: false,
+    mutateAsync: jest.fn(),
+  }),
+  useUpdateFeedbackBoardReviewerMutation: jest.fn(),
+  useUpdateFeedbackPortalMutation: jest.fn(),
+}));
+
+const mockUseTeams = jest.mocked(useTeams);
+const mockUseFeedbackPortals = jest.mocked(useFeedbackPortals);
+const mockUseFeedbackBoardReviewers = jest.mocked(useFeedbackBoardReviewers);
+const mockUseCreateFeedbackBoardMutation = jest.mocked(
+  useCreateFeedbackBoardMutation,
+);
+const mockUseDeleteFeedbackBoardMutation = jest.mocked(
+  useDeleteFeedbackBoardMutation,
+);
+const mockUseUpdateFeedbackBoardReviewerMutation = jest.mocked(
+  useUpdateFeedbackBoardReviewerMutation,
+);
+const mockUseUpdateFeedbackPortalMutation = jest.mocked(
+  useUpdateFeedbackPortalMutation,
+);
+
+const portal = {
+  id: "portal-1",
+  workspaceId: "workspace-1",
+  name: "City Roads",
+  slug: "city-roads",
+  isPublic: true,
+  guestIdentityPolicy: "show_identity" as const,
+  participationMode: "account_required" as const,
+  createdAt: "2026-07-19T00:00:00.000Z",
+  updatedAt: "2026-07-19T00:00:00.000Z",
+  boards: [
+    {
+      id: "board-1",
+      workspaceId: "workspace-1",
+      portalId: "portal-1",
+      teamId: "team-1",
+      name: "Road safety",
+      slug: "road-safety",
+      color: "red",
+      orderIndex: 0,
+      createdAt: "2026-07-19T00:00:00.000Z",
+      updatedAt: "2026-07-19T00:00:00.000Z",
+    },
+  ],
+};
+
+describe("FeedbackSettings", () => {
+  const deleteBoard = jest.fn();
+  const updatePortal = jest.fn();
+  const updateReviewer = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    updatePortal.mockResolvedValue({ data: portal });
+    mockUseTeams.mockReturnValue({
+      data: [{ id: "team-1", name: "Operations" }],
+    } as ReturnType<typeof useTeams>);
+    mockUseFeedbackPortals.mockReturnValue({
+      data: [portal],
+      isLoading: false,
+    } as ReturnType<typeof useFeedbackPortals>);
+    mockUseCreateFeedbackBoardMutation.mockReturnValue({
+      isPending: false,
+      mutateAsync: jest.fn(),
+    } as never);
+    mockUseDeleteFeedbackBoardMutation.mockReturnValue({
+      isPending: false,
+      mutate: deleteBoard,
+    } as never);
+    mockUseFeedbackBoardReviewers.mockReturnValue({
+      data: [
+        {
+          avatarUrl: "https://cdn.example.com/amina.jpg",
+          email: "amina@example.com",
+          emailFrequency: "daily",
+          name: "Amina Moyo",
+          role: "admin",
+          userId: "user-1",
+        },
+        {
+          email: "tariro@example.com",
+          emailFrequency: "off",
+          name: "Tariro Ncube",
+          role: "member",
+          userId: "user-2",
+        },
+      ],
+      isError: false,
+      isLoading: false,
+      refetch: jest.fn(),
+    } as never);
+    mockUseUpdateFeedbackBoardReviewerMutation.mockReturnValue({
+      isPending: false,
+      mutate: updateReviewer,
+    } as never);
+    mockUseUpdateFeedbackPortalMutation.mockReturnValue({
+      isPending: false,
+      mutateAsync: updatePortal,
+    } as never);
+  });
+
+  it("saves portal availability as soon as the switch changes", async () => {
+    render(<FeedbackSettings />);
+
+    expect(
+      screen.getByText(/collect requests, votes, and product feedback/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("Describe what people should submit here"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("/feedback")).not.toBeInTheDocument();
+
+    const enabledSwitch = screen.getByRole("switch", {
+      name: "Enable public feedback portal",
+    });
+
+    expect(
+      screen.queryByRole("button", { name: "Save Changes" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(enabledSwitch);
+
+    await waitFor(() => {
+      expect(updatePortal).toHaveBeenCalledWith({
+        input: { isPublic: false },
+        portalId: portal.id,
+      });
+    });
+  });
+
+  it("auto-saves who can submit without changing portal availability", async () => {
+    render(<FeedbackSettings />);
+
+    const participationMode = screen.getByRole("combobox", {
+      name: "Who can submit feedback",
+    });
+    expect(participationMode).toHaveValue("account_required");
+    expect(
+      screen.getByText(/must log in or create a FortyOne account/i),
+    ).toBeInTheDocument();
+
+    fireEvent.change(participationMode, {
+      target: { value: "anonymous_allowed" },
+    });
+
+    await waitFor(() => {
+      expect(updatePortal).toHaveBeenCalledWith({
+        input: { participationMode: "anonymous_allowed" },
+        portalId: portal.id,
+      });
+    });
+    expect(updatePortal).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({ isPublic: expect.anything() }),
+      }),
+    );
+    expect(
+      screen.getByText(/choose verified email for updates/i),
+    ).toBeInTheDocument();
+  });
+
+  it("offers verified email participation without requiring an account", async () => {
+    render(<FeedbackSettings />);
+
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Who can submit feedback" }),
+      { target: { value: "verified_guest" } },
+    );
+
+    await waitFor(() => {
+      expect(updatePortal).toHaveBeenCalledWith({
+        input: { participationMode: "verified_guest" },
+        portalId: portal.id,
+      });
+    });
+    expect(
+      screen.getByText(
+        /verify their email without creating a FortyOne account/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("lets administrators choose how verified guest names appear publicly", async () => {
+    render(<FeedbackSettings />);
+
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Who can submit feedback" }),
+      { target: { value: "verified_guest" } },
+    );
+    const guestIdentity = await screen.findByRole("combobox", {
+      name: "Guest public identity",
+    });
+    fireEvent.change(guestIdentity, {
+      target: { value: "allow_public_masking" },
+    });
+
+    await waitFor(() => {
+      expect(updatePortal).toHaveBeenCalledWith({
+        input: { guestIdentityPolicy: "allow_public_masking" },
+        portalId: portal.id,
+      });
+    });
+    expect(
+      screen.getByText(/decide whether their display name is public/i),
+    ).toBeInTheDocument();
+  });
+
+  it("organizes feedback settings into the established tab structure", () => {
+    render(<FeedbackSettings />);
+
+    const heading = screen.getByRole("heading", { name: "Feedback" });
+    const portalLink = screen.getByRole("link", {
+      name: "Open public portal",
+    });
+    expect(heading.parentElement).toContainElement(portalLink);
+    expect(portalLink).toHaveAttribute("target", "_blank");
+    expect(portalLink).toHaveAttribute("rel", "noreferrer");
+    expect(screen.getByText("General Information")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Boards" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Widget" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Updates" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
+    expect(screen.getByText("Road safety")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create Board" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps custom identity and origin setup out of the widget installation", () => {
+    render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Widget" }));
+
+    const container = screen.getByRole("tabpanel");
+
+    const snippet = [...container.querySelectorAll("code")].find((element) =>
+      element.textContent.includes('data-portal="city-roads"'),
+    );
+    if (!snippet) {
+      throw new Error(
+        "Expected the widget installation snippet to be rendered",
+      );
+    }
+    expect(snippet.textContent).not.toContain(
+      "FORTYONE_FEEDBACK_WIDGET_SECRET",
+    );
+    expect(snippet.textContent).not.toContain("data-key-id");
+    expect(screen.queryByText("Enable embeds")).not.toBeInTheDocument();
+    expect(screen.queryByText("Allowed origins")).not.toBeInTheDocument();
+    expect(screen.queryByText(/signing secret/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Appearance")).toBeInTheDocument();
+    expect(screen.getByText("Installation")).toBeInTheDocument();
+    expect(container.querySelector("pre")).toHaveClass("text-base");
+  });
+
+  it("does not offer anonymous collection when ingress identity is unavailable", () => {
+    render(<FeedbackSettings anonymousFeedbackAvailable={false} />);
+
+    expect(
+      screen.getByText(/anonymous feedback is unavailable on this deployment/i),
+    ).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Who can submit feedback" }),
+      { target: { value: "anonymous_allowed" } },
+    );
+    expect(updatePortal).not.toHaveBeenCalled();
+  });
+
+  it("rolls the participation mode back when the update fails", async () => {
+    updatePortal.mockRejectedValueOnce(new Error("Network unavailable"));
+    render(<FeedbackSettings />);
+
+    const participationMode = screen.getByRole("combobox", {
+      name: "Who can submit feedback",
+    });
+    fireEvent.change(participationMode, {
+      target: { value: "anonymous_allowed" },
+    });
+
+    await waitFor(() => {
+      expect(participationMode).toHaveValue("account_required");
+    });
+  });
+
+  it.each([
+    ["an API error response", { error: { message: "Could not update" } }],
+    ["a rejected request", new Error("Network unavailable")],
+  ])("rolls the switch back after %s", async (_label, result) => {
+    if (result instanceof Error) {
+      updatePortal.mockRejectedValueOnce(result);
+    } else {
+      updatePortal.mockResolvedValueOnce(result);
+    }
+    render(<FeedbackSettings />);
+
+    const enabledSwitch = screen.getByRole("switch", {
+      name: "Enable public feedback portal",
+    });
+    fireEvent.click(enabledSwitch);
+
+    await waitFor(() => {
+      expect(enabledSwitch).toHaveAttribute("aria-checked", "true");
+    });
+  });
+
+  it("shows the board color without a wrapper or slug", () => {
+    const { container } = render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
+
+    const boardSwatch = container.querySelector<HTMLElement>(
+      '[style*="background-color: red"]',
+    );
+
+    expect(boardSwatch).toBeInTheDocument();
+    expect(boardSwatch?.parentElement).not.toHaveClass("bg-surface-muted/70");
+    expect(screen.queryByText("road-safety")).not.toBeInTheDocument();
+  });
+
+  it("disables board creation when every team already has a board", () => {
+    render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
+
+    expect(screen.getByRole("button", { name: "Create Board" })).toBeDisabled();
+  });
+
+  it("keeps board creation available when the API omits an empty board list", () => {
+    mockUseFeedbackPortals.mockReturnValue({
+      data: [{ ...portal, boards: undefined }],
+      isLoading: false,
+    } as never);
+
+    render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
+
+    expect(screen.getByText("No boards found")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create Board" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Create Board" }));
+    expect(screen.getByRole("combobox", { name: "Owning team" })).toHaveValue(
+      "team-1",
+    );
+  });
+
+  it("requires confirmation before deleting a board", async () => {
+    render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Options for Road safety" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Delete Board" }));
+
+    expect(await screen.findByText("Delete Road safety?")).toBeInTheDocument();
+    expect(
+      screen.getByText(/permanently deletes the board and all feedback/i),
+    ).toBeInTheDocument();
+    expect(deleteBoard).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete board" }));
+
+    expect(deleteBoard).toHaveBeenCalledWith(
+      "board-1",
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+  });
+
+  it("offers only teams that do not already have a board", () => {
+    mockUseTeams.mockReturnValue({
+      data: [
+        { id: "team-1", name: "Operations" },
+        { id: "team-2", name: "Customer success" },
+      ],
+    } as ReturnType<typeof useTeams>);
+    render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Board" }));
+
+    const teamSelect = screen.getByRole("combobox", { name: "Owning team" });
+    expect(teamSelect).toHaveValue("team-2");
+    expect(teamSelect).toHaveClass("appearance-none", "pr-10", "pl-3");
+    expect(teamSelect.nextElementSibling).toHaveClass("right-3.5");
+    expect(
+      screen.queryByRole("option", { name: "Operations" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Customer success" }),
+    ).toBeInTheDocument();
+  });
+
+  it("loads reviewers only when opened and auto-saves their frequency", async () => {
+    render(<FeedbackSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
+
+    expect(mockUseFeedbackBoardReviewers).not.toHaveBeenCalled();
+    expect(screen.queryByText("1 subscribed")).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Options for Road safety" }),
+    );
+    const manageReviewers = screen.getByRole("button", {
+      name: "Manage Reviewers",
+    });
+    const deleteBoardOption = screen.getByRole("button", {
+      name: "Delete Board",
+    });
+
+    expect(manageReviewers.parentElement?.parentElement).toHaveClass("w-56");
+    expect(manageReviewers.compareDocumentPosition(deleteBoardOption)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    fireEvent.click(manageReviewers);
+
+    await waitFor(() => {
+      expect(mockUseFeedbackBoardReviewers).toHaveBeenLastCalledWith(
+        "board-1",
+        true,
+      );
+    });
+
+    expect(screen.getByText("Feedback stays immediate")).toBeInTheDocument();
+    expect(
+      screen.getByText("Feedback stays immediate").parentElement,
+    ).toHaveClass("dark:bg-white/[0.04]");
+    expect(screen.getByText("Amina Moyo")).toBeInTheDocument();
+    expect(screen.getByLabelText("Amina Moyo")).toHaveAttribute(
+      "src",
+      "https://cdn.example.com/amina.jpg",
+    );
+    expect(screen.getByText("amina@example.com")).toBeInTheDocument();
+    expect(screen.getByText("Admin")).toBeInTheDocument();
+    expect(screen.getByText("1 subscribed")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Save" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByRole("combobox", {
+        name: "Email summary for Tariro Ncube",
+      }),
+      { target: { value: "weekly" } },
+    );
+
+    expect(updateReviewer).toHaveBeenCalledWith({
+      input: { emailFrequency: "weekly" },
+      userId: "user-2",
+    });
+  });
+});

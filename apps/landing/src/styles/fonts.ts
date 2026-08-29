@@ -1,11 +1,14 @@
-import {
-  Geist,
-  Playfair_Display as Playfair,
-  Inconsolata,
-} from "next/font/google";
+import { Geist, Inconsolata, Inter, Newsreader } from "next/font/google";
 
 export const body = Geist({
-  variable: "--font-body",
+  variable: "--font-geist",
+  subsets: ["latin"],
+  display: "swap",
+  weight: "variable",
+});
+
+export const sans = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
   weight: "variable",
@@ -17,10 +20,10 @@ export const mono = Inconsolata({
   subsets: ["latin"],
 });
 
-export const heading = Playfair({
-  variable: "--font-heading",
-  display: "swap",
+export const serif = Newsreader({
+  variable: "--font-newsreader",
   subsets: ["latin"],
-  weight: "variable",
+  display: "swap",
   style: ["normal", "italic"],
+  weight: "400",
 });

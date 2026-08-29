@@ -6,10 +6,15 @@ import { Box, Input, Text, Button, Flex } from "ui";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Logo, GoogleIcon } from "@/components/ui";
+import { Logo, GoogleIcon, MicrosoftIcon } from "@/components/ui";
 import { OTPInput } from "@/components/ui/otp-input";
 import { requestMagicEmail } from "@/lib/actions/request-magic-email";
-import { signInWithGoogle } from "@/lib/actions/sign-in";
+import { signInWithGoogle, signInWithMicrosoft } from "@/lib/actions/sign-in";
+import {
+  getAuthCallbackPath,
+  getSafeCallbackUrl,
+  withCallbackUrl,
+} from "@/utils/callback-url";
 
 const COPYRIGHT_NOTICE =
   "\u00a9 2026 \u2022 Product of Complexus LLC \u2022 All Rights Reserved.";
@@ -17,10 +22,12 @@ const COPYRIGHT_NOTICE =
 export const AuthLayout = ({
   page,
   errorMessage,
+  callbackUrl,
   isMobileApp = false,
 }: {
   page: "login" | "signup";
   errorMessage?: string;
+  callbackUrl?: string;
   isMobileApp?: boolean;
 }) => {
   const [loading, setLoading] = useState(false);
@@ -30,22 +37,18 @@ export const AuthLayout = ({
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const router = useRouter();
+  const safeCallbackUrl = getSafeCallbackUrl(callbackUrl);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    const result = await requestMagicEmail(email, isMobileApp).catch((error) => {
-      toast.error("Failed to send magic link", {
-        description:
-          error instanceof Error ? error.message : "Please try again.",
-      });
-      return null;
+    const result = await requestMagicEmail(
+      email,
+      isMobileApp,
+      safeCallbackUrl,
+    ).finally(() => {
+      setLoading(false);
     });
-    setLoading(false);
-
-    if (!result) {
-      return;
-    }
 
     if (result.error.message) {
       toast.error("Failed to send magic link", {
@@ -61,6 +64,8 @@ export const AuthLayout = ({
     let url = `/verify/${email}/${otp}`;
     if (isMobileApp) {
       url += "?mobileApp=true";
+    } else {
+      url = withCallbackUrl(url, safeCallbackUrl);
     }
 
     if (otp.length !== 6) {
@@ -89,16 +94,16 @@ export const AuthLayout = ({
             ✨ Please check your inbox to continue.
           </Text>
           <Box className="mb-4">
-            <OTPInput value={otp} onChange={setOtp} className="mb-4" />
+            <OTPInput className="mb-4" onChange={setOtp} value={otp} />
             <Button
               align="center"
               className="mb-4 md:py-3"
               color="invert"
+              disabled={otp.length !== 6}
               fullWidth
               loading={otpLoading}
               loadingText="Verifying..."
               onClick={handleOTPSubmit}
-              disabled={otp.length !== 6}
               size="lg"
             >
               Verify Code
@@ -107,11 +112,11 @@ export const AuthLayout = ({
           <Text className="mb-6 pl-0.5" fontWeight="medium">
             Back to{" "}
             <button
-              type="button"
-              className="text-primary underline dark:text-white"
+              className="text-primary underline"
               onClick={() => {
                 setIsSent(false);
               }}
+              type="button"
             >
               Login
             </button>
@@ -138,8 +143,8 @@ export const AuthLayout = ({
                 <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
                   Don&apos;t have an account?{" "}
                   <Link
-                    className="text-primary underline dark:text-white"
-                    href="/signup"
+                    className="text-primary underline"
+                    href={withCallbackUrl("/signup", safeCallbackUrl)}
                   >
                     Create one
                   </Link>
@@ -149,7 +154,10 @@ export const AuthLayout = ({
           ) : (
             <Text className="mb-6 pl-0.5" color="muted" fontWeight="medium">
               Already have an account?{" "}
-              <Link className="text-primary underline dark:text-white" href="/">
+              <Link
+                className="text-primary underline"
+                href={withCallbackUrl("/", safeCallbackUrl)}
+              >
                 Sign in
               </Link>
             </Text>
@@ -177,8 +185,8 @@ export const AuthLayout = ({
               fullWidth
               loading={loading}
               loadingText="Logging you in..."
-              type="submit"
               size="lg"
+              type="submit"
             >
               Continue
             </Button>
@@ -197,7 +205,7 @@ export const AuthLayout = ({
                 await signInWithGoogle(
                   isMobileApp
                     ? "/auth-callback?mobileApp=true"
-                    : "/auth-callback",
+                    : getAuthCallbackPath(safeCallbackUrl),
                 ).catch((error) => {
                   toast.error("Google sign-in failed", {
                     description:
@@ -207,10 +215,37 @@ export const AuthLayout = ({
                   });
                 });
               }}
-              type="button"
               size="lg"
+              type="button"
             >
               Continue with Google
+            </Button>
+            <Button
+              align="center"
+              className="mb-3 md:py-2.5"
+              color="tertiary"
+              fullWidth
+              leftIcon={<MicrosoftIcon />}
+              onClick={async () => {
+                try {
+                  await signInWithMicrosoft(
+                    isMobileApp
+                      ? "/auth-callback?mobileApp=true"
+                      : getAuthCallbackPath(safeCallbackUrl),
+                  );
+                } catch (error) {
+                  toast.error("Microsoft sign-in failed", {
+                    description:
+                      error instanceof Error
+                        ? error.message
+                        : "Please try again.",
+                  });
+                }
+              }}
+              size="lg"
+              type="button"
+            >
+              Continue with Microsoft
             </Button>
           </form>
           <Text className="mt-3 pl-px text-[90%]" color="muted">

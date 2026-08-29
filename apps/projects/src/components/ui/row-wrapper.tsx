@@ -1,27 +1,27 @@
 "use client";
 import { cn } from "lib";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import type { ComponentProps } from "react";
 import { Box } from "ui";
 
 export const RowWrapper = ({
   children,
   className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) => {
+  ...props
+}: ComponentProps<typeof Box>) => {
   const pathname = usePathname();
   return (
     <Box
       className={cn(
         "border-border/80 group hover:bg-state-hover/50 focus-visible:bg-state-active flex items-center justify-between border-b-[0.5px] px-5 py-[0.655rem] outline-none md:px-12",
         {
-          "pr-0 pl-0 md:pl-7": pathname.startsWith("/story"),
+          "pr-0 pl-0 md:pl-7":
+            pathname.startsWith("/work") || pathname.includes("/work/"),
         },
         className,
       )}
       tabIndex={0}
+      {...props}
     >
       {children}
     </Box>

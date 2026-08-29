@@ -5,5 +5,12 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <FeedbackSettings />;
+  const anonymousFeedbackAvailable =
+    process.env.NODE_ENV !== "production" ||
+    Boolean(process.env.VERCEL) ||
+    Boolean(process.env.FEEDBACK_TRUSTED_CLIENT_IP_HEADER?.trim());
+
+  return (
+    <FeedbackSettings anonymousFeedbackAvailable={anonymousFeedbackAvailable} />
+  );
 }

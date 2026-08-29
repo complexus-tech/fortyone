@@ -1,22 +1,26 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Box, Text, Tabs } from "ui";
+import { Box, Flex, Text, Tabs } from "ui";
 import {
   FilterIcon,
   GitIcon,
   TeamIcon,
+  SprintsIcon,
   WarningIcon,
   WorkflowIcon,
 } from "icons";
 import { useQueryState, parseAsStringLiteral } from "nuqs";
+import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useTeam } from "@/modules/teams/hooks/use-team";
 import { TeamColor } from "@/components/ui";
+import { SettingsBackButton } from "@/modules/settings/components";
 import { GeneralSettings } from "./components/general";
 import { MembersSettings } from "./components/members";
 import { WorkflowSettings } from "./components/workflows";
 import { DeleteTeam } from "./components/delete";
 import { Automations } from "./components/automations";
+import { SprintSettings } from "./components/sprints";
 
 export const TeamManagement = () => {
   const tabs = [
@@ -24,9 +28,12 @@ export const TeamManagement = () => {
     "members",
     "workflows",
     "automations",
+    "sprints",
     "delete",
   ] as const;
   const { teamId } = useParams<{ teamId: string }>();
+  const { getTermDisplay } = useTerminology();
+  const { withWorkspace } = useWorkspacePath();
   const { data: team } = useTeam(teamId);
   const [tab, setTab] = useQueryState(
     "tab",
@@ -37,13 +44,16 @@ export const TeamManagement = () => {
 
   return (
     <Box>
-      <Text
-        as="h1"
-        className="mb-6 flex items-center gap-2 text-2xl font-medium"
-      >
-        <TeamColor color={team.color} />
-        {team.name}
-      </Text>
+      <Flex align="center" className="mb-6" gap={2}>
+        <SettingsBackButton
+          href={withWorkspace("/settings/workspace/teams")}
+          label="Back to teams"
+        />
+        <Text as="h1" className="flex items-center gap-2 text-2xl font-medium">
+          <TeamColor color={team.color} />
+          {team.name}
+        </Text>
+      </Flex>
 
       <Tabs
         defaultValue="general"
@@ -77,6 +87,15 @@ export const TeamManagement = () => {
               Automations
             </Tabs.Tab>
             <Tabs.Tab
+              leftIcon={<SprintsIcon className="h-[1.1rem]" />}
+              value="sprints"
+            >
+              {getTermDisplay("sprintTerm", {
+                capitalize: true,
+                variant: "plural",
+              })}
+            </Tabs.Tab>
+            <Tabs.Tab
               leftIcon={<WarningIcon className="h-[1.1rem]" />}
               value="delete"
             >
@@ -100,6 +119,9 @@ export const TeamManagement = () => {
           </Tabs.Panel>
           <Tabs.Panel value="automations">
             <Automations />
+          </Tabs.Panel>
+          <Tabs.Panel value="sprints">
+            <SprintSettings />
           </Tabs.Panel>
         </Box>
       </Tabs>

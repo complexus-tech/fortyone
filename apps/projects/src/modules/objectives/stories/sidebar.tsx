@@ -15,16 +15,16 @@ import { cn } from "lib";
 import type { ReactNode } from "react";
 import { CalendarIcon } from "icons";
 import { format, formatISO } from "date-fns";
-import { useSession } from "@/lib/auth/client";
 import { RowWrapper, StoryStatusIcon, PriorityIcon } from "@/components/ui";
 import type { StoryPriority } from "@/modules/stories/types";
 import {
+  useCanUpdateObjective,
   useObjective,
   useUpdateObjectiveMutation,
 } from "@/modules/objectives/hooks";
 import { useObjectiveAnalytics } from "@/modules/objectives/hooks/objective-analytics";
 import type { ObjectiveUpdate } from "@/modules/objectives/types";
-import { useIsAdminOrOwner } from "@/hooks/owner";
+import { useTerminology } from "@/hooks";
 import { ProgressChart } from "./progress-chart";
 
 const Option = ({
@@ -56,12 +56,12 @@ const Option = ({
 };
 
 export const Sidebar = ({ className }: { className?: string }) => {
-  const { data: session } = useSession();
+  const { getTermDisplay } = useTerminology();
+  const canUpdate = useCanUpdateObjective();
   const { objectiveId } = useParams<{ objectiveId: string }>();
   const { data: objective } = useObjective(objectiveId);
   const { data: analytics } = useObjectiveAnalytics(objectiveId);
   const updateMutation = useUpdateObjectiveMutation();
-  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
 
   const handleUpdate = (data: ObjectiveUpdate) => {
     updateMutation.mutate({
@@ -80,8 +80,6 @@ export const Sidebar = ({ className }: { className?: string }) => {
     priorityBreakdown,
     progressChart,
   } = analytics;
-  const canUpdate = isAdminOrOwner || session?.user?.id === objective?.leadUser;
-
   // Map progress breakdown to status categories
   const breakdownStatusMap = {
     inProgress: {
@@ -203,7 +201,13 @@ export const Sidebar = ({ className }: { className?: string }) => {
         <ProgressChart progressData={progressChart} />
       </Box>
       <Divider className="my-6" />
-      <Text className="mb-3">Stories Overview</Text>
+      <Text className="mb-3">
+        {getTermDisplay("storyTerm", {
+          capitalize: true,
+          variant: "plural",
+        })}{" "}
+        Overview
+      </Text>
       <Tabs defaultValue="assignees">
         <Tabs.List className="mx-0 mb-3 md:mx-0">
           <Tabs.Tab value="assignees">Assignees</Tabs.Tab>

@@ -1,8 +1,13 @@
 import { getApiUrl } from "@/lib/api-url";
 
-export const signInWithGoogle = async (callbackUrl = "/auth-callback") => {
+type SignInProvider = "google" | "microsoft";
+
+const signInWithProvider = async (
+  provider: SignInProvider,
+  callbackUrl = "/auth-callback",
+) => {
   if (typeof window === "undefined") {
-    throw new Error("Google sign-in is only available in the browser");
+    throw new Error(`${provider} sign-in is only available in the browser`);
   }
 
   const apiUrl = getApiUrl();
@@ -10,8 +15,14 @@ export const signInWithGoogle = async (callbackUrl = "/auth-callback") => {
     ? callbackUrl
     : new URL(callbackUrl, window.location.origin).toString();
 
-  const authUrl = new URL("/auth/google", apiUrl);
+  const authUrl = new URL(`/auth/${provider}`, apiUrl);
   authUrl.searchParams.set("callbackURL", callbackTarget);
 
   window.location.assign(authUrl.toString());
 };
+
+export const signInWithGoogle = (callbackUrl = "/auth-callback") =>
+  signInWithProvider("google", callbackUrl);
+
+export const signInWithMicrosoft = (callbackUrl = "/auth-callback") =>
+  signInWithProvider("microsoft", callbackUrl);

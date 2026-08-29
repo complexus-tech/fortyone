@@ -1,25 +1,28 @@
 "use client";
-import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import type {
+  AutoScrollOptions,
+  CollisionDetection,
+  DragEndEvent,
+  DragStartEvent,
+} from "@dnd-kit/core";
 import {
   DndContext,
   DragOverlay,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
-  MouseSensor,
   PointerSensor,
   TouchSensor,
 } from "@dnd-kit/core";
 import { Box, Flex, Text } from "ui";
-import { useState, useMemo, useCallback, useOptimistic } from "react";
+import { useState, useMemo, useCallback } from "react";
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { PlusIcon, StoryMissingIcon } from "icons";
+import { PlusIcon } from "icons";
 import { useParams } from "next/navigation";
 import { cn } from "lib";
-import type {
-  GroupedStoriesResponse,
-  Story,
-  StoryPriority,
-} from "@/modules/stories/types";
+import type { GroupedStoriesResponse, Story } from "@/modules/stories/types";
 import type {
   DisplayColumn,
   StoriesViewOptions,
@@ -30,17 +33,43 @@ import { useTeams } from "@/modules/teams/hooks/teams";
 import { useFeatures, useTerminology, useSprintsEnabled } from "@/hooks";
 import { StoriesList } from "@/components/ui/stories-list";
 import { BodyContainer } from "@/components/shared/body";
-import { moveStoryBetweenGroups } from "@/modules/stories/utils/optimistic";
 import { KanbanBoard } from "./kanban-board";
 import { StoryStatusIcon } from "./story-status-icon";
-import { StoryCard } from "./story/card";
+import { StoryCardPreview } from "./story/card";
 import { ListBoard } from "./list-board";
 import { GanttBoard } from "./gantt-board";
 import { StoriesToolbar } from "./stories-toolbar";
 import { BoardContext } from "./board-context";
 import { NewStoryButton } from "./new-story-button";
+import { getStoryDropUpdate } from "./story-drag";
+import { StoriesEmptyIllustration } from "./illustrations/stories-empty-illustration";
+import { canAutoScrollKanbanColumn } from "./kanban-auto-scroll";
 
 export type StoriesLayout = "list" | "kanban" | "gantt" | null;
+
+const KANBAN_COLUMN_AUTO_SCROLL_OPTIONS: AutoScrollOptions = {
+  canScroll: canAutoScrollKanbanColumn,
+};
+
+const storyCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  return pointerCollisions.length > 0
+    ? pointerCollisions
+    : rectIntersection(args);
+};
+
+const getDraggedStory = (
+  event: DragStartEvent | DragEndEvent,
+  groupedStories?: GroupedStoriesResponse,
+) => {
+  const draggedStory = event.active.data.current?.story as Story | undefined;
+  if (draggedStory) return draggedStory;
+
+  const storyId = event.active.id.toString();
+  return groupedStories?.groups
+    .flatMap((group) => group.stories)
+    .find((story) => story.id === storyId);
+};
 
 const StoryOverlay = ({
   story,
@@ -53,6 +82,36 @@ const StoryOverlay = ({
 }) => {
   const { data: teams = [] } = useTeams();
   const team = teams.find(({ id }) => id === story?.teamId);
+  let overlayContent: ReactNode = null;
+
+  if (story && layout === "kanban") {
+    overlayContent = <StoryCardPreview className="rotate-2" story={story} />;
+  } else if (story) {
+    overlayContent = (
+      <Flex
+        align="center"
+        className="border-border bg-surface-muted shadow-shadow w-max rounded-xl border px-3 py-3.5 shadow backdrop-blur"
+        gap={2}
+      >
+        {selectedStories > 1 ? (
+          <Text className="w-60 truncate pl-2" fontWeight="medium">
+            {selectedStories} stories selected
+          </Text>
+        ) : (
+          <>
+            <StoryStatusIcon statusId={story.statusId} />
+            <Text color="muted">
+              {team?.code}-{story.sequenceId}
+            </Text>
+            <Text className="max-w-xs truncate" fontWeight="medium">
+              {story.title}
+            </Text>
+          </>
+        )}
+      </Flex>
+    );
+  }
+
   return (
     <DragOverlay
       className="pointer-events-none"
@@ -61,35 +120,7 @@ const StoryOverlay = ({
         easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
       }}
     >
-      {layout === "kanban" ? (
-        <StoryCard
-          className="border-border shadow-shadow rotate-3 border shadow-lg"
-          handleStoryClick={() => {}}
-          story={story!}
-        />
-      ) : (
-        <Flex
-          align="center"
-          className="border-border bg-surface-muted shadow-shadow w-max rounded-xl border px-3 py-3.5 shadow backdrop-blur"
-          gap={2}
-        >
-          {selectedStories > 1 ? (
-            <Text className="w-60 truncate pl-2" fontWeight="medium">
-              {selectedStories} stories selected
-            </Text>
-          ) : (
-            <>
-              <StoryStatusIcon statusId={story?.statusId} />
-              <Text color="muted">
-                {team?.code}-{story?.sequenceId}
-              </Text>
-              <Text className="max-w-xs truncate" fontWeight="medium">
-                {story?.title}
-              </Text>
-            </>
-          )}
-        </Flex>
-      )}
+      {overlayContent}
     </DragOverlay>
   );
 };
@@ -100,15 +131,17 @@ const EmptyState = ({
   sprintId,
   teamId,
   getTermDisplay,
+  illustration,
 }: {
   objectiveId?: string;
   sprintId?: string;
   teamId?: string;
   getTermDisplay: ReturnType<typeof useTerminology>["getTermDisplay"];
+  illustration?: ReactNode;
 }) => (
   <Box className="flex h-[70dvh] items-center justify-center">
     <Box className="flex flex-col items-center">
-      <StoryMissingIcon className="h-20 w-auto rotate-12" strokeWidth={1.3} />
+      {illustration ?? <StoriesEmptyIllustration />}
       <Text className="mt-8 mb-6" fontSize="3xl">
         No {getTermDisplay("storyTerm", { variant: "plural" })} found
       </Text>
@@ -140,6 +173,7 @@ export const StoriesBoard = ({
   viewOptions,
   setViewOptions,
   rowClassName,
+  emptyStateIllustration,
 }: {
   isInSearch?: boolean;
   layout: StoriesLayout;
@@ -148,6 +182,7 @@ export const StoriesBoard = ({
   viewOptions: StoriesViewOptions;
   setViewOptions?: (value: StoriesViewOptions) => void;
   rowClassName?: string;
+  emptyStateIllustration?: ReactNode;
 }) => {
   const { getTermDisplay } = useTerminology();
   const { objectiveId, sprintId, teamId } = useParams<{
@@ -160,99 +195,57 @@ export const StoriesBoard = ({
   const sprintsEnabled = useSprintsEnabled(teamId);
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
-  const [groupedStories, setOptimisticGroupedStories] = useOptimistic<
-    GroupedStoriesResponse | undefined,
-    {
-      storyId: string;
-      updatePayload: Partial<DetailedStory>;
-      targetKey: string;
-    }
-  >(allStories, (currentStories, action) => {
-    if (!currentStories) {
-      return currentStories;
-    }
-
-    return getOptimisticallyUpdatedGroups(
-      currentStories,
-      action.storyId,
-      action.updatePayload,
-      action.targetKey,
-    );
-  });
-
   const { mutate } = useUpdateStoryMutation();
+  const updateStory = useCallback(
+    (storyId: string, payload: Partial<DetailedStory>) => {
+      mutate({ storyId, payload });
+    },
+    [mutate],
+  );
 
   // Memoize the isColumnVisible function
   const isColumnVisible = useCallback(
     (column: DisplayColumn) => {
       if (column === "Sprint" && !sprintsEnabled) return false;
-      if (column === "Objective" && !features.objectiveEnabled) return false;
+      if (
+        (column === "Objective" || column === "Key Result") &&
+        !features.objectiveEnabled
+      )
+        return false;
       return viewOptions.displayColumns.includes(column);
     },
     [features.objectiveEnabled, sprintsEnabled, viewOptions.displayColumns],
   );
 
-  const handleDragStart = (e: DragStartEvent) => {
-    const storyId = e.active.id.toString();
-    // get the story from groupedStories
-    const story = groupedStories?.groups
-      .flatMap((group) => group.stories)
-      .find((story) => story.id === storyId);
-    setActiveStory(story!);
-  };
-
-  const handleDragEnd = useCallback(
-    (e: DragEndEvent) => {
-      const updateStory = (
-        storyId: string,
-        payload: Partial<DetailedStory>,
-      ) => {
-        mutate({ storyId, payload });
-      };
-
-      const { groupBy } = viewOptions;
-
-      if (e.over) {
-        const storyId = e.active.id.toString();
-        const updatePayload: Partial<DetailedStory> = {};
-
-        if (groupBy === "status") {
-          const newStatus = e.over.id.toString();
-          updatePayload.statusId = newStatus;
-        }
-
-        if (groupBy === "priority") {
-          const newPriority = e.over.id as StoryPriority;
-          updatePayload.priority = newPriority;
-        }
-
-        if (groupBy === "assignee") {
-          const newAssignee = e.over.id as string;
-          updatePayload.assigneeId = newAssignee;
-        }
-        // Only call the API if we have updates
-        if (Object.keys(updatePayload).length > 0) {
-          updateStory(storyId, updatePayload);
-          if (groupBy !== "none") {
-            setOptimisticGroupedStories({
-              storyId,
-              updatePayload,
-              targetKey: e.over.id.toString(),
-            });
-          }
-        }
-      }
-
-      setActiveStory(null);
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      setActiveStory(getDraggedStory(event, allStories) ?? null);
     },
-    [mutate, setOptimisticGroupedStories, viewOptions],
+    [allStories],
   );
 
-  const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint: {
-      distance: 8,
+  const handleDragCancel = useCallback(() => {
+    setActiveStory(null);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { groupBy } = viewOptions;
+      const story = getDraggedStory(event, allStories);
+      const targetKey = event.over?.id.toString();
+
+      if (!story || !targetKey) {
+        setActiveStory(null);
+        return;
+      }
+
+      const updatePayload = getStoryDropUpdate(story, groupBy, targetKey);
+      if (updatePayload) updateStory(story.id, updatePayload);
+      setActiveStory(null);
     },
-  });
+    [allStories, updateStory, viewOptions],
+  );
+
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
       distance: 8,
@@ -266,7 +259,7 @@ export const StoriesBoard = ({
     },
   });
 
-  const sensors = useSensors(mouseSensor, pointerSensor, touchSensor);
+  const sensors = useSensors(pointerSensor, touchSensor);
 
   // Memoize the context value to prevent unnecessary re-renders
   const boardContextValue = useMemo(
@@ -276,20 +269,40 @@ export const StoriesBoard = ({
       viewOptions,
       setViewOptions,
       isColumnVisible,
+      updateStory,
+      newStoryDefaults: {
+        teamId,
+        objectiveId,
+        sprintId,
+      },
     }),
-    [selectedStories, setViewOptions, viewOptions, isColumnVisible],
+    [
+      selectedStories,
+      setViewOptions,
+      viewOptions,
+      isColumnVisible,
+      updateStory,
+      teamId,
+      objectiveId,
+      sprintId,
+    ],
   );
 
-  const hasStories = groupedStories?.groups.some(
+  const hasStories = allStories?.groups.some(
     (group) => group.stories.length > 0,
   );
 
   return (
     <BoardContext.Provider value={boardContextValue}>
-      <Box>
+      <Box
+        className={cn("min-h-0 w-full min-w-0", {
+          "h-full overflow-hidden": !isInSearch,
+        })}
+      >
         {!isInSearch && !hasStories && (
           <EmptyState
             getTermDisplay={getTermDisplay}
+            illustration={emptyStateIllustration}
             objectiveId={objectiveId}
             sprintId={sprintId}
             teamId={teamId}
@@ -298,6 +311,13 @@ export const StoriesBoard = ({
 
         {hasStories ? (
           <DndContext
+            autoScroll={
+              layout === "kanban"
+                ? KANBAN_COLUMN_AUTO_SCROLL_OPTIONS
+                : undefined
+            }
+            collisionDetection={storyCollisionDetection}
+            onDragCancel={handleDragCancel}
             onDragEnd={handleDragEnd}
             onDragStart={handleDragStart}
             sensors={sensors}
@@ -305,7 +325,7 @@ export const StoriesBoard = ({
             {layout === "gantt" && (
               <GanttBoard className={className} stories={[]} />
             )}
-            {groupedStories?.meta.groupBy === "none" ? (
+            {allStories?.meta.groupBy === "none" ? (
               <BodyContainer
                 className={cn(
                   "overflow-x-auto pb-6",
@@ -318,7 +338,7 @@ export const StoriesBoard = ({
                 <StoriesList
                   isInSearch={isInSearch}
                   rowClassName={rowClassName}
-                  stories={groupedStories.groups[0].stories}
+                  stories={allStories.groups[0].stories}
                 />
               </BodyContainer>
             ) : (
@@ -326,13 +346,13 @@ export const StoriesBoard = ({
                 {layout === "kanban" && (
                   <KanbanBoard
                     className={className}
-                    groupedStories={groupedStories!}
+                    groupedStories={allStories!}
                   />
                 )}
                 {(layout === "list" || !layout) && (
                   <ListBoard
                     className={className}
-                    groupedStories={groupedStories!}
+                    groupedStories={allStories!}
                     isInSearch={isInSearch}
                     rowClassName={rowClassName}
                     viewOptions={viewOptions}
@@ -340,7 +360,7 @@ export const StoriesBoard = ({
                 )}
               </>
             )}
-            {activeStory && typeof window !== "undefined"
+            {typeof window !== "undefined"
               ? createPortal(
                   <StoryOverlay
                     layout={layout}
@@ -358,19 +378,4 @@ export const StoriesBoard = ({
       </Box>
     </BoardContext.Provider>
   );
-};
-
-export const getOptimisticallyUpdatedGroups = (
-  prev: GroupedStoriesResponse,
-  storyId: string,
-  update: Partial<DetailedStory>,
-  targetKey: string,
-): GroupedStoriesResponse => {
-  const groups = moveStoryBetweenGroups(
-    prev.groups,
-    storyId,
-    targetKey,
-    update,
-  );
-  return { ...prev, groups };
 };

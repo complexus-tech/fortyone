@@ -6,26 +6,118 @@ import { cn } from "lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight2Icon, StoryIcon, SubStoryIcon } from "icons";
 import { useState } from "react";
+import type { KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
-import type { Story as StoryProps } from "@/modules/stories/types";
-import { slugify } from "@/utils";
+import type {
+  Story as StoryProps,
+  StoryPriority,
+} from "@/modules/stories/types";
 import type { DetailedStory } from "@/modules/story/types";
+import type { UserSummary } from "@/types";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
-import { useUserRole, useMediaQuery, useWorkspacePath } from "@/hooks";
+import {
+  useMediaQuery,
+  useTerminology,
+  useUserRole,
+  useWorkspacePath,
+} from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
 import { linkKeys } from "@/constants/keys";
 import { getLinks } from "@/lib/queries/links/get-links";
 import { useAutomationPreferences } from "@/lib/hooks/users/preferences";
-import { RowWrapper } from "../row-wrapper";
 import { useBoard } from "../board-context";
 import { MemberTooltip } from "../member-tooltip";
+import { RowWrapper } from "../row-wrapper";
 import { AssigneesMenu } from "./assignees-menu";
 import { StoryContextMenu } from "./context-menu";
 import { DragHandle } from "./drag-handle";
-import { StoryProperties } from "./properties";
+import {
+  StoryPriorityProperty,
+  StoryProperties,
+  StoryStatusProperty,
+} from "./properties";
+
+export const StoryRowPreview = ({
+  assignee,
+  onSelect,
+  priority,
+  reference,
+  statusColor,
+  statusId,
+  statusName,
+  title,
+}: {
+  assignee?: UserSummary | null;
+  onSelect: () => void;
+  priority: StoryPriority;
+  reference: string;
+  statusColor?: string;
+  statusId?: string | null;
+  statusName?: string;
+  title: string;
+}) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    onSelect();
+  };
+
+  return (
+    <RowWrapper
+      className="@container cursor-pointer gap-4 border-b-0 px-6 md:px-6"
+      onClick={onSelect}
+      onKeyDown={handleKeyDown}
+      role="button"
+    >
+      <Flex align="center" className="min-w-0 flex-1 select-none" gap={2}>
+        <Text
+          className="flex min-w-[6ch] shrink-0 items-center gap-1 truncate text-[0.95rem]"
+          color="muted"
+        >
+          {reference}
+        </Text>
+        <Text
+          className="line-clamp-1 min-w-0 hover:opacity-90"
+          fontWeight="medium"
+        >
+          {title}
+        </Text>
+      </Flex>
+      <Flex align="center" className="text-text-muted shrink-0" gap={3}>
+        {statusId ? (
+          <StoryStatusProperty
+            className="pointer-events-none"
+            readOnly
+            statusColor={statusColor}
+            statusId={statusId}
+            statusName={statusName}
+          />
+        ) : null}
+        <StoryPriorityProperty
+          className="pointer-events-none"
+          isListRow
+          priority={priority}
+          readOnly
+          showName
+        />
+        <MemberTooltip member={assignee}>
+          <span className="flex items-center">
+            <Avatar
+              name={assignee?.fullName || assignee?.username}
+              size="sm"
+              src={assignee?.avatarUrl}
+            />
+          </span>
+        </MemberTooltip>
+      </Flex>
+    </RowWrapper>
+  );
+};
 
 export const StoryRow = ({
   story,
@@ -33,18 +125,21 @@ export const StoryRow = ({
   isInSearch = false,
   handleStoryClick,
   className,
+  teamCode,
 }: {
   story: StoryProps;
   isSubStory?: boolean;
   isInSearch?: boolean;
   className?: string;
   handleStoryClick: (storyId: string) => void;
+  teamCode?: string;
 }) => {
   const router = useRouter();
   const { data: session } = useSession();
   const [isExpanded, setIsExpanded] = useState(false);
   const queryClient = useQueryClient();
   const { userRole } = useUserRole();
+  const { getTermDisplay } = useTerminology();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -54,9 +149,9 @@ export const StoryRow = ({
   const { data: preferences } = useAutomationPreferences();
   const openStoryInDialog = preferences?.openStoryInDialog;
 
-  const teamCode = story.team?.code;
-  const storyReference = teamCode
-    ? `${teamCode}-${story.sequenceId}`
+  const resolvedTeamCode = story.team?.code ?? teamCode;
+  const storyReference = resolvedTeamCode
+    ? `${resolvedTeamCode}-${story.sequenceId}`
     : String(story.sequenceId);
   const selectedAssignee = story.assignee;
 
@@ -95,7 +190,13 @@ export const StoryRow = ({
           });
         }
         router.prefetch(
-          withWorkspace(`/story/${story.id}/${slugify(story.title)}`),
+          withWorkspace(
+            getStoryPath({
+              id: story.id,
+              sequenceId: story.sequenceId,
+              teamCode: resolvedTeamCode,
+            }),
+          ),
         );
       }}
     >
@@ -136,7 +237,9 @@ export const StoryRow = ({
                 }}
               />
               {isColumnVisible("ID") && (
-                <Tooltip title={`Story ID: ${storyReference}`}>
+                <Tooltip
+                  title={`${getTermDisplay("storyTerm", { capitalize: true })} ID: ${storyReference}`}
+                >
                   <Text
                     className={cn(
                       "flex min-w-[6ch] shrink-0 items-center gap-1 truncate text-[0.95rem] transition-colors",
@@ -168,7 +271,11 @@ export const StoryRow = ({
               <Link
                 className="flex min-w-0 flex-1 items-center gap-1.5"
                 href={withWorkspace(
-                  `/story/${story.id}/${slugify(story.title)}`,
+                  getStoryPath({
+                    id: story.id,
+                    sequenceId: story.sequenceId,
+                    teamCode: resolvedTeamCode,
+                  }),
                 )}
                 onClick={(e) => {
                   if (isDesktop && openStoryInDialog) {
@@ -179,10 +286,10 @@ export const StoryRow = ({
               >
                 {isSubStory ? <SubStoryIcon className="shrink-0" /> : null}
                 <Text
-                  className="min-w-0 line-clamp-1 hover:opacity-90"
+                  className="line-clamp-1 min-w-0 hover:opacity-90"
                   fontWeight="medium"
-              >
-                {story.title}
+                >
+                  {story.title}
                 </Text>
               </Link>
             </Flex>
@@ -192,7 +299,7 @@ export const StoryRow = ({
                 handleUpdate={handleUpdate}
                 isExpanded={isExpanded}
                 setIsExpanded={setIsExpanded}
-                teamCode={teamCode}
+                teamCode={resolvedTeamCode}
               />
               {isColumnVisible("Assignee") && (
                 <AssigneesMenu>
@@ -200,7 +307,7 @@ export const StoryRow = ({
                     <span>
                       <AssigneesMenu.Trigger>
                         <button
-                          className="flex"
+                          className="flex items-center gap-1"
                           disabled={userRole === "guest"}
                           type="button"
                         >
@@ -212,6 +319,14 @@ export const StoryRow = ({
                             size="sm"
                             src={selectedAssignee?.avatarUrl}
                           />
+                          {story.collaboratorCount > 0 ? (
+                            <span
+                              className="text-text-muted text-xs"
+                              title={`${story.collaboratorCount} collaborator${story.collaboratorCount === 1 ? "" : "s"}`}
+                            >
+                              +{story.collaboratorCount}
+                            </span>
+                          ) : null}
                         </button>
                       </AssigneesMenu.Trigger>
                     </span>
@@ -237,6 +352,7 @@ export const StoryRow = ({
               isSubStory
               key={subStory.id}
               story={{ ...subStory, subStories: [], labels: [] }}
+              teamCode={resolvedTeamCode}
             />
           ))}
         </>

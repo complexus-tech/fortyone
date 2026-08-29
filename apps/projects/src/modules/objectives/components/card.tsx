@@ -5,72 +5,89 @@ import {
   Box,
   Avatar,
   Button,
+  Checkbox,
   DatePicker,
   CircleProgressBar,
-  Dialog,
-  TextArea,
+  ColorPicker,
 } from "ui";
 import Link from "next/link";
-import { ObjectiveIcon, CalendarIcon } from "icons";
+import { ArrowRight2Icon, ObjectiveIcon, CalendarIcon } from "icons";
 import { format, formatISO } from "date-fns";
 import { cn } from "lib";
-import { useSession } from "@/lib/auth/client";
-import { useState } from "react";
-import { toast } from "sonner";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import {
-  TeamColor,
   AssigneesMenu,
   PrioritiesMenu,
   PriorityIcon,
   ObjectiveHealthIcon,
 } from "@/components/ui";
 import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
-import { HealthMenu } from "@/components/ui/health-menu";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeamMembers } from "@/lib/hooks/team-members";
-import { useIsAdminOrOwner } from "@/hooks/owner";
 import { hexToRgba } from "@/utils";
 import { useTerminology, useWorkspacePath } from "@/hooks";
-import { useUpdateObjectiveMutation } from "../hooks";
-import type { Objective, ObjectiveUpdate, ObjectiveHealth } from "../types";
+import { useCanUpdateObjective } from "../hooks/use-can-update-objective";
+import { useUpdateObjectiveMutation } from "../hooks/update-mutation";
+import type { Objective, ObjectiveUpdate } from "../types";
+import { ObjectiveForecastRiskBadge } from "./objective-forecast-risk";
+import { ObjectiveHealthEditor } from "./objective-health-editor";
 
 export const ObjectiveCard = ({
   id,
+  sequenceId,
   name,
   leadUser,
   teamId,
   endDate,
-  isInTeam,
+  forecastCauseStory,
+  forecastDaysDelta,
+  forecastEndDate,
   isInSearch,
   statusId,
   health,
   priority,
-  createdBy,
+  scheduleStatus,
+  color,
+  onSelect,
+  onSelectionChange,
+  selected = false,
+  progress: progressOverride,
+  childCount = 0,
+  isExpanded = false,
+  onToggleExpanded,
   ...rest
-}: Objective & { isInTeam?: boolean; isInSearch?: boolean }) => {
-  const { data: session } = useSession();
+}: Objective & {
+  childCount?: number;
+  isExpanded?: boolean;
+  isInTeam?: boolean;
+  isInSearch?: boolean;
+  onSelect?: () => void;
+  onSelectionChange?: (checked: boolean) => void;
+  onToggleExpanded?: () => void;
+  progress?: number;
+  selected?: boolean;
+}) => {
+  const canUpdate = useCanUpdateObjective();
   const { data: members = [] } = useTeamMembers(teamId);
   const { data: teams = [] } = useTeams();
   const { data: statuses = [] } = useObjectiveStatuses();
   const updateMutation = useUpdateObjectiveMutation();
-  const { isAdminOrOwner } = useIsAdminOrOwner(createdBy);
-  const canUpdate = isAdminOrOwner || session?.user?.id === leadUser;
-  const { getTermDisplay } = useTerminology();
   const { withWorkspace } = useWorkspacePath();
-  const [comment, setComment] = useState("");
-  const [isCommentOpen, setIsCommentOpen] = useState(false);
-  const [pendingHealth, setPendingHealth] = useState<ObjectiveHealth | null>(
-    null,
-  );
+  const { getTermDisplay } = useTerminology();
 
   const lead = members.find((member) => member.id === leadUser);
   const team = teams.find((team) => team.id === teamId);
+  let objectiveReference: string | null = null;
+  if (sequenceId > 0) {
+    objectiveReference = team?.code
+      ? `${team.code}-${sequenceId}`
+      : String(sequenceId);
+  }
   const status = statuses.find((s) => s.id === statusId);
-  let progress = 0;
-  if (rest.stats) {
+  let progress = progressOverride ?? 0;
+  if (progressOverride === undefined && rest.stats) {
     progress = Math.round((rest.stats.completed / rest.stats.total) * 100) || 0;
   }
 
@@ -80,271 +97,262 @@ export const ObjectiveCard = ({
       data,
     });
   };
-
-  const handleHealthUpdate = () => {
-    if (!pendingHealth) {
-      toast.warning("Validation error", {
-        description: "Please select a health status",
-      });
-      return;
-    }
-
-    if (!comment) {
-      toast.warning("Validation error", {
-        description: "Please provide a comment",
-      });
-      return;
-    }
-
-    handleUpdate({ health: pendingHealth, comment });
-    setIsCommentOpen(false);
-    setComment("");
-    setPendingHealth(null);
+  const forecastRisk = {
+    endDate,
+    forecastCauseStory,
+    forecastDaysDelta,
+    forecastEndDate,
+    scheduleStatus,
   };
 
   return (
-    <>
-      <RowWrapper
-        className={cn("@container px-5 py-2.5 md:px-12", {
-          "gap-4 md:px-6": isInSearch,
-        })}
+    <RowWrapper
+      className={cn("@container px-5 py-2.5 md:px-12", {
+        "gap-4 md:px-6": isInSearch,
+      })}
+    >
+      <Box
+        className={cn(
+          "relative flex min-w-10 flex-1 items-center gap-1 @sm:min-w-20",
+          {
+            "pointer-events-none opacity-40": id === "optimistic",
+          },
+        )}
       >
-        <Box
-          className={cn(
-            "flex min-w-10 flex-1 items-center gap-2 @sm:min-w-20",
-            {
-              "pointer-events-none opacity-40": id === "optimistic",
-            },
-          )}
-        >
-          <Link
-            className="flex min-w-0 flex-1 items-center gap-2 hover:opacity-90"
-            href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
-            prefetch
+        {onSelectionChange ? (
+          <Checkbox
+            checked={selected}
+            className="shrink-0 rounded md:absolute md:-left-[1.6rem]"
+            disabled={!canUpdate}
+            onCheckedChange={onSelectionChange}
+          />
+        ) : null}
+        {childCount > 0 && onToggleExpanded ? (
+          <button
+            aria-label={`${isExpanded ? "Collapse" : "Expand"} ${getTermDisplay(
+              "keyResultTerm",
+              { variant: "plural" },
+            )}`}
+            className="text-text-muted hover:text-foreground grid h-7 w-5 shrink-0 place-items-center rounded transition-colors"
+            onClick={onToggleExpanded}
+            type="button"
           >
-            <Flex
-              align="center"
-              className="bg-surface-muted size-8 shrink-0 rounded-lg"
-              justify="center"
-            >
-              <ObjectiveIcon className="h-4" />
-            </Flex>
-            <Text className="min-w-0 truncate pr-2">{name}</Text>
-          </Link>
-        </Box>
-        <Flex align="center" className="shrink-0 gap-2 md:gap-4">
-          {!isInTeam ? (
-            <Box className="hidden w-[50px] shrink-0 items-center gap-1.5 md:flex">
-              <TeamColor color={team?.color} />
-              <Text className="truncate uppercase" color="muted">
-                {team?.code}
-              </Text>
-            </Box>
-          ) : null}
-          <Box className="hidden w-[40px] shrink-0 items-center md:flex">
-            <AssigneesMenu>
-              <AssigneesMenu.Trigger>
-                <Button
-                  className={cn({
-                    "text-text-secondary": !leadUser,
-                  })}
-                  color="tertiary"
-                  disabled={!canUpdate}
-                  leftIcon={
-                    <Avatar
-                      className={cn({
-                        "text-foreground/80": !leadUser,
-                      })}
-                      name={lead?.username}
-                      size="xs"
-                      src={lead?.avatarUrl}
-                    />
-                  }
-                  size="sm"
-                  type="button"
-                  variant="naked"
-                >
-                  <span className="sr-only">{lead?.username}</span>
-                </Button>
-              </AssigneesMenu.Trigger>
-              <AssigneesMenu.Items
-                assigneeId={leadUser}
-                onAssigneeSelected={(leadUser) => {
-                  handleUpdate({ leadUser });
-                }}
-                teamId={teamId}
-              />
-            </AssigneesMenu>
-          </Box>
-          {!isInSearch && (
-            <Box className="hidden w-[60px] shrink-0 items-center gap-1.5 pl-0.5 md:flex">
-              <CircleProgressBar
-                progress={progress}
-                size={16}
-                strokeWidth={2}
-              />
-              {progress}%
-            </Box>
-          )}
-          <Box className="shrink-0 md:w-[96px]">
-            <ObjectiveStatusesMenu>
-              <ObjectiveStatusesMenu.Trigger>
-                <Button
-                  color="tertiary"
-                  disabled={!canUpdate}
-                  leftIcon={<ObjectiveStatusIcon statusId={statusId} />}
-                  size="sm"
-                  style={{
-                    backgroundColor: hexToRgba(status?.color),
-                    borderColor: hexToRgba(status?.color),
-                  }}
-                  type="button"
-                >
-                  <span className="hidden max-w-[7ch] truncate md:inline-block">
-                    {status?.name ?? "Backlog"}
-                  </span>
-                </Button>
-              </ObjectiveStatusesMenu.Trigger>
-              <ObjectiveStatusesMenu.Items
-                setStatusId={(statusId) => {
-                  handleUpdate({ statusId });
-                }}
-                statusId={statusId}
-              />
-            </ObjectiveStatusesMenu>
-          </Box>
-          <Box className="shrink-0 md:w-[100px]">
-            <PrioritiesMenu>
-              <PrioritiesMenu.Trigger>
-                <Button
-                  color="tertiary"
-                  disabled={!canUpdate}
-                  leftIcon={<PriorityIcon priority={priority} />}
-                  size="sm"
-                  type="button"
-                  variant="naked"
-                >
-                  <span className="hidden md:inline-block">
-                    {priority ?? "No Priority"}
-                  </span>
-                </Button>
-              </PrioritiesMenu.Trigger>
-              <PrioritiesMenu.Items
-                priority={priority}
-                setPriority={(priority) => {
-                  handleUpdate({ priority });
-                }}
-              />
-            </PrioritiesMenu>
-          </Box>
-
-          <Box className="hidden w-[100px] shrink-0 md:block">
-            <DatePicker>
-              <DatePicker.Trigger>
-                <Button
-                  className={cn({
-                    "text-text-muted": !endDate,
-                  })}
-                  color="tertiary"
-                  disabled={!canUpdate}
-                  leftIcon={
-                    <CalendarIcon
-                      className={cn("h-[1.15rem]", {
-                        "text-text-muted": !endDate,
-                      })}
-                    />
-                  }
-                  size="sm"
-                  variant="naked"
-                >
-                  {endDate ? (
-                    format(new Date(endDate), "MMM d, yy")
-                  ) : (
-                    <Text color="muted">Target date</Text>
-                  )}
-                </Button>
-              </DatePicker.Trigger>
-              <DatePicker.Calendar
-                onDayClick={(day) => {
-                  handleUpdate({
-                    endDate: formatISO(day, { representation: "date" }),
-                  });
-                }}
-                selected={endDate ? new Date(endDate) : undefined}
-              />
-            </DatePicker>
-          </Box>
-
-          <Box className="shrink-0 md:w-[96px]">
-            <HealthMenu>
-              <HealthMenu.Trigger>
-                <Button
-                  color="tertiary"
-                  disabled={!canUpdate}
-                  leftIcon={<ObjectiveHealthIcon health={health} />}
-                  size="sm"
-                  type="button"
-                  variant="naked"
-                >
-                  <span className="hidden md:inline-block">
-                    {health ?? "No Health"}
-                  </span>
-                </Button>
-              </HealthMenu.Trigger>
-              <HealthMenu.Items
-                health={health}
-                setHealth={(health) => {
-                  setPendingHealth(health);
-                  setIsCommentOpen(true);
-                }}
-              />
-            </HealthMenu>
-          </Box>
-        </Flex>
-      </RowWrapper>
-      <Dialog onOpenChange={setIsCommentOpen} open={isCommentOpen}>
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title className="flex items-center gap-2 px-6 pt-0.5 text-lg">
-              Change {getTermDisplay("objectiveTerm")} health to{" "}
-              <ObjectiveHealthIcon health={pendingHealth} />
-              {pendingHealth}
-            </Dialog.Title>
-          </Dialog.Header>
-          <Dialog.Description>
-            Please provide a brief comment explaining why you&apos;re changing
-            the objective health status.
-          </Dialog.Description>
-          <Dialog.Body>
-            <Text className="mt-3 mb-1.5" color="muted">
-              Comment*
-            </Text>
-            <TextArea
-              className="border-border/80 resize-none rounded-2xl border bg-transparent py-4 leading-normal"
-              onChange={(e) => {
-                setComment(e.target.value);
-              }}
-              placeholder={`e.g, We're on track to complete the ${getTermDisplay("objectiveTerm")} by the end of the quarter.`}
-              rows={4}
-              value={comment}
+            <ArrowRight2Icon
+              className={cn("h-4 w-4 transition-transform", {
+                "rotate-90": isExpanded,
+              })}
+              strokeWidth={2.8}
             />
-          </Dialog.Body>
-          <Dialog.Footer className="justify-end gap-2">
-            <Button
-              color="tertiary"
-              onClick={() => {
-                setIsCommentOpen(false);
+          </button>
+        ) : null}
+        <Box className="flex min-w-0 flex-1 items-center gap-2">
+          {onSelectionChange ? null : (
+            <ColorPicker
+              ariaLabel={`Change color for ${name}`}
+              className="shrink-0"
+              disabled={!canUpdate}
+              onChange={(color) => {
+                handleUpdate({ color });
               }}
+              style={{
+                backgroundColor: hexToRgba(color, 0.1),
+                borderColor: hexToRgba(color, 0.2),
+              }}
+              value={color}
+            >
+              <ObjectiveIcon className="h-4" style={{ color }} />
+            </ColorPicker>
+          )}
+          {objectiveReference ? (
+            <Text className="shrink-0 text-[0.95rem] uppercase" color="muted">
+              {objectiveReference}
+            </Text>
+          ) : null}
+          {onSelect ? (
+            <button
+              className="focus-visible:ring-primary flex min-w-0 flex-1 items-center rounded-sm text-left outline-none hover:opacity-90 focus-visible:ring-1"
+              onClick={onSelect}
+              type="button"
+            >
+              <Text className="min-w-0 truncate pr-2">{name}</Text>
+              <ObjectiveForecastRiskBadge objective={forecastRisk} size="row" />
+            </button>
+          ) : (
+            <Link
+              className="flex min-w-0 flex-1 items-center hover:opacity-90"
+              href={withWorkspace(`/teams/${teamId}/objectives/${id}`)}
+              prefetch
+            >
+              <Text className="min-w-0 truncate pr-2">{name}</Text>
+              <ObjectiveForecastRiskBadge objective={forecastRisk} size="row" />
+            </Link>
+          )}
+        </Box>
+      </Box>
+      <Flex align="center" className="shrink-0 gap-2">
+        <Box className="shrink-0">
+          <ObjectiveStatusesMenu>
+            <ObjectiveStatusesMenu.Trigger>
+              <Button
+                className="gap-1 pr-2"
+                color="tertiary"
+                disabled={!canUpdate}
+                rounded="md"
+                size="xs"
+                style={{
+                  backgroundColor: hexToRgba(status?.color, 0.1),
+                  borderColor: hexToRgba(status?.color, 0.2),
+                }}
+                type="button"
+                variant="outline"
+              >
+                <ObjectiveStatusIcon statusId={statusId} />
+                <span className="max-w-[7ch] truncate">
+                  {status?.name ?? "Backlog"}
+                </span>
+              </Button>
+            </ObjectiveStatusesMenu.Trigger>
+            <ObjectiveStatusesMenu.Items
+              setStatusId={(statusId) => {
+                handleUpdate({ statusId });
+              }}
+              statusId={statusId}
+            />
+          </ObjectiveStatusesMenu>
+        </Box>
+        <Box className="shrink-0">
+          <ObjectiveHealthEditor health={health} objectiveId={id}>
+            <Button
+              className={cn("gap-1 pr-2", {
+                "border-success/20 bg-success/10": health === "On Track",
+                "border-warning/20 bg-warning/10": health === "At Risk",
+                "border-danger/20 bg-danger/10": health === "Off Track",
+              })}
+              color="tertiary"
+              disabled={!canUpdate}
+              rounded="md"
+              size="xs"
+              type="button"
               variant="outline"
             >
-              Cancel
+              <ObjectiveHealthIcon health={health} />
+              <span className="max-w-[8ch] truncate">
+                {health ?? "No Health"}
+              </span>
             </Button>
-            <Button disabled={!comment} onClick={handleHealthUpdate}>
-              Update health
-            </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog>
-    </>
+          </ObjectiveHealthEditor>
+        </Box>
+        <Box className="shrink-0">
+          <PrioritiesMenu>
+            <PrioritiesMenu.Trigger>
+              <button
+                aria-label={priority ?? "No Priority"}
+                className="flex items-center gap-1 select-none disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!canUpdate}
+                type="button"
+              >
+                <PriorityIcon priority={priority} />
+                <span className="hidden @6xl:inline">
+                  {priority ?? "No Priority"}
+                </span>
+              </button>
+            </PrioritiesMenu.Trigger>
+            <PrioritiesMenu.Items
+              priority={priority}
+              setPriority={(priority) => {
+                handleUpdate({ priority });
+              }}
+            />
+          </PrioritiesMenu>
+        </Box>
+
+        {!isInSearch ? (
+          <Box className="hidden shrink-0 items-center gap-1.5 px-1 sm:flex">
+            <CircleProgressBar progress={progress} size={16} strokeWidth={2} />
+            <Text className="tabular-nums">{progress}%</Text>
+          </Box>
+        ) : null}
+
+        <Box className="hidden shrink-0 md:block">
+          <DatePicker>
+            <DatePicker.Trigger>
+              <Button
+                aria-label={
+                  endDate
+                    ? `Target date: ${format(new Date(endDate), "MMMM d, yyyy")}`
+                    : "Set target date"
+                }
+                className={cn("px-2", {
+                  "text-text-muted": !endDate,
+                })}
+                color="tertiary"
+                disabled={!canUpdate}
+                leftIcon={
+                  <CalendarIcon
+                    className={cn("h-4", {
+                      "text-text-muted": !endDate,
+                    })}
+                    strokeWidth={3}
+                  />
+                }
+                rounded="md"
+                size="xs"
+                type="button"
+                variant="outline"
+              >
+                {endDate ? (
+                  format(new Date(endDate), "MMM d")
+                ) : (
+                  <Text color="muted">Target date</Text>
+                )}
+              </Button>
+            </DatePicker.Trigger>
+            <DatePicker.Calendar
+              onDayClick={(day) => {
+                handleUpdate({
+                  endDate: formatISO(day, { representation: "date" }),
+                });
+              }}
+              selected={endDate ? new Date(endDate) : undefined}
+            />
+          </DatePicker>
+        </Box>
+
+        <Box className="hidden shrink-0 md:flex">
+          <AssigneesMenu>
+            <AssigneesMenu.Trigger>
+              <Button
+                aria-label={lead ? `Lead: ${lead.username}` : "Add lead"}
+                asIcon
+                className={cn({
+                  "text-text-secondary": !leadUser,
+                })}
+                color="tertiary"
+                disabled={!canUpdate}
+                size="sm"
+                type="button"
+                variant="naked"
+              >
+                <Avatar
+                  className={cn({
+                    "text-foreground/80": !leadUser,
+                  })}
+                  name={lead?.fullName || lead?.username}
+                  size="sm"
+                  src={lead?.avatarUrl}
+                />
+              </Button>
+            </AssigneesMenu.Trigger>
+            <AssigneesMenu.Items
+              assigneeId={leadUser}
+              onAssigneeSelected={(leadUser) => {
+                handleUpdate({ leadUser });
+              }}
+              teamId={teamId}
+            />
+          </AssigneesMenu>
+        </Box>
+      </Flex>
+    </RowWrapper>
   );
 };

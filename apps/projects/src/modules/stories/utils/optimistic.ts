@@ -1,6 +1,5 @@
-// New file with helper utilities for optimistic updates
 import type { DetailedStory } from "../../story/types";
-import type { StoryGroup, GroupStoryParams } from "../types";
+import type { Story, StoryGroup, GroupStoryParams } from "../types";
 
 /**
  * Compute the group key a story should belong to after an update.
@@ -14,11 +13,93 @@ export const computeTargetKey = (
       return payload.statusId;
     case "priority":
       return payload.priority as string | undefined;
-    case "assignee":
-      return payload.assigneeId ?? undefined;
+    case "assignee": {
+      if (!Object.prototype.hasOwnProperty.call(payload, "assigneeId")) {
+        return undefined;
+      }
+
+      return payload.assigneeId ?? "null";
+    }
     default:
       return undefined;
   }
+};
+
+const groupFieldByGroup = {
+  assignee: "assigneeId",
+  priority: "priority",
+  status: "statusId",
+} as const;
+
+const patchesActiveGroup = (
+  groupBy: GroupStoryParams["groupBy"],
+  patch: Partial<DetailedStory>,
+) => {
+  if (groupBy === "none") return false;
+
+  return Object.prototype.hasOwnProperty.call(
+    patch,
+    groupFieldByGroup[groupBy],
+  );
+};
+
+export const patchStories = <T extends Story>(
+  stories: T[],
+  storyId: string,
+  patch: Partial<DetailedStory>,
+): T[] => {
+  if (!stories.some((story) => story.id === storyId)) return stories;
+
+  return stories.map((story) => {
+    if (story.id !== storyId) return story;
+
+    return {
+      ...story,
+      subStories: story.subStories,
+      ...patch,
+    } as T;
+  });
+};
+
+const patchStoryInGroups = (
+  groups: StoryGroup[],
+  storyId: string,
+  patch: Partial<DetailedStory>,
+) => {
+  if (!groups.some((group) => group.stories.some(({ id }) => id === storyId))) {
+    return groups;
+  }
+
+  const nextGroups = groups.map((group) => {
+    const stories = patchStories(group.stories, storyId, patch);
+    if (stories === group.stories) return group;
+
+    return { ...group, stories };
+  });
+
+  return nextGroups;
+};
+
+/**
+ * Patch a story in grouped results, moving it only when the update explicitly
+ * changes the field that defines the active grouping.
+ */
+export const updateStoryInGroups = (
+  groups: StoryGroup[],
+  storyId: string,
+  groupBy: GroupStoryParams["groupBy"],
+  patch: Partial<DetailedStory>,
+) => {
+  if (!patchesActiveGroup(groupBy, patch)) {
+    return patchStoryInGroups(groups, storyId, patch);
+  }
+
+  return moveStoryBetweenGroups(
+    groups,
+    storyId,
+    computeTargetKey(groupBy, patch),
+    patch,
+  );
 };
 
 /**
@@ -32,10 +113,15 @@ export const moveStoryBetweenGroups = (
   targetKey: string | undefined,
   patch: Partial<DetailedStory>,
 ): StoryGroup[] => {
+  if (!groups.some((group) => group.stories.some(({ id }) => id === storyId))) {
+    return groups;
+  }
+
   let moved: DetailedStory | undefined;
 
-  // 1. Remove the story from its current group, remembering it.
   const withoutStory = groups.map((g) => {
+    if (!g.stories.some((story) => story.id === storyId)) return g;
+
     const remaining = g.stories.filter((s) => {
       if (s.id === storyId) {
         moved = {
@@ -47,15 +133,26 @@ export const moveStoryBetweenGroups = (
       }
       return true;
     });
-    return { ...g, stories: remaining };
+
+    return {
+      ...g,
+      loadedCount: Math.max(0, g.loadedCount - 1),
+      stories: remaining,
+      totalCount: Math.max(0, g.totalCount - 1),
+    };
   });
 
-  // If we couldn't find the story or no target, just return cleaned groups.
   if (!moved || !targetKey) return withoutStory;
 
-  // 2. Insert into target group.
   return withoutStory.map((g) =>
-    g.key === targetKey ? { ...g, stories: [moved!, ...g.stories] } : g,
+    g.key === targetKey
+      ? {
+          ...g,
+          loadedCount: g.loadedCount + 1,
+          stories: [moved!, ...g.stories],
+          totalCount: g.totalCount + 1,
+        }
+      : g,
   );
 };
 

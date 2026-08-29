@@ -2,9 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useAnalytics, useWorkspacePath } from "@/hooks";
+import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
 import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
-import { slugify } from "@/utils";
+import { deriveAutoSchedulingStatus } from "@/lib/auto-scheduling";
+import { getStoryPath } from "@/modules/story/utils/story-url";
+import { objectiveKeys } from "@/modules/objectives/constants";
 import { storyKeys } from "@/modules/stories/constants";
 import type {
   GroupedStoriesResponse,
@@ -13,6 +15,25 @@ import type {
 } from "@/modules/stories/types";
 import { createStoryAction } from "../actions/create-story";
 import type { NewStory, DetailedStory } from "../types";
+
+const getOptimisticAutoSchedulingFields = (story: NewStory) => {
+  const autoSchedulingEnabled = story.autoSchedulingEnabled ?? false;
+  const autoSchedulingLocked = story.autoSchedulingLocked ?? false;
+
+  return {
+    autoSchedulingEnabled,
+    autoSchedulingLocked,
+    autoSchedulingStatus: deriveAutoSchedulingStatus({
+      assigneeId: story.assigneeId,
+      autoSchedulingEnabled,
+      autoSchedulingLocked,
+      autoSchedulingStatus: story.autoSchedulingStatus,
+      estimatedDurationMinutes: story.estimatedDurationMinutes,
+    }),
+    autoSchedulingReason: story.autoSchedulingReason ?? null,
+    autoSchedulingUpdatedAt: story.autoSchedulingUpdatedAt ?? null,
+  };
+};
 
 // Helper function to update detail queries (sub-stories)
 const updateDetailQuery = (
@@ -32,6 +53,7 @@ const updateDetailQuery = (
             ...data.subStories,
             {
               ...story,
+              ...getOptimisticAutoSchedulingFields(story),
               id: "123",
               sequenceId: data.subStories.length + 1,
               updatedAt: new Date().toISOString(),
@@ -63,6 +85,9 @@ const updateInfiniteQuery = (
         estimateLabel: story.estimateLabel || null,
         estimateValue: story.estimateValue ?? null,
         estimateScheme: story.estimateScheme ?? DEFAULT_ESTIMATE_SCHEME,
+        estimatedDurationMinutes: story.estimatedDurationMinutes ?? null,
+        minimumFocusBlockMinutes: story.minimumFocusBlockMinutes ?? null,
+        ...getOptimisticAutoSchedulingFields(story),
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -71,6 +96,7 @@ const updateInfiniteQuery = (
         teamId: story.teamId || "",
         workspaceId: story.workspaceId || "",
         assigneeId: story.assigneeId || null,
+        collaboratorCount: 0,
         reporterId: story.reporterId || "",
         epicId: story.epicId || null,
         sequenceId:
@@ -129,6 +155,9 @@ const updateGroupedQuery = (
         estimateLabel: story.estimateLabel || null,
         estimateValue: story.estimateValue ?? null,
         estimateScheme: story.estimateScheme ?? DEFAULT_ESTIMATE_SCHEME,
+        estimatedDurationMinutes: story.estimatedDurationMinutes ?? null,
+        minimumFocusBlockMinutes: story.minimumFocusBlockMinutes ?? null,
+        ...getOptimisticAutoSchedulingFields(story),
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -137,6 +166,7 @@ const updateGroupedQuery = (
         teamId: story.teamId || "",
         workspaceId: story.workspaceId || "",
         assigneeId: story.assigneeId || null,
+        collaboratorCount: 0,
         reporterId: story.reporterId || "",
         epicId: story.epicId || null,
         sequenceId:
@@ -280,6 +310,11 @@ export const useCreateStoryMutation = () => {
   const router = useRouter();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { analytics } = useAnalytics();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
+  const storyTermCapitalized = getTermDisplay("storyTerm", {
+    capitalize: true,
+  });
 
   const mutation = useMutation({
     mutationFn: async (story: NewStory) => {
@@ -288,7 +323,9 @@ export const useCreateStoryMutation = () => {
         throw new Error(response.error.message);
       }
       if (!response.data?.id) {
-        throw new Error("Story creation did not return a created story.");
+        throw new Error(
+          `${storyTermCapitalized} creation did not return a created ${storyTerm}.`,
+        );
       }
       return response.data;
     },
@@ -323,9 +360,9 @@ export const useCreateStoryMutation = () => {
         }
       });
 
-      toast.error(`Failed to create story: ${story.title}`, {
+      toast.error(`Failed to create ${storyTerm}: ${story.title}`, {
         description:
-          error.message || "An error occurred while creating the story",
+          error.message || `An error occurred while creating the ${storyTerm}`,
         action: {
           label: "Retry",
           onClick: () => {
@@ -347,6 +384,9 @@ export const useCreateStoryMutation = () => {
       queryClient.invalidateQueries({
         queryKey: storyKeys.all(workspaceSlug),
       });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
+      });
 
       if (createdStory.parentId) {
         queryClient.invalidateQueries({
@@ -354,15 +394,11 @@ export const useCreateStoryMutation = () => {
         });
       } else {
         toast.success("Success", {
-          description: "Story created successfully",
+          description: `${storyTermCapitalized} created successfully`,
           action: {
-            label: "View story",
+            label: `View ${storyTerm}`,
             onClick: () => {
-              router.push(
-                withWorkspace(
-                  `/story/${createdStory.id}/${slugify(createdStory.title)}`,
-                ),
-              );
+              router.push(withWorkspace(getStoryPath(createdStory)));
             },
           },
         });

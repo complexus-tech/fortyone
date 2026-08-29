@@ -1,5 +1,5 @@
-import React, { useCallback } from "react";
-import { format, isWeekend } from "date-fns";
+import { useId } from "react";
+import { format } from "date-fns";
 import {
   Line,
   XAxis,
@@ -14,37 +14,48 @@ import { cn } from "lib";
 import { useTerminology } from "@/hooks";
 import type { SprintAnalytics } from "../types";
 
+const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5];
+
 type BurndownChartProps = {
   burndownData: SprintAnalytics["burndown"];
+  workingDays?: SprintAnalytics["workingDays"];
   className?: string;
+};
+
+type BurndownChartRow = {
+  actual: number;
+  date: string;
+  ideal: number;
+  isNonWorkingDay: boolean;
+  label: string;
 };
 
 const CustomTooltip = ({
   active,
   payload,
-  label,
 }: {
   active?: boolean;
   payload?: {
-    payload: { actual: number; ideal: number; isWeekend: boolean };
+    payload: BurndownChartRow;
   }[];
-  label?: string;
 }) => {
   const { getTermDisplay } = useTerminology();
   if (active && payload?.length) {
     const data = payload[0].payload;
     return (
-      <Box className="border-border bg-surface-elevated/60 text-foreground z-50 min-w-44 rounded-2xl border p-4 backdrop-blur-lg">
-        <Text fontWeight="semibold">{label}</Text>
-        <Box className="mb-0.1 text-warning mt-1">
+      <Box className="border-border/40 bg-surface-elevated/85 text-foreground z-50 min-w-44 rounded-2xl border-[0.5px] p-4 shadow-lg shadow-black/5 backdrop-blur-xl dark:border-white/[0.08] dark:shadow-black/20">
+        <Text className="text-base font-semibold">{data.label}</Text>
+        <Box className="text-warning mt-2 text-[0.95rem] font-medium">
           Remaining: {data.actual}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        <Box className="mb-0.5 text-[#6366F1]">
+        <Box className="mt-1 text-[0.95rem] font-medium text-[#6366F1]">
           Ideal: {data.ideal}{" "}
           {getTermDisplay("storyTerm", { variant: "plural" })}
         </Box>
-        {data.isWeekend ? <Box className="opacity-60">Weekend</Box> : null}
+        {data.isNonWorkingDay ? (
+          <Box className="mt-2 text-sm opacity-55">Non-working day</Box>
+        ) : null}
       </Box>
     );
   }
@@ -88,70 +99,72 @@ const CustomXAxisTick = ({
     <text
       dy={16}
       fill={isDark ? "#9CA3AF" : "#6B7280"}
-      fontSize={12}
+      fontSize={13}
       textAnchor={textAnchor}
       x={x}
       y={y}
     >
-      {payload.value}
+      {format(new Date(payload.value), "MMM d")}
     </text>
   );
 };
 
 export const BurndownChart = ({
   burndownData,
+  workingDays = DEFAULT_WORKING_DAYS,
   className,
 }: BurndownChartProps) => {
   const { resolvedTheme } = useTheme();
+  const patternId = `non-working-${useId().replaceAll(":", "")}`;
+  const isDark = resolvedTheme === "dark";
 
-  // Memoized tick component to avoid recreation on every render
-  const renderTick = useCallback(
-    (props: {
-      x: number;
-      y: number;
-      payload: { value: string };
-      index: number;
-    }) => (
-      <CustomXAxisTick
-        {...props}
-        isDark={resolvedTheme === "dark"}
-        totalLength={burndownData.length - 1}
-      />
-    ),
-    [resolvedTheme, burndownData.length],
+  const renderTick = (props: {
+    x: number;
+    y: number;
+    payload: { value: string };
+    index: number;
+  }) => (
+    <CustomXAxisTick
+      {...props}
+      isDark={isDark}
+      totalLength={burndownData.length - 1}
+    />
   );
 
   // Transform the analytics data for the chart
-  const chartData = burndownData.map((item, index) => {
+  const chartData = burndownData.map((item) => {
     const date = new Date(item.date);
-    const isWeekendDay = isWeekend(date);
+    const utcWeekday = date.getUTCDay();
+    const isoWeekday = utcWeekday === 0 ? 7 : utcWeekday;
+    const isNonWorkingDay = !workingDays.includes(isoWeekday);
 
     return {
-      date: format(date, "MMM d"),
-      day: index + 1,
+      date: item.date,
       actual: item.remaining,
       ideal: item.ideal,
-      isWeekend: isWeekendDay,
-      rawDate: item.date,
+      isNonWorkingDay,
+      label: format(date, "MMM d"),
     };
   });
 
-  // Find weekend ranges for ReferenceArea
-  const weekendRanges: { start: string; end: string }[] = [];
-  let weekendStart: string | null = null;
+  // Find non-working ranges for ReferenceArea
+  const nonWorkingRanges: { start: string; end: string }[] = [];
+  let nonWorkingStart: string | null = null;
 
   chartData.forEach((item, index) => {
-    if (item.isWeekend && !weekendStart) {
-      weekendStart = item.date;
-    } else if (!item.isWeekend && weekendStart) {
+    if (item.isNonWorkingDay && !nonWorkingStart) {
+      nonWorkingStart = item.date;
+    } else if (!item.isNonWorkingDay && nonWorkingStart) {
       const prevItem = chartData[index - 1];
-      weekendRanges.push({ start: weekendStart, end: prevItem.date });
-      weekendStart = null;
+      nonWorkingRanges.push({
+        start: nonWorkingStart,
+        end: prevItem.date,
+      });
+      nonWorkingStart = null;
     }
 
-    // Handle case where sprint ends on weekend (last item)
-    if (index === chartData.length - 1 && weekendStart) {
-      weekendRanges.push({ start: weekendStart, end: item.date });
+    if (index === chartData.length - 1 && nonWorkingStart) {
+      nonWorkingRanges.push({ start: nonWorkingStart, end: item.date });
     }
   });
 
@@ -170,14 +183,14 @@ export const BurndownChart = ({
           <defs>
             <pattern
               height="6"
-              id="weekendPattern"
+              id={patternId}
               patternTransform="rotate(45)"
               patternUnits="userSpaceOnUse"
               width="6"
             >
               <rect
-                fill={resolvedTheme === "dark" ? "#6b7280" : "#6b7280"}
-                fillOpacity="0.4"
+                fill={isDark ? "#71717A" : "#94A3B8"}
+                fillOpacity={isDark ? 0.25 : 0.22}
                 height="6"
                 width="1"
               />
@@ -185,38 +198,51 @@ export const BurndownChart = ({
             </pattern>
           </defs>
 
-          {weekendRanges.map((range, index) => (
+          {nonWorkingRanges.map((range) => (
             <ReferenceArea
-              fill="url(#weekendPattern)"
-              fillOpacity={0.6}
-              key={index}
+              fill={`url(#${patternId})`}
+              fillOpacity={0.7}
+              key={`${range.start}-${range.end}`}
               x1={range.start}
               x2={range.end}
             />
           ))}
           <XAxis
             axisLine={{
-              stroke: resolvedTheme === "dark" ? "#222" : "#E0E0E0",
+              stroke: isDark
+                ? "rgba(255, 255, 255, 0.09)"
+                : "rgba(15, 23, 42, 0.12)",
             }}
             dataKey="date"
             interval={0}
             tick={renderTick}
             tickLine={{
-              stroke: resolvedTheme === "dark" ? "#333" : "#E0E0E0",
+              stroke: isDark
+                ? "rgba(255, 255, 255, 0.12)"
+                : "rgba(15, 23, 42, 0.12)",
             }}
           />
 
           <Tooltip
+            allowEscapeViewBox={{ x: false, y: true }}
             content={<CustomTooltip />}
             cursor={{
-              fill:
-                resolvedTheme === "dark"
-                  ? "rgba(255, 255, 255, 0.03)"
-                  : "rgba(0, 0, 0, 0.05)",
+              stroke: isDark
+                ? "rgba(255, 255, 255, 0.16)"
+                : "rgba(15, 23, 42, 0.18)",
+              strokeDasharray: "3 4",
+              strokeWidth: 1,
             }}
+            wrapperStyle={{ outline: "none" }}
           />
 
           <Line
+            activeDot={{
+              fill: "#6366F1",
+              r: 6,
+              stroke: isDark ? "#18181B" : "#FFFFFF",
+              strokeWidth: 3,
+            }}
             connectNulls={false}
             dataKey="ideal"
             dot={false}
@@ -227,10 +253,16 @@ export const BurndownChart = ({
             type="monotone"
           />
           <Line
+            activeDot={{
+              fill: "#EAB308",
+              r: 6,
+              stroke: isDark ? "#18181B" : "#FFFFFF",
+              strokeWidth: 3,
+            }}
             connectNulls={false}
             dataKey="actual"
             dot={false}
-            stroke="#eab308"
+            stroke="#EAB308"
             strokeWidth={2}
             type="monotone"
           />

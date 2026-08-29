@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useAnalytics, useWorkspacePath } from "@/hooks";
+import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
+import { objectiveKeys } from "@/modules/objectives/constants";
 import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import type {
@@ -119,6 +120,7 @@ export const useBulkUpdateStoriesMutation = () => {
   const { storyId } = useParams<{ storyId?: string }>();
   const { workspaceSlug } = useWorkspacePath();
   const { analytics } = useAnalytics();
+  const { getTermDisplay } = useTerminology();
 
   const mutation = useMutation({
     mutationFn: ({
@@ -188,16 +190,22 @@ export const useBulkUpdateStoriesMutation = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: storyKeys.all(workspaceSlug) });
+      queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
+      });
 
-      toast.error("Failed to update stories", {
-        description: error.message || "Your changes were not saved",
-        action: {
-          label: "Retry",
-          onClick: () => {
-            mutation.mutate(variables);
+      toast.error(
+        `Failed to update ${getTermDisplay("storyTerm", { variant: "plural" })}`,
+        {
+          description: error.message || "Your changes were not saved",
+          action: {
+            label: "Retry",
+            onClick: () => {
+              mutation.mutate(variables);
+            },
           },
         },
-      });
+      );
     },
 
     onSuccess: (res, { storyIds, payload }) => {

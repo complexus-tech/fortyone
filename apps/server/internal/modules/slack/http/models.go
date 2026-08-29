@@ -1,6 +1,8 @@
 package slackhttp
 
 import (
+	"time"
+
 	slack "github.com/complexus-tech/projects-api/internal/modules/slack/service"
 )
 
@@ -31,16 +33,38 @@ type AppSlackChannel struct {
 }
 
 type AppIntegration struct {
-	SlackWorkspace *AppSlackWorkspace `json:"slackWorkspace,omitempty"`
-	Channels       []AppSlackChannel  `json:"channels"`
+	SlackWorkspace *AppSlackWorkspace   `json:"slackWorkspace,omitempty"`
+	AccountLink    *AppSlackAccountLink `json:"accountLink,omitempty"`
+	Channels       []AppSlackChannel    `json:"channels"`
+}
+
+type AppSlackAccountLink struct {
+	SlackUserID string `json:"slackUserId"`
+	LinkedVia   string `json:"linkedVia"`
+	LinkedAt    string `json:"linkedAt"`
 }
 
 type AppCreateInstallSession struct {
 	InstallURL string `json:"installUrl"`
 }
 
+type AppCreateAccountLinkSessionRequest struct {
+	ReturnURL string `json:"returnUrl"`
+}
+
+type AppCreateAccountLinkSession struct {
+	Linked     bool   `json:"linked"`
+	CanLink    bool   `json:"canLink"`
+	InstallURL string `json:"installUrl,omitempty"`
+}
+
 type AppLinkSlackAccountRequest struct {
 	Token string `json:"token" validate:"required"`
+}
+
+type AppLinkSlackAccountResult struct {
+	Status      string `json:"status"`
+	SlackUserID string `json:"slackUserId"`
 }
 
 type AppRequestLog struct {
@@ -61,139 +85,6 @@ type AppRequestLog struct {
 	CreatedAt    string            `json:"createdAt"`
 }
 
-type AppRuntimeActor struct {
-	SlackTeamID    string `json:"teamId"`
-	SlackUserID    string `json:"userId"`
-	SlackUserName  string `json:"userName"`
-	SlackChannelID string `json:"channelId"`
-	SlackChannel   string `json:"channelName"`
-	SlackMessageTS string `json:"messageTs"`
-	SlackThreadTS  string `json:"threadTs"`
-}
-
-type AppRuntimeOptionsRequest struct {
-	Actor  AppRuntimeActor `json:"actor"`
-	Query  string          `json:"query"`
-	TeamID string          `json:"teamId"`
-}
-
-type AppRuntimeSlackInstallation struct {
-	BotToken  string `json:"botToken"`
-	BotUserID string `json:"botUserId,omitempty"`
-	TeamName  string `json:"teamName,omitempty"`
-}
-
-type AppRuntimeIdentityRequest struct {
-	Actor AppRuntimeActor `json:"actor"`
-}
-
-type AppRuntimeIdentityResponse struct {
-	WorkspaceID   string  `json:"workspaceId"`
-	WorkspaceSlug string  `json:"workspaceSlug"`
-	UserID        *string `json:"userId,omitempty"`
-	ConnectURL    string  `json:"connectUrl,omitempty"`
-}
-
-type AppRuntimeLogRequest struct {
-	Actor        AppRuntimeActor `json:"actor"`
-	Endpoint     string          `json:"endpoint"`
-	ErrorMessage string          `json:"errorMessage"`
-	Outcome      string          `json:"outcome"`
-	RequestType  string          `json:"requestType"`
-	ResponseCode int             `json:"responseCode"`
-}
-
-type AppRuntimeCreateStoryRequest struct {
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	TeamID      string   `json:"teamId"`
-	StatusID    string   `json:"statusId"`
-	Priority    string   `json:"priority"`
-	AssigneeID  string   `json:"assigneeId"`
-	ObjectiveID string   `json:"objectiveId"`
-	LabelIDs    []string `json:"labelIds"`
-	Source      struct {
-		SlackTeamID    string `json:"teamId"`
-		SlackUserID    string `json:"userId"`
-		SlackUserName  string `json:"userName"`
-		SlackChannelID string `json:"channelId"`
-		SlackChannel   string `json:"channelName"`
-		SlackMessageTS string `json:"messageTs"`
-		SlackThreadTS  string `json:"threadTs"`
-		SlackText      string `json:"messageText"`
-	} `json:"source"`
-}
-
-type AppRuntimeThreadCommentRequest struct {
-	Actor       AppRuntimeActor `json:"actor"`
-	MessageText string          `json:"messageText"`
-	StoryID     string          `json:"storyId"`
-}
-
-type AppRuntimeStoryUnfurlRequest struct {
-	Actor AppRuntimeActor `json:"actor"`
-	URL   string          `json:"url"`
-}
-
-func toCoreRuntimeActor(input AppRuntimeActor) slack.CoreRuntimeActor {
-	return slack.CoreRuntimeActor{
-		SlackTeamID:    input.SlackTeamID,
-		SlackUserID:    input.SlackUserID,
-		SlackUserName:  input.SlackUserName,
-		SlackChannelID: input.SlackChannelID,
-		SlackChannel:   input.SlackChannel,
-		SlackMessageTS: input.SlackMessageTS,
-		SlackThreadTS:  input.SlackThreadTS,
-	}
-}
-
-func toCoreRuntimeLogInput(input AppRuntimeLogRequest) slack.CoreRuntimeLogInput {
-	return slack.CoreRuntimeLogInput{
-		Actor:        toCoreRuntimeActor(input.Actor),
-		Endpoint:     input.Endpoint,
-		ErrorMessage: input.ErrorMessage,
-		Outcome:      input.Outcome,
-		RequestType:  input.RequestType,
-		ResponseCode: input.ResponseCode,
-	}
-}
-
-func toCoreRuntimeCreateStoryInput(input AppRuntimeCreateStoryRequest) slack.CoreRuntimeCreateStoryInput {
-	return slack.CoreRuntimeCreateStoryInput{
-		Title:       input.Title,
-		Description: input.Description,
-		TeamID:      input.TeamID,
-		StatusID:    input.StatusID,
-		Priority:    input.Priority,
-		AssigneeID:  input.AssigneeID,
-		ObjectiveID: input.ObjectiveID,
-		LabelIDs:    input.LabelIDs,
-		Source:      input.Source,
-	}
-}
-
-func toAppRuntimeSlackInstallation(input slack.CoreRuntimeSlackInstallation) AppRuntimeSlackInstallation {
-	return AppRuntimeSlackInstallation{
-		BotToken:  input.BotToken,
-		BotUserID: input.BotUserID,
-		TeamName:  input.TeamName,
-	}
-}
-
-func toAppRuntimeIdentity(input slack.CoreRuntimeIdentity) AppRuntimeIdentityResponse {
-	var userID *string
-	if input.UserID != nil {
-		value := input.UserID.String()
-		userID = &value
-	}
-	return AppRuntimeIdentityResponse{
-		WorkspaceID:   input.WorkspaceID.String(),
-		WorkspaceSlug: input.WorkspaceSlug,
-		UserID:        userID,
-		ConnectURL:    input.ConnectURL,
-	}
-}
-
 func toAppIntegration(input slack.CoreIntegration) AppIntegration {
 	out := AppIntegration{
 		Channels: make([]AppSlackChannel, 0, len(input.Channels)),
@@ -201,6 +92,13 @@ func toAppIntegration(input slack.CoreIntegration) AppIntegration {
 	if input.SlackWorkspace != nil {
 		workspace := toAppSlackWorkspace(*input.SlackWorkspace)
 		out.SlackWorkspace = &workspace
+	}
+	if input.AccountLink != nil {
+		out.AccountLink = &AppSlackAccountLink{
+			SlackUserID: input.AccountLink.SlackUserID,
+			LinkedVia:   input.AccountLink.LinkedVia,
+			LinkedAt:    input.AccountLink.LinkedAt.UTC().Format(time.RFC3339),
+		}
 	}
 	for _, channel := range input.Channels {
 		out.Channels = append(out.Channels, toAppChannel(channel))

@@ -4,7 +4,6 @@ import { Box, Button, Flex, Menu, Text } from "ui";
 import { cn } from "lib";
 import {
   format,
-  eachDayOfInterval,
   addDays,
   differenceInDays,
   formatISO,
@@ -13,21 +12,28 @@ import {
   getWeek,
   isSameWeek,
   isYesterday,
-  eachMonthOfInterval,
-  eachQuarterOfInterval,
-  startOfMonth,
   endOfMonth,
   startOfQuarter,
   endOfQuarter,
 } from "date-fns";
-import type { ReactNode } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { ArrowDown2Icon } from "icons";
-import { usePathname } from "next/navigation";
+import { ArrowDown2Icon, ChevronLeftIcon, ChevronRightIcon } from "icons";
 import { useLocalStorage } from "@/hooks";
+import {
+  calculateGanttPosition,
+  calculateTimelineDateFromPosition,
+  calculateTimelineDatePosition,
+  getColumnWidth,
+  getGanttOffscreenDirection,
+  getTimePeriodsForZoom,
+  type ZoomLevel,
+} from "./base-gantt-utils";
 
 // Types
-export type ZoomLevel = "weeks" | "months" | "quarters";
+export type { ZoomLevel } from "./base-gantt-utils";
+
+const DEFAULT_STICKY_COLUMNS_WIDTH = 544;
 
 export type GanttItem = {
   id: string;
@@ -40,6 +46,12 @@ type BaseGanttProps<T extends GanttItem> = {
   className?: string;
   storageKey: string; // for zoom level persistence
   zoomLevel?: ZoomLevel;
+  controlledZoomLevel?: ZoomLevel;
+  onZoomLevelChange?: (zoom: ZoomLevel) => void;
+  scrollToTodayRequest?: number;
+  stickyColumnsWidth?: number;
+  rowHeight?: number | string;
+  barClassName?: string;
   onDateUpdate: (itemId: string, startDate: string, endDate: string) => void;
   onBarClick?: (item: T) => void;
   renderSidebar: (
@@ -52,44 +64,6 @@ type BaseGanttProps<T extends GanttItem> = {
 };
 
 // Helper functions
-const getTimePeriodsForZoom = (
-  dateRange: { start: Date; end: Date },
-  zoomLevel: ZoomLevel,
-) => {
-  switch (zoomLevel) {
-    case "weeks":
-      return eachDayOfInterval({
-        start: dateRange.start,
-        end: dateRange.end,
-      });
-    case "months":
-      return eachMonthOfInterval({
-        start: startOfMonth(dateRange.start),
-        end: endOfMonth(dateRange.end),
-      });
-    case "quarters":
-      return eachQuarterOfInterval({
-        start: startOfQuarter(dateRange.start),
-        end: endOfQuarter(dateRange.end),
-      });
-    default:
-      return [];
-  }
-};
-
-const getColumnWidth = (zoomLevel: ZoomLevel) => {
-  switch (zoomLevel) {
-    case "weeks":
-      return 64;
-    case "months":
-      return 120;
-    case "quarters":
-      return 180;
-    default:
-      return 64;
-  }
-};
-
 const getWeekSpans = (days: Date[]) => {
   if (days.length === 0) return [];
 
@@ -140,6 +114,36 @@ const getVisibleDateRange = (centerDate: Date, viewportDays = 365) => {
   return { start, end };
 };
 
+const getDateRangeForZoom = <T extends GanttItem>(
+  centerDate: Date,
+  items: T[],
+  zoomLevel: ZoomLevel,
+) => {
+  const viewportDays = zoomLevel === "weeks" ? 365 : 1460;
+  const paddingDays = zoomLevel === "weeks" ? 30 : 120;
+  const baseRange = getVisibleDateRange(centerDate, viewportDays);
+
+  return items.reduce(
+    (range, item) => {
+      const itemStart = item.startDate ? new Date(item.startDate) : null;
+      const itemEnd = item.endDate ? new Date(item.endDate) : null;
+
+      if (itemStart && !Number.isNaN(itemStart.getTime())) {
+        const paddedStart = subDays(itemStart, paddingDays);
+        if (paddedStart < range.start) range.start = paddedStart;
+      }
+
+      if (itemEnd && !Number.isNaN(itemEnd.getTime())) {
+        const paddedEnd = addDays(itemEnd, paddingDays);
+        if (paddedEnd > range.end) range.end = paddedEnd;
+      }
+
+      return range;
+    },
+    { ...baseRange },
+  );
+};
+
 // Generic Bar Component
 const Bar = <T extends GanttItem>({
   item,
@@ -148,6 +152,7 @@ const Bar = <T extends GanttItem>({
   onBarClick,
   zoomLevel,
   renderContent,
+  className,
 }: {
   item: T;
   dateRange: { start: Date; end: Date };
@@ -155,6 +160,7 @@ const Bar = <T extends GanttItem>({
   onBarClick?: (item: T) => void;
   zoomLevel: ZoomLevel;
   renderContent: (item: T) => ReactNode;
+  className?: string;
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{
@@ -217,40 +223,10 @@ const Bar = <T extends GanttItem>({
     return date;
   }, [item.endDate, effectiveOptimisticDates?.endDate, startDate]);
 
-  const columnWidth = getColumnWidth(zoomLevel);
-
-  // Helper function to calculate position from dates
   const getPositionFromDates = useCallback(
-    (start: Date, end: Date) => {
-      const startDayOffset = differenceInDays(start, dateRange.start);
-      const durationDays = Math.max(1, differenceInDays(end, start));
-
-      switch (zoomLevel) {
-        case "weeks": {
-          return {
-            leftPosition: startDayOffset * columnWidth,
-            width: durationDays * columnWidth,
-          };
-        }
-        case "months":
-        case "quarters": {
-          const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
-          const totalDays = differenceInDays(dateRange.end, dateRange.start);
-          const daysPerPeriod = totalDays / periods.length;
-
-          return {
-            leftPosition: (startDayOffset / daysPerPeriod) * columnWidth,
-            width: (durationDays / daysPerPeriod) * columnWidth,
-          };
-        }
-        default:
-          return {
-            leftPosition: 0,
-            width: columnWidth,
-          };
-      }
-    },
-    [columnWidth, dateRange, zoomLevel],
+    (start: Date, end: Date) =>
+      calculateGanttPosition({ start, end, dateRange, zoomLevel }),
+    [dateRange, zoomLevel],
   );
 
   const handleMouseDown = useCallback(
@@ -526,33 +502,33 @@ const Bar = <T extends GanttItem>({
   return (
     <Box
       className={cn(
-        "group border-border bg-surface-muted absolute z-0 h-10 rounded-xl border-[0.5px] backdrop-blur transition-colors",
+        "group border-border focus-visible:ring-primary dark:border-border/70 dark:bg-surface/80 bg-surface-muted/80 absolute z-0 h-10 rounded-xl border-[0.5px] backdrop-blur-2xl transition-colors focus-visible:ring-1 focus-visible:outline-none",
         {
           "shadow-lg": isDragging,
-          "hover:border-border-strong hover:bg-state-hover cursor-pointer":
+          "hover:border-border-strong hover:bg-surface-muted dark:hover:bg-surface/90 cursor-pointer":
             onBarClick,
         },
+        className,
       )}
-      onFocus={(e) => {
-        e.preventDefault();
-        e.currentTarget.blur();
-      }}
       onKeyDown={(e) => {
+        if (!onBarClick || (e.key !== "Enter" && e.key !== " ")) return;
         e.preventDefault();
+        onBarClick(item);
       }}
       onMouseDown={(e) => {
         handleMouseDown(e, "move");
       }}
       onMouseUp={handleClick}
+      role={onBarClick ? "button" : undefined}
       style={{
         left: `${finalLeftPosition}px`,
         width: `${finalWidth}px`,
         top: "6px",
       }}
-      tabIndex={-1}
+      tabIndex={onBarClick ? 0 : -1}
     >
       <Box
-        className="group-hover:bg-border-strong absolute top-1/2 bottom-1/2 -left-1 h-[70%] w-2 -translate-y-1/2 cursor-col-resize rounded transition-colors"
+        className="group-hover:bg-foreground/20 absolute top-1/2 bottom-1/2 -left-1 h-[70%] w-2 -translate-y-1/2 cursor-col-resize rounded transition-colors dark:group-hover:bg-white/25"
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, "resize-start");
@@ -560,13 +536,13 @@ const Bar = <T extends GanttItem>({
       />
 
       <Box
-        className="group-hover:bg-border-strong absolute top-1/2 -right-1 bottom-1/2 h-[70%] w-2 -translate-y-1/2 cursor-col-resize rounded transition-colors"
+        className="group-hover:bg-foreground/20 absolute top-1/2 -right-1 bottom-1/2 h-[70%] w-2 -translate-y-1/2 cursor-col-resize rounded transition-colors dark:group-hover:bg-white/25"
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, "resize-end");
         }}
       />
-      <Box className="absolute inset-0 overflow-hidden">
+      <Box className="absolute inset-0 overflow-hidden rounded-[inherit]">
         <Box className="px-3 leading-10">{renderContent(item)}</Box>
       </Box>
     </Box>
@@ -586,20 +562,17 @@ const TimelineHeader = ({
 
   const timelineMinWidth = periods.length * columnWidth;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const renderPeriodHeader = () => {
     switch (zoomLevel) {
       case "weeks":
         return (
           <>
-            <Box className="border-border border-b-[0.5px]">
+            <Box className="border-border dark:border-border/45 border-b-[0.5px]">
               <Flex>
                 {getWeekSpans(periods).map(
                   ({ week, month, span, startIndex }) => (
                     <Box
-                      className="border-border border-r-[0.5px] px-2 py-1.5 text-left"
+                      className="border-border dark:border-border/45 border-r-[0.5px] px-2 py-1.5 text-left"
                       key={`${month}-${week}-${startIndex}`}
                       style={{ width: `${(span / periods.length) * 100}%` }}
                     >
@@ -631,36 +604,24 @@ const TimelineHeader = ({
 
             <Flex>
               {periods.map((day) => {
-                const isToday = day.getTime() === today.getTime();
-
                 return (
                   <Box
                     className={cn(
-                      "border-border h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center",
+                      "border-border dark:border-border/45 h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center",
                       {
-                        "bg-surface-muted": isWeekend(day) && !isToday,
-                        "border-primary bg-primary dark:border-primary":
-                          isToday,
+                        "bg-surface-muted": isWeekend(day),
                       },
                     )}
                     key={day.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >
                     <Flex align="center" className="px-1" justify="between">
-                      {isToday ? (
-                        <Text color="white" fontSize="sm" fontWeight="medium">
-                          Today
-                        </Text>
-                      ) : (
-                        <>
-                          <Text color="muted" fontSize="sm">
-                            {format(day, "d")}
-                          </Text>
-                          <Text color="muted" fontSize="sm">
-                            {format(day, "eeeee")}
-                          </Text>
-                        </>
-                      )}
+                      <Text color="muted" fontSize="sm">
+                        {format(day, "d")}
+                      </Text>
+                      <Text color="muted" fontSize="sm">
+                        {format(day, "eeeee")}
+                      </Text>
                     </Flex>
                   </Box>
                 );
@@ -671,11 +632,11 @@ const TimelineHeader = ({
       case "months":
         return (
           <>
-            <Box className="border-border border-b-[0.5px]">
+            <Box className="border-border dark:border-border/45 border-b-[0.5px]">
               <Flex>
                 {periods.map((month) => (
                   <Box
-                    className="border-border border-r-[0.5px] px-2 py-1.5 text-left"
+                    className="border-border dark:border-border/45 border-r-[0.5px] px-2 py-1.5 text-left"
                     key={month.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >
@@ -707,7 +668,7 @@ const TimelineHeader = ({
             <Flex>
               {periods.map((month) => (
                 <Box
-                  className="border-border h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center"
+                  className="border-border dark:border-border/45 h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center"
                   key={month.getTime()}
                   style={{ minWidth: `${columnWidth}px` }}
                 >
@@ -727,11 +688,11 @@ const TimelineHeader = ({
       case "quarters":
         return (
           <>
-            <Box className="border-border border-b-[0.5px]">
+            <Box className="border-border dark:border-border/45 border-b-[0.5px]">
               <Flex>
                 {periods.map((quarter) => (
                   <Box
-                    className="border-border border-r-[0.5px] px-2 py-1.5 text-left"
+                    className="border-border dark:border-border/45 border-r-[0.5px] px-2 py-1.5 text-left"
                     key={quarter.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >
@@ -767,7 +728,7 @@ const TimelineHeader = ({
 
                 return (
                   <Box
-                    className="border-border h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center"
+                    className="border-border dark:border-border/45 h-[calc(2rem-1px)] min-w-16 flex-1 border-r-[0.5px] px-1 py-1 text-center"
                     key={quarter.getTime()}
                     style={{ minWidth: `${columnWidth}px` }}
                   >
@@ -792,7 +753,7 @@ const TimelineHeader = ({
 
   return (
     <Box
-      className="border-border bg-background sticky top-0 z-10 h-16 border-b-[0.5px]"
+      className="border-border bg-background dark:border-border/45 sticky top-0 z-10 h-16 border-b-[0.5px]"
       style={{ minWidth: `${timelineMinWidth}px` }}
     >
       <Box className="h-8 w-full">{renderPeriodHeader()}</Box>
@@ -805,10 +766,38 @@ export const GanttHeader = ({
   onReset,
   zoomLevel,
   onZoomChange,
+  children,
 }: {
   onReset: () => void;
   zoomLevel: ZoomLevel;
   onZoomChange: (zoom: ZoomLevel) => void;
+  children?: ReactNode;
+}) => {
+  return (
+    <Box className="border-border bg-background sticky top-0 z-10 hidden h-16 border-b-[0.5px] px-4 md:block">
+      <GanttControls
+        className={children ? "h-9" : "h-full"}
+        onReset={onReset}
+        onZoomChange={onZoomChange}
+        zoomLevel={zoomLevel}
+      />
+      {children}
+    </Box>
+  );
+};
+
+export const GanttControls = ({
+  onReset,
+  zoomLevel,
+  onZoomChange,
+  className,
+  showSeparator = false,
+}: {
+  onReset: () => void;
+  zoomLevel: ZoomLevel;
+  onZoomChange: (zoom: ZoomLevel) => void;
+  className?: string;
+  showSeparator?: boolean;
 }) => {
   const getZoomLabel = (zoom: ZoomLevel) => {
     switch (zoom) {
@@ -824,10 +813,7 @@ export const GanttHeader = ({
   };
 
   return (
-    <Box className="border-border bg-background sticky top-0 z-10 hidden h-16 items-center justify-between border-b-[0.5px] px-6 py-2.5 md:flex">
-      <Button color="tertiary" onClick={onReset} size="sm">
-        Today
-      </Button>
+    <Flex align="center" className={className} gap={2}>
       <Flex align="center" gap={2}>
         <Text color="muted" fontWeight="medium">
           Zoom:
@@ -869,7 +855,15 @@ export const GanttHeader = ({
           </Menu.Items>
         </Menu>
       </Flex>
-    </Box>
+      {showSeparator ? (
+        <span className="text-text-secondary mx-1 hidden opacity-40 md:inline">
+          |
+        </span>
+      ) : null}
+      <Button color="tertiary" onClick={onReset} size="sm">
+        Today
+      </Button>
+    </Flex>
   );
 };
 
@@ -880,19 +874,24 @@ const Chart = <T extends GanttItem>({
   onDateUpdate,
   onBarClick,
   zoomLevel,
-  isContainerScrollable,
   renderBarContent,
+  rowHeight,
+  viewport,
+  onScrollToItem,
+  barClassName,
 }: {
   items: T[];
   dateRange: { start: Date; end: Date };
   onDateUpdate: (itemId: string, startDate: string, endDate: string) => void;
   onBarClick?: (item: T) => void;
   zoomLevel: ZoomLevel;
-  isContainerScrollable: boolean;
   renderBarContent: (item: T) => ReactNode;
+  rowHeight: number | string;
+  viewport: { scrollLeft: number; visibleWidth: number };
+  onScrollToItem: (item: T) => void;
+  barClassName?: string;
 }) => {
-  const pathname = usePathname();
-  const isRoadmap = pathname.includes("roadmap");
+  const [hoverPosition, setHoverPosition] = useState<number | null>(null);
   const periods = getTimePeriodsForZoom(dateRange, zoomLevel);
   const columnWidth = getColumnWidth(zoomLevel);
 
@@ -900,63 +899,187 @@ const Chart = <T extends GanttItem>({
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayPosition = calculateTimelineDatePosition({
+    date: today,
+    dateRange,
+    zoomLevel,
+  });
+  const hoverDate =
+    hoverPosition === null
+      ? null
+      : calculateTimelineDateFromPosition({
+          position: hoverPosition,
+          dateRange,
+          zoomLevel,
+        });
+
+  const handleTimelineMouseMove = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setHoverPosition(
+      Math.min(Math.max(event.clientX - bounds.left, 0), timelineMinWidth),
+    );
+  };
 
   return (
-    <Box className="flex-1" style={{ minWidth: `${timelineMinWidth}px` }}>
-      <TimelineHeader dateRange={dateRange} zoomLevel={zoomLevel} />
-      {items.map((item, idx) => (
-        <Box
-          className="border-border hover:bg-state-hover relative h-14 hover:border-y-[0.5px]"
-          key={item.id}
-        >
-          <Flex className="absolute inset-0">
-            {periods.map((period) => {
-              let isToday = false;
-              let dayIsYesterday = false;
+    <Box
+      className="relative z-0 min-h-full flex-1"
+      onMouseLeave={() => {
+        setHoverPosition(null);
+      }}
+      onMouseMove={handleTimelineMouseMove}
+      style={{ minWidth: `${timelineMinWidth}px` }}
+    >
+      <Flex className="pointer-events-none absolute inset-x-0 top-16 bottom-0">
+        {periods.map((period) => {
+          const dayIsYesterday = zoomLevel === "weeks" && isYesterday(period);
 
-              if (zoomLevel === "weeks") {
-                isToday = period.getTime() === today.getTime();
-                dayIsYesterday = isYesterday(period);
-              }
-
-              return (
-                <Box
-                  className={cn(
-                    "border-border min-w-16 flex-1 border-r-[0.5px]",
-                    {
-                      "bg-surface-muted":
-                        zoomLevel === "weeks" && isWeekend(period) && !isToday,
-                      "border-primary/50 bg-primary/10 dark:border-primary/50":
-                        isToday,
-                      "border-primary/50 dark:border-primary/50":
-                        dayIsYesterday,
-                    },
-                  )}
-                  key={period.getTime()}
-                  style={{
-                    minWidth: `${columnWidth}px`,
-                    height:
-                      idx === items.length - 1 && !isContainerScrollable
-                        ? `calc(100dvh - 8rem - ${3.5 * (items.length - (isRoadmap ? 1 : 0))}rem)`
-                        : "100%",
-                  }}
-                />
-              );
-            })}
-          </Flex>
-
-          <Box className="relative z-5 h-full px-2">
-            <Bar
-              dateRange={dateRange}
-              item={item}
-              onBarClick={onBarClick}
-              onDateUpdate={onDateUpdate}
-              renderContent={renderBarContent}
-              zoomLevel={zoomLevel}
+          return (
+            <Box
+              className={cn(
+                "border-border dark:border-border/40 min-w-16 flex-1 border-r-[0.5px]",
+                {
+                  "bg-surface-muted":
+                    zoomLevel === "weeks" && isWeekend(period),
+                  "border-primary/50 dark:border-primary/50": dayIsYesterday,
+                },
+              )}
+              key={period.getTime()}
+              style={{ minWidth: `${columnWidth}px` }}
             />
-          </Box>
+          );
+        })}
+      </Flex>
+
+      <Box
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 z-20"
+        style={{ left: `${todayPosition}px` }}
+      >
+        <Box className="bg-primary/35 absolute inset-y-0 w-px -translate-x-1/2" />
+        <Text
+          as="span"
+          className="bg-primary text-primary-foreground absolute top-7 flex h-6 -translate-x-1/2 items-center rounded-lg px-2 text-[0.85rem] leading-none whitespace-nowrap shadow-sm"
+          fontWeight="medium"
+        >
+          {format(today, "MMM d").toUpperCase()}
+        </Text>
+      </Box>
+
+      {hoverPosition !== null && hoverDate ? (
+        <Box
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 z-30"
+          style={{ left: `${hoverPosition}px` }}
+        >
+          <Box className="bg-foreground/25 absolute inset-y-0 w-px -translate-x-1/2" />
+          <Text
+            as="span"
+            className="border-border bg-surface/90 text-foreground dark:border-border/70 absolute top-7 flex h-6 -translate-x-1/2 items-center rounded-lg border-[0.5px] px-2 text-[0.85rem] leading-none whitespace-nowrap shadow-sm backdrop-blur-2xl"
+            fontWeight="medium"
+          >
+            {format(hoverDate, "MMM d").toUpperCase()}
+          </Text>
         </Box>
-      ))}
+      ) : null}
+
+      <Box className="relative z-1">
+        <TimelineHeader dateRange={dateRange} zoomLevel={zoomLevel} />
+        {items.map((item) => (
+          <Box
+            className="border-border hover:bg-state-hover/50 dark:border-border/40 relative border-b-[0.5px] dark:hover:bg-white/[0.02]"
+            key={item.id}
+            style={{
+              height:
+                typeof rowHeight === "number" ? `${rowHeight}px` : rowHeight,
+            }}
+          >
+            <Box className="relative h-full px-2">
+              <Bar
+                className={barClassName}
+                dateRange={dateRange}
+                item={item}
+                onBarClick={onBarClick}
+                onDateUpdate={onDateUpdate}
+                renderContent={renderBarContent}
+                zoomLevel={zoomLevel}
+              />
+              {(() => {
+                if (!item.startDate || !item.endDate) return null;
+
+                const position = calculateGanttPosition({
+                  start: new Date(item.startDate),
+                  end: new Date(item.endDate),
+                  dateRange,
+                  zoomLevel,
+                });
+                const direction = getGanttOffscreenDirection(
+                  position,
+                  viewport,
+                );
+
+                if (!direction || viewport.visibleWidth <= 0) return null;
+
+                const indicatorPosition =
+                  direction === "left"
+                    ? viewport.scrollLeft + 12
+                    : viewport.scrollLeft + viewport.visibleWidth - 12;
+                const dateRangeLabel = `${format(
+                  new Date(item.startDate),
+                  "MMM yyyy",
+                )} - ${format(new Date(item.endDate), "MMM yyyy")}`;
+
+                return (
+                  <Flex
+                    align="center"
+                    className="absolute top-3 z-20 gap-2"
+                    style={{
+                      left: indicatorPosition,
+                      transform:
+                        direction === "right" ? "translateX(-100%)" : undefined,
+                    }}
+                  >
+                    {direction === "right" ? (
+                      <Text
+                        className="shrink-0 text-[0.95rem] whitespace-nowrap dark:opacity-70"
+                        color="muted"
+                      >
+                        {dateRangeLabel}
+                      </Text>
+                    ) : null}
+                    <Button
+                      aria-label={`Scroll ${direction} to item`}
+                      asIcon
+                      className="border-border dark:border-border/70 dark:bg-surface/80 h-8 w-8 bg-white/80 p-0 backdrop-blur-2xl"
+                      color="tertiary"
+                      leftIcon={
+                        direction === "left" ? (
+                          <ChevronLeftIcon className="h-3.5 w-auto" />
+                        ) : (
+                          <ChevronRightIcon className="h-3.5 w-auto" />
+                        )
+                      }
+                      onClick={() => {
+                        onScrollToItem(item);
+                      }}
+                      rounded="full"
+                      size="sm"
+                      variant="outline"
+                    />
+                    {direction === "left" ? (
+                      <Text
+                        className="shrink-0 text-[0.95rem] whitespace-nowrap dark:opacity-70"
+                        color="muted"
+                      >
+                        {dateRangeLabel}
+                      </Text>
+                    ) : null}
+                  </Flex>
+                );
+              })()}
+            </Box>
+          </Box>
+        ))}
+      </Box>
     </Box>
   );
 };
@@ -971,60 +1094,90 @@ export const BaseGantt = <T extends GanttItem>({
   renderSidebar,
   renderBarContent,
   zoomLevel: defaultZoomLevel = "weeks",
+  controlledZoomLevel,
+  onZoomLevelChange,
+  scrollToTodayRequest = 0,
+  stickyColumnsWidth = DEFAULT_STICKY_COLUMNS_WIDTH,
+  rowHeight = "3.5rem",
+  barClassName,
 }: BaseGanttProps<T>) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
-  const [zoomLevel, setZoomLevel] = useLocalStorage<ZoomLevel>(
+  const [storedZoomLevel, setStoredZoomLevel] = useLocalStorage<ZoomLevel>(
     storageKey,
     defaultZoomLevel,
   );
-  const [isContainerScrollable, setIsContainerScrollable] = useState(false);
+  const zoomLevel = controlledZoomLevel ?? storedZoomLevel;
   const [scrollToTodayRequests, setScrollToTodayRequests] = useState(0);
+  const [viewport, setViewport] = useState({
+    scrollLeft: 0,
+    visibleWidth: 0,
+  });
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = useMemo(() => {
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    return currentDate;
+  }, []);
+  const dateRange = useMemo(
+    () => getDateRangeForZoom(today, items, zoomLevel),
+    [items, today, zoomLevel],
+  );
 
-  // Calculate date range based on zoom level
-  const getDateRangeForZoom = (zoomLevel: ZoomLevel) => {
-    switch (zoomLevel) {
-      case "weeks":
-        return getVisibleDateRange(today, 365); // 1 year for weeks
-      case "months":
-      case "quarters":
-        return getVisibleDateRange(today, 1460); // 4 years for months and quarters
-      default:
-        return getVisibleDateRange(today, 365);
-    }
-  };
+  const getRenderedStickyColumnsWidth = useCallback(() => {
+    const container = containerRef.current;
+    const stickyPane = container?.firstElementChild
+      ?.firstElementChild as HTMLElement | null;
+    const renderedWidth = stickyPane?.getBoundingClientRect().width;
 
-  const dateRange = getDateRangeForZoom(zoomLevel);
+    return renderedWidth && renderedWidth > 0
+      ? renderedWidth
+      : stickyColumnsWidth;
+  }, [stickyColumnsWidth]);
 
-  // Subscribe to container scrollable state changes
   useEffect(() => {
-    const updateScrollableState = () => {
-      if (containerRef.current) {
-        const pageHeaderHeight = 64;
-        const timelineHeaderHeight = 64;
-        const rowHeight = 56;
-        const availableHeight = window.innerHeight - pageHeaderHeight;
-        const usedHeight = timelineHeaderHeight + items.length * rowHeight;
+    const container = containerRef.current;
+    if (!container) return;
 
-        const needsScroll = usedHeight > availableHeight;
-        setIsContainerScrollable(needsScroll);
-      }
+    let frameId: number | undefined;
+    const updateViewport = () => {
+      if (frameId !== undefined) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        const renderedStickyColumnsWidth = getRenderedStickyColumnsWidth();
+        setViewport({
+          scrollLeft: container.scrollLeft,
+          visibleWidth: Math.max(
+            0,
+            container.clientWidth - renderedStickyColumnsWidth,
+          ),
+        });
+      });
     };
 
-    updateScrollableState();
-    window.addEventListener("resize", updateScrollableState);
+    updateViewport();
+    container.addEventListener("scroll", updateViewport, { passive: true });
+    window.addEventListener("resize", updateViewport);
 
     return () => {
-      window.removeEventListener("resize", updateScrollableState);
+      if (frameId !== undefined) cancelAnimationFrame(frameId);
+      container.removeEventListener("scroll", updateViewport);
+      window.removeEventListener("resize", updateViewport);
     };
-  }, [items.length]);
+  }, [getRenderedStickyColumnsWidth]);
 
   const requestScrollToToday = useCallback(() => {
     setScrollToTodayRequests((current) => current + 1);
   }, []);
+
+  const handleZoomLevelChange = useCallback(
+    (nextZoomLevel: ZoomLevel) => {
+      if (controlledZoomLevel === undefined) {
+        setStoredZoomLevel(nextZoomLevel);
+      }
+      onZoomLevelChange?.(nextZoomLevel);
+    },
+    [controlledZoomLevel, onZoomLevelChange, setStoredZoomLevel],
+  );
 
   const scrollToTodayNow = useCallback(() => {
     const container = containerRef.current;
@@ -1061,20 +1214,46 @@ export const BaseGantt = <T extends GanttItem>({
         }
       }
 
-      const stickyColumnsWidth = 34 * 16;
       const currentPeriodPixelPosition = periodOffset * columnWidth;
-      const viewportWidth = container.clientWidth;
-      const scrollPosition =
-        stickyColumnsWidth + currentPeriodPixelPosition - viewportWidth / 2;
+      const visibleWidth = Math.max(
+        0,
+        container.clientWidth - getRenderedStickyColumnsWidth(),
+      );
+      const scrollPosition = currentPeriodPixelPosition - visibleWidth / 2;
 
       container.scrollLeft = Math.max(0, scrollPosition);
     });
-  }, [dateRange, zoomLevel]);
+  }, [dateRange, getRenderedStickyColumnsWidth, zoomLevel]);
+
+  const scrollToItem = useCallback(
+    (item: T) => {
+      const container = containerRef.current;
+      if (!container || !item.startDate || !item.endDate) return;
+
+      const position = calculateGanttPosition({
+        start: new Date(item.startDate),
+        end: new Date(item.endDate),
+        dateRange,
+        zoomLevel,
+      });
+      const visibleWidth = Math.max(
+        0,
+        container.clientWidth - getRenderedStickyColumnsWidth(),
+      );
+      const itemCenter = position.leftPosition + position.width / 2;
+
+      container.scrollTo({
+        behavior: "smooth",
+        left: Math.max(0, itemCenter - visibleWidth / 2),
+      });
+    },
+    [dateRange, getRenderedStickyColumnsWidth, zoomLevel],
+  );
 
   useEffect(() => {
-    if (scrollToTodayRequests === 0) return;
+    if (scrollToTodayRequests + scrollToTodayRequest === 0) return;
     scrollToTodayNow();
-  }, [scrollToTodayNow, scrollToTodayRequests]);
+  }, [scrollToTodayNow, scrollToTodayRequest, scrollToTodayRequests]);
 
   useEffect(() => {
     if (!hasScrolledRef.current) {
@@ -1092,14 +1271,22 @@ export const BaseGantt = <T extends GanttItem>({
       ref={containerRef}
     >
       <Flex className="min-h-full min-w-max">
-        {renderSidebar(items, requestScrollToToday, zoomLevel, setZoomLevel)}
+        {renderSidebar(
+          items,
+          requestScrollToToday,
+          zoomLevel,
+          handleZoomLevelChange,
+        )}
         <Chart
+          barClassName={barClassName}
           dateRange={dateRange}
-          isContainerScrollable={isContainerScrollable}
           items={items}
           onBarClick={onBarClick}
           onDateUpdate={onDateUpdate}
+          onScrollToItem={scrollToItem}
           renderBarContent={renderBarContent}
+          rowHeight={rowHeight}
+          viewport={viewport}
           zoomLevel={zoomLevel}
         />
       </Flex>

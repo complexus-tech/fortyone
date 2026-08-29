@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import type { ComponentProps } from "react";
+import { useCallback, useState } from "react";
+import { TextSelection } from "@tiptap/pm/state";
 import { EditorContent, EditorContentProps } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 
-import { BubbleMenu as CustomBubbleMenu } from "./bubble-menu";
+import {
+  BubbleMenu as CustomBubbleMenu,
+  type BubbleMenuCreateAction,
+  type BubbleMenuPanel,
+} from "./bubble-menu";
 import { cn } from "lib";
 
 type TextEditorProps = EditorContentProps & {
   asTitle?: boolean;
+  bubbleMenuCreateActions?: readonly BubbleMenuCreateAction[];
+  bubbleMenuShouldShow?: ComponentProps<typeof BubbleMenu>["shouldShow"];
   hideBubbleMenu?: boolean;
 };
 
@@ -16,11 +24,39 @@ export const TextEditor = ({
   editor,
   className = "",
   asTitle = false,
+  bubbleMenuCreateActions,
+  bubbleMenuShouldShow,
   hideBubbleMenu = false,
   innerRef,
   ...rest
 }: TextEditorProps) => {
-  const [isLinkOpen, setIsLinkOpen] = useState(false);
+  const [activeBubbleMenu, setActiveBubbleMenu] =
+    useState<BubbleMenuPanel>(null);
+  const shouldShowBubbleMenu = useCallback<
+    NonNullable<ComponentProps<typeof BubbleMenu>["shouldShow"]>
+  >(
+    (props) => {
+      const { doc, selection } = props.state;
+      const isNonEmptyTextSelection =
+        selection instanceof TextSelection &&
+        !selection.empty &&
+        doc.textBetween(props.from, props.to).length > 0;
+      const isMenuFocused = props.element.contains(
+        window.document.activeElement,
+      );
+
+      if (
+        !props.editor.isEditable ||
+        !isNonEmptyTextSelection ||
+        (!props.view.hasFocus() && !isMenuFocused)
+      ) {
+        return false;
+      }
+
+      return bubbleMenuShouldShow?.(props) ?? true;
+    },
+    [bubbleMenuShouldShow],
+  );
 
   return (
     <>
@@ -29,24 +65,27 @@ export const TextEditor = ({
           editor={editor}
           options={{
             onHide: () => {
-              setIsLinkOpen(false);
+              setActiveBubbleMenu(null);
             },
           }}
+          shouldShow={shouldShowBubbleMenu}
         >
           <CustomBubbleMenu
+            activeMenu={activeBubbleMenu}
+            createActions={bubbleMenuCreateActions}
             editor={editor}
-            isLinkOpen={isLinkOpen}
-            setIsLinkOpen={setIsLinkOpen}
+            setActiveMenu={setActiveBubbleMenu}
           />
         </BubbleMenu>
       )}
       <EditorContent
         className={cn(
           {
-            "prose prose-lg max-w-full prose-stone leading-7 prose-a:text-primary dark:prose-invert prose-headings:font-medium prose-pre:text-foreground prose-pre:bg-surface-muted prose-pre:text-[1.1rem] prose-strong:font-medium prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-lg prose-h6:text-lg":
+            "rich-text-editor prose prose-lg max-w-full prose-stone prose-a:text-foreground prose-a:underline dark:prose-invert prose-headings:font-medium prose-pre:text-foreground prose-pre:bg-surface-muted prose-pre:text-[1.1rem] prose-strong:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-lg prose-h6:text-lg":
               !asTitle,
+            "mb-4": asTitle,
           },
-          className
+          className,
         )}
         editor={editor}
         {...rest}

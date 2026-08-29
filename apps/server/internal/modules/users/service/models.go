@@ -1,115 +1,21 @@
 package users
 
-import (
-	"time"
+import usersdomain "github.com/complexus-tech/projects-api/internal/modules/users/domain"
 
-	"github.com/google/uuid"
-)
-
-// CoreVerificationToken represents a verification token in the application layer
-type CoreVerificationToken struct {
-	ID        uuid.UUID  `json:"id"`
-	Token     string     `json:"token"`
-	Email     string     `json:"email"`
-	UserID    *uuid.UUID `json:"userId"`
-	ExpiresAt time.Time  `json:"expiresAt"`
-	UsedAt    *time.Time `json:"usedAt"`
-	TokenType string     `json:"tokenType"`
-	CreatedAt time.Time  `json:"createdAt"`
-	UpdatedAt time.Time  `json:"updatedAt"`
-}
-
-// CoreUser represents a user in the application layer.
-type CoreUser struct {
-	ID                            uuid.UUID
-	Username                      string
-	Email                         string
-	FullName                      string
-	AvatarURL                     string
-	IsActive                      bool
-	IsSystem                      bool
-	IsInternal                    bool
-	HasSeenWalkthrough            bool
-	Timezone                      string
-	LastLoginAt                   time.Time
-	LastUsedWorkspaceID           *uuid.UUID
-	GitHubUsername                *string
-	CreatedAt                     time.Time
-	UpdatedAt                     time.Time
-	Token                         *string
-	Role                          *string
-	TeamAIRoleTitle               string
-	TeamAIRoleDescription         string
-	InferredTeamAIRoleTitle       string
-	InferredTeamAIRoleDescription string
-	InferredTeamAIRoleStoryCount  int
-	InferredTeamAIRoleConfidence  float32
-	InferredTeamAIRoleGeneratedAt *time.Time
-	LastStoryActivityAt           *time.Time
-}
-
-type CoreListUsersFilter struct {
-	TeamID *uuid.UUID
-	Search string
-	Limit  int
-	Offset int
-}
-
-// CoreUpdateUser represents the fields that can be updated for a user.
-type CoreUpdateUser struct {
-	Username           *string
-	FullName           *string
-	AvatarURL          *string
-	HasSeenWalkthrough *bool
-	Timezone           *string
-}
-
-// CoreNewUser represents a new user to be created.
-type CoreNewUser struct {
-	Email     string
-	FullName  string
-	AvatarURL string
-	Timezone  string
-}
-
-// CoreAutomationPreferences represents the automation preferences for a user in a workspace
-type CoreAutomationPreferences struct {
-	UserID                     uuid.UUID
-	WorkspaceID                uuid.UUID
-	AutoAssignSelf             bool
-	AutoAssignMaya             bool
-	AssignSelfOnBranchCopy     bool
-	MoveStoryToStartedOnBranch bool
-	OpenStoryInDialog          bool
-	CreatedAt                  time.Time
-	UpdatedAt                  time.Time
-}
-
-// CoreUpdateAutomationPreferences represents the fields that can be updated for automation preferences
-type CoreUpdateAutomationPreferences struct {
-	AutoAssignSelf             *bool
-	AutoAssignMaya             *bool
-	AssignSelfOnBranchCopy     *bool
-	MoveStoryToStartedOnBranch *bool
-	OpenStoryInDialog          *bool
-}
-
-// CoreUserMemoryItem represents a single memory item for a user.
-type CoreUserMemoryItem struct {
-	ID          uuid.UUID `json:"id"`
-	UserID      uuid.UUID `json:"userId"`
-	WorkspaceID uuid.UUID `json:"workspaceId"`
-	Content     string    `json:"content"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-}
-
-type NewUserMemoryItem struct {
-	UserID      uuid.UUID
-	WorkspaceID uuid.UUID
-	Content     string
-}
-
-type UpdateUserMemoryItem struct {
-	Content *string
-}
+type CoreVerificationToken = usersdomain.VerificationToken
+type NewVerificationToken = usersdomain.NewVerificationToken
+type ConsumeVerificationTokenInput = usersdomain.ConsumeVerificationToken
+type CoreUser = usersdomain.User
+type CoreListUsersFilter = usersdomain.ListUsersFilter
+type CoreUpdateUser = usersdomain.UpdateUser
+type CoreWorkScheduleOverride = usersdomain.WorkScheduleOverride
+type CoreNewUser = usersdomain.NewUser
+type CoreExternalIdentityInput = usersdomain.ExternalIdentityInput
+type CoreExternalIdentityResult = usersdomain.ExternalIdentityResult
+type VerifiedSignInReactivation = usersdomain.VerifiedSignInReactivation
+type CoreAutomationPreferences = usersdomain.AutomationPreferences
+type CoreUpdateAutomationPreferences = usersdomain.UpdateAutomationPreferences
+type CoreUserMemoryItem = usersdomain.UserMemoryItem
+type NewUserMemoryItem = usersdomain.NewUserMemoryItem
+type UserMemoryScope = usersdomain.UserMemoryScope
+type UpdateUserMemoryItem = usersdomain.UpdateUserMemoryItem

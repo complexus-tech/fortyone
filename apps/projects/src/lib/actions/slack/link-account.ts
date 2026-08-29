@@ -7,6 +7,11 @@ type LinkSlackAccountInput = {
   token: string;
 };
 
+export type LinkSlackAccountResult = {
+  status: "connected" | "already_connected";
+  slackUserId: string;
+};
+
 export const linkSlackAccountAction = async (
   workspaceSlug: string,
   input: LinkSlackAccountInput,
@@ -14,11 +19,10 @@ export const linkSlackAccountAction = async (
   try {
     const session = await auth();
     const ctx = { session: session!, workspaceSlug };
-    return await post<LinkSlackAccountInput, ApiResponse<null>>(
-      "integrations/slack/link-account",
-      input,
-      ctx,
-    );
+    return await post<
+      LinkSlackAccountInput,
+      ApiResponse<LinkSlackAccountResult>
+    >("integrations/slack/link-account", input, ctx);
   } catch (error) {
     return getApiError(error);
   }

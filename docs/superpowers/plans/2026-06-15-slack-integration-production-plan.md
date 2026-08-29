@@ -1,5 +1,14 @@
 # Slack Integration Production Plan
 
+> [!IMPORTANT]
+> Superseded on 2026-08-08 by the
+> [Go-native messaging integration plan](../../plans/messaging-integration-plan.md).
+> Do not execute the tasks below: `apps/bot` and the Chat SDK webhook runtime
+> have been removed. Use the
+> [Slack production runbook](../../slack-production-runbook.md) and the committed
+> [`apps/server/slack-app-manifest.yaml`](../../../apps/server/slack-app-manifest.yaml)
+> for the canonical Go endpoints and deployment configuration.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship the Slack integration so installed Slack workspaces can talk to Maya, create FortyOne stories from Slack, resolve Slack users to FortyOne users, and leave enough logs to debug every failure.

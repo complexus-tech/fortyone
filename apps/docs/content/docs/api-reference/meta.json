@@ -1,0 +1,21 @@
+{
+  "title": "API Reference",
+  "icon": "Code2",
+  "description": "Guides and endpoint reference for the FortyOne developer API.",
+  "root": true,
+  "pages": [
+    "index",
+    "quickstart",
+    "authentication",
+    "scopes",
+    "idempotency",
+    "pagination-and-errors",
+    "---API Reference---",
+    "reference",
+    "---Tools---",
+    "sdks",
+    "outbound-webhooks",
+    "service-accounts",
+    "changelog"
+  ]
+}

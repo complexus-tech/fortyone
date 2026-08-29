@@ -9,7 +9,6 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 )
 
 // UserLookup provides minimal user lookup for comment authoring.
@@ -18,35 +17,38 @@ type UserLookup interface {
 }
 
 type Config struct {
-	DB        *sqlx.DB
-	Log       *logger.Logger
-	SecretKey string
-	Cache     *cache.Service
-	Service   *github.Service
-	Users     UserLookup
+	Log               *logger.Logger
+	SecretKey         string
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	Service           *github.Service
+	Users             UserLookup
 }
 
 func Routes(cfg Config, app *web.App) {
 	h := New(cfg.Service, cfg.Users)
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
+	memberOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
+	adminOnly := mid.RequireMinimumRole(cfg.Log, mid.RoleAdmin)
 
 	app.Get("/workspaces/{workspaceSlug}/integrations/github", h.GetIntegration, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/integrations/github/install-session", h.CreateInstallSession, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/integrations/github/repositories/resync", h.ResyncRepositories, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/integrations/github/install-session", h.CreateInstallSession, auth, workspace, adminOnly)
+	app.Post("/workspaces/{workspaceSlug}/integrations/github/repositories/resync", h.ResyncRepositories, auth, workspace, adminOnly)
 	app.Get("/workspaces/{workspaceSlug}/integrations/github/settings", h.GetWorkspaceSettings, auth, workspace)
-	app.Put("/workspaces/{workspaceSlug}/integrations/github/settings", h.UpdateWorkspaceSettings, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/integrations/github/issue-sync-links", h.CreateIssueSyncLink, auth, workspace)
-	app.Put("/workspaces/{workspaceSlug}/integrations/github/issue-sync-links/{linkId}", h.UpdateIssueSyncLink, auth, workspace)
-	app.Delete("/workspaces/{workspaceSlug}/integrations/github/issue-sync-links/{linkId}", h.DeleteIssueSyncLink, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/integrations/github/settings", h.UpdateWorkspaceSettings, auth, workspace, adminOnly)
+	app.Post("/workspaces/{workspaceSlug}/integrations/github/issue-sync-links", h.CreateIssueSyncLink, auth, workspace, adminOnly)
+	app.Put("/workspaces/{workspaceSlug}/integrations/github/issue-sync-links/{linkId}", h.UpdateIssueSyncLink, auth, workspace, adminOnly)
+	app.Delete("/workspaces/{workspaceSlug}/integrations/github/issue-sync-links/{linkId}", h.DeleteIssueSyncLink, auth, workspace, adminOnly)
 	app.Get("/workspaces/{workspaceSlug}/teams/{teamId}/settings/github", h.GetTeamSettings, auth, workspace)
-	app.Put("/workspaces/{workspaceSlug}/teams/{teamId}/settings/github", h.UpdateTeamSettings, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/teams/{teamId}/settings/github", h.UpdateTeamSettings, auth, workspace, adminOnly)
 	app.Get("/workspaces/{workspaceSlug}/stories/{storyId}/github-links", h.GetStoryGitHubLinks, auth, workspace)
-	app.Delete("/workspaces/{workspaceSlug}/stories/{storyId}/github-links/{linkId}", h.DeleteStoryGitHubLink, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/stories/{storyId}/github-links/{linkId}", h.DeleteStoryGitHubLink, auth, workspace, memberOnly)
 	app.Get("/workspaces/{workspaceSlug}/stories/{storyId}/github-comments", h.GetStoryGitHubComments, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/stories/{storyId}/github-comments", h.PostStoryGitHubComment, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/stories/{storyId}/github-comments", h.PostStoryGitHubComment, auth, workspace, memberOnly)
 	app.Get("/workspaces/{workspaceSlug}/integration-requests/{requestId}/github-comments", h.GetRequestGitHubComments, auth, workspace)
-	app.Post("/workspaces/{workspaceSlug}/integration-requests/{requestId}/github-comments", h.PostRequestGitHubComment, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/integration-requests/{requestId}/github-comments", h.PostRequestGitHubComment, auth, workspace, memberOnly)
 
 	app.Post("/user/integrations/github/link-session", h.CreateUserLinkSession, auth)
 	app.Post("/user/integrations/github/link", h.LinkGitHubUser, auth)

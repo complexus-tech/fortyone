@@ -29,6 +29,7 @@ export const ObjectiveOptionsProvider = ({
   const initialOptions: StoriesViewOptions = {
     groupBy: "status",
     orderBy: "created",
+    orderDirection: "desc",
     showEmptyGroups: true,
     showSubStories: false,
     displayColumns: [
@@ -36,6 +37,7 @@ export const ObjectiveOptionsProvider = ({
       "Status",
       "Assignee",
       "Estimate",
+      "Time needed",
       "Priority",
       "Deadline",
       "Created",

@@ -7,17 +7,24 @@ import { resyncSlackChannelsAction } from "@/lib/actions/slack/resync-channels";
 export const useResyncSlackChannels = () => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
-  const queryKey = slackKeys.integration(workspaceSlug);
 
   return useMutation({
     mutationFn: () => resyncSlackChannelsAction(workspaceSlug),
-    onSuccess: (res) => {
-      if (res.error?.message) {
-        toast.error("Slack", { description: res.error.message });
+    onSuccess: async (response) => {
+      if (response.error?.message) {
+        toast.error("Slack", { description: response.error.message });
         return;
       }
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: slackKeys.integration(workspaceSlug),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: slackKeys.channelAudiences(workspaceSlug),
+        }),
+      ]);
       toast.success("Slack channels synced");
-      queryClient.invalidateQueries({ queryKey });
     },
   });
 };

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { ArrowLeft2Icon, TeamIcon } from "icons";
-import { Box, Button, Text } from "ui";
 import { auth } from "@/auth";
+import { ResourceNotFoundState } from "@/components/ui/resource-not-found-state";
+import { TeamEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { getTeam } from "@/modules/teams/queries/get-team";
 import { withWorkspacePath } from "@/utils";
 
@@ -18,25 +18,12 @@ export default async function Layout({
   const data = await getTeam(teamId, ctx);
   if (data.error?.message) {
     return (
-      <Box className="flex h-screen items-center justify-center">
-        <Box className="flex flex-col items-center">
-          <TeamIcon className="h-16 w-auto" />
-          <Text className="mt-10 mb-6" fontSize="3xl">
-            404: Team not found
-          </Text>
-          <Text className="mb-6 max-w-md text-center" color="muted">
-            This team might not exist or you do not belong to this team.
-          </Text>
-          <Button
-            className="gap-1 pl-2"
-            color="tertiary"
-            href={withWorkspacePath("/my-work", workspaceSlug)}
-            leftIcon={<ArrowLeft2Icon className="h-[1.05rem] w-auto" />}
-          >
-            Go to my work
-          </Button>
-        </Box>
-      </Box>
+      <ResourceNotFoundState
+        description="This team might not exist or you might not belong to it."
+        href={withWorkspacePath("/my-work", workspaceSlug)}
+        illustration={<TeamEmptyIllustration />}
+        title="404: Team not found"
+      />
     );
   }
 

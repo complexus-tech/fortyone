@@ -9,12 +9,20 @@ export const assignStoriesToUser = tool({
     "Assign multiple stories to a specific user. Only admins or members can assign stories.",
   inputSchema: z.object({
     storyIds: z
-      .array(z.string())
+      .array(z.string().uuid("Each story ID must be a valid UUID."))
+      .min(1, "Provide at least one story to assign.")
+      .max(50, "Assign at most 50 stories in one request.")
       .describe("Array of story IDs to assign (required)"),
-    assigneeId: z.string().describe("User ID to assign stories to (required)"),
+    assigneeId: z
+      .string()
+      .uuid("The assignee ID must be a valid UUID.")
+      .describe("User ID to assign stories to (required)"),
   }),
 
-  execute: async ({ storyIds, assigneeId }, { experimental_context }) => {
+  execute: async (
+    { storyIds, assigneeId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
 
@@ -25,7 +33,7 @@ export const assignStoriesToUser = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

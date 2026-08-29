@@ -8,7 +8,7 @@ type AnchorProps = ComponentPropsWithoutRef<"a">;
 
 export const mdxComponents: MDXComponents = {
   a: ({ href, children, ...props }: AnchorProps) => {
-    const className = "text-primary";
+    const className = "text-primary underline underline-offset-4";
     if (href?.startsWith("/")) {
       return (
         <Link className={className} href={href} {...props}>

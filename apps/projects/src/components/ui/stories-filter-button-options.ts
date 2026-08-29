@@ -1,8 +1,6 @@
 import type { StoriesFilterField } from "./stories-filter-bar";
 
 export const STORIES_FILTER_BUTTON_FIELDS = [
-  "assignedToMe",
-  "createdByMe",
   "hasNoAssignee",
   "statusIds",
   "assigneeIds",

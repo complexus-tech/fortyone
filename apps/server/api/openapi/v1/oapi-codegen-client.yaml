@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/v2.8.0/configuration-schema.json
+package: fortyone
+generate:
+  models: true
+  client: true
+  server-urls: true
+output-options:
+  response-type-suffix: Response
+compatibility:
+  always-prefix-enum-values: true
+output: sdk/go/client.gen.go

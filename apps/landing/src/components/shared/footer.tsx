@@ -1,8 +1,7 @@
 "use client";
-import type { ReactNode } from "react";
-import { cn } from "lib";
-import { Box, Flex, Text, Tooltip } from "ui";
-import Link from "next/link";
+
+import type { ComponentType, ReactNode } from "react";
+import { useSyncExternalStore } from "react";
 import {
   FacebookIcon,
   InstagramIcon,
@@ -12,14 +11,27 @@ import {
   SystemIcon,
   TwitterIcon,
 } from "icons";
+import { cn } from "lib";
+import Link from "next/link";
 import { useTheme } from "next-themes";
+import { Tooltip } from "ui";
 import { comparisons } from "@/lib/comparisons";
 import { featureLinks } from "@/lib/feature-links";
 import { useCaseLinks } from "@/lib/use-case-links";
+import { ParticleVector } from "@/modules/home/particle-text";
 import { Logo } from "../ui/logo";
-import { Container } from "../ui/container";
 
 const COPYRIGHT_YEAR = 2026;
+
+const themeOptions = [
+  { id: "light", label: "Light", icon: SunIcon },
+  { id: "system", label: "System", icon: SystemIcon },
+  { id: "dark", label: "Dark", icon: MoonIcon },
+] as const;
+
+const subscribeToHydration = () => () => undefined;
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 const caseLinks = useCaseLinks.map(({ href, label }) => ({
   href,
@@ -32,14 +44,8 @@ const footerFeatureLinks = featureLinks.map(({ href, label }) => ({
 }));
 
 const company = [
-  {
-    title: "Pricing",
-    href: "/pricing",
-  },
-  {
-    title: "Contact",
-    href: "/contact",
-  },
+  { title: "Pricing", href: "/pricing" },
+  { title: "Contact", href: "/contact" },
 ];
 
 const comparisonFooterOrder = ["asana", "jira", "clickup", "trello", "monday"];
@@ -53,224 +59,228 @@ const comparisonLinks = comparisonFooterOrder
   }));
 
 const legal = [
-  {
-    title: "Privacy Policy",
-    href: "/privacy",
-  },
-  {
-    title: "Terms of Service",
-    href: "/terms",
-  },
+  { title: "Privacy Policy", href: "/privacy" },
+  { title: "Terms of Service", href: "/terms" },
 ];
 
 const resources = [
-  {
-    title: "AI Project Manager",
-    href: "/ai-project-manager",
-  },
-  {
-    title: "Docs",
-    href: "https://docs.fortyone.app",
-  },
-  {
-    title: "Blog",
-    href: "/blog",
-  },
-  {
-    title: "GitHub",
-    href: "https://github.com/complexus-tech/fortyone",
-  },
-  {
-    title: "Pitch",
-    href: "https://pitch.fortyone.app",
-  },
+  { title: "Developers", href: "/developers" },
+  { title: "Docs", href: "https://docs.fortyone.app" },
+  { title: "Blog", href: "/blog" },
+  { title: "Pitch", href: "https://pitch.fortyone.app" },
 ];
+
+const integrations = [
+  { title: "Google Calendar", href: "/integrations/google-calendar" },
+  { title: "Slack", href: "/integrations/slack" },
+  { title: "GitHub", href: "/integrations/github" },
+];
+
+const socialLinks = [
+  {
+    href: "https://x.com/fortyoneapp",
+    label: "X",
+    icon: TwitterIcon,
+  },
+  {
+    href: "https://www.linkedin.com/company/complexus-app/",
+    label: "LinkedIn",
+    icon: LinkedinIcon,
+  },
+  {
+    href: "https://www.instagram.com/complexus_tech/",
+    label: "Instagram",
+    icon: InstagramIcon,
+  },
+  {
+    href: "https://www.facebook.com/complexus.tech",
+    label: "Facebook",
+    icon: FacebookIcon,
+  },
+] as const;
 
 const FooterLink = ({
   href,
   children,
-  className = "",
 }: {
   href: string;
   children: ReactNode;
-  className?: string;
-}) => (
-  <Link
-    className={cn(
-      "hover:text-primary mb-3 block max-w-max text-[0.9375rem] transition-colors duration-200 ease-in-out",
-      className,
-    )}
-    href={href}
-    target={href.startsWith("http") ? "_blank" : undefined}
-  >
-    {children}
-  </Link>
-);
+}) => {
+  const isExternal = href.startsWith("http");
 
-const Copyright = () => {
   return (
-    <Box className="border-border flex flex-col justify-between gap-y-8 border-b pb-4 md:flex-row md:items-center md:gap-y-0">
-      <Box className="3xl:gap-16 flex gap-8">
-        <Link
-          className="hover:text-primary"
-          href="https://x.com/fortyoneapp"
-          target="_blank"
-        >
-          <span className="sr-only">Twitter</span>
-          <TwitterIcon className="text-foreground" />
-        </Link>
-        <Link
-          className="hover:text-primary"
-          href="https://www.linkedin.com/company/complexus-app/"
-          target="_blank"
-        >
-          <span className="sr-only">LinkedIn</span>
-          <LinkedinIcon className="text-foreground" />
-        </Link>
-        <Link
-          className="hover:text-primary"
-          href="https://www.instagram.com/complexus_tech/"
-          target="_blank"
-        >
-          <span className="sr-only">Instagram</span>
-          <InstagramIcon className="text-foreground" />
-        </Link>
-        <Link
-          className="hover:text-primary"
-          href="https://www.facebook.com/complexus.tech"
-          target="_blank"
-        >
-          <span className="sr-only">Facebook</span>
-          <FacebookIcon className="text-foreground" />
-        </Link>
-      </Box>
-      <Box className="hidden items-center gap-5 opacity-70 md:flex">
-        <Link className="3xl:text-lg text-sm" href="/privacy">
-          Privacy Policy
-        </Link>
-        |
-        <Text fontSize="sm">
-          © {COPYRIGHT_YEAR} Complexus LLC &bull; All rights reserved.
-        </Text>
-      </Box>
-    </Box>
+    <Link
+      className="text-text-muted hover:text-primary focus-visible:text-primary block max-w-max py-1 text-[0.9375rem] leading-6 transition-colors duration-200 ease-out focus-visible:outline-none"
+      href={href}
+      prefetch={false}
+      rel={isExternal ? "noreferrer" : undefined}
+      target={isExternal ? "_blank" : undefined}
+    >
+      {children}
+    </Link>
   );
 };
 
+const FooterGroup = ({
+  title,
+  links,
+}: {
+  title: string;
+  links: readonly { href: string; title: string }[];
+}) => (
+  <section>
+    <h2 className="font-heading text-foreground mb-3 text-base font-semibold tracking-tight">
+      {title}
+    </h2>
+    <nav aria-label={`${title} links`}>
+      {links.map(({ href, title: linkTitle }) => (
+        <FooterLink href={href} key={href}>
+          {linkTitle}
+        </FooterLink>
+      ))}
+    </nav>
+  </section>
+);
+
+const SocialLink = ({
+  href,
+  icon: Icon,
+  label,
+}: {
+  href: string;
+  icon: ComponentType<{ "aria-hidden"?: boolean; className?: string }>;
+  label: string;
+}) => (
+  <Tooltip title={label}>
+    <Link
+      aria-label={label}
+      className="border-border bg-state-hover text-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-primary focus-visible:outline-primary grid size-10 place-items-center rounded-lg border transition-[border-color,background-color,color,transform] duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 sm:size-11 sm:rounded-xl"
+      href={href}
+      rel="noreferrer"
+      target="_blank"
+    >
+      <Icon aria-hidden className="h-5 w-auto text-current" />
+    </Link>
+  </Tooltip>
+);
+
 export const Footer = () => {
   const { theme, setTheme } = useTheme();
+  const hasMounted = useSyncExternalStore(
+    subscribeToHydration,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
+
+  const activeTheme = hasMounted ? theme ?? "system" : undefined;
+
   return (
-    <Box as="footer" className="relative">
-      <Container>
-        <Box className="mb-8 grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-6 md:pt-20">
-          <Box className="hidden md:block">
-            <Logo className="-left-1 h-8 md:-left-2 md:h-7" />
-          </Box>
-          <Box>
-            <Text className="text-text-muted mb-4">Features</Text>
-            {footerFeatureLinks.map(({ href, title }) => (
-              <FooterLink className="whitespace-nowrap" href={href} key={href}>
-                {title}
-              </FooterLink>
-            ))}
-          </Box>
-          <Box>
-            <Text className="text-text-muted mb-4">Use cases</Text>
-            {caseLinks.map(({ href, title }) => (
-              <FooterLink className="whitespace-nowrap" href={href} key={href}>
-                {title}
-              </FooterLink>
-            ))}
-          </Box>
-          <Box>
-            <Text className="text-text-muted mb-4">Company</Text>
-            {company.map(({ href, title }) => (
-              <FooterLink href={href} key={href}>
-                {title}
-              </FooterLink>
-            ))}
-            <Box className="mt-8">
-              <Text className="text-text-muted mb-4">Compare</Text>
-              {comparisonLinks.map(({ href, title }) => (
-                <FooterLink href={href} key={href}>
-                  {title}
-                </FooterLink>
-              ))}
-            </Box>
-          </Box>
-          <Box>
-            <Text className="text-text-muted mb-4">Resources</Text>
-            {resources.map(({ href, title }) => (
-              <FooterLink href={href} key={href}>
-                {title}
-              </FooterLink>
-            ))}
-          </Box>
-          <Box>
-            <Text className="text-text-muted mb-4">Legal</Text>
-            {legal.map(({ href, title }) => (
-              <FooterLink href={href} key={href}>
-                {title}
-              </FooterLink>
-            ))}
-          </Box>
-        </Box>
-      </Container>
-      <Container className="pb-8 md:pb-16">
-        <Copyright />
-        <Flex className="mt-6" justify="between">
-          <Text color="muted" fontSize="sm">
-            FortyOne is an open source product of Complexus LLC.
-          </Text>
-          <Flex className="flex gap-5">
-            <Tooltip title="System">
-              <button
-                onClick={() => {
-                  setTheme("system");
-                }}
-                type="button"
+    <footer className="bg-background py-2 sm:py-3 md:py-6">
+      <div className="landing-hero-shell landing-page-frame overflow-hidden rounded-2xl sm:rounded-[3rem] md:rounded-[4rem]">
+        <div className="px-5 py-8 sm:px-10 sm:py-12 lg:px-14 lg:py-16 xl:px-20 xl:py-20">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:gap-y-14 lg:grid-cols-[minmax(18rem,1.45fr)_repeat(3,minmax(0,1fr))] lg:gap-x-10 xl:gap-x-16">
+            <div className="col-span-2 flex flex-col justify-between gap-10 lg:col-span-1 lg:min-h-[34rem]">
+              <p className="font-heading max-w-md text-[2.25rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-5xl lg:text-[3.4rem]">
+                Keep what matters moving.
+              </p>
+              <ParticleVector
+                className="-left-1"
+                entranceDelay={120}
+                sourceKey="footer-wordmark"
               >
-                <SystemIcon
-                  className={cn("h-4", {
-                    "text-foreground": theme === "system",
-                  })}
-                />
-              </button>
-            </Tooltip>
-            <Tooltip title="Light">
-              <button
-                onClick={() => {
-                  setTheme("light");
-                }}
-                type="button"
-              >
-                <SunIcon
-                  className={cn("h-4", {
-                    "text-foreground": theme === "light",
-                  })}
-                />
-              </button>
-            </Tooltip>
-            <Tooltip title="Dark">
-              <button
-                className={cn("", {
-                  "text-foreground": theme === "dark",
-                })}
-                onClick={() => {
-                  setTheme("dark");
-                }}
-                type="button"
-              >
-                <MoonIcon
-                  className={cn("h-4", {
-                    "text-foreground": theme === "dark",
-                  })}
-                />
-              </button>
-            </Tooltip>
-          </Flex>
-        </Flex>
-      </Container>
-    </Box>
+                <Logo className="h-8 text-current sm:h-9" />
+              </ParticleVector>
+            </div>
+
+            <div className="space-y-10">
+              <FooterGroup links={footerFeatureLinks} title="Features" />
+              <FooterGroup links={company} title="Company" />
+            </div>
+
+            <div className="space-y-10">
+              <FooterGroup links={caseLinks} title="Use cases" />
+              <FooterGroup links={integrations} title="Integrations" />
+            </div>
+
+            <div className="col-span-2 grid grid-cols-2 gap-x-6 gap-y-10 lg:col-span-1 lg:block lg:space-y-10">
+              <FooterGroup links={resources} title="Resources" />
+              <FooterGroup links={comparisonLinks} title="Compare" />
+              <FooterGroup links={legal} title="Legal" />
+            </div>
+          </div>
+
+          <div className="border-border mt-14 border-t pt-8 lg:mt-16 lg:pt-10">
+            <div className="grid gap-8 lg:grid-cols-2 lg:items-end">
+              <div>
+                <p className="text-foreground mb-3 text-sm font-semibold">
+                  Follow FortyOne
+                </p>
+                <div className="flex flex-wrap gap-2.5">
+                  {socialLinks.map((socialLink) => (
+                    <SocialLink {...socialLink} key={socialLink.href} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="lg:justify-self-end">
+                <p className="text-foreground mb-3 text-sm font-semibold lg:text-right">
+                  Appearance
+                </p>
+                <div
+                  aria-label="Color theme"
+                  className="bg-state-hover flex w-max items-center gap-0.5 rounded-full p-1"
+                  role="group"
+                >
+                  {themeOptions.map(({ icon: Icon, id, label }) => (
+                    <Tooltip key={id} title={label}>
+                      <button
+                        aria-label={`Use ${label.toLowerCase()} theme`}
+                        aria-pressed={activeTheme === id}
+                        className={cn(
+                          "text-text-muted hover:text-foreground focus-visible:outline-primary grid h-7 w-8 place-items-center rounded-full transition-[width,color,background-color,transform] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 active:scale-[0.94]",
+                          {
+                            "bg-state-active text-foreground w-10":
+                              activeTheme === id,
+                          },
+                        )}
+                        onClick={() => {
+                          setTheme(id);
+                        }}
+                        type="button"
+                      >
+                        <Icon aria-hidden className="text-current" />
+                      </button>
+                    </Tooltip>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-border text-text-muted mt-8 flex flex-wrap items-center justify-between gap-4 border-t pt-6 text-sm">
+              <p>
+                Built with heart in{" "}
+                <span
+                  aria-label="Zimbabwe"
+                  className="text-foreground opacity-100"
+                  role="img"
+                >
+                  🇿🇼
+                </span>{" "}
+                by{" "}
+                <a
+                  className="decoration-border-strong hover:text-primary underline decoration-dotted underline-offset-4 transition-colors"
+                  href="https://complexus.tech"
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Complexus
+                </a>
+              </p>
+              <p>© {COPYRIGHT_YEAR} Complexus LLC · All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
   );
 };

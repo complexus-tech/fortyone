@@ -2,6 +2,8 @@ package maya
 
 import (
 	"context"
+	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,14 +24,17 @@ func TestCreateWorkPlanPersistsAndAppliesActions(t *testing.T) {
 	userID := uuid.New()
 	startAt := time.Date(2026, 6, 15, 9, 0, 0, 0, time.UTC)
 	endAt := time.Date(2026, 6, 15, 17, 0, 0, 0, time.UTC)
+	duration := 60
 
 	repo := &fakeMayaRepository{}
 	storiesSvc := &fakeMayaStories{
 		story: stories.CoreSingleStory{
-			ID:        storyID,
-			Workspace: workspaceID,
-			Team:      teamID,
-			Title:     "Schedule me",
+			ID:                       storyID,
+			Workspace:                workspaceID,
+			Team:                     teamID,
+			Title:                    "Schedule me",
+			EstimatedDurationMinutes: &duration,
+			AutoSchedulingEnabled:    true,
 		},
 	}
 	calendarSvc := &fakeMayaCalendar{}
@@ -54,7 +59,7 @@ func TestCreateWorkPlanPersistsAndAppliesActions(t *testing.T) {
 		Trigger:         RunTriggerManual,
 		WindowStart:     startAt,
 		WindowEnd:       endAt,
-		DurationMinutes: 60,
+		DurationMinutes: duration,
 		AutoApply:       true,
 	})
 
@@ -81,23 +86,169 @@ func TestCreateWorkPlanPersistsAndAppliesActions(t *testing.T) {
 	if calendarSvc.createdBlock.Source != calendar.ScheduleBlockSourceMaya {
 		t.Fatalf("expected Maya schedule block source, got %q", calendarSvc.createdBlock.Source)
 	}
-	expectedScheduledEndAt := startAt.Add(60 * time.Minute)
-	if storiesSvc.updatedStartDate == nil || !storiesSvc.updatedStartDate.Equal(startAt) {
-		t.Fatalf("expected story start date update to %s, got %v", startAt, storiesSvc.updatedStartDate)
-	}
-	if storiesSvc.updatedEndDate == nil || !storiesSvc.updatedEndDate.Equal(expectedScheduledEndAt) {
-		t.Fatalf("expected story end date update to %s, got %v", expectedScheduledEndAt, storiesSvc.updatedEndDate)
+	if storiesSvc.updatedStartDate != nil || storiesSvc.updatedEndDate != nil {
+		t.Fatalf("generated schedule must not mutate story constraint dates: start=%v end=%v", storiesSvc.updatedStartDate, storiesSvc.updatedEndDate)
 	}
 	if len(repo.appliedActionIDs) != 2 {
 		t.Fatalf("expected two applied action marks, got %d", len(repo.appliedActionIDs))
 	}
-	if len(storiesSvc.updateReasons) != 2 {
-		t.Fatalf("expected two reason-aware story updates, got %d", len(storiesSvc.updateReasons))
+	if len(storiesSvc.updateReasons) != 1 {
+		t.Fatalf("expected one reason-aware assignment update, got %d", len(storiesSvc.updateReasons))
 	}
 	for _, reason := range storiesSvc.updateReasons {
 		if reason == "" {
 			t.Fatal("expected Maya story update reason to be recorded")
 		}
+	}
+}
+
+func TestPreviewThenApplyStoredWorkPlanExactlyOnce(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	requestedBy := uuid.New()
+	mayaActorID := uuid.New()
+	teamID := uuid.New()
+	userID := uuid.New()
+	storyUpdatedAt := time.Date(2026, 8, 27, 8, 0, 0, 0, time.UTC)
+	windowStart := time.Date(2026, 8, 28, 7, 0, 0, 0, time.UTC)
+	windowEnd := windowStart.Add(8 * time.Hour)
+	duration := 60
+
+	repo := &fakeMayaRepository{}
+	storiesService := &fakeMayaStories{story: stories.CoreSingleStory{
+		ID:        storyID,
+		Workspace: workspaceID,
+		Team:      teamID,
+		Title:     "Prepare launch brief",
+		UpdatedAt: storyUpdatedAt,
+	}}
+	calendarService := &fakeMayaCalendar{schedulingView: calendar.CoreSchedule{Timezone: "Africa/Harare"}}
+	service := New(Dependencies{
+		Repository: repo,
+		Stories:    storiesService,
+		Reports: &fakeMayaReports{analysis: reports.CoreWorkloadAnalysis{
+			Members: []reports.CoreMemberWorkload{{UserID: userID, FullName: "Ada"}},
+		}},
+		Calendar: calendarService,
+		Users:    &fakeMayaUsers{members: []users.CoreUser{{ID: userID, FullName: "Ada"}}},
+		Planner:  NewPlanner(), MayaActorID: mayaActorID,
+	})
+
+	preview, err := service.CreateWorkPlan(ctx, CreateWorkPlanInput{
+		WorkspaceID: workspaceID, StoryID: storyID, TriggeredBy: requestedBy,
+		Trigger: RunTriggerManual, WindowStart: windowStart, WindowEnd: windowEnd,
+		DurationMinutes: duration, AutoApply: false,
+	})
+	if err != nil {
+		t.Fatalf("CreateWorkPlan preview returned error: %v", err)
+	}
+	if len(preview.Actions) != 2 {
+		t.Fatalf("expected assignment and schedule previews, got %#v", preview.Actions)
+	}
+	for _, action := range preview.Actions {
+		if action.Status != ActionStatusProposed {
+			t.Fatalf("preview action %s was mutated: %q", action.ID, action.Status)
+		}
+	}
+	if storiesService.updatedAssignee != nil || storiesService.story.AutoSchedulingEnabled {
+		t.Fatalf("preview changed the story: %#v", storiesService.story)
+	}
+	if len(repo.appliedActionIDs) != 0 {
+		t.Fatalf("preview applied actions: %v", repo.appliedActionIDs)
+	}
+
+	applied, err := service.ApplyWorkPlan(ctx, ApplyWorkPlanInput{
+		WorkspaceID: workspaceID,
+		RunID:       preview.Run.ID,
+		TriggeredBy: requestedBy,
+	})
+	if err != nil {
+		t.Fatalf("ApplyWorkPlan returned error: %v", err)
+	}
+	for _, action := range applied.Actions {
+		if action.Status != ActionStatusApplied {
+			t.Fatalf("expected applied action %s, got %q", action.ID, action.Status)
+		}
+	}
+	if repo.createRunCalls != 1 {
+		t.Fatalf("apply recomputed the plan and created %d runs", repo.createRunCalls)
+	}
+	if storiesService.updatedAssignee == nil || *storiesService.updatedAssignee != userID {
+		t.Fatalf("expected stored assignee %s, got %v", userID, storiesService.updatedAssignee)
+	}
+	if !storiesService.story.AutoSchedulingEnabled || storiesService.story.EstimatedDurationMinutes == nil || *storiesService.story.EstimatedDurationMinutes != duration {
+		t.Fatalf("approved scheduling preferences were not saved: %#v", storiesService.story)
+	}
+	if len(repo.appliedActionIDs) != 2 {
+		t.Fatalf("expected two durable applied actions, got %v", repo.appliedActionIDs)
+	}
+
+	if _, err := service.ApplyWorkPlan(ctx, ApplyWorkPlanInput{
+		WorkspaceID: workspaceID,
+		RunID:       preview.Run.ID,
+		TriggeredBy: requestedBy,
+	}); err != nil {
+		t.Fatalf("idempotent ApplyWorkPlan retry returned error: %v", err)
+	}
+	if len(repo.appliedActionIDs) != 2 {
+		t.Fatalf("idempotent retry reapplied actions: %v", repo.appliedActionIDs)
+	}
+	if _, err := service.ApplyWorkPlan(ctx, ApplyWorkPlanInput{
+		WorkspaceID: workspaceID,
+		RunID:       preview.Run.ID,
+		TriggeredBy: uuid.New(),
+	}); !errors.Is(err, ErrPlanNotFound) {
+		t.Fatalf("expected user-scoped plan lookup to fail, got %v", err)
+	}
+}
+
+func TestApplyStoredWorkPlanRefreshesScheduleAfterSavingPreferences(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	requestedBy := uuid.New()
+	userID := uuid.New()
+	updatedAt := time.Date(2026, 8, 27, 9, 0, 0, 0, time.UTC)
+	windowStart := time.Date(2026, 8, 28, 7, 0, 0, 0, time.UTC)
+	repo := &fakeMayaRepository{}
+	storiesService := &fakeMayaStories{story: stories.CoreSingleStory{
+		ID: storyID, Workspace: workspaceID, Team: uuid.New(), Title: "Review launch",
+		Assignee: &userID, UpdatedAt: updatedAt,
+	}}
+	calendarService := &fakeMayaCalendar{schedulingView: calendar.CoreSchedule{Timezone: "Africa/Harare"}}
+	service := New(Dependencies{
+		Repository: repo, Stories: storiesService,
+		Reports:  &fakeMayaReports{analysis: reports.CoreWorkloadAnalysis{Members: []reports.CoreMemberWorkload{{UserID: userID}}}},
+		Calendar: calendarService, Users: &fakeMayaUsers{members: []users.CoreUser{{ID: userID}}},
+		Planner: NewPlanner(), MayaActorID: uuid.New(),
+	})
+
+	preview, err := service.CreateWorkPlan(context.Background(), CreateWorkPlanInput{
+		WorkspaceID: workspaceID, StoryID: storyID, TriggeredBy: requestedBy,
+		WindowStart: windowStart, WindowEnd: windowStart.Add(8 * time.Hour),
+		DurationMinutes: 60,
+	})
+	if err != nil {
+		t.Fatalf("CreateWorkPlan preview returned error: %v", err)
+	}
+	if len(preview.Actions) != 1 || preview.Actions[0].Type != ActionTypeScheduleWorkBlock {
+		t.Fatalf("expected an exact schedule-only preview, got %#v", preview.Actions)
+	}
+	if _, err := service.ApplyWorkPlan(context.Background(), ApplyWorkPlanInput{
+		WorkspaceID: workspaceID, RunID: preview.Run.ID, TriggeredBy: requestedBy,
+	}); err != nil {
+		t.Fatalf("ApplyWorkPlan returned error: %v", err)
+	}
+	if len(calendarService.reconciliations) < 2 {
+		t.Fatalf("expected schedule commit and ownership refresh, got %#v", calendarService.reconciliations)
+	}
+	refreshed := calendarService.reconciliations[len(calendarService.reconciliations)-1]
+	if refreshed.ExpectedStoryUpdatedAt == nil || !refreshed.ExpectedStoryUpdatedAt.Equal(storiesService.story.UpdatedAt) {
+		t.Fatalf("schedule ownership was not refreshed to story version %s: %#v", storiesService.story.UpdatedAt, refreshed)
 	}
 }
 
@@ -150,7 +301,120 @@ func TestCreateWorkPlanUsesBoundedDefaultCandidatePool(t *testing.T) {
 	}
 }
 
-func TestCreateWorkPlanOverwritesStoryDatesWithPlannedWorkWindow(t *testing.T) {
+func TestManuallyScheduleStoryLocksExplicitConflictingTime(t *testing.T) {
+	t.Parallel()
+
+	workspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	mayaActorID := uuid.New()
+	duration := 90
+	updatedAt := time.Date(2026, 8, 20, 8, 0, 0, 0, time.UTC)
+	startAt := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Minute)
+	repo := &fakeMayaRepository{schedulable: true}
+	storiesService := &fakeMayaStories{story: stories.CoreSingleStory{
+		ID:                       storyID,
+		Workspace:                workspaceID,
+		Title:                    "Prepare launch brief",
+		Assignee:                 &userID,
+		EstimatedDurationMinutes: &duration,
+		AutoSchedulingEnabled:    true,
+		AutoSchedulingStatus:     stories.AutoSchedulingStatusCannotFit,
+		UpdatedAt:                updatedAt,
+	}}
+	calendarService := &fakeMayaCalendar{hasOwnership: true}
+	service := New(Dependencies{
+		Repository:  repo,
+		Stories:     storiesService,
+		Reports:     &fakeMayaReports{},
+		Calendar:    calendarService,
+		Users:       &fakeMayaUsers{},
+		Planner:     NewPlanner(),
+		MayaActorID: mayaActorID,
+	})
+
+	block, err := service.ManuallyScheduleStory(context.Background(), ManualScheduleStoryInput{
+		WorkspaceID: workspaceID,
+		StoryID:     storyID,
+		UserID:      userID,
+		StartAt:     startAt,
+		Timezone:    "Africa/Harare",
+	})
+	if err != nil {
+		t.Fatalf("ManuallyScheduleStory returned error: %v", err)
+	}
+	if !block.StartAt.Equal(startAt) || !block.EndAt.Equal(startAt.Add(90*time.Minute)) || !block.IsLocked {
+		t.Fatalf("unexpected manual block: %#v", block)
+	}
+	if !calendarService.reconciled.AllowConflicts || !calendarService.reconciled.Locked || !calendarService.reconciled.KeepOwnership {
+		t.Fatalf("explicit placement did not preserve the override contract: %#v", calendarService.reconciled)
+	}
+	if !storiesService.story.AutoSchedulingLocked || storiesService.story.AutoSchedulingStatus != stories.AutoSchedulingStatusLocked {
+		t.Fatalf("story was not locked after explicit placement: %#v", storiesService.story)
+	}
+	if len(storiesService.scheduleTransitions) != 1 || storiesService.scheduleTransitions[0] == nil || storiesService.scheduleTransitions[0].StartAt == nil || !storiesService.scheduleTransitions[0].StartAt.Equal(startAt) {
+		t.Fatalf("expected one schedule transition for the chosen time: %#v", storiesService.scheduleTransitions)
+	}
+	if len(calendarService.dispatchedUsers) != 1 || calendarService.dispatchedUsers[0] != userID {
+		t.Fatalf("expected provider outbox dispatch for %s, got %v", userID, calendarService.dispatchedUsers)
+	}
+}
+
+func TestCreateWorkPlanUsesAccountWideAvailabilityTimezoneAndMinimumFocus(t *testing.T) {
+	workspaceID := uuid.New()
+	otherWorkspaceID := uuid.New()
+	storyID := uuid.New()
+	userID := uuid.New()
+	duration := 150
+	minimumFocus := 60
+	windowStart := time.Date(2026, 6, 15, 6, 0, 0, 0, time.UTC)
+	windowEnd := time.Date(2026, 6, 15, 14, 0, 0, 0, time.UTC)
+	calendarSvc := &fakeMayaCalendar{schedulingView: calendar.CoreSchedule{
+		Timezone: "Africa/Harare",
+		Blocks: []calendar.CoreScheduleBlock{{
+			WorkspaceID: otherWorkspaceID, UserID: userID, Title: "Busy",
+			StartAt: time.Date(2026, 6, 15, 7, 0, 0, 0, time.UTC),
+			EndAt:   time.Date(2026, 6, 15, 8, 0, 0, 0, time.UTC),
+			Source:  calendar.ScheduleBlockSourceUser, IsLocked: true,
+		}},
+	}}
+	service := New(Dependencies{
+		Repository: &fakeMayaRepository{},
+		Stories: &fakeMayaStories{story: stories.CoreSingleStory{
+			ID: storyID, Workspace: workspaceID, Team: uuid.New(), Title: "Account-wide plan",
+			EstimatedDurationMinutes: &duration, MinimumFocusBlockMinutes: &minimumFocus,
+		}},
+		Reports:  &fakeMayaReports{analysis: reports.CoreWorkloadAnalysis{Members: []reports.CoreMemberWorkload{{UserID: userID}}}},
+		Calendar: calendarSvc, Users: &fakeMayaUsers{members: []users.CoreUser{{ID: userID}}},
+		Planner: NewPlanner(), MayaActorID: uuid.New(),
+	})
+	plan, err := service.CreateWorkPlan(context.Background(), CreateWorkPlanInput{
+		WorkspaceID: workspaceID, StoryID: storyID, TriggeredBy: uuid.New(),
+		WindowStart: windowStart, WindowEnd: windowEnd,
+	})
+	if err != nil {
+		t.Fatalf("CreateWorkPlan returned error: %v", err)
+	}
+	if len(plan.Actions) != 3 {
+		t.Fatalf("expected assignment plus two focus segments: %#v", plan.Actions)
+	}
+	firstSegment := plan.Actions[1].Payload.ScheduleBlock
+	secondSegment := plan.Actions[2].Payload.ScheduleBlock
+	if firstSegment == nil || secondSegment == nil {
+		t.Fatalf("expected two schedule payloads: %#v", plan.Actions)
+	}
+	if expected := time.Date(2026, 6, 15, 8, 0, 0, 0, time.UTC); !firstSegment.StartAt.Equal(expected) {
+		t.Fatalf("expected other-workspace block to defer local 09:00 start until %s, got %s", expected, firstSegment.StartAt)
+	}
+	if firstSegment.EndAt.Sub(firstSegment.StartAt) < time.Hour || secondSegment.EndAt.Sub(secondSegment.StartAt) < time.Hour {
+		t.Fatalf("expected story minimum focus to reach planner: %#v %#v", firstSegment, secondSegment)
+	}
+	if firstSegment.EndAt.Sub(firstSegment.StartAt)+secondSegment.EndAt.Sub(secondSegment.StartAt) != 150*time.Minute {
+		t.Fatalf("expected exact task duration across segments: %#v %#v", firstSegment, secondSegment)
+	}
+}
+
+func TestCreateWorkPlanPreservesStoryConstraintDates(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New()
 	storyID := uuid.New()
@@ -162,8 +426,6 @@ func TestCreateWorkPlanOverwritesStoryDatesWithPlannedWorkWindow(t *testing.T) {
 	existingEndDate := time.Date(2026, 6, 24, 17, 0, 0, 0, time.UTC)
 	windowStart := time.Date(2026, 6, 16, 9, 0, 0, 0, time.UTC)
 	windowEnd := time.Date(2026, 6, 30, 17, 0, 0, 0, time.UTC)
-	expectedStartDate := windowStart
-	expectedEndDate := windowStart.Add(60 * time.Minute)
 
 	storiesSvc := &fakeMayaStories{
 		story: stories.CoreSingleStory{
@@ -202,11 +464,8 @@ func TestCreateWorkPlanOverwritesStoryDatesWithPlannedWorkWindow(t *testing.T) {
 		t.Fatalf("CreateWorkPlan returned error: %v", err)
 	}
 
-	if value, ok := storiesSvc.lastUpdates["start_date"].(time.Time); !ok || !value.Equal(expectedStartDate) {
-		t.Fatalf("expected start date to be overwritten with %s, got %#v", expectedStartDate, storiesSvc.lastUpdates["start_date"])
-	}
-	if value, ok := storiesSvc.lastUpdates["end_date"].(time.Time); !ok || !value.Equal(expectedEndDate) {
-		t.Fatalf("expected end date to be overwritten with %s, got %#v", expectedEndDate, storiesSvc.lastUpdates["end_date"])
+	if storiesSvc.updatedStartDate != nil || storiesSvc.updatedEndDate != nil {
+		t.Fatalf("generated calendar placement must not overwrite story constraints: start=%v end=%v", storiesSvc.updatedStartDate, storiesSvc.updatedEndDate)
 	}
 }
 
@@ -223,119 +482,27 @@ func TestShouldIncludeCandidateExcludesMayaActor(t *testing.T) {
 }
 
 type fakeMayaRepository struct {
-	actions          []CoreAction
-	appliedActionIDs []uuid.UUID
-}
-
-func (f *fakeMayaRepository) CreateRun(_ context.Context, input CreateRunInput) (CoreRun, error) {
-	return CoreRun{
-		ID:          uuid.New(),
-		WorkspaceID: input.WorkspaceID,
-		StoryID:     input.StoryID,
-		TriggeredBy: input.TriggeredBy,
-		Trigger:     input.Trigger,
-		Status:      RunStatusRunning,
-		StartedAt:   time.Now(),
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}, nil
-}
-
-func (f *fakeMayaRepository) CompleteRun(_ context.Context, runID uuid.UUID, status RunStatus, summary string, message *string) (CoreRun, error) {
-	return CoreRun{
-		ID:        runID,
-		Status:    status,
-		Summary:   summary,
-		Error:     message,
-		UpdatedAt: time.Now(),
-	}, nil
-}
-
-func (f *fakeMayaRepository) CreateActions(_ context.Context, actions []CoreAction) ([]CoreAction, error) {
-	for i := range actions {
-		actions[i].ID = uuid.New()
-	}
-	f.actions = actions
-	return actions, nil
-}
-
-func (f *fakeMayaRepository) MarkActionApplied(_ context.Context, actionID uuid.UUID) error {
-	f.appliedActionIDs = append(f.appliedActionIDs, actionID)
-	return nil
-}
-
-func (f *fakeMayaRepository) MarkActionFailed(_ context.Context, _ uuid.UUID, _ string) error {
-	return nil
-}
-
-type fakeMayaStories struct {
-	story            stories.CoreSingleStory
-	actorID          uuid.UUID
-	updatedAssignee  *uuid.UUID
-	updatedStartDate *time.Time
-	updatedEndDate   *time.Time
-	lastUpdates      map[string]any
-	updateReasons    []string
-}
-
-func (f *fakeMayaStories) Get(_ context.Context, storyID, workspaceID uuid.UUID) (stories.CoreSingleStory, error) {
-	f.story.ID = storyID
-	f.story.Workspace = workspaceID
-	return f.story, nil
-}
-
-func (f *fakeMayaStories) UpdateExternal(_ context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any) error {
-	return f.UpdateExternalWithReason(context.Background(), actorID, storyID, workspaceID, updates, "")
-}
-
-func (f *fakeMayaStories) UpdateExternalWithReason(_ context.Context, actorID, storyID, workspaceID uuid.UUID, updates map[string]any, reason string) error {
-	f.actorID = actorID
-	f.lastUpdates = updates
-	f.updateReasons = append(f.updateReasons, reason)
-	if value, ok := updates["assignee_id"].(uuid.UUID); ok {
-		f.updatedAssignee = &value
-	}
-	if value, ok := updates["start_date"].(time.Time); ok {
-		f.updatedStartDate = &value
-	}
-	if value, ok := updates["end_date"].(time.Time); ok {
-		f.updatedEndDate = &value
-	}
-	return nil
-}
-
-type fakeMayaReports struct {
-	analysis reports.CoreWorkloadAnalysis
-}
-
-func (f *fakeMayaReports) GetWorkloadAnalysis(_ context.Context, _ uuid.UUID, _ reports.ReportFilters) (reports.CoreWorkloadAnalysis, error) {
-	return f.analysis, nil
-}
-
-type fakeMayaCalendar struct {
-	createdBlock      calendar.CoreScheduleBlockInput
-	listScheduleCalls int
-}
-
-func (f *fakeMayaCalendar) ListSchedule(_ context.Context, workspaceID, userID uuid.UUID, startAt, endAt time.Time) (calendar.CoreSchedule, error) {
-	f.listScheduleCalls++
-	return calendar.CoreSchedule{StartAt: startAt, EndAt: endAt}, nil
-}
-
-func (f *fakeMayaCalendar) CreateScheduleBlock(_ context.Context, input calendar.CoreScheduleBlockInput) (calendar.CoreScheduleBlock, error) {
-	f.createdBlock = input
-	return calendar.CoreScheduleBlock{ID: uuid.New(), WorkspaceID: input.WorkspaceID, UserID: input.UserID, StoryID: input.StoryID, StartAt: input.StartAt, EndAt: input.EndAt, Source: input.Source}, nil
-}
-
-type fakeMayaUsers struct {
-	members    []users.CoreUser
-	lastFilter users.CoreListUsersFilter
-}
-
-func (f *fakeMayaUsers) List(_ context.Context, _ uuid.UUID, filter users.CoreListUsersFilter) ([]users.CoreUser, error) {
-	f.lastFilter = filter
-	if filter.Limit > 0 && len(f.members) > filter.Limit {
-		return f.members[:filter.Limit], nil
-	}
-	return f.members, nil
+	actions                      []CoreAction
+	run                          CoreRun
+	createRunCalls               int
+	completeRunCalls             int
+	appliedActionIDs             []uuid.UUID
+	failedActionIDs              []uuid.UUID
+	failedActionMessages         []string
+	markActionAppliedErr         error
+	markActionFailedErr          error
+	storyRefs                    []ScheduleStoryRef
+	recoveryRefs                 []ScheduleRecoveryRef
+	recoveryClaimLimit           int
+	recoveryRetryBefore          time.Time
+	recoveryInterruptedRunBefore time.Time
+	recoveryRequiresOwnership    bool
+	completedInterruptedRunIDs   []uuid.UUID
+	scheduleOwners               []uuid.UUID
+	schedulable                  bool
+	ownershipRetainable          bool
+	workspaceAccessDenied        bool
+	storyInactive                bool
+	scheduleLock                 sync.Mutex
+	scheduleLockCalls            int
 }

@@ -5,13 +5,14 @@ import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { objectiveKeys } from "../constants";
 import { getKeyResults } from "../queries/get-key-results";
 
-export const useKeyResults = (objectiveId: string) => {
+export const useKeyResults = (objectiveId: string, enabled = true) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
   return useQuery({
     queryKey: objectiveKeys.keyResults(workspaceSlug, objectiveId),
     queryFn: () =>
       getKeyResults(objectiveId, { session: session!, workspaceSlug }),
+    enabled: Boolean(objectiveId && session && enabled),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 10,
   });
 };

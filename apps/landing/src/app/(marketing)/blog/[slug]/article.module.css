@@ -1,0 +1,112 @@
+.articleTitle {
+  font-family: var(--font-body), sans-serif;
+}
+
+.articleBody {
+  color: var(--color-text-secondary);
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.97rem;
+  line-height: 1.76;
+}
+
+.articleBody > * + * {
+  margin-top: 1.25rem;
+}
+
+.articleBody h2,
+.articleBody h3,
+.articleBody h4 {
+  color: var(--color-foreground);
+  font-family: var(--font-body), sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  line-height: 1.3;
+}
+
+.articleBody h2 {
+  margin-top: 3.25rem;
+  font-size: 1.4rem;
+}
+
+.articleBody h3 {
+  margin-top: 2.5rem;
+  font-size: 1.15rem;
+}
+
+.articleBody h4 {
+  margin-top: 2rem;
+  font-size: 1rem;
+}
+
+.articleBody a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.articleBody ul,
+.articleBody ol {
+  padding-left: 1.35rem;
+}
+
+.articleBody ul {
+  list-style: disc;
+}
+
+.articleBody ol {
+  list-style: decimal;
+}
+
+.articleBody li + li {
+  margin-top: 0.45rem;
+}
+
+.articleBody blockquote {
+  margin-block: 2rem;
+  border-left: 2px solid var(--color-primary);
+  padding-left: 1.2rem;
+  color: var(--color-foreground);
+  font-style: italic;
+}
+
+.articleBody pre {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  padding: 1rem;
+  color: var(--color-foreground);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.articleBody :not(pre) > code {
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  padding: 0.12em 0.35em;
+  color: var(--color-foreground);
+  font-size: 0.9em;
+}
+
+.articleBody img {
+  margin-block: 2.25rem;
+  border-radius: var(--radius-md);
+}
+
+.articleBody hr {
+  margin-block: 3rem;
+  border-color: var(--color-border);
+}
+
+.articleBody table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.articleBody th,
+.articleBody td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.7rem 0.5rem;
+  text-align: left;
+}

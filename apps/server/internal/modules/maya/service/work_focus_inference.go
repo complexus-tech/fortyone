@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	mayadomain "github.com/complexus-tech/projects-api/internal/modules/maya/domain"
 )
 
 const (
@@ -12,11 +14,7 @@ const (
 	minWorkFocusConfidence      = 0.45
 )
 
-type WorkFocusEvidence struct {
-	Title       string
-	Description string
-	Labels      []string
-}
+type WorkFocusEvidence = mayadomain.WorkFocusEvidence
 
 type WorkFocusInferenceInput struct {
 	ManualRoleTitle       string
@@ -24,13 +22,7 @@ type WorkFocusInferenceInput struct {
 	Evidence              []WorkFocusEvidence
 }
 
-type WorkFocusInferenceResult struct {
-	ShouldInfer     bool
-	RoleTitle       string
-	RoleDescription string
-	StoryCount      int
-	Confidence      float64
-}
+type WorkFocusInferenceResult = mayadomain.WorkFocusInferenceResult
 
 type workFocusCategory struct {
 	Key         string

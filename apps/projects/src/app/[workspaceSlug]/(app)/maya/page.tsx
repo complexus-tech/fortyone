@@ -7,8 +7,9 @@ import { auth } from "@/auth";
 import { MayaChatPage } from "@/modules/maya/maya";
 
 export const metadata: Metadata = {
-  title: "Maya | AI Assistant",
-  description: "Your AI Assistant",
+  title: "Maya | AI Agent",
+  description:
+    "Maya, your AI agent for planning and managing work in FortyOne.",
 };
 
 export default async function MayaPage({

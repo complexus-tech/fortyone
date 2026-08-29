@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import { Box } from "ui";
 import { Pricing } from "@/components/ui";
 import { ComparePlans } from "@/components/ui/compare";
+import { Faqs } from "@/components/ui/faqs";
 import { CallToAction } from "@/components/shared";
+import {
+  DEFAULT_SOCIAL_IMAGE,
+  DEFAULT_TWITTER_IMAGE,
+  getCanonicalUrl,
+} from "@/lib/seo";
 import { PricingJsonLd } from "./json-ld";
 
 export const metadata: Metadata = {
@@ -19,15 +25,24 @@ export const metadata: Metadata = {
     "enterprise project management",
     "free project management",
   ],
+  alternates: {
+    canonical: getCanonicalUrl("/pricing"),
+  },
   openGraph: {
     title: "FortyOne Pricing | Flexible Plans for Teams of All Sizes",
     description:
       "Choose the perfect FortyOne plan for your team. From free starter plans to enterprise solutions, find the right fit for your project management needs.",
+    url: getCanonicalUrl("/pricing"),
+    siteName: "FortyOne",
+    type: "website",
+    images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
+    card: "summary_large_image",
     title: "FortyOne Pricing | Flexible Plans for Teams of All Sizes",
     description:
       "Choose the perfect FortyOne plan for your team. From free starter plans to enterprise solutions, find the right fit for your project management needs.",
+    images: [DEFAULT_TWITTER_IMAGE],
   },
 };
 
@@ -35,10 +50,18 @@ export default function Page() {
   return (
     <>
       <PricingJsonLd />
-      <Box className="pt-16 md:pt-0">
-        <Pricing />
+      <Box>
+        <section className="landing-hero-shell landing-page-frame mt-18 overflow-hidden rounded-2xl sm:rounded-[3rem] md:mt-20 md:rounded-[4rem]">
+          <Pricing variant="page" />
+        </section>
         <ComparePlans />
-        <CallToAction />
+        <Faqs variant="pricing" />
+        <CallToAction
+          className="border-t-0"
+          contentClassName="pt-24 md:pt-32"
+          description="Start free with one team. No card and no trial clock."
+          title="Bring your first project into FortyOne."
+        />
       </Box>
     </>
   );

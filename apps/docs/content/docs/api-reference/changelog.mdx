@@ -1,0 +1,34 @@
+---
+title: Changelog
+description: Follow public API releases and compatibility rules.
+icon: GitBranch
+---
+
+Only operations under `/api/v1` that appear in the published OpenAPI contract
+belong to the Developer API. Routes used privately by the web and mobile
+applications are not public API contracts.
+
+## Compatibility policy
+
+| Change                                  | Within `v1`? |
+| --------------------------------------- | ------------ |
+| Add an endpoint or optional field       | Yes          |
+| Add a documented error code             | Yes          |
+| Remove or rename an existing field      | No           |
+| Make an optional input required         | No           |
+| Change the meaning of an existing value | No           |
+
+Clients should ignore response fields they do not use and branch on documented
+error codes rather than messages. Breaking changes require a new API version or
+an announced deprecation window.
+
+## 2026-08-28 — v1 developer preview
+
+- Added typed workspace, team, story, comment, label, workflow, sprint,
+  objective, and key-result reads.
+- Added idempotent story creation.
+- Added scoped personal tokens and service-account keys with rotation,
+  revocation, team restrictions, and audit metadata.
+- Added signed outbound webhooks with durable delivery and secret rotation.
+- Added OpenAPI-generated Go and TypeScript SDK previews.
+- Added contract linting, generated-drift checks, and breaking-change gates.

@@ -1,0 +1,52 @@
+---
+title: API quickstart
+description: Prepare a credential and make your first request to the FortyOne API.
+icon: Rocket
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+## Before you begin
+
+You need a FortyOne account, access to the target workspace, and a personal
+access token with only the scopes required by your integration. FortyOne shows
+the token once, so copy it directly into a secret manager.
+
+<Steps>
+  <Step>
+    **Create a token.** Open **Settings → API → Access tokens**, choose an
+    expiry, and select the smallest useful set of scopes.
+  </Step>
+  <Step>
+    **Choose an operation.** Open the [API reference](/api-reference/reference)
+    and select the resource you want to read or change.
+  </Step>
+  <Step>
+    **Authorize the request.** Send one `Authorization: Bearer <token>` header.
+    Keep the token out of URLs, browser storage, source code, and logs.
+  </Step>
+  <Step>
+    **Handle the response.** Read the typed `data` object on success. On failure,
+    branch on `error.code` and retain `X-Request-ID` for troubleshooting.
+  </Step>
+</Steps>
+
+## Request checklist
+
+| Concern         | What to do                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| Base URL        | Use `https://api.fortyone.app/api/v1`.                                                           |
+| Authentication  | Send one bearer header over HTTPS.                                                               |
+| Writes          | Supply `Content-Type: application/json` and an `Idempotency-Key` when the operation requires it. |
+| Pagination      | Treat cursors as opaque and follow `meta.nextCursor`.                                            |
+| Rate limits     | Respect `RateLimit`, `RateLimit-Policy`, and `Retry-After`.                                      |
+| Troubleshooting | Record `X-Request-ID`, not the bearer token or sensitive body fields.                            |
+
+## What to read next
+
+- [Authentication](/api-reference/authentication) explains token storage,
+  rotation, and revocation.
+- [Scopes and access](/api-reference/scopes) explains least privilege.
+- [Idempotent writes](/api-reference/idempotency) explains safe retries.
+- [API reference](/api-reference/reference) contains the exact request and
+  response examples for every published operation.

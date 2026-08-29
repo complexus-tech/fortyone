@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { SearchIcon } from "icons";
+import { Kbd } from "ui";
+import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useRouter, usePathname } from "next/navigation";
+import { useQueryState } from "nuqs";
 import { useUserRole, useWorkspacePath } from "@/hooks";
 import { KeyboardShortcuts } from "@/components/shared/keyboard-shortcuts";
 import {
@@ -13,7 +17,13 @@ import {
 import { NewSprintDialog } from "@/components/ui/new-sprint-dialog";
 import { CommandBar } from "./command-bar";
 
-export const Commands = () => {
+export const Commands = ({
+  className,
+  showTrigger = false,
+}: {
+  className?: string;
+  showTrigger?: boolean;
+}) => {
   const { userRole } = useUserRole();
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isSprintsOpen, setIsSprintsOpen] = useState(false);
@@ -24,6 +34,8 @@ export const Commands = () => {
   const pathname = usePathname();
   const { withWorkspace } = useWorkspacePath();
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
+  const [query, setQuery] = useQueryState("query", { defaultValue: "" });
+  const isSearchPage = pathname === withWorkspace("/search");
 
   useHotkeys("mod+k", (e) => {
     e.preventDefault();
@@ -46,9 +58,9 @@ export const Commands = () => {
       router.push(withWorkspace("/summary"));
     }
   });
-  useHotkeys("g+o", () => {
-    if (pathname !== withWorkspace("/objectives")) {
-      router.push(withWorkspace("/objectives"));
+  useHotkeys("g+r", () => {
+    if (pathname !== withWorkspace("/roadmap")) {
+      router.push(withWorkspace("/roadmap"));
     }
   });
 
@@ -78,6 +90,67 @@ export const Commands = () => {
 
   return (
     <>
+      {showTrigger && isSearchPage ? (
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-2",
+            className,
+            "max-w-none",
+          )}
+        >
+          <search
+            className="bg-surface-muted focus-within:ring-ring flex h-11 w-full max-w-xl min-w-0 items-center gap-2 rounded-lg px-3 focus-within:ring-2"
+            key={query}
+          >
+            <SearchIcon className="text-text-muted h-4 shrink-0" />
+            <input
+              aria-label="Search tasks and objectives"
+              className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent outline-none"
+              defaultValue={query}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  void setQuery(event.currentTarget.value.trim());
+                }
+              }}
+              placeholder="Search tasks and objectives…"
+              type="search"
+            />
+          </search>
+          <button
+            aria-label="Open command menu"
+            className="border-border bg-surface-muted text-text-muted hover:bg-state-hover focus-visible:ring-ring ml-auto flex h-[2rem] shrink-0 items-center rounded-lg border-[0.5px] px-2.5 transition-colors outline-none focus-visible:ring-2"
+            onClick={() => {
+              setOpen(true);
+            }}
+            type="button"
+          >
+            <span className="text-[0.95rem] font-medium tracking-tight">
+              ⌘ K
+            </span>
+          </button>
+        </div>
+      ) : null}
+      {showTrigger && !isSearchPage ? (
+        <button
+          aria-label="Search tasks, objectives, or commands"
+          className={cn(
+            "bg-surface-muted text-text-muted hover:bg-state-hover focus-visible:ring-ring flex h-11 min-w-0 items-center gap-2 rounded-lg px-3 text-left transition-colors outline-none focus-visible:ring-2",
+            className,
+          )}
+          onClick={() => {
+            setOpen(true);
+          }}
+          type="button"
+        >
+          <SearchIcon className="h-4 shrink-0" />
+          <span className="min-w-0 flex-1 truncate">
+            Search tasks, objectives, or commands…
+          </span>
+          <Kbd className="!bg-surface/5 !text-text-muted dark:!bg-surface/10 hidden shrink-0 sm:flex">
+            ⌘ K
+          </Kbd>
+        </button>
+      ) : null}
       <CommandBar isOpen={open} setIsOpen={setOpen} />
       <KeyboardShortcuts
         isOpen={isKeyboardShortcutsOpen}

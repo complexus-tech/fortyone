@@ -7,6 +7,7 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNotificationRules(t *testing.T) {
@@ -127,6 +128,27 @@ func TestNotificationRules(t *testing.T) {
 	}
 }
 
+func TestHasNonAssignmentUpdatesSkipsAdministrativeEdits(t *testing.T) {
+	rules := &Rules{}
+	assigneeID := uuid.New()
+
+	for name, updates := range map[string]map[string]any{
+		"title":              {"title": "A clearer title"},
+		"start date":         {"start_date": "2026-08-20"},
+		"sprint":             {"sprint_id": uuid.New().String()},
+		"estimate":           {"estimate_unit": 3},
+		"collaborators":      {"collaborator_ids": []string{uuid.New().String()}},
+		"administrative mix": {"title": "A clearer title", "estimate_unit": 3},
+	} {
+		t.Run(name, func(t *testing.T) {
+			require.False(t, rules.hasNonAssignmentUpdates(events.StoryUpdatedPayload{
+				AssigneeID: &assigneeID,
+				Updates:    updates,
+			}))
+		})
+	}
+}
+
 func TestNotificationTypes(t *testing.T) {
 	actorID := uuid.New()
 	assigneeID := uuid.New()
@@ -151,7 +173,7 @@ func TestNotificationTypes(t *testing.T) {
 		assignmentMessage,
 	)
 
-	assert.Equal(t, "story_update", assignmentNotif.Type)
+	assert.Equal(t, "story_update", string(assignmentNotif.Type))
 	assert.Equal(t, "{actor} assigned you a story", assignmentNotif.Message.Template)
 	assert.Equal(t, "testuser", assignmentNotif.Message.Variables["actor"].Value)
 	assert.Equal(t, "actor", assignmentNotif.Message.Variables["actor"].Type)
@@ -181,7 +203,7 @@ func TestNotificationTypes(t *testing.T) {
 		updateMessage,
 	)
 
-	assert.Equal(t, "story_update", updateNotif.Type)
+	assert.Equal(t, "story_update", string(updateNotif.Type))
 	assert.Equal(t, "{actor} set the {field} to {value}", updateNotif.Message.Template)
 	assert.Equal(t, "testuser", updateNotif.Message.Variables["actor"].Value)
 	assert.Equal(t, "priority", updateNotif.Message.Variables["field"].Value)
@@ -206,10 +228,33 @@ func TestNotificationTypes(t *testing.T) {
 		unassignMessage,
 	)
 
-	assert.Equal(t, "story_update", unassignNotif.Type)
+	assert.Equal(t, "story_update", string(unassignNotif.Type))
 	assert.Equal(t, "{actor} reassigned story to {assignee}", unassignNotif.Message.Template)
 	assert.Equal(t, "testuser", unassignNotif.Message.Variables["actor"].Value)
 	assert.Equal(t, "tom", unassignNotif.Message.Variables["assignee"].Value)
+}
+
+func TestStoryAudienceRespectsResolvedEmptyAudience(t *testing.T) {
+	assigneeID := uuid.New()
+
+	resolved := storyAudience([]uuid.UUID{}, true, &assigneeID)
+	assert.Empty(t, resolved, "an explicitly resolved empty audience must remain empty")
+
+	legacyFallback := storyAudience(nil, false, &assigneeID)
+	assert.Equal(t, []uuid.UUID{assigneeID}, legacyFallback)
+}
+
+func TestStoryAudienceDeduplicatesRecipients(t *testing.T) {
+	first := uuid.New()
+	second := uuid.New()
+
+	audience := storyAudience(
+		[]uuid.UUID{first, uuid.Nil, second, first},
+		true,
+		nil,
+	)
+
+	assert.Equal(t, []uuid.UUID{first, second}, audience)
 }
 
 func TestGenerateUpdateMessage(t *testing.T) {
@@ -383,8 +428,8 @@ func TestProcessCommentCreated(t *testing.T) {
 			if tt.expectedCount > 0 {
 				notification := notifications[0]
 				assert.Equal(t, tt.expectedRecipient, notification.RecipientID)
-				assert.Equal(t, tt.expectedType, notification.Type)
-				assert.Equal(t, "story", notification.EntityType)
+				assert.Equal(t, tt.expectedType, string(notification.Type))
+				assert.Equal(t, "story", string(notification.EntityType))
 				assert.Equal(t, tt.payload.StoryID, notification.EntityID)
 				assert.Equal(t, tt.payload.StoryTitle, notification.Title)
 				assert.Equal(t, tt.actorID, notification.ActorID)
@@ -392,6 +437,98 @@ func TestProcessCommentCreated(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProcessFeedbackCommentCreated(t *testing.T) {
+	actorID := uuid.New()
+	recipientID := uuid.New()
+	payload := events.FeedbackCommentCreatedPayload{
+		CommentID:     uuid.New(),
+		FeedbackID:    uuid.New(),
+		FeedbackTitle: "Export roadmap to PDF",
+		FeedbackSlug:  "export-roadmap-to-pdf",
+		WorkspaceID:   uuid.New(),
+		RecipientID:   recipientID,
+		Content:       "We are working on this.",
+	}
+
+	rules := NewRules(nil, nil, nil, nil)
+	result := rules.ProcessFeedbackCommentCreated(context.Background(), payload, actorID)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, recipientID, result[0].RecipientID)
+	assert.Equal(t, "feedback_comment", string(result[0].Type))
+	assert.Equal(t, "feedback", string(result[0].EntityType))
+	assert.Equal(t, payload.FeedbackID, result[0].EntityID)
+	assert.Equal(t, payload.FeedbackTitle, result[0].Title)
+	assert.Equal(t, "{actor} commented on your feedback", result[0].Message.Template)
+
+	assert.Empty(t, rules.ProcessFeedbackCommentCreated(context.Background(), payload, recipientID))
+
+	payload.IsReply = true
+	replyResult := rules.ProcessFeedbackCommentCreated(context.Background(), payload, actorID)
+	assert.Len(t, replyResult, 1)
+	assert.Equal(t, "{actor} replied to your comment", replyResult[0].Message.Template)
+}
+
+func TestProcessFeedbackStatusUpdated(t *testing.T) {
+	actorID := uuid.New()
+	recipientID := uuid.New()
+	payload := events.FeedbackStatusUpdatedPayload{
+		EventID:       uuid.New(),
+		FeedbackID:    uuid.New(),
+		FeedbackTitle: "Export roadmap to PDF",
+		FeedbackSlug:  "export-roadmap-to-pdf",
+		WorkspaceID:   uuid.New(),
+		RecipientID:   recipientID,
+		Status:        "in_progress",
+	}
+
+	rules := NewRules(nil, nil, nil, nil)
+	result := rules.ProcessFeedbackStatusUpdated(context.Background(), payload, actorID)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, "feedback_status_update", string(result[0].Type))
+	assert.Equal(t, "in progress", result[0].Message.Variables["status"].Value)
+	assert.Empty(t, rules.ProcessFeedbackStatusUpdated(context.Background(), payload, recipientID))
+}
+
+func TestProcessFeedbackUpdatePublishedUsesRecipientDedupeKey(t *testing.T) {
+	actorID, recipientID := uuid.New(), uuid.New()
+	payload := events.FeedbackUpdatePublishedPayload{
+		PublicationEventID: uuid.New(), UpdateID: uuid.New(), LinkedItemID: uuid.New(), WorkspaceID: uuid.New(),
+		RecipientID: recipientID, UpdateTitle: "Dark mode shipped", UpdateSlug: "dark-mode-shipped",
+	}
+	rules := NewRules(nil, nil, nil, nil)
+
+	result := rules.ProcessFeedbackUpdatePublished(context.Background(), payload, actorID)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, "feedback_update_published", string(result[0].Type))
+	assert.Equal(t, "feedback", string(result[0].EntityType))
+	assert.Equal(t, payload.LinkedItemID, result[0].EntityID)
+	assert.Equal(t, "feedback-update:"+payload.PublicationEventID.String()+":"+recipientID.String(), result[0].DedupeKey)
+	assert.Empty(t, rules.ProcessFeedbackUpdatePublished(context.Background(), payload, recipientID))
+}
+
+func TestProcessFeedbackItemMergedUsesStableRecipientDedupeKey(t *testing.T) {
+	actorID, recipientID := uuid.New(), uuid.New()
+	payload := events.FeedbackItemMergedPayload{
+		MergeEventID: uuid.New(), SourceItemID: uuid.New(), TargetItemID: uuid.New(),
+		TargetItemTitle: "Canonical dark mode request", TargetItemSlug: "canonical-dark-mode-request",
+		WorkspaceID: uuid.New(), RecipientID: recipientID,
+	}
+	rules := NewRules(nil, nil, nil, nil)
+
+	result := rules.ProcessFeedbackItemMerged(context.Background(), payload, actorID)
+
+	assert.Len(t, result, 1)
+	assert.Equal(t, "feedback_item_merged", string(result[0].Type))
+	assert.Equal(t, "feedback", string(result[0].EntityType))
+	assert.Equal(t, payload.TargetItemID, result[0].EntityID)
+	assert.Equal(t, "feedback-merge:"+payload.MergeEventID.String()+":"+recipientID.String(), result[0].DedupeKey)
+	assert.Equal(t, "{actor} merged feedback into {feedback}", result[0].Message.Template)
+	assert.Empty(t, rules.ProcessFeedbackItemMerged(context.Background(), payload, recipientID))
 }
 
 func TestProcessCommentReplied(t *testing.T) {
@@ -452,8 +589,8 @@ func TestProcessCommentReplied(t *testing.T) {
 			if tt.expectedCount > 0 {
 				notification := notifications[0]
 				assert.Equal(t, tt.expectedRecipient, notification.RecipientID)
-				assert.Equal(t, tt.expectedType, notification.Type)
-				assert.Equal(t, "story", notification.EntityType)
+				assert.Equal(t, tt.expectedType, string(notification.Type))
+				assert.Equal(t, "story", string(notification.EntityType))
 				assert.Equal(t, tt.payload.StoryID, notification.EntityID)
 				assert.Equal(t, tt.payload.StoryTitle, notification.Title)
 				assert.Equal(t, tt.actorID, notification.ActorID)
@@ -517,8 +654,8 @@ func TestProcessUserMentioned(t *testing.T) {
 			if tt.expectedCount > 0 {
 				notification := notifications[0]
 				assert.Equal(t, tt.expectedRecipient, notification.RecipientID)
-				assert.Equal(t, tt.expectedType, notification.Type)
-				assert.Equal(t, "story", notification.EntityType)
+				assert.Equal(t, tt.expectedType, string(notification.Type))
+				assert.Equal(t, "story", string(notification.EntityType))
 				assert.Equal(t, tt.payload.StoryID, notification.EntityID)
 				assert.Equal(t, tt.payload.StoryTitle, notification.Title)
 				assert.Equal(t, tt.actorID, notification.ActorID)

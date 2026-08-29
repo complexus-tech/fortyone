@@ -1,41 +1,57 @@
 package stories
 
-import "testing"
+import (
+	"testing"
 
-func TestEstimateDurationMinutesUsesHoursSchemeLabels(t *testing.T) {
-	tests := []struct {
-		name     string
-		value    int16
-		expected int
-	}{
-		{name: "half hour", value: 1, expected: 30},
-		{name: "one hour", value: 2, expected: 60},
-		{name: "two hours", value: 3, expected: 120},
-		{name: "four hours", value: 5, expected: 240},
-		{name: "eight hours", value: 8, expected: 480},
-	}
+	"github.com/stretchr/testify/require"
+)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := EstimateDurationMinutes("hours", &tt.value); got != tt.expected {
-				t.Fatalf("expected %d minutes, got %d", tt.expected, got)
-			}
-		})
+func TestEstimateLabelDefaultsToTshirt(t *testing.T) {
+	value := int16(2)
+
+	label := EstimateLabelFromValue("", &value)
+	if label == nil || *label != "S" {
+		t.Fatalf("expected default estimate scheme to label 2 as S, got %v", label)
 	}
 }
 
-func TestEstimateDurationMinutesDefaultsToHours(t *testing.T) {
-	value := int16(2)
+func TestValidateEstimateSchemeOnlyAllowsComplexitySchemes(t *testing.T) {
+	for _, scheme := range []string{"points", "tshirt", ""} {
+		if err := ValidateEstimateScheme(scheme); err != nil {
+			t.Fatalf("expected %q to be valid, got %v", scheme, err)
+		}
+	}
 
-	if got := EstimateDurationMinutes("", &value); got != 60 {
-		t.Fatalf("expected default estimate scheme to schedule 2 as 60 minutes, got %d", got)
+	for _, scheme := range []string{"hours", "ideal_days"} {
+		if err := ValidateEstimateScheme(scheme); err == nil {
+			t.Fatalf("expected legacy time-based scheme %q to be rejected", scheme)
+		}
 	}
 }
 
-func TestEstimateDurationMinutesKeepsPointHeuristic(t *testing.T) {
-	value := int16(2)
+func TestNormalizeEstimateUpdateValueRejectsOverflowAndFractions(t *testing.T) {
+	t.Parallel()
 
-	if got := EstimateDurationMinutes("points", &value); got != 240 {
-		t.Fatalf("expected 2 points to schedule as 240 minutes, got %d", got)
+	tests := []any{
+		int(1 << 15),
+		int(-1<<15 - 1),
+		float64(1 << 15),
+		float64(-1<<15 - 1),
+		1.5,
+	}
+	for _, value := range tests {
+		_, err := normalizeEstimateUpdateValue(value)
+		require.Error(t, err)
+	}
+}
+
+func TestNormalizeEstimateUpdateValueAcceptsExactSupportedRepresentations(t *testing.T) {
+	t.Parallel()
+
+	for _, value := range []any{int(5), int16(5), float64(5)} {
+		normalized, err := normalizeEstimateUpdateValue(value)
+		require.NoError(t, err)
+		require.NotNil(t, normalized)
+		require.Equal(t, int16(5), *normalized)
 	}
 }

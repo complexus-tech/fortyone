@@ -11,12 +11,13 @@ export type CreateStoryPayload = {
   assigneeId?: string | null;
   priority: StoryPriority;
   labelIds?: string[];
+  autoSchedulingEnabled?: boolean;
 };
 
 export const createStory = async (payload: CreateStoryPayload) => {
   const response = await post<CreateStoryPayload, ApiResponse<DetailedStory>>(
     "stories",
-    payload
+    payload,
   );
 
   return response;

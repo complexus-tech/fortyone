@@ -1,0 +1,104 @@
+name: Server Quality and Security
+
+on:
+  pull_request:
+    paths:
+      - "apps/server/**"
+      - ".github/workflows/server-quality.yml"
+      - ".github/workflows/server-sqlc.yml"
+      - ".github/workflows/ecs-fargate-release.yml"
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/server
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: apps/server/go.mod
+          cache-dependency-path: apps/server/go.sum
+
+      - name: Reject incompatible public API changes
+        if: github.event_name == 'pull_request'
+        env:
+          OPENAPI_BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: make openapi-breaking-check
+
+      - name: Verify modules, formatting, vet, and static analysis
+        run: make quality-check
+
+      - name: Run unit and architecture tests
+        run: make test
+
+  security:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/server
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: apps/server/go.mod
+          cache-dependency-path: apps/server/go.sum
+
+      - name: Run reachable-vulnerability and Go security scans
+        run: make security-check
+
+      - name: Install checksum-pinned secret scanner
+        run: make security-bootstrap
+
+      - name: Prove the pinned secret rules detect a known fixture
+        shell: bash
+        run: |
+          set -o pipefail
+          if printf 'api_key = "q3W8eR5tY9uI2oP6aS4dF7gH1jK8lZ0x"\n' \
+            | .tools/bin/gitleaks stdin --redact --no-banner --no-color; then
+            echo "gitleaks failed to detect its non-secret test fixture" >&2
+            exit 1
+          fi
+
+      - name: Scan the API working tree for committed secrets
+        run: make gitleaks-check
+
+  race-and-fuzz:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/server
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: apps/server/go.mod
+          cache-dependency-path: apps/server/go.sum
+
+      - name: Run the hermetic race suite
+        run: make test-race
+
+      - name: Run the bounded fuzz smoke suite
+        run: make test-fuzz

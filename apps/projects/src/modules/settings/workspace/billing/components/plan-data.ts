@@ -32,7 +32,7 @@ export const plans: Plan[] = [
     limits: {
       members: "Up to 5 members",
       fileUploads: "10MB",
-      issues: "Up to 200 stories",
+      issues: "Up to 200",
     },
     features: {
       teams: "1 team",
@@ -44,7 +44,7 @@ export const plans: Plan[] = [
     name: "Professional",
     limits: {
       members: "Up to 10 members",
-      fileUploads: "Unlimited",
+      fileUploads: "25MB",
       issues: "Unlimited",
     },
     features: {
@@ -52,7 +52,7 @@ export const plans: Plan[] = [
       sso: true,
       rbac: true,
       emailSupport: true,
-      objectives: "Up to 5 objectives",
+      objectives: "Up to 20 objectives",
       trackOKRs: true,
       unlimitedGuests: true,
       customWorkflows: true,
@@ -63,7 +63,7 @@ export const plans: Plan[] = [
     highlighted: true,
     limits: {
       members: "Unlimited",
-      fileUploads: "Unlimited",
+      fileUploads: "25MB",
       issues: "Unlimited",
     },
     features: {
@@ -85,7 +85,7 @@ export const plans: Plan[] = [
     name: "Enterprise",
     limits: {
       members: "Unlimited",
-      fileUploads: "Unlimited",
+      fileUploads: "25MB",
       issues: "Unlimited",
     },
     features: {

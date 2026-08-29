@@ -1,7 +1,7 @@
 {
   "name": "auth",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
@@ -9,6 +9,6 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
-    "typescript": "^5.9.2"
+    "typescript": "7.0.2"
   }
 }

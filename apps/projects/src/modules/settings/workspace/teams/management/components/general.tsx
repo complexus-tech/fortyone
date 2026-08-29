@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Input,
@@ -18,6 +18,13 @@ import { useUpdateTeamMutation } from "@/modules/teams/hooks/use-update-team";
 import { SectionHeader } from "@/modules/settings/components/section-header";
 import { FeatureGuard } from "@/components/ui";
 import { useUserRole, useWorkspacePath } from "@/hooks";
+import { EstimationSettings } from "./estimation";
+
+const formatTeamCode = (name: string) =>
+  name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 3);
 
 export const GeneralSettings = ({ team }: { team: Team }) => {
   const [form, setForm] = useState({
@@ -30,21 +37,11 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
   const { withWorkspace } = useWorkspacePath();
   const updateTeam = useUpdateTeamMutation(team.id);
 
-  const formatCode = (name: string) => {
-    return name
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "") // Remove non-alphanumeric chars
-      .slice(0, 3); // Take first 3 characters
-  };
-
-  const hasChanged = useMemo(() => {
-    return (
-      form.name !== team.name ||
-      form.code !== team.code ||
-      form.color !== team.color ||
-      form.isPrivate !== team.isPrivate
-    );
-  }, [form, team]);
+  const hasChanged =
+    form.name !== team.name ||
+    form.code !== team.code ||
+    form.color !== team.color ||
+    form.isPrivate !== team.isPrivate;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -56,119 +53,125 @@ export const GeneralSettings = ({ team }: { team: Team }) => {
   };
 
   return (
-    <Box className="border-border bg-surface rounded-2xl border">
-      <SectionHeader
-        description="Basic information about your team."
-        title="General Information"
-      />
+    <>
+      <Box className="border-border bg-surface rounded-2xl border">
+        <SectionHeader
+          description="Basic information about your team."
+          title="General Information"
+        />
 
-      <form className="divide-border divide-y-[0.5px]" onSubmit={handleSubmit}>
-        <Box className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
-          <Box>
-            <Text>Team name</Text>
-            <Text color="muted" fontSize="sm">
-              Choose a descriptive name for your team
-            </Text>
-          </Box>
-          <Input
-            className="h-10 md:w-80"
-            maxLength={24}
-            minLength={3}
-            name="name"
-            onChange={(e) => {
-              setForm({ ...form, name: e.target.value });
-            }}
-            placeholder="eg. Growth, Product, Operations"
-            required
-            value={form.name}
-          />
-        </Box>
-        <Flex align="center" className="px-6 py-4" justify="between">
-          <Box>
-            <Text>Team code</Text>
-            <Text color="muted" fontSize="sm">
-              Short prefix for team&apos;s story IDs (e.g., ENG-123)
-            </Text>
-          </Box>
-          <Input
-            className="h-10 w-28"
-            maxLength={3}
-            minLength={2}
-            name="code"
-            onChange={(e) => {
-              setForm({ ...form, code: formatCode(e.target.value) });
-            }}
-            placeholder="ENG"
-            required
-            value={form.code}
-          />
-        </Flex>
-        <Flex align="center" className="px-6 py-4" justify="between">
-          <Box>
-            <Text>Team color</Text>
-            <Text color="muted" fontSize="sm">
-              Used to identify the team in the workspace
-            </Text>
-          </Box>
-          <ColorPicker
-            onChange={(value) => {
-              setForm({ ...form, color: value });
-            }}
-            value={form.color}
-          />
-        </Flex>
-        <FeatureGuard
-          fallback={
-            <Box className="px-6 py-4">
-              <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-center justify-between gap-2 border p-4">
-                <Flex align="center" gap={2}>
-                  <WarningIcon className="text-warning dark:text-warning" />
-                  <Text>
-                    {userRole === "admin"
-                      ? "Upgrade"
-                      : "Ask your admin to upgrade"}{" "}
-                    to a higher plan to create private teams
-                  </Text>
-                </Flex>
-                {userRole === "admin" && (
-                  <Button
-                    color="warning"
-                    href={withWorkspace("/settings/workspace/billing")}
-                  >
-                    Upgrade now
-                  </Button>
-                )}
-              </Wrapper>
-            </Box>
-          }
-          feature="privateTeams"
+        <form
+          className="divide-border divide-y-[0.5px]"
+          onSubmit={handleSubmit}
         >
-          <Flex align="center" className="gap-3 px-6 py-4" justify="between">
+          <Box className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
             <Box>
-              <Text>Private team</Text>
-              <Text className="max-w-xl" color="muted" fontSize="sm">
-                Private teams are only visible to members of the team. Admin and
-                team leads can add members to private teams.
+              <Text>Team name</Text>
+              <Text color="muted" fontSize="sm">
+                Choose a descriptive name for your team
               </Text>
             </Box>
-            <Switch
-              checked={form.isPrivate}
-              className="shrink-0"
-              name="isPrivate"
-              onCheckedChange={(checked) => {
-                setForm({ ...form, isPrivate: checked });
+            <Input
+              className="h-10 md:w-80"
+              maxLength={24}
+              minLength={3}
+              name="name"
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
               }}
+              placeholder="eg. Growth, Product, Operations"
+              required
+              value={form.name}
+            />
+          </Box>
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Box>
+              <Text>Team code</Text>
+              <Text color="muted" fontSize="sm">
+                Short prefix for team&apos;s story IDs (e.g., ENG-123)
+              </Text>
+            </Box>
+            <Input
+              className="h-10 w-28"
+              maxLength={3}
+              minLength={2}
+              name="code"
+              onChange={(e) => {
+                setForm({ ...form, code: formatTeamCode(e.target.value) });
+              }}
+              placeholder="ENG"
+              required
+              value={form.code}
             />
           </Flex>
-        </FeatureGuard>
-        {hasChanged ? (
-          <Box className="px-6 py-4">
-            <Button loading={updateTeam.isPending} type="submit">
-              Save Changes
-            </Button>
-          </Box>
-        ) : null}
-      </form>
-    </Box>
+          <Flex align="center" className="px-6 py-4" justify="between">
+            <Box>
+              <Text>Team color</Text>
+              <Text color="muted" fontSize="sm">
+                Used to identify the team in the workspace
+              </Text>
+            </Box>
+            <ColorPicker
+              onChange={(value) => {
+                setForm({ ...form, color: value });
+              }}
+              value={form.color}
+            />
+          </Flex>
+          <FeatureGuard
+            fallback={
+              <Box className="px-6 py-4">
+                <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-center justify-between gap-2 border p-4">
+                  <Flex align="center" gap={2}>
+                    <WarningIcon className="text-warning dark:text-warning" />
+                    <Text>
+                      {userRole === "admin"
+                        ? "Upgrade"
+                        : "Ask your admin to upgrade"}{" "}
+                      to a higher plan to create private teams
+                    </Text>
+                  </Flex>
+                  {userRole === "admin" && (
+                    <Button
+                      color="warning"
+                      href={withWorkspace("/settings/workspace/billing")}
+                    >
+                      Upgrade now
+                    </Button>
+                  )}
+                </Wrapper>
+              </Box>
+            }
+            feature="privateTeams"
+          >
+            <Flex align="center" className="gap-3 px-6 py-4" justify="between">
+              <Box>
+                <Text>Private team</Text>
+                <Text className="max-w-xl" color="muted" fontSize="sm">
+                  Private teams are only visible to members of the team. Admin
+                  and team leads can add members to private teams.
+                </Text>
+              </Box>
+              <Switch
+                checked={form.isPrivate}
+                className="shrink-0"
+                name="isPrivate"
+                onCheckedChange={(checked) => {
+                  setForm({ ...form, isPrivate: checked });
+                }}
+              />
+            </Flex>
+          </FeatureGuard>
+          {hasChanged ? (
+            <Box className="px-6 py-4">
+              <Button loading={updateTeam.isPending} type="submit">
+                Save Changes
+              </Button>
+            </Box>
+          ) : null}
+        </form>
+      </Box>
+      <EstimationSettings teamId={team.id} />
+    </>
   );
 };

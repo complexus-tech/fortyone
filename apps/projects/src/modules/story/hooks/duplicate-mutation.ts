@@ -2,8 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
-import { useAnalytics, useWorkspacePath } from "@/hooks";
-import { slugify } from "@/utils";
+import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import type {
   GroupedStoriesResponse,
   Story,
@@ -29,6 +29,11 @@ const updateDetailQuery = (
             ...data.subStories,
             {
               ...story,
+              autoSchedulingEnabled: false,
+              autoSchedulingLocked: false,
+              autoSchedulingReason: null,
+              autoSchedulingStatus: "off",
+              autoSchedulingUpdatedAt: null,
               id: "123",
               title: `${story.title} (Copy)`,
               sequenceId: data.subStories.length + 1,
@@ -61,6 +66,13 @@ const updateInfiniteQuery = (
         estimateLabel: story.estimateLabel || null,
         estimateValue: story.estimateValue || null,
         estimateScheme: story.estimateScheme,
+        estimatedDurationMinutes: story.estimatedDurationMinutes,
+        minimumFocusBlockMinutes: story.minimumFocusBlockMinutes,
+        autoSchedulingEnabled: false,
+        autoSchedulingLocked: false,
+        autoSchedulingReason: null,
+        autoSchedulingStatus: "off",
+        autoSchedulingUpdatedAt: null,
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -69,6 +81,7 @@ const updateInfiniteQuery = (
         teamId: story.teamId || "",
         workspaceId: story.workspaceId || "",
         assigneeId: story.assigneeId || null,
+        collaboratorCount: 0,
         reporterId: story.reporterId || "",
         epicId: story.epicId || null,
         sequenceId:
@@ -127,6 +140,13 @@ const updateGroupedQuery = (
         estimateLabel: story.estimateLabel || null,
         estimateValue: story.estimateValue || null,
         estimateScheme: story.estimateScheme,
+        estimatedDurationMinutes: story.estimatedDurationMinutes,
+        minimumFocusBlockMinutes: story.minimumFocusBlockMinutes,
+        autoSchedulingEnabled: false,
+        autoSchedulingLocked: false,
+        autoSchedulingReason: null,
+        autoSchedulingStatus: "off",
+        autoSchedulingUpdatedAt: null,
         description: story.description || "",
         statusId: story.statusId || "",
         sprintId: story.sprintId || null,
@@ -135,6 +155,7 @@ const updateGroupedQuery = (
         teamId: story.teamId || "",
         workspaceId: story.workspaceId || "",
         assigneeId: story.assigneeId || null,
+        collaboratorCount: 0,
         reporterId: story.reporterId || "",
         epicId: story.epicId || null,
         sequenceId:
@@ -280,6 +301,8 @@ export const useDuplicateStoryMutation = () => {
   const router = useRouter();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const { analytics } = useAnalytics();
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
 
   const mutation = useMutation({
     mutationFn: ({ storyId }: { storyId: string; story: DetailedStory }) =>
@@ -315,9 +338,10 @@ export const useDuplicateStoryMutation = () => {
         }
       });
 
-      toast.error("Failed to duplicate story", {
+      toast.error(`Failed to duplicate ${storyTerm}`, {
         description:
-          error.message || "An error occurred while duplicating the story",
+          error.message ||
+          `An error occurred while duplicating the ${storyTerm}`,
         action: {
           label: "Retry",
           onClick: () => {
@@ -358,15 +382,13 @@ export const useDuplicateStoryMutation = () => {
       });
 
       toast.success("Success", {
-        description: "Story duplicated successfully",
+        description: `${getTermDisplay("storyTerm", {
+          capitalize: true,
+        })} duplicated successfully`,
         action: {
-          label: "View story",
+          label: `View ${storyTerm}`,
           onClick: () => {
-            router.push(
-              withWorkspace(
-                `/story/${duplicatedStory.id}/${slugify(duplicatedStory.title)}`,
-              ),
-            );
+            router.push(withWorkspace(getStoryPath(duplicatedStory)));
           },
         },
       });

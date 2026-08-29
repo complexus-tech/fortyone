@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
+import { useTerminology } from "@/hooks";
 import { useAppliedFilters } from "@/modules/analytics/hooks/filters";
 import { useWorkspaceOverview } from "../hooks/workspace-overview";
 import type { CompletionTrendPoint } from "../types";
@@ -33,7 +34,7 @@ const CustomTooltip = ({
   }
 
   return (
-    <Box className="border-border bg-surface-elevated/80 text-foreground z-50 min-w-32 rounded-lg border px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
+    <Box className="border-border/60 bg-surface-elevated/80 text-foreground z-50 min-w-32 rounded-lg border-[0.5px] px-3 py-3 text-[0.95rem] font-medium backdrop-blur">
       <Flex align="center" gap={2}>
         {label}
       </Flex>
@@ -55,6 +56,7 @@ const formatDate = (date: string) => {
 export const CompletionTrend = () => {
   const filters = useAppliedFilters();
   const { resolvedTheme } = useTheme();
+  const { getTermDisplay } = useTerminology();
   const { data: overview, isPending } = useWorkspaceOverview(filters);
   const chartData = useMemo<ChartDataItem[]>(() => {
     if (!overview?.completionTrend.length) {
@@ -78,7 +80,13 @@ export const CompletionTrend = () => {
         <Text className="mb-1" fontSize="lg">
           Completion trend
         </Text>
-        <Text color="muted">Stories completed over time.</Text>
+        <Text color="muted">
+          {getTermDisplay("storyTerm", {
+            capitalize: true,
+            variant: "plural",
+          })}{" "}
+          completed over time.
+        </Text>
       </Box>
 
       <ResponsiveContainer height={220} width="100%">

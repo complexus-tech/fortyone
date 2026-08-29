@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last updated: {{date}}
+Last updated: August 9, 2026
 
 This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.
 
@@ -56,6 +56,38 @@ The Company allows You to create an account and log in to use the Service throug
 - Google
 
 If You decide to register through or otherwise grant us access to a Third-Party Social Media Service, We may collect Personal data that is already associated with Your Third-Party Social Media Service's account, such as Your name, Your email address, Your activities or Your contact list associated with that account.
+
+### Connected Services and Integrations
+
+You may choose to connect FortyOne to third-party services. We access and use data from a connected service only after an authorized user grants the requested permissions and only to provide, secure, support, and improve the user-facing integration. We do not sell connected-service data or use it for advertising.
+
+#### Slack
+
+When a workspace administrator connects Slack, We may collect and store Slack workspace and installation identifiers, workspace name and domain, authorized scopes, encrypted access credentials, channel identifiers and names, channel privacy and membership status, and identifiers used to link a Slack user to a FortyOne account.
+
+We process message content and related metadata when a person deliberately uses a supported FortyOne feature, including the `/fortyone` command, the **Create a story** message shortcut, a direct message or mention to Maya, a reply in a subscribed FortyOne thread, or a shared FortyOne link. Slack's event subscriptions may deliver unrelated message events to Our endpoint; FortyOne rejects unsupported root messages, bot messages, edits, and unsubscribed thread messages before storing their content in the durable message system.
+
+We use Slack data to create and link project work, answer requested questions, maintain short-term thread context, provide permission-aware story previews, synchronize supported request discussions, deliver replies, prevent duplicate processing, and diagnose integration failures. FortyOne does not use Slack API data to train general-purpose artificial intelligence models.
+
+Accepted inbound Slack payloads are encrypted at rest. Conversation and assistant message content in the messaging system is retained for up to 30 days for short-term continuity and operational recovery. Installation, linked-account, and channel metadata is retained while the integration is connected. When an administrator disconnects Slack, We revoke or remove the active credentials and associated connection records. Limited security, abuse-prevention, diagnostic, backup, and legal records may be retained for as long as reasonably necessary for those purposes.
+
+#### Google Calendar
+
+When You connect Google Calendar, We may collect and store Your Google account identifier, connected email address, timezone, authorized scopes, encrypted OAuth credentials, primary-calendar availability, and synchronization status. If You grant event-detail access, We may also cache event titles, descriptions, locations, meeting links, organizers, attendees, visibility, and start and end times for Your primary calendar. Private and confidential events are stored as Busy without their descriptive details.
+
+We use Google Calendar data to show Your meetings beside FortyOne work, calculate availability, avoid obvious schedule conflicts, and provide schedule-aware planning features. Detailed calendar events are visible only to the connected calendar owner. Teammates, managers, Maya, and capacity-planning features receive title-free availability windows rather than event content. The integration is read-only and does not create, edit, or delete Google Calendar events.
+
+FortyOne keeps a rolling calendar snapshot that currently covers seven days before and ninety days after the sync date. When You disconnect Google Calendar, We clear the connection credentials and scopes and delete the cached calendar events and availability windows for that connection. FortyOne's use and transfer of information received from Google APIs adheres to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including its Limited Use requirements.
+
+#### GitHub
+
+When a workspace administrator installs the FortyOne GitHub App, We may collect and store installation and organization identifiers, account name and avatar, the repositories selected during installation, repository metadata, granted permissions, webhook subscriptions, and identifiers used to associate a GitHub user with a FortyOne account.
+
+For connected repositories, We process the issue, comment, branch, commit, pull request, review, check, label, assignee, and repository event data needed to synchronize linked work, show development progress, and run the workflow rules configured by the workspace. GitHub displays the permissions requested by the FortyOne GitHub App and allows the installer to choose which repositories the app may access.
+
+Connection metadata is retained while the GitHub App is installed or while needed to preserve the integrity of linked workspace records. Content copied into FortyOne stories, comments, activity history, or audit records may remain after the GitHub App is disconnected so the workspace does not lose its project history. An authorized workspace administrator can unlink a repository or uninstall the GitHub App, and You may contact Us to request deletion as described below.
+
+The third-party services You connect process information under their own terms and privacy policies. You should review the permissions shown during authorization and the applicable provider policies before connecting an integration.
 
 ## Tracking Technologies and Cookies
 

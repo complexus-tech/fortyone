@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DefaultEstimateScheme = "hours"
+	DefaultEstimateScheme = "tshirt"
 )
 
 var allowedEstimateSchemes = map[string]map[string]int16{
@@ -17,26 +17,12 @@ var allowedEstimateSchemes = map[string]map[string]int16{
 		"5": 5,
 		"8": 8,
 	},
-	"hours": {
-		"0.5": 1,
-		"1":   2,
-		"2":   3,
-		"4":   5,
-		"8":   8,
-	},
 	"tshirt": {
 		"XS": 1,
 		"S":  2,
 		"M":  3,
 		"L":  5,
 		"XL": 8,
-	},
-	"ideal_days": {
-		"0.5": 1,
-		"1":   2,
-		"2":   3,
-		"3":   5,
-		"5":   8,
 	},
 }
 
@@ -48,57 +34,12 @@ var estimateValueToLabel = map[string]map[int16]string{
 		5: "5",
 		8: "8",
 	},
-	"hours": {
-		1: "0.5",
-		2: "1",
-		3: "2",
-		5: "4",
-		8: "8",
-	},
 	"tshirt": {
 		1: "XS",
 		2: "S",
 		3: "M",
 		5: "L",
 		8: "XL",
-	},
-	"ideal_days": {
-		1: "0.5",
-		2: "1",
-		3: "2",
-		5: "3",
-		8: "5",
-	},
-}
-
-var estimateDurationMinutes = map[string]map[int16]int{
-	"points": {
-		1: 120,
-		2: 240,
-		3: 360,
-		5: 600,
-		8: 960,
-	},
-	"hours": {
-		1: 30,
-		2: 60,
-		3: 120,
-		5: 240,
-		8: 480,
-	},
-	"tshirt": {
-		1: 60,
-		2: 120,
-		3: 240,
-		5: 480,
-		8: 960,
-	},
-	"ideal_days": {
-		1: 240,
-		2: 480,
-		3: 960,
-		5: 1440,
-		8: 2400,
 	},
 }
 
@@ -136,6 +77,39 @@ func ValidateEstimateValue(scheme string, estimateValue *int16) error {
 	return nil
 }
 
+func normalizeEstimateUpdateValue(value any) (*int16, error) {
+	const (
+		minimumInt16 = -1 << 15
+		maximumInt16 = 1<<15 - 1
+	)
+
+	switch value := value.(type) {
+	case nil:
+		return nil, nil
+	case *int16:
+		return value, nil
+	case int16:
+		return &value, nil
+	case int:
+		if value < minimumInt16 || value > maximumInt16 {
+			return nil, fmt.Errorf("invalid estimate value type: %T", value)
+		}
+		normalized := int16(value)
+		return &normalized, nil
+	case float64:
+		if value < minimumInt16 || value > maximumInt16 {
+			return nil, fmt.Errorf("invalid estimate value type: %T", value)
+		}
+		normalized := int16(value)
+		if float64(normalized) != value {
+			return nil, fmt.Errorf("invalid estimate value type: %T", value)
+		}
+		return &normalized, nil
+	default:
+		return nil, fmt.Errorf("invalid estimate value type: %T", value)
+	}
+}
+
 func EstimateLabelFromValue(scheme string, estimateValue *int16) *string {
 	if estimateValue == nil {
 		return nil
@@ -153,18 +127,4 @@ func EstimateLabelFromValue(scheme string, estimateValue *int16) *string {
 		return nil
 	}
 	return &value
-}
-
-func EstimateDurationMinutes(scheme string, estimateValue *int16) int {
-	if estimateValue == nil {
-		return 0
-	}
-
-	normalizedScheme := normalizeEstimateScheme(scheme)
-	durationsByValue, ok := estimateDurationMinutes[normalizedScheme]
-	if !ok {
-		durationsByValue = estimateDurationMinutes[DefaultEstimateScheme]
-	}
-
-	return durationsByValue[*estimateValue]
 }

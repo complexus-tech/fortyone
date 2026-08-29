@@ -5,12 +5,20 @@ import type { FormEvent } from "react";
 import { formatISO } from "date-fns";
 import type { NewKeyResult, MeasureType } from "@/modules/objectives/types";
 import { useTerminology } from "@/hooks";
+import { OkrQualityBanner } from "@/modules/objectives/components/okr-quality-banner";
+import { useOkrQualityAssessment } from "@/modules/objectives/hooks/use-okr-quality-assessment";
 
 type KeyResultEditorProps = {
   keyResult: NewKeyResult | null;
   onUpdate: (index: number, updates: Partial<NewKeyResult>) => void;
   onCancel: () => void;
   onSave: () => void;
+  qualityContext?: {
+    objectiveName: string;
+    objectiveStartDate: string | null;
+    objectiveEndDate: string | null;
+    existingKeyResults: NewKeyResult[];
+  };
 };
 
 export const KeyResultEditor = ({
@@ -18,8 +26,36 @@ export const KeyResultEditor = ({
   onUpdate,
   onCancel,
   onSave,
+  qualityContext,
 }: KeyResultEditorProps) => {
   const { getTermDisplay } = useTerminology();
+  const qualityRequest =
+    keyResult?.name.trim() && qualityContext?.objectiveName.trim()
+      ? {
+          kind: "key_result" as const,
+          draft: {
+            name: keyResult.name,
+            measurementType: keyResult.measurementType,
+            startValue: keyResult.startValue,
+            targetValue: keyResult.targetValue,
+            startDate: keyResult.startDate || null,
+            endDate: keyResult.endDate || null,
+          },
+          objective: {
+            id: "draft-objective",
+            name: qualityContext.objectiveName,
+            startDate: qualityContext.objectiveStartDate,
+            endDate: qualityContext.objectiveEndDate,
+          },
+          existingKeyResults: qualityContext.existingKeyResults.map(
+            (existingKeyResult, index) => ({
+              id: `draft-key-result-${index}`,
+              name: existingKeyResult.name,
+            }),
+          ),
+        }
+      : null;
+  const { assessment, isAssessing } = useOkrQualityAssessment(qualityRequest);
   const measurementTypes: { label: string; value: MeasureType }[] = [
     {
       label: "Number",
@@ -67,6 +103,13 @@ export const KeyResultEditor = ({
         placeholder="eg. Increase user adoption from 100 to 150"
         required
         value={keyResult.name}
+      />
+      <OkrQualityBanner
+        assessment={assessment}
+        isAssessing={isAssessing}
+        onUseSuggestion={(suggestion) => {
+          onUpdate(0, { name: suggestion });
+        }}
       />
       <Box className="grid grid-cols-2 gap-4">
         <Input

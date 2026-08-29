@@ -11,7 +11,6 @@ import {
   MoreHorizontalIcon,
   WarningIcon,
 } from "icons";
-import { cn } from "lib";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { RowWrapper } from "@/components/ui";
@@ -19,7 +18,7 @@ import { useWorkspacePath } from "@/hooks";
 import { useRemoveAssociationMutation } from "@/modules/story/hooks/remove-association-mutation";
 import { useUpdateAssociationMutation } from "@/modules/story/hooks/update-association-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { slugify } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import type { StoryAssociation, StoryAssociationType } from "../types";
 
 type AssociationOption = {
@@ -128,9 +127,7 @@ export const Associations = ({
       {associations.length > 0 && (
         <Flex
           align="center"
-          className={cn({
-            "border-border d border-b-[0.5px] pb-2": !isAssociationsOpen,
-          })}
+          className="border-border border-b-[0.5px] pb-2"
           justify="between"
         >
           <Button
@@ -156,7 +153,7 @@ export const Associations = ({
       )}
 
       {isAssociationsOpen && associations.length > 0 ? (
-        <Box className="border-border d mt-2 border-t-[0.5px] pb-0">
+        <Box>
           {associations.map((assoc) => {
             const teamCode = teams.find(
               (team) => team.id === assoc.story.teamId,
@@ -194,7 +191,11 @@ export const Associations = ({
                   <AssociationBadge association={assoc} storyId={storyId} />
                   <Link
                     href={withWorkspace(
-                      `/story/${assoc.story.id}/${slugify(assoc.story.title)}`,
+                      getStoryPath({
+                        id: assoc.story.id,
+                        sequenceId: assoc.story.sequenceId,
+                        teamCode,
+                      }),
                     )}
                   >
                     <Text

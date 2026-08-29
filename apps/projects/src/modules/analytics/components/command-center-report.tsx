@@ -243,7 +243,7 @@ const ChartTooltip = ({
   }
 
   return (
-    <Box className="border-border dark:bg-surface-elevated z-50 min-w-36 rounded-lg border bg-white px-3 py-3 text-[0.95rem] shadow-lg">
+    <Box className="border-border/60 bg-surface-elevated z-50 min-w-36 rounded-lg border-[0.5px] px-3 py-3 text-[0.95rem] shadow-lg">
       <Text className="mb-2 font-medium">{label}</Text>
       <Box className="space-y-1">
         {payload.map((entry) => (
@@ -328,7 +328,7 @@ const WorkloadMemberRow = ({ member }: { member: MemberWorkload }) => {
           <Flex align="center" className="mt-1 flex-wrap gap-x-3 gap-y-1">
             <Text color="muted">{formatNumber(member.openStories)} open</Text>
             <Text color="muted">
-              {formatNumber(member.estimateTotal)} estimate
+              {formatNumber(member.estimateTotal)} complexity
             </Text>
             <Text color="muted">
               {formatNumber(member.completedStories)} completed
@@ -345,7 +345,7 @@ const WorkloadMemberRow = ({ member }: { member: MemberWorkload }) => {
           <Text className="font-semibold">
             {formatNumber(member.unestimatedStories)}
           </Text>
-          <Text color="muted">unestimated</Text>
+          <Text color="muted">no complexity</Text>
         </Box>
       </Flex>
     </Link>
@@ -378,7 +378,7 @@ const TeamWorkloadRow = ({ team }: { team: TeamWorkloadSummary }) => {
             </Badge>
           </Flex>
           <Text className="mt-1" color="muted">
-            {formatNumber(team.estimateTotal)} estimate /{" "}
+            {formatNumber(team.estimateTotal)} complexity /{" "}
             {formatNumber(team.unassignedStories)} unassigned
           </Text>
         </Box>
@@ -956,7 +956,7 @@ const ProviderTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   ];
 
   return (
-    <Box className="border-border dark:bg-surface-elevated z-50 min-w-44 rounded-lg border bg-white px-3 py-3 text-[0.95rem] shadow-lg">
+    <Box className="border-border/60 bg-surface-elevated z-50 min-w-44 rounded-lg border-[0.5px] px-3 py-3 text-[0.95rem] shadow-lg">
       <Flex align="center" className="mb-2 gap-2" justify="between">
         <Text className="font-medium">{row.provider}</Text>
         <Text color="muted">{formatNumber(row.total)} total</Text>
@@ -1150,8 +1150,8 @@ const OverviewReadout = ({
           value={formatNumber(report.workload.summary.unassignedStories)}
         />
         <MiniMetric
-          description="Work without estimates."
-          label={`Unestimated ${storyTermPlural}`}
+          description="Work without a complexity value."
+          label={`${storyTermPlural} without complexity`}
           value={formatNumber(report.workload.summary.unestimatedStories)}
         />
         <MiniMetric
@@ -1285,7 +1285,7 @@ const WorkloadTab = ({ report }: { report: WorkspaceCommandCenterReport }) => {
       </Box>
       <Box className="grid gap-5 @6xl:grid-cols-2">
         <ReportCard>
-          <SectionTitle description="People with the most open work, estimate load, overdue work, and unestimated work.">
+          <SectionTitle description="People with the most open work, relative complexity, overdue work, and work without complexity.">
             Workload by person
           </SectionTitle>
           <Box className="mt-3">
@@ -1302,7 +1302,7 @@ const WorkloadTab = ({ report }: { report: WorkspaceCommandCenterReport }) => {
         </ReportCard>
 
         <ReportCard>
-          <SectionTitle description="Team load, ownership gaps, and estimate concentration.">
+          <SectionTitle description="Team load, ownership gaps, and complexity concentration.">
             Workload by team
           </SectionTitle>
           <Box className="mt-3">
@@ -1571,7 +1571,7 @@ export const CommandCenterReport = () => {
           value={formatNumber(activeRiskCount)}
         />
         <MetricCard
-          description={`${formatNumber(report.workload.summary.totalEstimate)} estimate loaded`}
+          description={`${formatNumber(report.workload.summary.totalEstimate)} total complexity`}
           label="Overloaded people"
           value={formatNumber(overloadedMembers)}
         />

@@ -78,6 +78,8 @@ export const teamKeys = {
     [...teamKeys.all(workspaceSlug), "detail"] as const,
   detail: (workspaceSlug: string, id: string) =>
     [...teamKeys.details(workspaceSlug), id] as const,
+  joined: (workspaceSlug: string) =>
+    [...teamKeys.lists(workspaceSlug), "joined"] as const,
   public: (workspaceSlug: string) =>
     [...teamKeys.lists(workspaceSlug), "public"] as const,
   settings: (workspaceSlug: string, id: string) =>
@@ -89,13 +91,6 @@ export const userKeys = {
   profile: () => [...userKeys.all, "profile"] as const,
   automationPreferences: (workspaceSlug: string) =>
     [...userKeys.all, "automation-preferences", workspaceSlug] as const,
-};
-
-export const invitationKeys = {
-  all: ["invitations"] as const,
-  pending: (workspaceSlug: string) =>
-    [...invitationKeys.all, "pending", workspaceSlug] as const,
-  mine: ["my-invitations"] as const,
 };
 
 export const notificationKeys = {
@@ -147,29 +142,49 @@ export const analyticsKeys = {
 };
 
 export const githubKeys = {
+  all: (workspaceSlug: string) => ["github", workspaceSlug] as const,
   integration: (workspaceSlug: string) =>
-    ["github", workspaceSlug, "integration"] as const,
+    [...githubKeys.all(workspaceSlug), "integration"] as const,
   teamSettings: (workspaceSlug: string, teamId: string) =>
-    ["github", workspaceSlug, "team-settings", teamId] as const,
+    [...githubKeys.all(workspaceSlug), "team-settings", teamId] as const,
   storyLinks: (workspaceSlug: string, storyId: string) =>
-    ["github", workspaceSlug, "story-links", storyId] as const,
+    [...githubKeys.all(workspaceSlug), "story-links", storyId] as const,
   storyComments: (workspaceSlug: string, storyId: string) =>
-    ["github", workspaceSlug, "story-comments", storyId] as const,
+    [...githubKeys.all(workspaceSlug), "story-comments", storyId] as const,
   requestComments: (workspaceSlug: string, requestId: string) =>
-    ["github", workspaceSlug, "request-comments", requestId] as const,
+    [...githubKeys.all(workspaceSlug), "request-comments", requestId] as const,
+};
+
+export const figmaKeys = {
+  integration: (workspaceSlug: string) =>
+    ["figma", workspaceSlug, "integration"] as const,
+  storyLinks: (workspaceSlug: string, storyId: string) =>
+    ["figma", workspaceSlug, "story-links", storyId] as const,
+  handoffStatuses: (workspaceSlug: string) =>
+    ["figma", workspaceSlug, "handoff-statuses"] as const,
 };
 
 export const slackKeys = {
   integration: (workspaceSlug: string) =>
     ["slack", workspaceSlug, "integration"] as const,
+  channelAudiences: (workspaceSlug: string) =>
+    ["slack", workspaceSlug, "channel-audiences"] as const,
+  agentSettings: (workspaceSlug: string) =>
+    ["slack", workspaceSlug, "agent-settings"] as const,
 };
 
 export const calendarKeys = {
   all: (workspaceSlug: string) => ["calendar", workspaceSlug] as const,
   integration: (workspaceSlug: string) =>
     [...calendarKeys.all(workspaceSlug), "integration"] as const,
+  events: (workspaceSlug: string) =>
+    [...calendarKeys.all(workspaceSlug), "event"] as const,
+  event: (workspaceSlug: string, eventId: string) =>
+    [...calendarKeys.events(workspaceSlug), eventId] as const,
+  schedules: (workspaceSlug: string) =>
+    [...calendarKeys.all(workspaceSlug), "schedule"] as const,
   schedule: (workspaceSlug: string, startAt: string, endAt: string) =>
-    [...calendarKeys.all(workspaceSlug), "schedule", startAt, endAt] as const,
+    [...calendarKeys.schedules(workspaceSlug), startAt, endAt] as const,
 };
 
 export const integrationRequestKeys = {
@@ -183,10 +198,67 @@ export const integrationRequestKeys = {
     [...integrationRequestKeys.all(workspaceSlug), "detail"] as const,
   detail: (workspaceSlug: string, requestId: string) =>
     [...integrationRequestKeys.details(workspaceSlug), requestId] as const,
+  thread: (workspaceSlug: string, requestId: string) =>
+    [
+      ...integrationRequestKeys.detail(workspaceSlug, requestId),
+      "thread",
+    ] as const,
+  storyLinks: (workspaceSlug: string, storyId: string) =>
+    [
+      ...integrationRequestKeys.all(workspaceSlug),
+      "story-links",
+      storyId,
+    ] as const,
 };
 
 export const feedbackKeys = {
   all: (workspaceSlug: string) => ["feedback", workspaceSlug] as const,
   portals: (workspaceSlug: string) =>
     [...feedbackKeys.all(workspaceSlug), "portals"] as const,
+  updates: (workspaceSlug: string) =>
+    [...feedbackKeys.all(workspaceSlug), "updates"] as const,
+  updateCandidates: (workspaceSlug: string, portalId: string, query: string) =>
+    [
+      ...feedbackKeys.updates(workspaceSlug),
+      "candidates",
+      portalId,
+      query,
+    ] as const,
+  widgetSettings: (workspaceSlug: string, portalId: string) =>
+    [
+      ...feedbackKeys.all(workspaceSlug),
+      "portals",
+      portalId,
+      "widget-settings",
+    ] as const,
+  reviewers: (workspaceSlug: string, boardId: string) =>
+    [
+      ...feedbackKeys.all(workspaceSlug),
+      "boards",
+      boardId,
+      "reviewers",
+    ] as const,
+  teamSummaries: (workspaceSlug: string) =>
+    [...feedbackKeys.all(workspaceSlug), "team-summaries"] as const,
+  lists: (workspaceSlug: string) =>
+    [...feedbackKeys.all(workspaceSlug), "list"] as const,
+  team: (workspaceSlug: string, teamId: string, status = "active") =>
+    [...feedbackKeys.lists(workspaceSlug), teamId, status] as const,
+  details: (workspaceSlug: string) =>
+    [...feedbackKeys.all(workspaceSlug), "detail"] as const,
+  detail: (workspaceSlug: string, feedbackId: string) =>
+    [...feedbackKeys.details(workspaceSlug), feedbackId] as const,
+  privateAuthor: (workspaceSlug: string, feedbackId: string) =>
+    [
+      ...feedbackKeys.detail(workspaceSlug, feedbackId),
+      "private-author",
+    ] as const,
+  mergeCandidates: (workspaceSlug: string, feedbackId: string, query: string) =>
+    [
+      ...feedbackKeys.detail(workspaceSlug, feedbackId),
+      "merge-candidates",
+      query,
+    ] as const,
+  storyLinks: (workspaceSlug: string, storyId: string) =>
+    [...feedbackKeys.all(workspaceSlug), "story-links", storyId] as const,
 };

@@ -1,18 +1,22 @@
 package linksrepository
 
 import (
+	linksql "github.com/complexus-tech/projects-api/internal/modules/links/repository/sqlc"
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/jmoiron/sqlx"
 )
 
 type repo struct {
-	log *logger.Logger
-	db  *sqlx.DB
+	log     *logger.Logger
+	queries linksql.Querier
 }
 
-func New(log *logger.Logger, db *sqlx.DB) *repo {
+func New(log *logger.Logger, db linksql.DBTX) *repo {
+	return newWithQueries(log, linksql.New(db))
+}
+
+func newWithQueries(log *logger.Logger, queries linksql.Querier) *repo {
 	return &repo{
-		log: log,
-		db:  db,
+		log:     log,
+		queries: queries,
 	}
 }

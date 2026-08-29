@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/complexus-tech/projects-api/internal/bootstrap/githubadapter"
+	"github.com/complexus-tech/projects-api/internal/bootstrap/integrationrequestsadapter"
+	bootstrapproviders "github.com/complexus-tech/projects-api/internal/bootstrap/providers"
+	"github.com/complexus-tech/projects-api/internal/bootstrap/slackadapter"
+	workspacebootstrap "github.com/complexus-tech/projects-api/internal/bootstrap/workspaces"
 	activitiesrepository "github.com/complexus-tech/projects-api/internal/modules/activities/repository"
 	activities "github.com/complexus-tech/projects-api/internal/modules/activities/service"
 	adminrepository "github.com/complexus-tech/projects-api/internal/modules/admin/repository"
@@ -17,12 +22,18 @@ import (
 	chatsessions "github.com/complexus-tech/projects-api/internal/modules/chatsessions/service"
 	commentsrepository "github.com/complexus-tech/projects-api/internal/modules/comments/repository"
 	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
+	"github.com/complexus-tech/projects-api/internal/modules/developeraccess"
+	developercredentials "github.com/complexus-tech/projects-api/internal/modules/developercredentials/service"
+	developeroauth "github.com/complexus-tech/projects-api/internal/modules/developeroauth/service"
 	documentsrepository "github.com/complexus-tech/projects-api/internal/modules/documents/repository"
 	documents "github.com/complexus-tech/projects-api/internal/modules/documents/service"
-	epicsrepository "github.com/complexus-tech/projects-api/internal/modules/epics/repository"
+	emailreply "github.com/complexus-tech/projects-api/internal/modules/emailreply/service"
 	epics "github.com/complexus-tech/projects-api/internal/modules/epics/service"
 	feedbackrepository "github.com/complexus-tech/projects-api/internal/modules/feedback/repository"
 	feedback "github.com/complexus-tech/projects-api/internal/modules/feedback/service"
+	feedbackstory "github.com/complexus-tech/projects-api/internal/modules/feedback/storyadapter"
+	figmarepository "github.com/complexus-tech/projects-api/internal/modules/figma/repository"
+	figma "github.com/complexus-tech/projects-api/internal/modules/figma/service"
 	githubrepository "github.com/complexus-tech/projects-api/internal/modules/github/repository"
 	github "github.com/complexus-tech/projects-api/internal/modules/github/service"
 	integrationrequestsrepository "github.com/complexus-tech/projects-api/internal/modules/integrationrequests/repository"
@@ -37,7 +48,8 @@ import (
 	links "github.com/complexus-tech/projects-api/internal/modules/links/service"
 	mayarepository "github.com/complexus-tech/projects-api/internal/modules/maya/repository"
 	maya "github.com/complexus-tech/projects-api/internal/modules/maya/service"
-	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
+	messagingrepository "github.com/complexus-tech/projects-api/internal/modules/messaging/repository"
+	messaging "github.com/complexus-tech/projects-api/internal/modules/messaging/service"
 	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
@@ -46,6 +58,7 @@ import (
 	objectivestatus "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/service"
 	okractivitiesrepository "github.com/complexus-tech/projects-api/internal/modules/okractivities/repository"
 	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
+	outboundwebhooksservice "github.com/complexus-tech/projects-api/internal/modules/outboundwebhooks/service"
 	reportsrepository "github.com/complexus-tech/projects-api/internal/modules/reports/repository"
 	reports "github.com/complexus-tech/projects-api/internal/modules/reports/service"
 	searchrepository "github.com/complexus-tech/projects-api/internal/modules/search/repository"
@@ -68,148 +81,288 @@ import (
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
+	workspaceuow "github.com/complexus-tech/projects-api/internal/modules/workspaces/uow"
 	"github.com/complexus-tech/projects-api/internal/platform/actors"
-	"github.com/complexus-tech/projects-api/internal/platform/billing"
+	actorsrepository "github.com/complexus-tech/projects-api/internal/platform/actors/repository"
 	"github.com/complexus-tech/projects-api/internal/platform/http/mux"
-	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
+	platformidempotency "github.com/complexus-tech/projects-api/internal/platform/idempotency"
 )
 
+var _ messaging.StoryMutationService = (*stories.Service)(nil)
+
 type services struct {
-	activities          *activities.Service
-	admin               *admin.Service
-	attachments         *attachments.Service
-	calendar            *calendar.Service
-	chatSessions        *chatsessions.Service
-	comments            *comments.Service
-	documents           *documents.Service
-	epics               *epics.Service
-	feedback            *feedback.Service
-	github              *github.Service
-	slack               *slack.Service
-	integrationRequests *integrationrequests.Service
-	invitations         *invitations.Service
-	keyResults          *keyresults.Service
-	labels              *labels.Service
-	links               *links.Service
-	maya                *maya.Service
-	notifications       *notifications.Service
-	objectives          *objectives.Service
-	objectiveStats      *objectivestatus.Service
-	okrActivities       *okractivities.Service
-	reports             *reports.Service
-	search              *search.Service
-	sprints             *sprints.Service
-	states              *states.Service
-	stories             *stories.Service
-	subscriptions       *subscriptions.Service
-	teams               *teams.Service
-	teamSettings        *teamsettings.Service
-	users               *users.Service
-	workspaces          *workspaces.Service
+	activities           *activities.Service
+	admin                *admin.Service
+	attachments          *attachments.Service
+	calendar             *calendar.Service
+	chatSessions         *chatsessions.Service
+	comments             *comments.Service
+	documents            *documents.Service
+	developerCredentials *developercredentials.Service
+	developerOAuth       *developeroauth.Platform
+	developerOAuthApps   *developeroauth.ApplicationManager
+	developerAccess      *developeraccess.Resolver
+	idempotency          *platformidempotency.Service
+	outboundWebhooks     *outboundwebhooksservice.Manager
+	emailReply           *emailreply.Service
+	epics                *epics.Service
+	feedback             *feedback.Service
+	figma                *figma.Service
+	github               *github.Service
+	slack                *slack.Service
+	integrationRequests  *integrationrequests.Service
+	invitations          *invitations.Service
+	keyResults           *keyresults.Service
+	labels               *labels.Service
+	links                *links.Service
+	maya                 *maya.Service
+	notifications        *notifications.Service
+	objectives           *objectives.Service
+	objectiveStats       *objectivestatus.Service
+	okrActivities        *okractivities.Service
+	reports              *reports.Service
+	search               *search.Service
+	sprints              *sprints.Service
+	states               *states.Service
+	stories              *stories.Service
+	subscriptions        *subscriptions.Service
+	teams                *teams.Service
+	teamSettings         *teamsettings.Service
+	users                *users.Service
+	workspaces           *workspaces.Service
 }
 
-func buildServices(cfg mux.Config) services {
-	mentionsRepo := mentionsrepository.New(cfg.Log, cfg.DB)
-
+func buildServices(cfg mux.Config, dependencies Dependencies) services {
+	developerCredentialService := buildDeveloperCredentialService(dependencies)
+	developerAccessResolver, err := developeraccess.NewResolver(
+		developerCredentialService,
+		dependencies.DeveloperAPIOAuth,
+	)
+	if err != nil {
+		panic("failed to initialize public API developer access: " + err.Error())
+	}
+	idempotencyService, err := platformidempotency.New(
+		dependencies.DatabasePool,
+		platformidempotency.DefaultConfig(),
+	)
+	if err != nil {
+		panic("failed to initialize API idempotency service: " + err.Error())
+	}
+	outboundWebhookManager, err := buildOutboundWebhookManager(dependencies, developerCredentialService)
+	if err != nil {
+		panic("failed to initialize outbound webhook service: " + err.Error())
+	}
 	attachmentsService := attachments.New(
 		cfg.Log,
-		attachmentsrepository.New(cfg.Log, cfg.DB),
+		attachmentsrepository.New(dependencies.DatabasePool),
 		cfg.StorageService,
 		cfg.StorageConfig,
+		cfg.TasksService,
 	)
 
-	usersService := users.New(cfg.Log, usersrepository.New(cfg.Log, cfg.DB), cfg.TasksService)
-	teamsService := teams.New(cfg.Log, teamsrepository.New(cfg.Log, cfg.DB))
-	statesService := states.New(cfg.Log, statesrepository.New(cfg.Log, cfg.DB))
-	objectiveStatusService := objectivestatus.New(cfg.Log, objectivestatusrepository.New(cfg.Log, cfg.DB))
+	usersRepository := usersrepository.New(dependencies.DatabasePool)
+	usersService := users.New(
+		cfg.Log,
+		usersRepository,
+		cfg.TasksService,
+		users.WithVerificationTokens(
+			dependencies.VerificationTokens,
+			usersRepository,
+		),
+	)
+	teamsRepository := teamsrepository.New(dependencies.DatabasePool)
+	teamsService := teams.New(cfg.Log, teamsRepository)
+	statesService := states.New(statesrepository.New(dependencies.DatabasePool))
+	objectiveStatusService := objectivestatus.New(objectivestatusrepository.New(dependencies.DatabasePool))
 	subscriptionsService := subscriptions.New(
 		cfg.Log,
-		subscriptionsrepository.New(cfg.Log, cfg.DB),
+		subscriptionsrepository.New(dependencies.DatabasePool),
 		cfg.StripeClient,
 		cfg.WebhookSecret,
 		cfg.TasksService,
+		subscriptions.WithRedirectOrigin(cfg.WebsiteURL),
 	)
-	storiesService := stories.New(cfg.Log, storiesrepository.New(cfg.Log, cfg.DB), mentionsRepo, cfg.Publisher, cfg.TasksService)
-	integrationRequestsRepo := integrationrequestsrepository.New(cfg.Log, cfg.DB)
-	commentsService := comments.New(cfg.Log, commentsrepository.New(cfg.Log, cfg.DB), mentionsRepo)
-	linksService := links.New(cfg.Log, linksrepository.New(cfg.Log, cfg.DB))
+	commentsService := comments.New(commentsrepository.New(cfg.Log, dependencies.DatabasePool))
+	mayaRepository := mayarepository.New(dependencies.DatabasePool)
+	storiesService := stories.New(
+		cfg.Log,
+		storiesrepository.New(
+			cfg.Log,
+			dependencies.DatabasePool,
+			storiesrepository.WithAttachmentObjectStorage(
+				cfg.StorageConfig.Provider,
+				cfg.StorageConfig.AttachmentsBucket,
+			),
+		),
+		cfg.Publisher,
+		cfg.TasksService,
+	)
+	storyCommentCreator, err := bootstrapproviders.NewStoryCommentCreator(commentsService)
+	if err != nil {
+		panic("failed to initialize story comment adapter: " + err.Error())
+	}
+	storiesService.ConfigureCommentCreator(storyCommentCreator)
+	storiesService.ConfigureAutoSchedulingEligibility(mayaRepository.WorkspaceCanUseMaya)
+	integrationRequestsRepo := integrationrequestsrepository.New(dependencies.DatabasePool)
+	messagingRepo := messagingrepository.New(dependencies.DatabasePool)
+	emailReplyService, err := emailreply.New(cfg.EmailReplySecurityKey, messagingRepo, cfg.TasksService)
+	if err != nil {
+		panic("failed to initialize Brevo email reply ingress: " + err.Error())
+	}
+	linksService := links.New(cfg.Log, linksrepository.New(cfg.Log, dependencies.DatabasePool))
+	workspaceRepository := workspacesrepository.New(dependencies.DatabasePool)
+	workspaceUnitOfWork, err := workspaceuow.New(
+		dependencies.DatabasePool,
+		workspaceRepository,
+		teamsRepository,
+		usersRepository,
+	)
+	if err != nil {
+		panic("failed to initialize workspace unit of work: " + err.Error())
+	}
 	workspacesService := workspaces.New(
 		cfg.Log,
-		workspacesrepository.New(cfg.Log, cfg.DB),
-		cfg.DB,
+		workspaceRepository,
+		workspaceUnitOfWork,
 		workspaces.Dependencies{
-			Teams:           teamsService,
-			Stories:         storiesService,
-			Statuses:        statesService,
-			Users:           usersService,
-			ObjectiveStatus: objectiveStatusService,
-			Subscriptions:   subscriptionsService,
-			Attachments:     attachmentsService,
-			Cache:           cfg.Cache,
-			Publisher:       cfg.Publisher,
-			TasksService:    cfg.TasksService,
+			SeedContent:   workspacebootstrap.NewSeedContentCreator(statesService, storiesService),
+			Users:         workspacebootstrap.NewUserDirectory(usersService),
+			Subscriptions: workspacebootstrap.NewSubscriptionManager(subscriptionsService),
+			Publisher:     cfg.Publisher,
+			Trials:        workspacebootstrap.NewTrialScheduler(cfg.TasksService),
 		},
 	)
 
 	invitationsService := invitations.New(
-		invitationsrepository.New(cfg.Log, cfg.DB),
-		cfg.Log,
-		cfg.Publisher,
+		invitationsrepository.New(dependencies.DatabasePool),
+		dependencies.InvitationTokens,
 		usersService,
 		workspacesService,
-		teamsService,
 	)
 
-	okrActivitiesService := okractivities.New(cfg.Log, okractivitiesrepository.New(cfg.Log, cfg.DB))
-	keyResultsService := keyresults.New(cfg.Log, keyresultsrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
-	objectivesService := objectives.New(cfg.Log, objectivesrepository.New(cfg.Log, cfg.DB), okrActivitiesService)
-	githubService, err := github.New(cfg.Log, githubrepository.New(cfg.Log, cfg.DB), storiesService, integrationRequestsRepo, attachmentsService, github.Config{
-		AppID:            cfg.GitHubAppID,
-		AppSlug:          cfg.GitHubAppSlug,
-		ClientID:         cfg.GitHubClientID,
-		ClientSecret:     cfg.GitHubClientSecret,
-		PrivateKeyBase64: cfg.GitHubKeyBase64,
-		RedirectURL:      cfg.GitHubRedirect,
-		WebhookSecret:    cfg.GitHubWebhook,
-		WebsiteURL:       cfg.WebsiteURL,
-		SecretKey:        cfg.SecretKey,
-		GitHubUserID:     cfg.GitHubUserID,
-	})
+	okrActivitiesService := okractivities.New(okractivitiesrepository.New(dependencies.DatabasePool))
+	keyResultsService := keyresults.New(
+		cfg.Log,
+		keyresultsrepository.New(dependencies.DatabasePool),
+		keyresults.WithPublisher(cfg.Publisher),
+	)
+	objectivesService := objectives.New(cfg.Log, objectivesrepository.New(dependencies.DatabasePool), objectives.WithPublisher(cfg.Publisher))
+	sprintsService := sprints.New(cfg.Log, sprintsrepository.New(dependencies.DatabasePool))
+	searchService := search.New(cfg.Log, searchrepository.New(dependencies.DatabasePool))
+	mutationConfirmer, err := messaging.NewFortyOneToolExecutor(
+		teamsService,
+		storiesService,
+		searchService,
+		objectivesService,
+		messaging.WithStoryMutations(cfg.MessagingMutationHMACKey),
+		messaging.WithStoryMutationConfirmationStore(messagingRepo),
+	)
+	if err != nil {
+		panic("failed to initialize Slack mutation confirmer: " + err.Error())
+	}
+	githubRepository := githubrepository.New(dependencies.DatabasePool)
+	githubConfig := github.Config{
+		AppID:                cfg.GitHubAppID,
+		AppSlug:              cfg.GitHubAppSlug,
+		ClientID:             cfg.GitHubClientID,
+		ClientSecret:         cfg.GitHubClientSecret,
+		PrivateKeyBase64:     cfg.GitHubKeyBase64,
+		RedirectURL:          cfg.GitHubRedirect,
+		WebhookSecret:        cfg.GitHubWebhook,
+		WebsiteURL:           cfg.WebsiteURL,
+		WebhookPayloadSecret: cfg.GitHubWebhookPayloadSecret,
+		GitHubUserID:         cfg.GitHubUserID,
+		CredentialVault:      dependencies.CredentialVault,
+		OAuthStateStore:      cfg.Cache,
+	}
+	githubWebhookGateway, githubWebhookInbox, githubWebhookPayloads, err := buildGitHubWebhookGateway(
+		dependencies.DatabasePool,
+		githubRepository,
+		cfg.TasksService,
+		githubConfig,
+	)
+	if err != nil {
+		panic("failed to initialize GitHub webhook gateway: " + err.Error())
+	}
+	githubConfig.WebhookGateway = githubWebhookGateway
+	githubConfig.WebhookInbox = githubWebhookInbox
+	githubConfig.WebhookPayloads = githubWebhookPayloads
+	githubService, err := github.New(
+		cfg.Log,
+		githubRepository,
+		githubadapter.NewStoryService(storiesService),
+		githubadapter.NewRequestStore(integrationRequestsRepo),
+		attachmentsService,
+		githubConfig,
+	)
 	if err != nil {
 		panic("failed to initialize github service: " + err.Error())
 	}
+	slackRepository := slackrepository.New(dependencies.DatabasePool)
+	slackConfig := slack.Config{
+		SigningSecret:        cfg.SlackSigningSecret,
+		ClientID:             cfg.SlackClientID,
+		ClientSecret:         cfg.SlackClientSecret,
+		RedirectURL:          cfg.SlackRedirectURL,
+		WebsiteURL:           cfg.WebsiteURL,
+		WebhookPayloadSecret: cfg.SlackWebhookPayloadSecret,
+		CredentialVault:      dependencies.CredentialVault,
+	}
+	slackWebhookGateway, err := buildSlackWebhookGateway(
+		dependencies.DatabasePool,
+		slackRepository,
+		cfg.TasksService,
+		slackConfig,
+	)
+	if err != nil {
+		panic("failed to initialize Slack webhook gateway: " + err.Error())
+	}
+	slackRequestStore := slackadapter.NewRequestStore(integrationRequestsRepo)
+	slackStoryService := slackadapter.NewStoryService(storiesService)
+	slackMessagingStore := slackadapter.NewMessagingStore(messagingRepo)
 	slackService := slack.New(
 		cfg.Log,
-		slackrepository.New(cfg.Log, cfg.DB),
-		integrationRequestsRepo,
-		storiesService,
-		slack.Config{
-			SigningSecret: cfg.SlackSigningSecret,
-			ClientID:      cfg.SlackClientID,
-			ClientSecret:  cfg.SlackClientSecret,
-			RedirectURL:   cfg.SlackRedirectURL,
-			WebsiteURL:    cfg.WebsiteURL,
-			SecretKey:     cfg.SecretKey,
-		},
+		slackRepository,
+		slackRequestStore,
+		slackStoryService,
+		slackConfig,
+		slack.WithEventRuntime(slackWebhookGateway, slackMessagingStore),
+		slack.WithNonceStore(slackMessagingStore),
+		slack.WithMutationConfirmer(slackadapter.NewMutationConfirmer(mutationConfirmer)),
+		slack.WithObjectiveReader(slackadapter.NewObjectiveReader(objectivesService)),
+		slack.WithSprintReader(slackadapter.NewSprintReader(sprintsService)),
 	)
 	calendarService := calendar.New(
 		cfg.Log,
-		calendarrepository.New(cfg.Log, cfg.DB),
+		calendarrepository.New(dependencies.DatabasePool),
 		calendar.Config{
 			SecretKey:  cfg.SecretKey,
 			WebsiteURL: cfg.WebsiteURL,
+			WebhookURL: cfg.GoogleCalendarWebhookURL,
+			WebhookURLs: map[calendar.Provider]string{
+				calendar.ProviderGoogle:    cfg.GoogleCalendarWebhookURL,
+				calendar.ProviderMicrosoft: cfg.MicrosoftCalendarWebhookURL,
+			},
+			RequireWebhook: true,
+			Tasks:          cfg.TasksService,
+			Updates:        cfg.Publisher,
 			Providers: map[calendar.Provider]calendar.CalendarProvider{
-				calendar.ProviderGoogle: calendar.NewGoogleProvider(cfg.GoogleService),
+				calendar.ProviderGoogle:    calendar.NewGoogleProvider(cfg.GoogleService),
+				calendar.ProviderMicrosoft: calendar.NewMicrosoftProvider(cfg.MicrosoftService),
 			},
 		},
 	)
-	actorResolver := actors.NewResolver(cfg.Log, cfg.DB, cfg.Cache)
+	actorResolver := actors.NewResolver(actorsrepository.New(dependencies.DatabasePool))
 	mayaActorID, err := actorResolver.Resolve(context.Background(), actors.KeySystem)
 	if err != nil {
 		panic("failed to resolve maya actor: " + err.Error())
 	}
-	reportsService := reports.New(cfg.Log, reportsrepository.New(cfg.Log, cfg.DB))
+	reportsService := reports.New(cfg.Log, reportsrepository.New(cfg.Log, dependencies.DatabasePool))
+	teamSettingsService := teamsettings.New(
+		cfg.Log,
+		teamsettingsrepository.New(dependencies.DatabasePool),
+		newTeamSettingsAutomationScheduler(cfg.TasksService),
+	)
 	mayaPlanner := maya.NewPlanner()
 	if strings.TrimSpace(cfg.AIAPIKey) != "" {
 		aiClient := maya.NewOpenAICompatibleClient(maya.OpenAICompatibleConfig{
@@ -218,75 +371,118 @@ func buildServices(cfg mux.Config) services {
 		mayaPlanner = maya.NewPlannerWithAdvisor(maya.NewOpenAIAdvisor(aiClient))
 	}
 	mayaService := maya.New(maya.Dependencies{
-		Repository:  mayarepository.New(cfg.Log, cfg.DB),
-		Stories:     storiesService,
-		Reports:     reportsService,
-		Calendar:    calendarService,
-		Users:       usersService,
-		Planner:     mayaPlanner,
-		MayaActorID: mayaActorID,
+		Repository:        mayaRepository,
+		Realtime:          mayaRepository,
+		Stories:           storiesService,
+		Reports:           reportsService,
+		Calendar:          calendarService,
+		Users:             usersService,
+		WorkspaceSettings: workspacesService,
+		Planner:           mayaPlanner,
+		MayaActorID:       mayaActorID,
 	})
 	storiesService.ConfigureMayaAssignment(mayaActorID, func(ctx context.Context, input stories.MayaAssignmentInput) error {
-		if err := ensureBackgroundMayaEnabled(ctx, cfg.DB, input.Story.Workspace); err != nil {
+		if err := ensureBackgroundMayaEnabled(ctx, mayaRepository, input.Story.Workspace); err != nil {
 			return err
 		}
 		return nil
 	})
+	slackProviderCallbacks := slackadapter.NewProviderCallbacks(slackService)
 	integrationRequestsService := integrationrequests.New(
 		cfg.Log,
 		integrationRequestsRepo,
-		storiesService,
+		integrationrequestsadapter.NewStoryCreator(storiesService),
 		map[string]integrationrequests.ProviderAccepter{
-			integrationrequests.ProviderGitHub: githubService,
-			integrationrequests.ProviderSlack:  slackService,
+			integrationrequests.ProviderGitHub: githubadapter.ProviderAccepter{Service: githubService},
+			integrationrequests.ProviderSlack:  slackProviderCallbacks,
 		},
+		integrationrequests.WithProviderCommenter(integrationrequests.ProviderSlack, slackProviderCallbacks),
 	)
-	feedbackService := feedback.New(feedbackrepository.New(cfg.Log, cfg.DB), storiesService)
+	feedbackService := feedback.New(
+		feedbackrepository.New(cfg.Log, dependencies.DatabasePool),
+		feedbackstory.New(storiesService),
+		feedback.WithEventPublisher(cfg.Log, cfg.Publisher),
+		feedback.WithContributorFeatures(cfg.FeedbackSecurityKey, cfg.WebsiteURL, cfg.TasksService),
+		feedback.WithGuestNotificationActor(mayaActorID),
+	)
+	figmaRepository := figmarepository.New(dependencies.DatabasePool)
+	figmaConfig := figma.Config{
+		ClientID:             cfg.FigmaClientID,
+		ClientSecret:         cfg.FigmaClientSecret,
+		RedirectURL:          cfg.FigmaRedirectURL,
+		WebhookURL:           cfg.FigmaWebhookURL,
+		WebsiteURL:           cfg.WebsiteURL,
+		Credentials:          dependencies.CredentialVault,
+		WebhookPayloadSecret: cfg.FigmaWebhookPayloadSecret,
+	}
+	figmaWebhookGateway, figmaWebhookInbox, figmaWebhookPayloads, err := buildFigmaWebhookGateway(
+		dependencies.DatabasePool,
+		figmaRepository,
+		cfg.TasksService,
+		figmaConfig,
+	)
+	if err != nil {
+		panic("failed to initialize Figma webhook gateway: " + err.Error())
+	}
+	figmaConfig.WebhookGateway = figmaWebhookGateway
+	figmaConfig.WebhookInbox = figmaWebhookInbox
+	figmaConfig.WebhookPayloads = figmaWebhookPayloads
+	figmaStories, err := bootstrapproviders.NewFigmaStoryAdapter(storiesService)
+	if err != nil {
+		panic("failed to initialize Figma story adapter: " + err.Error())
+	}
+	figmaService := figma.New(
+		cfg.Log,
+		figmaRepository,
+		figmaStories,
+		figmaConfig,
+	)
 
 	return services{
-		activities:          activities.New(cfg.Log, activitiesrepository.New(cfg.Log, cfg.DB)),
-		admin:               admin.New(adminrepository.New(cfg.Log, cfg.DB)),
-		attachments:         attachmentsService,
-		calendar:            calendarService,
-		chatSessions:        chatsessions.New(cfg.Log, chatsessionsrepository.New(cfg.Log, cfg.DB)),
-		comments:            commentsService,
-		documents:           documents.New(cfg.Log, documentsrepository.New(cfg.Log, cfg.DB)),
-		epics:               epics.New(cfg.Log, epicsrepository.New(cfg.Log, cfg.DB)),
-		feedback:            feedbackService,
-		github:              githubService,
-		slack:               slackService,
-		integrationRequests: integrationRequestsService,
-		invitations:         invitationsService,
-		keyResults:          keyResultsService,
-		labels:              labels.New(cfg.Log, labelsrepository.New(cfg.Log, cfg.DB)),
-		links:               linksService,
-		maya:                mayaService,
-		notifications:       notifications.New(cfg.Log, notificationsrepository.New(cfg.Log, cfg.DB), cfg.Redis, cfg.TasksService),
-		objectives:          objectivesService,
-		objectiveStats:      objectiveStatusService,
-		okrActivities:       okrActivitiesService,
-		reports:             reportsService,
-		search:              search.New(cfg.Log, searchrepository.New(cfg.Log, cfg.DB)),
-		sprints:             sprints.New(cfg.Log, sprintsrepository.New(cfg.Log, cfg.DB)),
-		states:              statesService,
-		stories:             storiesService,
-		subscriptions:       subscriptionsService,
-		teams:               teamsService,
-		teamSettings:        teamsettings.New(cfg.Log, teamsettingsrepository.New(cfg.Log, cfg.DB), cfg.TasksService),
-		users:               usersService,
-		workspaces:          workspacesService,
+		activities: activities.New(activitiesrepository.New(dependencies.DatabasePool)),
+		admin: admin.New(
+			adminrepository.New(dependencies.DatabasePool),
+			admin.WithAssetResolver(attachmentsService),
+			admin.WithSubscriptionSyncer(subscriptionsService),
+		),
+		attachments:          attachmentsService,
+		calendar:             calendarService,
+		chatSessions:         chatsessions.New(cfg.Log, chatsessionsrepository.New(cfg.Log, dependencies.DatabasePool)),
+		comments:             commentsService,
+		documents:            documents.New(documentsrepository.New(dependencies.DatabasePool)),
+		developerCredentials: developerCredentialService,
+		developerOAuth:       dependencies.DeveloperOAuthPlatform,
+		developerOAuthApps:   dependencies.DeveloperOAuthApplications,
+		developerAccess:      developerAccessResolver,
+		idempotency:          idempotencyService,
+		outboundWebhooks:     outboundWebhookManager,
+		emailReply:           emailReplyService,
+		epics:                epics.New(),
+		feedback:             feedbackService,
+		figma:                figmaService,
+		github:               githubService,
+		slack:                slackService,
+		integrationRequests:  integrationRequestsService,
+		invitations:          invitationsService,
+		keyResults:           keyResultsService,
+		labels:               labels.New(labelsrepository.New(dependencies.DatabasePool)),
+		links:                linksService,
+		maya:                 mayaService,
+		notifications:        notifications.New(cfg.Log, notificationsrepository.New(dependencies.DatabasePool), cfg.Redis, cfg.TasksService),
+		objectives:           objectivesService,
+		objectiveStats:       objectiveStatusService,
+		okrActivities:        okrActivitiesService,
+		reports:              reportsService,
+		search:               searchService,
+		sprints:              sprintsService,
+		states:               statesService,
+		stories:              storiesService,
+		subscriptions:        subscriptionsService,
+		teams:                teamsService,
+		teamSettings:         teamSettingsService,
+		users:                usersService,
+		workspaces:           workspacesService,
 	}
-}
-
-func ensureBackgroundMayaEnabled(ctx context.Context, db *sqlx.DB, workspaceID uuid.UUID) error {
-	hasAccess, err := billing.WorkspaceCanUseMaya(ctx, db, workspaceID)
-	if err != nil {
-		return fmt.Errorf("check background Maya access: %w", err)
-	}
-	if !hasAccess {
-		return fmt.Errorf("background Maya assignment requires a paid plan")
-	}
-	return nil
 }
 
 func (s services) validate() error {
@@ -311,11 +507,35 @@ func (s services) validate() error {
 	if s.documents == nil {
 		return fmt.Errorf("missing service: documents")
 	}
+	if s.developerCredentials == nil {
+		return fmt.Errorf("missing service: developerCredentials")
+	}
+	if s.developerOAuth == nil {
+		return fmt.Errorf("missing service: developerOAuth")
+	}
+	if s.developerOAuthApps == nil {
+		return fmt.Errorf("missing service: developerOAuthApps")
+	}
+	if s.developerAccess == nil {
+		return fmt.Errorf("missing service: developerAccess")
+	}
+	if s.idempotency == nil {
+		return fmt.Errorf("missing service: idempotency")
+	}
+	if s.outboundWebhooks == nil {
+		return fmt.Errorf("missing service: outboundWebhooks")
+	}
+	if s.emailReply == nil {
+		return fmt.Errorf("missing service: emailReply")
+	}
 	if s.epics == nil {
 		return fmt.Errorf("missing service: epics")
 	}
 	if s.feedback == nil {
 		return fmt.Errorf("missing service: feedback")
+	}
+	if s.figma == nil {
+		return fmt.Errorf("missing service: figma")
 	}
 	if s.github == nil {
 		return fmt.Errorf("missing service: github")

@@ -9,6 +9,18 @@ type Payload = {
   updates: Partial<DetailedStory>;
 };
 
+export type BulkStoryUpdateResult = {
+  totalCount: number;
+  succeededCount: number;
+  failedCount: number;
+  partial: boolean;
+  items: {
+    storyId: string;
+    success: boolean;
+    error?: string;
+  }[];
+};
+
 export const bulkUpdateAction = async (
   updates: Payload,
   workspaceSlug: string,
@@ -16,7 +28,7 @@ export const bulkUpdateAction = async (
   try {
     const session = await auth();
     const ctx = { session: session!, workspaceSlug };
-    const stories = await put<Payload, ApiResponse<null>>(
+    const stories = await put<Payload, ApiResponse<BulkStoryUpdateResult>>(
       "stories",
       updates,
       ctx,

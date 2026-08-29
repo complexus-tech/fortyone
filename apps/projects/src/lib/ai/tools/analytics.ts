@@ -20,7 +20,7 @@ const analyticsFiltersSchema = z.object({
   assigneeIds: z
     .array(z.string())
     .optional()
-    .describe("User IDs to filter by. Use members first when needed."),
+    .describe("User IDs to filter by. Use resolveMember first when needed."),
   startDate: z
     .string()
     .optional()
@@ -107,7 +107,7 @@ export const workspacePerformanceReportTool = tool({
 
 export const workspaceCommandCenterReportTool = tool({
   description:
-    "Build the most detailed workspace analytics command-center report. Use this for broad business questions about workload distribution, who has the most work, risks, bottlenecks, delivery flow, request source performance, engagement events, objective health, sprint health, and what the team should focus on next.",
+    "Build the most detailed workspace analytics command-center report. Use this only when the user explicitly requests a broad report, dashboard, analytics overview, or command-center view covering workload distribution, risks, bottlenecks, delivery flow, request source performance, engagement events, objective health, and sprint health. Use focusBrief instead for prioritization advice.",
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
@@ -143,7 +143,7 @@ export const workspaceCommandCenterReportTool = tool({
 
 export const pulseReportTool = tool({
   description:
-    "Build the deterministic workspace Pulse report for current health, risks, workload, sprint health, objective health, pending integration requests, blocked work, overdue work, and what needs attention next. Use this for workspace, team, person, or group-of-teams pulse questions.",
+    "Build the visible workspace Pulse report for current health, risks, workload, sprint health, objective health, pending integration requests, blocked work, and overdue work. Use this only when the user explicitly asks to see a Pulse or health report; use focusBrief for advice about what needs attention next.",
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
   }),
@@ -249,14 +249,14 @@ export const objectiveProgressReportTool = tool({
 
 export const teamPerformanceReportTool = tool({
   description:
-    "Build a team or person performance report with workload, member contribution, velocity by team, and workload trend. For person-specific questions, pass userId after using members.",
+    "Build a team or person performance report with workload, member contribution, velocity by team, and workload trend. For person-specific questions, pass userId after using resolveMember.",
   inputSchema: z.object({
     filters: analyticsFiltersSchema.optional(),
     userId: z
       .string()
       .optional()
       .describe(
-        "Specific user ID for person performance. Use members first when needed.",
+        "Specific user ID for person performance. Use resolveMember first when needed.",
       ),
   }),
   execute: async (

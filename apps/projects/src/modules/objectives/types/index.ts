@@ -2,11 +2,18 @@ import type { StoryPriority } from "@/modules/stories/types";
 import type { StateCategory } from "@/types/states";
 
 export type ObjectiveHealth = "On Track" | "At Risk" | "Off Track" | null;
+export type ObjectiveScheduleStatus =
+  | "on_track"
+  | "at_risk"
+  | "no_target"
+  | "no_schedule";
 
 export type Objective = {
   id: string;
+  sequenceId: number;
   name: string;
   description: string;
+  shortSummary: string | null;
   leadUser: string;
   teamId: string;
   workspaceId: string;
@@ -17,8 +24,20 @@ export type Objective = {
   updatedAt: string;
   createdBy: string;
   statusId: string;
+  keyResultCount: number;
   priority?: StoryPriority;
   health: ObjectiveHealth;
+  color: string;
+  forecastStartDate: string | null;
+  forecastEndDate: string | null;
+  scheduleStatus: ObjectiveScheduleStatus;
+  forecastDaysDelta: number;
+  forecastCauseStory: {
+    id: string;
+    sequenceId: number;
+    title: string;
+    source: "calendar" | "planning";
+  } | null;
   stats?: {
     total: number;
     cancelled: number;
@@ -43,6 +62,7 @@ export type MeasureType = "percentage" | "number" | "boolean";
 
 export type KeyResult = {
   id: string;
+  sequenceId: number;
   name: string;
   measurementType: MeasureType;
   objectiveId: string;
@@ -71,6 +91,7 @@ export type NewKeyResult = {
 };
 
 export type KeyResultUpdate = Partial<Omit<NewKeyResult, "measurementType">> & {
+  clearLead?: boolean;
   comment?: string;
 };
 
@@ -81,6 +102,7 @@ export type NewObjectiveKeyResult = NewKeyResult & {
 export type NewObjective = {
   name: string;
   description?: string;
+  shortSummary?: string;
   leadUser?: string | null;
   teamId: string;
   startDate?: string | null;
@@ -88,6 +110,7 @@ export type NewObjective = {
   isPrivate?: boolean;
   statusId: string;
   priority?: StoryPriority;
+  color?: string;
   keyResults?: NewKeyResult[];
 };
 

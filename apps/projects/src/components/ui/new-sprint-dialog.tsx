@@ -362,7 +362,7 @@ export const NewSprintDialog = ({
             Discard
           </Button>
           <Button
-            leftIcon={<PlusIcon className="text-white" />}
+            leftIcon={<PlusIcon className="text-current" />}
             onClick={handleCreateSprint}
             size="md"
           >

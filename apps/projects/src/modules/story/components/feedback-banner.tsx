@@ -1,0 +1,116 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { CopyIcon, LinkIcon, MoreHorizontalIcon, RequestsIcon } from "icons";
+import { cn } from "lib";
+import { Box, Flex, Menu, Text } from "ui";
+import { useWorkspacePath } from "@/hooks";
+import type { StoryFeedbackLink } from "@/modules/team-feedback/types";
+
+const relationshipLabel = (relationship: StoryFeedbackLink["relationship"]) => {
+  switch (relationship) {
+    case "created_from":
+      return "From feedback";
+    case "solves":
+      return "Resolves feedback";
+    default:
+      return "Linked to feedback";
+  }
+};
+
+export const FeedbackBanner = ({ links }: { links: StoryFeedbackLink[] }) => (
+  <Box className="mb-3 space-y-2">
+    {links.map((link) => (
+      <FeedbackBannerRow key={link.id} link={link} />
+    ))}
+  </Box>
+);
+
+export const FeedbackBannerRow = ({
+  embedded = false,
+  link,
+}: {
+  embedded?: boolean;
+  link: StoryFeedbackLink;
+}) => {
+  const router = useRouter();
+  const { withWorkspace } = useWorkspacePath();
+  const feedbackHref = withWorkspace(
+    `/teams/${link.teamId}/feedback/${link.itemId}`,
+  );
+
+  const copyFeedbackLink = () =>
+    navigator.clipboard.writeText(
+      new URL(feedbackHref, window.location.origin).toString(),
+    );
+
+  return (
+    <Flex
+      align="center"
+      className={cn(
+        "border-primary/20 bg-primary/5 rounded-xl border px-4 py-3 backdrop-blur-md",
+        { "rounded-none border-0 bg-transparent": embedded },
+      )}
+      justify="between"
+    >
+      <Link
+        aria-label={`Open feedback: ${link.feedbackTitle}`}
+        className="min-w-0 flex-1"
+        href={feedbackHref}
+        title={link.feedbackTitle}
+      >
+        <Flex align="center" className="min-w-0" gap={2}>
+          <RequestsIcon className="text-primary h-5 shrink-0" />
+          <Text
+            as="span"
+            className="min-w-0 truncate"
+            color="primary"
+            fontWeight="medium"
+          >
+            {relationshipLabel(link.relationship)}
+            <span aria-hidden="true"> · </span>
+            {link.feedbackTitle}
+          </Text>
+        </Flex>
+      </Link>
+      <Flex align="center" className="shrink-0" gap={1}>
+        <Link
+          aria-label="Open feedback"
+          className="text-primary hover:text-primary/80 rounded-md p-1 transition"
+          href={feedbackHref}
+          title="Open feedback"
+        >
+          <LinkIcon className="text-current" />
+        </Link>
+        <Menu>
+          <Menu.Button>
+            <button
+              aria-label="More feedback link actions"
+              className="text-primary hover:text-primary/80 rounded-md p-1 transition"
+              type="button"
+            >
+              <MoreHorizontalIcon className="h-5 text-current" />
+            </button>
+          </Menu.Button>
+          <Menu.Items align="end">
+            <Menu.Group>
+              <Menu.Item
+                onSelect={() => {
+                  router.push(feedbackHref);
+                }}
+              >
+                <RequestsIcon className="h-5 w-auto" />
+                Open feedback
+              </Menu.Item>
+              <Menu.Item onSelect={copyFeedbackLink}>
+                <CopyIcon />
+                Copy link
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
+      </Flex>
+    </Flex>
+  );
+};

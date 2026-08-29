@@ -1,5 +1,5 @@
 {
-  "private": false,
+  "private": true,
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -8,8 +8,10 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
+    "tailwindcss": "4.3.3",
     "tsconfig": "workspace:*",
     "turbo": "^2.7.2"
   },

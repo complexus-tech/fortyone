@@ -26,7 +26,28 @@ export type SlackChannel = {
 
 export type SlackIntegration = {
   slackWorkspace?: SlackWorkspace | null;
+  accountLink?: {
+    slackUserId: string;
+    linkedVia: string;
+    linkedAt: string;
+  } | null;
   channels: SlackChannel[];
+};
+
+export type SlackAgentSettings = {
+  guidance: string;
+};
+
+export type SlackChannelAudience = {
+  channel: SlackChannel;
+  isConfigured: boolean;
+  teamIds: string[];
+};
+
+export type UpdateSlackChannelAudienceInput = {
+  channelId: string;
+  isConfigured: boolean;
+  teamIds: string[];
 };
 
 export type CreateSlackInstallSessionResponse = {

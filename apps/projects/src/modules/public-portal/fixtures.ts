@@ -4,34 +4,36 @@ export const publicPortalFixture: PublicPortal = {
   id: "city-roads",
   name: "City Roads Program",
   slug: "city-roads",
+  participationMode: "account_required",
+  guestIdentityPolicy: "show_identity",
+  hasPublishedUpdates: true,
   workspace: {
     name: "City Roads Program",
     slug: "city-roads",
     avatarUrl: "/complexus.png",
     color: "#FF005C",
   },
-  description:
-    "A public request board for surfacing, reviewing, and publishing road delivery work.",
   boards: [
     {
       id: "road-repairs",
       name: "Road repairs",
-      colorClassName: "bg-success",
+      color: "#22C55E",
     },
     {
       id: "drainage",
       name: "Drainage",
-      colorClassName: "bg-info",
+      color: "#06B6D4",
     },
     {
       id: "traffic-lights",
       name: "Traffic lights",
-      colorClassName: "bg-warning",
+      color: "#F59E0B",
     },
   ],
   requests: [
     {
       id: "req-1",
+      authorId: "00000000-0000-4000-8000-000000000001",
       slug: "add-pedestrian-crossing-near-east-avenue-school",
       title: "Add pedestrian crossing near East Avenue school",
       description:
@@ -54,6 +56,7 @@ export const publicPortalFixture: PublicPortal = {
     },
     {
       id: "req-2",
+      authorId: "00000000-0000-4000-8000-000000000002",
       slug: "blocked-storm-drain-on-4th-street",
       title: "Blocked storm drain on 4th Street",
       description:
@@ -69,6 +72,7 @@ export const publicPortalFixture: PublicPortal = {
     },
     {
       id: "req-3",
+      authorId: "00000000-0000-4000-8000-000000000003",
       slug: "resurface-market-road-before-rainy-season",
       title: "Resurface Market Road before rainy season",
       description:
@@ -85,6 +89,7 @@ export const publicPortalFixture: PublicPortal = {
     },
     {
       id: "req-4",
+      authorId: "00000000-0000-4000-8000-000000000004",
       slug: "repair-school-zone-signal-timing",
       title: "Repair school-zone signal timing",
       description:
@@ -104,19 +109,38 @@ export const publicPortalFixture: PublicPortal = {
   updates: [
     {
       id: "update-1",
+      slug: "school-zone-signal-timing-completed",
       title: "School-zone signal timing completed",
+      summary:
+        "The longer pedestrian phase is now active around the school zone.",
       body: "The signal timing work near the school zone is now complete and the longer pedestrian phase is active during morning and afternoon periods.",
-      status: "published",
+      publishedAt: "2026-07-13T08:00:00.000Z",
       publishedAtLabel: "Last week",
-      relatedRequestIds: ["req-4"],
+      linkedItems: [
+        {
+          id: "req-4",
+          slug: "repair-school-zone-signal-timing",
+          status: "completed",
+          title: "Repair school-zone signal timing",
+        },
+      ],
     },
     {
       id: "update-2",
+      slug: "market-road-resurfacing-planning",
       title: "Market Road resurfacing moved into planning",
+      summary: "The request has moved into the public roadmap.",
       body: "The resurfacing request has been accepted into the public roadmap and is being prepared for the next resurfacing cycle.",
-      status: "published",
+      publishedAt: "2026-07-19T08:00:00.000Z",
       publishedAtLabel: "Yesterday",
-      relatedRequestIds: ["req-3"],
+      linkedItems: [
+        {
+          id: "req-3",
+          slug: "resurface-market-road-before-rainy-season",
+          status: "planned",
+          title: "Resurface Market Road before rainy season",
+        },
+      ],
     },
   ],
 };

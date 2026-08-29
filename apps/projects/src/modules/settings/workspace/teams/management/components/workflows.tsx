@@ -18,7 +18,7 @@ import { useUpdateStateMutation } from "@/lib/hooks/states/update-mutation";
 import { ConfirmDialog, FeatureGuard } from "@/components/ui";
 import type { State, StateCategory } from "@/types/states";
 import { useGroupedStories } from "@/modules/stories/hooks/use-grouped-stories";
-import { useUserRole, useWorkspacePath } from "@/hooks";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { StateRow } from "./state-row";
 
 const categories: {
@@ -69,6 +69,7 @@ const arrayMove = <T,>(array: T[], from: number, to: number): T[] => {
 };
 
 export const WorkflowSettings = () => {
+  const { getTermDisplay } = useTerminology();
   const { teamId } = useParams<{ teamId: string }>();
   const { userRole } = useUserRole();
   const { withWorkspace } = useWorkspacePath();
@@ -80,12 +81,12 @@ export const WorkflowSettings = () => {
 
   const storyCounts = useMemo(() => {
     if (!groupedStories?.groups) return {};
-    return groupedStories.groups.reduce(
+    return groupedStories.groups.reduce<Record<string, number>>(
       (acc, group) => ({
         ...acc,
         [group.key]: group.totalCount,
       }),
-      {} as Record<string, number>,
+      {},
     );
   }, [groupedStories]);
 
@@ -371,7 +372,7 @@ export const WorkflowSettings = () => {
         </DndContext>
         <ConfirmDialog
           confirmText="Delete state"
-          description="Are you sure you want to delete this state? Any stories in this state will need to be moved to another state."
+          description={`Are you sure you want to delete this state? Any ${getTermDisplay("storyTerm", { variant: "plural" })} in this state will need to be moved to another state.`}
           isOpen={Boolean(stateToDelete)}
           onClose={() => {
             setStateToDelete(null);

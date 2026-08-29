@@ -6,23 +6,31 @@ import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 
 export const updateTeam = tool({
   description:
-    "Update an existing team. Only admins or team creators can update teams.",
-  inputSchema: z.object({
-    teamId: z.string().describe("Team ID to update (required)"),
-    name: z.string().optional().describe("Updated team name"),
-    color: z.string().optional().describe("Updated team color"),
-    code: z
-      .string()
-      .optional()
-      .describe(
-        "Updated team code, (unique identifier 3 characters). eg WEB, DEV, MKT, PRD",
-      ),
-    isPrivate: z.boolean().optional().describe("Updated privacy setting"),
-  }),
+    "Update an existing team. Only workspace admins can update teams.",
+  inputSchema: z
+    .object({
+      teamId: z.string().describe("Team ID to update (required)"),
+      name: z.string().optional().describe("Updated team name"),
+      color: z.string().optional().describe("Updated team color"),
+      code: z
+        .string()
+        .optional()
+        .describe(
+          "Updated team code, (unique identifier 3 characters). eg WEB, DEV, MKT, PRD",
+        ),
+      isPrivate: z.boolean().optional().describe("Updated privacy setting"),
+    })
+    .refine(
+      (input) =>
+        [input.name, input.color, input.code, input.isPrivate].some(
+          (value) => value !== undefined,
+        ),
+      { message: "Provide at least one team field to update." },
+    ),
 
   execute: async (
     { teamId, name, color, code, isPrivate },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -34,7 +42,7 @@ export const updateTeam = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

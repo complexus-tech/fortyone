@@ -1,5 +1,147 @@
 /* Component-level styles for the UI package */
-@import "tailwindcss";
-@import "tailwind-config";
+@layer components {
+  .button-gradient-solid {
+    --button-gradient-secondary-fill: 28%;
+    --button-gradient-info-fill: 26%;
+    --button-gradient-primary-fill: 32%;
 
-@custom-variant dark (&:where(.dark, .dark *));
+    background-image: linear-gradient(
+      to right,
+      color-mix(
+        in oklab,
+        var(--color-secondary) var(--button-gradient-secondary-fill),
+        var(--color-surface)
+      ),
+      color-mix(
+        in oklab,
+        var(--color-info) var(--button-gradient-info-fill),
+        var(--color-surface)
+      ),
+      color-mix(
+        in oklab,
+        var(--color-primary) var(--button-gradient-primary-fill),
+        var(--color-surface)
+      )
+    );
+  }
+
+  .button-gradient-outline {
+    --button-gradient-secondary-border: 34%;
+    --button-gradient-info-border: 32%;
+    --button-gradient-primary-border: 38%;
+
+    position: relative;
+    isolation: isolate;
+    background: transparent;
+  }
+
+  .button-gradient-outline::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    corner-shape: inherit;
+    background-image: linear-gradient(
+      to right,
+      color-mix(
+        in oklab,
+        var(--color-secondary) var(--button-gradient-secondary-border),
+        var(--color-surface)
+      ),
+      color-mix(
+        in oklab,
+        var(--color-info) var(--button-gradient-info-border),
+        var(--color-surface)
+      ),
+      color-mix(
+        in oklab,
+        var(--color-primary) var(--button-gradient-primary-border),
+        var(--color-surface)
+      )
+    );
+    content: "";
+    pointer-events: none;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  .button-gradient-solid:hover {
+    --button-gradient-secondary-fill: 34%;
+    --button-gradient-info-fill: 32%;
+    --button-gradient-primary-fill: 38%;
+  }
+
+  .button-gradient-outline:hover {
+    --button-gradient-secondary-border: 42%;
+    --button-gradient-info-border: 40%;
+    --button-gradient-primary-border: 46%;
+  }
+
+  :where(.dark) .button-gradient-solid {
+    --button-gradient-secondary-fill: 46%;
+    --button-gradient-info-fill: 48%;
+    --button-gradient-primary-fill: 52%;
+  }
+
+  :where(.dark) .button-gradient-outline {
+    --button-gradient-secondary-border: 48%;
+    --button-gradient-info-border: 50%;
+    --button-gradient-primary-border: 54%;
+  }
+
+  :where(.dark) .button-gradient-solid:hover {
+    --button-gradient-secondary-fill: 52%;
+    --button-gradient-info-fill: 54%;
+    --button-gradient-primary-fill: 58%;
+  }
+
+  :where(.dark) .button-gradient-outline:hover {
+    --button-gradient-secondary-border: 56%;
+    --button-gradient-info-border: 58%;
+    --button-gradient-primary-border: 62%;
+  }
+
+  .rich-text-editor.prose-lg {
+    line-height: 1.65 !important;
+  }
+
+  .rich-text-editor p {
+    margin-block: 1rem !important;
+  }
+
+  .rich-text-editor :is(h1, h2, h3, h4, h5, h6) {
+    margin-block: 2.25rem 1rem !important;
+  }
+
+  .rich-text-editor :is(ul, ol) {
+    margin-block: 1rem !important;
+  }
+
+  .rich-text-editor li {
+    margin-block: 0.5rem !important;
+    line-height: 1.5 !important;
+  }
+
+  .rich-text-editor li > p {
+    margin-block: 0.25rem !important;
+    line-height: 1.5 !important;
+  }
+
+  .rich-text-editor table p {
+    line-height: 1.45 !important;
+    margin-block: 0 !important;
+  }
+
+  .rich-text-editor a.figma-smart-link::before {
+    background: url("/images/integrations/figma.svg") center / contain no-repeat;
+    content: "";
+    display: inline-block;
+    height: 0.9em;
+    margin-right: 0.3em;
+    vertical-align: -0.08em;
+    width: 0.6em;
+  }
+}

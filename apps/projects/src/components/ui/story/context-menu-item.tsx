@@ -1,10 +1,12 @@
-import { ArrowRightIcon } from "icons";
+import { CheckIcon, ChevronRightIcon } from "icons";
 import type { ReactNode } from "react";
 import { Box, ContextMenu, Flex, Text } from "ui";
+import type { TextProps } from "ui";
 
 export const ContextMenuItem = ({
   label,
   icon,
+  labelColor,
   subMenu,
   shortCut,
   disabled,
@@ -12,8 +14,10 @@ export const ContextMenuItem = ({
 }: {
   label: string;
   icon: ReactNode;
+  labelColor?: TextProps["color"];
   disabled?: boolean;
   subMenu?: {
+    active?: boolean;
     label: string;
     icon: ReactNode;
     shortCut?: string;
@@ -27,16 +31,19 @@ export const ContextMenuItem = ({
     <>
       {subMenu ? (
         <ContextMenu.SubMenu>
-          <ContextMenu.SubTrigger className="justify-between">
+          <ContextMenu.SubTrigger
+            className="justify-between"
+            disabled={disabled}
+          >
             <Box className="grid grid-cols-[24px_auto] items-center">
               <span className="text-foreground flex">{icon}</span>
-              <Text>{label}</Text>
+              <Text color={labelColor}>{label}</Text>
             </Box>
             <Flex align="center" gap={3}>
               {shortCut ? (
                 <Flex className="text-text-muted text-sm">{shortCut}</Flex>
               ) : null}
-              <ArrowRightIcon
+              <ChevronRightIcon
                 className="text-text-muted h-3.5 w-auto"
                 strokeWidth={2.8}
               />
@@ -51,9 +58,11 @@ export const ContextMenuItem = ({
                   shortCut: subShortCut,
                   onSelect: subOnSelect,
                   disabled: subDisabled,
+                  active: subActive,
                 }) => (
                   <ContextMenu.Item
-                    className="mb-1 justify-between py-1.5"
+                    active={subActive}
+                    className="mb-1 justify-between py-2"
                     disabled={subDisabled}
                     key={subLabel}
                     onSelect={subOnSelect}
@@ -64,9 +73,14 @@ export const ContextMenuItem = ({
                         {subLabel}
                       </Text>
                     </Box>
-                    {subShortCut ? (
-                      <Flex className="text-text-muted">{subShortCut}</Flex>
-                    ) : null}
+                    <Flex align="center" gap={2}>
+                      {subShortCut ? (
+                        <Flex className="text-text-muted">{subShortCut}</Flex>
+                      ) : null}
+                      {subActive ? (
+                        <CheckIcon className="h-4 w-4 shrink-0" />
+                      ) : null}
+                    </Flex>
                   </ContextMenu.Item>
                 ),
               )}
@@ -81,7 +95,9 @@ export const ContextMenuItem = ({
         >
           <Box className="grid grid-cols-[24px_auto] items-center gap-[2px]">
             <span className="text-text-muted flex">{icon}</span>
-            <Text className="max-w-40 truncate">{label}</Text>
+            <Text className="max-w-40 truncate" color={labelColor}>
+              {label}
+            </Text>
           </Box>
           {shortCut ? (
             <Flex className="text-text-muted">{shortCut}</Flex>

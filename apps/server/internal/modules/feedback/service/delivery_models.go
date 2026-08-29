@@ -1,0 +1,8 @@
+package feedback
+
+import feedbackdomain "github.com/complexus-tech/projects-api/internal/modules/feedback/domain"
+
+type ContributorDeliveryStore = feedbackdomain.ContributorDeliveryStore
+type CoreClaimedContributorDelivery = feedbackdomain.CoreClaimedContributorDelivery
+type CoreRecoverableContributorDelivery = feedbackdomain.CoreRecoverableContributorDelivery
+type CoreContributorDeliveryFailure = feedbackdomain.CoreContributorDeliveryFailure

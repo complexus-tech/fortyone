@@ -1,46 +1,96 @@
 package usersrepository
 
 import (
-	"fmt"
-	"math/rand"
-	"strings"
+	"context"
+	"errors"
 
-	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
-	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/jmoiron/sqlx"
+	usersdomain "github.com/complexus-tech/projects-api/internal/modules/users/domain"
+	usersql "github.com/complexus-tech/projects-api/internal/modules/users/repository/sqlc"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Repository errors
 var (
-	ErrNotFound = users.ErrNotFound
+	ErrNotFound                = usersdomain.ErrNotFound
+	errTransactionsUnavailable = errors.New("users repository transactions are unavailable")
 )
 
 type repo struct {
-	db  *sqlx.DB
-	log *logger.Logger
+	queries         usersql.Querier
+	bindTransaction func(pgx.Tx) usersql.Querier
+	runTransaction  func(context.Context, func(usersql.Querier) error) error
 }
 
-func New(log *logger.Logger, db *sqlx.DB) *repo {
+// New constructs the users persistence adapter over the shared native pgx
+// pool. Generated sqlc contracts stay private to this package.
+func New(pool *pgxpool.Pool) *repo {
+	queries := usersql.New(pool)
+	transactor := platformdatabase.NewTransactor(pool)
+
 	return &repo{
-		db:  db,
-		log: log,
+		queries: queries,
+		bindTransaction: func(tx pgx.Tx) usersql.Querier {
+			return queries.WithTx(tx)
+		},
+		runTransaction: func(ctx context.Context, operation func(usersql.Querier) error) error {
+			return transactor.WithinTransaction(ctx, pgx.TxOptions{}, func(tx pgx.Tx) error {
+				return operation(queries.WithTx(tx))
+			})
+		},
 	}
 }
 
-// generateOTP creates a 6-digit numeric OTP
-func generateOTP() (string, error) {
-	// Generate 6-digit numeric OTP (000000-999999)
-	otp := rand.Intn(1000000)
-	return fmt.Sprintf("%06d", otp), nil
+func newWithQueries(queries usersql.Querier) *repo {
+	return &repo{queries: queries}
 }
 
-// isUniqueConstraintViolation checks if the error is a unique constraint violation
-func isUniqueConstraintViolation(err error) bool {
-	if err == nil {
-		return false
+func (r *repo) withinTransaction(
+	ctx context.Context,
+	operation func(usersql.Querier) error,
+) error {
+	if operation == nil {
+		return platformdatabase.ErrNilTransactionOperation
 	}
-	errStr := strings.ToLower(err.Error())
-	return strings.Contains(errStr, "duplicate key value violates unique constraint") ||
-		strings.Contains(errStr, "unique constraint") ||
-		strings.Contains(errStr, "violates unique constraint")
+	if r == nil || r.runTransaction == nil {
+		return errTransactionsUnavailable
+	}
+	return r.runTransaction(ctx, operation)
+}
+
+func (r *repo) transactionQueries(tx pgx.Tx) (usersql.Querier, error) {
+	if tx == nil {
+		return nil, errors.New("users transaction is required")
+	}
+	if r == nil || r.bindTransaction == nil {
+		return nil, errTransactionsUnavailable
+	}
+	return r.bindTransaction(tx), nil
+}
+
+// WorkspaceTransaction is the account capability made available only inside
+// the workspace creation unit of work.
+type WorkspaceTransaction interface {
+	UpdateLastUsedWorkspace(context.Context, uuid.UUID, uuid.UUID) error
+}
+
+type workspaceTransaction struct {
+	queries usersql.Querier
+}
+
+func (r *repo) BindWorkspaceTransaction(tx pgx.Tx) (WorkspaceTransaction, error) {
+	queries, err := r.transactionQueries(tx)
+	if err != nil {
+		return nil, err
+	}
+	return &workspaceTransaction{queries: queries}, nil
+}
+
+func (transaction *workspaceTransaction) UpdateLastUsedWorkspace(
+	ctx context.Context,
+	userID uuid.UUID,
+	workspaceID uuid.UUID,
+) error {
+	return updateLastUsedWorkspace(ctx, transaction.queries, userID, workspaceID)
 }

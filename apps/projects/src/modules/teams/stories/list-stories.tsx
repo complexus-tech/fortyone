@@ -1,6 +1,7 @@
 "use client";
-import { useLocalStorage } from "@/hooks";
+import { Box } from "ui";
 import type { StoriesLayout } from "@/components/ui";
+import { useLocalStorage } from "@/hooks";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { TeamOptionsProvider, useTeamOptions } from "./provider";
 import { Header } from "./header";
@@ -26,9 +27,13 @@ export const ListStories = () => {
 
   return (
     <TeamOptionsProvider layout={layout}>
-      <Header layout={layout} setLayout={setLayout} />
-      <ActiveStoriesFilterBar />
-      <AllStories layout={layout} />
+      <Box className="flex h-full min-h-0 flex-col">
+        <Header layout={layout} setLayout={setLayout} />
+        <ActiveStoriesFilterBar />
+        <Box className="min-h-0 flex-1">
+          <AllStories layout={layout} />
+        </Box>
+      </Box>
     </TeamOptionsProvider>
   );
 };

@@ -10,8 +10,8 @@ import {
   LayoutSwitcher,
   StoriesViewOptionsButton,
   SideDetailsSwitch,
-  TeamColor,
   StoriesFilterButton,
+  TeamColor,
 } from "@/components/ui";
 import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
 import { useChatContext } from "@/context/chat-context";
@@ -40,7 +40,7 @@ export const Header = ({
   const { data: teams = [] } = useTeams();
   const { data: sprint } = useSprint(sprintId);
   const { userRole } = useUserRole();
-  const { isOpen: isChatOpen, openChat } = useChatContext();
+  const { openChat } = useChatContext();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useHotkeys("v+l", () => {
@@ -116,45 +116,39 @@ export const Header = ({
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
               onClick={() => {
                 openChat(
-                  `Suggest stories from "${teamName}" team backlog for sprint "${sprint.name}"`,
+                  `Suggest ${getTermDisplay("storyTerm", { variant: "plural" })} from "${teamName}" team backlog for sprint "${sprint.name}"`,
                 );
               }}
               size="sm"
               variant="naked"
             >
-              {isChatOpen ? null : "Smart fill"}
+              Smart fill
             </Button>
           </Tooltip>
         )}
         <LayoutSwitcher
+          className="hidden md:flex"
           layout={layout}
           options={["list", "kanban"]}
           setLayout={setLayout}
-          className="hidden md:flex"
         />
         <StoriesFilterButton
           filters={filters}
-          iconOnly={isChatOpen}
           resetFilters={resetFilters}
           setFilters={setFilters}
         />
         <StoriesViewOptionsButton
-          iconOnly={isChatOpen}
           layout={layout}
           setViewOptions={setViewOptions}
           viewOptions={viewOptions}
         />
-        {!isChatOpen ? (
-          <>
-            <span className="text-text-secondary hidden md:inline">|</span>
-            <Box className="hidden md:block">
-              <SideDetailsSwitch
-                isExpanded={isExpanded}
-                setIsExpanded={setIsExpanded}
-              />
-            </Box>
-          </>
-        ) : null}
+        <span className="text-text-secondary hidden md:inline">|</span>
+        <Box className="hidden md:block">
+          <SideDetailsSwitch
+            isExpanded={isExpanded}
+            setIsExpanded={setIsExpanded}
+          />
+        </Box>
       </Flex>
     </HeaderContainer>
   );

@@ -1,13 +1,13 @@
 "use client";
 
-import type { StoriesLayout } from "@/components/ui";
 import { useLocalStorage } from "@/hooks";
 import { MyWorkSkeleton } from "@/modules/my-work/components/my-work-skeleton";
+import { normalizeMyWorkLayout } from "@/modules/my-work/types";
 
 export default function Loading() {
-  const [layout] = useLocalStorage<StoriesLayout>(
+  const [layout] = useLocalStorage<string>(
     "my-stories:stories:layout",
     "kanban",
   );
-  return <MyWorkSkeleton layout={layout} />;
+  return <MyWorkSkeleton layout={normalizeMyWorkLayout(layout, "kanban")} />;
 }

@@ -1,13 +1,8 @@
 "use client";
 import { useState } from "react";
-import { Button, Flex, Badge, Box, Menu } from "ui";
-import {
-  NewStoryIcon,
-  SearchIcon,
-  BellIcon,
-  PlusIcon,
-  ArrowDown2Icon,
-} from "icons";
+import { Badge, Box, Button, Flex, Tooltip } from "ui";
+import { Notification02Icon, PlusIcon, SearchIcon } from "icons";
+import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { NewObjectiveDialog, NewStoryDialog } from "@/components/ui";
 import {
@@ -23,7 +18,7 @@ import { clearAllStorage } from "./utils";
 import { WorkspacesMenu } from "./workspaces-menu";
 import { logOut } from "./actions";
 
-export const Header = () => {
+export const Header = ({ isCollapsed = false }: { isCollapsed?: boolean }) => {
   const { getTermDisplay } = useTerminology();
   const { analytics } = useAnalytics();
   const [isOpen, setIsOpen] = useState(false);
@@ -73,64 +68,99 @@ export const Header = () => {
     await handleLogout();
   });
 
-  return (
-    <>
-      <Flex align="center" className="h-16" justify="between">
-        <WorkspacesMenu />
-        <Box data-sidebar-notifications-button>
-          <Button
-            asIcon
-            className="group relative"
-            color="tertiary"
-            href={withWorkspace("/notifications")}
-            leftIcon={
-              <BellIcon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
-            }
-            prefetch
-            size="sm"
-            variant="naked"
-          >
-            <span className="sr-only">Notifications</span>
-            {unreadNotifications ? (
-              <Badge
-                className="absolute -top-1 -right-1 shrink-0"
-                rounded="full"
-                size="sm"
-              >
-                {unreadNotifications > 9 ? "9+" : unreadNotifications}
-              </Badge>
-            ) : null}
-          </Button>
-        </Box>
-      </Flex>
-      <Flex className="mb-3 gap-1">
-        <Button
-          className="truncate md:h-[2.4rem]"
-          color="tertiary"
-          data-sidebar-create-story-button
-          disabled={userRole === "guest"}
-          fullWidth
-          leftIcon={<PlusIcon className="shrink-0" />}
-          onClick={() => {
-            if (userRole !== "guest") {
-              setIsOpen(!isOpen);
-            }
-          }}
-          variant="outline"
-        >
-          Create {getTermDisplay("storyTerm")}
-        </Button>
+  const notificationsAction = (
+    <Tooltip side="right" title="Notifications">
+      <Box data-sidebar-notifications-button>
         <Button
           asIcon
-          className="md:h-[2.4rem]"
+          className="group relative"
           color="tertiary"
-          href={withWorkspace("/search")}
-          leftIcon={<SearchIcon className="h-4" />}
+          href={withWorkspace("/notifications")}
+          leftIcon={
+            <Notification02Icon className="h-[1.4rem] transition-transform group-hover:rotate-12" />
+          }
           prefetch
-          variant="outline"
+          size="sm"
+          variant="naked"
         >
-          <span className="sr-only">Search</span>
+          <span className="sr-only">Notifications</span>
+          {unreadNotifications ? (
+            <Badge
+              className="absolute -top-1 -right-1 shrink-0"
+              rounded="full"
+              size="sm"
+            >
+              {unreadNotifications > 9 ? "9+" : unreadNotifications}
+            </Badge>
+          ) : null}
         </Button>
+      </Box>
+    </Tooltip>
+  );
+  const searchAction = (
+    <Tooltip side="right" title={null}>
+      <Button
+        asIcon
+        className="md:h-[2.4rem]"
+        color="tertiary"
+        href={withWorkspace("/search")}
+        leftIcon={<SearchIcon className="h-4" />}
+        prefetch
+        variant="outline"
+      >
+        <span className="sr-only">Search</span>
+      </Button>
+    </Tooltip>
+  );
+
+  return (
+    <>
+      {isCollapsed ? (
+        <Flex align="center" className="flex-col pt-3">
+          <WorkspacesMenu isCollapsed />
+          <Box aria-hidden className="mx-auto mt-3 h-px w-4/5" />
+        </Flex>
+      ) : (
+        <Flex align="center" className="h-[3.6rem] pt-2" justify="between">
+          <Box className="min-w-0 flex-1">
+            <WorkspacesMenu />
+          </Box>
+          {notificationsAction}
+        </Flex>
+      )}
+      <Flex
+        align={isCollapsed ? "center" : undefined}
+        className={cn("mt-2 mb-3 gap-1.5", isCollapsed && "mt-3 flex-col")}
+      >
+        <Tooltip side="right" title={isCollapsed ? "Create story" : null}>
+          <Button
+            asIcon={isCollapsed}
+            className={
+              isCollapsed ? "h-12 w-12 px-0 md:h-12" : "truncate md:h-[2.4rem]"
+            }
+            color="tertiary"
+            data-sidebar-create-story-button
+            disabled={userRole === "guest"}
+            fullWidth={!isCollapsed}
+            leftIcon={
+              <PlusIcon
+                className={cn("shrink-0", isCollapsed && "h-[1.375rem]")}
+              />
+            }
+            onClick={() => {
+              if (userRole !== "guest") {
+                setIsOpen(!isOpen);
+              }
+            }}
+            rounded={isCollapsed ? "full" : undefined}
+            variant="outline"
+          >
+            <span className={isCollapsed ? "hidden" : undefined}>
+              Create {getTermDisplay("storyTerm")}
+            </span>
+          </Button>
+        </Tooltip>
+        {isCollapsed ? null : searchAction}
       </Flex>
 
       {/* Dialogs */}

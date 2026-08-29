@@ -3,4 +3,14 @@ import type { tools } from ".";
 
 type MyTools = InferUITools<typeof tools>;
 
-export type MayaUIMessage = UIMessage<unknown, UIDataTypes, MyTools>;
+export type MayaMessageMetadata = {
+  source?: "text" | "voice";
+  voiceAnchorMessageId?: string | null;
+  voiceOrder?: number;
+};
+
+export type MayaUIMessage = UIMessage<
+  MayaMessageMetadata,
+  UIDataTypes,
+  MyTools
+>;

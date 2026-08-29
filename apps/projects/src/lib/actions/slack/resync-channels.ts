@@ -1,7 +1,7 @@
+import { auth } from "@/auth";
 import { post } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
-import { auth } from "@/auth";
 
 export const resyncSlackChannelsAction = async (workspaceSlug: string) => {
   try {

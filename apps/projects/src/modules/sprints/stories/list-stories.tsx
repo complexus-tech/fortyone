@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { Box } from "ui";
 import type { StoriesLayout } from "@/components/ui";
 import { BoardDividedPanel } from "@/components/ui";
 import { StoriesFilterBar } from "@/components/ui/stories-filter-bar";
 import { useLocalStorage, useMediaQuery } from "@/hooks";
-import { useChatContext } from "@/context/chat-context";
 import { useSprint } from "../hooks/sprint-details";
 import { Header } from "./header";
 import { SprintStoriesProvider, useSprintOptions } from "./provider";
@@ -36,14 +35,7 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
     "team:sprints:stories:isExpanded",
     true,
   );
-  const { isOpen: isChatOpen } = useChatContext();
   const { isPending: isSprintPending } = useSprint(sprintId);
-
-  useEffect(() => {
-    if (isChatOpen && isExpanded) {
-      setIsExpanded(false);
-    }
-  }, [isChatOpen, isExpanded, setIsExpanded]);
 
   if (isSprintPending) {
     return <StoriesSkeleton layout={layout} />;
@@ -51,26 +43,33 @@ export const ListSprintStories = ({ sprintId }: { sprintId: string }) => {
 
   return (
     <SprintStoriesProvider layout={layout}>
-      <Header
-        isExpanded={isExpanded}
-        layout={layout}
-        setIsExpanded={setIsExpanded}
-        setLayout={setLayout}
-      />
-      <ActiveStoriesFilterBar />
+      <Box className="flex h-full min-h-0 w-full min-w-0 flex-col">
+        <Header
+          isExpanded={isExpanded}
+          layout={layout}
+          setIsExpanded={setIsExpanded}
+          setLayout={setLayout}
+        />
+        <ActiveStoriesFilterBar />
 
-      {isMobile ? (
-        <AllStories layout={layout} />
-      ) : (
-        <BoardDividedPanel autoSaveId="team:sprints:stories:divided-panel">
-          <BoardDividedPanel.MainPanel>
+        <Box className="min-h-0 min-w-0 flex-1">
+          {isMobile ? (
             <AllStories layout={layout} />
-          </BoardDividedPanel.MainPanel>
-          <BoardDividedPanel.SideBar isExpanded={isExpanded}>
-            <Sidebar />
-          </BoardDividedPanel.SideBar>
-        </BoardDividedPanel>
-      )}
+          ) : (
+            <BoardDividedPanel autoSaveId="team:sprints:stories:divided-panel">
+              <BoardDividedPanel.MainPanel>
+                <AllStories layout={layout} />
+              </BoardDividedPanel.MainPanel>
+              <BoardDividedPanel.SideBar
+                className="h-full"
+                isExpanded={isExpanded}
+              >
+                <Sidebar />
+              </BoardDividedPanel.SideBar>
+            </BoardDividedPanel>
+          )}
+        </Box>
+      </Box>
     </SprintStoriesProvider>
   );
 };

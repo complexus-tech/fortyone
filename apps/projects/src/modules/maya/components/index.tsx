@@ -29,12 +29,13 @@ export const MayaChat = () => {
   };
   const {
     // Chat state
-    messages,
+    displayMessages,
     input,
     status,
     error,
     attachments,
     currentChatId,
+    realtimeVoice,
 
     // Chat actions
     setInput,
@@ -44,6 +45,7 @@ export const MayaChat = () => {
     handleNewChat,
     handleChatSelect,
     handleSuggestedPrompt,
+    addToolApprovalResponse,
     setAttachments,
 
     // Dialog states
@@ -66,54 +68,61 @@ export const MayaChat = () => {
   });
 
   return (
-    <>
+    <Box className="flex h-full min-h-0 flex-col overflow-hidden">
       <Header
         currentChatId={currentChatId}
         handleChatSelect={handleChatSelect}
         handleNewChat={handleNewChat}
       />
-      <BodyContainer className="mx-auto flex max-w-4xl flex-col">
+      <BodyContainer className="flex h-auto min-h-0 flex-1 flex-col overflow-hidden">
         <ChatMessages
-          messages={messages}
+          isOnPage
+          isVoiceSpeaking={realtimeVoice.isSpeaking}
+          messages={displayMessages}
           onPromptSelect={handleSuggestedPrompt}
+          onToolApproval={addToolApprovalResponse}
           regenerate={regenerate}
           status={status}
           value={input}
         />
-        {error ? (
-          <Box className="mb-4 px-6">
-            <Text>{error.message || "An error occurred."} </Text>
-            <Button
-              className="mt-2"
-              leftIcon={<ReloadIcon className="text-white dark:text-white" />}
-              onClick={() => {
-                regenerate();
-              }}
-            >
-              Retry
-            </Button>
-          </Box>
-        ) : null}
+        <Box className="mx-auto flex w-full max-w-3xl shrink-0 flex-col">
+          {error || realtimeVoice.error ? (
+            <Box className="mb-4 px-6">
+              <Text>
+                {realtimeVoice.error || error?.message || "An error occurred."}{" "}
+              </Text>
+              <Button
+                className="mt-2"
+                leftIcon={<ReloadIcon className="text-current" />}
+                onClick={() => {
+                  regenerate();
+                }}
+              >
+                Retry
+              </Button>
+            </Box>
+          ) : null}
 
-        {messages.length === 0 ? (
-          <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
-        ) : null}
-        {needsUpgrade ? <LimitReached isOnPage /> : null}
-        <ChatInput
-          attachments={attachments}
-          isLiveVoiceVisible={isInternalUser}
-          isOnPage
-          liveVoiceDisabled={needsUpgrade}
-          messagesCount={messages.length}
-          onAttachmentsChange={setAttachments}
-          onChange={(e) => {
-            setInput(e.target.value);
-          }}
-          onSend={handleSend}
-          onStop={handleStop}
-          status={status}
-          value={input}
-        />
+          {displayMessages.length === 0 ? (
+            <SuggestedPrompts isOnPage onPromptSelect={handleSuggestedPrompt} />
+          ) : null}
+          {needsUpgrade ? <LimitReached isOnPage /> : null}
+          <ChatInput
+            attachments={attachments}
+            isOnPage
+            liveVoiceDisabled={needsUpgrade}
+            messagesCount={displayMessages.length}
+            onAttachmentsChange={setAttachments}
+            onChange={(e) => {
+              setInput(e.target.value);
+            }}
+            onSend={handleSend}
+            onStop={handleStop}
+            realtimeVoice={realtimeVoice}
+            status={status}
+            value={input}
+          />
+        </Box>
       </BodyContainer>
 
       <NewStoryDialog isOpen={isStoryOpen} setIsOpen={setIsStoryOpen} />
@@ -122,6 +131,6 @@ export const MayaChat = () => {
         setIsOpen={setIsObjectiveOpen}
       />
       <NewSprintDialog isOpen={isSprintOpen} setIsOpen={setIsSprintOpen} />
-    </>
+    </Box>
   );
 };

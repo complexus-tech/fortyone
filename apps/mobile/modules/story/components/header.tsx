@@ -21,7 +21,11 @@ export const Header = () => {
   const { data: story } = useStory(storyId);
   const { data: teams = [] } = useTeams();
   const team = teams.find((team) => team.id === story?.teamId);
-  const storyUrl = `https://${workspace?.slug}.fortyone.app/story/${storyId}`;
+  const storyReference =
+    team?.code && story?.sequenceId
+      ? `${team.code.trim().toUpperCase()}-${story.sequenceId}`
+      : storyId;
+  const storyUrl = `https://${workspace?.slug}.fortyone.app/work/${encodeURIComponent(storyReference)}`;
 
   const archiveMutation = useArchiveStoryMutation();
   const unarchiveMutation = useUnarchiveStoryMutation();
@@ -42,7 +46,7 @@ export const Header = () => {
           style: "destructive",
           onPress: () => archiveMutation.mutate([storyId]),
         },
-      ]
+      ],
     );
   };
 
@@ -56,7 +60,7 @@ export const Header = () => {
           text: "Unarchive",
           onPress: () => unarchiveMutation.mutate([storyId]),
         },
-      ]
+      ],
     );
   };
 
@@ -74,7 +78,7 @@ export const Header = () => {
           style: "destructive",
           onPress: () => deleteMutation.mutate(storyId),
         },
-      ]
+      ],
     );
   };
 
@@ -88,7 +92,7 @@ export const Header = () => {
           text: "Restore",
           onPress: () => restoreMutation.mutate(storyId),
         },
-      ]
+      ],
     );
   };
 

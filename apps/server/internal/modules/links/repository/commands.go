@@ -2,114 +2,105 @@ package linksrepository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	links "github.com/complexus-tech/projects-api/internal/modules/links/service"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	linksdomain "github.com/complexus-tech/projects-api/internal/modules/links/domain"
+	linksql "github.com/complexus-tech/projects-api/internal/modules/links/repository/sqlc"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
-func (r *repo) CreateLink(ctx context.Context, cnl links.CoreNewLink) (links.CoreLink, error) {
-	ctx, span := web.AddSpan(ctx, "business.repository.links.CreateLink")
+func (r *repo) CreateLink(ctx context.Context, actorID uuid.UUID, input linksdomain.CreateLink) (linksdomain.Link, error) {
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.repository.links.CreateLink")
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("storyId", cnl.StoryID.String()),
-		attribute.String("url", cnl.URL),
+		attribute.String("storyId", input.StoryID.String()),
+		attribute.String("workspaceId", input.WorkspaceID.String()),
+		attribute.String("actorId", actorID.String()),
 	)
 
-	var link DbLink
-	query := `
-		INSERT INTO
-			story_links (title, url, story_id)
-		VALUES
-			(:title,:url,:story_id)
-		RETURNING
-			link_id,
-			title,
-			url,
-			story_id,
-			created_at,
-			updated_at
-	`
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	link, err := r.queries.CreateLinkForWorkspace(ctx, linksql.CreateLinkForWorkspaceParams{
+		Title:       input.Title,
+		URL:         input.URL,
+		StoryID:     input.StoryID,
+		WorkspaceID: input.WorkspaceID,
+		ActorID:     actorID,
+	})
 	if err != nil {
-		r.log.Error(ctx, "error preparing statement", err)
-		return links.CoreLink{}, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return linksdomain.Link{}, linksdomain.ErrNotFound
+		}
+		r.log.Error(ctx, "error creating link", "error", err)
+		return linksdomain.Link{}, fmt.Errorf("create link: %w", err)
 	}
 
-	if err := stmt.GetContext(ctx, &link, toDbNewLink(cnl)); err != nil {
-		r.log.Error(ctx, "error getting link", err)
-		return links.CoreLink{}, err
-	}
-
-	return toCoreLink(link), nil
+	return fromCreateLinkRow(link), nil
 }
 
-func (r *repo) UpdateLink(ctx context.Context, linkID uuid.UUID, cul links.CoreUpdateLink) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.links.UpdateLink")
+func (r *repo) UpdateLink(
+	ctx context.Context,
+	actorID uuid.UUID,
+	linkID uuid.UUID,
+	workspaceID uuid.UUID,
+	input linksdomain.UpdateLink,
+) error {
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.repository.links.UpdateLink")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("linkId", linkID.String()))
+	span.SetAttributes(
+		attribute.String("linkId", linkID.String()),
+		attribute.String("workspaceId", workspaceID.String()),
+		attribute.String("actorId", actorID.String()),
+	)
 
-	query := `
-		UPDATE story_links
-		SET
-			title = COALESCE(:title, title),
-			url = COALESCE(:url, url),
-			updated_at = NOW()
-		WHERE link_id = :link_id
-	`
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	rowsAffected, err := r.queries.UpdateLinkForWorkspace(ctx, linksql.UpdateLinkForWorkspaceParams{
+		Title:       input.Title,
+		URL:         input.URL,
+		LinkID:      linkID,
+		WorkspaceID: workspaceID,
+		ActorID:     actorID,
+	})
 	if err != nil {
-		r.log.Error(ctx, "error preparing statement", err)
-		return err
+		r.log.Error(ctx, "error updating link", "error", err)
+		return fmt.Errorf("update link: %w", err)
 	}
-	defer stmt.Close()
-
-	if _, err := stmt.ExecContext(ctx, toDbUpdateLink(cul, linkID)); err != nil {
-		r.log.Error(ctx, "error updating link", err)
-		return err
+	if rowsAffected == 0 {
+		return linksdomain.ErrNotFound
 	}
 
 	r.log.Info(ctx, "link updated successfully", "linkId", linkID)
-
 	return nil
 }
 
-func (r *repo) DeleteLink(ctx context.Context, linkID uuid.UUID) error {
-	ctx, span := web.AddSpan(ctx, "business.repository.links.DeleteLink")
+func (r *repo) DeleteLink(ctx context.Context, actorID, linkID, workspaceID uuid.UUID) error {
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.repository.links.DeleteLink")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("linkId", linkID.String()))
+	span.SetAttributes(
+		attribute.String("linkId", linkID.String()),
+		attribute.String("workspaceId", workspaceID.String()),
+		attribute.String("actorId", actorID.String()),
+	)
 
-	query := `
-		DELETE FROM story_links
-		WHERE link_id = :link_id
-	`
-	params := map[string]interface{}{
-		"link_id": linkID,
-	}
-
-	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	rowsAffected, err := r.queries.DeleteLinkForWorkspace(ctx, linksql.DeleteLinkForWorkspaceParams{
+		LinkID:      linkID,
+		WorkspaceID: workspaceID,
+		ActorID:     actorID,
+	})
 	if err != nil {
-		r.log.Error(ctx, "error preparing statement", err)
-		return err
+		r.log.Error(ctx, "error deleting link", "linkId", linkID, "error", err)
+		return fmt.Errorf("delete link: %w", err)
 	}
-	defer stmt.Close()
-
-	r.log.Info(ctx, fmt.Sprintf("Deleting link #%s", linkID), "linkId", linkID)
-	if _, err := stmt.ExecContext(ctx, params); err != nil {
-		r.log.Error(ctx, fmt.Sprintf("failed to delete link: %s", err), "linkId", linkID)
-		return err
+	if rowsAffected == 0 {
+		return linksdomain.ErrNotFound
 	}
 
-	r.log.Info(ctx, fmt.Sprintf("Link #%s deleted successfully", linkID), "linkId", linkID)
+	r.log.Info(ctx, "link deleted successfully", "linkId", linkID)
 	span.AddEvent("Link deleted.", trace.WithAttributes(attribute.String("link.id", linkID.String())))
-
 	return nil
 }

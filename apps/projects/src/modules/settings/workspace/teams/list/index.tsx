@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Box, Text, Input, Flex, Button } from "ui";
-import { PlusIcon, SearchIcon, TeamIcon } from "icons";
+import { PlusIcon, SearchIcon } from "icons";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { SectionHeader } from "@/modules/settings/components";
-import { WorkspaceTeam } from "../components/team";
+import { TeamEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import { useWorkspacePath } from "@/hooks";
+import { WorkspaceTeam } from "../components/team";
 
 export const TeamsList = () => {
   const { data: teams = [] } = useTeams();
@@ -64,7 +65,7 @@ export const TeamsList = () => {
             direction="column"
             justify="center"
           >
-            <TeamIcon className="h-12 w-auto" />
+            <TeamEmptyIllustration className="w-52" />
             <Text className="mt-4 text-lg font-semibold">No teams found</Text>
             <Text className="mb-3" color="muted">
               Create a team to get started.

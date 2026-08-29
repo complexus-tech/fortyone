@@ -1,16 +1,25 @@
 "use client";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import {
   Button,
   Dialog,
   Flex,
   Text,
+  TextArea,
   TextEditor,
   DatePicker,
   Menu,
   Avatar,
   Box,
+  ColorPicker,
   Divider,
+  Tooltip,
   Wrapper,
 } from "ui";
 import { useEditor } from "@tiptap/react";
@@ -20,6 +29,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import TextExt from "@tiptap/extension-text";
+import { marked } from "marked";
 import {
   ArrowRightIcon,
   CalendarIcon,
@@ -54,6 +64,8 @@ import {
 } from "@/modules/objectives/hooks/use-objectives";
 import { FeatureGuard } from "@/components/ui/feature-guard";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { OkrQualityBanner } from "@/modules/objectives/components/okr-quality-banner";
+import { useOkrQualityAssessment } from "@/modules/objectives/hooks/use-okr-quality-assessment";
 import { TeamColor } from "../team-color";
 import { PriorityIcon } from "../priority-icon";
 import { StoryStatusIcon } from "../story-status-icon";
@@ -61,16 +73,19 @@ import { PrioritiesMenu } from "../story/priorities-menu";
 import { ObjectiveStatusesMenu } from "../objective-statuses-menu";
 import { KeyResultEditor } from "./key-result-editor";
 import { KeyResultsList } from "./key-results-list";
+import { getAvailableObjectiveColor } from "./color-utils";
 
 type KeyResultFormMode = "add" | "edit" | null;
 
 type KeyResultUpdate = Partial<NewKeyResult>;
 
 export const NewObjectiveDialog = ({
+  description,
   isOpen,
   setIsOpen,
   teamId: initialTeamId,
 }: {
+  description?: string;
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   teamId?: string;
@@ -81,6 +96,9 @@ export const NewObjectiveDialog = ({
   const { data: members = [] } = useMembers();
   const { data: statuses = [] } = useObjectiveStatuses();
   const { data: objectives = [] } = useObjectives();
+  const defaultObjectiveColor = getAvailableObjectiveColor(
+    objectives.map(({ color }) => color),
+  );
   const { getTermDisplay } = useTerminology();
   const { tier, getLimit } = useSubscriptionFeatures();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -111,12 +129,14 @@ export const NewObjectiveDialog = ({
   const initialForm: NewObjective = {
     name: "",
     description: "",
+    shortSummary: "",
     leadUser: null,
     teamId: currentTeamId || "",
     startDate: null,
     endDate: null,
     statusId: statuses.length > 0 ? defaultStatus.id : "",
     priority: "No Priority",
+    color: defaultObjectiveColor,
     keyResults: [],
   };
   const features = useFeatures();
@@ -126,10 +146,28 @@ export const NewObjectiveDialog = ({
     null,
   );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [objectiveName, setObjectiveName] = useState("");
   const { data: teamObjectives = [] } = useTeamObjectives(
     currentTeam?.id ?? "",
   );
   const createMutation = useCreateObjectiveMutation();
+  const objectiveQualityRequest = objectiveName.trim()
+    ? {
+        kind: "objective" as const,
+        draft: {
+          name: objectiveName,
+          summary: objectiveForm.shortSummary ?? "",
+          startDate: objectiveForm.startDate ?? null,
+          endDate: objectiveForm.endDate ?? null,
+        },
+        existingObjectives: teamObjectives.map((objective) => ({
+          id: objective.id,
+          name: objective.name,
+        })),
+      }
+    : null;
+  const { assessment: objectiveQuality, isAssessing: isAssessingObjective } =
+    useOkrQualityAssessment(objectiveQualityRequest);
 
   const titleEditor = useEditor({
     extensions: [
@@ -142,6 +180,9 @@ export const NewObjectiveDialog = ({
     editable: true,
     immediatelyRender: false,
     autofocus: true,
+    onUpdate: ({ editor: currentEditor }) => {
+      setObjectiveName(currentEditor.getText());
+    },
   });
 
   const editor = useEditor({
@@ -153,10 +194,26 @@ export const NewObjectiveDialog = ({
       }),
       Placeholder.configure({ placeholder: "Add description..." }),
     ],
-    content: "",
+    content: marked.parse(description || "", { gfm: true }),
     editable: true,
     immediatelyRender: false,
   });
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      setObjectiveForm((current) => ({
+        ...current,
+        color: defaultObjectiveColor,
+      }));
+      if (editor) {
+        editor.commands.setContent(
+          marked.parse(description || "", { gfm: true }),
+        );
+      }
+    }
+    wasOpenRef.current = isOpen;
+  }, [defaultObjectiveColor, description, editor, isOpen]);
 
   const handleCreateObjective = () => {
     if (!titleEditor || !editor) return;
@@ -189,11 +246,12 @@ export const NewObjectiveDialog = ({
     createMutation.mutate({
       ...objectiveForm,
       name: titleEditor.getText(),
-      description: editor.getText(),
+      description: editor.getHTML(),
     });
     setIsOpen(false);
     setIsExpanded(false);
     titleEditor.commands.setContent("");
+    setObjectiveName("");
     editor.commands.setContent("");
     setObjectiveForm(initialForm);
   };
@@ -397,6 +455,29 @@ export const NewObjectiveDialog = ({
               className="text-2xl font-medium"
               editor={titleEditor}
             />
+            <TextArea
+              aria-label="Objective short summary"
+              className="mt-3 min-h-14 resize-none border-0 bg-transparent px-0 py-1.5 text-[1.125rem] leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
+              maxLength={500}
+              onChange={(event) => {
+                setObjectiveForm((current) => ({
+                  ...current,
+                  shortSummary: event.target.value,
+                }));
+              }}
+              placeholder="Add short summary..."
+              rows={2}
+              value={objectiveForm.shortSummary}
+            />
+            <OkrQualityBanner
+              assessment={objectiveQuality}
+              isAssessing={isAssessingObjective}
+              onUseSuggestion={(suggestion) => {
+                titleEditor?.commands.setContent(suggestion);
+                setObjectiveName(suggestion);
+              }}
+            />
+            <Divider className="my-3 opacity-60" />
             <TextEditor
               className={cn("min-h-20", {
                 "min-h-96": isExpanded,
@@ -404,6 +485,16 @@ export const NewObjectiveDialog = ({
               editor={editor}
             />
             <Flex align="center" className="mt-4 gap-1.5" wrap>
+              <Tooltip title="Objective color">
+                <span>
+                  <ColorPicker
+                    onChange={(color) => {
+                      setObjectiveForm((prev) => ({ ...prev, color }));
+                    }}
+                    value={objectiveForm.color}
+                  />
+                </span>
+              </Tooltip>
               <ObjectiveStatusesMenu>
                 <ObjectiveStatusesMenu.Trigger>
                   <Button
@@ -664,6 +755,14 @@ export const NewObjectiveDialog = ({
                         };
                       });
                     }}
+                    qualityContext={{
+                      existingKeyResults: (
+                        objectiveForm.keyResults ?? []
+                      ).filter((_keyResult, index) => index !== editingIndex),
+                      objectiveEndDate: objectiveForm.endDate ?? null,
+                      objectiveName,
+                      objectiveStartDate: objectiveForm.startDate ?? null,
+                    }}
                   />
                 )}
               </Box>
@@ -681,7 +780,7 @@ export const NewObjectiveDialog = ({
               Discard
             </Button>
             <Button
-              leftIcon={<PlusIcon className="text-white" />}
+              leftIcon={<PlusIcon className="text-current" />}
               loading={createMutation.isPending}
               loadingText="Creating..."
               onClick={handleCreateObjective}

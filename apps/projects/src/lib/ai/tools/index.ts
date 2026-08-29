@@ -1,3 +1,4 @@
+import type { MayaToolName } from "@/lib/ai/tool-names";
 import { listAttachments, deleteAttachment } from "@/lib/ai/tools/attachments";
 import {
   createObjectiveTool,
@@ -52,7 +53,7 @@ import {
   getTeamSettingsTool,
 } from "@/lib/ai/tools/teams";
 import { navigation } from "./navigation";
-import { membersTool } from "./members";
+import { membersTool, resolveMemberTool } from "./members";
 import { theme } from "./theme";
 import { searchTool } from "./search";
 import { linksTool } from "./links";
@@ -81,7 +82,8 @@ import {
   timelineTrendsReportTool,
 } from "./analytics";
 import { workloadPlanningTool } from "./workload";
-import { mayaWorkPlanTool } from "./maya";
+import { focusBriefTool } from "./focus-brief";
+import { applyMayaWorkPlanTool, mayaWorkPlanTool } from "./maya";
 import { activitySummaryTool } from "./activity-summary";
 import {
   createGitHubInstallSessionTool,
@@ -108,9 +110,11 @@ import {
   postRequestGitHubCommentTool,
   updateIntegrationRequestTool,
 } from "./integration-requests";
+import { getCustomerFeedbackTool, listCustomerFeedbackTool } from "./feedback";
+import { getDocumentDetailsTool, listDocumentsTool } from "./documents";
 
 export { navigation } from "./navigation";
-export { membersTool } from "./members";
+export { membersTool, resolveMemberTool } from "./members";
 export { statusesTool } from "./statuses";
 export { objectiveStatusesTool } from "./objective-statuses";
 export { searchTool } from "./search";
@@ -138,7 +142,8 @@ export {
   timelineTrendsReportTool,
 } from "./analytics";
 export { workloadPlanningTool } from "./workload";
-export { mayaWorkPlanTool } from "./maya";
+export { focusBriefTool } from "./focus-brief";
+export { applyMayaWorkPlanTool, mayaWorkPlanTool } from "./maya";
 export { activitySummaryTool } from "./activity-summary";
 export {
   createGitHubInstallSessionTool,
@@ -165,12 +170,15 @@ export {
   postRequestGitHubCommentTool,
   updateIntegrationRequestTool,
 } from "./integration-requests";
+export { getCustomerFeedbackTool, listCustomerFeedbackTool } from "./feedback";
+export { getDocumentDetailsTool, listDocumentsTool } from "./documents";
 
 export const tools = {
   navigation,
   theme,
   suggestions,
   members: membersTool,
+  resolveMember: resolveMemberTool,
   search: searchTool,
   notifications: notificationsTool,
   comments: commentsTool,
@@ -183,7 +191,9 @@ export const tools = {
   sprintPerformanceReportTool,
   timelineTrendsReportTool,
   workloadPlanningTool,
+  focusBrief: focusBriefTool,
   mayaWorkPlanTool,
+  applyMayaWorkPlanTool,
   activitySummaryTool,
   // GitHub
   getGitHubIntegrationTool,
@@ -208,6 +218,12 @@ export const tools = {
   declineAllIntegrationRequestsTool,
   getRequestGitHubCommentsTool,
   postRequestGitHubCommentTool,
+  // Customer feedback
+  listCustomerFeedbackTool,
+  getCustomerFeedbackTool,
+  // Documents
+  listDocumentsTool,
+  getDocumentDetailsTool,
   // Teams
   listTeams,
   listPublicTeams,
@@ -270,4 +286,4 @@ export const tools = {
   createMemory,
   updateMemory,
   deleteMemory,
-};
+} satisfies Record<MayaToolName, unknown>;

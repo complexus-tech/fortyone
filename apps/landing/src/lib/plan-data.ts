@@ -1,4 +1,4 @@
-type Plan = {
+export type Plan = {
   name: string;
   highlighted?: boolean;
   limits: {
@@ -23,8 +23,45 @@ type Plan = {
     onPremise?: boolean;
     dedicatedManager?: boolean;
     volumeDiscounts?: boolean;
+    customerFeedback?: boolean;
+    feedbackVoting?: boolean;
+    publicRoadmap?: boolean;
+    strategyMap?: boolean;
+    roadmaps?: boolean;
+    documents?: boolean;
+    calendarPlanning?: boolean;
+    myWork?: boolean;
+    kanbanAndList?: boolean;
+    sprints?: boolean;
+    summaryAnalytics?: boolean;
+    slackIntegration?: boolean;
+    githubIntegration?: boolean;
+    figmaIntegration?: boolean;
+    googleCalendarIntegration?: boolean;
+    mayaMessages?: string;
+    aiWorkPlanning?: boolean;
   };
 };
+
+export type PlanFeatureKey = keyof Plan["features"];
+
+const CORE_PRODUCT_FEATURES = {
+  customerFeedback: true,
+  feedbackVoting: true,
+  publicRoadmap: true,
+  strategyMap: true,
+  roadmaps: true,
+  documents: true,
+  calendarPlanning: true,
+  myWork: true,
+  kanbanAndList: true,
+  sprints: true,
+  summaryAnalytics: true,
+  slackIntegration: true,
+  githubIntegration: true,
+  figmaIntegration: true,
+  googleCalendarIntegration: true,
+} as const satisfies Partial<Plan["features"]>;
 
 export const plans: Plan[] = [
   {
@@ -35,19 +72,24 @@ export const plans: Plan[] = [
       issues: "Up to 200 tasks",
     },
     features: {
+      ...CORE_PRODUCT_FEATURES,
       teams: "1 team",
+      objectives: "1 objective",
+      trackOKRs: true,
       sso: true,
       emailSupport: true,
+      mayaMessages: "15 / month",
     },
   },
   {
     name: "Professional",
     limits: {
       members: "Up to 10 members",
-      fileUploads: "Unlimited",
+      fileUploads: "25MB",
       issues: "Unlimited",
     },
     features: {
+      ...CORE_PRODUCT_FEATURES,
       teams: "Up to 3 teams",
       sso: true,
       rbac: true,
@@ -56,6 +98,8 @@ export const plans: Plan[] = [
       trackOKRs: true,
       unlimitedGuests: true,
       customWorkflows: true,
+      mayaMessages: "100 / month",
+      aiWorkPlanning: true,
     },
   },
   {
@@ -63,10 +107,11 @@ export const plans: Plan[] = [
     highlighted: true,
     limits: {
       members: "Unlimited",
-      fileUploads: "Unlimited",
+      fileUploads: "25MB",
       issues: "Unlimited",
     },
     features: {
+      ...CORE_PRODUCT_FEATURES,
       teams: "Unlimited",
       trackOKRs: true,
       sso: true,
@@ -79,16 +124,19 @@ export const plans: Plan[] = [
       prioritySupport: true,
       unlimitedGuests: true,
       customWorkflows: true,
+      mayaMessages: "500 / month",
+      aiWorkPlanning: true,
     },
   },
   {
     name: "Enterprise",
     limits: {
       members: "Unlimited",
-      fileUploads: "Unlimited",
+      fileUploads: "25MB",
       issues: "Unlimited",
     },
     features: {
+      ...CORE_PRODUCT_FEATURES,
       teams: "Unlimited",
       objectives: "Unlimited",
       sso: true,
@@ -105,6 +153,8 @@ export const plans: Plan[] = [
       unlimitedGuests: true,
       customWorkflows: true,
       customTerminology: true,
+      mayaMessages: "Unlimited",
+      aiWorkPlanning: true,
     },
   },
 ];
@@ -127,7 +177,24 @@ export const featureLabels = {
   onPremise: "On-premise/Private Cloud Option",
   dedicatedManager: "Dedicated account manager",
   volumeDiscounts: "Volume discounts",
-};
+  customerFeedback: "Customer feedback",
+  feedbackVoting: "Feedback voting and comments",
+  publicRoadmap: "Public roadmap",
+  strategyMap: "Strategy map",
+  roadmaps: "Roadmaps",
+  documents: "Documents",
+  calendarPlanning: "Calendar planning",
+  myWork: "My Work",
+  kanbanAndList: "Kanban and list views",
+  sprints: "Sprints",
+  summaryAnalytics: "Summary and analytics",
+  slackIntegration: "Slack integration",
+  githubIntegration: "GitHub integration",
+  figmaIntegration: "Figma integration",
+  googleCalendarIntegration: "Google Calendar integration",
+  mayaMessages: "Maya AI agent messages",
+  aiWorkPlanning: "AI work planning",
+} satisfies Record<PlanFeatureKey, string>;
 
 // Helper function to generate a list of feature strings from a plan
 export const getPlanFeaturesList = (plan: Plan): string[] => {
@@ -136,6 +203,9 @@ export const getPlanFeaturesList = (plan: Plan): string[] => {
   // Add string features directly
   if (plan.features.teams) features.push(plan.features.teams);
   if (plan.features.objectives) features.push(plan.features.objectives);
+  if (plan.features.mayaMessages) {
+    features.push(`${plan.features.mayaMessages} Maya AI agent messages`);
+  }
 
   // Add boolean features using the labels
   Object.entries(plan.features).forEach(([key, value]) => {

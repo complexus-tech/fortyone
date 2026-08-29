@@ -2,45 +2,92 @@
 
 import { useState } from "react";
 import { BreadCrumbs, Flex, Button, Box, Text } from "ui";
-import { RoadmapIcon, PlusIcon, CopyIcon } from "icons";
-import { toast } from "sonner";
-import { HeaderContainer, MobileMenuButton } from "@/components/shared";
-import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { PlusIcon, RoadmapIcon, WarningIcon } from "icons";
 import {
-  useLocalStorage,
-  useTerminology,
-  useUserRole,
-  useCopyToClipboard,
-} from "@/hooks";
-import { RoadmapGanttBoard } from "@/components/ui/roadmap-gantt-board";
-import { BoardSkeleton } from "@/components/ui/board-skeleton";
-import { ListObjectives } from "@/modules/objectives/components/list-objectives";
+  HeaderContainer,
+  MobileMenuButton,
+  useAppCommandAction,
+} from "@/components/shared";
+import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useLocalStorage, useTerminology, useUserRole } from "@/hooks";
 import { NewObjectiveDialog } from "@/components/ui";
 import { RoadmapLayoutSwitcher } from "@/components/ui/roadmap-layout-switcher";
-import type { RoadmapLayoutType } from "./types";
+import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
+import type { ZoomLevel } from "@/components/ui/base-gantt";
+import { isObjectiveForecastAtRisk } from "@/modules/objectives/components/objective-forecast-risk-utils";
+import { ObjectiveViews } from "./components/objective-views";
+import { ObjectiveViewOptionsButton } from "./components/objective-view-options-button";
+import {
+  DEFAULT_OBJECTIVE_VIEW_OPTIONS,
+  type ObjectiveViewOptions,
+} from "./objective-board-utils";
+import { getRoadmapLayoutLabel } from "./types";
+import { useRoadmapLayout } from "./use-roadmap-layout";
 
 export const RoadmapPage = () => {
-  const [_, copyText] = useCopyToClipboard();
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
-  const [layout, setLayout] = useLocalStorage<RoadmapLayoutType>(
-    "roadmapLayout",
-    "gantt",
-  );
+  const { layout, setLayout } = useRoadmapLayout();
   const { data: objectives = [], isPending } = useObjectives();
+  const [showForecastRisksOnly, setShowForecastRisksOnly] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
+  const [zoomLevel, setZoomLevel] = useLocalStorage<ZoomLevel>(
+    "roadmapZoomLevel",
+    "months",
+  );
+  const [viewOptions, setViewOptions] = useLocalStorage<ObjectiveViewOptions>(
+    "objectivesViewOptions",
+    DEFAULT_OBJECTIVE_VIEW_OPTIONS,
+  );
 
-  const renderContent = () => {
-    switch (layout) {
-      case "gantt":
-        return <RoadmapGanttBoard className="h-full" objectives={objectives} />;
-      case "list":
-        return <ListObjectives objectives={objectives} />;
-      default:
-        return null;
-    }
-  };
+  useAppCommandAction({
+    disabled: userRole === "guest",
+    id: "roadmap:create-objective",
+    label: `Create ${getTermDisplay("objectiveTerm")}`,
+    onSelect: () => {
+      setIsOpen(true);
+    },
+  });
+  const forecastRiskObjectives = objectives.filter(isObjectiveForecastAtRisk);
+  const isForecastRiskFilterActive =
+    showForecastRisksOnly && forecastRiskObjectives.length > 0;
+  const displayedObjectives = isForecastRiskFilterActive
+    ? forecastRiskObjectives
+    : objectives;
+  const forecastRiskCountLabel = `${forecastRiskObjectives.length} ${
+    forecastRiskObjectives.length === 1 ? "item needs" : "items need"
+  } attention`;
+
+  const emptyState = (
+    <Box className="flex h-full items-center justify-center">
+      <Box className="flex flex-col items-center">
+        <RoadmapEmptyIllustration />
+        <Text className="mt-8 mb-6" fontSize="3xl">
+          Set your first {getTermDisplay("objectiveTerm", { capitalize: true })}
+        </Text>
+        <Text className="mb-6 max-w-md text-center" color="muted">
+          Define what the workspace wants to achieve, then connect measurable
+          key results and the work that moves them forward.
+        </Text>
+        <Flex gap={2}>
+          <Button
+            className="md:hidden"
+            color="primary"
+            disabled={userRole === "guest"}
+            leftIcon={<PlusIcon className="h-[1.1rem]" />}
+            onClick={() => {
+              if (userRole !== "guest") {
+                setIsOpen(true);
+              }
+            }}
+            size="md"
+          >
+            Set your first {getTermDisplay("objectiveTerm")}
+          </Button>
+        </Flex>
+      </Box>
+    </Box>
+  );
 
   return (
     <>
@@ -55,40 +102,55 @@ export const RoadmapPage = () => {
                   <RoadmapIcon className="h-[1.1rem] w-auto" strokeWidth={2} />
                 ),
               },
+              {
+                name: getRoadmapLayoutLabel(layout),
+              },
             ]}
           />
-        </Flex>
-        <Flex align="center" gap={1}>
-          <RoadmapLayoutSwitcher
-            layout={layout}
-            setLayout={setLayout}
-            className="hidden md:flex"
-          />
-          <Box className="hidden md:block">
+          {forecastRiskObjectives.length > 0 ? (
             <Button
-              className="mr-1.5 gap-1 px-3"
-              color="tertiary"
-              leftIcon={<CopyIcon className="h-4" />}
-              onClick={async () => {
-                await copyText(window.location.href);
-                setIsCopied(true);
-                toast.info("Success", {
-                  description: "Roadmap link copied to clipboard",
-                });
-                setTimeout(() => {
-                  setIsCopied(false);
-                }, 5000);
+              aria-pressed={isForecastRiskFilterActive}
+              className={
+                isForecastRiskFilterActive
+                  ? "text-primary-foreground dark:text-primary-foreground hidden gap-1.5 sm:flex"
+                  : "text-primary dark:text-primary hidden gap-1.5 sm:flex"
+              }
+              color="primary"
+              leftIcon={
+                <WarningIcon
+                  className={
+                    isForecastRiskFilterActive
+                      ? "text-primary-foreground dark:text-primary-foreground h-4 w-auto"
+                      : "text-primary dark:text-primary h-4 w-auto"
+                  }
+                />
+              }
+              onClick={() => {
+                setShowForecastRisksOnly((current) => !current);
               }}
               size="sm"
+              type="button"
+              variant={isForecastRiskFilterActive ? "solid" : "naked"}
             >
-              <span className="hidden md:inline">
-                {isCopied ? "Copied" : "Copy link"}
-              </span>
-              <span className="md:hidden">{isCopied ? "Copied" : "Copy"}</span>
+              {forecastRiskCountLabel}
             </Button>
-          </Box>
+          ) : null}
+        </Flex>
+        <Flex align="center" gap={2}>
+          <RoadmapLayoutSwitcher
+            className="hidden md:flex"
+            layout={layout}
+            setLayout={setLayout}
+          />
+          {layout !== "gantt" ? (
+            <ObjectiveViewOptionsButton
+              setViewOptions={setViewOptions}
+              viewOptions={viewOptions}
+            />
+          ) : null}
           <Button
-            color="invert"
+            className="md:hidden"
+            color="primary"
             disabled={userRole === "guest"}
             leftIcon={
               <PlusIcon className="h-[1.1rem] text-current dark:text-current" />
@@ -105,41 +167,20 @@ export const RoadmapPage = () => {
         </Flex>
       </HeaderContainer>
 
-      <Box className="h-[calc(100dvh-4rem)]">
-        {isPending ? (
-          <BoardSkeleton className="h-full" layout={layout} />
-        ) : objectives.length === 0 ? (
-          <Box className="flex h-full items-center justify-center">
-            <Box className="flex flex-col items-center">
-              <RoadmapIcon className="h-12 w-auto" strokeWidth={1.3} />
-              <Text className="mt-8 mb-6" fontSize="3xl">
-                Your strategic Roadmap awaits
-              </Text>
-              <Text className="mb-6 max-w-md text-center" color="muted">
-                Create {getTermDisplay("objectiveTerm", { variant: "plural" })}{" "}
-                to visualize your team&apos;s strategic work and track progress
-                toward your goals.
-              </Text>
-              <Flex gap={2}>
-                <Button
-                  color="tertiary"
-                  disabled={userRole === "guest"}
-                  leftIcon={<PlusIcon className="h-[1.1rem]" />}
-                  onClick={() => {
-                    if (userRole !== "guest") {
-                      setIsOpen(true);
-                    }
-                  }}
-                  size="md"
-                >
-                  Set your first {getTermDisplay("objectiveTerm")}
-                </Button>
-              </Flex>
-            </Box>
-          </Box>
-        ) : (
-          renderContent()
-        )}
+      <Box className="h-[calc(100%-3.6rem)] min-w-0">
+        <ObjectiveViews
+          emptyState={emptyState}
+          isPending={isPending}
+          layout={layout}
+          objectives={displayedObjectives}
+          onCreateObjective={() => {
+            if (userRole !== "guest") setIsOpen(true);
+          }}
+          onZoomLevelChange={setZoomLevel}
+          setViewOptions={setViewOptions}
+          viewOptions={viewOptions}
+          zoomLevel={zoomLevel}
+        />
       </Box>
       <NewObjectiveDialog isOpen={isOpen} setIsOpen={setIsOpen} />
     </>

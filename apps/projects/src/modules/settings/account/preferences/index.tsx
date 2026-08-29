@@ -5,6 +5,7 @@ import { useUserRole } from "@/hooks";
 import { Theming } from "./components/theming";
 import { Timezone } from "./components/timezone";
 import { Automations } from "./components/automations";
+import { PersonalWorkSchedule } from "./components/work-schedule";
 
 export const PreferencesSettings = () => {
   const { userRole } = useUserRole();
@@ -16,6 +17,7 @@ export const PreferencesSettings = () => {
       </Text>
       <Theming />
       <Timezone />
+      <PersonalWorkSchedule />
       {userRole !== "guest" && <Automations />}
     </Box>
   );

@@ -1,56 +1,113 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { Badge, Box, Button, Dialog, Flex, Menu, Text } from "ui";
-import { MoreHorizontalIcon, ReloadIcon, SlackIcon, UnlinkIcon } from "icons";
+import { useState } from "react";
+import { Badge, Box, Button, Dialog, Flex, Menu, Text, TextArea } from "ui";
+import { MoreHorizontalIcon, SlackIcon, UnlinkIcon } from "icons";
 import { useWorkspacePath } from "@/hooks";
-import { SectionHeader } from "@/modules/settings/components";
+import {
+  SectionHeader,
+  SettingsBackButton,
+} from "@/modules/settings/components";
 import {
   useCreateSlackInstallSession,
   useDisconnectSlackWorkspace,
-  useLinkSlackAccount,
-  useResyncSlackChannels,
+  useSlackAccountLinkToken,
+  useSlackAgentSettings,
   useSlackIntegration,
+  useResyncSlackChannels,
+  useUpdateSlackAgentSettings,
 } from "@/lib/hooks/slack";
+import { SlackChannelAudienceSettings } from "./slack-channel-audience-settings";
 
-let slackLinkTokenConsumed = false;
+const SlackAgentConfiguration = () => {
+  const { data: settings, isLoading } = useSlackAgentSettings();
+  const updateSettings = useUpdateSlackAgentSettings();
+  const [draftGuidance, setDraftGuidance] = useState<string | null>(null);
+
+  const effectiveGuidance = draftGuidance ?? settings?.guidance ?? "";
+  const hasChanges = Boolean(
+    settings && settings.guidance !== effectiveGuidance,
+  );
+
+  return (
+    <Box className="border-border bg-surface mt-6 rounded-2xl border">
+      <SectionHeader
+        description="Give Maya workspace-specific terminology, response style, or operating rules to follow in Slack."
+        title="Custom guidance"
+      />
+
+      {isLoading || !settings ? (
+        <Box className="px-6 py-8">
+          <Text color="muted">Loading custom guidance...</Text>
+        </Box>
+      ) : (
+        <Box className="px-6 py-5">
+          <TextArea
+            className="min-h-32 resize-y py-3 leading-6"
+            label="Guidance"
+            maxLength={4000}
+            onChange={(event) => {
+              setDraftGuidance(event.target.value);
+            }}
+            placeholder="Explain terminology, response style, or operating rules Maya should follow in Slack."
+            value={effectiveGuidance}
+          />
+          <Flex align="center" className="mt-3" justify="between">
+            <Text color="muted">
+              {effectiveGuidance.length}/4000 characters
+            </Text>
+            <Button
+              color="invert"
+              disabled={!hasChanges}
+              loading={updateSettings.isPending}
+              onClick={() => {
+                updateSettings.mutate(
+                  { guidance: effectiveGuidance },
+                  {
+                    onSuccess: (response) => {
+                      if (response.data)
+                        setDraftGuidance(response.data.guidance);
+                    },
+                  },
+                );
+              }}
+            >
+              Save guidance
+            </Button>
+          </Flex>
+        </Box>
+      )}
+    </Box>
+  );
+};
 
 export const SlackIntegrationSettings = () => {
-  const searchParams = useSearchParams();
   const { data: integration } = useSlackIntegration();
   const { withWorkspace } = useWorkspacePath();
 
   const createInstallSession = useCreateSlackInstallSession();
-  const disconnectWorkspace = useDisconnectSlackWorkspace();
-  const linkSlackAccount = useLinkSlackAccount();
   const resyncChannels = useResyncSlackChannels();
+  const disconnectWorkspace = useDisconnectSlackWorkspace();
+  useSlackAccountLinkToken();
   const [isDisconnectOpen, setIsDisconnectOpen] = useState(false);
 
   const isConnected = Boolean(integration?.slackWorkspace?.isActive);
   const slackWorkspace = integration?.slackWorkspace;
-
-  useEffect(() => {
-    const token = searchParams.get("slack_link_token");
-    if (!token || slackLinkTokenConsumed) {
-      return;
-    }
-    slackLinkTokenConsumed = true;
-    linkSlackAccount.mutate(token, {
-      onSettled: () => {
-        const url = new URL(window.location.href);
-        url.searchParams.delete("slack_link_token");
-        window.history.replaceState({}, "", url.toString());
-      },
-    });
-  }, [linkSlackAccount, searchParams]);
+  const isConnectionActionPending = isConnected
+    ? resyncChannels.isPending
+    : createInstallSession.isPending;
 
   return (
     <Box>
-      <Text as="h1" className="mb-6 text-2xl font-medium">
-        Slack
-      </Text>
+      <Flex align="center" className="mb-6" gap={2}>
+        <SettingsBackButton
+          href={withWorkspace("/settings/integrations")}
+          label="Back to integrations"
+        />
+        <Text as="h1" className="text-2xl font-medium">
+          Slack
+        </Text>
+      </Flex>
 
       <Box className="border-border bg-surface rounded-2xl border">
         <SectionHeader
@@ -58,15 +115,21 @@ export const SlackIntegrationSettings = () => {
             <Flex gap={2}>
               <Button
                 color="invert"
+                disabled={isConnectionActionPending}
+                loading={isConnectionActionPending}
                 onClick={() => {
+                  if (isConnected) {
+                    resyncChannels.mutate();
+                    return;
+                  }
                   createInstallSession.mutate();
                 }}
               >
-                {isConnected ? "Reconnect Slack" : "Connect Slack"}
+                {isConnected ? "Resync channels" : "Connect Slack"}
               </Button>
             </Flex>
           }
-          description="Connect Slack so people can create FortyOne tasks and requests from Slack."
+          description="Connect Slack so people can create FortyOne stories and requests from Slack."
           title="Connected workspace"
         />
 
@@ -74,7 +137,7 @@ export const SlackIntegrationSettings = () => {
           <Box className="px-6 py-8">
             <Text className="font-medium">No Slack workspace connected</Text>
             <Text className="mt-1" color="muted">
-              Connect Slack to create tasks from slash commands and message
+              Connect Slack to create stories from slash commands and message
               actions.
             </Text>
           </Box>
@@ -115,14 +178,6 @@ export const SlackIntegrationSettings = () => {
                     <Menu.Group>
                       <Menu.Item
                         onSelect={() => {
-                          resyncChannels.mutate();
-                        }}
-                      >
-                        <ReloadIcon />
-                        Resync channels
-                      </Menu.Item>
-                      <Menu.Item
-                        onSelect={() => {
                           createInstallSession.mutate();
                         }}
                       >
@@ -147,11 +202,12 @@ export const SlackIntegrationSettings = () => {
         )}
       </Box>
 
-      <Box className="mt-6">
-        <Link href={withWorkspace("/settings/workspace/integrations")}>
-          <Text color="muted">Back to integrations</Text>
-        </Link>
-      </Box>
+      {isConnected ? (
+        <>
+          <SlackChannelAudienceSettings />
+          <SlackAgentConfiguration />
+        </>
+      ) : null}
 
       <Dialog onOpenChange={setIsDisconnectOpen} open={isDisconnectOpen}>
         <Dialog.Content>
@@ -163,7 +219,7 @@ export const SlackIntegrationSettings = () => {
           <Dialog.Body>
             <Text color="muted">
               Slash commands and message actions from this Slack workspace will
-              stop creating FortyOne tasks and requests.
+              stop creating FortyOne stories and requests.
             </Text>
           </Dialog.Body>
           <Dialog.Footer className="justify-end gap-3 border-0 pt-2">

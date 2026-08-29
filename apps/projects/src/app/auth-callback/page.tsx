@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getMyInvitations } from "@/lib/queries/get-invitations";
+import { getMyInvitationsForCurrentRequest } from "@/modules/invitations/queries/my-invitations-for-current-request";
+import { getAuthCode } from "@/lib/queries/get-auth-code";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
+import { getLoginUrl } from "@/utils/callback-url";
 import { ClientPage } from "./client";
-import { getAuthCode } from "@/lib/queries/get-auth-code";
 
 export const metadata: Metadata = {
   title: "Auth Callback - FortyOne",
@@ -16,19 +17,20 @@ export const metadata: Metadata = {
 export default async function AuthCallback({
   searchParams,
 }: {
-  searchParams: Promise<{ mobileApp?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; mobileApp?: string }>;
 }) {
   const params = await searchParams;
-  const isMobileApp = params?.mobileApp === "true";
+  const isMobileApp = params.mobileApp === "true";
+  const callbackUrl = params.callbackUrl;
 
   const session = await auth();
 
   if (!session) {
-    redirect("/");
+    redirect(getLoginUrl(callbackUrl));
   }
 
   const [invitations, workspaces, profile] = await Promise.all([
-    getMyInvitations(),
+    getMyInvitationsForCurrentRequest(),
     getWorkspaces(),
     getProfile(),
   ]);
@@ -45,7 +47,8 @@ export default async function AuthCallback({
   }
   return (
     <ClientPage
-      invitations={invitations.data || []}
+      callbackUrl={callbackUrl}
+      invitations={invitations}
       profile={profile}
       session={session}
       workspaces={workspaces}

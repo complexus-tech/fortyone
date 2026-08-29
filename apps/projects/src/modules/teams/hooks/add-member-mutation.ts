@@ -1,23 +1,27 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth/client";
-import { useWorkspacePath } from "@/hooks";
+import { useUserRole, useWorkspacePath } from "@/hooks";
 import { memberKeys, statusKeys, teamKeys } from "@/constants/keys";
 import type { Member } from "@/types";
 import { useMembers } from "@/lib/hooks/members";
 import { addTeamMemberAction } from "../actions/add-team-member";
+import { joinPublicTeamAction } from "../actions/join-public-team";
 
 export const useAddMemberMutation = () => {
   const queryClient = useQueryClient();
   const { data: members = [] } = useMembers();
   const { data: session } = useSession();
+  const { userRole } = useUserRole();
   const { workspaceSlug } = useWorkspacePath();
-  const currentUserId = session?.user?.id ?? "";
+  const currentUserId = session?.user.id ?? "";
   const toastId = "add-member-mutation";
 
   const mutation = useMutation({
     mutationFn: ({ teamId, memberId }: { teamId: string; memberId: string }) =>
-      addTeamMemberAction(teamId, memberId, workspaceSlug),
+      memberId === currentUserId && userRole !== "admin"
+        ? joinPublicTeamAction(teamId, workspaceSlug)
+        : addTeamMemberAction(teamId, memberId, workspaceSlug),
     onMutate: async ({ teamId, memberId }) => {
       toast.loading(
         memberId === currentUserId ? "Joining team..." : "Adding member...",
@@ -87,7 +91,7 @@ export const useAddMemberMutation = () => {
       queryClient.invalidateQueries({
         queryKey: memberKeys.team(workspaceSlug, teamId),
       });
-      if (memberId === session?.user?.id) {
+      if (memberId === session?.user.id) {
         queryClient.invalidateQueries({
           queryKey: teamKeys.lists(workspaceSlug),
         });

@@ -1,0 +1,61 @@
+.progress {
+  animation: product-workflow-progress 7s linear forwards;
+}
+
+.viewport {
+  display: grid;
+  min-width: 0;
+  width: 100%;
+}
+
+.slide {
+  grid-area: 1 / 1;
+  min-width: 0;
+  width: 100%;
+  overflow: clip;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 420ms var(--landing-ease-out),
+    transform 560ms var(--landing-ease-out);
+}
+
+.activeSlide {
+  z-index: 2;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.queuedSlide {
+  transform: translate3d(0, 0.5rem, 0);
+}
+
+.exitingSlide {
+  transform: translate3d(0, -0.25rem, 0);
+}
+
+@keyframes product-workflow-progress {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress {
+    animation: none;
+  }
+
+  .slide {
+    transition: opacity 160ms var(--landing-ease-out);
+  }
+
+  .activeSlide,
+  .queuedSlide,
+  .exitingSlide {
+    transform: none;
+  }
+}

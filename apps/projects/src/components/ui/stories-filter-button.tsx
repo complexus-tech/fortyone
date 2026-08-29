@@ -1,12 +1,6 @@
 "use client";
 import { Avatar, Box, Button, Divider, Flex, Popover, Text, Tooltip } from "ui";
-import {
-  ArrowDownIcon,
-  AssigneeIcon,
-  CheckIcon,
-  FilterIcon,
-  UserIcon,
-} from "icons";
+import { ArrowDownIcon, AssigneeIcon, CheckIcon, FilterIcon } from "icons";
 import { useRef, type ReactNode } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -387,7 +381,7 @@ export const StoriesFilterButton = ({
       </Popover.Trigger>
       <Popover.Content
         align="end"
-        className="bg-surface-elevated/90 mr-0 max-h-[87vh] w-80 overflow-y-auto rounded-2xl pb-2 md:w-140"
+        className="bg-surface-elevated dark:bg-surface-elevated/80 mr-0 max-h-[87vh] w-80 overflow-y-auto rounded-2xl pb-2 md:w-140"
       >
         <Flex align="center" className="h-11 px-4" justify="between">
           <Text
@@ -411,46 +405,19 @@ export const StoriesFilterButton = ({
           )}
         </Flex>
         <Divider className="mt-1.5" />
-        {shouldShow("assignedToMe") ||
-        shouldShow("createdByMe") ||
-        shouldShow("hasNoAssignee") ? (
+        {shouldShow("hasNoAssignee") ? (
           <Box>
-            {shouldShow("assignedToMe") ? (
-              <ToggleButton
-                icon={<AssigneeIcon />}
-                isActive={filters.assignedToMe}
-                label="Assigned to me"
-                onClick={() => {
-                  setFilters({
-                    ...filters,
-                    assignedToMe: !filters.assignedToMe,
-                  });
-                }}
-              />
-            ) : null}
-            {shouldShow("createdByMe") ? (
-              <ToggleButton
-                icon={<UserIcon />}
-                isActive={filters.createdByMe}
-                label="Created by me"
-                onClick={() => {
-                  setFilters({ ...filters, createdByMe: !filters.createdByMe });
-                }}
-              />
-            ) : null}
-            {shouldShow("hasNoAssignee") ? (
-              <ToggleButton
-                icon={<AssigneeIcon />}
-                isActive={filters.hasNoAssignee || false}
-                label="Has no assignee"
-                onClick={() => {
-                  setFilters({
-                    ...filters,
-                    hasNoAssignee: !filters.hasNoAssignee,
-                  });
-                }}
-              />
-            ) : null}
+            <ToggleButton
+              icon={<AssigneeIcon />}
+              isActive={filters.hasNoAssignee || false}
+              label="Has no assignee"
+              onClick={() => {
+                setFilters({
+                  ...filters,
+                  hasNoAssignee: !filters.hasNoAssignee,
+                });
+              }}
+            />
           </Box>
         ) : null}
         {!isBacklog && shouldShow("statusIds") ? (

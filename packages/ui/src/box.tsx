@@ -1,10 +1,5 @@
-import {
-  CSSProperties,
-  HTMLAttributes,
-  JSX,
-  ReactNode,
-  createElement,
-} from "react";
+import { createElement } from "react";
+import type { CSSProperties, HTMLAttributes, JSX, ReactNode, Ref } from "react";
 
 export interface BoxProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
@@ -12,6 +7,7 @@ export interface BoxProps extends HTMLAttributes<HTMLDivElement> {
   style?: CSSProperties;
   html?: string;
   children?: ReactNode;
+  ref?: Ref<HTMLDivElement>;
 }
 
 export const Box = ({

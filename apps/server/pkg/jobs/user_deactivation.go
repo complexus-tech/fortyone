@@ -2,45 +2,59 @@ package jobs
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"time"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
+// InactiveUserDeactivator is the worker-owned persistence capability for
+// bounded inactivity-policy enforcement.
+type InactiveUserDeactivator interface {
+	DeactivateInactiveUsers(context.Context, time.Time, time.Time, time.Time, int) (int64, error)
+}
+
 // ProcessUserDeactivation deactivates users that received inactivity warnings 30+ days ago and are still inactive
-func ProcessUserDeactivation(ctx context.Context, db *sqlx.DB, log *logger.Logger) error {
+func ProcessUserDeactivation(ctx context.Context, store InactiveUserDeactivator, log *logger.Logger) error {
+	return processUserDeactivationAt(ctx, store, log, time.Now().UTC())
+}
+
+func processUserDeactivationAt(
+	ctx context.Context,
+	store InactiveUserDeactivator,
+	log *logger.Logger,
+	now time.Time,
+) error {
 	ctx, span := web.AddSpan(ctx, "jobs.ProcessUserDeactivation")
 	defer span.End()
+	if store == nil {
+		return errors.New("user maintenance store is required")
+	}
+	if log == nil {
+		return errors.New("user maintenance logger is required")
+	}
+	if now.IsZero() {
+		return errors.New("user maintenance clock is required")
+	}
+	now = now.UTC()
+	inactiveBefore := now.AddDate(0, -8, 0)
+	warningSentBefore := now.Add(-30 * 24 * time.Hour)
 
 	log.Info(ctx, "Deactivating users inactive for 8+ months with 30-day grace period")
-
-	deactivateQuery := `
-		UPDATE users 
-		SET is_active = false
-		WHERE last_login_at < NOW() - INTERVAL '8 months 30 days'
-		AND is_active = true
-		AND is_system = false
-		AND inactivity_warning_sent_at IS NOT NULL
-	`
-	result, err := db.ExecContext(ctx, deactivateQuery)
+	deactivated, err := drainMaintenanceBatches(ctx, "deactivate inactive users", func(ctx context.Context, batchSize int) (int64, error) {
+		return store.DeactivateInactiveUsers(ctx, inactiveBefore, warningSentBefore, now, batchSize)
+	})
 	if err != nil {
 		span.RecordError(err)
-		return fmt.Errorf("failed to deactivate users: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		span.RecordError(err)
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		return err
 	}
 
 	span.AddEvent("users_deactivated", trace.WithAttributes(
-		attribute.Int("rows_affected", int(rowsAffected)),
+		attribute.Int64("rows_affected", deactivated),
 	))
-	log.Info(ctx, fmt.Sprintf("Deactivated %d users", rowsAffected))
+	log.Info(ctx, "Deactivated inactive users", "rows_affected", deactivated)
 	return nil
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SelectIntegrationRequestMessage } from "@/modules/integration-requests/message";
 
 export const metadata: Metadata = {
-  title: "Requests",
+  title: "Intake",
 };
 
 export default function Page() {

@@ -4,6 +4,7 @@ import type {
   DisplayColumn,
   StoriesViewOptions,
 } from "@/components/ui/stories-view-options-button";
+import type { DetailedStory } from "@/modules/story/types";
 
 export const BoardContext = createContext<{
   selectedStories: string[];
@@ -11,6 +12,12 @@ export const BoardContext = createContext<{
   viewOptions: StoriesViewOptions;
   setViewOptions?: (value: StoriesViewOptions) => void;
   isColumnVisible: (column: DisplayColumn) => boolean;
+  updateStory: (storyId: string, payload: Partial<DetailedStory>) => void;
+  newStoryDefaults: {
+    teamId?: string;
+    objectiveId?: string;
+    sprintId?: string;
+  };
 } | null>(null);
 
 export const useBoard = () => {

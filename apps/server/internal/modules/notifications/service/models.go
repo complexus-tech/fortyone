@@ -1,73 +1,71 @@
 package notifications
 
-import (
-	"time"
+import notificationsdomain "github.com/complexus-tech/projects-api/internal/modules/notifications/domain"
 
-	"github.com/google/uuid"
+// Service aliases keep existing first-party callers source-compatible while
+// domain values remain transport-neutral and repository adapters import the
+// domain package directly.
+type (
+	NotificationType = notificationsdomain.NotificationType
+	EntityType       = notificationsdomain.EntityType
+	PreferenceType   = notificationsdomain.PreferenceType
+
+	NotificationMessage                         = notificationsdomain.NotificationMessage
+	Variable                                    = notificationsdomain.Variable
+	StrategyNotificationSnapshot                = notificationsdomain.StrategyNotificationSnapshot
+	StrategyPlanningSnapshot                    = notificationsdomain.StrategyPlanningSnapshot
+	StrategyWeeklyCheckInSnapshot               = notificationsdomain.StrategyWeeklyCheckInSnapshot
+	StrategyWeeklyCheckInTeamCountsSnapshot     = notificationsdomain.StrategyWeeklyCheckInTeamCountsSnapshot
+	StrategyWeeklyCheckInOmittedDetailsSnapshot = notificationsdomain.StrategyWeeklyCheckInOmittedDetailsSnapshot
+	StrategyWeeklyCheckInCounts                 = notificationsdomain.StrategyWeeklyCheckInCounts
+	StrategyObjectiveSnapshot                   = notificationsdomain.StrategyObjectiveSnapshot
+	StrategyObjectiveStatusSnapshot             = notificationsdomain.StrategyObjectiveStatusSnapshot
+	StrategyKeyResultSnapshot                   = notificationsdomain.StrategyKeyResultSnapshot
+	StrategyMonthlySummarySnapshot              = notificationsdomain.StrategyMonthlySummarySnapshot
+	CoreNewNotification                         = notificationsdomain.NewNotification
+	CoreNotification                            = notificationsdomain.Notification
+	CoreNotificationActor                       = notificationsdomain.NotificationActor
+	CorePortalNotification                      = notificationsdomain.PortalNotification
+	CoreNotificationPreferences                 = notificationsdomain.Preferences
+	NotificationChannels                        = notificationsdomain.Channels
+	NotificationPreferenceSet                   = notificationsdomain.PreferenceSet
+	NotificationChannelPatch                    = notificationsdomain.ChannelPatch
 )
 
-type NotificationMessage struct {
-	Template  string              `json:"template"`
-	Variables map[string]Variable `json:"variables"`
-}
+const (
+	StrategyNotificationKindPlanningReminder = notificationsdomain.StrategyNotificationKindPlanningReminder
+	StrategyNotificationKindWeeklyCheckIn    = notificationsdomain.StrategyNotificationKindWeeklyCheckIn
+	StrategyNotificationKindMonthlySummary   = notificationsdomain.StrategyNotificationKindMonthlySummary
 
-type Variable struct {
-	Value string `json:"value"`
-	Type  string `json:"type"` // "actor", "assignee", "field", "value", "date"
-}
+	StrategySignalReasonAtRisk     = notificationsdomain.StrategySignalReasonAtRisk
+	StrategySignalReasonStale      = notificationsdomain.StrategySignalReasonStale
+	StrategySignalReasonIncomplete = notificationsdomain.StrategySignalReasonIncomplete
 
-// CoreNewNotification represents a new notification to be created.
-type CoreNewNotification struct {
-	RecipientID uuid.UUID           `json:"recipient_id"`
-	WorkspaceID uuid.UUID           `json:"workspace_id"`
-	Type        string              `json:"type"`
-	EntityType  string              `json:"entity_type"`
-	EntityID    uuid.UUID           `json:"entity_id"`
-	ActorID     uuid.UUID           `json:"actor_id"`
-	Title       string              `json:"title"`
-	Message     NotificationMessage `json:"message"`
-}
+	StrategyMissingElementUltimateGoal = notificationsdomain.StrategyMissingElementUltimateGoal
+	StrategyMissingElementPillars      = notificationsdomain.StrategyMissingElementPillars
+	StrategyMissingElementObjectives   = notificationsdomain.StrategyMissingElementObjectives
 
-// CoreNotification represents a notification.
-type CoreNotification struct {
-	ID          uuid.UUID           `json:"id"`
-	RecipientID uuid.UUID           `json:"recipient_id"`
-	WorkspaceID uuid.UUID           `json:"workspace_id"`
-	Type        string              `json:"type"`
-	EntityType  string              `json:"entity_type"`
-	EntityID    uuid.UUID           `json:"entity_id"`
-	ActorID     uuid.UUID           `json:"actor_id"`
-	Title       string              `json:"title"`
-	Message     NotificationMessage `json:"message"`
-	CreatedAt   time.Time           `json:"created_at"`
-	ReadAt      *time.Time          `json:"read_at"`
-}
+	NotificationTypeStoryUpdate             = notificationsdomain.NotificationTypeStoryUpdate
+	NotificationTypeStoryComment            = notificationsdomain.NotificationTypeStoryComment
+	NotificationTypeCommentReply            = notificationsdomain.NotificationTypeCommentReply
+	NotificationTypeObjectiveUpdate         = notificationsdomain.NotificationTypeObjectiveUpdate
+	NotificationTypeKeyResultUpdate         = notificationsdomain.NotificationTypeKeyResultUpdate
+	NotificationTypeMention                 = notificationsdomain.NotificationTypeMention
+	NotificationTypeFeedbackComment         = notificationsdomain.NotificationTypeFeedbackComment
+	NotificationTypeFeedbackStatusUpdate    = notificationsdomain.NotificationTypeFeedbackStatusUpdate
+	NotificationTypeFeedbackUpdatePublished = notificationsdomain.NotificationTypeFeedbackUpdatePublished
+	NotificationTypeFeedbackItemMerged      = notificationsdomain.NotificationTypeFeedbackItemMerged
+	NotificationTypeStrategyUpdate          = notificationsdomain.NotificationTypeStrategyUpdate
 
-// CoreNotificationPreferences represents a user's notification preferences.
-type CoreNotificationPreferences struct {
-	ID          uuid.UUID              `json:"id"`
-	UserID      uuid.UUID              `json:"user_id"`
-	WorkspaceID uuid.UUID              `json:"workspace_id"`
-	Preferences map[string]interface{} `json:"preferences"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
-}
+	EntityTypeStory     = notificationsdomain.EntityTypeStory
+	EntityTypeComment   = notificationsdomain.EntityTypeComment
+	EntityTypeObjective = notificationsdomain.EntityTypeObjective
+	EntityTypeKeyResult = notificationsdomain.EntityTypeKeyResult
+	EntityTypeFeedback  = notificationsdomain.EntityTypeFeedback
+	EntityTypeStrategy  = notificationsdomain.EntityTypeStrategy
+)
 
-// CoreNotificationPreference represents a single notification preference
-// Legacy model - kept for backward compatibility
-type CoreNotificationPreference struct {
-	ID           uuid.UUID
-	UserID       uuid.UUID
-	WorkspaceID  uuid.UUID
-	Type         string
-	EmailEnabled bool
-	InAppEnabled bool
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-}
-
-// NotificationChannels represents the different delivery channels for a notification type
-type NotificationChannels struct {
-	Email bool `json:"email"`
-	InApp bool `json:"in_app"`
+func SupportsInAppDelivery[T ~string](notificationType T) bool {
+	parsed, err := notificationsdomain.ParseNotificationType(string(notificationType))
+	return err == nil && notificationsdomain.SupportsInAppDelivery(parsed)
 }

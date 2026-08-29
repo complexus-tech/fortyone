@@ -1,8 +1,9 @@
-# syntax=docker/dockerfile:1.7
-FROM --platform=$BUILDPLATFORM golang:1.23-alpine AS builder
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine@sha256:1ae0735f00daffa3aaf1363a5184c0d2dc55c78e3db4ec70241cdac97bf84b59 AS builder
 
 ARG TARGETOS
 ARG TARGETARCH
+ARG BUILD_VERSION=development
 
 WORKDIR /app
 
@@ -21,21 +22,31 @@ COPY apps/server/ .
 # Build the application
 RUN --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -trimpath -o /app/bin/api ./cmd/api
+    go build -trimpath -ldflags "-X main.version=${BUILD_VERSION}" -o /app/bin/api ./cmd/api
 
 # Create final lightweight image
-FROM alpine:3.20
+FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
+
+ARG BUILD_VERSION=development
+
+LABEL org.opencontainers.image.title="FortyOne API" \
+    org.opencontainers.image.revision="$BUILD_VERSION"
+
+RUN apk add --no-cache ca-certificates tzdata \
+    && addgroup -S -g 10001 fortyone \
+    && adduser -S -D -H -u 10001 -G fortyone fortyone
 
 WORKDIR /app
 
-# Copy the binary
-COPY --from=builder /app/bin/api /app/api
+# Copy immutable runtime assets with non-root ownership.
+COPY --from=builder --chown=fortyone:fortyone /app/bin/api /app/api
 
-# Copy templates directory
-COPY --from=builder /app/templates/ /app/templates/
+COPY --from=builder --chown=fortyone:fortyone /app/templates/ /app/templates/
+
+USER fortyone
 
 # Expose the API port
 EXPOSE 8000
 
 # Run the application
-CMD ["/app/api"] 
+CMD ["/app/api"]

@@ -18,6 +18,9 @@ type AppUser struct {
 	IsInternal                    bool       `json:"isInternal"`
 	HasSeenWalkthrough            bool       `json:"hasSeenWalkthrough"`
 	Timezone                      string     `json:"timezone"`
+	WorkingDays                   []int      `json:"workingDays"`
+	WorkingStartMinute            *int       `json:"workingStartMinute"`
+	WorkingEndMinute              *int       `json:"workingEndMinute"`
 	LastLoginAt                   time.Time  `json:"-"`
 	LastUsedWorkspaceID           *uuid.UUID `json:"lastUsedWorkspaceId"`
 	GitHubUsername                *string    `json:"githubUsername"`
@@ -52,11 +55,18 @@ type AppMembersResponse struct {
 }
 
 type UpdateProfileRequest struct {
-	Username           string  `json:"username"`
-	FullName           *string `json:"fullName,omitempty"`
-	AvatarURL          *string `json:"avatarUrl,omitempty"`
-	HasSeenWalkthrough *bool   `json:"hasSeenWalkthrough,omitempty"`
-	Timezone           *string `json:"timezone,omitempty"`
+	Username           string                     `json:"username"`
+	FullName           *string                    `json:"fullName,omitempty"`
+	AvatarURL          *string                    `json:"avatarUrl,omitempty"`
+	HasSeenWalkthrough *bool                      `json:"hasSeenWalkthrough,omitempty"`
+	Timezone           *string                    `json:"timezone,omitempty"`
+	WorkSchedule       *UpdateWorkScheduleRequest `json:"workSchedule,omitempty"`
+}
+
+type UpdateWorkScheduleRequest struct {
+	WorkingDays        []int `json:"workingDays"`
+	WorkingStartMinute *int  `json:"workingStartMinute"`
+	WorkingEndMinute   *int  `json:"workingEndMinute"`
 }
 
 type SwitchWorkspaceRequest struct {
@@ -77,10 +87,17 @@ type googleAuthState struct {
 	CallbackURL string `json:"callbackURL,omitempty"`
 }
 
+type microsoftAuthState struct {
+	CallbackURL string `json:"callbackURL,omitempty"`
+	Verifier    string `json:"verifier"`
+	Nonce       string `json:"nonce"`
+}
+
 // EmailVerificationRequest represents a request to send a verification email
 type EmailVerificationRequest struct {
-	Email    string `json:"email"`
-	IsMobile bool   `json:"isMobile"` // Whether the request is coming from a mobile app login
+	Email       string `json:"email"`
+	IsMobile    bool   `json:"isMobile"` // Whether the request is coming from a mobile app login
+	CallbackURL string `json:"callbackURL,omitempty"`
 }
 
 // VerifyEmailRequest represents a request to verify an email token
@@ -100,7 +117,7 @@ type AppAutomationPreferences struct {
 	UserID                     uuid.UUID `json:"userId"`
 	WorkspaceID                uuid.UUID `json:"workspaceId"`
 	AutoAssignSelf             bool      `json:"autoAssignSelf"`
-	AutoAssignMaya             bool      `json:"autoAssignMaya"`
+	AutoScheduling             bool      `json:"autoScheduling"`
 	AssignSelfOnBranchCopy     bool      `json:"assignSelfOnBranchCopy"`
 	MoveStoryToStartedOnBranch bool      `json:"moveStoryToStartedOnBranch"`
 	OpenStoryInDialog          bool      `json:"openStoryInDialog"`
@@ -111,7 +128,7 @@ type AppAutomationPreferences struct {
 // UpdateAutomationPreferencesRequest represents a request to update automation preferences
 type UpdateAutomationPreferencesRequest struct {
 	AutoAssignSelf             *bool `json:"autoAssignSelf,omitempty"`
-	AutoAssignMaya             *bool `json:"autoAssignMaya,omitempty"`
+	AutoScheduling             *bool `json:"autoScheduling,omitempty"`
 	AssignSelfOnBranchCopy     *bool `json:"assignSelfOnBranchCopy,omitempty"`
 	MoveStoryToStartedOnBranch *bool `json:"moveStoryToStartedOnBranch,omitempty"`
 	OpenStoryInDialog          *bool `json:"openStoryInDialog,omitempty"`
@@ -129,6 +146,9 @@ func toAppUser(user users.CoreUser) AppUser {
 		IsInternal:                    user.IsInternal,
 		HasSeenWalkthrough:            user.HasSeenWalkthrough,
 		Timezone:                      user.Timezone,
+		WorkingDays:                   user.WorkingDays,
+		WorkingStartMinute:            user.WorkingStartMinute,
+		WorkingEndMinute:              user.WorkingEndMinute,
 		LastLoginAt:                   user.LastLoginAt,
 		LastUsedWorkspaceID:           user.LastUsedWorkspaceID,
 		GitHubUsername:                user.GitHubUsername,
@@ -178,7 +198,7 @@ func toAppAutomationPreferences(prefs users.CoreAutomationPreferences) AppAutoma
 		UserID:                     prefs.UserID,
 		WorkspaceID:                prefs.WorkspaceID,
 		AutoAssignSelf:             prefs.AutoAssignSelf,
-		AutoAssignMaya:             prefs.AutoAssignMaya,
+		AutoScheduling:             prefs.AutoScheduling,
 		AssignSelfOnBranchCopy:     prefs.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: prefs.MoveStoryToStartedOnBranch,
 		OpenStoryInDialog:          prefs.OpenStoryInDialog,
@@ -191,7 +211,7 @@ func toAppAutomationPreferences(prefs users.CoreAutomationPreferences) AppAutoma
 func toCoreUpdateAutomationPreferences(req UpdateAutomationPreferencesRequest) users.CoreUpdateAutomationPreferences {
 	return users.CoreUpdateAutomationPreferences{
 		AutoAssignSelf:             req.AutoAssignSelf,
-		AutoAssignMaya:             req.AutoAssignMaya,
+		AutoScheduling:             req.AutoScheduling,
 		AssignSelfOnBranchCopy:     req.AssignSelfOnBranchCopy,
 		MoveStoryToStartedOnBranch: req.MoveStoryToStartedOnBranch,
 		OpenStoryInDialog:          req.OpenStoryInDialog,

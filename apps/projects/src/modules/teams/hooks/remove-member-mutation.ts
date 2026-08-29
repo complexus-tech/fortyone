@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth/client";
-import { useParams, useRouter } from "next/navigation";
 import { useWorkspacePath } from "@/hooks";
 import { memberKeys, statusKeys, teamKeys } from "@/constants/keys";
 import type { Member } from "@/types";
 import { storyKeys } from "@/modules/stories/constants";
+import { leaveTeamAction } from "../actions/leave-team";
 import { removeTeamMemberAction } from "../actions/remove-team-member";
 import { useAddMemberMutation } from "./add-member-mutation";
 
@@ -15,13 +16,15 @@ export const useRemoveMemberMutation = () => {
   const { data: session } = useSession();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
   const router = useRouter();
-  const currentUserId = session?.user?.id ?? "";
+  const currentUserId = session?.user.id ?? "";
   const toastId = "remove-member-mutation";
   const { mutate: addMember } = useAddMemberMutation();
 
   const mutation = useMutation({
     mutationFn: ({ teamId, memberId }: { teamId: string; memberId: string }) =>
-      removeTeamMemberAction(teamId, memberId, workspaceSlug),
+      memberId === currentUserId
+        ? leaveTeamAction(teamId, workspaceSlug)
+        : removeTeamMemberAction(teamId, memberId, workspaceSlug),
     onMutate: async ({ teamId, memberId }) => {
       toast.loading(
         memberId === currentUserId ? "Leaving team..." : "Removing member...",
@@ -94,7 +97,7 @@ export const useRemoveMemberMutation = () => {
       queryClient.invalidateQueries({
         queryKey: memberKeys.team(workspaceSlug, teamId),
       });
-      if (memberId === session?.user?.id) {
+      if (memberId === session?.user.id) {
         queryClient.invalidateQueries({
           queryKey: teamKeys.lists(workspaceSlug),
         });

@@ -1,55 +1,41 @@
 import { Box, Flex, Skeleton } from "ui";
 import { BodyContainer } from "@/components/shared/body";
 import { RowWrapper } from "@/components/ui/row-wrapper";
-import { TableHeader } from "./heading";
 import { ObjectivesHeader } from "./header";
 
-export const ObjectivesSkeleton = ({ isInTeam }: { isInTeam?: boolean }) => {
+export const ObjectivesSkeleton = () => {
   return (
     <>
       <ObjectivesHeader />
-      <BodyContainer className="h-[calc(100dvh-3.7rem)]">
-        <TableHeader isInTeam={isInTeam} />
+      <BodyContainer>
         {Array.from({ length: 8 }).map((_, index) => (
           <RowWrapper
             className="justify-between px-5 py-3 md:px-12"
             key={index}
           >
-            <Box className="flex shrink-0 items-center gap-2 md:w-[300px]">
-              <Flex
-                align="center"
-                className="bg-surface-muted size-8 shrink-0 rounded-lg"
-                justify="center"
-              >
-                <Skeleton className="h-4 w-4" />
-              </Flex>
+            <Box className="flex min-w-0 flex-1 items-center gap-2">
+              <Skeleton className="h-5 w-12 shrink-0" />
               <Skeleton className="h-6 w-56" />
             </Box>
-            <Flex align="center" gap={4}>
-              {!isInTeam && (
-                <Box className="hidden w-[45px] shrink-0 items-center gap-1.5 md:flex">
-                  <Skeleton className="h-3 w-3 rounded-full" />
-                  <Skeleton className="h-5 w-8" />
-                </Box>
-              )}
-              <Box className="hidden w-[40px] shrink-0 items-center md:flex">
-                <Skeleton className="h-6 w-6 rounded-full" />
+            <Flex align="center" gap={2}>
+              <Box className="shrink-0">
+                <Skeleton className="h-7 w-20 rounded-lg" />
               </Box>
-              <Box className="hidden w-[60px] shrink-0 items-center gap-1.5 pl-0.5 md:flex">
+              <Box className="shrink-0">
+                <Skeleton className="h-7 w-20 rounded-lg" />
+              </Box>
+              <Box className="shrink-0">
+                <Skeleton className="h-7 w-20 rounded-lg" />
+              </Box>
+              <Box className="hidden shrink-0 items-center gap-1.5 px-1 sm:flex">
                 <Skeleton className="h-4 w-4 rounded-full" />
                 <Skeleton className="h-5 w-10" />
               </Box>
-              <Box className="hidden w-[120px] shrink-0 md:block">
-                <Skeleton className="h-5 w-24" />
+              <Box className="hidden shrink-0 md:block">
+                <Skeleton className="h-7 w-20 rounded-lg" />
               </Box>
-              <Box className="hidden w-[100px] shrink-0 md:block">
-                <Skeleton className="h-5 w-20" />
-              </Box>
-              <Box className="hidden w-[100px] shrink-0 md:block">
-                <Skeleton className="h-5 w-24" />
-              </Box>
-              <Box className="shrink-0 md:w-[120px]">
-                <Skeleton className="h-5 w-20" />
+              <Box className="hidden shrink-0 md:block">
+                <Skeleton className="h-7 w-7 rounded-full" />
               </Box>
             </Flex>
           </RowWrapper>

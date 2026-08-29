@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { AnalyticsIcon, HistoryIcon, UserIcon, WorkspaceIcon } from "icons";
-import { Badge, Box, Button, Flex, Table, Text } from "ui";
+import { Avatar, Badge, Box, Button, Flex, Table, Text } from "ui";
 import {
   getAuditLogs,
   getDashboardSummary,
   getWorkspaces,
 } from "@/lib/admin-api";
+import type {
+  AuditLog,
+  DashboardSummary,
+  ListResult,
+  WorkspaceSummary,
+} from "@/lib/types";
 import {
   formatCount,
   formatDate,
@@ -17,27 +23,124 @@ import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { WorkspaceStatusBadge } from "@/components/status-badge";
 
+type SafeResult<T> = {
+  data: T;
+  failed: boolean;
+};
+
+const emptyDashboardSummary: DashboardSummary = {
+  totalWorkspaces: 0,
+  activeTrials: 0,
+  expiredTrials: 0,
+  paidWorkspaces: 0,
+  deletedWorkspaces: 0,
+  totalUsers: 0,
+  internalUsers: 0,
+  activeSubscriptions: 0,
+  slackInstallations: 0,
+  githubInstallations: 0,
+  recentAdminAuditLogs: 0,
+};
+
+const emptyListResult = <T,>(limit: number): ListResult<T> => ({
+  items: [],
+  pagination: {
+    total: 0,
+    page: 1,
+    limit,
+    offset: 0,
+  },
+});
+
+const resolveOverviewData = async <T,>(
+  request: Promise<T>,
+  fallback: T,
+): Promise<SafeResult<T>> => {
+  try {
+    return {
+      data: await request,
+      failed: false,
+    };
+  } catch {
+    return {
+      data: fallback,
+      failed: true,
+    };
+  }
+};
+
 export default async function OverviewPage() {
-  const [summary, expiringWorkspaces, auditLogs] = await Promise.all([
-    getDashboardSummary(),
-    getWorkspaces({ status: "expired", limit: 6 }),
-    getAuditLogs({ limit: 6 }),
+  const [
+    summaryResult,
+    expiredTrialsResult,
+    expiringTrialsResult,
+    pastDueWorkspacesResult,
+    auditLogsResult,
+  ] = await Promise.all([
+    resolveOverviewData(getDashboardSummary(), emptyDashboardSummary),
+    resolveOverviewData(
+      getWorkspaces({ status: "expired", limit: 6 }),
+      emptyListResult<WorkspaceSummary>(6),
+    ),
+    resolveOverviewData(
+      getWorkspaces({ status: "expiring", limit: 6 }),
+      emptyListResult<WorkspaceSummary>(6),
+    ),
+    resolveOverviewData(
+      getWorkspaces({ status: "past_due", limit: 6 }),
+      emptyListResult<WorkspaceSummary>(6),
+    ),
+    resolveOverviewData(
+      getAuditLogs({ limit: 6 }),
+      emptyListResult<AuditLog>(6),
+    ),
   ]);
+  const summary = summaryResult.data;
+  const expiredTrials = expiredTrialsResult.data;
+  const expiringTrials = expiringTrialsResult.data;
+  const pastDueWorkspaces = pastDueWorkspacesResult.data;
+  const auditLogs = auditLogsResult.data;
+  const hasPartialData = [
+    summaryResult,
+    expiredTrialsResult,
+    expiringTrialsResult,
+    pastDueWorkspacesResult,
+    auditLogsResult,
+  ].some((result) => result.failed);
+  const queueItems = [
+    ...expiredTrials.items.map((workspace) => ({
+      label: "Expired trial",
+      workspace,
+    })),
+    ...expiringTrials.items.map((workspace) => ({
+      label: "Trial ending",
+      workspace,
+    })),
+    ...pastDueWorkspaces.items.map((workspace) => ({
+      label: "Payment issue",
+      workspace,
+    })),
+  ].slice(0, 8);
 
   return (
     <Box>
       <PageHeader
-        actions={
-          <Button color="tertiary" href="/workspaces" rounded="lg">
-            View workspaces
-          </Button>
-        }
         description="Monitor platform health, billing posture, access state, and high-risk admin activity."
         eyebrow="Internal operations"
+        icon={<AnalyticsIcon className="h-[1.1rem]" />}
         title="Admin overview"
       />
 
       <Box className="space-y-5 p-5 md:p-7">
+        {hasPartialData ? (
+          <Box className="border-border bg-surface-muted/65 rounded-lg border-[0.5px] px-4 py-3">
+            <Text color="muted">
+              Some overview data could not load. The failing Admin API request
+              was logged by the server renderer.
+            </Text>
+          </Box>
+        ) : null}
+
         <Box className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             detail={`${formatCount(summary.activeTrials)} active trials, ${formatCount(summary.expiredTrials)} expired`}
@@ -58,7 +161,7 @@ export default async function OverviewPage() {
             value={formatCount(summary.activeSubscriptions)}
           />
           <MetricCard
-            detail={`${formatCount(summary.slackInstallations)} Slack, ${formatCount(summary.gitHubInstallations)} GitHub`}
+            detail={`${formatCount(summary.slackInstallations)} Slack, ${formatCount(summary.githubInstallations)} GitHub`}
             icon={<HistoryIcon />}
             label="Recent admin logs"
             value={formatCount(summary.recentAdminAuditLogs)}
@@ -66,69 +169,93 @@ export default async function OverviewPage() {
         </Box>
 
         <Box className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]">
-          <Box className="border-border bg-surface rounded-xl border-[0.5px]">
+          <Box className="border-border rounded-lg border-[0.5px]">
             <Flex
               align="center"
               className="border-border border-b-[0.5px] px-4 py-3"
               justify="between"
             >
               <Box>
-                <Text fontWeight="semibold">Expired trials</Text>
-                <Text className="mt-1 text-[0.92rem]" color="muted">
-                  Workspaces that may need commercial or support follow-up.
+                <Text fontWeight="semibold">Trial and billing queue</Text>
+                <Text className="mt-1 text-[0.95rem]" color="muted">
+                  Workspaces that may need support, sales, or billing follow-up.
                 </Text>
               </Box>
-              <Button
-                color="tertiary"
-                href="/workspaces?status=expired"
-                rounded="lg"
-                size="sm"
-                variant="naked"
-              >
-                Open list
-              </Button>
             </Flex>
             <Box className="overflow-x-auto">
-              <Table>
+              <Table color="light" variant="bordered">
                 <Table.Head>
                   <Table.Tr>
+                    <Table.Th>Queue</Table.Th>
                     <Table.Th>Workspace</Table.Th>
                     <Table.Th>Status</Table.Th>
-                    <Table.Th>Trial</Table.Th>
+                    <Table.Th>Trial or plan</Table.Th>
                     <Table.Th>Members</Table.Th>
                   </Table.Tr>
                 </Table.Head>
                 <Table.Body>
-                  {expiringWorkspaces.items.length > 0 ? (
-                    expiringWorkspaces.items.map((workspace) => (
-                      <Table.Tr key={workspace.id}>
-                        <Table.Td>
-                          <Link
-                            className="hover:text-primary line-clamp-1"
-                            href={`/workspaces/${workspace.id}`}
-                          >
-                            {workspace.name}
-                          </Link>
-                          <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                            {workspace.slug}
-                          </Text>
+                  {queueItems.length > 0 ? (
+                    queueItems.map(({ label, workspace }) => (
+                      <Table.Tr key={`${label}-${workspace.id}`}>
+                        <Table.Td className="min-w-40 whitespace-nowrap">
+                          {label}
+                        </Table.Td>
+                        <Table.Td className="min-w-72 whitespace-nowrap">
+                          <Flex align="center" className="gap-2">
+                            <Avatar
+                              name={workspace.name}
+                              src={workspace.avatarUrl}
+                            />
+                            <Link
+                              className="hover:text-primary line-clamp-1"
+                              href={`/workspaces/${workspace.id}`}
+                            >
+                              {workspace.name}
+                            </Link>
+                            <Text
+                              as="span"
+                              className="line-clamp-1 text-[0.95rem]"
+                              color="muted"
+                            >
+                              /{workspace.slug}
+                            </Text>
+                          </Flex>
                         </Table.Td>
                         <Table.Td>
                           <WorkspaceStatusBadge workspace={workspace} />
                         </Table.Td>
-                        <Table.Td>
-                          <Text>{formatDate(workspace.trialEndsOn)}</Text>
-                          <Text className="mt-0.5 text-[0.92rem]" color="muted">
-                            {formatTrialState(workspace.trialEndsOn)}
+                        <Table.Td className="min-w-52 whitespace-nowrap">
+                          <Text>
+                            {formatDate(workspace.trialEndsOn)}
+                            <Text
+                              as="span"
+                              className="ml-1 text-[0.95rem]"
+                              color="muted"
+                            >
+                              · {formatTrialState(workspace.trialEndsOn)}
+                            </Text>
                           </Text>
+                          {workspace.subscriptionStatus ? (
+                            <Text
+                              as="span"
+                              className="ml-1 text-[0.95rem]"
+                              color="muted"
+                            >
+                              · {workspace.subscriptionStatus}
+                            </Text>
+                          ) : null}
                         </Table.Td>
-                        <Table.Td>{workspace.memberCount}</Table.Td>
+                        <Table.Td className="whitespace-nowrap">
+                          {workspace.memberCount}
+                        </Table.Td>
                       </Table.Tr>
                     ))
                   ) : (
                     <Table.Tr>
-                      <Table.Td className="py-8 text-center" colSpan={4}>
-                        <Text color="muted">No expired trials right now.</Text>
+                      <Table.Td className="py-8 text-center" colSpan={5}>
+                        <Text color="muted">
+                          No trial or billing follow-up right now.
+                        </Text>
                       </Table.Td>
                     </Table.Tr>
                   )}
@@ -137,7 +264,7 @@ export default async function OverviewPage() {
             </Box>
           </Box>
 
-          <Box className="border-border bg-surface rounded-xl border-[0.5px]">
+          <Box className="border-border bg-surface rounded-lg border-[0.5px]">
             <Flex
               align="center"
               className="border-border border-b-[0.5px] px-4 py-3"
@@ -145,17 +272,11 @@ export default async function OverviewPage() {
             >
               <Box>
                 <Text fontWeight="semibold">Recent audit activity</Text>
-                <Text className="mt-1 text-[0.92rem]" color="muted">
+                <Text className="mt-1 text-[0.95rem]" color="muted">
                   Administrative changes recorded by the platform.
                 </Text>
               </Box>
-              <Button
-                color="tertiary"
-                href="/audit"
-                rounded="lg"
-                size="sm"
-                variant="naked"
-              >
+              <Button color="tertiary" href="/audit" size="sm" variant="naked">
                 Audit log
               </Button>
             </Flex>
@@ -167,16 +288,14 @@ export default async function OverviewPage() {
                       <Text fontWeight="semibold">
                         {humanizeKey(entry.action)}
                       </Text>
-                      <Badge color="tertiary" rounded="full" size="sm">
-                        {entry.targetType}
-                      </Badge>
+                      <Badge color="tertiary">{entry.targetType}</Badge>
                     </Flex>
-                    <Text className="mt-1 text-[0.92rem]" color="muted">
-                      {entry.actorName || entry.actorEmail} ·{" "}
+                    <Text className="mt-1 text-[0.95rem]" color="muted">
+                      {entry.actorName || "Unknown actor"} ·{" "}
                       {formatDateTime(entry.createdAt)}
                     </Text>
                     {entry.workspaceName ? (
-                      <Text className="mt-1 text-[0.92rem]" color="muted">
+                      <Text className="mt-1 text-[0.95rem]" color="muted">
                         {entry.workspaceName}
                       </Text>
                     ) : null}

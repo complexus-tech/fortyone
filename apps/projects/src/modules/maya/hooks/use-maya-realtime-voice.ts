@@ -3,8 +3,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/api-url";
+import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { useWorkspacePath } from "@/hooks";
+import { feedbackKeys, notificationKeys, sprintKeys } from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
+import {
+  applyRealtimeTranscriptUpdate,
+  getMayaMessageText,
+  getRealtimeTranscriptUpdate,
+  mergeRealtimeVoiceMessages,
+} from "../utils/realtime-voice-messages";
+import {
+  extractRealtimeClientAction,
+  type RealtimeClientAction,
+  type RealtimeTheme,
+} from "../utils/realtime-client-actions";
 
 type RealtimeVoiceStatus =
   | "idle"
@@ -24,6 +37,8 @@ type RealtimeSessionResponse = {
   expiresAt?: number;
   maxSessionSeconds: number;
   model: string;
+  monthlyLimitSeconds: number;
+  remainingSeconds: number;
   sessionId: string;
   voice: string;
 };
@@ -36,29 +51,59 @@ type RealtimeFunctionCall = {
 };
 
 type RealtimeServerEvent = {
+  delta?: string;
+  error?: {
+    message?: string;
+  };
+  item?: {
+    id?: string;
+    role?: string;
+    type?: string;
+  };
+  item_id?: string;
   response?: {
     output?: RealtimeFunctionCall[];
   };
+  response_id?: string;
+  transcript?: string;
   type?: string;
 };
 
 type RealtimeToolOutput = {
+  clientAction?: unknown;
   success?: boolean;
   error?: string;
+};
+
+type UseMayaRealtimeVoiceOptions = {
+  conversationMessages: MayaUIMessage[];
+  currentPath: string;
+  navigate: (path: string) => void;
+  setApplicationTheme: (theme: RealtimeTheme) => void;
 };
 
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
 const FALLBACK_REALTIME_MAX_SESSION_SECONDS = 5 * 60;
 const REALTIME_IDLE_TIMEOUT_MS = 60_000;
+const GOODBYE_DISCONNECT_DELAY_MS = 800;
+const MAX_REALTIME_CONTEXT_MESSAGES = 24;
 const REALTIME_ACTIVITY_EVENTS = new Set([
+  "conversation.item.added",
   "conversation.item.created",
+  "conversation.item.input_audio_transcription.completed",
+  "conversation.item.input_audio_transcription.delta",
   "input_audio_buffer.speech_started",
   "input_audio_buffer.speech_stopped",
   "response.audio.delta",
   "response.audio.done",
   "response.audio_transcript.delta",
+  "response.audio_transcript.done",
   "response.created",
   "response.done",
+  "response.output_audio.delta",
+  "response.output_audio.done",
+  "response.output_audio_transcript.delta",
+  "response.output_audio_transcript.done",
   "response.output_item.added",
 ]);
 
@@ -101,10 +146,17 @@ const parseRealtimeToolOutput = async (response: Response) => {
   );
 };
 
-export const useMayaRealtimeVoice = () => {
+export const useMayaRealtimeVoice = ({
+  conversationMessages,
+  currentPath,
+  navigate,
+  setApplicationTheme,
+}: UseMayaRealtimeVoiceOptions) => {
   const queryClient = useQueryClient();
   const { workspaceSlug } = useWorkspacePath();
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const connectionAttemptRef = useRef(0);
+  const connectionAbortControllerRef = useRef<AbortController | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -112,10 +164,36 @@ export const useMayaRealtimeVoice = () => {
   const speakingTimeoutRef = useRef<number | null>(null);
   const idleTimeoutRef = useRef<number | null>(null);
   const sessionTimeoutRef = useRef<number | null>(null);
+  const countdownIntervalRef = useRef<number | null>(null);
+  const goodbyeTimeoutRef = useRef<number | null>(null);
+  const sessionEndsAtRef = useRef<number | null>(null);
   const activeSessionIdRef = useRef<string | null>(null);
+  const pendingClientActionRef = useRef<RealtimeClientAction | null>(null);
+  const navigateRef = useRef(navigate);
+  const setApplicationThemeRef = useRef(setApplicationTheme);
+  const conversationMessagesRef = useRef(conversationMessages);
+  const messagesRef = useRef<MayaUIMessage[]>([]);
+  const voiceAnchorMessageIdRef = useRef<string | null>(null);
+  const voiceMessageOrdersRef = useRef<Map<string, number>>(new Map());
+  const nextVoiceMessageOrderRef = useRef(0);
   const [status, setStatus] = useState<RealtimeVoiceStatus>("idle");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<MayaUIMessage[]>([]);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+
+  useEffect(() => {
+    conversationMessagesRef.current = conversationMessages;
+  }, [conversationMessages]);
+
+  useEffect(() => {
+    navigateRef.current = navigate;
+    setApplicationThemeRef.current = setApplicationTheme;
+  }, [navigate, setApplicationTheme]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const clearSpeakingTimer = useCallback(() => {
     if (speakingTimeoutRef.current) {
@@ -131,11 +209,17 @@ export const useMayaRealtimeVoice = () => {
     }
   }, []);
 
-  const clearSessionTimer = useCallback(() => {
+  const clearSessionTimers = useCallback(() => {
     if (sessionTimeoutRef.current) {
       window.clearTimeout(sessionTimeoutRef.current);
       sessionTimeoutRef.current = null;
     }
+    if (countdownIntervalRef.current) {
+      window.clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    sessionEndsAtRef.current = null;
+    setRemainingSeconds(null);
   }, []);
 
   const endRealtimeSession = useCallback(
@@ -159,10 +243,18 @@ export const useMayaRealtimeVoice = () => {
   );
 
   const closeConnection = useCallback(() => {
+    connectionAttemptRef.current += 1;
+    connectionAbortControllerRef.current?.abort();
+    connectionAbortControllerRef.current = null;
     clearSpeakingTimer();
     clearIdleTimer();
-    clearSessionTimer();
+    clearSessionTimers();
     setIsSpeaking(false);
+
+    if (goodbyeTimeoutRef.current) {
+      window.clearTimeout(goodbyeTimeoutRef.current);
+      goodbyeTimeoutRef.current = null;
+    }
 
     const activeSessionId = activeSessionIdRef.current;
     activeSessionIdRef.current = null;
@@ -173,6 +265,7 @@ export const useMayaRealtimeVoice = () => {
     dataChannelRef.current?.close();
     dataChannelRef.current = null;
     handledFunctionCallsRef.current.clear();
+    pendingClientActionRef.current = null;
 
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
@@ -183,13 +276,14 @@ export const useMayaRealtimeVoice = () => {
     localStreamRef.current = null;
 
     if (remoteAudioRef.current) {
+      remoteAudioRef.current.pause();
       remoteAudioRef.current.srcObject = null;
       remoteAudioRef.current.remove();
       remoteAudioRef.current = null;
     }
   }, [
     clearIdleTimer,
-    clearSessionTimer,
+    clearSessionTimers,
     clearSpeakingTimer,
     endRealtimeSession,
   ]);
@@ -204,17 +298,30 @@ export const useMayaRealtimeVoice = () => {
 
   const startSessionTimer = useCallback(
     (maxSessionSeconds: number) => {
-      clearSessionTimer();
+      clearSessionTimers();
       const seconds =
         maxSessionSeconds > 0
           ? maxSessionSeconds
           : FALLBACK_REALTIME_MAX_SESSION_SECONDS;
+      sessionEndsAtRef.current = Date.now() + seconds * 1000;
+      setRemainingSeconds(seconds);
+
+      countdownIntervalRef.current = window.setInterval(() => {
+        const endsAt = sessionEndsAtRef.current;
+        if (!endsAt) {
+          return;
+        }
+        setRemainingSeconds(
+          Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)),
+        );
+      }, 1_000);
+
       sessionTimeoutRef.current = window.setTimeout(() => {
         closeConnection();
         setStatus("idle");
       }, seconds * 1000);
     },
-    [clearSessionTimer, closeConnection],
+    [clearSessionTimers, closeConnection],
   );
 
   const markSpeaking = useCallback(() => {
@@ -225,6 +332,57 @@ export const useMayaRealtimeVoice = () => {
       speakingTimeoutRef.current = null;
     }, 900);
   }, [clearSpeakingTimer]);
+
+  const runPendingClientAction = useCallback(() => {
+    const action = pendingClientActionRef.current;
+    pendingClientActionRef.current = null;
+    if (!action) {
+      return;
+    }
+    if (action.type === "navigate") {
+      if (action.path.startsWith("/") && !action.path.startsWith("//")) {
+        navigateRef.current(action.path);
+      }
+      return;
+    }
+    setApplicationThemeRef.current(action.theme);
+  }, []);
+
+  const getVoiceMessageOrder = useCallback((messageId: string) => {
+    const existingOrder = voiceMessageOrdersRef.current.get(messageId);
+    if (existingOrder !== undefined) {
+      return existingOrder;
+    }
+
+    const nextOrder = nextVoiceMessageOrderRef.current;
+    nextVoiceMessageOrderRef.current += 1;
+    voiceMessageOrdersRef.current.set(messageId, nextOrder);
+    return nextOrder;
+  }, []);
+
+  const rememberEventItemOrder = useCallback(
+    (event: RealtimeServerEvent) => {
+      if (event.type === "input_audio_buffer.speech_started" && event.item_id) {
+        getVoiceMessageOrder(`voice-user-${event.item_id}`);
+        return;
+      }
+
+      if (
+        (event.type === "conversation.item.added" ||
+          event.type === "conversation.item.created") &&
+        event.item?.id
+      ) {
+        const role = event.item.role === "assistant" ? "assistant" : "user";
+        getVoiceMessageOrder(`voice-${role}-${event.item.id}`);
+        return;
+      }
+
+      if (event.type === "response.output_item.added" && event.item?.id) {
+        getVoiceMessageOrder(`voice-assistant-${event.item.id}`);
+      }
+    },
+    [getVoiceMessageOrder],
+  );
 
   const runRealtimeTool = useCallback(
     async (functionCall: RealtimeFunctionCall) => {
@@ -246,29 +404,61 @@ export const useMayaRealtimeVoice = () => {
         }
       }
 
-      const output = await fetch(
-        `${getApiUrl()}/workspaces/${workspaceSlug}/maya/realtime-tool`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            arguments: toolArguments,
-            name,
-          }),
-        },
-      )
-        .then(parseRealtimeToolOutput)
-        .catch((toolError: unknown) => ({
-          success: false,
-          error: errorMessage(toolError, "Tool execution failed."),
-        }));
-      if (name === "create_task" && output.success === true) {
+      const sessionId = activeSessionIdRef.current;
+      const output: RealtimeToolOutput = sessionId
+        ? await fetch(
+            `${getApiUrl()}/workspaces/${workspaceSlug}/maya/realtime-tool`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                arguments: toolArguments,
+                callId,
+                name,
+                sessionId,
+              }),
+            },
+          )
+            .then(parseRealtimeToolOutput)
+            .catch((toolError: unknown) => ({
+              success: false,
+              error: errorMessage(toolError, "Tool execution failed."),
+            }))
+        : {
+            success: false,
+            error: "The voice session is no longer active.",
+          };
+      if (
+        (name === "create_task" ||
+          name === "update_story" ||
+          name === "story_comments") &&
+        output.success === true
+      ) {
         queryClient.invalidateQueries({
           queryKey: storyKeys.all(workspaceSlug),
         });
+      }
+      if (name === "notifications" && output.success === true) {
+        queryClient.invalidateQueries({
+          queryKey: notificationKeys.all(workspaceSlug),
+        });
+      }
+      if (name === "sprints" && output.success === true) {
+        queryClient.invalidateQueries({
+          queryKey: sprintKeys.all(workspaceSlug),
+        });
+      }
+      if (name === "customer_feedback" && output.success === true) {
+        queryClient.invalidateQueries({
+          queryKey: feedbackKeys.all(workspaceSlug),
+        });
+      }
+      const { action, modelOutput } = extractRealtimeClientAction(output);
+      if (action && output.success === true) {
+        pendingClientActionRef.current = action;
       }
       resetIdleTimer();
 
@@ -283,13 +473,16 @@ export const useMayaRealtimeVoice = () => {
           item: {
             type: "function_call_output",
             call_id: callId,
-            output: JSON.stringify(output),
+            output: JSON.stringify(modelOutput),
           },
         }),
       );
       if (name === "end_conversation") {
-        closeConnection();
-        setStatus("idle");
+        setStatus("disconnecting");
+        goodbyeTimeoutRef.current = window.setTimeout(() => {
+          closeConnection();
+          setStatus("idle");
+        }, GOODBYE_DISCONNECT_DELAY_MS);
         return;
       }
       dataChannel.send(JSON.stringify({ type: "response.create" }));
@@ -313,70 +506,136 @@ export const useMayaRealtimeVoice = () => {
 
   const handleRealtimeEvent = useCallback(
     (data: string) => {
+      let event: RealtimeServerEvent;
       try {
-        const event = JSON.parse(data) as RealtimeServerEvent;
-        if (event.type && REALTIME_ACTIVITY_EVENTS.has(event.type)) {
-          resetIdleTimer();
-        }
-        switch (event.type) {
-          case "response.audio.delta":
-          case "response.audio_transcript.delta":
-            markSpeaking();
-            break;
-          case "response.audio.done":
-            clearSpeakingTimer();
-            setIsSpeaking(false);
-            break;
-          case "response.done":
-            clearSpeakingTimer();
-            setIsSpeaking(false);
-            handleFunctionCalls(event);
-            break;
-          default:
-            break;
-        }
+        event = JSON.parse(data) as RealtimeServerEvent;
       } catch {
-        // Realtime data channel messages are best-effort UI signals here.
+        return;
+      }
+
+      if (event.type && REALTIME_ACTIVITY_EVENTS.has(event.type)) {
+        resetIdleTimer();
+      }
+      rememberEventItemOrder(event);
+
+      const transcriptUpdate = getRealtimeTranscriptUpdate(event);
+      if (transcriptUpdate) {
+        const order = getVoiceMessageOrder(transcriptUpdate.id);
+        setMessages((currentMessages) =>
+          applyRealtimeTranscriptUpdate(
+            currentMessages,
+            transcriptUpdate,
+            voiceAnchorMessageIdRef.current,
+            order,
+          ),
+        );
+      }
+
+      switch (event.type) {
+        case "response.output_audio.delta":
+        case "response.audio.delta":
+        case "response.output_audio_transcript.delta":
+        case "response.audio_transcript.delta":
+          markSpeaking();
+          break;
+        case "response.output_audio.done":
+        case "response.audio.done":
+          clearSpeakingTimer();
+          setIsSpeaking(false);
+          runPendingClientAction();
+          break;
+        case "response.done":
+          clearSpeakingTimer();
+          setIsSpeaking(false);
+          handleFunctionCalls(event);
+          break;
+        case "error":
+          setError(
+            event.error?.message ?? "The voice session encountered an error.",
+          );
+          break;
+        default:
+          break;
       }
     },
-    [clearSpeakingTimer, handleFunctionCalls, markSpeaking, resetIdleTimer],
+    [
+      clearSpeakingTimer,
+      getVoiceMessageOrder,
+      handleFunctionCalls,
+      markSpeaking,
+      rememberEventItemOrder,
+      resetIdleTimer,
+      runPendingClientAction,
+    ],
   );
 
-  const createRealtimeSession = useCallback(async () => {
-    const response = await fetch(
-      `${getApiUrl()}/workspaces/${workspaceSlug}/maya/realtime-session`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    );
-    const payload = (await response
-      .json()
-      .catch(() => null)) as ApiResponse<RealtimeSessionResponse> | null;
+  const createRealtimeSession = useCallback(
+    async (signal: AbortSignal) => {
+      const contextMessages = mergeRealtimeVoiceMessages(
+        conversationMessagesRef.current,
+        messagesRef.current,
+      )
+        .map((message) => ({
+          role: message.role,
+          text: getMayaMessageText(message).trim(),
+        }))
+        .filter(
+          (
+            message,
+          ): message is {
+            role: "assistant" | "user";
+            text: string;
+          } =>
+            (message.role === "assistant" || message.role === "user") &&
+            Boolean(message.text),
+        )
+        .slice(-MAX_REALTIME_CONTEXT_MESSAGES);
 
-    if (!response.ok) {
-      throw new Error(
-        payload?.error?.message ?? "Failed to create voice session.",
+      const response = await fetch(
+        `${getApiUrl()}/workspaces/${workspaceSlug}/maya/realtime-session`,
+        {
+          body: JSON.stringify({
+            currentPath,
+            messages: contextMessages,
+          }),
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          method: "POST",
+          signal,
+        },
       );
-    }
-    if (!payload?.data?.clientSecret || !payload.data.sessionId) {
-      throw new Error("Voice session did not include a client secret.");
-    }
-    return payload.data;
-  }, [workspaceSlug]);
+      const payload = (await response
+        .json()
+        .catch(() => null)) as ApiResponse<RealtimeSessionResponse> | null;
+
+      if (!response.ok) {
+        throw new Error(
+          payload?.error?.message ?? "Failed to create voice session.",
+        );
+      }
+      if (!payload?.data?.clientSecret || !payload.data.sessionId) {
+        throw new Error("Voice session did not include a client secret.");
+      }
+      return payload.data;
+    },
+    [currentPath, workspaceSlug],
+  );
 
   const disconnect = useCallback(() => {
-    if (status === "idle") return;
+    if (status === "idle") {
+      return;
+    }
     setStatus("disconnecting");
     closeConnection();
     setStatus("idle");
   }, [closeConnection, status]);
 
   const connect = useCallback(async () => {
-    if (status === "connecting" || status === "connected") return;
+    if (status !== "idle") {
+      return;
+    }
     setError(null);
 
     if (!isBrowserRealtimeSupported()) {
@@ -385,6 +644,12 @@ export const useMayaRealtimeVoice = () => {
     }
 
     setStatus("connecting");
+    voiceAnchorMessageIdRef.current =
+      conversationMessagesRef.current.at(-1)?.id ?? null;
+    const attemptId = connectionAttemptRef.current + 1;
+    connectionAttemptRef.current = attemptId;
+    const abortController = new AbortController();
+    connectionAbortControllerRef.current = abortController;
 
     try {
       const localStream = await navigator.mediaDevices.getUserMedia({
@@ -394,11 +659,19 @@ export const useMayaRealtimeVoice = () => {
           noiseSuppression: true,
         },
       });
+      if (connectionAttemptRef.current !== attemptId) {
+        localStream.getTracks().forEach((track) => {
+          track.stop();
+        });
+        return;
+      }
       localStreamRef.current = localStream;
 
-      const session = await createRealtimeSession();
+      const session = await createRealtimeSession(abortController.signal);
+      if (connectionAttemptRef.current !== attemptId) {
+        return;
+      }
       activeSessionIdRef.current = session.sessionId;
-      startSessionTimer(session.maxSessionSeconds);
 
       const peerConnection = new RTCPeerConnection();
       peerConnectionRef.current = peerConnection;
@@ -432,6 +705,26 @@ export const useMayaRealtimeVoice = () => {
           handleRealtimeEvent(event.data);
         }
       };
+      dataChannel.onopen = () => {
+        if (
+          connectionAttemptRef.current !== attemptId ||
+          dataChannel.readyState !== "open"
+        ) {
+          return;
+        }
+        setStatus("connected");
+        startSessionTimer(session.maxSessionSeconds);
+        resetIdleTimer();
+        dataChannel.send(
+          JSON.stringify({
+            type: "response.create",
+            response: {
+              instructions:
+                "Begin with one warm, concise sentence. Introduce yourself as Maya and ask what the user would like help with in FortyOne.",
+            },
+          }),
+        );
+      };
 
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
@@ -443,19 +736,27 @@ export const useMayaRealtimeVoice = () => {
           Authorization: `Bearer ${session.clientSecret}`,
           "Content-Type": "application/sdp",
         },
+        signal: abortController.signal,
       });
       if (!answerResponse.ok) {
         throw new Error("Failed to connect voice session.");
       }
+      if (connectionAttemptRef.current !== attemptId) {
+        return;
+      }
 
+      const answerSdp = await answerResponse.text();
+      if (connectionAttemptRef.current !== attemptId) {
+        return;
+      }
       await peerConnection.setRemoteDescription({
         type: "answer",
-        sdp: await answerResponse.text(),
+        sdp: answerSdp,
       });
-
-      setStatus("connected");
-      resetIdleTimer();
     } catch (connectError) {
+      if (abortController.signal.aborted) {
+        return;
+      }
       closeConnection();
       setStatus("idle");
       setError(errorMessage(connectError, "Failed to start voice session."));
@@ -469,18 +770,35 @@ export const useMayaRealtimeVoice = () => {
     status,
   ]);
 
+  const clearMessages = useCallback(() => {
+    messagesRef.current = [];
+    voiceMessageOrdersRef.current.clear();
+    nextVoiceMessageOrderRef.current = 0;
+    setMessages([]);
+    setError(null);
+  }, []);
+
   useEffect(() => {
+    const handlePageHide = () => {
+      closeConnection();
+    };
+    window.addEventListener("pagehide", handlePageHide);
+
     return () => {
+      window.removeEventListener("pagehide", handlePageHide);
       closeConnection();
     };
   }, [closeConnection]);
 
   return {
+    clearMessages,
     connect,
     disconnect,
     error,
     isListening: status === "connected" && !isSpeaking,
     isSpeaking,
+    messages,
+    remainingSeconds,
     status,
   };
 };

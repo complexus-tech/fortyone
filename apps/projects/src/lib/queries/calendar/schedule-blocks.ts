@@ -4,6 +4,7 @@ import type { ApiResponse } from "@/types";
 import type {
   CalendarScheduleBlock,
   CalendarScheduleBlockInput,
+  CalendarManualScheduleBlockInput,
 } from "./types";
 
 export const createCalendarScheduleBlock = async (
@@ -33,3 +34,15 @@ export const deleteCalendarScheduleBlock = async (
   ctx: WorkspaceCtx,
   blockId: string,
 ) => remove<ApiResponse<null>>(`calendar/schedule-blocks/${blockId}`, ctx);
+
+export const manuallyRescheduleCalendarScheduleBlock = async (
+  ctx: WorkspaceCtx,
+  blockId: string,
+  input: CalendarManualScheduleBlockInput,
+) => {
+  const response = await post<
+    CalendarManualScheduleBlockInput,
+    ApiResponse<CalendarScheduleBlock>
+  >(`calendar/schedule-blocks/${blockId}/manual-reschedule`, input, ctx);
+  return response.data!;
+};

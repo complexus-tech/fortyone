@@ -117,6 +117,7 @@ jest.mock("ui", () => {
       fontSize?: string;
       fontWeight?: string;
     }>) => <Component {...props}>{children}</Component>,
+    Tooltip: ({ children }: PropsWithChildren) => <>{children}</>,
   };
 });
 
@@ -196,7 +197,7 @@ describe("StoryRelationshipPicker", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /association/i }));
 
-    expect(screen.getByText("Add association")).toBeVisible();
+    expect(screen.getAllByText("Add association")).toHaveLength(2);
     expect(screen.queryByText(longTitle)).not.toBeInTheDocument();
   });
 
@@ -240,9 +241,12 @@ describe("StoryRelationshipPicker", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /association/i }));
     fireEvent.click(screen.getByRole("button", { name: /blocked by/i }));
-    fireEvent.change(screen.getByPlaceholderText(/search ticket title or id/i), {
-      target: { value: "rr" },
-    });
+    fireEvent.change(
+      screen.getByPlaceholderText(/search ticket title or id/i),
+      {
+        target: { value: "rr" },
+      },
+    );
 
     expect(mockedUseSearch).toHaveBeenLastCalledWith({
       pageSize: 8,
@@ -254,11 +258,13 @@ describe("StoryRelationshipPicker", () => {
     fireEvent.click(screen.getByRole("button", { name: /QIT-62 rrr/i }));
 
     expect(mutate).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
+        associatedStory: expect.objectContaining({ id: "story-2" }),
         fromStoryId: "story-2",
+        storyId: "story-1",
         toStoryId: "story-1",
         type: "blocking",
-      },
+      }),
       expect.any(Object),
     );
   });
@@ -284,9 +290,12 @@ describe("StoryRelationshipPicker", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /association/i }));
-    fireEvent.change(screen.getByPlaceholderText(/search ticket title or id/i), {
-      target: { value: "rr" },
-    });
+    fireEvent.change(
+      screen.getByPlaceholderText(/search ticket title or id/i),
+      {
+        target: { value: "rr" },
+      },
+    );
 
     expect(screen.getAllByTestId("relationship-search-skeleton")).toHaveLength(
       2,
@@ -325,15 +334,22 @@ describe("StoryRelationshipPicker", () => {
       screen.getByRole("button", { name: /dialog create ticket/i }),
     );
 
-    expect(addAssociation).toHaveBeenCalledWith({
-      fromStoryId: "story-1",
-      toStoryId: "story-3",
-      type: "related",
-    });
+    expect(addAssociation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        associatedStory: expect.objectContaining({ id: "story-3" }),
+        fromStoryId: "story-1",
+        storyId: "story-1",
+        toStoryId: "story-3",
+        type: "related",
+      }),
+    );
 
-    fireEvent.change(screen.getByPlaceholderText(/search ticket title or id/i), {
-      target: { value: "rr" },
-    });
+    fireEvent.change(
+      screen.getByPlaceholderText(/search ticket title or id/i),
+      {
+        target: { value: "rr" },
+      },
+    );
 
     expect(
       screen.queryByRole("button", { name: /create related ticket/i }),

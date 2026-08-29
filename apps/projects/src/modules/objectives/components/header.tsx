@@ -1,8 +1,12 @@
 "use client";
 import { BreadCrumbs, Button, Flex } from "ui";
 import { useState } from "react";
-import { PlusIcon, ObjectiveIcon } from "icons";
-import { HeaderContainer, MobileMenuButton } from "@/components/shared";
+import { ObjectiveIcon, PlusIcon } from "icons";
+import {
+  HeaderContainer,
+  MobileMenuButton,
+  useAppCommandAction,
+} from "@/components/shared";
 import { NewObjectiveDialog } from "@/components/ui";
 import { useUserRole, useTerminology } from "@/hooks";
 
@@ -10,6 +14,15 @@ export const ObjectivesHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
+
+  useAppCommandAction({
+    disabled: userRole === "guest",
+    id: "objectives:create-objective",
+    label: `Create ${getTermDisplay("objectiveTerm")}`,
+    onSelect: () => {
+      setIsOpen(true);
+    },
+  });
 
   return (
     <HeaderContainer className="justify-between">
@@ -29,7 +42,8 @@ export const ObjectivesHeader = () => {
       </Flex>
       <Flex align="center" gap={2}>
         <Button
-          color="tertiary"
+          className="md:hidden"
+          color="primary"
           disabled={userRole === "guest"}
           leftIcon={<PlusIcon className="h-[1.1rem]" />}
           onClick={() => {

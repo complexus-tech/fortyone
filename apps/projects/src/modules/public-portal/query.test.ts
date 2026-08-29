@@ -1,0 +1,258 @@
+/* global beforeEach, describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
+
+import { headers } from "next/headers";
+import { getApiUrl } from "@/lib/api-url";
+import {
+  getPublicContributor,
+  getPublicContributorComments,
+  getPublicFeedbackCanonicalItem,
+  getPublicFeedbackPortal,
+  getPublicPortal,
+  getPublicPortalUpdate,
+  getPublicPortalUpdates,
+  getSimilarPublicFeedback,
+} from "./query";
+import { getFeedbackSessionAuthorization } from "./guest-session";
+
+jest.mock("next/headers", () => ({
+  headers: jest.fn(),
+}));
+
+jest.mock("@/lib/api-url", () => ({
+  getApiUrl: jest.fn(),
+}));
+jest.mock("./guest-session", () => ({
+  getFeedbackSessionAuthorization: jest.fn(),
+}));
+
+const headersMock = jest.mocked(headers);
+const getApiUrlMock = jest.mocked(getApiUrl);
+const guestAuthorizationMock = jest.mocked(getFeedbackSessionAuthorization);
+
+const response = (data: unknown) =>
+  ({
+    json: async () => ({ data }),
+    ok: true,
+  }) as Response;
+
+describe("public portal query caching", () => {
+  beforeEach(() => {
+    getApiUrlMock.mockReturnValue("https://api.fortyone.test");
+    guestAuthorizationMock.mockResolvedValue(null);
+    headersMock.mockResolvedValue(
+      new Headers({ host: "art-circles.fortyone.app" }),
+    );
+    global.fetch = jest.fn(async (input: Parameters<typeof fetch>[0]) => {
+      const url = String(input);
+
+      if (url.endsWith("/workspaces/art-circles/portal")) {
+        return response({
+          avatarUrl: null,
+          color: "#111111",
+          name: "Art Circles",
+          slug: "art-circles",
+        });
+      }
+
+      return response({
+        boards: [],
+        id: "portal-1",
+        items: [],
+        name: "Art Circles",
+        slug: "feedback",
+      });
+    });
+  });
+
+  it("keeps public portal requests uncached by default", async () => {
+    await getPublicPortal("feedback");
+
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1,
+      "https://api.fortyone.test/workspaces/art-circles/portal",
+      { cache: "no-store" },
+    );
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.fortyone.test/workspaces/art-circles/portals/feedback/feedback",
+      { cache: "no-store" },
+    );
+  });
+
+  it("requests only active feedback for the default public list", async () => {
+    await getPublicPortal("feedback", { status: "active" });
+
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.fortyone.test/workspaces/art-circles/portals/feedback/feedback?status=active",
+      { cache: "no-store" },
+    );
+  });
+
+  it("opts the public roadmap bootstrap into timed revalidation", async () => {
+    await getPublicPortal("feedback", {}, { revalidateSeconds: 5 * 60 });
+
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1,
+      "https://api.fortyone.test/workspaces/art-circles/portal",
+      { next: { revalidate: 300 } },
+    );
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.fortyone.test/workspaces/art-circles/portals/feedback/feedback",
+      { next: { revalidate: 300 } },
+    );
+  });
+
+  it("loads widget roadmap lanes without repeating workspace metadata", async () => {
+    await getPublicFeedbackPortal(
+      "feedback",
+      { pageSize: 20, status: "planned", view: "summary" },
+      { revalidateSeconds: 300 },
+    );
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://api.fortyone.test/workspaces/art-circles/portals/feedback/feedback?pageSize=20&status=planned&view=summary",
+      { next: { revalidate: 300 } },
+    );
+  });
+
+  it("loads contributor summaries from the workspace-scoped public route", async () => {
+    global.fetch = jest.fn(async () =>
+      response({
+        avatarUrl: null,
+        id: "author-1",
+        joinedAt: "2026-07-20T10:00:00.000Z",
+        name: "Joseph Mukorivo",
+        stats: { commentCount: 4, feedbackCount: 2, voteScore: 9 },
+      }),
+    );
+
+    await getPublicContributor("feedback", "author-1");
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://api.fortyone.test/workspaces/art-circles/portals/feedback/feedback/contributors/author-1",
+      { cache: "no-store" },
+    );
+  });
+
+  it("loads paginated contributor comments from the global public route", async () => {
+    headersMock.mockResolvedValue(new Headers({ host: "localhost:3000" }));
+    global.fetch = jest.fn(async () =>
+      response({
+        comments: [],
+        pagination: { hasMore: false, nextPage: 3, page: 2, pageSize: 10 },
+      }),
+    );
+
+    await getPublicContributorComments("feedback", "author-1", 2, 10);
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://api.fortyone.test/portals/feedback/feedback/contributors/author-1/comments?page=2&pageSize=10",
+      { cache: "no-store" },
+    );
+  });
+
+  it("keeps similarity scoring on the API when the route is unavailable", async () => {
+    global.fetch = jest.fn(
+      async () => ({ ok: false, status: 404 }) as Response,
+    );
+
+    await expect(
+      getSimilarPublicFeedback("feedback", {
+        title: "Add a Linear integration",
+      }),
+    ).rejects.toMatchObject({
+      message: "Failed to find similar feedback",
+      status: 404,
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("resolves merged public URLs through the canonical feedback endpoint", async () => {
+    global.fetch = jest.fn(async () =>
+      response({
+        itemId: "target-id",
+        itemSlug: "canonical-request",
+        merged: true,
+      }),
+    );
+
+    await expect(
+      getPublicFeedbackCanonicalItem("customer feedback", "old/request"),
+    ).resolves.toEqual({
+      itemId: "target-id",
+      itemSlug: "canonical-request",
+      merged: true,
+    });
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://api.fortyone.test/portals/customer%20feedback/feedback/items/old%2Frequest/canonical",
+      { cache: "no-store" },
+    );
+  });
+
+  it("loads detail snapshots by exact canonical item id", async () => {
+    await getPublicPortal("feedback", {
+      itemId: "719b685e-b7a9-4bbd-ad53-816c545d3c4a",
+      pageSize: 1,
+    });
+
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://api.fortyone.test/workspaces/art-circles/portals/feedback/feedback?itemId=719b685e-b7a9-4bbd-ad53-816c545d3c4a&pageSize=1",
+      { cache: "no-store" },
+    );
+  });
+
+  it("loads only published updates and includes a guest session for unread state", async () => {
+    guestAuthorizationMock.mockResolvedValue(
+      "FeedbackSession opaque-session-token",
+    );
+    global.fetch = jest.fn(async () =>
+      response({
+        hasMore: false,
+        unreadCount: 2,
+        updates: [
+          {
+            body: "The crossing is open.",
+            id: "update-1",
+            linkedItems: [],
+            publishedAt: "2026-08-12T10:00:00.000Z",
+            slug: "crossing-open",
+            title: "The crossing is open",
+          },
+        ],
+      }),
+    );
+
+    const updates = await getPublicPortalUpdates("feedback", 2, 10);
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://api.fortyone.test/portals/feedback/feedback/updates?page=2&pageSize=10",
+      {
+        cache: "no-store",
+        headers: {
+          Authorization: "FeedbackSession opaque-session-token",
+        },
+      },
+    );
+    expect(updates).toEqual(
+      expect.objectContaining({
+        hasMore: false,
+        unreadCount: 2,
+        updates: [expect.objectContaining({ slug: "crossing-open" })],
+      }),
+    );
+  });
+
+  it("returns 404 for unpublished update detail slugs", async () => {
+    global.fetch = jest.fn(
+      async () => ({ ok: false, status: 404 }) as Response,
+    );
+
+    await expect(
+      getPublicPortalUpdate("feedback", "unpublished-draft"),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+});

@@ -2,10 +2,11 @@ import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { getObjectiveActivities } from "@/modules/objectives/queries/get-objective-activities";
+import { describeBackendPage } from "../tool-helpers";
 
 export const getObjectiveActivitiesTool = tool({
   description:
-    "View objective activity timeline and changes: track who made what changes, when they happened, and provide detailed history of objective modifications.",
+    "View a paginated objective activity timeline, including metadata that says when more history is available.",
   inputSchema: z.object({
     objectiveId: z.string().describe("Objective ID for activity operations"),
     page: z.number().min(1).optional().describe("Page number for pagination"),
@@ -19,7 +20,7 @@ export const getObjectiveActivitiesTool = tool({
 
   execute: async (
     { objectiveId, page = 1, pageSize = 20 },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -31,7 +32,7 @@ export const getObjectiveActivitiesTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -43,13 +44,17 @@ export const getObjectiveActivitiesTool = tool({
         pageSize,
       );
       const activities = response.activities;
+      const pagination = describeBackendPage(
+        response.pagination,
+        activities.length,
+      );
 
       return {
         success: true,
         activities,
         count: activities.length,
-        pagination: response.pagination,
-        message: `Found ${activities.length} activity${activities.length !== 1 ? "s" : ""} for this objective.`,
+        pagination,
+        message: `Returned ${activities.length} objective activit${activities.length === 1 ? "y" : "ies"} from page ${pagination.page}${pagination.hasMore ? "; more pages are available" : ""}.`,
       };
     } catch (error) {
       return {

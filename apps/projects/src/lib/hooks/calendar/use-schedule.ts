@@ -4,10 +4,15 @@ import { useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import { getCalendarSchedule } from "@/lib/queries/calendar/get-schedule";
 
-export const useCalendarSchedule = (params: {
-  startAt: string;
-  endAt: string;
-}) => {
+export const useCalendarSchedule = (
+  params: {
+    startAt: string;
+    endAt: string;
+  },
+  options?: {
+    enabled?: boolean;
+  },
+) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
 
@@ -19,6 +24,7 @@ export const useCalendarSchedule = (params: {
     ),
     queryFn: () =>
       getCalendarSchedule({ session: session!, workspaceSlug }, params),
+    enabled: options?.enabled,
     staleTime: 1000 * 60,
   });
 };

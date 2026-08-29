@@ -1,0 +1,46 @@
+---
+title: Authentication
+description: Choose and protect the credential used by a FortyOne integration.
+icon: KeyRound
+---
+
+FortyOne accepts bearer credentials on the versioned `/api/v1` surface. A
+credential narrows access; it never replaces workspace membership, team access,
+or resource-level authorization.
+
+## Credential types
+
+| Credential            | Best for                                                       | Owner     | Availability                   |
+| --------------------- | -------------------------------------------------------------- | --------- | ------------------------------ |
+| Personal access token | A script or tool acting for one person                         | Account   | Available to signed-in members |
+| Service-account key   | A deployed process that must not depend on an employee account | Workspace | Workspace administrators       |
+
+For most first integrations, start with a personal access token. Use a service
+account only when the process genuinely needs a non-human identity and the
+operation supports it.
+
+## Send the credential
+
+```http
+Authorization: Bearer <credential>
+```
+
+Send exactly one bearer header. Developer credentials are accepted only by the
+documented `/api/v1` routes; they do not replace a FortyOne web session.
+
+## Credential safety
+
+| Do                                                       | Avoid                                       |
+| -------------------------------------------------------- | ------------------------------------------- |
+| Store the value in a secret manager                      | Source code and committed `.env` files      |
+| Give each integration its own credential                 | Sharing one token between unrelated systems |
+| Choose the fewest scopes and shortest practical lifetime | Broad, long-lived tokens by default         |
+| Rotate immediately after suspected exposure              | Waiting for expiry after a leak             |
+| Log the token prefix and request ID                      | Logging the complete bearer value           |
+
+FortyOne stores only a digest of the secret. The full value is shown once and
+cannot be recovered later. Rotation revokes the old personal token immediately;
+revocation and expiry take effect on the next authentication attempt.
+
+Authentication failures deliberately do not reveal whether a token was unknown,
+expired, revoked, or malformed.

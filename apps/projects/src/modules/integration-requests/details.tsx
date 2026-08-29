@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useEditor } from "@tiptap/react";
 import Underline from "@tiptap/extension-underline";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
@@ -22,12 +22,15 @@ import {
   CloseIcon,
   ClockIcon,
   CopyIcon,
+  EstimateIcon,
   GitHubIcon,
   LinkIcon,
   MoreHorizontalIcon,
   ObjectiveIcon,
   SlackIcon,
   SprintsIcon,
+  TagsIcon,
+  Time02Icon,
 } from "icons";
 import {
   Avatar,
@@ -51,26 +54,35 @@ import {
   PriorityIcon,
   StatusesMenu,
   StoryStatusIcon,
+  LabelsMenu,
+  EstimateMenu,
+  TimeNeededMenu,
 } from "@/components/ui";
-import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
+import { ObjectiveKeyResultMenu } from "@/components/ui/story/objective-key-result-menu";
 import { SprintsMenu } from "@/components/ui/story/sprints-menu";
-import { useDebounce, useTerminology, useWorkspacePath } from "@/hooks";
+import { NotFoundIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
+import { useTerminology, useWorkspacePath } from "@/hooks";
+import { useDebouncedCallback } from "@/hooks/debounce";
 import {
+  DEFAULT_ESTIMATE_SCHEME,
   formatEstimate,
-  getEstimateOptions,
   type EstimateScheme,
 } from "@/lib/estimate";
+import { formatTimeNeeded } from "@/lib/time-needed";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useSession } from "@/lib/auth/client";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
+import { useLabels } from "@/lib/hooks/labels";
 import { BodyContainer } from "@/components/shared";
 import type { Member } from "@/types";
 import type { State } from "@/types/states";
 import type { GitHubComment } from "@/modules/settings/workspace/integrations/github/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { Option } from "@/modules/story/components/options";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
+import { useKeyResults } from "@/modules/objectives/hooks";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import {
@@ -83,6 +95,7 @@ import { useIntegrationRequest } from "./hooks/use-request";
 import { usePostRequestGitHubComment } from "./hooks/use-post-request-github-comment";
 import { useRequestGitHubComments } from "./hooks/use-request-github-comments";
 import { useUpdateIntegrationRequest } from "./hooks/use-update-request";
+import { IntegrationRequestThreadActivity } from "./thread-activity";
 import type {
   IntegrationRequest,
   UpdateIntegrationRequestInput,
@@ -199,7 +212,7 @@ const GitHubCommentInput = ({ requestId }: { requestId: string }) => {
   );
 };
 
-const RequestIntegrationBanner = ({
+export const RequestIntegrationBanner = ({
   canEditRequest,
   icon,
   onAccept,
@@ -235,8 +248,8 @@ const RequestIntegrationBanner = ({
           </Text>
         ) : null}
       </Flex>
-      {sourceUrl ? (
-        <Flex align="center" gap={1}>
+      <Flex align="center" className="shrink-0" gap={1}>
+        {sourceUrl ? (
           <a
             className="text-primary hover:text-primary/80 rounded-md p-1 transition"
             href={sourceUrl}
@@ -246,17 +259,20 @@ const RequestIntegrationBanner = ({
           >
             <LinkIcon className="text-current" />
           </a>
-          <Menu>
-            <Menu.Button>
-              <button
-                className="text-primary hover:text-primary/80 rounded-md p-1 transition"
-                type="button"
-              >
-                <MoreHorizontalIcon className="h-5 text-current" />
-              </button>
-            </Menu.Button>
-            <Menu.Items align="end">
-              <Menu.Group>
+        ) : null}
+        <Menu>
+          <Menu.Button>
+            <button
+              aria-label="Intake actions"
+              className="text-primary hover:text-primary/80 rounded-md p-1 transition"
+              type="button"
+            >
+              <MoreHorizontalIcon className="h-5 text-current" />
+            </button>
+          </Menu.Button>
+          <Menu.Items align="end">
+            <Menu.Group>
+              {sourceUrl ? (
                 <Menu.Item
                   onSelect={() => {
                     window.open(sourceUrl, "_blank", "noopener,noreferrer");
@@ -265,6 +281,8 @@ const RequestIntegrationBanner = ({
                   <LinkIcon className="text-icon h-5 w-auto" />
                   {openLabel}
                 </Menu.Item>
+              ) : null}
+              {sourceUrl ? (
                 <Menu.Item
                   onSelect={() => {
                     navigator.clipboard.writeText(sourceUrl);
@@ -273,23 +291,23 @@ const RequestIntegrationBanner = ({
                   <CopyIcon className="text-icon h-5 w-auto" />
                   Copy link
                 </Menu.Item>
-                <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
-                  <CheckIcon className="text-icon h-5 w-auto" />
-                  Accept request
-                </Menu.Item>
-                <Menu.Item
-                  className="text-danger"
-                  disabled={!canEditRequest}
-                  onSelect={onDecline}
-                >
-                  <CloseIcon className="text-danger" />
-                  Decline request...
-                </Menu.Item>
-              </Menu.Group>
-            </Menu.Items>
-          </Menu>
-        </Flex>
-      ) : null}
+              ) : null}
+              <Menu.Item disabled={!canEditRequest} onSelect={onAccept}>
+                <CheckIcon className="text-icon h-5 w-auto" />
+                Accept intake item
+              </Menu.Item>
+              <Menu.Item
+                className="text-danger"
+                disabled={!canEditRequest}
+                onSelect={onDecline}
+              >
+                <CloseIcon className="text-danger" />
+                Decline intake item...
+              </Menu.Item>
+            </Menu.Group>
+          </Menu.Items>
+        </Menu>
+      </Flex>
     </Flex>
   </Box>
 );
@@ -342,11 +360,13 @@ const getRequestSourceBanner = ({
   provider,
   repositoryName,
   slackChannel,
+  storyTerm,
 }: {
   issueNumber: string;
   provider: IntegrationRequest["provider"];
   repositoryName: string | null;
   slackChannel: string | null;
+  storyTerm: string;
 }): RequestSourceBannerDetails => {
   switch (provider) {
     case "github":
@@ -360,14 +380,14 @@ const getRequestSourceBanner = ({
       return {
         icon: <SlackIcon className="h-5 shrink-0" />,
         openLabel: "Open on Slack",
-        primaryText: "Message synced with Slack",
+        primaryText: "Request from Slack",
         secondaryText: slackChannel ? `#${slackChannel}` : null,
       };
     case "intercom":
       return {
         icon: <ChatIcon className="text-primary h-5 shrink-0" />,
         openLabel: "Open source",
-        primaryText: "Story from Intercom",
+        primaryText: `${storyTerm} from Intercom`,
         secondaryText: null,
       };
   }
@@ -403,9 +423,21 @@ const RequestProperties = ({
     request.objectiveId ?? null,
     teamId,
   );
+  const { data: keyResults = [] } = useKeyResults(
+    request.objectiveId ?? "",
+    Boolean(request.objectiveId),
+  );
+  const selectedKeyResult = keyResults.find(
+    (keyResult) => keyResult.id === request.keyResultId,
+  );
+  const { data: allLabels = [] } = useLabels({ teamId });
+  const selectedLabelIds = new Set(request.labelIds);
+  const selectedLabels = allLabels.filter((label) =>
+    selectedLabelIds.has(label.id),
+  );
   const { data: selectedSprint } = useSprint(request.sprintId ?? null, teamId);
   const estimateScheme = (teamSettings?.estimationSettings.scheme ??
-    "points") as EstimateScheme;
+    DEFAULT_ESTIMATE_SCHEME) as EstimateScheme;
   const requestEstimateLabel = formatEstimate(
     estimateScheme,
     request.estimateValue,
@@ -512,7 +544,7 @@ const RequestProperties = ({
               <AssigneesMenu.Items
                 assigneeId={request.assigneeId}
                 onAssigneeSelected={(assigneeId) => {
-                  onUpdate({ assigneeId: assigneeId ?? undefined });
+                  onUpdate({ assigneeId: assigneeId ?? null });
                 }}
                 teamId={teamId}
               />
@@ -522,36 +554,60 @@ const RequestProperties = ({
         <Option
           isCompact={isInline}
           isNotifications={isInline}
-          label="Estimate"
+          label="Complexity"
           value={
-            <Menu>
-              <Menu.Button>
+            <EstimateMenu>
+              <EstimateMenu.Trigger>
                 <Button
                   color="tertiary"
                   disabled={!canEditRequest}
+                  leftIcon={<EstimateIcon className="h-4" />}
                   size="sm"
                   variant={isInline ? "solid" : "naked"}
                 >
                   {requestEstimateLabel}
                 </Button>
-              </Menu.Button>
-              <Menu.Items align="start">
-                <Menu.Group>
-                  {getEstimateOptions(estimateScheme).map(
-                    ({ label, value }) => (
-                      <Menu.Item
-                        key={value}
-                        onSelect={() => {
-                          onUpdate({ estimateValue: value });
-                        }}
-                      >
-                        {label}
-                      </Menu.Item>
-                    ),
+              </EstimateMenu.Trigger>
+              <EstimateMenu.Items
+                align="start"
+                estimateScheme={estimateScheme}
+                estimateValue={request.estimateValue}
+                setEstimateValue={(estimateValue) => {
+                  onUpdate({ estimateValue });
+                }}
+              />
+            </EstimateMenu>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Time needed"
+          value={
+            <TimeNeededMenu>
+              <TimeNeededMenu.Trigger>
+                <Button
+                  color="tertiary"
+                  disabled={!canEditRequest}
+                  leftIcon={<Time02Icon className="h-4" />}
+                  size="sm"
+                  variant={isInline ? "solid" : "naked"}
+                >
+                  {formatTimeNeeded(
+                    request.estimatedDurationMinutes,
+                    request.estimatedDurationMinutes ? "full" : "compact",
                   )}
-                </Menu.Group>
-              </Menu.Items>
-            </Menu>
+                </Button>
+              </TimeNeededMenu.Trigger>
+              <TimeNeededMenu.Items
+                align="start"
+                estimatedDurationMinutes={request.estimatedDurationMinutes}
+                minimumFocusBlockMinutes={request.minimumFocusBlockMinutes}
+                setTimeNeeded={(timeNeeded) => {
+                  onUpdate(timeNeeded);
+                }}
+              />
+            </TimeNeededMenu>
           }
         />
         <Option
@@ -559,31 +615,62 @@ const RequestProperties = ({
           isNotifications={isInline}
           label={getTermDisplay("objectiveTerm", { capitalize: true })}
           value={
-            <ObjectivesMenu>
-              <ObjectivesMenu.Trigger>
+            <ObjectiveKeyResultMenu
+              keyResultId={request.keyResultId ?? null}
+              objectiveId={request.objectiveId ?? null}
+              onChange={({ keyResultId, objectiveId }) => {
+                onUpdate({
+                  objectiveId: objectiveId ?? null,
+                  keyResultId: keyResultId ?? null,
+                });
+              }}
+              teamId={teamId}
+            >
+              <Button
+                color="tertiary"
+                disabled={!canEditRequest}
+                leftIcon={<ObjectiveIcon className="h-4" />}
+                size="sm"
+                variant={isInline ? "solid" : "naked"}
+              >
+                <span className="max-w-40 truncate">
+                  {selectedKeyResult?.name ??
+                    selectedObjective?.name ??
+                    getTermDisplay("objectiveTerm", { capitalize: true })}
+                </span>
+              </Button>
+            </ObjectiveKeyResultMenu>
+          }
+        />
+        <Option
+          isCompact={isInline}
+          isNotifications={isInline}
+          label="Labels"
+          value={
+            <LabelsMenu>
+              <LabelsMenu.Trigger>
                 <Button
                   color="tertiary"
                   disabled={!canEditRequest}
-                  leftIcon={<ObjectiveIcon className="h-4" />}
+                  leftIcon={<TagsIcon className="h-4" />}
                   size="sm"
                   variant={isInline ? "solid" : "naked"}
                 >
                   <span className="max-w-40 truncate">
-                    {selectedObjective?.name ??
-                      getTermDisplay("objectiveTerm", { capitalize: true })}
+                    {selectedLabels.length > 0
+                      ? selectedLabels.map((label) => label.name).join(", ")
+                      : "Add labels"}
                   </span>
                 </Button>
-              </ObjectivesMenu.Trigger>
-              <ObjectivesMenu.Items
-                objectiveId={request.objectiveId}
-                setObjectiveId={(objectiveId) => {
-                  if (objectiveId) {
-                    onUpdate({ objectiveId });
-                  }
+              </LabelsMenu.Trigger>
+              <LabelsMenu.Items
+                labelIds={request.labelIds}
+                setLabelIds={(labelIds) => {
+                  onUpdate({ labelIds });
                 }}
                 teamId={teamId}
               />
-            </ObjectivesMenu>
+            </LabelsMenu>
           }
         />
         <Option
@@ -608,9 +695,7 @@ const RequestProperties = ({
               </SprintsMenu.Trigger>
               <SprintsMenu.Items
                 setSprintId={(sprintId) => {
-                  if (sprintId) {
-                    onUpdate({ sprintId });
-                  }
+                  onUpdate({ sprintId: sprintId ?? null });
                 }}
                 sprintId={request.sprintId}
                 teamId={teamId}
@@ -629,6 +714,24 @@ const RequestProperties = ({
                   color="tertiary"
                   disabled={!canEditRequest}
                   leftIcon={<CalendarIcon className="h-4" />}
+                  rightIcon={
+                    request.startDate ? (
+                      <CloseIcon
+                        aria-label="Remove start date"
+                        className="h-4"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onUpdate({ startDate: null });
+                        }}
+                        onPointerDown={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        role="button"
+                      />
+                    ) : null
+                  }
                   size="sm"
                   variant={isInline ? "solid" : "naked"}
                 >
@@ -661,6 +764,24 @@ const RequestProperties = ({
                   color="tertiary"
                   disabled={!canEditRequest}
                   leftIcon={<CalendarIcon className="h-4" />}
+                  rightIcon={
+                    request.endDate ? (
+                      <CloseIcon
+                        aria-label="Remove deadline"
+                        className="h-4"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onUpdate({ endDate: null });
+                        }}
+                        onPointerDown={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        role="button"
+                      />
+                    ) : null
+                  }
                   size="sm"
                   variant={isInline ? "solid" : "naked"}
                 >
@@ -834,11 +955,13 @@ export const IntegrationRequestDetails = ({
   const { teamId } = useParams<{ teamId: string }>();
   const router = useRouter();
   const { withWorkspace } = useWorkspacePath();
+  const { getTermDisplay } = useTerminology();
   const [isDeclining, setIsDeclining] = useState(false);
   const { data: request, isPending } = useIntegrationRequest(requestId);
-  const { data: statuses = [] } = useTeamStatuses(teamId);
+  const requestTeamId = request?.teamId ?? teamId;
+  const { data: statuses = [] } = useTeamStatuses(requestTeamId);
   const { data: members = [] } = useMembers();
-  const updateRequest = useUpdateIntegrationRequest();
+  const { mutate: updateRequest } = useUpdateIntegrationRequest();
   const acceptRequest = useAcceptIntegrationRequest();
   const declineRequest = useDeclineIntegrationRequest();
 
@@ -848,11 +971,24 @@ export const IntegrationRequestDetails = ({
   const statusId = request?.statusId ?? defaultStatus?.id;
   const priority: StoryPriority = request?.priority ?? "No Priority";
 
-  const handleUpdate = (payload: UpdateIntegrationRequestInput) => {
-    if (!request) return;
-    updateRequest.mutate({ requestId: request.id, payload });
-  };
-  const debouncedHandleUpdate = useDebounce(handleUpdate, DEBOUNCE_DELAY);
+  const requestIdForUpdate = request?.id;
+  const handleUpdate = useCallback(
+    (payload: UpdateIntegrationRequestInput) => {
+      if (!requestIdForUpdate) return;
+      updateRequest({ requestId: requestIdForUpdate, payload });
+    },
+    [requestIdForUpdate, updateRequest],
+  );
+  const {
+    callback: debouncedDescriptionUpdate,
+    flush: flushDescriptionUpdate,
+  } = useDebouncedCallback(handleUpdate, DEBOUNCE_DELAY, {
+    flushOnUnmount: true,
+  });
+  const { callback: debouncedTitleUpdate, flush: flushTitleUpdate } =
+    useDebouncedCallback(handleUpdate, DEBOUNCE_DELAY, {
+      flushOnUnmount: true,
+    });
 
   const descriptionEditor = useEditor({
     extensions: [
@@ -866,10 +1002,11 @@ export const IntegrationRequestDetails = ({
     content: request?.description ?? "",
     editable: request?.status === "pending",
     onUpdate: ({ editor }) => {
-      debouncedHandleUpdate({
+      debouncedDescriptionUpdate({
         description: editor.getHTML(),
       });
     },
+    onBlur: flushDescriptionUpdate,
     immediatelyRender: false,
   });
 
@@ -883,33 +1020,46 @@ export const IntegrationRequestDetails = ({
     content: request?.title ?? "",
     editable: request?.status === "pending",
     onUpdate: ({ editor }) => {
-      debouncedHandleUpdate({
+      debouncedTitleUpdate({
         title: editor.getText(),
       });
     },
+    onBlur: flushTitleUpdate,
     immediatelyRender: false,
   });
 
   useEffect(() => {
     if (
       titleEditor &&
+      !titleEditor.isFocused &&
       request?.title &&
       titleEditor.getText() !== request.title
     ) {
-      titleEditor.commands.setContent(request.title);
+      titleEditor.commands.setContent(request.title, { emitUpdate: false });
     }
     if (
       descriptionEditor &&
+      !descriptionEditor.isFocused &&
       request?.description &&
       descriptionEditor.getHTML() !== request.description
     ) {
-      descriptionEditor.commands.setContent(request.description);
+      descriptionEditor.commands.setContent(request.description, {
+        emitUpdate: false,
+      });
     }
   }, [descriptionEditor, request?.description, request?.title, titleEditor]);
 
+  useEffect(
+    () => () => {
+      flushDescriptionUpdate();
+      flushTitleUpdate();
+    },
+    [flushDescriptionUpdate, flushTitleUpdate, requestId],
+  );
+
   if (isPending) {
     return (
-      <Box className="h-dvh px-8 py-7">
+      <Box className="h-full px-8 py-7">
         <Box className="bg-surface-muted mb-8 h-8 w-2/5 rounded" />
         <Box className="bg-surface-muted mb-4 h-4 w-4/5 rounded" />
         <Box className="bg-surface-muted h-4 w-3/5 rounded" />
@@ -919,13 +1069,14 @@ export const IntegrationRequestDetails = ({
 
   if (!request) {
     return (
-      <Box className="flex h-dvh items-center justify-center px-6">
-        <Box>
+      <Box className="flex h-full items-center justify-center px-6">
+        <Box className="flex flex-col items-center">
+          <NotFoundIllustration className="mb-5 w-52" />
           <Text align="center" className="mb-3" fontSize="xl">
-            Request not found
+            Intake item not found
           </Text>
           <Text align="center" color="muted">
-            This request may have already been handled.
+            This intake item may have already been handled.
           </Text>
         </Box>
       </Box>
@@ -940,6 +1091,7 @@ export const IntegrationRequestDetails = ({
     provider: request.provider,
     repositoryName,
     slackChannel,
+    storyTerm: getTermDisplay("storyTerm", { capitalize: true }),
   });
   const selectedStatus = statuses.find((status) => status.id === statusId);
   const assignee = members.find((member) => member.id === request.assigneeId);
@@ -949,7 +1101,9 @@ export const IntegrationRequestDetails = ({
     acceptRequest.mutate(request.id, {
       onSuccess: (res) => {
         if (res.data?.acceptedStoryId) {
-          router.push(withWorkspace(`/story/${res.data.acceptedStoryId}`));
+          router.push(
+            withWorkspace(getStoryPath({ id: res.data.acceptedStoryId })),
+          );
         }
       },
     });
@@ -960,10 +1114,10 @@ export const IntegrationRequestDetails = ({
   };
 
   return (
-    <Box className="h-dvh">
-      <Box className="notification-story-container hidden h-full md:flex">
-        <Box className="min-w-0 flex-1">
-          <BodyContainer className="h-dvh overflow-y-auto pb-8">
+    <Box className="h-full min-h-0">
+      <Box className="notification-story-container flex h-full min-h-0 flex-col overflow-hidden md:flex-row">
+        <Box className="min-h-0 min-w-0 flex-1">
+          <BodyContainer className="h-full min-h-0 overflow-y-auto pb-8">
             <Container className="max-w-7xl pt-7">
               <RequestIntegrationBanner
                 canEditRequest={canEditRequest}
@@ -990,7 +1144,7 @@ export const IntegrationRequestDetails = ({
                   request={request}
                   selectedStatus={selectedStatus}
                   statusId={statusId}
-                  teamId={teamId}
+                  teamId={request.teamId}
                   variant="inline"
                 />
               </Box>
@@ -1022,27 +1176,43 @@ export const IntegrationRequestDetails = ({
                     </Tabs.Panel>
                   </Tabs>
                 </Box>
-              ) : (
+              ) : null}
+              {request.provider === "slack" ? (
                 <Box>
                   <Text
                     as="h4"
-                    className="mb-2 flex items-center gap-1"
+                    className="mb-4 flex items-center gap-1"
                     fontWeight="medium"
                   >
                     <ClockIcon className="relative -top-px" />
                     Activity feed
                   </Text>
-                  <Text color="muted">
-                    Slack story details are captured in the source link and
-                    metadata.
-                  </Text>
+                  <Tabs defaultValue="slack">
+                    <Tabs.List className="mx-0 mb-5">
+                      <Tabs.Tab
+                        className="gap-1 px-2"
+                        leftIcon={<SlackIcon className="h-[1.05rem]" />}
+                        value="slack"
+                      >
+                        Slack
+                      </Tabs.Tab>
+                    </Tabs.List>
+                    <Tabs.Panel value="slack">
+                      <IntegrationRequestThreadActivity
+                        requestId={request.id}
+                      />
+                    </Tabs.Panel>
+                  </Tabs>
                 </Box>
-              )}
+              ) : null}
+              {request.provider !== "github" && request.provider !== "slack" ? (
+                <Text color="muted">No integration activity is available.</Text>
+              ) : null}
             </Container>
           </BodyContainer>
         </Box>
 
-        <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border w-(--story-sidebar-width) shrink-0 border-l-[0.5px] bg-linear-to-br md:h-dvh md:overflow-y-auto md:pb-6">
+        <Box className="notification-story-sidebar from-sidebar/70 to-sidebar/40 border-border w-full shrink-0 overflow-y-auto border-t-[0.5px] bg-linear-to-br pb-6 md:h-full md:min-h-0 md:w-(--story-sidebar-width) md:border-t-0 md:border-l-[0.5px]">
           <RequestProperties
             assignee={assignee}
             canEditRequest={canEditRequest}
@@ -1051,13 +1221,13 @@ export const IntegrationRequestDetails = ({
             request={request}
             selectedStatus={selectedStatus}
             statusId={statusId}
-            teamId={teamId}
+            teamId={request.teamId}
           />
         </Box>
       </Box>
       <ConfirmDialog
-        confirmText="Decline request"
-        description="Declining removes this item from the team request queue. You can still find the original item in the source integration."
+        confirmText="Decline intake item"
+        description="Declining removes this item from the team's intake queue. You can still find the original item in the source integration."
         isLoading={declineRequest.isPending}
         isOpen={isDeclining}
         loadingText="Declining..."
@@ -1072,12 +1242,12 @@ export const IntegrationRequestDetails = ({
             onSuccess: (res) => {
               if (!res.error?.message) {
                 setIsDeclining(false);
-                router.push(withWorkspace(`/teams/${teamId}/requests`));
+                router.push(withWorkspace(`/teams/${request.teamId}/requests`));
               }
             },
           });
         }}
-        title="Decline this request?"
+        title="Decline this intake item?"
       />
     </Box>
   );

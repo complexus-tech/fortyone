@@ -8,20 +8,14 @@ import { getObjectiveStatuses } from "@/modules/objectives/queries/statuses";
 import type { NewObjectiveStatus } from "@/modules/objectives/actions/statuses/create";
 import type { UpdateObjectiveStatus } from "@/modules/objectives/actions/statuses/update";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { MAYA_TOOL_ACTIONS } from "@/lib/ai/tool-actions";
 
 export const objectiveStatusesTool = tool({
   description:
     "View, create, update, and manage WORKFLOW STATUSES for objectives (e.g., 'Backlog', 'In Progress', 'Review', 'Done'). These are workspace-level statuses only (no team-specific statuses). IMPORTANT: This is different from objective HEALTH ('On Track', 'At Risk', 'Off Track') which is managed by the objectives tool. Use this tool to list objective workflow statuses, create new workflow states for objectives, or modify existing objective statuses.",
   inputSchema: z.object({
     action: z
-      .enum([
-        "list-objective-statuses",
-        "get-objective-status-details",
-        "create-objective-status",
-        "update-objective-status",
-        "delete-objective-status",
-        "set-default-objective-status",
-      ])
+      .enum(MAYA_TOOL_ACTIONS.objectiveStatuses)
       .describe(
         "Action to perform: list-objective-statuses (show all objective statuses), get-objective-status-details (get info about a specific status), create-objective-status (make new status), update-objective-status (modify existing), delete-objective-status (remove), set-default-objective-status (make default)",
       ),
@@ -56,7 +50,7 @@ export const objectiveStatusesTool = tool({
   }),
   execute: async (
     { action, statusId, name, color, category, isDefault },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -67,7 +61,7 @@ export const objectiveStatusesTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -151,6 +145,7 @@ export const objectiveStatusesTool = tool({
             name,
             color,
             category,
+            isDefault: isDefault ?? false,
           };
 
           const result = await createObjectiveStatusAction(

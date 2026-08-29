@@ -1,10 +1,10 @@
-import { Avatar } from "ui";
 import { useState } from "react";
 import { ProfileUploadDialog } from "ui";
 import { toast } from "sonner";
 import { useCurrentWorkspace } from "@/lib/hooks/workspaces";
 import { useUploadWorkspaceLogoMutation } from "@/lib/hooks/workspace/upload-logo-mutation";
 import { useDeleteWorkspaceLogoMutation } from "@/lib/hooks/workspace/delete-logo-mutation";
+import { EditableAvatar } from "@/modules/settings/components";
 
 export const Logo = () => {
   const { workspace } = useCurrentWorkspace();
@@ -34,19 +34,14 @@ export const Logo = () => {
   };
   return (
     <>
-      <button
+      <EditableAvatar
+        label="Change workspace logo"
+        name={workspace?.name}
         onClick={() => {
           setIsDialogOpen(true);
         }}
-        type="button"
-      >
-        <Avatar
-          className="h-10"
-          name={workspace?.name}
-          src={workspace?.avatarUrl}
-        />
-        <span className="sr-only">Change workspace logo</span>
-      </button>
+        src={workspace?.avatarUrl}
+      />
       <ProfileUploadDialog
         currentImage={workspace?.avatarUrl}
         isOpen={isDialogOpen}

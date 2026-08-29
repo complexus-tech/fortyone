@@ -19,28 +19,30 @@ export const buttonVariants = cva(
         none: "rounded-none",
         sm: "rounded",
         md: "rounded-xl",
-        lg: "rounded-xl",
+        lg: "rounded-2xl",
         xl: "rounded-3xl",
         full: "rounded-full",
       },
       color: {
-        primary: "border-primary bg-primary",
+        primary: "border-primary-solid bg-primary-solid",
         danger: "text-danger border-danger bg-danger ring-danger",
         info: "text-info border-info bg-info ring-info",
         warning: "text-warning border-warning bg-warning ring-warning",
         tertiary:
-          "border-border bg-surface hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
+          "border-border hover:bg-state-hover focus-visible:bg-state-active active:bg-state-active",
         secondary:
           "text-secondary border-secondary bg-secondary ring-secondary",
-        white: "text-black dark:text-dark border-white bg-white ring-white",
+        white: "text-primary-foreground border-white bg-white ring-white",
         invert: "text-foreground-inverse bg-background-inverse",
-        black: "text-white border-black bg-black ring-black",
+        gradient: "border-transparent",
+        black:
+          "text-foreground-inverse border-background-inverse bg-background-inverse ring-background-inverse",
       },
       size: {
         xs: "px-1.5 h-[1.85rem] text-[0.95rem] gap-[2px]",
         sm: "px-2 h-[2.1rem] gap-1",
         md: "px-3 h-[2.4rem] md:h-10",
-        lg: "px-5 md:px-7 py-[0.56rem]",
+        lg: "px-5 md:px-6 h-11.5",
       },
       disabled: {
         true: "opacity-40 cursor-not-allowed",
@@ -68,8 +70,28 @@ export const buttonVariants = cva(
       // Solid variant
       {
         variant: "solid",
-        color: ["primary", "secondary", "danger", "info"],
-        className: "text-white",
+        color: "primary",
+        className: "text-white [&_svg]:!text-current",
+      },
+      {
+        variant: "outline",
+        color: "invert",
+        className: "bg-transparent border-foreground text-foreground",
+      },
+      {
+        variant: "solid",
+        color: "secondary",
+        className: "text-secondary-foreground",
+      },
+      {
+        variant: "solid",
+        color: "danger",
+        className: "text-danger-foreground",
+      },
+      {
+        variant: "solid",
+        color: "info",
+        className: "text-info-foreground",
       },
       {
         variant: "solid",
@@ -77,9 +99,24 @@ export const buttonVariants = cva(
         className: "text-warning-foreground",
       },
       {
+        variant: ["solid", "outline"],
+        color: "tertiary",
+        className: "bg-white dark:bg-surface",
+      },
+      {
         variant: "outline",
         color: "black",
         className: "text-foreground border-border bg-transparent ring-ring",
+      },
+      {
+        variant: "solid",
+        color: "gradient",
+        className: "button-gradient-solid",
+      },
+      {
+        variant: "outline",
+        color: "gradient",
+        className: "button-gradient-outline",
       },
       // Naked variant
       {
@@ -118,12 +155,13 @@ export const buttonVariants = cva(
         disabled: true,
         variant: ["outline", "naked"],
         color: ["primary", "tertiary"],
-        className: "bg-transparent text-text-disabled cursor-not-allowed",
+        className:
+          "cursor-not-allowed bg-transparent text-text-disabled dark:bg-transparent",
       },
       {
         active: true,
         color: "tertiary",
-        className: "bg-state-selected",
+        className: "bg-state-selected dark:bg-state-selected",
       },
     ],
     defaultVariants: {

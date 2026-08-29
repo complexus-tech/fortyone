@@ -7,8 +7,7 @@ export const LockIcon = (props: Icon) => {
     <svg
       {...rest}
       className={cn("h-5 w-auto text-icon", className)}
-      fill="currentColor"
-      fillOpacity={0.1}
+      fill="none"
       strokeWidth={strokeWidth}
       height="24"
       viewBox="0 0 24 24"
@@ -16,22 +15,20 @@ export const LockIcon = (props: Icon) => {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M12 16V14"
-        stroke="currentColor"
-        strokeWidth="2"
+        d="M16.4964 9V6.5C16.4964 4.01472 14.4817 2 11.9964 2C9.51112 2 7.4964 4.01472 7.4964 6.5V9"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M5 15C5 11.134 8.13401 8 12 8C15.866 8 19 11.134 19 15C19 18.866 15.866 22 12 22C8.13401 22 5 18.866 5 15Z"
+        d="M13.4958 9H10.4964C8.16158 9 6.99417 9 6.11049 9.47237C5.41275 9.84535 4.84128 10.4169 4.46837 11.1146C3.99608 11.9984 3.99619 13.1658 3.99641 15.5006C3.99662 17.835 3.99673 19.0023 4.46907 19.8858C4.84203 20.5835 5.41347 21.1548 6.11115 21.5277C6.99475 22 8.16197 22 10.4964 22H13.4958C15.8304 22 16.9978 22 17.8814 21.5277C18.5791 21.1548 19.1506 20.5833 19.5235 19.8856C19.9958 19.0019 19.9958 17.8346 19.9958 15.5C19.9958 13.1654 19.9958 11.9981 19.5235 11.1144C19.1506 10.4167 18.5791 9.84525 17.8814 9.47231C16.9978 9 15.8304 9 13.4958 9Z"
         stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        d="M16.5 9.5V6.5C16.5 4.01472 14.4853 2 12 2C9.51472 2 7.5 4.01472 7.5 6.5V9.5"
-        stroke="currentColor"
-        strokeWidth="2"
         strokeLinecap="round"
+      />
+      <circle
+        cx="11.9964"
+        cy="15.5"
+        r="2"
+        stroke="currentColor"
       />
     </svg>
   );

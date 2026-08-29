@@ -23,10 +23,13 @@ export const ObjectivePageSkeleton = ({
   );
 
   return (
-    <>
+    <Box className="flex h-full min-h-0 flex-col overflow-hidden">
       <HeaderSkeleton layout={layout} />
-      <Tabs value={tab as string}>
-        <Box className="border-border d sticky top-0 z-10 flex h-[3.7rem] w-full items-center border-b-[0.5px] pr-12">
+      <Tabs
+        className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        value={tab as string}
+      >
+        <Box className="border-border d sticky top-0 z-10 flex h-[3.7rem] w-full shrink-0 items-center border-b-[0.5px] pr-12">
           <Tabs.List className="h-min">
             <Tabs.Tab leftIcon={<ObjectiveIcon />} value="overview">
               Overview
@@ -39,28 +42,25 @@ export const ObjectivePageSkeleton = ({
             </Tabs.Tab>
           </Tabs.List>
         </Box>
-        <Tabs.Panel value="overview">
-          <Box className="md:hidden">
+        <Tabs.Panel className="min-h-0 flex-1 overflow-hidden" value="overview">
+          <Box className="h-full min-h-0 md:hidden">
             <OverviewSkeleton />
           </Box>
-          <Box className="hidden md:block">
+          <Box className="hidden h-full min-h-0 md:block">
             <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
               <BoardDividedPanel.MainPanel>
                 <OverviewSkeleton />
               </BoardDividedPanel.MainPanel>
-              <BoardDividedPanel.SideBar
-                className="h-[calc(100dvh-7.7rem)]"
-                isExpanded
-              >
+              <BoardDividedPanel.SideBar className="h-full min-h-0" isExpanded>
                 <SidebarSkeleton />
               </BoardDividedPanel.SideBar>
             </BoardDividedPanel>
           </Box>
         </Tabs.Panel>
-        <Tabs.Panel value="stories">
-          <StoriesSkeleton layout={layout} />
+        <Tabs.Panel className="min-h-0 flex-1 overflow-hidden" value="stories">
+          <StoriesSkeleton className="h-full" layout={layout} />
         </Tabs.Panel>
       </Tabs>
-    </>
+    </Box>
   );
 };

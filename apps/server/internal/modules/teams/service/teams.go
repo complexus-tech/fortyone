@@ -4,9 +4,8 @@ import (
 	"context"
 
 	"github.com/complexus-tech/projects-api/pkg/logger"
-	"github.com/complexus-tech/projects-api/pkg/web"
+	apptracing "github.com/complexus-tech/projects-api/pkg/tracing"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -17,11 +16,11 @@ type Repository interface {
 	ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filter CoreListTeamsFilter) ([]CoreTeam, error)
 	GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID, userID uuid.UUID) (CoreTeam, error)
 	Create(ctx context.Context, team CoreTeam) (CoreTeam, error)
-	CreateTx(ctx context.Context, tx *sqlx.Tx, team CoreTeam) (CoreTeam, error)
 	Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error)
 	Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID) error
-	AddMember(ctx context.Context, teamID, userID uuid.UUID) error
-	AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID) error
+	AddMember(ctx context.Context, teamID, userID, workspaceID uuid.UUID) error
+	JoinPublicTeam(ctx context.Context, input CorePublicTeamJoin) error
+	LeaveTeam(ctx context.Context, input CoreTeamSelfLeave) error
 	RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error
 	UpdateMemberAIContext(ctx context.Context, teamID, userID, workspaceID uuid.UUID, input CoreTeamMemberAIContext) error
 	UpdateUserTeamOrdering(ctx context.Context, userID, workspaceID uuid.UUID, teamIds []uuid.UUID) error
@@ -45,7 +44,7 @@ func New(log *logger.Logger, repo Repository) *Service {
 
 func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filters ...CoreListTeamsFilter) ([]CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.list")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.List")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.List")
 	defer span.End()
 
 	teams, err := s.repo.List(ctx, workspaceID, userID, firstListTeamsFilter(filters))
@@ -63,7 +62,7 @@ func (s *Service) List(ctx context.Context, workspaceID uuid.UUID, userID uuid.U
 
 func (s *Service) ListPublicTeams(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID, filters ...CoreListTeamsFilter) ([]CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.listPublicTeams")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.ListPublicTeams")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.ListPublicTeams")
 	defer span.End()
 
 	teams, err := s.repo.ListPublicTeams(ctx, workspaceID, userID, firstListTeamsFilter(filters))
@@ -88,7 +87,7 @@ func firstListTeamsFilter(filters []CoreListTeamsFilter) CoreListTeamsFilter {
 
 func (s *Service) GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID, userID uuid.UUID) (CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.getByID")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.GetByID")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.GetByID")
 	defer span.End()
 
 	team, err := s.repo.GetByID(ctx, teamID, workspaceID, userID)
@@ -107,7 +106,7 @@ func (s *Service) GetByID(ctx context.Context, teamID uuid.UUID, workspaceID uui
 
 func (s *Service) Create(ctx context.Context, team CoreTeam) (CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.create")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.Create")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.Create")
 	defer span.End()
 
 	result, err := s.repo.Create(ctx, team)
@@ -123,27 +122,9 @@ func (s *Service) Create(ctx context.Context, team CoreTeam) (CoreTeam, error) {
 	return result, nil
 }
 
-func (s *Service) CreateTx(ctx context.Context, tx *sqlx.Tx, team CoreTeam) (CoreTeam, error) {
-	s.log.Info(ctx, "business.core.teams.createTx")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.CreateTx")
-	defer span.End()
-
-	result, err := s.repo.CreateTx(ctx, tx, team)
-	if err != nil {
-		span.RecordError(err)
-		return CoreTeam{}, err
-	}
-
-	span.AddEvent("team created.", trace.WithAttributes(
-		attribute.String("team_id", result.ID.String()),
-		attribute.String("workspace_id", result.Workspace.String()),
-	))
-	return result, nil
-}
-
 func (s *Service) Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam) (CoreTeam, error) {
 	s.log.Info(ctx, "business.core.teams.update")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.Update")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.Update")
 	defer span.End()
 
 	result, err := s.repo.Update(ctx, teamID, updates)
@@ -161,7 +142,7 @@ func (s *Service) Update(ctx context.Context, teamID uuid.UUID, updates CoreTeam
 
 func (s *Service) Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "business.core.teams.delete")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.Delete")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.Delete")
 	defer span.End()
 
 	if err := s.repo.Delete(ctx, teamID, workspaceID); err != nil {
@@ -176,12 +157,12 @@ func (s *Service) Delete(ctx context.Context, teamID uuid.UUID, workspaceID uuid
 	return nil
 }
 
-func (s *Service) AddMember(ctx context.Context, teamID, userID uuid.UUID) error {
+func (s *Service) AddMember(ctx context.Context, teamID, userID, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "business.core.teams.addMember")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.AddMember")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.AddMember")
 	defer span.End()
 
-	if err := s.repo.AddMember(ctx, teamID, userID); err != nil {
+	if err := s.repo.AddMember(ctx, teamID, userID, workspaceID); err != nil {
 		span.RecordError(err)
 		return err
 	}
@@ -189,30 +170,52 @@ func (s *Service) AddMember(ctx context.Context, teamID, userID uuid.UUID) error
 	span.AddEvent("team member added.", trace.WithAttributes(
 		attribute.String("team_id", teamID.String()),
 		attribute.String("user_id", userID.String()),
+		attribute.String("workspace_id", workspaceID.String()),
 	))
 	return nil
 }
 
-func (s *Service) AddMemberTx(ctx context.Context, tx *sqlx.Tx, teamID, userID uuid.UUID) error {
-	s.log.Info(ctx, "business.core.teams.addMemberTx")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.AddMemberTx")
+// LeaveTeam removes only the authenticated actor's membership from a scoped team.
+func (s *Service) LeaveTeam(ctx context.Context, input CoreTeamSelfLeave) error {
+	s.log.Info(ctx, "business.core.teams.leaveTeam")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.LeaveTeam")
 	defer span.End()
 
-	if err := s.repo.AddMemberTx(ctx, tx, teamID, userID); err != nil {
+	if err := s.repo.LeaveTeam(ctx, input); err != nil {
 		span.RecordError(err)
 		return err
 	}
 
-	span.AddEvent("team member added.", trace.WithAttributes(
-		attribute.String("team_id", teamID.String()),
-		attribute.String("user_id", userID.String()),
+	span.AddEvent("team left.", trace.WithAttributes(
+		attribute.String("team_id", input.TeamID.String()),
+		attribute.String("workspace_id", input.WorkspaceID.String()),
+		attribute.String("actor_id", input.ActorID.String()),
+	))
+	return nil
+}
+
+// JoinPublicTeam lets an authenticated workspace member join a public team.
+func (s *Service) JoinPublicTeam(ctx context.Context, input CorePublicTeamJoin) error {
+	s.log.Info(ctx, "business.core.teams.joinPublicTeam")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.JoinPublicTeam")
+	defer span.End()
+
+	if err := s.repo.JoinPublicTeam(ctx, input); err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	span.AddEvent("public team joined.", trace.WithAttributes(
+		attribute.String("team_id", input.TeamID.String()),
+		attribute.String("workspace_id", input.WorkspaceID.String()),
+		attribute.String("actor_id", input.ActorID.String()),
 	))
 	return nil
 }
 
 func (s *Service) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, workspaceID uuid.UUID) error {
 	s.log.Info(ctx, "business.core.teams.removeMember")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.RemoveMember")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.RemoveMember")
 	defer span.End()
 
 	if err := s.repo.RemoveMember(ctx, teamID, userID, workspaceID); err != nil {
@@ -230,7 +233,7 @@ func (s *Service) RemoveMember(ctx context.Context, teamID, userID uuid.UUID, wo
 
 func (s *Service) UpdateMemberAIContext(ctx context.Context, teamID, userID, workspaceID uuid.UUID, input CoreTeamMemberAIContext) error {
 	s.log.Info(ctx, "business.core.teams.updateMemberAIContext")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.UpdateMemberAIContext")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.UpdateMemberAIContext")
 	defer span.End()
 
 	if err := s.repo.UpdateMemberAIContext(ctx, teamID, userID, workspaceID, input); err != nil {
@@ -249,7 +252,7 @@ func (s *Service) UpdateMemberAIContext(ctx context.Context, teamID, userID, wor
 // UpdateUserTeamOrdering updates the user's custom team ordering for a workspace.
 func (s *Service) UpdateUserTeamOrdering(ctx context.Context, userID, workspaceID uuid.UUID, teamIds []uuid.UUID) error {
 	s.log.Info(ctx, "business.core.teams.updateUserTeamOrdering")
-	ctx, span := web.AddSpan(ctx, "business.core.teams.UpdateUserTeamOrdering")
+	ctx, span := apptracing.AddSpanFromContext(ctx, "business.core.teams.UpdateUserTeamOrdering")
 	defer span.End()
 
 	if err := s.repo.UpdateUserTeamOrdering(ctx, userID, workspaceID, teamIds); err != nil {

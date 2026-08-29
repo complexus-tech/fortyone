@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { analyticsKeys } from "@/constants/keys";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
-import { useWorkspacePath } from "@/hooks";
-import { useAnalytics } from "@/hooks";
 import { objectiveKeys } from "../constants";
 import { createKeyResult } from "../actions/create-key-result";
 import type { KeyResult, NewObjectiveKeyResult } from "../types";
@@ -39,10 +39,12 @@ export const useCreateKeyResultMutation = () => {
         objectiveKeys.keyResults(workspaceSlug, newKeyResult.objectiveId),
       );
 
+      const optimisticKeyResultId = `optimistic:${crypto.randomUUID()}`;
       const optimisticKeyResult: KeyResult = {
         ...newKeyResult,
-        id: "optimistic",
-        createdBy: session?.user?.id || "",
+        id: optimisticKeyResultId,
+        sequenceId: 0,
+        createdBy: session?.user.id ?? "",
         lead: newKeyResult.lead || null,
         contributors: newKeyResult.contributors || [],
         createdAt: new Date().toISOString(),
@@ -54,15 +56,21 @@ export const useCreateKeyResultMutation = () => {
         (old = []) => [optimisticKeyResult, ...old],
       );
 
-      return { previousKeyResults };
+      return { optimisticKeyResultId, previousKeyResults };
     },
     onError: (error, variables, context) => {
-      if (context?.previousKeyResults) {
-        queryClient.setQueryData<KeyResult[]>(
-          objectiveKeys.keyResults(workspaceSlug, variables.objectiveId),
-          context.previousKeyResults,
-        );
-      }
+      queryClient.setQueryData<KeyResult[]>(
+        objectiveKeys.keyResults(workspaceSlug, variables.objectiveId),
+        (current) => {
+          if (!context) return current ?? [];
+          const keyResults = current ?? context.previousKeyResults;
+          if (!keyResults) return [];
+
+          return keyResults.filter(
+            ({ id }) => id !== context.optimisticKeyResultId,
+          );
+        },
+      );
       toast.error("Failed to create key result", {
         description:
           error.message || "An error occurred while creating the key result",
@@ -74,7 +82,7 @@ export const useCreateKeyResultMutation = () => {
         },
       });
     },
-    onSuccess: (keyResult, newKeyResult) => {
+    onSuccess: (keyResult, newKeyResult, context) => {
       analytics.track("key_result_created", {
         keyResultId: keyResult.id,
         objectiveId: keyResult.objectiveId,
@@ -86,6 +94,14 @@ export const useCreateKeyResultMutation = () => {
         description: "Key result created successfully",
       });
 
+      queryClient.setQueryData<KeyResult[]>(
+        objectiveKeys.keyResults(workspaceSlug, newKeyResult.objectiveId),
+        (current = []) =>
+          current.map((item) =>
+            item.id === context.optimisticKeyResultId ? keyResult : item,
+          ),
+      );
+
       queryClient.invalidateQueries({
         queryKey: objectiveKeys.keyResults(
           workspaceSlug,
@@ -93,10 +109,19 @@ export const useCreateKeyResultMutation = () => {
         ),
       });
       queryClient.invalidateQueries({
+        queryKey: objectiveKeys.list(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
         queryKey: objectiveKeys.activitiesInfinite(
           workspaceSlug,
           newKeyResult.objectiveId,
         ),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["key-results", workspaceSlug],
+      });
+      queryClient.invalidateQueries({
+        queryKey: analyticsKeys.all(workspaceSlug),
       });
     },
   });

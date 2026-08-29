@@ -9,19 +9,29 @@ import {
   InfoIcon,
   SprintsIcon,
   TagsIcon,
+  Time02Icon,
+  TimeScheduleIcon,
 } from "icons";
+import { useSession } from "@/lib/auth/client";
 import { formatActivityReasonDates } from "@/lib/activity-format";
 import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
+import { formatTimeNeeded } from "@/lib/time-needed";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useLabels } from "@/lib/hooks/labels";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
+import { useProfile } from "@/lib/hooks/profile";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import type { StoryActivity, StoryPriority } from "@/modules/stories/types";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
 import type { Label } from "@/types";
-import { getActivityCopy, getDisplayActivityReason } from "./activity-copy";
+import {
+  formatScheduleActivityValue,
+  getActivityCopy,
+  getActivityValueIds,
+  getDisplayActivityReason,
+} from "./activity-copy";
 import { MayaAvatar } from "./maya-avatar";
 import { PriorityIcon } from "./priority-icon";
 import { StoryStatusIcon } from "./story-status-icon";
@@ -42,8 +52,18 @@ const DisplayEstimate = ({
     <span className="flex items-center gap-1">
       <EstimateIcon className="h-5" />
       {Number.isNaN(estimateValue)
-        ? "No estimate"
+        ? "No complexity"
         : formatEstimate(estimateScheme, estimateValue, "full")}
+    </span>
+  );
+};
+
+const DisplayTimeNeeded = ({ value }: { value: string }) => {
+  const minutes = Number.parseInt(value, 10);
+  return (
+    <span className="flex items-center gap-1">
+      <Time02Icon className="h-5" />
+      {formatTimeNeeded(Number.isNaN(minutes) ? null : minutes, "full")}
     </span>
   );
 };
@@ -134,13 +154,6 @@ const AssociationActivityBadge = ({
   </Badge>
 );
 
-const getActivityLabelIds = (value: unknown): string[] => {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (labelId): labelId is string => typeof labelId === "string",
-  );
-};
-
 const getLabelActivityDisplayValue = (labels: Label[]) => {
   if (labels.length === 1) return labels[0].name;
   return `${labels.length} labels`;
@@ -187,6 +200,7 @@ const getActivityVerb = (type: StoryActivity["type"], storyTerm: string) => {
 };
 
 export const Activity = ({
+  avatarSurfaceClassName,
   teamId,
   field,
   currentValue,
@@ -196,15 +210,20 @@ export const Activity = ({
   newValue,
   oldValue,
   reason,
-}: StoryActivity & { teamId?: string }) => {
+}: StoryActivity & { avatarSurfaceClassName?: string; teamId?: string }) => {
   const { data: members = [] } = useMembers();
   const { data: mayaAssignee } = useMayaAssignee();
   const { data: statuses = [] } = useStatuses();
   const { data: allLabels = [] } = useLabels();
+  const { data: profile } = useProfile();
   const { withWorkspace } = useWorkspacePath();
   const { getTermDisplay } = useTerminology();
+  const { data: session } = useSession();
   const storyTerm = getTermDisplay("storyTerm");
   const member = user;
+  const isSelfActivity = session?.user.id === member.id;
+  const actorDisplayName = isSelfActivity ? "You" : member.fullName;
+  const actorDisplayUsername = isSelfActivity ? "you" : member.username;
   const activityAssignees = mayaAssignee
     ? [...members.filter(({ id }) => id !== mayaAssignee.id), mayaAssignee]
     : members;
@@ -225,7 +244,7 @@ export const Activity = ({
     if (isLinkedUrl && typeof newValue === "string") {
       linkedValue = (
         <a
-          className="inline-block shrink-0 text-sm text-black underline md:text-[0.95rem] dark:text-white"
+          className="inline-block min-w-0 truncate text-sm text-black underline md:text-[0.95rem] dark:text-white"
           href={newValue}
           rel="noopener noreferrer"
           target="_blank"
@@ -237,7 +256,7 @@ export const Activity = ({
       linkedValue = (
         <Text
           as="span"
-          className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
+          className="inline-block min-w-0 truncate text-sm text-black md:text-[0.95rem] dark:text-white"
           fontWeight="medium"
         >
           {currentValue}
@@ -265,7 +284,7 @@ export const Activity = ({
       label: "Status",
       render: (value: string) => (
         <span className="flex items-center gap-1">
-          <StoryStatusIcon className="h-5" statusId={value} />
+          <StoryStatusIcon className="size-3" statusId={value} />
           {statuses.find((status) => status.id === value)?.name}
         </span>
       ),
@@ -280,10 +299,44 @@ export const Activity = ({
       ),
     },
     estimate_unit: {
-      label: "Estimate",
+      label: "Complexity",
       render: (value: string) => (
         <DisplayEstimate teamId={teamId} value={value} />
       ),
+    },
+    estimated_duration_minutes: {
+      label: "Time needed",
+      render: (value: string) => <DisplayTimeNeeded value={value} />,
+    },
+    minimum_focus_block_minutes: {
+      label: "Minimum focus block",
+      render: (value: string) => <DisplayTimeNeeded value={value} />,
+    },
+    auto_scheduling_status: {
+      label: "Auto-scheduling",
+      render: (value: string) => (
+        <span className="flex items-center gap-1">
+          <TimeScheduleIcon className="h-4" />
+          {value}
+        </span>
+      ),
+    },
+    auto_scheduling_time: {
+      label: "Scheduled time",
+      render: (value: string) => (
+        <span className="flex items-center gap-1">
+          <CalendarIcon className="h-4" />
+          {value}
+        </span>
+      ),
+    },
+    auto_scheduling_locked: {
+      label: "Schedule lock",
+      render: (value: string) => <span>{value}</span>,
+    },
+    auto_scheduling_enabled: {
+      label: "Auto-scheduling",
+      render: (value: string) => <span>{value}</span>,
     },
     assignee_id: {
       label: "Assignee",
@@ -333,6 +386,10 @@ export const Activity = ({
         );
       },
     },
+    collaborator_ids: {
+      label: "Collaborators",
+      render: (value: string) => <span>{value}</span>,
+    },
     start_date: {
       label: "Start date",
       render: (value: string) => (
@@ -367,6 +424,12 @@ export const Activity = ({
       label: "Objective",
       render: (value: string) => (
         <DisplayObjective objectiveId={value} teamId={teamId} />
+      ),
+    },
+    key_result_id: {
+      label: "Key result",
+      render: (value: string) => (
+        <span>{!value || value.includes("nil") ? "No key result" : value}</span>
       ),
     },
     blocked_by_id: {
@@ -408,14 +471,48 @@ export const Activity = ({
   };
   const activityLabels =
     field === "labels"
-      ? getActivityLabelIds(newValue)
+      ? getActivityValueIds(newValue)
           .map((labelId) => allLabels.find((label) => label.id === labelId))
           .filter((label): label is Label => Boolean(label))
       : [];
-  const displayCurrentValue =
-    field === "labels" && activityLabels.length > 0
-      ? getLabelActivityDisplayValue(activityLabels)
-      : currentValue;
+  const memberById = new Map(members.map((member) => [member.id, member]));
+  const collaboratorIdsFromNewValue = getActivityValueIds(newValue);
+  let activityCollaboratorIds: string[] = [];
+  if (field === "collaborator_ids") {
+    activityCollaboratorIds =
+      collaboratorIdsFromNewValue.length > 0
+        ? collaboratorIdsFromNewValue
+        : getActivityValueIds(currentValue);
+  }
+  const activityCollaborators =
+    field === "collaborator_ids"
+      ? activityCollaboratorIds.flatMap((userId) => {
+          const collaborator = memberById.get(userId);
+          return collaborator ? [collaborator] : [];
+        })
+      : [];
+  let collaboratorDisplayValue = "No collaborators";
+  if (activityCollaboratorIds.length === 1) {
+    collaboratorDisplayValue =
+      activityCollaborators[0]?.fullName ||
+      activityCollaborators[0]?.username ||
+      "1 collaborator";
+  } else if (activityCollaboratorIds.length > 1) {
+    collaboratorDisplayValue = `${activityCollaboratorIds.length} collaborators`;
+  }
+
+  let displayCurrentValue = currentValue;
+  if (field === "labels" && activityLabels.length > 0) {
+    displayCurrentValue = getLabelActivityDisplayValue(activityLabels);
+  } else if (field === "collaborator_ids") {
+    displayCurrentValue = collaboratorDisplayValue;
+  } else if (field === "auto_scheduling_time") {
+    displayCurrentValue = formatScheduleActivityValue(
+      currentValue,
+      newValue,
+      profile?.timezone,
+    );
+  }
   const activityCopy = getActivityCopy({
     currentValue: displayCurrentValue,
     field,
@@ -432,7 +529,7 @@ export const Activity = ({
       return (
         <Text
           as="span"
-          className="text-sm md:text-[0.95rem]"
+          className="shrink-0 text-sm md:text-[0.95rem]"
           color="muted"
           key={`text-${segment.text}`}
         >
@@ -441,16 +538,24 @@ export const Activity = ({
       );
     }
 
+    const isTruncatableValue =
+      segment.type === "currentValue" &&
+      (field === "title" || ASSOCIATION_ACTIVITY_FIELDS.has(field));
+
     return (
       <Text
         as="span"
-        className="inline-block shrink-0 text-sm text-black md:text-[0.95rem] dark:text-white"
+        className={cn(
+          "inline-block text-sm text-black md:text-[0.95rem] dark:text-white",
+          isTruncatableValue ? "min-w-0 truncate" : "shrink-0",
+        )}
         fontWeight="medium"
         key={
           segment.type === "oldValue"
             ? `oldValue-${segment.value}`
             : segment.type
         }
+        title={isTruncatableValue ? currentValue : undefined}
       >
         {(() => {
           if (
@@ -479,9 +584,7 @@ export const Activity = ({
             return <ActivityLabelValue labels={activityLabels} />;
           }
 
-          return fieldMeta.render(
-            segment.type === "oldValue" ? segment.value : currentValue,
-          );
+          return fieldMeta.render(segment.value);
         })()}
       </Text>
     );
@@ -494,7 +597,7 @@ export const Activity = ({
           "border-border pointer-events-none absolute top-0 left-4 z-0 h-full border-l border-dashed",
         )}
       />
-      <Flex align="center" className="z-1" gap={1}>
+      <Flex align="center" className="z-1 min-w-0" gap={1}>
         <Tooltip
           className="py-2.5"
           title={
@@ -522,11 +625,13 @@ export const Activity = ({
                     href={member.isSystem ? "" : `/profile/${member.id}`}
                   >
                     <Text fontSize="md" fontWeight="medium">
-                      {member.fullName}
+                      {actorDisplayName}
                     </Text>
-                    <Text color="muted" fontSize="md">
-                      ({member.username})
-                    </Text>
+                    {!isSelfActivity ? (
+                      <Text color="muted" fontSize="md">
+                        ({member.username})
+                      </Text>
+                    ) : null}
                   </Link>
                   {!member.isSystem ? (
                     <Button
@@ -539,7 +644,7 @@ export const Activity = ({
                     </Button>
                   ) : (
                     <Text color="muted" fontSize="md">
-                      ({member.username === "maya" ? "AI Assistant" : "Bot"})
+                      ({member.username === "maya" ? "AI Agent" : "Bot"})
                     </Text>
                   )}
                 </Box>
@@ -547,8 +652,13 @@ export const Activity = ({
             </Box>
           }
         >
-          <Flex align="center" className="cursor-pointer" gap={1}>
-            <Box className="bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]">
+          <Flex align="center" className="shrink-0 cursor-pointer" gap={1}>
+            <Box
+              className={cn(
+                "bg-surface relative left-px flex aspect-square items-center rounded-full p-[0.3rem]",
+                avatarSurfaceClassName,
+              )}
+            >
               {member.isSystem ? (
                 <MayaAvatar
                   name={member.fullName}
@@ -567,11 +677,11 @@ export const Activity = ({
               className="relative ml-1 text-sm text-black md:text-[0.95rem] dark:text-white"
               fontWeight="medium"
             >
-              {member.username}
+              {actorDisplayUsername}
             </Text>
           </Flex>
         </Tooltip>
-        <Box className="line-clamp-1 flex items-center gap-1 text-sm md:text-[0.95rem]">
+        <Box className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-sm md:text-[0.95rem]">
           {type === "update" ? (
             activityCopy.segments.map(renderUpdateSegment)
           ) : (
@@ -589,7 +699,7 @@ export const Activity = ({
           ) : null}
           <Text
             as="span"
-            className="mx-0.5 text-sm md:text-[0.95rem]"
+            className="mx-0.5 shrink-0 text-sm md:text-[0.95rem]"
             color="muted"
           >
             ·

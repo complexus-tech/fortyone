@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
-import { getTeamsPage } from "@/modules/teams/queries/get-teams";
+import { getJoinedTeamsPage } from "@/modules/teams/queries/get-teams";
 import { resolvePaginationInput } from "../tool-helpers";
 
 export const listTeams = tool({
@@ -41,7 +41,7 @@ export const listTeams = tool({
       const ctx = { session, workspaceSlug };
       const pagination = resolvePaginationInput({ page, pageSize });
 
-      const response = await getTeamsPage(
+      const response = await getJoinedTeamsPage(
         ctx,
         searchQuery,
         pagination.page,

@@ -9,6 +9,7 @@ import { useGitHubTeamSettings } from "@/lib/hooks/github/use-team-settings";
 import { useUpdateGitHubTeamSettings } from "@/lib/hooks/github/use-update-team-settings";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { StoryStatusIcon } from "@/components/ui/story-status-icon";
+import { useTerminology } from "@/hooks";
 
 const orderedEvents = [
   { key: "draft_pr_open", label: "On draft PR open, move to..." },
@@ -116,6 +117,9 @@ const StatusPicker = ({
 };
 
 export const GitHubAutomations = () => {
+  const { getTermDisplay } = useTerminology();
+  const storyTerm = getTermDisplay("storyTerm");
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const { teamId } = useParams<{ teamId: string }>();
   const { data: teamSettings } = useGitHubTeamSettings(teamId);
   const { data: statuses = [] } = useTeamStatuses(teamId);
@@ -151,7 +155,7 @@ export const GitHubAutomations = () => {
   return (
     <Box className="border-border bg-surface mt-6 rounded-2xl border">
       <SectionHeader
-        description="Configure how GitHub pull requests and issues move stories through this team's workflow."
+        description={`Configure how GitHub pull requests and issues move ${storyTermPlural} through this team's workflow.`}
         title="GitHub automations"
       />
 
@@ -169,11 +173,14 @@ export const GitHubAutomations = () => {
               <Box>
                 <Text className="font-medium">{event.label}</Text>
                 <Text color="muted">
-                  Leave as no action to keep the story in its current status.
+                  Leave as no action to keep the {storyTerm} in its current
+                  status.
                 </Text>
               </Box>
               <StatusPicker
-                onChange={(statusId) => handleChange(event.key, statusId)}
+                onChange={(statusId) => {
+                  handleChange(event.key, statusId);
+                }}
                 statuses={statuses}
                 value={value}
               />

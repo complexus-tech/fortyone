@@ -7,7 +7,7 @@ import { getTeamMembersPage } from "@/lib/queries/members/get-members";
 
 export const getTeamDetails = tool({
   description:
-    "Get detailed information about a specific team including its members and settings.",
+    "Get details for a specific accessible team, including members and settings. Use only after the team is explicitly identified; access to this result does not mean the current user has joined the team.",
   inputSchema: z.object({
     teamId: z.string().describe("Team ID to get details for (required)"),
     includeMembers: z

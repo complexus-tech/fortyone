@@ -1,4 +1,3 @@
-import React from "react";
 import { cn } from "lib";
 
 export const Dot = ({
@@ -9,16 +8,10 @@ export const Dot = ({
   color?: string;
 }) => {
   return (
-    <svg
-      className={cn("size-2", className)}
-      fill="none"
-      height="24"
-      style={{ color }}
-      viewBox="0 0 24 24"
-      width="24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <circle cx={12} cy={12} fill="currentColor" r={12} />
-    </svg>
+    <span
+      aria-hidden="true"
+      className={cn("inline-block size-2 shrink-0 rounded-sm", className)}
+      style={{ backgroundColor: color ?? "currentColor" }}
+    />
   );
 };

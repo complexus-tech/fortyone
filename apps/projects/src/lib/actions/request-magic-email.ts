@@ -1,10 +1,15 @@
 import { post } from "api-client";
 
-export async function requestMagicEmail(email: string, isMobileApp: boolean) {
+export async function requestMagicEmail(
+  email: string,
+  isMobileApp: boolean,
+  callbackUrl?: string,
+) {
   try {
     await post("users/verify/email", {
       email,
       isMobile: isMobileApp,
+      callbackURL: callbackUrl,
     });
 
     return {

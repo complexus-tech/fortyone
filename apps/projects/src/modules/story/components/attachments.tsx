@@ -1,3 +1,4 @@
+import type { FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { Box, Button, DropZone, Flex, Text, Tooltip } from "ui";
 import { AttachmentIcon, PlusIcon } from "icons";
@@ -7,24 +8,21 @@ import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useStoryAttachments } from "../hooks/story-attachments";
 import { useUploadAttachmentMutation } from "../hooks/upload-attachment-mutation";
 import { useDeleteAttachmentMutation } from "../hooks/delete-attachment-mutation";
+import {
+  FREE_ATTACHMENT_SIZE_LIMIT,
+  getAttachmentRejectionMessage,
+  MAX_ATTACHMENT_BATCH_FILES,
+  PAID_ATTACHMENT_SIZE_LIMIT,
+  uploadAttachmentsConcurrently,
+} from "./attachment-upload";
 import { AttachmentsSkeleton } from "./attachments-skeleton";
 import { StoryAttachmentPreview } from "./story-attachment-preview";
 
-interface CustomFile extends File {
-  preview?: string;
-}
-
-const formatFileSize = (bytes: number) => {
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-};
-
 export const Attachments = ({
   className,
-  compactHeader = false,
   storyId,
 }: {
   className?: string;
-  compactHeader?: boolean;
   storyId: string;
 }) => {
   const { getLimit } = useSubscriptionFeatures();
@@ -32,28 +30,35 @@ export const Attachments = ({
   const uploadMutation = useUploadAttachmentMutation(storyId);
   const deleteMutation = useDeleteAttachmentMutation(storyId);
   const maxFileUploads = getLimit("maxFileUploads");
+  const maxFileSize =
+    maxFileUploads === "10MB"
+      ? FREE_ATTACHMENT_SIZE_LIMIT
+      : PAID_ATTACHMENT_SIZE_LIMIT;
 
-  const onDrop = (acceptedFiles: CustomFile[]) => {
-    if (acceptedFiles.length > 0) {
-      if (acceptedFiles.length > 1) {
-        toast.warning("Only one file can be uploaded at a time", {
-          description: "Please select only one file",
+  const onDrop = (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+    const hasTooManyFiles = rejectedFiles.some((rejection) =>
+      rejection.errors.some((error) => error.code === "too-many-files"),
+    );
+    if (hasTooManyFiles) {
+      toast.error(
+        `You can upload up to ${MAX_ATTACHMENT_BATCH_FILES} files at once`,
+        {
+          description: `Select ${MAX_ATTACHMENT_BATCH_FILES} or fewer files and try again.`,
+        },
+      );
+    } else {
+      rejectedFiles.forEach((rejection) => {
+        toast.error(`Could not upload ${rejection.file.name}`, {
+          description: getAttachmentRejectionMessage(rejection, maxFileSize),
         });
-        return;
-      }
-      const file = acceptedFiles[0];
-      const MAX_FILE_SIZE =
-        maxFileUploads === "10MB" ? 10 * 1024 * 1024 : 256 * 1024 * 1024;
-      if (file.size > MAX_FILE_SIZE) {
-        toast.warning(
-          `File size(${formatFileSize(file.size)}) exceeds the 10MB limit`,
-          {
-            description: `${file.name} is too large.`,
-          },
-        );
-        return;
-      }
-      uploadMutation.mutate(file);
+      });
+    }
+
+    if (acceptedFiles.length > 0) {
+      void uploadAttachmentsConcurrently(
+        acceptedFiles,
+        uploadMutation.mutateAsync,
+      );
     }
   };
 
@@ -64,8 +69,9 @@ export const Attachments = ({
     open: openFilePicker,
   } = useDropzone({
     onDrop,
-    multiple: false,
-    maxFiles: 1,
+    multiple: true,
+    maxFiles: MAX_ATTACHMENT_BATCH_FILES,
+    maxSize: maxFileSize,
     accept: {
       "image/*": [".png", ".jpg", ".jpeg", ".webp"],
       "video/*": [".mp4"],
@@ -77,16 +83,22 @@ export const Attachments = ({
 
   const imagesAndVideos = attachments.filter(
     (file) =>
-      file.mimeType.includes("image") || file.mimeType.includes("video"),
+      file.mimeType.startsWith("image/") || file.mimeType.startsWith("video/"),
   );
   const otherFiles = attachments.filter(
     (file) =>
-      !file.mimeType.includes("image") && !file.mimeType.includes("video"),
+      !file.mimeType.startsWith("image/") &&
+      !file.mimeType.startsWith("video/"),
+  );
+  const uploadedAttachments = [...imagesAndVideos, ...otherFiles].filter(
+    (file) => !file.id.startsWith("temp-"),
   );
 
   if (isPending) {
     return <AttachmentsSkeleton />;
   }
+
+  const hasAttachments = attachments.length > 0;
 
   const handleDelete = (attachmentId: string) => {
     deleteMutation.mutate(attachmentId);
@@ -96,14 +108,17 @@ export const Attachments = ({
     <Box className={className} suppressHydrationWarning>
       <Flex
         align="center"
-        className={cn("mb-2", compactHeader ? "mt-2" : "mt-4")}
+        className={cn(
+          "border-border",
+          hasAttachments && "border-b-[0.5px] pb-2",
+        )}
         justify="between"
       >
         <Text as="h4" className="flex items-center gap-1" fontWeight="semibold">
           <AttachmentIcon className="h-5 w-auto" />
           Attachments
         </Text>
-        {attachments.length > 0 && (
+        {hasAttachments ? (
           <Tooltip title="Add attachment">
             <Button
               asIcon
@@ -116,31 +131,40 @@ export const Attachments = ({
               <span className="sr-only">Add attachment</span>
             </Button>
           </Tooltip>
-        )}
+        ) : null}
       </Flex>
-      {attachments.length === 0 && (
-        <DropZone>
-          <DropZone.Root isDragActive={isDragActive} rootProps={getRootProps()}>
-            <DropZone.Input
-              inputProps={getInputProps({
-                multiple: true,
+      {!hasAttachments && (
+        <Box>
+          <DropZone>
+            <DropZone.Root
+              className={cn("dark:bg-surface/80 mt-2 rounded-xl", {
+                "dark:bg-surface-muted/80": isDragActive,
               })}
-            />
-            <DropZone.Body
               isDragActive={isDragActive}
-              message="Drag 'n' drop your file here, or click to select the file."
-            />
-          </DropZone.Root>
-        </DropZone>
+              rootProps={getRootProps()}
+            >
+              <DropZone.Input inputProps={getInputProps()} />
+              <DropZone.Body
+                isDragActive={isDragActive}
+                message={`Drag and drop up to ${MAX_ATTACHMENT_BATCH_FILES} files here, or click to select them.`}
+              />
+            </DropZone.Root>
+          </DropZone>
+        </Box>
       )}
+      {hasAttachments ? <input {...getInputProps()} /> : null}
       {imagesAndVideos.length > 0 && (
         <Box className="mt-3 grid grid-cols-3 gap-3 md:grid-cols-4 lg:grid-cols-6">
           {imagesAndVideos.map((file) => (
             <StoryAttachmentPreview
               file={file}
+              files={uploadedAttachments}
               key={file.id}
               onDelete={() => {
                 handleDelete(file.id);
+              }}
+              onDeleteFile={(attachment) => {
+                handleDelete(attachment.id);
               }}
               onDownload={() => window.open(file.url, "_blank")}
             />
@@ -152,9 +176,13 @@ export const Attachments = ({
           {otherFiles.map((file) => (
             <StoryAttachmentPreview
               file={file}
+              files={uploadedAttachments}
               key={file.id}
               onDelete={() => {
                 handleDelete(file.id);
+              }}
+              onDeleteFile={(attachment) => {
+                handleDelete(attachment.id);
               }}
               onDownload={() => window.open(file.url, "_blank")}
             />

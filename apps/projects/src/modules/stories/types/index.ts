@@ -8,6 +8,16 @@ export type StoryPriority =
   | "Medium"
   | "Low";
 
+export type AutoSchedulingStatus =
+  | "off"
+  | "needs_owner"
+  | "needs_time"
+  | "planning"
+  | "scheduled"
+  | "at_risk"
+  | "cannot_fit"
+  | "locked";
+
 export type StoryTeamSummary = {
   id: string;
   name: string;
@@ -33,7 +43,14 @@ export type Story = {
   title: string;
   estimateLabel: string | null;
   estimateValue: number | null;
-  estimateScheme: "points" | "hours" | "tshirt" | "ideal_days";
+  estimateScheme: "points" | "tshirt";
+  estimatedDurationMinutes: number | null;
+  minimumFocusBlockMinutes: number | null;
+  autoSchedulingEnabled: boolean;
+  autoSchedulingLocked: boolean;
+  autoSchedulingStatus: AutoSchedulingStatus;
+  autoSchedulingReason: string | null;
+  autoSchedulingUpdatedAt: string | null;
   description?: string;
   statusId: string;
   sprintId: string | null;
@@ -46,6 +63,7 @@ export type Story = {
   workspaceId: string;
   assigneeId: string | null;
   assignee?: UserSummary | null;
+  collaboratorCount: number;
   reporterId: string;
   reporter?: UserSummary | null;
   epicId: string | null;
@@ -87,21 +105,34 @@ export type StoryGroup = {
 
 export type StoryFilters = {
   statusIds?: string[] | null;
+  excludedStatusIds?: string[] | null;
   categories?: StateCategory[];
   assigneeIds?: string[] | null;
+  excludedAssigneeIds?: string[] | null;
   reporterIds?: string[] | null;
+  excludedReporterIds?: string[] | null;
   titleContains?: string | null;
+  titleNotContains?: string | null;
   priorities?: string[] | null;
+  excludedPriorities?: string[] | null;
   teamIds?: string[] | null;
+  excludedTeamIds?: string[] | null;
   sprintIds?: string[] | null;
+  excludedSprintIds?: string[] | null;
   labelIds?: string[] | null;
+  excludedLabelIds?: string[] | null;
   estimateValues?: number[] | null;
+  excludedEstimateValues?: number[] | null;
   parentId?: string | null;
   objectiveId?: string | null;
+  excludedObjectiveId?: string | null;
+  keyResultId?: string | null;
   epicId?: string | null;
   hasNoAssignee?: boolean | null;
+  hasAssignee?: boolean | null;
   hasBlockedBy?: boolean | null;
   assignedToMe?: boolean;
+  collaboratingWithMe?: boolean;
   createdByMe?: boolean;
   createdAfter?: string;
   createdBefore?: string;
@@ -109,8 +140,10 @@ export type StoryFilters = {
   updatedBefore?: string;
   startDateAfter?: string;
   startDateBefore?: string;
+  startDateNot?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
+  deadlineNot?: string;
   includeArchived?: boolean;
   includeDeleted?: boolean;
   showSubStories?: boolean;
@@ -148,22 +181,35 @@ export type GroupedStoryParams = {
   orderBy?: "created" | "updated" | "deadline" | "priority";
   orderDirection?: "asc" | "desc";
   teamIds?: string[];
+  excludedTeamIds?: string[];
   categories?: StateCategory[];
   assignedToMe?: boolean;
+  collaboratingWithMe?: boolean;
   createdByMe?: boolean;
   storiesPerGroup?: number;
   statusIds?: string[];
+  excludedStatusIds?: string[];
   assigneeIds?: string[];
+  excludedAssigneeIds?: string[];
   reporterIds?: string[];
+  excludedReporterIds?: string[];
   titleContains?: string;
+  titleNotContains?: string;
   priorities?: string[];
+  excludedPriorities?: string[];
   sprintIds?: string[];
+  excludedSprintIds?: string[];
   labelIds?: string[];
+  excludedLabelIds?: string[];
   estimateValues?: number[];
+  excludedEstimateValues?: number[];
   parentId?: string;
   objectiveId?: string;
+  excludedObjectiveId?: string;
+  keyResultId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
+  hasAssignee?: boolean;
   hasBlockedBy?: boolean;
   createdAfter?: string;
   createdBefore?: string;
@@ -171,8 +217,10 @@ export type GroupedStoryParams = {
   updatedBefore?: string;
   startDateAfter?: string;
   startDateBefore?: string;
+  startDateNot?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
+  deadlineNot?: string;
   includeArchived?: boolean;
   showSubStories?: boolean;
   completedAfter?: string;
@@ -185,24 +233,37 @@ export type GroupStoryParams = {
   groupBy: "priority" | "status" | "assignee" | "none";
   orderBy?: "created" | "updated" | "deadline" | "priority";
   orderDirection?: "asc" | "desc";
+  keyResultId?: string;
   page?: number;
   pageSize?: number;
   assignedToMe?: boolean;
+  collaboratingWithMe?: boolean;
   createdByMe?: boolean;
   statusIds?: string[];
+  excludedStatusIds?: string[];
   categories?: StateCategory[];
   assigneeIds?: string[];
+  excludedAssigneeIds?: string[];
   reporterIds?: string[];
+  excludedReporterIds?: string[];
   titleContains?: string;
+  titleNotContains?: string;
   priorities?: string[];
+  excludedPriorities?: string[];
   teamIds?: string[];
+  excludedTeamIds?: string[];
   sprintIds?: string[];
+  excludedSprintIds?: string[];
   labelIds?: string[];
+  excludedLabelIds?: string[];
   estimateValues?: number[];
+  excludedEstimateValues?: number[];
   parentId?: string;
   objectiveId?: string;
+  excludedObjectiveId?: string;
   epicId?: string;
   hasNoAssignee?: boolean;
+  hasAssignee?: boolean;
   hasBlockedBy?: boolean;
   createdAfter?: string;
   createdBefore?: string;
@@ -210,8 +271,10 @@ export type GroupStoryParams = {
   updatedBefore?: string;
   startDateAfter?: string;
   startDateBefore?: string;
+  startDateNot?: string;
   deadlineAfter?: string;
   deadlineBefore?: string;
+  deadlineNot?: string;
   includeArchived?: boolean;
   showSubStories?: boolean;
   includeDeleted?: boolean;

@@ -14,7 +14,6 @@ import {
 } from "@/hooks";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
-import { BodyContainer } from "../shared/body";
 import { MobileMenuButton } from "../shared/mobile-menu";
 import { NavLink } from "../ui";
 import { Commands } from "../shared/commands";
@@ -40,9 +39,11 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
 
   const isAdmin = userRole === "admin";
   const isMember = userRole === "member";
+  const canUseIntegrations = isAdmin || isMember || userRole === "guest";
 
   const accountItems = [
     { title: "Profile", href: withWorkspace("/settings/account") },
+    { title: "Calendar", href: withWorkspace("/settings/account/calendar") },
     {
       title: "Preferences",
       href: withWorkspace("/settings/account/preferences"),
@@ -77,8 +78,18 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
                 },
               ]
             : []),
-          { title: "Integrations", href: withWorkspace("/settings/workspace/integrations") },
-          // { title: "API tokens", href: withWorkspace("/settings/workspace/api") },
+        ]
+      : []),
+    {
+      title: "API",
+      href: withWorkspace("/settings/workspace/api"),
+    },
+    ...(canUseIntegrations
+      ? [
+          {
+            title: "Integrations",
+            href: withWorkspace("/settings/integrations"),
+          },
         ]
       : []),
   ];
@@ -112,7 +123,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
       icon: <UserIcon className="h-[1.15rem]" />,
       items: accountItems,
     },
-    ...(isAdmin
+    ...(workspaceItems.length > 0
       ? [
           {
             category: "Workspace",
@@ -131,6 +142,10 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
         ]
       : []),
   ];
+
+  const isSettingsItemActive = (href: string, title: string) =>
+    pathname === href ||
+    (title === "Integrations" && pathname.startsWith(`${href}/`));
 
   const mobileMenu = navigation.flatMap(({ items }) =>
     items.map(({ href, title }) => ({ href, title })),
@@ -152,7 +167,7 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             </button>
           </Flex>
         </Container>
-        <Box className="border-border overflow-x-auto border-y pl-3">
+        <Box className="border-border overflow-x-auto border-y-[0.5px] pl-3">
           <Flex align="center" gap={2}>
             {mobileMenu.map(({ href, title }) => (
               <Link
@@ -171,13 +186,13 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
             ))}
           </Flex>
         </Box>
-        <Box className="h-[calc(100dvh-8rem)] overflow-y-auto pt-6 pb-8">
+        <Box className="settings-card-borders h-[calc(100dvh-8rem)] overflow-y-auto pt-6 pb-8">
           <Container>{children}</Container>
         </Box>
       </Box>
-      <Box className="hidden md:flex">
-        <Box className="from-sidebar border-border to-sidebar/50 w-(--sidebar-width) shrink-0 border-r bg-linear-to-br">
-          <Box className="flex h-16 items-center px-4">
+      <Box className="hidden h-dvh md:flex" data-settings-shell>
+        <Box className="flex w-(--sidebar-width) shrink-0 flex-col">
+          <Box className="flex h-(--app-shell-header-height) shrink-0 items-center px-4">
             <Tooltip
               title={
                 <span className="flex items-center gap-1">
@@ -198,39 +213,65 @@ export const SettingsLayout = ({ children }: { children: ReactNode }) => {
               </button>
             </Tooltip>
           </Box>
-          <BodyContainer className="px-4">
+          <Box className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
             <Flex className="mt-6" direction="column" gap={4}>
-              {navigation.map(({ category, items, icon }) => (
-                <Box className="mb-3" key={category}>
-                  <Flex align="center" className="mb-2" gap={4}>
-                    {icon}
-                    <Text color="muted">{category}</Text>
-                  </Flex>
-                  <Flex className="ml-8" direction="column" gap={1}>
-                    {items.map(({ href, title }) => (
-                      <NavLink
-                        active={pathname === href}
-                        className="relative -left-1 py-1.5"
-                        href={href}
-                        key={href}
-                      >
-                        {title}
-                      </NavLink>
-                    ))}
-                  </Flex>
-                </Box>
-              ))}
+              {navigation.map(({ category, items, icon }) => {
+                const isCategoryActive = items.some(({ href, title }) =>
+                  isSettingsItemActive(href, title),
+                );
+
+                return (
+                  <Box className="mb-3" key={category}>
+                    <Flex
+                      align="center"
+                      className={cn(
+                        "text-text-muted mb-2 transition-colors [&_svg]:text-current",
+                        isCategoryActive && "text-primary",
+                      )}
+                      gap={4}
+                    >
+                      <span className="shrink-0">{icon}</span>
+                      <Text>{category}</Text>
+                    </Flex>
+                    <Flex className="ml-8" direction="column" gap={1}>
+                      {items.map(({ href, title }) => {
+                        const isActive = isSettingsItemActive(href, title);
+
+                        return (
+                          <NavLink
+                            active={isActive}
+                            aria-current={isActive ? "page" : undefined}
+                            className={cn(
+                              "hover:bg-primary/5 hover:text-primary relative -left-1 py-1.5",
+                              isActive && "bg-primary/5 text-primary",
+                            )}
+                            href={href}
+                            key={href}
+                          >
+                            {title}
+                          </NavLink>
+                        );
+                      })}
+                    </Flex>
+                  </Box>
+                );
+              })}
             </Flex>
-          </BodyContainer>
+          </Box>
         </Box>
-        <Box className="h-dvh flex-1 overflow-y-auto">
-          <Container
-            className={cn("max-w-216 py-12", {
-              "max-w-[80rem]": pathname.includes("billing"),
-            })}
+        <Box className="h-dvh min-w-0 flex-1 pt-(--app-content-inset) pr-(--app-content-inset) pb-(--app-content-inset) pl-2">
+          <Box
+            className="border-border/80 bg-surface-muted/40 dark:bg-surface-muted/20 settings-card-borders h-full min-w-0 overflow-y-auto rounded-xl border-[0.5px]"
+            data-settings-content-canvas
           >
-            {children}
-          </Container>
+            <Container
+              className={cn("max-w-216 pt-16 pb-12", {
+                "max-w-[80rem]": pathname.includes("billing"),
+              })}
+            >
+              {children}
+            </Container>
+          </Box>
         </Box>
       </Box>
       <Commands />

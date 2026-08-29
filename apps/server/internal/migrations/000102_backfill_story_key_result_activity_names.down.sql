@@ -1,0 +1,1 @@
+-- Irreversible data correction: the original UUID remains available in new_value.

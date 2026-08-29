@@ -1,7 +1,7 @@
 import { cn } from "lib";
 import type { Icon } from "./types";
 
-export const ArrowLeft2Icon = (props: Icon) => {
+export const ChevronLeftIcon = (props: Icon) => {
   const { className, strokeWidth = 2.5, ...rest } = props;
   return (
     <svg
@@ -24,3 +24,6 @@ export const ArrowLeft2Icon = (props: Icon) => {
     </svg>
   );
 };
+
+/** @deprecated Use ChevronLeftIcon. */
+export const ArrowLeft2Icon = ChevronLeftIcon;

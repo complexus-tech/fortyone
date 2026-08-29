@@ -1,0 +1,2 @@
+-- migration 000136 is forward-only: restoring hidden delivery-only rows to
+-- the inbox would recreate notification noise for existing recipients.

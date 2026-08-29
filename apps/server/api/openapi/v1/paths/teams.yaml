@@ -1,0 +1,26 @@
+get:
+  operationId: listTeams
+  tags: [Teams]
+  summary: List teams visible to the actor
+  description: Returns joined teams in a deterministic order. Personal access tokens are supported in this preview.
+  x-fortyone-scope: teams:read
+  parameters:
+    - $ref: ../openapi.yaml#/components/parameters/WorkspaceId
+    - $ref: ../openapi.yaml#/components/parameters/Cursor
+    - $ref: ../openapi.yaml#/components/parameters/PageLimit
+  responses:
+    '200':
+      description: A page of visible teams.
+      headers:
+        X-Request-ID: {$ref: ../openapi.yaml#/components/headers/RequestId}
+        RateLimit: {$ref: ../openapi.yaml#/components/headers/RateLimit}
+        RateLimit-Policy: {$ref: ../openapi.yaml#/components/headers/RateLimitPolicy}
+      content:
+        application/json:
+          schema: {$ref: ../openapi.yaml#/components/schemas/TeamPageResponse}
+    '400': {$ref: ../openapi.yaml#/components/responses/BadRequest}
+    '401': {$ref: ../openapi.yaml#/components/responses/Unauthorized}
+    '403': {$ref: ../openapi.yaml#/components/responses/Forbidden}
+    '429': {$ref: ../openapi.yaml#/components/responses/RateLimited}
+    '500': {$ref: ../openapi.yaml#/components/responses/InternalError}
+    '503': {$ref: ../openapi.yaml#/components/responses/ServiceUnavailable}

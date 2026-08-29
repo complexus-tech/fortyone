@@ -17,12 +17,18 @@ import {
   CalendarIcon,
   EstimateIcon,
   ObjectiveIcon,
-  PlusIcon,
+  OKRIcon,
   SprintsIcon,
+  TagsIcon,
+  Time02Icon,
+  TimeScheduleIcon,
+  UsersAddIcon,
 } from "icons";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
 import { formatEstimate } from "@/lib/estimate";
+import { formatTimeNeeded } from "@/lib/time-needed";
+import { isMayaAssigneeSelection } from "@/lib/auto-scheduling";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
 import {
@@ -31,13 +37,19 @@ import {
   AssigneesMenu,
   SprintsMenu,
   EstimateMenu,
+  TimeNeededMenu,
   StoryStatusIcon,
   PriorityIcon,
   LabelsMenu,
+  CollaboratorsMenu,
   StoryLabel,
   ConfirmDialog,
+  AutoSchedulingMenu,
 } from "@/components/ui";
-import { ObjectivesMenu } from "@/components/ui/story/objectives-menu";
+import {
+  KeyResultMenu,
+  ObjectiveKeyResultMenu,
+} from "@/components/ui/story/objective-key-result-menu";
 import { useLabels } from "@/lib/hooks/labels";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useIsAdminOrOwner } from "@/hooks/owner";
@@ -48,13 +60,17 @@ import {
   useUserRole,
   useSprintsEnabled,
 } from "@/hooks";
-import { useMembers } from "@/lib/hooks/members";
+import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
+import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useSprint } from "@/modules/sprints/hooks/sprint-details";
 import { useObjective } from "@/modules/objectives/hooks/use-objective";
+import { useKeyResults } from "@/modules/objectives/hooks";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
 import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
-import { OptionsHeader } from ".";
+import { useUpdateCollaboratorsMutation } from "../hooks/collaboration-mutations";
+import { AddLinks } from "./add-links";
+import { OptionsHeader } from "./options-header";
 
 export const Option = ({
   label,
@@ -76,7 +92,7 @@ export const Option = ({
   return (
     <Box
       className={cn(
-        "my-4 grid grid-cols-[7.5rem_auto] items-center gap-3 md:my-5",
+        "my-4 grid grid-cols-[7.875rem_auto] items-center gap-3 md:my-5",
         { "grid-cols-1": isNotifications },
         className,
       )}
@@ -113,11 +129,18 @@ export const Options = ({
     startDate,
     endDate,
     objectiveId,
+    keyResultId,
     assigneeId,
+    collaboratorIds,
+    collaborators,
     reporterId,
     teamId,
     estimateValue,
     estimateScheme,
+    estimatedDurationMinutes,
+    minimumFocusBlockMinutes,
+    autoSchedulingEnabled,
+    autoSchedulingLocked,
     labels: storyLabels,
     sprintId,
     deletedAt,
@@ -133,26 +156,97 @@ export const Options = ({
   const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
+  const { hasFeature } = useSubscriptionFeatures();
+  const canUseBackgroundMaya = hasFeature("backgroundMaya");
+  const { data: mayaAssignee } = useMayaAssignee(canUseBackgroundMaya);
   const { data: sprint } = useSprint(sprintId, teamId);
   const { data: objective } = useObjective(objectiveId, teamId);
+  const { data: keyResults = [] } = useKeyResults(
+    objectiveId ?? "",
+    Boolean(objectiveId && keyResultId),
+  );
+  const keyResult = keyResults.find(({ id }) => id === keyResultId);
+  const objectiveName =
+    typeof objective?.name === "string" ? objective.name.trim() || null : null;
+  const keyResultName =
+    typeof keyResult?.name === "string" ? keyResult.name.trim() || null : null;
   const status =
     statuses.find((state) => state.id === statusId) || statuses.at(0);
   const name = status?.name;
   const isDeleted = Boolean(deletedAt);
   const assignee = data?.assignee ?? members.find((m) => m.id === assigneeId);
+  const collaboratorLookup = new Map(
+    members.map(({ id, username, fullName, avatarUrl }) => [
+      id,
+      { id, username, fullName, avatarUrl },
+    ]),
+  );
+  for (const collaborator of collaborators) {
+    collaboratorLookup.set(collaborator.id, collaborator);
+  }
+  const selectedCollaborators = collaboratorIds.flatMap((id) => {
+    const collaborator = collaboratorLookup.get(id);
+    return collaborator ? [collaborator] : [];
+  });
+  const visibleCollaborators = selectedCollaborators.slice(0, 5);
+  const hiddenCollaboratorCount =
+    collaboratorIds.length - visibleCollaborators.length;
+  const singleCollaborator = selectedCollaborators.at(0);
+  let collaboratorButtonIcon: ReactNode = (
+    <UsersAddIcon className="h-[1.15rem] w-auto" />
+  );
+  let collaboratorButtonContent: ReactNode = "Collaborators";
+
+  if (collaboratorIds.length === 1) {
+    collaboratorButtonIcon = (
+      <Avatar
+        name={singleCollaborator?.fullName || singleCollaborator?.username}
+        size="xs"
+        src={singleCollaborator?.avatarUrl}
+      />
+    );
+    collaboratorButtonContent = (
+      <span className="max-w-48 truncate">
+        {singleCollaborator?.username ||
+          singleCollaborator?.fullName ||
+          "Collaborator"}
+      </span>
+    );
+  } else if (collaboratorIds.length > 1) {
+    collaboratorButtonIcon = null;
+    collaboratorButtonContent = (
+      <Flex className="-space-x-1.5">
+        {visibleCollaborators.map((collaborator) => (
+          <Avatar
+            className="ring-surface ring-1"
+            key={collaborator.id}
+            name={collaborator.fullName || collaborator.username}
+            size="xs"
+            src={collaborator.avatarUrl}
+          />
+        ))}
+        {hiddenCollaboratorCount > 0 ? (
+          <span className="bg-surface-muted ring-surface flex size-5 items-center justify-center rounded-full text-xs ring-1">
+            +{hiddenCollaboratorCount}
+          </span>
+        ) : null}
+      </Flex>
+    );
+  }
   const { data: allLabels = [] } = useLabels();
   const labels = allLabels.filter((label) => storyLabels?.includes(label.id));
   const { mutate } = useUpdateStoryMutation();
   const { mutate: updateLabels } = useUpdateLabelsMutation();
+  const { mutate: updateCollaborators } = useUpdateCollaboratorsMutation();
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
-
   // References to button elements for keyboard shortcuts
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   const priorityButtonRef = useRef<HTMLButtonElement>(null);
   const assigneeButtonRef = useRef<HTMLButtonElement>(null);
   const estimateButtonRef = useRef<HTMLButtonElement>(null);
+  const timeNeededButtonRef = useRef<HTMLButtonElement>(null);
   const startDateButtonRef = useRef<HTMLButtonElement>(null);
   const dueDateButtonRef = useRef<HTMLButtonElement>(null);
   const labelsButtonRef = useRef<HTMLButtonElement>(null);
@@ -291,9 +385,9 @@ export const Options = ({
       className={cn(
         isInline
           ? "h-auto bg-transparent bg-none p-0 md:h-auto md:overflow-visible md:pb-0"
-          : "from-sidebar/70 to-sidebar/40 bg-linear-to-br pb-2 md:h-dvh md:overflow-y-auto md:pb-6",
+          : "md:bg-surface-muted/50 dark:md:bg-surface-elevated/40 bg-transparent pb-2 md:h-full md:min-h-0 md:overflow-y-auto md:pb-6",
         {
-          "h-[85dvh]": isDialog,
+          "dark:md:bg-surface-elevated/80 h-[85dvh]": isDialog,
         },
       )}
     >
@@ -302,7 +396,6 @@ export const Options = ({
           <OptionsHeader
             isAdminOrOwner={isAdminOrOwner}
             isDialog={isDialog}
-            isNotifications={isNotifications}
             storyId={storyId}
           />
         </Box>
@@ -356,8 +449,8 @@ export const Options = ({
                     disabled={isDeleted || isGuest}
                     leftIcon={<StoryStatusIcon statusId={statusId} />}
                     ref={statusButtonRef}
-                    type="button"
                     size="sm"
+                    type="button"
                     variant={isCompact ? "solid" : "naked"}
                   >
                     {name}
@@ -385,8 +478,8 @@ export const Options = ({
                     disabled={isDeleted || isGuest}
                     leftIcon={<PriorityIcon priority={priority} />}
                     ref={priorityButtonRef}
-                    type="button"
                     size="sm"
+                    type="button"
                     variant={isCompact ? "solid" : "naked"}
                   >
                     {priority}
@@ -424,8 +517,8 @@ export const Options = ({
                       />
                     }
                     ref={assigneeButtonRef}
-                    type="button"
                     size="sm"
+                    type="button"
                     variant={isCompact ? "solid" : "naked"}
                   >
                     {assignee?.username || (
@@ -438,7 +531,12 @@ export const Options = ({
                 <AssigneesMenu.Items
                   assigneeId={assigneeId}
                   onAssigneeSelected={(assigneeId) => {
-                    handleUpdate({ assigneeId });
+                    handleUpdate({
+                      assigneeId,
+                      ...(isMayaAssigneeSelection(assigneeId, mayaAssignee?.id)
+                        ? { autoSchedulingEnabled: true }
+                        : {}),
+                    });
                   }}
                   teamId={teamId}
                 />
@@ -448,7 +546,39 @@ export const Options = ({
           <Option
             isCompact={isCompact}
             isNotifications={isNotifications}
-            label="Estimate"
+            label="Collaborators"
+            value={
+              <CollaboratorsMenu>
+                <CollaboratorsMenu.Trigger>
+                  <Button
+                    className={cn("max-w-full font-medium", {
+                      "text-text-muted": collaboratorIds.length === 0,
+                    })}
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={collaboratorButtonIcon}
+                    size="sm"
+                    type="button"
+                    variant={isCompact ? "solid" : "naked"}
+                  >
+                    {collaboratorButtonContent}
+                  </Button>
+                </CollaboratorsMenu.Trigger>
+                <CollaboratorsMenu.Items
+                  assigneeId={assigneeId}
+                  collaboratorIds={collaboratorIds}
+                  onCollaboratorsChange={(collaboratorIds) => {
+                    updateCollaborators({ storyId, collaboratorIds });
+                  }}
+                  teamId={teamId}
+                />
+              </CollaboratorsMenu>
+            }
+          />
+          <Option
+            isCompact={isCompact}
+            isNotifications={isNotifications}
+            label="Complexity"
             value={
               <EstimateMenu>
                 <EstimateMenu.Trigger>
@@ -466,15 +596,15 @@ export const Options = ({
                       />
                     }
                     ref={estimateButtonRef}
-                    type="button"
                     size="sm"
+                    type="button"
                     variant={isCompact ? "solid" : "naked"}
                   >
                     {estimateValue ? (
                       formatEstimate(estimateScheme, estimateValue, "full")
                     ) : (
                       <Text as="span" color="muted">
-                        Add estimate
+                        Add complexity
                       </Text>
                     )}
                   </Button>
@@ -487,6 +617,81 @@ export const Options = ({
                   }}
                 />
               </EstimateMenu>
+            }
+          />
+          <Option
+            isCompact={isCompact}
+            isNotifications={isNotifications}
+            label="Time needed"
+            value={
+              <TimeNeededMenu>
+                <TimeNeededMenu.Trigger>
+                  <Button
+                    className={cn("font-medium", {
+                      "text-text-muted": !estimatedDurationMinutes,
+                    })}
+                    color="tertiary"
+                    disabled={isDeleted || isGuest}
+                    leftIcon={
+                      <Time02Icon
+                        className={cn("h-[1.15rem] w-auto", {
+                          "text-text-muted": !estimatedDurationMinutes,
+                        })}
+                      />
+                    }
+                    ref={timeNeededButtonRef}
+                    size="sm"
+                    type="button"
+                    variant={isCompact ? "solid" : "naked"}
+                  >
+                    {estimatedDurationMinutes ? (
+                      formatTimeNeeded(estimatedDurationMinutes, "full")
+                    ) : (
+                      <Text as="span" color="muted">
+                        Add time needed
+                      </Text>
+                    )}
+                  </Button>
+                </TimeNeededMenu.Trigger>
+                <TimeNeededMenu.Items
+                  estimatedDurationMinutes={estimatedDurationMinutes}
+                  minimumFocusBlockMinutes={minimumFocusBlockMinutes}
+                  setTimeNeeded={(timeNeeded) => {
+                    handleUpdate(timeNeeded);
+                  }}
+                />
+              </TimeNeededMenu>
+            }
+          />
+          <Option
+            isCompact={isCompact}
+            isNotifications={isNotifications}
+            label="Auto-scheduling"
+            value={
+              <AutoSchedulingMenu>
+                <AutoSchedulingMenu.Trigger>
+                  <Button
+                    className="font-medium"
+                    color="tertiary"
+                    disabled={isDeleted || isGuest || !canUseBackgroundMaya}
+                    leftIcon={
+                      <TimeScheduleIcon className="h-[1.15rem] w-auto" />
+                    }
+                    size="sm"
+                    type="button"
+                    variant={isCompact ? "solid" : "naked"}
+                  >
+                    {autoSchedulingEnabled ? "On" : "Off"}
+                  </Button>
+                </AutoSchedulingMenu.Trigger>
+                <AutoSchedulingMenu.Items
+                  autoSchedulingEnabled={autoSchedulingEnabled}
+                  autoSchedulingLocked={autoSchedulingLocked}
+                  setAutoSchedulingEnabled={(enabled) => {
+                    handleUpdate({ autoSchedulingEnabled: enabled });
+                  }}
+                />
+              </AutoSchedulingMenu>
             }
           />
           <Option
@@ -548,7 +753,12 @@ export const Options = ({
                             new Date(endDate!) >= new Date(),
                         })}
                       />
-                      <Box>{getDueDateMessage(new Date(endDate!))}</Box>
+                      <Box>
+                        {getDueDateMessage(
+                          new Date(endDate!),
+                          getTermDisplay("storyTerm"),
+                        )}
+                      </Box>
                     </Flex>
                   }
                 >
@@ -594,45 +804,97 @@ export const Options = ({
             }
           />
           {features.objectiveEnabled ? (
-            <Option
-              isCompact={isCompact}
-              isNotifications={isNotifications}
-              label="Objective"
-              value={
-                <ObjectivesMenu>
-                  <ObjectivesMenu.Trigger>
+            <>
+              <Option
+                isCompact={isCompact}
+                isNotifications={isNotifications}
+                label={getTermDisplay("objectiveTerm", { capitalize: true })}
+                value={
+                  <ObjectiveKeyResultMenu
+                    align="end"
+                    keyResultId={keyResultId}
+                    objectiveId={objectiveId}
+                    onChange={(selection) => {
+                      handleUpdate(selection);
+                    }}
+                    teamId={teamId}
+                  >
                     <Button
+                      className="w-fit max-w-[13rem] justify-start font-medium"
                       color="tertiary"
                       disabled={isDeleted || isGuest}
                       leftIcon={
-                        objectiveId ? (
-                          <ObjectiveIcon className="h-[1.15rem] w-auto" />
-                        ) : (
-                          <PlusIcon className="h-5 w-auto" />
-                        )
+                        <ObjectiveIcon
+                          className={cn("h-[1.15rem] w-auto shrink-0", {
+                            "text-text-muted": !objectiveId,
+                          })}
+                        />
                       }
                       ref={objectiveButtonRef}
-                      title={objectiveId ? objective?.name : undefined}
-                      type="button"
                       size="sm"
+                      title={objectiveName ?? undefined}
+                      type="button"
                       variant={isCompact ? "solid" : "naked"}
                     >
-                      <span className="inline-block max-w-[12ch] truncate">
-                        {objective?.name || "Add objective"}
+                      <span className="block min-w-0 truncate">
+                        {objectiveId
+                          ? objectiveName ??
+                            getTermDisplay("objectiveTerm", {
+                              capitalize: true,
+                            })
+                          : `Add ${getTermDisplay("objectiveTerm")}`}
                       </span>
                     </Button>
-                  </ObjectivesMenu.Trigger>
-                  <ObjectivesMenu.Items
-                    align="end"
-                    objectiveId={objectiveId ?? undefined}
-                    setObjectiveId={(objectiveId) => {
-                      handleUpdate({ objectiveId });
-                    }}
-                    teamId={teamId}
-                  />
-                </ObjectivesMenu>
-              }
-            />
+                  </ObjectiveKeyResultMenu>
+                }
+              />
+              {objectiveId ? (
+                <Option
+                  isCompact={isCompact}
+                  isNotifications={isNotifications}
+                  label={getTermDisplay("keyResultTerm", {
+                    capitalize: true,
+                  })}
+                  value={
+                    <KeyResultMenu
+                      align="end"
+                      keyResultId={keyResultId}
+                      objectiveId={objectiveId}
+                      onChange={(nextKeyResultId) => {
+                        handleUpdate({ keyResultId: nextKeyResultId });
+                      }}
+                    >
+                      <Button
+                        className="w-fit max-w-[13rem] justify-start font-medium"
+                        color="tertiary"
+                        disabled={isDeleted || isGuest}
+                        leftIcon={
+                          <OKRIcon
+                            className={cn("h-[1.15rem] w-auto shrink-0", {
+                              "text-text-muted": !keyResultId,
+                            })}
+                            strokeWidth={2.4}
+                          />
+                        }
+                        size="sm"
+                        title={keyResultName ?? undefined}
+                        type="button"
+                        variant={isCompact ? "solid" : "naked"}
+                      >
+                        <span className="block min-w-0 truncate">
+                          {keyResultId
+                            ? keyResultName ??
+                              getTermDisplay("keyResultTerm", {
+                                capitalize: true,
+                              })
+                            : `Add ${getTermDisplay("keyResultTerm")}`}
+                        </span>
+                      </Button>
+                    </KeyResultMenu>
+                  }
+                />
+              ) : null}
+            </>
           ) : null}
           {sprintsEnabled ? (
             <Option
@@ -646,15 +908,15 @@ export const Options = ({
                       color="tertiary"
                       disabled={isDeleted || isGuest}
                       leftIcon={
-                        sprintId ? (
-                          <SprintsIcon className="h-5 w-auto" />
-                        ) : (
-                          <PlusIcon className="h-5 w-auto" />
-                        )
+                        <SprintsIcon
+                          className={cn("h-5 w-auto", {
+                            "text-text-muted": !sprintId,
+                          })}
+                        />
                       }
                       ref={sprintButtonRef}
-                      type="button"
                       size="sm"
+                      type="button"
                       variant={isCompact ? "solid" : "naked"}
                     >
                       <span className="inline-block max-w-[16ch] truncate">
@@ -742,7 +1004,7 @@ export const Options = ({
                             className="m-0"
                             color="tertiary"
                             disabled={isDeleted || isGuest}
-                            leftIcon={<PlusIcon />}
+                            leftIcon={<TagsIcon className="h-4 w-auto" />}
                             ref={labelsButtonRef}
                             rounded="full"
                             size="sm"
@@ -769,7 +1031,7 @@ export const Options = ({
                       <Button
                         color="tertiary"
                         disabled={isDeleted || isGuest}
-                        leftIcon={<PlusIcon />}
+                        leftIcon={<TagsIcon className="h-[1.15rem] w-auto" />}
                         ref={emptyLabelsButtonRef}
                         size="sm"
                         type="button"
@@ -827,7 +1089,10 @@ export const Options = ({
           }
         /> */}
 
-        {!isInline ? <Divider className="my-4" /> : null}
+        <Divider className={cn("my-4", { "mt-6 mb-4": isInline })} />
+        <Box className={cn({ "flex justify-end": isInline })}>
+          <AddLinks storyId={storyId} />
+        </Box>
       </Container>
 
       <ConfirmDialog

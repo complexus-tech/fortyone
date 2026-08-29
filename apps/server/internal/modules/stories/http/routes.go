@@ -2,7 +2,6 @@ package storieshttp
 
 import (
 	attachments "github.com/complexus-tech/projects-api/internal/modules/attachments/service"
-	comments "github.com/complexus-tech/projects-api/internal/modules/comments/service"
 	links "github.com/complexus-tech/projects-api/internal/modules/links/service"
 	stories "github.com/complexus-tech/projects-api/internal/modules/stories/service"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
@@ -12,37 +11,34 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/storage"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/go-playground/validator/v10"
-	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB             *sqlx.DB
-	Log            *logger.Logger
-	SecretKey      string
-	Publisher      *publisher.Publisher
-	Validate       *validator.Validate
-	StorageConfig  storage.Config
-	StorageService storage.StorageService
-	Cache          *cache.Service
-	Stories        *stories.Service
-	Users          *users.Service
-	Comments       *comments.Service
-	Links          *links.Service
-	Attachments    *attachments.Service
+	Log               *logger.Logger
+	SecretKey         string
+	Publisher         *publisher.Publisher
+	StorageConfig     storage.Config
+	StorageService    storage.StorageService
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	Stories           *stories.Service
+	Users             *users.Service
+	Links             *links.Service
+	Attachments       *attachments.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	storiesService := cfg.Stories
-	commentsService := cfg.Comments
 	linksService := cfg.Links
 	attachmentsService := cfg.Attachments
 
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
 	gzip := mid.Gzip(cfg.Log)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
+	memberAndAdmin := mid.RequireMinimumRole(cfg.Log, mid.RoleMember)
 
-	h := New(storiesService, cfg.Users, commentsService, linksService, attachmentsService, cfg.Cache, cfg.Log)
+	h := New(storiesService, cfg.Users, linksService, attachmentsService, cfg.Cache, cfg.Log)
 
 	// Stories
 	app.Get("/workspaces/{workspaceSlug}/stories", h.List, auth, workspace, gzip)
@@ -65,9 +61,11 @@ func Routes(cfg Config, app *web.App) {
 	app.Get("/workspaces/{workspaceSlug}/stories/count", h.CountInWorkspace, auth, workspace)
 
 	// Comments
-	app.Post("/workspaces/{workspaceSlug}/stories/{id}/comments", h.CreateComment, auth, workspace)
+	app.Post("/workspaces/{workspaceSlug}/stories/{id}/comments", h.CreateComment, auth, workspace, memberAndAdmin)
 	app.Get("/workspaces/{workspaceSlug}/stories/{id}/comments", h.GetComments, auth, workspace, gzip)
 	app.Put("/workspaces/{workspaceSlug}/stories/{id}/labels", h.UpdateLabels, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/stories/{id}/collaborators", h.UpdateCollaborators, auth, workspace)
+	app.Put("/workspaces/{workspaceSlug}/stories/{id}/watch", h.SetWatching, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/stories/{id}/links", h.GetStoryLinks, auth, workspace, gzip)
 	app.Get("/workspaces/{workspaceSlug}/my-stories", h.MyStories, auth, workspace, gzip)
 
@@ -75,6 +73,11 @@ func Routes(cfg Config, app *web.App) {
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/attachments", h.UploadStoryAttachment, auth, workspace)
 	app.Get("/workspaces/{workspaceSlug}/stories/{id}/attachments", h.GetAttachmentsForStory, auth, workspace)
 	app.Delete("/workspaces/{workspaceSlug}/stories/{id}/attachments/{attachmentId}", h.DeleteAttachment, auth, workspace)
+
+	// Inline media
+	app.Post("/workspaces/{workspaceSlug}/stories/{id}/media", h.UploadStoryMedia, auth, workspace, memberAndAdmin)
+	app.Get("/workspaces/{workspaceSlug}/stories/{id}/media/{attachmentId}", h.ResolveStoryMedia, auth, workspace)
+	app.Delete("/workspaces/{workspaceSlug}/stories/{id}/media/{attachmentId}", h.DeleteStoryMedia, auth, workspace, memberAndAdmin)
 
 	// Associations
 	app.Post("/workspaces/{workspaceSlug}/stories/{id}/associations", h.AddAssociation, auth, workspace)

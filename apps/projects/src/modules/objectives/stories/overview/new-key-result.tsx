@@ -1,26 +1,41 @@
 import { useParams } from "next/navigation";
 import type { FormEvent } from "react";
-import React, { useState } from "react";
+import { useState } from "react";
 import type { ButtonProps } from "ui";
 import { Button, Dialog, Input, Select, Flex, Box, Text } from "ui";
 import { toast } from "sonner";
 import { cn } from "lib";
 import { formatISO } from "date-fns";
-import { useMediaQuery, useTerminology } from "@/hooks";
-import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useCreateKeyResultMutation, useObjective } from "../../hooks";
+import { useMediaQuery, useTerminology, useUserRole } from "@/hooks";
+import { OkrQualityBanner } from "../../components/okr-quality-banner";
+import {
+  useCreateKeyResultMutation,
+  useKeyResults,
+  useObjective,
+} from "../../hooks";
+import { useOkrQualityAssessment } from "../../hooks/use-okr-quality-assessment";
 import type { NewKeyResult, MeasureType } from "../../types";
 
 export const NewKeyResultButton = ({
   color = "tertiary",
+  iconOnly = false,
+  objectiveId: objectiveIdProp,
   ...rest
-}: ButtonProps) => {
+}: ButtonProps & { iconOnly?: boolean; objectiveId?: string }) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { objectiveId } = useParams<{ objectiveId: string }>();
-  const { data: objective } = useObjective(objectiveId);
-  const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
+  const { objectiveId: routeObjectiveId } = useParams<{
+    objectiveId?: string;
+  }>();
+  const objectiveId = objectiveIdProp ?? routeObjectiveId ?? "";
+  const { userRole } = useUserRole();
+  const canCreate = Boolean(objectiveId) && userRole !== "guest";
   const keyResultMutation = useCreateKeyResultMutation();
   const [isOpen, setIsOpen] = useState(false);
+  const { data: objective } = useObjective(objectiveId || null);
+  const { data: existingKeyResults = [] } = useKeyResults(
+    objectiveId,
+    Boolean(isOpen && objectiveId),
+  );
   const { getTermDisplay } = useTerminology();
   const measurementTypes: { label: string; value: MeasureType }[] = [
     {
@@ -45,6 +60,31 @@ export const NewKeyResultButton = ({
     startDate: "",
     endDate: "",
   });
+  const qualityRequest =
+    objective && form.name.trim()
+      ? {
+          kind: "key_result" as const,
+          draft: {
+            name: form.name,
+            measurementType: form.measurementType,
+            startValue: form.startValue,
+            targetValue: form.targetValue,
+            startDate: form.startDate || null,
+            endDate: form.endDate || null,
+          },
+          objective: {
+            id: objective.id,
+            name: objective.name,
+            startDate: objective.startDate || null,
+            endDate: objective.endDate || null,
+          },
+          existingKeyResults: existingKeyResults.map((keyResult) => ({
+            id: keyResult.id,
+            name: keyResult.name,
+          })),
+        }
+      : null;
+  const { assessment, isAssessing } = useOkrQualityAssessment(qualityRequest);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -88,7 +128,7 @@ export const NewKeyResultButton = ({
 
   return (
     <>
-      {isAdminOrOwner ? (
+      {canCreate ? (
         <Button
           color={color}
           onClick={() => {
@@ -96,7 +136,13 @@ export const NewKeyResultButton = ({
           }}
           {...rest}
         >
-          Add {getTermDisplay("keyResultTerm", { capitalize: true })}
+          {iconOnly ? (
+            <span className="sr-only">
+              Add {getTermDisplay("keyResultTerm", { capitalize: true })}
+            </span>
+          ) : (
+            <>Add {getTermDisplay("keyResultTerm", { capitalize: true })}</>
+          )}
         </Button>
       ) : null}
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
@@ -116,6 +162,16 @@ export const NewKeyResultButton = ({
                 placeholder={`Enter a name for the ${getTermDisplay("keyResultTerm")}`}
                 required
                 value={form.name}
+              />
+              <OkrQualityBanner
+                assessment={assessment}
+                isAssessing={isAssessing}
+                onUseSuggestion={(suggestion) => {
+                  setForm((current) => ({
+                    ...current,
+                    name: suggestion,
+                  }));
+                }}
               />
               <Box className="grid grid-cols-2 gap-4">
                 <Input

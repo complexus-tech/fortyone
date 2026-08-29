@@ -1,0 +1,133 @@
+.heroShell {
+  --hero-gradient-midpoint: 54%;
+  --hero-gradient-end: 82%;
+
+  background: radial-gradient(
+      70% 30% at 92% 2%,
+      color-mix(in oklab, var(--color-primary) 7%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      55% 26% at 2% 15%,
+      color-mix(in oklab, var(--color-info) 4%, transparent),
+      transparent 76%
+    ),
+    linear-gradient(
+      180deg,
+      var(--color-surface-muted) 0%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 58%,
+          var(--color-background)
+        )
+        var(--hero-gradient-midpoint),
+      var(--color-background) var(--hero-gradient-end)
+    );
+}
+
+@media (min-width: 48rem) {
+  .heroShell {
+    --hero-gradient-midpoint: 64%;
+    --hero-gradient-end: 90%;
+  }
+}
+
+.progressBand {
+  --progress-band-shell-depth: clamp(3rem, 6vw, 6rem);
+  --progress-band-content-gap: clamp(5rem, 8vw, 8rem);
+
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  padding-top: calc(
+    var(--progress-band-shell-depth) + var(--progress-band-content-gap)
+  );
+  background: radial-gradient(
+      72% 44% at 94% 30%,
+      color-mix(in oklab, var(--color-info) 42%, transparent),
+      transparent 74%
+    ),
+    radial-gradient(
+      68% 42% at 4% 78%,
+      color-mix(in oklab, var(--color-primary) 12%, transparent),
+      transparent 78%
+    ),
+    radial-gradient(
+      62% 38% at 92% 74%,
+      color-mix(in oklab, var(--color-danger) 10%, transparent),
+      transparent 76%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--color-info) 44%, var(--color-surface-muted)) 0%,
+      color-mix(in oklab, var(--color-primary) 14%, var(--color-surface-muted))
+        36%,
+      color-mix(in oklab, var(--color-danger) 8%, var(--color-surface-muted))
+        60%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 30%,
+          var(--color-background)
+        )
+        90%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 18%,
+          var(--color-background)
+        )
+        100%
+    );
+}
+
+:global(.dark) .progressBand {
+  background: radial-gradient(
+      72% 44% at 94% 30%,
+      color-mix(in oklab, var(--color-success) 16%, transparent),
+      transparent 74%
+    ),
+    radial-gradient(
+      68% 42% at 4% 78%,
+      color-mix(in oklab, var(--color-primary) 8%, transparent),
+      transparent 78%
+    ),
+    radial-gradient(
+      62% 38% at 92% 74%,
+      color-mix(in oklab, var(--color-danger) 5%, transparent),
+      transparent 76%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--color-success) 14%, var(--color-surface-muted))
+        0%,
+      color-mix(in oklab, var(--color-primary) 8%, var(--color-surface-muted))
+        34%,
+      color-mix(in oklab, var(--color-danger) 4%, var(--color-surface-muted))
+        60%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 20%,
+          var(--color-background)
+        )
+        88%,
+      color-mix(
+          in oklab,
+          var(--color-surface-muted) 12%,
+          var(--color-background)
+        )
+        100%
+    );
+}
+
+.progressBand::before {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--progress-band-shell-depth);
+  border-radius: inherit;
+  corner-shape: inherit;
+  background: var(--color-background);
+  content: "";
+  pointer-events: none;
+}

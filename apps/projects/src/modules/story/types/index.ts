@@ -1,4 +1,8 @@
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type {
+  AutoSchedulingStatus,
+  Story,
+  StoryPriority,
+} from "@/modules/stories/types";
 import type { UserSummary } from "@/types";
 
 export type StoryAssociationType = "related" | "blocking" | "duplicate";
@@ -17,7 +21,14 @@ export type DetailedStory = {
   title: string;
   estimateLabel: string | null;
   estimateValue: number | null;
-  estimateScheme: "points" | "hours" | "tshirt" | "ideal_days";
+  estimateScheme: "points" | "tshirt";
+  estimatedDurationMinutes: number | null;
+  minimumFocusBlockMinutes: number | null;
+  autoSchedulingEnabled: boolean;
+  autoSchedulingLocked: boolean;
+  autoSchedulingStatus: AutoSchedulingStatus;
+  autoSchedulingReason: string | null;
+  autoSchedulingUpdatedAt: string | null;
   description: string;
   descriptionHTML: string;
   parentId: string;
@@ -29,6 +40,13 @@ export type DetailedStory = {
   statusId: string;
   assigneeId: string | null;
   assignee?: UserSummary | null;
+  collaboratorIds: string[];
+  collaborators: UserSummary[];
+  collaboratorCount: number;
+  watcherCount: number;
+  watchers: UserSummary[];
+  isWatching: boolean;
+  watchingReason: "assignee" | "collaborator" | "watcher" | null;
   reporterId: string;
   reporter?: UserSummary | null;
   priority: StoryPriority;
@@ -47,7 +65,13 @@ export type DetailedStory = {
 };
 
 export type NewStory = Partial<DetailedStory> & {
+  /** Stable client operation key used to make retried creates idempotent. */
+  idempotencyKey?: string;
   labelIds?: string[];
+};
+
+export type StoryUpdate = Partial<DetailedStory> & {
+  reconcileDescriptionMedia?: boolean;
 };
 
 export type StoryAttachment = {

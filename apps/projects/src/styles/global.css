@@ -1,24 +1,47 @@
 @import "tailwindcss";
 @import "tailwind-config";
+@import "ui/styles.css";
 @plugin "@tailwindcss/typography";
+
+@source "../../../../packages/ui/src";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-main: -apple-system, BlinkMacSystemFont, var(--font-body), "Segoe UI",
+  --font-main: -apple-system, BlinkMacSystemFont, var(--font-body-fallback),
     sans-serif;
-  --font-heading: var(--font-heading);
+  --font-heading: -apple-system, BlinkMacSystemFont,
+    var(--font-heading-fallback), sans-serif;
 }
 
 :root {
-  --nprogress-color: #ea6060;
-  --sidebar-width: 17rem;
+  --nprogress-color: var(--color-primary);
+  --app-shell-header-height: 4.5rem;
+  --app-content-inset: 0.75rem;
+  --app-content-canvas-height: 100dvh;
+  --app-page-header-height: 3.6rem;
+  --app-filter-bar-height: 3.6rem;
+  --app-page-content-height: calc(
+    var(--app-content-canvas-height) - var(--app-page-header-height)
+  );
+  --sidebar-width: 16.5rem;
+  --sidebar-width-collapsed: 7rem;
   --story-sidebar-width: 24rem;
 }
 
 body,
 html {
   @apply font-main text-foreground bg-background h-dvh w-screen overflow-hidden overscroll-contain text-[13px] font-medium antialiased 2xl:text-[13.5px];
+}
+
+/* Restore the browser typography scale for authentication and onboarding. */
+html:has(.onboarding-layout),
+html:has(.onboarding-layout) body {
+  font-size: 14.5px;
+}
+
+html:has(.onboarding-layout) :is(input, textarea, select) {
+  font-size: 14.5px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -40,6 +63,29 @@ html {
   }
 }
 
+@media (min-width: 768px) {
+  :root {
+    --app-content-canvas-height: calc(
+      100dvh - var(--app-shell-header-height) - var(--app-content-inset)
+    );
+  }
+}
+
+.sidebar-edge-toggle-path {
+  d: path("M 12 4 L 12 12 L 12 20");
+  transition: d 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.group:hover .sidebar-edge-toggle-path[data-direction="left"],
+.group:focus-visible .sidebar-edge-toggle-path[data-direction="left"] {
+  d: path("M 13.5 4 L 10.5 12 L 13.5 20");
+}
+
+.group:hover .sidebar-edge-toggle-path[data-direction="right"],
+.group:focus-visible .sidebar-edge-toggle-path[data-direction="right"] {
+  d: path("M 10.5 4 L 13.5 12 L 10.5 20");
+}
+
 @layer utilities {
   .hide-scrollbar {
     scrollbar-width: none;
@@ -50,7 +96,17 @@ html {
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  .settings-card-borders
+    :where(
+      div.border.rounded-lg,
+      div.border.rounded-xl,
+      div.border.rounded-2xl
+    ) {
+    border-width: 0.5px;
+  }
 }
+
 @layer base {
   input,
   textarea,
@@ -150,7 +206,7 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
 }
 
 .tiptap input[type="checkbox"] {
-  @apply accent-primary h-[1.1rem] w-[1.1rem];
+  @apply accent-primary h-[1.1rem] w-[1.1rem] shrink-0;
 }
 
 /* style tiptap tables */
@@ -158,8 +214,8 @@ ul[data-type="taskList"] > li ol[data-type="taskList"] {
   @apply w-full table-auto border-collapse;
 }
 .tiptap table td,
-th {
-  @apply border-border;
+.tiptap table th {
+  @apply border-border border;
 }
 .tiptap table p {
   @apply m-0;
@@ -168,15 +224,74 @@ th {
   @apply bg-surface-muted text-foreground font-semibold;
 }
 .tiptap table td,
-th {
-  @apply relative px-2 py-2.5 text-left;
+.tiptap table th {
+  @apply relative px-2 py-1.5 text-left align-top;
 }
 .tiptap table tr {
   @apply odd:bg-surface-muted/80 hover:bg-state-hover transition;
 }
 
 .tiptap table .column-resize-handle {
-  @apply bg-border-strong pointer-events-none absolute top-0 -right-[2px] -bottom-px z-5 w-1;
+  @apply bg-border-strong pointer-events-none absolute top-0 -right-0.5 -bottom-px z-5 w-1;
+}
+
+.tiptap .tableWrapper {
+  @apply my-4 overflow-x-auto rounded-lg;
+}
+
+.tiptap table .selectedCell::after {
+  @apply bg-primary/10 pointer-events-none absolute inset-0 content-[""];
+}
+
+/* Long-form document and story-description editors share the same table treatment. */
+.rich-document-editor {
+  @apply relative;
+}
+
+.rich-document-editor .tiptap .tableWrapper {
+  @apply my-4 rounded-md;
+}
+
+.rich-document-editor .tiptap :is(h1, h2, h3, h4, h5, h6) {
+  @apply font-semibold;
+}
+
+.rich-document-editor .tiptap table {
+  @apply border-border text-foreground dark:border-border-strong/80 overflow-hidden rounded-md border-[0.5px];
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+@supports (corner-shape: squircle) {
+  .rich-document-editor .tiptap table {
+    corner-shape: squircle;
+  }
+}
+
+.rich-document-editor .tiptap table td,
+.rich-document-editor .tiptap table th {
+  @apply border-border dark:border-border-strong/80 border-0 border-r-[0.5px] border-b-[0.5px] px-3 py-2.5;
+}
+
+.rich-document-editor .tiptap table tr > :last-child {
+  border-right-width: 0;
+}
+
+.rich-document-editor .tiptap table tr:last-child > * {
+  border-bottom-width: 0;
+}
+
+.rich-document-editor .tiptap table th {
+  @apply bg-surface-muted/45 dark:bg-surface-elevated/45;
+}
+
+.rich-document-editor .tiptap table tr,
+.rich-document-editor .tiptap table tr:hover {
+  @apply bg-transparent;
+}
+
+.rich-document-editor .tiptap table .selectedCell::after {
+  @apply bg-primary/10 ring-primary/80 ring-1 ring-inset;
 }
 
 .resize-cursor {
@@ -186,26 +301,26 @@ th {
 
 /*** Works on common browsers ***/
 ::selection {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-background-inverse text-foreground-inverse;
 }
 
 /*** Mozilla based browsers ***/
 ::-moz-selection {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-background-inverse text-foreground-inverse;
 }
 
 /***For Other Browsers ***/
 ::-o-selection {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-background-inverse text-foreground-inverse;
 }
 
 ::-ms-selection {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-background-inverse text-foreground-inverse;
 }
 
 /*** For Webkit ***/
 ::-webkit-selection {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-background-inverse text-foreground-inverse;
 }
 
 /* this is for sonner */
@@ -230,7 +345,7 @@ th {
 }
 
 #nprogress .bar {
-  @apply bg-primary fixed top-0 left-0 h-[3px] w-full;
+  @apply bg-primary fixed top-0 left-0 h-0.75 w-full;
   z-index: 19031 !important;
 }
 
@@ -284,5 +399,5 @@ th {
 }
 
 .chat-tables ul[data-type="taskList"] input[type="checkbox"] {
-  @apply accent-primary;
+  @apply accent-primary shrink-0;
 }

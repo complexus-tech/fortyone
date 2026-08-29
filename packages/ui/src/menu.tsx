@@ -24,19 +24,19 @@ export const Trigger = ({ children, className, ...rest }: TriggerProps) => (
 );
 
 const contentClasses = cva(
-  "bg-surface-elevated/90 backdrop-blur-md z-50 border border-border w-max shadow-lg shadow-shadow mt-1 py-2",
+  "z-50 mt-1 w-max border-[0.5px] border-border/70 bg-surface-elevated py-2 shadow-xl shadow-shadow backdrop-blur-md dark:bg-surface-elevated/80",
   {
     variants: {
       rounded: {
         sm: "rounded",
         md: "rounded-lg",
-        lg: "rounded-2xl",
+        lg: "rounded-xl",
       },
     },
     defaultVariants: {
       rounded: "lg",
     },
-  }
+  },
 );
 
 const SubTrigger = forwardRef<
@@ -47,11 +47,11 @@ const SubTrigger = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.SubTrigger
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-[state=open]:bg-accent data-disabled:opacity-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-2 outline-none hover:bg-accent focus:bg-accent data-[state=open]:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
       {
         "bg-accent": active,
       },
-      className
+      className,
     )}
     ref={ref}
     {...rest}
@@ -61,28 +61,39 @@ const SubTrigger = forwardRef<
 ));
 
 type ContentProps = ComponentProps<typeof DropdownMenu.Content> &
-  VariantProps<typeof contentClasses>;
+  VariantProps<typeof contentClasses> & {
+    portal?: boolean;
+    portalContainer?: ComponentProps<typeof DropdownMenu.Portal>["container"];
+  };
 
 export const Items = ({
   children,
   className,
   sideOffset = 4,
   loop = true,
+  portal = true,
+  portalContainer,
   rounded,
   ...rest
 }: ContentProps) => {
   const classes = cn(contentClasses({ rounded }), className);
-  return (
-    <DropdownMenu.Portal>
-      <DropdownMenu.Content
-        sideOffset={sideOffset}
-        className={classes}
-        loop={loop}
-        {...rest}
-      >
-        {children}
-      </DropdownMenu.Content>
+  const content = (
+    <DropdownMenu.Content
+      sideOffset={sideOffset}
+      className={classes}
+      loop={loop}
+      {...rest}
+    >
+      {children}
+    </DropdownMenu.Content>
+  );
+
+  return portal ? (
+    <DropdownMenu.Portal container={portalContainer}>
+      {content}
     </DropdownMenu.Portal>
+  ) : (
+    content
   );
 };
 
@@ -94,11 +105,11 @@ const Item = forwardRef<
 >(({ children, className, active, ...rest }, ref) => (
   <DropdownMenu.Item
     className={cn(
-      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
+      "flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-2 outline-none hover:bg-accent focus:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
       {
         "bg-accent": active,
       },
-      className
+      className,
     )}
     ref={ref}
     {...rest}
@@ -113,11 +124,11 @@ const CheckboxItem = forwardRef<
 >(({ children, className, checked, ...rest }, ref) => (
   <DropdownMenu.CheckboxItem
     className={cn(
-      "mb-1 flex w-full cursor-pointer select-none items-center gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
+      "mb-1 flex w-full cursor-pointer select-none items-center gap-1.5 rounded-md px-2 py-2 outline-none hover:bg-accent focus:bg-accent data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50",
       {
         "bg-accent": checked,
       },
-      className
+      className,
     )}
     ref={ref}
     checked={checked}
@@ -135,9 +146,9 @@ const CheckboxItem = forwardRef<
 ));
 
 type MenuProps = ComponentProps<typeof DropdownMenu.Root>;
-export const Menu = ({ children, ...rest }: MenuProps) => {
+export const Menu = ({ children, modal = false, ...rest }: MenuProps) => {
   return (
-    <DropdownMenu.Root {...rest}>
+    <DropdownMenu.Root modal={modal} {...rest}>
       <div>{children}</div>
     </DropdownMenu.Root>
   );
@@ -181,13 +192,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       <input
         className={cn(
           "w-full bg-transparent py-[0.15rem] outline-none",
-          className
+          className,
         )}
         ref={ref}
         {...rest}
       />
     </div>
-  )
+  ),
 );
 
 const Separator = forwardRef<
@@ -195,7 +206,10 @@ const Separator = forwardRef<
   ComponentPropsWithoutRef<typeof DropdownMenu.Separator>
 >(({ className, ...rest }, ref) => (
   <DropdownMenu.Separator
-    className={cn("my-1.5 border-b-[0.5px] border-border", className)}
+    className={cn(
+      "my-1.5 border-b-[0.5px] border-border dark:border-border-strong/80",
+      className,
+    )}
     ref={ref}
     {...rest}
   />

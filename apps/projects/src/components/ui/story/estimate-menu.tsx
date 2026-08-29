@@ -61,10 +61,10 @@ const Items = ({
   return (
     <Popover.Content align={align} className="w-64">
       <Command>
-        <Command.Input autoFocus placeholder="Change estimate..." />
+        <Command.Input autoFocus placeholder="Change complexity..." />
         <Divider className="my-2" />
         <Command.Empty className="py-2">
-          <Text color="muted">No estimate found.</Text>
+          <Text color="muted">No complexity found.</Text>
         </Command.Empty>
         <Command.Group>
           <Command.Item
@@ -76,11 +76,11 @@ const Items = ({
               }
               setOpen(false);
             }}
-            value="No estimate"
+            value="No complexity"
           >
             <Box className="grid grid-cols-[24px_auto] items-center">
               <EstimateIcon className="opacity-70" />
-              <Text>No estimate</Text>
+              <Text>No complexity</Text>
             </Box>
             <Flex align="center" gap={1}>
               {!estimateValue && (
@@ -90,7 +90,7 @@ const Items = ({
             </Flex>
           </Command.Item>
           <Divider className="my-2" />
-          {options.map(({ label, value }, idx) => (
+          {options.map(({ value }, idx) => (
             <Command.Item
               active={value === estimateValue}
               className="justify-between gap-4"

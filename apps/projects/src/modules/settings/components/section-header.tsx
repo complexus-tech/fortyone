@@ -16,9 +16,9 @@ export const SectionHeader = ({
   className,
 }: SectionHeaderProps) => {
   return (
-    <Box className={cn("border-border border-b px-6 py-4", className)}>
-      <Flex align="center" gap={2} justify="between">
-        <Box>
+    <Box className={cn("border-border border-b-[0.5px] px-6 py-4", className)}>
+      <Flex align="center" gap={3} justify="between" wrap>
+        <Box className="min-w-64 flex-1">
           {title ? (
             <Text as="h3" className="font-medium">
               {title}
@@ -28,7 +28,7 @@ export const SectionHeader = ({
             {description}
           </Text>
         </Box>
-        {action}
+        {action ? <Box className="shrink-0">{action}</Box> : null}
       </Flex>
     </Box>
   );

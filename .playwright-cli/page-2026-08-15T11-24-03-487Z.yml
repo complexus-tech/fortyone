@@ -1,0 +1,94 @@
+- generic [ref=e2]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: "41"
+      - generic [ref=e6]:
+        - strong [ref=e7]: Onboarding v3
+        - generic [ref=e8]: Calm contrarian copy system
+    - paragraph [ref=e9]: Email journey
+    - list [ref=e10]:
+      - listitem [ref=e11]:
+        - button "00 One live thread Conditional account rescue" [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: "00"
+          - generic [ref=e14]: One live thread
+          - generic [ref=e15]: Conditional account rescue
+      - listitem [ref=e16]:
+        - button "01 Before the Task Workspace created" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: "01"
+          - generic [ref=e19]: Before the Task
+          - generic [ref=e20]: Workspace created
+      - listitem [ref=e21]:
+        - button "02 The lost thread Human reply" [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: "02"
+          - generic [ref=e24]: The lost thread
+          - generic [ref=e25]: Human reply
+      - listitem [ref=e26]:
+        - button "03 AI shows its work Real Task exists" [ref=e27] [cursor=pointer]:
+          - generic [ref=e28]: "03"
+          - generic [ref=e29]: AI shows its work
+          - generic [ref=e30]: Real Task exists
+      - listitem [ref=e31]:
+        - button "04 Strategy on Monday No Objective yet" [ref=e32] [cursor=pointer]:
+          - generic [ref=e33]: "04"
+          - generic [ref=e34]: Strategy on Monday
+          - generic [ref=e35]: No Objective yet
+      - listitem [ref=e36]:
+        - button "05 Give the invite a job Solo admin with real work" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]: "05"
+          - generic [ref=e39]: Give the invite a job
+          - generic [ref=e40]: Solo admin with real work
+      - listitem [ref=e41]:
+        - button "5B The real week Team already invited" [ref=e42] [cursor=pointer]:
+          - generic [ref=e43]: 5B
+          - generic [ref=e44]: The real week
+          - generic [ref=e45]: Team already invited
+    - generic [ref=e46]:
+      - strong [ref=e47]: Campaign spine
+      - paragraph [ref=e48]: Most project tools start with a Task. FortyOne starts with the reason it deserves one.
+    - generic [ref=e49]:
+      - link "Implementation notes ↗" [ref=e50] [cursor=pointer]:
+        - /url: README.md
+      - link "Copy deck ↗" [ref=e51] [cursor=pointer]:
+        - /url: COPY.md
+  - main [ref=e52]:
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - strong [ref=e55]: A due date is not a free afternoon
+        - generic [ref=e56]: Plan against the week people actually have.
+      - generic "Preview size" [ref=e57]:
+        - button "Desktop" [active] [pressed] [ref=e58] [cursor=pointer]
+        - button "Mobile" [ref=e59] [cursor=pointer]
+    - region "Email preview" [ref=e60]:
+      - generic [ref=e61]:
+        - generic [ref=e62]:
+          - generic [ref=e63]: "41"
+          - generic [ref=e64]:
+            - strong [ref=e65]: FortyOne
+            - generic [ref=e66]: notifications@fortyone.app
+          - generic [ref=e67]: Copy-ready HTML
+        - iframe [ref=e68]:
+          - generic [ref=f1e1]:
+            - link [ref=f1e2] [cursor=pointer]:
+              - /url: https://www.fortyone.app/
+              - img "FortyOne" [ref=f1e3]
+            - paragraph [ref=f1e4]: Capacity, visible
+            - heading "Your calendar knows what the plan ignores." [level=1] [ref=f1e5]
+            - generic [ref=f1e6]:
+              - paragraph [ref=f1e7]: Hi Joseph,
+              - paragraph [ref=f1e8]: Roadmaps are drawn in weeks. Capacity disappears in thirty-minute blocks.
+              - paragraph [ref=f1e9]: Connect Google Calendar to see meetings beside scheduled FortyOne work in one weekly view. With that context, Maya can help an admin prepare a work plan around workload and availability.
+              - paragraph [ref=f1e10]: You review the plan before anything changes.
+              - paragraph [ref=f1e11]: The plan stays yours. FortyOne makes the collision visible before the deadline does.
+            - link "Plan against the real week" [ref=f1e12] [cursor=pointer]:
+              - /url: "https://{{ contact.WORKSPACE_SLUG }}.fortyone.app/settings/account/calendar?utm_source=brevo&utm_medium=email&utm_campaign=workspace_onboarding_v2&utm_content=connect_calendar"
+            - link [ref=f1e14] [cursor=pointer]:
+              - /url: "https://{{ contact.WORKSPACE_SLUG }}.fortyone.app/settings/account/calendar?utm_source=brevo&utm_medium=email&utm_campaign=workspace_onboarding_v2&utm_content=connect_calendar_image"
+              - img "FortyOne's weekly calendar showing meetings alongside scheduled Tasks" [ref=f1e15]
+            - generic [ref=f1e16]:
+              - paragraph [ref=f1e17]: FortyOne turns strategy and customer feedback into work your team can deliver.
+              - paragraph [ref=f1e18]:
+                - link "Get help" [ref=f1e19] [cursor=pointer]:
+                  - /url: mailto:joseph@fortyone.app
+                - text: ·
+                - link "Unsubscribe" [ref=f1e20] [cursor=pointer]:
+                  - /url: "{{ unsubscribe }}"

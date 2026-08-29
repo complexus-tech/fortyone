@@ -1,9 +1,9 @@
-import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Dialog, Input, Flex, Box, Text, TextArea } from "ui";
-import { toast } from "sonner";
-import { cn } from "lib";
+import { useState } from "react";
 import { formatISO } from "date-fns";
+import { cn } from "lib";
+import { toast } from "sonner";
+import { Box, Button, Dialog, Flex, Input, Text, TextArea } from "ui";
 import { useMediaQuery, useTerminology } from "@/hooks";
 import { useUpdateKeyResultMutation } from "../../hooks";
 import type { KeyResult, KeyResultUpdate } from "../../types";
@@ -154,8 +154,9 @@ export const UpdateKeyResultDialog = ({
         <form onSubmit={handleSubmit}>
           <Dialog.Header className="px-6">
             <Dialog.Title className="text-lg capitalize">
-              Update {getTermDisplay("keyResultTerm", { capitalize: true })}{" "}
-              progress
+              {updateMode === "progress" ? "Update" : "Edit"}{" "}
+              {getTermDisplay("keyResultTerm", { capitalize: true })}
+              {updateMode === "progress" ? " progress" : ""}
             </Dialog.Title>
           </Dialog.Header>
           <Dialog.Body className="space-y-4 pb-0">

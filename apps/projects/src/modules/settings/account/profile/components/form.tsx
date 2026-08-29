@@ -1,47 +1,66 @@
+"use client";
+
 import type { FormEvent } from "react";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Box, Input, Button } from "ui";
+import type { User } from "@/types";
 import { SectionHeader } from "@/modules/settings/components";
 import { useProfile } from "@/lib/hooks/profile";
 import { useUpdateProfileMutation } from "@/lib/hooks/update-profile-mutation";
 import { ProfilePicture } from "./profile-picture";
 
-export const Form = () => {
-  const { data: profile } = useProfile();
-  const { mutate: updateProfile } = useUpdateProfileMutation();
-  const profileForm = {
-    fullName: profile?.fullName || "",
-    username: profile?.username || "",
-  };
-  const [profileSnapshot, setProfileSnapshot] = useState(profileForm);
-  const [form, setForm] = useState(profileForm);
+type ProfileFormProps = {
+  initialProfile?: User;
+};
 
-  if (
-    profileSnapshot.fullName !== profileForm.fullName ||
-    profileSnapshot.username !== profileForm.username
-  ) {
-    setProfileSnapshot(profileForm);
-    setForm(profileForm);
-  }
-
-  const hasChanged = () => {
-    return (
-      form.fullName !== profile?.fullName || form.username !== profile.username
-    );
+export const ProfileForm = ({ initialProfile }: ProfileFormProps) => {
+  const { data: profile } = useProfile(initialProfile);
+  const { isPending, mutate: updateProfile } = useUpdateProfileMutation();
+  const profileFullName = profile?.fullName ?? "";
+  const profileUsername = profile?.username ?? "";
+  const [draft, setDraft] = useState<{
+    fullName?: string;
+    username?: string;
+  }>({});
+  const form = {
+    fullName: draft.fullName ?? profileFullName,
+    username: draft.username ?? profileUsername,
   };
+
+  const hasChanged =
+    form.fullName !== profileFullName || form.username !== profileUsername;
 
   const handleUpdateProfile = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    updateProfile({
-      fullName: form.fullName.trim(),
-      username: form.username.trim(),
-    });
+    const submittedForm = form;
+    updateProfile(
+      {
+        fullName: submittedForm.fullName.trim(),
+        username: submittedForm.username.trim(),
+      },
+      {
+        onSuccess: (response) => {
+          if (!response.error?.message) {
+            setDraft((current) => ({
+              ...(current.fullName !== undefined &&
+              current.fullName !== submittedForm.fullName
+                ? { fullName: current.fullName }
+                : {}),
+              ...(current.username !== undefined &&
+              current.username !== submittedForm.username
+                ? { username: current.username }
+                : {}),
+            }));
+          }
+        },
+      },
+    );
   };
 
   return (
     <Box className="border-border bg-surface rounded-2xl border">
       <SectionHeader
-        action={<ProfilePicture />}
+        action={<ProfilePicture initialProfile={profile ?? initialProfile} />}
         description="Update your personal information and profile picture."
         title="Personal Information"
       />
@@ -51,7 +70,10 @@ export const Form = () => {
             label="Full name"
             name="fullName"
             onChange={(e) => {
-              setForm({ ...form, fullName: e.target.value });
+              setDraft((current) => ({
+                ...current,
+                fullName: e.target.value,
+              }));
             }}
             placeholder="Enter your full name"
             value={form.fullName}
@@ -60,17 +82,24 @@ export const Form = () => {
             label="Username"
             name="username"
             onChange={(e) => {
-              setForm({ ...form, username: e.target.value });
+              setDraft((current) => ({
+                ...current,
+                username: e.target.value,
+              }));
             }}
             placeholder="Enter your username"
             value={form.username}
           />
         </Box>
-        {hasChanged() && (
-          <Button className="mt-3" type="submit">
-            Save changes
-          </Button>
-        )}
+        <Button
+          className="mt-4"
+          disabled={!hasChanged || isPending}
+          loading={isPending}
+          loadingText="Saving..."
+          type="submit"
+        >
+          Save changes
+        </Button>
       </form>
     </Box>
   );

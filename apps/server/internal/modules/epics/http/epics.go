@@ -2,11 +2,13 @@ package epicshttp
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	epics "github.com/complexus-tech/projects-api/internal/modules/epics/service"
 	mid "github.com/complexus-tech/projects-api/internal/platform/http/middleware"
 	"github.com/complexus-tech/projects-api/pkg/web"
+	"github.com/google/uuid"
 )
 
 type Handlers struct {
@@ -20,15 +22,20 @@ func New(epics *epics.Service) *Handlers {
 }
 
 func (h *Handlers) List(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	_, err := mid.GetWorkspace(ctx)
+	workspace, err := mid.GetWorkspace(ctx)
 	if err != nil {
 		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
 	}
+	return h.listForWorkspace(ctx, w, workspace.ID)
+}
 
-	epics, err := h.epics.List(ctx)
-	if err != nil {
-		return err
+func (h *Handlers) listForWorkspace(ctx context.Context, w http.ResponseWriter, workspaceID uuid.UUID) error {
+	if err := h.epics.List(ctx, workspaceID); err != nil {
+		if errors.Is(err, epics.ErrNotImplemented) {
+			return web.RespondError(ctx, w, err, http.StatusNotImplemented)
+		}
+		return web.RespondError(ctx, w, err, http.StatusInternalServerError)
 	}
-	web.Respond(ctx, w, toAppEpics(epics), http.StatusOK)
-	return nil
+
+	return web.Respond(ctx, w, nil, http.StatusOK)
 }

@@ -3,9 +3,10 @@ package notifications
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
-	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
+	statesdomain "github.com/complexus-tech/projects-api/internal/modules/states/domain"
 	"github.com/complexus-tech/projects-api/pkg/events"
 	"github.com/google/uuid"
 )
@@ -13,15 +14,37 @@ import (
 // getUserName gets a user's name with fallback
 func (r *Rules) getUserName(ctx context.Context, userID uuid.UUID) string {
 	var userName string
+	if r.users == nil {
+		return userName
+	}
 	if user, err := r.users.GetUser(ctx, userID); err == nil {
 		userName = user.Username
 	}
 	return userName
 }
 
+// getUserTimezone returns the recipient's profile timezone when available.
+// The transition timezone is retained as a fallback for older events and
+// deployments where the user record cannot be loaded.
+func (r *Rules) getUserTimezone(ctx context.Context, userID uuid.UUID, fallback string) string {
+	timezone := strings.TrimSpace(fallback)
+	if r.users == nil || userID == uuid.Nil {
+		return timezone
+	}
+	if user, err := r.users.GetUser(ctx, userID); err == nil {
+		if profileTimezone := strings.TrimSpace(user.Timezone); profileTimezone != "" {
+			return profileTimezone
+		}
+	}
+	return timezone
+}
+
 // getStoryTitle gets a story's title with fallback
 func (r *Rules) getStoryTitle(ctx context.Context, storyID, workspaceID uuid.UUID) string {
 	var storyTitle string
+	if r.stories == nil {
+		return storyTitle
+	}
 	if story, err := r.stories.Get(ctx, storyID, workspaceID); err == nil {
 		storyTitle = story.Title
 	}
@@ -29,18 +52,18 @@ func (r *Rules) getStoryTitle(ctx context.Context, storyID, workspaceID uuid.UUI
 }
 
 // getStatus gets a status
-func (r *Rules) getStatus(ctx context.Context, statusID uuid.UUID, workspaceID uuid.UUID) states.CoreState {
+func (r *Rules) getStatus(ctx context.Context, statusID uuid.UUID, workspaceID uuid.UUID) statesdomain.State {
 	status, _ := r.statuses.Get(ctx, workspaceID, statusID)
 	return status
 }
 
 // createNotification creates a notification with consistent structure
-func (r *Rules) createNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, notifType, title string, message NotificationMessage) CoreNewNotification {
+func (r *Rules) createNotification(recipientID uuid.UUID, payload events.StoryUpdatedPayload, actorID uuid.UUID, notifType NotificationType, title string, message NotificationMessage) CoreNewNotification {
 	return CoreNewNotification{
 		RecipientID: recipientID,
 		WorkspaceID: payload.WorkspaceID,
 		Type:        notifType,
-		EntityType:  "story",
+		EntityType:  EntityTypeStory,
 		EntityID:    payload.StoryID,
 		ActorID:     actorID,
 		Title:       title,
@@ -68,4 +91,70 @@ func parseDate(dateStr string) (time.Time, error) {
 // shouldNotify checks if a recipient should be notified (never notify the actor)
 func shouldNotify(recipientID, actorID uuid.UUID) bool {
 	return recipientID != actorID
+}
+
+func storyAudience(audienceIDs []uuid.UUID, audienceResolved bool, fallbackAssignee *uuid.UUID) []uuid.UUID {
+	if !audienceResolved {
+		if fallbackAssignee == nil {
+			return nil
+		}
+		return []uuid.UUID{*fallbackAssignee}
+	}
+
+	seen := make(map[uuid.UUID]struct{}, len(audienceIDs))
+	result := make([]uuid.UUID, 0, len(audienceIDs))
+	for _, audienceID := range audienceIDs {
+		if audienceID == uuid.Nil {
+			continue
+		}
+		if _, exists := seen[audienceID]; exists {
+			continue
+		}
+		seen[audienceID] = struct{}{}
+		result = append(result, audienceID)
+	}
+	return result
+}
+
+func uuidSet(values []uuid.UUID) map[uuid.UUID]struct{} {
+	result := make(map[uuid.UUID]struct{}, len(values))
+	for _, value := range values {
+		if value != uuid.Nil {
+			result[value] = struct{}{}
+		}
+	}
+	return result
+}
+
+func parseUUIDSlice(value any) []uuid.UUID {
+	switch values := value.(type) {
+	case []uuid.UUID:
+		return values
+	case []string:
+		result := make([]uuid.UUID, 0, len(values))
+		for _, item := range values {
+			if parsed, err := uuid.Parse(item); err == nil {
+				result = append(result, parsed)
+			}
+		}
+		return result
+	case []any:
+		result := make([]uuid.UUID, 0, len(values))
+		for _, item := range values {
+			if text, ok := item.(string); ok {
+				if parsed, err := uuid.Parse(text); err == nil {
+					result = append(result, parsed)
+				}
+			}
+		}
+		return result
+	default:
+		return nil
+	}
+}
+
+func addNotificationRecipients(recipients map[uuid.UUID]struct{}, notifications []CoreNewNotification) {
+	for _, notification := range notifications {
+		recipients[notification.RecipientID] = struct{}{}
+	}
 }

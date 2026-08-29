@@ -21,23 +21,34 @@ type Service interface {
 }
 
 type Config struct {
-	Host        string
-	Port        int
-	Username    string
-	Password    string
-	FromAddress string
-	FromName    string
-	Environment string
-	BaseDir     string
+	Host            string
+	Port            int
+	Username        string
+	Password        string
+	FromAddress     string
+	FromName        string
+	MayaFromAddress string
+	MayaFromName    string
+	Environment     string
+	BaseDir         string
 }
 
+type SenderProfile string
+
+const SenderProfileMaya SenderProfile = "maya"
+
 type Email struct {
-	To          []string
-	Subject     string
-	Body        string
-	IsHTML      bool
-	Attachments []Attachment
-	ReplyTo     string
+	To            []string
+	Subject       string
+	Body          string
+	PlainTextBody string
+	IsHTML        bool
+	Attachments   []Attachment
+	Sender        SenderProfile
+	ReplyTo       string
+	MessageID     string
+	InReplyTo     string
+	References    []string
 }
 
 type Attachment struct {
@@ -47,11 +58,16 @@ type Attachment struct {
 }
 
 type TemplatedEmail struct {
-	To       []string
-	Template string
-	Data     any
-	Subject  string
-	ReplyTo  string
+	To            []string
+	Template      string
+	Data          any
+	Subject       string
+	PlainTextBody string
+	Sender        SenderProfile
+	ReplyTo       string
+	MessageID     string
+	InReplyTo     string
+	References    []string
 }
 
 type service struct {
@@ -63,14 +79,18 @@ type service struct {
 }
 
 const (
-	defaultCompanyName = "FortyOne"
-	defaultLogoURL     = "https://fortyone.app/images/logo.png"
-	defaultSubject     = "FortyOne"
+	defaultCompanyName     = "FortyOne"
+	defaultLogoURL         = "https://fortyone.app/images/logo.png"
+	defaultMayaFromAddress = "maya@fortyone.app"
+	defaultSubject         = "FortyOne"
 )
 
 func NewService(cfg Config, log *logger.Logger) (Service, error) {
 	dialer := gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
-	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: cfg.Environment != "production"}
+	dialer.TLSConfig = &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		ServerName: strings.TrimSpace(cfg.Host),
+	}
 
 	if cfg.BaseDir == "" {
 		return nil, fmt.Errorf("email template base directory is required")
@@ -81,9 +101,7 @@ func NewService(cfg Config, log *logger.Logger) (Service, error) {
 		"formatDate": func(t time.Time) string {
 			return t.Format("January 2, 2006")
 		},
-		"safeHTML": func(value string) template.HTML {
-			return template.HTML(value)
-		},
+		"safeHTML":   safeEmailHTML,
 		"emailStyle": emailStyle,
 	}).ParseFiles(baseTemplatePath)
 	if err != nil {
@@ -133,22 +151,72 @@ func NewService(cfg Config, log *logger.Logger) (Service, error) {
 }
 
 func (s *service) Send(ctx context.Context, email Email) error {
-	msg := gomail.NewMessage()
-	fromName := s.config.FromName
-	if fromName == "" {
-		fromName = s.config.FromAddress
+	msg, err := s.buildMessage(email)
+	if err != nil {
+		return err
 	}
 
-	msg.SetHeader("From", fmt.Sprintf("%s <%s>", fromName, s.config.FromAddress))
+	if err := s.dialer.DialAndSend(msg); err != nil {
+		s.log.Error(ctx, "failed to send email", "error", err)
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+
+	s.log.Info(ctx, "email sent successfully", "to", email.To)
+	return nil
+}
+
+func (s *service) buildMessage(email Email) (*gomail.Message, error) {
+	msg := gomail.NewMessage()
+	fromAddress, fromName := s.senderForProfile(email.Sender)
+
+	msg.SetAddressHeader("From", fromAddress, fromName)
 	msg.SetHeader("To", email.To...)
 	msg.SetHeader("Subject", email.Subject)
+	if messageID := strings.TrimSpace(email.MessageID); messageID != "" {
+		if err := validateEmailHeaderValue("Message-ID", messageID); err != nil {
+			return nil, err
+		}
+		msg.SetHeader("Message-ID", messageID)
+	}
 
-	if email.ReplyTo != "" {
-		msg.SetHeader("Reply-To", email.ReplyTo)
+	if replyTo := strings.TrimSpace(email.ReplyTo); replyTo != "" {
+		if err := validateEmailHeaderValue("Reply-To", replyTo); err != nil {
+			return nil, err
+		}
+		msg.SetHeader("Reply-To", replyTo)
+	}
+
+	if inReplyTo := strings.TrimSpace(email.InReplyTo); inReplyTo != "" {
+		if err := validateEmailHeaderValue("In-Reply-To", inReplyTo); err != nil {
+			return nil, err
+		}
+		msg.SetHeader("In-Reply-To", inReplyTo)
+	}
+
+	if len(email.References) > 0 {
+		references := make([]string, 0, len(email.References))
+		for _, reference := range email.References {
+			reference = strings.TrimSpace(reference)
+			if reference == "" {
+				continue
+			}
+			if err := validateEmailHeaderValue("References", reference); err != nil {
+				return nil, err
+			}
+			references = append(references, reference)
+		}
+		if len(references) > 0 {
+			msg.SetHeader("References", strings.Join(references, " "))
+		}
 	}
 
 	if email.IsHTML {
-		msg.SetBody("text/html", email.Body)
+		if email.PlainTextBody != "" {
+			msg.SetBody("text/plain", email.PlainTextBody)
+			msg.AddAlternative("text/html", email.Body)
+		} else {
+			msg.SetBody("text/html", email.Body)
+		}
 	} else {
 		msg.SetBody("text/plain", email.Body)
 	}
@@ -165,13 +233,34 @@ func (s *service) Send(ctx context.Context, email Email) error {
 		)
 	}
 
-	if err := s.dialer.DialAndSend(msg); err != nil {
-		s.log.Error(ctx, "failed to send email", "error", err)
-		return fmt.Errorf("failed to send email: %w", err)
-	}
+	return msg, nil
+}
 
-	s.log.Info(ctx, "email sent successfully", "to", email.To)
+func validateEmailHeaderValue(name, value string) error {
+	if strings.ContainsAny(value, "\r\n") {
+		return fmt.Errorf("%s header contains a line break", name)
+	}
 	return nil
+}
+
+func (s *service) senderForProfile(profile SenderProfile) (string, string) {
+	fromAddress := s.config.FromAddress
+	fromName := s.config.FromName
+	if profile == SenderProfileMaya {
+		fromAddress = defaultMayaFromAddress
+		if configuredAddress := strings.TrimSpace(s.config.MayaFromAddress); configuredAddress != "" {
+			fromAddress = configuredAddress
+		}
+		if configuredName := strings.TrimSpace(s.config.MayaFromName); configuredName != "" {
+			fromName = configuredName
+		} else {
+			fromName = "Maya, AI Agent"
+		}
+	}
+	if fromName == "" {
+		fromName = fromAddress
+	}
+	return fromAddress, fromName
 }
 
 func (s *service) SendTemplated(ctx context.Context, templateEmail TemplatedEmail) error {
@@ -216,11 +305,16 @@ func (s *service) SendTemplated(ctx context.Context, templateEmail TemplatedEmai
 	}
 
 	email := Email{
-		To:      templateEmail.To,
-		Subject: subject,
-		Body:    buf.String(),
-		IsHTML:  true,
-		ReplyTo: templateEmail.ReplyTo,
+		To:            templateEmail.To,
+		Subject:       subject,
+		Body:          buf.String(),
+		PlainTextBody: templateEmail.PlainTextBody,
+		IsHTML:        true,
+		Sender:        templateEmail.Sender,
+		ReplyTo:       templateEmail.ReplyTo,
+		MessageID:     templateEmail.MessageID,
+		InReplyTo:     templateEmail.InReplyTo,
+		References:    templateEmail.References,
 	}
 
 	return s.Send(ctx, email)

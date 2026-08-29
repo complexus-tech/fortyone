@@ -2,7 +2,6 @@
 
 import { Flex, Text } from "ui";
 import { useEffect } from "react";
-import { redirect } from "next/navigation";
 import nProgress from "nprogress";
 import { Logo } from "@/components/ui";
 import type { Session } from "@/auth";
@@ -13,11 +12,13 @@ import type { User, Workspace } from "@/types";
 
 export const ClientPage = ({
   invitations,
+  callbackUrl,
   session,
   workspaces,
   profile,
 }: {
   invitations: Invitation[];
+  callbackUrl?: string;
   session: Session;
   workspaces: Workspace[];
   profile: User;
@@ -25,23 +26,18 @@ export const ClientPage = ({
   const { analytics } = useAnalytics();
 
   useEffect(() => {
-    const finalize = async () => {
-      nProgress.done();
-      if (session) {
-        analytics.identify(session.user!.email!, {
-          email: session.user!.email!,
-          name: session.user!.name!,
-        });
-        window.location.href = getRedirectUrl(
-          workspaces,
-          invitations,
-          profile.lastUsedWorkspaceId,
-        );
-      }
-    };
-
-    void finalize();
-  }, [analytics, session, invitations, workspaces, profile]);
+    nProgress.done();
+    analytics.identify(session.user.email, {
+      email: session.user.email,
+      name: session.user.name,
+    });
+    window.location.href = getRedirectUrl(
+      workspaces,
+      invitations,
+      profile.lastUsedWorkspaceId,
+      callbackUrl,
+    );
+  }, [analytics, callbackUrl, session, invitations, workspaces, profile]);
 
   return (
     <Flex

@@ -122,16 +122,18 @@ export const SubStories = ({
   });
 
   return (
-    <>
+    <Box className="mt-6">
       <Flex
         align="center"
-        className={cn({
-          "border-border border-b-[0.5px]": !isSubStoriesOpen,
+        className={cn("@container w-full min-w-0 pb-1.5", {
+          "border-border border-b-[0.5px]": parent.subStories.length > 0,
         })}
+        gap={2}
         justify={parent.subStories.length > 0 ? "between" : "end"}
+        wrap
       >
         {parent.subStories.length > 0 && (
-          <Flex align="center" gap={2}>
+          <Flex align="center" className="justify-end" gap={2} wrap>
             <Button
               className="font-semibold"
               color="tertiary"
@@ -161,8 +163,14 @@ export const SubStories = ({
         )}
 
         {userRole !== "guest" && (
-          <Flex align="center" gap={2}>
+          <Flex
+            align="center"
+            className="ml-auto max-w-full min-w-0 justify-end"
+            gap={2}
+            wrap
+          >
             <Button
+              className="shrink-0"
               color="tertiary"
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
               onClick={() => {
@@ -173,10 +181,11 @@ export const SubStories = ({
               size="sm"
               variant="naked"
             >
-              <span className="md:hidden">Improve</span>
-              <span className="hidden md:inline">Improve description</span>
+              <span className="@lg:hidden">Improve</span>
+              <span className="hidden @lg:inline">Improve description</span>
             </Button>
             <Button
+              className="shrink-0"
               color="tertiary"
               disabled={isLoading}
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
@@ -193,8 +202,8 @@ export const SubStories = ({
                 <Thinking message="Maya is thinking" />
               ) : (
                 <>
-                  <span className="md:hidden">Suggest</span>
-                  <span className="hidden md:inline">
+                  <span className="@lg:hidden">Suggest</span>
+                  <span className="hidden @lg:inline">
                     Suggest sub{" "}
                     {getTermDisplay("storyTerm", {
                       variant: "plural",
@@ -212,21 +221,19 @@ export const SubStories = ({
               teamCode={parent.teamCode}
               teamId={parent.teamId}
             />
-            <Tooltip
-              title={parent.subStories.length > 0 ? "Add Sub Story" : null}
-            >
+            <Tooltip title={`Add sub ${getTermDisplay("storyTerm")}`}>
               <Button
+                aria-label={`Add sub ${getTermDisplay("storyTerm")}`}
+                className="aspect-square shrink-0 justify-center px-0 @lg:aspect-auto @lg:px-2"
                 color="tertiary"
-                leftIcon={<PlusIcon />}
                 onClick={() => {
                   setIsCreateSubStoryOpen(true);
                 }}
                 size="sm"
                 variant="naked"
               >
-                <span
-                  className={cn({ "sr-only": parent.subStories.length > 0 })}
-                >
+                <PlusIcon />
+                <span className="hidden @lg:inline">
                   Add sub {getTermDisplay("storyTerm")}
                 </span>
               </Button>
@@ -324,7 +331,7 @@ export const SubStories = ({
 
       {isSubStoriesOpen && parent.subStories.length > 0 ? (
         <StoriesBoard
-          className="border-border mt-2 h-auto border-t-[0.5px] pb-0"
+          className="h-auto pb-0"
           groupedStories={{
             groups: [
               {
@@ -349,6 +356,7 @@ export const SubStories = ({
           viewOptions={{
             groupBy: "none",
             orderBy: "priority",
+            orderDirection: "desc",
             showEmptyGroups: false,
             showSubStories: false,
             displayColumns: [
@@ -356,11 +364,12 @@ export const SubStories = ({
               "Status",
               "Assignee",
               "Estimate",
+              "Time needed",
               "Priority",
             ],
           }}
         />
       ) : null}
-    </>
+    </Box>
   );
 };

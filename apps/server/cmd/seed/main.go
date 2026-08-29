@@ -6,16 +6,14 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
-	mentionsrepository "github.com/complexus-tech/projects-api/internal/modules/mentions/repository"
+	workspacebootstrap "github.com/complexus-tech/projects-api/internal/bootstrap/workspaces"
+	mayarepository "github.com/complexus-tech/projects-api/internal/modules/maya/repository"
 	notificationsrepository "github.com/complexus-tech/projects-api/internal/modules/notifications/repository"
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
 	objectivesrepository "github.com/complexus-tech/projects-api/internal/modules/objectives/repository"
 	objectives "github.com/complexus-tech/projects-api/internal/modules/objectives/service"
-	objectivestatusrepository "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/repository"
-	objectivestatus "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/service"
-	okractivitiesrepository "github.com/complexus-tech/projects-api/internal/modules/okractivities/repository"
-	okractivities "github.com/complexus-tech/projects-api/internal/modules/okractivities/service"
 	statesrepository "github.com/complexus-tech/projects-api/internal/modules/states/repository"
 	states "github.com/complexus-tech/projects-api/internal/modules/states/service"
 	storiesrepository "github.com/complexus-tech/projects-api/internal/modules/stories/repository"
@@ -23,14 +21,13 @@ import (
 	subscriptionsrepository "github.com/complexus-tech/projects-api/internal/modules/subscriptions/repository"
 	subscriptions "github.com/complexus-tech/projects-api/internal/modules/subscriptions/service"
 	teamsrepository "github.com/complexus-tech/projects-api/internal/modules/teams/repository"
-	teams "github.com/complexus-tech/projects-api/internal/modules/teams/service"
 	usersrepository "github.com/complexus-tech/projects-api/internal/modules/users/repository"
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 	workspacesrepository "github.com/complexus-tech/projects-api/internal/modules/workspaces/repository"
 	workspaces "github.com/complexus-tech/projects-api/internal/modules/workspaces/service"
+	workspaceuow "github.com/complexus-tech/projects-api/internal/modules/workspaces/uow"
+	platformdatabase "github.com/complexus-tech/projects-api/internal/platform/database"
 	"github.com/complexus-tech/projects-api/internal/seeding"
-	"github.com/complexus-tech/projects-api/pkg/cache"
-	"github.com/complexus-tech/projects-api/pkg/database"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/publisher"
 	"github.com/complexus-tech/projects-api/pkg/tasks"
@@ -47,8 +44,9 @@ type Config struct {
 		User         string `default:"postgres"`
 		Password     string `default:"password"`
 		Name         string `default:"complexus"`
-		MaxIdleConns int    `default:"25" env:"APP_DB_MAX_IDLE_CONNS"`
 		MaxOpenConns int    `default:"25" env:"APP_DB_MAX_OPEN_CONNS"`
+		SSLMode      string `env:"APP_DB_SSL_MODE"`
+		SSLRootCert  string `env:"APP_DB_SSL_ROOT_CERT"`
 		DisableTLS   bool   `default:"true" env:"APP_DB_DISABLE_TLS"`
 	}
 	Cache struct {
@@ -70,8 +68,6 @@ func main() {
 	slug := flag.String("slug", "dev", "Slug of the workspace")
 	email := flag.String("email", "admin@example.com", "Email of the admin user")
 	fullName := flag.String("fullname", "Admin User", "Full name of the admin user")
-	disableTLS := flag.Bool("disable-tls", true, "Disable TLS for database connection")
-	flag.Parse()
 
 	ctx := context.Background()
 	log := logger.NewWithJSON(os.Stdout, slog.LevelDebug, "seeder")
@@ -82,31 +78,55 @@ func main() {
 		log.Error(ctx, "failed to parse config", "error", err)
 		os.Exit(1)
 	}
+	disableTLS := flag.Bool(
+		"disable-tls",
+		cfg.DB.DisableTLS,
+		"deprecated TLS fallback used only when APP_DB_SSL_MODE is empty",
+	)
+	flag.Parse()
+	disableTLSWasSet := false
+	flag.Visit(func(parsedFlag *flag.Flag) {
+		if parsedFlag.Name == "disable-tls" {
+			disableTLSWasSet = true
+		}
+	})
+	if disableTLSWasSet && strings.TrimSpace(cfg.DB.SSLMode) != "" {
+		log.Error(ctx, "--disable-tls cannot be combined with APP_DB_SSL_MODE")
+		os.Exit(1)
+	}
+
+	databaseConfig := platformdatabase.Config{
+		Host:         cfg.DB.Host,
+		Port:         cfg.DB.Port,
+		User:         cfg.DB.User,
+		Password:     cfg.DB.Password,
+		Name:         cfg.DB.Name,
+		MaxOpenConns: cfg.DB.MaxOpenConns,
+		SSLMode:      cfg.DB.SSLMode,
+		SSLRootCert:  cfg.DB.SSLRootCert,
+		DisableTLS:   *disableTLS,
+	}
+	effectiveSSLMode, err := platformdatabase.EffectiveSSLMode(databaseConfig)
+	if err != nil {
+		log.Error(ctx, "invalid database TLS configuration", "error", err)
+		os.Exit(1)
+	}
 
 	log.Info(ctx, "database config",
 		"host", cfg.DB.Host,
 		"port", cfg.DB.Port,
 		"name", cfg.DB.Name,
 		"user", cfg.DB.User,
-		"disable_tls", cfg.DB.DisableTLS,
+		"ssl_mode", effectiveSSLMode,
 	)
 
 	// Connect to DB
-	db, err := database.Open(database.Config{
-		Host:         cfg.DB.Host,
-		Port:         cfg.DB.Port,
-		User:         cfg.DB.User,
-		Password:     cfg.DB.Password,
-		Name:         cfg.DB.Name,
-		MaxIdleConns: cfg.DB.MaxIdleConns,
-		MaxOpenConns: cfg.DB.MaxOpenConns,
-		DisableTLS:   *disableTLS, // Use flag which defaults to true
-	})
+	connections, err := platformdatabase.Open(ctx, databaseConfig)
 	if err != nil {
 		log.Error(ctx, "failed to connect to db", "error", err)
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer connections.Close()
 
 	// Connect to Redis (required for tasks and publisher)
 	rdb := redis.NewClient(&redis.Options{
@@ -117,34 +137,28 @@ func main() {
 	defer rdb.Close()
 
 	// Initialize Minimal Services
-	cacheService := cache.New(rdb, log)
 	tasksService, _ := tasks.New(rdb, log)
 	publisher := publisher.New(rdb, log)
 
 	// Dependency Tree
-	usersRepo := usersrepository.New(log, db)
+	usersRepo := usersrepository.New(connections.Pool)
 	usersService := users.New(log, usersRepo, tasksService)
 
-	teamsRepo := teamsrepository.New(log, db)
-	teamsService := teams.New(log, teamsRepo)
+	teamsRepo := teamsrepository.New(connections.Pool)
 
-	statesRepo := statesrepository.New(log, db)
-	statesService := states.New(log, statesRepo)
+	statesRepo := statesrepository.New(connections.Pool)
+	statesService := states.New(statesRepo)
 
-	mentionsRepo := mentionsrepository.New(log, db)
-	storiesRepo := storiesrepository.New(log, db)
-	storiesService := stories.New(log, storiesRepo, mentionsRepo, publisher, tasksService)
+	mayaRepository := mayarepository.New(connections.Pool)
+	storiesRepo := storiesrepository.New(log, connections.Pool)
+	storiesService := stories.New(log, storiesRepo, publisher, tasksService)
+	storiesService.ConfigureAutoSchedulingEligibility(mayaRepository.WorkspaceCanUseMaya)
 
-	okrActivitiesRepo := okractivitiesrepository.New(log, db)
-	okrActivitiesService := okractivities.New(log, okrActivitiesRepo)
-	objectivesRepo := objectivesrepository.New(log, db)
-	_ = objectives.New(log, objectivesRepo, okrActivitiesService)
+	objectivesRepo := objectivesrepository.New(connections.Pool)
+	_ = objectives.New(log, objectivesRepo)
 
-	notificationRepo := notificationsrepository.New(log, db)
+	notificationRepo := notificationsrepository.New(connections.Pool)
 	_ = notifications.New(log, notificationRepo, rdb, tasksService)
-
-	objStatusRepo := objectivestatusrepository.New(log, db)
-	objStatusService := objectivestatus.New(log, objStatusRepo)
 
 	// Initialize Stripe client (required by subscriptions service)
 	stripeClient := &client.API{}
@@ -152,25 +166,25 @@ func main() {
 		stripeClient = client.New(cfg.Stripe.SecretKey, nil)
 	}
 
-	subRepo := subscriptionsrepository.New(log, db)
+	subRepo := subscriptionsrepository.New(connections.Pool)
 	subService := subscriptions.New(log, subRepo, stripeClient, cfg.Stripe.WebhookSecret, tasksService)
 
-	workspaceRepo := workspacesrepository.New(log, db)
+	workspaceRepo := workspacesrepository.New(connections.Pool)
+	workspaceUnitOfWork, err := workspaceuow.New(connections.Pool, workspaceRepo, teamsRepo, usersRepo)
+	if err != nil {
+		log.Error(ctx, "failed to initialize workspace unit of work", "error", err)
+		os.Exit(1)
+	}
 	workspacesService := workspaces.New(
 		log,
 		workspaceRepo,
-		db,
+		workspaceUnitOfWork,
 		workspaces.Dependencies{
-			Teams:           teamsService,
-			Stories:         storiesService,
-			Statuses:        statesService,
-			Users:           usersService,
-			ObjectiveStatus: objStatusService,
-			Subscriptions:   subService,
-			Cache:           cacheService,
-			Publisher:       publisher,
-			TasksService:    tasksService,
-			// Attachments are not needed for seed.
+			SeedContent:   workspacebootstrap.NewSeedContentCreator(statesService, storiesService),
+			Users:         workspacebootstrap.NewUserDirectory(usersService),
+			Subscriptions: workspacebootstrap.NewSubscriptionManager(subService),
+			Publisher:     publisher,
+			Trials:        workspacebootstrap.NewTrialScheduler(tasksService),
 		},
 	)
 

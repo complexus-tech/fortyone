@@ -26,13 +26,18 @@ func (r *Rules) isPureUnassignment(payload events.StoryUpdatedPayload) bool {
 	return payload.AssigneeID != nil && isUnassignment(payload.Updates)
 }
 
-// hasNonAssignmentUpdates detects updates to status, priority, due date (excluding assignment changes)
+// hasNonAssignmentUpdates detects changes that affect another person's ability
+// to complete the work. Administrative edits stay in the activity trail.
 func (r *Rules) hasNonAssignmentUpdates(payload events.StoryUpdatedPayload) bool {
-	if payload.AssigneeID == nil {
-		return false // No current assignee to notify
+	if payload.AssigneeID == nil && len(payload.AudienceIDs) == 0 {
+		return false
 	}
 
-	nonAssignmentFields := []string{"status_id", "priority", "end_date"}
+	nonAssignmentFields := []string{
+		"status_id",
+		"priority",
+		"end_date",
+	}
 	for _, field := range nonAssignmentFields {
 		if _, exists := payload.Updates[field]; exists {
 			return true
@@ -58,6 +63,14 @@ func (r *Rules) handleNewAssignment(ctx context.Context, payload events.StoryUpd
 			Variables: map[string]Variable{
 				"actor": {Value: actorName, Type: "actor"},
 			},
+		}
+		if reason := normalizedMayaReason(payload); reason != "" {
+			message = NotificationMessage{
+				Template: "Maya assigned you this task: {reason}",
+				Variables: map[string]Variable{
+					"reason": {Value: safeNotificationText(reason), Type: "value"},
+				},
+			}
 		}
 		return []CoreNewNotification{
 			r.createNotification(*newAssigneeID, payload, actorID, "story_update", storyTitle, message),
@@ -96,6 +109,15 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 				"assignee": {Value: newAssigneeName, Type: "assignee"},
 			},
 		}
+		if reason := normalizedMayaReason(payload); reason != "" {
+			message = NotificationMessage{
+				Template: "Maya reassigned this task to {assignee}: {reason}",
+				Variables: map[string]Variable{
+					"assignee": {Value: newAssigneeName, Type: "assignee"},
+					"reason":   {Value: safeNotificationText(reason), Type: "value"},
+				},
+			}
+		}
 
 		notifications = append(notifications, r.createNotification(*oldAssigneeID, payload, actorID, "story_update", storyTitle, message))
 	}
@@ -107,6 +129,14 @@ func (r *Rules) handleReassignment(ctx context.Context, payload events.StoryUpda
 			Variables: map[string]Variable{
 				"actor": {Value: actorName, Type: "actor"},
 			},
+		}
+		if reason := normalizedMayaReason(payload); reason != "" {
+			message = NotificationMessage{
+				Template: "Maya assigned you this task: {reason}",
+				Variables: map[string]Variable{
+					"reason": {Value: safeNotificationText(reason), Type: "value"},
+				},
+			}
 		}
 
 		notifications = append(notifications, r.createNotification(*newAssigneeID, payload, actorID, "story_update", storyTitle, message))
@@ -138,10 +168,7 @@ func (r *Rules) handlePureUnassignment(ctx context.Context, payload events.Story
 }
 
 // handleStoryUpdates creates notifications for non-assignment updates (status, priority, due date)
-func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) []CoreNewNotification {
-	if payload.AssigneeID == nil || !shouldNotify(*payload.AssigneeID, actorID) {
-		return nil
-	}
+func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID, excludedRecipients map[uuid.UUID]struct{}) []CoreNewNotification {
 	if statusID, exists := payload.Updates["status_id"]; exists {
 		if statusStr, ok := statusID.(string); ok {
 			if statusID, err := uuid.Parse(statusStr); err == nil {
@@ -153,10 +180,79 @@ func (r *Rules) handleStoryUpdates(ctx context.Context, payload events.StoryUpda
 	actorName := r.getUserName(ctx, actorID)
 	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
 	message := r.generateNonAssignmentUpdateMessage(actorName, payload.Updates)
-
-	return []CoreNewNotification{
-		r.createNotification(*payload.AssigneeID, payload, actorID, "story_update", storyTitle, message),
+	recipients := storyAudience(payload.AudienceIDs, payload.AudienceResolved, payload.AssigneeID)
+	notifications := make([]CoreNewNotification, 0, len(recipients))
+	for _, recipientID := range recipients {
+		if !shouldNotify(recipientID, actorID) {
+			continue
+		}
+		if _, excluded := excludedRecipients[recipientID]; excluded {
+			continue
+		}
+		notifications = append(notifications, r.createNotification(recipientID, payload, actorID, "story_update", storyTitle, message))
 	}
+	return notifications
+}
+
+func (r *Rules) handleCollaboratorUpdates(ctx context.Context, payload events.StoryUpdatedPayload, actorID uuid.UUID) ([]CoreNewNotification, map[uuid.UUID]struct{}) {
+	rawCollaborators, exists := payload.Updates["collaborator_ids"]
+	if !exists {
+		return nil, nil
+	}
+
+	currentCollaborators := parseUUIDSlice(rawCollaborators)
+	previous := uuidSet(payload.PreviousCollaboratorIDs)
+	current := uuidSet(currentCollaborators)
+	directRecipients := make(map[uuid.UUID]struct{})
+	notifications := make([]CoreNewNotification, 0)
+	storyTitle := r.getStoryTitle(ctx, payload.StoryID, payload.WorkspaceID)
+	actorName := r.getUserName(ctx, actorID)
+
+	for collaboratorID := range current {
+		if _, existed := previous[collaboratorID]; existed {
+			continue
+		}
+		directRecipients[collaboratorID] = struct{}{}
+		if shouldNotify(collaboratorID, actorID) {
+			notifications = append(notifications, r.createNotification(
+				collaboratorID,
+				payload,
+				actorID,
+				"story_update",
+				storyTitle,
+				NotificationMessage{
+					Template: "{actor} added you as a collaborator",
+					Variables: map[string]Variable{
+						"actor": {Value: actorName, Type: "actor"},
+					},
+				},
+			))
+		}
+	}
+
+	for collaboratorID := range previous {
+		if _, remains := current[collaboratorID]; remains {
+			continue
+		}
+		directRecipients[collaboratorID] = struct{}{}
+		if shouldNotify(collaboratorID, actorID) {
+			notifications = append(notifications, r.createNotification(
+				collaboratorID,
+				payload,
+				actorID,
+				"story_update",
+				storyTitle,
+				NotificationMessage{
+					Template: "{actor} removed you as a collaborator",
+					Variables: map[string]Variable{
+						"actor": {Value: actorName, Type: "actor"},
+					},
+				},
+			))
+		}
+	}
+
+	return notifications, directRecipients
 }
 
 // generateNonAssignmentUpdateMessage creates messages for status, priority, due date updates
@@ -222,6 +318,52 @@ func (r *Rules) generateNonAssignmentUpdateMessage(actorName string, updates map
 				"actor": {Value: actorName, Type: "actor"},
 				"field": {Value: "Deadline", Type: "field"},
 				"value": {Value: dateStr, Type: "date"},
+			},
+		}
+	}
+
+	if _, exists := updates["start_date"]; exists {
+		return NotificationMessage{
+			Template: "{actor} changed the start date",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+			},
+		}
+	}
+
+	if _, exists := updates["sprint_id"]; exists {
+		return NotificationMessage{
+			Template: "{actor} changed the sprint",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+			},
+		}
+	}
+
+	if _, exists := updates["estimate_unit"]; exists {
+		return NotificationMessage{
+			Template: "{actor} changed the estimate",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+			},
+		}
+	}
+
+	if _, exists := updates["collaborator_ids"]; exists {
+		return NotificationMessage{
+			Template: "{actor} updated collaborators",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+			},
+		}
+	}
+
+	if title, exists := updates["title"].(string); exists && title != "" {
+		return NotificationMessage{
+			Template: "{actor} renamed the story to {value}",
+			Variables: map[string]Variable{
+				"actor": {Value: actorName, Type: "actor"},
+				"value": {Value: title, Type: "value"},
 			},
 		}
 	}

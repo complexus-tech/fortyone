@@ -1,49 +1,158 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDown2Icon } from "icons";
 import { cn } from "lib";
-import { Box, Button, Flex, NavigationMenu, NavLink } from "ui";
+import { Box, Button, Flex, NavLink } from "ui";
 import { Logo, Container } from "@/components/ui";
 import { APP_URL, SIGNUP_URL } from "@/lib/app-url";
 import { featureLinks } from "@/lib/feature-links";
 import { primaryUseCaseLinks } from "@/lib/use-case-links";
 import { MobileNavigation } from "./mobile-navigation";
+import {
+  NavigationMenuIcon,
+  type NavigationIconName,
+  type NavigationIconTone,
+} from "./navigation-menu-icon";
 // import { RequestDemo } from "./request-demo";
 
-type NavigationMenuItem = {
+type NavigationLinkItem = {
   href: string;
   title: string;
 };
 
+type NavigationMenuItem = NavigationLinkItem & {
+  description: string;
+  icon: NavigationIconName;
+  tone: NavigationIconTone;
+};
+
 const resourceLinks: NavigationMenuItem[] = [
   {
-    title: "Docs",
+    description: "Learn how FortyOne works",
     href: "https://docs.fortyone.app",
+    icon: "documents",
+    title: "Docs",
+    tone: "blue",
   },
   {
-    title: "Blog",
+    description: "Ideas for building focused teams",
     href: "/blog",
+    icon: "blog",
+    title: "Blog",
+    tone: "lime",
   },
   {
-    title: "GitHub",
-    href: "https://github.com/complexus-tech/fortyone",
-  },
-  {
-    title: "Pitch",
+    description: "See the product story in a few minutes",
     href: "https://pitch.fortyone.app",
+    icon: "pitch",
+    title: "Pitch",
+    tone: "orange",
   },
 ];
 
+const featureMenuDetails = {
+  "ai-planning": {
+    description: "Let Maya shape a realistic plan",
+    icon: "ai-planning",
+    tone: "lime",
+  },
+  "customer-feedback": {
+    description: "Turn customer insight into action",
+    icon: "customer-feedback",
+    tone: "blue",
+  },
+  goals: {
+    description: "Set objectives and track key results",
+    icon: "goals",
+    tone: "lime",
+  },
+  integrations: {
+    description: "Connect the tools your team uses",
+    icon: "integrations",
+    tone: "blue",
+  },
+  roadmaps: {
+    description: "Communicate what is coming next",
+    icon: "roadmaps",
+    tone: "aqua",
+  },
+  tasks: {
+    description: "Plan and deliver the day-to-day work",
+    icon: "tasks",
+    tone: "aqua",
+  },
+} satisfies Record<
+  (typeof featureLinks)[number]["slug"],
+  {
+    description: string;
+    icon: NavigationIconName;
+    tone: NavigationIconTone;
+  }
+>;
+
 const featureMenuLinks: NavigationMenuItem[] = featureLinks.map(
-  ({ href, label }) => ({
+  ({ href, label, slug }) => ({
+    ...featureMenuDetails[slug],
     href,
     title: label,
   }),
 );
 
-const useCaseMenuLinks: NavigationMenuItem[] = primaryUseCaseLinks.map(
-  ({ href, label }) => ({
+const useCaseMenuDetails = {
+  "customer-support": {
+    description: "Turn customer signals into action",
+    icon: "customer-support",
+    tone: "rose",
+  },
+  developers: {
+    description: "Plan, build, and ship with context",
+    icon: "developers",
+    tone: "lilac",
+  },
+  "field-crews": {
+    description: "Keep distributed teams moving together",
+    icon: "operations",
+    tone: "orange",
+  },
+  government: {
+    description: "Coordinate accountable public work",
+    icon: "government",
+    tone: "blue",
+  },
+  marketing: {
+    description: "Connect campaigns to company goals",
+    icon: "marketing",
+    tone: "orange",
+  },
+  leadership: {
+    description: "See priorities, progress, and risk clearly",
+    icon: "goals",
+    tone: "blue",
+  },
+  operations: {
+    description: "Coordinate recurring cross-team work",
+    icon: "operations",
+    tone: "aqua",
+  },
+  product: {
+    description: "Link discovery, strategy, and delivery",
+    icon: "product",
+    tone: "lime",
+  },
+} satisfies Record<
+  (typeof primaryUseCaseLinks)[number]["slug"],
+  {
+    description: string;
+    icon: NavigationIconName;
+    tone: NavigationIconTone;
+  }
+>;
+
+const primaryUseCaseMenuLinks: NavigationMenuItem[] = primaryUseCaseLinks.map(
+  ({ href, label, slug }) => ({
+    ...useCaseMenuDetails[slug],
     href,
     title: label,
   }),
@@ -51,59 +160,116 @@ const useCaseMenuLinks: NavigationMenuItem[] = primaryUseCaseLinks.map(
 
 const isExternalLink = (href: string) => href.startsWith("http");
 
-const NavigationMenuLink = ({ href, title }: NavigationMenuItem) => (
-  <NavigationMenu.Link asChild>
-    <Link
-      className="hover:bg-accent focus:bg-accent focus-visible:bg-accent flex w-full items-center rounded-lg px-2 py-1.5 text-[0.95rem] leading-6 whitespace-nowrap transition-colors outline-none select-none focus-visible:outline-none"
-      href={href}
-      prefetch={!isExternalLink(href)}
-      rel={isExternalLink(href) ? "noreferrer" : undefined}
-      target={isExternalLink(href) ? "_blank" : undefined}
-    >
-      {title}
-    </Link>
-  </NavigationMenu.Link>
+const NAVIGATION_DOCK_ENTER_Y = 16;
+const NAVIGATION_DOCK_EXIT_Y = 4;
+
+const NavigationMenuLink = ({
+  description,
+  href,
+  icon,
+  title,
+  tone,
+}: NavigationMenuItem) => (
+  <Link
+    className="group hover:bg-accent/70 focus:bg-accent/70 focus-visible:bg-accent/70 focus-visible:ring-ring dark:hover:bg-surface-prominent/75 dark:focus:bg-surface-prominent/75 dark:focus-visible:bg-surface-prominent/75 flex min-w-0 items-start gap-3 rounded-xl px-2.5 py-2.5 transition-colors outline-none select-none focus-visible:ring-2 focus-visible:outline-none"
+    href={href}
+    prefetch={!isExternalLink(href)}
+    rel={isExternalLink(href) ? "noreferrer" : undefined}
+    target={isExternalLink(href) ? "_blank" : undefined}
+  >
+    <NavigationMenuIcon name={icon} tone={tone} />
+    <span className="min-w-0 pt-0.5">
+      <span className="block text-[0.93rem] leading-5 font-medium tracking-[-0.01em]">
+        {title}
+      </span>
+      <span className="text-text-muted mt-0.5 block text-[0.78rem] leading-[1.08rem]">
+        {description}
+      </span>
+    </span>
+  </Link>
 );
 
 const NavigationDropdown = ({
   contentClassName,
+  gridClassName,
+  heading,
+  isOpen,
   items,
   label,
+  onOpenChange,
+  value,
 }: {
   contentClassName: string;
+  gridClassName: string;
+  heading?: string;
+  isOpen: boolean;
   items: NavigationMenuItem[];
   label: string;
+  onOpenChange: (value: string) => void;
+  value: string;
 }) => (
-  <NavigationMenu.Item className="relative">
-    <NavigationMenu.Trigger
-      className="rounded-full px-3 opacity-90 transition outline-none hover:opacity-100 focus:outline-none focus-visible:outline-none data-[state=open]:opacity-100"
-      hideArrow
+  <li
+    className="group/dropdown relative"
+    onBlur={(event) => {
+      if (
+        !(event.relatedTarget instanceof Node) ||
+        !event.currentTarget.contains(event.relatedTarget)
+      ) {
+        onOpenChange("");
+      }
+    }}
+    onMouseLeave={() => {
+      onOpenChange("");
+    }}
+  >
+    <button
+      aria-controls={`${value}-navigation-menu`}
+      aria-expanded={isOpen}
+      className="hover:bg-state-hover focus-visible:bg-state-hover focus-visible:ring-ring flex cursor-pointer items-center gap-1 rounded-md px-3 py-1.5 text-[0.95rem] transition outline-none select-none focus:outline-none focus-visible:ring-2 focus-visible:outline-none"
+      onClick={() => {
+        onOpenChange(isOpen ? "" : value);
+      }}
+      type="button"
     >
       {label}
-    </NavigationMenu.Trigger>
-    <NavigationMenu.Content
-      className={cn("top-full z-50 mt-1.5", contentClassName)}
+      <ArrowDown2Icon
+        aria-hidden="true"
+        className="h-3 w-auto transition-transform duration-200 group-focus-within/dropdown:rotate-180 group-hover/dropdown:rotate-180 motion-reduce:transition-none"
+        strokeWidth={3}
+      />
+    </button>
+    <div
+      className={cn(
+        "pointer-events-none invisible absolute top-full z-50 translate-y-1 pt-2 opacity-0 transition-[transform,opacity,visibility] delay-150 duration-[160ms] [transition-timing-function:var(--landing-ease-out)] group-focus-within/dropdown:pointer-events-auto group-focus-within/dropdown:visible group-focus-within/dropdown:translate-y-0 group-focus-within/dropdown:opacity-100 group-focus-within/dropdown:delay-0 group-hover/dropdown:pointer-events-auto group-hover/dropdown:visible group-hover/dropdown:translate-y-0 group-hover/dropdown:opacity-100 group-hover/dropdown:delay-0 motion-reduce:transition-none",
+        isOpen && "pointer-events-auto visible translate-y-0 opacity-100",
+        contentClassName,
+      )}
+      id={`${value}-navigation-menu`}
     >
-      <Box className="border-border shadow-shadow dark:bg-surface-elevated rounded-xl border bg-white px-1.5 py-1.5 shadow-xl">
-        {items.map((item) => (
-          <NavigationMenuLink key={item.href} {...item} />
-        ))}
+      <Box
+        className={cn(
+          "border-border/60 bg-popover/98 text-popover-foreground shadow-shadow rounded-xl border p-3 shadow-[0_24px_60px_-24px_rgba(31,24,18,0.38)] backdrop-blur-xl dark:shadow-[0_24px_60px_-24px_rgba(0,0,0,0.78)]",
+        )}
+      >
+        {heading ? (
+          <div className="text-text-muted px-2.5 pt-1 pb-2 text-[0.7rem] font-medium tracking-[0.12em] uppercase">
+            {heading}
+          </div>
+        ) : null}
+        <div className={cn("grid gap-1", gridClassName)}>
+          {items.map((item) => (
+            <NavigationMenuLink key={item.href} {...item} />
+          ))}
+        </div>
       </Box>
-    </NavigationMenu.Content>
-  </NavigationMenu.Item>
+    </div>
+  </li>
 );
 
-const DesktopNavItem = ({ href, title }: NavigationMenuItem) => {
-  const pathname = usePathname();
-
+const DesktopNavItem = ({ href, title }: NavigationLinkItem) => {
   return (
     <NavLink
-      className={cn(
-        "flex items-center rounded-full px-3 opacity-90 transition hover:opacity-100",
-        {
-          "opacity-100 dark:text-white dark:opacity-100": pathname === href,
-        },
-      )}
+      className="hover:bg-state-hover flex items-center rounded-md px-3 py-1.5 transition"
       href={href}
       prefetch
     >
@@ -112,71 +278,136 @@ const DesktopNavItem = ({ href, title }: NavigationMenuItem) => {
   );
 };
 
-export const Navigation = ({ hasSession }: { hasSession: boolean }) => {
+export const Navigation = () => {
+  const [activeMenu, setActiveMenu] = useState("");
+  const [isDocked, setIsDocked] = useState(false);
+  const navigationRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const updateDockedState = () => {
+      setIsDocked((wasDocked) =>
+        wasDocked
+          ? window.scrollY > NAVIGATION_DOCK_EXIT_Y
+          : window.scrollY > NAVIGATION_DOCK_ENTER_Y,
+      );
+    };
+
+    updateDockedState();
+    window.addEventListener("scroll", updateDockedState, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", updateDockedState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key === "Escape" &&
+        document.activeElement instanceof HTMLElement &&
+        navigationRef.current?.contains(document.activeElement)
+      ) {
+        setActiveMenu("");
+        document.activeElement.blur();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   return (
-    <Box className="border-border/40 fixed left-0 z-15 w-screen border-b bg-white/60 backdrop-blur-xl dark:bg-black/50">
-      <Container className="flex h-16 items-center justify-between gap-12">
-        <Logo />
-        <NavigationMenu className="hidden md:flex" showViewport={false}>
-          <NavigationMenu.List className="gap-4 space-x-0 lg:gap-6">
-            <NavigationDropdown
-              contentClassName="min-w-44"
-              items={featureMenuLinks}
-              label="Features"
-            />
-            <NavigationDropdown
-              contentClassName="min-w-44"
-              items={useCaseMenuLinks}
-              label="Use Cases"
-            />
-            <NavigationMenu.Item>
-              <DesktopNavItem
-                href="/ai-project-manager"
-                title="AI Project Manager"
+    <Box
+      className="fixed inset-x-0 top-1 z-15"
+      data-docked={isDocked ? "true" : "false"}
+    >
+      <Box
+        aria-hidden="true"
+        className={cn(
+          "bg-background/90 absolute inset-0 backdrop-blur-xl transition-opacity duration-[160ms] motion-reduce:transition-none",
+          isDocked ? "opacity-0" : "opacity-100",
+        )}
+      />
+      <Box
+        aria-hidden="true"
+        className={cn(
+          "landing-page-frame dark:bg-surface-prominent/60 absolute inset-x-0 top-2 h-full rounded-xl bg-white shadow-[0_16px_44px_-18px_rgba(31,24,18,0.3)] backdrop-blur-xl transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:top-3 md:rounded-3xl dark:shadow-[0_16px_44px_-18px_rgba(0,0,0,0.7)]",
+          isDocked
+            ? "translate-y-0 scale-100 opacity-100"
+            : "-translate-y-2 scale-[0.985] opacity-0",
+        )}
+      />
+      <Container
+        className={cn(
+          "landing-page-frame relative flex items-center justify-between gap-3 px-4 py-2.5 transition-transform duration-[220ms] [transition-timing-function:var(--landing-ease-out)] motion-reduce:transition-none md:gap-8 md:px-6 md:py-3",
+          isDocked ? "translate-y-2 md:translate-y-3" : "translate-y-0",
+        )}
+      >
+        <Flex align="center" className="min-w-0 gap-8">
+          <Logo className="h-6 sm:h-7" />
+          <nav
+            aria-label="Main"
+            className="landing-desktop-navigation relative z-10"
+            ref={navigationRef}
+          >
+            <ul className="flex list-none items-center gap-1">
+              <NavigationDropdown
+                contentClassName="w-[46rem] max-w-[calc(100vw-3rem)]"
+                gridClassName="grid-cols-3"
+                heading="Product"
+                isOpen={activeMenu === "features"}
+                items={featureMenuLinks}
+                label="Features"
+                onOpenChange={setActiveMenu}
+                value="features"
               />
-            </NavigationMenu.Item>
-            <NavigationDropdown
-              contentClassName="min-w-40"
-              items={resourceLinks}
-              label="Resources"
-            />
-            <NavigationMenu.Item>
-              <DesktopNavItem href="/pricing" title="Pricing" />
-            </NavigationMenu.Item>
-          </NavigationMenu.List>
-        </NavigationMenu>
-        <Flex align="center" className="ml-4 gap-2">
+              <NavigationDropdown
+                contentClassName="w-[38rem] max-w-[calc(100vw-3rem)]"
+                gridClassName="grid-cols-2"
+                isOpen={activeMenu === "use-cases"}
+                items={primaryUseCaseMenuLinks}
+                label="Use Cases"
+                onOpenChange={setActiveMenu}
+                value="use-cases"
+              />
+              <NavigationDropdown
+                contentClassName="right-0 left-auto w-[22rem]"
+                gridClassName="grid-cols-1"
+                isOpen={activeMenu === "resources"}
+                items={resourceLinks}
+                label="Resources"
+                onOpenChange={setActiveMenu}
+                value="resources"
+              />
+              <li>
+                <DesktopNavItem href="/pricing" title="Pricing" />
+              </li>
+            </ul>
+          </nav>
+        </Flex>
+        <Flex align="center" className="ml-2 gap-1 sm:ml-4 sm:gap-2">
           {/* <RequestDemo /> */}
-          {hasSession ? (
-            <Button
-              className="px-5 text-[0.93rem]"
-              color="invert"
-              href={APP_URL}
-              rounded="lg"
-            >
-              Open app
-            </Button>
-          ) : (
-            <>
-              <Button
-                className="hidden px-5 text-[0.93rem] md:flex"
-                color="tertiary"
-                href={APP_URL}
-                rounded="full"
-                variant="naked"
-              >
-                Login
-              </Button>
-              <Button
-                className="px-5 text-[0.93rem]"
-                color="invert"
-                href={SIGNUP_URL}
-                rounded="full"
-              >
-                Sign up
-              </Button>
-            </>
-          )}
+          <Button
+            className="hidden px-5 text-[0.93rem] md:flex"
+            color="gradient"
+            href={APP_URL}
+            size="lg"
+            variant="outline"
+          >
+            Log in
+          </Button>
+          <Button
+            className="h-10 px-4 text-[0.875rem] sm:h-11.5 sm:px-5 sm:text-[0.93rem]"
+            color="invert"
+            href={SIGNUP_URL}
+            rounded="md"
+            size="lg"
+          >
+            Get started
+          </Button>
 
           <MobileNavigation />
         </Flex>

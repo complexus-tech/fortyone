@@ -6,7 +6,14 @@ import { getApiError } from "@/utils";
 export const deleteMemoryAction = async (id: string, workspaceSlug: string) => {
   try {
     const session = await auth();
-    const ctx = { session: session!, workspaceSlug };
+    if (!session) {
+      return {
+        data: null,
+        error: { message: "Authentication required" },
+      } satisfies ApiResponse<null>;
+    }
+
+    const ctx = { session, workspaceSlug };
     const result = await remove<ApiResponse<null>>(`users/memory/${id}`, ctx);
     return result;
   } catch (error) {

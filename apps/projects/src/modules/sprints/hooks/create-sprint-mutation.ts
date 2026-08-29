@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useWorkspacePath } from "@/hooks";
-import { useAnalytics } from "@/hooks";
+import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { sprintKeys } from "@/constants/keys";
 import type { NewSprint, Sprint } from "../types";
 import { createSprintAction } from "../actions/create-sprint";
@@ -40,6 +39,7 @@ export const useCreateSprintMutation = () => {
         endDate: newSprint.endDate,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        scheduleManagedByAutomation: false,
         stats: {
           total: 0,
           cancelled: 0,

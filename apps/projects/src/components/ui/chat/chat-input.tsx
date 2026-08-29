@@ -1,7 +1,7 @@
 /* eslint-disable no-nested-ternary -- ok for now */
 import { Button, Box, Flex, Text, Tooltip } from "ui";
 import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "lib";
 import {
   PlusIcon,
@@ -18,8 +18,10 @@ import ky from "ky";
 import type { ChatStatus } from "ai";
 import { StoryAttachmentPreview } from "@/modules/story/components/story-attachment-preview";
 import { RealtimeVoiceControl } from "@/modules/maya/components/realtime-voice-control";
-import { useMayaRealtimeVoice } from "@/modules/maya/hooks/use-maya-realtime-voice";
+import type { useMayaRealtimeVoice } from "@/modules/maya/hooks/use-maya-realtime-voice";
+import { isChatResponseInProgress } from "@/modules/maya/utils/chat-send-policy";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
+import { useTerminology } from "@/hooks";
 
 type ChatInputProps = {
   value: string;
@@ -30,10 +32,15 @@ type ChatInputProps = {
   attachments: File[];
   onAttachmentsChange: (files: File[]) => void;
   isOnPage?: boolean;
+  isPopup?: boolean;
   messagesCount: number;
-  isLiveVoiceVisible?: boolean;
   liveVoiceDisabled?: boolean;
+  realtimeVoice: ReturnType<typeof useMayaRealtimeVoice>;
 };
+
+const MAX_ATTACHMENT_COUNT = 5;
+const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_TOTAL_ATTACHMENT_SIZE_BYTES = 8 * 1024 * 1024;
 
 const SendIcon = () => {
   return (
@@ -65,13 +72,20 @@ const AttachmentPreviewItem = ({
   file: File;
   onDelete: () => void;
 }) => {
-  const objectUrl = useMemo(() => URL.createObjectURL(file), [file]);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    const nextObjectUrl = URL.createObjectURL(file);
+    setObjectUrl(nextObjectUrl);
+
     return () => {
-      URL.revokeObjectURL(objectUrl);
+      URL.revokeObjectURL(nextObjectUrl);
     };
-  }, [objectUrl]);
+  }, [file]);
+
+  if (!objectUrl) {
+    return null;
+  }
 
   return (
     <StoryAttachmentPreview
@@ -81,7 +95,7 @@ const AttachmentPreviewItem = ({
         size: file.size,
         mimeType: file.type,
         url: objectUrl,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(file.lastModified).toISOString(),
         uploadedBy: "me",
       }}
       isInChat
@@ -99,15 +113,19 @@ export const ChatInput = ({
   attachments,
   onAttachmentsChange,
   isOnPage,
+  isPopup = false,
   messagesCount,
-  isLiveVoiceVisible = false,
   liveVoiceDisabled = false,
+  realtimeVoice,
 }: ChatInputProps) => {
+  const { getTermDisplay } = useTerminology();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const processRecordingRef = useRef<() => void>(() => {});
-  const realtimeVoice = useMayaRealtimeVoice();
+  const handleAutoStop = useCallback(() => {
+    processRecordingRef.current();
+  }, []);
   const isLiveVoiceActive = realtimeVoice.status !== "idle";
   const placeholderTexts =
     messagesCount > 2
@@ -124,7 +142,7 @@ export const ChatInput = ({
           "Show me the current sprint...",
           "Open my objectives...",
           "Navigate to the roadmap...",
-          "Find stories in progress...",
+          `Find ${getTermDisplay("storyTerm", { variant: "plural" })} in progress...`,
           "Show my key results...",
         ];
 
@@ -138,15 +156,13 @@ export const ChatInput = ({
     stopRecording,
     getAudioBlob,
     resetRecording,
-  } = useVoiceRecording(() => {
-    processRecordingRef.current();
-  });
+  } = useVoiceRecording(handleAutoStop);
 
   const onDropRejected = (fileRejections: FileRejection[]) => {
     const errors: string[] = [];
     fileRejections.forEach((file) => {
       if (file.errors[0]?.code === "file-too-large") {
-        errors.push(`File ${file.file.name} size exceeds 10MB limit`);
+        errors.push(`File ${file.file.name} size exceeds 5MB limit`);
       } else if (file.errors[0]?.code === "file-invalid-type") {
         errors.push("Invalid file type");
       } else if (file.errors[0]?.code === "too-many-files") {
@@ -163,7 +179,7 @@ export const ChatInput = ({
       });
     }
   };
-  const { open } = useDropzone({
+  const { getInputProps, open } = useDropzone({
     noClick: true,
     noKeyboard: true,
     accept: {
@@ -173,11 +189,36 @@ export const ChatInput = ({
       "image/gif": [".gif"],
       "application/pdf": [".pdf"],
     },
-    maxFiles: 5,
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxFiles: MAX_ATTACHMENT_COUNT,
+    maxSize: MAX_ATTACHMENT_SIZE_BYTES,
     minSize: 100, // 100 bytes
-    onDrop: async (acceptedFiles) => {
-      onAttachmentsChange([...attachments, ...acceptedFiles]);
+    onDrop: (acceptedFiles) => {
+      const remainingSlots = Math.max(
+        0,
+        MAX_ATTACHMENT_COUNT - attachments.length,
+      );
+      let remainingBytes = Math.max(
+        0,
+        MAX_TOTAL_ATTACHMENT_SIZE_BYTES -
+          attachments.reduce((total, attachment) => total + attachment.size, 0),
+      );
+      const filesToAdd = acceptedFiles
+        .slice(0, remainingSlots)
+        .filter((file) => {
+          if (file.size > remainingBytes) return false;
+          remainingBytes -= file.size;
+          return true;
+        });
+
+      if (filesToAdd.length < acceptedFiles.length) {
+        toast.error("Some files could not be attached", {
+          description: `Attach up to ${MAX_ATTACHMENT_COUNT} files with a combined size of 8 MB.`,
+        });
+      }
+
+      if (filesToAdd.length > 0) {
+        onAttachmentsChange([...attachments, ...filesToAdd]);
+      }
     },
     onDropRejected,
   });
@@ -208,7 +249,7 @@ export const ChatInput = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (isLiveVoiceActive) {
+      if (isLiveVoiceActive || isChatResponseInProgress(status)) {
         return;
       }
       onSend();
@@ -279,7 +320,12 @@ export const ChatInput = ({
   }, [processRecording]);
 
   return (
-    <Box className="sticky bottom-0 px-6 pb-3">
+    <Box
+      className={cn("sticky bottom-0", {
+        "px-3 pb-2.5": isPopup,
+        "px-6 pb-3": !isPopup,
+      })}
+    >
       {recordingState !== "idle" && (
         <Flex
           align="center"
@@ -305,7 +351,13 @@ export const ChatInput = ({
           </Flex>
         </Flex>
       )}
-      <Box className="border-border rounded-2xl border py-2">
+      <Box
+        className={cn("py-2", {
+          "rounded-xl border-[0.5px] border-black/[0.07] bg-black/[0.035] dark:border-white/[0.07] dark:bg-white/[0.035]":
+            isPopup,
+          "border-border rounded-2xl border": !isPopup,
+        })}
+      >
         {images.length > 0 && (
           <Box className="mt-2.5 grid grid-cols-3 gap-3 px-4">
             {images.map((attachment) => (
@@ -340,6 +392,7 @@ export const ChatInput = ({
               "max-h-40 min-h-12 w-full flex-1 resize-none border-none bg-transparent px-5 py-2 text-[1.1rem] shadow-none focus-visible:outline-none",
               {
                 "md:min-h-[3.7rem]": isOnPage,
+                "px-4": isPopup,
               },
             )}
             disabled={isLiveVoiceActive}
@@ -354,7 +407,13 @@ export const ChatInput = ({
           {!value && (
             <Box
               aria-hidden="true"
-              className="text-text-muted pointer-events-none absolute top-2 left-5 text-[1.1rem] transition-[opacity,transform] duration-200 ease-in-out motion-reduce:transition-none"
+              className={cn(
+                "text-text-muted pointer-events-none absolute top-2 transition-[opacity,transform] duration-200 ease-in-out motion-reduce:transition-none",
+                {
+                  "left-4 text-[1.1rem]": isPopup,
+                  "left-5 text-[1.1rem]": !isPopup,
+                },
+              )}
             >
               {recordingState === "idle"
                 ? placeholderTexts[currentPlaceholderIndex]
@@ -367,13 +426,29 @@ export const ChatInput = ({
         </Box>
         <Flex align="center" className="mb-1 px-3" gap={2} justify="between">
           <Flex align="center" gap={2}>
-            <Tooltip side="bottom" title="Add files (max 5 files, 5MB each)">
+            <input
+              {...getInputProps({
+                "aria-label": "Choose files to attach",
+              })}
+            />
+            <Tooltip
+              side="bottom"
+              title={
+                attachments.length >= MAX_ATTACHMENT_COUNT
+                  ? `Maximum of ${MAX_ATTACHMENT_COUNT} files attached`
+                  : `Add files (max ${MAX_ATTACHMENT_COUNT} files, 5MB each)`
+              }
+            >
               <Button
                 className="gap-1"
                 color="tertiary"
-                disabled={isLiveVoiceActive}
+                disabled={
+                  isLiveVoiceActive ||
+                  attachments.length >= MAX_ATTACHMENT_COUNT
+                }
                 onClick={open}
-                rounded="full"
+                rounded="md"
+                type="button"
                 variant="naked"
               >
                 <PlusIcon /> Attach files
@@ -403,21 +478,19 @@ export const ChatInput = ({
                   handleVoiceRecording();
                 }
               }}
-              rounded="full"
+              rounded="md"
               variant="naked"
             >
               {isTranscribing
                 ? "Transcribing..."
                 : isRecording
                   ? "Cancel"
-                  : "Talk"}
+                  : "Record"}
             </Button>
-            {isLiveVoiceVisible ? (
-              <RealtimeVoiceControl
-                disabled={liveVoiceDisabled}
-                voice={realtimeVoice}
-              />
-            ) : null}
+            <RealtimeVoiceControl
+              disabled={liveVoiceDisabled}
+              voice={realtimeVoice}
+            />
             <Button
               aria-label={
                 isRecording
@@ -438,7 +511,7 @@ export const ChatInput = ({
                   onSend();
                 }
               }}
-              rounded="full"
+              rounded="md"
             >
               {isRecording ? (
                 <CheckIcon className="text-current dark:text-current" />

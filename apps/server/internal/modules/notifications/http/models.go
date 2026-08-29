@@ -1,6 +1,7 @@
 package notificationshttp
 
 import (
+	"strings"
 	"time"
 
 	notifications "github.com/complexus-tech/projects-api/internal/modules/notifications/service"
@@ -15,10 +16,20 @@ type AppNotification struct {
 	EntityType  string                            `json:"entityType"`
 	EntityID    uuid.UUID                         `json:"entityId"`
 	ActorID     uuid.UUID                         `json:"actorId"`
+	Actor       *AppNotificationActor             `json:"actor,omitempty"`
 	Title       string                            `json:"title"`
 	Message     notifications.NotificationMessage `json:"message"`
 	CreatedAt   time.Time                         `json:"createdAt"`
 	ReadAt      *time.Time                        `json:"readAt"`
+}
+
+type AppNotificationActor struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	FullName  string    `json:"fullName"`
+	AvatarURL string    `json:"avatarUrl"`
+	IsActive  bool      `json:"isActive"`
+	IsSystem  bool      `json:"isSystem"`
 }
 
 type AppPagination struct {
@@ -31,6 +42,39 @@ type AppPagination struct {
 type AppNotificationsResponse struct {
 	Notifications []AppNotification `json:"notifications"`
 	Pagination    AppPagination     `json:"pagination"`
+}
+
+type AppPortalNotificationActor struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	AvatarURL *string   `json:"avatarUrl"`
+}
+
+type AppPortalNotificationFeedback struct {
+	ID    uuid.UUID `json:"id"`
+	Title string    `json:"title"`
+	Slug  string    `json:"slug"`
+	Path  string    `json:"path"`
+}
+
+type AppPortalNotification struct {
+	ID        uuid.UUID                         `json:"id"`
+	Type      string                            `json:"type"`
+	Title     string                            `json:"title"`
+	Message   notifications.NotificationMessage `json:"message"`
+	Actor     AppPortalNotificationActor        `json:"actor"`
+	Feedback  AppPortalNotificationFeedback     `json:"feedback"`
+	CreatedAt time.Time                         `json:"createdAt"`
+	ReadAt    *time.Time                        `json:"readAt"`
+}
+
+type AppPortalNotificationsResponse struct {
+	Notifications []AppPortalNotification `json:"notifications"`
+	Pagination    AppPagination           `json:"pagination"`
+}
+
+type AppUnreadCount struct {
+	Count int `json:"count"`
 }
 
 type NotificationChannel struct {
@@ -54,18 +98,55 @@ type AppUpdatePreference struct {
 }
 
 func toAppNotification(n notifications.CoreNotification) AppNotification {
+	n = n.Public()
+	n.Message = normalizeSystemActorMessage(n.Message, n.Actor)
 	return AppNotification{
 		ID:          n.ID,
 		RecipientID: n.RecipientID,
 		WorkspaceID: n.WorkspaceID,
-		Type:        n.Type,
-		EntityType:  n.EntityType,
+		Type:        string(n.Type),
+		EntityType:  string(n.EntityType),
 		EntityID:    n.EntityID,
 		ActorID:     n.ActorID,
+		Actor:       toAppNotificationActor(n.Actor),
 		Title:       n.Title,
 		Message:     n.Message,
 		CreatedAt:   n.CreatedAt,
 		ReadAt:      n.ReadAt,
+	}
+}
+
+func normalizeSystemActorMessage(message notifications.NotificationMessage, actor *notifications.CoreNotificationActor) notifications.NotificationMessage {
+	if actor == nil || !actor.IsSystem {
+		return message
+	}
+
+	for _, prefix := range []string{actor.FullName, actor.Username, "Maya"} {
+		prefix = strings.TrimSpace(prefix)
+		if prefix == "" {
+			continue
+		}
+		if strings.HasPrefix(message.Template, prefix+" ") {
+			message.Template = strings.TrimSpace(strings.TrimPrefix(message.Template, prefix))
+			break
+		}
+	}
+
+	return message
+}
+
+func toAppNotificationActor(actor *notifications.CoreNotificationActor) *AppNotificationActor {
+	if actor == nil {
+		return nil
+	}
+
+	return &AppNotificationActor{
+		ID:        actor.ID,
+		Username:  actor.Username,
+		FullName:  actor.FullName,
+		AvatarURL: actor.AvatarURL,
+		IsActive:  actor.IsActive,
+		IsSystem:  actor.IsSystem,
 	}
 }
 
@@ -89,6 +170,42 @@ func toAppNotificationsResponse(ns []notifications.CoreNotification, page, pageS
 	}
 }
 
+func toAppPortalNotificationsResponse(ns []notifications.CorePortalNotification, page, pageSize int, hasMore bool) AppPortalNotificationsResponse {
+	result := make([]AppPortalNotification, 0, len(ns))
+	for _, portalNotification := range ns {
+		notification := portalNotification.Notification.Public()
+		result = append(result, AppPortalNotification{
+			ID:      notification.ID,
+			Type:    string(notification.Type),
+			Title:   notification.Title,
+			Message: notification.Message,
+			Actor: AppPortalNotificationActor{
+				ID:        notification.ActorID,
+				Name:      portalNotification.ActorName,
+				AvatarURL: portalNotification.ActorAvatar,
+			},
+			Feedback: AppPortalNotificationFeedback{
+				ID:    notification.EntityID,
+				Title: portalNotification.FeedbackTitle,
+				Slug:  portalNotification.FeedbackSlug,
+				Path:  "/feedback/" + portalNotification.FeedbackSlug,
+			},
+			CreatedAt: notification.CreatedAt,
+			ReadAt:    notification.ReadAt,
+		})
+	}
+
+	return AppPortalNotificationsResponse{
+		Notifications: result,
+		Pagination: AppPagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasMore:  hasMore,
+			NextPage: page + 1,
+		},
+	}
+}
+
 // Convert core notification preferences to API model
 func toAppNotificationPreferences(p notifications.CoreNotificationPreferences) AppNotificationPreferences {
 	appPrefs := AppNotificationPreferences{
@@ -100,29 +217,10 @@ func toAppNotificationPreferences(p notifications.CoreNotificationPreferences) A
 		UpdatedAt:   p.UpdatedAt,
 	}
 
-	// Convert between internal and API representations
 	for key, channels := range p.Preferences {
-		// Handle the interface{} type from the database
-		if channelMap, ok := channels.(map[string]interface{}); ok {
-			email := false
-			inApp := false
-
-			if emailVal, exists := channelMap["email"]; exists {
-				if emailBool, ok := emailVal.(bool); ok {
-					email = emailBool
-				}
-			}
-
-			if inAppVal, exists := channelMap["in_app"]; exists {
-				if inAppBool, ok := inAppVal.(bool); ok {
-					inApp = inAppBool
-				}
-			}
-
-			appPrefs.Preferences[key] = NotificationChannel{
-				Email: email,
-				InApp: inApp,
-			}
+		appPrefs.Preferences[string(key)] = NotificationChannel{
+			Email: channels.Email,
+			InApp: channels.InApp,
 		}
 	}
 

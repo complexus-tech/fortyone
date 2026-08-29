@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { withWorkspacePath } from "@/utils";
+import { getStoryPath } from "@/modules/story/utils/story-url";
 
 export const navigation = tool({
   description:
@@ -20,7 +21,7 @@ export const navigation = tool({
         "sprints",
         "notifications",
         "settings",
-        "roadmaps",
+        "roadmap",
         "billing",
       ])
       .describe("Type of navigation target"),
@@ -57,12 +58,12 @@ export const navigation = tool({
 
   execute: async (
     { targetType, entityId, teamId, route },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     let routePath: string;
     let message: string;
 
-    const workspaceSlug = (experimental_context as { workspaceSlug: string })
+    const workspaceSlug = (experimentalContext as { workspaceSlug: string })
       .workspaceSlug;
 
     switch (targetType) {
@@ -104,9 +105,9 @@ export const navigation = tool({
         message = "Navigating to billing";
         break;
 
-      case "roadmaps":
-        routePath = withWorkspacePath("/roadmaps", workspaceSlug);
-        message = "Navigating to roadmaps";
+      case "roadmap":
+        routePath = withWorkspacePath("/roadmap", workspaceSlug);
+        message = "Navigating to roadmap";
         break;
 
       case "user-profile":
@@ -125,7 +126,10 @@ export const navigation = tool({
             error: "Entity ID is required for story navigation",
           };
         }
-        routePath = withWorkspacePath(`/story/${entityId}`, workspaceSlug);
+        routePath = withWorkspacePath(
+          getStoryPath({ id: entityId }),
+          workspaceSlug,
+        );
         message = "Navigating to story details";
         break;
 

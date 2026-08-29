@@ -2,6 +2,10 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamObject } from "ai";
 import { withTracing } from "@posthog/ai";
+import {
+  OPENAI_DEFAULT_REASONING_EFFORT,
+  OPENAI_TEXT_MODEL,
+} from "@/lib/ai/models";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
 import { keyResultGenerationSchema } from "@/modules/objectives/schemas/key-result-generation";
@@ -29,8 +33,8 @@ export async function POST(req: Request) {
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const model = withTracing(openaiClient("gpt-5-nano-2025-08-07"), phClient, {
-    posthogDistinctId: session.user.email ?? "",
+  const model = withTracing(openaiClient(OPENAI_TEXT_MODEL), phClient, {
+    posthogDistinctId: session.user.email,
     posthogProperties: {
       action: "generate_key_results",
     },
@@ -59,8 +63,8 @@ export async function POST(req: Request) {
       - "boolean": For binary outcomes (complete/incomplete)
     - **Start Value**: Realistic baseline value
     - **Target Value**: Ambitious but achievable target
-    - **Start Date**: Start date of the key result
-    - **End Date**: End date of the key result
+    - **Start Date**: Start date of the key result, formatted exactly as YYYY-MM-DD
+    - **End Date**: End date of the key result, formatted exactly as YYYY-MM-DD
 
     ## Examples
     - Number: "Increase monthly active users from 10,000 to 15,000"
@@ -79,6 +83,7 @@ export async function POST(req: Request) {
     - Unrealistic targets
     - Non-measurable outcomes
     - Using dates that are not in the objective's start and end date range
+    - Returning timestamps or any date format other than YYYY-MM-DD
 
     Generate 1-5 key results with appropriate measurement types and realistic start/target values that follow these principles.
 `;
@@ -89,7 +94,7 @@ export async function POST(req: Request) {
       prompt: improvedPrompt,
       providerOptions: {
         openai: {
-          reasoningEffort: "minimal",
+          reasoningEffort: OPENAI_DEFAULT_REASONING_EFFORT,
           textVerbosity: "low",
         } satisfies OpenAIResponsesProviderOptions,
       },

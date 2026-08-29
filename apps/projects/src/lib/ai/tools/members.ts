@@ -11,7 +11,7 @@ import { resolvePaginationInput } from "./tool-helpers";
 
 export const membersTool = tool({
   description:
-    "Manage and view workspace members and team members based on user permissions",
+    "Show a user-facing list of workspace or team members. Use this only when the user explicitly asks to browse, list, or search for people; use resolveMember for an internal name-to-ID lookup that supports another request.",
   inputSchema: z.object({
     action: z
       .enum([
@@ -205,6 +205,103 @@ export const membersTool = tool({
           error instanceof Error
             ? error.message
             : "An unexpected error occurred while performing member operation",
+      };
+    }
+  },
+});
+
+const MEMBER_RESOLUTION_LIMIT = 10;
+
+const normalizeMemberQuery = (value: string) =>
+  value.trim().replace(/^@/, "").toLocaleLowerCase();
+
+export const resolveMemberTool = tool({
+  description:
+    "Resolve an approximate member name or username to a user ID for another tool. This is an internal lookup, not a user-facing member list. Use members instead only when the requested outcome is to browse or show people.",
+  inputSchema: z.object({
+    query: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100)
+      .describe("Member name or username to resolve."),
+    teamId: z
+      .string()
+      .optional()
+      .describe("Optional team ID when the member must belong to one team."),
+  }),
+  execute: async (
+    { query, teamId },
+    { experimental_context: experimentalContext },
+  ) => {
+    try {
+      const session = await auth();
+
+      if (!session) {
+        return {
+          success: false,
+          error: "Authentication required to resolve members",
+        };
+      }
+
+      const workspaceSlug = (experimentalContext as { workspaceSlug?: string })
+        .workspaceSlug;
+
+      if (!workspaceSlug) {
+        return { success: false, error: "Workspace context is required" };
+      }
+
+      const ctx = { session, workspaceSlug };
+      const response = teamId
+        ? await getTeamMembersPage(
+            teamId,
+            ctx,
+            query,
+            1,
+            MEMBER_RESOLUTION_LIMIT,
+          )
+        : await getMembersPage(ctx, query, 1, MEMBER_RESOLUTION_LIMIT);
+      const matches = response.members.map((member) => ({
+        id: member.id,
+        name: member.fullName,
+        username: member.username,
+        role: member.role,
+      }));
+      const normalizedQuery = normalizeMemberQuery(query);
+      const exactMatches = matches.filter(
+        (member) =>
+          normalizeMemberQuery(member.name) === normalizedQuery ||
+          normalizeMemberQuery(member.username) === normalizedQuery,
+      );
+      let resolvedMatch: (typeof matches)[number] | undefined;
+      if (exactMatches.length === 1) {
+        resolvedMatch = exactMatches[0];
+      } else if (matches.length === 1 && !response.pagination.hasMore) {
+        resolvedMatch = matches[0];
+      }
+
+      let resolution = "ambiguous";
+      if (resolvedMatch) {
+        resolution = "resolved";
+      } else if (matches.length === 0) {
+        resolution = "not-found";
+      }
+
+      return {
+        success: true,
+        query: query.trim(),
+        resolution,
+        match: resolvedMatch,
+        matches,
+        hasMore: response.pagination.hasMore,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred while resolving a member",
       };
     }
   },

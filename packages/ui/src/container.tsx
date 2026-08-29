@@ -23,10 +23,10 @@ export const Container = ({
   return createElement(as, {
     className: cn(
       "mx-auto px-5 md:px-12",
-      {
-        "mx-auto px-0": full,
-      },
       className,
+      {
+        "max-w-full": full,
+      },
     ),
     id,
     style,

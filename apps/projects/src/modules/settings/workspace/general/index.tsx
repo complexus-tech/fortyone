@@ -13,6 +13,7 @@ import { SectionHeader } from "../../components";
 import { WorkspaceForm } from "./components/form";
 import { WorkspaceFeatures } from "./components/features";
 import { Logo } from "./components/logo";
+import { WorkspaceWorkSchedule } from "./components/work-schedule";
 
 export const WorkspaceGeneralSettings = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -62,6 +63,8 @@ export const WorkspaceGeneralSettings = () => {
         />
         <WorkspaceForm />
       </Box>
+
+      <WorkspaceWorkSchedule />
 
       <Box className="mb-6">
         <WorkspaceFeatures />

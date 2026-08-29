@@ -1,11 +1,94 @@
-@import "tailwindcss";
+@import "tailwind-config";
 @import "fumadocs-ui/css/black.css";
 @import "fumadocs-ui/css/preset.css";
+@import "fumadocs-openapi/css/preset.css";
+
+:root {
+  --font-body: var(--font-geist), -apple-system, BlinkMacSystemFont, sans-serif;
+  --color-fd-background: var(--color-background);
+  --color-fd-foreground: var(--color-foreground);
+  --color-fd-muted: var(--color-muted);
+  --color-fd-muted-foreground: var(--color-muted-foreground);
+  --color-fd-popover: var(--color-popover);
+  --color-fd-popover-foreground: var(--color-popover-foreground);
+  --color-fd-card: var(--color-surface);
+  --color-fd-card-foreground: var(--color-surface-foreground);
+  --color-fd-border: var(--color-border);
+  --color-fd-primary: var(--color-primary);
+  --color-fd-primary-foreground: var(--color-primary-foreground);
+  --color-fd-secondary: var(--color-surface-muted);
+  --color-fd-secondary-foreground: var(--color-surface-foreground);
+  --color-fd-accent: var(--color-accent);
+  --color-fd-accent-foreground: var(--color-accent-foreground);
+  --color-fd-ring: var(--color-ring);
+}
+
+@supports (corner-shape: squircle) {
+  .prose table,
+  .prose pre,
+  .prose :where(:not(pre) > code),
+  [role="dialog"],
+  [data-radix-popper-content-wrapper] > * {
+    corner-shape: squircle;
+  }
+}
+
+body {
+  font-family: var(--font-body);
+}
 
 .max-w-fd-container {
-  @apply max-w-6xl mx-auto;
+  @apply mx-auto max-w-6xl;
 }
 
 img {
-  @apply rounded-xl border-4;
+  @apply rounded-md;
+}
+
+[role="dialog"],
+[data-radix-popper-content-wrapper] > * {
+  border-radius: var(--radius-lg);
+}
+
+.prose :where(h1, h2, h3, h4) {
+  letter-spacing: -0.02em;
+}
+
+.prose :where(a:not([data-card])) {
+  color: var(--color-fd-foreground);
+  text-decoration-color: currentColor;
+  text-underline-offset: 0.18em;
+}
+
+.prose :where(a:not([data-card])):hover {
+  color: var(--color-fd-foreground);
+  text-decoration-thickness: 2px;
+}
+
+[data-header-tabs] a {
+  color: var(--color-fd-muted-foreground);
+}
+
+[data-header-tabs] {
+  display: flex;
+}
+
+[data-header-tabs] a.border-fd-primary {
+  border-color: var(--color-fd-foreground);
+  color: var(--color-fd-foreground);
+}
+
+.prose pre {
+  border-radius: var(--radius-md);
+}
+
+.prose :where(:not(pre) > code) {
+  border-radius: var(--radius-sm);
+}
+
+.prose table {
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-md);
 }

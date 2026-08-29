@@ -12,6 +12,7 @@ import { useUserRole, useTerminology } from "@/hooks";
 import { StoryStatusIcon } from "./story-status-icon";
 import { NewStoryDialog } from "./new-story-dialog";
 import { PriorityIcon } from "./priority-icon";
+import { getCategoryHeaderStyle } from "./category-header-style";
 
 type StoryHeaderProps = {
   status?: State;
@@ -23,6 +24,7 @@ type StoryHeaderProps = {
   setIsCollapsed: (value: boolean) => void;
   assignee?: Member;
 };
+
 export const StoriesHeader = ({
   className,
   group,
@@ -34,11 +36,15 @@ export const StoriesHeader = ({
   assignee,
 }: StoryHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { selectedStories, setSelectedStories } = useBoard();
+  const { newStoryDefaults, selectedStories, setSelectedStories } = useBoard();
   const { userRole } = useUserRole();
   const { getTermDisplay } = useTerminology();
 
   const groupedStories = group.stories.map((s) => s.id);
+  const headerStyle = getCategoryHeaderStyle({
+    statusColor: status?.color,
+    priority,
+  });
 
   return (
     <Container
@@ -49,6 +55,7 @@ export const StoriesHeader = ({
         },
         className,
       )}
+      style={headerStyle}
     >
       <Flex align="center" justify="between">
         <Flex align="center" className="relative gap-1.5">
@@ -120,7 +127,10 @@ export const StoriesHeader = ({
               </>
             )}
           </Button>
-          <Tooltip side="bottom" title="Total stories">
+          <Tooltip
+            side="bottom"
+            title={`Total ${getTermDisplay("storyTerm", { variant: "plural" })}`}
+          >
             <span>
               <StoryIcon
                 className="text-text-muted ml-1 h-5 w-auto"
@@ -162,11 +172,14 @@ export const StoriesHeader = ({
         </Flex>
       </Flex>
       <NewStoryDialog
-        assigneeId={assignee?.id}
+        assigneeId={groupBy === "assignee" ? assignee?.id ?? null : undefined}
         isOpen={isOpen}
+        objectiveId={newStoryDefaults.objectiveId}
         priority={priority}
         setIsOpen={setIsOpen}
+        sprintId={newStoryDefaults.sprintId}
         statusId={status?.id}
+        teamId={newStoryDefaults.teamId}
       />
     </Container>
   );

@@ -10,21 +10,14 @@ import { getTeams } from "@/modules/teams/queries/get-teams";
 import type { NewState } from "@/lib/actions/states/create";
 import type { UpdateState } from "@/lib/actions/states/update";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
+import { MAYA_TOOL_ACTIONS } from "@/lib/ai/tool-actions";
 
 export const statusesTool = tool({
   description:
     "View, create, update, and manage workflow statuses for teams. Use this tool to answer questions about statuses, count statuses, list team statuses, create new workflow states, or modify existing statuses. For team-specific operations, get the team ID from the teams tool first.",
   inputSchema: z.object({
     action: z
-      .enum([
-        "list-all-statuses",
-        "list-team-statuses",
-        "get-status-details",
-        "create-status",
-        "update-status",
-        "delete-status",
-        "set-default-status",
-      ])
+      .enum(MAYA_TOOL_ACTIONS.statuses)
       .describe(
         "Action to perform: list-all-statuses (show all statuses across teams), list-team-statuses (show statuses for a specific team, use this to count team statuses), get-status-details (get info about a specific status), create-status (make new status), update-status (modify existing), delete-status (remove), set-default-status (make default)",
       ),
@@ -62,7 +55,9 @@ export const statusesTool = tool({
         "cancelled",
       ])
       .optional()
-      .describe("Status category"),
+      .describe(
+        "Status category. Required when creating a status; existing status categories cannot be changed.",
+      ),
     isDefault: z
       .boolean()
       .optional()
@@ -70,7 +65,7 @@ export const statusesTool = tool({
   }),
   execute: async (
     { action, teamId, statusId, statusName, name, color, category, isDefault },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -81,7 +76,7 @@ export const statusesTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -235,6 +230,7 @@ export const statusesTool = tool({
             category,
             teamId,
             color,
+            isDefault: isDefault ?? false,
           };
 
           const result = await createStateAction(newStatusData, workspaceSlug);
@@ -276,9 +272,26 @@ export const statusesTool = tool({
             };
           }
 
+          if (category !== undefined) {
+            return {
+              success: false,
+              error:
+                "A status category cannot be changed after creation. Create a new status in the required category instead.",
+            };
+          }
+
           const updateData: UpdateState = {};
-          if (name) updateData.name = name;
+          if (name !== undefined) updateData.name = name;
+          if (color !== undefined) updateData.color = color;
           if (isDefault !== undefined) updateData.isDefault = isDefault;
+
+          if (Object.keys(updateData).length === 0) {
+            return {
+              success: false,
+              error:
+                "Provide at least one of name, color, or isDefault when updating a status.",
+            };
+          }
 
           const result = await updateStateAction(
             targetStatusId,

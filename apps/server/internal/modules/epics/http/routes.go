@@ -6,21 +6,21 @@ import (
 	"github.com/complexus-tech/projects-api/pkg/cache"
 	"github.com/complexus-tech/projects-api/pkg/logger"
 	"github.com/complexus-tech/projects-api/pkg/web"
-	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
-	DB        *sqlx.DB
-	Log       *logger.Logger
-	SecretKey string
-	Cache     *cache.Service
-	Service   *epics.Service
+	Log               *logger.Logger
+	SecretKey         string
+	Cache             *cache.Service
+	BrowserSessions   mid.SessionResolver
+	WorkspaceResolver mid.WorkspaceResolver
+	Service           *epics.Service
 }
 
 func Routes(cfg Config, app *web.App) {
 	epicsService := cfg.Service
-	auth := mid.Auth(cfg.Log, cfg.SecretKey)
-	workspace := mid.Workspace(cfg.Log, cfg.DB, cfg.Cache)
+	auth := mid.Auth(cfg.Log, cfg.SecretKey, cfg.BrowserSessions)
+	workspace := mid.Workspace(cfg.Log, cfg.WorkspaceResolver)
 
 	h := New(epicsService)
 

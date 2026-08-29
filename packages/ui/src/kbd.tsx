@@ -11,8 +11,8 @@ export const Kbd = ({
 }) => (
   <Badge
     className={cn(
-      "h-6 min-w-6 rounded-md px-1 uppercase tracking-wider",
-      className
+      "h-6 min-w-6 rounded-md px-1 uppercase tracking-wider dark:bg-surface-prominent/65",
+      className,
     )}
     color="tertiary"
     size="sm"

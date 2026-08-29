@@ -1,64 +1,27 @@
 package okractivities
 
-import (
-	"time"
+import okractivitiesdomain "github.com/complexus-tech/projects-api/internal/modules/okractivities/domain"
 
-	"github.com/google/uuid"
-)
-
-// OKRUpdateType represents whether the activity is for an objective or key result
-type OKRUpdateType string
+type OKRUpdateType = okractivitiesdomain.UpdateType
 
 const (
-	UpdateTypeObjective OKRUpdateType = "objective"
-	UpdateTypeKeyResult OKRUpdateType = "key_result"
+	UpdateTypeObjective = okractivitiesdomain.UpdateTypeObjective
+	UpdateTypeKeyResult = okractivitiesdomain.UpdateTypeKeyResult
 )
 
-// OKRActivityType represents the type of activity performed
-type OKRActivityType string
+type OKRActivityType = okractivitiesdomain.ActivityType
 
 const (
-	ActivityTypeCreate OKRActivityType = "create"
-	ActivityTypeUpdate OKRActivityType = "update"
-	ActivityTypeDelete OKRActivityType = "delete"
+	ActivityTypeCreate = okractivitiesdomain.ActivityTypeCreate
+	ActivityTypeUpdate = okractivitiesdomain.ActivityTypeUpdate
+	ActivityTypeDelete = okractivitiesdomain.ActivityTypeDelete
 )
 
-// CoreActivity represents an OKR activity in the system
-type CoreActivity struct {
-	ID           uuid.UUID       `json:"id"`
-	ObjectiveID  uuid.UUID       `json:"objectiveId"`
-	KeyResultID  *uuid.UUID      `json:"keyResultId"`
-	UserID       uuid.UUID       `json:"userId"`
-	Type         OKRActivityType `json:"type"`
-	UpdateType   OKRUpdateType   `json:"updateType"`
-	Field        string          `json:"field"`
-	CurrentValue string          `json:"currentValue"`
-	Comment      string          `json:"comment"`
-	CreatedAt    time.Time       `json:"createdAt"`
-	WorkspaceID  uuid.UUID       `json:"workspaceId"`
+type CoreActivity = okractivitiesdomain.Activity
+type UserDetails = okractivitiesdomain.UserDetails
+type CoreNewActivity = okractivitiesdomain.NewActivity
 
-	// User details (populated when fetching activities)
-	User UserDetails `json:"user"`
-}
-
-// UserDetails represents basic user information for activities
-type UserDetails struct {
-	ID        uuid.UUID `json:"id"`
-	Username  string    `json:"username"`
-	FullName  string    `json:"fullName"`
-	AvatarURL string    `json:"avatarUrl"`
-	IsActive  bool      `json:"isActive"`
-}
-
-// CoreNewActivity represents the data needed to create a new activity
-type CoreNewActivity struct {
-	ObjectiveID  uuid.UUID
-	KeyResultID  *uuid.UUID
-	UserID       uuid.UUID
-	Type         OKRActivityType
-	UpdateType   OKRUpdateType
-	Field        string
-	CurrentValue string
-	Comment      string
-	WorkspaceID  uuid.UUID
-}
+const (
+	DefaultPageSize = okractivitiesdomain.DefaultPageSize
+	MaximumPageSize = okractivitiesdomain.MaximumPageSize
+)

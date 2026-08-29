@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS public.idx_maya_realtime_voice_tool_calls_session_created;
+DROP TABLE IF EXISTS public.maya_realtime_voice_tool_calls;

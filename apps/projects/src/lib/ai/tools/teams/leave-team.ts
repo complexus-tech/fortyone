@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
-import { removeTeamMemberAction } from "@/modules/teams/actions/remove-team-member";
+import { leaveTeamAction } from "@/modules/teams/actions/leave-team";
 
 export const leaveTeam = tool({
   description: "Leave a team. Users can leave teams they are members of.",
@@ -9,7 +9,10 @@ export const leaveTeam = tool({
     teamId: z.string().describe("Team ID to leave (required)"),
   }),
 
-  execute: async ({ teamId }, { experimental_context }) => {
+  execute: async (
+    { teamId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
 
@@ -20,16 +23,10 @@ export const leaveTeam = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
-      const userId = session.user!.id!;
-
-      const result = await removeTeamMemberAction(
-        teamId,
-        userId,
-        workspaceSlug,
-      );
+      const result = await leaveTeamAction(teamId, workspaceSlug);
 
       if (result.error) {
         return {

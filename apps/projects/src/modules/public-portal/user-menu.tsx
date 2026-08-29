@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import {
-  ArrowRightIcon,
-  DashboardIcon,
+  ChevronRightIcon,
+  ExternalLinkIcon,
   LogoutIcon,
   MoonIcon,
   SettingsIcon,
   SunIcon,
   SystemIcon,
+  UserIcon,
 } from "icons";
 import { Avatar, Button, Flex, Menu, Text } from "ui";
 import { logOut } from "@/components/shared/sidebar/actions";
@@ -57,8 +58,10 @@ const handleLogout = async () => {
 };
 
 export const PublicPortalUserMenu = ({
+  profileHref,
   viewer,
 }: {
+  profileHref?: string | null;
   viewer: PublicPortalViewer;
 }) => {
   const { theme, setTheme } = useTheme();
@@ -69,9 +72,8 @@ export const PublicPortalUserMenu = ({
         <Button
           aria-label="Open account menu"
           asIcon
-          className="size-10 rounded-full p-0"
+          className="size-10 p-0"
           color="tertiary"
-          rounded="full"
           variant="naked"
         >
           <Avatar
@@ -83,7 +85,7 @@ export const PublicPortalUserMenu = ({
           />
         </Button>
       </Menu.Button>
-      <Menu.Items align="end" className="w-80 rounded-3xl pt-2" sideOffset={8}>
+      <Menu.Items align="end" className="w-80 pt-2" sideOffset={8}>
         <Menu.Group className="px-4 pt-2.5 pb-2">
           <Text className="line-clamp-1" fontWeight="semibold">
             {viewer.name}
@@ -94,16 +96,29 @@ export const PublicPortalUserMenu = ({
         </Menu.Group>
         <Menu.Separator className="mb-2" />
         <Menu.Group>
-          <Menu.Item className="rounded-2xl">
-            <Link
-              className="flex w-full items-center gap-2"
-              href={viewer.appHref}
-            >
-              <DashboardIcon className="h-[1.15rem]" />
-              Open app
-            </Link>
-          </Menu.Item>
-          <Menu.Item className="rounded-2xl">
+          {profileHref ? (
+            <Menu.Item>
+              <Link
+                className="flex w-full items-center gap-2"
+                href={profileHref}
+              >
+                <UserIcon className="h-[1.15rem]" />
+                Profile
+              </Link>
+            </Menu.Item>
+          ) : null}
+          {viewer.appHref ? (
+            <Menu.Item>
+              <Link
+                className="group flex w-full items-center gap-2"
+                href={viewer.appHref}
+              >
+                <ExternalLinkIcon className="text-current transition-transform duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                Open FortyOne
+              </Link>
+            </Menu.Item>
+          ) : null}
+          <Menu.Item>
             <Link
               className="flex w-full items-center gap-2"
               href={viewer.accountHref}
@@ -113,7 +128,7 @@ export const PublicPortalUserMenu = ({
             </Link>
           </Menu.Item>
           <Menu.SubMenu>
-            <Menu.SubTrigger className="rounded-2xl">
+            <Menu.SubTrigger>
               <span className="flex w-full items-center justify-between gap-4">
                 <span className="flex items-center gap-2">
                   <ThemeIcon theme={theme} />
@@ -126,15 +141,14 @@ export const PublicPortalUserMenu = ({
                   >
                     {getThemeLabel(theme)}
                   </Text>
-                  <ArrowRightIcon className="h-4" />
+                  <ChevronRightIcon className="h-4" />
                 </Flex>
               </span>
             </Menu.SubTrigger>
-            <Menu.SubItems className="rounded-2xl pt-1.5 md:w-48">
+            <Menu.SubItems className="pt-1.5 md:w-48">
               <Menu.Group>
                 <Menu.Item
                   active={theme === "light"}
-                  className="rounded-2xl"
                   onSelect={() => {
                     setTheme("light");
                   }}
@@ -144,7 +158,6 @@ export const PublicPortalUserMenu = ({
                 </Menu.Item>
                 <Menu.Item
                   active={theme === "dark"}
-                  className="rounded-2xl"
                   onSelect={() => {
                     setTheme("dark");
                   }}
@@ -154,7 +167,6 @@ export const PublicPortalUserMenu = ({
                 </Menu.Item>
                 <Menu.Item
                   active={theme === "system"}
-                  className="rounded-2xl"
                   onSelect={() => {
                     setTheme("system");
                   }}
@@ -168,10 +180,7 @@ export const PublicPortalUserMenu = ({
         </Menu.Group>
         <Menu.Separator className="my-2" />
         <Menu.Group>
-          <Menu.Item
-            className="text-danger rounded-2xl"
-            onSelect={handleLogout}
-          >
+          <Menu.Item className="text-danger" onSelect={handleLogout}>
             <LogoutIcon className="text-danger h-5 w-auto" />
             Log out
           </Menu.Item>

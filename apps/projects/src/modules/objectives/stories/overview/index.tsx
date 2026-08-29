@@ -2,6 +2,7 @@ import {
   Container,
   Box,
   Divider,
+  TextArea,
   TextEditor,
   Menu,
   Button,
@@ -21,7 +22,10 @@ import { useDebounce, useTerminology, useUserRole } from "@/hooks";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import { createRichTextStarterKit } from "@/lib/tiptap/starter-kit";
 import { useChatContext } from "@/context/chat-context";
+import { RelatedDocuments } from "@/modules/documents/related-documents";
+import { ObjectiveForecastRiskBanner } from "@/modules/objectives/components/objective-forecast-risk";
 import {
+  useCanUpdateObjective,
   useDeleteObjectiveMutation,
   useObjective,
   useUpdateObjectiveMutation,
@@ -40,11 +44,12 @@ export const Overview = () => {
   const { getTermDisplay } = useTerminology();
   const { data: objective } = useObjective(objectiveId);
   const { isAdminOrOwner } = useIsAdminOrOwner(objective?.createdBy);
+  const canUpdate = useCanUpdateObjective();
   const [isOpen, setIsOpen] = useState(false);
   const updateMutation = useUpdateObjectiveMutation();
   const deleteMutation = useDeleteObjectiveMutation();
   const { userRole } = useUserRole();
-  const { isOpen: isChatOpen, openChat } = useChatContext();
+  const { openChat } = useChatContext();
 
   const handleUpdate = (data: ObjectiveUpdate) => {
     updateMutation.mutate({
@@ -78,7 +83,7 @@ export const Overview = () => {
       }),
     ],
     content: objective?.name || "",
-    editable: isAdminOrOwner,
+    editable: canUpdate,
     immediatelyRender: true,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
@@ -99,7 +104,7 @@ export const Overview = () => {
       }),
     ],
     content: objective?.description || "",
-    editable: isAdminOrOwner,
+    editable: canUpdate,
     immediatelyRender: true,
     onUpdate: ({ editor }) => {
       debouncedHandleUpdate({
@@ -109,11 +114,11 @@ export const Overview = () => {
   });
 
   return (
-    <>
-      <Box className="hidden md:block">
+    <Box className="h-full min-h-0 overflow-hidden">
+      <Box className="hidden h-full min-h-0 md:block">
         <BoardDividedPanel autoSaveId="teams:objectives:stories:divided-panel">
           <BoardDividedPanel.MainPanel>
-            <Container className="h-[calc(100dvh-7.7rem)] overflow-y-auto pt-6">
+            <Container className="h-full min-h-0 overflow-y-auto pt-6">
               <Box>
                 <Flex align="start" gap={6} justify="between">
                   <TextEditor
@@ -172,26 +177,47 @@ export const Overview = () => {
                   </Flex>
                 </Flex>
 
+                {objective ? (
+                  <ObjectiveForecastRiskBanner
+                    className="mt-5"
+                    objective={objective}
+                  />
+                ) : null}
+
+                <TextArea
+                  aria-label="Objective short summary"
+                  className="mt-4 min-h-20 resize-none border-0 bg-transparent px-0 py-2 leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
+                  defaultValue={objective?.shortSummary ?? ""}
+                  key={`desktop-summary-${objective?.id ?? "loading"}-${objective?.shortSummary ?? ""}`}
+                  maxLength={500}
+                  onChange={(event) => {
+                    debouncedHandleUpdate({
+                      shortSummary: event.target.value,
+                    });
+                  }}
+                  placeholder="Add short summary..."
+                  readOnly={!canUpdate}
+                  rows={3}
+                />
+                <Divider className="my-3 opacity-60" />
                 <TextEditor
                   className="text-foreground"
                   editor={descriptionEditor}
                 />
               </Box>
               <Properties />
+              <RelatedDocuments entityId={objectiveId} entityType="objective" />
               <Divider className="my-8" />
-              <Activity />
+              <Activity viewport="desktop" />
             </Container>
           </BoardDividedPanel.MainPanel>
-          <BoardDividedPanel.SideBar
-            className="h-[calc(100dvh-7.7rem)]"
-            isExpanded={!isChatOpen}
-          >
-            <Sidebar className="h-[calc(100dvh-7.7rem)] overflow-y-auto" />
+          <BoardDividedPanel.SideBar className="h-full min-h-0" isExpanded>
+            <Sidebar className="h-full min-h-0 overflow-y-auto" />
           </BoardDividedPanel.SideBar>
         </BoardDividedPanel>
       </Box>
-      <Box className="md:hidden">
-        <Container className="h-[calc(100dvh-7.7rem)] overflow-y-auto pt-6">
+      <Box className="h-full min-h-0 md:hidden">
+        <Container className="h-full min-h-0 overflow-y-auto pt-6">
           <Box>
             <Flex align="center" gap={6} justify="between">
               <TextEditor
@@ -226,14 +252,38 @@ export const Overview = () => {
               ) : null}
             </Flex>
 
+            {objective ? (
+              <ObjectiveForecastRiskBanner
+                className="mt-4"
+                objective={objective}
+              />
+            ) : null}
+
+            <TextArea
+              aria-label="Objective short summary"
+              className="mt-4 min-h-20 resize-none border-0 bg-transparent px-0 py-2 leading-6 shadow-none focus-visible:ring-0 dark:bg-transparent"
+              defaultValue={objective?.shortSummary ?? ""}
+              key={`mobile-summary-${objective?.id ?? "loading"}-${objective?.shortSummary ?? ""}`}
+              maxLength={500}
+              onChange={(event) => {
+                debouncedHandleUpdate({
+                  shortSummary: event.target.value,
+                });
+              }}
+              placeholder="Add short summary..."
+              readOnly={!canUpdate}
+              rows={3}
+            />
+            <Divider className="my-3 opacity-60" />
             <TextEditor
               className="text-text-muted"
               editor={descriptionEditor}
             />
           </Box>
           <Properties />
+          <RelatedDocuments entityId={objectiveId} entityType="objective" />
           <Divider className="my-6 md:my-8" />
-          <Activity />
+          <Activity viewport="mobile" />
         </Container>
       </Box>
 
@@ -247,6 +297,6 @@ export const Overview = () => {
         onConfirm={handleDelete}
         title={`Delete ${getTermDisplay("objectiveTerm")}`}
       />
-    </>
+    </Box>
   );
 };

@@ -34,7 +34,7 @@ export const MayaAvatar = ({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black",
+        "bg-background-inverse text-foreground-inverse inline-flex shrink-0 items-center justify-center rounded-full",
         sizeClasses[size],
         className,
       )}

@@ -8,7 +8,7 @@ import { cva, type VariantProps } from "cva";
 import { cn } from "lib";
 
 const inputVariants = cva(
-  "w-full rounded-md border bg-surface border-input px-4 h-[2.8rem] leading-[2.8rem] focus-visible:outline-0 focus-visible:ring-2 focus-visible:ring-ring read-only:focus-visible:ring-0 placeholder:text-text-muted",
+  "w-full rounded-md border border-input bg-white px-4 h-[2.8rem] leading-[2.8rem] focus-visible:outline-0 focus-visible:ring-2 focus-visible:ring-ring read-only:focus-visible:ring-0 placeholder:text-text-muted dark:bg-surface",
   {
     variants: {
       size: {
@@ -36,7 +36,7 @@ const inputVariants = cva(
       variant: "default",
       rounded: "md",
     },
-  }
+  },
 );
 
 export interface InputProps
@@ -74,7 +74,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
       variant: hasError ? "error" : variant,
       rounded,
     }),
-    className
+    className,
   );
 
   return (
@@ -114,7 +114,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
             "text-[0.9rem] font-medium inline-block left-[2px] mt-1 text-text-muted",
             {
               "text-danger": hasError,
-            }
+            },
           )}
         >
           {helpText}

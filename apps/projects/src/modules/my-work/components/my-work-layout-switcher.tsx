@@ -1,0 +1,52 @@
+import { KanbanIcon, ListIcon } from "icons";
+import { cn } from "lib";
+import { Flex } from "ui";
+import type { ReactNode } from "react";
+import type { MyWorkLayout } from "../types";
+
+const options = [
+  {
+    icon: <ListIcon className="h-[1.1rem] w-auto" strokeWidth={3.5} />,
+    label: "List",
+    value: "list",
+  },
+  {
+    icon: <KanbanIcon className="h-5 w-auto" />,
+    label: "Board",
+    value: "kanban",
+  },
+] as const satisfies readonly {
+  icon: ReactNode;
+  label: string;
+  value: MyWorkLayout;
+}[];
+
+export const MyWorkLayoutSwitcher = ({
+  layout,
+  setLayout,
+}: {
+  layout: MyWorkLayout;
+  setLayout: (value: MyWorkLayout) => void;
+}) => (
+  <Flex className="bg-surface-prominent/30 dark:bg-surface-muted h-[2.2rem] items-center gap-1 rounded-xl md:mr-2">
+    {options.map((option) => (
+      <button
+        aria-pressed={layout === option.value}
+        className={cn(
+          "text-text-secondary hover:text-text-primary focus-visible:bg-state-hover flex h-full items-center gap-1.5 rounded-xl px-3 font-medium outline-none [&_svg]:text-current",
+          layout === option.value &&
+            "border-border bg-surface-elevated text-text-primary border",
+        )}
+        key={option.value}
+        onClick={() => {
+          setLayout(option.value);
+        }}
+        title={`${option.label} view`}
+        type="button"
+      >
+        {option.icon}
+        <span className="hidden md:inline">{option.label}</span>
+      </button>
+    ))}
+  </Flex>
+);

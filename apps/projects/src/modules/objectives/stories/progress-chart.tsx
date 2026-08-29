@@ -45,7 +45,7 @@ const CustomTooltip = ({
   if (active && payload?.length) {
     const data = payload[0].payload;
     return (
-      <Box className="border-border bg-surface-elevated/60 text-foreground z-50 min-w-44 rounded-2xl border p-4 backdrop-blur-lg">
+      <Box className="border-border/60 bg-surface-elevated/60 text-foreground z-50 min-w-44 rounded-2xl border-[0.5px] p-4 backdrop-blur-lg">
         <Text fontWeight="semibold">{label}</Text>
         <Box className="mb-0.1 mt-1 text-[#6366F1]">
           Completed: {data.completed}{" "}

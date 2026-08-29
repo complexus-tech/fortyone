@@ -9,6 +9,7 @@ export type Sprint = {
   endDate: string;
   createdAt: string;
   updatedAt: string;
+  scheduleManagedByAutomation: boolean;
   stats: {
     total: number;
     cancelled: number;
@@ -44,6 +45,7 @@ export type UpdateSprint = Partial<Omit<NewSprint, "teamId">>;
 
 export type SprintAnalytics = {
   sprintId: string;
+  workingDays: number[];
   overview: {
     completionPercentage: number;
     daysElapsed: number;
