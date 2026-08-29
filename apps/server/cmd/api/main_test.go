@@ -25,6 +25,23 @@ func TestEnvironmentDefault(t *testing.T) {
 	require.Equal(t, "APP_ENVIRONMENT", environment.Tag.Get("env"))
 }
 
+func TestTracingHeadersDefaultToEmptyJSONMap(t *testing.T) {
+	configType := reflect.TypeOf(Config{}.Tracing)
+	headers, found := configType.FieldByName("Headers")
+	require.True(t, found)
+	require.Equal(t, "{}", headers.Tag.Get("default"))
+}
+
+func TestMigrationConfigurationIgnoresUnrelatedRuntimeSettings(t *testing.T) {
+	t.Setenv("APP_TRACING_HEADERS", "")
+	t.Setenv("APP_DB_HOST", "database.internal")
+
+	cfg, err := parseMigrationProcessConfig()
+	require.NoError(t, err)
+	require.Equal(t, "database.internal", cfg.DB.Host)
+	require.Equal(t, "development", cfg.Environment)
+}
+
 func TestValidateRuntimeConfigRejectsUnsafeProductionConfiguration(t *testing.T) {
 	t.Parallel()
 
