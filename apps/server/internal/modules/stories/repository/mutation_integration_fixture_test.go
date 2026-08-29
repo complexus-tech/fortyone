@@ -117,7 +117,7 @@ func seedStoryMutationServiceAccount(
 			secret_digest, token_version, digest_key_id, digest_key_version,
 			expires_at, created_by_user_id, created_at
 		) VALUES (
-			$1, $2, $3, 'service_account_key', 'Story integration key', 'abcdef123456',
+			$1, $2, $3, 'service_account_key', 'Story integration key', 'exampleprefix',
 			$4, 1, 'integration', 1, $5, $6, $7
 		)`,
 		credentialID, fixture.workspaceID, principalID, make([]byte, 32),

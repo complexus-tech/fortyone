@@ -449,7 +449,7 @@ func TestValidateRuntimeConfigRejectsGitHubSigningAndPayloadKeyReuseInProduction
 func TestValidateRuntimeConfigRejectsVaultReuseOfGitHubWebhookPayloadKey(t *testing.T) {
 	t.Parallel()
 
-	const reusedSecret = "0123456789abcdef0123456789abcdef"
+	const reusedSecret = "0123456789abcdef0123456789abcdef" // gitleaks:allow -- deterministic key-reuse test vector
 	var cfg Config
 	cfg.Environment = "production"
 	cfg.Auth.SecretKey = "a-unique-production-secret-with-32-bytes"
@@ -468,7 +468,7 @@ func TestValidateRuntimeConfigRejectsVaultReuseOfGitHubWebhookPayloadKey(t *test
 func TestValidateRuntimeConfigRejectsVaultReuseOfFigmaWebhookPayloadKey(t *testing.T) {
 	t.Parallel()
 
-	const reusedSecret = "0123456789abcdef0123456789abcdef"
+	const reusedSecret = "0123456789abcdef0123456789abcdef" // gitleaks:allow -- deterministic key-reuse test vector
 	var cfg Config
 	cfg.Environment = "production"
 	cfg.Auth.SecretKey = "a-unique-production-secret-with-32-bytes"
@@ -506,7 +506,7 @@ func TestValidateRuntimeConfigRejectsVaultKEKReuse(t *testing.T) {
 
 	var cfg Config
 	cfg.Environment = "production"
-	cfg.Auth.SecretKey = "0123456789abcdef0123456789abcdef"
+	cfg.Auth.SecretKey = "0123456789abcdef0123456789abcdef" // gitleaks:allow -- deterministic key-reuse test vector
 	cfg.Feedback.SecurityKey = "a-unique-feedback-security-key-with-32-bytes"
 	cfg.DB.SSLMode = "verify-full"
 	cfg.HTTP = validWorkerHTTPConfig()

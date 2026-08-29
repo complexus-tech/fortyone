@@ -106,7 +106,7 @@ func newTestWebhookRuntime(
 	runtime, err := NewWebhookRuntime(resolver, queue, Config{
 		BaseURL:              "https://gitlab.example",
 		WebhookSigningToken:  "whsec_" + base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")),
-		WebhookPayloadSecret: "abcdef0123456789abcdef0123456789",
+		WebhookPayloadSecret: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		Now:                  func() time.Time { return now },
 	})
 	if err != nil {

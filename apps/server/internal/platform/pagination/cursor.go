@@ -30,7 +30,8 @@ var (
 
 var cursorKeyIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$`)
 
-const cursorKeyDerivationDomain = "fortyone.cursor.v1"
+// This is a public cryptographic domain-separation label, not secret material.
+const cursorKeyDerivationDomain = "fortyone.cursor.v1" // gitleaks:allow
 
 // SigningKey identifies one cursor-signing generation. IDs are safe metadata;
 // Secret must come from the managed secret store and must never be logged.

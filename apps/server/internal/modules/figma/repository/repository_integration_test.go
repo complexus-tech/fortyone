@@ -116,9 +116,10 @@ func TestFigmaConnectionMutationIsAtomicAndGenerationFenced(t *testing.T) {
 	_, err = fixture.repository.GetWebhook(ctx, webhook.FigmaWebhookID)
 	require.NoError(t, err, "failed reconnect must retain the existing webhook grant")
 
+	const wrongGenerationPayload = "vault.v2.wrong-generation"
 	replaced, err := fixture.repository.UpdateConnectionCredential(
 		ctx, created.ID, uuid.New(), created.CredentialPayload,
-		"vault.v2.wrong-generation", created.ExpiresAt.Add(time.Hour),
+		wrongGenerationPayload, created.ExpiresAt.Add(time.Hour),
 	)
 	require.NoError(t, err)
 	require.False(t, replaced)
