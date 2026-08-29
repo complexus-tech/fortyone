@@ -30,7 +30,7 @@ module with domain packages under `apps/server/internal/modules`.
 
 - Node.js 18 or newer
 - pnpm 9.3.0
-- Go 1.25.0
+- Go 1.25.14
 - PostgreSQL and Redis endpoints approved for development
 - `air` for Go live reload
 
