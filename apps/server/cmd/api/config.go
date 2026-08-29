@@ -10,6 +10,30 @@ import (
 	"github.com/complexus-tech/projects-api/internal/platform/configvalue"
 )
 
+type databaseConfig struct {
+	Host                      string        `default:"localhost" env:"APP_DB_HOST"`
+	Port                      string        `default:"5432" env:"APP_DB_PORT"`
+	User                      string        `default:"postgres" env:"APP_DB_USER"`
+	Password                  string        `default:"password" env:"APP_DB_PASSWORD"`
+	Name                      string        `default:"complexus" env:"APP_DB_NAME"`
+	MigrationMaxIdleConns     int           `default:"25" env:"APP_DB_MAX_IDLE_CONNS"`
+	MigrationStatementTimeout time.Duration `default:"30m" env:"APP_DB_MIGRATION_STATEMENT_TIMEOUT"`
+	MaxOpenConns              int           `default:"25" env:"APP_DB_MAX_OPEN_CONNS"`
+	MinConns                  int           `default:"0" env:"APP_DB_MIN_CONNS"`
+	ConnectTimeout            time.Duration `default:"10s" env:"APP_DB_CONNECT_TIMEOUT"`
+	MaxConnIdleTime           time.Duration `default:"30m" env:"APP_DB_MAX_CONN_IDLE_TIME"`
+	MaxConnLifetime           time.Duration `default:"1h" env:"APP_DB_MAX_CONN_LIFETIME"`
+	HealthCheckPeriod         time.Duration `default:"1m" env:"APP_DB_HEALTH_CHECK_PERIOD"`
+	SSLMode                   string        `env:"APP_DB_SSL_MODE"`
+	SSLRootCert               string        `env:"APP_DB_SSL_ROOT_CERT"`
+	DisableTLS                bool          `default:"true" env:"APP_DB_DISABLE_TLS"`
+}
+
+type migrationProcessConfig struct {
+	Environment string `default:"development" env:"APP_ENVIRONMENT"`
+	DB          databaseConfig
+}
+
 // Config is the API process configuration schema. Keep environment bindings in
 // this capability-named file so process composition remains easy to navigate.
 type Config struct {
@@ -80,24 +104,7 @@ type Config struct {
 	MCP struct {
 		LoginURL string `default:"http://localhost:3000" env:"APP_MCP_LOGIN_URL"`
 	}
-	DB struct {
-		Host                      string        `default:"localhost" env:"APP_DB_HOST"`
-		Port                      string        `default:"5432" env:"APP_DB_PORT"`
-		User                      string        `default:"postgres" env:"APP_DB_USER"`
-		Password                  string        `default:"password" env:"APP_DB_PASSWORD"`
-		Name                      string        `default:"complexus" env:"APP_DB_NAME"`
-		MigrationMaxIdleConns     int           `default:"25" env:"APP_DB_MAX_IDLE_CONNS"`
-		MigrationStatementTimeout time.Duration `default:"30m" env:"APP_DB_MIGRATION_STATEMENT_TIMEOUT"`
-		MaxOpenConns              int           `default:"25" env:"APP_DB_MAX_OPEN_CONNS"`
-		MinConns                  int           `default:"0" env:"APP_DB_MIN_CONNS"`
-		ConnectTimeout            time.Duration `default:"10s" env:"APP_DB_CONNECT_TIMEOUT"`
-		MaxConnIdleTime           time.Duration `default:"30m" env:"APP_DB_MAX_CONN_IDLE_TIME"`
-		MaxConnLifetime           time.Duration `default:"1h" env:"APP_DB_MAX_CONN_LIFETIME"`
-		HealthCheckPeriod         time.Duration `default:"1m" env:"APP_DB_HEALTH_CHECK_PERIOD"`
-		SSLMode                   string        `env:"APP_DB_SSL_MODE"`
-		SSLRootCert               string        `env:"APP_DB_SSL_ROOT_CERT"`
-		DisableTLS                bool          `default:"true" env:"APP_DB_DISABLE_TLS"`
-	}
+	DB    databaseConfig
 	Cache struct {
 		Host         string        `default:"localhost" env:"APP_REDIS_HOST"`
 		Port         string        `default:"6379" env:"APP_REDIS_PORT"`
@@ -126,7 +133,7 @@ type Config struct {
 	}
 	Tracing struct {
 		Endpoint string            `default:"localhost:4318" env:"APP_TRACING_ENDPOINT"`
-		Headers  map[string]string `env:"APP_TRACING_HEADERS"`
+		Headers  map[string]string `default:"{}" env:"APP_TRACING_HEADERS"`
 	}
 	Google struct {
 		ClientID string `env:"GOOGLE_CLIENT_ID"`
