@@ -70,6 +70,7 @@ func (handlers *Handlers) CreateServiceAccountKey(ctx context.Context, writer ht
 	if err != nil {
 		return web.RespondError(ctx, writer, err, statusForError(err))
 	}
+	setShowOnceCredentialHeaders(writer)
 	return web.Respond(ctx, writer, issuedCredentialModel(issued), http.StatusCreated)
 }
 
@@ -104,6 +105,7 @@ func (handlers *Handlers) RotateServiceAccountKey(ctx context.Context, writer ht
 	if err != nil {
 		return web.RespondError(ctx, writer, err, statusForError(err))
 	}
+	setShowOnceCredentialHeaders(writer)
 	return web.Respond(ctx, writer, issuedCredentialModel(issued), http.StatusCreated)
 }
 

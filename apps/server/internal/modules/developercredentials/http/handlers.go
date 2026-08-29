@@ -41,6 +41,7 @@ func (handlers *Handlers) CreatePersonalToken(ctx context.Context, writer http.R
 	if err != nil {
 		return web.RespondError(ctx, writer, err, statusForError(err))
 	}
+	setShowOnceCredentialHeaders(writer)
 	return web.Respond(ctx, writer, issuedCredentialModel(issued), http.StatusCreated)
 }
 
@@ -71,7 +72,13 @@ func (handlers *Handlers) RotatePersonalToken(ctx context.Context, writer http.R
 	if err != nil {
 		return web.RespondError(ctx, writer, err, statusForError(err))
 	}
+	setShowOnceCredentialHeaders(writer)
 	return web.Respond(ctx, writer, issuedCredentialModel(issued), http.StatusCreated)
+}
+
+func setShowOnceCredentialHeaders(writer http.ResponseWriter) {
+	writer.Header().Set("Cache-Control", "no-store")
+	writer.Header().Set("Pragma", "no-cache")
 }
 
 func (handlers *Handlers) RevokePersonalToken(ctx context.Context, writer http.ResponseWriter, request *http.Request) error {

@@ -30,6 +30,7 @@ import (
 	notificationshttp "github.com/complexus-tech/projects-api/internal/modules/notifications/http"
 	objectiveshttp "github.com/complexus-tech/projects-api/internal/modules/objectives/http"
 	objectivestatushttp "github.com/complexus-tech/projects-api/internal/modules/objectivestatus/http"
+	outboundwebhookshttp "github.com/complexus-tech/projects-api/internal/modules/outboundwebhooks/http"
 	reportshttp "github.com/complexus-tech/projects-api/internal/modules/reports/http"
 	searchhttp "github.com/complexus-tech/projects-api/internal/modules/search/http"
 	slackhttp "github.com/complexus-tech/projects-api/internal/modules/slack/http"
@@ -154,6 +155,14 @@ func (r routes) BuildAllRoutes(app *web.App, cfg mux.Config) {
 		Cache:             cfg.Cache,
 		BrowserSessions:   browserSessions,
 		Service:           svcs.developerOAuthApps,
+	}, app)
+	outboundwebhookshttp.Routes(outboundwebhookshttp.Config{
+		WorkspaceResolver: r.workspaceResolver,
+		Log:               cfg.Log,
+		SecretKey:         cfg.SecretKey,
+		Cache:             cfg.Cache,
+		BrowserSessions:   browserSessions,
+		Service:           svcs.outboundWebhooks,
 	}, app)
 	apiv1http.Routes(apiv1http.Config{
 		Log:                  cfg.Log,

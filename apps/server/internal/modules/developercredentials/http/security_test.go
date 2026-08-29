@@ -21,6 +21,16 @@ type managementServiceSpy struct {
 	createServiceAccountCalled bool
 }
 
+func TestShowOnceCredentialResponsesDisableCaching(t *testing.T) {
+	t.Parallel()
+
+	recorder := httptest.NewRecorder()
+	setShowOnceCredentialHeaders(recorder)
+
+	require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
+	require.Equal(t, "no-cache", recorder.Header().Get("Pragma"))
+}
+
 func (spy *managementServiceSpy) CreateServiceAccount(
 	context.Context,
 	developercredentialsdomain.Access,
