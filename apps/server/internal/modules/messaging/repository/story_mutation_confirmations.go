@@ -283,7 +283,7 @@ func transitionStoryMutationConfirmation(
 		return fmt.Errorf("%w: unsupported terminal status %q", messaging.ErrInvalidConfirmation, status)
 	}
 	affected, err := queries.TransitionStoryMutationConfirmation(ctx, messagingsql.TransitionStoryMutationConfirmationParams{
-		Status: string(status), Now: &now, ConfirmationID: confirmationID, CurrentStatus: string(currentStatus),
+		Status: string(status), Now: now, ConfirmationID: confirmationID, CurrentStatus: string(currentStatus),
 	})
 	if err != nil {
 		return fmt.Errorf("transition story mutation confirmation: %w", err)

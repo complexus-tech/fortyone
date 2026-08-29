@@ -59,7 +59,7 @@ func TestWorkspacePurgeDefersUnsafeSlackCredentialsAndSnapshotsCurrentVaultEnvel
 	require.Equal(t, int64(0), unsafeResult.Deleted)
 	require.Equal(t, int64(1), unsafeResult.Blocked)
 	require.True(t, unsafeResult.Cursor.Valid)
-	require.Equal(t, deletedAt, unsafeResult.Cursor.DeletedAt)
+	require.WithinDuration(t, deletedAt, unsafeResult.Cursor.DeletedAt, 0)
 	require.Equal(t, workspaceID, unsafeResult.Cursor.WorkspaceID)
 
 	var workspaceCount int
@@ -102,15 +102,12 @@ func TestWorkspacePurgeDefersUnsafeSlackCredentialsAndSnapshotsCurrentVaultEnvel
 
 	vaultResult, err := repository.PurgeSoftDeletedWorkspacesBatch(ctx, batch)
 	require.NoError(t, err)
-	require.Equal(t, workspacedomain.DeletedWorkspacePurgeResult{
-		CandidateCount: 1,
-		Deleted:        1,
-		Cursor: workspacedomain.DeletedWorkspacePurgeCursor{
-			DeletedAt:   deletedAt,
-			WorkspaceID: workspaceID,
-			Valid:       true,
-		},
-	}, vaultResult)
+	require.Equal(t, 1, vaultResult.CandidateCount)
+	require.Equal(t, int64(1), vaultResult.Deleted)
+	require.Zero(t, vaultResult.Blocked)
+	require.True(t, vaultResult.Cursor.Valid)
+	require.WithinDuration(t, deletedAt, vaultResult.Cursor.DeletedAt, 0)
+	require.Equal(t, workspaceID, vaultResult.Cursor.WorkspaceID)
 
 	var outboxPayload string
 	var outboxVersion int
@@ -128,7 +125,7 @@ func TestWorkspacePurgeDefersUnsafeSlackCredentialsAndSnapshotsCurrentVaultEnvel
 	))
 	require.Equal(t, envelope, outboxPayload)
 	require.Equal(t, credentialvault.CurrentVersion, outboxVersion)
-	require.Equal(t, processedAt, nextAttemptAt)
-	require.Equal(t, processedAt, createdAt)
-	require.Equal(t, processedAt, updatedAt)
+	require.WithinDuration(t, processedAt, nextAttemptAt, 0)
+	require.WithinDuration(t, processedAt, createdAt, 0)
+	require.WithinDuration(t, processedAt, updatedAt, 0)
 }

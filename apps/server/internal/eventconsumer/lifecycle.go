@@ -16,6 +16,8 @@ type consumerLifecycle struct {
 	initialized atomic.Bool
 }
 
+const streamReadBlock = 2 * time.Second
+
 // Initialize creates the required Redis consumer group. It is intentionally a
 // separate startup step so the process cannot report ready when the stream
 // contract is unavailable.
@@ -109,7 +111,7 @@ func (c *Consumer) processNewMessages(ctx context.Context, instanceID string) er
 		Consumer: instanceID,
 		Streams:  []string{eventStreamKey, ">"},
 		Count:    streamReadCount,
-		Block:    2 * time.Second,
+		Block:    streamReadBlock,
 	}).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {

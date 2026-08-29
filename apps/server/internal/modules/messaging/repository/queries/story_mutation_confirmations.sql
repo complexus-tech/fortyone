@@ -50,9 +50,18 @@ FOR UPDATE;
 -- name: TransitionStoryMutationConfirmation :execrows
 UPDATE messaging_story_mutation_confirmations
 SET status = sqlc.arg(status),
-    applied_at = CASE WHEN sqlc.arg(status) = 'applied' THEN sqlc.arg(now) ELSE NULL END,
-    cancelled_at = CASE WHEN sqlc.arg(status) = 'cancelled' THEN sqlc.arg(now) ELSE NULL END,
-    expired_at = CASE WHEN sqlc.arg(status) = 'expired' THEN sqlc.arg(now) ELSE NULL END,
+    applied_at = CASE
+        WHEN sqlc.arg(status) = 'applied' THEN CAST(sqlc.arg(now) AS timestamptz)
+        ELSE NULL
+    END,
+    cancelled_at = CASE
+        WHEN sqlc.arg(status) = 'cancelled' THEN CAST(sqlc.arg(now) AS timestamptz)
+        ELSE NULL
+    END,
+    expired_at = CASE
+        WHEN sqlc.arg(status) = 'expired' THEN CAST(sqlc.arg(now) AS timestamptz)
+        ELSE NULL
+    END,
     proposal = CASE
         WHEN sqlc.arg(status) IN ('cancelled', 'expired') THEN NULL
         ELSE proposal

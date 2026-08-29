@@ -94,7 +94,7 @@ func TestOAuthApplicationActorLifecycleUsesDigestsDedicatedPrincipalsAndRevocati
 		FROM oauth_client_secrets
 		WHERE secret_id = $1
 	`, issued.Secret.Secret.ID).Scan(&overlapCutoff))
-	require.Equal(t, harness.clock.Now().Add(5*time.Minute), overlapCutoff)
+	require.WithinDuration(t, harness.clock.Now().Add(5*time.Minute), overlapCutoff, 0)
 	exchangeApplicationToken(t, ctx, harness, issued.Application.ClientID,
 		issued.Secret.Plaintext.Reveal(), installation.ID, "overlap-exchange")
 	current, err := harness.manager.RotateClientSecret(ctx, harness.access, issued.Application.ID, developeroauth.RotateClientSecretInput{
