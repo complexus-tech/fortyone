@@ -82,10 +82,10 @@ func TestAppDoesNotLogUnexpectedHandlerErrorContents(t *testing.T) {
 	require.Contains(t, logs.String(), recorder.Header().Get("X-Request-ID"))
 }
 
-func TestAppAppliesExactCredentialedOriginPolicy(t *testing.T) {
+func TestAppAppliesCredentialedSubdomainOriginPolicy(t *testing.T) {
 	t.Parallel()
 
-	policy, err := NewOriginPolicy("https://app.fortyone.app")
+	policy, err := NewOriginPolicy("https://*.fortyone.app")
 	require.NoError(t, err)
 	app := New(make(chan os.Signal, 1), noop.NewTracerProvider().Tracer("test"))
 	app.SetOriginPolicy(policy)
@@ -97,8 +97,8 @@ func TestAppAppliesExactCredentialedOriginPolicy(t *testing.T) {
 		origin string
 		want   string
 	}{
-		{origin: "https://app.fortyone.app", want: "https://app.fortyone.app"},
-		{origin: "https://preview.fortyone.app"},
+		{origin: "https://complexus.fortyone.app", want: "https://complexus.fortyone.app"},
+		{origin: "https://fortyone.app.attacker.example"},
 	} {
 		recorder := httptest.NewRecorder()
 		request := httptest.NewRequest(http.MethodGet, "/ok", nil)

@@ -10,7 +10,7 @@ A blank example means the deployment must choose a value when the enabled capabi
 
 | Variable | Process | Type | Default | Sensitive | Schema field | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `APP_API_CORS_ALLOWED_ORIGINS` | API | `string` | `http://localhost:3000` | no | [API Config.Web.CORSAllowedOrigins](../cmd/api/config.go#L94) | Exact comma-separated browser origins. Wildcards and parent-domain matching are rejected; production origins must use HTTPS. |
+| `APP_API_CORS_ALLOWED_ORIGINS` | API | `string` | `http://localhost:3000,https://*.fortyone.app` | no | [API Config.Web.CORSAllowedOrigins](../cmd/api/config.go#L94) | Comma-separated exact origins and controlled leading subdomain patterns. Global wildcards are rejected; production origins must use HTTPS. |
 | `APP_API_CREDENTIAL_HMAC_ACTIVE_KEY_ID` | API | `string` | `development` | no | [API Config.DeveloperCredentials.ActiveKeyID](../cmd/api/config.go#L81) | Dedicated versioned HMAC keyring for PAT and service-account key digests. Production must replace this public development key with independent random 32-byte material and retain old entries only while issued keys still use them. |
 | `APP_API_CREDENTIAL_HMAC_ACTIVE_KEY_VERSION` | API | `configvalue.KeyVersion` | `1` | no | [API Config.DeveloperCredentials.ActiveKeyVersion](../cmd/api/config.go#L82) |  |
 | `APP_API_CREDENTIAL_HMAC_KEYS` | API | `string` | development placeholder | yes | [API Config.DeveloperCredentials.Keys](../cmd/api/config.go#L83) |  |
@@ -190,4 +190,3 @@ A blank example means the deployment must choose a value when the enabled capabi
 | `APP_OAUTH_DYNAMIC_CLIENT_TTL` | API | `time.Duration` | `720h` | no | [API Config.DeveloperOAuth.DynamicClientTTL](../cmd/api/config.go#L89) | Dynamic public clients are intentionally time-bounded (1h minimum, 90d max). |
 | `APP_SLACK_WEBHOOK_PAYLOAD_SECRET` | API, worker | `string` | API: development placeholder<br>worker: development placeholder | yes | [API Config.Slack.WebhookPayloadSecret](../cmd/api/config.go#L184)<br>[worker Config.Slack.WebhookPayloadSecret](../internal/bootstrap/worker/config.go#L159) | Shared by the API and worker only for encrypted Slack webhook inbox bodies. Replace in production and never reuse auth, provider-signing, OAuth, provider-credential, or credential-vault key material. |
 | `APP_WEBSITE_URL` | API, worker | `string` | API: `http://localhost:3000`<br>worker: `http://localhost:3000` | no | [API Config.Website.URL](../cmd/api/config.go#L142)<br>[worker Config.Website.URL](../internal/bootstrap/worker/config.go#L125) |  |
-

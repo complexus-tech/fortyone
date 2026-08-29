@@ -12,7 +12,7 @@ import (
 func TestRequireTrustedBrowserOrigin(t *testing.T) {
 	t.Parallel()
 
-	policy, err := web.NewOriginPolicy("https://app.fortyone.app")
+	policy, err := web.NewOriginPolicy("https://*.fortyone.app")
 	if err != nil {
 		t.Fatalf("new origin policy: %v", err)
 	}
@@ -27,9 +27,9 @@ func TestRequireTrustedBrowserOrigin(t *testing.T) {
 	}{
 		{name: "safe method", method: http.MethodGet, cookie: true, wantStatus: http.StatusNoContent, wantNext: true},
 		{name: "non-browser credential", method: http.MethodPost, wantStatus: http.StatusNoContent, wantNext: true},
-		{name: "configured origin", method: http.MethodPost, cookie: true, origin: "https://app.fortyone.app", wantStatus: http.StatusNoContent, wantNext: true},
+		{name: "configured subdomain", method: http.MethodPost, cookie: true, origin: "https://complexus.fortyone.app", wantStatus: http.StatusNoContent, wantNext: true},
 		{name: "same-origin metadata fallback", method: http.MethodDelete, cookie: true, fetchSite: "same-origin", wantStatus: http.StatusNoContent, wantNext: true},
-		{name: "sibling origin denied", method: http.MethodPost, cookie: true, origin: "https://preview.fortyone.app", wantStatus: http.StatusForbidden},
+		{name: "lookalike origin denied", method: http.MethodPost, cookie: true, origin: "https://fortyone.app.attacker.example", wantStatus: http.StatusForbidden},
 		{name: "same-site metadata denied", method: http.MethodPatch, cookie: true, fetchSite: "same-site", wantStatus: http.StatusForbidden},
 		{name: "missing browser metadata denied", method: http.MethodPut, cookie: true, wantStatus: http.StatusForbidden},
 	}

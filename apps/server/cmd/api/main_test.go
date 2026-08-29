@@ -95,7 +95,6 @@ func TestValidateRuntimeConfigRejectsUnsafeCORSOrigins(t *testing.T) {
 	tests := map[string]string{
 		"wildcard":        "*",
 		"insecure origin": "http://app.fortyone.app",
-		"sibling pattern": "https://*.fortyone.app",
 	}
 	for name, origins := range tests {
 		name, origins := name, origins
@@ -107,6 +106,16 @@ func TestValidateRuntimeConfigRejectsUnsafeCORSOrigins(t *testing.T) {
 			require.ErrorContains(t, err, "APP_API_CORS_ALLOWED_ORIGINS")
 		})
 	}
+}
+
+func TestValidateRuntimeConfigAcceptsHTTPSSubdomainOrigins(t *testing.T) {
+	t.Parallel()
+
+	cfg := secureProductionConfig()
+	cfg.Web.CORSAllowedOrigins = "https://*.fortyone.app"
+
+	_, err := validateRuntimeConfig(cfg)
+	require.NoError(t, err)
 }
 
 func TestValidateRuntimeConfigRejectsSemanticDevelopmentVaultKeys(t *testing.T) {

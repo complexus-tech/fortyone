@@ -91,7 +91,7 @@ type Config struct {
 	Web struct {
 		APIHost                  string        `default:"localhost:8000" env:"APP_API_HOST"`
 		PublicURL                string        `default:"http://localhost:8000" env:"APP_API_PUBLIC_URL"`
-		CORSAllowedOrigins       string        `default:"http://localhost:3000" env:"APP_API_CORS_ALLOWED_ORIGINS"`
+		CORSAllowedOrigins       string        `default:"http://localhost:3000,https://*.fortyone.app" env:"APP_API_CORS_ALLOWED_ORIGINS"`
 		ReadHeaderTimeout        time.Duration `default:"10s" env:"APP_API_READ_HEADER_TIMEOUT"`
 		ReadTimeout              time.Duration `default:"5m" env:"APP_API_READ_TIMEOUT"`
 		WriteTimeout             time.Duration `default:"5m" env:"APP_API_WRITE_TIMEOUT"`

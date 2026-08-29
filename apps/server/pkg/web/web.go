@@ -70,7 +70,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.mux.ServeHTTP(w, r)
 }
 
-// SetOriginPolicy configures the exact credentialed CORS allowlist before the
+// SetOriginPolicy configures the credentialed CORS allowlist before the
 // application starts serving requests.
 func (a *App) SetOriginPolicy(policy OriginPolicy) {
 	a.origins = policy

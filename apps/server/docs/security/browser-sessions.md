@@ -62,21 +62,24 @@ anonymous request.
 
 ## Browser origin policy
 
-`APP_API_CORS_ALLOWED_ORIGINS` is the exact comma-separated allowlist for
-credentialed browser requests and SSE. Wildcards, opaque `null` origins,
+`APP_API_CORS_ALLOWED_ORIGINS` is the comma-separated allowlist for credentialed
+browser requests and SSE. It accepts exact origins and controlled leading
+subdomain patterns such as `https://*.fortyone.app`. A subdomain pattern matches
+only the configured scheme and child hostnames; it does not match the apex,
+explicit ports, or lookalike domains. Global wildcards, opaque `null` origins,
 userinfo, paths, queries, fragments, and non-HTTP schemes are rejected at
-startup. Production additionally requires HTTPS for every configured origin.
+startup. Production additionally requires HTTPS for every configured entry.
 
-The API does not grant access to every `fortyone.app` subdomain. Add a preview
-or replacement application origin explicitly, deploy the API policy before the
-browser begins using it, and remove the old origin after the transition. CORS
-does not replace authentication, authorization, SameSite cookies, or request
-validation; it is an additional browser boundary.
+The FortyOne application uses the `https://*.fortyone.app` pattern because each
+workspace has its own subdomain. CORS does not replace authentication,
+authorization, SameSite cookies, or request validation; it is an additional
+browser boundary.
 
 Unsafe requests that carry `fortyone_session` also pass the global browser
 origin middleware. A configured `Origin` is required; when older same-origin
 browser behavior omits it, only `Sec-Fetch-Site: same-origin` is accepted.
-`same-site` is deliberately denied so a sibling subdomain cannot submit a
-cookie-authenticated form. Requests without the browser cookie (provider
-webhooks and versioned API credentials) continue through their dedicated
-authentication and signature checks.
+`same-site` metadata without an `Origin` is deliberately denied; a permitted
+workspace request must carry an origin that matches the configured policy.
+Requests without the browser cookie (provider webhooks and versioned API
+credentials) continue through their dedicated authentication and signature
+checks.

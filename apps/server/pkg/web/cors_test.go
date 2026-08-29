@@ -36,6 +36,38 @@ func TestOriginPolicyUsesExactConfiguredOrigins(t *testing.T) {
 	}
 }
 
+func TestOriginPolicyUsesConfiguredSubdomainPattern(t *testing.T) {
+	t.Parallel()
+
+	policy, err := NewOriginPolicy("https://*.fortyone.app")
+	if err != nil {
+		t.Fatalf("new subdomain origin policy: %v", err)
+	}
+	tests := []struct {
+		origin string
+		want   string
+	}{
+		{origin: "https://complexus.fortyone.app", want: "https://complexus.fortyone.app"},
+		{origin: "https://teams.complexus.fortyone.app", want: "https://teams.complexus.fortyone.app"},
+		{origin: "https://COMPLEXUS.FORTYONE.APP", want: "https://COMPLEXUS.FORTYONE.APP"},
+		{origin: "https://fortyone.app"},
+		{origin: "http://complexus.fortyone.app"},
+		{origin: "https://complexus.fortyone.app:8443"},
+		{origin: "https://fortyone.app.attacker.example"},
+		{origin: "https://complexusfortyone.app"},
+	}
+	for _, test := range tests {
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		request.Header.Set("Origin", test.origin)
+		if got := policy.AllowedOrigin(request); got != test.want {
+			t.Errorf("AllowedOrigin(%q) = %q, want %q", test.origin, got, test.want)
+		}
+	}
+	if got := policy.Origins(); len(got) != 1 || got[0] != "https://*.fortyone.app" {
+		t.Fatalf("Origins() = %v, want configured subdomain pattern", got)
+	}
+}
+
 func TestOriginPolicyRejectsUnsafeConfiguration(t *testing.T) {
 	t.Parallel()
 
@@ -43,6 +75,10 @@ func TestOriginPolicyRejectsUnsafeConfiguration(t *testing.T) {
 		"",
 		"*",
 		"null",
+		"https://*",
+		"https://foo*.fortyone.app",
+		"https://*.*.fortyone.app",
+		"https://*.fortyone.app:8443",
 		"ftp://app.fortyone.app",
 		"https://app.fortyone.app/path",
 		"https://app.fortyone.app?query=yes",
@@ -67,7 +103,7 @@ func tooManyOrigins() string {
 func TestOriginPolicyRequiresHTTPSWhenRequested(t *testing.T) {
 	t.Parallel()
 
-	secure, err := NewOriginPolicy("https://app.fortyone.app")
+	secure, err := NewOriginPolicy("https://app.fortyone.app,https://*.fortyone.app")
 	if err != nil {
 		t.Fatalf("secure policy: %v", err)
 	}
