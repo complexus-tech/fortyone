@@ -23,7 +23,7 @@
 ## Environment & Setup
 
 - Node.js `>=18` and `pnpm@9.3.0`.
-- Go `1.25.0` for `apps/server` (see `apps/server/go.mod` and `.go-version`).
+- Go `1.25.14` for `apps/server` (see `apps/server/go.mod` and `.go-version`).
 - Docker is required for production API/worker image builds. Local development
   uses internally approved PostgreSQL and Redis endpoints; there is no supported
   full-stack Compose installation.

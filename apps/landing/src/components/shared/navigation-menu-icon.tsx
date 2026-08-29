@@ -3,6 +3,7 @@ import { cn } from "lib";
 
 export type NavigationIconName =
   | "ai-planning"
+  | "api-reference"
   | "blog"
   | "calendar"
   | "customer-feedback"
@@ -43,6 +44,12 @@ const glyphs: Record<NavigationIconName, ReactNode> = {
       <path d="m10.9 3 .5 1.7a4 4 0 0 0 2.7 2.7l1.7.5-1.7.5a4 4 0 0 0-2.7 2.7l-.5 1.7-.5-1.7a4 4 0 0 0-2.7-2.7L6 7.9l1.7-.5a4 4 0 0 0 2.7-2.7L10.9 3Z" />
       <path d="m5.3 13.1.3.9a2.2 2.2 0 0 0 1.5 1.5l.9.3-.9.3a2.2 2.2 0 0 0-1.5 1.5l-.3.9-.3-.9a2.2 2.2 0 0 0-1.5-1.5l-.9-.3.9-.3A2.2 2.2 0 0 0 5 14l.3-.9Z" />
       <path d="m14.5 14.1.2.6a1.6 1.6 0 0 0 1.1 1.1l.6.2-.6.2a1.6 1.6 0 0 0-1.1 1.1l-.2.6-.2-.6a1.6 1.6 0 0 0-1.1-1.1l-.6-.2.6-.2a1.6 1.6 0 0 0 1.1-1.1l.2-.6Z" />
+    </>
+  ),
+  "api-reference": (
+    <>
+      <path d="m7.2 5.5-4 4.5 4 4.5M12.8 5.5l4 4.5-4 4.5" />
+      <path d="m11.3 3.5-2.6 13" />
     </>
   ),
   blog: (

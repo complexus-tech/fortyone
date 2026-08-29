@@ -840,14 +840,14 @@ type ClientInterface interface {
 
 	// ListKeyResults List key results visible to the actor
 	//
-	// Returns key results through the user credential's current workspace membership, team membership, scope, and optional team restriction. User credentials are personal access tokens or user-authorized OAuth tokens.
+	// Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/key-results (the `ListKeyResults` operationId).
 	ListKeyResults(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListKeyResultsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListLabels List labels visible in one team context
 	//
-	// Returns team and workspace-wide labels after current team membership is verified. A personal access token or user-authorized OAuth token and an explicit team are required in this preview.
+	// Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/labels (the `ListLabels` operationId).
 	ListLabels(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListLabelsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -868,7 +868,7 @@ type ClientInterface interface {
 
 	// ListWorkflowStates List workflow states for one team
 	//
-	// Returns the ordered workflow for a team the personal access token or OAuth grant's user currently belongs to.
+	// Returns the ordered workflow for a team the personal access token's user currently belongs to.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/states (the `ListWorkflowStates` operationId).
 	ListWorkflowStates(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListWorkflowStatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -882,7 +882,7 @@ type ClientInterface interface {
 
 	// CreateStoryWithBody Create a story
 	//
-	// Creates one story with a personal access token, service-account key, or user-authorized OAuth token. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
+	// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -891,7 +891,7 @@ type ClientInterface interface {
 
 	// CreateStory Create a story
 	//
-	// Creates one story with a personal access token, service-account key, or user-authorized OAuth token. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
+	// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -907,14 +907,14 @@ type ClientInterface interface {
 
 	// ListStoryComments List comments on one visible story
 	//
-	// Returns comments only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+	// Returns comments only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments (the `ListStoryComments` operationId).
 	ListStoryComments(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, params *ListStoryCommentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetStoryComment Get one comment on a visible story
 	//
-	// Returns a comment only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+	// Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments/{commentId} (the `GetStoryComment` operationId).
 	GetStoryComment(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, commentId ComponentsCommonCommentId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -928,14 +928,14 @@ type ClientInterface interface {
 
 	// ListWebhookEndpoints List outbound webhook endpoints
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token.
+	// Requires a current workspace administrator personal access token.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/webhook-endpoints (the `ListWebhookEndpoints` operationId).
 	ListWebhookEndpoints(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListWebhookEndpointsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateWebhookEndpointWithBody Register an outbound webhook endpoint
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
+	// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -944,7 +944,7 @@ type ClientInterface interface {
 
 	// CreateWebhookEndpoint Register an outbound webhook endpoint
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
+	// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -953,14 +953,14 @@ type ClientInterface interface {
 
 	// GetWebhookEndpoint Get an outbound webhook endpoint
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token.
+	// Requires a current workspace administrator personal access token.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId} (the `GetWebhookEndpoint` operationId).
 	GetWebhookEndpoint(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DisableWebhookEndpointWithBody Disable an outbound webhook endpoint
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. Disabled endpoints stop receiving newly created deliveries.
+	// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -969,7 +969,7 @@ type ClientInterface interface {
 
 	// DisableWebhookEndpoint Disable an outbound webhook endpoint
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. Disabled endpoints stop receiving newly created deliveries.
+	// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -978,14 +978,14 @@ type ClientInterface interface {
 
 	// RotateWebhookSecret Rotate an endpoint's signing secret
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
+	// Requires a current workspace administrator personal access token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
 	//
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/rotate-secret (the `RotateWebhookSecret` operationId).
 	RotateWebhookSecret(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ReplaceWebhookSubscriptionsWithBody Replace an endpoint's event subscriptions
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. This is a full replacement, not an additive patch.
+	// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -994,7 +994,7 @@ type ClientInterface interface {
 
 	// ReplaceWebhookSubscriptions Replace an endpoint's event subscriptions
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. This is a full replacement, not an additive patch.
+	// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -1021,7 +1021,7 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceId ComponentsCommonW
 
 // ListKeyResults List key results visible to the actor
 //
-// Returns key results through the user credential's current workspace membership, team membership, scope, and optional team restriction. User credentials are personal access tokens or user-authorized OAuth tokens.
+// Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
 //
 // Corresponds with GET /api/v1/workspaces/{workspaceId}/key-results (the `ListKeyResults` operationId).
 func (c *Client) ListKeyResults(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListKeyResultsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1038,7 +1038,7 @@ func (c *Client) ListKeyResults(ctx context.Context, workspaceId ComponentsCommo
 
 // ListLabels List labels visible in one team context
 //
-// Returns team and workspace-wide labels after current team membership is verified. A personal access token or user-authorized OAuth token and an explicit team are required in this preview.
+// Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
 //
 // Corresponds with GET /api/v1/workspaces/{workspaceId}/labels (the `ListLabels` operationId).
 func (c *Client) ListLabels(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListLabelsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1089,7 +1089,7 @@ func (c *Client) ListSprints(ctx context.Context, workspaceId ComponentsCommonWo
 
 // ListWorkflowStates List workflow states for one team
 //
-// Returns the ordered workflow for a team the personal access token or OAuth grant's user currently belongs to.
+// Returns the ordered workflow for a team the personal access token's user currently belongs to.
 //
 // Corresponds with GET /api/v1/workspaces/{workspaceId}/states (the `ListWorkflowStates` operationId).
 func (c *Client) ListWorkflowStates(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListWorkflowStatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1123,7 +1123,7 @@ func (c *Client) ListStories(ctx context.Context, workspaceId ComponentsCommonWo
 
 // CreateStoryWithBody Create a story
 //
-// Creates one story with a personal access token, service-account key, or user-authorized OAuth token. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
+// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1142,7 +1142,7 @@ func (c *Client) CreateStoryWithBody(ctx context.Context, workspaceId Components
 
 // CreateStory Create a story
 //
-// Creates one story with a personal access token, service-account key, or user-authorized OAuth token. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
+// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1178,7 +1178,7 @@ func (c *Client) GetStory(ctx context.Context, workspaceId ComponentsCommonWorks
 
 // ListStoryComments List comments on one visible story
 //
-// Returns comments only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+// Returns comments only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 //
 // Corresponds with GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments (the `ListStoryComments` operationId).
 func (c *Client) ListStoryComments(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, params *ListStoryCommentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1195,7 +1195,7 @@ func (c *Client) ListStoryComments(ctx context.Context, workspaceId ComponentsCo
 
 // GetStoryComment Get one comment on a visible story
 //
-// Returns a comment only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+// Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 //
 // Corresponds with GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments/{commentId} (the `GetStoryComment` operationId).
 func (c *Client) GetStoryComment(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, commentId ComponentsCommonCommentId, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1229,7 +1229,7 @@ func (c *Client) ListTeams(ctx context.Context, workspaceId ComponentsCommonWork
 
 // ListWebhookEndpoints List outbound webhook endpoints
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token.
+// Requires a current workspace administrator personal access token.
 //
 // Corresponds with GET /api/v1/workspaces/{workspaceId}/webhook-endpoints (the `ListWebhookEndpoints` operationId).
 func (c *Client) ListWebhookEndpoints(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListWebhookEndpointsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1246,7 +1246,7 @@ func (c *Client) ListWebhookEndpoints(ctx context.Context, workspaceId Component
 
 // CreateWebhookEndpointWithBody Register an outbound webhook endpoint
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
+// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1265,7 +1265,7 @@ func (c *Client) CreateWebhookEndpointWithBody(ctx context.Context, workspaceId 
 
 // CreateWebhookEndpoint Register an outbound webhook endpoint
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
+// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1284,7 +1284,7 @@ func (c *Client) CreateWebhookEndpoint(ctx context.Context, workspaceId Componen
 
 // GetWebhookEndpoint Get an outbound webhook endpoint
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token.
+// Requires a current workspace administrator personal access token.
 //
 // Corresponds with GET /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId} (the `GetWebhookEndpoint` operationId).
 func (c *Client) GetWebhookEndpoint(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1301,7 +1301,7 @@ func (c *Client) GetWebhookEndpoint(ctx context.Context, workspaceId ComponentsC
 
 // DisableWebhookEndpointWithBody Disable an outbound webhook endpoint
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. Disabled endpoints stop receiving newly created deliveries.
+// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1320,7 +1320,7 @@ func (c *Client) DisableWebhookEndpointWithBody(ctx context.Context, workspaceId
 
 // DisableWebhookEndpoint Disable an outbound webhook endpoint
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. Disabled endpoints stop receiving newly created deliveries.
+// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1339,7 +1339,7 @@ func (c *Client) DisableWebhookEndpoint(ctx context.Context, workspaceId Compone
 
 // RotateWebhookSecret Rotate an endpoint's signing secret
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
+// Requires a current workspace administrator personal access token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
 //
 // Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/rotate-secret (the `RotateWebhookSecret` operationId).
 func (c *Client) RotateWebhookSecret(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1356,7 +1356,7 @@ func (c *Client) RotateWebhookSecret(ctx context.Context, workspaceId Components
 
 // ReplaceWebhookSubscriptionsWithBody Replace an endpoint's event subscriptions
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. This is a full replacement, not an additive patch.
+// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1375,7 +1375,7 @@ func (c *Client) ReplaceWebhookSubscriptionsWithBody(ctx context.Context, worksp
 
 // ReplaceWebhookSubscriptions Replace an endpoint's event subscriptions
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. This is a full replacement, not an additive patch.
+// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2607,7 +2607,7 @@ type ClientWithResponsesInterface interface {
 
 	// ListKeyResultsWithResponse List key results visible to the actor
 	//
-	// Returns key results through the user credential's current workspace membership, team membership, scope, and optional team restriction. User credentials are personal access tokens or user-authorized OAuth tokens.
+	// Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2616,7 +2616,7 @@ type ClientWithResponsesInterface interface {
 
 	// ListLabelsWithResponse List labels visible in one team context
 	//
-	// Returns team and workspace-wide labels after current team membership is verified. A personal access token or user-authorized OAuth token and an explicit team are required in this preview.
+	// Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2643,7 +2643,7 @@ type ClientWithResponsesInterface interface {
 
 	// ListWorkflowStatesWithResponse List workflow states for one team
 	//
-	// Returns the ordered workflow for a team the personal access token or OAuth grant's user currently belongs to.
+	// Returns the ordered workflow for a team the personal access token's user currently belongs to.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2661,7 +2661,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreateStoryWithBodyWithResponse Create a story
 	//
-	// Creates one story with a personal access token, service-account key, or user-authorized OAuth token. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
+	// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -2670,7 +2670,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreateStoryWithResponse Create a story
 	//
-	// Creates one story with a personal access token, service-account key, or user-authorized OAuth token. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
+	// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -2688,7 +2688,7 @@ type ClientWithResponsesInterface interface {
 
 	// ListStoryCommentsWithResponse List comments on one visible story
 	//
-	// Returns comments only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+	// Returns comments only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2697,7 +2697,7 @@ type ClientWithResponsesInterface interface {
 
 	// GetStoryCommentWithResponse Get one comment on a visible story
 	//
-	// Returns a comment only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+	// Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2715,7 +2715,7 @@ type ClientWithResponsesInterface interface {
 
 	// ListWebhookEndpointsWithResponse List outbound webhook endpoints
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token.
+	// Requires a current workspace administrator personal access token.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2724,7 +2724,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreateWebhookEndpointWithBodyWithResponse Register an outbound webhook endpoint
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
+	// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -2733,7 +2733,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreateWebhookEndpointWithResponse Register an outbound webhook endpoint
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
+	// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -2742,7 +2742,7 @@ type ClientWithResponsesInterface interface {
 
 	// GetWebhookEndpointWithResponse Get an outbound webhook endpoint
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token.
+	// Requires a current workspace administrator personal access token.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2751,7 +2751,7 @@ type ClientWithResponsesInterface interface {
 
 	// DisableWebhookEndpointWithBodyWithResponse Disable an outbound webhook endpoint
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. Disabled endpoints stop receiving newly created deliveries.
+	// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -2760,7 +2760,7 @@ type ClientWithResponsesInterface interface {
 
 	// DisableWebhookEndpointWithResponse Disable an outbound webhook endpoint
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. Disabled endpoints stop receiving newly created deliveries.
+	// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -2769,7 +2769,7 @@ type ClientWithResponsesInterface interface {
 
 	// RotateWebhookSecretWithResponse Rotate an endpoint's signing secret
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
+	// Requires a current workspace administrator personal access token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2778,7 +2778,7 @@ type ClientWithResponsesInterface interface {
 
 	// ReplaceWebhookSubscriptionsWithBodyWithResponse Replace an endpoint's event subscriptions
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. This is a full replacement, not an additive patch.
+	// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -2787,7 +2787,7 @@ type ClientWithResponsesInterface interface {
 
 	// ReplaceWebhookSubscriptionsWithResponse Replace an endpoint's event subscriptions
 	//
-	// Requires a current workspace administrator personal access token or user-authorized OAuth token. This is a full replacement, not an additive patch.
+	// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -5581,7 +5581,7 @@ func (c *ClientWithResponses) GetWorkspaceWithResponse(ctx context.Context, work
 
 // ListKeyResultsWithResponse List key results visible to the actor
 //
-// Returns key results through the user credential's current workspace membership, team membership, scope, and optional team restriction. User credentials are personal access tokens or user-authorized OAuth tokens.
+// Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5596,7 +5596,7 @@ func (c *ClientWithResponses) ListKeyResultsWithResponse(ctx context.Context, wo
 
 // ListLabelsWithResponse List labels visible in one team context
 //
-// Returns team and workspace-wide labels after current team membership is verified. A personal access token or user-authorized OAuth token and an explicit team are required in this preview.
+// Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5641,7 +5641,7 @@ func (c *ClientWithResponses) ListSprintsWithResponse(ctx context.Context, works
 
 // ListWorkflowStatesWithResponse List workflow states for one team
 //
-// Returns the ordered workflow for a team the personal access token or OAuth grant's user currently belongs to.
+// Returns the ordered workflow for a team the personal access token's user currently belongs to.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5671,7 +5671,7 @@ func (c *ClientWithResponses) ListStoriesWithResponse(ctx context.Context, works
 
 // CreateStoryWithBodyWithResponse Create a story
 //
-// Creates one story with a personal access token, service-account key, or user-authorized OAuth token. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
+// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5686,7 +5686,7 @@ func (c *ClientWithResponses) CreateStoryWithBodyWithResponse(ctx context.Contex
 
 // CreateStoryWithResponse Create a story
 //
-// Creates one story with a personal access token, service-account key, or user-authorized OAuth token. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
+// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5716,7 +5716,7 @@ func (c *ClientWithResponses) GetStoryWithResponse(ctx context.Context, workspac
 
 // ListStoryCommentsWithResponse List comments on one visible story
 //
-// Returns comments only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+// Returns comments only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5731,7 +5731,7 @@ func (c *ClientWithResponses) ListStoryCommentsWithResponse(ctx context.Context,
 
 // GetStoryCommentWithResponse Get one comment on a visible story
 //
-// Returns a comment only after the personal access token or OAuth grant's user can currently read the owning story and team. Both comments:read and stories:read are required.
+// Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5761,7 +5761,7 @@ func (c *ClientWithResponses) ListTeamsWithResponse(ctx context.Context, workspa
 
 // ListWebhookEndpointsWithResponse List outbound webhook endpoints
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token.
+// Requires a current workspace administrator personal access token.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5776,7 +5776,7 @@ func (c *ClientWithResponses) ListWebhookEndpointsWithResponse(ctx context.Conte
 
 // CreateWebhookEndpointWithBodyWithResponse Register an outbound webhook endpoint
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
+// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5791,7 +5791,7 @@ func (c *ClientWithResponses) CreateWebhookEndpointWithBodyWithResponse(ctx cont
 
 // CreateWebhookEndpointWithResponse Register an outbound webhook endpoint
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
+// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5806,7 +5806,7 @@ func (c *ClientWithResponses) CreateWebhookEndpointWithResponse(ctx context.Cont
 
 // GetWebhookEndpointWithResponse Get an outbound webhook endpoint
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token.
+// Requires a current workspace administrator personal access token.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5821,7 +5821,7 @@ func (c *ClientWithResponses) GetWebhookEndpointWithResponse(ctx context.Context
 
 // DisableWebhookEndpointWithBodyWithResponse Disable an outbound webhook endpoint
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. Disabled endpoints stop receiving newly created deliveries.
+// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5836,7 +5836,7 @@ func (c *ClientWithResponses) DisableWebhookEndpointWithBodyWithResponse(ctx con
 
 // DisableWebhookEndpointWithResponse Disable an outbound webhook endpoint
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. Disabled endpoints stop receiving newly created deliveries.
+// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5851,7 +5851,7 @@ func (c *ClientWithResponses) DisableWebhookEndpointWithResponse(ctx context.Con
 
 // RotateWebhookSecretWithResponse Rotate an endpoint's signing secret
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
+// Requires a current workspace administrator personal access token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5866,7 +5866,7 @@ func (c *ClientWithResponses) RotateWebhookSecretWithResponse(ctx context.Contex
 
 // ReplaceWebhookSubscriptionsWithBodyWithResponse Replace an endpoint's event subscriptions
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. This is a full replacement, not an additive patch.
+// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5881,7 +5881,7 @@ func (c *ClientWithResponses) ReplaceWebhookSubscriptionsWithBodyWithResponse(ct
 
 // ReplaceWebhookSubscriptionsWithResponse Replace an endpoint's event subscriptions
 //
-// Requires a current workspace administrator personal access token or user-authorized OAuth token. This is a full replacement, not an additive patch.
+// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
