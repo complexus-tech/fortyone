@@ -126,7 +126,7 @@ first page and stop at the service's 1,000-comment safety limit.
 Clients that may retry a comment write must send exactly one stable header:
 
 ```http
-Idempotency-Key: 01JQ4N7X5M9FQ25M3P0N9H8K6C
+Idempotency-Key: <stable-operation-id>
 ```
 
 The key is scoped to operation, workspace, actor, and story/request. Reusing

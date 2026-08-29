@@ -126,7 +126,7 @@ func TestValidateRuntimeConfigRejectsSemanticDevelopmentVaultKeys(t *testing.T) 
 func TestValidateRuntimeConfigRejectsVaultReuseOfApplicationSecrets(t *testing.T) {
 	t.Parallel()
 
-	const reusedSecret = "0123456789abcdef0123456789abcdef"
+	const reusedSecret = "0123456789abcdef0123456789abcdef" // gitleaks:allow -- deterministic key-reuse test vector
 	tests := map[string]struct {
 		configName string
 		configure  func(*Config)

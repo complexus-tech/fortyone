@@ -71,7 +71,7 @@ func TestSubscriptionCreatedReconcilesCurrentProviderSnapshotAtCreatedPriority(t
 	repository := &eventRepositoryStub{}
 	service := &Service{
 		repo:         repository,
-		stripeClient: client.New("sk_test_subscriptions", backends),
+		stripeClient: client.New("test-stripe-key", backends),
 		log:          logger.NewWithText(io.Discard, slog.LevelError, "subscriptions-event-test"),
 	}
 
