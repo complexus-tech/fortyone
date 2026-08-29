@@ -206,9 +206,18 @@ func (q *Queries) RecordStoryMutationApplyFailure(ctx context.Context, arg Recor
 const transitionStoryMutationConfirmation = `-- name: TransitionStoryMutationConfirmation :execrows
 UPDATE messaging_story_mutation_confirmations
 SET status = $1,
-    applied_at = CASE WHEN $1 = 'applied' THEN $2 ELSE NULL END,
-    cancelled_at = CASE WHEN $1 = 'cancelled' THEN $2 ELSE NULL END,
-    expired_at = CASE WHEN $1 = 'expired' THEN $2 ELSE NULL END,
+    applied_at = CASE
+        WHEN $1 = 'applied' THEN CAST($2 AS timestamptz)
+        ELSE NULL
+    END,
+    cancelled_at = CASE
+        WHEN $1 = 'cancelled' THEN CAST($2 AS timestamptz)
+        ELSE NULL
+    END,
+    expired_at = CASE
+        WHEN $1 = 'expired' THEN CAST($2 AS timestamptz)
+        ELSE NULL
+    END,
     proposal = CASE
         WHEN $1 IN ('cancelled', 'expired') THEN NULL
         ELSE proposal
@@ -220,7 +229,7 @@ WHERE confirmation_id = $3
 
 type TransitionStoryMutationConfirmationParams struct {
 	Status         string
-	Now            *time.Time
+	Now            time.Time
 	ConfirmationID uuid.UUID
 	CurrentStatus  string
 }
