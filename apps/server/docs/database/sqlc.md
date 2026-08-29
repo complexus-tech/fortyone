@@ -329,7 +329,10 @@ The supported modes are `disable`, `require`, `verify-ca`, and `verify-full`.
 Explicit `require` is rejected unless a root certificate is supplied, because
 plain `require` encrypts traffic without authenticating the server. The legacy
 `APP_DB_DISABLE_TLS` setting is read only when `APP_DB_SSL_MODE` is empty: `true`
-maps to `disable`, while `false` now maps to authenticated `verify-full`.
+maps to `disable`, while `false` preserves the legacy encrypted `require` mode
+for deployment compatibility. External production deployments should set
+`APP_DB_SSL_MODE=verify-full` explicitly when their database certificate chain
+is available to the runtime.
 The direct `make migrate-*` commands resolve `APP_DB_*` through the same Go
 connection-string builder, including credential escaping, SSL-mode validation,
 and private root certificates. The helper loads `.env` strictly and aborts on a

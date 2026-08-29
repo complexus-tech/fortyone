@@ -90,7 +90,7 @@ func connectionSecurity(cfg Config) (string, string, error) {
 	}
 	explicit := mode != ""
 	if !explicit {
-		mode = "verify-full"
+		mode = "require"
 		if cfg.DisableTLS {
 			mode = "disable"
 		}

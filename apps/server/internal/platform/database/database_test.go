@@ -112,7 +112,7 @@ func TestConnectionStringRejectsRootCertificateWithDisabledTLS(t *testing.T) {
 	}
 }
 
-func TestConnectionStringDefaultsToAuthenticatedTLS(t *testing.T) {
+func TestConnectionStringPreservesLegacyEncryptedTLSFallback(t *testing.T) {
 	connectionString, err := ConnectionString(Config{
 		Host:     "database.example.com",
 		Port:     "5432",
@@ -127,8 +127,11 @@ func TestConnectionStringDefaultsToAuthenticatedTLS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse connection string: %v", err)
 	}
-	if got := connectionURL.Query().Get("sslmode"); got != "verify-full" {
-		t.Fatalf("sslmode = %q, want verify-full", got)
+	if got := connectionURL.Query().Get("sslmode"); got != "require" {
+		t.Fatalf("sslmode = %q, want require", got)
+	}
+	if got := connectionURL.Query().Get("sslrootcert"); got != "" {
+		t.Fatalf("sslrootcert = %q, want empty", got)
 	}
 }
 
