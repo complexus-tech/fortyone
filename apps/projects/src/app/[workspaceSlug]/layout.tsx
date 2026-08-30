@@ -45,7 +45,7 @@ export default async function RootLayout({
 
   // First try to find workspace
   const workspace = workspaces.find(
-    (w) => w.slug.toLowerCase() === workspaceSlug?.toLowerCase(),
+    (w) => w.slug.toLowerCase() === workspaceSlug.toLowerCase(),
   );
 
   if (!workspace) {

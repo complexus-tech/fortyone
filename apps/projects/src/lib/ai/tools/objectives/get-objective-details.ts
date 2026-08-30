@@ -12,7 +12,10 @@ export const getObjectiveDetailsTool = tool({
       .describe("Objective ID to get details for (required)"),
   }),
 
-  execute: async ({ objectiveId }, { experimental_context }) => {
+  execute: async (
+    { objectiveId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
       if (!session) {
@@ -22,7 +25,7 @@ export const getObjectiveDetailsTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

@@ -1,55 +1,13 @@
 "use client";
 import {
-  useEffect,
-  useState,
   useReducer,
-  useMemo,
   useRef,
+  useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Box,
-  Button,
-  Dialog,
-  Flex,
-  Switch,
-  Text,
-  TextEditor,
-  DatePicker,
-  Menu,
-  Tooltip,
-  Avatar,
-  Wrapper,
-  Divider,
-} from "ui";
-import { useEditor } from "@tiptap/react";
-import Placeholder from "@tiptap/extension-placeholder";
-import Document from "@tiptap/extension-document";
-import Paragraph from "@tiptap/extension-paragraph";
-import TextExt from "@tiptap/extension-text";
 import { useQueryClient } from "@tanstack/react-query";
-import { marked } from "marked";
-import {
-  CalendarIcon,
-  CheckIcon,
-  CloseIcon,
-  MaximizeIcon,
-  MinimizeIcon,
-  PlusIcon,
-  ObjectiveIcon,
-  SprintsIcon,
-  CrownIcon,
-  ArrowRight2Icon,
-  EstimateIcon,
-  Time02Icon,
-  TimeScheduleIcon,
-  TagsIcon,
-} from "icons";
-import { toast } from "sonner";
-import { addDays, format, formatISO } from "date-fns";
-import { cn } from "lib";
 import { useSession } from "@/lib/auth/client";
 import {
   useFeatures,
@@ -61,29 +19,13 @@ import {
 } from "@/hooks";
 import { useDebouncedCallback } from "@/hooks/debounce";
 import type { Team } from "@/modules/teams/types";
-import type { DetailedStory, NewStory } from "@/modules/story/types";
+import type { DetailedStory } from "@/modules/story/types";
 import type { StoryPriority } from "@/modules/stories/types";
 import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
 import { useStoryDescriptionMedia } from "@/modules/story/hooks/use-story-description-media";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useLabels } from "@/lib/hooks/labels";
-import { DEFAULT_ESTIMATE_SCHEME, formatEstimate } from "@/lib/estimate";
-import {
-  DEFAULT_TIME_NEEDED_MINUTES,
-  formatTimeNeeded,
-} from "@/lib/time-needed";
-import {
-  getNewStoryAutoSchedulingEnabled,
-  isMayaAssigneeSelection,
-} from "@/lib/auto-scheduling";
-import { createRichTextExtensions } from "@/lib/tiptap/rich-text-extensions";
-import {
-  clearRichTextContent,
-  getPersistableRichTextContent,
-  RICH_TEXT_MEDIA_ACCEPT,
-} from "@/lib/tiptap/rich-text-media";
-import { RichTextTableMenu } from "@/lib/tiptap/rich-text-table-menu";
-import { AssigneesMenu } from "@/components/ui/story/assignees-menu";
+import { DEFAULT_ESTIMATE_SCHEME } from "@/lib/estimate";
 import { useMayaAssignee, useMembers } from "@/lib/hooks/members";
 import { useJoinedTeams } from "@/modules/teams/hooks/teams";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
@@ -95,115 +37,42 @@ import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
 import { useTotalStories } from "@/modules/stories/hooks/total-stories";
 import { useLinkFigmaStory } from "@/lib/hooks/figma";
 import type { FigmaArtifact } from "@/modules/settings/workspace/integrations/figma/types";
-import type { FigmaDescription } from "@/modules/settings/workspace/integrations/figma/description";
 import { storyKeys } from "@/modules/stories/constants";
 import { useSimilarStories } from "@/modules/search/hooks/use-similar-stories";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import { MINIMUM_SIMILARITY_TITLE_CHARACTERS } from "@/constants/similarity";
-import { StoryRowPreview } from "./story/row";
-import { SimilarItemsPanel } from "./similar-items-panel";
-import { PriorityIcon } from "./priority-icon";
-import { PrioritiesMenu } from "./story/priorities-menu";
-import { StoryStatusIcon } from "./story-status-icon";
-import { StatusesMenu } from "./story/statuses-menu";
-import { TeamColor } from "./team-color";
-import { ObjectiveKeyResultMenu } from "./story/objective-key-result-menu";
-import { SprintsMenu } from "./story/sprints-menu";
-import { EstimateMenu } from "./story/estimate-menu";
-import { TimeNeededMenu } from "./story/time-needed-menu";
-import { AutoSchedulingMenu } from "./story/auto-scheduling-menu";
-import { LabelsMenu } from "./story/labels-menu";
-import { FeatureGuard } from "./feature-guard";
-import { NewStoryFigmaSource } from "./new-story-figma-source";
+import { NewStoryDialogContent } from "./new-story-dialog-content";
 import {
-  buildNewStoryDialogPayload,
-  getDeadlineForSprintSelection,
+  createInitialNewStoryDialogForm,
   getInitialDeadlineSource,
-  runStoryCreatedFollowUp,
+  storyFormReducer,
   toDateOnly,
   type DeadlineSource,
 } from "./new-story-dialog-form";
+import { useNewStoryDialogCreation } from "./use-new-story-dialog-creation";
+import { useNewStoryDialogEditors } from "./use-new-story-dialog-editors";
+import { useNewStoryDialogInitialization } from "./use-new-story-dialog-initialization";
+import {
+  useMayaAutoScheduling,
+  useNewStoryDialogLifecycle,
+} from "./use-new-story-dialog-lifecycle";
+import { NewStoryDialogLimitGuard } from "./new-story-dialog-limit-guard";
+import {
+  getNewStoryDialogFieldSelections,
+  getSelectedNewStoryLabels,
+} from "./new-story-dialog-selections";
 
-type StoryFormAction =
-  | { type: "INITIALIZE"; payload: NewStory }
-  | {
-      type: "SET_FIELD";
-      field: keyof NewStory;
-      value: NewStory[keyof NewStory];
-    }
-  | { type: "RESET_FORM"; payload: NewStory }
-  | { type: "PATCH_FORM"; payload: Partial<NewStory> }
-  | { type: "SYNC_TEAM_STATUS"; teamId: string; statusId: string };
-
-const attachFigmaDesigns = async ({
-  artifacts,
-  linkDesign,
-  storyId,
-}: {
-  artifacts: FigmaArtifact[];
-  linkDesign: (input: { storyId: string; url: string }) => Promise<unknown>;
-  storyId: string;
-}) => {
-  const results = await Promise.allSettled(
-    artifacts.map((artifact) =>
-      linkDesign({ storyId, url: artifact.canonicalUrl }),
-    ),
-  );
-  const failedArtifacts = artifacts.filter(
-    (_, index) => results[index]?.status === "rejected",
-  );
-  const attachedCount = artifacts.length - failedArtifacts.length;
-
-  if (failedArtifacts.length === 0) {
-    toast.success(
-      `${artifacts.length} Figma design${artifacts.length === 1 ? "" : "s"} attached`,
-    );
-    return;
-  }
-
-  toast.error(
-    failedArtifacts.length === artifacts.length
-      ? "Figma designs could not be attached"
-      : `${attachedCount} of ${artifacts.length} Figma designs attached`,
-    {
-      description:
-        "The story was created. Retry the remaining design attachments.",
-      action: {
-        label: "Retry",
-        onClick: () => {
-          void attachFigmaDesigns({
-            artifacts: failedArtifacts,
-            linkDesign,
-            storyId,
-          });
-        },
-      },
-    },
-  );
-};
-
-const storyFormReducer = (
-  state: NewStory,
-  action: StoryFormAction,
-): NewStory => {
-  switch (action.type) {
-    case "INITIALIZE":
-      return action.payload;
-    case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
-    case "PATCH_FORM":
-      return { ...state, ...action.payload };
-    case "SYNC_TEAM_STATUS":
-      return {
-        ...state,
-        teamId: action.teamId,
-        statusId: action.statusId,
-      };
-    case "RESET_FORM":
-      return action.payload;
-    default:
-      return state;
-  }
+type NewStoryDialogProps = {
+  isOpen: boolean;
+  setIsOpen: Dispatch<SetStateAction<boolean>>;
+  statusId?: string;
+  teamId?: string;
+  objectiveId?: string;
+  sprintId?: string;
+  priority?: StoryPriority;
+  assigneeId?: string | null;
+  description?: string;
+  onCreated?: (story: DetailedStory) => Promise<void> | void;
 };
 
 export const NewStoryDialog = ({
@@ -217,18 +86,7 @@ export const NewStoryDialog = ({
   sprintId,
   description,
   onCreated,
-}: {
-  isOpen: boolean;
-  setIsOpen: Dispatch<SetStateAction<boolean>>;
-  statusId?: string;
-  teamId?: string;
-  objectiveId?: string;
-  sprintId?: string;
-  priority?: StoryPriority;
-  assigneeId?: string | null;
-  description?: string;
-  onCreated?: (story: DetailedStory) => Promise<void> | void;
-}) => {
+}: NewStoryDialogProps) => {
   const router = useRouter();
   const session = useSession();
   const { userRole } = useUserRole();
@@ -287,49 +145,26 @@ export const NewStoryDialog = ({
     useMayaAssignee(isOpen && canUseBackgroundMaya);
   const currentUserId = session.data?.user.id ?? null;
   const autoAssignedUserId = autoAssignSelf ? currentUserId : null;
-  const initialForm: NewStory = useMemo(
-    () => ({
-      title: "",
-      description: "",
-      descriptionHTML: "",
-      teamId: currentTeamId,
-      statusId: defaultStatus?.id,
-      endDate: initialSprintEndDate,
-      startDate: null,
-      assigneeId: assigneeId !== undefined ? assigneeId : autoAssignedUserId,
-      priority,
-      objectiveId: objectiveId || null,
-      keyResultId: null,
-      sprintId: sprintId || null,
-      estimateValue: null,
-      estimatedDurationMinutes: DEFAULT_TIME_NEEDED_MINUTES,
-      minimumFocusBlockMinutes: null,
-      autoSchedulingEnabled: autoSchedulingDefaultEnabled,
-      autoSchedulingLocked: false,
-      labelIds: [],
-    }),
-    [
-      currentTeamId,
-      defaultStatus?.id,
+  const getInitialForm = () =>
+    createInitialNewStoryDialogForm({
       assigneeId,
       autoAssignedUserId,
       autoSchedulingDefaultEnabled,
-      priority,
+      currentTeamId,
+      endDate: initialSprintEndDate,
       objectiveId,
+      priority,
       sprintId,
-      initialSprintEndDate,
-    ],
-  );
+      statusId: defaultStatus?.id,
+    });
+  const initialForm = getInitialForm();
 
   const [storyForm, dispatch] = useReducer(storyFormReducer, initialForm);
   const deadlineSourceRef = useRef<DeadlineSource>(initialDeadlineSource);
-  const [loading, setLoading] = useState(false);
   const [createMore, setCreateMore] = useState(false);
   const [storyTitle, setStoryTitle] = useState("");
   const [storySearchQuery, setStorySearchQuery] = useState("");
   const [figmaArtifacts, setFigmaArtifacts] = useState<FigmaArtifact[]>([]);
-  const assigneeButtonRef = useRef<HTMLButtonElement>(null);
-  const timeNeededButtonRef = useRef<HTMLButtonElement>(null);
   const mutation = useCreateStoryMutation();
   const linkFigmaStory = useLinkFigmaStory();
   const {
@@ -340,31 +175,24 @@ export const NewStoryDialog = ({
     openMediaPicker,
     resetForNextStory,
   } = useStoryDescriptionMedia();
-  const objective = objectives.find((o) => o.id === storyForm.objectiveId);
   const { data: keyResults = [] } = useKeyResults(
     storyForm.objectiveId ?? "",
     Boolean(storyForm.objectiveId && storyForm.keyResultId),
   );
-  const keyResult = keyResults.find(({ id }) => id === storyForm.keyResultId);
-  const strategyLinkLabel = keyResult
-    ? `${currentTeam?.code}-${objective?.sequenceId} / ${keyResult.name}`
-    : objective?.name;
-  const sprint = sprints.find((s) => s.id === storyForm.sprintId);
-  const member =
-    mayaAssignee?.id === storyForm.assigneeId
-      ? mayaAssignee
-      : members.find((m) => m.id === storyForm.assigneeId);
-  const isMayaAssigned = isMayaAssigneeSelection(
-    storyForm.assigneeId,
-    mayaAssignee?.id,
+  const { isMayaAssigned, member, sprint, strategyLinkLabel } =
+    getNewStoryDialogFieldSelections({
+      currentTeamCode: currentTeam?.code,
+      keyResults,
+      mayaAssignee,
+      members,
+      objectives,
+      sprints,
+      storyForm,
+    });
+  const selectedLabels = getSelectedNewStoryLabels(
+    allLabels,
+    storyForm.labelIds,
   );
-  const selectedLabelIds = storyForm.labelIds ?? [];
-  const selectedLabels = allLabels.filter((label) =>
-    selectedLabelIds.includes(label.id),
-  );
-  const teamCodeById = new Map(teams.map((team) => [team.id, team.code]));
-  const statusById = new Map(statuses.map((status) => [status.id, status]));
-  const memberById = new Map(members.map((member) => [member.id, member]));
   const { callback: searchSimilarStories, cancel: cancelStorySearch } =
     useDebouncedCallback(setStorySearchQuery, 300);
   const similarStories = useSimilarStories({
@@ -378,1000 +206,172 @@ export const NewStoryDialog = ({
   const similarStoryItems =
     storyTitle.trim() === storySearchQuery ? similarStories.data ?? [] : [];
 
-  const titleEditor = useEditor({
-    extensions: [
-      Document,
-      Paragraph,
-      TextExt,
-      Placeholder.configure({ placeholder: "Enter title..." }),
-    ],
-    content: "",
-    editable: true,
-    autofocus: true,
-    immediatelyRender: false,
-    onUpdate: ({ editor }) => {
-      setStoryTitle(editor.getText());
+  const storyTerm = getTermDisplay("storyTerm");
+  const storyTermCapitalized = getTermDisplay("storyTerm", {
+    capitalize: true,
+  });
+  const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
+  const { descriptionEditor: editor, titleEditor } = useNewStoryDialogEditors({
+    description,
+    onMediaFiles: handleMediaFiles,
+    onMediaRequest: openMediaPicker,
+    onStoryTitleChange: setStoryTitle,
+    storyTerm: storyTermCapitalized,
+  });
+  const { handleCreateStory, isCreating } = useNewStoryDialogCreation({
+    createMore,
+    currentTeamId,
+    editor,
+    figmaArtifacts,
+    finalizeStagedMedia,
+    isMayaAssigneeLoading,
+    linkFigmaStory: linkFigmaStory.mutateAsync,
+    mayaAssigneeId: mayaAssignee?.id,
+    mutateStory: mutation.mutateAsync,
+    onCreated,
+    onDialogClose: () => {
+      setIsOpen(false);
+      setIsExpanded(false);
     },
-  });
-
-  const editor = useEditor({
-    extensions: createRichTextExtensions({
-      onMediaFiles: handleMediaFiles,
-      onMediaRequest: openMediaPicker,
-      placeholder: `${getTermDisplay("storyTerm", { capitalize: true })} description — type / for commands`,
-    }),
-    content: marked.parse(description || "", {
-      gfm: true,
-    }),
-    editable: true,
-    immediatelyRender: false,
-  });
-
-  const addFigmaDescription = (description: FigmaDescription) => {
-    if (!editor) return;
-    const listSection = (heading: string, items: string[]) =>
-      items.length > 0
-        ? [
-            {
-              type: "heading",
-              attrs: { level: 3 },
-              content: [{ type: "text", text: heading }],
-            },
-            {
-              type: "bulletList",
-              content: items.map((text) => ({
-                type: "listItem",
-                content: [
-                  {
-                    type: "paragraph",
-                    content: [{ type: "text", text }],
-                  },
-                ],
-              })),
-            },
-          ]
-        : [];
-    editor
-      .chain()
-      .focus()
-      .insertContent([
-        {
-          type: "heading",
-          attrs: { level: 3 },
-          content: [{ type: "text", text: "Overview" }],
-        },
-        {
-          type: "paragraph",
-          content: [{ type: "text", text: description.overview }],
-        },
-        ...listSection("Requirements", description.requirements),
-        ...listSection("Acceptance criteria", description.acceptanceCriteria),
-        ...listSection("Implementation notes", description.implementationNotes),
-      ])
-      .run();
-  };
-
-  const handleCreateStory = async () => {
-    if (!titleEditor || !editor) return;
-    if (isMayaAssigneeLoading) return;
-    if (!titleEditor.getText()) {
-      titleEditor.commands.focus();
-      toast.warning("Validation Error", {
-        description: "Title is required",
-      });
-      return;
-    }
-    setLoading(true);
-    const selectedFigmaArtifacts = figmaArtifacts;
-
-    const initialContent = getPersistableRichTextContent(editor);
-    const newStory = buildNewStoryDialogPayload({
-      currentTeamId,
-      description: initialContent.contentText,
-      descriptionHTML: initialContent.contentHtml,
-      mayaAssigneeId: mayaAssignee?.id,
-      storyForm,
-      title: titleEditor.getText(),
-    });
-
-    const creation = (async () => {
-      const createdStory = await mutation.mutateAsync(newStory);
-      let finalizedContent: Awaited<ReturnType<typeof finalizeStagedMedia>> =
-        null;
-      try {
-        finalizedContent = await finalizeStagedMedia(createdStory.id, editor);
-      } catch (error) {
-        toast.error(
-          `${getTermDisplay("storyTerm", { capitalize: true })} created, but media could not be finalized`,
-          {
-            description:
-              error instanceof Error
-                ? error.message
-                : "The description media could not be saved.",
-          },
-        );
-      }
-
-      const committedStory = finalizedContent
-        ? {
-            ...createdStory,
-            description: finalizedContent.contentText,
-            descriptionHTML: finalizedContent.contentHtml,
-          }
-        : createdStory;
-
-      if (!createMore) {
-        setIsOpen(false);
-        setIsExpanded(false);
-      }
-      titleEditor.commands.setContent("");
-      setStoryTitle("");
-      clearRichTextContent(editor);
-      resetForNextStory();
-      dispatch({ type: "RESET_FORM", payload: initialForm });
+    onFigmaArtifactsReset: () => {
       setFigmaArtifacts([]);
+    },
+    onFormReset: () => {
+      dispatch({ type: "RESET_FORM", payload: getInitialForm() });
+    },
+    onFreeStoryCreated:
+      tier === "free"
+        ? () => {
+            void queryClient.invalidateQueries({
+              queryKey: storyKeys.total(workspaceSlug),
+            });
+          }
+        : undefined,
+    onResetDeadlineSource: () => {
       deadlineSourceRef.current = initialDeadlineSource;
-      if (tier === "free") {
-        void queryClient.invalidateQueries({
-          queryKey: storyKeys.total(workspaceSlug),
-        });
-      }
+    },
+    resetStagedMedia: resetForNextStory,
+    setStoryTitle,
+    storyForm,
+    storyTerm: storyTermCapitalized,
+    titleEditor,
+  });
 
-      const [followUpError] = await Promise.all([
-        runStoryCreatedFollowUp(committedStory, onCreated),
-        selectedFigmaArtifacts.length > 0
-          ? attachFigmaDesigns({
-              artifacts: selectedFigmaArtifacts,
-              linkDesign: linkFigmaStory.mutateAsync,
-              storyId: committedStory.id,
-            })
-          : Promise.resolve(),
-      ]);
-      if (followUpError) {
-        toast.error(
-          `${getTermDisplay("storyTerm", { capitalize: true })} created, but the follow-up action failed`,
-          {
-            description: followUpError.message,
-          },
-        );
-      }
-    })();
+  useNewStoryDialogLifecycle({
+    activeTeamId: activeTeam?.id,
+    cancelStagedUploads,
+    cancelStorySearch,
+    currentTeamId,
+    dispatch,
+    firstTeam,
+    isOpen,
+    searchSimilarStories,
+    setActiveTeam,
+    statusId,
+    storyForm,
+    storyTitle,
+    teamStatuses,
+    teams,
+    titleEditor,
+  });
 
-    await creation.finally(() => {
-      setLoading(false);
-    });
-  };
+  useNewStoryDialogInitialization({
+    assigneeId,
+    autoAssignedUserId,
+    autoSchedulingDefaultEnabled,
+    currentTeamId,
+    deadlineSourceRef,
+    defaultStatusId: defaultStatus?.id,
+    dispatch,
+    initialDeadlineSource,
+    initialSprintEndDate,
+    objectiveId,
+    priority,
+    sprintId,
+  });
 
-  useEffect(() => {
-    const currentStatus = teamStatuses.find(
-      (status) => status.id === storyForm.statusId,
-    );
-    if (!currentStatus && teamStatuses.length > 0 && currentTeamId) {
-      dispatch({
-        type: "SYNC_TEAM_STATUS",
-        teamId: currentTeamId,
-        statusId: teamStatuses[0].id,
-      });
-    }
-  }, [currentTeamId, storyForm.statusId, teamStatuses, statusId]);
-
-  useEffect(() => {
-    if (!teams.find((team) => team.id === activeTeam?.id)) {
-      setActiveTeam(firstTeam);
-    }
-  }, [teams, activeTeam, setActiveTeam, firstTeam]);
-
-  useEffect(() => {
-    if (isOpen && titleEditor) {
-      titleEditor.commands.focus();
-    }
-  }, [isOpen, titleEditor]);
-
-  useEffect(() => {
-    if (!isOpen) cancelStagedUploads();
-  }, [cancelStagedUploads, isOpen]);
-
-  useEffect(() => {
-    if (
-      !isOpen ||
-      storyTitle.trim().length < MINIMUM_SIMILARITY_TITLE_CHARACTERS
-    ) {
-      cancelStorySearch();
-      return;
-    }
-    searchSimilarStories(storyTitle.trim());
-  }, [cancelStorySearch, isOpen, searchSimilarStories, storyTitle]);
-
-  // Initialize form when props change
-  useEffect(() => {
-    dispatch({ type: "INITIALIZE", payload: initialForm });
-    deadlineSourceRef.current = initialDeadlineSource;
-  }, [initialDeadlineSource, initialForm]);
-
-  useEffect(() => {
-    if (isMayaAssigned && !storyForm.autoSchedulingEnabled) {
-      dispatch({
-        type: "PATCH_FORM",
-        payload: { autoSchedulingEnabled: true },
-      });
-    }
-  }, [isMayaAssigned, storyForm.autoSchedulingEnabled]);
+  useMayaAutoScheduling({
+    dispatch,
+    isMayaAssigned,
+    isAutoSchedulingEnabled: storyForm.autoSchedulingEnabled,
+  });
 
   return (
-    <FeatureGuard
-      count={totalStories}
-      fallback={
-        <Dialog open={isOpen}>
-          <Dialog.Content hideClose>
-            <Dialog.Header className="flex items-center gap-2 px-6 pt-6 text-xl">
-              <CrownIcon className="text-warning relative -top-px h-6" />
-              <Dialog.Title>
-                {getTermDisplay("storyTerm", {
-                  capitalize: true,
-                })}{" "}
-                Limit Reached
-              </Dialog.Title>
-            </Dialog.Header>
-            <Dialog.Body>
-              <Text className="mb-4 dark:font-normal" color="muted">
-                You&apos;ve reached the limit of {getLimit("maxStories")}{" "}
-                {getTermDisplay("storyTerm", {
-                  variant: "plural",
-                })}{" "}
-                on your {tier.replace("free", "hobby")} plan.{" "}
-                {userRole === "admin" ? "Upgrade" : "Ask your admin"} to create
-                unlimited {getTermDisplay("storyTerm", { variant: "plural" })}{" "}
-                and unlock premium features.
-              </Text>
-              <Wrapper className="bg-surface-elevated/60">
-                <Flex align="center" gap={3} justify="between">
-                  <Text color="muted">Current plan:</Text>
-                  <Text transform="capitalize">
-                    {tier.replace("free", "hobby")}
-                  </Text>
-                </Flex>
-                <Divider className="my-3" />
-                <Flex align="center" gap={3} justify="between">
-                  <Text color="muted">
-                    {getTermDisplay("storyTerm", {
-                      variant: "plural",
-                      capitalize: true,
-                    })}
-                    :
-                  </Text>
-                  <Text color="primary">
-                    {totalStories}/{getLimit("maxStories")}
-                  </Text>
-                </Flex>
-              </Wrapper>
-              {userRole === "admin" && (
-                <Button
-                  align="center"
-                  className="mt-4 border-0"
-                  fullWidth
-                  href={withWorkspace("/settings/workspace/billing")}
-                  rounded="lg"
-                  size="lg"
-                >
-                  Upgrade now
-                </Button>
-              )}
-              <Button
-                align="center"
-                className="mt-3 mb-2 border-[0.5px]"
-                color="tertiary"
-                fullWidth
-                onClick={() => {
-                  setIsOpen(false);
-                }}
-                rounded="lg"
-                size="lg"
-              >
-                Maybe later
-              </Button>
-            </Dialog.Body>
-          </Dialog.Content>
-        </Dialog>
-      }
-      feature="maxStories"
+    <NewStoryDialogLimitGuard
+      billingHref={withWorkspace("/settings/workspace/billing")}
+      canUpgrade={userRole === "admin"}
+      isOpen={isOpen}
+      maxStories={getLimit("maxStories")}
+      onClose={() => {
+        setIsOpen(false);
+      }}
+      planName={tier.replace("free", "hobby")}
+      totalStories={totalStories}
     >
-      <Dialog
+      <NewStoryDialogContent
+        activeTeamId={activeTeam?.id}
+        canUseBackgroundMaya={canUseBackgroundMaya}
+        createMore={createMore}
+        currentTeam={currentTeam}
+        currentTeamId={currentTeamId}
+        deadlineSourceRef={deadlineSourceRef}
+        descriptionEditor={editor}
+        dispatch={dispatch}
+        estimateScheme={estimateScheme}
+        figmaArtifacts={figmaArtifacts}
+        isCreating={isCreating}
+        isExpanded={isExpanded}
+        isMayaAssigned={isMayaAssigned}
+        isMayaAssigneeLoading={isMayaAssigneeLoading}
+        isOpen={isOpen}
+        mayaAssigneeId={mayaAssignee?.id}
+        mediaInputRef={mediaInputRef}
+        member={member}
+        members={members}
+        objectiveTerm={getTermDisplay("objectiveTerm", { capitalize: true })}
+        onActiveTeamChange={setActiveTeam}
+        onCreate={handleCreateStory}
+        onCreateMoreChange={setCreateMore}
+        onFigmaArtifactsChange={setFigmaArtifacts}
+        onMediaFiles={(files) => {
+          if (editor) handleMediaFiles(editor, files);
+        }}
         onOpenChange={(open) => {
           if (!open) setFigmaArtifacts([]);
           setIsOpen(open);
         }}
-        open={isOpen}
-      >
-        <Dialog.Content
-          className="overflow-visible"
-          hideClose
-          size={isExpanded ? "xl" : "lg"}
-        >
-          <Dialog.Header className="flex items-center justify-between px-6 pt-6">
-            <Dialog.Title className="flex items-center gap-1 text-lg">
-              <Menu>
-                <Menu.Button>
-                  <Button
-                    className="dark:bg-surface-elevated/90 gap-1.5 text-[0.95rem] font-semibold tracking-wide"
-                    color="tertiary"
-                    leftIcon={<TeamColor color={currentTeam?.color} />}
-                    size="sm"
-                  >
-                    {currentTeam?.code}
-                  </Button>
-                </Menu.Button>
-                <Menu.Items align="start" className="w-52">
-                  <Menu.Group>
-                    {teams.map((team) => (
-                      <Menu.Item
-                        active={team.id === activeTeam?.id}
-                        className="justify-between gap-3"
-                        key={team.id}
-                        onClick={() => {
-                          setActiveTeam(team);
-                        }}
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <TeamColor className="shrink-0" color={team.color} />
-                          <span className="block truncate">{team.name}</span>
-                        </span>
-                        {team.id === activeTeam?.id && (
-                          <CheckIcon className="h-[1.1rem] w-auto" />
-                        )}
-                      </Menu.Item>
-                    ))}
-                  </Menu.Group>
-                </Menu.Items>
-              </Menu>
-              <ArrowRight2Icon
-                className="h-4.5 w-auto opacity-30"
-                strokeWidth={3}
-              />
-              <Text className="opacity-80" color="muted">
-                New {getTermDisplay("storyTerm")}
-              </Text>
-            </Dialog.Title>
-            <Flex gap={2}>
-              <Tooltip title={isExpanded ? "Minimize dialog" : "Expand dialog"}>
-                <Button
-                  className="hover:bg-state-hover px-[0.35rem]"
-                  color="tertiary"
-                  onClick={() => {
-                    setIsExpanded((prev) => !prev);
-                  }}
-                  size="xs"
-                  variant="naked"
-                >
-                  {isExpanded ? (
-                    <MinimizeIcon className="h-[1.2rem] w-auto" />
-                  ) : (
-                    <MaximizeIcon className="h-[1.2rem] w-auto" />
-                  )}
-                  <span className="sr-only">
-                    {isExpanded ? "Minimize" : "Expand"} dialog
-                  </span>
-                </Button>
-              </Tooltip>
-              <Dialog.Close />
-            </Flex>
-          </Dialog.Header>
-          <Dialog.Body className="max-h-[60dvh] !overflow-visible pt-0">
-            <TextEditor
-              asTitle
-              className="text-2xl font-medium"
-              editor={titleEditor}
-            />
-            <TextEditor
-              className={cn("rich-document-editor min-h-20", {
-                "min-h-96": isExpanded,
-              })}
-              editor={editor}
-            />
-            <input
-              accept={RICH_TEXT_MEDIA_ACCEPT}
-              aria-label="Upload story description media"
-              className="sr-only"
-              multiple
-              onChange={(event) => {
-                const files = Array.from(event.target.files ?? []);
-                event.target.value = "";
-                if (editor && files.length > 0) {
-                  handleMediaFiles(editor, files);
-                }
-              }}
-              ref={mediaInputRef}
-              type="file"
-            />
-            <RichTextTableMenu editor={editor} scrollTarget={null} />
-            <Flex align="center" className="mt-4 gap-1.5" wrap>
-              <StatusesMenu>
-                <StatusesMenu.Trigger>
-                  <Button
-                    className="dark:bg-surface-elevated/90"
-                    color="tertiary"
-                    leftIcon={
-                      <StoryStatusIcon
-                        className="size-4 shrink-0"
-                        statusId={storyForm.statusId}
-                      />
-                    }
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {
-                      teamStatuses.find(
-                        (state) => state.id === storyForm.statusId,
-                      )?.name
-                    }
-                  </Button>
-                </StatusesMenu.Trigger>
-                <StatusesMenu.Items
-                  setStatusId={(statusId) => {
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "statusId",
-                      value: statusId,
-                    });
-                  }}
-                  statusId={storyForm.statusId}
-                  teamId={currentTeamId ?? ""}
-                />
-              </StatusesMenu>
-              <PrioritiesMenu>
-                <PrioritiesMenu.Trigger>
-                  <Button
-                    className="dark:bg-surface-elevated/90"
-                    color="tertiary"
-                    leftIcon={
-                      <PriorityIcon
-                        className="h-4"
-                        priority={storyForm.priority}
-                      />
-                    }
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {storyForm.priority}
-                  </Button>
-                </PrioritiesMenu.Trigger>
-                <PrioritiesMenu.Items
-                  priority={storyForm.priority}
-                  setPriority={(priority) => {
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "priority",
-                      value: priority,
-                    });
-                  }}
-                />
-              </PrioritiesMenu>
-              <DatePicker>
-                <DatePicker.Trigger>
-                  <Button
-                    className="dark:bg-surface-elevated/90 px-2"
-                    color="tertiary"
-                    leftIcon={<CalendarIcon className="h-4.5 w-auto" />}
-                    rightIcon={
-                      storyForm.startDate ? (
-                        <CloseIcon
-                          aria-label="Remove date"
-                          className="h-4 w-auto"
-                          onClick={() => {
-                            dispatch({
-                              type: "SET_FIELD",
-                              field: "startDate",
-                              value: null,
-                            });
-                          }}
-                          role="button"
-                        />
-                      ) : null
-                    }
-                    size="sm"
-                    variant="outline"
-                  >
-                    {storyForm.startDate
-                      ? format(new Date(storyForm.startDate), "MMM d, yyyy")
-                      : "Start date"}
-                  </Button>
-                </DatePicker.Trigger>
-                <DatePicker.Calendar
-                  onDayClick={(date) => {
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "startDate",
-                      value: formatISO(date, { representation: "date" }),
-                    });
-                  }}
-                />
-              </DatePicker>
-              <DatePicker>
-                <DatePicker.Trigger>
-                  <Button
-                    className={cn("dark:bg-surface-elevated/90 px-2", {
-                      "text-primary dark:text-primary": storyForm.endDate
-                        ? new Date(storyForm.endDate) < new Date()
-                        : false,
-                      "text-warning dark:text-warning": storyForm.endDate
-                        ? new Date(storyForm.endDate) <=
-                            addDays(new Date(), 7) &&
-                          new Date(storyForm.endDate) >= new Date()
-                        : false,
-                    })}
-                    color="tertiary"
-                    leftIcon={<CalendarIcon className="h-4.5 w-auto" />}
-                    rightIcon={
-                      storyForm.endDate ? (
-                        <CloseIcon
-                          aria-label="Remove date"
-                          className="h-4 w-auto"
-                          onClick={() => {
-                            dispatch({
-                              type: "SET_FIELD",
-                              field: "endDate",
-                              value: null,
-                            });
-                            deadlineSourceRef.current = "cleared";
-                          }}
-                          role="button"
-                        />
-                      ) : null
-                    }
-                    size="sm"
-                    variant="outline"
-                  >
-                    {storyForm.endDate
-                      ? format(new Date(storyForm.endDate), "MMM d, yyyy")
-                      : "Deadline"}
-                  </Button>
-                </DatePicker.Trigger>
-                <DatePicker.Calendar
-                  fromDate={
-                    storyForm.startDate
-                      ? new Date(storyForm.startDate)
-                      : undefined
-                  }
-                  onDayClick={(date) => {
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "endDate",
-                      value: formatISO(date, { representation: "date" }),
-                    });
-                    deadlineSourceRef.current = "manual";
-                  }}
-                />
-              </DatePicker>
-              <Box className="order-8">
-                <AssigneesMenu>
-                  <AssigneesMenu.Trigger>
-                    <Button
-                      className="dark:bg-surface-elevated/90 gap-1.5 px-2"
-                      color="tertiary"
-                      leftIcon={
-                        <Avatar
-                          name={member?.fullName}
-                          size="xs"
-                          src={member?.avatarUrl}
-                        />
-                      }
-                      ref={assigneeButtonRef}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <span className="relative -top-px inline-block max-w-[12ch] truncate">
-                        {member?.username || "Assignee"}
-                      </span>
-                    </Button>
-                  </AssigneesMenu.Trigger>
-                  <AssigneesMenu.Items
-                    assigneeId={storyForm.assigneeId}
-                    onAssigneeSelected={(assigneeId) => {
-                      dispatch({
-                        type: "PATCH_FORM",
-                        payload: {
-                          assigneeId,
-                          autoSchedulingEnabled:
-                            getNewStoryAutoSchedulingEnabled({
-                              currentEnabled: Boolean(
-                                storyForm.autoSchedulingEnabled,
-                              ),
-                              mayaAssigneeId: mayaAssignee?.id,
-                              selectedAssigneeId: assigneeId,
-                            }),
-                        },
-                      });
-                    }}
-                    teamId={currentTeamId}
-                  />
-                </AssigneesMenu>
-              </Box>
-              <Box className="order-9">
-                <EstimateMenu>
-                  <EstimateMenu.Trigger>
-                    <Button
-                      className={cn(
-                        "dark:bg-surface-elevated/90 gap-1.5 px-2",
-                        {
-                          "text-text-muted": !storyForm.estimateValue,
-                        },
-                      )}
-                      color="tertiary"
-                      leftIcon={
-                        <EstimateIcon
-                          className={cn("h-4.5 w-auto", {
-                            "text-text-muted": !storyForm.estimateValue,
-                          })}
-                        />
-                      }
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      {storyForm.estimateValue
-                        ? formatEstimate(
-                            estimateScheme,
-                            storyForm.estimateValue,
-                            "full",
-                          )
-                        : "Complexity"}
-                    </Button>
-                  </EstimateMenu.Trigger>
-                  <EstimateMenu.Items
-                    estimateScheme={estimateScheme}
-                    estimateValue={storyForm.estimateValue}
-                    setEstimateValue={(estimateValue) => {
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "estimateValue",
-                        value: estimateValue,
-                      });
-                    }}
-                  />
-                </EstimateMenu>
-              </Box>
-              <Box className="order-10">
-                <TimeNeededMenu>
-                  <TimeNeededMenu.Trigger>
-                    <Button
-                      className={cn(
-                        "dark:bg-surface-elevated/90 gap-1.5 px-2",
-                        {
-                          "text-text-muted":
-                            !storyForm.estimatedDurationMinutes,
-                        },
-                      )}
-                      color="tertiary"
-                      leftIcon={
-                        <Time02Icon
-                          className={cn("h-4.5 w-auto", {
-                            "text-text-muted":
-                              !storyForm.estimatedDurationMinutes,
-                          })}
-                        />
-                      }
-                      ref={timeNeededButtonRef}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      {storyForm.estimatedDurationMinutes
-                        ? formatTimeNeeded(
-                            storyForm.estimatedDurationMinutes,
-                            "full",
-                          )
-                        : "Time needed"}
-                    </Button>
-                  </TimeNeededMenu.Trigger>
-                  <TimeNeededMenu.Items
-                    estimatedDurationMinutes={
-                      storyForm.estimatedDurationMinutes
-                    }
-                    minimumFocusBlockMinutes={
-                      storyForm.minimumFocusBlockMinutes
-                    }
-                    setTimeNeeded={({
-                      estimatedDurationMinutes,
-                      minimumFocusBlockMinutes,
-                    }) => {
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "estimatedDurationMinutes",
-                        value: estimatedDurationMinutes,
-                      });
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "minimumFocusBlockMinutes",
-                        value: minimumFocusBlockMinutes,
-                      });
-                    }}
-                  />
-                </TimeNeededMenu>
-              </Box>
-              <Box className="order-11">
-                <AutoSchedulingMenu>
-                  <AutoSchedulingMenu.Trigger>
-                    <Button
-                      className="dark:bg-surface-elevated/90 gap-1.5 px-2"
-                      color="tertiary"
-                      disabled={!canUseBackgroundMaya || isMayaAssigned}
-                      leftIcon={<TimeScheduleIcon className="h-4.5 w-auto" />}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      Auto-scheduling:{" "}
-                      {storyForm.autoSchedulingEnabled ? "On" : "Off"}
-                    </Button>
-                  </AutoSchedulingMenu.Trigger>
-                  <AutoSchedulingMenu.Items
-                    autoSchedulingEnabled={Boolean(
-                      storyForm.autoSchedulingEnabled,
-                    )}
-                    autoSchedulingLocked={Boolean(
-                      storyForm.autoSchedulingLocked,
-                    )}
-                    setAutoSchedulingEnabled={(enabled) => {
-                      dispatch({
-                        type: "PATCH_FORM",
-                        payload: { autoSchedulingEnabled: enabled },
-                      });
-                    }}
-                  />
-                </AutoSchedulingMenu>
-              </Box>
-              <Box className="order-5">
-                {selectedLabels.length > 0 ? (
-                  <Flex align="center" className="gap-1" wrap>
-                    {selectedLabels.map((label) => (
-                      <LabelsMenu key={label.id}>
-                        <LabelsMenu.Trigger>
-                          <Button
-                            className="dark:bg-surface-elevated/90 gap-1.5 px-2.5"
-                            color="tertiary"
-                            leftIcon={
-                              <TagsIcon
-                                className="h-4.5 w-auto"
-                                style={{ color: label.color }}
-                              />
-                            }
-                            size="sm"
-                            type="button"
-                            variant="outline"
-                          >
-                            <span className="inline-block max-w-[12ch] truncate">
-                              {label.name}
-                            </span>
-                          </Button>
-                        </LabelsMenu.Trigger>
-                        <LabelsMenu.Items
-                          labelIds={selectedLabelIds}
-                          setLabelIds={(labelIds) => {
-                            dispatch({
-                              type: "SET_FIELD",
-                              field: "labelIds",
-                              value: labelIds,
-                            });
-                          }}
-                          teamId={currentTeamId ?? ""}
-                        />
-                      </LabelsMenu>
-                    ))}
-                    <LabelsMenu>
-                      <LabelsMenu.Trigger>
-                        <Button
-                          asIcon
-                          className="dark:bg-surface-elevated/90"
-                          color="tertiary"
-                          leftIcon={<PlusIcon />}
-                          rounded="full"
-                          size="sm"
-                          title="Add labels"
-                          type="button"
-                          variant="outline"
-                        >
-                          <span className="sr-only">Add labels</span>
-                        </Button>
-                      </LabelsMenu.Trigger>
-                      <LabelsMenu.Items
-                        labelIds={selectedLabelIds}
-                        setLabelIds={(labelIds) => {
-                          dispatch({
-                            type: "SET_FIELD",
-                            field: "labelIds",
-                            value: labelIds,
-                          });
-                        }}
-                        teamId={currentTeamId ?? ""}
-                      />
-                    </LabelsMenu>
-                  </Flex>
-                ) : (
-                  <LabelsMenu>
-                    <LabelsMenu.Trigger>
-                      <Button
-                        className="dark:bg-surface-elevated/90 gap-1.5 px-2"
-                        color="tertiary"
-                        leftIcon={<TagsIcon className="h-4.5 w-auto" />}
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                      >
-                        Labels
-                      </Button>
-                    </LabelsMenu.Trigger>
-                    <LabelsMenu.Items
-                      labelIds={selectedLabelIds}
-                      setLabelIds={(labelIds) => {
-                        dispatch({
-                          type: "SET_FIELD",
-                          field: "labelIds",
-                          value: labelIds,
-                        });
-                      }}
-                      teamId={currentTeamId ?? ""}
-                    />
-                  </LabelsMenu>
-                )}
-              </Box>
-              <Box className="order-6">
-                {features.objectiveEnabled && objectives.length > 0 ? (
-                  <ObjectiveKeyResultMenu
-                    keyResultId={storyForm.keyResultId ?? null}
-                    objectiveId={storyForm.objectiveId ?? null}
-                    onChange={(selection) => {
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "objectiveId",
-                        value: selection.objectiveId,
-                      });
-                      dispatch({
-                        type: "SET_FIELD",
-                        field: "keyResultId",
-                        value: selection.keyResultId,
-                      });
-                    }}
-                    teamId={currentTeamId ?? ""}
-                  >
-                    <Button
-                      className="dark:bg-surface-elevated/90 gap-1 px-2"
-                      color="tertiary"
-                      leftIcon={<ObjectiveIcon />}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <span className="inline-block max-w-[18ch] truncate">
-                        {strategyLinkLabel ||
-                          getTermDisplay("objectiveTerm", { capitalize: true })}
-                      </span>
-                    </Button>
-                  </ObjectiveKeyResultMenu>
-                ) : null}
-              </Box>
-              <Box className="order-7">
-                {sprintsEnabled && sprints.length > 0 ? (
-                  <SprintsMenu>
-                    <SprintsMenu.Trigger>
-                      <Button
-                        className="dark:bg-surface-elevated/90 gap-1 px-2"
-                        color="tertiary"
-                        leftIcon={<SprintsIcon />}
-                        size="sm"
-                        variant="outline"
-                      >
-                        <span className="inline-block max-w-[12ch] truncate">
-                          {sprint?.name ||
-                            getTermDisplay("sprintTerm", { capitalize: true })}
-                        </span>
-                      </Button>
-                    </SprintsMenu.Trigger>
-                    <SprintsMenu.Items
-                      setSprintId={(sprintId, sprintEndDate) => {
-                        const nextDeadline = getDeadlineForSprintSelection({
-                          currentEndDate: storyForm.endDate,
-                          currentSource: deadlineSourceRef.current,
-                          sprintEndDate: toDateOnly(sprintEndDate),
-                        });
-                        dispatch({
-                          type: "SET_FIELD",
-                          field: "sprintId",
-                          value: sprintId,
-                        });
-                        dispatch({
-                          type: "SET_FIELD",
-                          field: "endDate",
-                          value: nextDeadline.endDate,
-                        });
-                        deadlineSourceRef.current = nextDeadline.source;
-                      }}
-                      sprintId={storyForm.sprintId ?? undefined}
-                      teamId={currentTeamId}
-                    />
-                  </SprintsMenu>
-                ) : null}
-              </Box>
-              <NewStoryFigmaSource
-                artifacts={figmaArtifacts}
-                enabled={isOpen}
-                onAddDescription={addFigmaDescription}
-                onArtifactsChange={setFigmaArtifacts}
-                onTitleSuggestion={(title) => {
-                  if (titleEditor && !titleEditor.getText().trim()) {
-                    titleEditor.commands.setContent(title);
-                  }
-                }}
-              />
-            </Flex>
-          </Dialog.Body>
-          <Dialog.Footer className="flex items-center justify-between gap-2">
-            <Text color="muted">
-              <label className="flex items-center gap-2" htmlFor="more">
-                Create more
-                <Switch
-                  checked={createMore}
-                  id="more"
-                  onCheckedChange={setCreateMore}
-                />
-              </label>
-            </Text>
-            <Button
-              leftIcon={<PlusIcon className="text-current" />}
-              loading={loading || isMayaAssigneeLoading}
-              loadingText={
-                isMayaAssigneeLoading
-                  ? "Preparing Maya..."
-                  : `Creating ${getTermDisplay("storyTerm")}...`
-              }
-              onClick={handleCreateStory}
-              size="md"
-            >
-              Create {getTermDisplay("storyTerm")}
-            </Button>
-          </Dialog.Footer>
-          <SimilarItemsPanel
-            heading={`Similar ${getTermDisplay("storyTerm", {
-              variant: "plural",
-            })}`}
-          >
-            {similarStoryItems.map((story) => {
-              const teamCode =
-                teamCodeById.get(story.teamId) ?? currentTeam?.code ?? "";
-              const status = story.statusId
-                ? statusById.get(story.statusId)
-                : undefined;
-              const assignee = story.assigneeId
-                ? memberById.get(story.assigneeId)
-                : undefined;
-
-              return (
-                <StoryRowPreview
-                  assignee={assignee}
-                  key={story.id}
-                  onSelect={() => {
-                    setIsOpen(false);
-                    router.push(
-                      withWorkspace(
-                        getStoryPath({
-                          id: story.id,
-                          sequenceId: story.sequenceId,
-                          teamCode,
-                        }),
-                      ),
-                    );
-                  }}
-                  priority={story.priority ?? "No Priority"}
-                  reference={`${teamCode}-${story.sequenceId}`}
-                  statusColor={status?.color}
-                  statusId={story.statusId}
-                  statusName={status?.name}
-                  title={story.title}
-                />
-              );
-            })}
-          </SimilarItemsPanel>
-        </Dialog.Content>
-      </Dialog>
-    </FeatureGuard>
+        onSimilarStorySelect={({ id, sequenceId, teamCode }) => {
+          setIsOpen(false);
+          router.push(
+            withWorkspace(
+              getStoryPath({
+                id,
+                sequenceId,
+                teamCode,
+              }),
+            ),
+          );
+        }}
+        onToggleExpanded={() => {
+          setIsExpanded((previous) => !previous);
+        }}
+        selectedLabels={selectedLabels}
+        showObjectives={
+          Boolean(features.objectiveEnabled) && objectives.length > 0
+        }
+        showSprints={Boolean(sprintsEnabled) && sprints.length > 0}
+        similarStories={similarStoryItems}
+        sprintName={sprint?.name}
+        sprintTerm={getTermDisplay("sprintTerm", { capitalize: true })}
+        statuses={statuses}
+        storyForm={storyForm}
+        storyTerm={storyTerm}
+        storyTermPlural={storyTermPlural}
+        strategyLinkLabel={strategyLinkLabel}
+        teamStatuses={teamStatuses}
+        teams={teams}
+        titleEditor={titleEditor}
+      />
+    </NewStoryDialogLimitGuard>
   );
 };

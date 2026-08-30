@@ -19,7 +19,7 @@ import type {
   PublicPortalSort,
   PublicPortalGuestParticipant,
   PublicRequestComment,
-} from "@/modules/public-portal/types";
+} from "@/shared/feedback-widget/types";
 import { getPublicFeedbackPortal } from "@/modules/public-portal/query";
 import {
   isPublicFeedbackListStatus,

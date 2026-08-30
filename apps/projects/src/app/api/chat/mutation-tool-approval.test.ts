@@ -11,6 +11,7 @@ import {
   TextDecoder as NodeTextDecoder,
   TextEncoder as NodeTextEncoder,
 } from "node:util";
+import { deserialize, serialize } from "node:v8";
 import type * as ZodModule from "zod";
 import { ApiError } from "api-client";
 import { tools } from "@/lib/ai/tools";
@@ -26,6 +27,8 @@ import { getApiError } from "@/utils";
 import { beginChatWrite, saveChat } from "./save-chat";
 import type * as MutationApprovalModule from "./mutation-tool-approval";
 
+jest.mock("server-only", () => ({}));
+
 globalThis.ReadableStream =
   NodeReadableStream as typeof globalThis.ReadableStream;
 globalThis.TransformStream =
@@ -39,7 +42,7 @@ globalThis.TextEncoder = NodeTextEncoder as typeof globalThis.TextEncoder;
 globalThis.TextEncoderStream =
   NodeTextEncoderStream as typeof globalThis.TextEncoderStream;
 globalThis.structuredClone = <Value>(value: Value) =>
-  JSON.parse(JSON.stringify(value)) as Value;
+  deserialize(serialize(value)) as Value;
 
 jest.mock("@/lib/ai/tools", () => {
   const { z } = jest.requireActual<typeof ZodModule>("zod");

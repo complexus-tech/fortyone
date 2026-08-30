@@ -9,11 +9,11 @@ const readSource = (path: string) =>
 describe("Roadmap objective list selection", () => {
   it("places the collapse arrow after the group identity", () => {
     const source = readSource(
-      "src/modules/roadmap/components/objectives-board.tsx",
+      "src/modules/roadmap/components/objective-group-sections.tsx",
     );
     const header = source.slice(
-      source.indexOf("const ObjectiveGroupHeader"),
-      source.indexOf("const HiddenObjectiveGroups"),
+      source.indexOf("export const ObjectiveGroupHeader"),
+      source.indexOf("export const HiddenObjectiveGroups"),
     );
 
     expect(header.indexOf("<ObjectiveGroupIdentity")).toBeLessThan(
@@ -22,13 +22,13 @@ describe("Roadmap objective list selection", () => {
   });
 
   it("supports row and group selection without the objective row icon", () => {
-    const boardSource = readSource(
-      "src/modules/roadmap/components/objectives-board.tsx",
+    const groupedListSource = readSource(
+      "src/modules/roadmap/components/objectives-grouped-list.tsx",
     );
     const cardSource = readSource("src/modules/objectives/components/card.tsx");
 
-    expect(boardSource).toContain("selectedObjectives");
-    expect(boardSource).toContain("<ObjectivesToolbar");
+    expect(groupedListSource).toContain("selectedObjectives");
+    expect(groupedListSource).toContain("<ObjectivesToolbar");
     expect(cardSource).toContain("onSelectionChange");
     expect(cardSource).toContain("onSelectionChange ? null");
   });
@@ -36,6 +36,9 @@ describe("Roadmap objective list selection", () => {
   it("shows key results on board cards and as collapsible list rows", () => {
     const boardSource = readSource(
       "src/modules/roadmap/components/objectives-board.tsx",
+    );
+    const groupedListSource = readSource(
+      "src/modules/roadmap/components/objectives-grouped-list.tsx",
     );
     const keyResultSource = readSource(
       "src/modules/roadmap/components/roadmap-key-results.tsx",
@@ -51,8 +54,8 @@ describe("Roadmap objective list selection", () => {
 
     expect(boardSource).toContain("RoadmapKeyResultSummary");
     expect(properties).toContain("RoadmapKeyResultSummary");
-    expect(boardSource).toContain("RoadmapObjectiveListItem");
-    expect(boardSource).not.toContain("TableHeader");
+    expect(groupedListSource).toContain("RoadmapObjectiveListItem");
+    expect(groupedListSource).not.toContain("TableHeader");
     expect(keyResultSource).toContain("KeyResultContextMenu");
     expect(keyResultSource).toContain("RoadmapKeyResultRow");
     expect(keyResultSource).toContain("getKeyResultReference");
@@ -148,9 +151,11 @@ describe("Roadmap objective list selection", () => {
     const layoutStateSource = readSource(
       "src/modules/roadmap/use-roadmap-layout.ts",
     );
-    const teamObjectivesSource = readSource("src/modules/objectives/index.tsx");
+    const teamObjectivesSource = readSource(
+      "src/modules/roadmap/team-roadmap-page.tsx",
+    );
     const teamHeaderSource = readSource(
-      "src/modules/objectives/components/team-header.tsx",
+      "src/modules/roadmap/components/team-roadmap-header.tsx",
     );
 
     expect(roadmapSource).toContain("getRoadmapLayoutLabel(layout)");

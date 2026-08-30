@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Box, Text, Button, Flex, Tooltip, Wrapper } from "ui";
 import { PlusIcon, WarningIcon } from "icons";
 import { useParams } from "next/navigation";
@@ -79,16 +79,10 @@ export const WorkflowSettings = () => {
     teamIds: [teamId],
   });
 
-  const storyCounts = useMemo(() => {
-    if (!groupedStories?.groups) return {};
-    return groupedStories.groups.reduce<Record<string, number>>(
-      (acc, group) => ({
-        ...acc,
-        [group.key]: group.totalCount,
-      }),
-      {},
-    );
-  }, [groupedStories]);
+  const storyCounts: Record<string, number> = {};
+  for (const group of groupedStories?.groups ?? []) {
+    storyCounts[group.key] = group.totalCount;
+  }
 
   const deleteMutation = useDeleteStateMutation();
   const createMutation = useCreateStateMutation();
@@ -257,14 +251,12 @@ export const WorkflowSettings = () => {
           });
         }
       });
-    } else {
+    } else if (activeState.orderIndex !== targetOrderIndex) {
       // Simple update - only change the dragged item
-      if (activeState.orderIndex !== targetOrderIndex) {
-        updateMutation.mutate({
-          stateId: activeState.id,
-          payload: { orderIndex: targetOrderIndex },
-        });
-      }
+      updateMutation.mutate({
+        stateId: activeState.id,
+        payload: { orderIndex: targetOrderIndex },
+      });
     }
   };
 

@@ -831,56 +831,56 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// GetWorkspace Get the credential's workspace
+	// GetWorkspace Get workspace
 	//
 	// Personal access tokens are supported. Service-account workspace reads remain disabled until the workspace read model supports non-human principals.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId} (the `GetWorkspace` operationId).
 	GetWorkspace(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListKeyResults List key results visible to the actor
+	// ListKeyResults List key results
 	//
 	// Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/key-results (the `ListKeyResults` operationId).
 	ListKeyResults(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListKeyResultsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListLabels List labels visible in one team context
+	// ListLabels List labels
 	//
 	// Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/labels (the `ListLabels` operationId).
 	ListLabels(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListLabelsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListObjectives List objectives visible to the actor
+	// ListObjectives List objectives
 	//
 	// Returns objectives from current team memberships. Personal access token team restrictions are applied before the product query.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/objectives (the `ListObjectives` operationId).
 	ListObjectives(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListObjectivesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSprints List sprints visible to the actor
+	// ListSprints List sprints
 	//
 	// Returns sprints from current team memberships. Personal access token team restrictions are applied before the product query.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/sprints (the `ListSprints` operationId).
 	ListSprints(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListSprintsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListWorkflowStates List workflow states for one team
+	// ListWorkflowStates List workflow states
 	//
 	// Returns the ordered workflow for a team the personal access token's user currently belongs to.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/states (the `ListWorkflowStates` operationId).
 	ListWorkflowStates(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListWorkflowStatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListStories List stories visible to the actor
+	// ListStories List stories
 	//
 	// Personal access tokens are supported in this preview. The cursor is bound to this workspace, credential principal, team filter, and page size.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/stories (the `ListStories` operationId).
 	ListStories(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListStoriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateStoryWithBody Create a story
+	// CreateStoryWithBody Create story
 	//
 	// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 	//
@@ -889,7 +889,7 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/stories (the `CreateStory` operationId).
 	CreateStoryWithBody(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *CreateStoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateStory Create a story
+	// CreateStory Create story
 	//
 	// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 	//
@@ -898,42 +898,42 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/stories (the `CreateStory` operationId).
 	CreateStory(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *CreateStoryParams, body CreateStoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetStory Get one visible story
+	// GetStory Get story
 	//
 	// Personal access tokens are supported in this preview. Current workspace and team membership remain authoritative.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/stories/{storyId} (the `GetStory` operationId).
 	GetStory(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListStoryComments List comments on one visible story
+	// ListStoryComments List comments
 	//
 	// Returns comments only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments (the `ListStoryComments` operationId).
 	ListStoryComments(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, params *ListStoryCommentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetStoryComment Get one comment on a visible story
+	// GetStoryComment Get comment
 	//
 	// Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments/{commentId} (the `GetStoryComment` operationId).
 	GetStoryComment(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, commentId ComponentsCommonCommentId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListTeams List teams visible to the actor
+	// ListTeams List teams
 	//
 	// Returns joined teams in a deterministic order. Personal access tokens are supported in this preview.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/teams (the `ListTeams` operationId).
 	ListTeams(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListTeamsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListWebhookEndpoints List outbound webhook endpoints
+	// ListWebhookEndpoints List webhooks
 	//
 	// Requires a current workspace administrator personal access token.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/webhook-endpoints (the `ListWebhookEndpoints` operationId).
 	ListWebhookEndpoints(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListWebhookEndpointsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateWebhookEndpointWithBody Register an outbound webhook endpoint
+	// CreateWebhookEndpointWithBody Create webhook
 	//
 	// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 	//
@@ -942,7 +942,7 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints (the `CreateWebhookEndpoint` operationId).
 	CreateWebhookEndpointWithBody(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateWebhookEndpoint Register an outbound webhook endpoint
+	// CreateWebhookEndpoint Create webhook
 	//
 	// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 	//
@@ -951,14 +951,14 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints (the `CreateWebhookEndpoint` operationId).
 	CreateWebhookEndpoint(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, body CreateWebhookEndpointJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetWebhookEndpoint Get an outbound webhook endpoint
+	// GetWebhookEndpoint Get webhook
 	//
 	// Requires a current workspace administrator personal access token.
 	//
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId} (the `GetWebhookEndpoint` operationId).
 	GetWebhookEndpoint(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DisableWebhookEndpointWithBody Disable an outbound webhook endpoint
+	// DisableWebhookEndpointWithBody Disable webhook
 	//
 	// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 	//
@@ -967,7 +967,7 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/disable (the `DisableWebhookEndpoint` operationId).
 	DisableWebhookEndpointWithBody(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DisableWebhookEndpoint Disable an outbound webhook endpoint
+	// DisableWebhookEndpoint Disable webhook
 	//
 	// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 	//
@@ -976,14 +976,14 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/disable (the `DisableWebhookEndpoint` operationId).
 	DisableWebhookEndpoint(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, body DisableWebhookEndpointJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RotateWebhookSecret Rotate an endpoint's signing secret
+	// RotateWebhookSecret Rotate secret
 	//
 	// Requires a current workspace administrator personal access token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
 	//
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/rotate-secret (the `RotateWebhookSecret` operationId).
 	RotateWebhookSecret(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceWebhookSubscriptionsWithBody Replace an endpoint's event subscriptions
+	// ReplaceWebhookSubscriptionsWithBody Update subscriptions
 	//
 	// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 	//
@@ -992,7 +992,7 @@ type ClientInterface interface {
 	// Corresponds with PUT /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/subscriptions (the `ReplaceWebhookSubscriptions` operationId).
 	ReplaceWebhookSubscriptionsWithBody(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceWebhookSubscriptions Replace an endpoint's event subscriptions
+	// ReplaceWebhookSubscriptions Update subscriptions
 	//
 	// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 	//
@@ -1002,7 +1002,7 @@ type ClientInterface interface {
 	ReplaceWebhookSubscriptions(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, body ReplaceWebhookSubscriptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// GetWorkspace Get the credential's workspace
+// GetWorkspace Get workspace
 //
 // Personal access tokens are supported. Service-account workspace reads remain disabled until the workspace read model supports non-human principals.
 //
@@ -1019,7 +1019,7 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceId ComponentsCommonW
 	return c.Client.Do(req)
 }
 
-// ListKeyResults List key results visible to the actor
+// ListKeyResults List key results
 //
 // Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
 //
@@ -1036,7 +1036,7 @@ func (c *Client) ListKeyResults(ctx context.Context, workspaceId ComponentsCommo
 	return c.Client.Do(req)
 }
 
-// ListLabels List labels visible in one team context
+// ListLabels List labels
 //
 // Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
 //
@@ -1053,7 +1053,7 @@ func (c *Client) ListLabels(ctx context.Context, workspaceId ComponentsCommonWor
 	return c.Client.Do(req)
 }
 
-// ListObjectives List objectives visible to the actor
+// ListObjectives List objectives
 //
 // Returns objectives from current team memberships. Personal access token team restrictions are applied before the product query.
 //
@@ -1070,7 +1070,7 @@ func (c *Client) ListObjectives(ctx context.Context, workspaceId ComponentsCommo
 	return c.Client.Do(req)
 }
 
-// ListSprints List sprints visible to the actor
+// ListSprints List sprints
 //
 // Returns sprints from current team memberships. Personal access token team restrictions are applied before the product query.
 //
@@ -1087,7 +1087,7 @@ func (c *Client) ListSprints(ctx context.Context, workspaceId ComponentsCommonWo
 	return c.Client.Do(req)
 }
 
-// ListWorkflowStates List workflow states for one team
+// ListWorkflowStates List workflow states
 //
 // Returns the ordered workflow for a team the personal access token's user currently belongs to.
 //
@@ -1104,7 +1104,7 @@ func (c *Client) ListWorkflowStates(ctx context.Context, workspaceId ComponentsC
 	return c.Client.Do(req)
 }
 
-// ListStories List stories visible to the actor
+// ListStories List stories
 //
 // Personal access tokens are supported in this preview. The cursor is bound to this workspace, credential principal, team filter, and page size.
 //
@@ -1121,7 +1121,7 @@ func (c *Client) ListStories(ctx context.Context, workspaceId ComponentsCommonWo
 	return c.Client.Do(req)
 }
 
-// CreateStoryWithBody Create a story
+// CreateStoryWithBody Create story
 //
 // Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 //
@@ -1140,7 +1140,7 @@ func (c *Client) CreateStoryWithBody(ctx context.Context, workspaceId Components
 	return c.Client.Do(req)
 }
 
-// CreateStory Create a story
+// CreateStory Create story
 //
 // Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 //
@@ -1159,7 +1159,7 @@ func (c *Client) CreateStory(ctx context.Context, workspaceId ComponentsCommonWo
 	return c.Client.Do(req)
 }
 
-// GetStory Get one visible story
+// GetStory Get story
 //
 // Personal access tokens are supported in this preview. Current workspace and team membership remain authoritative.
 //
@@ -1176,7 +1176,7 @@ func (c *Client) GetStory(ctx context.Context, workspaceId ComponentsCommonWorks
 	return c.Client.Do(req)
 }
 
-// ListStoryComments List comments on one visible story
+// ListStoryComments List comments
 //
 // Returns comments only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 //
@@ -1193,7 +1193,7 @@ func (c *Client) ListStoryComments(ctx context.Context, workspaceId ComponentsCo
 	return c.Client.Do(req)
 }
 
-// GetStoryComment Get one comment on a visible story
+// GetStoryComment Get comment
 //
 // Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 //
@@ -1210,7 +1210,7 @@ func (c *Client) GetStoryComment(ctx context.Context, workspaceId ComponentsComm
 	return c.Client.Do(req)
 }
 
-// ListTeams List teams visible to the actor
+// ListTeams List teams
 //
 // Returns joined teams in a deterministic order. Personal access tokens are supported in this preview.
 //
@@ -1227,7 +1227,7 @@ func (c *Client) ListTeams(ctx context.Context, workspaceId ComponentsCommonWork
 	return c.Client.Do(req)
 }
 
-// ListWebhookEndpoints List outbound webhook endpoints
+// ListWebhookEndpoints List webhooks
 //
 // Requires a current workspace administrator personal access token.
 //
@@ -1244,7 +1244,7 @@ func (c *Client) ListWebhookEndpoints(ctx context.Context, workspaceId Component
 	return c.Client.Do(req)
 }
 
-// CreateWebhookEndpointWithBody Register an outbound webhook endpoint
+// CreateWebhookEndpointWithBody Create webhook
 //
 // Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 //
@@ -1263,7 +1263,7 @@ func (c *Client) CreateWebhookEndpointWithBody(ctx context.Context, workspaceId 
 	return c.Client.Do(req)
 }
 
-// CreateWebhookEndpoint Register an outbound webhook endpoint
+// CreateWebhookEndpoint Create webhook
 //
 // Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 //
@@ -1282,7 +1282,7 @@ func (c *Client) CreateWebhookEndpoint(ctx context.Context, workspaceId Componen
 	return c.Client.Do(req)
 }
 
-// GetWebhookEndpoint Get an outbound webhook endpoint
+// GetWebhookEndpoint Get webhook
 //
 // Requires a current workspace administrator personal access token.
 //
@@ -1299,7 +1299,7 @@ func (c *Client) GetWebhookEndpoint(ctx context.Context, workspaceId ComponentsC
 	return c.Client.Do(req)
 }
 
-// DisableWebhookEndpointWithBody Disable an outbound webhook endpoint
+// DisableWebhookEndpointWithBody Disable webhook
 //
 // Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 //
@@ -1318,7 +1318,7 @@ func (c *Client) DisableWebhookEndpointWithBody(ctx context.Context, workspaceId
 	return c.Client.Do(req)
 }
 
-// DisableWebhookEndpoint Disable an outbound webhook endpoint
+// DisableWebhookEndpoint Disable webhook
 //
 // Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 //
@@ -1337,7 +1337,7 @@ func (c *Client) DisableWebhookEndpoint(ctx context.Context, workspaceId Compone
 	return c.Client.Do(req)
 }
 
-// RotateWebhookSecret Rotate an endpoint's signing secret
+// RotateWebhookSecret Rotate secret
 //
 // Requires a current workspace administrator personal access token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
 //
@@ -1354,7 +1354,7 @@ func (c *Client) RotateWebhookSecret(ctx context.Context, workspaceId Components
 	return c.Client.Do(req)
 }
 
-// ReplaceWebhookSubscriptionsWithBody Replace an endpoint's event subscriptions
+// ReplaceWebhookSubscriptionsWithBody Update subscriptions
 //
 // Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 //
@@ -1373,7 +1373,7 @@ func (c *Client) ReplaceWebhookSubscriptionsWithBody(ctx context.Context, worksp
 	return c.Client.Do(req)
 }
 
-// ReplaceWebhookSubscriptions Replace an endpoint's event subscriptions
+// ReplaceWebhookSubscriptions Update subscriptions
 //
 // Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 //
@@ -2596,7 +2596,7 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// GetWorkspaceWithResponse Get the credential's workspace
+	// GetWorkspaceWithResponse Get workspace
 	//
 	// Personal access tokens are supported. Service-account workspace reads remain disabled until the workspace read model supports non-human principals.
 	//
@@ -2605,7 +2605,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId} (the `GetWorkspace` operationId).
 	GetWorkspaceWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, reqEditors ...RequestEditorFn) (*GetWorkspaceResponse, error)
 
-	// ListKeyResultsWithResponse List key results visible to the actor
+	// ListKeyResultsWithResponse List key results
 	//
 	// Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
 	//
@@ -2614,7 +2614,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/key-results (the `ListKeyResults` operationId).
 	ListKeyResultsWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListKeyResultsParams, reqEditors ...RequestEditorFn) (*ListKeyResultsResponse, error)
 
-	// ListLabelsWithResponse List labels visible in one team context
+	// ListLabelsWithResponse List labels
 	//
 	// Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
 	//
@@ -2623,7 +2623,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/labels (the `ListLabels` operationId).
 	ListLabelsWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListLabelsParams, reqEditors ...RequestEditorFn) (*ListLabelsResponse, error)
 
-	// ListObjectivesWithResponse List objectives visible to the actor
+	// ListObjectivesWithResponse List objectives
 	//
 	// Returns objectives from current team memberships. Personal access token team restrictions are applied before the product query.
 	//
@@ -2632,7 +2632,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/objectives (the `ListObjectives` operationId).
 	ListObjectivesWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListObjectivesParams, reqEditors ...RequestEditorFn) (*ListObjectivesResponse, error)
 
-	// ListSprintsWithResponse List sprints visible to the actor
+	// ListSprintsWithResponse List sprints
 	//
 	// Returns sprints from current team memberships. Personal access token team restrictions are applied before the product query.
 	//
@@ -2641,7 +2641,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/sprints (the `ListSprints` operationId).
 	ListSprintsWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListSprintsParams, reqEditors ...RequestEditorFn) (*ListSprintsResponse, error)
 
-	// ListWorkflowStatesWithResponse List workflow states for one team
+	// ListWorkflowStatesWithResponse List workflow states
 	//
 	// Returns the ordered workflow for a team the personal access token's user currently belongs to.
 	//
@@ -2650,7 +2650,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/states (the `ListWorkflowStates` operationId).
 	ListWorkflowStatesWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListWorkflowStatesParams, reqEditors ...RequestEditorFn) (*ListWorkflowStatesResponse, error)
 
-	// ListStoriesWithResponse List stories visible to the actor
+	// ListStoriesWithResponse List stories
 	//
 	// Personal access tokens are supported in this preview. The cursor is bound to this workspace, credential principal, team filter, and page size.
 	//
@@ -2659,7 +2659,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/stories (the `ListStories` operationId).
 	ListStoriesWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListStoriesParams, reqEditors ...RequestEditorFn) (*ListStoriesResponse, error)
 
-	// CreateStoryWithBodyWithResponse Create a story
+	// CreateStoryWithBodyWithResponse Create story
 	//
 	// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 	//
@@ -2668,7 +2668,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/stories (the `CreateStory` operationId).
 	CreateStoryWithBodyWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *CreateStoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateStoryResponse, error)
 
-	// CreateStoryWithResponse Create a story
+	// CreateStoryWithResponse Create story
 	//
 	// Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 	//
@@ -2677,7 +2677,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/stories (the `CreateStory` operationId).
 	CreateStoryWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *CreateStoryParams, body CreateStoryJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateStoryResponse, error)
 
-	// GetStoryWithResponse Get one visible story
+	// GetStoryWithResponse Get story
 	//
 	// Personal access tokens are supported in this preview. Current workspace and team membership remain authoritative.
 	//
@@ -2686,7 +2686,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/stories/{storyId} (the `GetStory` operationId).
 	GetStoryWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, reqEditors ...RequestEditorFn) (*GetStoryResponse, error)
 
-	// ListStoryCommentsWithResponse List comments on one visible story
+	// ListStoryCommentsWithResponse List comments
 	//
 	// Returns comments only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 	//
@@ -2695,7 +2695,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments (the `ListStoryComments` operationId).
 	ListStoryCommentsWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, params *ListStoryCommentsParams, reqEditors ...RequestEditorFn) (*ListStoryCommentsResponse, error)
 
-	// GetStoryCommentWithResponse Get one comment on a visible story
+	// GetStoryCommentWithResponse Get comment
 	//
 	// Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 	//
@@ -2704,7 +2704,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/stories/{storyId}/comments/{commentId} (the `GetStoryComment` operationId).
 	GetStoryCommentWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, storyId ComponentsCommonStoryId, commentId ComponentsCommonCommentId, reqEditors ...RequestEditorFn) (*GetStoryCommentResponse, error)
 
-	// ListTeamsWithResponse List teams visible to the actor
+	// ListTeamsWithResponse List teams
 	//
 	// Returns joined teams in a deterministic order. Personal access tokens are supported in this preview.
 	//
@@ -2713,7 +2713,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/teams (the `ListTeams` operationId).
 	ListTeamsWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListTeamsParams, reqEditors ...RequestEditorFn) (*ListTeamsResponse, error)
 
-	// ListWebhookEndpointsWithResponse List outbound webhook endpoints
+	// ListWebhookEndpointsWithResponse List webhooks
 	//
 	// Requires a current workspace administrator personal access token.
 	//
@@ -2722,7 +2722,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/webhook-endpoints (the `ListWebhookEndpoints` operationId).
 	ListWebhookEndpointsWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, params *ListWebhookEndpointsParams, reqEditors ...RequestEditorFn) (*ListWebhookEndpointsResponse, error)
 
-	// CreateWebhookEndpointWithBodyWithResponse Register an outbound webhook endpoint
+	// CreateWebhookEndpointWithBodyWithResponse Create webhook
 	//
 	// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 	//
@@ -2731,7 +2731,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints (the `CreateWebhookEndpoint` operationId).
 	CreateWebhookEndpointWithBodyWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWebhookEndpointResponse, error)
 
-	// CreateWebhookEndpointWithResponse Register an outbound webhook endpoint
+	// CreateWebhookEndpointWithResponse Create webhook
 	//
 	// Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 	//
@@ -2740,7 +2740,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints (the `CreateWebhookEndpoint` operationId).
 	CreateWebhookEndpointWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, body CreateWebhookEndpointJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWebhookEndpointResponse, error)
 
-	// GetWebhookEndpointWithResponse Get an outbound webhook endpoint
+	// GetWebhookEndpointWithResponse Get webhook
 	//
 	// Requires a current workspace administrator personal access token.
 	//
@@ -2749,7 +2749,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId} (the `GetWebhookEndpoint` operationId).
 	GetWebhookEndpointWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, reqEditors ...RequestEditorFn) (*GetWebhookEndpointResponse, error)
 
-	// DisableWebhookEndpointWithBodyWithResponse Disable an outbound webhook endpoint
+	// DisableWebhookEndpointWithBodyWithResponse Disable webhook
 	//
 	// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 	//
@@ -2758,7 +2758,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/disable (the `DisableWebhookEndpoint` operationId).
 	DisableWebhookEndpointWithBodyWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DisableWebhookEndpointResponse, error)
 
-	// DisableWebhookEndpointWithResponse Disable an outbound webhook endpoint
+	// DisableWebhookEndpointWithResponse Disable webhook
 	//
 	// Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 	//
@@ -2767,7 +2767,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/disable (the `DisableWebhookEndpoint` operationId).
 	DisableWebhookEndpointWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, body DisableWebhookEndpointJSONRequestBody, reqEditors ...RequestEditorFn) (*DisableWebhookEndpointResponse, error)
 
-	// RotateWebhookSecretWithResponse Rotate an endpoint's signing secret
+	// RotateWebhookSecretWithResponse Rotate secret
 	//
 	// Requires a current workspace administrator personal access token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
 	//
@@ -2776,7 +2776,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/rotate-secret (the `RotateWebhookSecret` operationId).
 	RotateWebhookSecretWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, reqEditors ...RequestEditorFn) (*RotateWebhookSecretResponse, error)
 
-	// ReplaceWebhookSubscriptionsWithBodyWithResponse Replace an endpoint's event subscriptions
+	// ReplaceWebhookSubscriptionsWithBodyWithResponse Update subscriptions
 	//
 	// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 	//
@@ -2785,7 +2785,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/subscriptions (the `ReplaceWebhookSubscriptions` operationId).
 	ReplaceWebhookSubscriptionsWithBodyWithResponse(ctx context.Context, workspaceId ComponentsCommonWorkspaceId, endpointId ComponentsCommonEndpointId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceWebhookSubscriptionsResponse, error)
 
-	// ReplaceWebhookSubscriptionsWithResponse Replace an endpoint's event subscriptions
+	// ReplaceWebhookSubscriptionsWithResponse Update subscriptions
 	//
 	// Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 	//
@@ -5564,7 +5564,7 @@ func (r ReplaceWebhookSubscriptionsResponse) ContentType() string {
 	return ""
 }
 
-// GetWorkspaceWithResponse Get the credential's workspace
+// GetWorkspaceWithResponse Get workspace
 //
 // Personal access tokens are supported. Service-account workspace reads remain disabled until the workspace read model supports non-human principals.
 //
@@ -5579,7 +5579,7 @@ func (c *ClientWithResponses) GetWorkspaceWithResponse(ctx context.Context, work
 	return ParseGetWorkspaceResponse(rsp)
 }
 
-// ListKeyResultsWithResponse List key results visible to the actor
+// ListKeyResultsWithResponse List key results
 //
 // Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
 //
@@ -5594,7 +5594,7 @@ func (c *ClientWithResponses) ListKeyResultsWithResponse(ctx context.Context, wo
 	return ParseListKeyResultsResponse(rsp)
 }
 
-// ListLabelsWithResponse List labels visible in one team context
+// ListLabelsWithResponse List labels
 //
 // Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
 //
@@ -5609,7 +5609,7 @@ func (c *ClientWithResponses) ListLabelsWithResponse(ctx context.Context, worksp
 	return ParseListLabelsResponse(rsp)
 }
 
-// ListObjectivesWithResponse List objectives visible to the actor
+// ListObjectivesWithResponse List objectives
 //
 // Returns objectives from current team memberships. Personal access token team restrictions are applied before the product query.
 //
@@ -5624,7 +5624,7 @@ func (c *ClientWithResponses) ListObjectivesWithResponse(ctx context.Context, wo
 	return ParseListObjectivesResponse(rsp)
 }
 
-// ListSprintsWithResponse List sprints visible to the actor
+// ListSprintsWithResponse List sprints
 //
 // Returns sprints from current team memberships. Personal access token team restrictions are applied before the product query.
 //
@@ -5639,7 +5639,7 @@ func (c *ClientWithResponses) ListSprintsWithResponse(ctx context.Context, works
 	return ParseListSprintsResponse(rsp)
 }
 
-// ListWorkflowStatesWithResponse List workflow states for one team
+// ListWorkflowStatesWithResponse List workflow states
 //
 // Returns the ordered workflow for a team the personal access token's user currently belongs to.
 //
@@ -5654,7 +5654,7 @@ func (c *ClientWithResponses) ListWorkflowStatesWithResponse(ctx context.Context
 	return ParseListWorkflowStatesResponse(rsp)
 }
 
-// ListStoriesWithResponse List stories visible to the actor
+// ListStoriesWithResponse List stories
 //
 // Personal access tokens are supported in this preview. The cursor is bound to this workspace, credential principal, team filter, and page size.
 //
@@ -5669,7 +5669,7 @@ func (c *ClientWithResponses) ListStoriesWithResponse(ctx context.Context, works
 	return ParseListStoriesResponse(rsp)
 }
 
-// CreateStoryWithBodyWithResponse Create a story
+// CreateStoryWithBodyWithResponse Create story
 //
 // Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 //
@@ -5684,7 +5684,7 @@ func (c *ClientWithResponses) CreateStoryWithBodyWithResponse(ctx context.Contex
 	return ParseCreateStoryResponse(rsp)
 }
 
-// CreateStoryWithResponse Create a story
+// CreateStoryWithResponse Create story
 //
 // Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
 //
@@ -5699,7 +5699,7 @@ func (c *ClientWithResponses) CreateStoryWithResponse(ctx context.Context, works
 	return ParseCreateStoryResponse(rsp)
 }
 
-// GetStoryWithResponse Get one visible story
+// GetStoryWithResponse Get story
 //
 // Personal access tokens are supported in this preview. Current workspace and team membership remain authoritative.
 //
@@ -5714,7 +5714,7 @@ func (c *ClientWithResponses) GetStoryWithResponse(ctx context.Context, workspac
 	return ParseGetStoryResponse(rsp)
 }
 
-// ListStoryCommentsWithResponse List comments on one visible story
+// ListStoryCommentsWithResponse List comments
 //
 // Returns comments only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 //
@@ -5729,7 +5729,7 @@ func (c *ClientWithResponses) ListStoryCommentsWithResponse(ctx context.Context,
 	return ParseListStoryCommentsResponse(rsp)
 }
 
-// GetStoryCommentWithResponse Get one comment on a visible story
+// GetStoryCommentWithResponse Get comment
 //
 // Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
 //
@@ -5744,7 +5744,7 @@ func (c *ClientWithResponses) GetStoryCommentWithResponse(ctx context.Context, w
 	return ParseGetStoryCommentResponse(rsp)
 }
 
-// ListTeamsWithResponse List teams visible to the actor
+// ListTeamsWithResponse List teams
 //
 // Returns joined teams in a deterministic order. Personal access tokens are supported in this preview.
 //
@@ -5759,7 +5759,7 @@ func (c *ClientWithResponses) ListTeamsWithResponse(ctx context.Context, workspa
 	return ParseListTeamsResponse(rsp)
 }
 
-// ListWebhookEndpointsWithResponse List outbound webhook endpoints
+// ListWebhookEndpointsWithResponse List webhooks
 //
 // Requires a current workspace administrator personal access token.
 //
@@ -5774,7 +5774,7 @@ func (c *ClientWithResponses) ListWebhookEndpointsWithResponse(ctx context.Conte
 	return ParseListWebhookEndpointsResponse(rsp)
 }
 
-// CreateWebhookEndpointWithBodyWithResponse Register an outbound webhook endpoint
+// CreateWebhookEndpointWithBodyWithResponse Create webhook
 //
 // Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 //
@@ -5789,7 +5789,7 @@ func (c *ClientWithResponses) CreateWebhookEndpointWithBodyWithResponse(ctx cont
 	return ParseCreateWebhookEndpointResponse(rsp)
 }
 
-// CreateWebhookEndpointWithResponse Register an outbound webhook endpoint
+// CreateWebhookEndpointWithResponse Create webhook
 //
 // Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
 //
@@ -5804,7 +5804,7 @@ func (c *ClientWithResponses) CreateWebhookEndpointWithResponse(ctx context.Cont
 	return ParseCreateWebhookEndpointResponse(rsp)
 }
 
-// GetWebhookEndpointWithResponse Get an outbound webhook endpoint
+// GetWebhookEndpointWithResponse Get webhook
 //
 // Requires a current workspace administrator personal access token.
 //
@@ -5819,7 +5819,7 @@ func (c *ClientWithResponses) GetWebhookEndpointWithResponse(ctx context.Context
 	return ParseGetWebhookEndpointResponse(rsp)
 }
 
-// DisableWebhookEndpointWithBodyWithResponse Disable an outbound webhook endpoint
+// DisableWebhookEndpointWithBodyWithResponse Disable webhook
 //
 // Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 //
@@ -5834,7 +5834,7 @@ func (c *ClientWithResponses) DisableWebhookEndpointWithBodyWithResponse(ctx con
 	return ParseDisableWebhookEndpointResponse(rsp)
 }
 
-// DisableWebhookEndpointWithResponse Disable an outbound webhook endpoint
+// DisableWebhookEndpointWithResponse Disable webhook
 //
 // Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
 //
@@ -5849,7 +5849,7 @@ func (c *ClientWithResponses) DisableWebhookEndpointWithResponse(ctx context.Con
 	return ParseDisableWebhookEndpointResponse(rsp)
 }
 
-// RotateWebhookSecretWithResponse Rotate an endpoint's signing secret
+// RotateWebhookSecretWithResponse Rotate secret
 //
 // Requires a current workspace administrator personal access token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
 //
@@ -5864,7 +5864,7 @@ func (c *ClientWithResponses) RotateWebhookSecretWithResponse(ctx context.Contex
 	return ParseRotateWebhookSecretResponse(rsp)
 }
 
-// ReplaceWebhookSubscriptionsWithBodyWithResponse Replace an endpoint's event subscriptions
+// ReplaceWebhookSubscriptionsWithBodyWithResponse Update subscriptions
 //
 // Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 //
@@ -5879,7 +5879,7 @@ func (c *ClientWithResponses) ReplaceWebhookSubscriptionsWithBodyWithResponse(ct
 	return ParseReplaceWebhookSubscriptionsResponse(rsp)
 }
 
-// ReplaceWebhookSubscriptionsWithResponse Replace an endpoint's event subscriptions
+// ReplaceWebhookSubscriptionsWithResponse Update subscriptions
 //
 // Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
 //

@@ -2,7 +2,7 @@
 
 import { ApiKeyIcon, ServiceAccountIcon, WebhookIcon } from "icons";
 import { Box, Tabs, Text } from "ui";
-import { useUserRole } from "@/hooks";
+import { useUserRole } from "@/hooks/role";
 import { PersonalAccessTokens } from "./components/personal-access-tokens";
 import { ServiceAccounts } from "./components/service-accounts";
 import { WebhookEndpoints } from "./components/webhook-endpoints";

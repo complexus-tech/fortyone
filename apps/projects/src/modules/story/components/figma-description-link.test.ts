@@ -1,5 +1,3 @@
-/* eslint-disable no-undef -- Jest globals are provided by the Projects test environment. */
-
 import { Editor } from "@tiptap/core";
 import Document from "@tiptap/extension-document";
 import Link from "@tiptap/extension-link";

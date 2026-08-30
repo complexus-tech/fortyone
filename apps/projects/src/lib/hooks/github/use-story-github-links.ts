@@ -12,6 +12,6 @@ export const useStoryGitHubLinks = (storyId: string) => {
     queryKey: githubKeys.storyLinks(workspaceSlug, storyId),
     queryFn: () =>
       getStoryGitHubLinks(storyId, { session: session!, workspaceSlug }),
-    enabled: !!storyId,
+    enabled: Boolean(storyId),
   });
 };

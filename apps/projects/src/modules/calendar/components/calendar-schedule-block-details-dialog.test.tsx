@@ -46,7 +46,7 @@ jest.mock(
     },
 );
 
-jest.mock("@/modules/story/utils/story-url", () => ({
+jest.mock("@/shared/routing/story", () => ({
   getStoryPath: ({ id }: { id: string }) => `/stories/${id}`,
   getStoryReference: ({
     sequenceId,

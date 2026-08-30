@@ -1,5 +1,5 @@
-import type { Objective } from "@/modules/objectives/types";
-import type { Story, StoryPriority } from "@/modules/stories/types";
+import type { Objective } from "@/shared/objectives/types";
+import type { Story, StoryPriority } from "@/shared/story/types";
 import type { StateCategory } from "@/types/states";
 
 export type SearchQueryParams = {

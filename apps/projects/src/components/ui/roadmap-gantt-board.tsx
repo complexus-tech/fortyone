@@ -31,11 +31,16 @@ import { ObjectiveHealthIcon } from "@/components/ui/objective-health-icon";
 import { hexToRgba } from "@/utils";
 import { PriorityIcon } from "./priority-icon";
 import { ObjectiveStatusIcon } from "./objective-status-icon";
-import { BaseGantt, GanttControls, type ZoomLevel } from "./base-gantt";
+import {
+  BaseGantt,
+  GanttControls,
+  type GanttRowWindow,
+  type ZoomLevel,
+} from "./base-gantt";
 
 const ROADMAP_STICKY_COLUMNS_WIDTH = 640;
 const ROADMAP_COLLAPSED_COLUMNS_WIDTH = 320;
-const ROADMAP_ROW_HEIGHT = "3.5rem";
+const ROADMAP_ROW_HEIGHT = 56;
 const ROADMAP_COLUMNS =
   "grid-cols-[2rem_2rem_2rem_minmax(0,7rem)_minmax(0,1fr)_7rem]";
 const DAYS_PER_DISPLAY_MONTH = 30;
@@ -76,6 +81,64 @@ const getTimelineDate = (
 
   if (timestamp === null) return null;
   return formatISO(new Date(timestamp), { representation: "date" });
+};
+
+const renderRoadmapBarContent = (item: RoadmapGanttItem) => {
+  const { objective } = item;
+  const isAtRisk = objective.scheduleStatus === "at_risk";
+  const timelineStart = item.startDate ? new Date(item.startDate) : null;
+  const timelineEnd = item.endDate ? new Date(item.endDate) : null;
+  const targetEnd = objective.endDate ? new Date(objective.endDate) : null;
+  const timelineDays =
+    timelineStart && timelineEnd
+      ? Math.max(1, differenceInDays(timelineEnd, timelineStart))
+      : 1;
+  const targetPosition =
+    timelineStart && targetEnd
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            (differenceInDays(targetEnd, timelineStart) / timelineDays) * 100,
+          ),
+        )
+      : 100;
+
+  return (
+    <Box
+      className="absolute inset-0 overflow-hidden rounded-[inherit]"
+      style={{
+        background: isAtRisk
+          ? `linear-gradient(to right, ${hexToRgba(
+              objective.color,
+              0.28,
+            )} 0%, ${hexToRgba(
+              objective.color,
+              0.28,
+            )} ${targetPosition}%, ${hexToRgba(
+              objective.color,
+              0.1,
+            )} ${targetPosition}%, ${hexToRgba(objective.color, 0.1)} 100%)`
+          : hexToRgba(objective.color, 0.22),
+      }}
+    >
+      {isAtRisk && targetEnd ? (
+        <span
+          aria-label={`Target date ${format(targetEnd, "MMM d, yyyy")}`}
+          className="absolute inset-y-0 w-px bg-current opacity-35"
+          style={{ left: `${targetPosition}%` }}
+        />
+      ) : null}
+      <Flex align="center" className="h-full min-w-0 px-3" gap={2}>
+        <Text className="line-clamp-1 min-w-0" fontWeight="medium">
+          {objective.name}
+        </Text>
+        {isAtRisk ? (
+          <ObjectiveForecastRiskBadge label="delta" objective={objective} />
+        ) : null}
+      </Flex>
+    </Box>
+  );
 };
 
 // Individual Objective Row Component
@@ -462,6 +525,7 @@ export const RoadmapGanttBoard = ({
       onReset: () => void,
       sidebarZoomLevel: ZoomLevel,
       onZoomChange: (zoom: ZoomLevel) => void,
+      rowWindow: GanttRowWindow,
     ) => {
       return (
         <Box
@@ -498,35 +562,67 @@ export const RoadmapGanttBoard = ({
               </button>
             </Tooltip>
           </Box>
-          {items.map(({ objective }) => {
-            const startDate = objective.startDate
-              ? new Date(objective.startDate)
-              : null;
-            const endDate = objective.endDate
-              ? new Date(objective.endDate)
-              : null;
-            const duration =
-              startDate && endDate
-                ? differenceInDays(endDate, startDate) + 1
+          <Box
+            aria-label="Objectives"
+            className="relative"
+            role="list"
+            style={
+              rowWindow.virtualized
+                ? { height: rowWindow.totalSize }
+                : undefined
+            }
+          >
+            {items.map(({ objective }, renderedIndex) => {
+              const virtualRow = rowWindow.rows[renderedIndex];
+              const startDate = objective.startDate
+                ? new Date(objective.startDate)
                 : null;
-            const status = statuses.find(
-              (status) => status.id === objective.statusId,
-            );
+              const endDate = objective.endDate
+                ? new Date(objective.endDate)
+                : null;
+              const duration =
+                startDate && endDate
+                  ? differenceInDays(endDate, startDate) + 1
+                  : null;
+              const status = statuses.find(
+                (status) => status.id === objective.statusId,
+              );
 
-            return (
-              <ObjectiveRow
-                duration={duration}
-                handleUpdate={handleUpdate}
-                isSelected={selectedObjectiveId === objective.id}
-                isSidebarCollapsed={isSidebarCollapsed}
-                key={objective.id}
-                objective={objective}
-                onObjectiveSelect={onObjectiveSelect}
-                statusColor={status?.color}
-                statusName={status?.name ?? "No status"}
-              />
-            );
-          })}
+              return (
+                <Box
+                  aria-posinset={virtualRow.index + 1}
+                  aria-setsize={rowWindow.itemCount}
+                  className={
+                    rowWindow.virtualized
+                      ? "absolute inset-x-0 top-0"
+                      : undefined
+                  }
+                  data-gantt-item-id={objective.id}
+                  key={objective.id}
+                  role="listitem"
+                  style={
+                    rowWindow.virtualized
+                      ? {
+                          height: virtualRow.size,
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }
+                      : undefined
+                  }
+                >
+                  <ObjectiveRow
+                    duration={duration}
+                    handleUpdate={handleUpdate}
+                    isSelected={selectedObjectiveId === objective.id}
+                    isSidebarCollapsed={isSidebarCollapsed}
+                    objective={objective}
+                    onObjectiveSelect={onObjectiveSelect}
+                    statusColor={status?.color}
+                    statusName={status?.name ?? "No status"}
+                  />
+                </Box>
+              );
+            })}
+          </Box>
         </Box>
       );
     },
@@ -540,65 +636,6 @@ export const RoadmapGanttBoard = ({
     ],
   );
 
-  // Render bar content
-  const renderBarContent = useCallback((item: RoadmapGanttItem) => {
-    const { objective } = item;
-    const isAtRisk = objective.scheduleStatus === "at_risk";
-    const timelineStart = item.startDate ? new Date(item.startDate) : null;
-    const timelineEnd = item.endDate ? new Date(item.endDate) : null;
-    const targetEnd = objective.endDate ? new Date(objective.endDate) : null;
-    const timelineDays =
-      timelineStart && timelineEnd
-        ? Math.max(1, differenceInDays(timelineEnd, timelineStart))
-        : 1;
-    const targetPosition =
-      timelineStart && targetEnd
-        ? Math.min(
-            100,
-            Math.max(
-              0,
-              (differenceInDays(targetEnd, timelineStart) / timelineDays) * 100,
-            ),
-          )
-        : 100;
-
-    return (
-      <Box
-        className="absolute inset-0 overflow-hidden rounded-[inherit]"
-        style={{
-          background: isAtRisk
-            ? `linear-gradient(to right, ${hexToRgba(
-                objective.color,
-                0.28,
-              )} 0%, ${hexToRgba(
-                objective.color,
-                0.28,
-              )} ${targetPosition}%, ${hexToRgba(
-                objective.color,
-                0.1,
-              )} ${targetPosition}%, ${hexToRgba(objective.color, 0.1)} 100%)`
-            : hexToRgba(objective.color, 0.22),
-        }}
-      >
-        {isAtRisk && targetEnd ? (
-          <span
-            aria-label={`Target date ${format(targetEnd, "MMM d, yyyy")}`}
-            className="absolute inset-y-0 w-px bg-current opacity-35"
-            style={{ left: `${targetPosition}%` }}
-          />
-        ) : null}
-        <Flex align="center" className="h-full min-w-0 px-3" gap={2}>
-          <Text className="line-clamp-1 min-w-0" fontWeight="medium">
-            {objective.name}
-          </Text>
-          {isAtRisk ? (
-            <ObjectiveForecastRiskBadge label="delta" objective={objective} />
-          ) : null}
-        </Flex>
-      </Box>
-    );
-  }, []);
-
   return (
     <BaseGantt
       barClassName="hover:border-border-strong dark:hover:border-border-strong"
@@ -610,7 +647,8 @@ export const RoadmapGanttBoard = ({
       }}
       onDateUpdate={handleDateUpdate}
       onZoomLevelChange={onZoomLevelChange}
-      renderBarContent={renderBarContent}
+      pinnedItemIds={selectedObjectiveId ? [selectedObjectiveId] : undefined}
+      renderBarContent={renderRoadmapBarContent}
       renderSidebar={renderSidebar}
       rowHeight={ROADMAP_ROW_HEIGHT}
       stickyColumnsWidth={
@@ -619,6 +657,7 @@ export const RoadmapGanttBoard = ({
           : ROADMAP_STICKY_COLUMNS_WIDTH
       }
       storageKey="roadmapZoomLevel"
+      virtualizeRows
       zoomLevel="months"
     />
   );

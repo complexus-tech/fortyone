@@ -53,7 +53,7 @@ export const createKeyResultTool = tool({
       lead,
       contributors,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     const session = await auth();
 
@@ -64,7 +64,7 @@ export const createKeyResultTool = tool({
       };
     }
 
-    const workspaceSlug = (experimental_context as { workspaceSlug: string })
+    const workspaceSlug = (experimentalContext as { workspaceSlug: string })
       .workspaceSlug;
 
     const ctx = { session, workspaceSlug };

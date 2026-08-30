@@ -12,6 +12,6 @@ export const useStoryGitHubComments = (storyId: string, enabled = true) => {
     queryKey: githubKeys.storyComments(workspaceSlug, storyId),
     queryFn: () =>
       getStoryGitHubComments(storyId, { session: session!, workspaceSlug }),
-    enabled: !!storyId && enabled,
+    enabled: Boolean(storyId) && enabled,
   });
 };

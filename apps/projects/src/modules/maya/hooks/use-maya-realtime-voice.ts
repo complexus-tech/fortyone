@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/api-url";
 import type { MayaUIMessage } from "@/lib/ai/tools/types";
-import { useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { feedbackKeys, notificationKeys, sprintKeys } from "@/constants/keys";
 import { storyKeys } from "@/modules/stories/constants";
 import {
@@ -14,137 +14,30 @@ import {
   mergeRealtimeVoiceMessages,
 } from "../utils/realtime-voice-messages";
 import {
-  extractRealtimeClientAction,
-  type RealtimeClientAction,
-  type RealtimeTheme,
-} from "../utils/realtime-client-actions";
-
-type RealtimeVoiceStatus =
-  | "idle"
-  | "connecting"
-  | "connected"
-  | "disconnecting";
-
-type ApiResponse<T> = {
-  data?: T;
-  error?: {
-    message?: string;
-  };
-};
-
-type RealtimeSessionResponse = {
-  clientSecret: string;
-  expiresAt?: number;
-  maxSessionSeconds: number;
-  model: string;
-  monthlyLimitSeconds: number;
-  remainingSeconds: number;
-  sessionId: string;
-  voice: string;
-};
-
-type RealtimeFunctionCall = {
-  arguments?: string;
-  call_id?: string;
-  name?: string;
-  type?: string;
-};
-
-type RealtimeServerEvent = {
-  delta?: string;
-  error?: {
-    message?: string;
-  };
-  item?: {
-    id?: string;
-    role?: string;
-    type?: string;
-  };
-  item_id?: string;
-  response?: {
-    output?: RealtimeFunctionCall[];
-  };
-  response_id?: string;
-  transcript?: string;
-  type?: string;
-};
-
-type RealtimeToolOutput = {
-  clientAction?: unknown;
-  success?: boolean;
-  error?: string;
-};
-
-type UseMayaRealtimeVoiceOptions = {
-  conversationMessages: MayaUIMessage[];
-  currentPath: string;
-  navigate: (path: string) => void;
-  setApplicationTheme: (theme: RealtimeTheme) => void;
-};
-
-const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
-const FALLBACK_REALTIME_MAX_SESSION_SECONDS = 5 * 60;
-const REALTIME_IDLE_TIMEOUT_MS = 60_000;
-const GOODBYE_DISCONNECT_DELAY_MS = 800;
-const MAX_REALTIME_CONTEXT_MESSAGES = 24;
-const REALTIME_ACTIVITY_EVENTS = new Set([
-  "conversation.item.added",
-  "conversation.item.created",
-  "conversation.item.input_audio_transcription.completed",
-  "conversation.item.input_audio_transcription.delta",
-  "input_audio_buffer.speech_started",
-  "input_audio_buffer.speech_stopped",
-  "response.audio.delta",
-  "response.audio.done",
-  "response.audio_transcript.delta",
-  "response.audio_transcript.done",
-  "response.created",
-  "response.done",
-  "response.output_audio.delta",
-  "response.output_audio.done",
-  "response.output_audio_transcript.delta",
-  "response.output_audio_transcript.done",
-  "response.output_item.added",
-]);
-
-const isBrowserRealtimeSupported = () => {
-  if (
-    typeof window === "undefined" ||
-    typeof RTCPeerConnection === "undefined" ||
-    !("mediaDevices" in navigator)
-  ) {
-    return false;
-  }
-
-  return "getUserMedia" in navigator.mediaDevices;
-};
-
-const errorMessage = (error: unknown, fallback: string) => {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-  return fallback;
-};
-
-const parseRealtimeToolOutput = async (response: Response) => {
-  const payload = (await response
-    .json()
-    .catch(() => null)) as ApiResponse<RealtimeToolOutput> | null;
-
-  if (!response.ok) {
-    return {
-      success: false,
-      error: payload?.error?.message ?? "Tool execution failed.",
-    };
-  }
-
-  return (
-    payload?.data ?? {
-      success: false,
-      error: "Tool returned an unreadable response.",
-    }
-  );
-};
+  createRealtimePeerConnection,
+  disposeRealtimePeerConnection,
+} from "../utils/realtime-peer-connection";
+import { extractRealtimeClientAction } from "../utils/realtime-client-actions";
+import type { RealtimeClientAction } from "../utils/realtime-client-actions";
+import {
+  FALLBACK_REALTIME_MAX_SESSION_SECONDS,
+  GOODBYE_DISCONNECT_DELAY_MS,
+  getRealtimeErrorMessage,
+  isBrowserRealtimeSupported,
+  MAX_REALTIME_CONTEXT_MESSAGES,
+  parseRealtimeCallAnswer,
+  parseRealtimeSessionResponse,
+  parseRealtimeToolOutput,
+  REALTIME_ACTIVITY_EVENTS,
+  REALTIME_CALLS_URL,
+  REALTIME_IDLE_TIMEOUT_MS,
+  type RealtimeFunctionCall,
+  type RealtimeServerEvent,
+  type RealtimeToolOutput,
+  type RealtimeVoiceStatus,
+  type UseMayaRealtimeVoiceOptions,
+} from "./maya-realtime-voice-contract";
+import { useRealtimeVoiceMessageOrder } from "./use-realtime-voice-message-order";
 
 export const useMayaRealtimeVoice = ({
   conversationMessages,
@@ -174,8 +67,8 @@ export const useMayaRealtimeVoice = ({
   const conversationMessagesRef = useRef(conversationMessages);
   const messagesRef = useRef<MayaUIMessage[]>([]);
   const voiceAnchorMessageIdRef = useRef<string | null>(null);
-  const voiceMessageOrdersRef = useRef<Map<string, number>>(new Map());
-  const nextVoiceMessageOrderRef = useRef(0);
+  const { getMessageOrder, rememberEventItemOrder, resetMessageOrders } =
+    useRealtimeVoiceMessageOrder();
   const [status, setStatus] = useState<RealtimeVoiceStatus>("idle");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -267,8 +160,9 @@ export const useMayaRealtimeVoice = ({
     handledFunctionCallsRef.current.clear();
     pendingClientActionRef.current = null;
 
-    peerConnectionRef.current?.close();
+    const peerConnection = peerConnectionRef.current;
     peerConnectionRef.current = null;
+    disposeRealtimePeerConnection(peerConnection);
 
     localStreamRef.current?.getTracks().forEach((track) => {
       track.stop();
@@ -348,42 +242,6 @@ export const useMayaRealtimeVoice = ({
     setApplicationThemeRef.current(action.theme);
   }, []);
 
-  const getVoiceMessageOrder = useCallback((messageId: string) => {
-    const existingOrder = voiceMessageOrdersRef.current.get(messageId);
-    if (existingOrder !== undefined) {
-      return existingOrder;
-    }
-
-    const nextOrder = nextVoiceMessageOrderRef.current;
-    nextVoiceMessageOrderRef.current += 1;
-    voiceMessageOrdersRef.current.set(messageId, nextOrder);
-    return nextOrder;
-  }, []);
-
-  const rememberEventItemOrder = useCallback(
-    (event: RealtimeServerEvent) => {
-      if (event.type === "input_audio_buffer.speech_started" && event.item_id) {
-        getVoiceMessageOrder(`voice-user-${event.item_id}`);
-        return;
-      }
-
-      if (
-        (event.type === "conversation.item.added" ||
-          event.type === "conversation.item.created") &&
-        event.item?.id
-      ) {
-        const role = event.item.role === "assistant" ? "assistant" : "user";
-        getVoiceMessageOrder(`voice-${role}-${event.item.id}`);
-        return;
-      }
-
-      if (event.type === "response.output_item.added" && event.item?.id) {
-        getVoiceMessageOrder(`voice-assistant-${event.item.id}`);
-      }
-    },
-    [getVoiceMessageOrder],
-  );
-
   const runRealtimeTool = useCallback(
     async (functionCall: RealtimeFunctionCall) => {
       resetIdleTimer();
@@ -425,7 +283,10 @@ export const useMayaRealtimeVoice = ({
             .then(parseRealtimeToolOutput)
             .catch((toolError: unknown) => ({
               success: false,
-              error: errorMessage(toolError, "Tool execution failed."),
+              error: getRealtimeErrorMessage(
+                toolError,
+                "Tool execution failed.",
+              ),
             }))
         : {
             success: false,
@@ -520,7 +381,7 @@ export const useMayaRealtimeVoice = ({
 
       const transcriptUpdate = getRealtimeTranscriptUpdate(event);
       if (transcriptUpdate) {
-        const order = getVoiceMessageOrder(transcriptUpdate.id);
+        const order = getMessageOrder(transcriptUpdate.id);
         setMessages((currentMessages) =>
           applyRealtimeTranscriptUpdate(
             currentMessages,
@@ -560,7 +421,7 @@ export const useMayaRealtimeVoice = ({
     },
     [
       clearSpeakingTimer,
-      getVoiceMessageOrder,
+      getMessageOrder,
       handleFunctionCalls,
       markSpeaking,
       rememberEventItemOrder,
@@ -606,19 +467,7 @@ export const useMayaRealtimeVoice = ({
           signal,
         },
       );
-      const payload = (await response
-        .json()
-        .catch(() => null)) as ApiResponse<RealtimeSessionResponse> | null;
-
-      if (!response.ok) {
-        throw new Error(
-          payload?.error?.message ?? "Failed to create voice session.",
-        );
-      }
-      if (!payload?.data?.clientSecret || !payload.data.sessionId) {
-        throw new Error("Voice session did not include a client secret.");
-      }
-      return payload.data;
+      return parseRealtimeSessionResponse(response);
     },
     [currentPath, workspaceSlug],
   );
@@ -673,7 +522,7 @@ export const useMayaRealtimeVoice = ({
       }
       activeSessionIdRef.current = session.sessionId;
 
-      const peerConnection = new RTCPeerConnection();
+      const peerConnection = createRealtimePeerConnection();
       peerConnectionRef.current = peerConnection;
 
       const remoteAudio = document.createElement("audio");
@@ -738,14 +587,11 @@ export const useMayaRealtimeVoice = ({
         },
         signal: abortController.signal,
       });
-      if (!answerResponse.ok) {
-        throw new Error("Failed to connect voice session.");
-      }
       if (connectionAttemptRef.current !== attemptId) {
         return;
       }
 
-      const answerSdp = await answerResponse.text();
+      const answerSdp = await parseRealtimeCallAnswer(answerResponse);
       if (connectionAttemptRef.current !== attemptId) {
         return;
       }
@@ -759,7 +605,9 @@ export const useMayaRealtimeVoice = ({
       }
       closeConnection();
       setStatus("idle");
-      setError(errorMessage(connectError, "Failed to start voice session."));
+      setError(
+        getRealtimeErrorMessage(connectError, "Failed to start voice session."),
+      );
     }
   }, [
     closeConnection,
@@ -772,11 +620,10 @@ export const useMayaRealtimeVoice = ({
 
   const clearMessages = useCallback(() => {
     messagesRef.current = [];
-    voiceMessageOrdersRef.current.clear();
-    nextVoiceMessageOrderRef.current = 0;
+    resetMessageOrders();
     setMessages([]);
     setError(null);
-  }, []);
+  }, [resetMessageOrders]);
 
   useEffect(() => {
     const handlePageHide = () => {

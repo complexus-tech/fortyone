@@ -2,10 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useTerminology, useWorkspacePath } from "@/hooks";
-import type { DetailedStory } from "@/modules/story/types";
 import { storyKeys } from "../constants";
 import { bulkDeleteAction } from "../actions/bulk-delete-stories";
 import type {
+  DetailedStory,
   GroupedStoriesResponse,
   GroupStoriesResponse,
   Story,

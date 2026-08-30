@@ -168,5 +168,6 @@ export * from "./api-key";
 export * from "./service-account";
 export * from "./oauth";
 export * from "./webhook";
+export * from "./http";
 export * from "./user-multiple-02";
 export * from "./video-02";

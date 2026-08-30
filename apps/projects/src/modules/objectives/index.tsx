@@ -1,28 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
 import { Text, Button, Box } from "ui";
-import { CrownIcon, PlusIcon } from "icons";
-import { FeatureGuard, NewObjectiveDialog } from "@/components/ui";
-import {
-  useLocalStorage,
-  useTerminology,
-  useUserRole,
-  useWorkspacePath,
-} from "@/hooks";
-import type { ZoomLevel } from "@/components/ui/base-gantt";
-import { ObjectiveViews } from "@/modules/roadmap/components/objective-views";
-import {
-  DEFAULT_OBJECTIVE_VIEW_OPTIONS,
-  type ObjectiveViewOptions,
-} from "@/modules/roadmap/objective-board-utils";
-import { useRoadmapLayout } from "@/modules/roadmap/use-roadmap-layout";
-import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
+import { CrownIcon } from "icons";
+import { FeatureGuard } from "@/components/ui";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { ObjectivesHeader } from "./components/header";
 import { ListObjectives } from "./components/list-objectives";
-import { TeamObjectivesHeader } from "./components/team-header";
-import { useObjectives, useTeamObjectives } from "./hooks/use-objectives";
+import { useObjectives } from "./hooks/use-objectives";
 import { ObjectivesSkeleton } from "./components/objectives-skeleton";
 
 const Guard = () => {
@@ -74,83 +58,6 @@ export const ObjectivesList = () => {
       <FeatureGuard fallback={<Guard />} feature="objective">
         <ListObjectives objectives={objectives} />
       </FeatureGuard>
-    </>
-  );
-};
-
-export const TeamObjectivesList = () => {
-  const { teamId } = useParams<{ teamId: string }>();
-  const { data: objectives = [], isPending } = useTeamObjectives(teamId);
-  const { userRole } = useUserRole();
-  const { getTermDisplay } = useTerminology();
-  const [isOpen, setIsOpen] = useState(false);
-  const { layout, setLayout } = useRoadmapLayout();
-  const [zoomLevel, setZoomLevel] = useLocalStorage<ZoomLevel>(
-    "roadmapZoomLevel",
-    "months",
-  );
-  const [viewOptions, setViewOptions] = useLocalStorage<ObjectiveViewOptions>(
-    "objectivesViewOptions",
-    DEFAULT_OBJECTIVE_VIEW_OPTIONS,
-  );
-  const openNewObjectiveDialog = () => {
-    if (userRole !== "guest") setIsOpen(true);
-  };
-  const emptyState = (
-    <Box className="flex h-full items-center justify-center">
-      <Box className="flex flex-col items-center">
-        <RoadmapEmptyIllustration />
-        <Text className="mt-8 mb-6" fontSize="3xl">
-          No {getTermDisplay("objectiveTerm", { variant: "plural" })} found
-        </Text>
-        <Text className="mb-6 max-w-md text-center" color="muted">
-          This team doesn&apos;t have any{" "}
-          {getTermDisplay("objectiveTerm", { variant: "plural" })} yet. Create a
-          new {getTermDisplay("objectiveTerm")} to get started.
-        </Text>
-        <Button
-          color="primary"
-          disabled={userRole === "guest"}
-          leftIcon={<PlusIcon className="h-[1.1rem]" />}
-          onClick={openNewObjectiveDialog}
-          size="md"
-        >
-          Create new {getTermDisplay("objectiveTerm")}
-        </Button>
-      </Box>
-    </Box>
-  );
-
-  return (
-    <>
-      <TeamObjectivesHeader
-        layout={layout}
-        onCreateObjective={openNewObjectiveDialog}
-        setLayout={setLayout}
-        setViewOptions={setViewOptions}
-        viewOptions={viewOptions}
-      />
-      <FeatureGuard fallback={<Guard />} feature="objective">
-        <Box className="h-[calc(100%-3.6rem)] min-w-0">
-          <ObjectiveViews
-            emptyState={emptyState}
-            isPending={isPending}
-            key={teamId}
-            layout={layout}
-            objectives={objectives}
-            onCreateObjective={openNewObjectiveDialog}
-            onZoomLevelChange={setZoomLevel}
-            setViewOptions={setViewOptions}
-            viewOptions={viewOptions}
-            zoomLevel={zoomLevel}
-          />
-        </Box>
-      </FeatureGuard>
-      <NewObjectiveDialog
-        isOpen={isOpen}
-        setIsOpen={setIsOpen}
-        teamId={teamId}
-      />
     </>
   );
 };

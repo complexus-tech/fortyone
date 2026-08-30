@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { analyticsKeys } from "@/constants/keys";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
-import { useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useSession } from "@/lib/auth/client";
 import { getCommandCenterReport } from "../queries/get-command-center-report";
 import type { AnalyticsFilters } from "../types";

@@ -3,10 +3,10 @@ import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
-import { objectiveKeys } from "@/modules/objectives/constants";
-import type { DetailedStory } from "@/modules/story/types";
+import { objectiveKeys } from "@/shared/objectives/keys";
 import { storyKeys } from "../constants";
 import type {
+  DetailedStory,
   GroupedStoriesResponse,
   GroupStoriesResponse,
   Story,

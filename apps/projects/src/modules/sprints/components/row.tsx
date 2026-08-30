@@ -3,7 +3,7 @@ import { Flex, Text, ProgressBar, Box, Badge, Tooltip } from "ui";
 import Link from "next/link";
 import { ArrowRightIcon, CalendarIcon, SprintsIcon } from "icons";
 import { format } from "date-fns";
-import { QueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
 import { RowWrapper } from "@/components/ui/row-wrapper";
 import type { Sprint } from "@/modules/sprints/types";
@@ -33,7 +33,7 @@ export const SprintRow = ({
   const sprintTerm = getTermDisplay("sprintTerm", { capitalize: true });
   const { data: session } = useSession();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
-  const queryClient = new QueryClient();
+  const queryClient = useQueryClient();
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
 
@@ -75,7 +75,7 @@ export const SprintRow = ({
             className="line-clamp-1 antialiased md:text-[1.05rem]"
             fontWeight="semibold"
           >
-            {name?.replace("Sprint", sprintTerm)}
+            {name.replace("Sprint", sprintTerm)}
           </Text>
           <Text className="flex items-center gap-1.5" color="muted">
             <CalendarIcon className="h-[1.1rem]" />

@@ -1,7 +1,7 @@
 get:
   operationId: listWebhookEndpoints
   tags: [Webhooks]
-  summary: List outbound webhook endpoints
+  summary: List webhooks
   description: Requires a current workspace administrator personal access token.
   x-fortyone-scope: webhooks:manage
   parameters:
@@ -31,7 +31,7 @@ get:
 post:
   operationId: createWebhookEndpoint
   tags: [Webhooks]
-  summary: Register an outbound webhook endpoint
+  summary: Create webhook
   description: Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
   x-fortyone-scope: webhooks:manage
   parameters:

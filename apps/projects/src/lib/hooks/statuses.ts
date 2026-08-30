@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
-import { useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { statusKeys } from "@/constants/keys";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getStatuses } from "../queries/states/get-states";

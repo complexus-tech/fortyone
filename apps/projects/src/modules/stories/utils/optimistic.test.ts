@@ -1,7 +1,6 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
-import type { DetailedStory } from "../../story/types";
-import type { StoryGroup } from "../types";
+import type { DetailedStory, StoryGroup } from "../types";
 import {
   computeTargetKey,
   moveStoryBetweenGroups,

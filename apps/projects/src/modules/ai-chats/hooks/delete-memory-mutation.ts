@@ -38,7 +38,9 @@ export const useDeleteMemory = () => {
         description: error.message || "Your memory was not deleted",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(id),
+          onClick: () => {
+            mutation.mutate(id);
+          },
         },
       });
     },

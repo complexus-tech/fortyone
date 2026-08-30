@@ -11,7 +11,10 @@ export const deleteKeyResultTool = tool({
     keyResultId: z.string().describe("Key result ID to delete"),
   }),
 
-  execute: async ({ keyResultId }, { experimental_context }) => {
+  execute: async (
+    { keyResultId },
+    { experimental_context: experimentalContext },
+  ) => {
     const session = await auth();
 
     if (!session) {
@@ -21,7 +24,7 @@ export const deleteKeyResultTool = tool({
       };
     }
 
-    const workspaceSlug = (experimental_context as { workspaceSlug: string })
+    const workspaceSlug = (experimentalContext as { workspaceSlug: string })
       .workspaceSlug;
 
     const ctx = { session, workspaceSlug };

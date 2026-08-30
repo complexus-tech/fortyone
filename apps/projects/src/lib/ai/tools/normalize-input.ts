@@ -1,5 +1,5 @@
 export const normalizeOptionalString = (value?: string | null) => {
-  if (value == null) {
+  if (value === null || value === undefined) {
     return undefined;
   }
 
@@ -8,7 +8,7 @@ export const normalizeOptionalString = (value?: string | null) => {
 };
 
 export const normalizeStringArray = (values?: string[] | null) => {
-  if (values == null) {
+  if (values === null || values === undefined) {
     return undefined;
   }
 

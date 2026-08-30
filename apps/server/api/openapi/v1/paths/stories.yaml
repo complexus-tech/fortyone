@@ -1,7 +1,7 @@
 get:
   operationId: listStories
   tags: [Stories]
-  summary: List stories visible to the actor
+  summary: List stories
   description: Personal access tokens are supported in this preview. The cursor is bound to this workspace, credential principal, team filter, and page size.
   x-fortyone-scope: stories:read
   parameters:
@@ -34,7 +34,7 @@ get:
 post:
   operationId: createStory
   tags: [Stories]
-  summary: Create a story
+  summary: Create story
   description: Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
   x-fortyone-scope: stories:write
   parameters:

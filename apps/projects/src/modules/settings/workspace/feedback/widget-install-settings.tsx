@@ -8,12 +8,12 @@ import { SectionHeader } from "@/modules/settings/components";
 import {
   buildFeedbackWidgetSnippet,
   buildInlineFeedbackWidgetMarkup,
-} from "@/modules/feedback-widget/install";
+} from "@/shared/feedback-widget/install";
 import type {
   FeedbackWidgetMode,
   FeedbackWidgetTab,
   FeedbackWidgetTheme,
-} from "@/modules/feedback-widget/protocol";
+} from "@/shared/feedback-widget/protocol";
 
 const subscribeToBrowserOrigin = () => () => undefined;
 const getBrowserOrigin = () => window.location.origin;

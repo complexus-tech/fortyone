@@ -9,7 +9,7 @@ import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useMediaQuery } from "@/hooks";
 import { hexToRgba } from "@/utils";
-import { ObjectivePillarProperty } from "@/modules/strategy/objective-pillar-property";
+import { ObjectivePillarProperty } from "@/shared/strategy-map/objective-pillar-property";
 import type { ObjectiveUpdate } from "../../types";
 import {
   useCanUpdateObjective,
@@ -43,6 +43,7 @@ export const Properties = () => {
         Properties:
       </Text>
       <ObjectivePillarProperty
+        canUpdate={canUpdate}
         objectiveId={objectiveId}
         variant={isMobile ? "solid" : "naked"}
       />

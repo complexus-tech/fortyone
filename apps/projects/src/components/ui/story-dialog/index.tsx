@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { Button, Dialog, Flex, Tooltip } from "ui";
 import {
   ArrowDown2Icon,
@@ -14,7 +14,7 @@ import { useWorkspacePath } from "@/hooks";
 import { useStoryById } from "@/modules/story/hooks/story";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import type { Story } from "@/modules/stories/types";
 import { StoryPage } from "../../../modules/story";
 import { StoryActionsMenu } from "../../../modules/story/components/story-actions-menu";
@@ -39,17 +39,11 @@ export const StoryDialog = ({
   const { data: session } = useSession();
   const { workspaceSlug, withWorkspace } = useWorkspacePath();
 
-  // Memoized navigation state
-  const navigationState = useMemo(() => {
-    const currentIndex = stories.findIndex((s) => s.id === storyId);
-    const hasPrev = currentIndex > 0;
-    const hasNext = currentIndex < stories.length - 1;
-    const prevStoryId = hasPrev ? stories[currentIndex - 1]?.id : null;
-    const nextStoryId = hasNext ? stories[currentIndex + 1]?.id : null;
-    return { hasPrev, hasNext, prevStoryId, nextStoryId };
-  }, [stories, storyId]);
-
-  const { hasPrev, hasNext, prevStoryId, nextStoryId } = navigationState;
+  const currentIndex = stories.findIndex((s) => s.id === storyId);
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < stories.length - 1;
+  const prevStoryId = hasPrev ? stories[currentIndex - 1]?.id : null;
+  const nextStoryId = hasNext ? stories[currentIndex + 1]?.id : null;
 
   // Prefetch adjacent stories
   useEffect(() => {

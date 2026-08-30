@@ -17,7 +17,9 @@ TimeAgo.addDefaultLocale(en);
 const isProduction = process.env.NODE_ENV === "production";
 
 export const Providers = ({ children }: { children: ReactNode }) => {
-  const [queryClient] = useState(() => getQueryClient());
+  // QueryClient is an immutable provider resource, so it is initialized once and never replaced.
+  // eslint-disable-next-line react/hook-use-state -- QueryClient is intentionally never replaced.
+  const [queryClient] = useState(getQueryClient);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -27,13 +29,7 @@ export const Providers = ({ children }: { children: ReactNode }) => {
             {children}
           </ThemeProvider>
         </NuqsAdapter>
-        <Suspense>
-          {isProduction ? (
-            <>
-              <PostHogPageView />
-            </>
-          ) : null}
-        </Suspense>
+        <Suspense>{isProduction ? <PostHogPageView /> : null}</Suspense>
       </PostHogProvider>
       {/* <ReactQueryDevtools  initialIsOpen={false} /> */}
     </QueryClientProvider>

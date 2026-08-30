@@ -3,6 +3,7 @@
 import type { KeyResult, Objective } from "@/modules/objectives/types";
 import {
   createStrategyMapLayout,
+  getKeyResultNodeId,
   getObjectiveNodeId,
   getPillarNodeId,
   getStrategyConnections,
@@ -110,5 +111,48 @@ describe("strategy map layout", () => {
         ({ targetId }) => targetId === "key-result:key-result-1",
       ),
     ).toBe(false);
+  });
+
+  it("reserves expanded key-result geometry before its data is available", () => {
+    const objectiveWithKeyResults = {
+      id: "objective-1",
+      keyResultCount: 3,
+    } as Objective;
+    const expandedObjectiveIds = new Set([objectiveWithKeyResults.id]);
+    const unloadedLayout = createStrategyMapLayout(
+      strategy,
+      [objectiveWithKeyResults],
+      new Map(),
+      expandedObjectiveIds,
+    );
+    const loadedLayout = createStrategyMapLayout(
+      strategy,
+      [objectiveWithKeyResults],
+      new Map([
+        [
+          objectiveWithKeyResults.id,
+          [
+            { id: "key-result-1" },
+            { id: "key-result-2" },
+            { id: "key-result-3" },
+          ] as KeyResult[],
+        ],
+      ]),
+      expandedObjectiveIds,
+    );
+
+    expect(unloadedLayout.width).toBe(loadedLayout.width);
+    expect(unloadedLayout.height).toBe(loadedLayout.height);
+    expect(
+      unloadedLayout.positions[getObjectiveNodeId(objectiveWithKeyResults.id)],
+    ).toEqual(
+      loadedLayout.positions[getObjectiveNodeId(objectiveWithKeyResults.id)],
+    );
+    expect(
+      unloadedLayout.positions[getKeyResultNodeId("key-result-1")],
+    ).toBeUndefined();
+    expect(
+      loadedLayout.positions[getKeyResultNodeId("key-result-1")],
+    ).toBeDefined();
   });
 });

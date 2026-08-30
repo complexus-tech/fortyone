@@ -1,4 +1,4 @@
-import { get, post, put, remove } from "@/lib/http";
+import { post, put, remove } from "@/lib/http";
 import type { WorkspaceCtx } from "@/lib/http";
 import type { ApiResponse } from "@/types";
 import type {
@@ -7,18 +7,8 @@ import type {
   StrategyUpdate,
   UpdateStrategicPillar,
 } from "./types";
-import {
-  normalizeStrategyMap,
-  type StrategyMapResponse,
-} from "./normalize-strategy-map";
 
-export const getStrategyMap = async (ctx: WorkspaceCtx) => {
-  const response = await get<ApiResponse<StrategyMapResponse>>(
-    "strategy-map",
-    ctx,
-  );
-  return normalizeStrategyMap(response.data);
-};
+export { alignObjective, getStrategyMap } from "@/shared/strategy-map/api";
 
 export const updateStrategy = (strategy: StrategyUpdate, ctx: WorkspaceCtx) =>
   put<StrategyUpdate, ApiResponse<null>>("strategy-map", strategy, ctx);
@@ -41,17 +31,6 @@ export const updateStrategicPillar = (
   put<UpdateStrategicPillar, ApiResponse<StrategicPillar>>(
     `strategy-map/pillars/${pillarId}`,
     pillar,
-    ctx,
-  );
-
-export const alignObjective = (
-  objectiveId: string,
-  pillarId: string | null,
-  ctx: WorkspaceCtx,
-) =>
-  put<{ pillarId: string | null }, ApiResponse<null>>(
-    `strategy-map/objectives/${objectiveId}`,
-    { pillarId },
     ctx,
   );
 

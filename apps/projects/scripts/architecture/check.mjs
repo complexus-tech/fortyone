@@ -23,7 +23,10 @@ const usage = `Usage:
 
 The ordinary baseline writer accepts debt reductions only. New, grown, or moved
 debt requires the deliberately noisy --force-with-adr flag and a reviewable ADR
-or architecture-plan reference.`;
+or architecture-plan reference. A scanner-policy change also requires that
+explicit ADR reference and records the policy transition. Oversized-file debt
+is a hard ceiling: an ADR cannot approve a new oversized file or growth in an
+existing one.`;
 
 const parseArguments = (arguments_) => {
   let writeBaseline = false;
@@ -135,12 +138,14 @@ const main = async () => {
   });
 
   if (!prepared.allowed) {
+    const hardBlockMessage =
+      prepared.hardBlockedIssues.length > 0
+        ? "\n\nOversized-file debt is a hard ceiling. Reduce the file or split a cohesive behavior slice; --force-with-adr cannot approve this growth."
+        : "\n\nUse --force-with-adr <reference> only after the growth is approved and documented.";
     process.stderr.write(
       `Refusing to bless ${prepared.issues.length} new, grown, or moved debt item(s):\n${prepared.issues
         .map(formatIssue)
-        .join(
-          "\n",
-        )}\n\nUse --force-with-adr <reference> only after the growth is approved and documented.\n`,
+        .join("\n")}${hardBlockMessage}\n`,
     );
     process.exitCode = 1;
     return;

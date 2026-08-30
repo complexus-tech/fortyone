@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui";
 import type { Workspace } from "@/types";
 import type { Team } from "@/modules/teams/types";
-import { inviteOnboardingMembers } from "@/modules/invitations/actions/invite-onboarding-members";
+import { inviteOnboardingMembers } from "@/modules/invitations/public/onboarding";
 import { withOnboardingCallbackUrl } from "@/modules/onboarding/routing";
 import { InviteForm } from "./components/invite-form";
 
@@ -34,10 +34,13 @@ export const InviteTeam = ({
   const [members, setMembers] = useState<Member[]>([]);
   const isValid = members.some((m) => isValidEmail(m.email));
 
-  const handleContinue = async () => {
-    const validEmails = members
-      .filter((m) => isValidEmail(m.email))
-      .map((m) => m.email.toLowerCase());
+  const handleContinue = () => {
+    const validEmails: string[] = [];
+    for (const member of members) {
+      if (isValidEmail(member.email)) {
+        validEmails.push(member.email.toLowerCase());
+      }
+    }
     if (validEmails.length === 0) {
       toast.warning("Invalid email addresses", {
         description: "Please enter valid email addresses",
@@ -45,22 +48,33 @@ export const InviteTeam = ({
     }
 
     setIsLoading(true);
-    const res = await inviteOnboardingMembers(
+    void inviteOnboardingMembers(
       validEmails,
       teams.map((t) => t.id),
       activeWorkspace.slug,
-    );
-    if (res.error?.message) {
-      setIsLoading(false);
-      toast.error("Failed to invite members", {
-        description:
-          res.error.message ||
-          "But don't worry, you can add them later after you've signed in.",
+    )
+      .then((res) => {
+        if (res.error?.message) {
+          toast.error("Failed to invite members", {
+            description:
+              res.error.message ||
+              "But don't worry, you can add them later after you've signed in.",
+          });
+          return false;
+        }
+
+        return true;
+      })
+      .finally(() => {
+        setIsLoading(false);
+      })
+      .then((shouldContinue) => {
+        if (shouldContinue) {
+          router.push(
+            withOnboardingCallbackUrl("/onboarding/welcome", callbackUrl),
+          );
+        }
       });
-      return;
-    }
-    setIsLoading(false);
-    router.push(withOnboardingCallbackUrl("/onboarding/welcome", callbackUrl));
   };
 
   const welcomeUrl = withOnboardingCallbackUrl(

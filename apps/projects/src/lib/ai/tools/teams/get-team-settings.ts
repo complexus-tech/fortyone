@@ -10,7 +10,10 @@ export const getTeamSettingsTool = tool({
     teamId: z.string().describe("Team ID to get settings for (required)"),
   }),
 
-  execute: async ({ teamId }, { experimental_context }) => {
+  execute: async (
+    { teamId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
 
@@ -21,7 +24,7 @@ export const getTeamSettingsTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

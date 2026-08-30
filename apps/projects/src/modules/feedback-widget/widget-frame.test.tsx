@@ -8,7 +8,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import type { PublicPortal } from "@/modules/public-portal/types";
+import type { PublicPortal } from "@/shared/feedback-widget/types";
 import {
   confirmWidgetFeedbackVerificationAction,
   createWidgetFeedbackAction,

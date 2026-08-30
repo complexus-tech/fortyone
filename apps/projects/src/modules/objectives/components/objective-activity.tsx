@@ -11,8 +11,8 @@ import type { StoryPriority } from "@/modules/stories/types";
 import { useObjectiveStatuses } from "@/lib/hooks/objective-statuses";
 import { useKeyResults } from "@/modules/objectives/hooks";
 import { ObjectiveHealthIcon } from "@/components/ui";
-import type { ObjectiveActivity, ObjectiveHealth } from "../types";
 import { useWorkspacePath } from "@/hooks";
+import type { ObjectiveActivity, ObjectiveHealth } from "../types";
 
 export const ObjectiveActivityComponent = ({
   userId,

@@ -7,7 +7,7 @@ import { useEditor } from "@tiptap/react";
 import { Avatar, Box, Button, Checkbox, Flex, Text, TextEditor } from "ui";
 import { CommentIcon, ReplyIcon } from "icons";
 import { toast } from "sonner";
-import { getStoryCommentEditorExtensions } from "@/modules/story/components/story-comment-editor";
+import { getCommentEditorExtensions } from "@/lib/tiptap/comment-editor";
 import type {
   PublicPortal,
   PublicPortalParticipant,
@@ -43,7 +43,7 @@ const FeedbackCommentComposer = ({
   const editor = useEditor({
     content: "",
     editable: true,
-    extensions: getStoryCommentEditorExtensions({
+    extensions: getCommentEditorExtensions({
       placeholder: parentId ? "Reply to comment..." : "Leave a comment...",
     }),
     immediatelyRender: false,

@@ -21,7 +21,9 @@ export const useDeleteGitHubIssueSyncLink = () => {
         if (!old) return old;
         return {
           ...old,
-          issueSyncLinks: old.issueSyncLinks.filter((item) => item.id !== linkId),
+          issueSyncLinks: old.issueSyncLinks.filter(
+            (item) => item.id !== linkId,
+          ),
         };
       });
 
@@ -35,7 +37,7 @@ export const useDeleteGitHubIssueSyncLink = () => {
     },
     onSuccess: (res, _linkId, context) => {
       if (res.error?.message) {
-        if (context?.previous) {
+        if (context.previous) {
           queryClient.setQueryData(queryKey, context.previous);
         }
         toast.error("GitHub", { description: res.error.message });

@@ -1,6 +1,6 @@
 import { useParams } from "next/navigation";
 
-const EXTERNAL_LINK_PATTERN = /^(https?:|mailto:|tel:)/i;
+const EXTERNAL_LINK_PATTERN = /^(?:https?:|mailto:|tel:)/i;
 
 const isFortyOneSubdomain = () => {
   if (typeof window === "undefined") return false;
@@ -12,7 +12,7 @@ const isFortyOneSubdomain = () => {
 
 export const useWorkspacePath = () => {
   const params = useParams<{ workspaceSlug?: string }>();
-  const workspaceSlug = params?.workspaceSlug?.toLowerCase() ?? "";
+  const workspaceSlug = params.workspaceSlug?.toLowerCase() ?? "";
 
   const withWorkspace = (path: string) => {
     if (!workspaceSlug || !path) {

@@ -1,7 +1,7 @@
 get:
   operationId: getStoryComment
   tags: [Comments]
-  summary: Get one comment on a visible story
+  summary: Get comment
   description: Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
   x-fortyone-scope: comments:read
   x-fortyone-scopes: [comments:read, stories:read]

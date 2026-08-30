@@ -2,7 +2,7 @@ import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { deleteStoryAction } from "@/modules/story/actions/delete-story";
-import { isStoryDeletionOutcomeUncertainError } from "@/modules/story/actions/story-deletion-error";
+import { isStoryDeletionOutcomeUncertainError } from "@/shared/story/deletion";
 import { requireToolConfirmation } from "../tool-helpers";
 
 export const deleteStory = tool({

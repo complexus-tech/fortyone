@@ -1,6 +1,13 @@
 "use client";
 
-import { forwardRef, useRef, useEffect, useState, useMemo } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type KeyboardEvent,
+} from "react";
 import { cn } from "lib";
 
 export interface OTPInputProps {
@@ -16,14 +23,10 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
   ({ value, onChange, length = 6, className, hasError, disabled }, ref) => {
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-    const inputSlots = useMemo(
-      () =>
-        Array.from({ length }, (_, index) => ({
-          id: `otp-slot-${index + 1}`,
-          index,
-        })),
-      [length],
-    );
+    const inputSlots = Array.from({ length }, (_, index) => ({
+      id: `otp-slot-${index + 1}`,
+      index,
+    }));
 
     // Initialize input refs array
     useEffect(() => {
@@ -32,28 +35,26 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
 
     const handleInputChange = (index: number, inputValue: string) => {
       // Only allow single digit
-      if (inputValue.length > 1) {
-        inputValue = inputValue.slice(-1);
-      }
+      const digit = inputValue.slice(-1);
 
       // Only allow digits
-      if (!/^\d*$/.test(inputValue)) {
+      if (!/^\d*$/.test(digit)) {
         return;
       }
 
       const newValue = value.split("");
-      newValue[index] = inputValue;
+      newValue[index] = digit;
       const updatedValue = newValue.join("").padEnd(length, "");
 
       onChange(updatedValue);
 
       // Auto-focus next input
-      if (inputValue && index < length - 1) {
+      if (digit && index < length - 1) {
         inputRefs.current[index + 1]?.focus();
       }
     };
 
-    const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    const handleKeyDown = (index: number, e: KeyboardEvent) => {
       if (e.key === "Backspace") {
         if (!value[index] && index > 0) {
           // If current input is empty, focus previous input
@@ -66,7 +67,7 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
       }
     };
 
-    const handlePaste = (e: React.ClipboardEvent) => {
+    const handlePaste = (e: ClipboardEvent) => {
       e.preventDefault();
       const pastedData = e.clipboardData.getData("text").replace(/\D/g, "");
       if (pastedData.length <= length) {
@@ -78,24 +79,10 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
     };
 
     return (
-      <div ref={ref} className={cn("flex gap-2", className)}>
+      <div className={cn("flex gap-2", className)} ref={ref}>
         {inputSlots.map((slot) => (
           <input
-            key={slot.id}
-            ref={(el) => {
-              inputRefs.current[slot.index] = el;
-            }}
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={1}
-            value={value[slot.index] || ""}
-            onChange={(e) => handleInputChange(slot.index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(slot.index, e)}
-            onPaste={handlePaste}
-            onFocus={() => setFocusedIndex(slot.index)}
-            onBlur={() => setFocusedIndex(null)}
-            disabled={disabled}
+            aria-label={`Verification code digit ${slot.index + 1} of ${length}`}
             className={cn(
               "size-12 rounded-lg border text-center text-lg font-semibold transition-all duration-200",
               "border-border bg-surface/70",
@@ -108,6 +95,29 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>(
                   focusedIndex === slot.index,
               },
             )}
+            disabled={disabled}
+            inputMode="numeric"
+            key={slot.id}
+            maxLength={1}
+            onBlur={() => {
+              setFocusedIndex(null);
+            }}
+            onChange={(event) => {
+              handleInputChange(slot.index, event.target.value);
+            }}
+            onFocus={() => {
+              setFocusedIndex(slot.index);
+            }}
+            onKeyDown={(event) => {
+              handleKeyDown(slot.index, event);
+            }}
+            onPaste={handlePaste}
+            pattern="[0-9]*"
+            ref={(element) => {
+              inputRefs.current[slot.index] = element;
+            }}
+            type="text"
+            value={value[slot.index] || ""}
           />
         ))}
       </div>

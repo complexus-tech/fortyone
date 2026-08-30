@@ -5,7 +5,7 @@ import { ApiSettings } from "./index";
 
 const mockUseUserRole = jest.fn();
 
-jest.mock("@/hooks", () => ({
+jest.mock("@/hooks/role", () => ({
   useUserRole: () => mockUseUserRole(),
 }));
 

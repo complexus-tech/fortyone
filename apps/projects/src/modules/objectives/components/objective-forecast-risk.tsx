@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Tooltip } from "ui";
 import { SignalBannerRow } from "@/components/ui/signal-banner-row";
 import { useTerminology, useWorkspacePath } from "@/hooks";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import type { Objective } from "../types";
 import { getObjectiveForecastRiskCopy } from "./objective-forecast-risk-utils";
 

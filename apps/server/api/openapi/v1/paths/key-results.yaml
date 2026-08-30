@@ -1,7 +1,7 @@
 get:
   operationId: listKeyResults
   tags: [Objectives]
-  summary: List key results visible to the actor
+  summary: List key results
   description: Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
   x-fortyone-scope: objectives:read
   parameters:

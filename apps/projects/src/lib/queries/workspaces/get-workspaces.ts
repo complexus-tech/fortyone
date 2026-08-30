@@ -1,5 +1,5 @@
-import type { ApiResponse, Workspace } from "@/types";
 import { get } from "api-client";
+import type { ApiResponse, Workspace } from "@/types";
 
 export const getWorkspaces = async (
   _token?: string,

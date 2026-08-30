@@ -1,32 +1,33 @@
+import type * as FeedbackWidget from "@/shared/feedback-widget/types";
+
 export type PublicPortalTab = "feedback" | "roadmap" | "updates";
 
+/**
+ * Portal aliases preserve the public-portal API while the hosted portal and
+ * embedded widget consume the same feedback contract.
+ */
 export type FeedbackParticipationMode =
-  | "account_required"
-  | "verified_guest"
-  | "anonymous_allowed";
-
+  FeedbackWidget.FeedbackParticipationMode;
 export type FeedbackGuestIdentityPolicy =
-  | "show_identity"
-  | "allow_public_masking"
-  | "always_mask_guests";
-
-export type PublicParticipantKind =
-  | "account"
-  | "verified_guest"
-  | "external"
-  | "anonymous";
-
-export type PublicRequestStatus =
-  | "pending"
-  | "reviewing"
-  | "planned"
-  | "in_progress"
-  | "completed"
-  | "closed";
-
-export type PublicFeedbackListStatus = "active" | PublicRequestStatus;
-
-export type PublicPortalSort = "top" | "newest" | "oldest";
+  FeedbackWidget.FeedbackGuestIdentityPolicy;
+export type PublicParticipantKind = FeedbackWidget.PublicParticipantKind;
+export type PublicRequestStatus = FeedbackWidget.PublicRequestStatus;
+export type PublicFeedbackListStatus = FeedbackWidget.PublicFeedbackListStatus;
+export type PublicPortalSort = FeedbackWidget.PublicPortalSort;
+export type PublicRequestBoard = FeedbackWidget.PublicRequestBoard;
+export type PublicRequestComment = FeedbackWidget.PublicRequestComment;
+export type PublicFeedbackStoryLink = FeedbackWidget.PublicFeedbackStoryLink;
+export type PublicRequest = FeedbackWidget.PublicRequest;
+export type PublicPortalUpdate = FeedbackWidget.PublicPortalUpdate;
+export type PublicPortalWorkspace = FeedbackWidget.PublicPortalWorkspace;
+export type PublicPortalViewer = FeedbackWidget.PublicPortalViewer;
+export type PublicPortalGuestParticipant =
+  FeedbackWidget.PublicPortalGuestParticipant;
+export type PublicPortalAnonymousParticipant =
+  FeedbackWidget.PublicPortalAnonymousParticipant;
+export type PublicPortalParticipant = FeedbackWidget.PublicPortalParticipant;
+export type LegacyPublicPortalViewer = FeedbackWidget.LegacyPublicPortalViewer;
+export type PublicPortal = FeedbackWidget.PublicPortal;
 
 export type PublicPortalFilters = {
   boardId?: string;
@@ -35,23 +36,18 @@ export type PublicPortalFilters = {
   status?: PublicFeedbackListStatus;
 };
 
-export type PublicRequestBoard = {
+export type SimilarPublicFeedback = {
   id: string;
-  teamId?: string;
-  name: string;
-  slug?: string;
-  color?: string;
-};
-
-export type PublicRequestComment = {
-  id: string;
-  parentId?: string | null;
-  participantKind?: PublicParticipantKind;
-  authorMasked?: boolean;
+  slug: string;
+  title: string;
+  authorId: string | null;
   authorName: string;
   authorAvatar?: string | null;
-  body: string;
-  createdAtLabel: string;
+  status?: PublicRequestStatus;
+  voteCount: number;
+  commentCount: number;
+  confidence: number;
+  isDuplicate: boolean;
 };
 
 export type PublicContributorStats = {
@@ -88,112 +84,6 @@ export type PublicContributorCommentsPage = {
     nextPage: number;
   };
 };
-
-export type PublicFeedbackStoryLink = {
-  id: string;
-  storyId: string;
-  relationship: "created_from" | "linked" | "solves";
-};
-
-export type PublicRequest = {
-  id: string;
-  authorId: string | null;
-  slug: string;
-  title: string;
-  description: string;
-  authorMasked?: boolean;
-  authorName: string;
-  authorAvatar?: string | null;
-  boardId: string;
-  status: PublicRequestStatus;
-  voteCount: number;
-  commentCount: number;
-  createdAtLabel: string;
-  roadmapSummary?: string;
-  comments: PublicRequestComment[];
-  storyLinks: PublicFeedbackStoryLink[];
-  participantKind?: PublicParticipantKind;
-  following?: boolean;
-  viewerVote?: -1 | 0 | 1;
-};
-
-export type SimilarPublicFeedback = {
-  id: string;
-  slug: string;
-  title: string;
-  authorId: string | null;
-  authorName: string;
-  authorAvatar?: string | null;
-  status?: PublicRequestStatus;
-  voteCount: number;
-  commentCount: number;
-  confidence: number;
-  isDuplicate: boolean;
-};
-
-export type PublicPortalUpdate = {
-  id: string;
-  slug: string;
-  title: string;
-  summary?: string | null;
-  body: string;
-  coverImageUrl?: string | null;
-  publishedAt: string;
-  publishedAtLabel: string;
-  linkedItems: {
-    id: string;
-    slug: string;
-    title: string;
-    status: PublicRequestStatus;
-  }[];
-};
-
-export type PublicPortalWorkspace = {
-  name: string;
-  slug: string;
-  avatarUrl: string | null;
-  color: string;
-};
-
-export type PublicPortalViewer = {
-  kind: "account";
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-  appHref?: string;
-  accountHref: string;
-  feedbackSetupHref: string;
-  canReceiveUpdates: true;
-};
-
-export type PublicPortalGuestParticipant = {
-  kind: "verified_guest" | "external";
-  id: string;
-  name: string;
-  displayName: string;
-  email?: string;
-  avatarUrl: string | null;
-  masked: boolean;
-  canReceiveUpdates: true;
-  sessionExpiresAt: string;
-  unreadUpdateCount: number;
-};
-
-export type PublicPortalAnonymousParticipant = {
-  kind: "anonymous";
-  canReceiveUpdates: false;
-};
-
-export type PublicPortalParticipant =
-  | PublicPortalViewer
-  | PublicPortalGuestParticipant
-  | PublicPortalAnonymousParticipant;
-
-export type LegacyPublicPortalViewer = Omit<
-  PublicPortalViewer,
-  "kind" | "canReceiveUpdates"
->;
 
 export type PublicPortalNotification = {
   id: string;
@@ -234,20 +124,6 @@ export type PublicPortalNotificationsPage = {
     hasMore: boolean;
     nextPage: number;
   };
-};
-
-export type PublicPortal = {
-  id: string;
-  name: string;
-  slug: string;
-  participationMode: FeedbackParticipationMode;
-  guestIdentityPolicy: FeedbackGuestIdentityPolicy;
-  hasPublishedUpdates: boolean;
-  workspace: PublicPortalWorkspace;
-  boards: PublicRequestBoard[];
-  requests: PublicRequest[];
-  requestsHasMore: boolean;
-  updates: PublicPortalUpdate[];
 };
 
 export type PublicFeedback = PublicRequest;

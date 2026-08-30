@@ -1,7 +1,9 @@
-/* global describe, expect, it -- Jest globals are provided by the projects test runner. */
+/* global describe, expect, it, jest -- Jest globals are provided by the projects test runner. */
 
 import type { UIMessage } from "ai";
 import { selectActiveTools } from "./active-tools";
+
+jest.mock("server-only", () => ({}));
 
 const userMessage = (text: string, id = "user-message") =>
   ({

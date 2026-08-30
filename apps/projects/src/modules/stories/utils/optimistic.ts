@@ -1,5 +1,9 @@
-import type { DetailedStory } from "../../story/types";
-import type { Story, StoryGroup, GroupStoryParams } from "../types";
+import type {
+  DetailedStory,
+  GroupStoryParams,
+  Story,
+  StoryGroup,
+} from "../types";
 
 /**
  * Compute the group key a story should belong to after an update.

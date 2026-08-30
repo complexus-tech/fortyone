@@ -4,6 +4,8 @@ import { cn } from "lib";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import { REASONING_SANITIZE_SCHEMA } from "./reasoning-sanitize";
 
 interface ReasoningProps {
   content: string;
@@ -28,7 +30,9 @@ export const Reasoning = ({
     <Box className={cn("mb-3", className)}>
       <button
         className="flex items-center gap-1.5"
-        onClick={() => setIsExpanded((prev) => !prev)}
+        onClick={() => {
+          setIsExpanded((previousValue) => !previousValue);
+        }}
         type="button"
       >
         <svg
@@ -43,17 +47,23 @@ export const Reasoning = ({
         >
           <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <Text color="muted" className="text-base">
+        <Text className="text-base" color="muted">
           {isExpanded ? "Hide reasoning" : "Show reasoning"}
         </Text>
       </button>
-      {isExpanded && (
+      {isExpanded ? (
         <Box className="prose prose-stone dark:prose-invert mt-2 border-l-2 border-current/10 pl-3 leading-snug opacity-70">
-          <Markdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
+          <Markdown
+            rehypePlugins={[
+              rehypeRaw,
+              [rehypeSanitize, REASONING_SANITIZE_SCHEMA],
+            ]}
+            remarkPlugins={[remarkGfm]}
+          >
             {content}
           </Markdown>
         </Box>
-      )}
+      ) : null}
     </Box>
   );
 };

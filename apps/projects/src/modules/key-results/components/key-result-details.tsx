@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { format, formatISO } from "date-fns";
 import {
@@ -15,15 +16,6 @@ import {
   UserIcon,
 } from "icons";
 import {
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip as ChartTooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
   Avatar,
   Box,
   Button,
@@ -31,6 +23,7 @@ import {
   Divider,
   Flex,
   ProgressBar,
+  Skeleton,
   Text,
 } from "ui";
 import { AssigneesMenu } from "@/components/ui";
@@ -44,13 +37,24 @@ import { useUpdateKeyResultMutation } from "@/modules/objectives/hooks/use-updat
 import type { KeyResult, Objective } from "@/modules/objectives/types";
 import { UpdateKeyResultDialog } from "@/modules/objectives/stories/overview/update-key-result-dialog";
 import { useKeyResultStories } from "@/modules/stories/hooks/key-result-stories";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import { formatKeyResultValue, getKeyResultProgress } from "../utils";
+import type { KeyResultProgressPoint } from "./key-result-progress-chart";
 
-type KeyResultProgressPoint = {
-  date: string;
-  value: number;
-};
+const KeyResultProgressChart = dynamic(
+  () =>
+    import("./key-result-progress-chart").then(
+      (module) => module.KeyResultProgressChart,
+    ),
+  {
+    loading: () => (
+      <Box className="h-56 pt-2">
+        <Skeleton className="h-full w-full rounded-lg" />
+      </Box>
+    ),
+    ssr: false,
+  },
+);
 
 const createProgressData = (
   keyResult: KeyResult,
@@ -238,50 +242,11 @@ export const KeyResultDetails = ({
           </Box>
 
           <Text className="mt-6 mb-3">Progress history</Text>
-          <Box className="h-56 pt-2">
-            <ResponsiveContainer height="100%" width="100%">
-              <LineChart data={progressData} margin={{ left: -20, right: 12 }}>
-                <XAxis
-                  axisLine={false}
-                  dataKey="date"
-                  tickFormatter={(value: string) =>
-                    format(new Date(value), "MMM d")
-                  }
-                  tickLine={false}
-                />
-                <YAxis axisLine={false} tickLine={false} />
-                <ChartTooltip
-                  contentStyle={{
-                    background: "var(--color-surface-elevated)",
-                    border: "1px solid var(--color-border-strong)",
-                    borderRadius: "0.75rem",
-                  }}
-                  formatter={(value) => [
-                    formatKeyResultValue(
-                      Number(value),
-                      keyResult.measurementType,
-                    ),
-                    "Progress",
-                  ]}
-                  labelFormatter={(value) =>
-                    format(new Date(String(value)), "MMM d, yyyy")
-                  }
-                />
-                <ReferenceLine
-                  stroke="var(--color-text-muted)"
-                  strokeDasharray="4 4"
-                  y={keyResult.targetValue}
-                />
-                <Line
-                  dataKey="value"
-                  dot={{ r: 3 }}
-                  stroke="var(--color-info)"
-                  strokeWidth={2}
-                  type="monotone"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Box>
+          <KeyResultProgressChart
+            data={progressData}
+            measurementType={keyResult.measurementType}
+            targetValue={keyResult.targetValue}
+          />
 
           <Divider className="my-6" />
 

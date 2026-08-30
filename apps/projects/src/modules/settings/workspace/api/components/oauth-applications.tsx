@@ -11,7 +11,7 @@ import {
 import { toast } from "sonner";
 import { Box, Button, Dialog, Flex, Input, Menu, Text, TextArea } from "ui";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useCopyToClipboard } from "@/hooks";
+import { useCopyToClipboard } from "@/hooks/clipboard";
 import { SectionHeader } from "@/modules/settings/components";
 import { expiryFromNow, formatDeveloperDate } from "../constants";
 import {

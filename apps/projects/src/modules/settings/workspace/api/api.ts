@@ -1,6 +1,6 @@
 import { get, post, put, remove } from "@/lib/http";
 import type { WorkspaceCtx } from "@/lib/http";
-import type { ApiResponse } from "@/types";
+import type { ApiResponse } from "@/types/api-response";
 import type {
   CreateCredentialInput,
   CreatedWebhookEndpoint,

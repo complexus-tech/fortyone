@@ -17,7 +17,7 @@ const ASSOCIATION_FIELDS = new Set([
 const UUID_PATTERN =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi;
 
-type ActivityCopySegment =
+export type ActivityCopySegment =
   | { type: "currentValue"; value: string }
   | { type: "fieldLabel" }
   | { type: "oldValue"; value: string }

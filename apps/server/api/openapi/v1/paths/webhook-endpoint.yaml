@@ -1,7 +1,7 @@
 get:
   operationId: getWebhookEndpoint
   tags: [Webhooks]
-  summary: Get an outbound webhook endpoint
+  summary: Get webhook
   description: Requires a current workspace administrator personal access token.
   x-fortyone-scope: webhooks:manage
   parameters:

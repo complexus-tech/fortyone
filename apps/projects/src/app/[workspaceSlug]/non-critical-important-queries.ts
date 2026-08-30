@@ -11,17 +11,18 @@ import {
   memberKeys,
   subscriptionKeys,
 } from "@/constants/keys";
-import { invitationKeys } from "@/modules/invitations/keys";
 import { objectiveKeys } from "@/modules/objectives/constants";
 import { getLabels } from "@/lib/queries/labels/get-labels";
 import { getPublicTeams } from "@/modules/teams/queries/get-public-teams";
-import { getMyInvitations } from "@/modules/invitations/queries/my-invitations";
+import {
+  myInvitationsPrefetchOptions,
+  pendingInvitationsPrefetchOptions,
+} from "@/modules/invitations/public/server";
 import { getAutomationPreferences } from "@/lib/queries/users/automation-preferences";
 import { getUnreadNotifications } from "@/modules/notifications/queries/get-unread";
 import { getWorkspaceSettings } from "@/lib/queries/workspaces/get-settings";
 import { getMembers } from "@/lib/queries/members/get-members";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
-import { getPendingInvitations } from "@/modules/invitations/queries/pending-invitations";
 import { getNotificationPreferences } from "@/modules/notifications/queries/get-preferences";
 import { getSubscription } from "@/lib/queries/subscriptions/get-subscription";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
@@ -57,15 +58,12 @@ export const fetchNonCriticalImportantQueries = (
     queryFn: () => getLabels(ctx),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
-  queryClient.prefetchQuery({
-    queryKey: invitationKeys.mine,
-    queryFn: () =>
-      getMyInvitations({
-        token: ctx.session?.token,
-        cookieHeader: ctx.cookieHeader,
-      }),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
-  });
+  queryClient.prefetchQuery(
+    myInvitationsPrefetchOptions({
+      token: ctx.session?.token,
+      cookieHeader: ctx.cookieHeader,
+    }),
+  );
   queryClient.prefetchQuery({
     queryKey: notificationKeys.unread(ctx.workspaceSlug),
     queryFn: () => getUnreadNotifications(ctx),
@@ -86,11 +84,7 @@ export const fetchNonCriticalImportantQueries = (
     queryFn: () => getWorkspaces(ctx.session?.token, ctx.cookieHeader),
     staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
   });
-  queryClient.prefetchQuery({
-    queryKey: invitationKeys.pending(ctx.workspaceSlug),
-    queryFn: () => getPendingInvitations(ctx),
-    staleTime: DURATION_FROM_MILLISECONDS.MINUTE * 5,
-  });
+  queryClient.prefetchQuery(pendingInvitationsPrefetchOptions(ctx));
   queryClient.prefetchQuery({
     queryKey: notificationKeys.preferences(ctx.workspaceSlug),
     queryFn: () => getNotificationPreferences(ctx),

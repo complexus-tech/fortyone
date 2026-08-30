@@ -7,12 +7,24 @@ import { objectiveKeys } from "@/modules/objectives/constants";
 import { getKeyResults } from "@/modules/objectives/queries/get-key-results";
 import type { KeyResult, Objective } from "@/modules/objectives/types";
 
-export const useStrategyKeyResults = (objectives: Objective[]) => {
+export const getStrategyKeyResultQueryObjectives = (
+  objectives: readonly Objective[],
+  activeObjectiveIds: ReadonlySet<string>,
+) =>
+  objectives.filter(
+    ({ id, keyResultCount }) =>
+      keyResultCount > 0 && activeObjectiveIds.has(id),
+  );
+
+export const useStrategyKeyResults = (
+  objectives: Objective[],
+  activeObjectiveIds: ReadonlySet<string>,
+) => {
   const { data: session } = useSession();
   const { workspaceSlug } = useWorkspacePath();
   const objectivesWithKeyResults = useMemo(
-    () => objectives.filter(({ keyResultCount }) => keyResultCount > 0),
-    [objectives],
+    () => getStrategyKeyResultQueryObjectives(objectives, activeObjectiveIds),
+    [activeObjectiveIds, objectives],
   );
   const queries = useQueries({
     queries: objectivesWithKeyResults.map((objective) => ({
@@ -26,13 +38,17 @@ export const useStrategyKeyResults = (objectives: Objective[]) => {
 
   return useMemo(() => {
     const keyResultsByObjective = new Map<string, KeyResult[]>();
+    const loadedObjectiveIds = new Set<string>();
     objectivesWithKeyResults.forEach((objective, index) => {
-      keyResultsByObjective.set(objective.id, queries[index]?.data ?? []);
+      const keyResults = queries[index]?.data;
+      if (keyResults !== undefined) loadedObjectiveIds.add(objective.id);
+      keyResultsByObjective.set(objective.id, keyResults ?? []);
     });
 
     return {
       isPending: queries.some(({ isPending }) => isPending),
       keyResultsByObjective,
+      loadedObjectiveIds,
     };
   }, [objectivesWithKeyResults, queries]);
 };

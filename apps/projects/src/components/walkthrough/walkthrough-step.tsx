@@ -2,11 +2,11 @@
 
 import { Button, Flex, Text, Box, Tooltip } from "ui";
 import { ArrowLeft2Icon, ArrowRight2Icon, CheckIcon, CloseIcon } from "icons";
+import { cn } from "lib";
 import {
   useWalkthrough,
   type WalkthroughStep as WalkthroughStepType,
 } from "./walkthrough-provider";
-import { cn } from "lib";
 
 interface ElementPosition {
   top: number;

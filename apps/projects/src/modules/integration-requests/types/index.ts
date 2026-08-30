@@ -2,6 +2,16 @@ export type IntegrationRequestStatus = "pending" | "accepted" | "declined";
 
 export type IntegrationRequestProvider = "github" | "slack" | "intercom";
 
+export type IntegrationRequestGitHubComment = {
+  id: number;
+  body: string;
+  userLogin: string;
+  userAvatar: string;
+  createdAt: string;
+  updatedAt: string;
+  htmlUrl: string;
+};
+
 export type IntegrationRequest = {
   id: string;
   workspaceId: string;

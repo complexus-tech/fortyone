@@ -6,7 +6,7 @@ import {
   type FeedbackWidgetMode,
   type FeedbackWidgetTab,
   type FeedbackWidgetTheme,
-} from "@/modules/feedback-widget/protocol";
+} from "@/shared/feedback-widget/protocol";
 import {
   getPublicFeedbackPortalOrNotFound,
   getPublicPortalOrNotFound,

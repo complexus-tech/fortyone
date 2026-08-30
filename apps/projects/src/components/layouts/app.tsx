@@ -2,7 +2,7 @@
 import { type ReactNode } from "react";
 import { Box } from "ui";
 import { WorkspaceChatLayout } from "@/components/ui/chat";
-import { AppCommandBar } from "../shared/app-command-bar";
+import { AppCommandBar } from "@/shell/commands/app-command-bar";
 import { AppCommandActionProvider } from "../shared/app-command-action-context";
 import { SidebarProvider } from "../shared/sidebar/sidebar-context";
 import { Sidebar } from "../shared/sidebar/sidebar";

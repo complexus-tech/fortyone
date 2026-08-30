@@ -226,6 +226,8 @@ export const RoadmapObjectiveListItem = ({
   onKeyResultSelect,
   onObjectiveSelect,
   onSelectionChange,
+  expanded,
+  onExpandedChange,
   selected,
   teamCode,
 }: {
@@ -233,10 +235,13 @@ export const RoadmapObjectiveListItem = ({
   onKeyResultSelect: (keyResult: KeyResult) => void;
   onObjectiveSelect: () => void;
   onSelectionChange: (checked: boolean) => void;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
   selected: boolean;
   teamCode?: string;
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [internallyExpanded, setInternallyExpanded] = useState(false);
+  const isExpanded = expanded ?? internallyExpanded;
   const { data: keyResults = [] } = useKeyResults(
     objective.id,
     objective.keyResultCount > 0,
@@ -260,7 +265,9 @@ export const RoadmapObjectiveListItem = ({
         onSelect={onObjectiveSelect}
         onSelectionChange={onSelectionChange}
         onToggleExpanded={() => {
-          setIsExpanded((current) => !current);
+          const nextExpanded = !isExpanded;
+          setInternallyExpanded(nextExpanded);
+          onExpandedChange?.(nextExpanded);
         }}
         progress={keyResultProgress}
         selected={selected}

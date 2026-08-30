@@ -52,7 +52,9 @@ export const useUpdateMemory = () => {
         description: error.message || "Your changes were not saved",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate({ id, payload }),
+          onClick: () => {
+            mutation.mutate({ id, payload });
+          },
         },
       });
     },

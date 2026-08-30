@@ -21,7 +21,7 @@ import {
   useUserRole,
   useWorkspacePath,
 } from "@/hooks";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mutation";
 import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";

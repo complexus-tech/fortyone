@@ -3,7 +3,7 @@
 import type { ToolExecutionOptions, ToolExecuteFunction } from "ai";
 import { auth } from "@/auth";
 import { deleteStoryAction } from "@/modules/story/actions/delete-story";
-import { StoryDeletionOutcomeUncertainError } from "@/modules/story/actions/story-deletion-error";
+import { StoryDeletionOutcomeUncertainError } from "@/shared/story/deletion";
 import { deleteStory } from "./delete-story";
 
 jest.mock("ai", () => ({

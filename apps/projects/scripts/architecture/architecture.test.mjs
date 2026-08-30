@@ -6,12 +6,15 @@ import test from "node:test";
 import {
   buildSnapshot,
   CATEGORY_ORDER,
+  compareBaselineTransitions,
   compareSnapshots,
   findStronglyConnectedComponents,
+  fingerprintPolicy,
   parseModuleSpecifiers,
   prepareSnapshotForWrite,
   resolveInternalSpecifier,
   scanArchitecture,
+  validateBaseline,
 } from "./architecture.mjs";
 
 const BACKTICK = String.fromCodePoint(96);
@@ -176,6 +179,64 @@ test("tracks feature imports from constants, types, and utils", async () => {
   );
 });
 
+test("allows explicit module public boundaries and flags private cross-module imports", async () => {
+  await withFixtureApp(
+    {
+      "src/modules/consumer/component.ts": `
+        import { publicApi } from "@/modules/owner/public";
+        import { browserApi } from "@/modules/owner/public/browser";
+        import { privateApi } from "@/modules/owner/api/private";
+
+        export const value = [publicApi, browserApi, privateApi];
+      `,
+      "src/modules/owner/api/private.ts":
+        'export const privateApi = "private";\n',
+      "src/modules/owner/public.ts": 'export const publicApi = "public";\n',
+      "src/modules/owner/public/browser.ts":
+        'export const browserApi = "browser";\n',
+    },
+    async (appRoot) => {
+      const { snapshot } = await scanArchitecture({ appRoot });
+
+      assert.deepEqual(snapshot.categories.crossModuleImports, [
+        {
+          count: 1,
+          destination: "src/modules/owner/api/private.ts",
+          destinationModule: "owner",
+          key: "src/modules/consumer/component.ts -> src/modules/owner/api/private.ts [@/modules/owner/api/private]",
+          source: "src/modules/consumer/component.ts",
+          sourceModule: "consumer",
+          specifier: "@/modules/owner/api/private",
+        },
+      ]);
+    },
+  );
+});
+
+test("public module dependencies still participate in cycle detection", async () => {
+  await withFixtureApp(
+    {
+      "src/modules/alpha/public.ts":
+        'export { beta } from "@/modules/beta/public";\n',
+      "src/modules/beta/public.ts":
+        'export { alpha } from "@/modules/alpha/public";\n',
+    },
+    async (appRoot) => {
+      const { snapshot } = await scanArchitecture({ appRoot });
+
+      assert.deepEqual(snapshot.categories.crossModuleImports, []);
+      assert.deepEqual(snapshot.categories.moduleCycles, [
+        {
+          count: 2,
+          edges: ["alpha -> beta", "beta -> alpha"],
+          key: "alpha <-> beta",
+          modules: ["alpha", "beta"],
+        },
+      ]);
+    },
+  );
+});
+
 test("does not classify required boundary authentication as architecture debt", async () => {
   await withFixtureApp(
     {
@@ -329,6 +390,145 @@ test("comparison allows an SCC to shrink or split but rejects SCC growth", () =>
   ]);
 });
 
+test("comparison rejects new edges inside an unchanged cycle and allows edge removal", () => {
+  const baseline = snapshotWith("moduleCycles", [
+    {
+      count: 3,
+      edges: [
+        "alpha -> beta",
+        "alpha -> gamma",
+        "beta -> gamma",
+        "gamma -> alpha",
+      ],
+      key: "alpha <-> beta <-> gamma",
+      modules: ["alpha", "beta", "gamma"],
+    },
+  ]);
+  const reduced = snapshotWith("moduleCycles", [
+    {
+      count: 3,
+      edges: ["alpha -> beta", "beta -> gamma", "gamma -> alpha"],
+      key: "alpha <-> beta <-> gamma",
+      modules: ["alpha", "beta", "gamma"],
+    },
+  ]);
+  const grown = snapshotWith("moduleCycles", [
+    {
+      count: 3,
+      edges: [
+        "alpha -> beta",
+        "alpha -> gamma",
+        "beta -> alpha",
+        "beta -> gamma",
+        "gamma -> alpha",
+      ],
+      key: "alpha <-> beta <-> gamma",
+      modules: ["alpha", "beta", "gamma"],
+    },
+  ]);
+
+  assert.deepEqual(compareSnapshots(baseline, reduced), []);
+  assert.deepEqual(compareSnapshots(baseline, grown), [
+    {
+      baselineCount: 4,
+      category: "moduleCycles",
+      currentCount: 5,
+      key: "alpha <-> beta <-> gamma [beta -> alpha]",
+      type: "growth",
+    },
+  ]);
+});
+
+test("comparison rejects edges introduced while an SCC shrinks", () => {
+  const baseline = snapshotWith("moduleCycles", [
+    {
+      count: 3,
+      edges: ["alpha -> beta", "beta -> gamma", "gamma -> alpha"],
+      key: "alpha <-> beta <-> gamma",
+      modules: ["alpha", "beta", "gamma"],
+    },
+  ]);
+  const reduced = snapshotWith("moduleCycles", [
+    {
+      count: 2,
+      edges: ["alpha -> beta", "beta -> alpha"],
+      key: "alpha <-> beta",
+      modules: ["alpha", "beta"],
+    },
+  ]);
+
+  assert.deepEqual(compareSnapshots(baseline, reduced), [
+    {
+      baselineCount: 1,
+      category: "moduleCycles",
+      currentCount: 2,
+      key: "alpha <-> beta [beta -> alpha]",
+      type: "growth",
+    },
+  ]);
+});
+
+test("baseline transition rejects a self-blessed debt increase but allows a reduction", () => {
+  const base = snapshotWith("legacyFiles", [
+    { count: 1, key: "src/lib/actions/a.ts", path: "src/lib/actions/a.ts" },
+  ]);
+  const reduced = snapshotWith("legacyFiles", []);
+  const grown = snapshotWith("legacyFiles", [
+    { count: 2, key: "src/lib/actions/a.ts", path: "src/lib/actions/a.ts" },
+  ]);
+
+  assert.deepEqual(compareBaselineTransitions(base, reduced), []);
+  assert.deepEqual(compareBaselineTransitions(base, grown), [
+    {
+      baselineCount: 1,
+      category: "legacyFiles",
+      currentCount: 2,
+      key: "src/lib/actions/a.ts",
+      type: "growth",
+    },
+  ]);
+});
+
+test("baseline transition requires an approved chain for policy drift", () => {
+  const candidate = buildSnapshot({ categories: emptyCategories() });
+  const base = structuredClone(candidate);
+  delete base.policy.modulePublicBoundary;
+  delete base.policy.nonOverridableCategories;
+  const transition = {
+    from: fingerprintPolicy(base.policy),
+    reference:
+      "apps/projects/docs/architecture/decisions/0001-modular-frontend-boundaries.md",
+    to: fingerprintPolicy(candidate.policy),
+  };
+
+  assert.deepEqual(compareBaselineTransitions(base, candidate), [
+    {
+      baselineCount: 0,
+      category: "policy",
+      currentCount: 1,
+      key: `approved transition ${transition.from} -> ${transition.to}`,
+      type: "new",
+    },
+  ]);
+
+  candidate.approvedPolicyTransitions = [transition];
+  assert.deepEqual(compareBaselineTransitions(base, candidate), []);
+
+  const guarded = prepareSnapshotForWrite({
+    current: candidate,
+    existing: base,
+  });
+  assert.equal(guarded.allowed, false);
+
+  const approved = prepareSnapshotForWrite({
+    current: candidate,
+    existing: base,
+    forceAdrReference: transition.reference,
+  });
+  assert.equal(approved.allowed, true);
+  assert.deepEqual(approved.snapshot.approvedPolicyTransitions, [transition]);
+});
+
 test("baseline writing requires an explicit ADR reference when debt grows", () => {
   const baseline = snapshotWith("legacyFiles", []);
   const current = snapshotWith("legacyFiles", [
@@ -348,4 +548,136 @@ test("baseline writing requires an explicit ADR reference when debt grows", () =
   assert.deepEqual(approved.snapshot.approval, {
     reference: "docs/architecture/decisions/0001.md",
   });
+});
+
+test("baseline validation rejects snapshots missing semantic policy rules", () => {
+  const current = buildSnapshot({ categories: emptyCategories() });
+  const withoutPublicBoundary = structuredClone(current);
+  delete withoutPublicBoundary.policy.modulePublicBoundary;
+  const withoutHardCeiling = structuredClone(current);
+  delete withoutHardCeiling.policy.nonOverridableCategories;
+  const invalidCycle = buildSnapshot({
+    categories: {
+      ...emptyCategories(),
+      moduleCycles: [
+        {
+          count: 2,
+          edges: ["alpha -> beta", "beta -> alpha"],
+          key: "alpha <-> beta",
+          modules: ["beta", "alpha"],
+        },
+      ],
+    },
+  });
+
+  assert.throws(
+    () => validateBaseline(withoutPublicBoundary),
+    /Architecture policy changed/,
+  );
+  assert.throws(
+    () => validateBaseline(withoutHardCeiling),
+    /Architecture policy changed/,
+  );
+  assert.throws(
+    () => validateBaseline(invalidCycle),
+    /Invalid module cycle modules/,
+  );
+});
+
+test("scanner records handwritten production files only after the oversized threshold", async () => {
+  const atLimit = `${"export const atLimit = true;\n"}${"// line\n".repeat(699)}`;
+  const overLimit = `${"export const overLimit = true;\n"}${"// line\n".repeat(700)}`;
+  const generated = `${"// @generated\n"}${"// line\n".repeat(900)}`;
+
+  await withFixtureApp(
+    {
+      "src/modules/example/at-limit.ts": atLimit,
+      "src/modules/example/generated.ts": generated,
+      "src/modules/example/over-limit.ts": overLimit,
+    },
+    async (appRoot) => {
+      const { snapshot } = await scanArchitecture({ appRoot });
+
+      assert.deepEqual(snapshot.categories.oversizedFiles, [
+        {
+          count: 701,
+          key: "src/modules/example/over-limit.ts",
+          lineLimit: 700,
+          path: "src/modules/example/over-limit.ts",
+        },
+      ]);
+    },
+  );
+});
+
+test("oversized-file growth cannot be approved by forcing a baseline write", () => {
+  const baseline = snapshotWith("oversizedFiles", [
+    {
+      count: 800,
+      key: "src/modules/example/existing.tsx",
+      lineLimit: 700,
+      path: "src/modules/example/existing.tsx",
+    },
+  ]);
+  const current = snapshotWith("oversizedFiles", [
+    {
+      count: 801,
+      key: "src/modules/example/existing.tsx",
+      lineLimit: 700,
+      path: "src/modules/example/existing.tsx",
+    },
+    {
+      count: 750,
+      key: "src/modules/example/new.tsx",
+      lineLimit: 700,
+      path: "src/modules/example/new.tsx",
+    },
+  ]);
+
+  const result = prepareSnapshotForWrite({
+    current,
+    existing: baseline,
+    forceAdrReference: "docs/architecture/decisions/exception.md",
+  });
+
+  assert.equal(result.allowed, false);
+  assert.deepEqual(
+    result.hardBlockedIssues.map(({ key, type }) => ({ key, type })),
+    [
+      { key: "src/modules/example/existing.tsx", type: "growth" },
+      { key: "src/modules/example/new.tsx", type: "new" },
+    ],
+  );
+  assert.equal(result.snapshot, null);
+});
+
+test("oversized-file reductions remain writable without an exception", () => {
+  const baseline = snapshotWith("oversizedFiles", [
+    {
+      count: 900,
+      key: "src/modules/example/existing.tsx",
+      lineLimit: 700,
+      path: "src/modules/example/existing.tsx",
+    },
+    {
+      count: 750,
+      key: "src/modules/example/removed.tsx",
+      lineLimit: 700,
+      path: "src/modules/example/removed.tsx",
+    },
+  ]);
+  const current = snapshotWith("oversizedFiles", [
+    {
+      count: 800,
+      key: "src/modules/example/existing.tsx",
+      lineLimit: 700,
+      path: "src/modules/example/existing.tsx",
+    },
+  ]);
+
+  const result = prepareSnapshotForWrite({ current, existing: baseline });
+
+  assert.equal(result.allowed, true);
+  assert.deepEqual(result.hardBlockedIssues, []);
+  assert.equal(result.snapshot.categories.oversizedFiles[0].count, 800);
 });

@@ -1,5 +1,19 @@
 module.exports = {
   extends: ["eslint-config-custom/next.js"],
+  overrides: [
+    {
+      env: {
+        jest: true,
+      },
+      files: ["**/*.{test,spec}.{js,jsx,ts,tsx}"],
+      rules: {
+        // Legacy tests may still declare Jest globals inline. Keep regular
+        // redeclaration detection while treating runner-provided globals as
+        // environment declarations instead of duplicate variables.
+        "no-redeclare": ["error", { builtinGlobals: false }],
+      },
+    },
+  ],
   rules: {
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/consistent-type-definitions": "off",

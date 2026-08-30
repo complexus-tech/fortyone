@@ -9,7 +9,7 @@ export default function Loading() {
       justify="center"
     >
       <Flex align="center" direction="column" justify="center">
-        <Logo className="animate-pulse" asIcon />
+        <Logo asIcon className="animate-pulse" />
         <Text className="mt-4" color="muted" fontWeight="medium">
           Loading workspace...
         </Text>

@@ -25,7 +25,7 @@ export const createTeamTool = tool({
 
   execute: async (
     { name, code, color, isPrivate = false },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -37,7 +37,7 @@ export const createTeamTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

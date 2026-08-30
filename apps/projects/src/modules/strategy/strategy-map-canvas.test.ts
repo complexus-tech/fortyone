@@ -6,12 +6,34 @@ import { join } from "node:path";
 const readSource = (path: string) =>
   readFileSync(join(process.cwd(), path), "utf8");
 
+const readStrategyMapCanvasSource = () =>
+  [
+    "src/modules/strategy/strategy-map-canvas.tsx",
+    "src/modules/strategy/strategy-map-canvas-renderers.tsx",
+    "src/modules/strategy/strategy-map-canvas-nodes.tsx",
+    "src/modules/strategy/strategy-map-canvas-surface.tsx",
+    "src/modules/strategy/strategy-map-canvas-storage.ts",
+    "src/modules/strategy/use-strategy-map-canvas-interactions.ts",
+    "src/modules/strategy/use-strategy-map-canvas-render-data.ts",
+    "src/modules/strategy/use-strategy-map-canvas-viewport.ts",
+  ]
+    .map(readSource)
+    .join("\n");
+
+const readStrategyMapCardSource = () =>
+  [
+    "src/modules/strategy/strategy-map-cards.tsx",
+    "src/modules/strategy/strategy-map-card-primitives.tsx",
+    "src/modules/strategy/strategy-map-objective-card-menu.tsx",
+    "src/modules/strategy/strategy-map-progress.ts",
+  ]
+    .map(readSource)
+    .join("\n");
+
 describe("StrategyMapCanvas", () => {
   it("keeps objective alignment discoverable", () => {
-    const source = readSource("src/modules/strategy/strategy-map-canvas.tsx");
-    const cardSource = readSource(
-      "src/modules/strategy/strategy-map-cards.tsx",
-    );
+    const source = readStrategyMapCanvasSource();
+    const cardSource = readStrategyMapCardSource();
 
     expect(source).toContain("getPillarAtPointer");
     expect(source).toContain("onPointerDown");
@@ -33,10 +55,8 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("renders the hierarchy as cards with contextual objective actions", () => {
-    const source = readSource("src/modules/strategy/strategy-map-canvas.tsx");
-    const cardSource = readSource(
-      "src/modules/strategy/strategy-map-cards.tsx",
-    );
+    const source = readStrategyMapCanvasSource();
+    const cardSource = readStrategyMapCardSource();
     const navigationSource = readSource(
       "src/components/shared/sidebar/navigation.tsx",
     );
@@ -60,7 +80,7 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("uses the dotted freeform canvas and persistent node positions", () => {
-    const source = readSource("src/modules/strategy/strategy-map-canvas.tsx");
+    const source = readStrategyMapCanvasSource();
 
     expect(source).toContain("radial-gradient");
     expect(source).toContain("strategy-map-layout:v");
@@ -78,9 +98,7 @@ describe("StrategyMapCanvas", () => {
     const detailsSource = readSource(
       "src/modules/strategy/strategy-node-details.tsx",
     );
-    const cardSource = readSource(
-      "src/modules/strategy/strategy-map-cards.tsx",
-    );
+    const cardSource = readStrategyMapCardSource();
     const pageSource = readSource("src/modules/strategy/index.tsx");
 
     expect(editorSource).toContain("StrategyDescriptionEditor");
@@ -105,12 +123,8 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("uses key-result progress with story fallback and horizontal bars", () => {
-    const cardSource = readSource(
-      "src/modules/strategy/strategy-map-cards.tsx",
-    );
-    const canvasSource = readSource(
-      "src/modules/strategy/strategy-map-canvas.tsx",
-    );
+    const cardSource = readStrategyMapCardSource();
+    const canvasSource = readStrategyMapCanvasSource();
     const pageSource = readSource("src/modules/strategy/index.tsx");
 
     expect(cardSource).toContain("objective.keyResultCount > 0");
@@ -131,9 +145,7 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("uses faint dark-mode surfaces for strategy objective properties", () => {
-    const cardSource = readSource(
-      "src/modules/strategy/strategy-map-cards.tsx",
-    );
+    const cardSource = readStrategyMapCardSource();
     const roadmapSource = readSource(
       "src/modules/roadmap/components/objectives-board.tsx",
     );
@@ -146,12 +158,8 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("uses campaign-style objective references and the shared external-link icon", () => {
-    const cardSource = readSource(
-      "src/modules/strategy/strategy-map-cards.tsx",
-    );
-    const canvasSource = readSource(
-      "src/modules/strategy/strategy-map-canvas.tsx",
-    );
+    const cardSource = readStrategyMapCardSource();
+    const canvasSource = readStrategyMapCanvasSource();
     const profileMenuSource = readSource(
       "src/components/shared/sidebar/profile-menu.tsx",
     );
@@ -172,12 +180,8 @@ describe("StrategyMapCanvas", () => {
 
   it("opens node details without treating controls or drags as card clicks", () => {
     const pageSource = readSource("src/modules/strategy/index.tsx");
-    const canvasSource = readSource(
-      "src/modules/strategy/strategy-map-canvas.tsx",
-    );
-    const cardSource = readSource(
-      "src/modules/strategy/strategy-map-cards.tsx",
-    );
+    const canvasSource = readStrategyMapCanvasSource();
+    const cardSource = readStrategyMapCardSource();
     const detailsSource = readSource(
       "src/modules/strategy/strategy-node-details.tsx",
     );
@@ -214,12 +218,8 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("renders key results as persistently collapsible child nodes", () => {
-    const cardSource = readSource(
-      "src/modules/strategy/strategy-map-cards.tsx",
-    );
-    const canvasSource = readSource(
-      "src/modules/strategy/strategy-map-canvas.tsx",
-    );
+    const cardSource = readStrategyMapCardSource();
+    const canvasSource = readStrategyMapCanvasSource();
     const layoutSource = readSource(
       "src/modules/strategy/strategy-map-layout.ts",
     );
@@ -237,7 +237,7 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("zooms around the pointer and drags visible objective subtrees", () => {
-    const source = readSource("src/modules/strategy/strategy-map-canvas.tsx");
+    const source = readStrategyMapCanvasSource();
 
     expect(source).toContain('addEventListener("wheel"');
     expect(source).toContain("{ passive: false }");
@@ -248,9 +248,7 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("keeps the goal label prominent and pillar content compact", () => {
-    const cardSource = readSource(
-      "src/modules/strategy/strategy-map-cards.tsx",
-    );
+    const cardSource = readStrategyMapCardSource();
 
     expect(cardSource).toContain(
       'className="text-text-primary text-[0.74rem] font-bold"',
@@ -263,9 +261,7 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("shows concept help only for the goal and strategic pillars", () => {
-    const cardSource = readSource(
-      "src/modules/strategy/strategy-map-cards.tsx",
-    );
+    const cardSource = readStrategyMapCardSource();
 
     expect(cardSource).toContain("HelpIcon");
     expect(cardSource).toContain('className="h-4 w-4 text-current"');
@@ -277,9 +273,9 @@ describe("StrategyMapCanvas", () => {
   });
 
   it("shares pillar alignment across objective property surfaces", () => {
-    const hooksSource = readSource("src/modules/strategy/hooks.ts");
+    const hooksSource = readSource("src/shared/strategy-map/hooks.ts");
     const pillarPropertySource = readSource(
-      "src/modules/strategy/objective-pillar-property.tsx",
+      "src/shared/strategy-map/objective-pillar-property.tsx",
     );
     const objectivePropertiesSource = readSource(
       "src/modules/objectives/stories/overview/properties.tsx",
@@ -290,6 +286,9 @@ describe("StrategyMapCanvas", () => {
 
     expect(pillarPropertySource).toContain("useStrategyMap");
     expect(pillarPropertySource).toContain("useAlignObjectiveMutation");
+    expect(pillarPropertySource).toContain("canUpdate: boolean");
+    expect(pillarPropertySource).toContain("disabled={!canUpdate");
+    expect(pillarPropertySource).not.toContain("@/modules/objectives");
     expect(pillarPropertySource).toContain(
       "if (pillars.length === 0) return null",
     );
@@ -298,6 +297,14 @@ describe("StrategyMapCanvas", () => {
     expect(pillarPropertySource).toContain("Remove pillar alignment");
     expect(objectivePropertiesSource).toContain("ObjectivePillarProperty");
     expect(roadmapPropertiesSource).toContain("ObjectivePillarProperty");
+    expect(objectivePropertiesSource).toContain("canUpdate={canUpdate}");
+    expect(roadmapPropertiesSource).toContain("canUpdate={canUpdate}");
+    expect(objectivePropertiesSource).toContain(
+      "@/shared/strategy-map/objective-pillar-property",
+    );
+    expect(roadmapPropertiesSource).toContain(
+      "@/shared/strategy-map/objective-pillar-property",
+    );
     expect(hooksSource).toContain("onMutate: async");
     expect(hooksSource).toContain("cancelQueries");
     expect(hooksSource).toContain("previousStrategy");

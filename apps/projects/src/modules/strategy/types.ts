@@ -1,15 +1,12 @@
-export type StrategicPillar = {
-  id: string;
-  name: string;
-  description: string | null;
-  orderIndex: number;
-  objectiveIds: string[];
-};
+import type { StrategicPillar, StrategyMap } from "@/shared/strategy-map/types";
 
-export type StrategyMap = {
-  ultimateGoal: string;
-  description: string | null;
-  pillars: StrategicPillar[];
+export type { StrategicPillar, StrategyMap };
+
+export type StrategyMember = {
+  avatarUrl: string | null;
+  fullName: string;
+  id: string;
+  username: string;
 };
 
 export type StrategyUpdate = Pick<StrategyMap, "ultimateGoal" | "description">;

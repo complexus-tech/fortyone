@@ -58,7 +58,7 @@ export const useCreateGitHubIssueSyncLink = () => {
     },
     onSuccess: (res, _input, context) => {
       if (res.error?.message) {
-        if (context?.previous) {
+        if (context.previous) {
           queryClient.setQueryData(queryKey, context.previous);
         }
         toast.error("GitHub", { description: res.error.message });

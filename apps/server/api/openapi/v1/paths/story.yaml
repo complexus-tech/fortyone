@@ -1,7 +1,7 @@
 get:
   operationId: getStory
   tags: [Stories]
-  summary: Get one visible story
+  summary: Get story
   description: Personal access tokens are supported in this preview. Current workspace and team membership remain authoritative.
   x-fortyone-scope: stories:read
   parameters:

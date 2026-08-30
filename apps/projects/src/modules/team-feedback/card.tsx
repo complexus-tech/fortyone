@@ -17,7 +17,7 @@ import { Avatar, Box, Button, ContextMenu, Flex, Text, TimeAgo } from "ui";
 import { ConfirmDialog, Dot } from "@/components/ui";
 import { ListItemAttentionDot } from "@/components/ui/list-item-attention-dot";
 import { useWorkspacePath } from "@/hooks";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import { useUserRole } from "@/hooks/role";
 import { openDialogAfterMenuClose } from "@/utils/menu-dialog-state";
 import { usePlanTeamFeedback } from "./hooks/use-plan-feedback";

@@ -15,7 +15,7 @@ import type {
 } from "@/modules/stories/types";
 import type { DetailedStory } from "@/modules/story/types";
 import type { UserSummary } from "@/types";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import {
   useMediaQuery,

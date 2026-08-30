@@ -120,10 +120,10 @@ export type GitHubComment = {
 };
 
 export type UpdateGitHubTeamSettingsInput = {
-  rules: Array<{
+  rules: {
     eventKey: string;
     targetStatusId?: string | null;
     baseBranchPattern?: string | null;
     isActive: boolean;
-  }>;
+  }[];
 };

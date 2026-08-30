@@ -21,7 +21,11 @@
       "legacyFiles",
       "oversizedFiles"
     ],
-    "legacyRoots": ["src/lib/actions", "src/lib/hooks", "src/lib/queries"],
+    "legacyRoots": [
+      "src/lib/actions",
+      "src/lib/hooks",
+      "src/lib/queries"
+    ],
     "lowerLayerRoots": [
       "src/components",
       "src/constants",
@@ -31,9 +35,26 @@
       "src/types",
       "src/utils"
     ],
+    "modulePublicBoundary": {
+      "directory": "public",
+      "entrypoint": "public.ts"
+    },
+    "nonOverridableCategories": [
+      "oversizedFiles"
+    ],
     "oversizedFileLineLimit": 700,
-    "sourceExtensions": [".ts", ".tsx"]
+    "sourceExtensions": [
+      ".ts",
+      ".tsx"
+    ]
   },
+  "approvedPolicyTransitions": [
+    {
+      "from": "a9e50476e573dda6371d83bb70eba9b642df9834ecbf153d367638cff3fb8463",
+      "reference": "apps/projects/docs/architecture/decisions/0001-modular-frontend-boundaries.md",
+      "to": "957eb47f3e92235effef47e9328c62c3bbb27f53a4a9bb3092100e22ece1e503"
+    }
+  ],
   "approval": {
     "reference": "apps/projects/docs/architecture/decisions/0001-modular-frontend-boundaries.md"
   },
@@ -46,62 +67,6 @@
         "destinationModule": "invitations",
         "source": "src/components/layouts/settings.tsx",
         "specifier": "@/modules/invitations/hooks/my-invitations"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/app-command-bar.tsx -> src/modules/notifications/hooks/unread.ts [@/modules/notifications/hooks/unread]",
-        "destination": "src/modules/notifications/hooks/unread.ts",
-        "destinationModule": "notifications",
-        "source": "src/components/shared/app-command-bar.tsx",
-        "specifier": "@/modules/notifications/hooks/unread"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/command-palette-content.tsx -> src/modules/search/hooks/use-search.ts [@/modules/search/hooks/use-search]",
-        "destination": "src/modules/search/hooks/use-search.ts",
-        "destinationModule": "search",
-        "source": "src/components/shared/command-palette-content.tsx",
-        "specifier": "@/modules/search/hooks/use-search"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/command-palette-content.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/components/shared/command-palette-content.tsx",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/command-search-results.tsx -> src/modules/objectives/types/index.ts [@/modules/objectives/types]",
-        "destination": "src/modules/objectives/types/index.ts",
-        "destinationModule": "objectives",
-        "source": "src/components/shared/command-search-results.tsx",
-        "specifier": "@/modules/objectives/types"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/command-search-results.tsx -> src/modules/search/types/index.ts [@/modules/search/types]",
-        "destination": "src/modules/search/types/index.ts",
-        "destinationModule": "search",
-        "source": "src/components/shared/command-search-results.tsx",
-        "specifier": "@/modules/search/types"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/command-search-results.tsx -> src/modules/stories/types/index.ts [@/modules/stories/types]",
-        "destination": "src/modules/stories/types/index.ts",
-        "destinationModule": "stories",
-        "source": "src/components/shared/command-search-results.tsx",
-        "specifier": "@/modules/stories/types"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/command-search-results.tsx -> src/modules/teams/hooks/teams.ts [@/modules/teams/hooks/teams]",
-        "destination": "src/modules/teams/hooks/teams.ts",
-        "destinationModule": "teams",
-        "source": "src/components/shared/command-search-results.tsx",
-        "specifier": "@/modules/teams/hooks/teams"
       },
       {
         "count": 1,
@@ -233,14 +198,6 @@
       },
       {
         "count": 1,
-        "key": "src/components/shared/sidebar/upcoming-meeting-card.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/components/shared/sidebar/upcoming-meeting-card.tsx",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
         "key": "src/components/ui/activity-copy.ts -> src/modules/stories/types/index.ts [@/modules/stories/types]",
         "destination": "src/modules/stories/types/index.ts",
         "destinationModule": "stories",
@@ -294,22 +251,6 @@
         "destinationModule": "stories",
         "source": "src/components/ui/category-header-style.ts",
         "specifier": "@/modules/stories/types"
-      },
-      {
-        "count": 1,
-        "key": "src/components/ui/chat/analytics-report.tsx -> src/modules/sprints/stories/burndown.tsx [@/modules/sprints/stories/burndown]",
-        "destination": "src/modules/sprints/stories/burndown.tsx",
-        "destinationModule": "sprints",
-        "source": "src/components/ui/chat/analytics-report.tsx",
-        "specifier": "@/modules/sprints/stories/burndown"
-      },
-      {
-        "count": 1,
-        "key": "src/components/ui/chat/analytics-report.tsx -> src/modules/sprints/types/index.ts [@/modules/sprints/types]",
-        "destination": "src/modules/sprints/types/index.ts",
-        "destinationModule": "sprints",
-        "source": "src/components/ui/chat/analytics-report.tsx",
-        "specifier": "@/modules/sprints/types"
       },
       {
         "count": 1,
@@ -433,14 +374,6 @@
       },
       {
         "count": 1,
-        "key": "src/components/ui/chat/story-results.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/components/ui/chat/story-results.tsx",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
         "key": "src/components/ui/chat/tool-output-policy.ts -> src/modules/stories/types/index.ts [@/modules/stories/types]",
         "destination": "src/modules/stories/types/index.ts",
         "destinationModule": "stories",
@@ -494,14 +427,6 @@
         "destinationModule": "story",
         "source": "src/components/ui/gantt-board.tsx",
         "specifier": "@/modules/story/types"
-      },
-      {
-        "count": 1,
-        "key": "src/components/ui/gantt-board.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/components/ui/gantt-board.tsx",
-        "specifier": "@/modules/story/utils/story-url"
       },
       {
         "count": 1,
@@ -777,14 +702,6 @@
       },
       {
         "count": 1,
-        "key": "src/components/ui/new-story-dialog.tsx -> src/modules/settings/workspace/integrations/figma/description.ts [@/modules/settings/workspace/integrations/figma/description]",
-        "destination": "src/modules/settings/workspace/integrations/figma/description.ts",
-        "destinationModule": "settings",
-        "source": "src/components/ui/new-story-dialog.tsx",
-        "specifier": "@/modules/settings/workspace/integrations/figma/description"
-      },
-      {
-        "count": 1,
         "key": "src/components/ui/new-story-dialog.tsx -> src/modules/settings/workspace/integrations/figma/types.ts [@/modules/settings/workspace/integrations/figma/types]",
         "destination": "src/modules/settings/workspace/integrations/figma/types.ts",
         "destinationModule": "settings",
@@ -846,14 +763,6 @@
         "destinationModule": "story",
         "source": "src/components/ui/new-story-dialog.tsx",
         "specifier": "@/modules/story/types"
-      },
-      {
-        "count": 1,
-        "key": "src/components/ui/new-story-dialog.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/components/ui/new-story-dialog.tsx",
-        "specifier": "@/modules/story/utils/story-url"
       },
       {
         "count": 1,
@@ -1073,14 +982,6 @@
       },
       {
         "count": 1,
-        "key": "src/components/ui/stories-filter-bar.tsx -> src/modules/stories/types/index.ts [@/modules/stories/types]",
-        "destination": "src/modules/stories/types/index.ts",
-        "destinationModule": "stories",
-        "source": "src/components/ui/stories-filter-bar.tsx",
-        "specifier": "@/modules/stories/types"
-      },
-      {
-        "count": 1,
         "key": "src/components/ui/stories-filter-bar.tsx -> src/modules/teams/hooks/teams.ts [@/modules/teams/hooks/teams]",
         "destination": "src/modules/teams/hooks/teams.ts",
         "destinationModule": "teams",
@@ -1273,14 +1174,6 @@
       },
       {
         "count": 1,
-        "key": "src/components/ui/story-dialog/index.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/components/ui/story-dialog/index.tsx",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
         "key": "src/components/ui/story-drag.ts -> src/modules/stories/types/index.ts [@/modules/stories/types]",
         "destination": "src/modules/stories/types/index.ts",
         "destinationModule": "stories",
@@ -1345,14 +1238,6 @@
       },
       {
         "count": 1,
-        "key": "src/components/ui/story/card.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/components/ui/story/card.tsx",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
         "key": "src/components/ui/story/context-menu.tsx -> src/modules/stories/hooks/archive-mutation.ts [@/modules/stories/hooks/archive-mutation]",
         "destination": "src/modules/stories/hooks/archive-mutation.ts",
         "destinationModule": "stories",
@@ -1406,14 +1291,6 @@
         "destinationModule": "story",
         "source": "src/components/ui/story/context-menu.tsx",
         "specifier": "@/modules/story/types"
-      },
-      {
-        "count": 1,
-        "key": "src/components/ui/story/context-menu.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/components/ui/story/context-menu.tsx",
-        "specifier": "@/modules/story/utils/story-url"
       },
       {
         "count": 1,
@@ -1473,14 +1350,6 @@
       },
       {
         "count": 1,
-        "key": "src/components/ui/story/properties.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/components/ui/story/properties.tsx",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
         "key": "src/components/ui/story/row.tsx -> src/modules/stories/constants/index.ts [@/modules/stories/constants]",
         "destination": "src/modules/stories/constants/index.ts",
         "destinationModule": "stories",
@@ -1526,14 +1395,6 @@
         "destinationModule": "story",
         "source": "src/components/ui/story/row.tsx",
         "specifier": "@/modules/story/types"
-      },
-      {
-        "count": 1,
-        "key": "src/components/ui/story/row.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/components/ui/story/row.tsx",
-        "specifier": "@/modules/story/utils/story-url"
       },
       {
         "count": 1,
@@ -1889,30 +1750,6 @@
       },
       {
         "count": 1,
-        "key": "src/lib/ai/tools/github.ts -> src/modules/settings/workspace/integrations/github/types.ts [@/modules/settings/workspace/integrations/github/types]",
-        "destination": "src/modules/settings/workspace/integrations/github/types.ts",
-        "destinationModule": "settings",
-        "source": "src/lib/ai/tools/github.ts",
-        "specifier": "@/modules/settings/workspace/integrations/github/types"
-      },
-      {
-        "count": 1,
-        "key": "src/lib/ai/tools/github.ts -> src/modules/story/queries/get-story.ts [@/modules/story/queries/get-story]",
-        "destination": "src/modules/story/queries/get-story.ts",
-        "destinationModule": "story",
-        "source": "src/lib/ai/tools/github.ts",
-        "specifier": "@/modules/story/queries/get-story"
-      },
-      {
-        "count": 1,
-        "key": "src/lib/ai/tools/github.ts -> src/modules/teams/queries/get-teams.ts [@/modules/teams/queries/get-teams]",
-        "destination": "src/modules/teams/queries/get-teams.ts",
-        "destinationModule": "teams",
-        "source": "src/lib/ai/tools/github.ts",
-        "specifier": "@/modules/teams/queries/get-teams"
-      },
-      {
-        "count": 1,
         "key": "src/lib/ai/tools/integration-requests.ts -> src/modules/integration-requests/actions/accept-all.ts [@/modules/integration-requests/actions/accept-all]",
         "destination": "src/modules/integration-requests/actions/accept-all.ts",
         "destinationModule": "integration-requests",
@@ -1982,14 +1819,6 @@
         "destinationModule": "integration-requests",
         "source": "src/lib/ai/tools/integration-requests.ts",
         "specifier": "@/modules/integration-requests/queries/get-team-requests"
-      },
-      {
-        "count": 1,
-        "key": "src/lib/ai/tools/integration-requests.ts -> src/modules/integration-requests/types/index.ts [@/modules/integration-requests/types]",
-        "destination": "src/modules/integration-requests/types/index.ts",
-        "destinationModule": "integration-requests",
-        "source": "src/lib/ai/tools/integration-requests.ts",
-        "specifier": "@/modules/integration-requests/types"
       },
       {
         "count": 1,
@@ -2078,14 +1907,6 @@
         "destinationModule": "ai-chats",
         "source": "src/lib/ai/tools/memory.ts",
         "specifier": "@/modules/ai-chats/queries/get-memory"
-      },
-      {
-        "count": 1,
-        "key": "src/lib/ai/tools/navigation.ts -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/lib/ai/tools/navigation.ts",
-        "specifier": "@/modules/story/utils/story-url"
       },
       {
         "count": 1,
@@ -2409,14 +2230,6 @@
       },
       {
         "count": 1,
-        "key": "src/lib/ai/tools/stories/bulk-delete-stories.ts -> src/modules/story/actions/story-deletion-error.ts [@/modules/story/actions/story-deletion-error]",
-        "destination": "src/modules/story/actions/story-deletion-error.ts",
-        "destinationModule": "story",
-        "source": "src/lib/ai/tools/stories/bulk-delete-stories.ts",
-        "specifier": "@/modules/story/actions/story-deletion-error"
-      },
-      {
-        "count": 1,
         "key": "src/lib/ai/tools/stories/bulk-update-stories.ts -> src/modules/stories/actions/bulk-update-stories.ts [@/modules/stories/actions/bulk-update-stories]",
         "destination": "src/modules/stories/actions/bulk-update-stories.ts",
         "destinationModule": "stories",
@@ -2446,14 +2259,6 @@
         "destinationModule": "story",
         "source": "src/lib/ai/tools/stories/delete-story.ts",
         "specifier": "@/modules/story/actions/delete-story"
-      },
-      {
-        "count": 1,
-        "key": "src/lib/ai/tools/stories/delete-story.ts -> src/modules/story/actions/story-deletion-error.ts [@/modules/story/actions/story-deletion-error]",
-        "destination": "src/modules/story/actions/story-deletion-error.ts",
-        "destinationModule": "story",
-        "source": "src/lib/ai/tools/stories/delete-story.ts",
-        "specifier": "@/modules/story/actions/story-deletion-error"
       },
       {
         "count": 1,
@@ -3084,39 +2889,12 @@
       },
       {
         "count": 1,
-        "key": "src/modules/calendar/components/calendar-schedule-block-details-dialog.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/modules/calendar/components/calendar-schedule-block-details-dialog.tsx",
-        "sourceModule": "calendar",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/calendar/components/calendar.tsx -> src/modules/settings/workspace/integrations/calendar/types.ts [@/modules/settings/workspace/integrations/calendar/types]",
-        "destination": "src/modules/settings/workspace/integrations/calendar/types.ts",
-        "destinationModule": "settings",
-        "source": "src/modules/calendar/components/calendar.tsx",
-        "sourceModule": "calendar",
-        "specifier": "@/modules/settings/workspace/integrations/calendar/types"
-      },
-      {
-        "count": 1,
         "key": "src/modules/calendar/components/calendar.tsx -> src/modules/stories/hooks/use-my-stories-grouped.ts [@/modules/stories/hooks/use-my-stories-grouped]",
         "destination": "src/modules/stories/hooks/use-my-stories-grouped.ts",
         "destinationModule": "stories",
         "source": "src/modules/calendar/components/calendar.tsx",
         "sourceModule": "calendar",
         "specifier": "@/modules/stories/hooks/use-my-stories-grouped"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/calendar/components/calendar.tsx -> src/modules/stories/types/index.ts [@/modules/stories/types]",
-        "destination": "src/modules/stories/types/index.ts",
-        "destinationModule": "stories",
-        "source": "src/modules/calendar/components/calendar.tsx",
-        "sourceModule": "calendar",
-        "specifier": "@/modules/stories/types"
       },
       {
         "count": 1,
@@ -3174,114 +2952,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/feedback-widget/actions.ts -> src/modules/public-portal/types.ts [@/modules/public-portal/types]",
-        "destination": "src/modules/public-portal/types.ts",
-        "destinationModule": "public-portal",
-        "source": "src/modules/feedback-widget/actions.ts",
-        "sourceModule": "feedback-widget",
-        "specifier": "@/modules/public-portal/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/feedback-widget/widget-frame.tsx -> src/modules/public-portal/status.ts [@/modules/public-portal/status]",
-        "destination": "src/modules/public-portal/status.ts",
-        "destinationModule": "public-portal",
-        "source": "src/modules/feedback-widget/widget-frame.tsx",
-        "sourceModule": "feedback-widget",
-        "specifier": "@/modules/public-portal/status"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/feedback-widget/widget-frame.tsx -> src/modules/public-portal/types.ts [@/modules/public-portal/types]",
-        "destination": "src/modules/public-portal/types.ts",
-        "destinationModule": "public-portal",
-        "source": "src/modules/feedback-widget/widget-frame.tsx",
-        "sourceModule": "feedback-widget",
-        "specifier": "@/modules/public-portal/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/modules/objectives/hooks/index.ts [@/modules/objectives/hooks]",
-        "destination": "src/modules/objectives/hooks/index.ts",
-        "destinationModule": "objectives",
-        "source": "src/modules/integration-requests/details.tsx",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/objectives/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/modules/objectives/hooks/use-objective.ts [@/modules/objectives/hooks/use-objective]",
-        "destination": "src/modules/objectives/hooks/use-objective.ts",
-        "destinationModule": "objectives",
-        "source": "src/modules/integration-requests/details.tsx",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/objectives/hooks/use-objective"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/modules/settings/workspace/integrations/github/types.ts [@/modules/settings/workspace/integrations/github/types]",
-        "destination": "src/modules/settings/workspace/integrations/github/types.ts",
-        "destinationModule": "settings",
-        "source": "src/modules/integration-requests/details.tsx",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/settings/workspace/integrations/github/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/modules/sprints/hooks/sprint-details.ts [@/modules/sprints/hooks/sprint-details]",
-        "destination": "src/modules/sprints/hooks/sprint-details.ts",
-        "destinationModule": "sprints",
-        "source": "src/modules/integration-requests/details.tsx",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/sprints/hooks/sprint-details"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/modules/stories/types/index.ts [@/modules/stories/types]",
-        "destination": "src/modules/stories/types/index.ts",
-        "destinationModule": "stories",
-        "source": "src/modules/integration-requests/details.tsx",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/stories/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/modules/story/components/options.tsx [@/modules/story/components/options]",
-        "destination": "src/modules/story/components/options.tsx",
-        "destinationModule": "story",
-        "source": "src/modules/integration-requests/details.tsx",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/story/components/options"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/modules/story/components/story-comment-editor.tsx [@/modules/story/components/story-comment-editor]",
-        "destination": "src/modules/story/components/story-comment-editor.tsx",
-        "destinationModule": "story",
-        "source": "src/modules/integration-requests/details.tsx",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/story/components/story-comment-editor"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/modules/integration-requests/details.tsx",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/modules/teams/hooks/use-team-settings.ts [@/modules/teams/hooks/use-team-settings]",
-        "destination": "src/modules/teams/hooks/use-team-settings.ts",
-        "destinationModule": "teams",
-        "source": "src/modules/integration-requests/details.tsx",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/teams/hooks/use-team-settings"
-      },
-      {
-        "count": 1,
         "key": "src/modules/integration-requests/hooks/use-accept-all-requests.ts -> src/modules/stories/constants/index.ts [@/modules/stories/constants]",
         "destination": "src/modules/stories/constants/index.ts",
         "destinationModule": "stories",
@@ -3297,24 +2967,6 @@
         "source": "src/modules/integration-requests/hooks/use-accept-request.ts",
         "sourceModule": "integration-requests",
         "specifier": "@/modules/stories/constants"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/queries/get-request-github-comments.ts -> src/modules/settings/workspace/integrations/github/types.ts [@/modules/settings/workspace/integrations/github/types]",
-        "destination": "src/modules/settings/workspace/integrations/github/types.ts",
-        "destinationModule": "settings",
-        "source": "src/modules/integration-requests/queries/get-request-github-comments.ts",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/settings/workspace/integrations/github/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/thread-activity.tsx -> src/modules/story/components/story-comment-editor.tsx [@/modules/story/components/story-comment-editor]",
-        "destination": "src/modules/story/components/story-comment-editor.tsx",
-        "destinationModule": "story",
-        "source": "src/modules/integration-requests/thread-activity.tsx",
-        "sourceModule": "integration-requests",
-        "specifier": "@/modules/story/components/story-comment-editor"
       },
       {
         "count": 1,
@@ -3396,69 +3048,6 @@
         "source": "src/modules/key-results/components/key-result-details.tsx",
         "sourceModule": "key-results",
         "specifier": "@/modules/stories/hooks/key-result-stories"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-result-details.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/modules/key-results/components/key-result-details.tsx",
-        "sourceModule": "key-results",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-filter-button.tsx -> src/modules/objectives/hooks/use-objectives.ts [@/modules/objectives/hooks/use-objectives]",
-        "destination": "src/modules/objectives/hooks/use-objectives.ts",
-        "destinationModule": "objectives",
-        "source": "src/modules/key-results/components/key-results-filter-button.tsx",
-        "sourceModule": "key-results",
-        "specifier": "@/modules/objectives/hooks/use-objectives"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-filter-button.tsx -> src/modules/teams/hooks/teams.ts [@/modules/teams/hooks/teams]",
-        "destination": "src/modules/teams/hooks/teams.ts",
-        "destinationModule": "teams",
-        "source": "src/modules/key-results/components/key-results-filter-button.tsx",
-        "sourceModule": "key-results",
-        "specifier": "@/modules/teams/hooks/teams"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-list.tsx -> src/modules/objectives/hooks/use-delete-key-result-mutation.ts [@/modules/objectives/hooks/use-delete-key-result-mutation]",
-        "destination": "src/modules/objectives/hooks/use-delete-key-result-mutation.ts",
-        "destinationModule": "objectives",
-        "source": "src/modules/key-results/components/key-results-list.tsx",
-        "sourceModule": "key-results",
-        "specifier": "@/modules/objectives/hooks/use-delete-key-result-mutation"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-list.tsx -> src/modules/objectives/hooks/use-update-key-result-mutation.ts [@/modules/objectives/hooks/use-update-key-result-mutation]",
-        "destination": "src/modules/objectives/hooks/use-update-key-result-mutation.ts",
-        "destinationModule": "objectives",
-        "source": "src/modules/key-results/components/key-results-list.tsx",
-        "sourceModule": "key-results",
-        "specifier": "@/modules/objectives/hooks/use-update-key-result-mutation"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-list.tsx -> src/modules/objectives/stories/overview/new-key-result.tsx [@/modules/objectives/stories/overview/new-key-result]",
-        "destination": "src/modules/objectives/stories/overview/new-key-result.tsx",
-        "destinationModule": "objectives",
-        "source": "src/modules/key-results/components/key-results-list.tsx",
-        "sourceModule": "key-results",
-        "specifier": "@/modules/objectives/stories/overview/new-key-result"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-list.tsx -> src/modules/objectives/stories/overview/update-key-result-dialog.tsx [@/modules/objectives/stories/overview/update-key-result-dialog]",
-        "destination": "src/modules/objectives/stories/overview/update-key-result-dialog.tsx",
-        "destinationModule": "objectives",
-        "source": "src/modules/key-results/components/key-results-list.tsx",
-        "sourceModule": "key-results",
-        "specifier": "@/modules/objectives/stories/overview/update-key-result-dialog"
       },
       {
         "count": 1,
@@ -3651,15 +3240,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/notifications/details/index.tsx -> src/modules/story/index.tsx [@/modules/story]",
-        "destination": "src/modules/story/index.tsx",
-        "destinationModule": "story",
-        "source": "src/modules/notifications/details/index.tsx",
-        "sourceModule": "notifications",
-        "specifier": "@/modules/story"
-      },
-      {
-        "count": 1,
         "key": "src/modules/objectives/components/card.tsx -> src/modules/teams/hooks/teams.ts [@/modules/teams/hooks/teams]",
         "destination": "src/modules/teams/hooks/teams.ts",
         "destinationModule": "teams",
@@ -3678,102 +3258,12 @@
       },
       {
         "count": 1,
-        "key": "src/modules/objectives/components/objective-forecast-risk.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/modules/objectives/components/objective-forecast-risk.tsx",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/components/team-header.tsx -> src/modules/roadmap/components/objective-view-options-button.tsx [@/modules/roadmap/components/objective-view-options-button]",
-        "destination": "src/modules/roadmap/components/objective-view-options-button.tsx",
-        "destinationModule": "roadmap",
-        "source": "src/modules/objectives/components/team-header.tsx",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/roadmap/components/objective-view-options-button"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/components/team-header.tsx -> src/modules/roadmap/objective-board-utils.ts [@/modules/roadmap/objective-board-utils]",
-        "destination": "src/modules/roadmap/objective-board-utils.ts",
-        "destinationModule": "roadmap",
-        "source": "src/modules/objectives/components/team-header.tsx",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/roadmap/objective-board-utils"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/components/team-header.tsx -> src/modules/roadmap/types/index.ts [@/modules/roadmap/types]",
-        "destination": "src/modules/roadmap/types/index.ts",
-        "destinationModule": "roadmap",
-        "source": "src/modules/objectives/components/team-header.tsx",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/roadmap/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/components/team-header.tsx -> src/modules/teams/hooks/teams.ts [@/modules/teams/hooks/teams]",
-        "destination": "src/modules/teams/hooks/teams.ts",
-        "destinationModule": "teams",
-        "source": "src/modules/objectives/components/team-header.tsx",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/teams/hooks/teams"
-      },
-      {
-        "count": 1,
         "key": "src/modules/objectives/hooks/update-mutation.ts -> src/modules/search/types/index.ts [@/modules/search/types]",
         "destination": "src/modules/search/types/index.ts",
         "destinationModule": "search",
         "source": "src/modules/objectives/hooks/update-mutation.ts",
         "sourceModule": "objectives",
         "specifier": "@/modules/search/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/hooks/use-delete-key-result-mutation.ts -> src/modules/key-results/types/index.ts [@/modules/key-results/types]",
-        "destination": "src/modules/key-results/types/index.ts",
-        "destinationModule": "key-results",
-        "source": "src/modules/objectives/hooks/use-delete-key-result-mutation.ts",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/key-results/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/hooks/use-update-key-result-mutation.ts -> src/modules/key-results/types/index.ts [@/modules/key-results/types]",
-        "destination": "src/modules/key-results/types/index.ts",
-        "destinationModule": "key-results",
-        "source": "src/modules/objectives/hooks/use-update-key-result-mutation.ts",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/key-results/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/index.tsx -> src/modules/roadmap/components/objective-views.tsx [@/modules/roadmap/components/objective-views]",
-        "destination": "src/modules/roadmap/components/objective-views.tsx",
-        "destinationModule": "roadmap",
-        "source": "src/modules/objectives/index.tsx",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/roadmap/components/objective-views"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/index.tsx -> src/modules/roadmap/objective-board-utils.ts [@/modules/roadmap/objective-board-utils]",
-        "destination": "src/modules/roadmap/objective-board-utils.ts",
-        "destinationModule": "roadmap",
-        "source": "src/modules/objectives/index.tsx",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/roadmap/objective-board-utils"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/index.tsx -> src/modules/roadmap/use-roadmap-layout.ts [@/modules/roadmap/use-roadmap-layout]",
-        "destination": "src/modules/roadmap/use-roadmap-layout.ts",
-        "destinationModule": "roadmap",
-        "source": "src/modules/objectives/index.tsx",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/roadmap/use-roadmap-layout"
       },
       {
         "count": 1,
@@ -3804,39 +3294,12 @@
       },
       {
         "count": 1,
-        "key": "src/modules/objectives/stories/overview/properties.tsx -> src/modules/strategy/objective-pillar-property.tsx [@/modules/strategy/objective-pillar-property]",
-        "destination": "src/modules/strategy/objective-pillar-property.tsx",
-        "destinationModule": "strategy",
-        "source": "src/modules/objectives/stories/overview/properties.tsx",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/strategy/objective-pillar-property"
-      },
-      {
-        "count": 1,
         "key": "src/modules/objectives/stories/sidebar.tsx -> src/modules/stories/types/index.ts [@/modules/stories/types]",
         "destination": "src/modules/stories/types/index.ts",
         "destinationModule": "stories",
         "source": "src/modules/objectives/stories/sidebar.tsx",
         "sourceModule": "objectives",
         "specifier": "@/modules/stories/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/types/index.ts -> src/modules/stories/types/index.ts [@/modules/stories/types]",
-        "destination": "src/modules/stories/types/index.ts",
-        "destinationModule": "stories",
-        "source": "src/modules/objectives/types/index.ts",
-        "sourceModule": "objectives",
-        "specifier": "@/modules/stories/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/onboarding/invite/index.tsx -> src/modules/invitations/actions/invite-onboarding-members.ts [@/modules/invitations/actions/invite-onboarding-members]",
-        "destination": "src/modules/invitations/actions/invite-onboarding-members.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/onboarding/invite/index.tsx",
-        "sourceModule": "onboarding",
-        "specifier": "@/modules/invitations/actions/invite-onboarding-members"
       },
       {
         "count": 1,
@@ -3849,57 +3312,12 @@
       },
       {
         "count": 1,
-        "key": "src/modules/onboarding/join/components/join-form.tsx -> src/modules/invitations/actions/accept-invitation.ts [@/modules/invitations/actions/accept-invitation]",
-        "destination": "src/modules/invitations/actions/accept-invitation.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/onboarding/join/components/join-form.tsx",
-        "sourceModule": "onboarding",
-        "specifier": "@/modules/invitations/actions/accept-invitation"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/onboarding/join/components/join-form.tsx -> src/modules/invitations/types/index.ts [@/modules/invitations/types]",
-        "destination": "src/modules/invitations/types/index.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/onboarding/join/components/join-form.tsx",
-        "sourceModule": "onboarding",
-        "specifier": "@/modules/invitations/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/onboarding/join/index.tsx -> src/modules/invitations/types/index.ts [@/modules/invitations/types]",
-        "destination": "src/modules/invitations/types/index.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/onboarding/join/index.tsx",
-        "sourceModule": "onboarding",
-        "specifier": "@/modules/invitations/types"
-      },
-      {
-        "count": 1,
         "key": "src/modules/profile/components/all-stories.tsx -> src/modules/stories/hooks/use-grouped-stories.ts [@/modules/stories/hooks/use-grouped-stories]",
         "destination": "src/modules/stories/hooks/use-grouped-stories.ts",
         "destinationModule": "stories",
         "source": "src/modules/profile/components/all-stories.tsx",
         "sourceModule": "profile",
         "specifier": "@/modules/stories/hooks/use-grouped-stories"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/public-portal/account-page.tsx -> src/modules/settings/account/profile/components/form.tsx [@/modules/settings/account/profile/components/form]",
-        "destination": "src/modules/settings/account/profile/components/form.tsx",
-        "destinationModule": "settings",
-        "source": "src/modules/public-portal/account-page.tsx",
-        "sourceModule": "public-portal",
-        "specifier": "@/modules/settings/account/profile/components/form"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/public-portal/feedback-comments.tsx -> src/modules/story/components/story-comment-editor.tsx [@/modules/story/components/story-comment-editor]",
-        "destination": "src/modules/story/components/story-comment-editor.tsx",
-        "destinationModule": "story",
-        "source": "src/modules/public-portal/feedback-comments.tsx",
-        "sourceModule": "public-portal",
-        "specifier": "@/modules/story/components/story-comment-editor"
       },
       {
         "count": 1,
@@ -3954,15 +3372,6 @@
         "source": "src/modules/roadmap/components/objective-details-properties.tsx",
         "sourceModule": "roadmap",
         "specifier": "@/modules/objectives/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/roadmap/components/objective-details-properties.tsx -> src/modules/strategy/objective-pillar-property.tsx [@/modules/strategy/objective-pillar-property]",
-        "destination": "src/modules/strategy/objective-pillar-property.tsx",
-        "destinationModule": "strategy",
-        "source": "src/modules/roadmap/components/objective-details-properties.tsx",
-        "sourceModule": "roadmap",
-        "specifier": "@/modules/strategy/objective-pillar-property"
       },
       {
         "count": 1,
@@ -4182,33 +3591,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/search/index.tsx -> src/modules/objectives/components/list-objectives.tsx [../objectives/components/list-objectives]",
-        "destination": "src/modules/objectives/components/list-objectives.tsx",
-        "destinationModule": "objectives",
-        "source": "src/modules/search/index.tsx",
-        "sourceModule": "search",
-        "specifier": "../objectives/components/list-objectives"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/search/types/index.ts -> src/modules/objectives/types/index.ts [@/modules/objectives/types]",
-        "destination": "src/modules/objectives/types/index.ts",
-        "destinationModule": "objectives",
-        "source": "src/modules/search/types/index.ts",
-        "sourceModule": "search",
-        "specifier": "@/modules/objectives/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/search/types/index.ts -> src/modules/stories/types/index.ts [@/modules/stories/types]",
-        "destination": "src/modules/stories/types/index.ts",
-        "destinationModule": "stories",
-        "source": "src/modules/search/types/index.ts",
-        "sourceModule": "search",
-        "specifier": "@/modules/stories/types"
-      },
-      {
-        "count": 1,
         "key": "src/modules/settings/account/notifications/components/email.tsx -> src/modules/notifications/hooks/preferences.ts [@/modules/notifications/hooks/preferences]",
         "destination": "src/modules/notifications/hooks/preferences.ts",
         "destinationModule": "notifications",
@@ -4272,42 +3654,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/settings/invitations/components/invite.tsx -> src/modules/invitations/hooks/use-accept-invitation.ts [@/modules/invitations/hooks/use-accept-invitation]",
-        "destination": "src/modules/invitations/hooks/use-accept-invitation.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/settings/invitations/components/invite.tsx",
-        "sourceModule": "settings",
-        "specifier": "@/modules/invitations/hooks/use-accept-invitation"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/invitations/components/invite.tsx -> src/modules/invitations/hooks/use-revoke-invitation.ts [@/modules/invitations/hooks/use-revoke-invitation]",
-        "destination": "src/modules/invitations/hooks/use-revoke-invitation.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/settings/invitations/components/invite.tsx",
-        "sourceModule": "settings",
-        "specifier": "@/modules/invitations/hooks/use-revoke-invitation"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/invitations/components/invite.tsx -> src/modules/invitations/types/index.ts [@/modules/invitations/types]",
-        "destination": "src/modules/invitations/types/index.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/settings/invitations/components/invite.tsx",
-        "sourceModule": "settings",
-        "specifier": "@/modules/invitations/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/invitations/index.tsx -> src/modules/invitations/hooks/my-invitations.ts [@/modules/invitations/hooks/my-invitations]",
-        "destination": "src/modules/invitations/hooks/my-invitations.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/settings/invitations/index.tsx",
-        "sourceModule": "settings",
-        "specifier": "@/modules/invitations/hooks/my-invitations"
-      },
-      {
-        "count": 1,
         "key": "src/modules/settings/workspace/feedback/index.tsx -> src/modules/teams/hooks/teams.ts [@/modules/teams/hooks/teams]",
         "destination": "src/modules/teams/hooks/teams.ts",
         "destinationModule": "teams",
@@ -4323,24 +3669,6 @@
         "source": "src/modules/settings/workspace/feedback/types.ts",
         "sourceModule": "settings",
         "specifier": "@/modules/teams/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/workspace/feedback/widget-install-settings.tsx -> src/modules/feedback-widget/install.ts [@/modules/feedback-widget/install]",
-        "destination": "src/modules/feedback-widget/install.ts",
-        "destinationModule": "feedback-widget",
-        "source": "src/modules/settings/workspace/feedback/widget-install-settings.tsx",
-        "sourceModule": "settings",
-        "specifier": "@/modules/feedback-widget/install"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/workspace/feedback/widget-install-settings.tsx -> src/modules/feedback-widget/protocol.ts [@/modules/feedback-widget/protocol]",
-        "destination": "src/modules/feedback-widget/protocol.ts",
-        "destinationModule": "feedback-widget",
-        "source": "src/modules/settings/workspace/feedback/widget-install-settings.tsx",
-        "sourceModule": "settings",
-        "specifier": "@/modules/feedback-widget/protocol"
       },
       {
         "count": 1,
@@ -4368,33 +3696,6 @@
         "source": "src/modules/settings/workspace/integrations/slack/slack-channel-audience-settings.tsx",
         "sourceModule": "settings",
         "specifier": "@/modules/teams/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/workspace/members/components/invitee.tsx -> src/modules/invitations/hooks/use-revoke-invitation.ts [@/modules/invitations/hooks/use-revoke-invitation]",
-        "destination": "src/modules/invitations/hooks/use-revoke-invitation.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/settings/workspace/members/components/invitee.tsx",
-        "sourceModule": "settings",
-        "specifier": "@/modules/invitations/hooks/use-revoke-invitation"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/workspace/members/components/invitee.tsx -> src/modules/invitations/types/index.ts [@/modules/invitations/types]",
-        "destination": "src/modules/invitations/types/index.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/settings/workspace/members/components/invitee.tsx",
-        "sourceModule": "settings",
-        "specifier": "@/modules/invitations/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/workspace/members/index.tsx -> src/modules/invitations/hooks/pending-invitations.ts [@/modules/invitations/hooks/pending-invitations]",
-        "destination": "src/modules/invitations/hooks/pending-invitations.ts",
-        "destinationModule": "invitations",
-        "source": "src/modules/settings/workspace/members/index.tsx",
-        "sourceModule": "settings",
-        "specifier": "@/modules/invitations/hooks/pending-invitations"
       },
       {
         "count": 1,
@@ -4704,69 +4005,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/stories/actions/bulk-delete-stories.ts -> src/modules/story/actions/execute-story-deletion-request.ts [@/modules/story/actions/execute-story-deletion-request]",
-        "destination": "src/modules/story/actions/execute-story-deletion-request.ts",
-        "destinationModule": "story",
-        "source": "src/modules/stories/actions/bulk-delete-stories.ts",
-        "sourceModule": "stories",
-        "specifier": "@/modules/story/actions/execute-story-deletion-request"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/stories/actions/bulk-update-stories.ts -> src/modules/story/types/index.ts [@/modules/story/types]",
-        "destination": "src/modules/story/types/index.ts",
-        "destinationModule": "story",
-        "source": "src/modules/stories/actions/bulk-update-stories.ts",
-        "sourceModule": "stories",
-        "specifier": "@/modules/story/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/stories/hooks/archive-mutation.ts -> src/modules/story/types/index.ts [@/modules/story/types]",
-        "destination": "src/modules/story/types/index.ts",
-        "destinationModule": "story",
-        "source": "src/modules/stories/hooks/archive-mutation.ts",
-        "sourceModule": "stories",
-        "specifier": "@/modules/story/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/stories/hooks/delete-mutation.ts -> src/modules/story/types/index.ts [@/modules/story/types]",
-        "destination": "src/modules/story/types/index.ts",
-        "destinationModule": "story",
-        "source": "src/modules/stories/hooks/delete-mutation.ts",
-        "sourceModule": "stories",
-        "specifier": "@/modules/story/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/stories/hooks/update-mutation.ts -> src/modules/objectives/constants/index.ts [@/modules/objectives/constants]",
-        "destination": "src/modules/objectives/constants/index.ts",
-        "destinationModule": "objectives",
-        "source": "src/modules/stories/hooks/update-mutation.ts",
-        "sourceModule": "stories",
-        "specifier": "@/modules/objectives/constants"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/stories/hooks/update-mutation.ts -> src/modules/story/types/index.ts [@/modules/story/types]",
-        "destination": "src/modules/story/types/index.ts",
-        "destinationModule": "story",
-        "source": "src/modules/stories/hooks/update-mutation.ts",
-        "sourceModule": "stories",
-        "specifier": "@/modules/story/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/stories/utils/optimistic.ts -> src/modules/story/types/index.ts [../../story/types]",
-        "destination": "src/modules/story/types/index.ts",
-        "destinationModule": "story",
-        "source": "src/modules/stories/utils/optimistic.ts",
-        "sourceModule": "stories",
-        "specifier": "../../story/types"
-      },
-      {
-        "count": 1,
         "key": "src/modules/story/components/add-link-dialog.tsx -> src/modules/settings/workspace/integrations/figma/url.ts [@/modules/settings/workspace/integrations/figma/url]",
         "destination": "src/modules/settings/workspace/integrations/figma/url.ts",
         "destinationModule": "settings",
@@ -5055,15 +4293,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/story/components/sub-stories.tsx -> src/modules/stories/schemas/index.ts [@/modules/stories/schemas]",
-        "destination": "src/modules/stories/schemas/index.ts",
-        "destinationModule": "stories",
-        "source": "src/modules/story/components/sub-stories.tsx",
-        "sourceModule": "story",
-        "specifier": "@/modules/stories/schemas"
-      },
-      {
-        "count": 1,
         "key": "src/modules/story/components/sub-stories.tsx -> src/modules/teams/hooks/teams.ts [@/modules/teams/hooks/teams]",
         "destination": "src/modules/teams/hooks/teams.ts",
         "destinationModule": "teams",
@@ -5343,39 +4572,12 @@
       },
       {
         "count": 1,
-        "key": "src/modules/story/types/index.ts -> src/modules/stories/types/index.ts [@/modules/stories/types]",
-        "destination": "src/modules/stories/types/index.ts",
-        "destinationModule": "stories",
-        "source": "src/modules/story/types/index.ts",
-        "sourceModule": "story",
-        "specifier": "@/modules/stories/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/strategy/hooks.ts -> src/modules/objectives/constants/index.ts [@/modules/objectives/constants]",
-        "destination": "src/modules/objectives/constants/index.ts",
-        "destinationModule": "objectives",
-        "source": "src/modules/strategy/hooks.ts",
-        "sourceModule": "strategy",
-        "specifier": "@/modules/objectives/constants"
-      },
-      {
-        "count": 1,
         "key": "src/modules/strategy/index.tsx -> src/modules/objectives/hooks/use-objectives.ts [@/modules/objectives/hooks/use-objectives]",
         "destination": "src/modules/objectives/hooks/use-objectives.ts",
         "destinationModule": "objectives",
         "source": "src/modules/strategy/index.tsx",
         "sourceModule": "strategy",
         "specifier": "@/modules/objectives/hooks/use-objectives"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/strategy/objective-pillar-property.tsx -> src/modules/objectives/hooks/index.ts [@/modules/objectives/hooks]",
-        "destination": "src/modules/objectives/hooks/index.ts",
-        "destinationModule": "objectives",
-        "source": "src/modules/strategy/objective-pillar-property.tsx",
-        "sourceModule": "strategy",
-        "specifier": "@/modules/objectives/hooks"
       },
       {
         "count": 1,
@@ -5403,24 +4605,6 @@
         "source": "src/modules/strategy/strategy-map-canvas.tsx",
         "sourceModule": "strategy",
         "specifier": "@/modules/objectives/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/strategy/strategy-map-canvas.tsx -> src/modules/teams/hooks/teams.ts [@/modules/teams/hooks/teams]",
-        "destination": "src/modules/teams/hooks/teams.ts",
-        "destinationModule": "teams",
-        "source": "src/modules/strategy/strategy-map-canvas.tsx",
-        "sourceModule": "strategy",
-        "specifier": "@/modules/teams/hooks/teams"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/strategy/strategy-map-cards.tsx -> src/modules/key-results/utils.ts [@/modules/key-results/utils]",
-        "destination": "src/modules/key-results/utils.ts",
-        "destinationModule": "key-results",
-        "source": "src/modules/strategy/strategy-map-cards.tsx",
-        "sourceModule": "strategy",
-        "specifier": "@/modules/key-results/utils"
       },
       {
         "count": 1,
@@ -5532,15 +4716,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/summary/components/my-stories.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/modules/summary/components/my-stories.tsx",
-        "sourceModule": "summary",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
         "key": "src/modules/summary/components/priority.tsx -> src/modules/stories/types/index.ts [@/modules/stories/types]",
         "destination": "src/modules/stories/types/index.ts",
         "destinationModule": "stories",
@@ -5568,15 +4743,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/team-feedback/card.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/modules/team-feedback/card.tsx",
-        "sourceModule": "team-feedback",
-        "specifier": "@/modules/story/utils/story-url"
-      },
-      {
-        "count": 1,
         "key": "src/modules/team-feedback/details.tsx -> src/modules/public-portal/utils.ts [@/modules/public-portal/utils]",
         "destination": "src/modules/public-portal/utils.ts",
         "destinationModule": "public-portal",
@@ -5592,33 +4758,6 @@
         "source": "src/modules/team-feedback/details.tsx",
         "sourceModule": "team-feedback",
         "specifier": "@/modules/settings/workspace/feedback/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/team-feedback/details.tsx -> src/modules/story/components/options.tsx [@/modules/story/components/options]",
-        "destination": "src/modules/story/components/options.tsx",
-        "destinationModule": "story",
-        "source": "src/modules/team-feedback/details.tsx",
-        "sourceModule": "team-feedback",
-        "specifier": "@/modules/story/components/options"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/team-feedback/details.tsx -> src/modules/story/components/story-comment-editor.tsx [@/modules/story/components/story-comment-editor]",
-        "destination": "src/modules/story/components/story-comment-editor.tsx",
-        "destinationModule": "story",
-        "source": "src/modules/team-feedback/details.tsx",
-        "sourceModule": "team-feedback",
-        "specifier": "@/modules/story/components/story-comment-editor"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/team-feedback/details.tsx -> src/modules/story/utils/story-url.ts [@/modules/story/utils/story-url]",
-        "destination": "src/modules/story/utils/story-url.ts",
-        "destinationModule": "story",
-        "source": "src/modules/team-feedback/details.tsx",
-        "sourceModule": "team-feedback",
-        "specifier": "@/modules/story/utils/story-url"
       },
       {
         "count": 1,
@@ -5684,92 +4823,7 @@
         "specifier": "@/modules/stories/hooks/use-team-stories-grouped"
       }
     ],
-    "moduleCycles": [
-      {
-        "count": 16,
-        "key": "documents <-> feedback-widget <-> integration-requests <-> key-results <-> notifications <-> objectives <-> public-portal <-> roadmap <-> search <-> settings <-> sprints <-> stories <-> story <-> strategy <-> team-feedback <-> teams",
-        "edges": [
-          "documents -> search",
-          "documents -> teams",
-          "feedback-widget -> public-portal",
-          "integration-requests -> objectives",
-          "integration-requests -> settings",
-          "integration-requests -> sprints",
-          "integration-requests -> stories",
-          "integration-requests -> story",
-          "integration-requests -> teams",
-          "key-results -> objectives",
-          "key-results -> stories",
-          "key-results -> story",
-          "key-results -> teams",
-          "notifications -> story",
-          "objectives -> documents",
-          "objectives -> key-results",
-          "objectives -> roadmap",
-          "objectives -> search",
-          "objectives -> stories",
-          "objectives -> story",
-          "objectives -> strategy",
-          "objectives -> teams",
-          "public-portal -> settings",
-          "public-portal -> story",
-          "roadmap -> key-results",
-          "roadmap -> objectives",
-          "roadmap -> stories",
-          "roadmap -> strategy",
-          "roadmap -> teams",
-          "search -> objectives",
-          "search -> stories",
-          "settings -> feedback-widget",
-          "settings -> notifications",
-          "settings -> objectives",
-          "settings -> sprints",
-          "settings -> stories",
-          "settings -> teams",
-          "sprints -> stories",
-          "sprints -> teams",
-          "stories -> objectives",
-          "stories -> story",
-          "story -> documents",
-          "story -> integration-requests",
-          "story -> objectives",
-          "story -> search",
-          "story -> settings",
-          "story -> sprints",
-          "story -> stories",
-          "story -> team-feedback",
-          "story -> teams",
-          "strategy -> key-results",
-          "strategy -> objectives",
-          "strategy -> roadmap",
-          "strategy -> teams",
-          "team-feedback -> public-portal",
-          "team-feedback -> search",
-          "team-feedback -> settings",
-          "team-feedback -> stories",
-          "team-feedback -> story",
-          "teams -> stories"
-        ],
-        "modules": [
-          "documents",
-          "feedback-widget",
-          "integration-requests",
-          "key-results",
-          "notifications",
-          "objectives",
-          "public-portal",
-          "roadmap",
-          "search",
-          "settings",
-          "sprints",
-          "stories",
-          "story",
-          "strategy",
-          "team-feedback",
-          "teams"
-        ]
-      }
-    ],
+    "moduleCycles": [],
     "broadBarrelImports": [
       {
         "count": 1,
@@ -5976,13 +5030,6 @@
       },
       {
         "count": 1,
-        "key": "src/app/api/chat/route.ts -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/app/api/chat/route.ts",
-        "specifier": "@/types"
-      },
-      {
-        "count": 1,
         "key": "src/app/api/chat/user-context.ts -> src/types/index.ts [@/types]",
         "destination": "src/types/index.ts",
         "source": "src/app/api/chat/user-context.ts",
@@ -6067,13 +5114,6 @@
       },
       {
         "count": 1,
-        "key": "src/app/server-sent-events.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/app/server-sent-events.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
         "key": "src/app/signup/page.tsx -> src/utils/index.ts [@/utils]",
         "destination": "src/utils/index.ts",
         "source": "src/app/signup/page.tsx",
@@ -6120,55 +5160,6 @@
         "destination": "src/components/ui/index.ts",
         "source": "src/components/onboarding/product-image.tsx",
         "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/app-command-bar.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/components/shared/app-command-bar.tsx",
-        "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/app-command-bar.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/components/shared/app-command-bar.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/command-bar.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/components/shared/command-bar.tsx",
-        "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/command-bar.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/components/shared/command-bar.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/command-search-results.tsx -> src/utils/index.ts [@/utils]",
-        "destination": "src/utils/index.ts",
-        "source": "src/components/shared/command-search-results.tsx",
-        "specifier": "@/utils"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/commands.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/components/shared/commands.tsx",
-        "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/components/shared/commands.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/components/shared/commands.tsx",
-        "specifier": "@/hooks"
       },
       {
         "count": 1,
@@ -6294,13 +5285,6 @@
         "key": "src/components/ui/base-gantt.tsx -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/components/ui/base-gantt.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/components/ui/chat/analytics-report.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/components/ui/chat/analytics-report.tsx",
         "specifier": "@/hooks"
       },
       {
@@ -6539,13 +5523,6 @@
         "key": "src/components/ui/stories-board.tsx -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/components/ui/stories-board.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/components/ui/stories-filter-bar.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/components/ui/stories-filter-bar.tsx",
         "specifier": "@/hooks"
       },
       {
@@ -7859,13 +6836,6 @@
       },
       {
         "count": 1,
-        "key": "src/lib/hooks/statuses.ts -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/lib/hooks/statuses.ts",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
         "key": "src/lib/hooks/subscriptions/subscription.ts -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/lib/hooks/subscriptions/subscription.ts",
@@ -8538,13 +7508,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/analytics/components/command-center-report.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/analytics/components/command-center-report.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
         "key": "src/modules/analytics/components/completion-trend.tsx -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/analytics/components/completion-trend.tsx",
@@ -8622,13 +7585,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/analytics/hooks/command-center-report.ts -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/analytics/hooks/command-center-report.ts",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
         "key": "src/modules/analytics/hooks/objective-progress.ts -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/analytics/hooks/objective-progress.ts",
@@ -8678,13 +7634,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/analytics/hooks/workspace-analytics-event.ts -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/analytics/hooks/workspace-analytics-event.ts",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
         "key": "src/modules/analytics/hooks/workspace-overview.ts -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/analytics/hooks/workspace-overview.ts",
@@ -8696,13 +7645,6 @@
         "destination": "src/components/shared/index.ts",
         "source": "src/modules/analytics/index.tsx",
         "specifier": "@/components/shared"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/analytics/queries/get-command-center-report.ts -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/analytics/queries/get-command-center-report.ts",
-        "specifier": "@/types"
       },
       {
         "count": 1,
@@ -8762,13 +7704,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/analytics/queries/track-workspace-analytics-event.ts -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/analytics/queries/track-workspace-analytics-event.ts",
-        "specifier": "@/types"
-      },
-      {
-        "count": 1,
         "key": "src/modules/auth/index.tsx -> src/components/ui/index.ts [@/components/ui]",
         "destination": "src/components/ui/index.ts",
         "source": "src/modules/auth/index.tsx",
@@ -8787,13 +7722,6 @@
         "destination": "src/hooks/index.ts",
         "source": "src/modules/calendar/components/calendar-schedule-block-details-dialog.tsx",
         "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/calendar/components/calendar.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/modules/calendar/components/calendar.tsx",
-        "specifier": "@/components/ui"
       },
       {
         "count": 1,
@@ -8842,20 +7770,6 @@
         "key": "src/modules/documents/document-page.tsx -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/documents/document-page.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/documents/documents-home.tsx -> src/components/shared/index.ts [@/components/shared]",
-        "destination": "src/components/shared/index.ts",
-        "source": "src/modules/documents/documents-home.tsx",
-        "specifier": "@/components/shared"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/documents/documents-home.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/documents/documents-home.tsx",
         "specifier": "@/hooks"
       },
       {
@@ -9042,34 +7956,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/components/shared/index.ts [@/components/shared]",
-        "destination": "src/components/shared/index.ts",
-        "source": "src/modules/integration-requests/details.tsx",
-        "specifier": "@/components/shared"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/modules/integration-requests/details.tsx",
-        "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/integration-requests/details.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/integration-requests/details.tsx -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/integration-requests/details.tsx",
-        "specifier": "@/types"
-      },
-      {
-        "count": 1,
         "key": "src/modules/integration-requests/header.tsx -> src/components/shared/index.ts [@/components/shared]",
         "destination": "src/components/shared/index.ts",
         "source": "src/modules/integration-requests/header.tsx",
@@ -9252,20 +8138,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/invitations/hooks/pending-invitations.ts -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/invitations/hooks/pending-invitations.ts",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/invitations/hooks/use-revoke-invitation.ts -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/invitations/hooks/use-revoke-invitation.ts",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
         "key": "src/modules/invitations/queries/my-invitations.ts -> src/types/index.ts [@/types]",
         "destination": "src/types/index.ts",
         "source": "src/modules/invitations/queries/my-invitations.ts",
@@ -9312,62 +8184,6 @@
         "destination": "src/hooks/index.ts",
         "source": "src/modules/key-results/components/key-result-details.tsx",
         "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-filter-button.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/modules/key-results/components/key-results-filter-button.tsx",
-        "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-filter-button.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/key-results/components/key-results-filter-button.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-filter-button.tsx -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/key-results/components/key-results-filter-button.tsx",
-        "specifier": "@/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-filter-button.tsx -> src/utils/index.ts [@/utils]",
-        "destination": "src/utils/index.ts",
-        "source": "src/modules/key-results/components/key-results-filter-button.tsx",
-        "specifier": "@/utils"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-list.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/modules/key-results/components/key-results-list.tsx",
-        "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-list.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/key-results/components/key-results-list.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-list.tsx -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/key-results/components/key-results-list.tsx",
-        "specifier": "@/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/key-results/components/key-results-list.tsx -> src/utils/index.ts [@/utils]",
-        "destination": "src/utils/index.ts",
-        "source": "src/modules/key-results/components/key-results-list.tsx",
-        "specifier": "@/utils"
       },
       {
         "count": 1,
@@ -9479,13 +8295,6 @@
         "key": "src/modules/maya/hooks/use-maya-chat.ts -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/maya/hooks/use-maya-chat.ts",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/maya/hooks/use-maya-realtime-voice.ts -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/maya/hooks/use-maya-realtime-voice.ts",
         "specifier": "@/hooks"
       },
       {
@@ -9969,27 +8778,6 @@
         "key": "src/modules/objectives/components/objective-health-editor.tsx -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/objectives/components/objective-health-editor.tsx",
-        "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/components/team-header.tsx -> src/components/shared/index.ts [@/components/shared]",
-        "destination": "src/components/shared/index.ts",
-        "source": "src/modules/objectives/components/team-header.tsx",
-        "specifier": "@/components/shared"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/components/team-header.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/modules/objectives/components/team-header.tsx",
-        "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/objectives/components/team-header.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/objectives/components/team-header.tsx",
         "specifier": "@/hooks"
       },
       {
@@ -10512,20 +9300,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/public-portal/account-page.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/modules/public-portal/account-page.tsx",
-        "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/public-portal/account-page.tsx -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/public-portal/account-page.tsx",
-        "specifier": "@/types"
-      },
-      {
-        "count": 1,
         "key": "src/modules/public-portal/actions.ts -> src/types/index.ts [@/types]",
         "destination": "src/types/index.ts",
         "source": "src/modules/public-portal/actions.ts",
@@ -10607,13 +9381,6 @@
         "destination": "src/components/ui/index.ts",
         "source": "src/modules/roadmap/components/objectives-board.tsx",
         "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/roadmap/components/objectives-board.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/roadmap/components/objectives-board.tsx",
-        "specifier": "@/hooks"
       },
       {
         "count": 1,
@@ -10707,20 +9474,6 @@
         "specifier": "@/hooks"
       },
       {
-        "count": 2,
-        "key": "src/modules/search/index.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/modules/search/index.tsx",
-        "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/search/index.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/search/index.tsx",
-        "specifier": "@/hooks"
-      },
-      {
         "count": 1,
         "key": "src/modules/search/queries/search.ts -> src/types/index.ts [@/types]",
         "destination": "src/types/index.ts",
@@ -10768,27 +9521,6 @@
         "destination": "src/hooks/index.ts",
         "source": "src/modules/settings/account/preferences/index.tsx",
         "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/account/profile/components/form.tsx -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/settings/account/profile/components/form.tsx",
-        "specifier": "@/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/account/profile/components/profile-picture.tsx -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/settings/account/profile/components/profile-picture.tsx",
-        "specifier": "@/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/settings/account/profile/index.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/modules/settings/account/profile/index.tsx",
-        "specifier": "@/components/ui"
       },
       {
         "count": 1,
@@ -11274,7 +10006,7 @@
         "specifier": "@/hooks"
       },
       {
-        "count": 2,
+        "count": 1,
         "key": "src/modules/sprints/hooks/delete-sprint-mutation.ts -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/sprints/hooks/delete-sprint-mutation.ts",
@@ -11323,7 +10055,7 @@
         "specifier": "@/hooks"
       },
       {
-        "count": 2,
+        "count": 1,
         "key": "src/modules/sprints/hooks/update-sprint-mutation.ts -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/sprints/hooks/update-sprint-mutation.ts",
@@ -11412,13 +10144,6 @@
         "destination": "src/components/ui/index.ts",
         "source": "src/modules/sprints/stories/all-stories.tsx",
         "specifier": "@/components/ui"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/sprints/stories/burndown.tsx -> src/hooks/index.ts [@/hooks]",
-        "destination": "src/hooks/index.ts",
-        "source": "src/modules/sprints/stories/burndown.tsx",
-        "specifier": "@/hooks"
       },
       {
         "count": 1,
@@ -11716,13 +10441,6 @@
       },
       {
         "count": 1,
-        "key": "src/modules/stories/types/index.ts -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/stories/types/index.ts",
-        "specifier": "@/types"
-      },
-      {
-        "count": 1,
         "key": "src/modules/story/actions/add-association.ts -> src/types/index.ts [@/types]",
         "destination": "src/types/index.ts",
         "source": "src/modules/story/actions/add-association.ts",
@@ -11810,20 +10528,6 @@
         "key": "src/modules/story/actions/duplicate-story.ts -> src/utils/index.ts [@/utils]",
         "destination": "src/utils/index.ts",
         "source": "src/modules/story/actions/duplicate-story.ts",
-        "specifier": "@/utils"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/story/actions/execute-story-deletion-request.ts -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/story/actions/execute-story-deletion-request.ts",
-        "specifier": "@/types"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/story/actions/execute-story-deletion-request.ts -> src/utils/index.ts [@/utils]",
-        "destination": "src/utils/index.ts",
-        "source": "src/modules/story/actions/execute-story-deletion-request.ts",
         "specifier": "@/utils"
       },
       {
@@ -12063,13 +10767,6 @@
         "destination": "src/hooks/index.ts",
         "source": "src/modules/story/components/options-header.tsx",
         "specifier": "@/hooks"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/story/components/options.tsx -> src/components/ui/index.ts [@/components/ui]",
-        "destination": "src/components/ui/index.ts",
-        "source": "src/modules/story/components/options.tsx",
-        "specifier": "@/components/ui"
       },
       {
         "count": 1,
@@ -12315,13 +11012,6 @@
         "destination": "src/utils/index.ts",
         "source": "src/modules/story/server/legacy-story-route.tsx",
         "specifier": "@/utils"
-      },
-      {
-        "count": 1,
-        "key": "src/modules/story/types/index.ts -> src/types/index.ts [@/types]",
-        "destination": "src/types/index.ts",
-        "source": "src/modules/story/types/index.ts",
-        "specifier": "@/types"
       },
       {
         "count": 1,
@@ -13087,7 +11777,7 @@
         "specifier": "@/types"
       },
       {
-        "count": 2,
+        "count": 1,
         "key": "src/modules/teams/hooks/delete-team-mutation.ts -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/teams/hooks/delete-team-mutation.ts",
@@ -13185,7 +11875,7 @@
         "specifier": "@/hooks"
       },
       {
-        "count": 2,
+        "count": 1,
         "key": "src/modules/teams/hooks/use-update-team.ts -> src/hooks/index.ts [@/hooks]",
         "destination": "src/hooks/index.ts",
         "source": "src/modules/teams/hooks/use-update-team.ts",
@@ -14149,157 +12839,6 @@
         "path": "src/lib/queries/workspaces/get-workspaces.ts"
       }
     ],
-    "oversizedFiles": [
-      {
-        "count": 876,
-        "key": "src/app/api/chat/active-tools.ts",
-        "lineLimit": 700,
-        "path": "src/app/api/chat/active-tools.ts"
-      },
-      {
-        "count": 985,
-        "key": "src/app/api/chat/mutation-tool-approval.ts",
-        "lineLimit": 700,
-        "path": "src/app/api/chat/mutation-tool-approval.ts"
-      },
-      {
-        "count": 718,
-        "key": "src/components/ui/activity.tsx",
-        "lineLimit": 700,
-        "path": "src/components/ui/activity.tsx"
-      },
-      {
-        "count": 1295,
-        "key": "src/components/ui/base-gantt.tsx",
-        "lineLimit": 700,
-        "path": "src/components/ui/base-gantt.tsx"
-      },
-      {
-        "count": 1509,
-        "key": "src/components/ui/chat/analytics-report.tsx",
-        "lineLimit": 700,
-        "path": "src/components/ui/chat/analytics-report.tsx"
-      },
-      {
-        "count": 796,
-        "key": "src/components/ui/new-objective/index.tsx",
-        "lineLimit": 700,
-        "path": "src/components/ui/new-objective/index.tsx"
-      },
-      {
-        "count": 1377,
-        "key": "src/components/ui/new-story-dialog.tsx",
-        "lineLimit": 700,
-        "path": "src/components/ui/new-story-dialog.tsx"
-      },
-      {
-        "count": 2047,
-        "key": "src/components/ui/stories-filter-bar.tsx",
-        "lineLimit": 700,
-        "path": "src/components/ui/stories-filter-bar.tsx"
-      },
-      {
-        "count": 899,
-        "key": "src/lib/ai/tools/github.ts",
-        "lineLimit": 700,
-        "path": "src/lib/ai/tools/github.ts"
-      },
-      {
-        "count": 716,
-        "key": "src/lib/ai/tools/integration-requests.ts",
-        "lineLimit": 700,
-        "path": "src/lib/ai/tools/integration-requests.ts"
-      },
-      {
-        "count": 812,
-        "key": "src/lib/tiptap/rich-text-media.tsx",
-        "lineLimit": 700,
-        "path": "src/lib/tiptap/rich-text-media.tsx"
-      },
-      {
-        "count": 1637,
-        "key": "src/modules/analytics/components/command-center-report.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/analytics/components/command-center-report.tsx"
-      },
-      {
-        "count": 2426,
-        "key": "src/modules/calendar/components/calendar.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/calendar/components/calendar.tsx"
-      },
-      {
-        "count": 858,
-        "key": "src/modules/documents/documents-home.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/documents/documents-home.tsx"
-      },
-      {
-        "count": 2663,
-        "key": "src/modules/feedback-widget/widget-frame.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/feedback-widget/widget-frame.tsx"
-      },
-      {
-        "count": 1254,
-        "key": "src/modules/integration-requests/details.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/integration-requests/details.tsx"
-      },
-      {
-        "count": 893,
-        "key": "src/modules/key-results/components/key-results-filter-button.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/key-results/components/key-results-filter-button.tsx"
-      },
-      {
-        "count": 737,
-        "key": "src/modules/key-results/components/key-results-list.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/key-results/components/key-results-list.tsx"
-      },
-      {
-        "count": 804,
-        "key": "src/modules/maya/hooks/use-maya-realtime-voice.ts",
-        "lineLimit": 700,
-        "path": "src/modules/maya/hooks/use-maya-realtime-voice.ts"
-      },
-      {
-        "count": 816,
-        "key": "src/modules/public-portal/feedback-controls.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/public-portal/feedback-controls.tsx"
-      },
-      {
-        "count": 840,
-        "key": "src/modules/roadmap/components/objectives-board.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/roadmap/components/objectives-board.tsx"
-      },
-      {
-        "count": 1125,
-        "key": "src/modules/story/components/options.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/story/components/options.tsx"
-      },
-      {
-        "count": 1090,
-        "key": "src/modules/strategy/strategy-map-canvas.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/strategy/strategy-map-canvas.tsx"
-      },
-      {
-        "count": 813,
-        "key": "src/modules/strategy/strategy-map-cards.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/strategy/strategy-map-cards.tsx"
-      },
-      {
-        "count": 1033,
-        "key": "src/modules/team-feedback/details.tsx",
-        "lineLimit": 700,
-        "path": "src/modules/team-feedback/details.tsx"
-      }
-    ]
+    "oversizedFiles": []
   }
 }

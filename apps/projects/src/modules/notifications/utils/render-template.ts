@@ -14,7 +14,9 @@ export const renderTemplate = (
   const replaceVariables = (template: string, wrapInSpan = false): string => {
     return template.replace(/\{\w+\}/g, (match) => {
       const key = match.slice(1, -1); // Remove { and }
-      const variable = variables[key as keyof typeof variables];
+      const variable = Object.prototype.hasOwnProperty.call(variables, key)
+        ? variables[key]
+        : undefined;
 
       if (variable?.value) {
         if (wrapInSpan) {

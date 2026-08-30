@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useWorkspacePath } from "@/hooks";
-import { useAnalytics } from "@/hooks";
+import { useWorkspacePath, useAnalytics } from "@/hooks";
 import { sprintKeys } from "@/constants/keys";
 import type { Sprint, UpdateSprint } from "../types";
 import { updateSprintAction } from "../actions/update-sprint";

@@ -11,7 +11,10 @@ export const getSprintDetailsTool = tool({
     sprintId: z.string().describe("Sprint ID to get details for (required)"),
   }),
 
-  execute: async ({ sprintId }, { experimental_context }) => {
+  execute: async (
+    { sprintId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
 
@@ -22,7 +25,7 @@ export const getSprintDetailsTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

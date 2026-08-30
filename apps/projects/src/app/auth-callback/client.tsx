@@ -7,7 +7,7 @@ import { Logo } from "@/components/ui";
 import type { Session } from "@/auth";
 import { useAnalytics } from "@/hooks";
 import { getRedirectUrl } from "@/utils";
-import type { Invitation } from "@/modules/invitations/types";
+import type { Invitation } from "@/modules/invitations/public/types";
 import type { User, Workspace } from "@/types";
 
 export const ClientPage = ({

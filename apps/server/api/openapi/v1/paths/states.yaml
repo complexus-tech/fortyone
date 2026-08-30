@@ -1,7 +1,7 @@
 get:
   operationId: listWorkflowStates
   tags: [Workflows]
-  summary: List workflow states for one team
+  summary: List workflow states
   description: Returns the ordered workflow for a team the personal access token's user currently belongs to.
   x-fortyone-scope: stories:read
   parameters:

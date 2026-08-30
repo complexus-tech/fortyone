@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useAnalytics, useTerminology, useWorkspacePath } from "@/hooks";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import type {
   GroupedStoriesResponse,
   Story,

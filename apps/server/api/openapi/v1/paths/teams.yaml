@@ -1,7 +1,7 @@
 get:
   operationId: listTeams
   tags: [Teams]
-  summary: List teams visible to the actor
+  summary: List teams
   description: Returns joined teams in a deterministic order. Personal access tokens are supported in this preview.
   x-fortyone-scope: teams:read
   parameters:

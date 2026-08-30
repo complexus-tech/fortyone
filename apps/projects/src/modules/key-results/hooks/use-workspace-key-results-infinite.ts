@@ -1,17 +1,10 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
+import { keyResultKeys } from "@/constants/keys";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { useWorkspacePath } from "@/hooks";
 import { getWorkspaceKeyResults } from "../queries/get-workspace-key-results";
 import type { KeyResultFilters, KeyResultListResponse } from "../types";
-
-export const keyResultKeys = {
-  all: (workspaceSlug: string) => ["key-results", workspaceSlug] as const,
-  lists: (workspaceSlug: string) =>
-    [...keyResultKeys.all(workspaceSlug), "list"] as const,
-  list: (workspaceSlug: string, filters?: KeyResultFilters) =>
-    [...keyResultKeys.lists(workspaceSlug), filters] as const,
-};
 
 export const useWorkspaceKeyResultsInfinite = (filters?: KeyResultFilters) => {
   const { data: session } = useSession();

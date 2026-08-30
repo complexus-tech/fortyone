@@ -1,7 +1,7 @@
 post:
   operationId: disableWebhookEndpoint
   tags: [Webhooks]
-  summary: Disable an outbound webhook endpoint
+  summary: Disable webhook
   description: Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
   x-fortyone-scope: webhooks:manage
   parameters:

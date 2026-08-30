@@ -12,7 +12,10 @@ export const deleteObjectiveTool = tool({
     objectiveId: z.string().describe("Objective ID to delete (required)"),
   }),
 
-  execute: async ({ objectiveId }, { experimental_context }) => {
+  execute: async (
+    { objectiveId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
 
@@ -23,14 +26,14 @@ export const deleteObjectiveTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
 
       const workspace = await getWorkspace(ctx);
       const userRole = workspace.userRole;
-      const userId = session.user!.id;
+      const userId = session.user.id;
 
       // Check permissions
       const objective = await getObjective(objectiveId, ctx);

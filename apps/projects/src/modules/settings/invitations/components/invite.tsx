@@ -3,9 +3,11 @@ import { Box, Text, Flex, Button, Avatar } from "ui";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
-import type { Invitation } from "@/modules/invitations/types";
-import { useRevokeInvitationMutation } from "@/modules/invitations/hooks/use-revoke-invitation";
-import { useAcceptInvitationMutation } from "@/modules/invitations/hooks/use-accept-invitation";
+import {
+  useAcceptInvitationMutation,
+  useRevokeInvitationMutation,
+} from "@/modules/invitations/public/client";
+import type { Invitation } from "@/modules/invitations/public/types";
 
 export const InvitationRow = ({ invitation }: { invitation: Invitation }) => {
   const { mutate: declineInvitation } = useRevokeInvitationMutation();

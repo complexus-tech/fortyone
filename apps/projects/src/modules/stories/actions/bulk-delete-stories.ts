@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { remove } from "@/lib/http";
-import { executeStoryDeletionRequest } from "@/modules/story/actions/execute-story-deletion-request";
+import { executeStoryDeletionRequest } from "@/shared/story/deletion";
 import type { ApiResponse } from "@/types";
 
 type Payload = {

@@ -8,10 +8,72 @@ import {
   endOfQuarter,
   startOfMonth,
   startOfQuarter,
+  subDays,
 } from "date-fns";
 
 export type ZoomLevel = "weeks" | "months" | "quarters";
 export type OffscreenDirection = "left" | "right";
+export type GanttVirtualRow = {
+  index: number;
+  size: number;
+  start: number;
+};
+
+export const getGanttVirtualRows = ({
+  itemCount,
+  rowHeight,
+  scrollTop,
+  viewportHeight,
+  headerHeight = 64,
+  overscan = 6,
+  pinnedIndices = [],
+}: {
+  itemCount: number;
+  rowHeight: number;
+  scrollTop: number;
+  viewportHeight: number;
+  headerHeight?: number;
+  overscan?: number;
+  pinnedIndices?: readonly number[];
+}) => {
+  const totalSize = itemCount * rowHeight;
+  if (itemCount === 0) return { rows: [], totalSize };
+
+  const visibleStart = Math.max(0, scrollTop - headerHeight);
+  const visibleEnd = Math.max(
+    visibleStart + rowHeight,
+    scrollTop + viewportHeight - headerHeight,
+  );
+  const firstVisibleIndex = Math.min(
+    itemCount - 1,
+    Math.floor(visibleStart / rowHeight),
+  );
+  const lastVisibleIndex = Math.min(
+    itemCount - 1,
+    Math.max(firstVisibleIndex, Math.ceil(visibleEnd / rowHeight) - 1),
+  );
+  const startIndex = Math.max(0, firstVisibleIndex - overscan);
+  const endIndex = Math.min(itemCount, lastVisibleIndex + overscan + 1);
+  const renderedIndices = new Set<number>();
+
+  for (let index = startIndex; index < endIndex; index++) {
+    renderedIndices.add(index);
+  }
+  for (const index of pinnedIndices) {
+    if (index >= 0 && index < itemCount) renderedIndices.add(index);
+  }
+
+  return {
+    rows: Array.from(renderedIndices)
+      .sort((left, right) => left - right)
+      .map((index) => ({
+        index,
+        size: rowHeight,
+        start: index * rowHeight,
+      })),
+    totalSize,
+  };
+};
 
 export const getTimePeriodsForZoom = (
   dateRange: { start: Date; end: Date },
@@ -42,6 +104,43 @@ export const getColumnWidth = (zoomLevel: ZoomLevel) => {
     case "quarters":
       return 180;
   }
+};
+
+export const getGanttDateRange = <
+  T extends { startDate?: string | null; endDate?: string | null },
+>(
+  centerDate: Date,
+  items: T[],
+  zoomLevel: ZoomLevel,
+) => {
+  const viewportDays = zoomLevel === "weeks" ? 365 : 1460;
+  const paddingDays = zoomLevel === "weeks" ? 30 : 120;
+  const halfViewport = Math.floor(viewportDays / 2);
+  const start = subDays(centerDate, halfViewport);
+  const end = addDays(centerDate, halfViewport);
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  return items.reduce(
+    (range, item) => {
+      const itemStart = item.startDate ? new Date(item.startDate) : null;
+      const itemEnd = item.endDate ? new Date(item.endDate) : null;
+
+      if (itemStart && !Number.isNaN(itemStart.getTime())) {
+        const paddedStart = subDays(itemStart, paddingDays);
+        if (paddedStart < range.start) range.start = paddedStart;
+      }
+
+      if (itemEnd && !Number.isNaN(itemEnd.getTime())) {
+        const paddedEnd = addDays(itemEnd, paddingDays);
+        if (paddedEnd > range.end) range.end = paddedEnd;
+      }
+
+      return range;
+    },
+    { start, end },
+  );
 };
 
 export const calculateGanttPosition = ({

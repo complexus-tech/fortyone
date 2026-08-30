@@ -1,7 +1,7 @@
 import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { analyticsKeys } from "@/constants/keys";
+import { analyticsKeys, keyResultKeys } from "@/constants/keys";
 import { useAnalytics, useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
 import { createKeyResults } from "../actions/create-key-results";
@@ -186,7 +186,7 @@ export const useCreateKeyResultsMutation = () => {
           ),
         }),
         queryClient.invalidateQueries({
-          queryKey: ["key-results", workspaceSlug],
+          queryKey: keyResultKeys.all(workspaceSlug),
         }),
         queryClient.invalidateQueries({
           queryKey: ["strategy-map", workspaceSlug],

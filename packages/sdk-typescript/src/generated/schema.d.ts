@@ -26,7 +26,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get the credential's workspace
+         * Get workspace
          * @description Personal access tokens are supported. Service-account workspace reads remain disabled until the workspace read model supports non-human principals.
          */
         get: operations["getWorkspace"];
@@ -46,7 +46,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List key results visible to the actor
+         * List key results
          * @description Returns key results through the personal access token user's current workspace membership, team membership, scope, and optional team restriction.
          */
         get: operations["listKeyResults"];
@@ -66,7 +66,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List labels visible in one team context
+         * List labels
          * @description Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
          */
         get: operations["listLabels"];
@@ -86,7 +86,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List objectives visible to the actor
+         * List objectives
          * @description Returns objectives from current team memberships. Personal access token team restrictions are applied before the product query.
          */
         get: operations["listObjectives"];
@@ -106,7 +106,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List sprints visible to the actor
+         * List sprints
          * @description Returns sprints from current team memberships. Personal access token team restrictions are applied before the product query.
          */
         get: operations["listSprints"];
@@ -126,7 +126,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List workflow states for one team
+         * List workflow states
          * @description Returns the ordered workflow for a team the personal access token's user currently belongs to.
          */
         get: operations["listWorkflowStates"];
@@ -146,13 +146,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List stories visible to the actor
+         * List stories
          * @description Personal access tokens are supported in this preview. The cursor is bound to this workspace, credential principal, team filter, and page size.
          */
         get: operations["listStories"];
         put?: never;
         /**
-         * Create a story
+         * Create story
          * @description Creates one story with a personal access token or supported service-account key. The Idempotency-Key is required; an exact retry returns the original story, while reuse with different JSON bytes is rejected.
          */
         post: operations["createStory"];
@@ -170,7 +170,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get one visible story
+         * Get story
          * @description Personal access tokens are supported in this preview. Current workspace and team membership remain authoritative.
          */
         get: operations["getStory"];
@@ -190,7 +190,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List comments on one visible story
+         * List comments
          * @description Returns comments only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
          */
         get: operations["listStoryComments"];
@@ -210,7 +210,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get one comment on a visible story
+         * Get comment
          * @description Returns a comment only after the personal access token's user can currently read the owning story and team. Both comments:read and stories:read are required.
          */
         get: operations["getStoryComment"];
@@ -230,7 +230,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List teams visible to the actor
+         * List teams
          * @description Returns joined teams in a deterministic order. Personal access tokens are supported in this preview.
          */
         get: operations["listTeams"];
@@ -250,13 +250,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List outbound webhook endpoints
+         * List webhooks
          * @description Requires a current workspace administrator personal access token.
          */
         get: operations["listWebhookEndpoints"];
         put?: never;
         /**
-         * Register an outbound webhook endpoint
+         * Create webhook
          * @description Requires a current workspace administrator personal access token. The signing secret is returned once. HTTPS port 443 and public DNS are required.
          */
         post: operations["createWebhookEndpoint"];
@@ -274,7 +274,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an outbound webhook endpoint
+         * Get webhook
          * @description Requires a current workspace administrator personal access token.
          */
         get: operations["getWebhookEndpoint"];
@@ -296,7 +296,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Disable an outbound webhook endpoint
+         * Disable webhook
          * @description Requires a current workspace administrator personal access token. Disabled endpoints stop receiving newly created deliveries.
          */
         post: operations["disableWebhookEndpoint"];
@@ -316,7 +316,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rotate an endpoint's signing secret
+         * Rotate secret
          * @description Requires a current workspace administrator personal access token. The new secret is shown once. The previous secret remains valid for the documented overlap period.
          */
         post: operations["rotateWebhookSecret"];
@@ -335,7 +335,7 @@ export interface paths {
         };
         get?: never;
         /**
-         * Replace an endpoint's event subscriptions
+         * Update subscriptions
          * @description Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
          */
         put: operations["replaceWebhookSubscriptions"];

@@ -240,14 +240,12 @@ export const WorkflowSettings = () => {
           });
         }
       });
-    } else {
+    } else if (activeStatus.orderIndex !== targetOrderIndex) {
       // Simple update - only change the dragged item
-      if (activeStatus.orderIndex !== targetOrderIndex) {
-        updateMutation.mutate({
-          statusId: activeStatus.id,
-          payload: { orderIndex: targetOrderIndex },
-        });
-      }
+      updateMutation.mutate({
+        statusId: activeStatus.id,
+        payload: { orderIndex: targetOrderIndex },
+      });
     }
   };
 
@@ -293,7 +291,7 @@ export const WorkflowSettings = () => {
             )} across your workspace. Each category represents a different phase in your workflow process.`}
           />
           <DndContext onDragEnd={handleDragEnd}>
-            <Flex direction="column" gap={4} className="pb-6">
+            <Flex className="pb-6" direction="column" gap={4}>
               {categories.map(({ label, value }) => {
                 const categoryStatuses = statuses
                   .filter((status) => status.category === value)

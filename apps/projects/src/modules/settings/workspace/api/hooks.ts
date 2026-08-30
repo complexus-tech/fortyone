@@ -6,7 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useSession } from "@/lib/auth/client";
 import {
   createOAuthApplication,

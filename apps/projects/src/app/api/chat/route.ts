@@ -18,11 +18,8 @@ import {
 } from "@/lib/ai/models";
 import { tools } from "@/lib/ai/tools";
 import { withCompactModelOutputs } from "@/lib/ai/model-tools";
-import type { MayaUIMessage } from "@/lib/ai/tools/types";
 import { auth } from "@/auth";
 import posthogServer from "@/app/posthog-server";
-import type { Workspace } from "@/types";
-import type { Memory } from "@/modules/ai-chats/types";
 import { systemPrompt } from "./system";
 import { getUserContext } from "./user-context";
 import { beginChatWrite, saveChat } from "./save-chat";
@@ -49,6 +46,10 @@ import {
   runWithMayaHttpRequestContext,
   withMayaHttpRequestContext,
 } from "./maya-http-request-context";
+import {
+  type ChatRequestBody,
+  dispatchValidatedChatRequest,
+} from "./chat-request";
 
 export const maxDuration = 300;
 
@@ -62,70 +63,21 @@ const CHAT_TIMEOUT = {
   totalMs: 250_000,
 } as const;
 const MAX_TOOL_STEPS = 12;
-const MAX_CHAT_REQUEST_BYTES = 16 * 1024 * 1024;
 const MAYA_PROMPT_CACHE_NAMESPACE = "maya-projects-v2";
 const modelTools = withMayaHttpRequestContext(withCompactModelOutputs(tools));
 const modelToolNames = new Set(Object.keys(modelTools));
 const ANALYTICAL_TOOL_NAME_PATTERN =
   /(?:AnalyticsTool|ReportTool|focusBrief|workloadPlanningTool|activitySummaryTool)$/;
 
-type ChatRequestBody = {
-  currentPath: string;
-  currentTheme: string;
-  id: string;
-  memories: Memory[];
-  messageId?: string;
-  messages: MayaUIMessage[];
-  provider?: "google" | "openai";
-  resolvedTheme: string;
-  subscription?: {
-    billingEndsAt: string;
-    billingInterval: string;
-    status: string;
-    tier: string;
-    username?: string;
-  };
-  terminology: {
-    keyResults: string;
-    objectives: string;
-    sprints: string;
-    stories: string;
-  };
-  totalMessages: { current: number; limit: number };
-  trigger?: "regenerate-message" | "submit-message";
-  username?: string;
-  workspace: Workspace;
-};
-
 const getChatReasoningEffort = (activeTools: readonly string[]) =>
   activeTools.some((toolName) => ANALYTICAL_TOOL_NAME_PATTERN.test(toolName))
     ? OPENAI_DEFAULT_REASONING_EFFORT
     : ("low" as const);
 
-const parseChatRequestBody = async (req: NextRequest) => {
-  const declaredLength = Number(req.headers.get("content-length"));
-  if (
-    Number.isFinite(declaredLength) &&
-    declaredLength > MAX_CHAT_REQUEST_BYTES
-  ) {
-    throw Object.assign(new Error("Maya chat request is too large."), {
-      code: "request_too_large",
-    });
-  }
-
-  const requestText = await req.text();
-  if (
-    new TextEncoder().encode(requestText).byteLength > MAX_CHAT_REQUEST_BYTES
-  ) {
-    throw Object.assign(new Error("Maya chat request is too large."), {
-      code: "request_too_large",
-    });
-  }
-
-  return JSON.parse(requestText) as ChatRequestBody;
-};
-
-const handleChatRequest = async (req: NextRequest) => {
+const handleChatRequest = async (
+  req: NextRequest,
+  requestBody: ChatRequestBody,
+) => {
   const sessionPromise = auth();
   const {
     messages: messagesFromRequest,
@@ -142,7 +94,7 @@ const handleChatRequest = async (req: NextRequest) => {
     provider = "openai",
     totalMessages,
     trigger,
-  } = await parseChatRequestBody(req);
+  } = requestBody;
   const session = await sessionPromise;
   if (!session?.user) {
     return new Response("Unauthorized", { status: 401 });
@@ -337,7 +289,10 @@ const handleChatRequest = async (req: NextRequest) => {
 
 export async function POST(req: NextRequest) {
   try {
-    return await handleChatRequest(req);
+    return await dispatchValidatedChatRequest({
+      handle: (requestBody) => handleChatRequest(req, requestBody),
+      request: req,
+    });
   } catch (error) {
     // eslint-disable-next-line no-console -- Diagnostics intentionally omit request payloads and user content.
     console.error(

@@ -1,9 +1,9 @@
 import { stringify } from "qs";
+import type { RequestOptions } from "api-client";
 import { get } from "@/lib/http";
 import type { WorkspaceCtx } from "@/lib/http";
 import type { Story } from "@/modules/stories/types";
 import type { ApiResponse } from "@/types";
-import type { RequestOptions } from "api-client";
 
 export const getStories = async (
   ctx: WorkspaceCtx,

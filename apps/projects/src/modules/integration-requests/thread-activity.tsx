@@ -17,10 +17,8 @@ import {
   TimeAgo,
 } from "ui";
 import { useSession } from "@/lib/auth/client";
-import {
-  getStoryCommentEditorExtensions,
-  serializeStoryCommentToGitHubMarkdown,
-} from "@/modules/story/components/story-comment-editor";
+import { getCommentEditorExtensions } from "@/lib/tiptap/comment-editor";
+import { serializeCommentToGitHubMarkdown } from "@/lib/tiptap/comment-markdown";
 import { useCreateSlackAccountLinkSession } from "@/lib/hooks/slack";
 import { getCommentDeliveryLabel } from "./delivery-status";
 import { usePostIntegrationRequestComment } from "./hooks/use-post-request-comment";
@@ -42,7 +40,7 @@ const SlackCommentComposer = ({
   const editor = useEditor({
     content: "",
     editable: !postComment.isPending,
-    extensions: getStoryCommentEditorExtensions({
+    extensions: getCommentEditorExtensions({
       placeholder: "Reply to the Slack thread...",
     }),
     immediatelyRender: false,
@@ -51,7 +49,7 @@ const SlackCommentComposer = ({
   const handleSubmit = async () => {
     if (!editor || editor.isEmpty) return;
 
-    const body = serializeStoryCommentToGitHubMarkdown(editor.getJSON());
+    const body = serializeCommentToGitHubMarkdown(editor.getJSON());
     if (!body) return;
 
     const previousAttempt = retryRef.current;

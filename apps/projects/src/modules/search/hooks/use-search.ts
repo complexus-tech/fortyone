@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
+import { useWorkspacePath } from "@/hooks";
 import { searchQuery } from "../queries/search";
 import type { SearchQueryParams } from "../types";
-import { useWorkspacePath } from "@/hooks";
 
 const searchKeys = {
   all: (workspaceSlug: string) => ["search", workspaceSlug] as const,

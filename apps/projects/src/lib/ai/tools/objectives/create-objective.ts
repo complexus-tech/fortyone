@@ -73,7 +73,7 @@ export const createObjectiveTool = tool({
       statusId,
       keyResults,
     },
-    { experimental_context },
+    { experimental_context: experimentalContext },
   ) => {
     try {
       const session = await auth();
@@ -85,7 +85,7 @@ export const createObjectiveTool = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };
@@ -128,7 +128,7 @@ export const createObjectiveTool = tool({
         };
       }
 
-      if (!result.data?.objective?.id) {
+      if (!result.data?.objective.id) {
         return {
           success: false,
           error: "Objective creation did not return a created objective.",

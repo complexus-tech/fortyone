@@ -3,7 +3,7 @@
 import { Tooltip } from "ui";
 import { useTerminology, useWorkspacePath } from "@/hooks";
 import { useStatuses } from "@/lib/hooks/statuses";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import type { State } from "@/types/states";
 import { PriorityIcon } from "../priority-icon";
 import { Dot } from "../dot";

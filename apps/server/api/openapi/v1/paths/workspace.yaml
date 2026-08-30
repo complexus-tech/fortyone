@@ -1,7 +1,7 @@
 get:
   operationId: getWorkspace
   tags: [Workspaces]
-  summary: Get the credential's workspace
+  summary: Get workspace
   description: Personal access tokens are supported. Service-account workspace reads remain disabled until the workspace read model supports non-human principals.
   x-fortyone-scope: workspaces:read
   parameters:

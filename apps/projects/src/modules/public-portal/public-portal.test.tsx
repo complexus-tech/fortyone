@@ -300,12 +300,16 @@ jest.mock("ui", () => {
     children,
     href,
     leftIcon,
+    loading = false,
+    loadingText,
     rightIcon,
     ...props
   }: ReactTypes.ButtonHTMLAttributes<HTMLButtonElement> &
     Record<string, unknown> & {
       href?: string;
       leftIcon?: ReactTypes.ReactNode;
+      loading?: boolean;
+      loadingText?: string;
       rightIcon?: ReactTypes.ReactNode;
     }) =>
     href ? (
@@ -316,9 +320,15 @@ jest.mock("ui", () => {
       </a>
     ) : (
       <button {...getDomProps(props)} type="button">
-        {leftIcon}
-        {children}
-        {rightIcon}
+        {loading ? (
+          loadingText || "Loading..."
+        ) : (
+          <>
+            {leftIcon}
+            {children}
+            {rightIcon}
+          </>
+        )}
       </button>
     );
   const Avatar = ({ name }: { name?: string }) => (

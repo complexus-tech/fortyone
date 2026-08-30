@@ -1,57 +1,11 @@
 "use client";
-import {
-  Box,
-  Button,
-  Container,
-  Divider,
-  Text,
-  DatePicker,
-  Avatar,
-  Flex,
-  Tooltip,
-  Badge,
-} from "ui";
-import { type ReactNode, useRef, useState } from "react";
-import { addDays, format, differenceInDays, formatISO } from "date-fns";
-import {
-  CalendarIcon,
-  EstimateIcon,
-  ObjectiveIcon,
-  OKRIcon,
-  SprintsIcon,
-  TagsIcon,
-  Time02Icon,
-  TimeScheduleIcon,
-  UsersAddIcon,
-} from "icons";
+import { Badge, Box, Container, Divider, Text } from "ui";
+import { useRef, useState } from "react";
+import { addDays, differenceInDays } from "date-fns";
 import { cn } from "lib";
-import { useHotkeys } from "react-hotkeys-hook";
-import { formatEstimate } from "@/lib/estimate";
-import { formatTimeNeeded } from "@/lib/time-needed";
-import { isMayaAssigneeSelection } from "@/lib/auto-scheduling";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useStatuses } from "@/lib/hooks/statuses";
 import { useStoryById } from "@/modules/story/hooks/story";
-import {
-  PrioritiesMenu,
-  StatusesMenu,
-  AssigneesMenu,
-  SprintsMenu,
-  EstimateMenu,
-  TimeNeededMenu,
-  StoryStatusIcon,
-  PriorityIcon,
-  LabelsMenu,
-  CollaboratorsMenu,
-  StoryLabel,
-  ConfirmDialog,
-  AutoSchedulingMenu,
-} from "@/components/ui";
-import {
-  KeyResultMenu,
-  ObjectiveKeyResultMenu,
-} from "@/components/ui/story/objective-key-result-menu";
-import { useLabels } from "@/lib/hooks/labels";
-import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
 import { useIsAdminOrOwner } from "@/hooks/owner";
 import {
   useFeatures,
@@ -67,49 +21,12 @@ import { useObjective } from "@/modules/objectives/hooks/use-objective";
 import { useKeyResults } from "@/modules/objectives/hooks";
 import { useUpdateStoryMutation } from "../hooks/update-mutation";
 import type { DetailedStory } from "../types";
-import { useUpdateLabelsMutation } from "../hooks/update-labels-mutation";
-import { useUpdateCollaboratorsMutation } from "../hooks/collaboration-mutations";
 import { AddLinks } from "./add-links";
 import { OptionsHeader } from "./options-header";
-
-export const Option = ({
-  label,
-  value,
-  className,
-  isCompact = false,
-  isNotifications,
-}: {
-  label: string;
-  value: ReactNode;
-  className?: string;
-  isCompact?: boolean;
-  isNotifications: boolean;
-}) => {
-  const isMobile = useMediaQuery("(max-width: 768px)");
-  if (isMobile || isCompact) {
-    return value;
-  }
-  return (
-    <Box
-      className={cn(
-        "my-4 grid grid-cols-[7.875rem_auto] items-center gap-3 md:my-5",
-        { "grid-cols-1": isNotifications },
-        className,
-      )}
-    >
-      {!isNotifications && (
-        <Text
-          className="flex items-center gap-1 truncate"
-          color="muted"
-          fontWeight="medium"
-        >
-          {label}
-        </Text>
-      )}
-      {value}
-    </Box>
-  );
-};
+import { CoreOptions } from "./story-options/core-options";
+import { DateOptions } from "./story-options/date-options";
+import { LabelsOption } from "./story-options/labels-option";
+import { PlanningOptions } from "./story-options/planning-options";
 
 export const Options = ({
   storyId,
@@ -124,23 +41,14 @@ export const Options = ({
 }) => {
   const { data } = useStoryById(storyId);
   const {
-    priority,
     statusId,
     startDate,
     endDate,
     objectiveId,
     keyResultId,
     assigneeId,
-    collaboratorIds,
-    collaborators,
     reporterId,
     teamId,
-    estimateValue,
-    estimateScheme,
-    estimatedDurationMinutes,
-    minimumFocusBlockMinutes,
-    autoSchedulingEnabled,
-    autoSchedulingLocked,
     labels: storyLabels,
     sprintId,
     deletedAt,
@@ -153,7 +61,7 @@ export const Options = ({
   const isCompact = isMobile || variant === "inline";
   const isInline = variant === "inline";
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
-  const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
+  const pendingStatusIdRef = useRef<string | null>(null);
   const { data: statuses = [] } = useStatuses();
   const { data: members = [] } = useMembers();
   const { hasFeature } = useSubscriptionFeatures();
@@ -175,113 +83,42 @@ export const Options = ({
   const name = status?.name;
   const isDeleted = Boolean(deletedAt);
   const assignee = data?.assignee ?? members.find((m) => m.id === assigneeId);
-  const collaboratorLookup = new Map(
-    members.map(({ id, username, fullName, avatarUrl }) => [
-      id,
-      { id, username, fullName, avatarUrl },
-    ]),
-  );
-  for (const collaborator of collaborators) {
-    collaboratorLookup.set(collaborator.id, collaborator);
-  }
-  const selectedCollaborators = collaboratorIds.flatMap((id) => {
-    const collaborator = collaboratorLookup.get(id);
-    return collaborator ? [collaborator] : [];
-  });
-  const visibleCollaborators = selectedCollaborators.slice(0, 5);
-  const hiddenCollaboratorCount =
-    collaboratorIds.length - visibleCollaborators.length;
-  const singleCollaborator = selectedCollaborators.at(0);
-  let collaboratorButtonIcon: ReactNode = (
-    <UsersAddIcon className="h-[1.15rem] w-auto" />
-  );
-  let collaboratorButtonContent: ReactNode = "Collaborators";
-
-  if (collaboratorIds.length === 1) {
-    collaboratorButtonIcon = (
-      <Avatar
-        name={singleCollaborator?.fullName || singleCollaborator?.username}
-        size="xs"
-        src={singleCollaborator?.avatarUrl}
-      />
-    );
-    collaboratorButtonContent = (
-      <span className="max-w-48 truncate">
-        {singleCollaborator?.username ||
-          singleCollaborator?.fullName ||
-          "Collaborator"}
-      </span>
-    );
-  } else if (collaboratorIds.length > 1) {
-    collaboratorButtonIcon = null;
-    collaboratorButtonContent = (
-      <Flex className="-space-x-1.5">
-        {visibleCollaborators.map((collaborator) => (
-          <Avatar
-            className="ring-surface ring-1"
-            key={collaborator.id}
-            name={collaborator.fullName || collaborator.username}
-            size="xs"
-            src={collaborator.avatarUrl}
-          />
-        ))}
-        {hiddenCollaboratorCount > 0 ? (
-          <span className="bg-surface-muted ring-surface flex size-5 items-center justify-center rounded-full text-xs ring-1">
-            +{hiddenCollaboratorCount}
-          </span>
-        ) : null}
-      </Flex>
-    );
-  }
-  const { data: allLabels = [] } = useLabels();
-  const labels = allLabels.filter((label) => storyLabels?.includes(label.id));
   const { mutate } = useUpdateStoryMutation();
-  const { mutate: updateLabels } = useUpdateLabelsMutation();
-  const { mutate: updateCollaborators } = useUpdateCollaboratorsMutation();
   const { isAdminOrOwner } = useIsAdminOrOwner(reporterId);
   const { userRole } = useUserRole();
   const isGuest = userRole === "guest";
-  // References to button elements for keyboard shortcuts
-  const statusButtonRef = useRef<HTMLButtonElement>(null);
-  const priorityButtonRef = useRef<HTMLButtonElement>(null);
-  const assigneeButtonRef = useRef<HTMLButtonElement>(null);
-  const estimateButtonRef = useRef<HTMLButtonElement>(null);
-  const timeNeededButtonRef = useRef<HTMLButtonElement>(null);
-  const startDateButtonRef = useRef<HTMLButtonElement>(null);
-  const dueDateButtonRef = useRef<HTMLButtonElement>(null);
-  const labelsButtonRef = useRef<HTMLButtonElement>(null);
-  const emptyLabelsButtonRef = useRef<HTMLButtonElement>(null);
-  const objectiveButtonRef = useRef<HTMLButtonElement>(null);
-  const sprintButtonRef = useRef<HTMLButtonElement>(null);
+  const isEditingDisabled = isDeleted || isGuest;
+
+  const incompleteStatusIds = new Set<string>();
+  const completedStatusIds = new Set<string>();
+  for (const statusOption of statuses) {
+    if (statusOption.category === "completed") {
+      completedStatusIds.add(statusOption.id);
+    } else if (
+      statusOption.category === "started" ||
+      statusOption.category === "unstarted" ||
+      statusOption.category === "backlog"
+    ) {
+      incompleteStatusIds.add(statusOption.id);
+    }
+  }
 
   const getUndoneChildren = () => {
-    const unstartedAndStartedStatusIds = statuses
-      .filter(
-        (status) =>
-          status.category === "started" ||
-          status.category === "unstarted" ||
-          status.category === "backlog",
-      )
-      .map((s) => s.id);
-
-    return subStories
-      .filter((subStory) =>
-        unstartedAndStartedStatusIds.includes(subStory.statusId),
-      )
-      .map((s) => s.id);
-  };
-
-  const isDoneStatus = (statusId: string) => {
-    const status = statuses.find((s) => s.id === statusId);
-    return status?.category === "completed";
+    const undoneChildrenIds: string[] = [];
+    for (const subStory of subStories) {
+      if (incompleteStatusIds.has(subStory.statusId)) {
+        undoneChildrenIds.push(subStory.id);
+      }
+    }
+    return undoneChildrenIds;
   };
 
   const handleUpdate = (data: Partial<DetailedStory>) => {
     // If updating status to a "done" state and has undone children
-    if (data.statusId && isDoneStatus(data.statusId)) {
+    if (data.statusId && completedStatusIds.has(data.statusId)) {
       const undoneChildrenIds = getUndoneChildren();
       if (undoneChildrenIds.length > 0) {
-        setPendingStatusId(data.statusId);
+        pendingStatusIdRef.current = data.statusId;
         setShowChildrenDialog(true);
         return; // Don't update yet, wait for user confirmation
       }
@@ -291,11 +128,8 @@ export const Options = ({
     mutate({ storyId, payload: data });
   };
 
-  const handleUpdateLabels = (labels: string[] = []) => {
-    updateLabels({ storyId, labels });
-  };
-
   const handleConfirmStatusChange = (markChildrenAsDone: boolean) => {
+    const pendingStatusId = pendingStatusIdRef.current;
     if (!pendingStatusId) return;
 
     // Update the main story
@@ -310,75 +144,8 @@ export const Options = ({
     }
     // Reset dialog state
     setShowChildrenDialog(false);
-    setPendingStatusId(null);
+    pendingStatusIdRef.current = null;
   };
-
-  useHotkeys("s", (e) => {
-    e.preventDefault();
-    if (!isDeleted && !isGuest) {
-      statusButtonRef.current?.click();
-    }
-  });
-
-  useHotkeys("p", (e) => {
-    e.preventDefault();
-    if (!isDeleted && !isGuest) {
-      priorityButtonRef.current?.click();
-    }
-  });
-
-  useHotkeys("a", (e) => {
-    e.preventDefault();
-    if (!isDeleted && !isGuest) {
-      assigneeButtonRef.current?.click();
-    }
-  });
-
-  useHotkeys("e", (e) => {
-    e.preventDefault();
-    if (!isDeleted && !isGuest) {
-      estimateButtonRef.current?.click();
-    }
-  });
-
-  useHotkeys("d", (e) => {
-    e.preventDefault();
-    if (!isDeleted && !isGuest) {
-      dueDateButtonRef.current?.click();
-    }
-  });
-
-  useHotkeys("l", (e) => {
-    e.preventDefault();
-    if (!isDeleted && !isGuest) {
-      if (labels.length > 0) {
-        labelsButtonRef.current?.click();
-      } else {
-        emptyLabelsButtonRef.current?.click();
-      }
-    }
-  });
-
-  useHotkeys("o", (e) => {
-    e.preventDefault();
-    if (!isDeleted && !isGuest && features.objectiveEnabled) {
-      objectiveButtonRef.current?.click();
-    }
-  });
-
-  useHotkeys("n", (e) => {
-    e.preventDefault();
-    if (!isDeleted && !isGuest && sprintsEnabled) {
-      sprintButtonRef.current?.click();
-    }
-  });
-
-  useHotkeys("b", (e) => {
-    e.preventDefault();
-    if (!isDeleted && !isGuest) {
-      startDateButtonRef.current?.click();
-    }
-  });
 
   return (
     <Box
@@ -437,657 +204,53 @@ export const Options = ({
             "md:block": !isCompact,
           })}
         >
-          <Option
+          <CoreOptions
+            assignee={assignee}
+            canUseBackgroundMaya={canUseBackgroundMaya}
+            disabled={isEditingDisabled}
             isCompact={isCompact}
             isNotifications={isNotifications}
-            label="Status"
-            value={
-              <StatusesMenu>
-                <StatusesMenu.Trigger>
-                  <Button
-                    color="tertiary"
-                    disabled={isDeleted || isGuest}
-                    leftIcon={<StoryStatusIcon statusId={statusId} />}
-                    ref={statusButtonRef}
-                    size="sm"
-                    type="button"
-                    variant={isCompact ? "solid" : "naked"}
-                  >
-                    {name}
-                  </Button>
-                </StatusesMenu.Trigger>
-                <StatusesMenu.Items
-                  setStatusId={(statusId) => {
-                    handleUpdate({ statusId });
-                  }}
-                  statusId={statusId}
-                  teamId={teamId}
-                />
-              </StatusesMenu>
-            }
+            mayaAssigneeId={mayaAssignee?.id}
+            members={members}
+            onUpdate={handleUpdate}
+            statusName={name}
+            story={data!}
+            storyId={storyId}
           />
-          <Option
+          <DateOptions
+            disabled={isEditingDisabled}
+            endDate={endDate}
             isCompact={isCompact}
             isNotifications={isNotifications}
-            label="Priority"
-            value={
-              <PrioritiesMenu>
-                <PrioritiesMenu.Trigger>
-                  <Button
-                    color="tertiary"
-                    disabled={isDeleted || isGuest}
-                    leftIcon={<PriorityIcon priority={priority} />}
-                    ref={priorityButtonRef}
-                    size="sm"
-                    type="button"
-                    variant={isCompact ? "solid" : "naked"}
-                  >
-                    {priority}
-                  </Button>
-                </PrioritiesMenu.Trigger>
-                <PrioritiesMenu.Items
-                  setPriority={(priority) => {
-                    handleUpdate({ priority });
-                  }}
-                />
-              </PrioritiesMenu>
-            }
+            onUpdate={handleUpdate}
+            startDate={startDate}
+            storyTerm={getTermDisplay("storyTerm")}
           />
-          <Option
+          <PlanningOptions
+            disabled={isEditingDisabled}
+            getTermDisplay={getTermDisplay}
             isCompact={isCompact}
             isNotifications={isNotifications}
-            label="Assignee"
-            value={
-              <AssigneesMenu>
-                <AssigneesMenu.Trigger>
-                  <Button
-                    className={cn("font-medium", {
-                      "text-text-muted": !assigneeId,
-                    })}
-                    color="tertiary"
-                    disabled={isDeleted || isGuest}
-                    leftIcon={
-                      <Avatar
-                        className={cn({
-                          "text-foreground/80": !assignee?.fullName,
-                        })}
-                        name={assignee?.fullName}
-                        size="xs"
-                        src={assignee?.avatarUrl}
-                      />
-                    }
-                    ref={assigneeButtonRef}
-                    size="sm"
-                    type="button"
-                    variant={isCompact ? "solid" : "naked"}
-                  >
-                    {assignee?.username || (
-                      <Text as="span" color="muted">
-                        Assign
-                      </Text>
-                    )}
-                  </Button>
-                </AssigneesMenu.Trigger>
-                <AssigneesMenu.Items
-                  assigneeId={assigneeId}
-                  onAssigneeSelected={(assigneeId) => {
-                    handleUpdate({
-                      assigneeId,
-                      ...(isMayaAssigneeSelection(assigneeId, mayaAssignee?.id)
-                        ? { autoSchedulingEnabled: true }
-                        : {}),
-                    });
-                  }}
-                  teamId={teamId}
-                />
-              </AssigneesMenu>
-            }
+            keyResultId={keyResultId}
+            keyResultName={keyResultName}
+            objectiveEnabled={features.objectiveEnabled}
+            objectiveId={objectiveId}
+            objectiveName={objectiveName}
+            onUpdate={handleUpdate}
+            sprintId={sprintId}
+            sprintName={sprint?.name}
+            sprintsEnabled={sprintsEnabled}
+            teamId={teamId}
           />
-          <Option
+          <LabelsOption
+            disabled={isEditingDisabled}
             isCompact={isCompact}
             isNotifications={isNotifications}
-            label="Collaborators"
-            value={
-              <CollaboratorsMenu>
-                <CollaboratorsMenu.Trigger>
-                  <Button
-                    className={cn("max-w-full font-medium", {
-                      "text-text-muted": collaboratorIds.length === 0,
-                    })}
-                    color="tertiary"
-                    disabled={isDeleted || isGuest}
-                    leftIcon={collaboratorButtonIcon}
-                    size="sm"
-                    type="button"
-                    variant={isCompact ? "solid" : "naked"}
-                  >
-                    {collaboratorButtonContent}
-                  </Button>
-                </CollaboratorsMenu.Trigger>
-                <CollaboratorsMenu.Items
-                  assigneeId={assigneeId}
-                  collaboratorIds={collaboratorIds}
-                  onCollaboratorsChange={(collaboratorIds) => {
-                    updateCollaborators({ storyId, collaboratorIds });
-                  }}
-                  teamId={teamId}
-                />
-              </CollaboratorsMenu>
-            }
-          />
-          <Option
-            isCompact={isCompact}
-            isNotifications={isNotifications}
-            label="Complexity"
-            value={
-              <EstimateMenu>
-                <EstimateMenu.Trigger>
-                  <Button
-                    className={cn("font-medium", {
-                      "text-text-muted": !estimateValue,
-                    })}
-                    color="tertiary"
-                    disabled={isDeleted || isGuest}
-                    leftIcon={
-                      <EstimateIcon
-                        className={cn("h-[1.15rem] w-auto", {
-                          "text-text-muted": !estimateValue,
-                        })}
-                      />
-                    }
-                    ref={estimateButtonRef}
-                    size="sm"
-                    type="button"
-                    variant={isCompact ? "solid" : "naked"}
-                  >
-                    {estimateValue ? (
-                      formatEstimate(estimateScheme, estimateValue, "full")
-                    ) : (
-                      <Text as="span" color="muted">
-                        Add complexity
-                      </Text>
-                    )}
-                  </Button>
-                </EstimateMenu.Trigger>
-                <EstimateMenu.Items
-                  estimateScheme={estimateScheme}
-                  estimateValue={estimateValue}
-                  setEstimateValue={(estimateValue) => {
-                    handleUpdate({ estimateValue });
-                  }}
-                />
-              </EstimateMenu>
-            }
-          />
-          <Option
-            isCompact={isCompact}
-            isNotifications={isNotifications}
-            label="Time needed"
-            value={
-              <TimeNeededMenu>
-                <TimeNeededMenu.Trigger>
-                  <Button
-                    className={cn("font-medium", {
-                      "text-text-muted": !estimatedDurationMinutes,
-                    })}
-                    color="tertiary"
-                    disabled={isDeleted || isGuest}
-                    leftIcon={
-                      <Time02Icon
-                        className={cn("h-[1.15rem] w-auto", {
-                          "text-text-muted": !estimatedDurationMinutes,
-                        })}
-                      />
-                    }
-                    ref={timeNeededButtonRef}
-                    size="sm"
-                    type="button"
-                    variant={isCompact ? "solid" : "naked"}
-                  >
-                    {estimatedDurationMinutes ? (
-                      formatTimeNeeded(estimatedDurationMinutes, "full")
-                    ) : (
-                      <Text as="span" color="muted">
-                        Add time needed
-                      </Text>
-                    )}
-                  </Button>
-                </TimeNeededMenu.Trigger>
-                <TimeNeededMenu.Items
-                  estimatedDurationMinutes={estimatedDurationMinutes}
-                  minimumFocusBlockMinutes={minimumFocusBlockMinutes}
-                  setTimeNeeded={(timeNeeded) => {
-                    handleUpdate(timeNeeded);
-                  }}
-                />
-              </TimeNeededMenu>
-            }
-          />
-          <Option
-            isCompact={isCompact}
-            isNotifications={isNotifications}
-            label="Auto-scheduling"
-            value={
-              <AutoSchedulingMenu>
-                <AutoSchedulingMenu.Trigger>
-                  <Button
-                    className="font-medium"
-                    color="tertiary"
-                    disabled={isDeleted || isGuest || !canUseBackgroundMaya}
-                    leftIcon={
-                      <TimeScheduleIcon className="h-[1.15rem] w-auto" />
-                    }
-                    size="sm"
-                    type="button"
-                    variant={isCompact ? "solid" : "naked"}
-                  >
-                    {autoSchedulingEnabled ? "On" : "Off"}
-                  </Button>
-                </AutoSchedulingMenu.Trigger>
-                <AutoSchedulingMenu.Items
-                  autoSchedulingEnabled={autoSchedulingEnabled}
-                  autoSchedulingLocked={autoSchedulingLocked}
-                  setAutoSchedulingEnabled={(enabled) => {
-                    handleUpdate({ autoSchedulingEnabled: enabled });
-                  }}
-                />
-              </AutoSchedulingMenu>
-            }
-          />
-          <Option
-            isCompact={isCompact}
-            isNotifications={isNotifications}
-            label="Start date"
-            value={
-              <DatePicker>
-                <DatePicker.Trigger>
-                  <Button
-                    color="tertiary"
-                    disabled={isDeleted || isGuest}
-                    leftIcon={
-                      <CalendarIcon
-                        className={cn("h-[1.15rem] w-auto", {
-                          "text-text-muted": !startDate,
-                        })}
-                      />
-                    }
-                    ref={startDateButtonRef}
-                    size="sm"
-                    variant={isCompact ? "solid" : "naked"}
-                  >
-                    {startDate ? (
-                      format(new Date(startDate), "MMM d, yyyy")
-                    ) : (
-                      <Text color="muted">Add start date</Text>
-                    )}
-                  </Button>
-                </DatePicker.Trigger>
-                <DatePicker.Calendar
-                  onDayClick={(day) => {
-                    handleUpdate({
-                      startDate: formatISO(day, { representation: "date" }),
-                    });
-                  }}
-                  selected={startDate ? new Date(startDate) : undefined}
-                />
-              </DatePicker>
-            }
-          />
-          <Option
-            isCompact={isCompact}
-            isNotifications={isNotifications}
-            label="Deadline"
-            value={
-              <DatePicker>
-                <Tooltip
-                  className="py-3"
-                  hidden={!endDate}
-                  title={
-                    <Flex align="start" gap={2}>
-                      <CalendarIcon
-                        className={cn("relative top-[2.5px] h-5 w-auto", {
-                          "text-primary dark:text-primary":
-                            new Date(endDate!) < new Date(),
-                          "text-warning dark:text-warning":
-                            new Date(endDate!) <= addDays(new Date(), 7) &&
-                            new Date(endDate!) >= new Date(),
-                        })}
-                      />
-                      <Box>
-                        {getDueDateMessage(
-                          new Date(endDate!),
-                          getTermDisplay("storyTerm"),
-                        )}
-                      </Box>
-                    </Flex>
-                  }
-                >
-                  <span>
-                    <DatePicker.Trigger>
-                      <Button
-                        className={cn({
-                          "text-primary dark:text-primary":
-                            endDate && new Date(endDate) < new Date(),
-                          "text-warning dark:text-warning":
-                            endDate &&
-                            new Date(endDate) <= addDays(new Date(), 7) &&
-                            new Date(endDate) >= new Date(),
-                          "text-text-muted": !endDate,
-                        })}
-                        color="tertiary"
-                        disabled={isDeleted || isGuest}
-                        leftIcon={
-                          <CalendarIcon className="h-[1.15rem] w-auto" />
-                        }
-                        ref={dueDateButtonRef}
-                        size="sm"
-                        variant={isCompact ? "solid" : "naked"}
-                      >
-                        {endDate ? (
-                          format(new Date(endDate), "MMM d, yyyy")
-                        ) : (
-                          <Text color="muted">Add deadline</Text>
-                        )}
-                      </Button>
-                    </DatePicker.Trigger>
-                  </span>
-                </Tooltip>
-                <DatePicker.Calendar
-                  onDayClick={(day) => {
-                    handleUpdate({
-                      endDate: formatISO(day, { representation: "date" }),
-                    });
-                  }}
-                  selected={endDate ? new Date(endDate) : undefined}
-                />
-              </DatePicker>
-            }
-          />
-          {features.objectiveEnabled ? (
-            <>
-              <Option
-                isCompact={isCompact}
-                isNotifications={isNotifications}
-                label={getTermDisplay("objectiveTerm", { capitalize: true })}
-                value={
-                  <ObjectiveKeyResultMenu
-                    align="end"
-                    keyResultId={keyResultId}
-                    objectiveId={objectiveId}
-                    onChange={(selection) => {
-                      handleUpdate(selection);
-                    }}
-                    teamId={teamId}
-                  >
-                    <Button
-                      className="w-fit max-w-[13rem] justify-start font-medium"
-                      color="tertiary"
-                      disabled={isDeleted || isGuest}
-                      leftIcon={
-                        <ObjectiveIcon
-                          className={cn("h-[1.15rem] w-auto shrink-0", {
-                            "text-text-muted": !objectiveId,
-                          })}
-                        />
-                      }
-                      ref={objectiveButtonRef}
-                      size="sm"
-                      title={objectiveName ?? undefined}
-                      type="button"
-                      variant={isCompact ? "solid" : "naked"}
-                    >
-                      <span className="block min-w-0 truncate">
-                        {objectiveId
-                          ? objectiveName ??
-                            getTermDisplay("objectiveTerm", {
-                              capitalize: true,
-                            })
-                          : `Add ${getTermDisplay("objectiveTerm")}`}
-                      </span>
-                    </Button>
-                  </ObjectiveKeyResultMenu>
-                }
-              />
-              {objectiveId ? (
-                <Option
-                  isCompact={isCompact}
-                  isNotifications={isNotifications}
-                  label={getTermDisplay("keyResultTerm", {
-                    capitalize: true,
-                  })}
-                  value={
-                    <KeyResultMenu
-                      align="end"
-                      keyResultId={keyResultId}
-                      objectiveId={objectiveId}
-                      onChange={(nextKeyResultId) => {
-                        handleUpdate({ keyResultId: nextKeyResultId });
-                      }}
-                    >
-                      <Button
-                        className="w-fit max-w-[13rem] justify-start font-medium"
-                        color="tertiary"
-                        disabled={isDeleted || isGuest}
-                        leftIcon={
-                          <OKRIcon
-                            className={cn("h-[1.15rem] w-auto shrink-0", {
-                              "text-text-muted": !keyResultId,
-                            })}
-                            strokeWidth={2.4}
-                          />
-                        }
-                        size="sm"
-                        title={keyResultName ?? undefined}
-                        type="button"
-                        variant={isCompact ? "solid" : "naked"}
-                      >
-                        <span className="block min-w-0 truncate">
-                          {keyResultId
-                            ? keyResultName ??
-                              getTermDisplay("keyResultTerm", {
-                                capitalize: true,
-                              })
-                            : `Add ${getTermDisplay("keyResultTerm")}`}
-                        </span>
-                      </Button>
-                    </KeyResultMenu>
-                  }
-                />
-              ) : null}
-            </>
-          ) : null}
-          {sprintsEnabled ? (
-            <Option
-              isCompact={isCompact}
-              isNotifications={isNotifications}
-              label="Sprint"
-              value={
-                <SprintsMenu>
-                  <SprintsMenu.Trigger>
-                    <Button
-                      color="tertiary"
-                      disabled={isDeleted || isGuest}
-                      leftIcon={
-                        <SprintsIcon
-                          className={cn("h-5 w-auto", {
-                            "text-text-muted": !sprintId,
-                          })}
-                        />
-                      }
-                      ref={sprintButtonRef}
-                      size="sm"
-                      type="button"
-                      variant={isCompact ? "solid" : "naked"}
-                    >
-                      <span className="inline-block max-w-[16ch] truncate">
-                        {sprint?.name || "Add sprint"}
-                      </span>
-                    </Button>
-                  </SprintsMenu.Trigger>
-                  <SprintsMenu.Items
-                    align="end"
-                    setSprintId={(sprintId) => {
-                      handleUpdate({ sprintId });
-                    }}
-                    sprintId={sprintId ?? undefined}
-                    teamId={teamId}
-                  />
-                </SprintsMenu>
-              }
-            />
-          ) : null}
-          <Option
-            className={cn("items-start pt-1", {
-              "items-center pt-0": labels.length === 0,
-            })}
-            isCompact={isCompact}
-            isNotifications={isNotifications}
-            label="Labels"
-            value={
-              <Box
-                className={cn({
-                  "md:ml-2.5": !isCompact,
-                  "md:ml-0": !isCompact && labels.length === 0,
-                })}
-              >
-                {labels.length > 0 ? (
-                  <Flex align="center" className="gap-1.5" wrap>
-                    {labels.slice(0, labels.length - 1).map((label) => (
-                      <LabelsMenu key={label.id}>
-                        <LabelsMenu.Trigger>
-                          <span
-                            className={cn({
-                              "pointer-events-none cursor-not-allowed":
-                                isDeleted || isGuest,
-                            })}
-                          >
-                            <StoryLabel {...label} isRectangular size="sm" />
-                          </span>
-                        </LabelsMenu.Trigger>
-                        <LabelsMenu.Items
-                          labelIds={storyLabels ?? []}
-                          setLabelIds={(labelIds) => {
-                            handleUpdateLabels(labelIds);
-                          }}
-                          teamId={teamId}
-                        />
-                      </LabelsMenu>
-                    ))}
-                    <Flex align="center" gap={1}>
-                      <LabelsMenu>
-                        <LabelsMenu.Trigger>
-                          <span
-                            className={cn({
-                              "pointer-events-none cursor-not-allowed":
-                                isDeleted || isGuest,
-                            })}
-                          >
-                            <StoryLabel
-                              {...labels.at(-1)!}
-                              isRectangular
-                              size="sm"
-                            />
-                          </span>
-                        </LabelsMenu.Trigger>
-                        <LabelsMenu.Items
-                          labelIds={storyLabels ?? []}
-                          setLabelIds={(labelIds) => {
-                            handleUpdateLabels(labelIds);
-                          }}
-                          teamId={teamId}
-                        />
-                      </LabelsMenu>
-                      <LabelsMenu>
-                        <LabelsMenu.Trigger>
-                          <Button
-                            asIcon
-                            className="m-0"
-                            color="tertiary"
-                            disabled={isDeleted || isGuest}
-                            leftIcon={<TagsIcon className="h-4 w-auto" />}
-                            ref={labelsButtonRef}
-                            rounded="full"
-                            size="sm"
-                            title="Add labels"
-                            type="button"
-                            variant={isCompact ? "solid" : "naked"}
-                          >
-                            <span className="sr-only">Add labels</span>
-                          </Button>
-                        </LabelsMenu.Trigger>
-                        <LabelsMenu.Items
-                          labelIds={storyLabels ?? []}
-                          setLabelIds={(labelIds) => {
-                            handleUpdateLabels(labelIds);
-                          }}
-                          teamId={teamId}
-                        />
-                      </LabelsMenu>
-                    </Flex>
-                  </Flex>
-                ) : (
-                  <LabelsMenu>
-                    <LabelsMenu.Trigger>
-                      <Button
-                        color="tertiary"
-                        disabled={isDeleted || isGuest}
-                        leftIcon={<TagsIcon className="h-[1.15rem] w-auto" />}
-                        ref={emptyLabelsButtonRef}
-                        size="sm"
-                        type="button"
-                        variant={isCompact ? "solid" : "naked"}
-                      >
-                        Add labels
-                      </Button>
-                    </LabelsMenu.Trigger>
-                    <LabelsMenu.Items
-                      labelIds={storyLabels ?? []}
-                      setLabelIds={(labelIds) => {
-                        handleUpdateLabels(labelIds);
-                      }}
-                      teamId={teamId}
-                    />
-                  </LabelsMenu>
-                )}
-              </Box>
-            }
+            storyId={storyId}
+            storyLabels={storyLabels}
+            teamId={teamId}
           />
         </Box>
-
-        {/* 
-        <Option label="Module" value={<ModulesMenu />} />
-        <Option
-          label="Parent"
-          value={
-            <Button color="tertiary" variant="naked">
-              None
-            </Button>
-          }
-        />
-        <Option
-          label="Blocking"
-          value={
-            <Button color="tertiary" variant="naked">
-              None
-            </Button>
-          }
-        />
-        <Option
-          label="Blocked by"
-          value={
-            <Button color="tertiary" variant="naked">
-              None
-            </Button>
-          }
-        />
-        <Option
-          label="Related to"
-          value={
-            <Button color="tertiary" variant="naked">
-              None
-            </Button>
-          }
-        /> */}
 
         <Divider className={cn("my-4", { "mt-6 mb-4": isInline })} />
         <Box className={cn({ "flex justify-end": isInline })}>

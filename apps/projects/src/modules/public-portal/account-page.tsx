@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Box, Button, Flex, Text } from "ui";
-import type { User } from "@/types";
-import { Logo } from "@/components/ui";
-import { ProfileForm } from "@/modules/settings/account/profile/components/form";
+import { Logo } from "@/components/ui/logo";
+import { ProfileForm } from "@/shared/profile/profile-form";
+import type { User } from "@/types/user";
 import { PublicPortalShell } from "./portal-shell";
 import type { PublicPortal, PublicPortalViewer } from "./types";
 import { PublicPortalUserMenu } from "./user-menu";

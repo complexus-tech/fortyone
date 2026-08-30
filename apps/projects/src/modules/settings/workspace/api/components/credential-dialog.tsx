@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Box, Button, Checkbox, Dialog, Flex, Input, Text } from "ui";
-import { useTeams } from "@/modules/teams/hooks/teams";
+import { useTeams } from "@/modules/teams/public/client";
 import { DEVELOPER_SCOPES, expiryFromNow } from "../constants";
 import type { CreateCredentialInput, DeveloperScope } from "../types";
 

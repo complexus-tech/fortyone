@@ -5,8 +5,8 @@ import { ClockIcon, InviteMembersIcon, TeamIcon } from "icons";
 import { useState } from "react";
 import { useMembers } from "@/lib/hooks/members";
 import { InviteMembersDialog } from "@/components/ui";
-import { usePendingInvitations } from "@/modules/invitations/hooks/pending-invitations";
-import { SectionHeader } from "../../components";
+import { usePendingInvitations } from "@/modules/invitations/public/client";
+import { SectionHeader } from "../../components/section-header";
 import { WorkspaceMember } from "./components/member";
 import { WorkspaceInvitee } from "./components/invitee";
 

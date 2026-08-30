@@ -3,13 +3,84 @@
 import type { DetailedStory, NewStory } from "@/modules/story/types";
 import {
   buildNewStoryDialogPayload,
+  createInitialNewStoryDialogForm,
   getDeadlineForSprintSelection,
   getInitialDeadlineSource,
   runStoryCreatedFollowUp,
+  storyFormReducer,
   toDateOnly,
 } from "./new-story-dialog-form";
 
 describe("new story dialog form", () => {
+  it("creates a complete draft while preserving an explicit assignee choice", () => {
+    expect(
+      createInitialNewStoryDialogForm({
+        assigneeId: "assignee-1",
+        autoAssignedUserId: "current-user",
+        autoSchedulingDefaultEnabled: true,
+        currentTeamId: "team-1",
+        endDate: "2026-06-20",
+        objectiveId: "objective-1",
+        priority: "High",
+        sprintId: "sprint-1",
+        statusId: "status-1",
+      }),
+    ).toMatchObject({
+      assigneeId: "assignee-1",
+      autoSchedulingEnabled: true,
+      autoSchedulingLocked: false,
+      endDate: "2026-06-20",
+      estimatedDurationMinutes: 60,
+      labelIds: [],
+      objectiveId: "objective-1",
+      priority: "High",
+      sprintId: "sprint-1",
+      statusId: "status-1",
+      teamId: "team-1",
+    });
+  });
+
+  it("falls back to the auto-assigned user only when no assignee was provided", () => {
+    expect(
+      createInitialNewStoryDialogForm({
+        autoAssignedUserId: "current-user",
+        autoSchedulingDefaultEnabled: false,
+        endDate: null,
+        priority: "No Priority",
+      }).assigneeId,
+    ).toBe("current-user");
+  });
+
+  it("updates individual fields without discarding the rest of the draft", () => {
+    expect(
+      storyFormReducer(
+        { statusId: "status-1", title: "Preserve me" },
+        { type: "SET_FIELD", field: "priority", value: "High" },
+      ),
+    ).toEqual({
+      priority: "High",
+      statusId: "status-1",
+      title: "Preserve me",
+    });
+  });
+
+  it("synchronizes team and status atomically", () => {
+    expect(
+      storyFormReducer(
+        { priority: "Low", statusId: "old-status", teamId: "old-team" },
+        {
+          type: "SYNC_TEAM_STATUS",
+          statusId: "new-status",
+          teamId: "new-team",
+        },
+      ),
+    ).toEqual({
+      priority: "Low",
+      statusId: "new-status",
+      teamId: "new-team",
+    });
+  });
+
   it("removes the time component from sprint deadlines", () => {
     expect(toDateOnly("2026-06-20T23:59:59.000Z")).toBe("2026-06-20");
     expect(toDateOnly("2026-06-20")).toBe("2026-06-20");

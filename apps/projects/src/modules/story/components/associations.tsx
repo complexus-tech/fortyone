@@ -18,7 +18,7 @@ import { useWorkspacePath } from "@/hooks";
 import { useRemoveAssociationMutation } from "@/modules/story/hooks/remove-association-mutation";
 import { useUpdateAssociationMutation } from "@/modules/story/hooks/update-association-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import type { StoryAssociation, StoryAssociationType } from "../types";
 
 type AssociationOption = {

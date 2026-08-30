@@ -35,7 +35,7 @@ import { useBulkArchiveStoryMutation } from "@/modules/stories/hooks/archive-mut
 import { useBulkDeleteStoryMutation } from "@/modules/stories/hooks/delete-mutation";
 import { useBulkRestoreStoryMutation } from "@/modules/stories/hooks/restore-mutation";
 import { useBulkUnarchiveStoryMutation } from "@/modules/stories/hooks/unarchive-mutation";
-import { getStoryPath } from "../utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import { useSetStoryWatchingMutation } from "../hooks/collaboration-mutations";
 import { useDuplicateStoryMutation } from "../hooks/duplicate-mutation";
 import { useStoryById } from "../hooks/story";

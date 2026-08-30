@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { remove } from "@/lib/http";
+import { executeStoryDeletionRequest } from "@/shared/story/deletion";
 import type { ApiResponse } from "@/types";
-import { executeStoryDeletionRequest } from "./execute-story-deletion-request";
 
 export const deleteStoryAction = async (
   storyId: string,

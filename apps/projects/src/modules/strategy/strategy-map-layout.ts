@@ -1,4 +1,4 @@
-import type { KeyResult, Objective } from "@/modules/objectives/types";
+import type { Objective } from "@/modules/objectives/types";
 import type { StrategyMap } from "./types";
 
 export const STRATEGY_CANVAS_MIN_WIDTH = 2200;
@@ -6,6 +6,7 @@ export const STRATEGY_CANVAS_MIN_HEIGHT = 1400;
 export const GOAL_NODE_WIDTH = 440;
 export const PILLAR_NODE_WIDTH = 340;
 export const OBJECTIVE_NODE_WIDTH = 340;
+export const KEY_RESULT_NODE_HEIGHT = 154;
 export const KEY_RESULT_NODE_WIDTH = 280;
 
 const CANVAS_GUTTER = 160;
@@ -37,6 +38,10 @@ export type StrategyConnection = {
   targetId: string;
 };
 
+export type StrategyKeyResultNode = {
+  id: string;
+};
+
 export const GOAL_NODE_ID = "goal";
 export const getPillarNodeId = (pillarId: string) => `pillar:${pillarId}`;
 export const getObjectiveNodeId = (objectiveId: string) =>
@@ -45,8 +50,10 @@ export const getKeyResultNodeId = (keyResultId: string) =>
   `key-result:${keyResultId}`;
 
 type ObjectiveCell = {
+  height: number;
   objective: Objective;
-  keyResults: KeyResult[];
+  keyResults: StrategyKeyResultNode[];
+  keyResultCount: number;
   width: number;
 };
 
@@ -58,29 +65,41 @@ type ObjectiveRow = {
 
 const getVisibleKeyResults = (
   objectiveId: string,
-  keyResultsByObjective: ReadonlyMap<string, KeyResult[]>,
+  keyResultsByObjective: ReadonlyMap<string, StrategyKeyResultNode[]>,
   expandedObjectiveIds: ReadonlySet<string>,
 ) =>
   expandedObjectiveIds.has(objectiveId)
     ? keyResultsByObjective.get(objectiveId) ?? []
     : [];
 
-const getObjectiveCellWidth = (keyResultCount: number) => {
+export const getStrategyObjectiveCellDimensions = (keyResultCount: number) => {
+  const normalizedKeyResultCount = Number.isFinite(keyResultCount)
+    ? Math.max(0, Math.floor(keyResultCount))
+    : 0;
   const visibleColumns = Math.min(
-    Math.max(keyResultCount, 1),
+    Math.max(normalizedKeyResultCount, 1),
     MAX_KEY_RESULTS_PER_ROW,
   );
-
-  return Math.max(
-    OBJECTIVE_NODE_WIDTH,
-    visibleColumns * KEY_RESULT_NODE_WIDTH +
-      Math.max(0, visibleColumns - 1) * KEY_RESULT_GAP,
+  const keyResultRows = Math.ceil(
+    normalizedKeyResultCount / MAX_KEY_RESULTS_PER_ROW,
   );
+
+  return {
+    height: Math.max(
+      OBJECTIVE_ROW_MIN_HEIGHT,
+      OBJECTIVE_TO_KEY_RESULT_OFFSET + keyResultRows * KEY_RESULT_ROW_GAP,
+    ),
+    width: Math.max(
+      OBJECTIVE_NODE_WIDTH,
+      visibleColumns * KEY_RESULT_NODE_WIDTH +
+        Math.max(0, visibleColumns - 1) * KEY_RESULT_GAP,
+    ),
+  };
 };
 
 const createObjectiveRows = (
   objectives: Objective[],
-  keyResultsByObjective: ReadonlyMap<string, KeyResult[]>,
+  keyResultsByObjective: ReadonlyMap<string, StrategyKeyResultNode[]>,
   expandedObjectiveIds: ReadonlySet<string>,
 ): ObjectiveRow[] => {
   if (objectives.length === 0) return [];
@@ -99,25 +118,25 @@ const createObjectiveRows = (
           keyResultsByObjective,
           expandedObjectiveIds,
         );
+        const knownKeyResultCount = Number.isFinite(objective.keyResultCount)
+          ? objective.keyResultCount
+          : 0;
+        const keyResultCount = expandedObjectiveIds.has(objective.id)
+          ? Math.max(knownKeyResultCount, keyResults.length)
+          : 0;
+        const dimensions = getStrategyObjectiveCellDimensions(keyResultCount);
         return {
+          height: dimensions.height,
           keyResults,
+          keyResultCount,
           objective,
-          width: getObjectiveCellWidth(keyResults.length),
+          width: dimensions.width,
         };
       });
-    const keyResultRows = Math.max(
-      0,
-      ...cells.map(({ keyResults }) =>
-        Math.ceil(keyResults.length / MAX_KEY_RESULTS_PER_ROW),
-      ),
-    );
 
     rows.push({
       cells,
-      height: Math.max(
-        OBJECTIVE_ROW_MIN_HEIGHT,
-        OBJECTIVE_TO_KEY_RESULT_OFFSET + keyResultRows * KEY_RESULT_ROW_GAP,
-      ),
+      height: Math.max(...cells.map(({ height }) => height)),
       width:
         cells.reduce((total, cell) => total + cell.width, 0) +
         Math.max(0, cells.length - 1) * OBJECTIVE_GAP,
@@ -193,7 +212,10 @@ const positionObjectiveRows = ({
 export const createStrategyMapLayout = (
   strategy: StrategyMap,
   objectives: Objective[],
-  keyResultsByObjective: ReadonlyMap<string, KeyResult[]> = new Map(),
+  keyResultsByObjective: ReadonlyMap<
+    string,
+    StrategyKeyResultNode[]
+  > = new Map(),
   expandedObjectiveIds: ReadonlySet<string> = new Set(),
 ) => {
   const objectiveById = new Map(
@@ -282,7 +304,10 @@ export const createStrategyMapLayout = (
 export const getStrategyConnections = (
   strategy: StrategyMap,
   objectiveIds: ReadonlySet<string>,
-  keyResultsByObjective: ReadonlyMap<string, KeyResult[]> = new Map(),
+  keyResultsByObjective: ReadonlyMap<
+    string,
+    StrategyKeyResultNode[]
+  > = new Map(),
   expandedObjectiveIds: ReadonlySet<string> = new Set(),
 ): StrategyConnection[] => {
   const connections: StrategyConnection[] = [];

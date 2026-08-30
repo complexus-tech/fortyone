@@ -1,22 +1,24 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspacePath } from "@/hooks";
 import { useSession } from "@/lib/auth/client";
-import { objectiveKeys } from "@/modules/objectives/constants";
 import {
-  alignObjective,
+  strategyKeys,
+  useAlignObjectiveMutation,
+} from "@/shared/strategy-map/hooks";
+import type { StrategyMap } from "@/shared/strategy-map/types";
+import {
   createStrategicPillar,
   deleteStrategicPillar,
-  getStrategyMap,
   updateStrategicPillar,
   updateStrategy,
 } from "./api";
-import { alignObjectiveInStrategy } from "./strategy-cache";
-import type { StrategyMap } from "./types";
 
-export const strategyKeys = {
-  map: (workspaceSlug: string) => ["strategy-map", workspaceSlug] as const,
-};
+export {
+  strategyKeys,
+  useAlignObjectiveMutation,
+  useStrategyMap,
+} from "@/shared/strategy-map/hooks";
 
 const useStrategyContext = () => {
   const { data: session } = useSession();
@@ -28,56 +30,6 @@ const handleStrategyError = (error: Error) =>
   toast.error("Strategy could not be updated", {
     description: error.message,
   });
-
-export const useStrategyMap = () => {
-  const { session, workspaceSlug } = useStrategyContext();
-  return useQuery({
-    queryKey: strategyKeys.map(workspaceSlug),
-    queryFn: () => getStrategyMap({ session: session!, workspaceSlug }),
-    enabled: Boolean(session && workspaceSlug),
-  });
-};
-
-export const useAlignObjectiveMutation = () => {
-  const queryClient = useQueryClient();
-  const { session, workspaceSlug } = useStrategyContext();
-  const ctx = { session: session!, workspaceSlug };
-  const strategyKey = strategyKeys.map(workspaceSlug);
-
-  return useMutation({
-    mutationFn: ({
-      objectiveId,
-      pillarId,
-    }: {
-      objectiveId: string;
-      pillarId: string | null;
-    }) => alignObjective(objectiveId, pillarId, ctx),
-    onMutate: async ({ objectiveId, pillarId }) => {
-      await queryClient.cancelQueries({ queryKey: strategyKey });
-      const previousStrategy =
-        queryClient.getQueryData<StrategyMap>(strategyKey);
-
-      queryClient.setQueryData<StrategyMap>(strategyKey, (strategy) => {
-        if (!strategy) return strategy;
-        return alignObjectiveInStrategy(strategy, objectiveId, pillarId);
-      });
-
-      return { previousStrategy };
-    },
-    onError: (error, _variables, context) => {
-      if (context?.previousStrategy) {
-        queryClient.setQueryData(strategyKey, context.previousStrategy);
-      }
-      handleStrategyError(error);
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: strategyKey });
-      void queryClient.invalidateQueries({
-        queryKey: objectiveKeys.list(workspaceSlug),
-      });
-    },
-  });
-};
 
 export const useStrategyMutations = () => {
   const queryClient = useQueryClient();

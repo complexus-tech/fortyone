@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { redirect } from "next/navigation";
-import { workspaceKeys } from "@/constants/keys";
 import { acceptInvitation } from "../actions/accept-invitation";
-import { invitationKeys } from "../keys";
-import type { Invitation } from "../types";
+import {
+  optimisticallyAcceptInvitation,
+  reconcileAcceptedInvitation,
+  rollbackAcceptedInvitation,
+} from "../mutations/cache";
 
 const isFortyOneApp = process.env.NEXT_PUBLIC_DOMAIN === "fortyone.app";
 
@@ -15,22 +17,9 @@ export const useAcceptInvitationMutation = () => {
   const mutation = useMutation({
     mutationFn: (inviteToken: string) => acceptInvitation(inviteToken),
     onMutate: async (inviteToken) => {
-      await queryClient.cancelQueries({
-        queryKey: invitationKeys.mine,
-      });
-
-      const previousMineInvitations = queryClient.getQueryData<Invitation[]>(
-        invitationKeys.mine,
-      );
-
-      // get invitation that is being accepted
-      const invitation = previousMineInvitations?.find(
-        (invitation) => invitation.token === inviteToken,
-      );
-
-      // Optimistically remove the invitation from the cache
-      queryClient.setQueryData(invitationKeys.mine, (old: Invitation[] = []) =>
-        old.filter((invitation) => invitation.token !== inviteToken),
+      const context = await optimisticallyAcceptInvitation(
+        queryClient,
+        inviteToken,
       );
 
       toast.loading("Accepting invitation...", {
@@ -38,14 +27,10 @@ export const useAcceptInvitationMutation = () => {
         id: toastId,
       });
 
-      return { previousMineInvitations, invitation };
+      return context;
     },
     onError: (error, variables, context) => {
-      // Restore the previous data
-      queryClient.setQueryData(
-        invitationKeys.mine,
-        context?.previousMineInvitations,
-      );
+      rollbackAcceptedInvitation(queryClient, context);
 
       toast.error("Failed to accept", {
         id: toastId,
@@ -88,10 +73,7 @@ export const useAcceptInvitationMutation = () => {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: invitationKeys.mine });
-      queryClient.invalidateQueries({
-        queryKey: workspaceKeys.lists(),
-      });
+      reconcileAcceptedInvitation(queryClient);
     },
   });
 

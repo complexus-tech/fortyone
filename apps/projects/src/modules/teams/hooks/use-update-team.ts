@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useWorkspacePath } from "@/hooks";
-import { useAnalytics } from "@/hooks";
+import { useWorkspacePath, useAnalytics } from "@/hooks";
 import { teamKeys } from "@/constants/keys";
 import type { Team, UpdateTeamInput } from "../types";
 import { updateTeamAction } from "../actions/update-team";

@@ -2,10 +2,10 @@
 
 import { Button, Box, Flex, Text, Wrapper, Avatar } from "ui";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { redirect } from "next/navigation";
-import type { Invitation } from "@/modules/invitations/types";
-import { acceptInvitation } from "@/modules/invitations/actions/accept-invitation";
+import { acceptInvitation } from "@/modules/invitations/public/onboarding";
+import type { Invitation } from "@/modules/invitations/public/types";
 import { buildWorkspaceUrl } from "@/utils";
 import { useWorkspaces } from "@/lib/hooks/workspaces";
 
@@ -18,21 +18,38 @@ export const JoinForm = ({
 }) => {
   const { workspaceName, workspaceSlug } = invitation;
   const [isLoading, setIsLoading] = useState(false);
+  const latestRequestVersionRef = useRef(0);
   const { data: workspaces = [] } = useWorkspaces();
 
-  const handleJoin = async () => {
+  const handleJoin = () => {
+    const requestVersion = latestRequestVersionRef.current + 1;
+    latestRequestVersionRef.current = requestVersion;
     setIsLoading(true);
-    const res = await acceptInvitation(token);
-    if (res.error?.message) {
-      toast.error("Failed to join workspace", {
-        description: res.error.message,
+    void acceptInvitation(token)
+      .then((res) => {
+        if (requestVersion !== latestRequestVersionRef.current) {
+          return;
+        }
+
+        if (res.error?.message) {
+          toast.error("Failed to join workspace", {
+            description: res.error.message,
+          });
+          return;
+        }
+
+        if (workspaces.length === 0) {
+          redirect("/onboarding/account");
+          return;
+        }
+
+        redirect(buildWorkspaceUrl(workspaceSlug));
+      })
+      .finally(() => {
+        if (requestVersion === latestRequestVersionRef.current) {
+          setIsLoading(false);
+        }
       });
-      setIsLoading(false);
-    } else if (workspaces.length === 0) {
-      redirect("/onboarding/account");
-    } else {
-      redirect(buildWorkspaceUrl(workspaceSlug));
-    }
   };
 
   return (

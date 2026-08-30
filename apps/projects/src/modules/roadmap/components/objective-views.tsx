@@ -63,7 +63,9 @@ export const ObjectiveViews = ({
         objectives={objectives}
         onObjectiveSelect={selectObjective}
         onZoomLevelChange={onZoomLevelChange}
-        selectedObjectiveId={selectedObjective?.id}
+        selectedObjectiveId={
+          selectedObjective?.id ?? selectedKeyResult?.objective.id
+        }
         zoomLevel={zoomLevel}
       />
     );
@@ -75,6 +77,9 @@ export const ObjectiveViews = ({
         onCreateObjective={onCreateObjective}
         onKeyResultSelect={selectKeyResult}
         onObjectiveSelect={selectObjective}
+        selectedObjectiveId={
+          selectedObjective?.id ?? selectedKeyResult?.objective.id
+        }
         setViewOptions={setViewOptions}
         viewOptions={viewOptions}
       />

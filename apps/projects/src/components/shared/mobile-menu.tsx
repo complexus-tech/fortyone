@@ -12,8 +12,8 @@ export const MobileMenuButton = () => {
     <Box className="md:hidden">
       <Button
         asIcon
-        color="tertiary"
         className="mr-1"
+        color="tertiary"
         leftIcon={<MenuIcon />}
         onClick={() => {
           setIsOpen(true);

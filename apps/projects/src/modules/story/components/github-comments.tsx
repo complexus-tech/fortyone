@@ -13,7 +13,7 @@ import {
   TextEditor,
   TimeAgo,
 } from "ui";
-import { LinkIcon, NewTabIcon } from "icons";
+import { LinkIcon } from "icons";
 import { useSession } from "@/lib/auth/client";
 import {
   useStoryGitHubComments,
@@ -30,9 +30,9 @@ const CommentRow = ({ comment }: { comment: GitHubComment }) => (
     <Flex align="center" gap={1}>
       <Box className="bg-surface relative top-px flex aspect-square items-center rounded-full p-[0.3rem]">
         <Avatar
+          className="relative top-0.5"
           name={comment.userLogin}
           size="xs"
-          className="relative top-0.5"
           src={comment.userAvatar || undefined}
         />
       </Box>
@@ -112,9 +112,9 @@ const GitHubCommentInput = ({ storyId }: { storyId: string }) => {
     <Flex align="start" className="mb-3">
       <Box className="bg-surface z-1 flex aspect-square items-center rounded-full p-[0.3rem]">
         <Avatar
-          name={session?.user?.name ?? undefined}
+          name={session?.user.name ?? undefined}
           size="xs"
-          src={session?.user?.image ?? undefined}
+          src={session?.user.image ?? undefined}
         />
       </Box>
       <Flex
@@ -156,18 +156,28 @@ export const GitHubCommentsPanel = ({
     hasLinks,
   );
 
+  const commentsContent = (() => {
+    if (isLoading) {
+      return <CommentsSkeleton />;
+    }
+
+    if (!comments || comments.length === 0) {
+      return null;
+    }
+
+    return (
+      <Box>
+        {comments.map((comment) => (
+          <CommentRow comment={comment} key={comment.id} />
+        ))}
+      </Box>
+    );
+  })();
+
   return (
     <Box>
       <GitHubCommentInput storyId={storyId} />
-      {isLoading ? (
-        <CommentsSkeleton />
-      ) : comments && comments.length > 0 ? (
-        <Box>
-          {comments.map((comment) => (
-            <CommentRow comment={comment} key={comment.id} />
-          ))}
-        </Box>
-      ) : null}
+      {commentsContent}
     </Box>
   );
 };

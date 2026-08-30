@@ -51,7 +51,6 @@ export const useUpdateGitHubTeamSettings = (teamId: string) => {
       if (res.error?.message) {
         toast.error("GitHub", { description: res.error.message });
         queryClient.invalidateQueries({ queryKey });
-        return;
       }
     },
     onSettled: () => {

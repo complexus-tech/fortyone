@@ -10,7 +10,10 @@ export const listAttachments = tool({
     storyId: z.string().describe("Story ID to list attachments for (required)"),
   }),
 
-  execute: async ({ storyId }, { experimental_context }) => {
+  execute: async (
+    { storyId },
+    { experimental_context: experimentalContext },
+  ) => {
     try {
       const session = await auth();
 
@@ -21,7 +24,7 @@ export const listAttachments = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

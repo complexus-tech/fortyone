@@ -7,5 +7,5 @@ export const getTotalMessagesForTheMonth = async (ctx: WorkspaceCtx) => {
     "chat-sessions/messages/count",
     ctx,
   );
-  return chats?.data?.count || 0;
+  return chats.data?.count || 0;
 };

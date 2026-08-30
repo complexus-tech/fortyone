@@ -3,7 +3,7 @@
 import { ApiError } from "api-client";
 import { auth } from "@/auth";
 import { remove } from "@/lib/http";
-import { StoryDeletionOutcomeUncertainError } from "@/modules/story/actions/story-deletion-error";
+import { StoryDeletionOutcomeUncertainError } from "@/shared/story/deletion";
 import { bulkDeleteAction } from "./bulk-delete-stories";
 
 jest.mock("api-client", () => ({

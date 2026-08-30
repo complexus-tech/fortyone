@@ -27,7 +27,7 @@ const applyTheme = (theme: Theme) => {
 };
 
 export const useTheme = () => {
-  const [theme, setThemeState] = useState<Theme>(() => {
+  const [theme, setTheme] = useState<Theme>(() => {
     const initialTheme = getTheme();
     applyTheme(initialTheme);
     return initialTheme;
@@ -35,7 +35,7 @@ export const useTheme = () => {
 
   const toggleTheme = () => {
     const nextTheme = theme === "light" ? "dark" : "light";
-    setThemeState(nextTheme);
+    setTheme(nextTheme);
     window.localStorage.setItem("theme", nextTheme);
     applyTheme(nextTheme);
   };

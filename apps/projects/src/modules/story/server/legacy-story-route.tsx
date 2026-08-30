@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { StoryRouteNotFound } from "@/modules/story/components/story-route-not-found";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import { withWorkspacePath } from "@/utils";
 import { getStoryRouteData } from "./get-story-route-data";
 

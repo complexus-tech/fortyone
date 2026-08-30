@@ -1,8 +1,8 @@
 "use client";
 
 import { Box, Button, Text } from "ui";
-import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
-import { SectionHeader } from "../components";
+import { useMyInvitations } from "@/modules/invitations/public/client";
+import { SectionHeader } from "../components/section-header";
 import { InvitationRow } from "./components/invite";
 
 export const InvitationsPage = () => {

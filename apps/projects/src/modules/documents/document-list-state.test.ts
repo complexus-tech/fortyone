@@ -2,6 +2,7 @@
 
 import {
   filterAndSortDocumentSummaries,
+  getDocumentPageAfterArchive,
   getDocumentListState,
   paginateDocumentSummaries,
 } from "./document-list-state";
@@ -154,5 +155,11 @@ describe("document list state", () => {
       start: 0,
       total: 0,
     });
+  });
+
+  it("returns to the previous page only when an archive empties the current page", () => {
+    expect(getDocumentPageAfterArchive(3, 1)).toBe(2);
+    expect(getDocumentPageAfterArchive(1, 1)).toBe(1);
+    expect(getDocumentPageAfterArchive(3, 2)).toBe(3);
   });
 });

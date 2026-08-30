@@ -14,9 +14,9 @@ import {
 } from "@/hooks";
 import { useMyInvitations } from "@/modules/invitations/hooks/my-invitations";
 import { useSubscriptionFeatures } from "@/lib/hooks/subscription-features";
+import { Commands } from "@/shell/commands/commands";
 import { MobileMenuButton } from "../shared/mobile-menu";
 import { NavLink } from "../ui";
-import { Commands } from "../shared/commands";
 
 export const SettingsLayout = ({ children }: { children: ReactNode }) => {
   const { userRole } = useUserRole();

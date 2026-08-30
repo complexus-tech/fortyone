@@ -1,43 +1,9 @@
 "use client";
-import {
-  useDeferredValue,
-  useMemo,
-  useState,
-  type ReactNode,
-  type UIEvent,
-} from "react";
-import {
-  Avatar,
-  Box,
-  Button,
-  Calendar,
-  Command,
-  Divider,
-  Dialog,
-  Flex,
-  Input,
-  Menu,
-  Popover,
-  Text,
-} from "ui";
-import {
-  AssigneeIcon,
-  CalendarIcon,
-  CheckIcon,
-  ChevronRightIcon,
-  CloseIcon,
-  EstimateIcon,
-  ListIcon,
-  ObjectiveIcon,
-  OKRIcon,
-  PlusIcon,
-  SprintsIcon,
-  TagsIcon,
-  TeamIcon,
-  UserIcon,
-} from "icons";
-import { format, formatISO } from "date-fns";
+
+import { useDeferredValue, useState } from "react";
 import { useParams } from "next/navigation";
+import { Box, Button, Flex, Menu, Text } from "ui";
+import { ChevronRightIcon, PlusIcon } from "icons";
 import { useStatuses } from "@/lib/hooks/statuses";
 import {
   MEMBER_MENU_PAGE_SIZE,
@@ -63,528 +29,61 @@ import {
   useTeamObjectives,
   useTeamObjectivesInfinite,
 } from "@/modules/objectives/hooks/use-objectives";
-import type { StoryPriority } from "@/modules/stories/types";
 import { useTeamSettings } from "@/modules/teams/hooks/use-team-settings";
-import { useTerminology } from "@/hooks";
 import { useKeyResults } from "@/modules/objectives/hooks";
-import {
-  LABEL_MENU_PAGE_SIZE,
-  useLabels,
-  useLabelsInfinite,
-} from "@/lib/hooks/labels";
-import {
-  DEFAULT_ESTIMATE_SCHEME,
-  formatEstimate,
-  getEstimateOptions,
-  type EstimateScheme,
-} from "@/lib/estimate";
+import { useTerminology } from "@/hooks/use-terminology-display";
+import { useLabels } from "@/lib/hooks/labels";
+import { DEFAULT_ESTIMATE_SCHEME, type EstimateScheme } from "@/lib/estimate";
 import { getScopedStoriesFilterTeamId } from "./stories-filter-query";
-import type {
-  StoriesFilter,
-  StoriesFilterOperator,
-  StoriesFilterOperatorField,
-} from "./stories-filter-types";
+import type { StoriesFilterOperator } from "./stories-filter-types";
 import { getStoriesFilterOperator } from "./stories-filter-types";
-import { MenuLoadingSkeleton } from "./menu-loading-skeleton";
-import { PriorityIcon } from "./priority-icon";
-import { StoryStatusIcon } from "./story-status-icon";
-import { TeamColor } from "./team-color";
 import { hasActiveStoriesFilters } from "./stories-filter-utils";
+import {
+  DateEditor,
+  EstimateEditor,
+  LabelEditor,
+} from "./stories-filter-bar/attribute-editors";
+import { buildFilterChips } from "./stories-filter-bar/filter-chips";
+import { buildFilterOptions } from "./stories-filter-bar/filter-options";
+import {
+  StoriesFilterChip,
+  TitleFilterDialog,
+} from "./stories-filter-bar/filter-chip";
+import {
+  EMPTY_FILTER_FIELDS,
+  getEditorContentClassName,
+  isFilterOperatorField,
+  removeStoriesFilterField,
+} from "./stories-filter-bar/filter-model";
+import {
+  PeopleEditor,
+  PriorityEditor,
+  StatusEditor,
+  type FilterMemberOption,
+  type FilterStatusOption,
+} from "./stories-filter-bar/people-editors";
+import {
+  KeyResultEditor,
+  ObjectiveEditor,
+  SprintEditor,
+  TeamEditor,
+} from "./stories-filter-bar/planning-editors";
+import type {
+  StoriesFilterBarProps,
+  StoriesFilterEditorProps,
+  StoriesFilterField,
+} from "./stories-filter-bar/types";
 
-export type StoriesFilterField =
-  | "contentContains"
-  | "statusIds"
-  | "assigneeIds"
-  | "reporterIds"
-  | "priorities"
-  | "teamIds"
-  | "sprintIds"
-  | "labelIds"
-  | "estimateValues"
-  | "objectiveId"
-  | "keyResultId"
-  | "startDate"
-  | "endDate"
-  | "assignedToMe"
-  | "createdByMe"
-  | "hasNoAssignee";
+export type { StoriesFilterField } from "./stories-filter-bar/types";
 
-type FilterChip = {
-  field: StoriesFilterField;
-  label: string;
-  operator: string;
-  operatorOptions?: readonly OperatorOption[];
-  value: ReactNode;
-  icon?: ReactNode;
-};
+type EditorContainerProps = StoriesFilterEditorProps & { teamId?: string };
 
-type OperatorOption = {
-  label: string;
-  value: StoriesFilterOperator;
-};
-
-type FilterOption = {
-  field: StoriesFilterField;
-  icon: ReactNode;
-  label: string;
-};
-
-type StoriesFilterBarProps = {
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-  resetFilters: () => void;
-  hiddenFields?: readonly StoriesFilterField[];
-  showWhenEmpty?: boolean;
-};
-
-const EMPTY_FILTER_FIELDS: readonly StoriesFilterField[] = [];
-
-const CONTENT_OPERATOR_OPTIONS = [
-  { label: "contains", value: "contains" },
-  { label: "does not contain", value: "doesNotContain" },
-] as const satisfies readonly OperatorOption[];
-
-const MULTI_VALUE_OPERATOR_OPTIONS = [
-  { label: "is any of", value: "isAnyOf" },
-  { label: "is not any of", value: "isNotAnyOf" },
-] as const satisfies readonly OperatorOption[];
-
-const SINGLE_VALUE_OPERATOR_OPTIONS = [
-  { label: "is", value: "is" },
-  { label: "is not", value: "isNot" },
-] as const satisfies readonly OperatorOption[];
-
-const DATE_OPERATOR_OPTIONS = [
-  { label: "is", value: "is" },
-  { label: "is on or before", value: "isOnOrBefore" },
-  { label: "is on or after", value: "isOnOrAfter" },
-  { label: "is not", value: "isNot" },
-] as const satisfies readonly OperatorOption[];
-
-const ASSIGNEE_PRESENCE_OPERATOR_OPTIONS = [
-  { label: "is", value: "isEmpty" },
-  { label: "is not", value: "isNotEmpty" },
-] as const satisfies readonly OperatorOption[];
-
-const FILTER_OPERATOR_FIELDS = new Set<StoriesFilterField>([
-  "contentContains",
-  "statusIds",
-  "assigneeIds",
-  "reporterIds",
-  "priorities",
-  "teamIds",
-  "sprintIds",
-  "labelIds",
-  "estimateValues",
-  "objectiveId",
-  "startDate",
-  "endDate",
-  "hasNoAssignee",
-]);
-
-const isFilterOperatorField = (
-  field: StoriesFilterField,
-): field is StoriesFilterOperatorField => FILTER_OPERATOR_FIELDS.has(field);
-
-const getOperatorOptions = (field: StoriesFilterOperatorField) => {
-  if (field === "contentContains") {
-    return CONTENT_OPERATOR_OPTIONS;
-  }
-
-  if (field === "startDate" || field === "endDate") {
-    return DATE_OPERATOR_OPTIONS;
-  }
-
-  if (field === "objectiveId") {
-    return SINGLE_VALUE_OPERATOR_OPTIONS;
-  }
-
-  if (field === "hasNoAssignee") {
-    return ASSIGNEE_PRESENCE_OPERATOR_OPTIONS;
-  }
-
-  return MULTI_VALUE_OPERATOR_OPTIONS;
-};
-
-const getOperatorConfig = (
-  filters: StoriesFilter,
-  field: StoriesFilterOperatorField,
-) => {
-  const operator = getStoriesFilterOperator(filters, field);
-  const operatorOptions = getOperatorOptions(field);
-
-  return {
-    operator:
-      operatorOptions.find((option) => option.value === operator)?.label ??
-      operatorOptions[0].label,
-    operatorOptions,
-  };
-};
-
-const getNames = (
-  ids: string[] | null | undefined,
-  labelsById: Map<string, string>,
-) => {
-  if (!ids?.length) {
-    return "";
-  }
-
-  return ids.map((id) => labelsById.get(id) ?? id).join(", ");
-};
-
-const normalizeArrayFilter = (values: string[]) =>
-  values.length > 0 ? values : null;
-
-const normalizeNumberArrayFilter = (values: number[]) =>
-  values.length > 0 ? values : null;
-
-const getPluralLabel = (count: number, singular: string, plural: string) =>
-  `${count} ${count === 1 ? singular : plural}`;
-
-type UserChipSummary = {
-  avatarUrl: string | null;
-  id: string;
-  name: string;
-  username: string;
-};
-
-const PeopleChipValue = ({
-  label,
-  pluralLabel,
-  users,
-}: {
-  label: string;
-  pluralLabel: string;
-  users: UserChipSummary[];
-}) => {
-  const visibleUsers = users.slice(0, 2);
-
-  if (users.length > 2) {
-    return (
-      <Flex align="center" gap={1}>
-        <Flex align="center" className="-space-x-1">
-          {visibleUsers.map((user) => (
-            <Avatar
-              className="ring-background ring-1"
-              color="primary"
-              key={user.id}
-              name={user.name}
-              size="xs"
-              src={user.avatarUrl}
-            />
-          ))}
-        </Flex>
-        <span>{getPluralLabel(users.length, label, pluralLabel)}</span>
-      </Flex>
-    );
-  }
-
-  return (
-    <Flex align="center" gap={2}>
-      {visibleUsers.map((user) => (
-        <Flex align="center" gap={1} key={user.id}>
-          <Avatar
-            color="primary"
-            name={user.name}
-            size="xs"
-            src={user.avatarUrl}
-          />
-          <span>{user.username}</span>
-        </Flex>
-      ))}
-    </Flex>
-  );
-};
-
-type StatusChipSummary = {
-  id: string;
-  name: string;
-};
-
-const StatusChipValue = ({ statuses }: { statuses: StatusChipSummary[] }) => {
-  const visibleStatuses = statuses.slice(0, 2);
-
-  if (statuses.length > 2) {
-    return (
-      <Flex align="center" gap={1}>
-        <Flex align="center" className="-space-x-0.5">
-          {visibleStatuses.map((status) => (
-            <StoryStatusIcon
-              className="ring-background size-3 ring-1"
-              key={status.id}
-              statusId={status.id}
-            />
-          ))}
-        </Flex>
-        <span>{getPluralLabel(statuses.length, "status", "statuses")}</span>
-      </Flex>
-    );
-  }
-
-  return (
-    <Flex align="center" gap={2}>
-      {visibleStatuses.map((status) => (
-        <Flex align="center" gap={1} key={status.id}>
-          <StoryStatusIcon statusId={status.id} />
-          <span>{status.name}</span>
-        </Flex>
-      ))}
-    </Flex>
-  );
-};
-
-const PriorityChipValue = ({ priorities }: { priorities: StoryPriority[] }) => {
-  const visiblePriorities = priorities.slice(0, 2);
-
-  if (priorities.length > 2) {
-    return (
-      <Flex align="center" gap={1}>
-        <PriorityIcon priority="High" />
-        <span>
-          {getPluralLabel(priorities.length, "priority", "priorities")}
-        </span>
-      </Flex>
-    );
-  }
-
-  return (
-    <Flex align="center" gap={2}>
-      {visiblePriorities.map((priority) => (
-        <Flex align="center" gap={1} key={priority}>
-          <PriorityIcon priority={priority} />
-          <span>{priority}</span>
-        </Flex>
-      ))}
-    </Flex>
-  );
-};
-
-type LabelChipSummary = {
-  color: string;
-  id: string;
-  name: string;
-};
-
-const LabelChipValue = ({ labels }: { labels: LabelChipSummary[] }) => {
-  const visibleLabels = labels.slice(0, 2);
-
-  if (labels.length > 2) {
-    return (
-      <Flex align="center" gap={1}>
-        <TagsIcon
-          className="h-4 w-auto"
-          style={{ color: visibleLabels[0]?.color }}
-        />
-        <span>{getPluralLabel(labels.length, "label", "labels")}</span>
-      </Flex>
-    );
-  }
-
-  return (
-    <Flex align="center" gap={2}>
-      {visibleLabels.map((label) => (
-        <Flex align="center" gap={1} key={label.id}>
-          <TagsIcon className="h-4 w-auto" style={{ color: label.color }} />
-          <span>{label.name}</span>
-        </Flex>
-      ))}
-    </Flex>
-  );
-};
-
-const EstimateChipValue = ({
-  estimateScheme,
-  estimateValues,
-}: {
-  estimateScheme: EstimateScheme;
-  estimateValues: number[];
-}) => {
-  const visibleValues = estimateValues.slice(0, 2);
-
-  if (estimateValues.length > 2) {
-    return (
-      <Flex align="center" gap={1}>
-        <EstimateIcon className="h-4 w-auto" />
-        <span>
-          {getPluralLabel(
-            estimateValues.length,
-            "complexity value",
-            "complexity values",
-          )}
-        </span>
-      </Flex>
-    );
-  }
-
-  return (
-    <Flex align="center" gap={2}>
-      {visibleValues.map((estimateValue) => (
-        <Flex align="center" gap={1} key={estimateValue}>
-          <EstimateIcon className="h-4 w-auto" />
-          <span>{formatEstimate(estimateScheme, estimateValue, "full")}</span>
-        </Flex>
-      ))}
-    </Flex>
-  );
-};
-
-const getEditorContentClassName = (field: StoriesFilterField) => {
-  if (field === "contentContains") {
-    return "w-80 overflow-hidden py-2";
-  }
-
-  if (field === "objectiveId") {
-    return "w-96 overflow-hidden py-2";
-  }
-
-  if (field === "assigneeIds" || field === "reporterIds") {
-    return "w-80 overflow-hidden py-2";
-  }
-
-  if (field === "startDate" || field === "endDate") {
-    return "w-auto overflow-hidden py-2";
-  }
-
-  return "w-64 overflow-hidden py-2";
-};
-
-const TitleFilterDialog = ({
-  open,
-  onOpenChange,
-  filters,
-  setFilters,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
-  const [draft, setDraft] = useState(filters.contentContains ?? "");
-
-  const applyTitleFilter = () => {
-    const contentContains = draft.trim();
-    setFilters({
-      ...filters,
-      contentContains: contentContains ? contentContains : null,
-    });
-    onOpenChange(false);
-  };
-
-  return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <Dialog.Content className="max-w-lg" hideClose>
-        <Dialog.Header className="px-6 pt-6">
-          <Dialog.Title className="text-lg">Filter by content</Dialog.Title>
-        </Dialog.Header>
-        <Dialog.Body className="pt-1">
-          <Input
-            autoFocus
-            onChange={(event) => {
-              setDraft(event.target.value);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                applyTitleFilter();
-              }
-            }}
-            placeholder="Content contains..."
-            value={draft}
-          />
-        </Dialog.Body>
-        <Dialog.Footer className="justify-end gap-3 border-0 pt-2">
-          <Button
-            color="tertiary"
-            onClick={() => {
-              onOpenChange(false);
-            }}
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button onClick={applyTitleFilter}>Apply</Button>
-        </Dialog.Footer>
-      </Dialog.Content>
-    </Dialog>
-  );
-};
-
-const StatusEditor = ({
-  filters,
-  setFilters,
-}: {
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
-  const { teamId } = useParams<{ teamId?: string }>();
-  const [query, setQuery] = useState("");
-  const { data: allStatuses = [] } = useStatuses();
-  const statuses = teamId
-    ? allStatuses.filter((status) => status.teamId === teamId)
-    : allStatuses;
-  const filteredStatuses = statuses.filter((status) =>
-    status.name.toLowerCase().includes(query.toLowerCase()),
-  );
-
-  const toggleStatus = (statusId: string) => {
-    const selected = filters.statusIds ?? [];
-    const statusIds = selected.includes(statusId)
-      ? selected.filter((id) => id !== statusId)
-      : [...selected, statusId];
-    setFilters({ ...filters, statusIds: normalizeArrayFilter(statusIds) });
-  };
-
-  return (
-    <Command>
-      <Command.Input
-        autoFocus
-        onValueChange={setQuery}
-        placeholder="Search status..."
-        value={query}
-      />
-      <Divider className="my-2" />
-      <Command.Empty className="py-2">
-        <Text color="muted">No statuses found.</Text>
-      </Command.Empty>
-      <Command.Group className="max-h-80 overflow-y-auto">
-        {filteredStatuses.map((status, idx) => (
-          <Command.Item
-            active={Boolean(filters.statusIds?.includes(status.id))}
-            className="justify-between gap-4"
-            key={status.id}
-            onSelect={() => {
-              toggleStatus(status.id);
-            }}
-            value={status.name}
-          >
-            <Box className="grid min-w-0 flex-1 grid-cols-[16px_minmax(0,1fr)] items-center">
-              <span className="min-w-0">
-                <StoryStatusIcon statusId={status.id} />
-              </span>
-              <Text className="max-w-[22ch] truncate">{status.name}</Text>
-            </Box>
-            <Flex align="center" className="shrink-0" gap={2}>
-              {filters.statusIds?.includes(status.id) ? (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              ) : null}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Command.Item>
-        ))}
-      </Command.Group>
-    </Command>
-  );
-};
-
-const PeopleEditor = ({
+const PeopleEditorContainer = ({
   field,
   filters,
   setFilters,
-}: {
-  field: "assigneeIds" | "reporterIds";
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
-  const { teamId } = useParams<{ teamId?: string }>();
+  teamId,
+}: EditorContainerProps & { field: "assigneeIds" | "reporterIds" }) => {
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const workspaceMembersQuery = useMembersInfinite(
@@ -601,278 +100,60 @@ const PeopleEditor = ({
   const membersQuery = teamId ? teamMembersQuery : workspaceMembersQuery;
   const members =
     membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
-  const isLoadingMembers =
-    membersQuery.isFetching && !membersQuery.isFetchingNextPage;
-
-  const toggleMember = (memberId: string) => {
-    const selected = filters[field] ?? [];
-    const memberIds = selected.includes(memberId)
-      ? selected.filter((id) => id !== memberId)
-      : [...selected, memberId];
-    setFilters({ ...filters, [field]: normalizeArrayFilter(memberIds) });
-  };
-
-  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
-    const target = event.currentTarget;
-    const distanceToBottom =
-      target.scrollHeight - target.scrollTop - target.clientHeight;
-
-    if (
-      distanceToBottom <= 80 &&
-      membersQuery.hasNextPage &&
-      !membersQuery.isFetchingNextPage
-    ) {
-      void membersQuery.fetchNextPage();
-    }
-  };
 
   return (
-    <Command>
-      <Command.Input
-        autoFocus
-        onValueChange={setQuery}
-        placeholder="Search people..."
-        value={query}
-      />
-      <Divider className="my-2" />
-      {!isLoadingMembers ? (
-        <Command.Empty className="py-2">
-          <Text color="muted">No user found.</Text>
-        </Command.Empty>
-      ) : null}
-      <Command.Group
-        className="max-h-80 overflow-y-auto md:max-h-100"
-        onScroll={handleScroll}
-      >
-        {isLoadingMembers ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton avatar rows={5} />
-          </Command.Loading>
-        ) : null}
-        {field === "assigneeIds" ? (
-          <Command.Item
-            active={Boolean(filters.hasNoAssignee)}
-            className="justify-between gap-4"
-            onSelect={() => {
-              setFilters({
-                ...filters,
-                assigneeIds: null,
-                hasNoAssignee: filters.hasNoAssignee ? null : true,
-              });
-            }}
-            value="No assignee"
-          >
-            <Flex align="center" className="min-w-0 flex-1" gap={2}>
-              <Avatar
-                className="text-foreground/80"
-                color="primary"
-                size="sm"
-              />
-              <Text className="max-w-48 truncate">No assignee</Text>
-            </Flex>
-            <Flex align="center" className="shrink-0" gap={1}>
-              {filters.hasNoAssignee ? (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              ) : null}
-              <Text color="muted">0</Text>
-            </Flex>
-          </Command.Item>
-        ) : null}
-        {members.map((member, idx) => {
-          const name = member.fullName || member.username || member.email;
-          return (
-            <Command.Item
-              active={Boolean(filters[field]?.includes(member.id))}
-              className="justify-between gap-4"
-              key={member.id}
-              onSelect={() => {
-                toggleMember(member.id);
-              }}
-              value={name}
-            >
-              <Flex align="center" className="min-w-0 flex-1" gap={2}>
-                <Avatar
-                  color="primary"
-                  name={name}
-                  size="sm"
-                  src={member.avatarUrl}
-                />
-                <Text className="max-w-48 truncate">{name}</Text>
-              </Flex>
-              <Flex align="center" className="shrink-0" gap={1}>
-                {filters[field]?.includes(member.id) ? (
-                  <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                ) : null}
-                <Text color="muted">
-                  {idx + (field === "assigneeIds" ? 1 : 0)}
-                </Text>
-              </Flex>
-            </Command.Item>
-          );
-        })}
-        {membersQuery.isFetchingNextPage ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton avatar rows={2} />
-          </Command.Loading>
-        ) : null}
-      </Command.Group>
-    </Command>
+    <PeopleEditor
+      field={field}
+      filters={filters}
+      hasNextPage={Boolean(membersQuery.hasNextPage)}
+      isFetchingNextPage={membersQuery.isFetchingNextPage}
+      isLoading={Boolean(
+        membersQuery.isFetching && !membersQuery.isFetchingNextPage,
+      )}
+      members={members satisfies FilterMemberOption[]}
+      onFetchNextPage={() => {
+        void membersQuery.fetchNextPage();
+      }}
+      onQueryChange={setQuery}
+      query={query}
+      setFilters={setFilters}
+    />
   );
 };
 
-const PriorityEditor = ({
+const TeamEditorContainer = ({
   filters,
   setFilters,
-}: {
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
-  const priorities = [
-    "Urgent",
-    "High",
-    "Medium",
-    "Low",
-    "No Priority",
-  ] as StoryPriority[];
-
-  const togglePriority = (priority: StoryPriority) => {
-    const selected = filters.priorities ?? [];
-    const priorities = selected.includes(priority)
-      ? selected.filter((value) => value !== priority)
-      : [...selected, priority];
-    setFilters({ ...filters, priorities: normalizeArrayFilter(priorities) });
-  };
-
-  return (
-    <Command>
-      <Command.Input autoFocus placeholder="Change priority..." />
-      <Divider className="my-2" />
-      <Command.Empty className="py-2">
-        <Text color="muted">No priority found.</Text>
-      </Command.Empty>
-      <Command.Group>
-        {priorities.map((priority, idx) => (
-          <Command.Item
-            active={Boolean(filters.priorities?.includes(priority))}
-            className="justify-between gap-4"
-            key={priority}
-            onSelect={() => {
-              togglePriority(priority);
-            }}
-            value={priority}
-          >
-            <Box className="grid min-w-0 flex-1 grid-cols-[24px_minmax(0,1fr)] items-center">
-              <PriorityIcon priority={priority} />
-              <Text className="truncate">{priority}</Text>
-            </Box>
-            <Flex align="center" className="shrink-0" gap={2}>
-              {filters.priorities?.includes(priority) ? (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              ) : null}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Command.Item>
-        ))}
-      </Command.Group>
-    </Command>
-  );
-};
-
-const TeamEditor = ({
-  filters,
-  setFilters,
-}: {
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
+}: StoriesFilterEditorProps) => {
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useTeamsInfinite(deferredQuery, TEAM_MENU_PAGE_SIZE);
-  const teams = data?.pages.flatMap((page) => page.teams) ?? [];
-  const isLoadingTeams = isFetching && !isFetchingNextPage;
-
-  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
-    const target = event.currentTarget;
-    const distanceToBottom =
-      target.scrollHeight - target.scrollTop - target.clientHeight;
-
-    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage();
-    }
-  };
-
-  const toggleTeam = (teamId: string) => {
-    const selected = filters.teamIds ?? [];
-    const teamIds = selected.includes(teamId)
-      ? selected.filter((id) => id !== teamId)
-      : [...selected, teamId];
-    setFilters({ ...filters, teamIds: normalizeArrayFilter(teamIds) });
-  };
+  const teamsQuery = useTeamsInfinite(deferredQuery, TEAM_MENU_PAGE_SIZE);
+  const teams = teamsQuery.data?.pages.flatMap((page) => page.teams) ?? [];
 
   return (
-    <Command>
-      <Command.Input
-        autoFocus
-        onValueChange={setQuery}
-        placeholder="Search teams..."
-        value={query}
-      />
-      <Divider className="my-2" />
-      {!isLoadingTeams ? (
-        <Command.Empty className="py-2">
-          <Text color="muted">No teams found.</Text>
-        </Command.Empty>
-      ) : null}
-      <Command.Group
-        className="max-h-80 overflow-y-auto"
-        onScroll={handleScroll}
-      >
-        {isLoadingTeams ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={5} />
-          </Command.Loading>
-        ) : null}
-        {teams.map((team, idx) => (
-          <Command.Item
-            active={Boolean(filters.teamIds?.includes(team.id))}
-            className="justify-between gap-4"
-            key={team.id}
-            onSelect={() => {
-              toggleTeam(team.id);
-            }}
-            value={team.name}
-          >
-            <Flex align="center" className="min-w-0 flex-1" gap={2}>
-              <TeamColor color={team.color} />
-              <Text className="max-w-48 truncate">{team.name}</Text>
-            </Flex>
-            <Flex align="center" className="shrink-0" gap={2}>
-              {filters.teamIds?.includes(team.id) ? (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              ) : null}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Command.Item>
-        ))}
-        {isFetchingNextPage ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={2} />
-          </Command.Loading>
-        ) : null}
-      </Command.Group>
-    </Command>
+    <TeamEditor
+      filters={filters}
+      hasNextPage={Boolean(teamsQuery.hasNextPage)}
+      isFetchingNextPage={teamsQuery.isFetchingNextPage}
+      isLoading={Boolean(
+        teamsQuery.isFetching && !teamsQuery.isFetchingNextPage,
+      )}
+      onFetchNextPage={() => {
+        void teamsQuery.fetchNextPage();
+      }}
+      onQueryChange={setQuery}
+      query={query}
+      setFilters={setFilters}
+      teams={teams}
+    />
   );
 };
 
-const SprintEditor = ({
+const SprintEditorContainer = ({
   filters,
   setFilters,
-}: {
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
-  const { teamId } = useParams<{ teamId?: string }>();
+  teamId,
+}: EditorContainerProps) => {
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const scopedTeamId = getScopedStoriesFilterTeamId(
@@ -880,102 +161,41 @@ const SprintEditor = ({
     filters.teamIds,
     getStoriesFilterOperator(filters, "teamIds"),
   );
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useTeamSprintsInfinite(
-      scopedTeamId ?? "",
-      deferredQuery,
-      SPRINT_MENU_PAGE_SIZE,
-    );
-  const sprints = data?.pages.flatMap((page) => page.sprints) ?? [];
-  const isLoadingSprints =
-    Boolean(scopedTeamId) && isFetching && !isFetchingNextPage;
-  const needsSingleTeam = !scopedTeamId;
-
-  const toggleSprint = (sprintId: string) => {
-    const selected = filters.sprintIds ?? [];
-    const sprintIds = selected.includes(sprintId)
-      ? selected.filter((id) => id !== sprintId)
-      : [...selected, sprintId];
-    setFilters({ ...filters, sprintIds: normalizeArrayFilter(sprintIds) });
-  };
-
-  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
-    const target = event.currentTarget;
-    const distanceToBottom =
-      target.scrollHeight - target.scrollTop - target.clientHeight;
-
-    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage();
-    }
-  };
+  const sprintsQuery = useTeamSprintsInfinite(
+    scopedTeamId ?? "",
+    deferredQuery,
+    SPRINT_MENU_PAGE_SIZE,
+  );
+  const sprints =
+    sprintsQuery.data?.pages.flatMap((page) => page.sprints) ?? [];
 
   return (
-    <Command>
-      <Command.Input
-        autoFocus
-        onValueChange={setQuery}
-        placeholder="Search sprints..."
-        value={query}
-      />
-      <Divider className="my-2" />
-      {!isLoadingSprints ? (
-        <Command.Empty className="py-2">
-          <Text color="muted">
-            {needsSingleTeam ? "Select one team first." : "No sprints found."}
-          </Text>
-        </Command.Empty>
-      ) : null}
-      <Command.Group
-        className="max-h-80 overflow-y-auto"
-        onScroll={handleScroll}
-      >
-        {isLoadingSprints ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={5} />
-          </Command.Loading>
-        ) : null}
-        {!needsSingleTeam
-          ? sprints.map((sprint, idx) => (
-              <Command.Item
-                active={Boolean(filters.sprintIds?.includes(sprint.id))}
-                className="justify-between gap-4"
-                key={sprint.id}
-                onSelect={() => {
-                  toggleSprint(sprint.id);
-                }}
-                value={sprint.name}
-              >
-                <Flex align="center" className="min-w-0 flex-1" gap={2}>
-                  <SprintsIcon className="text-text-secondary h-4 w-auto" />
-                  <Text className="max-w-48 truncate">{sprint.name}</Text>
-                </Flex>
-                <Flex align="center" className="shrink-0" gap={2}>
-                  {filters.sprintIds?.includes(sprint.id) ? (
-                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                  ) : null}
-                  <Text color="muted">{idx}</Text>
-                </Flex>
-              </Command.Item>
-            ))
-          : null}
-        {isFetchingNextPage ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={2} />
-          </Command.Loading>
-        ) : null}
-      </Command.Group>
-    </Command>
+    <SprintEditor
+      filters={filters}
+      hasNextPage={Boolean(sprintsQuery.hasNextPage)}
+      isFetchingNextPage={sprintsQuery.isFetchingNextPage}
+      isLoading={Boolean(
+        scopedTeamId &&
+          sprintsQuery.isFetching &&
+          !sprintsQuery.isFetchingNextPage,
+      )}
+      needsSingleTeam={!scopedTeamId}
+      onFetchNextPage={() => {
+        void sprintsQuery.fetchNextPage();
+      }}
+      onQueryChange={setQuery}
+      query={query}
+      setFilters={setFilters}
+      sprints={sprints}
+    />
   );
 };
 
-const ObjectiveEditor = ({
+const ObjectiveEditorContainer = ({
   filters,
   setFilters,
-}: {
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
-  const { teamId } = useParams<{ teamId?: string }>();
+  teamId,
+}: EditorContainerProps) => {
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const scopedTeamId = getScopedStoriesFilterTeamId(
@@ -983,396 +203,127 @@ const ObjectiveEditor = ({
     filters.teamIds,
     getStoriesFilterOperator(filters, "teamIds"),
   );
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useTeamObjectivesInfinite(
-      scopedTeamId ?? "",
-      deferredQuery,
-      OBJECTIVE_MENU_PAGE_SIZE,
-    );
-  const objectives = data?.pages.flatMap((page) => page.objectives) ?? [];
-  const isLoadingObjectives =
-    Boolean(scopedTeamId) && isFetching && !isFetchingNextPage;
-  const needsSingleTeam = !scopedTeamId;
-
-  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
-    const target = event.currentTarget;
-    const distanceToBottom =
-      target.scrollHeight - target.scrollTop - target.clientHeight;
-
-    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage();
-    }
-  };
+  const objectivesQuery = useTeamObjectivesInfinite(
+    scopedTeamId ?? "",
+    deferredQuery,
+    OBJECTIVE_MENU_PAGE_SIZE,
+  );
+  const objectives =
+    objectivesQuery.data?.pages.flatMap((page) => page.objectives) ?? [];
 
   return (
-    <Command>
-      <Command.Input
-        autoFocus
-        onValueChange={setQuery}
-        placeholder="Search objectives..."
-        value={query}
-      />
-      <Divider className="my-2" />
-      {!isLoadingObjectives ? (
-        <Command.Empty className="py-2">
-          <Text color="muted">
-            {needsSingleTeam
-              ? "Select one team first."
-              : "No objectives found."}
-          </Text>
-        </Command.Empty>
-      ) : null}
-      <Command.Group
-        className="max-h-80 overflow-y-auto"
-        onScroll={handleScroll}
-      >
-        {isLoadingObjectives ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={5} />
-          </Command.Loading>
-        ) : null}
-        {!needsSingleTeam
-          ? objectives.map((objective, idx) => (
-              <Command.Item
-                active={filters.objectiveId === objective.id}
-                className="justify-between gap-4"
-                key={objective.id}
-                onSelect={() => {
-                  const objectiveId =
-                    filters.objectiveId === objective.id ? null : objective.id;
-                  setFilters({
-                    ...filters,
-                    objectiveId,
-                    keyResultId:
-                      objectiveId === filters.objectiveId
-                        ? filters.keyResultId
-                        : null,
-                  });
-                }}
-                value={objective.name}
-              >
-                <Flex align="center" className="min-w-0 flex-1" gap={2}>
-                  <ObjectiveIcon className="text-text-secondary h-4 w-auto" />
-                  <Text className="max-w-64 truncate">{objective.name}</Text>
-                </Flex>
-                <Flex align="center" className="shrink-0" gap={2}>
-                  {filters.objectiveId === objective.id ? (
-                    <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-                  ) : null}
-                  <Text color="muted">{idx}</Text>
-                </Flex>
-              </Command.Item>
-            ))
-          : null}
-        {isFetchingNextPage ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={2} />
-          </Command.Loading>
-        ) : null}
-      </Command.Group>
-    </Command>
+    <ObjectiveEditor
+      filters={filters}
+      hasNextPage={Boolean(objectivesQuery.hasNextPage)}
+      isFetchingNextPage={objectivesQuery.isFetchingNextPage}
+      isLoading={Boolean(
+        scopedTeamId &&
+          objectivesQuery.isFetching &&
+          !objectivesQuery.isFetchingNextPage,
+      )}
+      needsSingleTeam={!scopedTeamId}
+      objectives={objectives}
+      onFetchNextPage={() => {
+        void objectivesQuery.fetchNextPage();
+      }}
+      onQueryChange={setQuery}
+      query={query}
+      setFilters={setFilters}
+    />
   );
 };
 
-const KeyResultEditor = ({
+const KeyResultEditorContainer = ({
   filters,
   setFilters,
-}: {
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
+}: StoriesFilterEditorProps) => {
   const { getTermDisplay } = useTerminology();
-  const { data: keyResults = [], isPending } = useKeyResults(
+  const keyResultsQuery = useKeyResults(
     filters.objectiveId ?? "",
     Boolean(filters.objectiveId),
   );
 
   return (
-    <Command>
-      <Command.Input
-        autoFocus
-        placeholder={`Search ${getTermDisplay("keyResultTerm", { variant: "plural" })}...`}
-      />
-      <Divider className="my-2" />
-      <Command.Group className="max-h-80 overflow-y-auto">
-        {!filters.objectiveId ? (
-          <Text className="px-3 py-2" color="muted">
-            Select an {getTermDisplay("objectiveTerm")} filter first.
-          </Text>
-        ) : null}
-        {isPending && filters.objectiveId ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={4} />
-          </Command.Loading>
-        ) : null}
-        {!isPending && filters.objectiveId && keyResults.length === 0 ? (
-          <Command.Empty className="py-2">
-            <Text color="muted">
-              No {getTermDisplay("keyResultTerm", { variant: "plural" })} found.
-            </Text>
-          </Command.Empty>
-        ) : null}
-        {keyResults.map((keyResult) => (
-          <Command.Item
-            active={filters.keyResultId === keyResult.id}
-            className="justify-between gap-4"
-            key={keyResult.id}
-            onSelect={() => {
-              setFilters({
-                ...filters,
-                keyResultId:
-                  filters.keyResultId === keyResult.id ? null : keyResult.id,
-              });
-            }}
-            value={keyResult.name}
-          >
-            <Flex align="center" className="min-w-0 flex-1" gap={2}>
-              <OKRIcon className="text-text-secondary h-4 w-auto" />
-              <Text className="max-w-72 truncate">{keyResult.name}</Text>
-            </Flex>
-            {filters.keyResultId === keyResult.id ? (
-              <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-            ) : null}
-          </Command.Item>
-        ))}
-      </Command.Group>
-    </Command>
-  );
-};
-
-const LabelEditor = ({
-  filters,
-  setFilters,
-}: {
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
-  const { teamId } = useParams<{ teamId?: string }>();
-  const [query, setQuery] = useState("");
-  const deferredQuery = useDeferredValue(query);
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useLabelsInfinite({ search: deferredQuery, teamId }, LABEL_MENU_PAGE_SIZE);
-  const labels = data?.pages.flatMap((page) => page.labels) ?? [];
-  const isLoadingLabels = isFetching && !isFetchingNextPage;
-
-  const toggleLabel = (labelId: string) => {
-    const selected = filters.labelIds ?? [];
-    const labelIds = selected.includes(labelId)
-      ? selected.filter((id) => id !== labelId)
-      : [...selected, labelId];
-    setFilters({ ...filters, labelIds: normalizeArrayFilter(labelIds) });
-  };
-
-  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
-    const target = event.currentTarget;
-    const distanceToBottom =
-      target.scrollHeight - target.scrollTop - target.clientHeight;
-
-    if (distanceToBottom <= 80 && hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage();
-    }
-  };
-
-  return (
-    <Command>
-      <Command.Input
-        autoFocus
-        onValueChange={setQuery}
-        placeholder="Search labels..."
-        value={query}
-      />
-      <Divider className="my-2" />
-      {!isLoadingLabels ? (
-        <Command.Empty className="py-2">
-          <Text color="muted">No labels found.</Text>
-        </Command.Empty>
-      ) : null}
-      <Command.Group
-        className="max-h-80 overflow-y-auto"
-        onScroll={handleScroll}
-      >
-        {isLoadingLabels ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={5} />
-          </Command.Loading>
-        ) : null}
-        {labels.map((label, idx) => (
-          <Command.Item
-            active={Boolean(filters.labelIds?.includes(label.id))}
-            className="justify-between gap-4"
-            key={label.id}
-            onSelect={() => {
-              toggleLabel(label.id);
-            }}
-            value={label.name}
-          >
-            <Flex align="center" className="min-w-0 flex-1" gap={2}>
-              <TagsIcon className="h-4 w-auto" style={{ color: label.color }} />
-              <Text className="max-w-48 truncate">{label.name}</Text>
-            </Flex>
-            <Flex align="center" className="shrink-0" gap={2}>
-              {filters.labelIds?.includes(label.id) ? (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              ) : null}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Command.Item>
-        ))}
-        {isFetchingNextPage ? (
-          <Command.Loading className="p-2">
-            <MenuLoadingSkeleton rows={2} />
-          </Command.Loading>
-        ) : null}
-      </Command.Group>
-    </Command>
-  );
-};
-
-const EstimateEditor = ({
-  estimateScheme,
-  filters,
-  setFilters,
-}: {
-  estimateScheme: EstimateScheme;
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
-  const options = getEstimateOptions(estimateScheme);
-
-  const toggleEstimate = (estimateValue: number) => {
-    const selected = filters.estimateValues ?? [];
-    const estimateValues = selected.includes(estimateValue)
-      ? selected.filter((value) => value !== estimateValue)
-      : [...selected, estimateValue];
-    setFilters({
-      ...filters,
-      estimateValues: normalizeNumberArrayFilter(estimateValues),
-    });
-  };
-
-  return (
-    <Command>
-      <Command.Input autoFocus placeholder="Change complexity..." />
-      <Divider className="my-2" />
-      <Command.Empty className="py-2">
-        <Text color="muted">No complexity found.</Text>
-      </Command.Empty>
-      <Command.Group>
-        {options.map(({ label, value }, idx) => (
-          <Command.Item
-            active={Boolean(filters.estimateValues?.includes(value))}
-            className="justify-between gap-4"
-            key={value}
-            onSelect={() => {
-              toggleEstimate(value);
-            }}
-            value={label}
-          >
-            <Box className="grid min-w-0 flex-1 grid-cols-[24px_minmax(0,1fr)] items-center">
-              <EstimateIcon className="text-text-secondary h-4 w-auto" />
-              <Text className="truncate">
-                {formatEstimate(estimateScheme, value, "full")}
-              </Text>
-            </Box>
-            <Flex align="center" className="shrink-0" gap={2}>
-              {filters.estimateValues?.includes(value) ? (
-                <CheckIcon className="h-5 w-auto" strokeWidth={2.1} />
-              ) : null}
-              <Text color="muted">{idx}</Text>
-            </Flex>
-          </Command.Item>
-        ))}
-      </Command.Group>
-    </Command>
-  );
-};
-
-const DateEditor = ({
-  field,
-  filters,
-  setFilters,
-}: {
-  field: "startDate" | "endDate";
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-}) => {
-  const selectedDate = filters[field] ? new Date(filters[field]) : undefined;
-
-  return (
-    <Box>
-      <Calendar
-        className="px-3 py-3 shadow-none"
-        mode="single"
-        onDayClick={(date) => {
-          setFilters({
-            ...filters,
-            [field]: formatISO(date, { representation: "date" }),
-          });
-        }}
-        selected={selectedDate}
-      />
-      {selectedDate ? (
-        <Button
-          className="mx-3 mb-2 w-[calc(100%-1.5rem)] justify-start"
-          color="tertiary"
-          onClick={() => {
-            setFilters({ ...filters, [field]: null });
-          }}
-          size="sm"
-          variant="naked"
-        >
-          Clear date
-        </Button>
-      ) : null}
-    </Box>
+    <KeyResultEditor
+      filters={filters}
+      isPending={keyResultsQuery.isPending}
+      keyResultPluralLabel={getTermDisplay("keyResultTerm", {
+        variant: "plural",
+      })}
+      keyResults={keyResultsQuery.data ?? []}
+      objectiveLabel={getTermDisplay("objectiveTerm")}
+      setFilters={setFilters}
+    />
   );
 };
 
 const FilterValueEditor = ({
-  field,
+  allStatuses,
   estimateScheme,
+  field,
   filters,
   setFilters,
-}: {
-  field: StoriesFilterField;
+  teamId,
+}: StoriesFilterEditorProps & {
+  allStatuses: (FilterStatusOption & { teamId: string })[];
   estimateScheme: EstimateScheme;
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
+  field: StoriesFilterField;
+  teamId?: string;
 }) => {
   if (field === "statusIds") {
-    return <StatusEditor filters={filters} setFilters={setFilters} />;
-  }
-
-  if (field === "assigneeIds" || field === "reporterIds") {
+    const statuses = teamId
+      ? allStatuses.filter((status) => status.teamId === teamId)
+      : allStatuses;
     return (
-      <PeopleEditor field={field} filters={filters} setFilters={setFilters} />
+      <StatusEditor
+        filters={filters}
+        setFilters={setFilters}
+        statuses={statuses}
+      />
     );
   }
-
+  if (field === "assigneeIds" || field === "reporterIds") {
+    return (
+      <PeopleEditorContainer
+        field={field}
+        filters={filters}
+        setFilters={setFilters}
+        teamId={teamId}
+      />
+    );
+  }
   if (field === "priorities") {
     return <PriorityEditor filters={filters} setFilters={setFilters} />;
   }
-
   if (field === "teamIds") {
-    return <TeamEditor filters={filters} setFilters={setFilters} />;
+    return <TeamEditorContainer filters={filters} setFilters={setFilters} />;
   }
-
   if (field === "sprintIds") {
-    return <SprintEditor filters={filters} setFilters={setFilters} />;
+    return (
+      <SprintEditorContainer
+        filters={filters}
+        setFilters={setFilters}
+        teamId={teamId}
+      />
+    );
   }
-
   if (field === "objectiveId") {
-    return <ObjectiveEditor filters={filters} setFilters={setFilters} />;
+    return (
+      <ObjectiveEditorContainer
+        filters={filters}
+        setFilters={setFilters}
+        teamId={teamId}
+      />
+    );
   }
-
   if (field === "keyResultId") {
-    return <KeyResultEditor filters={filters} setFilters={setFilters} />;
+    return (
+      <KeyResultEditorContainer filters={filters} setFilters={setFilters} />
+    );
   }
-
   if (field === "labelIds") {
     return <LabelEditor filters={filters} setFilters={setFilters} />;
   }
-
   if (field === "estimateValues") {
     return (
       <EstimateEditor
@@ -1382,136 +333,12 @@ const FilterValueEditor = ({
       />
     );
   }
-
   if (field === "startDate" || field === "endDate") {
     return (
       <DateEditor field={field} filters={filters} setFilters={setFilters} />
     );
   }
-
   return null;
-};
-
-const Chip = ({
-  chip,
-  estimateScheme,
-  filters,
-  setFilters,
-  onEditTitle,
-  onOperatorChange,
-  onRemove,
-}: {
-  chip: FilterChip;
-  estimateScheme: EstimateScheme;
-  filters: StoriesFilter;
-  setFilters: (value: StoriesFilter) => void;
-  onEditTitle: () => void;
-  onOperatorChange: (operator: StoriesFilterOperator) => void;
-  onRemove: () => void;
-}) => {
-  const isEditable =
-    chip.field !== "assignedToMe" &&
-    chip.field !== "createdByMe" &&
-    chip.field !== "hasNoAssignee";
-  const shouldUseDialog = chip.field === "contentContains";
-  const valueContent = (
-    <div className="flex min-w-0 items-center truncate">{chip.value}</div>
-  );
-  let valueControl: ReactNode = (
-    <div className="flex h-full items-center px-2.5">{chip.value}</div>
-  );
-
-  if (shouldUseDialog) {
-    valueControl = (
-      <button
-        className="hover:bg-state-hover flex h-full max-w-72 items-center truncate px-2.5 text-left transition"
-        onClick={onEditTitle}
-        type="button"
-      >
-        {valueContent}
-      </button>
-    );
-  } else if (isEditable) {
-    valueControl = (
-      <Popover>
-        <Popover.Trigger asChild>
-          <button
-            className="hover:bg-state-hover flex h-full max-w-72 items-center truncate px-2.5 text-left transition"
-            type="button"
-          >
-            {valueContent}
-          </button>
-        </Popover.Trigger>
-        <Popover.Content
-          align="start"
-          className={getEditorContentClassName(chip.field)}
-        >
-          <FilterValueEditor
-            estimateScheme={estimateScheme}
-            field={chip.field}
-            filters={filters}
-            setFilters={setFilters}
-          />
-        </Popover.Content>
-      </Popover>
-    );
-  }
-
-  return (
-    <Flex
-      align="center"
-      className="border-border bg-surface h-[2.1rem] shrink-0 overflow-hidden rounded-xl border"
-      gap={0}
-    >
-      <span className="border-border text-text-secondary flex h-full items-center gap-1.5 border-r px-2.5">
-        {chip.icon}
-        {chip.label}
-      </span>
-      {chip.operatorOptions ? (
-        <Menu>
-          <Menu.Button>
-            <button
-              aria-label={`Change ${chip.label} filter operator`}
-              className="hover:bg-state-hover border-border text-text-secondary flex h-[2.1rem] items-center border-r px-2.5 transition"
-              type="button"
-            >
-              {chip.operator}
-            </button>
-          </Menu.Button>
-          <Menu.Items align="start" className="w-44 p-1">
-            {chip.operatorOptions.map((option) => (
-              <Menu.Item
-                active={chip.operator === option.label}
-                className="justify-between"
-                key={option.value}
-                onSelect={() => {
-                  onOperatorChange(option.value);
-                }}
-              >
-                <span>{option.label}</span>
-                {chip.operator === option.label ? (
-                  <CheckIcon className="h-4 w-auto" />
-                ) : null}
-              </Menu.Item>
-            ))}
-          </Menu.Items>
-        </Menu>
-      ) : (
-        <span className="border-border text-text-secondary flex h-full items-center border-r px-2.5">
-          {chip.operator}
-        </span>
-      )}
-      {valueControl}
-      <button
-        aria-label={`Remove ${chip.label} filter`}
-        className="hover:bg-state-hover border-border flex h-full w-9 items-center justify-center border-l transition"
-        onClick={onRemove}
-        type="button"
-      >
-        <CloseIcon className="text-text-secondary h-3.5 w-auto" />
-      </button>
-    </Flex>
-  );
 };
 
 export const StoriesFilterBar = ({
@@ -1544,366 +371,77 @@ export const StoriesFilterBar = ({
   const { data: teamSettings } = useTeamSettings(scopedTeamId);
   const estimateScheme =
     teamSettings?.estimationSettings.scheme ?? DEFAULT_ESTIMATE_SCHEME;
-  const hiddenFieldSet = useMemo(() => new Set(hiddenFields), [hiddenFields]);
-
+  const hiddenFieldSet = new Set(hiddenFields);
   const users = scopedTeamId ? teamMembers : allUsers;
   const statuses = scopedTeamId
     ? allStatuses.filter((status) => status.teamId === scopedTeamId)
     : allStatuses;
 
-  const statusById = useMemo(
-    () => new Map(statuses.map((status) => [status.id, status.name])),
-    [statuses],
+  const statusById = new Map(
+    statuses.map((status) => [status.id, status.name]),
   );
-  const userById = useMemo(
-    () =>
-      new Map(
-        users.map((user) => {
-          const username = user.username || user.email || "Unknown user";
-          return [
-            user.id,
-            {
-              avatarUrl: user.avatarUrl ?? null,
-              id: user.id,
-              name: user.fullName || username,
-              username,
-            },
-          ];
-        }),
-      ),
-    [users],
+  const userById = new Map(
+    users.map((user) => {
+      const username = user.username || user.email || "Unknown user";
+      return [
+        user.id,
+        {
+          avatarUrl: user.avatarUrl ?? null,
+          id: user.id,
+          name: user.fullName || username,
+          username,
+        },
+      ];
+    }),
   );
-  const teamById = useMemo(
-    () => new Map(teams.map((team) => [team.id, team.name])),
-    [teams],
+  const teamById = new Map(teams.map((team) => [team.id, team.name]));
+  const teamColorById = new Map(teams.map((team) => [team.id, team.color]));
+  const sprintById = new Map(sprints.map((sprint) => [sprint.id, sprint.name]));
+  const objectiveById = new Map(
+    objectives.map((objective) => [objective.id, objective.name]),
   );
-  const teamColorById = useMemo(
-    () => new Map(teams.map((team) => [team.id, team.color])),
-    [teams],
+  const keyResultById = new Map(
+    keyResults.map((keyResult) => [keyResult.id, keyResult.name]),
   );
-  const sprintById = useMemo(
-    () => new Map(sprints.map((sprint) => [sprint.id, sprint.name])),
-    [sprints],
+  const labelById = new Map(
+    allLabels.map((label) => [
+      label.id,
+      { color: label.color, id: label.id, name: label.name },
+    ]),
   );
-  const objectiveById = useMemo(
-    () =>
-      new Map(objectives.map((objective) => [objective.id, objective.name])),
-    [objectives],
-  );
-  const keyResultById = useMemo(
-    () =>
-      new Map(keyResults.map((keyResult) => [keyResult.id, keyResult.name])),
-    [keyResults],
-  );
-  const labelById = useMemo(
-    () =>
-      new Map(
-        allLabels.map((label) => [
-          label.id,
-          {
-            color: label.color,
-            id: label.id,
-            name: label.name,
-          },
-        ]),
-      ),
-    [allLabels],
-  );
-
-  const chips = useMemo(() => {
-    const items: FilterChip[] = [];
-
-    if (filters.contentContains?.trim()) {
-      items.push({
-        field: "contentContains",
-        label: "Content",
-        ...getOperatorConfig(filters, "contentContains"),
-        value: filters.contentContains.trim(),
-        icon: <ListIcon className="h-4 w-auto" />,
-      });
-    }
-
-    if (filters.startDate) {
-      items.push({
-        field: "startDate",
-        label: "Start date",
-        ...getOperatorConfig(filters, "startDate"),
-        value: format(new Date(filters.startDate), "MMM d, yyyy"),
-        icon: <CalendarIcon className="h-4 w-auto" />,
-      });
-    }
-
-    if (filters.endDate) {
-      items.push({
-        field: "endDate",
-        label: "End date",
-        ...getOperatorConfig(filters, "endDate"),
-        value: format(new Date(filters.endDate), "MMM d, yyyy"),
-        icon: <CalendarIcon className="h-4 w-auto" />,
-      });
-    }
-
-    if (filters.statusIds?.length) {
-      const selectedStatuses = filters.statusIds.map((id) => ({
-        id,
-        name: statusById.get(id) ?? id,
-      }));
-
-      items.push({
-        field: "statusIds",
-        label: "Status",
-        ...getOperatorConfig(filters, "statusIds"),
-        value: <StatusChipValue statuses={selectedStatuses} />,
-        icon: <StoryStatusIcon statusId={filters.statusIds[0]} />,
-      });
-    }
-
-    if (filters.assigneeIds?.length) {
-      const selectedUsers = filters.assigneeIds
-        .map((id) => userById.get(id))
-        .filter((user): user is UserChipSummary => Boolean(user));
-
-      items.push({
-        field: "assigneeIds",
-        label: "Assignee",
-        ...getOperatorConfig(filters, "assigneeIds"),
-        value: (
-          <PeopleChipValue
-            label="assignee"
-            pluralLabel="assignees"
-            users={selectedUsers}
-          />
-        ),
-      });
-    }
-
-    if (filters.reporterIds?.length) {
-      const selectedUsers = filters.reporterIds
-        .map((id) => userById.get(id))
-        .filter((user): user is UserChipSummary => Boolean(user));
-
-      items.push({
-        field: "reporterIds",
-        label: "Creator",
-        ...getOperatorConfig(filters, "reporterIds"),
-        value: (
-          <PeopleChipValue
-            label="creator"
-            pluralLabel="creators"
-            users={selectedUsers}
-          />
-        ),
-      });
-    }
-
-    if (filters.priorities?.length) {
-      const selectedPriorities = filters.priorities as StoryPriority[];
-
-      items.push({
-        field: "priorities",
-        label: "Priority",
-        ...getOperatorConfig(filters, "priorities"),
-        value: <PriorityChipValue priorities={selectedPriorities} />,
-        icon: (
-          <PriorityIcon priority={filters.priorities[0] as StoryPriority} />
-        ),
-      });
-    }
-
-    if (filters.teamIds?.length) {
-      items.push({
-        field: "teamIds",
-        label: "Team",
-        ...getOperatorConfig(filters, "teamIds"),
-        value: getNames(filters.teamIds, teamById),
-        icon: <TeamColor color={teamColorById.get(filters.teamIds[0])} />,
-      });
-    }
-
-    if (filters.sprintIds?.length) {
-      items.push({
-        field: "sprintIds",
-        label: "Sprint",
-        ...getOperatorConfig(filters, "sprintIds"),
-        value: getNames(filters.sprintIds, sprintById),
-      });
-    }
-
-    if (filters.labelIds?.length) {
-      const selectedLabels = filters.labelIds
-        .map((id) => labelById.get(id))
-        .filter((label): label is LabelChipSummary => Boolean(label));
-
-      items.push({
-        field: "labelIds",
-        label: "Label",
-        ...getOperatorConfig(filters, "labelIds"),
-        value: <LabelChipValue labels={selectedLabels} />,
-        icon: (
-          <TagsIcon
-            className="h-4 w-auto"
-            style={{ color: selectedLabels[0]?.color }}
-          />
-        ),
-      });
-    }
-
-    if (filters.estimateValues?.length) {
-      items.push({
-        field: "estimateValues",
-        label: "Complexity",
-        ...getOperatorConfig(filters, "estimateValues"),
-        value: (
-          <EstimateChipValue
-            estimateScheme={estimateScheme}
-            estimateValues={filters.estimateValues}
-          />
-        ),
-        icon: <EstimateIcon className="h-4 w-auto" />,
-      });
-    }
-
-    if (filters.objectiveId) {
-      items.push({
-        field: "objectiveId",
-        label: getTermDisplay("objectiveTerm", { capitalize: true }),
-        ...getOperatorConfig(filters, "objectiveId"),
-        value: objectiveById.get(filters.objectiveId) ?? filters.objectiveId,
-        icon: <ObjectiveIcon className="h-4 w-auto" />,
-      });
-    }
-
-    if (filters.keyResultId) {
-      items.push({
-        field: "keyResultId",
-        label: getTermDisplay("keyResultTerm", { capitalize: true }),
-        operator: "is",
-        value: keyResultById.get(filters.keyResultId) ?? filters.keyResultId,
-        icon: <OKRIcon className="h-4 w-auto" />,
-      });
-    }
-
-    if (filters.hasNoAssignee) {
-      items.push({
-        field: "hasNoAssignee",
-        label: "Assignee",
-        ...getOperatorConfig(filters, "hasNoAssignee"),
-        value: "empty",
-      });
-    }
-
-    return items.filter((item) => !hiddenFieldSet.has(item.field));
-  }, [
-    filters,
+  const chips = buildFilterChips({
     estimateScheme,
-    hiddenFieldSet,
+    filters,
     getTermDisplay,
-    keyResultById,
-    labelById,
-    objectiveById,
-    sprintById,
-    statusById,
-    teamById,
-    teamColorById,
-    userById,
-  ]);
+    hiddenFields: hiddenFieldSet,
+    keyResults: keyResultById,
+    labels: labelById,
+    objectives: objectiveById,
+    sprints: sprintById,
+    statuses: statusById,
+    teamColors: teamColorById,
+    teams: teamById,
+    users: userById,
+  });
 
-  const removeFilter = (field: StoriesFilterField) => {
-    if (field === "assignedToMe" || field === "createdByMe") {
-      setFilters({ ...filters, [field]: false });
-      return;
-    }
-
-    if (isFilterOperatorField(field)) {
-      setFilters({
-        ...filters,
-        [field]: null,
-        operators: { ...filters.operators, [field]: undefined },
-      });
-      return;
-    }
-
-    setFilters({ ...filters, [field]: null });
-  };
-
-  const baseFilterOptions: FilterOption[] = [
-    {
-      field: "statusIds",
-      icon: <StoryStatusIcon statusId={filters.statusIds?.[0] ?? ""} />,
-      label: "Status",
-    },
-    {
-      field: "assigneeIds",
-      icon: <AssigneeIcon className="h-5 w-auto" />,
-      label: "Assignee",
-    },
-    {
-      field: "reporterIds",
-      icon: <UserIcon className="h-5 w-auto" />,
-      label: "Creator",
-    },
-    {
-      field: "contentContains",
-      icon: <ListIcon className="h-5 w-auto" />,
-      label: "Content",
-    },
-    {
-      field: "priorities",
-      icon: <PriorityIcon priority="No Priority" />,
-      label: "Priority",
-    },
-    ...(!teamId
-      ? ([
-          {
-            field: "teamIds",
-            icon: <TeamIcon className="h-5 w-auto" />,
-            label: "Team",
-          },
-        ] satisfies FilterOption[])
-      : []),
-    {
-      field: "sprintIds",
-      icon: <SprintsIcon className="h-5 w-auto" />,
-      label: "Sprint",
-    },
-    {
-      field: "labelIds",
-      icon: <TagsIcon className="h-5 w-auto" />,
-      label: "Label",
-    },
-    {
-      field: "estimateValues",
-      icon: <EstimateIcon className="h-5 w-auto" />,
-      label: "Complexity",
-    },
-    {
-      field: "objectiveId",
-      icon: <ObjectiveIcon className="h-5 w-auto" />,
-      label: getTermDisplay("objectiveTerm", { capitalize: true }),
-    },
-    {
-      field: "keyResultId",
-      icon: <OKRIcon className="h-5 w-auto" />,
-      label: getTermDisplay("keyResultTerm", { capitalize: true }),
-    },
-    {
-      field: "startDate",
-      icon: <CalendarIcon className="h-5 w-auto" />,
-      label: "Start date",
-    },
-    {
-      field: "endDate",
-      icon: <CalendarIcon className="h-5 w-auto" />,
-      label: "End date",
-    },
-  ];
-  const filterOptions = baseFilterOptions.filter(
-    (option) => !hiddenFieldSet.has(option.field),
+  const filterOptions = buildFilterOptions({
+    filters,
+    getTermDisplay,
+    hasRouteTeam: Boolean(teamId),
+    hiddenFields: hiddenFieldSet,
+  });
+  const renderEditor = (field: StoriesFilterField) => (
+    <FilterValueEditor
+      allStatuses={allStatuses}
+      estimateScheme={estimateScheme}
+      field={field}
+      filters={filters}
+      setFilters={setFilters}
+      teamId={teamId}
+    />
   );
 
-  if (!showWhenEmpty && chips.length === 0) {
-    return null;
-  }
+  if (!showWhenEmpty && chips.length === 0) return null;
 
   return (
     <Flex
@@ -1914,31 +452,23 @@ export const StoriesFilterBar = ({
     >
       <Flex align="center" className="min-w-0 flex-1 overflow-x-auto" gap={2}>
         {chips.map((chip) => (
-          <Chip
+          <StoriesFilterChip
             chip={chip}
-            estimateScheme={estimateScheme}
-            filters={filters}
             key={chip.field}
             onEditTitle={() => {
               setTitleDialogOpen(true);
             }}
-            onOperatorChange={(operator) => {
-              if (!isFilterOperatorField(chip.field)) {
-                return;
-              }
-
+            onOperatorChange={(operator: StoriesFilterOperator) => {
+              if (!isFilterOperatorField(chip.field)) return;
               setFilters({
                 ...filters,
-                operators: {
-                  ...filters.operators,
-                  [chip.field]: operator,
-                },
+                operators: { ...filters.operators, [chip.field]: operator },
               });
             }}
             onRemove={() => {
-              removeFilter(chip.field);
+              setFilters(removeStoriesFilterField(filters, chip.field));
             }}
-            setFilters={setFilters}
+            renderEditor={renderEditor}
           />
         ))}
         <Menu>
@@ -1961,9 +491,7 @@ export const StoriesFilterBar = ({
                 const isActive = chips.some(
                   (chip) => chip.field === option.field,
                 );
-                const shouldOpenDialog = option.field === "contentContains";
-
-                if (shouldOpenDialog) {
+                if (option.field === "contentContains") {
                   return (
                     <Menu.Item
                       active={isActive}
@@ -2007,12 +535,7 @@ export const StoriesFilterBar = ({
                       className={getEditorContentClassName(option.field)}
                       sideOffset={8}
                     >
-                      <FilterValueEditor
-                        estimateScheme={estimateScheme}
-                        field={option.field}
-                        filters={filters}
-                        setFilters={setFilters}
-                      />
+                      {renderEditor(option.field)}
                     </Menu.SubItems>
                   </Menu.SubMenu>
                 );

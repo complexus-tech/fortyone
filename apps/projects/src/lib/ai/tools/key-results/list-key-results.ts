@@ -59,7 +59,10 @@ export const listKeyResultsTool = tool({
       .describe("Filter options for listing key results"),
   }),
 
-  execute: async ({ filters }, { experimental_context }) => {
+  execute: async (
+    { filters },
+    { experimental_context: experimentalContext },
+  ) => {
     const session = await auth();
 
     if (!session) {
@@ -69,7 +72,7 @@ export const listKeyResultsTool = tool({
       };
     }
 
-    const workspaceSlug = (experimental_context as { workspaceSlug: string })
+    const workspaceSlug = (experimentalContext as { workspaceSlug: string })
       .workspaceSlug;
 
     const ctx = { session, workspaceSlug };

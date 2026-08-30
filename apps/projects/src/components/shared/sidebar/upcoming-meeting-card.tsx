@@ -30,7 +30,7 @@ import {
 } from "@/modules/objectives/components/objective-forecast-risk-utils";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
 import type { Objective, ObjectiveStatus } from "@/modules/objectives/types";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import {
   dismissMeetingUntilEnd,
   getUpcomingMeetings,
@@ -417,14 +417,13 @@ export const SidebarAssistantCards = ({
         dismissedIssueTokens,
       ),
   );
-  const activeObjectiveStatusIds = new Set(
-    objectiveStatuses
-      .filter(
-        (status) =>
-          status.category !== "completed" && status.category !== "cancelled",
-      )
-      .map((status) => status.id),
-  );
+  const activeObjectiveStatusIds = new Set<string>();
+  for (const status of objectiveStatuses) {
+    if (status.category === "completed" || status.category === "cancelled") {
+      continue;
+    }
+    activeObjectiveStatusIds.add(status.id);
+  }
   const objectiveRisks = isHydrated
     ? objectives.filter(
         (objective) =>

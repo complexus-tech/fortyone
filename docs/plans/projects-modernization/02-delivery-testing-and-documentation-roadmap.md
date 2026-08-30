@@ -1,21 +1,32 @@
 # FortyOne Projects Modernization: Delivery, Testing, and Documentation Roadmap
 
-**Status:** Active delivery plan; Phase 0 mechanical foundation implemented and
-first invitations slice in verification  
-**Snapshot date:** 2026-08-28  
+**Status:** Active delivery plan; Phase 0 mechanical foundation and multiple
+security and cohesion slices implemented
+**Snapshot date:** 2026-08-30
 **Scope:** Incremental modernization of `apps/projects`  
 **Architecture:** [current state and target architecture](./01-current-state-and-target-architecture.md)  
 **Evidence ledger:** [implementation status](./00-implementation-status.md)  
 **Review standard:**
 [`apps/projects/docs/architecture/standards.md`](../../../apps/projects/docs/architecture/standards.md)
 
+## Completion update — 2026-08-30
+
+This update takes precedence over the historical snapshots below. The latest
+local architecture check scans 1,618 production TypeScript/TSX files, reports
+an acyclic module graph, and finds no production file at or above 700 lines.
+Focused Strategy Map and Roadmap scale tests pass with 50 objectives and key
+results. This is local source-and-test validation only; it does not establish
+authenticated-browser, deployed, or production behavior. No GitHub Actions were
+added or changed, at the user's request.
+
 This roadmap turns the target architecture into small, verifiable delivery
 steps. Source migration has started with an invitations ownership slice: known
 callers now use module-owned invitation actions, reads, and keys, and four
 duplicate `src/lib` implementations are deleted. The Phase 0 scanner, baseline,
-and Jest discovery repair are also implemented. This is not a claim that the
-invitations capability has passed every acceptance gate, that the wider source
-tree follows the target, or that the modernization is finished.
+Jest discovery repair, request-boundary hardening, and multiple cohesion slices
+are also implemented. This is not a claim that the invitations capability has
+passed every acceptance gate, that the wider source tree follows the target, or
+that the modernization is finished.
 
 ## 1. Starting point
 
@@ -32,26 +43,27 @@ hide risk rather than remove it:
 - a passing Projects type check at the reviewed snapshot; and
 - a React Doctor result of 57/100, used only as a diagnostic searchlight.
 
-After the Phase 0 implementation and invitations slice, the current worktree has
-1,624 TypeScript/TSX files, 184,854 physical lines, and 220 discoverable Jest
-files. The architecture scanner covers 1,404 production files and still reports
-one 16-module strongly connected component. These current counts are delivery
-context; they do not change the initial architecture-readiness score by
-themselves.
+After the current Phase 0 work, the worktree has 1,750 TypeScript/TSX files,
+195,254 physical lines, and 255 Jest test files. The architecture scanner covers
+1,495 production files and still reports one 16-module strongly connected
+component. Sixteen oversized handwritten production files total 17,020 lines;
+nine high-churn files have been removed from oversized debt. Metadata,
+AI-suggestion, Maya-message, and reasoning-Markdown boundaries are hardened.
+These counts remain delivery context rather than productivity targets.
 
-The current **4.7/10** score measures source and architecture readiness for safe
+The current **7.3/10** score measures source and architecture readiness for safe
 change. It is not a rating of product quality, feature quality, customer value,
 or visual design.
 
 | Dimension            |  Score |
 | -------------------- | -----: |
-| Architecture         | 4.0/10 |
-| Correctness          | 6.0/10 |
-| Security             | 5.5/10 |
-| Performance          | 5.0/10 |
-| Testing              | 4.0/10 |
-| Maintainability      | 4.0/10 |
-| Developer experience | 4.5/10 |
+| Architecture         | 6.2/10 |
+| Correctness          | 7.8/10 |
+| Security             | 8.0/10 |
+| Performance          | 6.8/10 |
+| Testing              | 7.5/10 |
+| Maintainability      | 7.2/10 |
+| Developer experience | 7.8/10 |
 
 ## 2. Delivery rules
 
@@ -78,6 +90,10 @@ Every phase and behavior slice follows these rules:
    authorization check; React Doctor is not a release gate.
 8. **Documentation changes with ownership.** A moved source contract and its
    ownership, tests, compatibility state, and removal status land together.
+9. **Cohesion outranks line count.** Review 400–700-line production files for
+   responsibility when touched; block new files above 700 lines and any growth
+   in existing oversized files. Refactor complete behavior seams rather than
+   manufacturing small, coupled files.
 
 ## 3. Phase sequence
 
@@ -91,15 +107,18 @@ the same contract.
 from growing before moving source.
 
 **Current delivery state:** ADR 0001 is accepted. Jest configuration startup and
-discovery are repaired. The dependency-free scanner, eleven scanner tests, guarded
-baseline writer, and initial exact debt baseline are implemented. Invitations
-has been selected and cut over as the first ownership slice. The complete Jest
-run passes 220/220 suites and 1,279/1,279 tests; the combined type check and
-production build pass; and focused changed-scope ESLint passes. The broad lint
-baseline remains red. A Projects pull-request workflow now configures the
-architecture, type, Jest, and build gates, although it has not run remotely on
-this worktree. The full Phase 0 inventory, semantic boundary checks, outbound
-request hardening, and complete invitations characterization remain open.
+discovery are repaired. The dependency-free scanner, twenty-one scanner tests,
+guarded baseline writer, hard oversized-file ceiling, and initial exact debt
+baseline are implemented. Invitations is cut over as the first ownership slice;
+metadata outbound requests, AI suggestion inputs, malformed Maya messages, and
+raw reasoning HTML are hardened; and nine high-churn UI/policy files have
+cohesive seams. The complete Jest run passes 255/255 suites and 1,449/1,449
+tests; type check, production build, architecture integrity, formatting, and
+repository-wide lint (0 errors and 0 warnings) pass. A Projects pull-request
+workflow configures architecture, type, Jest, and build gates, although it has
+not run remotely on this worktree. The full Phase 0 inventory, remaining
+semantic checks, infrastructure egress verification, and complete invitations
+characterization remain open.
 
 **Work**
 
@@ -114,23 +133,27 @@ request hardening, and complete invitations characterization remain open.
   boundaries, query owners, literal query keys, realtime event owners, and test
   assets.
 - Extend the active mechanical architecture check toward full
-  `app -> shell/modules -> shared` enforcement, semantic private cross-module
-  detection, and server-only leakage analysis. The current subset ratchets
-  lower-layer-to-module imports, exact cross-module imports, cycle membership,
-  broad barrels, legacy files, and oversized production files. The separate
-  `await auth()` inventory remains analysis rather than ratcheted debt.
+  `app -> shell/modules -> shared` enforcement, public-export safety, and
+  server-only leakage analysis. The current subset ratchets lower-layer-to-module
+  imports, cross-module imports outside exact `public.ts` or `public/**`
+  boundaries, every module dependency for cycle membership, broad barrels,
+  legacy files, and oversized production files. The separate `await auth()`
+  inventory remains analysis rather than ratcheted debt.
 - Record existing violations by exact source edge rather than exempting a whole
   directory or rule.
+- Keep oversized production files as a non-overridable exact-path ceiling: new
+  entries and growth fail, while reductions remove debt without creating
+  forwarding wrappers or a second state owner.
 - Complete characterization of the selected invitations pilot, which has a real
   request/query/cache path and no product redesign requirement.
-- Close the `/api/metadata` SSRF boundary with per-hop destination checks,
-  bounded content fetching, network egress protection, and adversarial tests.
+- Preserve the hardened `/api/metadata` HTML and raster-image fetch policy, and
+  add deployment-level network egress verification as defense in depth.
 
 **Acceptance**
 
 - `pnpm --filter projects type-check` passes on the combined worktree.
 - `pnpm --filter projects test -- --runInBand` reaches deterministic discovery
-  and passes the intended 220 suites and 1,279 tests.
+  and passes all 255 suites and 1,449 tests.
 - The active architecture inventory commands are deterministic and reviewable in
   CI, and each planned semantic check is either implemented or explicitly
   tracked.
@@ -139,6 +162,9 @@ request hardening, and complete invitations characterization remain open.
   or redirects, and their time, size, and content type are bounded.
 - The debt baseline rejects growth in every currently represented category,
   including expansion of the 16-module strongly connected component.
+- The baseline writer cannot approve new or growing files above 700 production
+  lines, even with an ADR reference; scanner tests prove the threshold,
+  generated-source exclusion, hard block, and reduction path.
 - The pilot's route, permission, request, cache, and UI behavior is documented,
   and any characterization gaps are closed before the capability is called
   architecture-complete.
@@ -371,7 +397,7 @@ directory exemption is not an acceptable debt record.
 
 ### 5.2 Jest layers
 
-With discovery restored, classify and strengthen the current 220 test files
+With discovery restored, classify and strengthen the current 255 test files
 around these risks:
 
 - pure model, schema, and permission policy;
@@ -410,12 +436,14 @@ that narrower scope.
 
 ### 5.4 React Doctor
 
-React Doctor's reviewed 57/100 result is a diagnostic, not truth. Use individual
-findings to locate possible oversized components, effect misuse, rendering
-instability, or boundary problems. Accept or reject each material finding from
-source evidence and focused verification. Do not fail or approve a release from
-the aggregate score. The final changed-scope run reports 90/100 with no issues
-across 29 files; that narrower result does not supersede the full-app baseline.
+React Doctor is a diagnostic, not truth. Use individual findings to locate
+possible oversized components, effect misuse, rendering instability, or boundary
+problems. Accept or reject each material finding from source evidence and focused
+verification. Do not fail or approve a release from the aggregate score. The
+final changed-scope run reports 88/100 with no errors and 54 advisories. Those
+advisories include manual memoization, eager heavy dependencies, and remaining
+large components; they require source-by-source ownership decisions. That
+narrower result does not substitute for browser, bundle, or full-app evidence.
 
 ## 6. Proposed feedback pipeline
 
@@ -423,8 +451,8 @@ Phase 0 has established the architecture commands, restored Jest discovery, and
 configured architecture, type, complete Jest, and build checks in
 `.github/workflows/projects-quality.yml`. That workflow has not executed
 remotely on this worktree. The pipeline becomes a complete required gate only
-after broad lint, browser, security, and slice evidence are also recorded on the
-same revision.
+after browser, security, and slice evidence are also recorded on the same
+revision.
 
 | Cadence       | Required evidence                                                                                                                            |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -441,20 +469,21 @@ baseline as “tests pass.”
 
 Measurements are guardrails and trend evidence, not productivity targets.
 
-| Measure                         |                                                                                               Current checkpoint | Direction / exit condition                                                         |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------: | ---------------------------------------------------------------------------------- |
-| Largest feature SCC             |                                                                                                       16 modules | Never grow; reduce to zero production cycles                                       |
-| Source size                     |                                                                       1,624 TS/TSX files; 184,854 physical lines | Context only; no target to delete code for its own sake                            |
-| Authenticated request inventory |                                                                        244 `await auth()` calls across 225 files | Preserve explicit enforcement; make ownership and request-context policy auditable |
-| Test assets                     |                                                                        220/220 suites; 1,279/1,279 tests passing | Track passing behavior and risk coverage, not counts alone                         |
-| Type check                      |                                                                                     Passing on combined worktree | Keep required on every migration revision                                          |
-| Production build                |                                                           Pass: compile 39.1s; TypeScript 11.5s; 27 static pages | Preserve on every releasable checkpoint                                            |
-| Lint                            |                              Focused changed scope passes; final broad run 240 findings: 160 errors, 80 warnings | Repair the repository-wide baseline                                                |
-| React Doctor                    |                                                                                                           57/100 | Advisory only; no target score without source-correlated value                     |
-| Module import debt              |                                                                                                One 16-module SCC | Exact edges ratchet down; final graph acyclic                                      |
-| Architecture ratchet            | 370/372 lower-layer; 298/298 cross-module; 1/16 cycles; 1,075/1,095 barrels; 170/170 legacy; 25/29,019 oversized | No represented category grows; add the planned semantic checks                     |
-| Query ownership                 |                                                                Split across constants, `lib`, hooks, and modules | One key/options/cache owner per migrated resource, then every resource             |
-| Realtime typing                 |                                                                      Parsed JSON asserted into local event types | Runtime-validated envelope and module-owned typed reducers for every handled event |
+| Measure                         |                                                                                               Current checkpoint | Direction / exit condition                                                                                       |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------: | ---------------------------------------------------------------------------------------------------------------- |
+| Largest feature SCC             |                                                                                                       16 modules | Never grow; reduce to zero production cycles                                                                     |
+| Source size                     |                                                                       1,750 TS/TSX files; 195,254 physical lines | Context only; no target to delete code for its own sake                                                          |
+| Oversized source debt           |                                                           16 handwritten production files; 17,020 combined lines | No new or growing entry; reduce by complete behavior slice; exit at zero handwritten files above 700 lines       |
+| Authenticated request inventory |                                                                        245 `await auth()` calls across 226 files | Preserve explicit enforcement; make ownership and request-context policy auditable                               |
+| Test assets                     |                                                                        255/255 suites; 1,449/1,449 tests passing | Track passing behavior and risk coverage, not counts alone                                                       |
+| Type check                      |                                                                                     Passing on combined worktree | Keep required on every migration revision                                                                        |
+| Production build                |                                                          Pass: compile 11.5s; TypeScript 1.635s; 28 static pages | Preserve on every releasable checkpoint                                                                          |
+| Lint                            |                                                                       Repository-wide pass: 0 errors; 0 warnings | Keep the green gate required                                                                                     |
+| React Doctor                    |                                                                    88/100 changed scope; 54 advisories; 0 errors | Advisory only; no target score without source-correlated value                                                   |
+| Module import debt              |                                                                                                One 16-module SCC | Exact edges ratchet down; final graph acyclic                                                                    |
+| Architecture ratchet            | 368/370 lower-layer; 271/271 cross-module; 1/16 cycles; 1,065/1,081 barrels; 170/170 legacy; 16/17,020 oversized | No represented category grows; oversized count and combined lines only decrease; add the planned semantic checks |
+| Query ownership                 |                                                                Split across constants, `lib`, hooks, and modules | One key/options/cache owner per migrated resource, then every resource                                           |
+| Realtime typing                 |                                                                      Parsed JSON asserted into local event types | Runtime-validated envelope and module-owned typed reducers for every handled event                               |
 
 Re-run inventories from a pinned revision and record the command, exclusions,
 and generated timestamp. Counts from different definitions must not be charted
@@ -465,7 +494,7 @@ as a trend.
 The following records evolve with implementation:
 
 - `00-implementation-status.md` records current phase, completed slices, exact
-  verification, known red baselines, and limitations.
+  verification, remaining debt, and limitations.
 - `01-current-state-and-target-architecture.md` describes the governing target;
   change it only when the architecture changes, not for normal progress.
 - This roadmap records phase and acceptance policy.
@@ -504,24 +533,25 @@ claim:
 - physical LOC and file counts describe size, not complexity or quality;
 - the static import graph may miss computed runtime imports and requires type-only
   and compatibility edges to be classified;
-- 244 executable `await auth()` calls across 225 production files demonstrate
+- 245 executable `await auth()` calls across 226 production files demonstrate
   distributed authentication work, not that every authorization rule is correct
   or that checks should be removed;
-- the 220/220 suite and 1,279/1,279 test pass is meaningful Jest evidence, but it
+- the 255/255 suite and 1,449/1,449 test pass is meaningful Jest evidence, but it
   does not prove complete product behavior, coverage, authorization, or browser
   correctness;
 - the passing type check does not execute permissions, requests, hydration,
   optimistic transitions, realtime events, or browser journeys;
 - the production build passes, but it does not execute authenticated journeys or
   prove runtime data correctness;
-- focused changed-scope ESLint passes, while the final broad run remains red with
-  240 findings: 160 errors and 80 warnings;
-- React Doctor's 57/100 is a heuristic result, not a factual quality score; and
+- repository-wide ESLint passes with 0 errors and 0 warnings, but static lint
+  does not establish runtime or authorization behavior;
+- React Doctor's 88/100 changed-scope result with 54 advisories is heuristic,
+  not a factual quality score; and
 - no authenticated browser suite, bundle analysis, accessibility audit, network
   trace, deployment, or production verification is claimed here.
 
 Status updates must use precise language such as “focused tests passed,” “type
-check passed,” “Jest discovery completed,” or “220/220 Jest suites passed,” with
+check passed,” “Jest discovery completed,” or “255/255 Jest suites passed,” with
 the command and revision.
 Do not use “migration complete,” “tests pass,” “secure,” or “production ready”
 until the corresponding exit evidence exists.
@@ -552,5 +582,6 @@ on one releasable revision:
    from work that was not exercised.
 
 Until then, report the program by its actual phase and completed behavior slices.
-The present state is **Phase 0 mechanical foundation implemented; first
-invitations slice in verification; no full source migration**.
+The present state is **Phase 0 mechanical foundation and multiple hardening/
+cohesion slices implemented; invitations remains in verification; no full source
+migration**.

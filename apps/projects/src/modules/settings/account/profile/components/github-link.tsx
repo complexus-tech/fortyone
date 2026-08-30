@@ -25,7 +25,7 @@ export const GitHubAccountLink = () => {
   const unlinkGitHub = useUnlinkGitHubUser();
   const { data: profile } = useProfile();
 
-  const isLinked = !!profile?.githubUsername;
+  const githubUsername = profile?.githubUsername;
 
   useEffect(() => {
     const code = searchParams.get("code");
@@ -41,7 +41,7 @@ export const GitHubAccountLink = () => {
       url.searchParams.delete("github_state");
       window.history.replaceState({}, "", url.toString());
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- A single-use OAuth code must only be consumed when the callback URL changes.
   }, [searchParams]);
 
   const handleConnect = () => {
@@ -73,21 +73,21 @@ export const GitHubAccountLink = () => {
         title="GitHub Account"
       />
       <Box className="px-6 py-4">
-        {isLinked ? (
+        {githubUsername ? (
           <Flex align="center" justify="between">
             <Flex align="center" gap={2}>
               <Text color="muted">
                 Connected as{" "}
                 <Text as="span" className="font-medium">
-                  @{profile.githubUsername}
+                  @{githubUsername}
                 </Text>
               </Text>
             </Flex>
             <Button
               color="danger"
-              variant="naked"
-              onClick={handleDisconnect}
               disabled={unlinkGitHub.isPending}
+              onClick={handleDisconnect}
+              variant="naked"
             >
               Disconnect
             </Button>
@@ -99,12 +99,12 @@ export const GitHubAccountLink = () => {
             </Text>
             <Button
               color="invert"
-              onClick={handleConnect}
               disabled={
                 !GITHUB_CLIENT_ID ||
                 createLinkSession.isPending ||
                 linkGitHub.isPending
               }
+              onClick={handleConnect}
             >
               {linkGitHub.isPending || createLinkSession.isPending
                 ? "Connecting..."

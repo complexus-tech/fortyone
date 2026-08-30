@@ -9,7 +9,7 @@ export const useIsOwner = (entityOwnerId?: string) => {
     };
   }
   return {
-    isEntityOwner: session?.user?.id === entityOwnerId,
+    isEntityOwner: session?.user.id === entityOwnerId,
   };
 };
 
@@ -22,6 +22,6 @@ export const useIsAdminOrOwner = (entityOwnerId?: string) => {
     };
   }
   return {
-    isAdminOrOwner: userRole === "admin" || session?.user?.id === entityOwnerId,
+    isAdminOrOwner: userRole === "admin" || session?.user.id === entityOwnerId,
   };
 };

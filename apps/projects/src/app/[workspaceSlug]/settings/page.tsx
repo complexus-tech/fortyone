@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { WorkspaceGeneralSettings } from "@/modules/settings/workspace/general";
 import { redirect } from "next/navigation";
+import { WorkspaceGeneralSettings } from "@/modules/settings/workspace/general";
 import { auth } from "@/auth";
 import { getWorkspaces } from "@/lib/queries/workspaces/get-workspaces";
 import { withWorkspacePath } from "@/utils";
@@ -15,9 +15,11 @@ export default async function Page({
 }: {
   params: Promise<{ workspaceSlug: string }>;
 }) {
-  const { workspaceSlug } = await params;
-  const session = await auth();
-  const cookieHeader = await getCookieHeader();
+  const [{ workspaceSlug }, session, cookieHeader] = await Promise.all([
+    params,
+    auth(),
+    getCookieHeader(),
+  ]);
 
   const workspaces = await getWorkspaces(session?.token, cookieHeader);
   const workspace = workspaces.find(

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
-import { isStoryDeletionOutcomeUncertainError } from "@/modules/story/actions/story-deletion-error";
+import { isStoryDeletionOutcomeUncertainError } from "@/shared/story/deletion";
 import { bulkDeleteAction } from "@/modules/stories/actions/bulk-delete-stories";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
 import { requireToolConfirmation } from "../tool-helpers";

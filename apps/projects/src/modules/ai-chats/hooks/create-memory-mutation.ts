@@ -53,7 +53,9 @@ export const useCreateMemory = () => {
         description: error.message || "Your memory was not saved",
         action: {
           label: "Retry",
-          onClick: () => mutation.mutate(payload),
+          onClick: () => {
+            mutation.mutate(payload);
+          },
         },
       });
     },

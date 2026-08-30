@@ -13,10 +13,8 @@ import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-st
 import { useMediaQuery, useTerminology } from "@/hooks";
 import { useMembers } from "@/lib/hooks/members";
 import { useTeams } from "@/modules/teams/hooks/teams";
-import {
-  KeyResultsFilterButton,
-  KeyResultsFilterBar,
-} from "./components/key-results-filter-button";
+import { KeyResultsFilterBar } from "./components/key-results-filter-bar";
+import { KeyResultsFilterButton } from "./components/key-results-filter-button";
 import { KeyResultsList } from "./components/key-results-list";
 import { KeyResultsReportSidebar } from "./components/key-results-report-sidebar";
 import { KeyResultsToolbar } from "./components/key-results-toolbar";

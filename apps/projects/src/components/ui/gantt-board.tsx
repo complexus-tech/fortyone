@@ -14,7 +14,7 @@ import { useUpdateStoryMutation } from "@/modules/story/hooks/update-mutation";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import { useTeamMembers } from "@/lib/hooks/team-members";
 import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";
 import { getStoryAttachments } from "@/modules/story/queries/get-attachments";
@@ -261,6 +261,12 @@ type GanttBoardProps = {
   className?: string;
 };
 
+const renderStoryBarContent = (story: Story) => (
+  <Text className="line-clamp-1" fontWeight="medium">
+    {story.title}
+  </Text>
+);
+
 export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
   const { data: teams = [] } = useTeams();
   const { mutate } = useUpdateStoryMutation();
@@ -354,23 +360,13 @@ export const GanttBoard = ({ stories, className }: GanttBoardProps) => {
     [getTeamCode, handleUpdate],
   );
 
-  // Render bar content
-  const renderBarContent = useCallback(
-    (story: Story) => (
-      <Text className="line-clamp-1" fontWeight="medium">
-        {story.title}
-      </Text>
-    ),
-    [],
-  );
-
   return (
     <BaseGantt
       className={className}
       items={stories}
       onBarClick={handleBarClick}
       onDateUpdate={handleDateUpdate}
-      renderBarContent={renderBarContent}
+      renderBarContent={renderStoryBarContent}
       renderSidebar={renderSidebar}
       storageKey="zoomLevel"
     />

@@ -1,7 +1,7 @@
 get:
   operationId: listSprints
   tags: [Sprints]
-  summary: List sprints visible to the actor
+  summary: List sprints
   description: Returns sprints from current team memberships. Personal access token team restrictions are applied before the product query.
   x-fortyone-scope: sprints:read
   parameters:

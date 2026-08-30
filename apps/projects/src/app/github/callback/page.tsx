@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Flex, Text } from "ui";
 import { Logo } from "@/components/ui";
@@ -48,7 +48,18 @@ const decodeReturnPath = (state: string | null) => {
   }
 };
 
-export default function GitHubCallbackPage() {
+const GitHubCallbackLoading = () => (
+  <Flex align="center" className="bg-background h-dvh" justify="center">
+    <Flex align="center" direction="column" justify="center">
+      <Logo asIcon className="animate-pulse" />
+      <Text className="mt-4" color="muted" fontWeight="medium">
+        Connecting your GitHub account...
+      </Text>
+    </Flex>
+  </Flex>
+);
+
+const GitHubCallbackContent = () => {
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -64,14 +75,13 @@ export default function GitHubCallbackPage() {
     }
   }, [searchParams]);
 
+  return <GitHubCallbackLoading />;
+};
+
+export default function GitHubCallbackPage() {
   return (
-    <Flex align="center" className="bg-background h-dvh" justify="center">
-      <Flex align="center" direction="column" justify="center">
-        <Logo asIcon className="animate-pulse" />
-        <Text color="muted" fontWeight="medium" className="mt-4">
-          Connecting your GitHub account...
-        </Text>
-      </Flex>
-    </Flex>
+    <Suspense fallback={<GitHubCallbackLoading />}>
+      <GitHubCallbackContent />
+    </Suspense>
   );
 }

@@ -8,7 +8,7 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useSession } from "@/lib/auth/client";
 import type { Story as StoryProps } from "@/modules/stories/types";
 import type { DetailedStory } from "@/modules/story/types";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import { useMediaQuery, useUserRole, useWorkspacePath } from "@/hooks";
 import { storyKeys } from "@/modules/stories/constants";
 import { getStory } from "@/modules/story/queries/get-story";

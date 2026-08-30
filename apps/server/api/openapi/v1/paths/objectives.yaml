@@ -1,7 +1,7 @@
 get:
   operationId: listObjectives
   tags: [Objectives]
-  summary: List objectives visible to the actor
+  summary: List objectives
   description: Returns objectives from current team memberships. Personal access token team restrictions are applied before the product query.
   x-fortyone-scope: objectives:read
   parameters:

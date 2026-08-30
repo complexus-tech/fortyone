@@ -1,3 +1,5 @@
+import "server-only";
+
 import ky from "ky";
 import { getApiUrl } from "@/lib/api-url";
 import { requestError } from "@/lib/fetch-error";

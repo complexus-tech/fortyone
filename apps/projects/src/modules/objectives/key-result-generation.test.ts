@@ -28,6 +28,31 @@ describe("toKeyResultCreateInput", () => {
     expect(result.success).toBe(false);
   });
 
+  it("allows an intentional empty response but bounds generated key result output", () => {
+    const keyResult = {
+      name: "Increase activation",
+      measurementType: "number" as const,
+      startValue: 10,
+      targetValue: 25,
+      startDate: "2026-08-05",
+      endDate: "2026-09-15",
+    };
+
+    expect(
+      keyResultGenerationSchema.safeParse({ keyResults: [] }).success,
+    ).toBe(true);
+    expect(
+      keyResultGenerationSchema.safeParse({
+        keyResults: Array.from({ length: 6 }, () => keyResult),
+      }).success,
+    ).toBe(false);
+    expect(
+      keyResultGenerationSchema.safeParse({
+        keyResults: [{ ...keyResult, name: "x".repeat(256) }],
+      }).success,
+    ).toBe(false);
+  });
+
   it("maps a generated suggestion to the key-result create contract", () => {
     expect(
       toKeyResultCreateInput(

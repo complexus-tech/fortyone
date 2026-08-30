@@ -1,9 +1,25 @@
 import { Text } from "ui";
-import { format, addDays, differenceInDays, isTomorrow } from "date-fns";
+import {
+  addDays,
+  differenceInCalendarDays,
+  differenceInDays,
+  format,
+} from "date-fns";
 
-export const getDueDateMessage = (date: Date, storyTerm: string) => {
-  if (date < new Date()) {
-    const daysOverdue = differenceInDays(new Date(), date);
+export const getDueDateMessage = (
+  date: Date,
+  storyTerm: string,
+  now: Date | null = new Date(),
+) => {
+  if (!now) {
+    return <Text fontSize="md">Due on {format(date, "MMM d, yyyy")}</Text>;
+  }
+
+  const daysUntilDue = differenceInDays(date, now);
+  const isTomorrow = differenceInCalendarDays(date, now) === 1;
+
+  if (date < now) {
+    const daysOverdue = differenceInDays(now, date);
     if (daysOverdue === 0) {
       return (
         <>
@@ -28,21 +44,17 @@ export const getDueDateMessage = (date: Date, storyTerm: string) => {
       <>
         <Text fontSize="md">This was due on {format(date, "MMM d, yyyy")}</Text>
         <Text color="muted" fontSize="md">
-          {differenceInDays(new Date(), date)} days overdue
+          {daysOverdue} days overdue
         </Text>
       </>
     );
   }
-  if (date <= addDays(new Date(), 7) && date >= new Date()) {
+  if (date <= addDays(now, 7) && date >= now) {
     return (
       <>
         <Text fontSize="md">Due on {format(date, "MMM d, yyyy")}</Text>
         <Text color="muted" fontSize="md">
-          {isTomorrow(date) ? (
-            "Due tomorrow"
-          ) : (
-            <>Due in {differenceInDays(date, new Date()) + 1} days</>
-          )}
+          {isTomorrow ? "Due tomorrow" : <>Due in {daysUntilDue + 1} days</>}
         </Text>
       </>
     );
@@ -51,11 +63,7 @@ export const getDueDateMessage = (date: Date, storyTerm: string) => {
     <>
       <Text fontSize="md">Due on {format(date, "MMM d, yyyy")}</Text>
       <Text color="muted" fontSize="md">
-        {isTomorrow(date) ? (
-          "Tomorrow"
-        ) : (
-          <>Due in {differenceInDays(date, new Date()) + 1} days</>
-        )}
+        {isTomorrow ? "Tomorrow" : <>Due in {daysUntilDue + 1} days</>}
       </Text>
     </>
   );

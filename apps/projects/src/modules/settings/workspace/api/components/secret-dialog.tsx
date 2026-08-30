@@ -2,7 +2,7 @@
 
 import { CheckIcon, CopyIcon } from "icons";
 import { Box, Button, Dialog, Flex, Text } from "ui";
-import { useCopyToClipboard } from "@/hooks";
+import { useCopyToClipboard } from "@/hooks/clipboard";
 
 type SecretDialogProps = {
   description: string;

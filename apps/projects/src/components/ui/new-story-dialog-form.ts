@@ -1,8 +1,47 @@
 import type { DetailedStory, NewStory } from "@/modules/story/types";
 import { isMayaAssigneeSelection } from "@/lib/auto-scheduling";
-import { normalizeTimeNeeded } from "@/lib/time-needed";
+import {
+  DEFAULT_TIME_NEEDED_MINUTES,
+  normalizeTimeNeeded,
+} from "@/lib/time-needed";
 
 export type DeadlineSource = "unset" | "sprint" | "manual" | "cleared";
+export type NewStoryDialogForm = NewStory;
+
+export type StoryFormAction =
+  | { type: "INITIALIZE"; payload: NewStory }
+  | {
+      type: "SET_FIELD";
+      field: keyof NewStory;
+      value: NewStory[keyof NewStory];
+    }
+  | { type: "RESET_FORM"; payload: NewStory }
+  | { type: "PATCH_FORM"; payload: Partial<NewStory> }
+  | { type: "SYNC_TEAM_STATUS"; teamId: string; statusId: string };
+
+export const storyFormReducer = (
+  state: NewStory,
+  action: StoryFormAction,
+): NewStory => {
+  switch (action.type) {
+    case "INITIALIZE":
+      return action.payload;
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "PATCH_FORM":
+      return { ...state, ...action.payload };
+    case "SYNC_TEAM_STATUS":
+      return {
+        ...state,
+        teamId: action.teamId,
+        statusId: action.statusId,
+      };
+    case "RESET_FORM":
+      return action.payload;
+    default:
+      return state;
+  }
+};
 
 export const toDateOnly = (value?: string | null): string | null => {
   if (!value) return null;
@@ -18,6 +57,47 @@ export const getInitialDeadlineSource = ({
   sprintId?: string | null;
   sprintEndDate?: string | null;
 }): DeadlineSource => (sprintId && sprintEndDate ? "sprint" : "unset");
+
+export const createInitialNewStoryDialogForm = ({
+  assigneeId,
+  autoAssignedUserId,
+  autoSchedulingDefaultEnabled,
+  currentTeamId,
+  endDate,
+  objectiveId,
+  priority,
+  sprintId,
+  statusId,
+}: {
+  assigneeId?: string | null;
+  autoAssignedUserId: string | null;
+  autoSchedulingDefaultEnabled: boolean;
+  currentTeamId?: string;
+  endDate: string | null;
+  objectiveId?: string;
+  priority: NewStory["priority"];
+  sprintId?: string;
+  statusId?: string;
+}): NewStory => ({
+  title: "",
+  description: "",
+  descriptionHTML: "",
+  teamId: currentTeamId,
+  statusId,
+  endDate,
+  startDate: null,
+  assigneeId: assigneeId !== undefined ? assigneeId : autoAssignedUserId,
+  priority,
+  objectiveId: objectiveId || null,
+  keyResultId: null,
+  sprintId: sprintId || null,
+  estimateValue: null,
+  estimatedDurationMinutes: DEFAULT_TIME_NEEDED_MINUTES,
+  minimumFocusBlockMinutes: null,
+  autoSchedulingEnabled: autoSchedulingDefaultEnabled,
+  autoSchedulingLocked: false,
+  labelIds: [],
+});
 
 export const getDeadlineForSprintSelection = ({
   currentEndDate,

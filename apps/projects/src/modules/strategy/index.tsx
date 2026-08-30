@@ -6,14 +6,43 @@ import { MinusIcon, PlusIcon, StrategyIcon } from "icons";
 import { HeaderContainer, MobileMenuButton } from "@/components/shared";
 import { useUserRole } from "@/hooks";
 import { useObjectives } from "@/modules/objectives/hooks/use-objectives";
+import { useStrategyMap } from "@/shared/strategy-map/hooks";
 import { StrategyEditorDialog } from "./strategy-editor-dialog";
 import { StrategyMapCanvas } from "./strategy-map-canvas";
+import {
+  getKeyResultNodeId,
+  getObjectiveNodeId,
+  getPillarNodeId,
+  GOAL_NODE_ID,
+} from "./strategy-map-layout";
 import { StrategyMapSkeleton } from "./strategy-map-skeleton";
 import {
   StrategySelectedDetails,
   type SelectedStrategyNode,
 } from "./strategy-selected-details";
-import { useStrategyMap, useStrategyMutations } from "./hooks";
+import { useStrategyMutations } from "./hooks";
+
+const getSelectedStrategyNodeId = (
+  selectedNode: SelectedStrategyNode | null,
+) => {
+  if (!selectedNode) return null;
+
+  switch (selectedNode.type) {
+    case "goal":
+      return GOAL_NODE_ID;
+    case "pillar":
+      return getPillarNodeId(selectedNode.pillarId);
+    case "objective":
+      return getObjectiveNodeId(selectedNode.objectiveId);
+    case "key-result":
+      return getKeyResultNodeId(selectedNode.keyResultId);
+  }
+};
+
+const getSelectedObjectiveId = (selectedNode: SelectedStrategyNode | null) =>
+  selectedNode?.type === "objective" || selectedNode?.type === "key-result"
+    ? selectedNode.objectiveId
+    : null;
 
 export const WorkspaceStrategyMapPage = () => {
   const { userRole } = useUserRole();
@@ -37,6 +66,8 @@ export const WorkspaceStrategyMapPage = () => {
   const [resetSignal, setResetSignal] = useState(0);
   const showUnaligned = true;
   const isGuest = userRole === "guest";
+  const selectedNodeId = getSelectedStrategyNodeId(selectedNode);
+  const selectedObjectiveId = getSelectedObjectiveId(selectedNode);
 
   return (
     <>
@@ -152,6 +183,8 @@ export const WorkspaceStrategyMapPage = () => {
             }}
             onZoomChange={setZoom}
             resetSignal={resetSignal}
+            selectedNodeId={selectedNodeId}
+            selectedObjectiveId={selectedObjectiveId}
             showUnaligned={showUnaligned}
             strategy={strategy}
             zoom={zoom}

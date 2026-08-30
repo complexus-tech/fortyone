@@ -1,7 +1,7 @@
 put:
   operationId: replaceWebhookSubscriptions
   tags: [Webhooks]
-  summary: Replace an endpoint's event subscriptions
+  summary: Update subscriptions
   description: Requires a current workspace administrator personal access token. This is a full replacement, not an additive patch.
   x-fortyone-scope: webhooks:manage
   parameters:

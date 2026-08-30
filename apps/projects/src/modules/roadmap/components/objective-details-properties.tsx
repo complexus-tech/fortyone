@@ -17,7 +17,7 @@ import { ObjectiveStatusesMenu } from "@/components/ui/objective-statuses-menu";
 import { ObjectiveStatusIcon } from "@/components/ui/objective-status-icon";
 import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import { PriorityIcon } from "@/components/ui/priority-icon";
-import { ObjectivePillarProperty } from "@/modules/strategy/objective-pillar-property";
+import { ObjectivePillarProperty } from "@/shared/strategy-map/objective-pillar-property";
 
 const DetailRow = ({ label, value }: { label: string; value: ReactNode }) => (
   <Flex align="center" className="min-h-9" gap={4}>
@@ -56,6 +56,7 @@ export const ObjectiveDetailsProperties = ({
       <Flex direction="column" gap={2}>
         <ObjectivePillarProperty
           buttonClassName={propertyButtonClassName}
+          canUpdate={canUpdate}
           layout="detail"
           objectiveId={objective.id}
         />

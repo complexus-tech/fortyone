@@ -1,98 +1,21 @@
+import type { Story } from "@/shared/story/types";
 import type { StateCategory } from "@/types/states";
-import type { UserSummary } from "@/types";
 
-export type StoryPriority =
-  | "No Priority"
-  | "Urgent"
-  | "High"
-  | "Medium"
-  | "Low";
-
-export type AutoSchedulingStatus =
-  | "off"
-  | "needs_owner"
-  | "needs_time"
-  | "planning"
-  | "scheduled"
-  | "at_risk"
-  | "cannot_fit"
-  | "locked";
-
-export type StoryTeamSummary = {
-  id: string;
-  name: string;
-  code: string;
-};
-
-export type StoryObjectiveSummary = {
-  id: string;
-  name: string;
-  description: string | null;
-};
-
-export type StorySprintSummary = {
-  id: string;
-  name: string;
-  goal: string | null;
-  startDate: string;
-  endDate: string;
-};
-
-export type Story = {
-  id: string;
-  title: string;
-  estimateLabel: string | null;
-  estimateValue: number | null;
-  estimateScheme: "points" | "tshirt";
-  estimatedDurationMinutes: number | null;
-  minimumFocusBlockMinutes: number | null;
-  autoSchedulingEnabled: boolean;
-  autoSchedulingLocked: boolean;
-  autoSchedulingStatus: AutoSchedulingStatus;
-  autoSchedulingReason: string | null;
-  autoSchedulingUpdatedAt: string | null;
-  description?: string;
-  statusId: string;
-  sprintId: string | null;
-  sprint?: StorySprintSummary | null;
-  objectiveId: string | null;
-  objective?: StoryObjectiveSummary | null;
-  keyResultId: string | null;
-  teamId: string;
-  team?: StoryTeamSummary | null;
-  workspaceId: string;
-  assigneeId: string | null;
-  assignee?: UserSummary | null;
-  collaboratorCount: number;
-  reporterId: string;
-  reporter?: UserSummary | null;
-  epicId: string | null;
-  sequenceId: number;
-  priority: StoryPriority;
-  startDate: string | null;
-  endDate: string | null;
-  createdAt: string;
-  updatedAt: string;
-  completedAt: string | null;
-  deletedAt: string | null;
-  archivedAt: string | null;
-  labels: string[] | null;
-  subStories: Story[];
-};
-
-export type StoryActivity = {
-  id: string;
-  storyId: string;
-  userId: string;
-  user: UserSummary;
-  type: "update" | "create" | "link";
-  field: string;
-  currentValue: string;
-  oldValue?: unknown;
-  newValue?: unknown;
-  reason?: string | null;
-  createdAt: string;
-};
+export type {
+  AutoSchedulingStatus,
+  DetailedStory,
+  NewStory,
+  Story,
+  StoryActivity,
+  StoryAssociation,
+  StoryAssociationType,
+  StoryAttachment,
+  StoryObjectiveSummary,
+  StoryPriority,
+  StorySprintSummary,
+  StoryTeamSummary,
+  StoryUpdate,
+} from "@/shared/story/types";
 
 export type StoryGroup = {
   key: string;

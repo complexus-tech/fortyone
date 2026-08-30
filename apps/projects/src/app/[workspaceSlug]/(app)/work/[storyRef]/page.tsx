@@ -5,10 +5,7 @@ import { StoryPage } from "@/modules/story";
 import { getQueryClient } from "@/app/get-query-client";
 import { StoryRouteNotFound } from "@/modules/story/components/story-route-not-found";
 import { getStoryRouteData } from "@/modules/story/server/get-story-route-data";
-import {
-  getStoryPath,
-  getStoryReference,
-} from "@/modules/story/utils/story-url";
+import { getStoryPath, getStoryReference } from "@/shared/routing/story";
 import { storyKeys } from "@/modules/stories/constants";
 import { withWorkspacePath } from "@/utils";
 

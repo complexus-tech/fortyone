@@ -1,42 +1,10 @@
-export type ApiResponse<T> = {
-  data?: T | null;
-  error?: {
-    code?: string;
-    hint?: string;
-    message: string;
-  };
-};
+import type { UserSummary } from "./user-summary";
+
+export type { ApiResponse } from "./api-response";
+export type { User } from "./user";
+export type { UserSummary } from "./user-summary";
 
 export type UserRole = "admin" | "member" | "guest" | "system";
-
-export type User = {
-  id: string;
-  username: string;
-  email: string;
-  fullName: string;
-  avatarUrl: string | null;
-  isActive: boolean;
-  isSystem: boolean;
-  isInternal: boolean;
-  lastUsedWorkspaceId: string;
-  hasSeenWalkthrough: boolean;
-  timezone: string;
-  workingDays?: number[] | null;
-  workingStartMinute?: number | null;
-  workingEndMinute?: number | null;
-  githubUsername: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type UserSummary = {
-  id: string;
-  username: string;
-  fullName: string;
-  avatarUrl: string | null;
-  isActive: boolean;
-  isSystem: boolean;
-};
 
 export type Member = {
   id: string;

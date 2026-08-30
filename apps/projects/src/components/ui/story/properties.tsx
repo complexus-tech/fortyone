@@ -8,7 +8,7 @@ import {
   Time02Icon,
 } from "icons";
 import { cn } from "lib";
-import { format, addDays, formatISO } from "date-fns";
+import { format, formatISO } from "date-fns";
 import Link from "next/link";
 import {
   forwardRef,
@@ -29,10 +29,16 @@ import { PrioritiesMenu } from "@/components/ui/story/priorities-menu";
 import type { Story } from "@/modules/stories/types";
 import { useBoard } from "@/components/ui/board-context";
 import type { StateCategory } from "@/types/states";
-import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
+import {
+  useHydratedNow,
+  useTerminology,
+  useUserRole,
+  useWorkspacePath,
+} from "@/hooks";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
 import { hexToRgba } from "@/utils";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
+import { getDueDateTone, parseDueDate } from "@/shared/story/due-date";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatEstimate } from "@/lib/estimate";
 import { formatTimeNeeded } from "@/lib/time-needed";
@@ -184,6 +190,7 @@ export const StoryProperties = ({
   const { getTermDisplay } = useTerminology();
   const { isColumnVisible } = useBoard();
   const { withWorkspace } = useWorkspacePath();
+  const now = useHydratedNow();
   const { data: statuses = [] } = useTeamStatuses(teamId);
   const [showChildrenDialog, setShowChildrenDialog] = useState(false);
   const pendingStatusIdRef = useRef<string | null>(null);
@@ -199,6 +206,13 @@ export const StoryProperties = ({
   const isGuest = userRole === "guest";
   const isListRow = !asKanban;
   const selectedSprint = sprintId && sprint?.id === sprintId ? sprint : null;
+  const dueDate = endDate ? parseDueDate(endDate) : null;
+  const dueDateTone = dueDate ? getDueDateTone(dueDate, now) : "neutral";
+  const dueDateTooltip = dueDate
+    ? getDueDateMessage(dueDate, getTermDisplay("storyTerm"), now)
+    : null;
+  const isDueDateOverdue = dueDateTone === "overdue";
+  const isDueDateDueSoon = dueDateTone === "due-soon";
   const isDoneStatus = (statusId: string) => {
     const status = statuses.find((s) => s.id === statusId);
     return status?.category === "completed";
@@ -526,7 +540,7 @@ export const StoryProperties = ({
         />
       ) : null}
       {isColumnVisible("Deadline") &&
-      endDate &&
+      dueDate &&
       !completedOrCancelled(status?.category) ? (
         <DatePicker>
           <Tooltip
@@ -535,19 +549,11 @@ export const StoryProperties = ({
               <Flex align="start" gap={2}>
                 <CalendarIcon
                   className={cn("relative top-[2.5px] h-5 w-auto", {
-                    "text-primary dark:text-primary":
-                      new Date(endDate) < new Date(),
-                    "text-warning dark:text-warning":
-                      new Date(endDate) <= addDays(new Date(), 7) &&
-                      new Date(endDate) >= new Date(),
+                    "text-primary dark:text-primary": isDueDateOverdue,
+                    "text-warning dark:text-warning": isDueDateDueSoon,
                   })}
                 />
-                <Box>
-                  {getDueDateMessage(
-                    new Date(endDate),
-                    getTermDisplay("storyTerm"),
-                  )}
-                </Box>
+                <Box>{dueDateTooltip}</Box>
               </Flex>
             }
           >
@@ -555,11 +561,8 @@ export const StoryProperties = ({
               <DatePicker.Trigger>
                 <Button
                   className={cn("pr-2", {
-                    "text-primary dark:text-primary":
-                      new Date(endDate) < new Date(),
-                    "text-warning dark:text-warning":
-                      new Date(endDate) <= addDays(new Date(), 7) &&
-                      new Date(endDate) >= new Date(),
+                    "text-primary dark:text-primary": isDueDateOverdue,
+                    "text-warning dark:text-warning": isDueDateDueSoon,
                     "px-2": !asKanban,
                   })}
                   color="tertiary"
@@ -571,15 +574,12 @@ export const StoryProperties = ({
                 >
                   <CalendarIcon
                     className={cn("h-4", {
-                      "text-primary dark:text-primary":
-                        new Date(endDate) < new Date(),
-                      "text-warning dark:text-warning":
-                        new Date(endDate) <= addDays(new Date(), 7) &&
-                        new Date(endDate) >= new Date(),
+                      "text-primary dark:text-primary": isDueDateOverdue,
+                      "text-warning dark:text-warning": isDueDateDueSoon,
                     })}
                     strokeWidth={3}
                   />
-                  {format(new Date(endDate), "MMM d")}
+                  {format(dueDate, "MMM d")}
                 </Button>
               </DatePicker.Trigger>
             </span>
@@ -592,7 +592,7 @@ export const StoryProperties = ({
                 }),
               });
             }}
-            selected={new Date(endDate)}
+            selected={dueDate}
           />
         </DatePicker>
       ) : null}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TeamObjectivesList } from "@/modules/objectives";
+import { TeamRoadmapPage } from "@/modules/roadmap/public/client";
 import { getTeam } from "@/modules/teams/queries/get-team";
 import { auth } from "@/auth";
 
@@ -8,8 +8,10 @@ export async function generateMetadata({
 }: {
   params: Promise<{ teamId: string; workspaceSlug: string }>;
 }): Promise<Metadata> {
-  const { teamId, workspaceSlug } = await params;
-  const session = await auth();
+  const [{ teamId, workspaceSlug }, session] = await Promise.all([
+    params,
+    auth(),
+  ]);
   const ctx = { session: session!, workspaceSlug };
   const teamData = await getTeam(teamId, ctx);
 
@@ -19,5 +21,5 @@ export async function generateMetadata({
 }
 
 export default function Page() {
-  return <TeamObjectivesList />;
+  return <TeamRoadmapPage />;
 }

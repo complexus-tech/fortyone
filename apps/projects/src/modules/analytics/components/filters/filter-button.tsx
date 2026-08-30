@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Box, Button, Flex, Popover, Text } from "ui";
 import type { FilterButtonProps } from "./types";
 

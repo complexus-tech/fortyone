@@ -2,10 +2,10 @@ import { Flex, Text, Button, Menu, Box, Avatar } from "ui";
 import { DeleteIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import type { Invitation } from "@/modules/invitations/types";
+import { useRevokeInvitationMutation } from "@/modules/invitations/public/client";
+import type { Invitation } from "@/modules/invitations/public/types";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
 import { useMembers } from "@/lib/hooks/members";
-import { useRevokeInvitationMutation } from "@/modules/invitations/hooks/use-revoke-invitation";
 
 export const WorkspaceInvitee = ({
   id,

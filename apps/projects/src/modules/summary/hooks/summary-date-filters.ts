@@ -1,6 +1,6 @@
 import { parseAsIsoDate, useQueryStates } from "nuqs";
-import { getDefaultDateRange } from "@/modules/analytics/components/filters/types";
 import { formatISO } from "date-fns";
+import { getDefaultDateRange } from "@/modules/analytics/components/filters/types";
 
 export const useSummaryDateFilters = () => {
   const defaultDates = getDefaultDateRange();

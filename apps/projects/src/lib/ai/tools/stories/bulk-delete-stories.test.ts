@@ -3,7 +3,7 @@
 import type { ToolExecutionOptions, ToolExecuteFunction } from "ai";
 import { auth } from "@/auth";
 import { getWorkspace } from "@/lib/queries/workspaces/get-workspace";
-import { StoryDeletionOutcomeUncertainError } from "@/modules/story/actions/story-deletion-error";
+import { StoryDeletionOutcomeUncertainError } from "@/shared/story/deletion";
 import { bulkDeleteAction } from "@/modules/stories/actions/bulk-delete-stories";
 import type { Workspace } from "@/types";
 import { bulkDeleteStories } from "./bulk-delete-stories";

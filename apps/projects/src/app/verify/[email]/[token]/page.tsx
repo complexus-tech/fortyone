@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getRedirectUrl } from "@/utils";
-import { getMyInvitationsForCurrentRequest } from "@/modules/invitations/queries/my-invitations-for-current-request";
+import { getMyInvitationsForCurrentRequest } from "@/modules/invitations/public/server";
 import { getWorkspaces } from "@/lib/queries/get-workspaces";
 import { getProfile } from "@/lib/queries/profile";
 import { EmailVerificationCallback } from "./client";

@@ -1,4 +1,3 @@
-import React from "react";
 import { Box, Flex } from "ui";
 import { SectionHeader } from "@/modules/settings/components";
 import { useNotificationPreferences } from "@/modules/notifications/hooks/preferences";

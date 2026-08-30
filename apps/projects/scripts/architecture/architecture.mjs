@@ -1,9 +1,17 @@
+import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
 export const SNAPSHOT_VERSION = 1;
 export const OVERSIZED_FILE_LINE_LIMIT = 700;
 const MAX_CONCURRENT_FILE_READS = 32;
+const MODULE_PUBLIC_ENTRYPOINT = "public.ts";
+const MODULE_PUBLIC_DIRECTORY = "public";
+const NON_OVERRIDABLE_CATEGORY_NAMES = Object.freeze(["oversizedFiles"]);
+const NON_OVERRIDABLE_CATEGORIES = new Set(NON_OVERRIDABLE_CATEGORY_NAMES);
+const ARCHITECTURE_DECISION_PATH_PREFIX =
+  "apps/projects/docs/architecture/decisions/";
+const POLICY_FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/;
 
 export const CATEGORY_ORDER = Object.freeze([
   "lowerLayerModuleImports",
@@ -84,9 +92,30 @@ const POLICY = Object.freeze({
   categories: CATEGORY_ORDER,
   legacyRoots: LEGACY_ROOTS,
   lowerLayerRoots: LOWER_LAYER_ROOTS,
+  modulePublicBoundary: Object.freeze({
+    directory: MODULE_PUBLIC_DIRECTORY,
+    entrypoint: MODULE_PUBLIC_ENTRYPOINT,
+  }),
+  nonOverridableCategories: NON_OVERRIDABLE_CATEGORY_NAMES,
   oversizedFileLineLimit: OVERSIZED_FILE_LINE_LIMIT,
   sourceExtensions: SOURCE_EXTENSIONS,
 });
+
+const canonicalizeJson = (value) => {
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalizeJson).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalizeJson(value[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+};
+
+export const fingerprintPolicy = (policy) =>
+  createHash("sha256").update(canonicalizeJson(policy)).digest("hex");
 
 const toPosixPath = (value) => value.split(path.sep).join("/");
 
@@ -451,6 +480,14 @@ const moduleNameForPath = (filePath) => {
   return match?.groups?.moduleName ?? null;
 };
 
+const isPublicModuleBoundary = (filePath, moduleName) => {
+  const moduleRoot = `src/modules/${moduleName}`;
+  return (
+    filePath === `${moduleRoot}/${MODULE_PUBLIC_ENTRYPOINT}` ||
+    filePath.startsWith(`${moduleRoot}/${MODULE_PUBLIC_DIRECTORY}/`)
+  );
+};
+
 const createCategoryMaps = () =>
   Object.fromEntries(CATEGORY_ORDER.map((category) => [category, new Map()]));
 
@@ -576,9 +613,14 @@ const mapCategoriesToSnapshot = (categoryMaps) =>
     ]),
   );
 
-export const buildSnapshot = ({ categories, approval }) => ({
+export const buildSnapshot = ({
+  approvedPolicyTransitions,
+  approval,
+  categories,
+}) => ({
   version: SNAPSHOT_VERSION,
   policy: POLICY,
+  ...(approvedPolicyTransitions?.length ? { approvedPolicyTransitions } : {}),
   ...(approval ? { approval } : {}),
   categories,
 });
@@ -667,13 +709,15 @@ export const scanArchitecture = async ({ appRoot }) => {
         destinationModule &&
         sourceModule !== destinationModule
       ) {
-        addDebt(categories.crossModuleImports, importKey, {
-          destination,
-          destinationModule,
-          source: relativePath,
-          sourceModule,
-          specifier: parsedImport.specifier,
-        });
+        if (!isPublicModuleBoundary(destination, destinationModule)) {
+          addDebt(categories.crossModuleImports, importKey, {
+            destination,
+            destinationModule,
+            source: relativePath,
+            sourceModule,
+            specifier: parsedImport.specifier,
+          });
+        }
 
         if (!moduleGraph.has(sourceModule)) {
           moduleGraph.set(sourceModule, new Set());
@@ -752,6 +796,48 @@ const entriesByKey = (snapshot, category) => {
   return result;
 };
 
+const cycleModulesAreSubsetOf = (candidateCycle, baselineCycle) => {
+  const baselineModules = new Set(baselineCycle.modules ?? []);
+  const candidateModules = new Set(candidateCycle.modules ?? []);
+
+  return (
+    candidateModules.size < baselineModules.size &&
+    [...candidateModules].every((moduleName) => baselineModules.has(moduleName))
+  );
+};
+
+const edgeIsWithinModules = (edge, modules) => {
+  const [source, destination, extra] = edge.split(" -> ");
+  return (
+    extra === undefined &&
+    source !== undefined &&
+    destination !== undefined &&
+    modules.has(source) &&
+    modules.has(destination)
+  );
+};
+
+const cycleEdgeGrowthIssues = (baselineCycle, currentCycle) => {
+  const currentModules = new Set(currentCycle.modules ?? []);
+  const baselineEdges = new Set(
+    (baselineCycle.edges ?? []).filter((edge) =>
+      edgeIsWithinModules(edge, currentModules),
+    ),
+  );
+  const currentEdges = new Set(currentCycle.edges ?? []);
+
+  return [...currentEdges]
+    .filter((edge) => !baselineEdges.has(edge))
+    .sort()
+    .map((edge) => ({
+      baselineCount: baselineEdges.size,
+      category: "moduleCycles",
+      currentCount: currentEdges.size,
+      key: `${currentCycle.key} [${edge}]`,
+      type: "growth",
+    }));
+};
+
 export const compareSnapshots = (baseline, current) => {
   const issues = [];
 
@@ -788,19 +874,20 @@ export const compareSnapshots = (baseline, current) => {
     const exactBaseline = baselineCycles.find(
       (baselineCycle) => baselineCycle.key === currentCycle.key,
     );
-    if (exactBaseline && currentCycle.count <= exactBaseline.count) continue;
+    if (exactBaseline && currentCycle.count <= exactBaseline.count) {
+      issues.push(...cycleEdgeGrowthIssues(exactBaseline, currentCycle));
+      continue;
+    }
 
-    const currentModules = new Set(currentCycle.modules ?? []);
-    const isBaselineReduction = baselineCycles.some((baselineCycle) => {
-      const baselineModules = new Set(baselineCycle.modules ?? []);
-      return (
-        currentModules.size < baselineModules.size &&
-        [...currentModules].every((moduleName) =>
-          baselineModules.has(moduleName),
-        )
+    const containingBaselineCycle = baselineCycles.find((baselineCycle) =>
+      cycleModulesAreSubsetOf(currentCycle, baselineCycle),
+    );
+    if (containingBaselineCycle) {
+      issues.push(
+        ...cycleEdgeGrowthIssues(containingBaselineCycle, currentCycle),
       );
-    });
-    if (isBaselineReduction) continue;
+      continue;
+    }
 
     issues.push({
       baselineCount: exactBaseline?.count ?? 0,
@@ -819,6 +906,128 @@ export const compareSnapshots = (baseline, current) => {
   );
 };
 
+const isSortedUniqueStringList = (value) =>
+  Array.isArray(value) &&
+  value.every(
+    (entry, index) =>
+      typeof entry === "string" &&
+      (index === 0 || value[index - 1].localeCompare(entry) < 0),
+  );
+
+const validateCycleEntry = (entry) => {
+  if (!isSortedUniqueStringList(entry.modules) || entry.modules.length < 2) {
+    throw new Error("Invalid module cycle modules in architecture baseline");
+  }
+  if (entry.count !== entry.modules.length) {
+    throw new Error("Invalid module cycle count in architecture baseline");
+  }
+  if (entry.key !== entry.modules.join(" <-> ")) {
+    throw new Error("Invalid module cycle key in architecture baseline");
+  }
+  if (!isSortedUniqueStringList(entry.edges)) {
+    throw new Error("Invalid module cycle edges in architecture baseline");
+  }
+
+  const modules = new Set(entry.modules);
+  for (const edge of entry.edges) {
+    const [source, destination, extra] = edge.split(" -> ");
+    if (
+      extra !== undefined ||
+      !source ||
+      !destination ||
+      source === destination ||
+      !modules.has(source) ||
+      !modules.has(destination)
+    ) {
+      throw new Error("Invalid module cycle edge in architecture baseline");
+    }
+  }
+};
+
+const policyTransitionKey = ({ from, reference, to }) =>
+  `${from} -> ${to} [${reference}]`;
+
+const policyTransitionsFor = (baseline) =>
+  baseline.approvedPolicyTransitions ?? [];
+
+const policyTransitionsMatch = (baseTransitions, candidateTransitions) =>
+  baseTransitions.length === candidateTransitions.length &&
+  baseTransitions.every(
+    (transition, index) =>
+      policyTransitionKey(transition) ===
+      policyTransitionKey(candidateTransitions[index]),
+  );
+
+const validateApprovedPolicyTransitions = (baseline) => {
+  const transitions = policyTransitionsFor(baseline);
+  if (!Array.isArray(transitions)) {
+    throw new Error(
+      "Architecture baseline approvedPolicyTransitions must be an array",
+    );
+  }
+
+  const transitionKeys = new Set();
+  for (let index = 0; index < transitions.length; index += 1) {
+    const transition = transitions[index];
+    const reference = transition?.reference;
+    if (
+      !POLICY_FINGERPRINT_PATTERN.test(transition?.from ?? "") ||
+      !POLICY_FINGERPRINT_PATTERN.test(transition?.to ?? "") ||
+      typeof reference !== "string" ||
+      !reference.startsWith(ARCHITECTURE_DECISION_PATH_PREFIX) ||
+      !reference.endsWith(".md") ||
+      reference.split("/").includes("..")
+    ) {
+      throw new Error("Invalid approved architecture policy transition");
+    }
+
+    const key = policyTransitionKey(transition);
+    if (transitionKeys.has(key)) {
+      throw new Error("Duplicate approved architecture policy transition");
+    }
+    transitionKeys.add(key);
+
+    if (index > 0 && transition.from !== transitions[index - 1].to) {
+      throw new Error("Architecture policy transitions must form a chain");
+    }
+  }
+
+  if (
+    transitions.length > 0 &&
+    transitions.at(-1).to !== fingerprintPolicy(baseline.policy)
+  ) {
+    throw new Error(
+      "Latest approved architecture policy transition does not match baseline policy",
+    );
+  }
+};
+
+const policiesMatch = (base, candidate) =>
+  fingerprintPolicy(base.policy) === fingerprintPolicy(candidate.policy);
+
+export const findApprovedPolicyTransition = (base, candidate) => {
+  if (policiesMatch(base, candidate)) return null;
+
+  const baseTransitions = policyTransitionsFor(base);
+  const candidateTransitions = policyTransitionsFor(candidate);
+  if (candidateTransitions.length !== baseTransitions.length + 1) return null;
+  if (
+    !policyTransitionsMatch(baseTransitions, candidateTransitions.slice(0, -1))
+  ) {
+    return null;
+  }
+
+  const transition = candidateTransitions.at(-1);
+  if (
+    transition.from !== fingerprintPolicy(base.policy) ||
+    transition.to !== fingerprintPolicy(candidate.policy)
+  ) {
+    return null;
+  }
+
+  return transition;
+};
+
 export const validateBaseline = (
   baseline,
   { allowPolicyMismatch = false } = {},
@@ -832,13 +1041,22 @@ export const validateBaseline = (
     );
   }
   if (
+    !baseline.policy ||
+    typeof baseline.policy !== "object" ||
+    Array.isArray(baseline.policy)
+  ) {
+    throw new Error("Architecture baseline policy must be an object");
+  }
+  if (
     !allowPolicyMismatch &&
-    JSON.stringify(baseline.policy) !== JSON.stringify(POLICY)
+    fingerprintPolicy(baseline.policy) !== fingerprintPolicy(POLICY)
   ) {
     throw new Error(
       "Architecture policy changed; regenerate deliberately with --force-with-adr <reference>",
     );
   }
+
+  validateApprovedPolicyTransitions(baseline);
 
   for (const category of CATEGORY_ORDER) {
     const entries = baseline.categories?.[category];
@@ -855,7 +1073,64 @@ export const validateBaseline = (
       }
     }
     entriesByKey(baseline, category);
+
+    if (category === "moduleCycles") {
+      for (const entry of entries) validateCycleEntry(entry);
+    }
   }
+};
+
+const compareTransitionIssues = (left, right) => {
+  const leftCategoryIndex = CATEGORY_ORDER.indexOf(left.category);
+  const rightCategoryIndex = CATEGORY_ORDER.indexOf(right.category);
+  const normalizedLeftIndex =
+    leftCategoryIndex === -1 ? CATEGORY_ORDER.length : leftCategoryIndex;
+  const normalizedRightIndex =
+    rightCategoryIndex === -1 ? CATEGORY_ORDER.length : rightCategoryIndex;
+
+  return (
+    normalizedLeftIndex - normalizedRightIndex ||
+    left.key.localeCompare(right.key)
+  );
+};
+
+/**
+ * Verifies a proposed checked-in baseline against the merge-base baseline.
+ * Debt reductions remain valid. A scanner-policy change must append one
+ * approved, reviewable architecture-decision transition from the exact base
+ * policy to the exact candidate policy.
+ */
+export const compareBaselineTransitions = (base, candidate) => {
+  validateBaseline(base, { allowPolicyMismatch: true });
+  validateBaseline(candidate);
+
+  const issues = compareSnapshots(base, candidate);
+  if (!policiesMatch(base, candidate)) {
+    if (!findApprovedPolicyTransition(base, candidate)) {
+      issues.push({
+        baselineCount: 0,
+        category: "policy",
+        currentCount: 1,
+        key: `approved transition ${fingerprintPolicy(base.policy)} -> ${fingerprintPolicy(candidate.policy)}`,
+        type: "new",
+      });
+    }
+  } else if (
+    !policyTransitionsMatch(
+      policyTransitionsFor(base),
+      policyTransitionsFor(candidate),
+    )
+  ) {
+    issues.push({
+      baselineCount: policyTransitionsFor(base).length,
+      category: "policy",
+      currentCount: policyTransitionsFor(candidate).length,
+      key: "approved transition history",
+      type: "growth",
+    });
+  }
+
+  return issues.sort(compareTransitionIssues);
 };
 
 export const prepareSnapshotForWrite = ({
@@ -863,6 +1138,9 @@ export const prepareSnapshotForWrite = ({
   existing,
   forceAdrReference,
 }) => {
+  const policyChanged =
+    Boolean(existing) &&
+    fingerprintPolicy(existing.policy) !== fingerprintPolicy(current.policy);
   const issues = existing
     ? compareSnapshots(existing, current)
     : [
@@ -875,18 +1153,53 @@ export const prepareSnapshotForWrite = ({
         },
       ];
 
+  if (policyChanged) {
+    issues.push({
+      baselineCount: 0,
+      category: "policy",
+      currentCount: 1,
+      key: `approved transition ${fingerprintPolicy(existing.policy)} -> ${fingerprintPolicy(current.policy)}`,
+      type: "new",
+    });
+  }
+
+  const hardBlockedIssues = existing
+    ? issues.filter(({ category }) => NON_OVERRIDABLE_CATEGORIES.has(category))
+    : [];
+
+  if (hardBlockedIssues.length > 0) {
+    return {
+      allowed: false,
+      hardBlockedIssues,
+      issues,
+      snapshot: null,
+    };
+  }
+
   if (issues.length > 0 && !forceAdrReference) {
-    return { allowed: false, issues, snapshot: null };
+    return { allowed: false, hardBlockedIssues: [], issues, snapshot: null };
   }
 
   const approval = forceAdrReference
     ? { reference: forceAdrReference }
     : existing?.approval;
+  const approvedPolicyTransitions = policyChanged
+    ? [
+        ...policyTransitionsFor(existing),
+        {
+          from: fingerprintPolicy(existing.policy),
+          reference: forceAdrReference,
+          to: fingerprintPolicy(current.policy),
+        },
+      ]
+    : existing?.approvedPolicyTransitions;
 
   return {
     allowed: true,
+    hardBlockedIssues: [],
     issues,
     snapshot: buildSnapshot({
+      approvedPolicyTransitions,
       approval,
       categories: current.categories,
     }),

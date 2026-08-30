@@ -1,9 +1,9 @@
 import { Box, Flex, Text, Button, Avatar, Select, Menu } from "ui";
 import { DeleteIcon, MoreHorizontalIcon } from "icons";
 import { useState } from "react";
-import { useSession } from "@/lib/auth/client";
 import { cn } from "lib";
 import { toast } from "sonner";
+import { useSession } from "@/lib/auth/client";
 import type { Member, UserRole } from "@/types";
 import { ConfirmDialog, RowWrapper } from "@/components/ui";
 import { useUpdateRoleMutation } from "@/lib/hooks/update-role";
@@ -25,10 +25,10 @@ export const WorkspaceMember = ({
   const { mutate: removeMember } = useRemoveMemberMutation();
   const { tier } = useSubscriptionFeatures();
   const [isOpen, setIsOpen] = useState(false);
-  const isCurrentUser = session?.user?.id === id;
+  const isCurrentUser = session?.user.id === id;
 
   const otherAdminsCount = members.filter(
-    (member) => member.role === "admin" && member.id !== session?.user?.id,
+    (member) => member.role === "admin" && member.id !== session?.user.id,
   ).length;
 
   const canLeaveWorkspace = otherAdminsCount > 0;

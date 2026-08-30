@@ -1,9 +1,7 @@
-import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { analyticsKeys } from "@/constants/keys";
+import { analyticsKeys, keyResultKeys } from "@/constants/keys";
 import { useAnalytics, useWorkspacePath } from "@/hooks";
-import type { KeyResultListResponse } from "@/modules/key-results/types";
 import { objectiveKeys } from "../constants";
 import { updateKeyResult } from "../actions/update-key-result";
 import type { KeyResult, KeyResultUpdate } from "../types";
@@ -14,8 +12,6 @@ type UpdateKeyResultVariables = {
   data: KeyResultUpdate;
   silent?: boolean;
 };
-
-type WorkspaceKeyResultsData = InfiniteData<KeyResultListResponse>;
 
 export const useUpdateKeyResultMutation = () => {
   const queryClient = useQueryClient();
@@ -34,24 +30,12 @@ export const useUpdateKeyResultMutation = () => {
     },
 
     onMutate: async ({ keyResultId, objectiveId, data }) => {
-      const workspaceKeyResultsQuery = ["key-results", workspaceSlug] as const;
-
-      await Promise.all([
-        queryClient.cancelQueries({
-          queryKey: objectiveKeys.keyResults(workspaceSlug, objectiveId),
-        }),
-        queryClient.cancelQueries({
-          queryKey: workspaceKeyResultsQuery,
-        }),
-      ]);
+      await queryClient.cancelQueries({
+        queryKey: objectiveKeys.keyResults(workspaceSlug, objectiveId),
+      });
       const previousKeyResults = queryClient.getQueryData<KeyResult[]>(
         objectiveKeys.keyResults(workspaceSlug, objectiveId),
       );
-      const previousWorkspaceKeyResults =
-        queryClient.getQueriesData<WorkspaceKeyResultsData>({
-          queryKey: workspaceKeyResultsQuery,
-        });
-
       queryClient.setQueryData<KeyResult[]>(
         objectiveKeys.keyResults(workspaceSlug, objectiveId),
         (old = []) =>
@@ -65,29 +49,7 @@ export const useUpdateKeyResultMutation = () => {
               : keyResult,
           ),
       );
-      queryClient.setQueriesData<WorkspaceKeyResultsData>(
-        { queryKey: workspaceKeyResultsQuery },
-        (old) =>
-          old
-            ? {
-                ...old,
-                pages: old.pages.map((page) => ({
-                  ...page,
-                  keyResults: page.keyResults.map((keyResult) =>
-                    keyResult.id === keyResultId
-                      ? {
-                          ...keyResult,
-                          ...data,
-                          updatedAt: new Date().toISOString(),
-                        }
-                      : keyResult,
-                  ),
-                })),
-              }
-            : old,
-      );
-
-      return { previousKeyResults, previousWorkspaceKeyResults };
+      return { previousKeyResults };
     },
     onError: (error, variables, context) => {
       if (context?.previousKeyResults) {
@@ -95,10 +57,6 @@ export const useUpdateKeyResultMutation = () => {
           objectiveKeys.keyResults(workspaceSlug, variables.objectiveId),
           context.previousKeyResults,
         );
-      }
-      for (const [queryKey, data] of context?.previousWorkspaceKeyResults ??
-        []) {
-        queryClient.setQueryData(queryKey, data);
       }
       toast.error("Failed to update key result", {
         description:
@@ -128,7 +86,7 @@ export const useUpdateKeyResultMutation = () => {
         queryKey: ["key-result-activities", workspaceSlug, keyResultId],
       });
       queryClient.invalidateQueries({
-        queryKey: ["key-results", workspaceSlug],
+        queryKey: keyResultKeys.all(workspaceSlug),
       });
       queryClient.invalidateQueries({
         queryKey: analyticsKeys.all(workspaceSlug),

@@ -155,3 +155,8 @@ export const paginateDocumentSummaries = (
     total,
   };
 };
+
+export const getDocumentPageAfterArchive = (
+  page: number,
+  pageItemCount: number,
+) => (pageItemCount === 1 ? Math.max(1, page - 1) : page);

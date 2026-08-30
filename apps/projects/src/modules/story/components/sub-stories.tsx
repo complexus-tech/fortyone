@@ -1,27 +1,25 @@
-import { Flex, Badge, Button, Tooltip, Box, Text, Checkbox, Wrapper } from "ui";
+import { Flex, Badge, Button, Tooltip, Box } from "ui";
 import {
   ArrowDown2Icon,
   ArrowUp2Icon,
   PlusIcon,
   SubStoryIcon,
   AiIcon,
-  InfoIcon,
 } from "icons";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { cn } from "lib";
 import { useHotkeys } from "react-hotkeys-hook";
-import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { NewSubStory } from "@/components/ui/new-sub-story";
 import { RowWrapper, StoriesBoard } from "@/components/ui";
 import { useTeamStatuses } from "@/lib/hooks/statuses";
-import { useTerminology, useUserRole } from "@/hooks";
-import { substoryGenerationSchema } from "@/modules/stories/schemas";
-import { useCreateStoryMutation } from "@/modules/story/hooks/create-mutation";
+import { useTerminology, useUserRole, useWorkspacePath } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
 import { useChatContext } from "@/context/chat-context";
 import { useTeams } from "@/modules/teams/hooks/teams";
 import type { DetailedStory } from "../types";
 import { StoryRelationshipPicker } from "./story-relationship-picker";
+import { SubstorySuggestions } from "./substory-suggestions";
+import { useSubstorySuggestions } from "./use-substory-suggestions";
 
 export const SubStories = ({
   parent,
@@ -33,87 +31,52 @@ export const SubStories = ({
   isSubStoriesOpen: boolean;
 }) => {
   const { getTermDisplay } = useTerminology();
-  const mutation = useCreateStoryMutation();
   const [isCreateSubStoryOpen, setIsCreateSubStoryOpen] = useState(false);
-  const [manualSelectedSubstories, setManualSelectedSubstories] = useState<
-    Set<string>
-  >(new Set());
-  const [hasCustomSelection, setHasCustomSelection] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(true);
   const { data: statuses = [] } = useTeamStatuses(parent.teamId);
   const { data: teams = [] } = useTeams();
   const team = teams.find((team) => team.id === parent.teamId);
   const { openChat } = useChatContext();
   const { userRole } = useUserRole();
+  const { workspaceSlug } = useWorkspacePath();
   const completedStatus = statuses.find(
     (status) => status.category === "completed",
   );
   const defaultStatus =
     statuses.find((status) => status.isDefault) || statuses.at(0);
-
-  const { object, submit, isLoading } = useObject({
-    api: "/api/suggest-substories",
-    schema: substoryGenerationSchema,
+  const storyTerms = {
+    plural: getTermDisplay("storyTerm", { variant: "plural" }),
+    pluralCapitalized: getTermDisplay("storyTerm", {
+      capitalize: true,
+      variant: "plural",
+    }),
+    singular: getTermDisplay("storyTerm"),
+    singularCapitalized: getTermDisplay("storyTerm", {
+      capitalize: true,
+      variant: "singular",
+    }),
+  };
+  const {
+    canCreateSuggestedSubstories,
+    cancelSuggestions,
+    createSelectedSubstories,
+    isCreatingSuggestedSubstories,
+    isLoadingSuggestions,
+    isShowingSuggestionError,
+    requestSuggestions,
+    selectedSubstories,
+    showSuggestions,
+    suggestedSubstories,
+    toggleSelectedSubstory,
+  } = useSubstorySuggestions({
+    defaultStatusId: defaultStatus?.id,
+    storyId: parent.id,
+    teamId: parent.teamId,
+    workspaceSlug,
   });
-
-  const suggestedTitles = useMemo(
-    () =>
-      (object?.substories ?? [])
-        .map((substory) => substory?.title)
-        .filter((title): title is string => Boolean(title)),
-    [object?.substories],
-  );
-
-  const selectedSubstories = useMemo(() => {
-    if (hasCustomSelection) {
-      return manualSelectedSubstories;
-    }
-    return new Set(suggestedTitles);
-  }, [hasCustomSelection, manualSelectedSubstories, suggestedTitles]);
 
   const completedStories = parent.subStories.filter(
     (story) => story.statusId === completedStatus?.id,
   ).length;
-
-  const toggleSelection = (substoryTitle: string) => {
-    setHasCustomSelection(true);
-    setManualSelectedSubstories((prev) => {
-      const baseSelection = hasCustomSelection
-        ? prev
-        : new Set(suggestedTitles);
-      const newSet = new Set(baseSelection);
-      if (newSet.has(substoryTitle)) {
-        newSet.delete(substoryTitle);
-      } else {
-        newSet.add(substoryTitle);
-      }
-      return newSet;
-    });
-  };
-
-  const clearSelection = () => {
-    setHasCustomSelection(true);
-    setManualSelectedSubstories(new Set());
-  };
-
-  const handleAddSelected = () => {
-    Array.from(selectedSubstories).forEach((substoryTitle) => {
-      mutation.mutate({
-        title: substoryTitle,
-        parentId: parent.id,
-        teamId: parent.teamId,
-        priority: "No Priority",
-        statusId: defaultStatus?.id,
-      });
-    });
-    clearSelection();
-    setShowSuggestions(false);
-  };
-
-  const handleCancel = () => {
-    clearSelection();
-    setShowSuggestions(false);
-  };
 
   useHotkeys("c", () => {
     if (userRole !== "guest") {
@@ -187,18 +150,13 @@ export const SubStories = ({
             <Button
               className="shrink-0"
               color="tertiary"
-              disabled={isLoading}
+              disabled={isLoadingSuggestions}
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
-              onClick={() => {
-                setHasCustomSelection(false);
-                setManualSelectedSubstories(new Set());
-                setShowSuggestions(true);
-                submit(parent);
-              }}
+              onClick={requestSuggestions}
               size="sm"
               variant="naked"
             >
-              {isLoading ? (
+              {isLoadingSuggestions ? (
                 <Thinking message="Maya is thinking" />
               ) : (
                 <>
@@ -247,87 +205,20 @@ export const SubStories = ({
         setIsOpen={setIsCreateSubStoryOpen}
         teamId={parent.teamId}
       />
-      {object?.substories && showSuggestions ? (
-        <Box className="my-2.5">
-          {object.substories.length > 0 ? (
-            <>
-              <Box className="border-border rounded-2xl border-[0.5px]">
-                {object.substories.map((substory) => {
-                  if (!substory?.title) return null;
-                  return (
-                    <RowWrapper
-                      className="gap-6 px-2 last-of-type:border-b-0 md:px-4"
-                      key={substory.title}
-                    >
-                      <Flex align="center" className="flex-1" gap={2}>
-                        <AiIcon className="shrink-0" />
-                        <Text
-                          className="line-clamp-1"
-                          color={
-                            selectedSubstories.has(substory.title)
-                              ? undefined
-                              : "muted"
-                          }
-                        >
-                          {substory.title}
-                        </Text>
-                      </Flex>
-                      <Checkbox
-                        checked={selectedSubstories.has(substory.title)}
-                        className="shrink-0"
-                        onCheckedChange={() => {
-                          toggleSelection(substory.title!);
-                        }}
-                      />
-                    </RowWrapper>
-                  );
-                })}
-              </Box>
-              <Flex className="mt-2" gap={2} justify="end">
-                <Button color="tertiary" onClick={handleCancel} variant="naked">
-                  Cancel
-                </Button>
-                <Button
-                  disabled={selectedSubstories.size === 0}
-                  onClick={handleAddSelected}
-                >
-                  Create {selectedSubstories.size} Sub{" "}
-                  {getTermDisplay("storyTerm", {
-                    capitalize: true,
-                    variant:
-                      selectedSubstories.size === 1 ? "singular" : "plural",
-                  })}
-                </Button>
-              </Flex>
-            </>
-          ) : (
-            <Wrapper className="border-warning bg-warning/10 dark:border-warning/20 dark:bg-warning/10 flex items-center justify-between gap-2 border p-4">
-              <Flex align="center" gap={2}>
-                <InfoIcon className="text-warning dark:text-warning" />
-                <Text>
-                  Could not generate sub{" "}
-                  {getTermDisplay("storyTerm", {
-                    variant: "plural",
-                  })}
-                  , make sure your parent {getTermDisplay("storyTerm")} is
-                  actionable
-                </Text>
-              </Flex>
-              <Button
-                color="warning"
-                onClick={() => {
-                  setHasCustomSelection(false);
-                  setManualSelectedSubstories(new Set());
-                  setShowSuggestions(true);
-                  submit(parent);
-                }}
-              >
-                Try again
-              </Button>
-            </Wrapper>
-          )}
-        </Box>
-      ) : null}
+      <SubstorySuggestions
+        SuggestionRow={RowWrapper}
+        canCreateSuggestedSubstories={canCreateSuggestedSubstories}
+        isCreatingSuggestedSubstories={isCreatingSuggestedSubstories}
+        isShowingSuggestionError={isShowingSuggestionError}
+        onCancelSuggestions={cancelSuggestions}
+        onCreateSelectedSubstories={createSelectedSubstories}
+        onRequestSuggestions={requestSuggestions}
+        onToggleSelectedSubstory={toggleSelectedSubstory}
+        selectedSubstories={selectedSubstories}
+        showSuggestions={showSuggestions}
+        suggestedSubstories={suggestedSubstories}
+        terms={storyTerms}
+      />
 
       {isSubStoriesOpen && parent.subStories.length > 0 ? (
         <StoriesBoard

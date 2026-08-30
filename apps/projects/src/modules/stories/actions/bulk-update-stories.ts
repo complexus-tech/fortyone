@@ -1,8 +1,8 @@
 import { auth } from "@/auth";
 import { put } from "@/lib/http";
-import type { DetailedStory } from "@/modules/story/types";
 import type { ApiResponse } from "@/types";
 import { getApiError } from "@/utils";
+import type { DetailedStory } from "../types";
 
 type Payload = {
   storyIds: string[];

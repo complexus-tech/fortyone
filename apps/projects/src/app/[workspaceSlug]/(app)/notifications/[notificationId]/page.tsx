@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { NotificationDetails } from "@/modules/notifications/details";
+import { NotificationStoryDetails } from "@/shell/notifications/notification-story-details";
 import { getStory } from "@/modules/story/queries/get-story";
 import { auth } from "@/auth";
 import { getObjective } from "@/modules/objectives/queries/get-objective";
@@ -143,6 +143,9 @@ export default async function Page({
   }
 
   return (
-    <NotificationDetails entityId={entityId} notificationId={notificationId} />
+    <NotificationStoryDetails
+      entityId={entityId}
+      notificationId={notificationId}
+    />
   );
 }

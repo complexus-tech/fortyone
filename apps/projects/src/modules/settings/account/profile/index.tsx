@@ -2,9 +2,9 @@
 
 import { Box, Button, Text } from "ui";
 import { useState } from "react";
-import { ConfirmDialog } from "@/components/ui";
-import { SectionHeader } from "../../components";
-import { ProfileForm } from "./components/form";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { SectionHeader } from "@/components/ui/section-header";
+import { ProfileForm } from "@/shared/profile/profile-form";
 import { GitHubAccountLink } from "./components/github-link";
 
 export const ProfileSettings = () => {

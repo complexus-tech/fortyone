@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
 import { sprintKeys } from "@/constants/keys";
+import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
 import { getSprint } from "../queries/get-sprint-details";
+import type { Sprint } from "../types";
 import { useSprints } from "./sprints";
 import { useTeamSprints } from "./team-sprints";
-import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
-import type { Sprint } from "../types";
 
 export const useSprint = (sprintId: string | null, teamId?: string) => {
   const { data: session } = useSession();

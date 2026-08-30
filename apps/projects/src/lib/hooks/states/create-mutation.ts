@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
-import { useWorkspacePath } from "@/hooks";
 import { statusKeys } from "@/constants/keys";
-import type { NewState } from "../../actions/states/create";
+import { useWorkspacePath } from "@/hooks";
+import type { State } from "@/types/states";
 import { createStateAction } from "../../actions/states/create";
-import { State } from "@/types/states";
+import type { NewState } from "../../actions/states/create";
 
 export const useCreateStateMutation = () => {
   const queryClient = useQueryClient();
@@ -84,7 +84,7 @@ export const useCreateStateMutation = () => {
       );
       if (currentStates) {
         const updatedStates = currentStates.map((state) =>
-          state.id === context?.tempId ? createdState : state,
+          state.id === context.tempId ? createdState : state,
         );
         queryClient.setQueryData<State[]>(
           statusKeys.team(workspaceSlug, teamId),

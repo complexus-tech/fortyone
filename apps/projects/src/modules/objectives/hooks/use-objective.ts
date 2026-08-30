@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/client";
 import { useWorkspacePath } from "@/hooks";
-import { objectiveKeys } from "../constants";
 import { DURATION_FROM_MILLISECONDS } from "@/constants/time";
+import { objectiveKeys } from "../constants";
 import { getObjective } from "../queries/get-objective";
-import { useObjectives } from "./use-objectives";
-import { useTeamObjectives } from "./use-objectives";
+import { useObjectives, useTeamObjectives } from "./use-objectives";
 
 export const useObjective = (objectiveId: string | null, teamId?: string) => {
   const { data: session } = useSession();

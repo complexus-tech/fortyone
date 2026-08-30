@@ -1,4 +1,3 @@
-import React from "react";
 import { Flex } from "ui";
 import type { Icon } from "icons/src/types";
 

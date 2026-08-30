@@ -34,7 +34,7 @@ jest.mock("ui", () => ({
   ),
 }));
 
-jest.mock("@/hooks", () => ({
+jest.mock("@/hooks/use-terminology-display", () => ({
   useTerminology: () => ({
     getTermDisplay: (term: string) => (term === "storyTerm" ? "stories" : term),
   }),
@@ -54,9 +54,10 @@ jest.mock("recharts", () => ({
     data?: Record<string, unknown>[];
   }) => (
     <div>
-      {data?.map((row) => (
-        <span key={String(row.memberName)}>{String(row.memberName ?? "")}</span>
-      ))}
+      {data?.map((row) => {
+        const label = row.memberName ?? row.username;
+        return <span key={String(label)}>{String(label ?? "")}</span>;
+      })}
       {children}
     </div>
   ),
@@ -70,7 +71,7 @@ jest.mock("recharts", () => ({
   YAxis: () => null,
 }));
 
-jest.mock("@/modules/sprints/stories/burndown", () => ({
+jest.mock("@/components/ui/burndown-chart", () => ({
   BurndownChart: () => null,
 }));
 
@@ -258,4 +259,132 @@ describe("AnalyticsReport workspace command center", () => {
     );
     expect(container).not.toHaveTextContent("private backend failure detail");
   });
+
+  it("renders a single-sprint report with its owned report sections", () => {
+    render(
+      <AnalyticsReport
+        output={{
+          analytics: {
+            burndown: [
+              { date: "2026-08-01", ideal: 8, remaining: 10 },
+              { date: "2026-08-02", ideal: 6, remaining: 7 },
+            ],
+            overview: { completionPercentage: 25, daysRemaining: 4 },
+            storyBreakdown: {
+              blocked: 1,
+              completed: 2,
+              inProgress: 3,
+              total: 8,
+            },
+            teamAllocation: [{ assigned: 5, completed: 2, username: "Ada" }],
+            workingDays: [1, 2, 3, 4, 5],
+          },
+          kind: "single-sprint-analytics-report",
+          title: "August launch sprint",
+        }}
+      />,
+    );
+
+    expect(screen.getByText("August launch sprint")).toBeInTheDocument();
+    expect(screen.getByText("Burndown")).toBeInTheDocument();
+    expect(screen.getByText("Team allocation")).toBeInTheDocument();
+    expect(screen.getByText("Ada")).toBeInTheDocument();
+  });
+});
+
+const reportDispatchCases: {
+  expected: string;
+  name: string;
+  output: Record<string, unknown>;
+}[] = [
+  {
+    expected: "GitHub is not connected to this workspace.",
+    name: "GitHub integration",
+    output: {
+      kind: "github-integration-report",
+      summary: {},
+    },
+  },
+  {
+    expected: "Automation rules for Platform.",
+    name: "GitHub team automation",
+    output: {
+      kind: "github-team-automation-report",
+      rules: [],
+      team: { name: "Platform" },
+    },
+  },
+  {
+    expected: "No GitHub links are attached to this stories.",
+    name: "GitHub story links",
+    output: {
+      kind: "github-story-report",
+      links: [],
+      story: {},
+    },
+  },
+  {
+    expected: "Completion trend",
+    name: "workspace performance",
+    output: {
+      kind: "workspace-performance-report",
+      overview: { metrics: {} },
+    },
+  },
+  {
+    expected: "Highest workload",
+    name: "pulse",
+    output: {
+      kind: "pulse-report",
+      report: { risks: [], summary: {}, workload: { members: [] } },
+    },
+  },
+  {
+    expected: "Workload by member",
+    name: "workload analysis",
+    output: {
+      analysis: { members: [], risks: {}, summary: {} },
+      kind: "workload-analysis-report",
+    },
+  },
+  {
+    expected: "Status breakdown",
+    name: "story performance",
+    output: { analytics: {}, kind: "story-performance-report" },
+  },
+  {
+    expected: "Key-result progress",
+    name: "objective progress",
+    output: { kind: "objective-progress-report", progress: {} },
+  },
+  {
+    expected: "Team workload",
+    name: "team performance",
+    output: {
+      focusMember: {},
+      kind: "team-performance-report",
+      performance: {},
+    },
+  },
+  {
+    expected: "Sprint progress",
+    name: "sprint performance",
+    output: { analytics: {}, kind: "sprint-performance-report" },
+  },
+  {
+    expected: "Key metrics",
+    name: "timeline trends",
+    output: { kind: "timeline-trends-report", trends: {} },
+  },
+];
+
+describe("AnalyticsReport report dispatch", () => {
+  it.each(reportDispatchCases)(
+    "renders the $name report",
+    ({ expected, output }) => {
+      render(<AnalyticsReport output={output} />);
+
+      expect(screen.getByText(expected)).toBeInTheDocument();
+    },
+  );
 });

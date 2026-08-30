@@ -46,6 +46,7 @@ jest.mock("@/components/ui/confirm-dialog", () => ({
 }));
 
 jest.mock("@/hooks", () => ({
+  useHydratedNow: () => null,
   useTerminology: () => ({
     getTermDisplay: () => "story",
   }),

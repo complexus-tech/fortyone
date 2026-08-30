@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { tool } from "ai";
 import { withWorkspacePath } from "@/utils";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 
 export const navigation = tool({
   description:

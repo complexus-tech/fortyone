@@ -1,6 +1,6 @@
 import { stringify } from "qs";
-import { get, type WorkspaceCtx } from "@/lib/http";
-import type { ApiResponse } from "@/types";
+import { get, type WorkspaceCtx } from "@/lib/http/fetch";
+import type { ApiResponse } from "@/types/api-response";
 import type { AnalyticsFilters, WorkspaceCommandCenterReport } from "../types";
 
 const COMMAND_CENTER_TIMEOUT_MS = 60_000;

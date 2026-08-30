@@ -2,7 +2,7 @@ import { z } from "zod";
 import { tool } from "ai";
 import { auth } from "@/auth";
 import { getStory, getStoryRef } from "@/modules/story/queries/get-story";
-import { DetailedStory } from "@/modules/story/types";
+import type { DetailedStory } from "@/modules/story/types";
 
 export const getStoryDetails = tool({
   description:
@@ -22,7 +22,10 @@ export const getStoryDetails = tool({
       ),
   }),
 
-  execute: async ({ storyId, storyRef }, { experimental_context }) => {
+  execute: async (
+    { storyId, storyRef },
+    { experimental_context: experimentalContext },
+  ) => {
     if (!storyId && !storyRef) {
       return {
         success: false,
@@ -39,7 +42,7 @@ export const getStoryDetails = tool({
         };
       }
 
-      const workspaceSlug = (experimental_context as { workspaceSlug: string })
+      const workspaceSlug = (experimentalContext as { workspaceSlug: string })
         .workspaceSlug;
 
       const ctx = { session, workspaceSlug };

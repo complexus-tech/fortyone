@@ -29,7 +29,7 @@ import { cn } from "lib";
 import { toast } from "sonner";
 import { ConfirmDialog, RowWrapper, AssigneesMenu } from "@/components/ui";
 import { useIsAdminOrOwner } from "@/hooks/owner";
-import { useMediaQuery, useTerminology } from "@/hooks";
+import { useMediaQuery, useTerminology, useWorkspacePath } from "@/hooks";
 import { Thinking } from "@/components/ui/chat/thinking";
 import { RoadmapEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
 import {
@@ -370,6 +370,7 @@ const Okr = ({
 export const KeyResults = ({ viewport }: { viewport: KeyResultsViewport }) => {
   const { getTermDisplay } = useTerminology();
   const { objectiveId } = useParams<{ objectiveId: string }>();
+  const { workspaceSlug } = useWorkspacePath();
   const searchParams = useSearchParams();
   const createKeyResultsMutation = useCreateKeyResultsMutation();
   const { data: keyResults = [], isPending } = useKeyResults(objectiveId);
@@ -463,6 +464,13 @@ export const KeyResults = ({ viewport }: { viewport: KeyResultsViewport }) => {
     setShowSuggestions(false);
   };
 
+  const requestSuggestions = () => {
+    setHasCustomSelection(false);
+    setManualSelectedKeyResults(new Set());
+    setShowSuggestions(true);
+    submit({ objectiveId, workspaceSlug });
+  };
+
   if (isPending) {
     return (
       <Box className="my-8">
@@ -500,12 +508,7 @@ export const KeyResults = ({ viewport }: { viewport: KeyResultsViewport }) => {
               color="tertiary"
               disabled={isLoading}
               leftIcon={<AiIcon className="text-primary dark:text-primary" />}
-              onClick={() => {
-                setHasCustomSelection(false);
-                setManualSelectedKeyResults(new Set());
-                setShowSuggestions(true);
-                submit({ objective, keyResults });
-              }}
+              onClick={requestSuggestions}
               size="sm"
               variant="naked"
             >
@@ -612,15 +615,7 @@ export const KeyResults = ({ viewport }: { viewport: KeyResultsViewport }) => {
                   actionable
                 </Text>
               </Flex>
-              <Button
-                color="warning"
-                onClick={() => {
-                  setHasCustomSelection(false);
-                  setManualSelectedKeyResults(new Set());
-                  setShowSuggestions(true);
-                  submit({ objective, keyResults });
-                }}
-              >
+              <Button color="warning" onClick={requestSuggestions}>
                 Try again
               </Button>
             </Wrapper>

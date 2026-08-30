@@ -1,9 +1,7 @@
-import type { InfiniteData } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { analyticsKeys } from "@/constants/keys";
+import { analyticsKeys, keyResultKeys } from "@/constants/keys";
 import { useWorkspacePath } from "@/hooks";
-import type { KeyResultListResponse } from "@/modules/key-results/types";
 import { objectiveKeys } from "../constants";
 import { deleteKeyResult } from "../actions/delete-key-result";
 import type { KeyResult } from "../types";
@@ -12,8 +10,6 @@ type DeleteKeyResultVariables = {
   keyResultId: string;
   objectiveId: string;
 };
-
-type WorkspaceKeyResultsData = InfiniteData<KeyResultListResponse>;
 
 export const useDeleteKeyResultMutation = () => {
   const queryClient = useQueryClient();
@@ -24,47 +20,18 @@ export const useDeleteKeyResultMutation = () => {
       deleteKeyResult(keyResultId, workspaceSlug),
 
     onMutate: async ({ keyResultId, objectiveId }) => {
-      const workspaceKeyResultsQuery = ["key-results", workspaceSlug] as const;
-
-      await Promise.all([
-        queryClient.cancelQueries({
-          queryKey: objectiveKeys.keyResults(workspaceSlug, objectiveId),
-        }),
-        queryClient.cancelQueries({
-          queryKey: workspaceKeyResultsQuery,
-        }),
-      ]);
+      await queryClient.cancelQueries({
+        queryKey: objectiveKeys.keyResults(workspaceSlug, objectiveId),
+      });
 
       const previousKeyResults = queryClient.getQueryData<KeyResult[]>(
         objectiveKeys.keyResults(workspaceSlug, objectiveId),
       );
-      const previousWorkspaceKeyResults =
-        queryClient.getQueriesData<WorkspaceKeyResultsData>({
-          queryKey: workspaceKeyResultsQuery,
-        });
-
       queryClient.setQueryData<KeyResult[]>(
         objectiveKeys.keyResults(workspaceSlug, objectiveId),
         (old = []) => old.filter((keyResult) => keyResult.id !== keyResultId),
       );
-      queryClient.setQueriesData<WorkspaceKeyResultsData>(
-        { queryKey: workspaceKeyResultsQuery },
-        (old) =>
-          old
-            ? {
-                ...old,
-                pages: old.pages.map((page) => ({
-                  ...page,
-                  keyResults: page.keyResults.filter(
-                    (keyResult) => keyResult.id !== keyResultId,
-                  ),
-                  totalCount: Math.max(0, page.totalCount - 1),
-                })),
-              }
-            : old,
-      );
-
-      return { previousKeyResults, previousWorkspaceKeyResults };
+      return { previousKeyResults };
     },
     onError: (error, variables, context) => {
       if (context?.previousKeyResults) {
@@ -72,10 +39,6 @@ export const useDeleteKeyResultMutation = () => {
           objectiveKeys.keyResults(workspaceSlug, variables.objectiveId),
           context.previousKeyResults,
         );
-      }
-      for (const [queryKey, data] of context?.previousWorkspaceKeyResults ??
-        []) {
-        queryClient.setQueryData(queryKey, data);
       }
       toast.error("Failed to delete key result", {
         description:
@@ -108,7 +71,7 @@ export const useDeleteKeyResultMutation = () => {
         queryKey: objectiveKeys.activitiesInfinite(workspaceSlug, objectiveId),
       });
       queryClient.invalidateQueries({
-        queryKey: ["key-results", workspaceSlug],
+        queryKey: keyResultKeys.all(workspaceSlug),
       });
       queryClient.invalidateQueries({
         queryKey: analyticsKeys.all(workspaceSlug),

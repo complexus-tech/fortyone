@@ -1,13 +1,24 @@
 # FortyOne Projects Modernization: Current State and Target Architecture
 
-**Status:** Active source of truth; Phase 0 foundation and first invitations
-slice in progress  
+**Status:** Active source of truth; Phase 0 foundation and multiple
+behavior-preserving hardening and cohesion slices implemented
+**Snapshot date:** 2026-08-30
 **Scope:** `apps/projects`  
 **Audience:** Projects engineers, reviewers, product engineers, and integration
 authors  
 **Decision:** Keep one modular Next.js application and migrate incrementally  
 **Implementation status:** [evidence ledger](./00-implementation-status.md)  
 **Delivery plan:** [delivery, testing, and documentation roadmap](./02-delivery-testing-and-documentation-roadmap.md)
+
+## Completion update — 2026-08-30
+
+This update takes precedence over the historical snapshots below. The latest
+local architecture check scans 1,618 production TypeScript/TSX files, reports
+an acyclic module graph, and finds no production file at or above 700 lines.
+Focused Strategy Map and Roadmap scale tests pass with 50 objectives and key
+results. This is local source-and-test validation only; it does not establish
+authenticated-browser, deployed, or production behavior. No GitHub Actions were
+added or changed, at the user's request.
 
 ## 1. Executive decision
 
@@ -33,9 +44,10 @@ Dependencies point in one direction:
 app -> shell/modules -> shared
 ```
 
-These documents establish the destination and review rules. The initial
-architecture ratchet and invitations ownership slice begin adoption, but they do
-not mean that the wider source tree already follows the target.
+These documents establish the destination and review rules. The active
+architecture ratchet and completed ownership/hardening slices demonstrate
+adoption, but they do not mean that the wider source tree already follows the
+target.
 
 ## 2. What was reviewed
 
@@ -62,38 +74,44 @@ containing 16 feature modules and classified about 250 authenticated request
 paths. The implementation ledger records current post-foundation counts and
 verification separately so the initial score is not silently rewritten.
 
-The baseline score is **4.7/10 for source and architecture readiness**:
+The initial reviewed score was 4.7/10. Current implementation evidence raises
+the score to **7.3/10 for source and architecture readiness**:
 
 | Dimension            |  Score |
 | -------------------- | -----: |
-| Architecture         | 4.0/10 |
-| Correctness          | 6.0/10 |
-| Security             | 5.5/10 |
-| Performance          | 5.0/10 |
-| Testing              | 4.0/10 |
-| Maintainability      | 4.0/10 |
-| Developer experience | 4.5/10 |
+| Architecture         | 6.2/10 |
+| Correctness          | 7.8/10 |
+| Security             | 8.0/10 |
+| Performance          | 6.8/10 |
+| Testing              | 7.5/10 |
+| Maintainability      | 7.2/10 |
+| Developer experience | 7.8/10 |
 
 This is not a product-quality or feature-quality score. The detailed rationale
 and evidence limitations are in the implementation-status ledger.
 
 ### 2.1 Current adoption checkpoint
 
-ADR 0001 is accepted. Phase 0 now has a dependency-free scanner, eleven scanner
-tests, a guarded exact-path debt baseline, deterministic Jest discovery, and a
-pull-request workflow for the architecture, type, Jest, and build gates. The
-first invitations ownership slice moves invitation keys and duplicate request
-paths into `src/modules/invitations`, switches the known route, onboarding,
-layout-prefetch, and UI callers, and deletes four superseded `src/lib` files.
+ADR 0001 is accepted. Phase 0 now has a dependency-free scanner, twenty-one
+scanner tests, a guarded exact-path debt baseline, deterministic Jest discovery,
+and a pull-request workflow for architecture integrity, changed-file
+lint/format, type, complete Jest, and build gates. The invitations slice moves
+its keys and duplicate request paths into `src/modules/invitations`, switches
+known callers, and deletes four superseded `src/lib` files. Metadata HTML and
+image paths now enforce a pinned, per-hop public-target policy and response
+budgets. AI-suggestion, Maya-message, and reasoning-Markdown boundaries have
+their own request/decoder/sanitization hardening. Story options, New Story,
+Story subtasks, filters, Integration Requests, Calendar, Strategy map, and Maya
+policy now have narrower cohesive seams with focused characterization.
 
-This is an incremental source cutover, not a claim that invitations or Projects
-already satisfy every target rule. The complete Jest run, combined type check,
-production build, focused changed-scope ESLint, and changed-scope React Doctor
-pass; React Doctor reports 90/100 with no issues across 29 changed files. The
-broad lint baseline remains red with 240 findings in the final run, the full-app
-React Doctor baseline remains 57/100, and semantic architecture, request,
-permission, cache, and browser evidence still must be completed before
-invitations can be called architecture-complete.
+This is incremental source cutover, not a claim that invitations or Projects
+already satisfy every target rule. The combined type check, repository-wide
+lint, architecture baseline verification, complete Jest run (255 suites and
+1,449 tests), and production build pass. React Doctor reports 88/100 on the
+final changed scope with no errors and 54 reviewed advisories. Semantic
+architecture, request, permission, cache, authenticated-browser, accessibility,
+bundle, and deployment evidence still must be completed before affected
+capabilities can be called architecture-complete.
 
 ## 3. What should remain
 
@@ -148,7 +166,7 @@ and browser bundles. Without explicit entrypoints, a helper can acquire cookies,
 tokens, Node APIs, or server-only dependencies and later be imported by a client
 component. Conversely, browser concerns can spread into server data functions.
 
-Separate static analysis finds 244 executable `await auth()` calls across 225
+Separate static analysis finds 245 executable `await auth()` calls across 226
 production files. That heuristic inventory shows that authentication is taken
 seriously, but also that request context is assembled repeatedly. The target
 deduplicates request-local work without hiding or weakening authorization.
@@ -162,14 +180,20 @@ shape decides deduplication, hydration, optimistic state, invalidation, and
 realtime updates. Duplicate ownership can make a mutation appear successful in
 one view while another remains stale.
 
-### 4.5 Outbound request policy is incomplete
+### 4.5 Outbound request policy is explicit for metadata
 
-`src/app/api/metadata/route.ts` accepts a caller-supplied URL and fetches it on
-the server with `cheerio.fromURL`. Authentication limits who can invoke the
-route, but does not make the destination safe. The handler has no explicit
-private-network, loopback, link-local, cloud-metadata, redirect-hop, content
-type, or response-size policy. This is an SSRF boundary and should be remediated
-before lower-risk structural cleanup.
+`src/app/api/metadata/route.ts` now authenticates before outbound work and
+allows only default-port HTTP(S) destinations whose complete DNS answer set is
+public. Each socket is pinned to a validated address, transport failures can
+fall through the safe answer set, and every redirect is revalidated under one
+eight-second budget. HTML MIME, encoding, and byte limits are enforced.
+
+Metadata images use an authenticated same-origin proxy rather than returning an
+attacker-controlled browser destination. The proxy shares the destination and
+redirect policy, limits raster MIME types and bytes, rejects SVG, and sets
+defensive headers. Focused tests cover IPv4, IPv6, DNS, redirects, address
+fallback, response policy, image proxying, authentication, and error mapping.
+Infrastructure egress enforcement remains required defense in depth.
 
 ### 4.6 Realtime behavior is centralized but not typed end to end
 
@@ -185,14 +209,13 @@ including detail, flat list, grouped, paginated, and infinite data.
 default Jest command originally failed before discovery with `TypeError: Cannot
 read properties of undefined (reading 'fileExists')`; the CommonJS `next/jest`
 configuration now reaches deterministic discovery. The complete combined-
-worktree run passes 220/220 suites and 1,279/1,279 tests with 0 snapshots in
-33.601 seconds. The production build also passes, compiling in 39.1 seconds,
-type-checking in 11.5 seconds, and generating 27 static pages. Focused ESLint over
-every changed app and scanner file passes; the final broad lint run remains red
-with 160 errors and 80 warnings. These are strong static/build gates, not a
-production-readiness or complete runtime-verification claim. React Doctor's
-57/100 result with 536 findings remains diagnostic rather than an architecture
-specification or release verdict.
+worktree run passes 255/255 suites and 1,449/1,449 tests with 0 snapshots in
+34.972 seconds. The production build also passes, compiling in 11.5 seconds,
+type-checking in 1.635 seconds, and generating 28 static pages. Repository-wide
+ESLint passes with 0 errors and 0 warnings. These are strong static/build gates,
+not a production-readiness or complete runtime-verification claim. React
+Doctor's 88/100 changed-scope result has no errors and 54 advisories; it remains
+diagnostic rather than an architecture specification or release verdict.
 
 ## 5. Architectural principles
 
@@ -543,20 +566,23 @@ initial exact-path baseline ratchets:
 
 - imports from current lower-layer roots (`components`, `constants`, `context`,
   `hooks`, `lib`, `types`, and `utils`) into feature modules;
-- all exact cross-module imports and the membership of module dependency cycles;
+- exact cross-module imports outside `src/modules/<owner>/public.ts` and
+  `src/modules/<owner>/public/**`, plus all module dependency edges for cycle
+  membership;
 - imports from designated broad root barrels;
 - files under the current legacy `src/lib/actions`, `src/lib/hooks`, and
   `src/lib/queries` roots; and
 - handwritten production files above 700 lines.
 
-The separate 244-call `await auth()` analysis remains useful for request-boundary
+The separate 245-call `await auth()` analysis remains useful for request-boundary
 planning, but the gate deliberately does not classify required authentication as
 architecture debt.
 
 This is a mechanical subset of the target enforcement, not the complete gate.
-Semantic public-versus-private module entrypoints, server-only leakage reachable
-from client graphs, unmanaged query-key literals, duplicate resource owners, and
-shell or route files implementing module cache semantics still require dedicated
+The explicit public-path rule does not yet prove that exports are narrow or safe
+for their browser/server consumer graph. Server-only leakage reachable from
+client graphs, unmanaged query-key literals, duplicate resource owners, and shell
+or route files implementing module cache semantics still require dedicated
 checks.
 
 The initial baseline records existing findings by exact path/edge. It is a
@@ -570,9 +596,14 @@ ratchet:
 
 File size is a review signal, not the architecture itself. For handwritten
 production files, target fewer than 400 lines, review 400–700 for cohesion, and
-require an explicit exception or split above 700 before substantial behavior is
-added. Generated files and data-only fixtures are exempt. Split by use case or
-component responsibility, never `part2` naming.
+classify anything above 700 as oversized debt. New oversized files and growth in
+an existing oversized file fail even when the emergency baseline writer has an
+ADR reference. Existing exact-path entries may only shrink. Machine-recognizable
+generated sources and test files are outside this production threshold;
+handwritten runtime fixtures are not. Split complete behavior seams or component
+responsibilities, never arbitrary ranges or `part2` files. The short engineering
+standard defines the required characterization, extraction sequence, exceptions,
+and acceptance evidence.
 
 ## 15. Testing standard
 
@@ -594,7 +625,7 @@ Tests must not use arbitrary sleeps, share mutable cache/session state between
 parallel cases, or replace an authorization test with a hidden button assertion.
 
 Jest startup and discovery repair are part of Phase 0 and are now implemented.
-The complete checkpoint passes 220/220 suites and 1,279/1,279 tests. Every
+The complete checkpoint passes 255/255 suites and 1,449/1,449 tests. Every
 subsequent modernization checkpoint must repeat the complete run and distinguish
 that Jest evidence from type, build, browser, authorization, and deployment
 evidence.

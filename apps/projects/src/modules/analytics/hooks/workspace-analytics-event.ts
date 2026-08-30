@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useWorkspacePath } from "@/hooks";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useSession } from "@/lib/auth/client";
 import { trackWorkspaceAnalyticsEvent } from "../queries/track-workspace-analytics-event";
 import type { WorkspaceAnalyticsEventPayload } from "../types";

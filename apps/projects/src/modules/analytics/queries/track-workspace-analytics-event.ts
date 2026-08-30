@@ -1,5 +1,5 @@
-import { post, type WorkspaceCtx } from "@/lib/http";
-import type { ApiResponse } from "@/types";
+import { post, type WorkspaceCtx } from "@/lib/http/fetch";
+import type { ApiResponse } from "@/types/api-response";
 import type {
   WorkspaceAnalyticsEventPayload,
   WorkspaceAnalyticsEventResponse,

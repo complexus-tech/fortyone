@@ -1,7 +1,7 @@
 "use client";
 import { Avatar, Box, Button, Flex, Tabs, Text, Tooltip, Wrapper } from "ui";
 import { ArrowRightIcon, CalendarIcon, StoryIcon } from "icons";
-import { format, addDays, formatISO } from "date-fns";
+import { addDays, format, formatISO } from "date-fns";
 import Link from "next/link";
 import { cn } from "lib";
 import { useState } from "react";
@@ -9,9 +9,10 @@ import { RowWrapper, PriorityIcon, StoryStatusIcon } from "@/components/ui";
 import { useMyStoriesGrouped } from "@/modules/stories/hooks/use-my-stories-grouped";
 import { useStatuses } from "@/lib/hooks/statuses";
 import type { Story } from "@/modules/stories/types";
-import { getStoryPath } from "@/modules/story/utils/story-url";
+import { getStoryPath } from "@/shared/routing/story";
 import { getDueDateMessage } from "@/components/ui/story/due-date-tooltip";
-import { useTerminology, useWorkspacePath } from "@/hooks";
+import { useHydratedNow, useTerminology, useWorkspacePath } from "@/hooks";
+import { getDueDateTone, parseDueDate } from "@/shared/story/due-date";
 import { useSummaryDateFilters } from "@/modules/summary/hooks/summary-date-filters";
 import { MyStoriesSkeleton } from "./my-stories-skeleton";
 
@@ -24,7 +25,8 @@ const StoryRow = ({
   team,
   assignee,
   endDate,
-}: Story) => {
+  now,
+}: Story & { now: Date | null }) => {
   const { getTermDisplay } = useTerminology();
   const { withWorkspace } = useWorkspacePath();
   const { data: statuses = [] } = useStatuses();
@@ -36,6 +38,13 @@ const StoryRow = ({
   const storyReference = team?.code
     ? `${team.code}-${sequenceId}`
     : String(sequenceId);
+  const dueDate = endDate ? parseDueDate(endDate) : null;
+  const dueDateTone = dueDate ? getDueDateTone(dueDate, now) : "neutral";
+  const dueDateTooltip = dueDate
+    ? getDueDateMessage(dueDate, getTermDisplay("storyTerm"), now)
+    : null;
+  const isDueDateOverdue = dueDateTone === "overdue";
+  const isDueDateDueSoon = dueDateTone === "due-soon";
 
   return (
     <Link
@@ -71,47 +80,33 @@ const StoryRow = ({
               {getStoryStatus()}
             </span>
           </Text>
-          {endDate ? (
+          {dueDate ? (
             <Tooltip
               title={
                 <Flex align="start" gap={2}>
                   <CalendarIcon
                     className={cn("relative top-[2.5px] h-5 w-auto", {
-                      "text-primary dark:text-primary":
-                        new Date(endDate) < new Date(),
-                      "text-warning dark:text-warning":
-                        new Date(endDate) <= addDays(new Date(), 7) &&
-                        new Date(endDate) >= new Date(),
+                      "text-primary dark:text-primary": isDueDateOverdue,
+                      "text-warning dark:text-warning": isDueDateDueSoon,
                     })}
                   />
-                  <Box>
-                    {getDueDateMessage(
-                      new Date(endDate),
-                      getTermDisplay("storyTerm"),
-                    )}
-                  </Box>
+                  <Box>{dueDateTooltip}</Box>
                 </Flex>
               }
             >
               <Text
                 className={cn("flex shrink-0 items-center gap-1", {
-                  "text-primary dark:text-primary":
-                    new Date(endDate) < new Date(),
-                  "text-warning dark:text-warning":
-                    new Date(endDate) <= addDays(new Date(), 7) &&
-                    new Date(endDate) >= new Date(),
+                  "text-primary dark:text-primary": isDueDateOverdue,
+                  "text-warning dark:text-warning": isDueDateDueSoon,
                 })}
               >
                 <CalendarIcon
                   className={cn("relative -top-px", {
-                    "text-primary dark:text-primary":
-                      new Date(endDate) < new Date(),
-                    "text-warning dark:text-warning":
-                      new Date(endDate) <= addDays(new Date(), 7) &&
-                      new Date(endDate) >= new Date(),
+                    "text-primary dark:text-primary": isDueDateOverdue,
+                    "text-warning dark:text-warning": isDueDateDueSoon,
                   })}
                 />
-                {format(new Date(endDate), "MMM, d")}
+                {format(dueDate, "MMM, d")}
               </Text>
             </Tooltip>
           ) : null}
@@ -126,11 +121,11 @@ const StoryRow = ({
   );
 };
 
-const List = ({ stories }: { stories: Story[] }) => {
+const List = ({ now, stories }: { now: Date | null; stories: Story[] }) => {
   return (
     <Box className="border-border mt-2.5 border-t-[0.5px]">
       {stories.slice(0, 9).map((story) => (
-        <StoryRow key={story.id} {...story} />
+        <StoryRow key={story.id} now={now} {...story} />
       ))}
     </Box>
   );
@@ -146,6 +141,7 @@ const getStoriesFromGrouped = (grouped?: {
 export const MyStories = () => {
   const { getTermDisplay } = useTerminology();
   const { withWorkspace } = useWorkspacePath();
+  const hydratedNow = useHydratedNow();
   const [activeTab, setActiveTab] = useState("inProgress");
   const dateFilters = useSummaryDateFilters();
 
@@ -240,7 +236,7 @@ export const MyStories = () => {
               </Text>
             </Flex>
           ) : (
-            <List stories={inProgressStories} />
+            <List now={hydratedNow} stories={inProgressStories} />
           )}
         </Tabs.Panel>
         <Tabs.Panel value="upcoming">
@@ -259,7 +255,7 @@ export const MyStories = () => {
               </Text>
             </Flex>
           ) : (
-            <List stories={upcomingStories} />
+            <List now={hydratedNow} stories={upcomingStories} />
           )}
         </Tabs.Panel>
         <Tabs.Panel value="due">
@@ -278,7 +274,7 @@ export const MyStories = () => {
               </Text>
             </Flex>
           ) : (
-            <List stories={overdueStories} />
+            <List now={hydratedNow} stories={overdueStories} />
           )}
         </Tabs.Panel>
       </Tabs>

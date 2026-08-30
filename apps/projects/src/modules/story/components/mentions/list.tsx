@@ -1,6 +1,6 @@
-import { useSession } from "@/lib/auth/client";
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { Avatar, Box, Text } from "ui";
+import { useSession } from "@/lib/auth/client";
 
 export type MentionItem = {
   id: string;
@@ -28,7 +28,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
         : selectedIndex;
 
     const selectItem = (index: number) => {
-      const item = props.items[index];
+      const item = props.items.at(index);
       if (!item) {
         return;
       }
@@ -101,7 +101,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
             <Avatar name={item.label} size="sm" src={item.avatar} />
             <Text className="max-w-48 truncate">
               {item.label}
-              {item.id === session?.user?.id && (
+              {item.id === session?.user.id && (
                 <Text as="span" color="muted">
                   (You)
                 </Text>

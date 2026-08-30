@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { auth } from "@/auth";
 import { getStory, getStoryRef } from "@/modules/story/queries/get-story";
-import { isStoryUuid } from "@/modules/story/utils/story-url";
+import { isStoryUuid } from "@/shared/routing/story";
 
 const getSession = cache(async () => auth());
 

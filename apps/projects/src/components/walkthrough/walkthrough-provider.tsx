@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useState,
+  useRef,
   useCallback,
   useEffect,
   type ReactNode,
@@ -37,6 +38,10 @@ interface WalkthroughState {
   totalSteps: number;
   hasSeenWalkthrough: boolean;
   walkthroughVersion: string;
+}
+
+interface WalkthroughProviderState extends WalkthroughState {
+  completionVersion: number;
 }
 
 interface WalkthroughContextType {
@@ -108,52 +113,56 @@ export const WalkthroughProvider = ({
     string | null
   >("fortyone:walkthrough-closed-at", null);
 
-  const [state, setState] = useState<WalkthroughState>({
+  const [state, setState] = useState<WalkthroughProviderState>({
     isActive: false,
     currentStep: 0,
     totalSteps: 0,
     hasSeenWalkthrough: Boolean(profile?.hasSeenWalkthrough),
     walkthroughVersion: version,
+    completionVersion: 0,
   });
 
-  const [steps, setStepsState] = useState<WalkthroughStep[]>([]);
+  const [walkthroughSteps, setWalkthroughSteps] = useState<WalkthroughStep[]>(
+    [],
+  );
+  const lastSyncedCompletionVersionRef = useRef(0);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const hasSeenWalkthrough =
     state.hasSeenWalkthrough || Boolean(profile?.hasSeenWalkthrough);
 
-  const currentStepData = steps[state.currentStep] || null;
+  const currentStepData = walkthroughSteps[state.currentStep] || null;
 
-  const markWalkthroughComplete = useCallback(() => {
-    updateProfile({ hasSeenWalkthrough: true });
+  const completeWalkthrough = useCallback(() => {
     setState((prev) => ({
       ...prev,
+      isActive: false,
       hasSeenWalkthrough: true,
+      completionVersion: prev.completionVersion + 1,
     }));
-  }, [updateProfile]);
+  }, []);
 
   const startWalkthrough = useCallback(() => {
     setState((prev) => ({
       ...prev,
       isActive: true,
       currentStep: 0,
-      totalSteps: steps.length,
+      totalSteps: walkthroughSteps.length,
     }));
-  }, [steps.length]);
+  }, [walkthroughSteps.length]);
 
   const nextStep = useCallback(() => {
     setState((prev) => {
       if (prev.currentStep < prev.totalSteps - 1) {
         return { ...prev, currentStep: prev.currentStep + 1 };
       }
-      // Completed walkthrough
-      markWalkthroughComplete();
       return {
         ...prev,
         isActive: false,
         hasSeenWalkthrough: true,
+        completionVersion: prev.completionVersion + 1,
       };
     });
-  }, [markWalkthroughComplete]);
+  }, []);
 
   const prevStep = useCallback(() => {
     setState((prev) => ({
@@ -170,13 +179,8 @@ export const WalkthroughProvider = ({
   }, []);
 
   const skipWalkthrough = useCallback(() => {
-    markWalkthroughComplete();
-    setState((prev) => ({
-      ...prev,
-      isActive: false,
-      hasSeenWalkthrough: true,
-    }));
-  }, [markWalkthroughComplete]);
+    completeWalkthrough();
+  }, [completeWalkthrough]);
 
   const closeWalkthrough = useCallback(() => {
     // Store the close timestamp using useLocalStorage hook
@@ -192,9 +196,18 @@ export const WalkthroughProvider = ({
   const canShowWalkthrough =
     !hasSeenWalkthrough && !isMobile && isCooldownComplete(walkthroughClosedAt);
 
+  useEffect(() => {
+    if (state.completionVersion <= lastSyncedCompletionVersionRef.current) {
+      return;
+    }
+
+    lastSyncedCompletionVersionRef.current = state.completionVersion;
+    updateProfile({ hasSeenWalkthrough: true });
+  }, [state.completionVersion, updateProfile]);
+
   const setSteps = useCallback(
     (nextSteps: WalkthroughStep[]) => {
-      setStepsState(nextSteps);
+      setWalkthroughSteps(nextSteps);
       setState((prev) => {
         const totalSteps = nextSteps.length;
         const boundedCurrentStep = totalSteps
@@ -221,12 +234,17 @@ export const WalkthroughProvider = ({
     }
   }, [state.isActive, state.currentStep, currentStepData]);
 
+  const contextState: WalkthroughState = {
+    isActive: state.isActive,
+    currentStep: state.currentStep,
+    totalSteps: state.totalSteps,
+    hasSeenWalkthrough,
+    walkthroughVersion: state.walkthroughVersion,
+  };
+
   const contextValue: WalkthroughContextType = {
-    state: {
-      ...state,
-      hasSeenWalkthrough,
-    },
-    steps,
+    state: contextState,
+    steps: walkthroughSteps,
     currentStepData,
     nextStep,
     prevStep,

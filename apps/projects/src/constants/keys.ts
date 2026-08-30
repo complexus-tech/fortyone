@@ -28,6 +28,14 @@ export const sprintKeys = {
     [...sprintKeys.all(workspaceSlug), "analytics", sprintId] as const,
 };
 
+export const keyResultKeys = {
+  all: (workspaceSlug: string) => ["key-results", workspaceSlug] as const,
+  lists: (workspaceSlug: string) =>
+    [...keyResultKeys.all(workspaceSlug), "list"] as const,
+  list: (workspaceSlug: string, filters?: unknown) =>
+    [...keyResultKeys.lists(workspaceSlug), filters] as const,
+};
+
 export const memberKeys = {
   all: (workspaceSlug: string) => ["members", workspaceSlug] as const,
   lists: (workspaceSlug: string) =>

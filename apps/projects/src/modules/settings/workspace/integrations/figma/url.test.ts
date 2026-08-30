@@ -1,4 +1,3 @@
-/* eslint-disable no-undef -- Jest globals are provided by the Projects test environment. */
 import { isFigmaURL } from "./url";
 
 describe("isFigmaURL", () => {

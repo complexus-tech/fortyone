@@ -1,7 +1,7 @@
 get:
   operationId: listLabels
   tags: [Labels]
-  summary: List labels visible in one team context
+  summary: List labels
   description: Returns team and workspace-wide labels after current team membership is verified. A personal access token and an explicit team are required in this preview.
   x-fortyone-scope: labels:read
   parameters:

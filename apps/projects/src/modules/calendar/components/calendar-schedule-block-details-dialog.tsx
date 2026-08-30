@@ -1,6 +1,5 @@
 "use client";
 
-import { format, isSameDay } from "date-fns";
 import dynamic from "next/dynamic";
 import { ClockIcon, CopyIcon, EditIcon, ExternalLinkIcon } from "icons";
 import { toast } from "sonner";
@@ -10,11 +9,9 @@ import { useIsAdminOrOwner } from "@/hooks/owner";
 import type { CalendarScheduleBlock } from "@/lib/queries/calendar/types";
 import { StoryActionsMenu } from "@/modules/story/components/story-actions-menu";
 import { useStoryById } from "@/modules/story/hooks/story";
-import {
-  getStoryPath,
-  getStoryReference,
-} from "@/modules/story/utils/story-url";
+import { getStoryPath, getStoryReference } from "@/shared/routing/story";
 import { isCalendarScheduleBlockEditable } from "./calendar-block";
+import { getCalendarScheduleBlockTimeLabel } from "./calendar-schedule-block-time-label";
 
 const CalendarStoryMainDetails = dynamic(
   () =>
@@ -35,17 +32,6 @@ const CalendarStoryMainDetails = dynamic(
     ssr: false,
   },
 );
-
-export const getCalendarScheduleBlockTimeLabel = (
-  block: Pick<CalendarScheduleBlock, "startAt" | "endAt">,
-) => {
-  const start = new Date(block.startAt);
-  const end = new Date(block.endAt);
-  if (isSameDay(start, end)) {
-    return `${format(start, "EEEE, MMMM d")} · ${format(start, "h:mm a")} – ${format(end, "h:mm a")}`;
-  }
-  return `${format(start, "MMM d, h:mm a")} – ${format(end, "MMM d, h:mm a")}`;
-};
 
 const ScheduledStoryDetails = ({
   block,

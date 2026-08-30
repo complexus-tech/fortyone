@@ -1,6 +1,6 @@
 import { Box, Button, Text } from "ui";
 import { Logo } from "@/components/ui";
-import type { Invitation } from "@/modules/invitations/types";
+import type { Invitation } from "@/modules/invitations/public/types";
 import { auth } from "@/auth";
 import { JoinForm } from "./components/join-form";
 
@@ -13,7 +13,7 @@ export const JoinWorkspace = async ({
 }) => {
   const session = await auth();
   const { email, workspaceName, role } = invitation;
-  const canJoin = session?.user?.email === email;
+  const canJoin = session?.user.email === email;
 
   return (
     <Box className="w-full px-6 md:max-w-md md:px-0">

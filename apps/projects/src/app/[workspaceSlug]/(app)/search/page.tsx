@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { SearchPage } from "@/modules/search";
+import { WorkspaceSearchPage } from "@/shell/search/workspace-search-page";
 
 export const metadata: Metadata = {
   title: "Search",
 };
 
 export default function Page() {
-  return <SearchPage />;
+  return <WorkspaceSearchPage />;
 }

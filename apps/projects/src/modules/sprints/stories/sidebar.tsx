@@ -2,12 +2,12 @@ import { Avatar, Badge, Box, Divider, Flex, ProgressBar, Tabs, Text } from "ui";
 import { SprintsIcon } from "icons";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
+import { BurndownChart } from "@/components/ui/burndown-chart";
 import { RowWrapper, StoryStatusIcon } from "@/components/ui";
 import { useTerminology } from "@/hooks";
 import { useSprint } from "../hooks/sprint-details";
 import { useSprintAnalytics } from "../hooks/sprint-analytics";
 import type { SprintAnalytics } from "../types";
-import { BurndownChart } from "./burndown";
 
 export const Sidebar = () => {
   const { getTermDisplay } = useTerminology();

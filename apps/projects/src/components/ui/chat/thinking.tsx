@@ -17,11 +17,11 @@ export const Thinking = ({
       className={cn("flex min-h-6 items-baseline gap-1.5", className)}
       color="muted"
     >
-      {icon && (
+      {icon ? (
         <span className="flex shrink-0 translate-y-[2px] items-center">
           {icon}
         </span>
-      )}
+      ) : null}
       {message}
       <Flex className="gap-0.5">
         <Box className="size-[2.5px] animate-bounce rounded-full bg-current" />

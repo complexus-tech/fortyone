@@ -3,32 +3,37 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const source = readFileSync(
+const documentsHomeSource = readFileSync(
   join(process.cwd(), "src/modules/documents/documents-home.tsx"),
+  "utf8",
+);
+
+const controlsSource = readFileSync(
+  join(process.cwd(), "src/modules/documents/documents-home-controls.tsx"),
   "utf8",
 );
 
 describe("Documents home controls", () => {
   it("groups list filters in one popover", () => {
-    expect(source).toContain("const DocumentFilters");
-    expect(source).toContain('<Popover.Content align="start"');
-    expect(source).toContain('label="Access"');
-    expect(source).toContain('label="Owner"');
-    expect(source).toContain('label="Updated"');
-    expect(source).not.toContain("DocumentControlMenu");
+    expect(controlsSource).toContain("DocumentFilters");
+    expect(controlsSource).toContain('<Popover.Content align="start"');
+    expect(controlsSource).toContain('label="Access"');
+    expect(controlsSource).toContain('label="Owner"');
+    expect(controlsSource).toContain('label="Updated"');
+    expect(controlsSource).not.toContain("DocumentControlMenu");
   });
 
   it("uses compact sort labels and icon pagination in the top toolbar", () => {
-    expect(source).toContain('label: "Newest"');
-    expect(source).toContain('label: "Oldest"');
-    expect(source).toContain('label: "A to Z"');
-    expect(source).toContain('label: "Z to A"');
-    expect(source).toContain('aria-label="Previous page"');
-    expect(source).toContain('aria-label="Next page"');
-    expect(source).toContain(
+    expect(controlsSource).toContain('label: "Newest"');
+    expect(controlsSource).toContain('label: "Oldest"');
+    expect(controlsSource).toContain('label: "A to Z"');
+    expect(controlsSource).toContain('label: "Z to A"');
+    expect(documentsHomeSource).toContain('aria-label="Previous page"');
+    expect(documentsHomeSource).toContain('aria-label="Next page"');
+    expect(documentsHomeSource).toContain(
       "Page {pagination.page} of {pagination.pageCount}",
     );
-    expect(source).toContain('className="h-5 w-auto"');
-    expect(source).not.toContain("{filteredDocuments.length}");
+    expect(documentsHomeSource).toContain('className="h-5 w-auto"');
+    expect(documentsHomeSource).not.toContain("{filteredDocuments.length}");
   });
 });

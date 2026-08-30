@@ -5,7 +5,21 @@ import type {
   Node as PageTreeNode,
   Root as PageTreeRoot,
 } from "fumadocs-core/page-tree";
+import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+import type { ReactNode } from "react";
 import { DocsLayout } from "fumadocs-ui/layouts/notebook";
+import {
+  CommentIcon,
+  HttpIcon,
+  ObjectiveIcon,
+  SprintsIcon,
+  StoriesIcon,
+  TagsIcon,
+  TeamIcon,
+  WebhookIcon,
+  WorkflowIcon,
+  WorkspaceIcon,
+} from "icons";
 import {
   BookOpen,
   Code2,
@@ -14,11 +28,28 @@ import {
   MessageCircleQuestion,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useMemo, type ReactNode } from "react";
-import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+import { useMemo } from "react";
+
+const API_OPERATION_PREFIX = "/api-reference/reference/";
+
+const API_RESOURCE_ICONS: Record<string, ReactNode> = {
+  Comments: <CommentIcon aria-hidden="true" className="size-4" />,
+  Labels: <TagsIcon aria-hidden="true" className="size-4" />,
+  Objectives: <ObjectiveIcon aria-hidden="true" className="size-4" />,
+  Sprints: <SprintsIcon aria-hidden="true" className="size-4" />,
+  Stories: <StoriesIcon aria-hidden="true" className="size-4" />,
+  Teams: <TeamIcon aria-hidden="true" className="size-4" />,
+  Webhooks: <WebhookIcon aria-hidden="true" className="size-4" />,
+  Workflows: <WorkflowIcon aria-hidden="true" className="size-4" />,
+  Workspaces: <WorkspaceIcon aria-hidden="true" className="size-4" />,
+};
 
 const isDeveloperAPIPage = (node: PageTreeItem) =>
   node.url.startsWith("/api-reference");
+
+const isAPIOperationPage = (node: PageTreeItem) =>
+  node.url.startsWith(API_OPERATION_PREFIX) &&
+  node.url.slice(API_OPERATION_PREFIX.length).split("/").length === 2;
 
 const isDeveloperAPIFolder = (
   node: Extract<PageTreeNode, { type: "folder" }>,
@@ -34,6 +65,13 @@ const isDeveloperAPIFolder = (
   );
 
 const withPageIcon = (node: PageTreeItem): PageTreeItem => {
+  if (isAPIOperationPage(node)) {
+    return {
+      ...node,
+      icon: <HttpIcon aria-hidden="true" className="size-4" />,
+    };
+  }
+
   if (node.icon) return node;
 
   if (node.url === "/help-and-support/faq") {
@@ -55,12 +93,17 @@ const withNavigationIcons = (node: PageTreeNode): PageTreeNode => {
   if (node.type === "separator") return node;
 
   const belongsToDeveloperAPI = isDeveloperAPIFolder(node);
+  const resourceIcon =
+    belongsToDeveloperAPI && typeof node.name === "string"
+      ? API_RESOURCE_ICONS[node.name]
+      : undefined;
 
   return {
     ...node,
     children: node.children.map(withNavigationIcons),
     icon:
       node.icon ??
+      resourceIcon ??
       (belongsToDeveloperAPI ? <FolderCode aria-hidden="true" /> : undefined),
     index: node.index ? withPageIcon(node.index) : undefined,
   };

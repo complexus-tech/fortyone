@@ -1,33 +1,29 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, Flex, Menu, Popover, Select, Skeleton, Text } from "ui";
+import { Box, Button, Flex, Skeleton, Text } from "ui";
 import {
-  ArchiveIcon,
-  ArrowDown2Icon,
-  ArrowUpDownIcon,
   CalendarIcon,
-  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   DocsIcon,
-  FilterIcon,
-  LockKeyholeIcon,
-  MoreHorizontalIcon,
   ObjectiveIcon,
   PlusIcon,
-  ShareIcon,
   TeamIcon,
   UserIcon,
 } from "icons";
 import { cn } from "lib";
-import { ExpandableSearchHeader, MobileMenuButton } from "@/components/shared";
+import { ExpandableSearchHeader } from "@/components/shared/expandable-search-header";
+import { MobileMenuButton } from "@/components/shared/mobile-menu";
 import { DocumentsEmptyIllustration } from "@/components/ui/illustrations/empty-state-illustrations";
-import { useUserRole, useWorkspacePath } from "@/hooks";
+import { useUserRole } from "@/hooks/role";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { useSession } from "@/lib/auth/client";
+import { DocumentRow } from "./document-row";
+import { DocumentFilters, DocumentSortMenu } from "./documents-home-controls";
 import {
   documentTemplates,
   type DocumentTemplate,
@@ -35,20 +31,12 @@ import {
 } from "./document-templates";
 import {
   filterAndSortDocumentSummaries,
+  getDocumentPageAfterArchive,
   getDocumentListState,
   paginateDocumentSummaries,
 } from "./document-list-state";
 import { useArchiveDocument, useCreateDocument, useDocuments } from "./hooks";
-import { formatDocumentRelativeTime } from "./relative-time";
-import type {
-  DocumentAccessFilter,
-  DocumentOwnerFilter,
-  DocumentScope,
-  DocumentSortDirection,
-  DocumentSortField,
-  DocumentUpdatedFilter,
-  WorkspaceDocumentSummary,
-} from "./types";
+import type { DocumentScope } from "./types";
 
 const scopeCopy: Record<
   DocumentScope,
@@ -95,227 +83,6 @@ const mobileScopes: { label: string; value: DocumentScope }[] = [
   { label: "Shared", value: "shared" },
   { label: "Templates", value: "templates" },
 ];
-
-type FilterOption<T extends string> = {
-  label: string;
-  value: T;
-};
-
-const accessOptions: FilterOption<DocumentAccessFilter>[] = [
-  { label: "All access", value: "all" },
-  { label: "Workspace", value: "workspace" },
-  { label: "Shared", value: "restricted" },
-  { label: "Private", value: "private" },
-];
-
-const ownerOptions: FilterOption<DocumentOwnerFilter>[] = [
-  { label: "Anyone", value: "all" },
-  { label: "Owned by me", value: "mine" },
-  { label: "Owned by others", value: "others" },
-];
-
-const updatedOptions: FilterOption<DocumentUpdatedFilter>[] = [
-  { label: "Any time", value: "all" },
-  { label: "Today", value: "today" },
-  { label: "Past 7 days", value: "7d" },
-  { label: "Past 30 days", value: "30d" },
-  { label: "Past 90 days", value: "90d" },
-];
-
-type DocumentSortOption = {
-  direction: DocumentSortDirection;
-  field: DocumentSortField;
-  label: string;
-};
-
-const sortOptions: DocumentSortOption[] = [
-  { direction: "desc", field: "updated", label: "Newest" },
-  { direction: "asc", field: "updated", label: "Oldest" },
-  { direction: "asc", field: "title", label: "A to Z" },
-  { direction: "desc", field: "title", label: "Z to A" },
-];
-
-function DocumentFilterSelect<T extends string>({
-  label,
-  onChange,
-  options,
-  value,
-}: {
-  label: string;
-  onChange: (value: T) => void;
-  options: FilterOption<T>[];
-  value: T;
-}) {
-  return (
-    <Flex align="center" className="px-4 py-2" gap={4} justify="between">
-      <Text color="muted">{label}</Text>
-      <Select
-        onValueChange={(nextValue) => {
-          onChange(nextValue as T);
-        }}
-        value={value}
-      >
-        <Select.Trigger className="bg-surface-muted dark:bg-surface-prominent/70 w-40">
-          <Select.Input />
-        </Select.Trigger>
-        <Select.Content className="ring-border/70 shadow-2xl ring-1">
-          <Select.Group>
-            {options.map((option) => (
-              <Select.Option key={option.value} value={option.value}>
-                {option.label}
-              </Select.Option>
-            ))}
-          </Select.Group>
-        </Select.Content>
-      </Select>
-    </Flex>
-  );
-}
-
-const DocumentFilters = ({
-  access,
-  activeCount,
-  onAccessChange,
-  onClear,
-  onOwnerChange,
-  onUpdatedChange,
-  owner,
-  showOwner,
-  updated,
-}: {
-  access: DocumentAccessFilter;
-  activeCount: number;
-  onAccessChange: (value: DocumentAccessFilter) => void;
-  onClear: () => void;
-  onOwnerChange: (value: DocumentOwnerFilter) => void;
-  onUpdatedChange: (value: DocumentUpdatedFilter) => void;
-  owner: DocumentOwnerFilter;
-  showOwner: boolean;
-  updated: DocumentUpdatedFilter;
-}) => (
-  <Popover>
-    <Popover.Trigger asChild>
-      <Button
-        aria-label={
-          activeCount > 0 ? `Filters, ${activeCount} applied` : "Filters"
-        }
-        className="relative"
-        color="tertiary"
-        leftIcon={<FilterIcon className="h-4 w-auto" />}
-        rightIcon={<ArrowDown2Icon className="h-3.5 w-auto" />}
-        size="sm"
-        variant="outline"
-      >
-        {activeCount > 0 ? (
-          <span
-            aria-hidden="true"
-            className="bg-primary absolute -top-0.5 -right-0.5 size-2.5 rounded-full"
-          />
-        ) : null}
-        Filters
-      </Button>
-    </Popover.Trigger>
-    <Popover.Content align="start" className="min-w-[20rem] pb-2">
-      <Flex align="center" className="my-2 px-4" justify="between">
-        <Text color="muted">Apply filters</Text>
-        {activeCount > 0 ? (
-          <Button
-            className="text-primary dark:text-primary"
-            color="tertiary"
-            onClick={onClear}
-            size="sm"
-            variant="naked"
-          >
-            Clear filters
-          </Button>
-        ) : null}
-      </Flex>
-      <DocumentFilterSelect
-        label="Access"
-        onChange={onAccessChange}
-        options={accessOptions}
-        value={access}
-      />
-      {showOwner ? (
-        <DocumentFilterSelect
-          label="Owner"
-          onChange={onOwnerChange}
-          options={ownerOptions}
-          value={owner}
-        />
-      ) : null}
-      <DocumentFilterSelect
-        label="Updated"
-        onChange={onUpdatedChange}
-        options={updatedOptions}
-        value={updated}
-      />
-    </Popover.Content>
-  </Popover>
-);
-
-const DocumentSortMenu = ({
-  direction,
-  field,
-  onChange,
-}: {
-  direction: DocumentSortDirection;
-  field: DocumentSortField;
-  onChange: (option: DocumentSortOption) => void;
-}) => {
-  const selectedOption =
-    sortOptions.find(
-      (option) => option.field === field && option.direction === direction,
-    ) ?? sortOptions[0];
-
-  return (
-    <Menu>
-      <Menu.Button>
-        <Button
-          className="gap-1.5 px-1.5 whitespace-nowrap"
-          color="tertiary"
-          leftIcon={
-            <ArrowUpDownIcon
-              className="text-text-muted h-4 w-auto"
-              strokeWidth={2}
-            />
-          }
-          rightIcon={
-            <ArrowDown2Icon
-              className="text-text-muted h-3.5 w-auto"
-              strokeWidth={2}
-            />
-          }
-          size="sm"
-          variant="naked"
-        >
-          {selectedOption.label}
-        </Button>
-      </Menu.Button>
-      <Menu.Items align="end" className="min-w-44 p-1">
-        {sortOptions.map((option) => {
-          const isActive =
-            option.field === field && option.direction === direction;
-          return (
-            <Menu.Item
-              active={isActive}
-              className="justify-between gap-3"
-              key={`${option.field}:${option.direction}`}
-              onSelect={() => {
-                onChange(option);
-              }}
-            >
-              <span>{option.label}</span>
-              {isActive ? (
-                <CheckIcon className="h-4 w-auto" strokeWidth={2} />
-              ) : null}
-            </Menu.Item>
-          );
-        })}
-      </Menu.Items>
-    </Menu>
-  );
-};
 
 const TemplateCard = ({
   disabled,
@@ -495,6 +262,20 @@ export const DocumentsHome = () => {
     router.push(getDocumentsPath(params), { scroll: false });
   };
 
+  const archiveDocumentAndMaintainPage = (documentId: string) => {
+    const nextPage = getDocumentPageAfterArchive(
+      pagination.page,
+      pagination.items.length,
+    );
+    archiveDocument.mutate(documentId, {
+      onSuccess: () => {
+        if (nextPage !== pagination.page) {
+          goToPage(nextPage);
+        }
+      },
+    });
+  };
+
   const handleCreate = (template: DocumentTemplate) => {
     if (!canCreateDocuments) return;
     setCreatingTemplateId(template.id);
@@ -527,34 +308,6 @@ export const DocumentsHome = () => {
     scope !== "mine" && listState.owner !== "all",
     listState.updated !== "all",
   ].filter(Boolean).length;
-
-  useEffect(() => {
-    if (
-      isPending ||
-      showTemplateGallery ||
-      listState.page === pagination.page
-    ) {
-      return;
-    }
-    const params = new URLSearchParams(rawSearchParams);
-    if (pagination.page === 1) {
-      params.delete("page");
-    } else {
-      params.set("page", String(pagination.page));
-    }
-    const query = params.toString();
-    router.replace(withWorkspace(`/docs${query ? `?${query}` : ""}`), {
-      scroll: false,
-    });
-  }, [
-    isPending,
-    listState.page,
-    pagination.page,
-    rawSearchParams,
-    router,
-    showTemplateGallery,
-    withWorkspace,
-  ]);
 
   return (
     <Box className="h-full min-h-0 min-w-0 overflow-y-auto">
@@ -773,7 +526,7 @@ export const DocumentsHome = () => {
                     }
                     key={document.id}
                     onArchive={() => {
-                      archiveDocument.mutate(document.id);
+                      archiveDocumentAndMaintainPage(document.id);
                     }}
                     withWorkspace={withWorkspace}
                   />
@@ -784,75 +537,5 @@ export const DocumentsHome = () => {
         ) : null}
       </Box>
     </Box>
-  );
-};
-
-const DocumentRow = ({
-  document,
-  isArchiving,
-  isOwner,
-  onArchive,
-  withWorkspace,
-}: {
-  document: WorkspaceDocumentSummary;
-  isArchiving: boolean;
-  isOwner: boolean;
-  onArchive: () => void;
-  withWorkspace: (path: string) => string;
-}) => {
-  let DocumentIcon = DocsIcon;
-  if (document.visibility === "private") DocumentIcon = LockKeyholeIcon;
-  if (document.visibility === "restricted") DocumentIcon = ShareIcon;
-
-  return (
-    <Flex
-      align="center"
-      className="border-border/80 hover:bg-state-hover/50 border-b-[0.5px] py-[0.655rem] transition-colors"
-      gap={2}
-    >
-      <Link
-        className="focus-visible:ring-ring/40 flex min-w-0 flex-1 items-center gap-2 rounded-sm outline-none focus-visible:ring-1"
-        href={withWorkspace(`/docs/${document.id}`)}
-      >
-        <DocumentIcon
-          className="text-text-muted size-[1.1rem] shrink-0"
-          strokeWidth={2}
-        />
-        <span className="min-w-0 flex-1 truncate">{document.title}</span>
-        <Text as="span" className="shrink-0" color="muted">
-          {formatDocumentRelativeTime(document.updatedAt)}
-        </Text>
-      </Link>
-      {isOwner ? (
-        <Menu>
-          <Menu.Button>
-            <Button
-              aria-label={`Actions for ${document.title}`}
-              asIcon
-              color="tertiary"
-              disabled={isArchiving}
-              size="sm"
-              variant="naked"
-            >
-              <MoreHorizontalIcon />
-            </Button>
-          </Menu.Button>
-          <Menu.Items align="end" className="min-w-52">
-            <Menu.Group>
-              <Menu.Item
-                className="text-danger dark:!text-danger"
-                onSelect={onArchive}
-              >
-                <ArchiveIcon
-                  className="text-danger dark:!text-danger size-4"
-                  strokeWidth={2}
-                />
-                Archive document
-              </Menu.Item>
-            </Menu.Group>
-          </Menu.Items>
-        </Menu>
-      ) : null}
-    </Flex>
   );
 };

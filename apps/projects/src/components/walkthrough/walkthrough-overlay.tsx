@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { createPortal } from "react-dom";
 import { useWalkthrough } from "./walkthrough-provider";
 import { WalkthroughStep } from "./walkthrough-step";
@@ -12,9 +12,40 @@ interface ElementPosition {
   height: number;
 }
 
+const getTargetPosition = (
+  isActive: boolean,
+  currentTarget: string | undefined,
+): ElementPosition | null => {
+  if (!isActive || !currentTarget || typeof window === "undefined") {
+    return null;
+  }
+
+  if (currentTarget === "body") {
+    return {
+      top: window.scrollY + window.innerHeight / 2 - 100,
+      left: window.innerWidth / 2 - 160,
+      width: 320,
+      height: 200,
+    };
+  }
+
+  const targetElement = document.querySelector(currentTarget);
+  if (!targetElement) {
+    return null;
+  }
+
+  const rect = targetElement.getBoundingClientRect();
+  return {
+    top: rect.top + window.scrollY,
+    left: rect.left + window.scrollX,
+    width: rect.width,
+    height: rect.height,
+  };
+};
+
 export const WalkthroughOverlay = () => {
   const { state, currentStepData } = useWalkthrough();
-  const [layoutTick, bumpLayoutTick] = useReducer(
+  const [, refreshLayout] = useReducer(
     (currentValue: number) => currentValue + 1,
     0,
   );
@@ -26,10 +57,10 @@ export const WalkthroughOverlay = () => {
     }
 
     const handleResize = () => {
-      bumpLayoutTick();
+      refreshLayout();
     };
     const handleScroll = () => {
-      bumpLayoutTick();
+      refreshLayout();
     };
     const scrollListenerOptions: AddEventListenerOptions = { passive: true };
 
@@ -37,7 +68,7 @@ export const WalkthroughOverlay = () => {
     window.addEventListener("scroll", handleScroll, scrollListenerOptions);
 
     const timeout = window.setTimeout(() => {
-      bumpLayoutTick();
+      refreshLayout();
     }, 100);
 
     return () => {
@@ -47,33 +78,7 @@ export const WalkthroughOverlay = () => {
     };
   }, [state.isActive, currentTarget]);
 
-  const targetPosition = useMemo<ElementPosition | null>(() => {
-    if (!state.isActive || !currentTarget || typeof window === "undefined") {
-      return null;
-    }
-
-    if (currentTarget === "body") {
-      return {
-        top: window.scrollY + window.innerHeight / 2 - 100,
-        left: window.innerWidth / 2 - 160,
-        width: 320,
-        height: 200,
-      };
-    }
-
-    const targetElement = document.querySelector(currentTarget);
-    if (!targetElement) {
-      return null;
-    }
-
-    const rect = targetElement.getBoundingClientRect();
-    return {
-      top: rect.top + window.scrollY,
-      left: rect.left + window.scrollX,
-      width: rect.width,
-      height: rect.height,
-    };
-  }, [state.isActive, currentTarget, layoutTick]);
+  const targetPosition = getTargetPosition(state.isActive, currentTarget);
 
   if (
     typeof document === "undefined" ||

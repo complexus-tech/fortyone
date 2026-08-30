@@ -96,22 +96,22 @@ describe("ChatMessage", () => {
     const rendererSource = readSource(
       "src/components/ui/chat/tool-output-renderer.tsx",
     );
-    const reportSource = readSource(
-      "src/components/ui/chat/analytics-report.tsx",
+    const sprintReportSource = readSource(
+      "src/components/ui/chat/analytics-report/sprint-report.tsx",
     );
     const promptSource = readSource("src/app/api/chat/system.ts");
 
-    expect(reportSource).toContain("<BurndownChart");
-    expect(reportSource).toContain("workingDays={asWorkingDays");
-    expect(reportSource).toContain('title="Team allocation"');
-    expect(reportSource).toContain(
+    expect(sprintReportSource).toContain("<BurndownChart");
+    expect(sprintReportSource).toContain("workingDays={asWorkingDays");
+    expect(sprintReportSource).toContain('title="Team allocation"');
+    expect(sprintReportSource).toContain(
       "Tracks remaining work against the ideal sprint pace.",
     );
-    expect(reportSource).toContain(
+    expect(sprintReportSource).toContain(
       "Shows completed and assigned work for each team member.",
     );
-    expect(reportSource).toContain(".slice(0, 5)");
-    expect(reportSource).toContain("maxLabelLength={12}");
+    expect(sprintReportSource).toContain(".slice(0, 5)");
+    expect(sprintReportSource).toContain("maxLabelLength={12}");
     expect(rendererSource).not.toContain("getSprintBurndownData");
     expect(rendererSource).not.toContain("Burndown graph");
     expect(promptSource).toContain(
