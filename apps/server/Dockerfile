@@ -26,7 +26,8 @@ FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec4
 
 ARG BUILD_VERSION=development
 
-RUN apk add --no-cache ca-certificates tzdata \
+RUN apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates tzdata \
     && addgroup -S -g 10001 fortyone \
     && adduser -S -D -H -u 10001 -G fortyone fortyone
 
