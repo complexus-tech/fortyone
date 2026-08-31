@@ -121,13 +121,25 @@ WHERE session.id = sqlc.arg(session_id)
   AND session.deleted_at IS NULL;
 
 -- name: CountUserMessages :one
-SELECT COUNT(*)
-FROM public.chat_sessions AS session
-INNER JOIN public.chat_messages AS messages
-    ON messages.session_id = session.id
-CROSS JOIN LATERAL jsonb_array_elements(messages.messages) AS message
-WHERE session.user_id = sqlc.arg(user_id)
-  AND session.workspace_id = sqlc.arg(workspace_id)
-  AND session.created_at >= sqlc.arg(start_date)
-  AND session.created_at < sqlc.arg(end_date)
-  AND message ->> 'role' = 'user';
+SELECT CAST(GREATEST(
+    (
+        SELECT COUNT(*)
+        FROM public.chat_sessions AS session
+        INNER JOIN public.chat_messages AS messages
+            ON messages.session_id = session.id
+        CROSS JOIN LATERAL jsonb_array_elements(messages.messages) AS message
+        WHERE session.user_id = sqlc.arg(user_id)
+          AND session.workspace_id = sqlc.arg(workspace_id)
+          AND session.created_at >= sqlc.arg(start_date)
+          AND session.created_at < sqlc.arg(end_date)
+          AND session.deleted_at IS NULL
+          AND message ->> 'role' = 'user'
+    ) - COALESCE((
+        SELECT reset.baseline_message_count
+        FROM public.user_ai_usage_resets AS reset
+        WHERE reset.user_id = sqlc.arg(user_id)
+          AND reset.workspace_id = sqlc.arg(workspace_id)
+          AND reset.period_start = sqlc.arg(start_date)
+    ), 0),
+    0
+) AS bigint);

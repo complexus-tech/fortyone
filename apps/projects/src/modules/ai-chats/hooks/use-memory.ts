@@ -9,7 +9,7 @@ export const useMemories = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: aiChatKeys.memories(),
+    queryKey: aiChatKeys.memories(workspaceSlug),
     queryFn: () => getMemories({ session: session!, workspaceSlug }),
     enabled: Boolean(session),
   });

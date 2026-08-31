@@ -12,6 +12,20 @@ const REQUEST_TOO_LARGE_MESSAGE =
 
 type ErrorRecord = Record<string, unknown>;
 
+const MAX_DIAGNOSTIC_MESSAGE_LENGTH = 500;
+const OPERATIONAL_ERROR_NAMES = new Set([
+  "AI_APICallError",
+  "AI_LoadAPIKeyError",
+  "AI_RetryError",
+  "APICallError",
+  "ApiContractError",
+  "ApiError",
+  "HTTPError",
+  "LoadAPIKeyError",
+  "RetryError",
+  "TimeoutError",
+]);
+
 const asRecord = (value: unknown): ErrorRecord | undefined =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as ErrorRecord)
@@ -28,9 +42,43 @@ const parseErrorMessage = (error: unknown): unknown => {
   }
 };
 
+const sanitizeDiagnosticMessage = (message: string) =>
+  message
+    .replace(/data:[^;,\s]+;base64,[A-Za-z0-9+/=]+/g, "[inline data redacted]")
+    .replace(/\b(?:sk|rk|pk|sess)-[A-Za-z0-9_-]{12,}\b/g, "[credential redacted]")
+    .replace(
+      /\b(?<field>authorization|api[-_ ]?key|password|secret|token)(?<separator>\s*[:=]\s*)(?<value>[^,\s]+)/gi,
+      "$<field>$<separator>[redacted]",
+    )
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_DIAGNOSTIC_MESSAGE_LENGTH);
+
+const getErrorName = (value: unknown, record: ErrorRecord) => {
+  if (value instanceof Error) return value.name;
+  return typeof record.name === "string" ? record.name : undefined;
+};
+
+const collectApiErrorEnvelope = (
+  value: unknown,
+  codes: Set<string>,
+  requestIds: Set<string>,
+) => {
+  const envelope = asRecord(value);
+  const detail = asRecord(envelope?.error);
+  if (!detail) return;
+
+  if (typeof detail.code === "string") codes.add(detail.code);
+  if (typeof detail.request_id === "string") requestIds.add(detail.request_id);
+  if (typeof detail.requestId === "string") requestIds.add(detail.requestId);
+};
+
 const collectErrorDetails = (error: unknown) => {
   const codes = new Set<string>();
   const messages = new Set<string>();
+  const operationalMessages = new Set<string>();
+  const requestIds = new Set<string>();
+  const retryable = new Set<boolean>();
   const statuses = new Set<number>();
   const visited = new Set<unknown>();
 
@@ -50,9 +98,27 @@ const collectErrorDetails = (error: unknown) => {
 
     const record = asRecord(value);
     if (!record) return;
+    const errorName = getErrorName(value, record);
     if (typeof record.code === "string") codes.add(record.code);
     if (typeof record.message === "string") messages.add(record.message);
     if (typeof record.status === "number") statuses.add(record.status);
+    if (typeof record.statusCode === "number") statuses.add(record.statusCode);
+    if (typeof record.isRetryable === "boolean") {
+      retryable.add(record.isRetryable);
+    }
+    if (
+      errorName &&
+      OPERATIONAL_ERROR_NAMES.has(errorName) &&
+      typeof record.message === "string"
+    ) {
+      const sanitizedMessage = sanitizeDiagnosticMessage(record.message);
+      if (sanitizedMessage) operationalMessages.add(sanitizedMessage);
+    }
+
+    collectApiErrorEnvelope(record.data, codes, requestIds);
+
+    const response = asRecord(record.response);
+    if (typeof response?.status === "number") statuses.add(response.status);
 
     for (const key of ["error", "cause", "lastError", "errors"]) {
       const nested = record[key];
@@ -67,7 +133,14 @@ const collectErrorDetails = (error: unknown) => {
   };
 
   visit(error);
-  return { codes, statuses, text: Array.from(messages).join(" ") };
+  return {
+    codes,
+    operationalMessages,
+    requestIds,
+    retryable,
+    statuses,
+    text: Array.from(messages).join(" "),
+  };
 };
 
 /**
@@ -75,14 +148,31 @@ const collectErrorDetails = (error: unknown) => {
  * request bodies, tool inputs, user content, or nested response payloads.
  */
 export const getChatErrorDiagnostic = (error: unknown) => {
-  const { codes, statuses } = collectErrorDetails(error);
+  const {
+    codes,
+    operationalMessages,
+    requestIds,
+    retryable,
+    statuses,
+  } = collectErrorDetails(error);
+  const messages = Array.from(operationalMessages).slice(0, 3);
+  const providerRequestIds = Array.from(requestIds).slice(0, 3);
+  const retryability = Array.from(retryable);
 
   return {
     codes: Array.from(codes).slice(0, 5),
     errorType: error instanceof Error ? error.name : typeof error,
+    ...(messages.length > 0 ? { messages } : {}),
+    ...(providerRequestIds.length > 0
+      ? { requestIds: providerRequestIds }
+      : {}),
+    ...(retryability.length > 0 ? { retryable: retryability } : {}),
     statuses: Array.from(statuses).slice(0, 5),
   };
 };
+
+export const formatChatErrorDiagnostic = (error: unknown) =>
+  JSON.stringify(getChatErrorDiagnostic(error));
 
 export const getChatStreamErrorMessage = (error: unknown) => {
   const { codes, text } = collectErrorDetails(error);

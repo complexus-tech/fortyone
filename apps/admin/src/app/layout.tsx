@@ -18,6 +18,9 @@ const font = Geist({
   weight: "variable",
 });
 
+// Every admin route is authenticated against the API at request time.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "FortyOne Admin",
   description: "Internal administration for FortyOne.",

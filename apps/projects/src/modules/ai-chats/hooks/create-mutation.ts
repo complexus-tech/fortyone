@@ -12,7 +12,9 @@ export const useCreateAiChat = () => {
     mutationFn: (payload: CreateAiChatPayload) =>
       createAiChatAction(payload, workspaceSlug),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: aiChatKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: aiChatKeys.lists(workspaceSlug),
+      });
     },
   });
 };

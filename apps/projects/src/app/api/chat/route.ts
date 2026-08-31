@@ -6,6 +6,7 @@ import { devToolsMiddleware } from "@ai-sdk/devtools";
 import {
   consumeStream,
   convertToModelMessages,
+  generateId,
   stepCountIs,
   streamText,
   wrapLanguageModel,
@@ -35,6 +36,7 @@ import {
   pruneChatModelMessages,
 } from "./chat-context";
 import {
+  formatChatErrorDiagnostic,
   getChatErrorDiagnostic,
   getChatStreamErrorMessage,
 } from "./chat-errors";
@@ -252,7 +254,10 @@ const handleChatRequest = async (
     },
     onError: ({ error }) => {
       // eslint-disable-next-line no-console -- Diagnostics intentionally omit provider payloads and user content.
-      console.error("[chat/route] Stream error", getChatErrorDiagnostic(error));
+      console.error(
+        "[chat/route] Stream error",
+        formatChatErrorDiagnostic(error),
+      );
     },
     onStepFinish: ({ finishReason, toolCalls, usage }) => {
       if (finishReason !== "length" && finishReason !== "error") return;
@@ -272,6 +277,11 @@ const handleChatRequest = async (
     // and persists the canonical partial response when the browser disconnects
     // or the user deliberately stops a stream.
     consumeSseStream: consumeStream,
+    // Persistence requires stable identities for every newly generated
+    // assistant message. AI SDK only adds the response ID when this generator
+    // is provided; the same ID is emitted to the browser and passed to
+    // onFinish for the durable transcript write.
+    generateMessageId: generateId,
     sendReasoning: false,
     sendSources: false,
     originalMessages: canonicalUiMessages,
@@ -297,7 +307,10 @@ export async function POST(req: NextRequest) {
     // eslint-disable-next-line no-console -- Diagnostics intentionally omit request payloads and user content.
     console.error(
       "[chat/route] Request setup failed",
-      getChatErrorDiagnostic(error),
+      JSON.stringify({
+        error: getChatErrorDiagnostic(error),
+        requestOrigin: req.headers.get("origin") ?? "missing",
+      }),
     );
     return new Response(getChatStreamErrorMessage(error), { status: 500 });
   }

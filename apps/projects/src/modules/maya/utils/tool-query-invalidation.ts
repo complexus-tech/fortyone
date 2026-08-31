@@ -210,7 +210,7 @@ export const getMayaToolInvalidationKeys = ({
       ];
       break;
     case "memories":
-      queryKeys = [aiChatKeys.memories()];
+      queryKeys = [aiChatKeys.memories(workspaceSlug)];
       break;
     case "none":
     default:

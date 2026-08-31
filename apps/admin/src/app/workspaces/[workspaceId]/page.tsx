@@ -1,8 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { GitHubIcon, SlackIcon, UserIcon, WorkspaceIcon } from "icons";
-import { Avatar, Badge, Box, Flex, Table, Text } from "ui";
-import { getAdminNotes, getAuditLogs, getWorkspace } from "@/lib/admin-api";
+import { UserIcon, WorkspaceIcon } from "icons";
+import { Avatar, Box, Flex, Table, Text } from "ui";
+import {
+  getAdminNotes,
+  getAuditLogs,
+  getWorkspace,
+  getWorkspaceIntegrations,
+} from "@/lib/admin-api";
 import {
   formatAuditValue,
   formatCount,
@@ -15,6 +20,7 @@ import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { AdminNotesPanel } from "@/components/admin-notes-panel";
 import { WorkspaceActionsMenu } from "@/components/workspace-actions-menu";
+import { WorkspaceIntegrationsPanel } from "@/components/workspace-integrations-panel";
 import {
   UserStatusBadge,
   WorkspaceStatusBadge,
@@ -26,8 +32,9 @@ export default async function WorkspaceDetailPage({
   params: Promise<{ workspaceId: string }>;
 }) {
   const { workspaceId } = await params;
-  const [overview, auditLogs, notes] = await Promise.all([
+  const [overview, integrations, auditLogs, notes] = await Promise.all([
     getWorkspace(workspaceId),
+    getWorkspaceIntegrations(workspaceId),
     getAuditLogs({ workspaceId, limit: 8 }),
     getAdminNotes({ targetType: "workspace", targetId: workspaceId, limit: 5 }),
   ]);
@@ -116,18 +123,6 @@ export default async function WorkspaceDetailPage({
                 <DetailRow label="Stripe subscription">
                   <Text>{workspace.stripeSubscriptionId ?? "Not linked"}</Text>
                 </DetailRow>
-                <DetailRow label="Integrations">
-                  <Flex align="center" className="gap-2">
-                    <Badge color="tertiary">
-                      <SlackIcon className="h-4" />
-                      {workspace.slackInstalled ? "Slack" : "No Slack"}
-                    </Badge>
-                    <Badge color="tertiary">
-                      <GitHubIcon className="h-4" />
-                      {workspace.githubInstalled ? "GitHub" : "No GitHub"}
-                    </Badge>
-                  </Flex>
-                </DetailRow>
               </Box>
             </Box>
             <AdminNotesPanel
@@ -187,6 +182,8 @@ export default async function WorkspaceDetailPage({
             </Box>
           </Box>
         </Box>
+
+        <WorkspaceIntegrationsPanel integrations={integrations} />
 
         <Box className="border-border overflow-hidden rounded-lg border-[0.5px]">
           <Box className="border-border border-b-[0.5px] px-4 py-3">

@@ -6,10 +6,14 @@ import type {
   AdminListParams,
   AuditLog,
   DashboardSummary,
+  IntegrationListParams,
   ListResult,
   UserOverview,
+  UserAIUsageReset,
   UserSummary,
   WorkspaceOverview,
+  WorkspaceIntegrations,
+  WorkspaceIntegrationSummary,
   WorkspaceSummary,
 } from "@/lib/types";
 
@@ -99,6 +103,29 @@ export const getWorkspace = (workspaceId: string) =>
     adminClient().get(`admin/workspaces/${workspaceId}`, { cache: "no-store" }),
   );
 
+export const getWorkspaceIntegrations = (workspaceId: string) =>
+  adminRequest<WorkspaceIntegrations>(
+    "get_workspace_integrations",
+    adminClient().get(`admin/workspaces/${workspaceId}/integrations`, {
+      cache: "no-store",
+    }),
+  );
+
+export const getIntegrationWorkspaces = (params: IntegrationListParams = {}) =>
+  adminRequest<ListResult<WorkspaceIntegrationSummary>>(
+    "list_workspace_integrations",
+    adminClient().get(
+      `admin/integrations${buildQuery({
+        page: params.page,
+        limit: params.limit,
+        q: params.q,
+        provider: params.provider,
+        status: params.status,
+      })}`,
+      { cache: "no-store" },
+    ),
+  );
+
 export const updateWorkspaceTrial = async (
   workspaceId: string,
   input: { trialEndsOn: string; reason: string },
@@ -168,6 +195,18 @@ export const requestUserSessionRevocation = async (
   return adminRequest<UserOverview>(
     "request_user_session_revocation",
     adminClient().post(`admin/users/${userId}/session-revocation`, {
+      json: input,
+    }),
+  );
+};
+
+export const resetUserAIUsage = async (
+  userId: string,
+  input: { reason: string },
+) => {
+  return adminRequest<UserAIUsageReset>(
+    "reset_user_ai_usage",
+    adminClient().post(`admin/users/${userId}/ai-usage-reset`, {
       json: input,
     }),
   );

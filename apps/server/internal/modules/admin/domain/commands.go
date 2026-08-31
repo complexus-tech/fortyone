@@ -27,6 +27,21 @@ type GetWorkspaceQuery struct {
 	WorkspaceID uuid.UUID
 }
 
+type ListWorkspaceIntegrationsQuery struct {
+	ActorID  uuid.UUID
+	Page     pagination.OffsetParams
+	Search   string
+	Provider IntegrationProvider
+	Status   IntegrationStatus
+	Now      time.Time
+}
+
+type GetWorkspaceIntegrationsQuery struct {
+	ActorID     uuid.UUID
+	WorkspaceID uuid.UUID
+	Now         time.Time
+}
+
 type UpdateWorkspaceTrialCommand struct {
 	ActorID     uuid.UUID
 	WorkspaceID uuid.UUID
@@ -75,6 +90,15 @@ type RequestSessionRevocationCommand struct {
 	ActorID uuid.UUID
 	UserID  uuid.UUID
 	Reason  string
+}
+
+type ResetUserAIUsageCommand struct {
+	ActorID     uuid.UUID
+	UserID      uuid.UUID
+	Reason      string
+	PeriodStart time.Time
+	PeriodEnd   time.Time
+	ResetAt     time.Time
 }
 
 type ListAuditLogsQuery struct {

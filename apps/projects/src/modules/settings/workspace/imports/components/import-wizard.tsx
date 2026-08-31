@@ -126,6 +126,7 @@ const MAPPING_FIELDS: {
 const fileAccept = {
   "text/csv": [".csv"],
   "text/tab-separated-values": [".tsv"],
+  "application/json": [".json"],
   "application/vnd.ms-excel": [".xls"],
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
     ".xlsx",
@@ -157,6 +158,14 @@ const fileNameToTeamName = (fileName: string) =>
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 24);
+
+const getSuggestedTeamName = (
+  sourceType: ImportDraft["sourceType"] | undefined,
+  fileName: string,
+) => {
+  if (sourceType === "jira_csv") return "Jira Import";
+  return fileNameToTeamName(fileName);
+};
 
 const SelectionCard = ({
   description,
@@ -656,7 +665,9 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
         }
 
         setDraft((current) => {
-          if (current?.rows.length) {
+          const usesDeterministicRowMapping =
+            current?.sourceType === "csv" || current?.sourceType === "jira_csv";
+          if (current?.rows.length && usesDeterministicRowMapping) {
             const mapping =
               !mappingEdited.current && response.analysis.mapping
                 ? response.analysis.mapping
@@ -668,6 +679,14 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
               tasks: mapping
                 ? mapRowsToImportTasks(current.rows, mapping)
                 : current.tasks,
+              warnings: response.analysis.warnings,
+            };
+          }
+          if (current) {
+            return {
+              ...current,
+              summary: response.analysis.summary,
+              tasks: response.analysis.tasks,
               warnings: response.analysis.warnings,
             };
           }
@@ -725,10 +744,10 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
       setAnalysisPending(response.status === "queued");
 
       if (response.analysis) {
-        const teamName =
-          response.analysis.sourceType === "jira_csv"
-            ? "Jira Import"
-            : fileNameToTeamName(file.name);
+        const teamName = getSuggestedTeamName(
+          response.analysis.sourceType,
+          file.name,
+        );
         setDestination((current) =>
           current.kind === "new"
             ? {
@@ -765,7 +784,8 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
       const tooLarge = rejections.some(({ errors }) =>
         errors.some((error) => error.code === "file-too-large"),
       );
-      let message = "Choose a CSV, TSV, Excel, PDF, JPG, PNG, or WebP file.";
+      let message =
+        "Choose a CSV, TSV, JSON, Excel, PDF, JPG, PNG, or WebP file.";
       if (tooLarge) message = "The import file must be 20 MB or smaller.";
       setAnalysisError(message);
     },
@@ -965,11 +985,8 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
 
   const title = "Import work";
   const description =
-    "Upload an export from your work tool. FortyOne uses its configured OpenAI service to map every file automatically, then gives you a full review before any story is created.";
-  const suggestedTeamName =
-    draft?.sourceType === "jira_csv"
-      ? "Jira Import"
-      : fileNameToTeamName(fileName);
+    "Upload an export from your work tool. FortyOne maps the file automatically, then gives you a full review before any story is created.";
+  const suggestedTeamName = getSuggestedTeamName(draft?.sourceType, fileName);
 
   let uploadLabel = "Drop a file here or choose one";
   if (uploadPending) uploadLabel = "Reading your file…";
@@ -1099,10 +1116,10 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
                 Add your export
               </Text>
               <Text className="mt-1 leading-6" color="muted">
-                Export tasks or issues from Jira, ClickUp, monday.com, Asana, or
-                another tool, then upload the file here. AI mapping starts
-                automatically, and you can correct every suggestion before the
-                import runs.
+                Export tasks or issues from Jira, Trello, ClickUp, monday.com,
+                Asana, or another tool, then upload the file here. Mapping
+                starts automatically, and you can correct every suggestion
+                before the import runs.
               </Text>
 
               {fileName ? (
@@ -1131,7 +1148,7 @@ export const ImportWizard = ({ onOpenChange, open }: ImportWizardProps) => {
                       </Box>
                       <Text className="font-medium">{uploadLabel}</Text>
                       <Text color="muted">
-                        CSV, Excel, PDF, JPG, PNG, or WebP, up to 20 MB
+                        CSV, JSON, Excel, PDF, JPG, PNG, or WebP, up to 20 MB
                       </Text>
                     </Flex>
                   </DropZone.Root>

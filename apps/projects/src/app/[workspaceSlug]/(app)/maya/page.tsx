@@ -29,7 +29,7 @@ export default async function MayaPage({
 
   if (chatRef && session) {
     await queryClient.prefetchQuery({
-      queryKey: aiChatKeys.messages(chatRef),
+      queryKey: aiChatKeys.messages(workspaceSlug, chatRef),
       queryFn: () => getAiChatMessages(ctx, chatRef),
     });
   }

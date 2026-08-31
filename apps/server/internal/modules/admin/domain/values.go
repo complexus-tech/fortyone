@@ -63,6 +63,47 @@ func ParseNoteTargetType(value string) (TargetType, error) {
 
 type AuditAction string
 
+type IntegrationProvider string
+
+const (
+	IntegrationProviderAny      IntegrationProvider = ""
+	IntegrationProviderSlack    IntegrationProvider = "slack"
+	IntegrationProviderGitHub   IntegrationProvider = "github"
+	IntegrationProviderCalendar IntegrationProvider = "calendar"
+	IntegrationProviderFigma    IntegrationProvider = "figma"
+)
+
+func ParseIntegrationProvider(value string) (IntegrationProvider, error) {
+	provider := IntegrationProvider(strings.ToLower(strings.TrimSpace(value)))
+	switch provider {
+	case IntegrationProviderAny, IntegrationProviderSlack, IntegrationProviderGitHub,
+		IntegrationProviderCalendar, IntegrationProviderFigma:
+		return provider, nil
+	default:
+		return IntegrationProviderAny, fmt.Errorf("%w: integration provider %q", ErrInvalidFilter, value)
+	}
+}
+
+type IntegrationStatus string
+
+const (
+	IntegrationStatusAny          IntegrationStatus = ""
+	IntegrationStatusConnected    IntegrationStatus = "connected"
+	IntegrationStatusAttention    IntegrationStatus = "attention"
+	IntegrationStatusNotConnected IntegrationStatus = "not_connected"
+)
+
+func ParseIntegrationStatus(value string) (IntegrationStatus, error) {
+	status := IntegrationStatus(strings.ToLower(strings.TrimSpace(value)))
+	switch status {
+	case IntegrationStatusAny, IntegrationStatusConnected, IntegrationStatusAttention,
+		IntegrationStatusNotConnected:
+		return status, nil
+	default:
+		return IntegrationStatusAny, fmt.Errorf("%w: integration status %q", ErrInvalidFilter, value)
+	}
+}
+
 type LoginReactivationPolicy string
 
 const (
@@ -83,6 +124,7 @@ const (
 	AuditUserStateReviewed              AuditAction = "user.state_reviewed"
 	AuditUserReactivationPolicyChanged  AuditAction = "user.reactivation_policy_changed"
 	AuditUserSessionRevocationRequested AuditAction = "user.session_revocation_requested"
+	AuditUserAIUsageReset               AuditAction = "user.ai_usage_reset"
 	AuditAdminNoteCreated               AuditAction = "admin_note.created"
 	AuditSubscriptionSyncRequested      AuditAction = "subscription.sync_requested"
 	AuditSubscriptionSynced             AuditAction = "subscription.synced"
@@ -96,7 +138,7 @@ func ParseAuditAction(value string) (AuditAction, error) {
 		AuditWorkspaceRestored, AuditUserActivated, AuditUserDeactivated,
 		AuditUserInternalGranted, AuditUserInternalRevoked, AuditUserStateReviewed,
 		AuditUserReactivationPolicyChanged,
-		AuditUserSessionRevocationRequested, AuditAdminNoteCreated,
+		AuditUserSessionRevocationRequested, AuditUserAIUsageReset, AuditAdminNoteCreated,
 		AuditSubscriptionSyncRequested, AuditSubscriptionSynced,
 		AuditSubscriptionSyncFailed:
 		return action, nil

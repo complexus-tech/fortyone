@@ -9,7 +9,7 @@ export const useAiChats = () => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: aiChatKeys.lists(),
+    queryKey: aiChatKeys.lists(workspaceSlug),
     queryFn: () => getAiChats({ session: session!, workspaceSlug }),
     enabled: Boolean(session),
   });

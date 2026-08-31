@@ -85,6 +85,13 @@ describe("ImportWizard presentation", () => {
       /rightIcon=\{<ArrowRight2Icon \/>}[^]*?Continue/,
     );
   });
+
+  it("accepts JSON exports through the universal importer", () => {
+    expect(source).toContain('"application/json": [".json"]');
+    expect(source).toContain("CSV, JSON, Excel");
+    expect(source).toContain('current?.sourceType === "csv"');
+    expect(source).toContain("tasks: response.analysis.tasks");
+  });
 });
 
 describe("Select presentation", () => {

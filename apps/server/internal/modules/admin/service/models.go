@@ -36,15 +36,26 @@ type DashboardSummary = admindomain.DashboardSummary
 type UserSummary = admindomain.UserSummary
 type UserMembership = admindomain.UserMembership
 type UserOverview = admindomain.UserOverview
+type UserAIUsageReset = admindomain.UserAIUsageReset
 type WorkspaceSummary = admindomain.WorkspaceSummary
 type WorkspaceMember = admindomain.WorkspaceMember
 type WorkspaceOverview = admindomain.WorkspaceOverview
+type IntegrationSummary = admindomain.IntegrationSummary
+type WorkspaceIntegrationSummary = admindomain.WorkspaceIntegrationSummary
+type WorkspaceIntegrations = admindomain.WorkspaceIntegrations
 type AuditLog = admindomain.AuditLog
 type AdminNote = admindomain.AdminNote
 
 type ListWorkspacesInput struct {
 	Pagination PaginationInput
 	Query      string
+	Status     string
+}
+
+type ListWorkspaceIntegrationsInput struct {
+	Pagination PaginationInput
+	Query      string
+	Provider   string
 	Status     string
 }
 
@@ -84,6 +95,10 @@ type UpdateUserStateInput struct {
 }
 
 type RequestUserSessionRevocationInput struct {
+	Reason string `json:"reason"`
+}
+
+type ResetUserAIUsageInput struct {
 	Reason string `json:"reason"`
 }
 

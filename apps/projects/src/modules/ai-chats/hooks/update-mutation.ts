@@ -18,19 +18,23 @@ export const useUpdateAiChat = () => {
       payload: UpdateAiChatPayload;
     }) => updateAiChatAction(id, payload, workspaceSlug),
     onMutate: async ({ id, payload }) => {
-      await queryClient.cancelQueries({ queryKey: aiChatKeys.lists() });
-      await queryClient.cancelQueries({ queryKey: aiChatKeys.detail(id) });
+      await queryClient.cancelQueries({
+        queryKey: aiChatKeys.lists(workspaceSlug),
+      });
+      await queryClient.cancelQueries({
+        queryKey: aiChatKeys.detail(workspaceSlug, id),
+      });
 
       const previousChats = queryClient.getQueryData<AiChatSession[]>(
-        aiChatKeys.lists(),
+        aiChatKeys.lists(workspaceSlug),
       );
       const previousChat = queryClient.getQueryData<AiChatSession>(
-        aiChatKeys.detail(id),
+        aiChatKeys.detail(workspaceSlug, id),
       );
 
       if (previousChats) {
         queryClient.setQueryData<AiChatSession[]>(
-          aiChatKeys.lists(),
+          aiChatKeys.lists(workspaceSlug),
           previousChats.map((chat) =>
             chat.id === id ? { ...chat, ...payload } : chat,
           ),
@@ -38,20 +42,29 @@ export const useUpdateAiChat = () => {
       }
 
       if (previousChat) {
-        queryClient.setQueryData<AiChatSession>(aiChatKeys.detail(id), {
-          ...previousChat,
-          ...payload,
-        });
+        queryClient.setQueryData<AiChatSession>(
+          aiChatKeys.detail(workspaceSlug, id),
+          {
+            ...previousChat,
+            ...payload,
+          },
+        );
       }
 
       return { previousChats, previousChat };
     },
     onError: (error, { id }, context) => {
       if (context?.previousChats) {
-        queryClient.setQueryData(aiChatKeys.lists(), context.previousChats);
+        queryClient.setQueryData(
+          aiChatKeys.lists(workspaceSlug),
+          context.previousChats,
+        );
       }
       if (context?.previousChat) {
-        queryClient.setQueryData(aiChatKeys.detail(id), context.previousChat);
+        queryClient.setQueryData(
+          aiChatKeys.detail(workspaceSlug, id),
+          context.previousChat,
+        );
       }
       toast.error("Failed to update chat", {
         description: error.message || "Your changes were not saved",
@@ -68,8 +81,12 @@ export const useUpdateAiChat = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: aiChatKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: aiChatKeys.detail(id) });
+      queryClient.invalidateQueries({
+        queryKey: aiChatKeys.lists(workspaceSlug),
+      });
+      queryClient.invalidateQueries({
+        queryKey: aiChatKeys.detail(workspaceSlug, id),
+      });
     },
   });
 

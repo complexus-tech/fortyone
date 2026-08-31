@@ -56,9 +56,26 @@ jest.mock("@/modules/ai-chats/queries/get-ai-chat-messages", () => ({
 
 jest.mock("@/modules/ai-chats/constants", () => ({
   aiChatKeys: {
-    lists: () => ["ai-chats", "lists"],
-    messages: (chatId: string) => ["ai-chats", "messages", chatId],
-    totalMessages: () => ["ai-chats", "total-messages"],
+    lists: (workspaceSlug: string) => [
+      "ai-chats",
+      "workspace",
+      workspaceSlug,
+      "list",
+    ],
+    messages: (workspaceSlug: string, chatId: string) => [
+      "ai-chats",
+      "workspace",
+      workspaceSlug,
+      "detail",
+      chatId,
+      "messages",
+    ],
+    totalMessages: (workspaceSlug: string) => [
+      "ai-chats",
+      "workspace",
+      workspaceSlug,
+      "total-messages",
+    ],
   },
 }));
 

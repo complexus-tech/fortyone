@@ -13,10 +13,12 @@ export const useCreateMemory = () => {
     mutationFn: (payload: CreateMemoryPayload) =>
       createMemoryAction(payload, workspaceSlug),
     onMutate: async (payload) => {
-      await queryClient.cancelQueries({ queryKey: aiChatKeys.memories() });
+      await queryClient.cancelQueries({
+        queryKey: aiChatKeys.memories(workspaceSlug),
+      });
 
       const previousMemories = queryClient.getQueryData<Memory[]>(
-        aiChatKeys.memories(),
+        aiChatKeys.memories(workspaceSlug),
       );
 
       // Create optimistic memory item
@@ -30,14 +32,15 @@ export const useCreateMemory = () => {
       };
 
       if (previousMemories) {
-        queryClient.setQueryData<Memory[]>(aiChatKeys.memories(), [
-          ...previousMemories,
-          optimisticMemory,
-        ]);
+        queryClient.setQueryData<Memory[]>(
+          aiChatKeys.memories(workspaceSlug),
+          [...previousMemories, optimisticMemory],
+        );
       } else {
-        queryClient.setQueryData<Memory[]>(aiChatKeys.memories(), [
-          optimisticMemory,
-        ]);
+        queryClient.setQueryData<Memory[]>(
+          aiChatKeys.memories(workspaceSlug),
+          [optimisticMemory],
+        );
       }
 
       return { previousMemories };
@@ -45,7 +48,7 @@ export const useCreateMemory = () => {
     onError: (error, payload, context) => {
       if (context?.previousMemories) {
         queryClient.setQueryData(
-          aiChatKeys.memories(),
+          aiChatKeys.memories(workspaceSlug),
           context.previousMemories,
         );
       }
@@ -64,7 +67,9 @@ export const useCreateMemory = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: aiChatKeys.memories() });
+      queryClient.invalidateQueries({
+        queryKey: aiChatKeys.memories(workspaceSlug),
+      });
       toast.success("Memory created successfully");
     },
   });

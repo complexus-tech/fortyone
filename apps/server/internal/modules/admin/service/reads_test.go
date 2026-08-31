@@ -39,6 +39,43 @@ func TestListWorkspacesRejectsUnknownStatus(t *testing.T) {
 	require.ErrorIs(t, err, ErrInvalidFilter)
 }
 
+func TestListWorkspaceIntegrationsBuildsTypedBoundedQuery(t *testing.T) {
+	actorID := uuid.New()
+	now := time.Date(2026, 8, 31, 10, 0, 0, 0, time.FixedZone("CAT", 2*60*60))
+	repository := &adminTestRepository{}
+	service := New(repository, WithNow(func() time.Time { return now }))
+
+	_, err := service.ListWorkspaceIntegrations(context.Background(), actorID, ListWorkspaceIntegrationsInput{
+		Pagination: PaginationInput{Page: 0, Limit: 500},
+		Query:      "  Acme  ",
+		Provider:   " GITHUB ",
+		Status:     " ATTENTION ",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, actorID, repository.listIntegrationsQuery.ActorID)
+	require.Equal(t, 1, repository.listIntegrationsQuery.Page.Page)
+	require.Equal(t, maxPageLimit, repository.listIntegrationsQuery.Page.PageSize)
+	require.Equal(t, "acme", repository.listIntegrationsQuery.Search)
+	require.Equal(t, admindomain.IntegrationProviderGitHub, repository.listIntegrationsQuery.Provider)
+	require.Equal(t, admindomain.IntegrationStatusAttention, repository.listIntegrationsQuery.Status)
+	require.Equal(t, now.UTC(), repository.listIntegrationsQuery.Now)
+}
+
+func TestListWorkspaceIntegrationsRejectsUnknownFilters(t *testing.T) {
+	service := New(&adminTestRepository{})
+
+	_, err := service.ListWorkspaceIntegrations(context.Background(), uuid.New(), ListWorkspaceIntegrationsInput{
+		Provider: "drop table",
+	})
+	require.ErrorIs(t, err, ErrInvalidFilter)
+
+	_, err = service.ListWorkspaceIntegrations(context.Background(), uuid.New(), ListWorkspaceIntegrationsInput{
+		Status: "broken",
+	})
+	require.ErrorIs(t, err, ErrInvalidFilter)
+}
+
 func TestListAuditLogsBuildsTypedUTCFilter(t *testing.T) {
 	actorID := uuid.New()
 	from := time.Date(2026, 7, 1, 0, 0, 0, 0, time.FixedZone("CAT", 2*60*60))

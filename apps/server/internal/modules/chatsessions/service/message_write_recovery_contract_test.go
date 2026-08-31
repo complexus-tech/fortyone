@@ -6,6 +6,79 @@ import (
 	"testing"
 )
 
+func TestRegenerationRecoversLatestUserMessageWhenInitialReservationWasNotCommitted(t *testing.T) {
+	t.Parallel()
+
+	t.Run("new conversation", func(t *testing.T) {
+		t.Parallel()
+
+		incoming := []any{message("user-1", "user", textPart("Hello"))}
+		reserved, err := ReserveMessageWriteForTarget(nil, incoming, MessageWriteRegenerate, "")
+		if err != nil {
+			t.Fatalf("recover initial user message: %v", err)
+		}
+		if !reflect.DeepEqual(reserved, incoming) {
+			t.Fatalf("reserved transcript = %#v, want %#v", reserved, incoming)
+		}
+	})
+
+	t.Run("different target remains a conflict", func(t *testing.T) {
+		t.Parallel()
+
+		incoming := []any{message("user-1", "user", textPart("Hello"))}
+		if _, err := ReserveMessageWriteForTarget(nil, incoming, MessageWriteRegenerate, "different-user"); !errors.Is(err, ErrMessageWriteConflict) {
+			t.Fatalf("different target error = %v, want conflict", err)
+		}
+	})
+
+	t.Run("multiple uncommitted messages remain invalid", func(t *testing.T) {
+		t.Parallel()
+
+		incoming := []any{
+			message("user-1", "user", textPart("First")),
+			message("assistant-1", "assistant", textPart("Answer")),
+			message("user-2", "user", textPart("Second")),
+		}
+		if _, err := ReserveMessageWriteForTarget(nil, incoming, MessageWriteRegenerate, ""); !errors.Is(err, ErrMessageWriteConflict) {
+			t.Fatalf("multiple uncommitted messages error = %v, want conflict", err)
+		}
+	})
+
+	t.Run("existing conversation", func(t *testing.T) {
+		t.Parallel()
+
+		current := []any{
+			message("user-1", "user", textPart("First")),
+			message("assistant-1", "assistant", textPart("First answer")),
+		}
+		incoming := append(append([]any{}, current...), message("user-2", "user", textPart("Second")))
+		reserved, err := ReserveMessageWriteForTarget(current, incoming, MessageWriteRegenerate, "user-2")
+		if err != nil {
+			t.Fatalf("recover latest user message: %v", err)
+		}
+		if !reflect.DeepEqual(reserved, incoming) {
+			t.Fatalf("reserved transcript = %#v, want %#v", reserved, incoming)
+		}
+	})
+
+	t.Run("changed history remains a conflict", func(t *testing.T) {
+		t.Parallel()
+
+		current := []any{
+			message("user-1", "user", textPart("Original")),
+			message("assistant-1", "assistant", textPart("Answer")),
+		}
+		incoming := []any{
+			message("user-1", "user", textPart("Edited")),
+			message("assistant-1", "assistant", textPart("Answer")),
+			message("user-2", "user", textPart("Second")),
+		}
+		if _, err := ReserveMessageWriteForTarget(current, incoming, MessageWriteRegenerate, "user-2"); !errors.Is(err, ErrMessageWriteConflict) {
+			t.Fatalf("changed history error = %v, want conflict", err)
+		}
+	})
+}
+
 func TestNormalTurnSelfHealsCompletedApprovalAfterTranscriptWriteLoss(t *testing.T) {
 	t.Parallel()
 

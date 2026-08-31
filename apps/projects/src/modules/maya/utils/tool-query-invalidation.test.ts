@@ -87,4 +87,13 @@ describe("Maya tool query invalidation", () => {
       ]),
     );
   });
+
+  it("refreshes memories only within the active workspace", () => {
+    expect(getKeys("createMemory")).toContainEqual([
+      "ai-chats",
+      "workspace",
+      WORKSPACE_SLUG,
+      "memories",
+    ]);
+  });
 });

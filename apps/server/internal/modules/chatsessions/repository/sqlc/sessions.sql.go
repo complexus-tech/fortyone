@@ -37,16 +37,28 @@ func (q *Queries) ChatSessionExists(ctx context.Context, arg ChatSessionExistsPa
 }
 
 const countUserMessages = `-- name: CountUserMessages :one
-SELECT COUNT(*)
-FROM public.chat_sessions AS session
-INNER JOIN public.chat_messages AS messages
-    ON messages.session_id = session.id
-CROSS JOIN LATERAL jsonb_array_elements(messages.messages) AS message
-WHERE session.user_id = $1
-  AND session.workspace_id = $2
-  AND session.created_at >= $3
-  AND session.created_at < $4
-  AND message ->> 'role' = 'user'
+SELECT CAST(GREATEST(
+    (
+        SELECT COUNT(*)
+        FROM public.chat_sessions AS session
+        INNER JOIN public.chat_messages AS messages
+            ON messages.session_id = session.id
+        CROSS JOIN LATERAL jsonb_array_elements(messages.messages) AS message
+        WHERE session.user_id = $1
+          AND session.workspace_id = $2
+          AND session.created_at >= $3
+          AND session.created_at < $4
+          AND session.deleted_at IS NULL
+          AND message ->> 'role' = 'user'
+    ) - COALESCE((
+        SELECT reset.baseline_message_count
+        FROM public.user_ai_usage_resets AS reset
+        WHERE reset.user_id = $1
+          AND reset.workspace_id = $2
+          AND reset.period_start = $3
+    ), 0),
+    0
+) AS bigint)
 `
 
 type CountUserMessagesParams struct {
@@ -63,9 +75,9 @@ func (q *Queries) CountUserMessages(ctx context.Context, arg CountUserMessagesPa
 		arg.StartDate,
 		arg.EndDate,
 	)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const getChatMessages = `-- name: GetChatMessages :one

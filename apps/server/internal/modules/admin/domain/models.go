@@ -67,6 +67,13 @@ type UserOverview struct {
 	Memberships []UserMembership `json:"memberships"`
 }
 
+type UserAIUsageReset struct {
+	User                 UserSummary `json:"user"`
+	WorkspaceCount       int         `json:"workspaceCount"`
+	PreviousMessageCount int         `json:"previousMessageCount"`
+	ResetAt              time.Time   `json:"resetAt"`
+}
+
 type WorkspaceSummary struct {
 	ID                   uuid.UUID  `json:"id"`
 	Name                 string     `json:"name"`
@@ -106,6 +113,101 @@ type WorkspaceMember struct {
 type WorkspaceOverview struct {
 	Workspace WorkspaceSummary  `json:"workspace"`
 	Members   []WorkspaceMember `json:"members"`
+}
+
+type IntegrationSummary struct {
+	Provider            string     `json:"provider"`
+	State               string     `json:"state"`
+	AccountLabel        *string    `json:"accountLabel"`
+	ConnectionCount     int        `json:"connectionCount"`
+	MappingCount        int        `json:"mappingCount"`
+	UnmappedMemberCount int        `json:"unmappedMemberCount"`
+	LastSyncedAt        *time.Time `json:"lastSyncedAt"`
+}
+
+type WorkspaceIntegrationSummary struct {
+	WorkspaceID      uuid.UUID            `json:"workspaceId"`
+	WorkspaceName    string               `json:"workspaceName"`
+	WorkspaceSlug    string               `json:"workspaceSlug"`
+	WorkspaceAvatar  *string              `json:"workspaceAvatar"`
+	SubscriptionTier *string              `json:"subscriptionTier"`
+	MemberCount      int                  `json:"memberCount"`
+	Integrations     []IntegrationSummary `json:"integrations"`
+}
+
+type SlackIntegrationDetail struct {
+	ID                  uuid.UUID  `json:"id"`
+	TeamID              string     `json:"teamId"`
+	TeamName            string     `json:"teamName"`
+	TeamDomain          string     `json:"teamDomain"`
+	InstalledByName     *string    `json:"installedByName"`
+	InstalledByEmail    *string    `json:"installedByEmail"`
+	ChannelCount        int        `json:"channelCount"`
+	ChannelMappingCount int        `json:"channelMappingCount"`
+	LastSyncedAt        *time.Time `json:"lastSyncedAt"`
+	CreatedAt           time.Time  `json:"createdAt"`
+}
+
+type GitHubInstallationDetail struct {
+	ID                  uuid.UUID  `json:"id"`
+	AccountLogin        string     `json:"accountLogin"`
+	AccountType         string     `json:"accountType"`
+	RepositorySelection string     `json:"repositorySelection"`
+	State               string     `json:"state"`
+	InstalledByName     *string    `json:"installedByName"`
+	InstalledByEmail    *string    `json:"installedByEmail"`
+	RepositoryCount     int        `json:"repositoryCount"`
+	TeamMappingCount    int        `json:"teamMappingCount"`
+	LastSyncedAt        *time.Time `json:"lastSyncedAt"`
+	CreatedAt           time.Time  `json:"createdAt"`
+}
+
+type CalendarConnectionDetail struct {
+	ID             uuid.UUID  `json:"id"`
+	UserID         uuid.UUID  `json:"userId"`
+	UserName       string     `json:"userName"`
+	UserEmail      string     `json:"userEmail"`
+	Provider       string     `json:"provider"`
+	ConnectedEmail string     `json:"connectedEmail"`
+	State          string     `json:"state"`
+	LastSyncedAt   *time.Time `json:"lastSyncedAt"`
+	CreatedAt      time.Time  `json:"createdAt"`
+}
+
+type FigmaIntegrationDetail struct {
+	ID               uuid.UUID `json:"id"`
+	AccountLabel     string    `json:"accountLabel"`
+	ConnectedByName  *string   `json:"connectedByName"`
+	ConnectedByEmail string    `json:"connectedByEmail"`
+	State            string    `json:"state"`
+	LinkedFileCount  int       `json:"linkedFileCount"`
+	WebhookCount     int       `json:"webhookCount"`
+	ExpiresAt        time.Time `json:"expiresAt"`
+	CreatedAt        time.Time `json:"createdAt"`
+}
+
+type IntegrationMemberMapping struct {
+	UserID           uuid.UUID  `json:"userId"`
+	Name             string     `json:"name"`
+	Email            string     `json:"email"`
+	Role             string     `json:"role"`
+	SlackUserID      *string    `json:"slackUserId"`
+	SlackLinkedVia   *string    `json:"slackLinkedVia"`
+	SlackLinkedAt    *time.Time `json:"slackLinkedAt"`
+	GitHubUsername   *string    `json:"githubUsername"`
+	CalendarProvider *string    `json:"calendarProvider"`
+	CalendarEmail    *string    `json:"calendarEmail"`
+	CalendarState    *string    `json:"calendarState"`
+}
+
+type WorkspaceIntegrations struct {
+	WorkspaceID    uuid.UUID                  `json:"workspaceId"`
+	Summaries      []IntegrationSummary       `json:"summaries"`
+	Slack          *SlackIntegrationDetail    `json:"slack"`
+	GitHub         []GitHubInstallationDetail `json:"github"`
+	Calendar       []CalendarConnectionDetail `json:"calendar"`
+	Figma          *FigmaIntegrationDetail    `json:"figma"`
+	MemberMappings []IntegrationMemberMapping `json:"memberMappings"`
 }
 
 type AuditLog struct {

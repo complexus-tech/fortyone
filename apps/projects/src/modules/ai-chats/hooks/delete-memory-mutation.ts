@@ -12,15 +12,17 @@ export const useDeleteMemory = () => {
   const mutation = useMutation({
     mutationFn: (id: string) => deleteMemoryAction(id, workspaceSlug),
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: aiChatKeys.memories() });
+      await queryClient.cancelQueries({
+        queryKey: aiChatKeys.memories(workspaceSlug),
+      });
 
       const previousMemories = queryClient.getQueryData<Memory[]>(
-        aiChatKeys.memories(),
+        aiChatKeys.memories(workspaceSlug),
       );
 
       if (previousMemories) {
         queryClient.setQueryData<Memory[]>(
-          aiChatKeys.memories(),
+          aiChatKeys.memories(workspaceSlug),
           previousMemories.filter((memory) => memory.id !== id),
         );
       }
@@ -30,7 +32,7 @@ export const useDeleteMemory = () => {
     onError: (error, id, context) => {
       if (context?.previousMemories) {
         queryClient.setQueryData(
-          aiChatKeys.memories(),
+          aiChatKeys.memories(workspaceSlug),
           context.previousMemories,
         );
       }
@@ -49,7 +51,9 @@ export const useDeleteMemory = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: aiChatKeys.memories() });
+      queryClient.invalidateQueries({
+        queryKey: aiChatKeys.memories(workspaceSlug),
+      });
       toast.success("Memory deleted successfully");
     },
   });

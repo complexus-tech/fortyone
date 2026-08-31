@@ -41,6 +41,7 @@ The machine-readable source of truth is [`internal/migrations/manifest.json`](..
 | `000174` | `login_reactivation_policy` | `reversible` | `coordinated-cutover` | Replacement authentication reactivates only verified_sign_in accounts after a verified email or OAuth identity, while administrator state mutations atomically set admin_only or clear the gate and advance the browser-session epoch on both disable and re-enable transitions. | Replacement inactivity maintenance explicitly preserves verified_sign_in eligibility while deactivating and fencing an account. Old workers leave the additive default unchanged, which has the same automated-inactivity behavior. |
 | `000175` | `automation_keyset_indexes` | `reversible` | `schema-first` | Unaffected. Migration 000175 adds planner-visible indexes only and changes no API schema, response, authorization, or mutation behavior. | Old and replacement workers remain schema-compatible. Replacement story and sprint automation jobs can use the indexes immediately after PostgreSQL builds and analyzes them. |
 | `000176` | `user_onboarding_tour_progress` | `forward-only` | `schema-first` | Replacement onboarding-progress endpoints require schema 000176 and enforce an active user plus workspace membership on every read or upsert. Existing APIs ignore the additive table and remain schema-compatible. | Unaffected. Walkthrough progress is synchronous user API state; no worker claims, mutates, or interprets these rows. |
+| `000177` | `user_ai_usage_resets` | `forward-only` | `schema-first` | Replacement chat message counts subtract the current period reset baseline, and the internal-admin endpoint atomically updates every current workspace membership plus its immutable audit entry. Old APIs ignore the additive table. | Unaffected. Maya web-chat allowance counts and administrator resets are synchronous API operations; no worker reads or mutates the reset offsets. |
 
 ## `000152_harden_verification_tokens`
 
@@ -757,6 +758,36 @@ Operational notes:
 - The composite key scopes progress to one user, workspace, tour key, and tour version; a new tour version intentionally starts with independent state.
 - Completed step IDs and completed action IDs are bounded opaque identifiers. The Maya onboarding action records that a user submitted a non-empty prompt; it does not assert that the AI provider returned a successful response.
 - Terminal completed and skipped states are monotonic, and progress is onboarding convenience state only: it must not authorize access or serve as activation, billing, or audit evidence.
+
+## `000177_user_ai_usage_resets`
+
+- **Classification:** `forward-only`
+- **Files:** `000177_user_ai_usage_resets.up.sql`, `000177_user_ai_usage_resets.down.sql`
+- **Schema:** Additive per-user, per-workspace, per-period AI message-usage reset offsets preserve chat transcripts while allowing an audited current-month allowance reset.
+- **API:** Replacement chat message counts subtract the current period reset baseline, and the internal-admin endpoint atomically updates every current workspace membership plus its immutable audit entry. Old APIs ignore the additive table.
+- **Worker:** Unaffected. Maya web-chat allowance counts and administrator resets are synchronous API operations; no worker reads or mutates the reset offsets.
+- **Mixed versions:** Apply schema 000177 before deploying any replacement API instance because replacement message-count and admin-reset queries require the table. Old API instances remain safe while the additive schema is present but do not honor resets until drained.
+- **Rollout mode:** `schema-first`
+
+Rollout:
+
+1. Back up PostgreSQL, apply migration 000177, and verify the composite primary key, three foreign keys, nonnegative baseline constraint, and reset-time index.
+2. Deploy the complete replacement API fleet before exposing the admin action, then confirm ordinary users cannot call the internal-admin route and every successful reset records an immutable user.ai_usage_reset audit with a required reason.
+3. With a disposable non-internal user, record current-month Maya messages in more than one workspace, reset usage in Admin, verify the allowance reads zero without removing chat history, then send a new message and verify the count advances from zero.
+4. Repeat the reset in the same month and verify the upsert moves the baseline forward without duplicate rows or negative usage; also verify users with no workspace memberships return a successful zero-workspace audit.
+
+Recovery (`forward-fix`):
+
+1. Disable the Admin reset action while preserving user_ai_usage_resets rows if reset or counting behavior is unhealthy.
+2. Deploy a forward-compatible query or data repair that retains chat history, current-period baselines, active-internal-admin authorization, and immutable audit evidence before re-enabling resets.
+3. Do not run the down migration after any reset has been granted: deleting reset offsets can unexpectedly restore consumed usage and lock affected users. Roll back only before adoption with explicit operator approval.
+
+Operational notes:
+
+- A reset stores the current raw user-message count as a baseline; it does not edit chat_sessions or chat_messages, so conversation history and mutation evidence remain intact.
+- The reset covers every workspace membership held by the target user at reset time. A later membership starts with its normal current-month count because no reset row was created for that workspace.
+- The allowance count excludes soft-deleted sessions and clamps subtraction at zero. Calendar boundaries use the shared application clock location in both the ordinary count and administrator reset service.
+- The audit records aggregate prior message and workspace counts without copying prompts, responses, or other conversation content.
 
 ## Adding the next migration
 

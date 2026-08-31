@@ -1,6 +1,7 @@
 /* global describe, expect, it -- Jest globals are provided by the projects test runner. */
 
 import {
+  formatChatErrorDiagnostic,
   getChatErrorDiagnostic,
   getChatStreamErrorMessage,
 } from "./chat-errors";
@@ -102,5 +103,70 @@ describe("getChatErrorDiagnostic", () => {
     expect(JSON.stringify(diagnostic)).not.toMatch(
       /secret|private|confidential/i,
     );
+  });
+
+  it("captures allowlisted HTTP diagnostics without serializing response data", () => {
+    const error = Object.assign(new Error("internal server error"), {
+      data: {
+        data: { transcript: "private workspace content" },
+        error: {
+          code: "internal_error",
+          message: "internal server error",
+          request_id: "request-123",
+        },
+      },
+      name: "ApiError",
+      status: 500,
+    });
+
+    const diagnostic = getChatErrorDiagnostic(error);
+
+    expect(diagnostic).toEqual({
+      codes: ["internal_error"],
+      errorType: "ApiError",
+      messages: ["internal server error"],
+      requestIds: ["request-123"],
+      statuses: [500],
+    });
+    expect(formatChatErrorDiagnostic(error)).toBe(JSON.stringify(diagnostic));
+    expect(JSON.stringify(diagnostic)).not.toContain("private workspace content");
+  });
+
+  it("captures AI SDK statusCode and retryability fields", () => {
+    const error = Object.assign(new Error("Provider request failed"), {
+      isRetryable: false,
+      name: "AI_APICallError",
+      requestBodyValues: { messages: ["private prompt"] },
+      statusCode: 400,
+    });
+
+    expect(getChatErrorDiagnostic(error)).toEqual({
+      codes: [],
+      errorType: "AI_APICallError",
+      messages: ["Provider request failed"],
+      retryable: [false],
+      statuses: [400],
+    });
+  });
+
+  it("does not log validation messages that can embed private input values", () => {
+    const error = Object.assign(
+      new Error(
+        'Type validation failed: Value: {"prompt":"private workspace content"}.',
+      ),
+      {
+        name: "AI_TypeValidationError",
+        statusCode: 400,
+      },
+    );
+
+    const diagnostic = getChatErrorDiagnostic(error);
+
+    expect(diagnostic).toEqual({
+      codes: [],
+      errorType: "AI_TypeValidationError",
+      statuses: [400],
+    });
+    expect(JSON.stringify(diagnostic)).not.toContain("private workspace content");
   });
 });

@@ -24,7 +24,14 @@ const FIELD_ALIASES: Record<keyof ImportMapping, readonly string[]> = {
     "subject",
     "name",
   ],
-  description: ["description", "details", "body", "notes", "task details"],
+  description: [
+    "description",
+    "desc",
+    "details",
+    "body",
+    "notes",
+    "task details",
+  ],
   status: ["status", "state", "workflow status", "issue status"],
   priority: ["priority", "urgency", "issue priority"],
   assigneeEmail: [
@@ -35,7 +42,7 @@ const FIELD_ALIASES: Record<keyof ImportMapping, readonly string[]> = {
     "owner",
   ],
   startDate: ["start date", "start", "planned start"],
-  endDate: ["due date", "deadline", "end date", "end", "target date"],
+  endDate: ["due date", "due", "deadline", "end date", "end", "target date"],
   sourceId: ["issue key", "key", "issue id", "task id", "story id", "id"],
 };
 

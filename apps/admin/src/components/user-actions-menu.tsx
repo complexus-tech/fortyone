@@ -9,11 +9,16 @@ import {
   FileUnlockedIcon,
   LockIcon,
   NewTabIcon,
+  ReloadIcon,
   UndoIcon,
 } from "icons";
 import { toast } from "sonner";
 import { Box, Button, Dialog, Flex, Menu, Text, TextArea } from "ui";
-import { requestUserSessionRevocation, updateUserState } from "@/lib/admin-api";
+import {
+  requestUserSessionRevocation,
+  resetUserAIUsage,
+  updateUserState,
+} from "@/lib/admin-api";
 import type { UserSummary } from "@/lib/types";
 
 type UserAction =
@@ -21,7 +26,8 @@ type UserAction =
   | "deactivate"
   | "grant_internal"
   | "revoke_internal"
-  | "revoke_sessions";
+  | "revoke_sessions"
+  | "reset_ai_usage";
 
 const actionCopy: Record<UserAction, { title: string; submit: string }> = {
   activate: {
@@ -43,6 +49,10 @@ const actionCopy: Record<UserAction, { title: string; submit: string }> = {
   revoke_sessions: {
     title: "Request session revocation",
     submit: "Record request",
+  },
+  reset_ai_usage: {
+    title: "Reset AI usage",
+    submit: "Reset usage",
   },
 };
 
@@ -68,7 +78,12 @@ export const UserActionsMenu = ({ user }: { user: UserSummary }) => {
 
     startTransition(async () => {
       try {
-        if (action === "revoke_sessions") {
+        if (action === "reset_ai_usage") {
+          const reset = await resetUserAIUsage(user.id, { reason });
+          toast.success("AI usage reset", {
+            description: `${reset.previousMessageCount} messages cleared across ${reset.workspaceCount} workspace${reset.workspaceCount === 1 ? "" : "s"}.`,
+          });
+        } else if (action === "revoke_sessions") {
           await requestUserSessionRevocation(user.id, { reason });
         } else if (action === "activate" || action === "deactivate") {
           await updateUserState(user.id, {
@@ -82,7 +97,9 @@ export const UserActionsMenu = ({ user }: { user: UserSummary }) => {
           });
         }
 
-        toast.success("User action recorded");
+        if (action !== "reset_ai_usage") {
+          toast.success("User action recorded");
+        }
         closeDialog();
         router.refresh();
       } catch (error) {
@@ -146,6 +163,14 @@ export const UserActionsMenu = ({ user }: { user: UserSummary }) => {
               <FileLockedIcon className="h-[1.15rem]" />
               Request session revocation
             </Menu.Item>
+            <Menu.Item
+              onSelect={() => {
+                setAction("reset_ai_usage");
+              }}
+            >
+              <ReloadIcon className="h-[1.15rem]" />
+              Reset AI usage
+            </Menu.Item>
           </Menu.Group>
           {user.lastUsedWorkspaceId ? (
             <>
@@ -194,11 +219,22 @@ export const UserActionsMenu = ({ user }: { user: UserSummary }) => {
                 </Text>
               </Box>
               <Box className="mt-4">
+                {action === "reset_ai_usage" ? (
+                  <Text className="mb-4 leading-6" color="muted">
+                    This resets the user&apos;s current-month Maya message usage
+                    in every workspace they belong to. Their chat history is
+                    preserved.
+                  </Text>
+                ) : null}
                 <TextArea
                   className="min-h-28 leading-6"
                   label="Reason"
                   name="reason"
-                  placeholder="Security review, support escalation, internal access request..."
+                  placeholder={
+                    action === "reset_ai_usage"
+                      ? "Customer support request, billing correction..."
+                      : "Security review, support escalation, internal access request..."
+                  }
                   required
                 />
               </Box>

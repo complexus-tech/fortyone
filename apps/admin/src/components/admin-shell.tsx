@@ -9,6 +9,7 @@ import {
   ArrowRight2Icon,
   DashboardIcon,
   HistoryIcon,
+  LinkIcon,
   MoonIcon,
   NewTabIcon,
   SunIcon,
@@ -62,6 +63,11 @@ const navItems: NavItem[] = [
     href: "/workspaces",
     label: "Workspaces",
     icon: <WorkspaceIcon />,
+  },
+  {
+    href: "/integrations",
+    label: "Integrations",
+    icon: <LinkIcon />,
   },
   {
     href: "/users",

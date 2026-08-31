@@ -61,6 +61,44 @@ func (service *Service) GetWorkspaceOverview(ctx context.Context, actorID, works
 	return overview, nil
 }
 
+func (service *Service) ListWorkspaceIntegrations(
+	ctx context.Context,
+	actorID uuid.UUID,
+	input ListWorkspaceIntegrationsInput,
+) (ListResult[WorkspaceIntegrationSummary], error) {
+	ctx, span := adminTracer.Start(ctx, "admin.ListWorkspaceIntegrations")
+	defer span.End()
+
+	query, err := listWorkspaceIntegrationsQuery(actorID, input)
+	if err != nil {
+		return ListResult[WorkspaceIntegrationSummary]{}, err
+	}
+	query.Now = service.clock.Now().UTC()
+	result, err := service.repo.ListWorkspaceIntegrations(ctx, query)
+	if err != nil {
+		return ListResult[WorkspaceIntegrationSummary]{}, err
+	}
+	for index := range result.Items {
+		workspace := WorkspaceSummary{AvatarURL: result.Items[index].WorkspaceAvatar}
+		service.resolveWorkspaceLogo(ctx, &workspace)
+		result.Items[index].WorkspaceAvatar = workspace.AvatarURL
+	}
+	return result, nil
+}
+
+func (service *Service) GetWorkspaceIntegrations(
+	ctx context.Context,
+	actorID, workspaceID uuid.UUID,
+) (WorkspaceIntegrations, error) {
+	ctx, span := adminTracer.Start(ctx, "admin.GetWorkspaceIntegrations")
+	defer span.End()
+	return service.repo.GetWorkspaceIntegrations(ctx, admindomain.GetWorkspaceIntegrationsQuery{
+		ActorID:     actorID,
+		WorkspaceID: workspaceID,
+		Now:         service.clock.Now().UTC(),
+	})
+}
+
 func (service *Service) ListUsers(ctx context.Context, actorID uuid.UUID, input ListUsersInput) (ListResult[UserSummary], error) {
 	ctx, span := adminTracer.Start(ctx, "admin.ListUsers")
 	defer span.End()

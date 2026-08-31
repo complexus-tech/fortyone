@@ -18,15 +18,17 @@ export const useUpdateMemory = () => {
       payload: UpdateMemoryPayload;
     }) => updateMemoryAction(id, payload, workspaceSlug),
     onMutate: async ({ id, payload }) => {
-      await queryClient.cancelQueries({ queryKey: aiChatKeys.memories() });
+      await queryClient.cancelQueries({
+        queryKey: aiChatKeys.memories(workspaceSlug),
+      });
 
       const previousMemories = queryClient.getQueryData<Memory[]>(
-        aiChatKeys.memories(),
+        aiChatKeys.memories(workspaceSlug),
       );
 
       if (previousMemories) {
         queryClient.setQueryData<Memory[]>(
-          aiChatKeys.memories(),
+          aiChatKeys.memories(workspaceSlug),
           previousMemories.map((memory) =>
             memory.id === id
               ? {
@@ -44,7 +46,7 @@ export const useUpdateMemory = () => {
     onError: (error, { id, payload }, context) => {
       if (context?.previousMemories) {
         queryClient.setQueryData(
-          aiChatKeys.memories(),
+          aiChatKeys.memories(workspaceSlug),
           context.previousMemories,
         );
       }
@@ -63,7 +65,9 @@ export const useUpdateMemory = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: aiChatKeys.memories() });
+      queryClient.invalidateQueries({
+        queryKey: aiChatKeys.memories(workspaceSlug),
+      });
       toast.success("Memory updated successfully");
     },
   });

@@ -57,10 +57,21 @@ const createKyClient = (prefixUrl?: string) => {
                 return;
               }
               const { headers } = await import("next/headers");
-              const cookieHeader = (await headers()).get("cookie");
+              const incomingHeaders = await headers();
+              const cookieHeader = incomingHeaders.get("cookie");
+              const originHeader = incomingHeaders.get("origin");
 
               if (cookieHeader && !request.headers.has("cookie")) {
                 request.headers.set("cookie", cookieHeader);
+              }
+              // Unsafe API requests authenticated with the browser session are
+              // protected by the Go service's origin policy. Preserve the
+              // browser-supplied Origin across this server-side hop so the API
+              // can validate it instead of seeing an untrusted metadata-free
+              // cookie request. Never synthesize an origin or forward
+              // Sec-Fetch-Site, whose value is relative to the Next.js origin.
+              if (cookieHeader && originHeader) {
+                request.headers.set("origin", originHeader);
               }
             },
           ]
@@ -109,16 +120,15 @@ export const createApiClient = (prefixUrl?: string): ApiClient => {
   };
 };
 
-const apiClient = createKyClient();
-
 export const get = <T>(url: string, options?: Options) =>
-  apiClient.get(url, options).json<T>();
+  createKyClient().get(url, options).json<T>();
 
 export const post = async <T>(
   url: string,
   payload: unknown,
   options?: Options,
 ): Promise<T> => {
+  const apiClient = createKyClient();
   const response =
     payload instanceof FormData
       ? await apiClient.post(url, { body: payload, ...options })
@@ -128,6 +138,7 @@ export const post = async <T>(
 };
 
 export const put = <T>(url: string, payload: unknown, options?: Options) => {
+  const apiClient = createKyClient();
   if (payload instanceof FormData) {
     return apiClient.put(url, { body: payload, ...options }).json<T>();
   }
@@ -135,6 +146,7 @@ export const put = <T>(url: string, payload: unknown, options?: Options) => {
 };
 
 export const patch = <T>(url: string, payload: unknown, options?: Options) => {
+  const apiClient = createKyClient();
   if (payload instanceof FormData) {
     return apiClient.patch(url, { body: payload, ...options }).json<T>();
   }
@@ -145,6 +157,7 @@ export const remove = async <T = unknown>(
   url: string,
   options?: Options,
 ): Promise<T | null> => {
+  const apiClient = createKyClient();
   const response = await apiClient.delete(url, options);
   return parseSuccessfulResponse<T>(response);
 };

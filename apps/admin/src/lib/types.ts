@@ -55,6 +55,13 @@ export type UserOverview = {
   memberships: UserMembership[];
 };
 
+export type UserAIUsageReset = {
+  user: UserSummary;
+  workspaceCount: number;
+  previousMessageCount: number;
+  resetAt: string;
+};
+
 export type WorkspaceSummary = {
   id: string;
   name: string;
@@ -96,6 +103,103 @@ export type WorkspaceOverview = {
   members: WorkspaceMember[];
 };
 
+export type IntegrationProvider = "slack" | "github" | "calendar" | "figma";
+
+export type IntegrationSummary = {
+  provider: IntegrationProvider;
+  state: string;
+  accountLabel: string | null;
+  connectionCount: number;
+  mappingCount: number;
+  unmappedMemberCount: number;
+  lastSyncedAt: string | null;
+};
+
+export type WorkspaceIntegrationSummary = {
+  workspaceId: string;
+  workspaceName: string;
+  workspaceSlug: string;
+  workspaceAvatar: string | null;
+  subscriptionTier: string | null;
+  memberCount: number;
+  integrations: IntegrationSummary[];
+};
+
+export type SlackIntegrationDetail = {
+  id: string;
+  teamId: string;
+  teamName: string;
+  teamDomain: string;
+  installedByName: string | null;
+  installedByEmail: string | null;
+  channelCount: number;
+  channelMappingCount: number;
+  lastSyncedAt: string | null;
+  createdAt: string;
+};
+
+export type GitHubInstallationDetail = {
+  id: string;
+  accountLogin: string;
+  accountType: string;
+  repositorySelection: string;
+  state: string;
+  installedByName: string | null;
+  installedByEmail: string | null;
+  repositoryCount: number;
+  teamMappingCount: number;
+  lastSyncedAt: string | null;
+  createdAt: string;
+};
+
+export type CalendarConnectionDetail = {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  provider: string;
+  connectedEmail: string;
+  state: string;
+  lastSyncedAt: string | null;
+  createdAt: string;
+};
+
+export type FigmaIntegrationDetail = {
+  id: string;
+  accountLabel: string;
+  connectedByName: string | null;
+  connectedByEmail: string;
+  state: string;
+  linkedFileCount: number;
+  webhookCount: number;
+  expiresAt: string;
+  createdAt: string;
+};
+
+export type IntegrationMemberMapping = {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  slackUserId: string | null;
+  slackLinkedVia: string | null;
+  slackLinkedAt: string | null;
+  githubUsername: string | null;
+  calendarProvider: string | null;
+  calendarEmail: string | null;
+  calendarState: string | null;
+};
+
+export type WorkspaceIntegrations = {
+  workspaceId: string;
+  summaries: IntegrationSummary[];
+  slack: SlackIntegrationDetail | null;
+  github: GitHubInstallationDetail[];
+  calendar: CalendarConnectionDetail[];
+  figma: FigmaIntegrationDetail | null;
+  memberMappings: IntegrationMemberMapping[];
+};
+
 export type AuditLog = {
   id: string;
   actorUserId: string;
@@ -132,6 +236,10 @@ export type AdminListParams = {
   status?: string;
   page?: string | number;
   limit?: string | number;
+};
+
+export type IntegrationListParams = AdminListParams & {
+  provider?: string;
 };
 
 export type AuditListParams = AdminListParams & {

@@ -9,7 +9,7 @@ export const useAiChatMessages = (id: string) => {
   const { workspaceSlug } = useWorkspacePath();
 
   return useQuery({
-    queryKey: aiChatKeys.messages(id),
+    queryKey: aiChatKeys.messages(workspaceSlug, id),
     queryFn: () => getAiChatMessages({ session: session!, workspaceSlug }, id),
     enabled: Boolean(session && id),
     staleTime: 1000 * 60 * 2, // 2 minutes

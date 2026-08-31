@@ -76,12 +76,14 @@ class MockResponse {
 const createPostRequest = ({
   contents,
   fileName = "jira.csv",
+  mimeType = "text/csv",
 }: {
   contents: string;
   fileName?: string;
+  mimeType?: string;
 }) => {
   const formData = new FormData();
-  const file = new File([contents], fileName, { type: "text/csv" });
+  const file = new File([contents], fileName, { type: mimeType });
   Object.defineProperty(file, "arrayBuffer", {
     configurable: true,
     value: async () => Uint8Array.from(Buffer.from(contents)).buffer,
@@ -183,6 +185,80 @@ describe("/api/imports/analyze", () => {
         }),
         store: true,
       }),
+    );
+  });
+
+  it("returns a deterministic JSON preview when AI is not configured", async () => {
+    delete process.env.OPENAI_API_KEY;
+
+    const response = await POST(
+      createPostRequest({
+        contents: JSON.stringify({
+          cards: [
+            {
+              desc: "Move this card",
+              id: "65a1234567890abcdef12345",
+              idList: "list-1",
+              name: "Imported Trello card",
+            },
+          ],
+          lists: [{ id: "list-1", name: "Doing" }],
+          name: "Migration board",
+        }),
+        fileName: "trello.json",
+        mimeType: "application/json",
+      }),
+    );
+
+    await expect(response.json()).resolves.toMatchObject({
+      analysis: {
+        sourceType: "json",
+        tasks: [
+          {
+            sourceId: "65a1234567890abcdef12345",
+            status: null,
+            title: "Imported Trello card",
+          },
+        ],
+      },
+      responseId: null,
+      status: "completed",
+    });
+    expect(mockedOpenAI).not.toHaveBeenCalled();
+    expect(mockResponsesCreate).not.toHaveBeenCalled();
+  });
+
+  it("queues the complete JSON document for vendor-neutral AI mapping", async () => {
+    mockResponsesCreate.mockResolvedValue({ id: "resp_json_import_1" });
+
+    const response = await POST(
+      createPostRequest({
+        contents: JSON.stringify({
+          cards: [
+            {
+              id: "card-1",
+              idList: "list-1",
+              idMembers: ["member-1"],
+              name: "Map this task",
+            },
+          ],
+          lists: [{ id: "list-1", name: "Doing" }],
+          members: [{ email: "owner@example.com", id: "member-1" }],
+        }),
+        fileName: "board.json",
+        mimeType: "application/json",
+      }),
+    );
+
+    await expect(response.json()).resolves.toMatchObject({
+      analysis: { sourceType: "json" },
+      responseId: "resp_json_import_1",
+      status: "queued",
+    });
+    const request = mockResponsesCreate.mock.calls[0]?.[0];
+    expect(JSON.stringify(request?.input)).toContain('"filename":"board.json"');
+    expect(JSON.stringify(request?.input)).toContain(
+      "The source format and product are unknown",
     );
   });
 

@@ -12,14 +12,16 @@ export const useDeleteAiChat = () => {
   const mutation = useMutation({
     mutationFn: (id: string) => deleteAiChatAction(id, workspaceSlug),
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: aiChatKeys.lists() });
+      await queryClient.cancelQueries({
+        queryKey: aiChatKeys.lists(workspaceSlug),
+      });
       const previousChats = queryClient.getQueryData<AiChatSession[]>(
-        aiChatKeys.lists(),
+        aiChatKeys.lists(workspaceSlug),
       );
 
       if (previousChats) {
         queryClient.setQueryData<AiChatSession[]>(
-          aiChatKeys.lists(),
+          aiChatKeys.lists(workspaceSlug),
           previousChats.filter((chat) => chat.id !== id),
         );
       }
@@ -28,7 +30,10 @@ export const useDeleteAiChat = () => {
     },
     onError: (error, id, context) => {
       if (context?.previousChats) {
-        queryClient.setQueryData(aiChatKeys.lists(), context.previousChats);
+        queryClient.setQueryData(
+          aiChatKeys.lists(workspaceSlug),
+          context.previousChats,
+        );
       }
       toast.error("Failed to delete chat", {
         description: error.message || "Your changes were not saved",
@@ -45,9 +50,15 @@ export const useDeleteAiChat = () => {
         throw new Error(res.error.message);
       }
 
-      queryClient.invalidateQueries({ queryKey: aiChatKeys.lists() });
-      queryClient.removeQueries({ queryKey: aiChatKeys.detail(id) });
-      queryClient.removeQueries({ queryKey: aiChatKeys.messages(id) });
+      queryClient.invalidateQueries({
+        queryKey: aiChatKeys.lists(workspaceSlug),
+      });
+      queryClient.removeQueries({
+        queryKey: aiChatKeys.detail(workspaceSlug, id),
+      });
+      queryClient.removeQueries({
+        queryKey: aiChatKeys.messages(workspaceSlug, id),
+      });
     },
   });
 

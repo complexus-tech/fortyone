@@ -18,7 +18,7 @@ describe("WorkspaceImportSettings", () => {
     render(<WorkspaceImportSettings />);
 
     const importCard = screen.getByRole("region", {
-      name: "Import issues from Jira, ClickUp, or anywhere",
+      name: "Import issues from Jira, Trello, or anywhere",
     });
 
     expect(importCard).toHaveClass(
@@ -28,9 +28,19 @@ describe("WorkspaceImportSettings", () => {
       "border-[0.5px]",
     );
     expect(importCard).not.toHaveClass("rounded-3xl");
-    for (const source of ["Jira", "ClickUp", "monday.com", "Asana"]) {
+    for (const source of [
+      "Jira",
+      "ClickUp",
+      "Trello",
+      "monday.com",
+      "Asana",
+      "Notion",
+    ]) {
       expect(screen.getByRole("img", { name: source })).toBeInTheDocument();
     }
+    expect(
+      screen.queryByRole("img", { name: "Linear" }),
+    ).not.toBeInTheDocument();
 
     expect(
       screen.queryByText("About direct Jira connections"),

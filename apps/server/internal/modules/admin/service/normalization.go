@@ -34,6 +34,27 @@ func listWorkspacesQuery(actorID uuid.UUID, input ListWorkspacesInput) (admindom
 	}, nil
 }
 
+func listWorkspaceIntegrationsQuery(
+	actorID uuid.UUID,
+	input ListWorkspaceIntegrationsInput,
+) (admindomain.ListWorkspaceIntegrationsQuery, error) {
+	provider, err := admindomain.ParseIntegrationProvider(input.Provider)
+	if err != nil {
+		return admindomain.ListWorkspaceIntegrationsQuery{}, err
+	}
+	status, err := admindomain.ParseIntegrationStatus(input.Status)
+	if err != nil {
+		return admindomain.ListWorkspaceIntegrationsQuery{}, err
+	}
+	return admindomain.ListWorkspaceIntegrationsQuery{
+		ActorID:  actorID,
+		Page:     normalizePage(input.Pagination),
+		Search:   admindomain.NormalizeSearch(input.Query),
+		Provider: provider,
+		Status:   status,
+	}, nil
+}
+
 func listAuditLogsQuery(actorID uuid.UUID, input ListAuditLogsInput) (admindomain.ListAuditLogsQuery, error) {
 	targetType, err := admindomain.ParseTargetType(input.TargetType)
 	if err != nil {

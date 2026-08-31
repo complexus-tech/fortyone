@@ -9,29 +9,33 @@ import (
 )
 
 type adminTestRepository struct {
-	adminUser            admindomain.UserSummary
-	adminUserErr         error
-	workspaces           admindomain.ListResult[admindomain.WorkspaceSummary]
-	listWorkspacesQuery  admindomain.ListWorkspacesQuery
-	workspace            admindomain.WorkspaceOverview
-	workspaceMutationErr error
-	trialCommand         admindomain.UpdateWorkspaceTrialCommand
-	deletedCommand       admindomain.SetWorkspaceDeletedCommand
-	users                admindomain.ListResult[admindomain.UserSummary]
-	listUsersQuery       admindomain.ListUsersQuery
-	user                 admindomain.UserOverview
-	userMutationErr      error
-	userStateCommand     admindomain.UpdateUserStateCommand
-	sessionCommand       admindomain.RequestSessionRevocationCommand
-	auditQuery           admindomain.ListAuditLogsQuery
-	notesQuery           admindomain.ListAdminNotesQuery
-	createNoteCommand    admindomain.CreateAdminNoteCommand
-	note                 admindomain.AdminNote
-	beginSyncCommand     admindomain.BeginSubscriptionSyncCommand
-	finishSyncCommands   []admindomain.FinishSubscriptionSyncCommand
-	syncAttempt          admindomain.SubscriptionSyncAttempt
-	beginSyncErr         error
-	finishSyncErr        error
+	adminUser             admindomain.UserSummary
+	adminUserErr          error
+	workspaces            admindomain.ListResult[admindomain.WorkspaceSummary]
+	listWorkspacesQuery   admindomain.ListWorkspacesQuery
+	workspace             admindomain.WorkspaceOverview
+	integrations          admindomain.ListResult[admindomain.WorkspaceIntegrationSummary]
+	listIntegrationsQuery admindomain.ListWorkspaceIntegrationsQuery
+	workspaceIntegrations admindomain.WorkspaceIntegrations
+	workspaceMutationErr  error
+	trialCommand          admindomain.UpdateWorkspaceTrialCommand
+	deletedCommand        admindomain.SetWorkspaceDeletedCommand
+	users                 admindomain.ListResult[admindomain.UserSummary]
+	listUsersQuery        admindomain.ListUsersQuery
+	user                  admindomain.UserOverview
+	userMutationErr       error
+	userStateCommand      admindomain.UpdateUserStateCommand
+	sessionCommand        admindomain.RequestSessionRevocationCommand
+	resetAIUsageCommand   admindomain.ResetUserAIUsageCommand
+	auditQuery            admindomain.ListAuditLogsQuery
+	notesQuery            admindomain.ListAdminNotesQuery
+	createNoteCommand     admindomain.CreateAdminNoteCommand
+	note                  admindomain.AdminNote
+	beginSyncCommand      admindomain.BeginSubscriptionSyncCommand
+	finishSyncCommands    []admindomain.FinishSubscriptionSyncCommand
+	syncAttempt           admindomain.SubscriptionSyncAttempt
+	beginSyncErr          error
+	finishSyncErr         error
 }
 
 func (repository *adminTestRepository) GetAdminUser(context.Context, uuid.UUID) (admindomain.UserSummary, error) {
@@ -49,6 +53,15 @@ func (repository *adminTestRepository) ListWorkspaces(_ context.Context, query a
 
 func (repository *adminTestRepository) GetWorkspaceOverview(context.Context, admindomain.GetWorkspaceQuery) (admindomain.WorkspaceOverview, error) {
 	return repository.workspace, repository.adminUserErr
+}
+
+func (repository *adminTestRepository) ListWorkspaceIntegrations(_ context.Context, query admindomain.ListWorkspaceIntegrationsQuery) (admindomain.ListResult[admindomain.WorkspaceIntegrationSummary], error) {
+	repository.listIntegrationsQuery = query
+	return repository.integrations, repository.adminUserErr
+}
+
+func (repository *adminTestRepository) GetWorkspaceIntegrations(context.Context, admindomain.GetWorkspaceIntegrationsQuery) (admindomain.WorkspaceIntegrations, error) {
+	return repository.workspaceIntegrations, repository.adminUserErr
 }
 
 func (repository *adminTestRepository) UpdateWorkspaceTrial(_ context.Context, command admindomain.UpdateWorkspaceTrialCommand) (admindomain.WorkspaceOverview, error) {
@@ -83,6 +96,11 @@ func (repository *adminTestRepository) UpdateUserState(_ context.Context, comman
 func (repository *adminTestRepository) RequestSessionRevocation(_ context.Context, command admindomain.RequestSessionRevocationCommand) (admindomain.UserOverview, error) {
 	repository.sessionCommand = command
 	return repository.user, repository.userMutationErr
+}
+
+func (repository *adminTestRepository) ResetUserAIUsage(_ context.Context, command admindomain.ResetUserAIUsageCommand) (admindomain.UserAIUsageReset, error) {
+	repository.resetAIUsageCommand = command
+	return admindomain.UserAIUsageReset{User: repository.user.User, ResetAt: command.ResetAt}, repository.userMutationErr
 }
 
 func (repository *adminTestRepository) ListAuditLogs(_ context.Context, query admindomain.ListAuditLogsQuery) (admindomain.ListResult[admindomain.AuditLog], error) {

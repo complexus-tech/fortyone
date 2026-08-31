@@ -9,6 +9,7 @@ import (
 
 	admindomain "github.com/complexus-tech/projects-api/internal/modules/admin/domain"
 	adminsql "github.com/complexus-tech/projects-api/internal/modules/admin/repository/sqlc"
+	"github.com/complexus-tech/projects-api/internal/platform/safecast"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -205,6 +206,69 @@ func (repository *Repository) RequestSessionRevocation(
 			Metadata: map[string]any{"user_email": result.User.Email, "user_name": result.User.FullName},
 		})
 		return err
+	})
+	return result, err
+}
+
+func (repository *Repository) ResetUserAIUsage(
+	ctx context.Context,
+	command admindomain.ResetUserAIUsageCommand,
+) (admindomain.UserAIUsageReset, error) {
+	reason, err := admindomain.RequireReason(command.Reason)
+	if err != nil {
+		return admindomain.UserAIUsageReset{}, err
+	}
+	command.Reason = reason
+
+	var result admindomain.UserAIUsageReset
+	err = repository.withActiveInternalAdmin(ctx, command.ActorID, func(queries adminsql.Querier) error {
+		if _, err := queries.LockUserTarget(ctx, adminsql.LockUserTargetParams{UserID: command.UserID}); errors.Is(err, pgx.ErrNoRows) {
+			return admindomain.ErrNotFound
+		} else if err != nil {
+			return fmt.Errorf("lock AI usage reset target: %w", err)
+		}
+
+		overview, err := getUserOverview(ctx, queries, command.UserID)
+		if err != nil {
+			return err
+		}
+		reset, err := queries.ResetAdminUserAIUsage(ctx, adminsql.ResetAdminUserAIUsageParams{
+			PeriodStart: command.PeriodStart,
+			PeriodEnd:   command.PeriodEnd,
+			UserID:      command.UserID,
+			ResetAt:     command.ResetAt,
+			ActorUserID: command.ActorID,
+		})
+		if err != nil {
+			return fmt.Errorf("reset admin user AI usage: %w", err)
+		}
+		workspaceCount, err := safecast.Int64(reset.WorkspaceCount)
+		if err != nil {
+			return fmt.Errorf("map AI usage reset workspace count: %w", err)
+		}
+		previousMessageCount, err := safecast.Int64(reset.PreviousMessageCount)
+		if err != nil {
+			return fmt.Errorf("map AI usage reset message count: %w", err)
+		}
+
+		targetID := command.UserID
+		if _, err := insertAuditLog(ctx, queries, auditEntry{
+			ActorID: command.ActorID, TargetType: admindomain.TargetUser, TargetID: &targetID,
+			Action: admindomain.AuditUserAIUsageReset, FieldName: "ai_message_usage",
+			OldValue: previousMessageCount, NewValue: 0, Reason: command.Reason,
+			Metadata: map[string]any{
+				"user_email": overview.User.Email, "user_name": overview.User.FullName,
+				"workspace_count": workspaceCount, "period_start": command.PeriodStart,
+			},
+		}); err != nil {
+			return err
+		}
+
+		result = admindomain.UserAIUsageReset{
+			User: overview.User, WorkspaceCount: workspaceCount,
+			PreviousMessageCount: previousMessageCount, ResetAt: command.ResetAt,
+		}
+		return nil
 	})
 	return result, err
 }

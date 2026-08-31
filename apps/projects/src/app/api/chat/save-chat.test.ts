@@ -99,13 +99,16 @@ describe("chat write persistence", () => {
 
     expect(consoleError).toHaveBeenCalledWith(
       "[chat/save] Failed to finalize Maya conversation write",
-      {
+      JSON.stringify({
         chatId: "chat-12345678901",
-        errorCode: "timeout",
-        errorType: "Error",
         generation: 7,
         workspaceSlug: "acme",
-      },
+        error: {
+          codes: ["timeout"],
+          errorType: "Error",
+          statuses: [],
+        },
+      }),
     );
     consoleError.mockRestore();
   });

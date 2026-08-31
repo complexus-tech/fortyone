@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"strings"
+	"time"
 
 	admindomain "github.com/complexus-tech/projects-api/internal/modules/admin/domain"
 	"github.com/google/uuid"
@@ -93,6 +94,27 @@ func (service *Service) RequestUserSessionRevocation(ctx context.Context, actorI
 	}
 	service.resolveUserAvatar(ctx, &overview.User)
 	return overview, nil
+}
+
+func (service *Service) ResetUserAIUsage(ctx context.Context, actorID, userID uuid.UUID, input ResetUserAIUsageInput) (UserAIUsageReset, error) {
+	ctx, span := adminTracer.Start(ctx, "admin.ResetUserAIUsage")
+	defer span.End()
+
+	reason, err := admindomain.RequireReason(input.Reason)
+	if err != nil {
+		return UserAIUsageReset{}, err
+	}
+	now := service.clock.Now()
+	periodStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	result, err := service.repo.ResetUserAIUsage(ctx, admindomain.ResetUserAIUsageCommand{
+		ActorID: actorID, UserID: userID, Reason: reason,
+		PeriodStart: periodStart, PeriodEnd: periodStart.AddDate(0, 1, 0), ResetAt: now,
+	})
+	if err != nil {
+		return UserAIUsageReset{}, err
+	}
+	service.resolveUserAvatar(ctx, &result.User)
+	return result, nil
 }
 
 func (service *Service) CreateAdminNote(ctx context.Context, actorID uuid.UUID, input CreateAdminNoteInput) (AdminNote, error) {

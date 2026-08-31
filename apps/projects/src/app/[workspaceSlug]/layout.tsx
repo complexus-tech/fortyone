@@ -113,7 +113,7 @@ export default async function RootLayout({
         autoStart
         version={WORKSPACE_GETTING_STARTED_TOUR_VERSION}
       >
-        <ChatProvider>
+        <ChatProvider key={workspaceSlug}>
           {children}
           <ServerSentEvents />
           <IdentifyUser />

@@ -7,6 +7,7 @@ export const JIRA_ISSUE_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]+-[1-9]\d*$/;
 export const importSourceTypeSchema = z.enum([
   "jira_csv",
   "csv",
+  "json",
   "spreadsheet",
   "document",
   "image",

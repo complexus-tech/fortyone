@@ -55,3 +55,54 @@ func TestAdminListsHaveUniqueTieBreakers(t *testing.T) {
 		}
 	}
 }
+
+func TestAdminAIUsageResetPreservesHistoryAndAdvancesTheBaseline(t *testing.T) {
+	raw, err := os.ReadFile("queries/mutations.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := strings.Join(strings.Fields(string(raw)), " ")
+	for _, contract := range []string{
+		"INSERT INTO user_ai_usage_resets",
+		"usage.raw_message_count - COALESCE(reset.baseline_message_count, 0)",
+		"ON CONFLICT (user_id, workspace_id, period_start) DO UPDATE",
+		"baseline_message_count = EXCLUDED.baseline_message_count",
+	} {
+		if !strings.Contains(query, contract) {
+			t.Errorf("AI usage reset query is missing contract %q", contract)
+		}
+	}
+	if strings.Contains(query, "DELETE FROM chat_") {
+		t.Fatal("AI usage reset must not delete chat history")
+	}
+}
+
+func TestAdminIntegrationReadsExcludeProviderCredentials(t *testing.T) {
+	raw, err := os.ReadFile("queries/integrations.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := strings.ToLower(string(raw))
+	for _, secretColumn := range []string{
+		"bot_access_token",
+		"token_payload",
+		"passcode_hash",
+		"permissions",
+		"scopes",
+	} {
+		if strings.Contains(query, secretColumn) {
+			t.Errorf("admin integration query exposes credential field %q", secretColumn)
+		}
+	}
+	for _, requiredSource := range []string{
+		"slack_workspaces",
+		"slack_user_links",
+		"github_installations",
+		"calendar_connections",
+		"figma_connections",
+	} {
+		if !strings.Contains(query, requiredSource) {
+			t.Errorf("admin integration query is missing provider source %q", requiredSource)
+		}
+	}
+}

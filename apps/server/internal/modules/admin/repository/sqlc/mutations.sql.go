@@ -98,6 +98,97 @@ func (q *Queries) LockAdminWorkspaceMutationTarget(ctx context.Context, arg Lock
 	return i, err
 }
 
+const resetAdminUserAIUsage = `-- name: ResetAdminUserAIUsage :one
+WITH raw_usage AS (
+    SELECT
+        membership.workspace_id,
+        CAST(COUNT(message.value) AS bigint) AS raw_message_count
+    FROM workspace_members AS membership
+    LEFT JOIN chat_sessions AS session
+      ON session.user_id = membership.user_id
+     AND session.workspace_id = membership.workspace_id
+     AND session.created_at >= CAST($1 AS timestamptz)
+     AND session.created_at < CAST($2 AS timestamptz)
+     AND session.deleted_at IS NULL
+    LEFT JOIN chat_messages AS messages
+      ON messages.session_id = session.id
+    LEFT JOIN LATERAL jsonb_array_elements(
+        COALESCE(messages.messages, CAST('[]' AS jsonb))
+    ) AS message(value)
+      ON message.value ->> 'role' = 'user'
+    WHERE membership.user_id = CAST($3 AS uuid)
+    GROUP BY membership.workspace_id
+), current_usage AS (
+    SELECT
+        usage.workspace_id,
+        usage.raw_message_count,
+        GREATEST(
+            usage.raw_message_count - COALESCE(reset.baseline_message_count, 0),
+            0
+        ) AS message_count
+    FROM raw_usage AS usage
+    LEFT JOIN user_ai_usage_resets AS reset
+      ON reset.user_id = CAST($3 AS uuid)
+     AND reset.workspace_id = usage.workspace_id
+     AND reset.period_start = CAST($1 AS timestamptz)
+), reset_rows AS (
+    INSERT INTO user_ai_usage_resets (
+        user_id,
+        workspace_id,
+        period_start,
+        baseline_message_count,
+        reset_at,
+        reset_by_user_id
+    )
+    SELECT
+        CAST($3 AS uuid),
+        usage.workspace_id,
+        CAST($1 AS timestamptz),
+        usage.raw_message_count,
+        CAST($4 AS timestamptz),
+        CAST($5 AS uuid)
+    FROM current_usage AS usage
+    ON CONFLICT (user_id, workspace_id, period_start) DO UPDATE
+    SET
+        baseline_message_count = EXCLUDED.baseline_message_count,
+        reset_at = EXCLUDED.reset_at,
+        reset_by_user_id = EXCLUDED.reset_by_user_id
+    RETURNING workspace_id
+)
+SELECT
+    CAST(COUNT(reset.workspace_id) AS bigint) AS workspace_count,
+    CAST(COALESCE(SUM(usage.message_count), 0) AS bigint) AS previous_message_count
+FROM reset_rows AS reset
+INNER JOIN current_usage AS usage
+  ON usage.workspace_id = reset.workspace_id
+`
+
+type ResetAdminUserAIUsageParams struct {
+	PeriodStart time.Time
+	PeriodEnd   time.Time
+	UserID      uuid.UUID
+	ResetAt     time.Time
+	ActorUserID uuid.UUID
+}
+
+type ResetAdminUserAIUsageRow struct {
+	WorkspaceCount       int64
+	PreviousMessageCount int64
+}
+
+func (q *Queries) ResetAdminUserAIUsage(ctx context.Context, arg ResetAdminUserAIUsageParams) (ResetAdminUserAIUsageRow, error) {
+	row := q.db.QueryRow(ctx, resetAdminUserAIUsage,
+		arg.PeriodStart,
+		arg.PeriodEnd,
+		arg.UserID,
+		arg.ResetAt,
+		arg.ActorUserID,
+	)
+	var i ResetAdminUserAIUsageRow
+	err := row.Scan(&i.WorkspaceCount, &i.PreviousMessageCount)
+	return i, err
+}
+
 const revokeAdminUserBrowserSessions = `-- name: RevokeAdminUserBrowserSessions :one
 UPDATE users
 SET

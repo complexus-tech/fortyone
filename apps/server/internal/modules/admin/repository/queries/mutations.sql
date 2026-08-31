@@ -84,6 +84,70 @@ SET
 WHERE user_id = CAST(sqlc.arg(user_id) AS uuid)
 RETURNING auth_session_version;
 
+-- name: ResetAdminUserAIUsage :one
+WITH raw_usage AS (
+    SELECT
+        membership.workspace_id,
+        CAST(COUNT(message.value) AS bigint) AS raw_message_count
+    FROM workspace_members AS membership
+    LEFT JOIN chat_sessions AS session
+      ON session.user_id = membership.user_id
+     AND session.workspace_id = membership.workspace_id
+     AND session.created_at >= CAST(sqlc.arg(period_start) AS timestamptz)
+     AND session.created_at < CAST(sqlc.arg(period_end) AS timestamptz)
+     AND session.deleted_at IS NULL
+    LEFT JOIN chat_messages AS messages
+      ON messages.session_id = session.id
+    LEFT JOIN LATERAL jsonb_array_elements(
+        COALESCE(messages.messages, CAST('[]' AS jsonb))
+    ) AS message(value)
+      ON message.value ->> 'role' = 'user'
+    WHERE membership.user_id = CAST(sqlc.arg(user_id) AS uuid)
+    GROUP BY membership.workspace_id
+), current_usage AS (
+    SELECT
+        usage.workspace_id,
+        usage.raw_message_count,
+        GREATEST(
+            usage.raw_message_count - COALESCE(reset.baseline_message_count, 0),
+            0
+        ) AS message_count
+    FROM raw_usage AS usage
+    LEFT JOIN user_ai_usage_resets AS reset
+      ON reset.user_id = CAST(sqlc.arg(user_id) AS uuid)
+     AND reset.workspace_id = usage.workspace_id
+     AND reset.period_start = CAST(sqlc.arg(period_start) AS timestamptz)
+), reset_rows AS (
+    INSERT INTO user_ai_usage_resets (
+        user_id,
+        workspace_id,
+        period_start,
+        baseline_message_count,
+        reset_at,
+        reset_by_user_id
+    )
+    SELECT
+        CAST(sqlc.arg(user_id) AS uuid),
+        usage.workspace_id,
+        CAST(sqlc.arg(period_start) AS timestamptz),
+        usage.raw_message_count,
+        CAST(sqlc.arg(reset_at) AS timestamptz),
+        CAST(sqlc.arg(actor_user_id) AS uuid)
+    FROM current_usage AS usage
+    ON CONFLICT (user_id, workspace_id, period_start) DO UPDATE
+    SET
+        baseline_message_count = EXCLUDED.baseline_message_count,
+        reset_at = EXCLUDED.reset_at,
+        reset_by_user_id = EXCLUDED.reset_by_user_id
+    RETURNING workspace_id
+)
+SELECT
+    CAST(COUNT(reset.workspace_id) AS bigint) AS workspace_count,
+    CAST(COALESCE(SUM(usage.message_count), 0) AS bigint) AS previous_message_count
+FROM reset_rows AS reset
+INNER JOIN current_usage AS usage
+  ON usage.workspace_id = reset.workspace_id;
+
 -- name: CreateAdminNote :one
 INSERT INTO admin_notes (
     target_type,

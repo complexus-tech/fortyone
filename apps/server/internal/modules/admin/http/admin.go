@@ -80,6 +80,37 @@ func (h *Handlers) ListWorkspaces(ctx context.Context, w http.ResponseWriter, r 
 	return web.Respond(ctx, w, result, http.StatusOK)
 }
 
+func (h *Handlers) ListWorkspaceIntegrations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	page, limit, err := paginationParams(r)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	query, err := optionalTextQuery(r, "q", maximumAdminSearchRunes)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	provider, err := optionalTextQuery(r, "provider", maximumAdminFilterRunes)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	status, err := optionalTextQuery(r, "status", maximumAdminFilterRunes)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	result, err := h.admin.ListWorkspaceIntegrations(ctx, userID, admin.ListWorkspaceIntegrationsInput{
+		Pagination: admin.PaginationInput{Page: page, Limit: limit},
+		Query:      query, Provider: provider, Status: status,
+	})
+	if err != nil {
+		return h.respondAdminError(ctx, w, "list_workspace_integrations", err)
+	}
+	return web.Respond(ctx, w, result, http.StatusOK)
+}
+
 func (h *Handlers) GetWorkspace(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	userID, err := mid.GetUserID(ctx)
 	if err != nil {
@@ -96,6 +127,22 @@ func (h *Handlers) GetWorkspace(ctx context.Context, w http.ResponseWriter, r *h
 		return h.respondAdminError(ctx, w, "get_workspace", err)
 	}
 	return web.Respond(ctx, w, workspace, http.StatusOK)
+}
+
+func (h *Handlers) GetWorkspaceIntegrations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	userID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+	workspaceID, err := uuid.Parse(web.Params(r, "workspaceID"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+	integrations, err := h.admin.GetWorkspaceIntegrations(ctx, userID, workspaceID)
+	if err != nil {
+		return h.respondAdminError(ctx, w, "get_workspace_integrations", err)
+	}
+	return web.Respond(ctx, w, integrations, http.StatusOK)
 }
 
 func (h *Handlers) UpdateWorkspaceTrial(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -266,6 +313,31 @@ func (h *Handlers) RequestUserSessionRevocation(ctx context.Context, w http.Resp
 		return h.respondAdminError(ctx, w, "request_user_session_revocation", err)
 	}
 	return web.Respond(ctx, w, user, http.StatusOK)
+}
+
+func (h *Handlers) ResetUserAIUsage(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	actorID, err := mid.GetUserID(ctx)
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusUnauthorized)
+	}
+
+	userID, err := uuid.Parse(web.Params(r, "userID"))
+	if err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	var req reasonRequest
+	if err := web.Decode(r, &req); err != nil {
+		return web.RespondError(ctx, w, err, http.StatusBadRequest)
+	}
+
+	reset, err := h.admin.ResetUserAIUsage(ctx, actorID, userID, admin.ResetUserAIUsageInput{
+		Reason: req.Reason,
+	})
+	if err != nil {
+		return h.respondAdminError(ctx, w, "reset_user_ai_usage", err)
+	}
+	return web.Respond(ctx, w, reset, http.StatusOK)
 }
 
 func (h *Handlers) ListAuditLogs(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

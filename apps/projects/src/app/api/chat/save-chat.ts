@@ -8,23 +8,15 @@ import type {
   MessageWriteReservation,
   MessageWriteResult,
 } from "@/modules/ai-chats/actions/message-write";
+import { getChatErrorDiagnostic } from "./chat-errors";
 import { getChatTitle } from "./chat-title";
 
 const SLOW_MESSAGE_WRITE_MS = 2_000;
 
-const getPersistenceDiagnostic = (error: unknown) => {
-  const errorCode =
-    error &&
-    typeof error === "object" &&
-    "code" in error &&
-    typeof error.code === "string"
-      ? error.code
-      : "unknown";
-  return {
-    errorCode,
-    errorType: error instanceof Error ? error.name : typeof error,
-  };
-};
+const formatPersistenceDiagnostic = (
+  error: unknown,
+  context: Record<string, number | string>,
+) => JSON.stringify({ ...context, error: getChatErrorDiagnostic(error) });
 
 export const beginChatWrite = async <UIMessageType extends UIMessage>({
   id,
@@ -62,12 +54,14 @@ export const beginChatWrite = async <UIMessageType extends UIMessage>({
     return reservation;
   } catch (error) {
     // eslint-disable-next-line no-console -- Never log transcript content or approval inputs.
-    console.error("[chat/save] Failed to reserve Maya conversation write", {
-      chatId: id,
-      ...getPersistenceDiagnostic(error),
-      operation,
-      workspaceSlug,
-    });
+    console.error(
+      "[chat/save] Failed to reserve Maya conversation write",
+      formatPersistenceDiagnostic(error, {
+        chatId: id,
+        operation,
+        workspaceSlug,
+      }),
+    );
     throw error;
   }
 };
@@ -92,12 +86,14 @@ export const saveChat = async <UIMessageType extends UIMessage>({
     });
   } catch (error) {
     // eslint-disable-next-line no-console -- Persisting the conversation must remain observable without exposing message content.
-    console.error("[chat/save] Failed to finalize Maya conversation write", {
-      chatId: id,
-      ...getPersistenceDiagnostic(error),
-      generation: reservation.generation,
-      workspaceSlug,
-    });
+    console.error(
+      "[chat/save] Failed to finalize Maya conversation write",
+      formatPersistenceDiagnostic(error, {
+        chatId: id,
+        generation: reservation.generation,
+        workspaceSlug,
+      }),
+    );
     throw error;
   }
 };

@@ -76,6 +76,28 @@ func TestUpdateUserStateRejectsExplicitNull(t *testing.T) {
 	require.Equal(t, uuid.Nil, repository.userStateCommand.ActorID)
 }
 
+func TestResetUserAIUsageUsesCurrentCalendarMonth(t *testing.T) {
+	actorID, userID := uuid.New(), uuid.New()
+	location := time.FixedZone("CAT", 2*60*60)
+	now := time.Date(2026, time.August, 31, 23, 30, 0, 0, location)
+	repository := &adminTestRepository{user: admindomain.UserOverview{
+		User: admindomain.UserSummary{ID: userID},
+	}}
+	service := New(repository, WithNow(func() time.Time { return now }))
+
+	_, err := service.ResetUserAIUsage(context.Background(), actorID, userID, ResetUserAIUsageInput{
+		Reason: "  customer support request  ",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, actorID, repository.resetAIUsageCommand.ActorID)
+	require.Equal(t, userID, repository.resetAIUsageCommand.UserID)
+	require.Equal(t, "customer support request", repository.resetAIUsageCommand.Reason)
+	require.Equal(t, time.Date(2026, time.August, 1, 0, 0, 0, 0, location), repository.resetAIUsageCommand.PeriodStart)
+	require.Equal(t, time.Date(2026, time.September, 1, 0, 0, 0, 0, location), repository.resetAIUsageCommand.PeriodEnd)
+	require.Equal(t, now, repository.resetAIUsageCommand.ResetAt)
+}
+
 func TestCreateAdminNoteNormalizesWorkspaceTarget(t *testing.T) {
 	actorID, workspaceID := uuid.New(), uuid.New()
 	repository := &adminTestRepository{note: admindomain.AdminNote{ID: uuid.New()}}

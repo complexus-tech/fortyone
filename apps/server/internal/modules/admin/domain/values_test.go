@@ -37,6 +37,23 @@ func TestAuditActionParserIsFinite(t *testing.T) {
 	}
 }
 
+func TestIntegrationFiltersAreFinite(t *testing.T) {
+	provider, err := admindomain.ParseIntegrationProvider(" GitHub ")
+	if err != nil || provider != admindomain.IntegrationProviderGitHub {
+		t.Fatalf("parsed provider = %q, %v", provider, err)
+	}
+	status, err := admindomain.ParseIntegrationStatus(" NOT_CONNECTED ")
+	if err != nil || status != admindomain.IntegrationStatusNotConnected {
+		t.Fatalf("parsed status = %q, %v", status, err)
+	}
+	if _, err := admindomain.ParseIntegrationProvider("github' OR true"); !errors.Is(err, admindomain.ErrInvalidFilter) {
+		t.Fatalf("unsafe provider error = %v, want ErrInvalidFilter", err)
+	}
+	if _, err := admindomain.ParseIntegrationStatus("unknown"); !errors.Is(err, admindomain.ErrInvalidFilter) {
+		t.Fatalf("unknown status error = %v, want ErrInvalidFilter", err)
+	}
+}
+
 func TestAdminNoteTargetsAreRestricted(t *testing.T) {
 	if _, err := admindomain.ParseNoteTargetType("subscription"); !errors.Is(err, admindomain.ErrInvalidAction) {
 		t.Fatalf("subscription note target error = %v, want ErrInvalidAction", err)

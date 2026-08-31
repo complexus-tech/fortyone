@@ -121,7 +121,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     realtimeVoice.clearMessages();
     // Fetch messages for the new chat ID directly
     const newMessages = await queryClient.fetchQuery({
-      queryKey: aiChatKeys.messages(chatId),
+      queryKey: aiChatKeys.messages(workspaceSlug, chatId),
       queryFn: () =>
         getAiChatMessages({ session: session!, workspaceSlug }, chatId),
     });
@@ -168,7 +168,9 @@ export const useMayaChat = (config: MayaChatConfig) => {
 
         // Refresh chat list on any text response
         if (part.type === "text") {
-          queryClient.invalidateQueries({ queryKey: aiChatKeys.lists() });
+          queryClient.invalidateQueries({
+            queryKey: aiChatKeys.lists(workspaceSlug),
+          });
           queryClient.invalidateQueries({
             queryKey: aiChatKeys.totalMessages(workspaceSlug),
           });

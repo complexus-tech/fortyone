@@ -100,6 +100,25 @@ func ReserveMessageWriteForTarget(current, incoming []any, operation MessageWrit
 		if hasUnresolvedApproval(current) {
 			return nil, ErrMessageWriteApprovalOpen
 		}
+		// AI SDK exposes a single regenerate action for retrying a failed turn.
+		// When the original request failed before its reservation was committed,
+		// the client still holds the latest user message while durable history
+		// does not. Recover that exact one-message append here; otherwise a safe
+		// retry of a transient setup failure is rejected as a stale regeneration.
+		if len(incoming) == len(current)+1 && messageRole(incoming[len(incoming)-1]) == "user" {
+			incomingMessage, _ := asObject(incoming[len(incoming)-1])
+			incomingMessageID, _ := incomingMessage["id"].(string)
+			if targetMessageID == "" || targetMessageID == incomingMessageID {
+				merged, err := mergePrefixAndSuffix(current, incoming, true)
+				if err != nil {
+					return nil, err
+				}
+				if err := validateNewMessageIdentities(current, incoming[len(current):]); err != nil {
+					return nil, err
+				}
+				return merged, nil
+			}
+		}
 		expectedLength, err := regenerationPrefixLength(current, targetMessageID)
 		if err != nil {
 			return nil, err

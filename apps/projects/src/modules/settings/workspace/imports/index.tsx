@@ -21,6 +21,13 @@ const IMPORT_SOURCES = [
     width: 32,
   },
   {
+    alt: "Trello",
+    className: "h-8 w-8",
+    height: 32,
+    src: "/integrations/trello.svg",
+    width: 32,
+  },
+  {
     alt: "monday.com",
     className: "h-7 w-10 object-contain",
     height: 24,
@@ -32,6 +39,13 @@ const IMPORT_SOURCES = [
     className: "h-8 w-8",
     height: 32,
     src: "/integrations/asana.svg",
+    width: 32,
+  },
+  {
+    alt: "Notion",
+    className: "h-8 w-8",
+    height: 32,
+    src: "/integrations/notion.svg",
     width: 32,
   },
 ] as const;
@@ -82,11 +96,12 @@ export const WorkspaceImportSettings = ({
           className="mt-6 text-xl font-medium"
           id="import-export-heading"
         >
-          Import issues from Jira, ClickUp, or anywhere
+          Import issues from Jira, Trello, or anywhere
         </Text>
         <Text className="mt-2 max-w-2xl leading-6" color="muted">
-          Upload an export from Jira, ClickUp, monday.com, Asana, or any tool
-          that gives you a CSV. Excel files, PDFs, and images work too.
+          Upload an export from Jira, Trello, ClickUp, monday.com, Asana, or any
+          tool that gives you a CSV or JSON file. Excel files, PDFs, and images
+          work too.
         </Text>
 
         <Button

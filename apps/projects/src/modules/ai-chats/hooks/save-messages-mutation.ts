@@ -12,8 +12,12 @@ export const useSaveAiChatMessages = () => {
     mutationFn: (payload: SaveMessagesPayload) =>
       saveAiChatMessagesAction(payload, workspaceSlug),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: aiChatKeys.messages(id) });
-      queryClient.invalidateQueries({ queryKey: aiChatKeys.detail(id) });
+      queryClient.invalidateQueries({
+        queryKey: aiChatKeys.messages(workspaceSlug, id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: aiChatKeys.detail(workspaceSlug, id),
+      });
     },
   });
 };
