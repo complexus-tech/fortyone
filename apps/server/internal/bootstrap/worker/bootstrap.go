@@ -62,10 +62,10 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 
 	cfg, err := loadConfig()
 	if err != nil {
-		return App{}, fmt.Errorf("error parsing worker configuration: %w", err)
+		return App{}, workerConfigurationParseFailure.Wrap(err)
 	}
 	if _, err := validateRuntimeConfig(cfg); err != nil {
-		return App{}, err
+		return App{}, workerConfigurationInvalidFailure.Wrap(err)
 	}
 	integrationKeys, err := appkeys.NewIntegrationKeys(cfg.Auth.SecretKey)
 	if err != nil {
@@ -83,7 +83,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 
 	connections, err := openDB(ctx, cfg)
 	if err != nil {
-		return App{}, err
+		return App{}, workerDatabaseUnavailableFailure.Wrap(err)
 	}
 	databaseTransferred := false
 	defer func() {
@@ -98,7 +98,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 
 	if _, err := redisClient.Ping(ctx).Result(); err != nil {
 		_ = redisClient.Close()
-		return App{}, fmt.Errorf("error pinging redis: %w", err)
+		return App{}, workerRedisUnavailableFailure.Wrap(err)
 	}
 
 	tasksService, err := tasks.New(redisClient, log)
@@ -144,7 +144,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 
 	scheduler := asynq.NewScheduler(redisOpt, nil)
 	if err := registerSchedules(scheduler); err != nil {
-		return App{}, err
+		return App{}, workerSchedulerInitializationFailure.Wrap(err)
 	}
 
 	server := asynq.NewServer(
@@ -337,7 +337,7 @@ func New(ctx context.Context, log *logger.Logger) (App, error) {
 		WebhookPayloadSecret: integrationKeys.SlackWebhookPayloadSecret,
 	})
 	if err != nil {
-		return App{}, fmt.Errorf("initialize Slack event processor: %w", err)
+		return App{}, workerSlackInitializationFailure.WrapIfUnclassified(err)
 	}
 	upgradedGitHubCredentials, err := githubService.BackfillLegacyUserCredentials(ctx)
 	if err != nil {

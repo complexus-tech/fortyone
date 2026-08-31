@@ -42,8 +42,44 @@ import (
 )
 
 var (
-	service = "projects-api"
-	version = "development"
+	service             = "projects-api"
+	version             = "development"
+	apiMigrationFailure = logger.MustDefineError(
+		"api.migrations.failed",
+		"Database migrations failed",
+	)
+	apiRuntimeFailure = logger.MustDefineError(
+		"api.runtime.failed",
+		"API runtime stopped unexpectedly",
+	)
+	apiConfigurationFailure = logger.MustDefineError(
+		"api.configuration.invalid",
+		"API runtime configuration is invalid",
+	)
+	apiDatabaseUnavailableFailure = logger.MustDefineError(
+		"api.postgres.unavailable",
+		"API could not connect to PostgreSQL",
+	)
+	apiRedisUnavailableFailure = logger.MustDefineError(
+		"api.redis.unavailable",
+		"API could not connect to Redis",
+	)
+	apiHTTPInitializationFailure = logger.MustDefineError(
+		"api.http.initialization_failed",
+		"API HTTP runtime could not be initialized",
+	)
+	apiHTTPRuntimeFailure = logger.MustDefineError(
+		"api.http.runtime_failed",
+		"API HTTP runtime stopped unexpectedly",
+	)
+	apiMigrationConfigurationFailure = logger.MustDefineError(
+		"api.migrations.configuration_invalid",
+		"Database migration configuration is invalid",
+	)
+	apiMigrationExecutionFailure = logger.MustDefineError(
+		"api.migrations.execution_failed",
+		"Database migration execution failed",
+	)
 )
 
 func main() {
@@ -56,7 +92,7 @@ func main() {
 
 	if *migrateOnly {
 		if err := runMigrations(ctx, log); err != nil {
-			log.Error(ctx, fmt.Sprintf("migrations failed: %s", err))
+			logAPIFailure(ctx, log, "migration", apiMigrationFailure.WrapIfUnclassified(err))
 			os.Exit(1)
 		}
 		log.Info(ctx, "migrations completed")
@@ -64,9 +100,19 @@ func main() {
 	}
 
 	if err := run(ctx, log); err != nil {
-		log.Error(ctx, fmt.Sprintf("error shutting down: %s", err))
+		logAPIFailure(ctx, log, "runtime", apiRuntimeFailure.WrapIfUnclassified(err))
 		os.Exit(1)
 	}
+}
+
+func logAPIFailure(ctx context.Context, log *logger.Logger, phase string, err error) {
+	log.Error(
+		ctx,
+		"API process ended with error",
+		"version", version,
+		"phase", phase,
+		"error", err,
+	)
 }
 
 // run starts the HTTP server, tracing and listens for OS signals to gracefully shutdown.
@@ -75,22 +121,22 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	err := config.Parse("app", &cfg)
 	if err != nil {
-		return fmt.Errorf("error parsing config: %s", err)
+		return apiConfigurationFailure.Wrap(err)
 	}
 	cfg.Feedback.IngressSecret = strings.TrimSpace(cfg.Feedback.IngressSecret)
 	cfg.Feedback.SecurityKey = strings.TrimSpace(cfg.Feedback.SecurityKey)
 	if len(cfg.Feedback.IngressSecret) < 32 {
-		return fmt.Errorf("FEEDBACK_INGRESS_SECRET must contain at least 32 characters")
+		return apiConfigurationFailure.Wrap(fmt.Errorf("FEEDBACK_INGRESS_SECRET must contain at least 32 characters"))
 	}
 	mode, err := validateRuntimeConfig(cfg)
 	if err != nil {
-		return err
+		return apiConfigurationFailure.Wrap(err)
 	}
 	if _, err := providers.BuiltInRegistry(); err != nil {
 		return fmt.Errorf("validate built-in integration providers: %w", err)
 	}
 	if err := validateAPIHTTPConfig(cfg); err != nil {
-		return fmt.Errorf("validate API HTTP configuration: %w", err)
+		return apiConfigurationFailure.Wrap(err)
 	}
 	originPolicy, err := web.NewOriginPolicy(cfg.Web.CORSAllowedOrigins)
 	if err != nil {
@@ -140,7 +186,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("error connecting to db: %w", err)
+		return apiDatabaseUnavailableFailure.Wrap(err)
 	}
 
 	defer func() {
@@ -173,7 +219,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}()
 
 	if _, err := rdb.Ping(ctx).Result(); err != nil {
-		return fmt.Errorf("error pinging redis: %w", err)
+		return apiRedisUnavailableFailure.Wrap(err)
 	}
 	log.Info(ctx, fmt.Sprintf("connected to redis database `%d`", cfg.Cache.Name))
 
@@ -399,7 +445,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		mailerService,
 	)
 	if err != nil {
-		return fmt.Errorf("error building bootstrap runtime: %w", err)
+		return apiHTTPInitializationFailure.Wrap(err)
 	}
 
 	handler := mux.New(muxConfig, runtime.RouteAdder)
@@ -427,21 +473,21 @@ func run(ctx context.Context, log *logger.Logger) error {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("initialize API process lifecycle: %w", err)
+		return apiHTTPInitializationFailure.Wrap(err)
 	}
 
 	lifecycleOwnsResources = true
-	return process.Run(ctx)
+	return apiHTTPRuntimeFailure.Wrap(process.Run(ctx))
 }
 
 func runMigrations(ctx context.Context, log *logger.Logger) error {
 	cfg, err := parseMigrationProcessConfig()
 	if err != nil {
-		return err
+		return apiMigrationConfigurationFailure.Wrap(err)
 	}
 	mode, err := deployment.Parse(cfg.Environment)
 	if err != nil {
-		return fmt.Errorf("validate migration configuration: %w", err)
+		return apiMigrationConfigurationFailure.Wrap(err)
 	}
 	sslMode, err := platformdatabase.EffectiveSSLMode(platformdatabase.Config{
 		SSLMode:     cfg.DB.SSLMode,
@@ -449,16 +495,16 @@ func runMigrations(ctx context.Context, log *logger.Logger) error {
 		DisableTLS:  cfg.DB.DisableTLS,
 	})
 	if err != nil {
-		return fmt.Errorf("validate migration database transport: %w", err)
+		return apiMigrationConfigurationFailure.Wrap(err)
 	}
 	if err := deployment.ValidateProductionTransports(mode, deployment.TransportSecurity{
 		PostgreSQLSSLMode: sslMode,
 	}); err != nil {
-		return fmt.Errorf("validate migration database transport: %w", err)
+		return apiMigrationConfigurationFailure.Wrap(err)
 	}
 
 	log.Info(ctx, "running database migrations")
-	return migrations.Run(ctx, platformdatabase.MigrationConfig{
+	return apiMigrationExecutionFailure.Wrap(migrations.Run(ctx, platformdatabase.MigrationConfig{
 		Config: platformdatabase.Config{
 			Host:           cfg.DB.Host,
 			Port:           cfg.DB.Port,
@@ -473,7 +519,7 @@ func runMigrations(ctx context.Context, log *logger.Logger) error {
 		},
 		MaxIdleConns:     cfg.DB.MigrationMaxIdleConns,
 		StatementTimeout: cfg.DB.MigrationStatementTimeout,
-	})
+	}))
 }
 
 func parseMigrationProcessConfig() (migrationProcessConfig, error) {

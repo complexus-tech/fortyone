@@ -2,7 +2,6 @@ package stories
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/complexus-tech/projects-api/internal/platform/auth"
@@ -180,7 +179,7 @@ func (s *Service) GetComments(
 	}
 	comments, hasMore, err := s.listVisibleComments(ctx, storyID, workspaceID, page, pageSize)
 	if err != nil {
-		s.log.Error(ctx, fmt.Sprintf("failed to get comments: %s", err))
+		s.log.Error(ctx, "failed to get comments", "error", err)
 		span.RecordError(err)
 		return nil, false, err
 	}

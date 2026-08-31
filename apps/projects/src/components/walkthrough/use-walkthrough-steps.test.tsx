@@ -11,7 +11,11 @@ import {
 } from "@/hooks";
 import { useChatContext } from "@/context/chat-context";
 import { useMayaMessageAvailability } from "@/modules/maya/hooks/use-maya-message-availability";
-import { walkthroughTargetSelectors } from "@/shared/walkthrough/targets";
+import {
+  getWalkthroughTargetSelector,
+  walkthroughTargetSelectors,
+  walkthroughTargets,
+} from "@/shared/walkthrough/targets";
 import { useWalkthroughSteps } from "./use-walkthrough-steps";
 
 jest.mock("canvas-confetti", () => jest.fn());
@@ -279,65 +283,47 @@ describe("useWalkthroughSteps", () => {
     expect(openChatMock).toHaveBeenCalledTimes(1);
   });
 
-  it("lets setup continue when Maya is unavailable at the message limit", () => {
-    useUserRoleMock.mockReturnValue({ userRole: "member" } as ReturnType<
-      typeof useUserRole
-    >);
-    useMayaMessageAvailabilityMock.mockReturnValue({
-      isLimited: true,
-      isPending: false,
-      isUnavailable: false,
-    });
+  it.each([
+    [
+      "the monthly message limit is reached",
+      { isLimited: true, isPending: false, isUnavailable: false },
+    ],
+    [
+      "availability cannot be checked",
+      { isLimited: false, isPending: false, isUnavailable: true },
+    ],
+    [
+      "availability is still loading",
+      { isLimited: false, isPending: true, isUnavailable: false },
+    ],
+  ])(
+    "keeps the Maya composer highlighted and actionable when %s",
+    (_, availability) => {
+      useUserRoleMock.mockReturnValue({ userRole: "member" } as ReturnType<
+        typeof useUserRole
+      >);
+      useMayaMessageAvailabilityMock.mockReturnValue(availability);
 
-    const { result } = renderHook(() => useWalkthroughSteps());
-    const mayaStep = result.current.find((step) => step.id === "maya");
+      const { result } = renderHook(() => useWalkthroughSteps());
+      const mayaStep = result.current.find((step) => step.id === "maya");
 
-    expect(mayaStep).toMatchObject({
-      highlight: false,
-      nextActionLabel: "Continue setup",
-      position: "center",
-      target: "body",
-    });
-    expect(mayaStep?.requiredAction).toBeUndefined();
-    expect(mayaStep?.action).toBeUndefined();
-  });
+      expect(mayaStep).toMatchObject({
+        highlight: true,
+        position: "top-end",
+        requiredAction: {
+          actionLabel: "Write my first Maya message",
+          id: "maya-message-completed",
+        },
+        target: getWalkthroughTargetSelector(walkthroughTargets.mayaComposer),
+      });
 
-  it("does not make Maya mandatory when availability cannot be checked", () => {
-    useUserRoleMock.mockReturnValue({ userRole: "member" } as ReturnType<
-      typeof useUserRole
-    >);
-    useMayaMessageAvailabilityMock.mockReturnValue({
-      isLimited: false,
-      isPending: false,
-      isUnavailable: true,
-    });
+      act(() => {
+        mayaStep?.action?.();
+      });
 
-    const { result } = renderHook(() => useWalkthroughSteps());
-    const mayaStep = result.current.find((step) => step.id === "maya");
-
-    expect(mayaStep).toMatchObject({
-      highlight: false,
-      nextActionLabel: "Continue setup",
-      position: "center",
-      target: "body",
-    });
-    expect(mayaStep?.requiredAction).toBeUndefined();
-  });
-
-  it("waits for Maya availability before building a gated setup path", () => {
-    useUserRoleMock.mockReturnValue({ userRole: "member" } as ReturnType<
-      typeof useUserRole
-    >);
-    useMayaMessageAvailabilityMock.mockReturnValue({
-      isLimited: false,
-      isPending: true,
-      isUnavailable: false,
-    });
-
-    const { result } = renderHook(() => useWalkthroughSteps());
-
-    expect(result.current).toEqual([]);
-  });
+      expect(openChatMock).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("brings the Teams target into view before showing its tip", () => {
     useUserRoleMock.mockReturnValue({ userRole: "member" } as ReturnType<

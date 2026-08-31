@@ -79,13 +79,15 @@ func TestWorkerRunSupervisesStartupAndGracefulShutdown(t *testing.T) {
 func TestWorkerRunStopsSchedulerWhenTaskServerCannotStart(t *testing.T) {
 	t.Parallel()
 
-	server := &fakeTaskServer{startErr: errors.New("cannot reserve queues")}
+	startErr := errors.New("cannot reserve queues")
+	server := &fakeTaskServer{startErr: startErr}
 	scheduler := &fakeTaskScheduler{}
 	app := newLifecycleTestApp(server, scheduler)
 
 	err := app.Run(context.Background())
 
-	require.ErrorContains(t, err, "start Asynq worker server")
+	require.ErrorContains(t, err, "Worker task server could not start")
+	require.ErrorIs(t, err, startErr)
 	require.True(t, scheduler.start.Load())
 	require.True(t, scheduler.shutdown.Load())
 	require.True(t, server.start.Load())
@@ -97,12 +99,14 @@ func TestWorkerRunDoesNotStartTaskServerWhenSchedulerCannotStart(t *testing.T) {
 	t.Parallel()
 
 	server := &fakeTaskServer{}
-	scheduler := &fakeTaskScheduler{startErr: errors.New("cannot register schedules")}
+	startErr := errors.New("cannot register schedules")
+	scheduler := &fakeTaskScheduler{startErr: startErr}
 	app := newLifecycleTestApp(server, scheduler)
 
 	err := app.Run(context.Background())
 
-	require.ErrorContains(t, err, "start worker scheduler")
+	require.ErrorContains(t, err, "Worker scheduler could not start")
+	require.ErrorIs(t, err, startErr)
 	require.True(t, scheduler.start.Load())
 	require.False(t, scheduler.shutdown.Load())
 	require.False(t, server.start.Load())

@@ -744,7 +744,7 @@ Rollout:
 1. Back up PostgreSQL, apply migration 000176, and verify the composite primary key, user and workspace cascade foreign keys, status check, empty-array defaults, and workspace lookup index.
 2. Deploy the replacement API fleet before enabling the client persistence path, then verify an active workspace member can read and upsert only their own versioned tour state while non-members and inactive accounts receive no state.
 3. Exercise concurrent or repeated progress updates to confirm step and action IDs merge without loss, terminal status does not regress, and a browser reload resumes the stored state.
-4. Enable the frontend after every API instance serves the new route, and verify a quota-limited Maya step resolves only its step ID rather than claiming its action was completed.
+4. Enable the frontend after every API instance serves the new route, and verify the Maya step records a non-empty prompt submission even when the AI response is rejected by the workspace message limit.
 
 Recovery (`forward-fix`):
 
@@ -755,7 +755,7 @@ Recovery (`forward-fix`):
 Operational notes:
 
 - The composite key scopes progress to one user, workspace, tour key, and tour version; a new tour version intentionally starts with independent state.
-- Completed step IDs and completed action IDs are bounded opaque identifiers. Record an action ID only after the corresponding real product action succeeds; a skipped or quota-limited step may resolve its step ID without asserting action completion.
+- Completed step IDs and completed action IDs are bounded opaque identifiers. The Maya onboarding action records that a user submitted a non-empty prompt; it does not assert that the AI provider returned a successful response.
 - Terminal completed and skipped states are monotonic, and progress is onboarding convenience state only: it must not authorize access or serve as activation, billing, or audit evidence.
 
 ## Adding the next migration

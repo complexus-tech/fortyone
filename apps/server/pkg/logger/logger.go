@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"strings"
 	"time"
@@ -68,7 +67,7 @@ const redactedValue = "[REDACTED]"
 // replaceAttribute is the logger's final privacy boundary. Call sites should
 // still avoid sensitive fields, but a missed email/token/payload attribute or
 // arbitrary error value must not become durable log data.
-func replaceAttribute(_ []string, attribute slog.Attr) slog.Attr {
+func replaceAttribute(groups []string, attribute slog.Attr) slog.Attr {
 	if attribute.Key == slog.SourceKey {
 		if source, ok := attribute.Value.Any().(*slog.Source); ok {
 			value := fmt.Sprintf("%s:%d", filepath.Base(source.File), source.Line)
@@ -77,10 +76,17 @@ func replaceAttribute(_ []string, attribute slog.Attr) slog.Attr {
 	}
 
 	normalizedKey := normalizeAttributeKey(attribute.Key)
-	if normalizedKey == "error" || normalizedKey == "err" {
-		return slog.String(attribute.Key, safeErrorType(attribute.Value))
+	if sensitiveAttributeKey(normalizedKey) || containsSensitiveAttributeGroup(groups) {
+		return slog.String(attribute.Key, redactedValue)
 	}
-	if sensitiveAttributeKey(normalizedKey) {
+	if err, ok := attribute.Value.Any().(error); ok {
+		key := attribute.Key
+		if key == "!BADKEY" {
+			key = "error"
+		}
+		return safeErrorAttribute(key, err)
+	}
+	if normalizedKey == "error" || normalizedKey == "err" {
 		return slog.String(attribute.Key, redactedValue)
 	}
 	return attribute
@@ -97,6 +103,7 @@ func sensitiveAttributeKey(key string) bool {
 		"authorizationcode", "oauthcode",
 		"secret", "clientsecret", "signingsecret", "password", "passphrase", "apikey",
 		"body", "rawbody", "rawmessage", "payload",
+		"errormessage", "errordetail", "errorreason", "cause", "stack", "stacktrace", "exceptionmessage",
 		"email", "inviteremail", "actoremail", "url", "uri", "requestpath":
 		return true
 	default:
@@ -112,19 +119,62 @@ func sensitiveAttributeKey(key string) bool {
 	}
 }
 
-func safeErrorType(value slog.Value) string {
-	if value.Kind() != slog.KindAny {
-		return redactedValue
+func containsSensitiveAttributeGroup(groups []string) bool {
+	for _, group := range groups {
+		if sensitiveAttributeKey(normalizeAttributeKey(group)) {
+			return true
+		}
 	}
-	item := value.Any()
-	if item == nil {
-		return "<nil>"
+	return false
+}
+
+// sanitizeLogArguments captures error values before slog resolves LogValuer.
+// Some error implementations also implement LogValuer and could otherwise turn
+// themselves into raw strings before replaceAttribute sees them.
+func sanitizeLogArguments(args []any) []any {
+	attributes := make([]any, 0, len(args))
+	for index := 0; index < len(args); {
+		switch argument := args[index].(type) {
+		case slog.Attr:
+			attributes = append(attributes, sanitizeLogAttribute(argument))
+			index++
+		case string:
+			if index+1 >= len(args) {
+				attributes = append(attributes, slog.String("!BADKEY", argument))
+				index++
+				continue
+			}
+			attributes = append(attributes, sanitizeLogAttribute(slog.Any(argument, args[index+1])))
+			index += 2
+		default:
+			attributes = append(attributes, sanitizeLogAttribute(slog.Any("!BADKEY", argument)))
+			index++
+		}
 	}
-	itemType := reflect.TypeOf(item)
-	if itemType == nil {
-		return redactedValue
+	return attributes
+}
+
+func sanitizeLogAttribute(attribute slog.Attr) slog.Attr {
+	if sensitiveAttributeKey(normalizeAttributeKey(attribute.Key)) {
+		return slog.String(attribute.Key, redactedValue)
 	}
-	return itemType.String()
+	if err, ok := attribute.Value.Any().(error); ok {
+		key := attribute.Key
+		if key == "!BADKEY" {
+			key = "error"
+		}
+		return safeErrorAttribute(key, err)
+	}
+	if attribute.Value.Kind() != slog.KindGroup {
+		return attribute
+	}
+
+	children := attribute.Value.Group()
+	sanitized := make([]slog.Attr, 0, len(children))
+	for _, child := range children {
+		sanitized = append(sanitized, sanitizeLogAttribute(child))
+	}
+	return slog.Attr{Key: attribute.Key, Value: slog.GroupValue(sanitized...)}
 }
 
 // write writes a log message to the handler. The message is only written if the
@@ -148,7 +198,7 @@ func (l *Logger) write(ctx context.Context, level slog.Level, msg string, args .
 		r.Add("trace_id", spanContext.TraceID().String(), "span_id", spanContext.SpanID().String())
 	}
 
-	r.Add(args...)
+	r.Add(sanitizeLogArguments(args)...)
 
 	if err := l.handler.Handle(ctx, r); err != nil {
 		fallback := l.fallbackWriter

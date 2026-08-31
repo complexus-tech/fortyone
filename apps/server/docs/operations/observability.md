@@ -21,7 +21,8 @@ The structured logger automatically adds:
 - Record safe fingerprints only when correlating an opaque value is necessary. A fingerprint must be one-way, purpose-bound, short, and insufficient to authenticate.
 - Provider errors are classified at the adapter boundary. Log the safe class/status/request ID; do not copy an arbitrary upstream response body.
 - The final HTTP transport boundary logs only that an unexpected handler failure occurred, its status, and the request correlation fields. It deliberately omits `err.Error()` because an unclassified error can contain SQL, credentials, or provider payloads.
-- The logger is a defense-in-depth privacy boundary: known token, secret, cookie, body, payload, raw-message, and email attribute keys are replaced with `[REDACTED]`. An `error`/`err` attribute retains only its concrete Go type, never `Error()` text. Callers still must omit sensitive attributes; redaction is not permission to collect them.
+- The logger is a defense-in-depth privacy boundary: known token, secret, cookie, body, payload, raw-message, error-message, and email attribute keys are replaced with `[REDACTED]`. Any attribute whose value implements `error` becomes a structured diagnostic containing a bounded Go type chain, never arbitrary `Error()` text. Callers still must omit sensitive attributes; redaction is not permission to collect them.
+- Operational boundaries that need an actionable production message must wrap the cause with a package-level `logger.MustDefineError` definition. This adds a stable `error.code` and reviewed `error.safe_message` while preserving `errors.Is`/`errors.As`. Safe messages are literal, bounded copy; they must never include runtime values, `err.Error()`, SQL, provider responses, URLs, credentials, or user input.
 - HTTP logs use `r.Pattern`, not `r.URL.Path`, so high-cardinality resource IDs do not become metric or trace dimensions.
 - HTTP request logs omit raw client addresses. Edge/network telemetry owns source-address evidence under its separate access and retention policy.
 
@@ -31,7 +32,15 @@ The structured logger automatically adds:
 2. Locate the API record with that `request_id` and confirm the matched route, status, deployment version, and safe actor/workspace identifiers.
 3. Follow `trace_id` into the trace backend for dependency timing and the failing span.
 4. For queued work, follow the durable task/delivery ID recorded by the enqueue event rather than assuming the original HTTP span remains open.
-5. If a record is insufficient, add an explicitly reviewed safe field or metric; never temporarily log the secret-bearing payload.
+5. If an error is still unclassified, add an explicitly reviewed error definition, safe field, or metric at the boundary that understands the failure; never temporarily log the secret-bearing payload.
+
+Process-fatal API and worker records always include `version`, `phase`, and an
+`error` object. Query `error.code` first; startup classifications distinguish
+configuration, PostgreSQL, Redis, HTTP, scheduler, queue, migration, and Slack
+failures. For example, a missing Slack signing secret is reported as
+`worker.slack.signing_secret_missing` with the reviewed summary
+`SLACK_SIGNING_SECRET is not configured`, without writing the secret value or
+the underlying provider/database text.
 
 Readiness and liveness expose stable dependency states without returning underlying error strings. The API changes readiness to draining before it stops accepting work; the worker reports its queue/scheduler state independently. See `docs/architecture/api-lifecycle.md` for lifecycle semantics.
 

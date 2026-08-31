@@ -1,6 +1,7 @@
 package workerbootstrap
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/complexus-tech/projects-api/internal/bootstrap/providers"
@@ -25,6 +26,9 @@ func buildSlackWebhookRuntime(
 	}
 	runtime, err := slack.NewWebhookRuntime(repository, queue, config)
 	if err != nil {
+		if errors.Is(err, slack.ErrSlackSigningSecretNotConfigured) {
+			return nil, nil, workerSlackSigningSecretMissingFailure.Wrap(err)
+		}
 		return nil, nil, fmt.Errorf("build Slack webhook adapter: %w", err)
 	}
 	runtimes, err := webhooks.NewRuntimeRegistry(catalog, runtime)

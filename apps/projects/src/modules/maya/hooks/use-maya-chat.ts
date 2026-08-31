@@ -70,12 +70,11 @@ export const useMayaChat = (config: MayaChatConfig) => {
   const { data: aiChatMessages = [] } = useAiChatMessages(currentChatId);
   const [input, setInput] = useState("");
   const isSendingRef = useRef(false);
-  const pendingUserSubmissionRef = useRef(false);
-  const onUserMessageCompletedRef = useRef(config.onUserMessageCompleted);
+  const onUserMessageSubmittedRef = useRef(config.onUserMessageSubmitted);
 
   useEffect(() => {
-    onUserMessageCompletedRef.current = config.onUserMessageCompleted;
-  }, [config.onUserMessageCompleted]);
+    onUserMessageSubmittedRef.current = config.onUserMessageSubmitted;
+  }, [config.onUserMessageSubmitted]);
 
   const terminology = {
     stories: getTermDisplay("storyTerm", { variant: "plural" }),
@@ -145,22 +144,7 @@ export const useMayaChat = (config: MayaChatConfig) => {
     id: currentChatId,
     transport,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
-    onError: () => {
-      pendingUserSubmissionRef.current = false;
-    },
-    onFinish: ({ isAbort, isDisconnect, isError, message }) => {
-      const completedUserSubmission =
-        pendingUserSubmissionRef.current &&
-        !isAbort &&
-        !isDisconnect &&
-        !isError;
-
-      pendingUserSubmissionRef.current = false;
-
-      if (completedUserSubmission) {
-        onUserMessageCompletedRef.current?.();
-      }
-
+    onFinish: ({ message }) => {
       message.parts.forEach((part) => {
         // Handle side effects for navigation and theme
         if (part.type === "tool-navigation") {
@@ -252,6 +236,10 @@ export const useMayaChat = (config: MayaChatConfig) => {
     if (isSendingRef.current) return;
     if (isChatResponseInProgress(status)) return;
 
+    if (content.trim()) {
+      onUserMessageSubmittedRef.current?.();
+    }
+
     const limit = getLimit("maxAiMessages");
     if (
       !canSendMayaMessage({
@@ -298,16 +286,10 @@ export const useMayaChat = (config: MayaChatConfig) => {
           ),
         );
 
-        pendingUserSubmissionRef.current = true;
-        try {
-          await sendMessage({
-            text: content,
-            files: attachmentData,
-          });
-        } catch (error) {
-          pendingUserSubmissionRef.current = false;
-          throw error;
-        }
+        await sendMessage({
+          text: content,
+          files: attachmentData,
+        });
       },
     });
   };
@@ -322,7 +304,6 @@ export const useMayaChat = (config: MayaChatConfig) => {
   };
 
   const stop = () => {
-    pendingUserSubmissionRef.current = false;
     handleStop();
   };
 

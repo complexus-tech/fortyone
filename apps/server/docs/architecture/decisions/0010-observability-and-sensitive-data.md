@@ -18,6 +18,13 @@ the shared fields appropriate to the operation: request/trace ID, deployment
 version, route template, operation, actor kind, workspace ID when authorized,
 provider, job/task kind, outcome, duration, and stable safe error code.
 
+Arbitrary Go error text is not log-safe. The shared logger records a bounded
+type chain for unclassified errors and accepts package-owned, immutable error
+definitions for stable codes and reviewed static summaries. Definitions retain
+the original cause for `errors.Is`/`errors.As`, but their formatted value never
+reveals that cause. Runtime values are separate structured fields and remain
+subject to the sensitive-data and cardinality rules below.
+
 Never record bearer tokens, cookies, authorization headers, OAuth codes,
 verification/invitation tokens, encryption material, raw webhook bodies, email
 bodies, or unrestricted user/provider payloads. Database statements and

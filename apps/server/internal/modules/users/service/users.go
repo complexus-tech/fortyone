@@ -231,7 +231,7 @@ func (s *Service) Register(ctx context.Context, newUser CoreNewUser) (CoreUser, 
 	})
 	if err != nil {
 		span.RecordError(err)
-		s.log.Error(ctx, "Error enqueuing onboarding task: %v", err)
+		s.log.Error(ctx, "Error enqueuing onboarding task", "error", err)
 	}
 	return user, nil
 }
@@ -320,7 +320,7 @@ func (s *Service) UpdateUser(ctx context.Context, userID uuid.UUID, updates Core
 	})
 	if err != nil {
 		span.RecordError(err)
-		s.log.Error(ctx, "Error enqueuing subscriber update task: %v", err)
+		s.log.Error(ctx, "Error enqueuing subscriber update task", "error", err)
 	}
 
 	return nil
@@ -351,7 +351,7 @@ func (s *Service) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 	})
 	if err != nil {
 		span.RecordError(err)
-		s.log.Error(ctx, "Error enqueuing subscriber delete task: %v", err)
+		s.log.Error(ctx, "Error enqueuing subscriber delete task", "error", err)
 	}
 
 	return nil
@@ -507,7 +507,7 @@ func (s *Service) GetAutomationPreferences(ctx context.Context, userID, workspac
 
 	preferences, err := s.repo.GetAutomationPreferences(ctx, userID, workspaceID)
 	if err != nil {
-		s.log.Error(ctx, "Error getting automation preferences: %v", err)
+		s.log.Error(ctx, "Error getting automation preferences", "error", err)
 		span.RecordError(err)
 		return CoreAutomationPreferences{}, fmt.Errorf("failed to get automation preferences: %w", err)
 	}
@@ -527,7 +527,7 @@ func (s *Service) UpdateAutomationPreferences(ctx context.Context, userID, works
 	defer span.End()
 
 	if err := s.repo.UpdateAutomationPreferences(ctx, userID, workspaceID, updates); err != nil {
-		s.log.Error(ctx, "Error updating automation preferences: %v", err)
+		s.log.Error(ctx, "Error updating automation preferences", "error", err)
 		span.RecordError(err)
 		return fmt.Errorf("failed to update automation preferences: %w", err)
 	}

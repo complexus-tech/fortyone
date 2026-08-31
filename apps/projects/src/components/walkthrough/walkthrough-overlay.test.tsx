@@ -38,6 +38,8 @@ jest.mock("./walkthrough-step", () => ({
 
 const useWalkthroughMock = jest.mocked(useWalkthrough);
 const originalInnerWidth = window.innerWidth;
+const originalIntersectionObserver = window.IntersectionObserver;
+const originalResizeObserver = window.ResizeObserver;
 let targetElement: HTMLButtonElement | null = null;
 
 const createTargetRect = ({
@@ -88,6 +90,16 @@ describe("WalkthroughOverlay", () => {
     Object.defineProperty(window, "innerWidth", {
       configurable: true,
       value: originalInnerWidth,
+      writable: true,
+    });
+    Object.defineProperty(window, "IntersectionObserver", {
+      configurable: true,
+      value: originalIntersectionObserver,
+      writable: true,
+    });
+    Object.defineProperty(window, "ResizeObserver", {
+      configurable: true,
+      value: originalResizeObserver,
       writable: true,
     });
   });
@@ -160,6 +172,170 @@ describe("WalkthroughOverlay", () => {
       expect(screen.getByTestId("walkthrough-step")).toHaveAttribute(
         "data-fallback",
         "false",
+      );
+    });
+  });
+
+  it("recovers when an existing offscreen target enters the viewport", async () => {
+    const intersectionCallbackRef: {
+      current?: IntersectionObserverCallback;
+    } = {};
+    const observe = jest.fn();
+
+    class TestIntersectionObserver implements IntersectionObserver {
+      readonly root = null;
+      readonly rootMargin = "0px";
+      readonly scrollMargin = "0px";
+      readonly thresholds = [0];
+      readonly disconnect = jest.fn();
+      readonly observe = observe;
+      readonly takeRecords = jest.fn(() => []);
+      readonly unobserve = jest.fn();
+
+      constructor(callback: IntersectionObserverCallback) {
+        intersectionCallbackRef.current = callback;
+      }
+    }
+
+    Object.defineProperty(window, "IntersectionObserver", {
+      configurable: true,
+      value: TestIntersectionObserver,
+      writable: true,
+    });
+
+    targetElement = document.createElement("button");
+    targetElement.dataset.walkthroughTarget = walkthroughTargets.notifications;
+    document.body.append(targetElement);
+
+    const getBoundingClientRect = jest
+      .spyOn(targetElement, "getBoundingClientRect")
+      .mockReturnValue(
+        createTargetRect({
+          height: 56,
+          left: 720,
+          top: window.innerHeight + 40,
+          width: 56,
+        }),
+      );
+
+    render(<WalkthroughOverlay />);
+
+    expect(screen.getByTestId("walkthrough-step")).toHaveAttribute(
+      "data-fallback",
+      "true",
+    );
+    expect(observe).toHaveBeenCalledWith(targetElement);
+
+    const visibleRect = createTargetRect({
+      height: 56,
+      left: 720,
+      top: 12,
+      width: 56,
+    });
+    getBoundingClientRect.mockReturnValue(visibleRect);
+
+    const notifyIntersection = intersectionCallbackRef.current;
+    if (!notifyIntersection) {
+      throw new Error(
+        "Expected the target to be observed for visibility changes.",
+      );
+    }
+
+    act(() => {
+      notifyIntersection(
+        [
+          {
+            boundingClientRect: visibleRect,
+            intersectionRatio: 1,
+            intersectionRect: visibleRect,
+            isIntersecting: true,
+            rootBounds: null,
+            target: targetElement!,
+            time: 0,
+          },
+        ],
+        {} as IntersectionObserver,
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("walkthrough-step")).toHaveAttribute(
+        "data-fallback",
+        "false",
+      );
+    });
+  });
+
+  it("updates the spotlight when a mounted target changes layout", async () => {
+    const resizeCallbackRef: { current?: ResizeObserverCallback } = {};
+    const observe = jest.fn();
+
+    class TestResizeObserver implements ResizeObserver {
+      readonly disconnect = jest.fn();
+      readonly observe = observe;
+      readonly unobserve = jest.fn();
+
+      constructor(callback: ResizeObserverCallback) {
+        resizeCallbackRef.current = callback;
+      }
+    }
+
+    Object.defineProperty(window, "ResizeObserver", {
+      configurable: true,
+      value: TestResizeObserver,
+      writable: true,
+    });
+
+    targetElement = document.createElement("button");
+    targetElement.dataset.walkthroughTarget = walkthroughTargets.notifications;
+    document.body.append(targetElement);
+
+    const getBoundingClientRect = jest
+      .spyOn(targetElement, "getBoundingClientRect")
+      .mockReturnValue(
+        createTargetRect({ height: 56, left: 720, top: 12, width: 56 }),
+      );
+
+    render(<WalkthroughOverlay />);
+
+    expect(screen.getByTestId("walkthrough-step")).toHaveAttribute(
+      "data-left",
+      "720",
+    );
+    expect(observe).toHaveBeenCalledWith(targetElement);
+
+    const movedRect = createTargetRect({
+      height: 56,
+      left: 520,
+      top: 12,
+      width: 56,
+    });
+    getBoundingClientRect.mockReturnValue(movedRect);
+
+    const notifyResize = resizeCallbackRef.current;
+    if (!notifyResize) {
+      throw new Error("Expected the target layout to be observed.");
+    }
+
+    act(() => {
+      notifyResize(
+        [
+          {
+            borderBoxSize: [],
+            contentBoxSize: [],
+            contentRect: movedRect,
+            devicePixelContentBoxSize: [],
+            target: targetElement!,
+          },
+        ],
+        {} as ResizeObserver,
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("walkthrough-step")).toHaveAttribute(
+        "data-left",
+        "520",
       );
     });
   });

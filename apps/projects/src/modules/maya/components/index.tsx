@@ -20,14 +20,14 @@ export const MayaChat = () => {
   const { chatRef, getInitialChatId, isNewChat, updateChatRef, clearChatRef } =
     useMayaNavigation();
   const { completeWalkthroughAction } = useWalkthrough();
-  const handleUserMessageCompleted = useCallback(() => {
+  const handleUserMessageSubmitted = useCallback(() => {
     completeWalkthroughAction("maya-message-completed");
   }, [completeWalkthroughAction]);
   const config: MayaChatConfig = {
     currentChatId: getInitialChatId(),
     hasSelectedChat: Boolean(chatRef),
     isNewChat: isNewChat(),
-    onUserMessageCompleted: handleUserMessageCompleted,
+    onUserMessageSubmitted: handleUserMessageSubmitted,
     updateChatRef,
     clearChatRef,
   };

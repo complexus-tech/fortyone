@@ -1,95 +1,22 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "lib";
-import type { WalkthroughTargetPosition } from "./walkthrough-position";
+import { useWalkthroughTarget } from "./use-walkthrough-target";
 import { useWalkthrough } from "./walkthrough-provider";
 import { WalkthroughStep } from "./walkthrough-step";
 
-interface ResolvedWalkthroughTarget {
-  element: Element | null;
-  position: WalkthroughTargetPosition;
-  isFallback: boolean;
-  isSpotlightTarget: boolean;
-}
-
-const fallbackTargetPosition: WalkthroughTargetPosition = {
-  top: 0,
-  left: 0,
-  width: 0,
-  height: 0,
-};
-
 const SPOTLIGHT_PADDING = 8;
-
-const isVisibleTarget = (rect: DOMRect) =>
-  rect.height > 0 &&
-  rect.width > 0 &&
-  rect.bottom > 0 &&
-  rect.left < window.innerWidth &&
-  rect.right > 0 &&
-  rect.top < window.innerHeight;
-
-const resolveWalkthroughTarget = (
-  isActive: boolean,
-  currentTarget: string | undefined,
-): ResolvedWalkthroughTarget | null => {
-  if (!isActive || !currentTarget || typeof window === "undefined") {
-    return null;
-  }
-
-  if (currentTarget === "body") {
-    return {
-      element: null,
-      position: fallbackTargetPosition,
-      isFallback: false,
-      isSpotlightTarget: false,
-    };
-  }
-
-  const targetElement = document.querySelector(currentTarget);
-  if (!targetElement) {
-    return {
-      element: null,
-      position: fallbackTargetPosition,
-      isFallback: true,
-      isSpotlightTarget: false,
-    };
-  }
-
-  const rect = targetElement.getBoundingClientRect();
-  if (!isVisibleTarget(rect)) {
-    return {
-      element: targetElement,
-      position: fallbackTargetPosition,
-      isFallback: true,
-      isSpotlightTarget: false,
-    };
-  }
-
-  return {
-    element: targetElement,
-    position: {
-      top: rect.top,
-      left: rect.left,
-      width: rect.width,
-      height: rect.height,
-    },
-    isFallback: false,
-    isSpotlightTarget: true,
-  };
-};
 
 export const WalkthroughOverlay = () => {
   const { currentStepData, isWalkthroughActionComplete, state } =
     useWalkthrough();
-  const [, refreshLayout] = useReducer(
-    (currentValue: number) => currentValue + 1,
-    0,
-  );
   const currentTarget = currentStepData?.target;
-  const target = resolveWalkthroughTarget(state.isActive, currentTarget);
+  const target = useWalkthroughTarget({
+    currentTarget,
+    isActive: state.isActive,
+  });
   const targetElement = target?.element ?? null;
   const isActionPending = Boolean(
     currentStepData?.requiredAction &&
@@ -97,94 +24,6 @@ export const WalkthroughOverlay = () => {
   );
   const allowsTargetInteraction =
     isActionPending && Boolean(target?.isSpotlightTarget);
-
-  useEffect(() => {
-    if (!state.isActive || !currentTarget) {
-      return;
-    }
-
-    const refreshTargetLayout = () => {
-      refreshLayout();
-    };
-    const scrollListenerOptions: AddEventListenerOptions = {
-      capture: true,
-      passive: true,
-    };
-    let animationFrameId: number | null = null;
-
-    const scheduleTargetLayoutRefresh = () => {
-      if (animationFrameId !== null) {
-        return;
-      }
-
-      animationFrameId = window.requestAnimationFrame(() => {
-        animationFrameId = null;
-        refreshTargetLayout();
-      });
-    };
-    const timeoutId = window.setTimeout(refreshTargetLayout, 100);
-
-    window.addEventListener("resize", refreshTargetLayout);
-    window.addEventListener(
-      "scroll",
-      scheduleTargetLayoutRefresh,
-      scrollListenerOptions,
-    );
-
-    return () => {
-      window.removeEventListener("resize", refreshTargetLayout);
-      window.removeEventListener("scroll", scheduleTargetLayoutRefresh, true);
-      window.clearTimeout(timeoutId);
-      if (animationFrameId !== null) {
-        window.cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, [state.isActive, currentTarget]);
-
-  useEffect(() => {
-    if (
-      !state.isActive ||
-      !targetElement ||
-      typeof ResizeObserver === "undefined"
-    ) {
-      return;
-    }
-
-    const observer = new ResizeObserver(refreshLayout);
-    observer.observe(targetElement);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [state.isActive, targetElement]);
-
-  useEffect(() => {
-    if (
-      !state.isActive ||
-      !currentTarget ||
-      currentTarget === "body" ||
-      targetElement ||
-      typeof MutationObserver === "undefined"
-    ) {
-      return;
-    }
-
-    const observer = new MutationObserver(() => {
-      if (document.querySelector(currentTarget)) {
-        refreshLayout();
-      }
-    });
-    observer.observe(document.body, {
-      attributeFilter: ["data-walkthrough-target"],
-      attributes: true,
-      childList: true,
-      subtree: true,
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [state.isActive, currentTarget, targetElement]);
 
   useEffect(() => {
     if (!allowsTargetInteraction || !(targetElement instanceof HTMLElement)) {

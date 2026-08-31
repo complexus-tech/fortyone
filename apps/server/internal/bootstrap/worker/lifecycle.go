@@ -26,7 +26,7 @@ func (a *App) Run(ctx context.Context) (runErr error) {
 		return errors.New("worker context is required")
 	}
 	if err := a.validateRuntime(); err != nil {
-		return err
+		return workerConfigurationInvalidFailure.Wrap(err)
 	}
 	defer func() {
 		runErr = errors.Join(runErr, a.closeResources())
@@ -34,7 +34,7 @@ func (a *App) Run(ctx context.Context) (runErr error) {
 
 	handler, closeQueueMonitor, err := a.newHTTPHandler()
 	if err != nil {
-		return fmt.Errorf("initialize worker HTTP handler: %w", err)
+		return workerHTTPInitializationFailure.Wrap(err)
 	}
 	defer func() {
 		runErr = errors.Join(runErr, closeMonitor(closeQueueMonitor))
@@ -42,7 +42,7 @@ func (a *App) Run(ctx context.Context) (runErr error) {
 
 	listener, err := net.Listen("tcp", a.httpConfig.Host)
 	if err != nil {
-		return fmt.Errorf("listen for worker health traffic on %s: %w", a.httpConfig.Host, err)
+		return workerHTTPListenFailure.Wrap(err)
 	}
 	listenerTransferred := false
 	defer func() {
@@ -57,7 +57,7 @@ func (a *App) Run(ctx context.Context) (runErr error) {
 
 	a.log.Info(ctx, "Starting worker scheduler")
 	if err := a.scheduler.Start(); err != nil {
-		return fmt.Errorf("start worker scheduler: %w", err)
+		return workerSchedulerStartFailure.Wrap(err)
 	}
 	schedulerStarted := true
 	defer func() {
@@ -68,7 +68,7 @@ func (a *App) Run(ctx context.Context) (runErr error) {
 
 	a.log.Info(ctx, "Starting Asynq worker server")
 	if err := a.server.Start(a.taskMux); err != nil {
-		return fmt.Errorf("start Asynq worker server: %w", err)
+		return workerTaskServerStartFailure.Wrap(err)
 	}
 	serverStarted := true
 	defer func() {

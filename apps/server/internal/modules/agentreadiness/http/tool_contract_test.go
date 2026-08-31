@@ -34,7 +34,12 @@ func TestToolErrorsDoNotExposeBackendInternals(t *testing.T) {
 	logOutput := logs.String()
 	require.Contains(t, logOutput, `"msg":"MCP tool failed"`)
 	require.Contains(t, logOutput, `"tool":"list_stories"`)
-	require.Contains(t, logOutput, `"error":"*errors.errorString"`)
+	var logRecord map[string]any
+	require.NoError(t, json.Unmarshal(logs.Bytes(), &logRecord))
+	errorDetails, ok := logRecord["error"].(map[string]any)
+	require.True(t, ok, "error = %#v, want structured safe diagnostic", logRecord["error"])
+	require.Equal(t, "*errors.errorString", errorDetails["type"])
+	require.NotContains(t, errorDetails, "safe_message")
 	for _, internalDetail := range []string{"workspace_id", "ambiguous", "SQLSTATE", "42702", "column reference"} {
 		require.NotContains(t, logOutput, internalDetail)
 	}

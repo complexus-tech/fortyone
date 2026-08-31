@@ -5,7 +5,7 @@ export type MayaChatConfig = {
   initialMessages?: MayaUIMessage[];
   hasSelectedChat?: boolean;
   isNewChat?: boolean;
-  onUserMessageCompleted?: () => void;
+  onUserMessageSubmitted?: () => void;
   updateChatRef: (chatId: string) => void;
   clearChatRef: (nextChatId?: string) => void;
 };

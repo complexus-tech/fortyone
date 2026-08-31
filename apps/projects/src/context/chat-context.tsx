@@ -27,12 +27,12 @@ const ChatContext = createContext<ChatContextType | null>(null);
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [chatId, setChatId] = useState(() => generateId());
   const { completeWalkthroughAction } = useWalkthrough();
-  const handleUserMessageCompleted = useCallback(() => {
+  const handleUserMessageSubmitted = useCallback(() => {
     completeWalkthroughAction("maya-message-completed");
   }, [completeWalkthroughAction]);
   const chat = useMayaChat({
     currentChatId: chatId,
-    onUserMessageCompleted: handleUserMessageCompleted,
+    onUserMessageSubmitted: handleUserMessageSubmitted,
     updateChatRef: setChatId,
     clearChatRef: (nextChatId = generateId()) => {
       setChatId(nextChatId);

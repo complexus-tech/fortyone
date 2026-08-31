@@ -18,7 +18,6 @@ import {
   type WalkthroughStep,
   type WalkthroughWelcomeChoice,
 } from "./walkthrough-provider";
-import { useMayaMessageAvailability } from "@/modules/maya/hooks/use-maya-message-availability";
 
 export const useWalkthroughSteps = (): WalkthroughStep[] => {
   const pathname = usePathname();
@@ -28,21 +27,13 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
   const { userRole } = useUserRole();
   const { withWorkspace } = useWorkspacePath();
   const { openChat } = useChatContext();
-  const {
-    isLimited: isMayaMessageLimitReached,
-    isPending: isMayaMessageAvailabilityPending,
-    isUnavailable: isMayaMessageAvailabilityUnavailable,
-  } = useMayaMessageAvailability();
   const storyTerm = getTermDisplay("storyTerm");
   const storyTermPlural = getTermDisplay("storyTerm", { variant: "plural" });
   const objectiveTerm = getTermDisplay("objectiveTerm");
   const isMayaPage = pathname.includes("/maya");
   const myWorkPath = withWorkspace("/my-work");
   const roadmapPath = withWorkspace("/roadmap");
-  const isWalkthroughReady =
-    Boolean(userRole) &&
-    !features.isPending &&
-    !isMayaMessageAvailabilityPending;
+  const isWalkthroughReady = Boolean(userRole) && !features.isPending;
 
   return useMemo(() => {
     if (!isWalkthroughReady) {
@@ -140,9 +131,6 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
       mayaChoice,
     ];
     const welcomeChoices = userRole === "guest" ? guestChoices : memberChoices;
-
-    const shouldDeferMayaStep =
-      isMayaMessageLimitReached || isMayaMessageAvailabilityUnavailable;
 
     return [
       {
@@ -252,29 +240,16 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
         : []),
       {
         id: "maya",
-        target: shouldDeferMayaStep
-          ? "body"
-          : getWalkthroughTargetSelector(walkthroughTargets.mayaComposer),
+        target: getWalkthroughTargetSelector(walkthroughTargets.mayaComposer),
         title: "Try Maya with a real request",
-        action: shouldDeferMayaStep || isMayaPage ? undefined : openChat,
+        action: isMayaPage ? undefined : openChat,
         content: (
           <Box className="space-y-3">
             <Text color="muted">
               Maya can help you plan, clarify, and prepare the next move. She
               will ask before making a change in your workspace.
             </Text>
-            {isMayaMessageLimitReached ? (
-              <Text color="muted">
-                You&apos;ve used the AI messages included with this month&apos;s
-                plan. You can complete setup now, then try Maya when messages
-                reset or your plan changes.
-              </Text>
-            ) : isMayaMessageAvailabilityUnavailable ? (
-              <Text color="muted">
-                Maya isn&apos;t available to start right now. You can complete
-                setup and try her again when the connection is back.
-              </Text>
-            ) : userRole === "guest" ? (
+            {userRole === "guest" ? (
               <Text color="muted">
                 I’ve opened Maya for you. Send a real message to see how she can
                 help with your next move.
@@ -290,15 +265,12 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
             )}
           </Box>
         ),
-        highlight: !shouldDeferMayaStep,
-        nextActionLabel: shouldDeferMayaStep ? "Continue setup" : undefined,
-        position: shouldDeferMayaStep ? "center" : "top-end",
-        requiredAction: shouldDeferMayaStep
-          ? undefined
-          : {
-              actionLabel: "Write my first Maya message",
-              id: "maya-message-completed",
-            },
+        highlight: true,
+        position: "top-end",
+        requiredAction: {
+          actionLabel: "Write my first Maya message",
+          id: "maya-message-completed",
+        },
       },
       {
         id: "help",
@@ -344,9 +316,6 @@ export const useWalkthroughSteps = (): WalkthroughStep[] => {
     features.objectiveEnabled,
     getTermDisplay,
     isMayaPage,
-    isMayaMessageAvailabilityUnavailable,
-    isMayaMessageAvailabilityPending,
-    isMayaMessageLimitReached,
     isWalkthroughReady,
     myWorkPath,
     objectiveTerm,
