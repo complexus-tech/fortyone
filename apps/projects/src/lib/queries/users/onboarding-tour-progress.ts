@@ -1,5 +1,6 @@
 import { get } from "@/lib/http";
 import type { WorkspaceCtx } from "@/lib/http";
+import { normalizeOnboardingTourProgress } from "@/lib/onboarding-tour-progress";
 import type { ApiResponse, OnboardingTourProgress } from "@/types";
 
 type OnboardingTourProgressQuery = {
@@ -17,5 +18,8 @@ export const getOnboardingTourProgress = async (
     ctx,
   );
 
-  return progress.data!;
+  return normalizeOnboardingTourProgress(progress.data, {
+    tourKey,
+    tourVersion,
+  });
 };

@@ -443,8 +443,8 @@ export const WalkthroughProvider = ({
 
     if (
       onboardingTourProgress.status !== "active" ||
-      onboardingTourProgress.completedActionIds.length > 0 ||
-      onboardingTourProgress.completedStepIds.length > 0 ||
+      (onboardingTourProgress.completedActionIds?.length ?? 0) > 0 ||
+      (onboardingTourProgress.completedStepIds?.length ?? 0) > 0 ||
       legacyCompletedActions.length === 0
     ) {
       return;

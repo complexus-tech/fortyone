@@ -156,4 +156,4 @@ jobs:
           task-definition: ${{ steps.render-worker.outputs.task-definition }}
           service: ${{ vars.ECS_WORKER_SERVICE }}
           cluster: ${{ vars.ECS_CLUSTER }}
-          wait-for-service-stability: false
+          wait-for-service-stability: true

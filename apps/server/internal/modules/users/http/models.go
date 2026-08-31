@@ -240,8 +240,8 @@ func toAppOnboardingTourProgress(progress users.CoreOnboardingTourProgress) AppO
 	return AppOnboardingTourProgress{
 		TourKey:            progress.TourKey,
 		TourVersion:        progress.TourVersion,
-		CompletedStepIDs:   append([]string(nil), progress.CompletedStepIDs...),
-		CompletedActionIDs: append([]string(nil), progress.CompletedActionIDs...),
+		CompletedStepIDs:   append([]string{}, progress.CompletedStepIDs...),
+		CompletedActionIDs: append([]string{}, progress.CompletedActionIDs...),
 		Status:             string(progress.Status),
 		CreatedAt:          progress.CreatedAt,
 		UpdatedAt:          progress.UpdatedAt,

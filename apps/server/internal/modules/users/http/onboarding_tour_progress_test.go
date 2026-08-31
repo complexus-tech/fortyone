@@ -1,12 +1,35 @@
 package usershttp
 
 import (
+	"encoding/json"
 	"net/url"
 	"strings"
 	"testing"
 
 	users "github.com/complexus-tech/projects-api/internal/modules/users/service"
 )
+
+func TestToAppOnboardingTourProgressSerializesEmptyCollectionsAsArrays(t *testing.T) {
+	t.Parallel()
+
+	progress := toAppOnboardingTourProgress(users.CoreOnboardingTourProgress{
+		TourKey:     "workspace-getting-started",
+		TourVersion: "v1",
+		Status:      users.CoreOnboardingTourStatusActive,
+	})
+	payload, err := json.Marshal(progress)
+	if err != nil {
+		t.Fatalf("marshal onboarding progress: %v", err)
+	}
+
+	serialized := string(payload)
+	if !strings.Contains(serialized, `"completedStepIds":[]`) {
+		t.Fatalf("completedStepIds must serialize as an array: %s", serialized)
+	}
+	if !strings.Contains(serialized, `"completedActionIds":[]`) {
+		t.Fatalf("completedActionIds must serialize as an array: %s", serialized)
+	}
+}
 
 func TestParseOnboardingTourProgressQueryNormalizesVersionedScope(t *testing.T) {
 	t.Parallel()
