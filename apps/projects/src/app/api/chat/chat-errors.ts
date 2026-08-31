@@ -45,10 +45,13 @@ const parseErrorMessage = (error: unknown): unknown => {
 const sanitizeDiagnosticMessage = (message: string) =>
   message
     .replace(/data:[^;,\s]+;base64,[A-Za-z0-9+/=]+/g, "[inline data redacted]")
-    .replace(/\b(?:sk|rk|pk|sess)-[A-Za-z0-9_-]{12,}\b/g, "[credential redacted]")
     .replace(
-      /\b(?<field>authorization|api[-_ ]?key|password|secret|token)(?<separator>\s*[:=]\s*)(?<value>[^,\s]+)/gi,
-      "$<field>$<separator>[redacted]",
+      /\b(?:sk|rk|pk|sess)-[A-Za-z0-9_-]{12,}\b/g,
+      "[credential redacted]",
+    )
+    .replace(
+      /\b(authorization|api[-_ ]?key|password|secret|token)(\s*[:=]\s*)[^,\s]+/gi,
+      "$1$2[redacted]",
     )
     .replace(/\s+/g, " ")
     .trim()
@@ -148,13 +151,8 @@ const collectErrorDetails = (error: unknown) => {
  * request bodies, tool inputs, user content, or nested response payloads.
  */
 export const getChatErrorDiagnostic = (error: unknown) => {
-  const {
-    codes,
-    operationalMessages,
-    requestIds,
-    retryable,
-    statuses,
-  } = collectErrorDetails(error);
+  const { codes, operationalMessages, requestIds, retryable, statuses } =
+    collectErrorDetails(error);
   const messages = Array.from(operationalMessages).slice(0, 3);
   const providerRequestIds = Array.from(requestIds).slice(0, 3);
   const retryability = Array.from(retryable);

@@ -129,7 +129,9 @@ describe("getChatErrorDiagnostic", () => {
       statuses: [500],
     });
     expect(formatChatErrorDiagnostic(error)).toBe(JSON.stringify(diagnostic));
-    expect(JSON.stringify(diagnostic)).not.toContain("private workspace content");
+    expect(JSON.stringify(diagnostic)).not.toContain(
+      "private workspace content",
+    );
   });
 
   it("captures AI SDK statusCode and retryability fields", () => {
@@ -146,6 +148,20 @@ describe("getChatErrorDiagnostic", () => {
       messages: ["Provider request failed"],
       retryable: [false],
       statuses: [400],
+    });
+  });
+
+  it("redacts credential fields from operational error messages", () => {
+    const error = Object.assign(new Error("token=private-provider-token"), {
+      name: "ApiError",
+      status: 500,
+    });
+
+    expect(getChatErrorDiagnostic(error)).toEqual({
+      codes: [],
+      errorType: "ApiError",
+      messages: ["token=[redacted]"],
+      statuses: [500],
     });
   });
 
@@ -167,6 +183,8 @@ describe("getChatErrorDiagnostic", () => {
       errorType: "AI_TypeValidationError",
       statuses: [400],
     });
-    expect(JSON.stringify(diagnostic)).not.toContain("private workspace content");
+    expect(JSON.stringify(diagnostic)).not.toContain(
+      "private workspace content",
+    );
   });
 });
