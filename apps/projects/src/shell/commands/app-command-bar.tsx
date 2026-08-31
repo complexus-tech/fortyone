@@ -9,6 +9,7 @@ import {
   HelpIcon,
   Notification02Icon,
   PlusIcon,
+  ProductTourIcon,
 } from "icons";
 import { useParams, usePathname } from "next/navigation";
 import { useUnreadNotifications } from "@/modules/notifications/hooks/unread";
@@ -47,7 +48,7 @@ export const AppCommandBar = () => {
   const { getTermDisplay } = useTerminology();
   const { userRole } = useUserRole();
   const { withWorkspace } = useWorkspacePath();
-  const { completeWalkthroughAction } = useWalkthrough();
+  const { completeWalkthroughAction, startWalkthrough } = useWalkthrough();
 
   const createsObjective =
     pathname === withWorkspace("/roadmap") || isTeamObjectivesIndex(pathname);
@@ -133,6 +134,10 @@ export const AppCommandBar = () => {
               </Menu.Button>
               <Menu.Items align="end">
                 <Menu.Group>
+                  <Menu.Item onSelect={startWalkthrough}>
+                    <ProductTourIcon />
+                    Product tour
+                  </Menu.Item>
                   <Menu.Item
                     onSelect={() => {
                       setIsKeyboardShortcutsOpen(true);

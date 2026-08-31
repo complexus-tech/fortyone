@@ -175,6 +175,18 @@ describe("Navigation", () => {
       "data-walkthrough-target",
       walkthroughTargets.roadmap,
     );
+    expect(screen.getByRole("link", { name: "Summary" })).toHaveAttribute(
+      "data-walkthrough-target",
+      walkthroughTargets.summary,
+    );
+    expect(screen.getByRole("link", { name: "Strategy Map" })).toHaveAttribute(
+      "data-walkthrough-target",
+      walkthroughTargets.strategy,
+    );
+    expect(screen.getByRole("link", { name: "Documents" })).toHaveAttribute(
+      "data-walkthrough-target",
+      walkthroughTargets.documents,
+    );
 
     fireEvent.click(workspaceTrigger);
 

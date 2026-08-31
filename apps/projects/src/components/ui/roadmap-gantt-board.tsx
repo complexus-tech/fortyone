@@ -40,7 +40,8 @@ import {
 
 const ROADMAP_STICKY_COLUMNS_WIDTH = 640;
 const ROADMAP_COLLAPSED_COLUMNS_WIDTH = 320;
-const ROADMAP_ROW_HEIGHT = 56;
+// Keep the virtual Gantt stride equal to the existing h-14 objective rows.
+const ROADMAP_ROW_HEIGHT = 45.5;
 const ROADMAP_COLUMNS =
   "grid-cols-[2rem_2rem_2rem_minmax(0,7rem)_minmax(0,1fr)_7rem]";
 const DAYS_PER_DISPLAY_MONTH = 30;
@@ -195,7 +196,11 @@ const ObjectiveRow = ({
 
   if (objective.scheduleStatus === "at_risk") {
     scheduleCell = (
-      <ObjectiveForecastRiskBadge objective={objective} size="row" />
+      <ObjectiveForecastRiskBadge
+        label={isSidebarCollapsed ? "delta" : "forecast"}
+        objective={objective}
+        size={isSidebarCollapsed ? "control" : "row"}
+      />
     );
   } else if (duration !== null) {
     const durationLabel = formatObjectiveDuration(duration);

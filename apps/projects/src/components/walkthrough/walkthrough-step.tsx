@@ -34,7 +34,7 @@ const DEFAULT_PANEL_SIZES = {
 const WALKTHROUGH_SUBTLE_BUTTON_CLASS =
   "bg-surface/45 hover:bg-surface/65 dark:bg-surface/45 dark:hover:bg-surface/65";
 const WALKTHROUGH_PRIMARY_BUTTON_CLASS =
-  "bg-primary-solid/90 hover:bg-primary-solid focus-visible:ring-primary/45 focus-visible:ring-2 focus-visible:ring-offset-2";
+  "bg-primary-solid/90 hover:bg-primary-solid focus-visible:ring-primary/45 focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-surface-elevated";
 
 const getViewportSize = () => ({
   height: typeof window === "undefined" ? 0 : window.innerHeight,
@@ -371,9 +371,9 @@ export const WalkthroughStep = ({
     targetPosition,
     viewport: getViewportSize(),
   });
-  const isFirstStep = state.currentStep === 0;
-  const isLastStep = state.currentStep === state.totalSteps - 1;
-  const currentStepNumber = state.currentStep + 1;
+  const isFirstStep = state.progress.current <= 1;
+  const isLastStep = state.progress.current === state.progress.total;
+  const currentStepNumber = state.progress.current;
   const primaryActionLabel = (() => {
     if (isRequiredActionPending && isFallback) {
       return "Getting things ready…";
@@ -428,10 +428,7 @@ export const WalkthroughStep = ({
         >
           {isWelcome ? (
             <Box className="absolute top-5 right-5 z-10 sm:top-6 sm:right-6">
-              <Tooltip
-                className="w-56"
-                title="This will temporarily dismiss the walkthrough"
-              >
+              <Tooltip className="w-56" title="Close walkthrough">
                 <Button
                   asIcon
                   color="tertiary"
@@ -455,13 +452,10 @@ export const WalkthroughStep = ({
                   id={titleId}
                   isWelcome={false}
                   title={step.title}
-                  totalSteps={state.totalSteps}
+                  totalSteps={state.progress.total}
                 />
               </Box>
-              <Tooltip
-                className="w-56"
-                title="This will temporarily dismiss the walkthrough"
-              >
+              <Tooltip className="w-56" title="Close walkthrough">
                 <Button
                   asIcon
                   color="tertiary"
@@ -488,7 +482,7 @@ export const WalkthroughStep = ({
                     id={titleId}
                     isWelcome
                     title={step.title}
-                    totalSteps={state.totalSteps}
+                    totalSteps={state.progress.total}
                   />
                   <Box className="mt-4 text-lg">{step.content}</Box>
                 </Box>

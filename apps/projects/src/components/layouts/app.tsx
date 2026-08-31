@@ -3,6 +3,7 @@ import { type ReactNode } from "react";
 import { Box } from "ui";
 import { WorkspaceChatLayout } from "@/components/ui/chat";
 import { WalkthroughIntegration } from "@/components/walkthrough/walkthrough-integration";
+import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { AppCommandBar } from "@/shell/commands/app-command-bar";
 import { AppCommandActionProvider } from "../shared/app-command-action-context";
 import { SidebarProvider } from "../shared/sidebar/sidebar-context";
@@ -24,6 +25,7 @@ export const ApplicationLayout = ({ children }: { children: ReactNode }) => {
               <Box
                 className="border-border/80 bg-surface-muted/40 dark:bg-surface-muted/20 h-full min-w-0 overflow-hidden md:rounded-xl md:border-[0.5px]"
                 data-app-content-canvas
+                data-walkthrough-target={walkthroughTargets.workspaceContent}
               >
                 <WorkspaceChatLayout>{children}</WorkspaceChatLayout>
               </Box>

@@ -74,6 +74,33 @@ const actionGatedWalkthroughSteps: WalkthroughStep[] = [
   },
 ];
 
+const branchedWalkthroughSteps: WalkthroughStep[] = [
+  {
+    content: "Choose a path.",
+    id: "welcome",
+    target: "body",
+    title: "Welcome",
+  },
+  {
+    content: "Create work.",
+    id: "create",
+    target: "body",
+    title: "Create",
+  },
+  {
+    content: "Plan time.",
+    id: "calendar",
+    target: "body",
+    title: "Calendar",
+  },
+  {
+    content: "Get help.",
+    id: "help",
+    target: "body",
+    title: "Help",
+  },
+];
+
 const WalkthroughTestProvider = ({ children }: { children: ReactNode }) => (
   <StrictMode>
     <WalkthroughProvider>{children}</WalkthroughProvider>
@@ -188,6 +215,57 @@ describe("WalkthroughProvider", () => {
     });
   });
 
+  it("counts and navigates only the journey selected from the welcome step", () => {
+    const { result } = renderHook(() => useWalkthrough(), {
+      wrapper: WalkthroughTestProvider,
+    });
+
+    act(() => {
+      result.current.setSteps(branchedWalkthroughSteps);
+    });
+
+    act(() => {
+      result.current.startWalkthrough();
+    });
+
+    act(() => {
+      result.current.goToStep(2);
+    });
+
+    expect(result.current.state).toMatchObject({
+      currentStep: 2,
+      progress: {
+        current: 2,
+        total: 3,
+      },
+      totalSteps: 4,
+    });
+
+    act(() => {
+      result.current.prevStep();
+    });
+
+    expect(result.current.state).toMatchObject({
+      currentStep: 0,
+      progress: {
+        current: 1,
+        total: 3,
+      },
+    });
+
+    act(() => {
+      result.current.nextStep();
+    });
+
+    expect(result.current.state).toMatchObject({
+      currentStep: 2,
+      progress: {
+        current: 2,
+        total: 3,
+      },
+    });
+  });
+
   it("persists a real action completed outside the visible tour as its resolved step", () => {
     const { result } = renderHook(() => useWalkthrough(), {
       wrapper: WalkthroughTestProvider,
@@ -258,5 +336,71 @@ describe("WalkthroughProvider", () => {
       currentStep: 1,
       isActive: true,
     });
+  });
+
+  it.each(["completed", "skipped"] as const)(
+    "replays %s progress from the welcome step",
+    (status) => {
+      useOnboardingTourProgressMock.mockReturnValue({
+        data: {
+          completedActionIds: [],
+          completedStepIds: ["first"],
+          status,
+          tourKey: "workspace-getting-started",
+          tourVersion: "1.0.0",
+        },
+        isPending: false,
+      } as unknown as ReturnType<typeof useOnboardingTourProgress>);
+
+      const { result } = renderHook(() => useWalkthrough(), {
+        wrapper: WalkthroughTestProvider,
+      });
+
+      act(() => {
+        result.current.setSteps(walkthroughSteps);
+      });
+
+      act(() => {
+        result.current.startWalkthrough();
+      });
+
+      expect(result.current.state).toMatchObject({
+        currentStep: 0,
+        isActive: true,
+      });
+    },
+  );
+
+  it("persists contextual tour dismissal against its own tour key", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <WalkthroughProvider
+        dismissOnClose
+        tourKey="workspace-module-calendar"
+        version="1.0.0"
+      >
+        {children}
+      </WalkthroughProvider>
+    );
+    const { result } = renderHook(() => useWalkthrough(), { wrapper });
+
+    act(() => {
+      result.current.setSteps(walkthroughSteps);
+    });
+
+    act(() => {
+      result.current.startWalkthrough();
+    });
+
+    act(() => {
+      result.current.closeWalkthrough();
+    });
+
+    expect(updateOnboardingTourProgressMock).toHaveBeenCalledWith({
+      status: "skipped",
+      tourKey: "workspace-module-calendar",
+      tourVersion: "1.0.0",
+    });
+    expect(result.current.state.isActive).toBe(false);
+    expect(result.current.state.hasSeenWalkthrough).toBe(true);
   });
 });

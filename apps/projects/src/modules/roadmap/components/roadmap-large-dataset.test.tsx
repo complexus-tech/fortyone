@@ -111,7 +111,13 @@ jest.mock("@/modules/objectives/components/objective-health-editor", () => ({
 }));
 
 jest.mock("@/modules/objectives/components/objective-forecast-risk", () => ({
-  ObjectiveForecastRiskBadge: () => null,
+  ObjectiveForecastRiskBadge: ({
+    label,
+    size,
+  }: {
+    label?: string;
+    size?: string;
+  }) => <span data-forecast-label={label} data-forecast-size={size} />,
 }));
 
 jest.mock("@/modules/objectives/hooks", () => ({
@@ -333,12 +339,48 @@ describe("Roadmap large objective datasets", () => {
       MAX_GANTT_HOOK_RENDER_CALLS,
     );
 
+    const timelineRows = screen
+      .getByRole("list", { name: "Timeline items" })
+      .querySelectorAll("[data-gantt-item-id]");
+    expect(timelineRows[0]).toHaveStyle({ height: "45.5px" });
+    expect(timelineRows[1]).toHaveStyle({
+      transform: "translateY(45.5px)",
+    });
+
     const middleLabel = screen
       .getAllByText(middleObjective.name)
       .find((element) => element.closest("button"));
     expect(middleLabel).toBeDefined();
     fireEvent.click(middleLabel!.closest("button")!);
     expect(onObjectiveSelect).toHaveBeenCalledWith(middleObjective);
+  });
+
+  it("shows only the forecast icon and day delta when collapsed", () => {
+    const atRiskObjective = {
+      ...objectives[0],
+      forecastDaysDelta: 15,
+      forecastEndDate: "2027-01-15",
+      scheduleStatus: "at_risk" as const,
+    };
+
+    render(
+      <RoadmapGanttBoard
+        objectives={[atRiskObjective]}
+        onObjectiveSelect={jest.fn()}
+        onZoomLevelChange={jest.fn()}
+        zoomLevel="months"
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Collapse objectives panel" }),
+    );
+
+    expect(
+      document.querySelector(
+        '[data-forecast-label="delta"][data-forecast-size="control"]',
+      ),
+    ).toBeInTheDocument();
   });
 
   it.each(["list", "kanban"] as const)(

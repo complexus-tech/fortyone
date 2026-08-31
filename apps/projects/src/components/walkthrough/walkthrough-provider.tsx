@@ -62,11 +62,17 @@ interface WalkthroughState {
   isActive: boolean;
   currentStep: number;
   totalSteps: number;
+  progress: {
+    current: number;
+    total: number;
+  };
   hasSeenWalkthrough: boolean;
   walkthroughVersion: string;
 }
 
-type WalkthroughProviderState = WalkthroughState;
+interface WalkthroughProviderState extends Omit<WalkthroughState, "progress"> {
+  stepSequence: number[];
+}
 
 interface WalkthroughContextType {
   state: WalkthroughState;
@@ -88,6 +94,10 @@ const WalkthroughContext = createContext<WalkthroughContextType>({
     isActive: false,
     currentStep: 0,
     totalSteps: 0,
+    progress: {
+      current: 0,
+      total: 0,
+    },
     hasSeenWalkthrough: false,
     walkthroughVersion: "1.0.0",
   },
@@ -132,6 +142,31 @@ const getFirstIncompleteStepIndex = (
   return steps.findIndex((step) => !completedSteps.has(step.id));
 };
 
+const getStepSequence = (totalSteps: number, startingStep = 0) => {
+  if (totalSteps <= 0) {
+    return [];
+  }
+
+  const boundedStartingStep = Math.max(
+    0,
+    Math.min(startingStep, totalSteps - 1),
+  );
+  const remainingSteps = Array.from(
+    { length: totalSteps - boundedStartingStep },
+    (_, index) => boundedStartingStep + index,
+  );
+
+  return boundedStartingStep === 0 ? remainingSteps : [0, ...remainingSteps];
+};
+
+const getStepSequencePosition = (
+  stepSequence: number[],
+  currentStep: number,
+) => {
+  const position = stepSequence.indexOf(currentStep);
+  return position >= 0 ? position : 0;
+};
+
 const completedStepIdsForActions = (actions: string[]) => {
   const actionStepIds: Partial<Record<string, string>> = {
     "maya-message-completed": "maya",
@@ -148,12 +183,16 @@ interface WalkthroughProviderProps {
   children: ReactNode;
   version?: string;
   autoStart?: boolean;
+  dismissOnClose?: boolean;
+  tourKey?: string;
 }
 
 export const WalkthroughProvider = ({
   children,
   version = "1.0.0",
   autoStart = false,
+  dismissOnClose = false,
+  tourKey = WORKSPACE_GETTING_STARTED_TOUR_KEY,
 }: WalkthroughProviderProps) => {
   const { data: profile, isPending: isProfilePending } = useProfile();
   const { workspaceSlug } = useWorkspacePath();
@@ -161,14 +200,19 @@ export const WalkthroughProvider = ({
     data: onboardingTourProgress,
     isPending: isOnboardingTourProgressPending,
   } = useOnboardingTourProgress({
-    tourKey: WORKSPACE_GETTING_STARTED_TOUR_KEY,
+    tourKey,
     tourVersion: version,
   });
   const { mutate: updateOnboardingTourProgress } =
     useUpdateOnboardingTourProgressMutation();
   const [walkthroughClosedAt, setWalkthroughClosedAt] = useLocalStorage<
     string | null
-  >("fortyone:walkthrough-closed-at", null);
+  >(
+    tourKey === WORKSPACE_GETTING_STARTED_TOUR_KEY
+      ? "fortyone:walkthrough-closed-at"
+      : `fortyone:walkthrough-closed-at:${tourKey}:${version}`,
+    null,
+  );
   const [walkthroughActionProgress, setWalkthroughActionProgress] =
     useLocalStorage<WalkthroughActionProgress>(
       WALKTHROUGH_ACTION_PROGRESS_STORAGE_KEY,
@@ -180,6 +224,7 @@ export const WalkthroughProvider = ({
     currentStep: 0,
     totalSteps: 0,
     hasSeenWalkthrough: false,
+    stepSequence: [],
     walkthroughVersion: version,
   });
 
@@ -192,7 +237,9 @@ export const WalkthroughProvider = ({
     state.hasSeenWalkthrough ||
     (onboardingTourProgress?.status !== undefined &&
       onboardingTourProgress.status !== "active");
-  const walkthroughActionScope = `${profile?.id ?? "anonymous"}:${workspaceSlug || "workspace"}:${version}`;
+  const walkthroughActionScope = `${profile?.id ?? "anonymous"}:${workspaceSlug || "workspace"}:${
+    tourKey === WORKSPACE_GETTING_STARTED_TOUR_KEY ? "" : `${tourKey}:`
+  }${version}`;
   const legacyCompletedActions = useMemo(
     () => walkthroughActionProgress[walkthroughActionScope] ?? [],
     [walkthroughActionProgress, walkthroughActionScope],
@@ -217,8 +264,11 @@ export const WalkthroughProvider = ({
   }, [completedActions, onboardingTourProgress?.completedStepIds]);
   const isOnboardingTourReady =
     !isProfilePending && !isOnboardingTourProgressPending;
+  const hasTerminalOnboardingTourProgress =
+    onboardingTourProgress?.status === "completed" ||
+    onboardingTourProgress?.status === "skipped";
 
-  const currentStepData = walkthroughSteps[state.currentStep] || null;
+  const currentStepData = walkthroughSteps.at(state.currentStep) ?? null;
 
   const persistOnboardingTourProgress = useCallback(
     (
@@ -226,11 +276,11 @@ export const WalkthroughProvider = ({
     ) => {
       updateOnboardingTourProgress({
         ...updates,
-        tourKey: WORKSPACE_GETTING_STARTED_TOUR_KEY,
+        tourKey,
         tourVersion: version,
       });
     },
-    [updateOnboardingTourProgress, version],
+    [tourKey, updateOnboardingTourProgress, version],
   );
 
   const completeWalkthrough = useCallback(
@@ -253,22 +303,27 @@ export const WalkthroughProvider = ({
   );
 
   const startWalkthrough = useCallback(() => {
+    if (!walkthroughSteps.length) {
+      return;
+    }
+
     const firstIncompleteStep = getFirstIncompleteStepIndex(
       walkthroughSteps,
       completedStepIds,
     );
-
-    if (firstIncompleteStep < 0) {
-      return;
-    }
+    const startingStep =
+      hasTerminalOnboardingTourProgress || firstIncompleteStep < 0
+        ? 0
+        : firstIncompleteStep;
 
     setState((prev) => ({
       ...prev,
-      currentStep: firstIncompleteStep,
+      currentStep: startingStep,
       isActive: true,
+      stepSequence: getStepSequence(walkthroughSteps.length, startingStep),
       totalSteps: walkthroughSteps.length,
     }));
-  }, [completedStepIds, walkthroughSteps]);
+  }, [completedStepIds, hasTerminalOnboardingTourProgress, walkthroughSteps]);
 
   const completeWalkthroughAction = useCallback(
     (action: WalkthroughAction) => {
@@ -302,9 +357,13 @@ export const WalkthroughProvider = ({
       }
 
       const completedStepIdsForAction = ["welcome", currentStep.id];
-      const isLastStep = state.currentStep >= walkthroughSteps.length - 1;
+      const currentSequencePosition = getStepSequencePosition(
+        state.stepSequence,
+        state.currentStep,
+      );
+      const nextStepIndex = state.stepSequence.at(currentSequencePosition + 1);
 
-      if (isLastStep) {
+      if (nextStepIndex === undefined) {
         completeWalkthrough("completed", {
           completedActionIds: [action],
           completedStepIds: completedStepIdsForAction,
@@ -318,7 +377,7 @@ export const WalkthroughProvider = ({
       });
       setState((prev) => ({
         ...prev,
-        currentStep: prev.currentStep + 1,
+        currentStep: nextStepIndex,
       }));
     },
     [
@@ -328,8 +387,8 @@ export const WalkthroughProvider = ({
       setWalkthroughActionProgress,
       state.currentStep,
       state.isActive,
+      state.stepSequence,
       walkthroughActionScope,
-      walkthroughSteps.length,
     ],
   );
 
@@ -352,9 +411,13 @@ export const WalkthroughProvider = ({
       return;
     }
 
-    const isLastStep = state.currentStep >= walkthroughSteps.length - 1;
+    const currentSequencePosition = getStepSequencePosition(
+      state.stepSequence,
+      state.currentStep,
+    );
+    const nextStepIndex = state.stepSequence.at(currentSequencePosition + 1);
 
-    if (isLastStep) {
+    if (nextStepIndex === undefined) {
       completeWalkthrough("completed", {
         completedStepIds: [currentStep.id],
       });
@@ -364,7 +427,7 @@ export const WalkthroughProvider = ({
     persistOnboardingTourProgress({ completedStepIds: [currentStep.id] });
     setState((prev) => ({
       ...prev,
-      currentStep: prev.currentStep + 1,
+      currentStep: nextStepIndex,
     }));
   }, [
     completeWalkthrough,
@@ -372,14 +435,23 @@ export const WalkthroughProvider = ({
     currentStepData,
     persistOnboardingTourProgress,
     state.currentStep,
-    walkthroughSteps.length,
+    state.stepSequence,
   ]);
 
   const prevStep = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      currentStep: Math.max(0, prev.currentStep - 1),
-    }));
+    setState((prev) => {
+      const currentSequencePosition = getStepSequencePosition(
+        prev.stepSequence,
+        prev.currentStep,
+      );
+      const previousStepIndex =
+        prev.stepSequence[Math.max(0, currentSequencePosition - 1)] ?? 0;
+
+      return {
+        ...prev,
+        currentStep: previousStepIndex,
+      };
+    });
   }, []);
 
   const goToStep = useCallback(
@@ -400,6 +472,10 @@ export const WalkthroughProvider = ({
       setState((prev) => ({
         ...prev,
         currentStep: targetStepIndex,
+        stepSequence:
+          prev.currentStep === 0 && targetStepIndex > 0
+            ? getStepSequence(prev.totalSteps, targetStepIndex)
+            : prev.stepSequence,
       }));
     },
     [
@@ -415,7 +491,11 @@ export const WalkthroughProvider = ({
   }, [completeWalkthrough]);
 
   const closeWalkthrough = useCallback(() => {
-    // Store the close timestamp using useLocalStorage hook
+    if (dismissOnClose) {
+      completeWalkthrough("skipped");
+      return;
+    }
+
     const closeTimestamp = new Date().toISOString();
     setWalkthroughClosedAt(closeTimestamp);
 
@@ -423,7 +503,7 @@ export const WalkthroughProvider = ({
       ...prev,
       isActive: false,
     }));
-  }, [setWalkthroughClosedAt]);
+  }, [completeWalkthrough, dismissOnClose, setWalkthroughClosedAt]);
 
   const canShowWalkthrough =
     isOnboardingTourReady &&
@@ -443,8 +523,8 @@ export const WalkthroughProvider = ({
 
     if (
       onboardingTourProgress.status !== "active" ||
-      (onboardingTourProgress.completedActionIds?.length ?? 0) > 0 ||
-      (onboardingTourProgress.completedStepIds?.length ?? 0) > 0 ||
+      onboardingTourProgress.completedActionIds.length > 0 ||
+      onboardingTourProgress.completedStepIds.length > 0 ||
       legacyCompletedActions.length === 0
     ) {
       return;
@@ -473,13 +553,12 @@ export const WalkthroughProvider = ({
           nextSteps,
           completedStepIds,
         );
+        const preferredCurrentStep =
+          prev.isActive || firstIncompleteStep < 0
+            ? prev.currentStep
+            : firstIncompleteStep;
         const boundedCurrentStep = totalSteps
-          ? Math.min(
-              prev.isActive || firstIncompleteStep < 0
-                ? prev.currentStep
-                : firstIncompleteStep,
-              totalSteps - 1,
-            )
+          ? Math.min(preferredCurrentStep, totalSteps - 1)
           : 0;
         const shouldAutoStart =
           autoStart &&
@@ -487,14 +566,29 @@ export const WalkthroughProvider = ({
           firstIncompleteStep >= 0 &&
           totalSteps > 0 &&
           !prev.isActive;
+        const nextCurrentStep = shouldAutoStart
+          ? Math.max(0, firstIncompleteStep)
+          : boundedCurrentStep;
+        const retainedStepSequence = prev.stepSequence.filter(
+          (stepIndex) => stepIndex < totalSteps,
+        );
+        let stepSequence = getStepSequence(totalSteps);
+
+        if (shouldAutoStart) {
+          stepSequence = getStepSequence(totalSteps, nextCurrentStep);
+        } else if (
+          prev.isActive &&
+          retainedStepSequence.includes(nextCurrentStep)
+        ) {
+          stepSequence = retainedStepSequence;
+        }
 
         return {
           ...prev,
-          currentStep: shouldAutoStart
-            ? Math.max(0, firstIncompleteStep)
-            : boundedCurrentStep,
+          currentStep: nextCurrentStep,
           totalSteps,
           isActive: shouldAutoStart ? true : prev.isActive,
+          stepSequence,
         };
       });
     },
@@ -503,15 +597,24 @@ export const WalkthroughProvider = ({
 
   // Execute step action when current step changes
   useEffect(() => {
-    if (state.isActive && currentStepData.action) {
+    if (state.isActive && currentStepData?.action) {
       currentStepData.action();
     }
   }, [state.isActive, state.currentStep, currentStepData]);
+
+  const currentProgressIndex = getStepSequencePosition(
+    state.stepSequence,
+    state.currentStep,
+  );
 
   const contextState: WalkthroughState = {
     isActive: state.isActive,
     currentStep: state.currentStep,
     totalSteps: state.totalSteps,
+    progress: {
+      current: state.stepSequence.length ? currentProgressIndex + 1 : 0,
+      total: state.stepSequence.length,
+    },
     hasSeenWalkthrough,
     walkthroughVersion: state.walkthroughVersion,
   };

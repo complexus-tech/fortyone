@@ -100,14 +100,7 @@ type ScheduleIssueRepository interface {
 	ListScheduleIssues(ctx context.Context, workspaceID, userID uuid.UUID) ([]CoreScheduleIssue, error)
 }
 
-type ScheduleEventOutboxStore interface {
-	ListPendingScheduleEventOutbox(ctx context.Context, userID uuid.UUID, provider Provider, limit int) ([]CoreScheduleEventOutbox, error)
-	ScheduleEventUpsertIsCurrent(ctx context.Context, item CoreScheduleEventOutbox, event ExternalScheduleEventInput) (bool, error)
-	MarkScheduleEventOutboxProcessed(ctx context.Context, item CoreScheduleEventOutbox, syncHash string) error
-	MarkScheduleEventOutboxFailed(ctx context.Context, item CoreScheduleEventOutbox, message string, permanent bool) error
-	ReleaseScheduleEventOutbox(ctx context.Context, outboxIDs []uuid.UUID) error
-	DeleteCleanupPendingConnectionIfDrained(ctx context.Context, userID uuid.UUID, provider Provider) error
-}
+type ScheduleEventOutboxStore = calendardomain.ScheduleEventOutboxStore
 
 type Config struct {
 	SecretKey      string

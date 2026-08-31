@@ -134,6 +134,12 @@ export const Navigation = ({
         walkthroughTarget = walkthroughTargets.calendar;
       } else if (href === withWorkspace("/roadmap")) {
         walkthroughTarget = walkthroughTargets.roadmap;
+      } else if (href === withWorkspace("/strategy")) {
+        walkthroughTarget = walkthroughTargets.strategy;
+      } else if (href === withWorkspace("/summary")) {
+        walkthroughTarget = walkthroughTargets.summary;
+      } else if (href === withWorkspace("/docs")) {
+        walkthroughTarget = walkthroughTargets.documents;
       }
 
       return (

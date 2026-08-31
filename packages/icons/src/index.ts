@@ -171,3 +171,4 @@ export * from "./webhook";
 export * from "./http";
 export * from "./user-multiple-02";
 export * from "./video-02";
+export * from "./product-tour";

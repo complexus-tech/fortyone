@@ -34,6 +34,10 @@ describe("WalkthroughStep", () => {
         currentStep: 3,
         hasSeenWalkthrough: false,
         isActive: true,
+        progress: {
+          current: 4,
+          total: 10,
+        },
         totalSteps: 10,
         walkthroughVersion: "1.0.0",
       },
@@ -62,6 +66,38 @@ describe("WalkthroughStep", () => {
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(dialog).toHaveAttribute("aria-describedby");
     expect(nextButton).toHaveFocus();
+    expect(nextButton).toHaveClass(
+      "dark:focus-visible:ring-offset-surface-elevated",
+    );
+  });
+
+  it("shows progress for the selected journey instead of the global step index", () => {
+    useWalkthroughMock.mockReturnValue({
+      closeWalkthrough: closeWalkthroughMock,
+      goToStep: goToStepMock,
+      isWalkthroughActionComplete: isWalkthroughActionCompleteMock,
+      nextStep: nextStepMock,
+      prevStep: jest.fn(),
+      skipWalkthrough: jest.fn(),
+      steps: [],
+      state: {
+        currentStep: 2,
+        hasSeenWalkthrough: false,
+        isActive: true,
+        progress: {
+          current: 2,
+          total: 3,
+        },
+        totalSteps: 4,
+        walkthroughVersion: "1.0.0",
+      },
+    } as unknown as ReturnType<typeof useWalkthrough>);
+
+    renderStep();
+
+    expect(screen.getByLabelText("Step 2 of 3")).toBeInTheDocument();
+    expect(screen.getByText("[2 / 3]")).toBeInTheDocument();
+    expect(screen.queryByText("[3 / 4]")).not.toBeInTheDocument();
   });
 
   it("closes the walkthrough when Escape is pressed", () => {
@@ -131,6 +167,10 @@ describe("WalkthroughStep", () => {
         currentStep: 0,
         hasSeenWalkthrough: false,
         isActive: true,
+        progress: {
+          current: 1,
+          total: 4,
+        },
         totalSteps: 4,
         walkthroughVersion: "1.0.0",
       },

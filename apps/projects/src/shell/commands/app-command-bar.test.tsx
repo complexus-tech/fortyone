@@ -6,6 +6,7 @@ import { walkthroughTargets } from "@/shared/walkthrough/targets";
 import { AppCommandBar } from "./app-command-bar";
 
 const mockCompleteWalkthroughAction = jest.fn();
+const mockStartWalkthrough = jest.fn();
 
 jest.mock("next/navigation", () => ({
   useParams: () => ({}),
@@ -154,6 +155,7 @@ jest.mock("@/components/ui/new-story-dialog", () => ({
 jest.mock("@/components/walkthrough/walkthrough-provider", () => ({
   useWalkthrough: () => ({
     completeWalkthroughAction: mockCompleteWalkthroughAction,
+    startWalkthrough: mockStartWalkthrough,
   }),
 }));
 
@@ -185,6 +187,7 @@ jest.mock("@/components/shared/app-command-action-context", () => ({
 describe("AppCommandBar", () => {
   beforeEach(() => {
     mockCompleteWalkthroughAction.mockClear();
+    mockStartWalkthrough.mockClear();
   });
 
   it("shows Help with the existing command controls", () => {
@@ -218,6 +221,14 @@ describe("AppCommandBar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
 
     expect(screen.getByText("Keyboard shortcuts dialog")).toBeInTheDocument();
+  });
+
+  it("starts the product tour from Help", () => {
+    render(<AppCommandBar />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Product tour" }));
+
+    expect(mockStartWalkthrough).toHaveBeenCalledTimes(1);
   });
 
   it("completes the walkthrough task action after the task dialog closes", () => {
